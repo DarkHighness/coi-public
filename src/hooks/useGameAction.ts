@@ -297,6 +297,7 @@ export const useGameAction = ({
             currentSlotId || "default",
             currentForkId,
             summarySnapshot.id || Date.now(),
+            vfsSession,
           );
         }
 
@@ -677,7 +678,8 @@ export const useGameAction = ({
     const sessionId = `${currentSlotId}:${gameStateRef.current.forkId ?? 0}:${story.providerId}:${story.modelId}`;
     console.log(`[useGameAction] Manually invalidating session: ${sessionId}`);
     await sessionManager.invalidate(sessionId, "manual_clear");
-  }, [aiSettings, currentSlotId]);
+    vfsSession.beginReadEpoch("manual_invalidate");
+  }, [aiSettings, currentSlotId, vfsSession]);
 
   const handleRebuildContext = useCallback(async () => {
     if (processingRef.current || gameStateRef.current.isProcessing) return;
@@ -802,6 +804,7 @@ export const useGameAction = ({
           currentSlotId || "default",
           gameStateRef.current.forkId ?? 0,
           summarySnapshot.id || Date.now(),
+          vfsSession,
         );
 
         showToast(t("game.success.contextRebuilt"), "success");

@@ -1,5 +1,12 @@
 export type VfsContentType = "application/json" | "text/plain" | "text/markdown";
 
+export type VfsReadEpochReason =
+  | "summary_created"
+  | "context_overflow"
+  | "manual_invalidate"
+  | "session_switch"
+  | "snapshot_restore";
+
 export interface VfsFile {
   path: string;
   content: string;
@@ -31,4 +38,10 @@ export interface VfsIndex {
   turn: number;
   createdAt: number;
   files: VfsIndexEntry[];
+}
+
+export interface VfsReadFenceState {
+  currentReadEpoch: number;
+  seenByEpoch: Record<string, number>;
+  boundConversationSessionId: string | null;
 }

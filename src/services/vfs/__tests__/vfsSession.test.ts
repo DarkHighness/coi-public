@@ -175,4 +175,49 @@ expect(session.list("skills")).toEqual(
     expect(session.readFile("skills/evil.txt")).toBeNull();
     expect(session.readFile("world/global.json")).toBeTruthy();
   });
+
+
+  it("invalidates seen paths when read epoch advances", () => {
+    const session = new VfsSession();
+    session.noteToolSeen("world/notes.md");
+
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(true);
+
+    session.beginReadEpoch("summary_created");
+
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(false);
+  });
+
+  it("bumps read epoch when conversation session changes", () => {
+    const session = new VfsSession();
+
+    const firstBind = session.bindConversationSession("session-a");
+    expect(firstBind.changed).toBe(true);
+
+    session.noteToolSeen("world/notes.md");
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(true);
+
+    const sameBind = session.bindConversationSession("session-a");
+    expect(sameBind.changed).toBe(false);
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(true);
+
+    const switched = session.bindConversationSession("session-b");
+    expect(switched.changed).toBe(true);
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(false);
+  });
+
+  it("restores read fence state from snapshot", () => {
+    const session = new VfsSession();
+
+    session.bindConversationSession("session-a");
+    session.noteToolSeen("world/notes.md");
+    const snapshot = session.snapshotReadFenceState();
+
+    session.beginReadEpoch("manual_invalidate");
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(false);
+
+    session.restoreReadFenceState(snapshot);
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(true);
+  });
+
 });

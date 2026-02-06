@@ -2,6 +2,49 @@ import { describe, it, expect } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
 import { dispatchToolCall, dispatchToolCallAsync } from "../handlers";
 
+const createValidGlobal = () => ({
+  time: "Day 1",
+  theme: "fantasy",
+  currentLocation: "loc:1",
+  atmosphere: {
+    envTheme: "fantasy",
+    ambience: "forest",
+    weather: "clear",
+  },
+  turnNumber: 1,
+  forkId: 0,
+});
+
+const createValidActorProfile = (id: string) => ({
+  id,
+  kind: "npc",
+  currentLocation: "loc:1",
+  knownBy: ["char:player"],
+  visible: {
+    name: "Bob",
+  },
+  relations: [],
+});
+
+const createValidThemeConfig = () => ({
+  name: "Default",
+  narrativeStyle: "Narrative",
+  worldSetting: "Setting",
+  backgroundTemplate: "Template",
+  example: "Example",
+  isRestricted: false,
+});
+
+const createValidCustomRule = (id: string) => ({
+  id,
+  category: "custom",
+  title: id,
+  content: "Rule content",
+  enabled: true,
+  priority: 1,
+  createdAt: 1,
+});
+
 describe("VFS handlers", () => {
   it("writes and reads files via dispatch", () => {
     const session = new VfsSession();
@@ -13,7 +56,7 @@ describe("VFS handlers", () => {
         files: [
           {
             path: "current/world/global.json",
-            content: "{}",
+            content: JSON.stringify(createValidGlobal()),
             contentType: "application/json",
           },
         ],
@@ -30,7 +73,7 @@ describe("VFS handlers", () => {
     ) as { success: boolean; data?: { content?: string } };
 
     expect(readResult.success).toBe(true);
-    expect(readResult.data?.content).toBe("{}");
+    expect(JSON.parse(readResult.data?.content ?? "{}").time).toBe("Day 1");
   });
 
   it("blocks overwriting an unseen file via vfs_write until it is read", () => {
@@ -352,9 +395,9 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/global.json",
-            content: JSON.stringify({ big: "x".repeat(100) }),
-            contentType: "application/json",
+            path: "current/world/notes.md",
+            content: "x".repeat(100),
+            contentType: "text/markdown",
           },
         ],
       },
@@ -363,7 +406,7 @@ describe("VFS handlers", () => {
 
     const readResult = dispatchToolCall(
       "vfs_read",
-      { path: "current/world/global.json", maxChars: 20 },
+      { path: "current/world/notes.md", maxChars: 20 },
       ctx,
     ) as { success: boolean; data?: { content?: string; truncated?: boolean } };
 
@@ -381,7 +424,7 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/global.json",
+            path: "current/world/slice.txt",
             content: "abcdefghijklmnopqrstuvwxyz",
             contentType: "text/plain",
           },
@@ -392,7 +435,7 @@ describe("VFS handlers", () => {
 
     const readResult = dispatchToolCall(
       "vfs_read",
-      { path: "current/world/global.json", start: 5, offset: 3 },
+      { path: "current/world/slice.txt", start: 5, offset: 3 },
       ctx,
     ) as {
       success: boolean;
@@ -422,8 +465,8 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/npcs/npc:1.json",
-            content: JSON.stringify({ id: "npc:1", visible: { name: "Bob" } }),
+            path: "current/world/characters/char:npc_1/profile.json",
+            content: JSON.stringify(createValidActorProfile("char:npc_1")),
             contentType: "application/json",
           },
         ],
@@ -433,7 +476,7 @@ describe("VFS handlers", () => {
 
     const result = dispatchToolCall(
       "vfs_read_json",
-      { path: "current/world/npcs/npc:1.json", pointers: ["/visible/name"] },
+      { path: "current/world/characters/char:npc_1/profile.json", pointers: ["/visible/name"] },
       ctx,
     ) as {
       success: boolean;
@@ -479,12 +522,12 @@ describe("VFS handlers", () => {
         files: [
           {
             path: "current/world/global.json",
-            content: "{}",
+            content: JSON.stringify(createValidGlobal()),
             contentType: "application/json",
           },
           {
-            path: "current/world/npcs/npc:1.json",
-            content: JSON.stringify({ id: "npc:1" }),
+            path: "current/world/characters/char:npc_1/profile.json",
+            content: JSON.stringify(createValidActorProfile("char:npc_1")),
             contentType: "application/json",
           },
         ],
@@ -534,8 +577,8 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/a.json",
-            content: "{}",
+            path: "current/world/theme_config.json",
+            content: JSON.stringify(createValidThemeConfig()),
             contentType: "application/json",
           },
           {
@@ -544,8 +587,8 @@ describe("VFS handlers", () => {
             contentType: "text/plain",
           },
           {
-            path: "current/world/sub/c.json",
-            content: "{}",
+            path: "current/world/custom_rules/rule:1.json",
+            content: JSON.stringify(createValidCustomRule("rule:1")),
             contentType: "application/json",
           },
         ],
@@ -566,8 +609,8 @@ describe("VFS handlers", () => {
     expect(globResult.data?.truncated).toBe(false);
     expect(globResult.data?.totalMatches).toBe(2);
     expect(globResult.data?.matches).toEqual([
-      "current/world/a.json",
-      "current/world/sub/c.json",
+      "current/world/custom_rules/rule:1.json",
+      "current/world/theme_config.json",
     ]);
   });
 
@@ -580,13 +623,13 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/a.json",
-            content: "{}",
+            path: "current/world/theme_config.json",
+            content: JSON.stringify(createValidThemeConfig()),
             contentType: "application/json",
           },
           {
-            path: "current/world/sub/c.json",
-            content: "{}",
+            path: "current/world/custom_rules/rule:2.json",
+            content: JSON.stringify(createValidCustomRule("rule:2")),
             contentType: "application/json",
           },
         ],
@@ -598,7 +641,7 @@ describe("VFS handlers", () => {
       "vfs_glob",
       {
         patterns: ["world/**/*.json"],
-        excludePatterns: ["world/sub/**"],
+        excludePatterns: ["world/custom_rules/**"],
       },
       ctx,
     ) as {
@@ -608,7 +651,7 @@ describe("VFS handlers", () => {
 
     expect(globResult.success).toBe(true);
     expect(globResult.data?.totalMatches).toBe(1);
-    expect(globResult.data?.matches).toEqual(["current/world/a.json"]);
+    expect(globResult.data?.matches).toEqual(["current/world/theme_config.json"]);
   });
 
   it("returns metadata via vfs_glob returnMeta", () => {
@@ -620,8 +663,8 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/a.json",
-            content: "{}",
+            path: "current/world/theme_config.json",
+            content: JSON.stringify(createValidThemeConfig()),
             contentType: "application/json",
           },
         ],
@@ -649,13 +692,13 @@ describe("VFS handlers", () => {
     };
 
     expect(globResult.success).toBe(true);
-    expect(globResult.data?.matches).toEqual(["current/world/a.json"]);
+    expect(globResult.data?.matches).toEqual(["current/world/theme_config.json"]);
     expect(globResult.data?.entries?.[0]).toMatchObject({
-      path: "current/world/a.json",
+      path: "current/world/theme_config.json",
       contentType: "application/json",
-      totalChars: 2,
-      size: 2,
     });
+    expect((globResult.data?.entries?.[0]?.totalChars ?? 0) > 2).toBe(true);
+    expect((globResult.data?.entries?.[0]?.size ?? 0) > 2).toBe(true);
     expect(typeof globResult.data?.entries?.[0]?.hash).toBe("string");
     expect(typeof globResult.data?.entries?.[0]?.updatedAt).toBe("number");
   });
@@ -669,8 +712,8 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/world/a.json",
-            content: "{}",
+            path: "current/world/theme_config.json",
+            content: JSON.stringify(createValidThemeConfig()),
             contentType: "application/json",
           },
         ],
@@ -707,7 +750,7 @@ describe("VFS handlers", () => {
         files: [
           {
             path: "current/world/global.json",
-            content: JSON.stringify({ time: "Day 1" }),
+            content: JSON.stringify(createValidGlobal()),
             contentType: "application/json",
           },
           {
@@ -1014,7 +1057,7 @@ describe("VFS handlers", () => {
         files: [
           {
             path: "current/world/global.json",
-            content: "{}",
+            content: JSON.stringify(createValidGlobal()),
             contentType: "application/json",
           },
         ],
@@ -1167,7 +1210,7 @@ describe("VFS handlers", () => {
           {
             op: "write",
             path: "current/world/global.json",
-            content: JSON.stringify({ time: "Day 1" }),
+            content: JSON.stringify(createValidGlobal()),
             contentType: "application/json",
           },
           {
@@ -1349,9 +1392,9 @@ describe("VFS handlers", () => {
     expect(ok.success).toBe(true);
   });
 
-  it("blocks vfs_text_edit outside current/world/**.md", () => {
+  it("allows vfs_text_edit on writable text outside world after read", () => {
     const session = new VfsSession();
-    session.writeFile("conversation/index.json", "{}", "text/plain");
+    session.writeFile("conversation/scratch.txt", "A\nB", "text/plain");
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
@@ -1359,8 +1402,8 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/conversation/index.json",
-            ops: [{ op: "replace", from: "{", to: "[" }],
+            path: "current/conversation/scratch.txt",
+            ops: [{ op: "replace", from: "B", to: "C" }],
           },
         ],
       },
@@ -1369,6 +1412,37 @@ describe("VFS handlers", () => {
 
     expect(blocked.success).toBe(false);
     expect(blocked.code).toBe("INVALID_ACTION");
+
+    const read = dispatchToolCall(
+      "vfs_read",
+      { path: "current/conversation/scratch.txt" },
+      ctx,
+    ) as { success: boolean };
+    expect(read.success).toBe(true);
+
+    const edited = dispatchToolCall(
+      "vfs_text_edit",
+      {
+        files: [
+          {
+            path: "current/conversation/scratch.txt",
+            ops: [{ op: "replace", from: "B", to: "C" }],
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(edited.success).toBe(true);
+
+    const verify = dispatchToolCall(
+      "vfs_read",
+      { path: "current/conversation/scratch.txt" },
+      ctx,
+    ) as { success: boolean; data?: { content?: string } };
+
+    expect(verify.success).toBe(true);
+    expect(verify.data?.content).toBe("A\nC");
   });
 
   it("can append a marker block via vfs_text_edit replace_between when markers are missing", () => {
@@ -1512,4 +1586,287 @@ describe("VFS handlers", () => {
     expect(read.success).toBe(true);
     expect(read.data?.content ?? "").toBe("A\nX\nBB\nC");
   });
+
+
+  it("allows vfs_append on writable text outside world after read", () => {
+    const session = new VfsSession();
+    session.writeFile("conversation/scratch.md", "# Scratch", "text/markdown");
+    const ctx = { vfsSession: session };
+
+    const blocked = dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [
+          {
+            path: "current/conversation/scratch.md",
+            content: "- item",
+            ensureNewline: true,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.code).toBe("INVALID_ACTION");
+
+    dispatchToolCall("vfs_read", { path: "current/conversation/scratch.md" }, ctx);
+
+    const ok = dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [
+          {
+            path: "current/conversation/scratch.md",
+            content: "- item",
+            ensureNewline: true,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(ok.success).toBe(true);
+
+    const read = dispatchToolCall(
+      "vfs_read",
+      { path: "current/conversation/scratch.md" },
+      ctx,
+    ) as { success: boolean; data?: { content?: string } };
+
+    expect(read.success).toBe(true);
+    expect(read.data?.content).toBe("# Scratch\n- item");
+  });
+
+  it("supports vfs_text_patch with read fence and base guard", () => {
+    const session = new VfsSession();
+    session.writeFile("world/notes.md", "Alpha", "text/markdown");
+    const ctx = { vfsSession: session };
+
+    const blocked = dispatchToolCall(
+      "vfs_text_patch",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            base: "Alpha",
+            next: "Beta",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.code).toBe("INVALID_ACTION");
+
+    dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
+
+    const mismatchedBase = dispatchToolCall(
+      "vfs_text_patch",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            base: "Wrong",
+            next: "Beta",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(mismatchedBase.success).toBe(false);
+    expect(mismatchedBase.code).toBe("INVALID_ACTION");
+
+    const ok = dispatchToolCall(
+      "vfs_text_patch",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            base: "Alpha",
+            next: "Beta",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(ok.success).toBe(true);
+
+    const read = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/notes.md" },
+      ctx,
+    ) as { success: boolean; data?: { content?: string } };
+
+    expect(read.success).toBe(true);
+    expect(read.data?.content).toBe("Beta");
+  });
+
+  it("requires empty base when vfs_text_patch creates files", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const invalidCreate = dispatchToolCall(
+      "vfs_text_patch",
+      {
+        files: [
+          {
+            path: "current/world/new_notes.md",
+            base: "seed",
+            next: "content",
+            createIfMissing: true,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(invalidCreate.success).toBe(false);
+    expect(invalidCreate.code).toBe("INVALID_DATA");
+
+    const validCreate = dispatchToolCall(
+      "vfs_text_patch",
+      {
+        files: [
+          {
+            path: "current/world/new_notes.md",
+            base: "",
+            next: "content",
+            createIfMissing: true,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(validCreate.success).toBe(true);
+  });
+
+  it("rejects invalid JSON payloads in vfs_write", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const wrongType = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: "{}",
+            contentType: "text/plain",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(wrongType.success).toBe(false);
+    expect(wrongType.code).toBe("INVALID_DATA");
+
+    const invalidJson = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: "{",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(invalidJson.success).toBe(false);
+    expect(invalidJson.code).toBe("INVALID_DATA");
+
+    const schemaMismatch = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: JSON.stringify({ time: 1 }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(schemaMismatch.success).toBe(false);
+    expect(schemaMismatch.code).toBe("INVALID_DATA");
+
+    const valid = dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/global.json",
+            content: JSON.stringify({
+              time: "Day 1",
+              theme: "fantasy",
+              currentLocation: "loc:1",
+              atmosphere: {
+                envTheme: "fantasy",
+                ambience: "forest",
+                weather: "clear",
+              },
+              turnNumber: 1,
+              forkId: 0,
+            }),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(valid.success).toBe(true);
+  });
+
+  it("rejects invalid JSON payloads in vfs_tx write operations", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const wrongType = dispatchToolCall(
+      "vfs_tx",
+      {
+        ops: [
+          {
+            op: "write",
+            path: "current/world/global.json",
+            content: "{}",
+            contentType: "text/plain",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(wrongType.success).toBe(false);
+    expect(wrongType.code).toBe("INVALID_DATA");
+
+    const invalidJson = dispatchToolCall(
+      "vfs_tx",
+      {
+        ops: [
+          {
+            op: "write",
+            path: "current/world/global.json",
+            content: "{",
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+
+    expect(invalidJson.success).toBe(false);
+    expect(invalidJson.code).toBe("INVALID_DATA");
+  });
+
 });

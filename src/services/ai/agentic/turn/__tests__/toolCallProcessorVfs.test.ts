@@ -1,10 +1,35 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { DEFAULTS } from "@/utils/constants";
 import { VfsSession } from "@/services/vfs/vfsSession";
 import { deriveGameStateFromVfs } from "@/services/vfs/derivations";
 import { createLoopState } from "../loopInitializer";
 import { executeGenericTool } from "../toolCallProcessor";
 import { buildResponseFromVfs, getConversationMarker } from "../resultAccumulator";
+
+const createValidGlobal = () => ({
+  time: "Day 1",
+  theme: "fantasy",
+  currentLocation: "loc:1",
+  atmosphere: {
+    envTheme: "fantasy",
+    ambience: "forest",
+    weather: "clear",
+  },
+  turnNumber: 1,
+  forkId: 0,
+});
+
+const createAssistantPayload = (narrative: string) => ({
+  narrative,
+  choices: [
+    { text: "Continue", consequence: null },
+    { text: "Wait", consequence: null },
+  ],
+  narrativeTone: null,
+  atmosphere: null,
+  ending: null,
+  forceEnd: null,
+});
 
 describe("toolCallProcessor VFS integration", () => {
   it("passes VFS session to tool handlers", () => {
@@ -18,7 +43,7 @@ describe("toolCallProcessor VFS integration", () => {
         files: [
           {
             path: "current/world/global.json",
-            content: "{}",
+            content: JSON.stringify(createValidGlobal()),
             contentType: "application/json",
           },
         ],
@@ -31,7 +56,9 @@ describe("toolCallProcessor VFS integration", () => {
     ) as { success?: boolean };
 
     expect(output.success).toBe(true);
-    expect(session.readFile("world/global.json")?.content).toBe("{}");
+    expect(JSON.parse(session.readFile("world/global.json")?.content ?? "{}").time).toBe(
+      "Day 1",
+    );
   });
 
   it("builds response from conversation turn files", () => {
@@ -39,42 +66,21 @@ describe("toolCallProcessor VFS integration", () => {
     const gameState = deriveGameStateFromVfs({});
     const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
-    executeGenericTool(
-      "vfs_write",
+    const commit = executeGenericTool(
+      "vfs_commit_turn",
       {
-        files: [
-          {
-            path: "current/conversation/index.json",
-            content: JSON.stringify({
-              activeForkId: 0,
-              activeTurnId: "fork-0/turn-0",
-              rootTurnIdByFork: { "0": "fork-0/turn-0" },
-              latestTurnNumberByFork: { "0": 0 },
-              turnOrderByFork: { "0": ["fork-0/turn-0"] },
-            }),
-            contentType: "application/json",
-          },
-          {
-            path: "current/conversation/turns/fork-0/turn-0.json",
-            content: JSON.stringify({
-              turnId: "fork-0/turn-0",
-              forkId: 0,
-              turnNumber: 0,
-              parentTurnId: null,
-              createdAt: 1,
-              userAction: "start",
-              assistant: { narrative: "hello", choices: [] },
-            }),
-            contentType: "application/json",
-          },
-        ],
+        userAction: "start",
+        assistant: createAssistantPayload("hello"),
+        createdAt: 1,
       },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
       },
-    );
+    ) as { success?: boolean };
+
+    expect(commit.success).toBe(true);
 
     const response = buildResponseFromVfs(session);
     expect(response?.narrative).toBe("hello");
@@ -85,42 +91,21 @@ describe("toolCallProcessor VFS integration", () => {
     const gameState = deriveGameStateFromVfs({});
     const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
-    executeGenericTool(
-      "vfs_write",
+    const commit = executeGenericTool(
+      "vfs_commit_turn",
       {
-        files: [
-          {
-            path: "current/conversation/index.json",
-            content: JSON.stringify({
-              activeForkId: 0,
-              activeTurnId: "fork-0/turn-0",
-              rootTurnIdByFork: { "0": "fork-0/turn-0" },
-              latestTurnNumberByFork: { "0": 0 },
-              turnOrderByFork: { "0": ["fork-0/turn-0"] },
-            }),
-            contentType: "application/json",
-          },
-          {
-            path: "current/conversation/turns/fork-0/turn-0.json",
-            content: JSON.stringify({
-              turnId: "fork-0/turn-0",
-              forkId: 0,
-              turnNumber: 0,
-              parentTurnId: null,
-              createdAt: 1,
-              userAction: "start",
-              assistant: { narrative: "hello", choices: [] },
-            }),
-            contentType: "application/json",
-          },
-        ],
+        userAction: "start",
+        assistant: createAssistantPayload("hello"),
+        createdAt: 1,
       },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
       },
-    );
+    ) as { success?: boolean };
+
+    expect(commit.success).toBe(true);
 
     const baseline = getConversationMarker(session);
     const response = buildResponseFromVfs(session, baseline);
@@ -132,96 +117,39 @@ describe("toolCallProcessor VFS integration", () => {
     const gameState = deriveGameStateFromVfs({});
     const loopState = createLoopState(gameState, DEFAULTS, false, false, session);
 
-    executeGenericTool(
-      "vfs_write",
+    const firstCommit = executeGenericTool(
+      "vfs_commit_turn",
       {
-        files: [
-          {
-            path: "current/conversation/index.json",
-            content: JSON.stringify({
-              activeForkId: 0,
-              activeTurnId: "fork-0/turn-0",
-              rootTurnIdByFork: { "0": "fork-0/turn-0" },
-              latestTurnNumberByFork: { "0": 0 },
-              turnOrderByFork: { "0": ["fork-0/turn-0"] },
-            }),
-            contentType: "application/json",
-          },
-          {
-            path: "current/conversation/turns/fork-0/turn-0.json",
-            content: JSON.stringify({
-              turnId: "fork-0/turn-0",
-              forkId: 0,
-              turnNumber: 0,
-              parentTurnId: null,
-              createdAt: 1,
-              userAction: "start",
-              assistant: { narrative: "hello", choices: [] },
-            }),
-            contentType: "application/json",
-          },
-        ],
+        userAction: "start",
+        assistant: createAssistantPayload("hello"),
+        createdAt: 1,
       },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
       },
-    );
+    ) as { success?: boolean };
+
+    expect(firstCommit.success).toBe(true);
 
     const baseline = getConversationMarker(session);
 
-    // Inspect before overwrite (tooling enforces read-before-write on existing paths).
-    const inspected = executeGenericTool(
-      "vfs_read",
-      { path: "current/conversation/index.json" },
+    const secondCommit = executeGenericTool(
+      "vfs_commit_turn",
+      {
+        userAction: "next",
+        assistant: createAssistantPayload("second"),
+        createdAt: 2,
+      },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
       },
     ) as { success?: boolean };
-    expect(inspected.success).toBe(true);
 
-    const overwrite = executeGenericTool(
-      "vfs_write",
-      {
-        files: [
-          {
-            path: "current/conversation/index.json",
-            content: JSON.stringify({
-              activeForkId: 0,
-              activeTurnId: "fork-0/turn-1",
-              rootTurnIdByFork: { "0": "fork-0/turn-0" },
-              latestTurnNumberByFork: { "0": 1 },
-              turnOrderByFork: {
-                "0": ["fork-0/turn-0", "fork-0/turn-1"],
-              },
-            }),
-            contentType: "application/json",
-          },
-          {
-            path: "current/conversation/turns/fork-0/turn-1.json",
-            content: JSON.stringify({
-              turnId: "fork-0/turn-1",
-              forkId: 0,
-              turnNumber: 1,
-              parentTurnId: "fork-0/turn-0",
-              createdAt: 2,
-              userAction: "next",
-              assistant: { narrative: "second", choices: [] },
-            }),
-            contentType: "application/json",
-          },
-        ],
-      },
-      {
-        loopState,
-        gameState,
-        settings: DEFAULTS,
-      },
-    ) as { success?: boolean };
-    expect(overwrite.success).toBe(true);
+    expect(secondCommit.success).toBe(true);
 
     const response = buildResponseFromVfs(session, baseline);
     expect(response?.narrative).toBe("second");

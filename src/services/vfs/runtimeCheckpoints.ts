@@ -1,4 +1,4 @@
-import type { VfsFileMap } from "./types";
+import type { VfsFileMap, VfsReadFenceState } from "./types";
 import type { VfsSession } from "./vfsSession";
 
 /**
@@ -10,13 +10,21 @@ import type { VfsSession } from "./vfsSession";
  *
  * Strategy: keep only the most recent checkpoint per sessionId.
  */
-const vfsCheckpointBySessionId = new Map<string, VfsFileMap>();
+interface VfsRuntimeCheckpoint {
+  files: VfsFileMap;
+  readFence: VfsReadFenceState;
+}
+
+const vfsCheckpointBySessionId = new Map<string, VfsRuntimeCheckpoint>();
 
 export function checkpointVfsSession(
   sessionId: string,
   vfsSession: VfsSession,
 ): void {
-  vfsCheckpointBySessionId.set(sessionId, vfsSession.snapshot());
+  vfsCheckpointBySessionId.set(sessionId, {
+    files: vfsSession.snapshot(),
+    readFence: vfsSession.snapshotReadFenceState(),
+  });
 }
 
 export function rollbackVfsSessionToCheckpoint(
@@ -25,7 +33,8 @@ export function rollbackVfsSessionToCheckpoint(
 ): boolean {
   const snapshot = vfsCheckpointBySessionId.get(sessionId);
   if (!snapshot) return false;
-  vfsSession.restore(snapshot);
+  vfsSession.restore(snapshot.files);
+  vfsSession.restoreReadFenceState(snapshot.readFence);
   return true;
 }
 

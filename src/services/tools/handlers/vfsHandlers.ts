@@ -17,6 +17,7 @@ import {
   VFS_WRITE_TOOL,
   VFS_APPEND_TOOL,
   VFS_TEXT_EDIT_TOOL,
+  VFS_TEXT_PATCH_TOOL,
   VFS_EDIT_TOOL,
   VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
@@ -61,6 +62,13 @@ import {
 } from "../../vfs/conversation";
 import { registerToolHandler, type ToolContext } from "../toolHandlerRegistry";
 import { getVfsSchemaHint } from "../../providers/utils";
+import {
+  ensureTextFile,
+  requireReadBeforeMutateForExistingFile,
+  resolveTextContentType,
+  validateExpectedHash,
+  validateWritePayload,
+} from "./vfsMutationGuard";
 
 interface VfsMatch {
   path: string;
@@ -75,48 +83,30 @@ interface FuseMatch extends VfsMatch {
 const cloneSession = (session: VfsSession): VfsSession => {
   const clone = new VfsSession();
   clone.restore(session.snapshot());
-  clone.restoreToolSeenPaths(session.snapshotToolSeenPaths());
+  clone.restoreReadFenceState(session.snapshotReadFenceState());
   return clone;
 };
 
 const commitSession = (target: VfsSession, source: VfsSession): void => {
   target.restore(source.snapshot());
-  target.restoreToolSeenPaths(source.snapshotToolSeenPaths());
+  target.restoreReadFenceState(source.snapshotReadFenceState());
 };
 
 const getSession = (ctx: ToolContext): VfsSession => ctx.vfsSession;
 
-const isReadOnlyToolPath = (path: string): boolean => {
-  const normalized = normalizeVfsPath(path);
-  return normalized === "skills" || normalized.startsWith("skills/");
-};
-
 const requireToolSeenForExistingFile = (
   session: VfsSession,
   path: string,
-  operation: "overwrite" | "append" | "text_edit" | "edit" | "merge" | "delete",
+  operation:
+    | "overwrite"
+    | "append"
+    | "text_edit"
+    | "text_patch"
+    | "edit"
+    | "merge"
+    | "delete",
 ): ToolCallResult<never> | null => {
-  const normalized = normalizeVfsPath(path);
-
-  // Let the underlying VFS throw a read-only error so callers get the
-  // most accurate message.
-  if (isReadOnlyToolPath(normalized)) {
-    return null;
-  }
-
-  const existing = session.readFile(normalized);
-  if (!existing) {
-    return null;
-  }
-
-  if (session.hasToolSeen(normalized)) {
-    return null;
-  }
-
-  return createError(
-    `Blocked: must read file before ${operation} in this session: ${toCurrentPath(normalized)} (use vfs_read first).`,
-    "INVALID_ACTION",
-  );
+  return requireReadBeforeMutateForExistingFile(session, path, operation);
 };
 
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
@@ -2108,7 +2098,19 @@ registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
       if (seenError) {
         return seenError;
       }
-      draft.writeFile(resolved.path, file.content, file.contentType);
+      const validated = validateWritePayload(
+        resolved.path,
+        file.content,
+        file.contentType,
+      );
+      if (!validated.ok) {
+        return validated.error;
+      }
+      draft.writeFile(
+        resolved.path,
+        validated.normalizedContent,
+        validated.contentType,
+      );
       written.push(toCurrentPath(resolved.path));
     }
 
@@ -2180,12 +2182,6 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
       if (!resolved.ok) {
         return resolved.error;
       }
-      if (!resolved.path.startsWith("world/") || !resolved.path.endsWith(".md")) {
-        return createError(
-          `vfs_append is only allowed under current/world/**.md: ${op.path}`,
-          "INVALID_ACTION",
-        );
-      }
 
       const existing = draft.readFile(resolved.path);
       const seenError = requireToolSeenForExistingFile(draft, resolved.path, "append");
@@ -2196,19 +2192,14 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
       const maxTotalChars =
         typeof op.maxTotalChars === "number" ? op.maxTotalChars : null;
 
-      if (existing && op.expectedHash && existing.hash !== op.expectedHash) {
-        return createError(
-          `Hash mismatch for ${op.path} (expected ${op.expectedHash}, got ${existing.hash}). Re-read the file and retry.`,
-          "INVALID_ACTION",
-        );
+      const hashError = validateExpectedHash(existing, op.expectedHash, op.path);
+      if (hashError) {
+        return hashError;
       }
 
-      if (
-        existing &&
-        existing.contentType !== "text/plain" &&
-        existing.contentType !== "text/markdown"
-      ) {
-        return createError(`File is not a text file: ${op.path}`, "INVALID_DATA");
+      const textTypeError = ensureTextFile(existing, op.path);
+      if (textTypeError) {
+        return textTypeError;
       }
 
       const base = existing ? existing.content : "";
@@ -2222,7 +2213,11 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
         );
       }
 
-      draft.writeFile(resolved.path, next, "text/markdown");
+      draft.writeFile(
+        resolved.path,
+        next,
+        resolveTextContentType(resolved.path, existing),
+      );
       appended.push({
         path: toCurrentPath(resolved.path),
         appendedChars: (sep + op.content).length,
@@ -2246,12 +2241,6 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
       if (!resolved.ok) {
         return resolved.error;
       }
-      if (!resolved.path.startsWith("world/") || !resolved.path.endsWith(".md")) {
-        return createError(
-          `vfs_text_edit is only allowed under current/world/**.md: ${fileEdit.path}`,
-          "INVALID_ACTION",
-        );
-      }
 
       const existing = draft.readFile(resolved.path);
       const createIfMissing = fileEdit.createIfMissing ?? true;
@@ -2267,17 +2256,17 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
         if (seenError) {
           return seenError;
         }
-        if (fileEdit.expectedHash && existing.hash !== fileEdit.expectedHash) {
-          return createError(
-            `Hash mismatch for ${fileEdit.path} (expected ${fileEdit.expectedHash}, got ${existing.hash}). Re-read the file and retry.`,
-            "INVALID_ACTION",
-          );
+        const hashError = validateExpectedHash(
+          existing,
+          fileEdit.expectedHash,
+          fileEdit.path,
+        );
+        if (hashError) {
+          return hashError;
         }
-        if (
-          existing.contentType !== "text/plain" &&
-          existing.contentType !== "text/markdown"
-        ) {
-          return createError(`File is not a text file: ${fileEdit.path}`, "INVALID_DATA");
+        const textTypeError = ensureTextFile(existing, fileEdit.path);
+        if (textTypeError) {
+          return textTypeError;
         }
       }
 
@@ -2468,11 +2457,99 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
         );
       }
 
-      draft.writeFile(resolved.path, content, "text/markdown");
+      draft.writeFile(
+        resolved.path,
+        content,
+        resolveTextContentType(resolved.path, existing),
+      );
       edited.push({ path: toCurrentPath(resolved.path), totalChars: content.length, created });
     }
 
     return createSuccess({ edited }, "VFS text files edited");
+  });
+});
+
+registerToolHandler(VFS_TEXT_PATCH_TOOL, (args, ctx) => {
+  const typedArgs = getTypedArgs("vfs_text_patch", args);
+
+  return withAtomicSession(ctx, (draft) => {
+    const patched: Array<{ path: string; totalChars: number; created: boolean }> = [];
+
+    for (const filePatch of typedArgs.files) {
+      const resolved = resolveCurrentPath(filePatch.path);
+      if (!resolved.ok) {
+        return resolved.error;
+      }
+
+      const existing = draft.readFile(resolved.path);
+      const createIfMissing = filePatch.createIfMissing ?? false;
+      const maxTotalChars =
+        typeof filePatch.maxTotalChars === "number" ? filePatch.maxTotalChars : null;
+
+      if (!existing) {
+        if (!createIfMissing) {
+          return createError(`File not found: ${filePatch.path}`, "NOT_FOUND");
+        }
+        if (filePatch.base !== "") {
+          return createError(
+            `vfs_text_patch requires empty base when creating new file: ${filePatch.path}`,
+            "INVALID_DATA",
+          );
+        }
+      }
+
+      if (existing) {
+        const seenError = requireToolSeenForExistingFile(
+          draft,
+          resolved.path,
+          "text_patch",
+        );
+        if (seenError) {
+          return seenError;
+        }
+
+        const hashError = validateExpectedHash(
+          existing,
+          filePatch.expectedHash,
+          filePatch.path,
+        );
+        if (hashError) {
+          return hashError;
+        }
+
+        const textTypeError = ensureTextFile(existing, filePatch.path);
+        if (textTypeError) {
+          return textTypeError;
+        }
+
+        if (existing.content !== filePatch.base) {
+          return createError(
+            `vfs_text_patch base mismatch for ${filePatch.path}. Re-read and retry.`,
+            "INVALID_ACTION",
+          );
+        }
+      }
+
+      if (maxTotalChars && filePatch.next.length > maxTotalChars) {
+        return createError(
+          `Patch would exceed maxTotalChars (${maxTotalChars}) for ${filePatch.path}`,
+          "INVALID_DATA",
+        );
+      }
+
+      draft.writeFile(
+        resolved.path,
+        filePatch.next,
+        resolveTextContentType(resolved.path, existing),
+      );
+      patched.push({
+        path: toCurrentPath(resolved.path),
+        totalChars: filePatch.next.length,
+        created: !existing,
+      });
+    }
+
+    return createSuccess({ patched }, "VFS text files patched");
   });
 });
 
@@ -2697,7 +2774,19 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (seenError) {
           return seenError;
         }
-        draft.writeFile(resolved.path, op.content, op.contentType);
+        const validated = validateWritePayload(
+          resolved.path,
+          op.content,
+          op.contentType,
+        );
+        if (!validated.ok) {
+          return validated.error;
+        }
+        draft.writeFile(
+          resolved.path,
+          validated.normalizedContent,
+          validated.contentType,
+        );
         written.push(toCurrentPath(resolved.path));
         continue;
       }

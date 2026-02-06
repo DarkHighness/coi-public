@@ -80,4 +80,5 @@ export const restoreVfsSessionFromSnapshot = (
 ): void => {
   const root = buildTurnRoot(snapshot.forkId, snapshot.turn);
   session.restore(stripSnapshotPrefix(snapshot.files, root));
+  session.beginReadEpoch("snapshot_restore");
 };

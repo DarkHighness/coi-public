@@ -597,6 +597,54 @@ export const VFS_TEXT_EDIT_TOOL = defineTool({
     .strict(),
 });
 
+export const VFS_TEXT_PATCH_TOOL = defineTool({
+  name: "vfs_text_patch",
+  description:
+    "Replace full text file contents using base->next guard (atomic batch). For existing files, base must exactly match current content.",
+  parameters: z
+    .object({
+      files: z
+        .array(
+          z
+            .object({
+              path: vfsFilePathSchema.describe(
+                "File path (text/plain or text/markdown).",
+              ),
+              base: z
+                .string()
+                .describe(
+                  "Expected current content. Existing files must match exactly; new files require empty base.",
+                ),
+              next: z.string().describe("New full text content."),
+              createIfMissing: z
+                .boolean()
+                .nullish()
+                .describe(
+                  "Create file if missing. Prefer omitting; null is false.",
+                ),
+              expectedHash: z
+                .string()
+                .nullish()
+                .describe(
+                  "Optional optimistic concurrency guard. If provided and file exists, current hash must match.",
+                ),
+              maxTotalChars: z
+                .number()
+                .int()
+                .positive()
+                .nullish()
+                .describe(
+                  "Optional max characters allowed after patch. Prefer omitting; null uses default (no cap).",
+                ),
+            })
+            .strict(),
+        )
+        .min(1)
+        .describe("Files to patch."),
+    })
+    .strict(),
+});
+
 export const VFS_EDIT_TOOL = defineTool({
   name: "vfs_edit",
   description: "Apply JSON Patch edits to VFS files (atomic batch).",
@@ -968,6 +1016,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_WRITE_TOOL,
   VFS_APPEND_TOOL,
   VFS_TEXT_EDIT_TOOL,
+  VFS_TEXT_PATCH_TOOL,
   VFS_EDIT_TOOL,
   VFS_MERGE_TOOL,
   VFS_MOVE_TOOL,
@@ -997,6 +1046,7 @@ export type VfsGrepParams = InferToolParams<typeof VFS_GREP_TOOL>;
 export type VfsWriteParams = InferToolParams<typeof VFS_WRITE_TOOL>;
 export type VfsAppendParams = InferToolParams<typeof VFS_APPEND_TOOL>;
 export type VfsTextEditParams = InferToolParams<typeof VFS_TEXT_EDIT_TOOL>;
+export type VfsTextPatchParams = InferToolParams<typeof VFS_TEXT_PATCH_TOOL>;
 export type VfsEditParams = InferToolParams<typeof VFS_EDIT_TOOL>;
 export type VfsMergeParams = InferToolParams<typeof VFS_MERGE_TOOL>;
 export type VfsMoveParams = InferToolParams<typeof VFS_MOVE_TOOL>;
@@ -1029,6 +1079,7 @@ export interface ToolParamsMap {
   vfs_write: VfsWriteParams;
   vfs_append: VfsAppendParams;
   vfs_text_edit: VfsTextEditParams;
+  vfs_text_patch: VfsTextPatchParams;
   vfs_edit: VfsEditParams;
   vfs_merge: VfsMergeParams;
   vfs_move: VfsMoveParams;

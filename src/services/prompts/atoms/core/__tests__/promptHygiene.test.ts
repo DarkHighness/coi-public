@@ -40,5 +40,9 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("read → modify → write");
     expect(content).toContain("vfs_append");
     expect(content).toContain("vfs_text_edit");
+    expect(content).toContain("vfs_text_patch");
+    expect(content).toContain("current/summary/state.json");
+    expect(content).toContain("current/world/global.json");
+    expect(content).toContain('vfs_glob patterns=["current/**/notes.md"]');
   });
 });

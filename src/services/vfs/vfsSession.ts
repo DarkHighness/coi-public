@@ -2,7 +2,13 @@ import { applyPatch } from "fast-json-patch";
 import type { Operation } from "fast-json-patch";
 import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
-import { VfsFile, VfsFileMap, VfsContentType } from "./types";
+import {
+  VfsFile,
+  VfsFileMap,
+  VfsContentType,
+  VfsReadFenceState,
+  VfsReadEpochReason,
+} from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
 import { deepMergeJson } from "./merge";
 import { buildGlobalVfsSkills } from "./globalSkills";
@@ -138,14 +144,17 @@ export class VfsSession {
   private files: VfsFileMap = {};
   private readonlyFiles: VfsFileMap = buildGlobalVfsSkills();
   private semanticIndexer?: VfsSemanticIndexer;
-  private toolSeenPaths = new Set<string>();
+  private currentReadEpoch = 0;
+  private seenByEpoch = new Map<string, number>();
+  private boundConversationSessionId: string | null = null;
 
   constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
     this.semanticIndexer = options?.semanticIndexer;
   }
 
   public noteToolSeen(path: string): void {
-    this.toolSeenPaths.add(normalizeVfsPath(path));
+    const normalized = normalizeVfsPath(path);
+    this.seenByEpoch.set(normalized, this.currentReadEpoch);
   }
 
   public noteToolSeenMany(paths: string[]): void {
@@ -155,29 +164,96 @@ export class VfsSession {
   }
 
   public hasToolSeen(path: string): boolean {
-    return this.toolSeenPaths.has(normalizeVfsPath(path));
+    return this.hasToolSeenInCurrentEpoch(path);
+  }
+
+  public hasToolSeenInCurrentEpoch(path: string): boolean {
+    const normalized = normalizeVfsPath(path);
+    return this.seenByEpoch.get(normalized) === this.currentReadEpoch;
   }
 
   public snapshotToolSeenPaths(): string[] {
-    return Array.from(this.toolSeenPaths);
+    const paths: string[] = [];
+    for (const [path, epoch] of this.seenByEpoch.entries()) {
+      if (epoch === this.currentReadEpoch) {
+        paths.push(path);
+      }
+    }
+    return paths;
   }
 
   public restoreToolSeenPaths(paths: string[]): void {
-    this.toolSeenPaths = new Set(paths.map((path) => normalizeVfsPath(path)));
+    this.seenByEpoch.clear();
+    for (const path of paths) {
+      const normalized = normalizeVfsPath(path);
+      this.seenByEpoch.set(normalized, this.currentReadEpoch);
+    }
+  }
+
+  public snapshotReadFenceState(): VfsReadFenceState {
+    const seenByEpoch: Record<string, number> = {};
+    for (const [path, epoch] of this.seenByEpoch.entries()) {
+      seenByEpoch[path] = epoch;
+    }
+    return {
+      currentReadEpoch: this.currentReadEpoch,
+      seenByEpoch,
+      boundConversationSessionId: this.boundConversationSessionId,
+    };
+  }
+
+  public restoreReadFenceState(state: VfsReadFenceState): void {
+    this.currentReadEpoch =
+      typeof state.currentReadEpoch === "number" &&
+      Number.isFinite(state.currentReadEpoch) &&
+      state.currentReadEpoch >= 0
+        ? Math.floor(state.currentReadEpoch)
+        : 0;
+    this.boundConversationSessionId =
+      typeof state.boundConversationSessionId === "string" &&
+      state.boundConversationSessionId.trim().length > 0
+        ? state.boundConversationSessionId
+        : null;
+
+    this.seenByEpoch.clear();
+    for (const [path, epoch] of Object.entries(state.seenByEpoch ?? {})) {
+      if (typeof epoch !== "number" || !Number.isFinite(epoch)) {
+        continue;
+      }
+      this.seenByEpoch.set(normalizeVfsPath(path), Math.floor(epoch));
+    }
+  }
+
+  public beginReadEpoch(_reason: VfsReadEpochReason): void {
+    this.currentReadEpoch += 1;
+  }
+
+  public bindConversationSession(sessionId: string): { changed: boolean } {
+    const normalized = sessionId.trim();
+    if (!normalized) {
+      return { changed: false };
+    }
+    if (this.boundConversationSessionId === normalized) {
+      return { changed: false };
+    }
+    this.boundConversationSessionId = normalized;
+    this.beginReadEpoch("session_switch");
+    return { changed: true };
   }
 
   public renameToolSeenPath(from: string, to: string): void {
     const normalizedFrom = normalizeVfsPath(from);
     const normalizedTo = normalizeVfsPath(to);
-    if (!this.toolSeenPaths.has(normalizedFrom)) {
+    const epoch = this.seenByEpoch.get(normalizedFrom);
+    if (epoch === undefined) {
       return;
     }
-    this.toolSeenPaths.delete(normalizedFrom);
-    this.toolSeenPaths.add(normalizedTo);
+    this.seenByEpoch.delete(normalizedFrom);
+    this.seenByEpoch.set(normalizedTo, epoch);
   }
 
   public forgetToolSeenPath(path: string): void {
-    this.toolSeenPaths.delete(normalizeVfsPath(path));
+    this.seenByEpoch.delete(normalizeVfsPath(path));
   }
 
   private isReadOnlyPath(path: string): boolean {

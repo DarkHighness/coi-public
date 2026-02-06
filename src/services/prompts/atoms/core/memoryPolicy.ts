@@ -39,10 +39,11 @@ const globalNotes = `
 
     <read_write_protocol>
       **IMPORTANT (tool-seen constraints):**
+      - Existing files must be read before mutation in the current session epoch.
       - Prefer \`vfs_append\` for additive updates (fast + safe, no full rewrite):
         - \`vfs_append({ appends: [{ path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
         - If the file already exists, you MUST \`vfs_read\` it first (read-before-mutate).
-        - For maximum safety, pass \`expectedHash\` from the prior \`vfs_read\` result to guard against stale edits.
+        - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
       - For non-additive changes, use read → modify → write:
         1) \`vfs_read\` the notes file
         2) Then \`vfs_write\` the updated full markdown content (read → modify → write)
@@ -50,15 +51,30 @@ const globalNotes = `
       - For marker/regex edits without manual full rewrites, use \`vfs_text_edit\`:
         - Use marker-based ops (insert/replace-between), line-based ops, and fall back to regex ops when needed.
         - If the file already exists, you MUST \`vfs_read\` it first (read-before-mutate).
-        - For maximum safety, pass \`expectedHash\` from the prior \`vfs_read\` result to guard against stale edits.
+        - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
+      - For full-body replacements, use \`vfs_text_patch\`:
+        - Existing files: MUST \`vfs_read\` first, then patch with exact \`base\` -> \`next\`.
+        - New files: use empty \`base\` with \`createIfMissing: true\`.
       - Do NOT use \`vfs_edit\` for notes (it is JSON Patch only).
     </read_write_protocol>
+
+    <compact_bootstrap>
+      **AFTER COMPACT/SUMMARY OR ANY HISTORY REBUILD, RE-BOOTSTRAP MEMORY CONTEXT**:
+      1. \`vfs_read path="current/summary/state.json"\`
+      2. \`vfs_read path="current/world/global.json"\`
+      3. \`vfs_read path="current/world/notes.md"\` (if present)
+      4. If more notes are needed, \`vfs_glob patterns=["current/**/notes.md"]\`, then read only relevant files.
+
+      **CANONICAL VS NOTES**:
+      - Stable facts belong in structured JSON.
+      - Notes are scratch pad context, not canonical truth.
+    </compact_bootstrap>
 
     <search_strategy>
       **AVOID FULL SCANS**:
       - Start with \`vfs_read path="current/world/notes.md"\` (if present).
       - When you need related entity notes, use:
-        - \`vfs_glob pattern="current/**/notes.md"\`
+        - \`vfs_glob patterns=["current/**/notes.md"]\`
       - Then \`vfs_read\` only the relevant notes files.
     </search_strategy>
 

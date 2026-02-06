@@ -28,6 +28,7 @@ describe("VFS persistence", () => {
 
   it("restores relative paths from a snapshot", () => {
     const session = new VfsSession();
+    session.noteToolSeen("world/global.json");
     const snapshot = {
       saveId: "slot-1",
       forkId: 0,
@@ -47,5 +48,6 @@ describe("VFS persistence", () => {
 
     restoreVfsSessionFromSnapshot(session, snapshot);
     expect(session.readFile("world/global.json")?.content).toBe("{}");
+    expect(session.hasToolSeenInCurrentEpoch("world/global.json")).toBe(false);
   });
 });

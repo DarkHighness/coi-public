@@ -232,6 +232,8 @@ export const generateAdventureTurn = async (
     isInit: context.isInit,
   });
 
+  context.vfsSession.bindConversationSession(sessionId);
+
   // Handle retry detection
   const activeHistory = handleRetryDetection(
     sessionId,
@@ -279,6 +281,7 @@ export const generateAdventureTurn = async (
   } catch (e: any) {
     if (isContextLengthError(e)) {
       await sessionManager.onContextOverflow(sessionId);
+      context.vfsSession.beginReadEpoch("context_overflow");
       throw new Error("CONTEXT_LENGTH_EXCEEDED: " + e.message);
     }
     throw e;

@@ -39,6 +39,7 @@ export const notifySessionSummaryCreated = async (
   slotId: string,
   forkId: number,
   summaryId: string | number,
+  vfsSession: VfsSession,
 ): Promise<void> => {
   const storyProvider = getProviderInstance(
     aiSettings,
@@ -62,6 +63,7 @@ export const notifySessionSummaryCreated = async (
 
   // Now we can safely call onSummaryCreated
   await sessionManager.onSummaryCreated(storySession.id, String(summaryId));
+  vfsSession.beginReadEpoch("summary_created");
 };
 
 /**
