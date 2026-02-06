@@ -8,7 +8,7 @@ import {
 } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
-import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -243,7 +243,7 @@ const getStatusConfig = (condition: CharacterCondition) => {
 // Sub-component for individual skills to handle expansion state
 const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
   const { t } = useTranslation();
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(skill.highlight || false);
@@ -417,7 +417,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
   condition,
 }) => {
   const { t } = useTranslation();
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(condition.highlight || false);
@@ -632,7 +632,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
 // Sub-component for individual traits to handle expansion state
 const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
   const { t } = useTranslation();
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(trait.highlight || false);

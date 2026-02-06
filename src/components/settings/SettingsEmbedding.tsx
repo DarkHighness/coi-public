@@ -5,7 +5,7 @@ import {
   EmbeddingModelInfo,
 } from "../../services/aiService";
 import { useSettings } from "../../hooks/useSettings";
-import { useOptionalRAGContext } from "../../contexts/RAGContext";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 
 interface SettingsEmbeddingProps {
   showToast: (message: string, type: "success" | "error" | "info") => void;
@@ -15,7 +15,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   showToast,
 }) => {
   const { t } = useTranslation();
-  const ragContext = useOptionalRAGContext();
+  const runtimeContext = useOptionalRuntimeContext();
   const { settings: currentSettings, updateSettings: onUpdateSettings } =
     useSettings();
   const config = currentSettings.embedding;
@@ -133,9 +133,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       // Check if model has changed and RAG has existing index
       const prevModel = previousModelIdRef.current;
       const hasExistingIndex =
-        ragContext?.isInitialized &&
-        ragContext?.status?.storageDocuments &&
-        ragContext.status.storageDocuments > 0;
+        runtimeContext?.state.rag.isInitialized &&
+        runtimeContext?.state.rag.status?.storageDocuments &&
+        runtimeContext.state.rag.status.storageDocuments > 0;
 
       if (prevModel && prevModel !== value && hasExistingIndex) {
         // Show confirmation dialog
@@ -155,9 +155,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
       // Also check for existing index when provider changes
       const hasExistingIndex =
-        ragContext?.isInitialized &&
-        ragContext?.status?.storageDocuments &&
-        ragContext.status.storageDocuments > 0;
+        runtimeContext?.state.rag.isInitialized &&
+        runtimeContext?.state.rag.status?.storageDocuments &&
+        runtimeContext.state.rag.status.storageDocuments > 0;
       if (previousModelIdRef.current && hasExistingIndex) {
         setModelChangeConfirm({ show: true, pendingSettings: newSettings });
         return;
@@ -183,9 +183,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       previousModelIdRef.current = pendingSettings.embedding.modelId;
 
       // Trigger rebuild through RAG context
-      if (ragContext?.actions?.handleModelMismatch) {
+      if (runtimeContext?.actions?.rag?.handleModelMismatch) {
         try {
-          await ragContext.actions.handleModelMismatch("rebuild");
+          await runtimeContext.actions.rag.handleModelMismatch("rebuild");
           showToast(
             t("embedding.rebuildStarted") || "Rebuilding RAG index...",
             "info",
@@ -211,8 +211,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       previousModelIdRef.current = pendingSettings.embedding.modelId;
 
       // Terminate RAG service
-      if (ragContext?.actions?.handleModelMismatch) {
-        await ragContext.actions.handleModelMismatch("disable");
+      if (runtimeContext?.actions?.rag?.handleModelMismatch) {
+        await runtimeContext.actions.rag.handleModelMismatch("disable");
       }
       showToast(t("embedding.ragDisabled") || "RAG has been disabled", "info");
     }

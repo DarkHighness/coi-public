@@ -21,9 +21,8 @@ interface StateEditorProps {
   isOpen: boolean;
   onClose: () => void;
   gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   vfsSession: VfsSession;
-  triggerSave: () => void;
+  applyVfsMutation: (nextState: GameState) => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
 
@@ -31,9 +30,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   isOpen,
   onClose,
   gameState,
-  setGameState,
   vfsSession,
-  triggerSave,
+  applyVfsMutation,
   onShowToast,
 }) => {
   const { t } = useTranslation();
@@ -230,8 +228,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         contentType: fileContentType,
         baseState: gameState,
       });
-      setGameState(nextState);
-      triggerSave();
+      applyVfsMutation(nextState);
       setHasChanges(false);
       setError(null);
       onShowToast?.(

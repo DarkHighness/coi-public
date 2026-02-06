@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { TimelineEvent } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
-import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 
 interface TimelineEventsPanelProps {
   events?: TimelineEvent[];
@@ -13,7 +13,7 @@ interface TimelineEventsPanelProps {
 // Sub-component for individual timeline events
 const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
   const { t } = useTranslation();
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(event.highlight || false);

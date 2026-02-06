@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { InventoryItem as InventoryItemType } from "../types";
 import { getValidIcon } from "../utils/emojiValidator";
 import { MarkdownText } from "./render/MarkdownText";
-import { useOptionalGameEngineContext } from "../contexts/GameEngineContext";
+import { useOptionalRuntimeContext } from "../runtime/context";
 
 interface InventoryItemProps {
   item: InventoryItemType;
@@ -33,7 +33,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
   isDragging,
 }) => {
   const { t } = useTranslation();
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const [isOpen, setIsOpen] = useState(false);
   const [isHighlight, setIsHighlight] = useState(item.highlight || false);

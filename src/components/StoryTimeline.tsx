@@ -8,7 +8,7 @@ import { ImageLightbox } from "./render/ImageLightbox";
 import { TimelineExport, TimelineExportRef } from "./TimelineExport";
 import { TimelineExportModal } from "./TimelineExportModal";
 import { StoryTimelineItem } from "./StoryTimelineItem";
-import { useGameEngineContext } from "../contexts/GameEngineContext";
+import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
 
 interface StoryTimelineProps {
@@ -25,7 +25,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   onNavigateToSegment,
   onFork,
 }) => {
-  const { state } = useGameEngineContext();
+  const { state } = useRuntimeContext();
   const { settings } = useSettingsContext();
   const { currentHistory: segments, gameState } = state;
   const theme = gameState.theme;

@@ -5,7 +5,7 @@ import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { DetailedListModal } from "../DetailedListModal";
-import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -52,7 +52,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
   isPinned,
   t,
 }) => {
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const isExpanded = expandedLocations.has(item.id);
   const locationData = item.data;

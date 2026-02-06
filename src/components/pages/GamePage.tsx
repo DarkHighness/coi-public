@@ -21,7 +21,7 @@ import {
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
 import { useToast } from "../Toast";
-import { useGameEngineContext } from "../../contexts/GameEngineContext";
+import { useRuntimeContext } from "../../runtime/context";
 import { useSettings } from "../../hooks/useSettings";
 import { useTutorialContextOptional } from "../../contexts/TutorialContext";
 import { createGamePageTutorialFlow } from "../tutorial/tutorialFlows";
@@ -103,8 +103,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // Use GameEngine Context for state and actions
-  const { state: engineState, actions: engineActions } = useGameEngineContext();
+  const { state: engineState, actions: engineActions } = useRuntimeContext();
   const {
     gameState,
     currentHistory,
@@ -121,7 +120,6 @@ export const GamePage: React.FC<GamePageProps> = ({
   // Use override font if provided (debug), otherwise usage engine state
   const themeFont = overrideThemeConfig?.fontClass || engineThemeFont;
   const {
-    setGameState,
     setLanguage,
     handleAction,
     handleSaveSettings,
@@ -133,6 +131,9 @@ export const GamePage: React.FC<GamePageProps> = ({
     handleForceUpdate,
     rebuildContext,
     invalidateSession,
+    updateUiState,
+    updateNodeMeta,
+    setVeoScript,
   } = engineActions;
 
   // Toast Context for toast notifications
@@ -244,15 +245,12 @@ export const GamePage: React.FC<GamePageProps> = ({
   const setFeedLayout = useCallback(
     (newLayout: FeedLayout) => {
       setFeedLayoutLocal(newLayout);
-      setGameState((prev) => ({
-        ...prev,
-        uiState: {
-          ...prev.uiState,
-          feedLayout: newLayout,
-        },
-      }));
+      updateUiState("feedLayout", newLayout, {
+        reason: "gamePage.feedLayout",
+        persist: false,
+      });
     },
-    [setGameState],
+    [updateUiState],
   );
 
   // Initialize feedLayout from UIState on mount
@@ -326,17 +324,14 @@ export const GamePage: React.FC<GamePageProps> = ({
     }
   };
 
-  const handleUpdateUIState = <K extends keyof UIState>(
-    section: K,
-    newState: UIState[K],
+  const handleUpdateUIState = (
+    section: keyof UIState,
+    newState: UIState[keyof UIState],
   ) => {
-    setGameState((prev) => ({
-      ...prev,
-      uiState: {
-        ...prev.uiState,
-        [section]: newState,
-      },
-    }));
+    updateUiState(section as keyof UIState, newState as any, {
+      reason: `gamePage.uiState.${String(section)}`,
+      persist: false,
+    });
   };
 
   const handleToggleMute = () => {
@@ -433,40 +428,18 @@ export const GamePage: React.FC<GamePageProps> = ({
   };
 
   const handleImageUpload = (nodeId: string, imageId: string) => {
-    setGameState((prev) => {
-      const newNodes = { ...prev.nodes };
-      if (newNodes[nodeId]) {
-        newNodes[nodeId] = {
-          ...newNodes[nodeId],
-          imageId: imageId,
-          imageUrl: undefined, // Clear legacy URL to prefer ID
-        };
-      }
-      return {
-        ...prev,
-        nodes: newNodes,
-      };
+    updateNodeMeta(nodeId, { imageId, imageUrl: undefined }, {
+      reason: "gamePage.imageUpload",
+      persist: true,
     });
-    triggerSave();
     showToast(t("imageUploaded", "Image uploaded successfully"), "info");
   };
 
   const handleImageDelete = (nodeId: string) => {
-    setGameState((prev) => {
-      const newNodes = { ...prev.nodes };
-      if (newNodes[nodeId]) {
-        newNodes[nodeId] = {
-          ...newNodes[nodeId],
-          imageId: undefined,
-          imageUrl: undefined,
-        };
-      }
-      return {
-        ...prev,
-        nodes: newNodes,
-      };
+    updateNodeMeta(nodeId, { imageId: undefined, imageUrl: undefined }, {
+      reason: "gamePage.imageDelete",
+      persist: true,
     });
-    triggerSave();
     showToast(t("imageDeleted", "Image deleted successfully"), "info");
   };
 
@@ -574,10 +547,10 @@ export const GamePage: React.FC<GamePageProps> = ({
           settings={aiSettings}
           themeFont={themeFont}
           onScriptGenerated={(script) => {
-            setGameState((prev) => ({
-              ...prev,
-              veoScript: script,
-            }));
+            setVeoScript(script, {
+              reason: "gamePage.veoScript",
+              persist: false,
+            });
           }}
         />
 
@@ -605,9 +578,8 @@ export const GamePage: React.FC<GamePageProps> = ({
             isOpen={isStateEditorOpen}
             onClose={() => setIsStateEditorOpen(false)}
             gameState={gameState}
-            setGameState={setGameState}
             vfsSession={vfsSession}
-            triggerSave={triggerSave}
+            applyVfsMutation={engineActions.applyVfsMutation}
             onShowToast={(msg, type) => showToast(msg, type)}
           />
         )}
@@ -644,9 +616,8 @@ export const GamePage: React.FC<GamePageProps> = ({
             isOpen={isRulesEditorOpen}
             onClose={() => setIsRulesEditorOpen(false)}
             gameState={gameState}
-            setGameState={setGameState}
             vfsSession={vfsSession}
-            triggerSave={triggerSave}
+            applyVfsMutation={engineActions.applyVfsMutation}
             onShowToast={(msg, type) => showToast(msg, type)}
           />
         )}

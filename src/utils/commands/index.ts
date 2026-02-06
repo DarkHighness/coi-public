@@ -4,6 +4,7 @@
  */
 
 import { GameState } from "../../types";
+import type { RuntimeActions } from "../../runtime/state";
 
 export interface CommandResult {
   handled: boolean;
@@ -24,7 +25,7 @@ export type CommandAction =
 
 export interface CommandContext {
   gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  runtimeActions: Pick<RuntimeActions, "toggleGodMode" | "unlockAll">;
   t: (key: string, values?: Record<string, string>) => string;
 }
 
@@ -232,78 +233,21 @@ function handleHelp(args: string[], context: CommandContext): CommandResult {
 export function executeCommandAction(
   action: CommandAction,
   gameState: GameState,
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>,
+  runtimeActions: Pick<RuntimeActions, "toggleGodMode" | "unlockAll">,
 ): void {
+  void gameState;
   switch (action.type) {
     case "god_mode":
-      setGameState((prev) => ({
-        ...prev,
-        godMode: action.enable,
-      }));
+      runtimeActions.toggleGodMode(action.enable, {
+        reason: "command.god_mode",
+        persist: true,
+      });
       break;
 
     case "unlock_all":
-      setGameState((prev) => {
-        // Deep clone and unlock everything
-        const newState = { ...prev };
-
-        // Unlock inventory items
-        newState.inventory = prev.inventory.map((item) => ({
-          ...item,
-          unlocked: true,
-          highlight: true,
-        }));
-
-        // Unlock npcs
-        newState.npcs = prev.npcs.map((rel) => ({
-          ...rel,
-          unlocked: true,
-          highlight: true,
-        }));
-
-        // Unlock locations
-        newState.locations = prev.locations.map((loc) => ({
-          ...loc,
-          unlocked: true,
-          highlight: true,
-        }));
-
-        // Unlock quests
-        newState.quests = prev.quests.map((quest) => ({
-          ...quest,
-          unlocked: true,
-          highlight: true,
-        }));
-
-        // Unlock knowledge
-        newState.knowledge = prev.knowledge.map((k) => ({
-          ...k,
-          unlocked: true,
-          highlight: true,
-        }));
-
-        // Unlock factions
-        newState.factions = prev.factions.map((f) => ({
-          ...f,
-          unlocked: true,
-          highlight: true,
-        }));
-
-        // Unlock character hidden traits
-        if (newState.character?.hiddenTraits) {
-          newState.character = {
-            ...prev.character!,
-            hiddenTraits: prev.character!.hiddenTraits?.map((t) => ({
-              ...t,
-              unlocked: true,
-            })),
-          };
-        }
-
-        // Mark unlock mode in state
-        newState.unlockMode = true;
-
-        return newState;
+      runtimeActions.unlockAll({
+        reason: "command.unlock_all",
+        persist: true,
       });
       break;
 

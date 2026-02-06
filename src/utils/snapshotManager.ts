@@ -83,7 +83,7 @@ export function createStateSnapshot(
 /**
  * Restore game state from a snapshot
  * NOTE: When restoring, we DON'T restore forkId/forkTree - these are managed
- * by the fork logic in useGameEngine which will increment forkId when forking
+ * by the runtime fork navigation logic which will increment forkId when forking
  */
 export function restoreStateFromSnapshot(
   currentState: GameState,

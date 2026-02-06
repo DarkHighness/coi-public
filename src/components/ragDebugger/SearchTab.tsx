@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useOptionalRAGContext } from "../../contexts/RAGContext";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 import type {
   SearchResult as RAGSearchResult,
   DocumentType,
@@ -13,7 +13,7 @@ export const SearchTab: React.FC<SearchTabProps> = ({
   aiSettings,
 }) => {
   const { t } = useTranslation();
-  const ragContext = useOptionalRAGContext();
+  const ragContext = useOptionalRuntimeContext();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultDisplay[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -30,7 +30,7 @@ export const SearchTab: React.FC<SearchTabProps> = ({
     setError(null);
 
     try {
-      if (!ragContext || !ragContext.isInitialized) {
+      if (!ragContext || !ragContext.state.rag.isInitialized) {
         setError(
           t("ragDebugger.noEmbeddingManager", "RAG service not initialized"),
         );
@@ -65,7 +65,7 @@ export const SearchTab: React.FC<SearchTabProps> = ({
         searchOptions.types = [selectedType];
       }
 
-      const searchResults = await ragContext.actions.search(
+      const searchResults = await ragContext.actions.rag.search(
         query,
         searchOptions,
       );

@@ -6,7 +6,7 @@ import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
-import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 
 interface NpcPanelProps {
   npcs: NPC[];
@@ -79,7 +79,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
   t,
   unlockMode,
 }) => {
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const pinned = isPinned?.(rel.id) ?? false;
   const isDragging = draggedId === rel.id;

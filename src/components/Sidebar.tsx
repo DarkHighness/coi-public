@@ -13,7 +13,7 @@ import { WorldInfoPanel } from "./sidebar/WorldInfoPanel";
 import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
 import { RAGPanel } from "./sidebar/RAGPanel";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
-import { useGameEngineContext } from "../contexts/GameEngineContext";
+import { useRuntimeContext } from "../runtime/context";
 
 interface SidebarProps {
   // Callbacks only - state comes from context
@@ -51,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { t } = useTranslation();
 
   // Get state from context
-  const { state, actions } = useGameEngineContext();
+  const { state, actions } = useRuntimeContext();
   const { gameState, isTranslating, currentThemeConfig } = state;
   const { setLanguage } = actions;
 

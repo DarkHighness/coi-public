@@ -8,7 +8,7 @@ import { MobileNav, MobileTab } from "../MobileNav";
 import { THEMES, ENV_THEMES, BUILD_INFO } from "../../utils/constants";
 import { getThemeKeyForAtmosphere } from "../../utils/constants/atmosphere";
 import { useTranslation } from "react-i18next";
-import { useGameEngineContext } from "../../contexts/GameEngineContext";
+import { useRuntimeContext } from "../../runtime/context";
 
 interface MobileGameLayoutProps {
   // Local UI state (managed by GamePage)
@@ -85,7 +85,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   const { t } = useTranslation();
 
   // Get state and actions from context
-  const { state, actions } = useGameEngineContext();
+  const { state, actions } = useRuntimeContext();
   const { gameState, aiSettings } = state;
   const { generateImageForNode, triggerSave, cleanupEntities } = actions;
 

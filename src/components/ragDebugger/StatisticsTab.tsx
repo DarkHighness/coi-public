@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useOptionalRAGContext } from "../../contexts/RAGContext";
-import { extractDocumentsFromState } from "../../hooks/useRAG";
+import { useOptionalRuntimeContext } from "../../runtime/context";
+import { extractDocumentsFromState } from "../../services/rag/documentExtraction";
 import type { StatisticsTabProps, IndexStats } from "./types";
 
 export const StatisticsTab: React.FC<StatisticsTabProps> = ({
@@ -9,7 +9,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
   aiSettings,
 }) => {
   const { t } = useTranslation();
-  const ragContext = useOptionalRAGContext();
+  const runtimeContext = useOptionalRuntimeContext();
   const [indexStats, setIndexStats] = useState<IndexStats | null>(null);
   const [isRebuildingIndex, setIsRebuildingIndex] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,15 +17,15 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
   const embeddingEnabled = aiSettings?.embedding?.enabled ?? false;
 
   const loadIndexStats = useCallback(async () => {
-    if (!ragContext) {
+    if (!runtimeContext) {
       setIndexStats(null);
       return;
     }
 
     // Refresh status from RAG context
-    await ragContext.actions.refreshStatus();
+    await runtimeContext.actions.rag.refreshStatus?.();
 
-    const status = ragContext.status;
+    const status = runtimeContext.state.rag.status;
     if (!status) {
       setIndexStats(null);
       return;
@@ -39,16 +39,16 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
       currentSaveId: status.currentSaveId,
       storageDocuments: status.storageDocuments,
     });
-  }, [ragContext]);
+  }, [runtimeContext]);
 
   const handleRebuildIndex = useCallback(async () => {
-    if (!gameState || !aiSettings || !ragContext) return;
+    if (!gameState || !aiSettings || !runtimeContext) return;
 
     setIsRebuildingIndex(true);
     setError(null);
 
     try {
-      const service = ragContext.actions.getService();
+      const service = runtimeContext.actions.rag.getService?.();
       if (service) {
         await service.rebuildForModel();
 
@@ -82,7 +82,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
           await service.addDocuments(
             documents.map((doc) => ({
               ...doc,
-              saveId: ragContext.currentSaveId || "unknown",
+              saveId: runtimeContext.state.rag.currentSaveId || "unknown",
               forkId: gameState.forkId || 0,
               turnNumber: gameState.turnNumber || 0,
             })),
@@ -102,7 +102,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
     } finally {
       setIsRebuildingIndex(false);
     }
-  }, [gameState, aiSettings, ragContext, loadIndexStats, t]);
+  }, [gameState, aiSettings, runtimeContext, loadIndexStats, t]);
 
   useEffect(() => {
     loadIndexStats();

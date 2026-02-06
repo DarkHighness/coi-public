@@ -14,7 +14,7 @@ import { StackControls } from "./feed/StackControls";
 import { GenerationTimer } from "./common/GenerationTimer";
 import { ToolCallCarousel } from "./common/ToolCallCarousel";
 import { MarkdownText } from "./render/MarkdownText";
-import { useGameEngineContext } from "../contexts/GameEngineContext";
+import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
 import {
   runVisualLoop,
@@ -70,8 +70,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     },
     ref,
   ) => {
-    const { state, actions } = useGameEngineContext();
-    const { setGameState } = actions;
+    const { state, actions } = useRuntimeContext();
+    const { updateNodeMeta } = actions;
     const { settings, updateSettings } = useSettingsContext();
     const {
       gameState,
@@ -495,18 +495,11 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         });
 
         if (result.imagePrompt) {
-          // Update game state with the new prompt
-          setGameState((prev: GameState) => {
-            const node = prev.nodes[id];
-            if (!node) return prev;
-            return {
-              ...prev,
-              nodes: {
-                ...prev.nodes,
-                [id]: { ...node, imagePrompt: result.imagePrompt },
-              },
-            };
-          });
+          updateNodeMeta(
+            id,
+            { imagePrompt: result.imagePrompt },
+            { reason: "storyFeed.generatePrompt", persist: false },
+          );
         }
       } catch (error) {
         console.error("Failed to generate prompt:", error);
@@ -541,18 +534,11 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         });
 
         if (result.imagePrompt) {
-          // Update prompt first
-          setGameState((prev: GameState) => {
-            const node = prev.nodes[id];
-            if (!node) return prev;
-            return {
-              ...prev,
-              nodes: {
-                ...prev.nodes,
-                [id]: { ...node, imagePrompt: result.imagePrompt },
-              },
-            };
-          });
+          updateNodeMeta(
+            id,
+            { imagePrompt: result.imagePrompt },
+            { reason: "storyFeed.generateImageFull", persist: false },
+          );
 
           // Step 2: Trigger image generation using the prompt
           onGenerateImage(id);
@@ -583,18 +569,11 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
         });
 
         if (result.veoScript) {
-          // Update node with the new script
-          setGameState((prev: GameState) => {
-            const node = prev.nodes[id];
-            if (!node) return prev;
-            return {
-              ...prev,
-              nodes: {
-                ...prev.nodes,
-                [id]: { ...node, veoScript: result.veoScript },
-              },
-            };
-          });
+          updateNodeMeta(
+            id,
+            { veoScript: result.veoScript },
+            { reason: "storyFeed.generateCinematic", persist: false },
+          );
 
           // Trigger animation with the script
           onAnimate(currentHistory.find((s) => s.id === id)?.imageUrl || "");

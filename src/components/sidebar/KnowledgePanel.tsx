@@ -5,7 +5,7 @@ import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useListManagement } from "../../hooks/useListManagement";
-import { useOptionalGameEngineContext } from "../../contexts/GameEngineContext";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 
 interface KnowledgePanelProps {
   knowledge: KnowledgeEntry[];
@@ -60,7 +60,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   isEditMode,
   isDragging,
 }) => {
-  const engine = useOptionalGameEngineContext();
+  const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const [isHighlight, setIsHighlight] = useState(k.highlight || false);
 

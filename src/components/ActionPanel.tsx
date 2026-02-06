@@ -10,7 +10,7 @@ import {
 } from "../utils/commands";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useGameEngineContext } from "../contexts/GameEngineContext";
+import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
 
 interface ActionPanelProps {
@@ -52,9 +52,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onForceUpdate,
   onJumpToSegment,
 }) => {
-  const { state, actions } = useGameEngineContext();
+  const { state, actions } = useRuntimeContext();
   const { gameState, currentHistory, isTranslating, aiSettings } = state;
-  const { setGameState } = actions;
+  const { toggleGodMode, unlockAll } = actions;
   const { providerModels } = useSettingsContext();
   const [isJumpOpen, setIsJumpOpen] = useState(false);
   const [jumpInputValue, setJumpInputValue] = useState("");
@@ -164,7 +164,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   // Command context for command parsing
   const commandContext: CommandContext = {
     gameState,
-    setGameState,
+    runtimeActions: { toggleGodMode, unlockAll },
     t,
   };
 
@@ -316,7 +316,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     } else if (action.type === "force_update") {
       onForceUpdate?.(action.prompt);
     } else {
-      executeCommandAction(action, gameState, setGameState);
+      executeCommandAction(action, gameState, {
+        toggleGodMode,
+        unlockAll,
+      });
 
       // Trigger save for state-modifying commands (/god, /unlock)
       if (action.type === "god_mode" || action.type === "unlock_all") {

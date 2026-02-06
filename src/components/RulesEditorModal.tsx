@@ -42,9 +42,8 @@ interface RulesEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   vfsSession: VfsSession;
-  triggerSave: () => void;
+  applyVfsMutation: (nextState: GameState) => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
 
@@ -52,9 +51,8 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
   isOpen,
   onClose,
   gameState,
-  setGameState,
   vfsSession,
-  triggerSave,
+  applyVfsMutation,
   onShowToast,
 }) => {
   const { t } = useTranslation();
@@ -124,8 +122,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       data: nextRules,
       baseState: gameState,
     });
-    setGameState(nextState);
-    triggerSave();
+    applyVfsMutation(nextState);
 
     setNewTitle("");
     setNewContent("");
@@ -150,8 +147,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       data: nextRules,
       baseState: gameState,
     });
-    setGameState(nextState);
-    triggerSave();
+    applyVfsMutation(nextState);
 
     setEditingRule(null);
     setNewTitle("");
@@ -169,8 +165,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       data: nextRules,
       baseState: gameState,
     });
-    setGameState(nextState);
-    triggerSave();
+    applyVfsMutation(nextState);
     onShowToast?.(t("rules.deleted"), "info");
   };
 
@@ -185,8 +180,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       data: nextRules,
       baseState: gameState,
     });
-    setGameState(nextState);
-    triggerSave();
+    applyVfsMutation(nextState);
   };
 
   // Start editing a rule

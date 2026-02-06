@@ -1,23 +1,15 @@
 /**
- * RAG Context
+ * RAG Runtime
  *
- * Provides global access to the RAG (Retrieval Augmented Generation) service
- * throughout the application. This context manages:
+ * Provides runtime access to the RAG (Retrieval Augmented Generation) service
+ * throughout the application. This hook manages:
  * - RAG service initialization and lifecycle
  * - Save context switching
  * - Document indexing and search
  * - Model mismatch and storage overflow handling
  */
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { AISettings, GameState, ForkTree } from "../types";
 import {
   initializeRAGService,
@@ -37,13 +29,14 @@ import { getEmbeddingModels as getGeminiEmbeddingModels } from "../services/prov
 import { getEmbeddingModels as getOpenAIEmbeddingModels } from "../services/providers/openaiProvider";
 import { getEmbeddingModels as getOpenRouterEmbeddingModels } from "../services/providers/openRouterProvider";
 import { getEmbeddingModels as getClaudeEmbeddingModels } from "../services/providers/claudeProvider";
-import { extractDocumentsFromState } from "../hooks/useRAG";
+import { extractDocumentsFromState } from "../services/rag/documentExtraction";
+import { indexInitialEntities as indexInitialRagDocuments } from "./effects/ragDocuments";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface RAGContextState {
+export interface RagRuntimeState {
   isInitialized: boolean;
   isLoading: boolean;
   status: RAGStatus | null;
@@ -53,7 +46,7 @@ export interface RAGContextState {
   currentSaveId: string | null;
 }
 
-export interface RAGContextActions {
+export interface RagRuntimeActions {
   /** Initialize the RAG service with settings */
   initialize: (settings: AISettings) => Promise<boolean>;
   /** Switch to a different save context */
@@ -75,7 +68,7 @@ export interface RAGContextActions {
     types?: DocumentType[],
   ) => Promise<RAGDocumentMeta[]>;
   /** Get RAG context for a query */
-  getRAGContext: (query: string, state: GameState) => Promise<string>;
+  getContext: (query: string, state: GameState) => Promise<string>;
   /** Handle model mismatch */
   handleModelMismatch: (
     action: "rebuild" | "disable" | "continue",
@@ -96,45 +89,16 @@ export interface RAGContextActions {
   getService: () => RAGService | null;
 }
 
-interface RAGContextValue extends RAGContextState {
-  actions: RAGContextActions;
+interface RagRuntimeValue extends RagRuntimeState {
+  actions: RagRuntimeActions;
 }
 
 // ============================================================================
-// Context
+// Runtime Hook
 // ============================================================================
 
-const RAGContext = createContext<RAGContextValue | null>(null);
-
-/**
- * Hook to access the RAG context
- */
-export function useRAGContext(): RAGContextValue {
-  const context = useContext(RAGContext);
-  if (!context) {
-    throw new Error("useRAGContext must be used within a RAGProvider");
-  }
-  return context;
-}
-
-/**
- * Optional hook that returns null if not within a provider
- * Useful for components that may or may not have RAG available
- */
-export function useOptionalRAGContext(): RAGContextValue | null {
-  return useContext(RAGContext);
-}
-
-// ============================================================================
-// Provider
-// ============================================================================
-
-interface RAGProviderProps {
-  children: ReactNode;
-}
-
-export function RAGProvider({ children }: RAGProviderProps) {
-  const [state, setState] = useState<RAGContextState>({
+export function useRagRuntime(): RagRuntimeValue {
+  const [state, setState] = useState<RagRuntimeState>({
     isInitialized: false,
     isLoading: false,
     status: null,
@@ -239,7 +203,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
           }
         } catch (error) {
           console.warn(
-            "[RAGContext] Failed to fetch model info for context length:",
+            "[RAGRuntime] Failed to fetch model info for context length:",
             error,
           );
         }
@@ -267,7 +231,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
         });
 
         service.on("error", (error) => {
-          console.error("[RAGContext] Service error:", error);
+          console.error("[RAGRuntime] Service error:", error);
           setState((prev) => ({ ...prev, error }));
         });
 
@@ -282,12 +246,12 @@ export function RAGProvider({ children }: RAGProviderProps) {
           currentSaveId: status.currentSaveId,
         }));
 
-        console.log("[RAGContext] Initialized successfully");
+        console.log("[RAGRuntime] Initialized successfully");
         return true;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Failed to initialize RAG";
-        console.error("[RAGContext] Initialization failed:", errorMessage);
+        console.error("[RAGRuntime] Initialization failed:", errorMessage);
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -311,13 +275,13 @@ export function RAGProvider({ children }: RAGProviderProps) {
     ): Promise<boolean> => {
       const service = serviceRef.current;
       if (!service) {
-        console.warn("[RAGContext] switchSave: Service not initialized");
+        console.warn("[RAGRuntime] switchSave: Service not initialized");
         return false;
       }
 
       try {
         console.log(
-          `[RAGContext] Switching to save: ${saveId}, fork: ${forkId}`,
+          `[RAGRuntime] Switching to save: ${saveId}, fork: ${forkId}`,
         );
 
         // Convert ForkTree to the format expected by RAG service
@@ -346,10 +310,10 @@ export function RAGProvider({ children }: RAGProviderProps) {
           currentSaveId: saveId,
         }));
 
-        console.log(`[RAGContext] Switched to save: ${saveId}`);
+        console.log(`[RAGRuntime] Switched to save: ${saveId}`);
         return true;
       } catch (error) {
-        console.error("[RAGContext] Switch save failed:", error);
+        console.error("[RAGRuntime] Switch save failed:", error);
         return false;
       }
     },
@@ -365,7 +329,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
       const service = serviceRef.current;
       if (!service || !state.currentSaveId) {
         console.warn(
-          "[RAGContext] updateDocuments: No service or save context",
+          "[RAGRuntime] updateDocuments: No service or save context",
         );
         return;
       }
@@ -387,9 +351,9 @@ export function RAGProvider({ children }: RAGProviderProps) {
           })),
         );
 
-        console.log(`[RAGContext] Updated ${documents.length} documents`);
+        console.log(`[RAGRuntime] Updated ${documents.length} documents`);
       } catch (error) {
-        console.error("[RAGContext] Update documents failed:", error);
+        console.error("[RAGRuntime] Update documents failed:", error);
       }
     },
     [state.currentSaveId],
@@ -404,64 +368,18 @@ export function RAGProvider({ children }: RAGProviderProps) {
       const service = serviceRef.current;
       if (!service) {
         console.warn(
-          "[RAGContext] indexInitialEntities: Service not initialized",
+          "[RAGRuntime] indexInitialEntities: Service not initialized",
         );
         return;
       }
 
       try {
-        console.log(
-          `[RAGContext] Indexing initial entities for save: ${saveId}`,
-        );
+        await indexInitialRagDocuments(gameState, saveId);
 
-        const entityIds: string[] = [];
-
-        // Index outline documents first (highest priority)
-        if (gameState.outline) {
-          entityIds.push("outline:full");
-          entityIds.push("outline:world");
-          entityIds.push("outline:goal");
-          entityIds.push("outline:premise");
-          entityIds.push("outline:character");
-        }
-
-        gameState.inventory?.forEach((item) => entityIds.push(item.id));
-        gameState.npcs?.forEach((npc) => entityIds.push(npc.id));
-        gameState.locations?.forEach((loc) => entityIds.push(loc.id));
-        gameState.quests?.forEach((quest) => entityIds.push(quest.id));
-        gameState.knowledge?.forEach((know) => entityIds.push(know.id));
-        gameState.factions?.forEach((faction) => entityIds.push(faction.id));
-        gameState.timeline?.forEach((event) => entityIds.push(event.id));
-
-        if (entityIds.length === 0) {
-          console.log("[RAGContext] No entities to index");
-          return;
-        }
-
-        const documents = extractDocumentsFromState(gameState, entityIds);
-        if (documents.length === 0) {
-          console.log("[RAGContext] No documents extracted");
-          return;
-        }
-
-        await service.addDocuments(
-          documents.map((doc) => ({
-            ...doc,
-            saveId,
-            forkId: gameState.forkId || 0,
-            turnNumber: gameState.turnNumber || 0,
-          })),
-        );
-
-        console.log(
-          `[RAGContext] Indexed ${documents.length} initial documents`,
-        );
-
-        // Update status after indexing
         const status = await service.getStatus();
         setState((prev) => ({ ...prev, status }));
       } catch (error) {
-        console.error("[RAGContext] Failed to index initial entities:", error);
+        console.error("[RAGRuntime] Failed to index initial entities:", error);
       }
     },
     [],
@@ -482,7 +400,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
       try {
         return await service.search(query, options);
       } catch (error) {
-        console.error("[RAGContext] Search failed:", error);
+        console.error("[RAGRuntime] Search failed:", error);
         return [];
       }
     },
@@ -496,21 +414,21 @@ export function RAGProvider({ children }: RAGProviderProps) {
     ): Promise<RAGDocumentMeta[]> => {
       const service = serviceRef.current;
       if (!service) {
-        console.log("[RAGContext] getRecentDocuments: Service not initialized");
+        console.log("[RAGRuntime] getRecentDocuments: Service not initialized");
         return [];
       }
 
       try {
         return await service.getRecentDocuments(limit, types);
       } catch (error) {
-        console.error("[RAGContext] getRecentDocuments failed:", error);
+        console.error("[RAGRuntime] getRecentDocuments failed:", error);
         return [];
       }
     },
     [],
   );
 
-  const getRAGContext = useCallback(
+  const getContext = useCallback(
     async (query: string, gameState: GameState): Promise<string> => {
       const service = serviceRef.current;
       if (!service) return "";
@@ -561,7 +479,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
 
         return sections.join("\n\n");
       } catch (error) {
-        console.error("[RAGContext] Get context failed:", error);
+        console.error("[RAGRuntime] Get context failed:", error);
         return "";
       }
     },
@@ -624,7 +542,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
         await service.deleteOldestSaves(saveIdsToDelete);
         setState((prev) => ({ ...prev, storageOverflow: null }));
       } catch (error) {
-        console.error("[RAGContext] Delete saves failed:", error);
+        console.error("[RAGRuntime] Delete saves failed:", error);
       }
     },
     [],
@@ -642,7 +560,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
       try {
         return await service.getAllSaveStats();
       } catch (error) {
-        console.error("[RAGContext] Get all save stats failed:", error);
+        console.error("[RAGRuntime] Get all save stats failed:", error);
         return null;
       }
     }, []);
@@ -659,7 +577,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
         currentSaveId: status.currentSaveId,
       }));
     } catch (error) {
-      console.error("[RAGContext] Refresh status failed:", error);
+      console.error("[RAGRuntime] Refresh status failed:", error);
     }
   }, []);
 
@@ -676,7 +594,7 @@ export function RAGProvider({ children }: RAGProviderProps) {
       const status = await service.getStatus();
       setState((prev) => ({ ...prev, status }));
     } catch (error) {
-      console.error("[RAGContext] Cleanup failed:", error);
+      console.error("[RAGRuntime] Cleanup failed:", error);
     }
   }, []);
 
@@ -711,29 +629,46 @@ export function RAGProvider({ children }: RAGProviderProps) {
   // Context Value
   // ============================================================================
 
-  const actions: RAGContextActions = {
-    initialize,
-    switchSave,
-    updateDocuments,
-    search,
-    getRecentDocuments,
-    getRAGContext,
-    handleModelMismatch,
-    handleStorageOverflow,
-    getAllSaveStats,
-    cleanup,
-    terminate,
-    refreshStatus,
-    indexInitialEntities,
-    getService,
-  };
+  const actions = useMemo<RagRuntimeActions>(
+    () => ({
+      initialize,
+      switchSave,
+      updateDocuments,
+      search,
+      getRecentDocuments,
+      getContext,
+      handleModelMismatch,
+      handleStorageOverflow,
+      getAllSaveStats,
+      cleanup,
+      terminate,
+      refreshStatus,
+      indexInitialEntities,
+      getService,
+    }),
+    [
+      initialize,
+      switchSave,
+      updateDocuments,
+      search,
+      getRecentDocuments,
+      getContext,
+      handleModelMismatch,
+      handleStorageOverflow,
+      getAllSaveStats,
+      cleanup,
+      terminate,
+      refreshStatus,
+      indexInitialEntities,
+      getService,
+    ],
+  );
 
-  const value: RAGContextValue = {
-    ...state,
-    actions,
-  };
-
-  return <RAGContext.Provider value={value}>{children}</RAGContext.Provider>;
+  return useMemo<RagRuntimeValue>(
+    () => ({
+      ...state,
+      actions,
+    }),
+    [state, actions],
+  );
 }
-
-export default RAGContext;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { formatBytes } from "../../utils/formatters";
 import { SettingsDataProps } from "./types";
-import { useRAG } from "../../hooks/useRAG";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 import { GlobalStorageStats } from "../../services/rag";
 import { getImageStorageStats } from "../../utils/imageStorage";
 import { sessionManager } from "../../services/ai/sessionManager";
@@ -14,7 +14,9 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
   showToast,
 }) => {
   const { t } = useTranslation();
-  const [ragState, ragActions] = useRAG();
+  const runtimeContext = useOptionalRuntimeContext();
+  const ragState = runtimeContext?.state.rag ?? null;
+  const ragActions = runtimeContext?.actions.rag ?? null;
   const [storageEstimate, setStorageEstimate] = useState<{
     usage: number;
     quota: number;
@@ -37,14 +39,14 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
 
     // Poll for RAG stats updates
     let intervalId: NodeJS.Timeout;
-    if (ragState.isInitialized) {
+    if (ragState?.isInitialized) {
       intervalId = setInterval(fetchRagStats, 5000);
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [ragState.isInitialized]);
+  }, [ragState?.isInitialized]);
 
   const fetchStorageEstimate = async () => {
     if ("storage" in navigator && "estimate" in navigator.storage) {
@@ -63,10 +65,12 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
   };
 
   const fetchRagStats = async () => {
-    if (ragState.isInitialized) {
+    if (ragState?.isInitialized && ragActions) {
       const stats = await ragActions.getAllSaveStats();
       setRagStats(stats);
+      return;
     }
+    setRagStats(null);
   };
 
   const fetchImageStats = async () => {
@@ -431,6 +435,10 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
           onClick={async () => {
             if (window.confirm(t("data.confirmClearRag"))) {
               try {
+                if (!ragActions) {
+                  showToast(t("data.ragUnavailable"), "info");
+                  return;
+                }
                 await ragActions.cleanup();
                 showToast(t("data.clearRagSuccess"), "info");
                 fetchRagStats();
@@ -468,14 +476,14 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
           <button
             onClick={fetchRagStats}
             className="text-xs text-theme-primary hover:text-theme-primary-hover underline"
-            disabled={!ragState.isInitialized}
+            disabled={!ragState?.isInitialized}
           >
             {t("refresh")}
           </button>
         </div>
 
         <div className="space-y-3 text-sm">
-          {ragState.isInitialized ? (
+          {ragState?.isInitialized ? (
             ragStats ? (
               <>
                 <div className="flex justify-between items-center">

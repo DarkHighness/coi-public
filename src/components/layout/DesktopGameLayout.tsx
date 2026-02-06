@@ -4,7 +4,7 @@ import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
 import { StoryTimeline } from "../StoryTimeline";
-import { useGameEngineContext } from "../../contexts/GameEngineContext";
+import { useRuntimeContext } from "../../runtime/context";
 
 interface DesktopGameLayoutProps {
   // Local UI state (managed by GamePage)
@@ -75,7 +75,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onImageDelete,
 }) => {
   // Get state and actions from context
-  const { state, actions } = useGameEngineContext();
+  const { state, actions } = useRuntimeContext();
   const { gameState, aiSettings } = state;
   const { generateImageForNode, triggerSave, cleanupEntities } = actions;
 
