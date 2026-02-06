@@ -23,7 +23,7 @@ import { getConversationMarker, type ConversationMarker } from "./resultAccumula
 
 export interface LoopState {
   /** VFS session for file-based state */
-  vfsSession?: VfsSession;
+  vfsSession: VfsSession;
   /** Baseline conversation marker (for detecting new turns) */
   conversationMarker: ConversationMarker | null;
   /** Budget tracking state */
@@ -58,7 +58,7 @@ export function createLoopState(
   settings: AISettings,
   isSudoMode: boolean,
   isCleanupMode: boolean = false,
-  vfsSession?: VfsSession,
+  vfsSession: VfsSession,
 ): LoopState {
   const budgetState = createBudgetState(settings, {
     loopType: isCleanupMode ? "cleanup" : "turn",

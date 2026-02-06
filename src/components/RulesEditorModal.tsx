@@ -43,7 +43,7 @@ interface RulesEditorModalProps {
   onClose: () => void;
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  vfsSession: VfsSession | null;
+  vfsSession: VfsSession;
   triggerSave: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
@@ -118,21 +118,14 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
     };
 
     const nextRules = [...(gameState.customRules || []), newRule];
-    if (vfsSession) {
-      const nextState = applyVfsStateEdit({
-        session: vfsSession,
-        section: "customRules",
-        data: nextRules,
-        baseState: gameState,
-      });
-      setGameState(nextState);
-      triggerSave();
-    } else {
-      setGameState((prev) => ({
-        ...prev,
-        customRules: nextRules,
-      }));
-    }
+    const nextState = applyVfsStateEdit({
+      session: vfsSession,
+      section: "customRules",
+      data: nextRules,
+      baseState: gameState,
+    });
+    setGameState(nextState);
+    triggerSave();
 
     setNewTitle("");
     setNewContent("");
@@ -151,21 +144,14 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
         ? { ...r, title: newTitle.trim(), content: newContent.trim() }
         : r,
     );
-    if (vfsSession) {
-      const nextState = applyVfsStateEdit({
-        session: vfsSession,
-        section: "customRules",
-        data: nextRules,
-        baseState: gameState,
-      });
-      setGameState(nextState);
-      triggerSave();
-    } else {
-      setGameState((prev) => ({
-        ...prev,
-        customRules: nextRules,
-      }));
-    }
+    const nextState = applyVfsStateEdit({
+      session: vfsSession,
+      section: "customRules",
+      data: nextRules,
+      baseState: gameState,
+    });
+    setGameState(nextState);
+    triggerSave();
 
     setEditingRule(null);
     setNewTitle("");
@@ -177,21 +163,14 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
   // Delete rule
   const handleDeleteRule = (id: string) => {
     const nextRules = (gameState.customRules || []).filter((r) => r.id !== id);
-    if (vfsSession) {
-      const nextState = applyVfsStateEdit({
-        session: vfsSession,
-        section: "customRules",
-        data: nextRules,
-        baseState: gameState,
-      });
-      setGameState(nextState);
-      triggerSave();
-    } else {
-      setGameState((prev) => ({
-        ...prev,
-        customRules: nextRules,
-      }));
-    }
+    const nextState = applyVfsStateEdit({
+      session: vfsSession,
+      section: "customRules",
+      data: nextRules,
+      baseState: gameState,
+    });
+    setGameState(nextState);
+    triggerSave();
     onShowToast?.(t("rules.deleted"), "info");
   };
 
@@ -200,21 +179,14 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
     const nextRules = (gameState.customRules || []).map((r) =>
       r.id === id ? { ...r, enabled: !r.enabled } : r,
     );
-    if (vfsSession) {
-      const nextState = applyVfsStateEdit({
-        session: vfsSession,
-        section: "customRules",
-        data: nextRules,
-        baseState: gameState,
-      });
-      setGameState(nextState);
-      triggerSave();
-    } else {
-      setGameState((prev) => ({
-        ...prev,
-        customRules: nextRules,
-      }));
-    }
+    const nextState = applyVfsStateEdit({
+      session: vfsSession,
+      section: "customRules",
+      data: nextRules,
+      baseState: gameState,
+    });
+    setGameState(nextState);
+    triggerSave();
   };
 
   // Start editing a rule

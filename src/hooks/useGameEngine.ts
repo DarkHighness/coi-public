@@ -220,9 +220,6 @@ export const useGameEngine = () => {
     triggerSave,
     refreshSlots,
     vfsSession,
-    legacySaveCount,
-    legacySaveNoticeDismissed,
-    dismissLegacySavesNotice,
     seedFromDefaults,
     restoreVfsToTurn,
   } = useVfsPersistence(gameState, setGameState, view);
@@ -1448,10 +1445,6 @@ export const useGameEngine = () => {
         );
       }
 
-      if (!vfsSession) {
-        throw new Error("VFS session is not available");
-      }
-
       if (isFork) {
         const baseDerived = deriveGameStateFromVfs(vfsSession.snapshot());
         const forkResult = createFork(
@@ -1973,7 +1966,7 @@ export const useGameEngine = () => {
         }));
       }
 
-      const vfsSnapshot = vfsSession?.snapshot() ?? {};
+      const vfsSnapshot = vfsSession.snapshot();
       if (Object.keys(vfsSnapshot).length === 0) {
         throw new Error(
           "VFS snapshot is empty after force update. Ensure tools wrote state files.",
@@ -2109,10 +2102,6 @@ export const useGameEngine = () => {
     setGameState((prev) => ({ ...prev, isProcessing: true, error: null }));
 
     try {
-      if (!vfsSession) {
-        throw new Error("VFS session is not available");
-      }
-
       // Cleanup is a maintenance action; preserve the story conversation files so
       // it doesn't pollute the player's visible history or break retry semantics.
       const baselineConversationFiles = (() => {
@@ -2326,8 +2315,5 @@ export const useGameEngine = () => {
     refreshSlots,
     vfsSession,
     clearHighlight,
-    legacySaveCount,
-    legacySaveNoticeDismissed,
-    dismissLegacySavesNotice,
   };
 };

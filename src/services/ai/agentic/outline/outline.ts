@@ -101,7 +101,7 @@ const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase9Schema,
 ] as const;
 import { getPhasePrompt } from "./outlinePrompts";
-import { mergeOutlinePhases } from "./outlinePhaseHandler";
+import { mergeOutlinePhases } from "./outlineMerge";
 
 // ============================================================================
 // Phased Story Outline Generation
@@ -125,9 +125,9 @@ export interface PhasedOutlineOptions {
   /** Callback to save checkpoint after each phase */
   onSaveCheckpoint?: (state: OutlineConversationState) => void | Promise<void>;
   settings: AISettings;
-  /** Optional VFS session (enables read-only VFS tools during outline generation). */
-  vfsSession?: VfsSession;
-  /** When true (default), allow read-only VFS tools if vfsSession is provided. */
+  /** VFS session (enables read-only VFS tools during outline generation). */
+  vfsSession: VfsSession;
+  /** When true (default), allow read-only VFS tools. */
   enableReadOnlyVfsTools?: boolean;
   /**
    * Optional allowlist of read-only VFS path prefixes for outline generation.
@@ -416,13 +416,11 @@ export const generateStoryOutlinePhased = async (
   themeConfig: ResolvedThemeConfig;
   usage: TokenUsage;
 }> => {
-  if (!options?.settings) {
-    throw new Error("settings is required in options");
+  if (!options) {
+    throw new Error("options is required");
   }
-  const settings = options.settings;
-  const readOnlyVfsEnabled = Boolean(
-    options?.vfsSession && (options.enableReadOnlyVfsTools ?? true),
-  );
+  const { settings, vfsSession } = options;
+  const readOnlyVfsEnabled = Boolean(options.enableReadOnlyVfsTools ?? true);
 
   // Use "lore" model config for outline generation
   const providerInfo = getProviderConfig(settings, "lore");
@@ -445,7 +443,7 @@ export const generateStoryOutlinePhased = async (
   })();
 
   const readOnlyVfsAllowPrefixes =
-    options?.readOnlyVfsAllowPrefixes ??
+    options.readOnlyVfsAllowPrefixes ??
     getOutlineDefaultReadOnlyAllowPrefixes(theme, isImageBasedFlow);
 
   // Get theme data (skip if image-based flow - Phase 0 will generate context)
@@ -655,12 +653,10 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
       providerId: instance.id, // Track which provider was used
     };
 
-    if (options?.vfsSession) {
-      try {
-        writeOutlineProgress(options.vfsSession, checkpoint);
-      } catch (e) {
-        console.warn("[OutlineAgentic] Failed to write outline progress to VFS", e);
-      }
+    try {
+      writeOutlineProgress(vfsSession, checkpoint);
+    } catch (e) {
+      console.warn("[OutlineAgentic] Failed to write outline progress to VFS", e);
     }
 
     if (options.onSaveCheckpoint) {
@@ -1075,7 +1071,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
 	            }
 
 	            const output = await dispatchToolCallAsync(tc.name, tc.args, {
-	              vfsSession: options?.vfsSession,
+	              vfsSession,
 	              settings,
 	              gameState: { forkId: -1, turnNumber: 0 } as any,
 	            });
@@ -1112,7 +1108,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
               continue;
             }
             const output = await dispatchToolCallAsync(tc.name, tc.args, {
-              vfsSession: options?.vfsSession,
+              vfsSession,
               settings,
               gameState: { forkId: -1, turnNumber: 0 } as any,
             });

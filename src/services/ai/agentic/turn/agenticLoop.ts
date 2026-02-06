@@ -19,7 +19,6 @@ import type { VfsSession } from "../../../vfs/vfsSession";
 import type { ToolCallResult } from "../../../providers/types";
 import { UnifiedMessage } from "../../../messageTypes";
 
-import { createProvider } from "../../provider/createProvider";
 import { sessionManager } from "../../sessionManager";
 import { createLogEntry } from "../../utils";
 import {
@@ -44,6 +43,7 @@ import {
 } from "../budgetUtils";
 import { buildResponseFromVfs, getChangedEntitiesArray } from "./resultAccumulator";
 import { normalizeVfsPath } from "../../../vfs/utils";
+import { rollbackVfsSessionToCheckpoint } from "../../../vfs/runtimeCheckpoints";
 
 // Import tool handling
 import {
@@ -67,8 +67,8 @@ export interface AgenticLoopConfig {
   settings: AISettings;
   isSudoMode?: boolean;
   isCleanupMode?: boolean;
-  sessionId?: string;
-  vfsSession?: VfsSession;
+  sessionId: string;
+  vfsSession: VfsSession;
 }
 
 export interface AgenticLoopResult {
@@ -101,16 +101,7 @@ export async function runAgenticLoopRefactored(
   } = config;
 
   // Initialize provider
-  const provider = sessionId
-    ? sessionManager.getProvider(sessionId, instance)
-    : createProvider(instance);
-
-  // Turn-level VFS rollback:
-  // - Tool handlers are atomic per call, but a turn can involve multiple calls.
-  // - If the loop fails to commit a turn (or throws), we must restore the VFS to
-  //   the pre-turn snapshot so retries start from a clean baseline.
-  const baselineVfsSnapshot = config.vfsSession?.snapshot() ?? null;
-  const vfsSession = config.vfsSession;
+  const provider = sessionManager.getProvider(sessionId, instance);
 
   // Initialize loop state
   const loopState = createLoopState(
@@ -252,15 +243,25 @@ export async function runAgenticLoopRefactored(
       incrementIterations(loopState.budgetState);
     }
   } catch (error) {
-    if (baselineVfsSnapshot && vfsSession) {
-      vfsSession.restore(baselineVfsSnapshot);
+    const rolledBack = rollbackVfsSessionToCheckpoint(
+      sessionId,
+      config.vfsSession,
+    );
+    if (!rolledBack) {
+      throw new Error(
+        `[AgenticLoop] Missing VFS checkpoint for session "${sessionId}". Cannot rollback after error.`,
+        { cause: error as unknown },
+      );
     }
     throw error;
   }
 
   if (!didFinishTurn) {
-    if (baselineVfsSnapshot && vfsSession) {
-      vfsSession.restore(baselineVfsSnapshot);
+    const rolledBack = rollbackVfsSessionToCheckpoint(sessionId, config.vfsSession);
+    if (!rolledBack) {
+      throw new Error(
+        `[AgenticLoop] Missing VFS checkpoint for session "${sessionId}". Cannot rollback after TURN_NOT_COMMITTED.`,
+      );
     }
     throw new Error(
       `TURN_NOT_COMMITTED: Agentic loop exhausted its budget without writing conversation files (expected ${loopState.finishToolName} or equivalent conversation writes as the last tool call).`,
@@ -285,7 +286,7 @@ interface ProcessToolCallsParams {
   loopState: LoopState;
   gameState: GameState;
   settings: AISettings;
-  sessionId?: string;
+  sessionId: string;
   conversationHistory: UnifiedMessage[];
   protocol: ProviderProtocol;
   modelId: string;
@@ -542,7 +543,6 @@ async function processToolCalls(
     loopState,
     gameState,
     settings,
-    vfsSession: loopState.vfsSession,
   };
 
   for (const call of functionCalls) {

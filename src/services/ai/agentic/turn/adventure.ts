@@ -301,8 +301,8 @@ export const runAgenticLoop = async (
   settings: AISettings,
   isSudoMode: boolean = false,
   isCleanupMode: boolean = false,
-  _sessionId?: string,
-  vfsSession?: VfsSession,
+  _sessionId: string,
+  vfsSession: VfsSession,
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
   return runAgenticLoopRefactored({

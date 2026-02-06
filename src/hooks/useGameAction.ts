@@ -38,7 +38,7 @@ interface UseGameActionProps {
     nodeOverride?: StorySegment,
   ) => Promise<void>;
   triggerSave: () => void;
-  vfsSession?: VfsSession;
+  vfsSession: VfsSession;
 }
 
 export const useGameAction = ({
@@ -362,7 +362,7 @@ export const useGameAction = ({
         });
 
         // ===== STATE UPDATE =====
-        const vfsSnapshot = vfsSession?.snapshot() ?? {};
+        const vfsSnapshot = vfsSession.snapshot();
         if (Object.keys(vfsSnapshot).length === 0) {
           throw new Error(
             "VFS snapshot is empty after turn. Ensure tools wrote state files.",

@@ -32,8 +32,8 @@ export interface ToolContext {
   gameState?: GameState;
   /** AI settings (optional) */
   settings?: AISettings;
-  /** VFS session for file-based tools (optional) */
-  vfsSession?: VfsSession;
+  /** VFS session for file-based tools */
+  vfsSession: VfsSession;
 }
 
 /**
@@ -74,7 +74,7 @@ const handlerRegistry = new Map<string, ToolHandler>();
  * ```ts
  * registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
  *   const typedArgs = getTypedArgs("vfs_write", args);
- *   ctx.vfsSession?.writeFile(typedArgs.files[0].path, typedArgs.files[0].content, typedArgs.files[0].contentType);
+ *   ctx.vfsSession.writeFile(typedArgs.files[0].path, typedArgs.files[0].content, typedArgs.files[0].contentType);
  *   return { success: true };
  * });
  * ```

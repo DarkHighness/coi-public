@@ -5,7 +5,6 @@ import {
   saveMetadata,
   loadMetadata,
   deleteMetadata,
-  getLegacySaveCount,
   getStorageEstimate,
   clearDatabase,
   getAllVfsSaveIds,
@@ -33,9 +32,6 @@ export const useVfsPersistence = (
   const [currentSlotId, setCurrentSlotId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
-  const [legacySaveCount, setLegacySaveCount] = useState(0);
-  const [legacySaveNoticeDismissed, setLegacySaveNoticeDismissed] =
-    useState(false);
   const [skipNextSave, setSkipNextSave] = useState(false);
   const [triggerSaveCount, setTriggerSaveCount] = useState(0);
   const isSavingRef = useRef(false);
@@ -219,24 +215,6 @@ export const useVfsPersistence = (
       try {
         isRestoringRef.current = true;
         await sessionManager.initialize();
-
-        // Detect legacy saves (non-VFS). These are not loadable anymore.
-        try {
-          const count = await getLegacySaveCount();
-          setLegacySaveCount(count);
-        } catch (error) {
-          console.warn("[VFS Persistence] Failed to check legacy save count:", error);
-        }
-
-        try {
-          const dismissed = await loadMetadata("legacySavesNoticeDismissed");
-          setLegacySaveNoticeDismissed(Boolean(dismissed));
-        } catch (error) {
-          console.warn(
-            "[VFS Persistence] Failed to load legacy save notice flag:",
-            error,
-          );
-        }
 
         const inferSlotsIfMissing = async (): Promise<SaveSlot[]> => {
           const candidateIds = Array.from(
@@ -740,25 +718,11 @@ export const useVfsPersistence = (
     }
   };
 
-  const dismissLegacySavesNotice = useCallback(async (): Promise<void> => {
-    setLegacySaveNoticeDismissed(true);
-    try {
-      await saveMetadata("legacySavesNoticeDismissed", true);
-    } catch (error) {
-      console.warn(
-        "[VFS Persistence] Failed to persist legacy save notice flag:",
-        error,
-      );
-    }
-  }, []);
-
   const clearAllSaves = async (): Promise<boolean> => {
     try {
       await clearDatabase();
       setSaveSlots([]);
       setCurrentSlotId(null);
-      setLegacySaveCount(0);
-      setLegacySaveNoticeDismissed(false);
       return true;
     } catch (error) {
       console.error("Failed to clear saves:", error);
@@ -808,9 +772,6 @@ export const useVfsPersistence = (
     refreshSlots,
     vfsSession: vfsSessionRef.current,
     latestSlotId,
-    legacySaveCount,
-    legacySaveNoticeDismissed,
-    dismissLegacySavesNotice,
     seedFromDefaults: () => seedVfsSessionFromDefaults(vfsSessionRef.current),
     restoreVfsToTurn,
   };

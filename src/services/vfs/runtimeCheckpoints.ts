@@ -14,17 +14,15 @@ const vfsCheckpointBySessionId = new Map<string, VfsFileMap>();
 
 export function checkpointVfsSession(
   sessionId: string,
-  vfsSession: VfsSession | undefined,
+  vfsSession: VfsSession,
 ): void {
-  if (!vfsSession) return;
   vfsCheckpointBySessionId.set(sessionId, vfsSession.snapshot());
 }
 
 export function rollbackVfsSessionToCheckpoint(
   sessionId: string,
-  vfsSession: VfsSession | undefined,
+  vfsSession: VfsSession,
 ): boolean {
-  if (!vfsSession) return false;
   const snapshot = vfsCheckpointBySessionId.get(sessionId);
   if (!snapshot) return false;
   vfsSession.restore(snapshot);
@@ -34,4 +32,3 @@ export function rollbackVfsSessionToCheckpoint(
 export function clearVfsCheckpoint(sessionId: string): void {
   vfsCheckpointBySessionId.delete(sessionId);
 }
-

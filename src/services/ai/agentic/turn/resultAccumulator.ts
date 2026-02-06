@@ -45,9 +45,8 @@ export interface ConversationMarker {
 }
 
 export const getConversationMarker = (
-  vfsSession?: VfsSession,
+  vfsSession: VfsSession,
 ): ConversationMarker | null => {
-  if (!vfsSession) return null;
   const snapshot = vfsSession.snapshot();
   if (!snapshot || Object.keys(snapshot).length === 0) return null;
   const index = readConversationIndex(snapshot);
@@ -62,10 +61,9 @@ export const getConversationMarker = (
 };
 
 export const buildResponseFromVfs = (
-  vfsSession?: VfsSession,
+  vfsSession: VfsSession,
   baseline?: ConversationMarker | null,
 ): GameResponse | null => {
-  if (!vfsSession) return null;
   const snapshot = vfsSession.snapshot();
   if (!snapshot || Object.keys(snapshot).length === 0) return null;
   const index = readConversationIndex(snapshot);

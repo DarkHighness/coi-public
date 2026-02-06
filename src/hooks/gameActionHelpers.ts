@@ -180,7 +180,7 @@ export const handleSummarization = async (
   isInit: boolean,
   aiSettings: AISettings,
   language: LanguageCode,
-  vfsSession: VfsSession | undefined,
+  vfsSession: VfsSession,
   slotId: string | null,
   forceSummarize: boolean = false,
 ): Promise<{
@@ -285,17 +285,6 @@ export const handleSummarization = async (
     };
 
     // Call Summary Service with agentic loop
-    if (!vfsSession) {
-      return {
-        effectiveSummaries,
-        lastIndex: baseIndex, // RESET lastIndex so we retry next time
-        summarySnapshot: undefined,
-        contextNodes,
-        logs: [],
-        error: "VFS session is not available for summarization",
-      };
-    }
-
     const pendingPlayerAction =
       !isInit && typeof action === "string" && action.trim().length > 0
         ? { segmentIdx: nodeRange.toIndex, text: action }
