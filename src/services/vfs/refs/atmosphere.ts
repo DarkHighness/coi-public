@@ -7,7 +7,7 @@ import {
 import type { VfsSession } from "../vfsSession";
 
 const writeText = (session: VfsSession, path: string, value: string) => {
-  session.writeFile(path, value, "text/plain");
+  session.writeFile(path, value, path.endsWith(".md") ? "text/markdown" : "text/plain");
 };
 
 /**

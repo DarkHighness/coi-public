@@ -19,10 +19,10 @@ const writeJson = (session: VfsSession, path: string, value: unknown) => {
 };
 
 const ensureGlobalNotes = (session: VfsSession): void => {
-  // Notes are a flexible scratch pad (markdown stored as text/plain).
+  // Notes are a flexible scratch pad (markdown).
   // Keep it empty by default; the AI may populate it when needed.
   if (!session.readFile("world/notes.md")) {
-    session.writeFile("world/notes.md", "", "text/plain");
+    session.writeFile("world/notes.md", "", "text/markdown");
   }
 };
 

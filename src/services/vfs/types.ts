@@ -1,4 +1,4 @@
-export type VfsContentType = "application/json" | "text/plain";
+export type VfsContentType = "application/json" | "text/plain" | "text/markdown";
 
 export interface VfsFile {
   path: string;

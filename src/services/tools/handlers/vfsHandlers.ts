@@ -2196,11 +2196,19 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
       const maxTotalChars =
         typeof op.maxTotalChars === "number" ? op.maxTotalChars : null;
 
-      if (existing && existing.contentType !== "text/plain") {
+      if (existing && op.expectedHash && existing.hash !== op.expectedHash) {
         return createError(
-          `File is not text/plain: ${op.path}`,
-          "INVALID_DATA",
+          `Hash mismatch for ${op.path} (expected ${op.expectedHash}, got ${existing.hash}). Re-read the file and retry.`,
+          "INVALID_ACTION",
         );
+      }
+
+      if (
+        existing &&
+        existing.contentType !== "text/plain" &&
+        existing.contentType !== "text/markdown"
+      ) {
+        return createError(`File is not a text file: ${op.path}`, "INVALID_DATA");
       }
 
       const base = existing ? existing.content : "";
@@ -2214,7 +2222,7 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
         );
       }
 
-      draft.writeFile(resolved.path, next, "text/plain");
+      draft.writeFile(resolved.path, next, "text/markdown");
       appended.push({
         path: toCurrentPath(resolved.path),
         appendedChars: (sep + op.content).length,
@@ -2259,11 +2267,17 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
         if (seenError) {
           return seenError;
         }
-        if (existing.contentType !== "text/plain") {
+        if (fileEdit.expectedHash && existing.hash !== fileEdit.expectedHash) {
           return createError(
-            `File is not text/plain: ${fileEdit.path}`,
-            "INVALID_DATA",
+            `Hash mismatch for ${fileEdit.path} (expected ${fileEdit.expectedHash}, got ${existing.hash}). Re-read the file and retry.`,
+            "INVALID_ACTION",
           );
+        }
+        if (
+          existing.contentType !== "text/plain" &&
+          existing.contentType !== "text/markdown"
+        ) {
+          return createError(`File is not a text file: ${fileEdit.path}`, "INVALID_DATA");
         }
       }
 
@@ -2271,6 +2285,78 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
       const created = !existing;
 
       for (const op of fileEdit.ops as any[]) {
+        if (op.op === "insert_lines_before") {
+          const lines = content.split("\n");
+          const insertIdx = op.line - 1;
+          if (insertIdx < 0 || insertIdx > lines.length) {
+            return createError(
+              `Line out of range for insert_lines_before: ${fileEdit.path}`,
+              "INVALID_DATA",
+            );
+          }
+          const insertLines = String(op.content).split("\n");
+          const nextLines = [
+            ...lines.slice(0, insertIdx),
+            ...insertLines,
+            ...lines.slice(insertIdx),
+          ];
+          content = nextLines.join("\n");
+          continue;
+        }
+
+        if (op.op === "insert_lines_after") {
+          const lines = content.split("\n");
+          const afterIdx = op.line;
+          if (afterIdx < 0 || afterIdx > lines.length) {
+            return createError(
+              `Line out of range for insert_lines_after: ${fileEdit.path}`,
+              "INVALID_DATA",
+            );
+          }
+          const insertLines = String(op.content).split("\n");
+          const nextLines = [
+            ...lines.slice(0, afterIdx),
+            ...insertLines,
+            ...lines.slice(afterIdx),
+          ];
+          content = nextLines.join("\n");
+          continue;
+        }
+
+        if (op.op === "replace_lines") {
+          const startLine = Number(op.startLine);
+          const endLine = Number(op.endLine);
+          if (!Number.isInteger(startLine) || !Number.isInteger(endLine) || startLine <= 0 || endLine <= 0) {
+            return createError(
+              `Invalid line range for replace_lines: ${fileEdit.path}`,
+              "INVALID_DATA",
+            );
+          }
+          if (startLine > endLine) {
+            return createError(
+              `Invalid line range (startLine > endLine) for replace_lines: ${fileEdit.path}`,
+              "INVALID_DATA",
+            );
+          }
+          const lines = content.split("\n");
+          if (endLine > lines.length) {
+            return createError(
+              `Line out of range for replace_lines: ${fileEdit.path}`,
+              "INVALID_DATA",
+            );
+          }
+          const startIdx = startLine - 1;
+          const endIdxExclusive = endLine;
+          const replacementLines = String(op.content).split("\n");
+          const nextLines = [
+            ...lines.slice(0, startIdx),
+            ...replacementLines,
+            ...lines.slice(endIdxExclusive),
+          ];
+          content = nextLines.join("\n");
+          continue;
+        }
+
         if (op.op === "insert_after" || op.op === "insert_before") {
           const markerMatch = findTextMarker(content, op.marker, {
             regex: op.markerIsRegex === true,
@@ -2382,7 +2468,7 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
         );
       }
 
-      draft.writeFile(resolved.path, content, "text/plain");
+      draft.writeFile(resolved.path, content, "text/markdown");
       edited.push({ path: toCurrentPath(resolved.path), totalChars: content.length, created });
     }
 

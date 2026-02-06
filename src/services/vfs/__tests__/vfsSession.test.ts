@@ -73,7 +73,7 @@ describe("VfsSession", () => {
 
   it("exposes global read-only skills files", () => {
     const session = new VfsSession();
-    expect(session.readFile("skills/README.md")?.contentType).toBe("text/plain");
+    expect(session.readFile("skills/README.md")?.contentType).toBe("text/markdown");
     const indexContent = session.readFile("skills/index.json")?.content ?? "";
     const indexJson = JSON.parse(indexContent) as { skills?: Array<{ id?: string }> };
     const ids = new Set((indexJson.skills ?? []).map((s) => s.id).filter(Boolean));

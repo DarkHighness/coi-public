@@ -92,7 +92,11 @@ const vfsOptionalPathSchema = vfsPathSchema
 
 const vfsFilePathSchema = vfsPathSchema.min(1, "Path is required.");
 
-const vfsContentTypeSchema = z.enum(["application/json", "text/plain"]);
+const vfsContentTypeSchema = z.enum([
+  "application/json",
+  "text/plain",
+  "text/markdown",
+]);
 
 const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
   z
@@ -377,8 +381,14 @@ export const VFS_APPEND_TOOL = defineTool({
         .array(
           z
             .object({
-              path: vfsFilePathSchema.describe("File path (text/plain)."),
+              path: vfsFilePathSchema.describe("File path (text/markdown)."),
               content: z.string().describe("Text to append."),
+              expectedHash: z
+                .string()
+                .nullish()
+                .describe(
+                  "Optional optimistic concurrency guard. If provided and the file exists, the append will fail unless the existing file hash matches this value (use vfs_read first to get it). Prefer omitting; null is disabled.",
+                ),
               ensureNewline: z
                 .boolean()
                 .nullish()
@@ -511,24 +521,60 @@ const vfsTextEditOpSchema = z.discriminatedUnion("op", [
         .describe("Max replacements. Prefer omitting; null is 1."),
     })
     .strict(),
+  z
+    .object({
+      op: z.literal("insert_lines_before"),
+      line: z
+        .number()
+        .int()
+        .positive()
+        .describe("1-based line number to insert before (1 inserts at top)."),
+      content: z.string().describe("Lines to insert (may contain newlines)."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("insert_lines_after"),
+      line: z
+        .number()
+        .int()
+        .positive()
+        .describe("1-based line number to insert after (N inserts after line N)."),
+      content: z.string().describe("Lines to insert (may contain newlines)."),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal("replace_lines"),
+      startLine: z.number().int().positive().describe("1-based start line (inclusive)."),
+      endLine: z.number().int().positive().describe("1-based end line (inclusive)."),
+      content: z.string().describe("Replacement lines (may contain newlines)."),
+    })
+    .strict(),
 ]);
 
 export const VFS_TEXT_EDIT_TOOL = defineTool({
   name: "vfs_text_edit",
   description:
-    "Edit one or more VFS text files using marker/regex-based operations (atomic batch). Intended for notes.md updates without manual full rewrites.",
+    "Edit one or more VFS text files using marker/regex/line-based operations (atomic batch). Intended for notes.md updates without manual full rewrites.",
   parameters: z
     .object({
       files: z
         .array(
           z
             .object({
-              path: vfsFilePathSchema.describe("File path (text/plain)."),
+              path: vfsFilePathSchema.describe("File path (text/markdown)."),
               createIfMissing: z
                 .boolean()
                 .nullish()
                 .describe(
                   "Create the file if it does not exist. Prefer omitting; null is true.",
+                ),
+              expectedHash: z
+                .string()
+                .nullish()
+                .describe(
+                  "Optional optimistic concurrency guard. If provided and the file exists, edits will fail unless the existing file hash matches this value (use vfs_read first to get it). Prefer omitting; null is disabled.",
                 ),
               maxTotalChars: z
                 .number()

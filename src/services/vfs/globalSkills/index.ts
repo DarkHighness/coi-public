@@ -2976,7 +2976,7 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
 
   return resolvedDefs.map((def) => ({
     path: `skills/theme/${def.slug}/SKILL.md`,
-    contentType: "text/plain",
+    contentType: "text/markdown",
     content: buildThemeSkillMarkdown(def),
   }));
 }

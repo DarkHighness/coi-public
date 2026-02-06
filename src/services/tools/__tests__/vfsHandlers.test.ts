@@ -321,7 +321,7 @@ describe("VFS handlers", () => {
     ) as { success: boolean; data?: { content?: string; contentType?: string } };
 
     expect(readResult.success).toBe(true);
-    expect(readResult.data?.contentType).toBe("text/plain");
+    expect(readResult.data?.contentType).toBe("text/markdown");
     expect(readResult.data?.content ?? "").toContain("read-only");
 
     const writeResult = dispatchToolCall(
@@ -1307,7 +1307,7 @@ describe("VFS handlers", () => {
 
   it("blocks vfs_text_edit until the file is read in this session", () => {
     const session = new VfsSession();
-    session.writeFile("world/notes.md", "A\nB\n", "text/plain");
+    session.writeFile("world/notes.md", "A\nB\n", "text/markdown");
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
@@ -1409,5 +1409,107 @@ describe("VFS handlers", () => {
     expect(read.data?.content ?? "").toContain("## Threads");
     expect(read.data?.content ?? "").toContain("- t1");
     expect(read.data?.content ?? "").toContain("## End Threads");
+  });
+
+  it("supports expectedHash guards for vfs_append on existing files", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [{ path: "current/world/notes.md", content: "A", ensureNewline: true }],
+      },
+      ctx,
+    );
+
+    const read1 = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/notes.md" },
+      ctx,
+    ) as { success: boolean; data?: { hash?: string } };
+    expect(read1.success).toBe(true);
+    const hash1 = read1.data?.hash ?? "";
+    expect(hash1.length).toBeGreaterThan(0);
+
+    const bad = dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [
+          {
+            path: "current/world/notes.md",
+            content: "B",
+            ensureNewline: true,
+            expectedHash: "not-the-hash",
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean; code?: string };
+    expect(bad.success).toBe(false);
+    expect(bad.code).toBe("INVALID_ACTION");
+
+    const ok = dispatchToolCall(
+      "vfs_append",
+      {
+        appends: [
+          {
+            path: "current/world/notes.md",
+            content: "B",
+            ensureNewline: true,
+            expectedHash: hash1,
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+    expect(ok.success).toBe(true);
+  });
+
+  it("supports line-based edits via vfs_text_edit", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    dispatchToolCall(
+      "vfs_write",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            content: "A\nB\nC",
+            contentType: "text/markdown",
+          },
+        ],
+      },
+      ctx,
+    );
+
+    dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
+
+    const result = dispatchToolCall(
+      "vfs_text_edit",
+      {
+        files: [
+          {
+            path: "current/world/notes.md",
+            ops: [
+              { op: "insert_lines_after", line: 1, content: "X" },
+              { op: "replace_lines", startLine: 3, endLine: 3, content: "BB" },
+            ],
+          },
+        ],
+      },
+      ctx,
+    ) as { success: boolean };
+
+    expect(result.success).toBe(true);
+
+    const read = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/notes.md" },
+      ctx,
+    ) as { success: boolean; data?: { content?: string } };
+    expect(read.success).toBe(true);
+    expect(read.data?.content ?? "").toBe("A\nX\nBB\nC");
   });
 });
