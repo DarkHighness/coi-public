@@ -1321,6 +1321,8 @@
     "storylineEditable": "Storyline files are editable by default (/sudo mode).",
     "editMode": "Edit",
     "previewMode": "Preview",
+    "mobileFiles": "Files",
+    "mobileEditor": "Editor",
     "confirmReadonlyEdit": "This is a protected file. Editing it may break game state. Continue to enable editing for this file?",
     "readonlyOverrideEnabled": "Protected file editing enabled for this file."
   },
@@ -1610,6 +1612,9 @@
   "saveManager": {
     "startPrompt": "Start a new game to create your first save",
     "current": "Current",
+    "rename": "Rename",
+    "renameConfirm": "Save name",
+    "renamePlaceholder": "Save name",
     "export": "Export",
     "delete": "Delete",
     "import": "Import Save",

@@ -1358,6 +1358,8 @@
     "storylineEditable": "剧情文件默认可编辑（/sudo 模式）。",
     "editMode": "编辑",
     "previewMode": "预览",
+    "mobileFiles": "文件",
+    "mobileEditor": "编辑器",
     "confirmReadonlyEdit": "这是受保护文件，编辑可能破坏游戏状态。是否继续并为当前文件启用编辑？",
     "readonlyOverrideEnabled": "已为当前受保护文件启用编辑。"
   },
@@ -1624,6 +1626,9 @@
   "saveManager": {
     "startPrompt": "开始新游戏以创建第一个存档",
     "current": "当前",
+    "rename": "重命名",
+    "renameConfirm": "保存名称",
+    "renamePlaceholder": "存档名称",
     "export": "导出",
     "delete": "删除",
     "import": "导入存档",

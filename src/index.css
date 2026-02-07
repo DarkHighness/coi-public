@@ -206,6 +206,37 @@ input:disabled {
   bottom: 0;
 }
 
+.state-editor-cm {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.state-editor-cm .cm-theme,
+.state-editor-cm .cm-editor {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.state-editor-cm .cm-scroller {
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+.state-editor-cm .cm-content {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+}
+
+.state-editor-cm .cm-gutters {
+  background: color-mix(in srgb, var(--theme-surface) 70%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--theme-divider) 60%, transparent);
+}
+
 /* --- Environmental Effects --- */
 
 /* Rain */

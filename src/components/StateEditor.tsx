@@ -3,7 +3,7 @@
  * Allows direct JSON/text editing through a file tree interface
  */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { json as jsonLanguage } from "@codemirror/lang-json";
 import { markdown as markdownLanguage } from "@codemirror/lang-markdown";
@@ -51,10 +51,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     string | null
   >(null);
   const [markdownMode, setMarkdownMode] = useState<"edit" | "preview">("edit");
+  const [mobileView, setMobileView] = useState<"files" | "editor">("editor");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
   const [snapshotVersion, setSnapshotVersion] = useState(0);
   const [editingPath, setEditingPath] = useState<string | null>(null);
-  const editorContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -109,6 +109,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setIsEditMode(false);
       setConfirmedReadonlyPath(null);
       setMarkdownMode("edit");
+      setMobileView("editor");
       setSearchQuery("");
       setSelectedPath(null);
       setExpandedPaths([""]);
@@ -324,41 +325,6 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     setIsEditMode(true);
   };
 
-  const handleEditorWheelCapture: React.WheelEventHandler<HTMLDivElement> = (
-    event,
-  ) => {
-    const container = editorContainerRef.current;
-    if (!container) {
-      return;
-    }
-
-    const scroller = container.querySelector<HTMLElement>(".cm-scroller");
-    if (!scroller) {
-      return;
-    }
-
-    const canScrollY = scroller.scrollHeight > scroller.clientHeight + 1;
-    const canScrollX = scroller.scrollWidth > scroller.clientWidth + 1;
-    if (!canScrollY && !canScrollX) {
-      return;
-    }
-
-    const beforeTop = scroller.scrollTop;
-    const beforeLeft = scroller.scrollLeft;
-
-    if (canScrollY && event.deltaY !== 0) {
-      scroller.scrollTop += event.deltaY;
-    }
-    if (canScrollX && event.deltaX !== 0) {
-      scroller.scrollLeft += event.deltaX;
-    }
-
-    if (scroller.scrollTop !== beforeTop || scroller.scrollLeft !== beforeLeft) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  };
-
   const lineCount = useMemo(
     () => (fileContent ? fileContent.split("\n").length : 0),
     [fileContent],
@@ -435,7 +401,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       <button
         key={node.path}
         type="button"
-        onClick={() => setSelectedPath(node.path)}
+        onClick={() => {
+          setSelectedPath(node.path);
+          setMobileView("editor");
+        }}
         className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
           isSelected
             ? "bg-theme-primary/10 text-theme-primary border-theme-primary"
@@ -474,6 +443,30 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="inline-flex md:hidden items-center rounded-md border border-theme-divider/60 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMobileView("files")}
+                className={`px-2.5 py-1 text-xs transition-colors ${
+                  mobileView === "files"
+                    ? "bg-theme-primary/20 text-theme-primary"
+                    : "text-theme-text-secondary hover:bg-theme-bg/20"
+                }`}
+              >
+                {t("stateEditor.mobileFiles") || "Files"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileView("editor")}
+                className={`px-2.5 py-1 text-xs transition-colors ${
+                  mobileView === "editor"
+                    ? "bg-theme-primary/20 text-theme-primary"
+                    : "text-theme-text-secondary hover:bg-theme-bg/20"
+                }`}
+              >
+                {t("stateEditor.mobileEditor") || "Editor"}
+              </button>
+            </div>
             <button
               type="button"
               onClick={handleToggleEditMode}
@@ -521,7 +514,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         {/* Body */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* File Tree */}
-          <div className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-theme-surface/80 flex flex-col min-h-0">
+          <div
+            className={`${mobileView === "files" ? "flex" : "hidden"} md:flex w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-theme-surface/80 flex-col min-h-0`}
+          >
             <div className="p-3 border-b border-theme-divider/60 bg-theme-surface-highlight/20">
               <div className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wide mb-2">
                 {t("stateEditor.fileTree") || "File Tree"}
@@ -547,7 +542,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
 
           {/* Editor Area */}
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0">
+          <div
+            className={`${mobileView === "editor" ? "flex" : "hidden"} md:flex flex-1 flex-col overflow-hidden min-w-0 min-h-0`}
+          >
             {/* Toolbar */}
             <div className="flex-none px-4 py-2.5 border-b border-theme-divider/60 bg-theme-surface/80 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2 overflow-hidden">
@@ -619,10 +616,18 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 <div className="h-full overflow-auto p-4 text-sm text-theme-text">
                   <MarkdownText content={fileContent || ""} />
                 </div>
+              ) : isReadOnly ? (
+                <textarea
+                  value={fileContent}
+                  readOnly
+                  className={`w-full h-full p-4 bg-transparent text-theme-text font-mono text-sm leading-relaxed resize-none focus:outline-none overflow-auto ${
+                    error ? "border-2 border-theme-error/50" : ""
+                  } opacity-85`}
+                  spellCheck={false}
+                  placeholder={t("loadingGeneric") || "Loading..."}
+                />
               ) : (
                 <div
-                  ref={editorContainerRef}
-                  onWheelCapture={handleEditorWheelCapture}
                   className={`h-full state-editor-cm ${
                     isReadOnly ? "opacity-80" : ""
                   } ${error ? "border-2 border-theme-error/50" : ""}`}
@@ -631,7 +636,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                     value={fileContent}
                     height="100%"
                     extensions={editorExtensions}
-                    readOnly={isReadOnly}
+                    readOnly={false}
                     onChange={(value) => handleContentChange(value)}
                     basicSetup={{
                       lineNumbers: true,
