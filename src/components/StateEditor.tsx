@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from "react";
+import type { OnMount } from "@monaco-editor/react";
 import { ZodError } from "zod";
 import { useTranslation } from "react-i18next";
 import type { GameState } from "../types";
@@ -17,6 +18,8 @@ import {
 import { formatVfsContent, readVfsFile } from "./vfsExplorer/fileOps";
 import { applyVfsFileEdit } from "./stateEditorUtils";
 import { MarkdownText } from "./render/MarkdownText";
+
+const MonacoEditor = React.lazy(() => import("@monaco-editor/react"));
 
 interface StateEditorProps {
   isOpen: boolean;
@@ -52,6 +55,27 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
   const [snapshotVersion, setSnapshotVersion] = useState(0);
   const [editingPath, setEditingPath] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+    return window.innerWidth >= 768;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -330,6 +354,31 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const isMarkdownFile =
     fileContentType === "text/markdown" ||
     (selectedPath?.toLowerCase().endsWith(".md") ?? false);
+
+  const monacoLanguage = useMemo(() => {
+    const lowerPath = selectedPath?.toLowerCase() ?? "";
+
+    if (fileContentType === "application/json" || lowerPath.endsWith(".json")) {
+      return "json";
+    }
+    if (isMarkdownFile) {
+      return "markdown";
+    }
+    if (lowerPath.endsWith(".ts") || lowerPath.endsWith(".tsx")) {
+      return "typescript";
+    }
+    if (lowerPath.endsWith(".js") || lowerPath.endsWith(".jsx")) {
+      return "javascript";
+    }
+
+    return "plaintext";
+  }, [fileContentType, isMarkdownFile, selectedPath]);
+
+  const handleMonacoMount: OnMount = (editor) => {
+    editor.updateOptions({
+      readOnly: isReadOnly,
+    });
+  };
 
   const toggleFolder = (path: string) => {
     if (path === "") return;
@@ -612,6 +661,46 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               {isMarkdownFile && markdownMode === "preview" ? (
                 <div className="h-full overflow-auto p-4 text-sm text-theme-text state-editor-scroll-y">
                   <MarkdownText content={fileContent || ""} />
+                </div>
+              ) : isDesktop ? (
+                <div
+                  className={`h-full state-editor-monaco ${
+                    error ? "border-2 border-theme-error/50" : ""
+                  }`}
+                >
+                  <React.Suspense
+                    fallback={
+                      <textarea
+                        value={fileContent}
+                        readOnly
+                        className="w-full h-full p-4 bg-transparent text-theme-text font-mono text-sm leading-relaxed resize-none focus:outline-none overflow-auto state-editor-scroll-y opacity-85"
+                        spellCheck={false}
+                        placeholder={t("loadingGeneric") || "Loading..."}
+                      />
+                    }
+                  >
+                    <MonacoEditor
+                      value={fileContent}
+                      language={monacoLanguage}
+                      theme="vs-dark"
+                      onMount={handleMonacoMount}
+                      onChange={(value) => handleContentChange(value ?? "")}
+                      options={{
+                        readOnly: isReadOnly,
+                        minimap: { enabled: false },
+                        automaticLayout: true,
+                        scrollBeyondLastLine: false,
+                        smoothScrolling: true,
+                        wordWrap: "off",
+                        lineNumbers: "on",
+                        fontSize: 13,
+                        scrollbar: {
+                          alwaysConsumeMouseWheel: false,
+                        },
+                      }}
+                      loading={t("loadingGeneric") || "Loading..."}
+                    />
+                  </React.Suspense>
                 </div>
               ) : (
                 <textarea

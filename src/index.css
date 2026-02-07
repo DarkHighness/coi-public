@@ -232,6 +232,17 @@ input:disabled {
   touch-action: pan-y;
 }
 
+.state-editor-monaco {
+  height: 100%;
+  min-height: 0;
+}
+
+.state-editor-monaco .monaco-editor,
+.state-editor-monaco .monaco-editor .overflow-guard,
+.state-editor-monaco .monaco-editor .monaco-scrollable-element {
+  height: 100% !important;
+}
+
 .state-editor-cm .cm-content {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
