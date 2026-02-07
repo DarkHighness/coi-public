@@ -443,30 +443,6 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="inline-flex md:hidden items-center rounded-md border border-theme-divider/60 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setMobileView("files")}
-                className={`px-2.5 py-1 text-xs transition-colors ${
-                  mobileView === "files"
-                    ? "bg-theme-primary/20 text-theme-primary"
-                    : "text-theme-text-secondary hover:bg-theme-bg/20"
-                }`}
-              >
-                {t("stateEditor.mobileFiles") || "Files"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileView("editor")}
-                className={`px-2.5 py-1 text-xs transition-colors ${
-                  mobileView === "editor"
-                    ? "bg-theme-primary/20 text-theme-primary"
-                    : "text-theme-text-secondary hover:bg-theme-bg/20"
-                }`}
-              >
-                {t("stateEditor.mobileEditor") || "Editor"}
-              </button>
-            </div>
             <button
               type="button"
               onClick={handleToggleEditMode}
@@ -511,6 +487,33 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
         </div>
 
+        <div className="md:hidden flex-none px-3 py-2 border-b border-theme-divider/60 bg-theme-surface/75">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileView("files")}
+              className={`rounded-md py-2.5 text-sm font-semibold transition-colors ${
+                mobileView === "files"
+                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+              }`}
+            >
+              {t("stateEditor.mobileFiles") || "Files"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView("editor")}
+              className={`rounded-md py-2.5 text-sm font-semibold transition-colors ${
+                mobileView === "editor"
+                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+              }`}
+            >
+              {t("stateEditor.mobileEditor") || "Editor"}
+            </button>
+          </div>
+        </div>
+
         {/* Body */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* File Tree */}
@@ -524,13 +527,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-md bg-theme-bg/30 border border-theme-divider/60 text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
+                className="w-full text-sm md:text-xs px-3 py-2.5 md:py-2 rounded-md bg-theme-bg/30 border border-theme-divider/60 text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
                 placeholder={
                   t("stateEditor.searchPlaceholder") || "Search files..."
                 }
               />
             </div>
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-2 state-editor-scroll-y">
               {tree.children && tree.children.length > 0 ? (
                 renderTreeNode(tree)
               ) : (
@@ -548,6 +551,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             {/* Toolbar */}
             <div className="flex-none px-4 py-2.5 border-b border-theme-divider/60 bg-theme-surface/80 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setMobileView("files")}
+                  className="md:hidden shrink-0 px-2.5 py-1 rounded-md border border-theme-divider/60 text-xs text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/15 transition-colors"
+                >
+                  {t("stateEditor.mobileBackToFiles") || "Back to files"}
+                </button>
                 <span className="font-mono text-xs text-theme-text-secondary">
                   {selectedPath || t("stateEditor.noSelection") || "No file"}
                 </span>
@@ -613,14 +623,14 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             {/* Editor */}
             <div className="flex-1 overflow-hidden relative bg-theme-bg/80 min-h-0">
               {isMarkdownFile && markdownMode === "preview" ? (
-                <div className="h-full overflow-auto p-4 text-sm text-theme-text">
+                <div className="h-full overflow-auto p-4 text-sm text-theme-text state-editor-scroll-y">
                   <MarkdownText content={fileContent || ""} />
                 </div>
               ) : isReadOnly ? (
                 <textarea
                   value={fileContent}
                   readOnly
-                  className={`w-full h-full p-4 bg-transparent text-theme-text font-mono text-sm leading-relaxed resize-none focus:outline-none overflow-auto ${
+                  className={`w-full h-full p-4 bg-transparent text-theme-text font-mono text-sm leading-relaxed resize-none focus:outline-none overflow-auto state-editor-scroll-y ${
                     error ? "border-2 border-theme-error/50" : ""
                   } opacity-85`}
                   spellCheck={false}

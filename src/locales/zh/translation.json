@@ -1360,6 +1360,7 @@
     "previewMode": "预览",
     "mobileFiles": "文件",
     "mobileEditor": "编辑器",
+    "mobileBackToFiles": "返回文件列表",
     "confirmReadonlyEdit": "这是受保护文件，编辑可能破坏游戏状态。是否继续并为当前文件启用编辑？",
     "readonlyOverrideEnabled": "已为当前受保护文件启用编辑。"
   },

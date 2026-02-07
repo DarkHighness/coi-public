@@ -1323,6 +1323,7 @@
     "previewMode": "Preview",
     "mobileFiles": "Files",
     "mobileEditor": "Editor",
+    "mobileBackToFiles": "Back to files",
     "confirmReadonlyEdit": "This is a protected file. Editing it may break game state. Continue to enable editing for this file?",
     "readonlyOverrideEnabled": "Protected file editing enabled for this file."
   },

@@ -226,6 +226,12 @@ input:disabled {
   min-height: 0 !important;
 }
 
+.state-editor-scroll-y {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 .state-editor-cm .cm-content {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
