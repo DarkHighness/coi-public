@@ -94,6 +94,7 @@ import {
   composeSystemInstruction,
   getOutlineRuntimeFloor,
 } from "../../../prompts/runtimeFloor";
+import { validateGenderPreferencePhase2 } from "./genderValidation";
 
 const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase0Schema,
@@ -343,80 +344,6 @@ const formatOutlineSubmitValidationError = (error: unknown): string => {
       return path ? `${path}: ${message}` : message;
     })
     .join("; ");
-};
-
-const validateGenderPreferencePhase2 = (
-  phase2Data: unknown,
-  expectedGender: "male" | "female",
-): string | null => {
-  const playerVisible = (phase2Data as any)?.player?.profile?.visible ?? {};
-  const race = String(playerVisible?.race ?? "").toLowerCase();
-  const title = String(playerVisible?.title ?? "").toLowerCase();
-
-  const maleKeywords = [
-    "male",
-    "男",
-    "man",
-    "boy",
-    "他",
-    "先生",
-    "公子",
-    "少爷",
-    "王子",
-    "皇子",
-    "lord",
-    "prince",
-    "master",
-    "king",
-    "emperor",
-    "duke",
-    "sir",
-    "gentleman",
-  ];
-  const femaleKeywords = [
-    "female",
-    "女",
-    "woman",
-    "girl",
-    "她",
-    "小姐",
-    "夫人",
-    "姑娘",
-    "公主",
-    "皇后",
-    "lady",
-    "princess",
-    "queen",
-    "empress",
-    "duchess",
-    "miss",
-    "madam",
-    "mistress",
-  ];
-
-  const raceHasMale = maleKeywords.some((kw) => race.includes(kw));
-  const raceHasFemale = femaleKeywords.some((kw) => race.includes(kw));
-  const titleHasMale = maleKeywords.some((kw) => title.includes(kw));
-  const titleHasFemale = femaleKeywords.some((kw) => title.includes(kw));
-
-  const raceGender = raceHasFemale ? "female" : raceHasMale ? "male" : null;
-  const titleGender = titleHasFemale ? "female" : titleHasMale ? "male" : null;
-
-  if (raceGender !== null && raceGender !== expectedGender) {
-    return (
-      `Phase 2: Gender mismatch in race - protagonist must be ${expectedGender === "male" ? "male (男性)" : "female (女性)"}, ` +
-      `but visible.race is "${String(playerVisible?.race ?? "")}". Please resubmit Phase 2 with correct gender.`
-    );
-  }
-
-  if (titleGender !== null && titleGender !== expectedGender) {
-    return (
-      `Phase 2: Gender mismatch in title - visible.title "${String(playerVisible?.title ?? "")}" conflicts with required gender ` +
-      `${expectedGender === "male" ? "male (男性)" : "female (女性)"}. Please resubmit Phase 2 with a gender-appropriate title.`
-    );
-  }
-
-  return null;
 };
 
 /**
