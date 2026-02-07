@@ -1,6 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import type { GameState, SaveSlot, EmbeddingIndex, ForkTree } from "../types";
+import type {
+  EmbeddingIndex,
+  ForkTree,
+  GameState,
+  SaveSlot,
+} from "../types";
 import {
   saveMetadata,
   loadMetadata,
@@ -14,7 +19,6 @@ import { sessionManager } from "../services/ai/sessionManager";
 import { VfsSession } from "../services/vfs/vfsSession";
 import { IndexedDbVfsStore } from "../services/vfs/store";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
-import { mergeDerivedViewState } from "./vfsViewState";
 import {
   restoreVfsSessionFromSnapshot,
   saveVfsSessionSnapshot,
@@ -22,6 +26,8 @@ import {
 import { seedVfsSessionFromDefaults } from "../services/vfs/seed";
 import { deleteImagesBySaveId } from "../utils/imageStorage";
 import { getRAGService } from "../services/rag";
+import { loadRuntimeStats, persistRuntimeStats } from "./runtimeStatsStore";
+import { buildRestoredGameState } from "./vfsRestoreState";
 
 export const useVfsPersistence = (
   gameState: GameState,
@@ -105,8 +111,9 @@ export const useVfsPersistence = (
 
   const saveSnapshot = useCallback(
     async (slotId: string, state?: GameState) => {
-      const forkId = state?.forkId ?? gameState.forkId ?? 0;
-      const turn = state?.turnNumber ?? gameState.turnNumber ?? 0;
+      const snapshotState = state ?? gameState;
+      const forkId = snapshotState.forkId ?? 0;
+      const turn = snapshotState.turnNumber ?? 0;
 
       if (Object.keys(vfsSessionRef.current.snapshot()).length === 0) {
         seedVfsSessionFromDefaults(vfsSessionRef.current);
@@ -126,11 +133,12 @@ export const useVfsPersistence = (
         updatedAt: Date.now(),
       });
 
+      await persistRuntimeStats(slotId, snapshotState);
+
       // Update slots metadata so StartScreen "Continue" reflects real progress.
       // Keep it best-effort and lightweight.
       try {
         const now = Date.now();
-        const snapshotState = state ?? gameState;
         const currentFork = snapshotState.currentFork ?? [];
         const lastModel = [...currentFork]
           .reverse()
@@ -379,12 +387,15 @@ export const useVfsPersistence = (
               const storedUiState = await loadMetadata(
                 `ui_state:${lastSlotId}`,
               );
+              const runtimeStats = await loadRuntimeStats(lastSlotId);
               setGameState((prev) =>
-                mergeDerivedViewState(
-                  { ...prev, uiState: mergeUiState(prev.uiState, storedUiState) },
+                buildRestoredGameState({
+                  previous: prev,
                   derived,
-                  { resetRuntime: true },
-                ),
+                  storedUiState,
+                  runtimeStats,
+                  mergeUiState,
+                }),
               );
               setCurrentSlotId(lastSlotId);
 
@@ -629,12 +640,15 @@ export const useVfsPersistence = (
       restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
       const derived = deriveGameStateFromVfs(vfsSessionRef.current.snapshot());
       const storedUiState = await loadMetadata(`ui_state:${id}`);
+      const runtimeStats = await loadRuntimeStats(id);
       setGameState((prev) =>
-        mergeDerivedViewState(
-          { ...prev, uiState: mergeUiState(prev.uiState, storedUiState) },
+        buildRestoredGameState({
+          previous: prev,
           derived,
-          { resetRuntime: true },
-        ),
+          storedUiState,
+          runtimeStats,
+          mergeUiState,
+        }),
       );
 
       setCurrentSlotId(id);
@@ -684,7 +698,11 @@ export const useVfsPersistence = (
     }
 
     // Cleanup per-save metadata keys.
-    const metaKeys = [`vfs_latest:${id}`, `ui_state:${id}`];
+    const metaKeys = [
+      `vfs_latest:${id}`,
+      `ui_state:${id}`,
+      `runtime_stats:${id}`,
+    ];
     for (const key of metaKeys) {
       try {
         await deleteMetadata(key);
