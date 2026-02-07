@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { GameState, StorySegment } from "../types";
 import {
@@ -27,6 +27,58 @@ interface ActionPanelProps {
   onForceUpdate?: (prompt: string) => void;
   onJumpToSegment?: (segmentId: string) => void;
 }
+
+type ConfirmTone = "neutral" | "warning" | "danger";
+
+interface ConfirmDialogContent {
+  badge: string;
+  title: string;
+  description: string;
+  detail?: string;
+  confirmLabel: string;
+  tone: ConfirmTone;
+}
+
+interface ActiveConfirmDialog {
+  content: ConfirmDialogContent;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const CONFIRM_TONE_STYLES: Record<
+  ConfirmTone,
+  {
+    iconWrapper: string;
+    badge: string;
+    confirmButton: string;
+    iconPath: string;
+  }
+> = {
+  neutral: {
+    iconWrapper: "bg-theme-primary/12 text-theme-primary border border-theme-primary/25",
+    badge: "bg-theme-primary/12 text-theme-primary border border-theme-primary/25",
+    confirmButton:
+      "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg focus-visible:ring-theme-primary/35",
+    iconPath:
+      "M9 12.75l2.25 2.25L15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  },
+  warning: {
+    iconWrapper: "bg-theme-warning/12 text-theme-warning border border-theme-warning/30",
+    badge: "bg-theme-warning/12 text-theme-warning border border-theme-warning/30",
+    confirmButton:
+      "bg-theme-warning text-theme-bg hover:opacity-90 focus-visible:ring-theme-warning/35",
+    iconPath:
+      "M12 9v3.75m0 3.75h.008v.008H12v-.008zm8.714-4.5L13.714 4a2 2 0 00-3.428 0L3.286 12a2 2 0 001.714 3h13.999a2 2 0 001.715-3z",
+  },
+  danger: {
+    iconWrapper: "bg-theme-error/12 text-theme-error border border-theme-error/30",
+    badge: "bg-theme-error/12 text-theme-error border border-theme-error/30",
+    confirmButton:
+      "bg-theme-error text-theme-bg hover:opacity-90 focus-visible:ring-theme-error/35",
+    iconPath:
+      "M12 9v3.75m0 3.75h.008v.008H12v-.008zM9.172 4.172a4 4 0 015.656 0l4.999 4.999a4 4 0 010 5.656l-4.999 4.999a4 4 0 01-5.656 0l-5-5a4 4 0 010-5.655l5-5z",
+  },
+};
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
   onAction,
@@ -374,6 +426,171 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     setPendingCommand(null);
   };
 
+  const pendingActionConfig =
+    pendingAction === "retry"
+      ? {
+          badge: t("retryGeneration") || "Retry",
+          title: t("retryGeneration") || "Retry",
+          description:
+            t("confirmRetry") ||
+            "Regenerate the current turn from the same input.",
+          confirmLabel: t("actionPanel.confirm.retry") || "Retry now",
+          tone: "neutral" as const,
+        }
+      : pendingAction === "rebuild"
+        ? {
+            badge: t("rebuildContext") || "Rebuild Context",
+            title: t("rebuildContext") || "Rebuild Context",
+            description:
+              t("confirmRebuildContext") ||
+              "Summarize history and clear model cache before continuing.",
+            confirmLabel: t("actionPanel.confirm.rebuild") || "Rebuild now",
+            tone: "warning" as const,
+          }
+        : pendingAction === "cleanup"
+          ? {
+              badge: t("cleanupEntities") || "Cleanup",
+              title: t("cleanupEntities") || "Cleanup Entities",
+              description:
+                t("confirmCleanupEntities") ||
+                "Remove invalid or duplicate entities from game state.",
+              confirmLabel: t("actionPanel.confirm.cleanup") || "Cleanup now",
+              tone: "warning" as const,
+            }
+          : null;
+
+  const commandTone =
+    pendingCommand?.action.type === "god_mode" ||
+    pendingCommand?.action.type === "unlock_all" ||
+    pendingCommand?.action.type === "force_update"
+      ? "danger"
+      : "warning";
+
+  const commandTitle =
+    pendingCommand?.action.type === "god_mode"
+      ? pendingCommand.action.enable
+        ? t("commands.godMode.titleEnable") || "Enable God Mode"
+        : t("commands.godMode.titleDisable") || "Disable God Mode"
+      : pendingCommand?.action.type === "unlock_all"
+        ? t("commands.unlock.title") || "Unlock Hidden Information"
+        : pendingCommand?.action.type === "force_update"
+          ? t("commands.sudo.title") || "Force World Update"
+          : t("commands.confirmTitle") || "Confirm Command";
+
+  const commandBadge =
+    pendingCommand?.action.type === "god_mode"
+      ? t("commands.godMode.short") || "/god"
+      : pendingCommand?.action.type === "unlock_all"
+        ? t("commands.unlock.short") || "/unlock"
+        : pendingCommand?.action.type === "force_update"
+          ? t("commands.sudo.short") || "/sudo"
+          : t("commands.confirmBadge") || "Command";
+
+  const commandConfirmLabel =
+    pendingCommand?.action.type === "god_mode"
+      ? pendingCommand.action.enable
+        ? t("commands.godMode.confirmEnableCta") || "Enable"
+        : t("commands.godMode.confirmDisableCta") || "Disable"
+      : pendingCommand?.action.type === "unlock_all"
+        ? t("commands.unlock.confirmCta") || "Unlock all"
+        : pendingCommand?.action.type === "force_update"
+          ? t("commands.sudo.confirmCta") || "Apply update"
+          : t("confirm") || "Confirm";
+
+  const commandDescription =
+    pendingCommand?.action.type === "god_mode"
+      ? pendingCommand.action.enable
+        ? t("commands.godMode.enableSummary") ||
+          "All actions will succeed and world consistency constraints become permissive."
+        : t("commands.godMode.disableSummary") ||
+          "Return to normal success/failure logic and standard world constraints."
+      : pendingCommand?.action.type === "unlock_all"
+        ? t("commands.unlock.summary") ||
+          "Reveal hidden traits, motives, and secret state across the current world."
+        : pendingCommand?.action.type === "force_update"
+          ? t("commands.sudo.summary") ||
+            "Apply a direct world instruction that bypasses normal progression checks."
+          : t("commands.confirmDescription") ||
+            "Please review this command before continuing.";
+
+  const commandDetail =
+    pendingCommand?.action.type === "force_update"
+      ? `${t("commands.sudo.promptPreview") || "Instruction"}:\n${pendingCommand.action.prompt}`
+      : undefined;
+
+  const activeConfirmDialog: ActiveConfirmDialog | null = useMemo(() => {
+    if (pendingCommand) {
+      return {
+        content: {
+          badge: commandBadge,
+          title: commandTitle,
+          description: commandDescription,
+          detail: commandDetail,
+          confirmLabel: commandConfirmLabel,
+          tone: commandTone,
+        },
+        onConfirm: handleConfirmCommand,
+        onCancel: handleCancelCommand,
+      };
+    }
+
+    if (pendingAction && pendingActionConfig) {
+      return {
+        content: pendingActionConfig,
+        onConfirm: () => {
+          if (pendingAction === "retry") onRetry?.();
+          else if (pendingAction === "rebuild") onRebuildContext?.();
+          else if (pendingAction === "cleanup") onCleanupEntities?.();
+          setPendingAction(null);
+        },
+        onCancel: () => setPendingAction(null),
+      };
+    }
+
+    return null;
+  }, [
+    commandBadge,
+    commandDetail,
+    commandDescription,
+    commandConfirmLabel,
+    commandTitle,
+    commandTone,
+    handleCancelCommand,
+    onCleanupEntities,
+    onRebuildContext,
+    onRetry,
+    pendingAction,
+    pendingActionConfig,
+    pendingCommand,
+  ]);
+
+  useEffect(() => {
+    if (!activeConfirmDialog) {
+      return;
+    }
+
+    const handleConfirmKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        activeConfirmDialog.onCancel();
+        return;
+      }
+
+      if (e.key === "Enter") {
+        const target = e.target as HTMLElement | null;
+        const tagName = target?.tagName;
+        if (tagName === "TEXTAREA" || tagName === "INPUT") {
+          return;
+        }
+        e.preventDefault();
+        activeConfirmDialog.onConfirm();
+      }
+    };
+
+    window.addEventListener("keydown", handleConfirmKeydown);
+    return () => window.removeEventListener("keydown", handleConfirmKeydown);
+  }, [activeConfirmDialog]);
+
   const calculateRoll = () => {
     const d20 = Math.floor(Math.random() * 20) + 1;
     let outcome = t("fail");
@@ -526,57 +743,88 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         </div>
       )}
 
-      {/* Command Confirmation Modal */}
-      {pendingCommand && (
-        <div className="fixed inset-0 ui-overlay backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-theme-surface border border-theme-divider/60 rounded-xl shadow-lg max-w-md w-full p-6 animate-fade-in-up">
-            <div className="text-theme-text whitespace-pre-wrap text-sm mb-6">
-              {pendingCommand.message}
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleCancelCommand}
-                className="px-4 py-2 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
+      {/* Unified Confirmation Modal */}
+      {activeConfirmDialog && (
+        <div
+          className="fixed inset-0 ui-overlay backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              activeConfirmDialog.onCancel();
+            }
+          }}
+        >
+          <div
+            className="bg-theme-bg border border-theme-divider/60 rounded-xl shadow-lg max-w-lg w-full p-5 md:p-6 animate-fade-in-up"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="action-confirm-title"
+            aria-describedby="action-confirm-detail"
+          >
+            <div className="flex items-start gap-3 md:gap-4">
+              <div
+                className={`mt-0.5 shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone].iconWrapper}`}
               >
-                {t("cancel") || "Cancel"}
-              </button>
-              <button
-                onClick={handleConfirmCommand}
-                className="px-4 py-2 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-colors"
-              >
-                {t("confirm") || "Confirm"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                <svg
+                  className="w-4.5 h-4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.75"
+                    d={CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone].iconPath}
+                  ></path>
+                </svg>
+              </div>
 
-      {/* Action Confirmation Modal */}
-      {pendingAction && (
-        <div className="fixed inset-0 ui-overlay backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-theme-surface border border-theme-divider/60 rounded-xl shadow-lg max-w-md w-full p-6 animate-fade-in-up">
-            <div className="text-theme-text text-sm mb-6">
-              {pendingAction === "retry" && t("confirmRetry")}
-              {pendingAction === "rebuild" && t("confirmRebuildContext")}
-              {pendingAction === "cleanup" && t("confirmCleanupEntities")}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold ${CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone].badge}`}
+                  >
+                    {activeConfirmDialog.content.badge}
+                  </span>
+                </div>
+
+                <h3
+                  id="action-confirm-title"
+                  className="text-theme-text text-base md:text-lg font-semibold leading-tight"
+                >
+                  {activeConfirmDialog.content.title}
+                </h3>
+
+                <p className="mt-2 text-theme-text-secondary text-sm leading-6">
+                  {activeConfirmDialog.content.description}
+                </p>
+
+                {activeConfirmDialog.content.detail && (
+                  <pre
+                    id="action-confirm-detail"
+                    className="mt-3 whitespace-pre-wrap break-words text-[12px] leading-5 bg-theme-surface/50 border border-theme-divider/70 rounded-lg px-3 py-2 text-theme-text"
+                  >
+                    {activeConfirmDialog.content.detail}
+                  </pre>
+                )}
+              </div>
             </div>
-            <div className="flex gap-3 justify-end">
+
+            <div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
               <button
-                onClick={() => setPendingAction(null)}
-                className="px-4 py-2 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight rounded-lg transition-colors"
+                type="button"
+                onClick={activeConfirmDialog.onCancel}
+                className="px-4 py-2 rounded-lg border border-theme-divider/70 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/30"
               >
                 {t("cancel") || "Cancel"}
               </button>
               <button
-                onClick={() => {
-                  if (pendingAction === "retry") onRetry?.();
-                  else if (pendingAction === "rebuild") onRebuildContext?.();
-                  else if (pendingAction === "cleanup") onCleanupEntities?.();
-                  setPendingAction(null);
-                }}
-                className="px-4 py-2 bg-theme-primary hover:bg-theme-primary-hover text-theme-bg rounded-lg font-bold transition-colors"
+                type="button"
+                onClick={activeConfirmDialog.onConfirm}
+                className={`px-4 py-2 rounded-lg font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone].confirmButton}`}
               >
-                {t("confirm") || "Confirm"}
+                {activeConfirmDialog.content.confirmLabel}
               </button>
             </div>
           </div>

@@ -222,6 +222,13 @@
   "confirmRebuildContext": "确定要重建故事上下文吗？这将总结当前历史并清理 AI 的内存缓存。如果故事响应变慢或 AI 变得混乱，请使用此功能。",
   "confirmRetry": "确定要重新生成吗？这将重新生成当前回合的内容。",
   "confirmCleanupEntities": "确定要整理实体吗？这将清理游戏状态中已失效或重复的实体（如角色、物品、地点）。",
+  "actionPanel": {
+    "confirm": {
+      "retry": "立即重试",
+      "rebuild": "立即重建",
+      "cleanup": "立即整理"
+    }
+  },
   "loadError": "存档文件无效。",
   "menu": "菜单",
   "mainMenu": "主菜单",
@@ -1157,7 +1164,17 @@
     "inventory": "已知物品"
   },
   "commands": {
+    "confirmTitle": "确认命令",
+    "confirmBadge": "命令",
+    "confirmDescription": "请在继续前确认本次命令。",
     "godMode": {
+      "titleEnable": "启用上帝模式",
+      "titleDisable": "关闭上帝模式",
+      "confirmEnableCta": "确认启用",
+      "confirmDisableCta": "确认关闭",
+      "enableSummary": "所有行动将直接成功，世界一致性限制会更宽松。",
+      "disableSummary": "恢复正常成败逻辑和标准世界约束。",
+      "short": "/god",
       "confirmEnable": "⚠️ 上帝模式 ⚠️\n\n这将启用上帝模式：\n• 所有行动都会成功\n• 所有 NPC 无条件相信你\n• 你可以改变世界规则和逻辑\n\n这可能会严重影响游戏平衡。\n\n确定要启用上帝模式吗？",
       "confirmDisable": "关闭上帝模式并恢复正常游戏？",
       "enabled": "🔱 上帝模式已启用",
@@ -1165,10 +1182,19 @@
       "indicator": "上帝模式"
     },
     "unlock": {
+      "title": "解锁隐藏信息",
+      "confirmCta": "全部解锁",
+      "summary": "揭示当前世界中的隐藏特质、动机与秘密状态。",
+      "short": "/unlock",
       "confirm": "⚠️ 全部解锁 ⚠️\n\n这将揭示所有隐藏信息：\n• 物品的秘密和真实本质\n• NPC 的真实性格和动机\n• 地点的隐藏特性\n• 任务的真正目标\n• 知识的隐藏真相\n\n此操作无法撤销，可能会剧透故事。\n\n确定吗？",
       "success": "🔓 所有隐藏信息已解锁！"
     },
     "sudo": {
+      "title": "强制世界更新",
+      "confirmCta": "应用更新",
+      "summary": "直接应用世界指令，绕过常规流程一致性检查。",
+      "promptPreview": "指令",
+      "short": "/sudo",
       "confirm": "⚠️ SUDO ⚠️\n\n你正在试图强制以下变更:\n\"{{prompt}}\"\n\n这将绕过标准游戏框架和世界一致性。\n\n确定吗？",
       "missingPrompt": "使用方法: /sudo <prompt>"
     },

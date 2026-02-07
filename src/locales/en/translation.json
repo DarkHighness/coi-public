@@ -256,6 +256,13 @@
   "confirmRebuildContext": "Are you sure you want to rebuild the story context? This will summarize the current history and clear the AI's memory cache. Use this if the story becomes slow or the AI gets confused.",
   "confirmRetry": "Are you sure you want to retry? This will regenerate the current turn's content.",
   "confirmCleanupEntities": "Are you sure you want to cleanup entities? This will clean up invalid or duplicate entities (characters, items, locations) from the game state.",
+  "actionPanel": {
+    "confirm": {
+      "retry": "Retry now",
+      "rebuild": "Rebuild now",
+      "cleanup": "Cleanup now"
+    }
+  },
   "loadError": "Invalid save file.",
   "menu": "Menu",
   "mainMenu": "Main Menu",
@@ -1148,7 +1155,17 @@
     "inventory": "Possessions"
   },
   "commands": {
+    "confirmTitle": "Confirm Command",
+    "confirmBadge": "Command",
+    "confirmDescription": "Please review this command before continuing.",
     "godMode": {
+      "titleEnable": "Enable God Mode",
+      "titleDisable": "Disable God Mode",
+      "confirmEnableCta": "Enable",
+      "confirmDisableCta": "Disable",
+      "enableSummary": "All actions will succeed and world consistency constraints become permissive.",
+      "disableSummary": "Return to normal success/failure logic and standard world constraints.",
+      "short": "/god",
       "confirmEnable": "⚠️ GOD MODE ⚠️\n\nThis will enable God Mode where:\n• All your actions succeed\n• All NPCs believe you unconditionally\n• You can change world rules and logic\n\nThis may significantly impact game balance.\n\nAre you sure you want to enable God Mode?",
       "confirmDisable": "Disable God Mode and return to normal gameplay?",
       "enabled": "🔱 GOD MODE ENABLED",
@@ -1156,10 +1173,19 @@
       "indicator": "GOD MODE"
     },
     "unlock": {
+      "title": "Unlock Hidden Information",
+      "confirmCta": "Unlock all",
+      "summary": "Reveal hidden traits, motives, and secret state across the current world.",
+      "short": "/unlock",
       "confirm": "⚠️ UNLOCK ALL ⚠️\n\nThis will reveal ALL hidden information:\n• Item secrets and true nature\n• NPC true personalities and motives\n• Location hidden features\n• Quest true objectives\n• Knowledge hidden truths\n\nThis cannot be undone and may spoil the story.\n\nAre you sure?",
       "success": "🔓 All hidden information unlocked!"
     },
     "sudo": {
+      "title": "Force World Update",
+      "confirmCta": "Apply update",
+      "summary": "Apply a direct world instruction that bypasses normal progression checks.",
+      "promptPreview": "Instruction",
+      "short": "/sudo",
       "confirm": "⚠️ SUDO ⚠️\n\nYou are about to force the following change:\n\"{{prompt}}\"\n\nThis will bypass standard game logic and consistency checks.\n\nAre you sure?",
       "missingPrompt": "Usage: /sudo <prompt>"
     },
