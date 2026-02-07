@@ -60,6 +60,97 @@ export function createCommandActions({
   saveToSlot,
   triggerSave,
 }: CommandActionsDeps) {
+  const requireNonEmptyVfsSnapshot = (operation: string) => {
+    const snapshot = vfsSession.snapshot() ?? {};
+    if (Object.keys(snapshot).length === 0) {
+      throw new Error(
+        `VFS snapshot is empty after ${operation}. Ensure tools wrote state files.`,
+      );
+    }
+    return snapshot;
+  };
+
+  const getParentSummaryState = (parentId: string | null | undefined) => {
+    const parentNode = parentId ? gameStateRef.current.nodes[parentId] : undefined;
+    const baseSummaries = parentNode?.summaries || [];
+    const baseIndex = parentNode?.summarizedIndex || 0;
+    const nextSegmentIdx = (parentNode?.segmentIdx ?? -1) + 1;
+
+    return { baseSummaries, baseIndex, nextSegmentIdx };
+  };
+
+  const sanitizeNodeChoices = (choices: any, fallbackChoice: string) => {
+    if (!Array.isArray(choices) || choices.length === 0) {
+      return [fallbackChoice];
+    }
+
+    const normalized = choices.map((choice: any) => {
+      if (typeof choice === "string") {
+        return choice;
+      }
+
+      if (typeof choice === "object" && choice !== null) {
+        return {
+          text: choice.text || choice.choice || choice.label || "Continue",
+          consequence: choice.consequence,
+        };
+      }
+
+      return String(choice);
+    });
+
+    return normalized.length > 0 ? normalized : [fallbackChoice];
+  };
+
+  const buildSystemNode = ({
+    id,
+    parentId,
+    text,
+    choices,
+    atmosphere,
+    narrativeTone,
+    segmentIdx,
+    baseSummaries,
+    baseIndex,
+    derivedState,
+    viewState,
+  }: {
+    id: string;
+    parentId: string | null;
+    text: string;
+    choices: any[];
+    atmosphere: AtmosphereObject;
+    narrativeTone?: string;
+    segmentIdx: number;
+    baseSummaries: any[];
+    baseIndex: number;
+    derivedState: GameState;
+    viewState: GameState;
+  }): StorySegment => ({
+    segmentIdx,
+    id,
+    parentId,
+    text,
+    choices,
+    imagePrompt: "",
+    role: "system",
+    timestamp: Date.now(),
+    atmosphere,
+    narrativeTone,
+    ending: "continue",
+    summaries: baseSummaries,
+    summarizedIndex: baseIndex,
+    stateSnapshot: createStateSnapshot(derivedState, {
+      summaries: baseSummaries,
+      lastSummarizedIndex: baseIndex,
+      currentLocation: derivedState.currentLocation,
+      time: derivedState.time,
+      atmosphere,
+      veoScript: viewState.veoScript,
+      uiState: viewState.uiState,
+    }),
+  });
+
   const navigateToNode = async (
     nodeId: string,
     isFork: boolean = false,
@@ -230,12 +321,7 @@ export function createCommandActions({
         }));
       }
 
-      const vfsSnapshot = vfsSession.snapshot();
-      if (Object.keys(vfsSnapshot).length === 0) {
-        throw new Error(
-          "VFS snapshot is empty after force update. Ensure tools wrote state files.",
-        );
-      }
+      const vfsSnapshot = requireNonEmptyVfsSnapshot("force update");
       const derivedState = deriveGameStateFromVfs(vfsSnapshot);
       const viewState = mergeDerivedViewState(gameStateRef.current, derivedState);
 
@@ -246,13 +332,10 @@ export function createCommandActions({
       const newSegmentId = Date.now().toString();
       const commandNodeId = `command-${newSegmentId}`;
       const parentId = gameStateRef.current.activeNodeId;
-
-      const parentNode = gameStateRef.current.nodes[parentId];
-      const baseSummaries = parentNode?.summaries || [];
-      const baseIndex = parentNode?.summarizedIndex || 0;
+      const parentSummaryState = getParentSummaryState(parentId);
 
       const commandNode: StorySegment = {
-        segmentIdx: (gameStateRef.current.nodes[parentId]?.segmentIdx ?? -1) + 1,
+        segmentIdx: parentSummaryState.nextSegmentIdx,
         id: commandNodeId,
         parentId,
         text: prompt,
@@ -262,11 +345,11 @@ export function createCommandActions({
         timestamp: Date.now(),
         atmosphere: gameStateRef.current.atmosphere,
         ending: "continue",
-        summaries: baseSummaries,
-        summarizedIndex: baseIndex,
+        summaries: parentSummaryState.baseSummaries,
+        summarizedIndex: parentSummaryState.baseIndex,
         stateSnapshot: createStateSnapshot(gameStateRef.current, {
-          summaries: baseSummaries,
-          lastSummarizedIndex: baseIndex,
+          summaries: parentSummaryState.baseSummaries,
+          lastSummarizedIndex: parentSummaryState.baseIndex,
           currentLocation: gameStateRef.current.currentLocation,
           time: gameStateRef.current.time,
           atmosphere: gameStateRef.current.atmosphere,
@@ -275,47 +358,20 @@ export function createCommandActions({
         }),
       };
 
-      const sanitizedChoices = Array.isArray(response.choices)
-        ? response.choices.map((choice: any) => {
-            if (typeof choice === "object" && choice !== null) {
-              const normalizedChoice = choice as any;
-              return {
-                text:
-                  normalizedChoice.text ||
-                  normalizedChoice.choice ||
-                  normalizedChoice.label ||
-                  "Continue",
-                consequence: normalizedChoice.consequence,
-              };
-            }
-            return String(choice);
-          })
-        : [];
-
       const resultNodeId = `system-${newSegmentId}`;
-      const resultNode: StorySegment = {
-        segmentIdx: (commandNode.segmentIdx ?? -1) + 1,
+      const resultNode = buildSystemNode({
         id: resultNodeId,
         parentId: commandNodeId,
         text: response.narrative,
-        choices: sanitizedChoices.length > 0 ? sanitizedChoices : [t("continue")],
-        role: "system",
-        timestamp: Date.now() + 1,
+        choices: sanitizeNodeChoices(response.choices, t("continue")),
         atmosphere: responseAtmosphere,
         narrativeTone: response.narrativeTone,
-        ending: "continue",
-        summaries: baseSummaries,
-        summarizedIndex: baseIndex,
-        stateSnapshot: createStateSnapshot(derivedState, {
-          summaries: baseSummaries,
-          lastSummarizedIndex: baseIndex,
-          currentLocation: derivedState.currentLocation,
-          time: derivedState.time,
-          atmosphere: responseAtmosphere,
-          veoScript: viewState.veoScript,
-          uiState: viewState.uiState,
-        }),
-      };
+        segmentIdx: parentSummaryState.nextSegmentIdx + 1,
+        baseSummaries: parentSummaryState.baseSummaries,
+        baseIndex: parentSummaryState.baseIndex,
+        derivedState,
+        viewState,
+      });
 
       setGameState((prev) => {
         const mergedBase = mergeDerivedViewState(prev, derivedState);
@@ -435,56 +491,27 @@ export function createCommandActions({
         }));
       }
 
-      const vfsSnapshot = vfsSession.snapshot() ?? {};
-      if (Object.keys(vfsSnapshot).length === 0) {
-        throw new Error(
-          "VFS snapshot is empty after cleanup. Ensure tools wrote state files.",
-        );
-      }
+      const vfsSnapshot = requireNonEmptyVfsSnapshot("cleanup");
       const derivedState = deriveGameStateFromVfs(vfsSnapshot);
       const viewState = mergeDerivedViewState(gameStateRef.current, derivedState);
 
       const newSegmentId = Date.now().toString();
       const cleanupNodeId = `cleanup-${newSegmentId}`;
       const parentId = gameStateRef.current.activeNodeId;
+      const parentSummaryState = getParentSummaryState(parentId);
 
-      const parentNode = gameStateRef.current.nodes[parentId];
-      const baseSummaries = parentNode?.summaries || [];
-      const baseIndex = parentNode?.summarizedIndex || 0;
-
-      const cleanupNode: StorySegment = {
-        segmentIdx: (gameStateRef.current.nodes[parentId]?.segmentIdx ?? -1) + 1,
+      const cleanupNode = buildSystemNode({
         id: cleanupNodeId,
         parentId,
         text: response.narrative || "Entity cleanup completed.",
-        choices:
-          Array.isArray(response.choices) && response.choices.length > 0
-            ? response.choices.map((choice: any) =>
-                typeof choice === "string"
-                  ? choice
-                  : {
-                      text: choice.text || "Continue",
-                      consequence: choice.consequence,
-                    },
-              )
-            : [t("continue")],
-        imagePrompt: "",
-        role: "system",
-        timestamp: Date.now(),
+        choices: sanitizeNodeChoices(response.choices, t("continue")),
         atmosphere: gameStateRef.current.atmosphere,
-        ending: "continue",
-        summaries: baseSummaries,
-        summarizedIndex: baseIndex,
-        stateSnapshot: createStateSnapshot(derivedState, {
-          summaries: baseSummaries,
-          lastSummarizedIndex: baseIndex,
-          currentLocation: derivedState.currentLocation,
-          time: derivedState.time,
-          atmosphere: gameStateRef.current.atmosphere,
-          veoScript: viewState.veoScript,
-          uiState: viewState.uiState,
-        }),
-      };
+        segmentIdx: parentSummaryState.nextSegmentIdx,
+        baseSummaries: parentSummaryState.baseSummaries,
+        baseIndex: parentSummaryState.baseIndex,
+        derivedState,
+        viewState,
+      });
 
       setGameState((prev) => {
         const mergedBase = mergeDerivedViewState(prev, derivedState);

@@ -214,4 +214,114 @@ describe("runSummaryLoop", () => {
     expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
     expect((input.vfsSession as any).mergeJson).toHaveBeenCalledTimes(2); // baseline + rollback
   });
+
+  it("rejects finish calls when finish is not the last tool", async () => {
+    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+
+    mockCallWithAgenticRetry
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            { id: "call_finish", name: finishTool, args: {} },
+            { id: "call_read", name: "vfs_read_json", args: {} },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      })
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [{ id: "call_finish_ok", name: finishTool, args: {} }],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      });
+
+    const input = makeInput();
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary?.id).toBe("s1");
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
+      finishTool,
+      {},
+      expect.any(Object),
+    );
+  });
+
+  it("rejects multiple finish calls in one response", async () => {
+    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+
+    mockCallWithAgenticRetry
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            { id: "call_finish_1", name: finishTool, args: {} },
+            { id: "call_finish_2", name: finishTool, args: {} },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      })
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [{ id: "call_finish_ok", name: finishTool, args: {} }],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      });
+
+    const input = makeInput();
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary?.id).toBe("s1");
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("enforces finish-only mode when budget is critically low", async () => {
+    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+
+    mockCallWithAgenticRetry
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [{ id: "call_read", name: "vfs_read_json", args: {} }],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      })
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [{ id: "call_finish", name: finishTool, args: {} }],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      });
+
+    const input = makeInput({
+      settings: {
+        ...makeInput().settings,
+        extra: {
+          maxToolCalls: 2,
+          maxAgenticRounds: 3,
+          maxErrorRetries: 3,
+        },
+      } as any,
+    });
+
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary?.id).toBe("s1");
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
+    expect(mockCallWithAgenticRetry.mock.calls[0]?.[3]?.requiredToolName).toBe(
+      finishTool,
+    );
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
+      finishTool,
+      {},
+      expect.any(Object),
+    );
+  });
 });

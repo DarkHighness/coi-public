@@ -29,22 +29,37 @@ export interface CommandContext {
   t: (key: string, values?: Record<string, string>) => string;
 }
 
-// Available commands
-const COMMANDS: Record<string, CommandHandler> = {
-  "/god": handleGodMode,
-  "/unlock": handleUnlockAll,
-  "/edit": handleOpenEditor,
-  "/rag": handleOpenRAG,
-  "/view": handleOpenViewer,
-  "/rules": handleOpenRules,
-  "/sudo": handleForceUpdate,
-  "/help": handleHelp,
-};
+export interface CommandDefinition {
+  cmd: string;
+  desc: string;
+}
 
 type CommandHandler = (
   args: string[],
   context: CommandContext,
 ) => CommandResult;
+
+interface InternalCommandDefinition extends CommandDefinition {
+  handler: CommandHandler;
+}
+
+const COMMAND_DEFINITION_ENTRIES: InternalCommandDefinition[] = [
+  { cmd: "/god", desc: "Toggle God Mode", handler: handleGodMode },
+  { cmd: "/unlock", desc: "Unlock All Info", handler: handleUnlockAll },
+  { cmd: "/edit", desc: "Edit State", handler: handleOpenEditor },
+  { cmd: "/rag", desc: "RAG Debugger", handler: handleOpenRAG },
+  { cmd: "/view", desc: "View State", handler: handleOpenViewer },
+  { cmd: "/rules", desc: "Custom Rules", handler: handleOpenRules },
+  { cmd: "/sudo", desc: "Force Update", handler: handleForceUpdate },
+  { cmd: "/help", desc: "Show Help", handler: handleHelp },
+];
+
+export const COMMAND_DEFINITIONS: CommandDefinition[] =
+  COMMAND_DEFINITION_ENTRIES.map(({ cmd, desc }) => ({ cmd, desc }));
+
+const COMMANDS: Record<string, CommandHandler> = Object.fromEntries(
+  COMMAND_DEFINITION_ENTRIES.map(({ cmd, handler }) => [cmd, handler]),
+);
 
 /**
  * Parse and execute a command if the input starts with /
@@ -79,11 +94,11 @@ export function parseCommand(
  * /god - Toggle God Mode
  */
 function handleGodMode(args: string[], context: CommandContext): CommandResult {
+  void args;
   const { gameState, t } = context;
   const currentGodMode = gameState.godMode ?? false;
   const newGodMode = !currentGodMode;
 
-  // Require confirmation via alert
   const confirmMessage = newGodMode
     ? t("commands.godMode.confirmEnable") ||
       "⚠️ GOD MODE ⚠️\n\nThis will enable God Mode where:\n• All your actions succeed\n• All NPCs believe you unconditionally\n• You can change world rules and logic\n\nThis may significantly impact game balance.\n\nAre you sure you want to enable God Mode?"
@@ -105,6 +120,7 @@ function handleUnlockAll(
   args: string[],
   context: CommandContext,
 ): CommandResult {
+  void args;
   const { t } = context;
 
   const confirmMessage =
@@ -126,6 +142,8 @@ function handleOpenEditor(
   args: string[],
   context: CommandContext,
 ): CommandResult {
+  void args;
+  void context;
   return {
     handled: true,
     preventAction: true,
@@ -137,6 +155,8 @@ function handleOpenEditor(
  * /rag - Open RAG Debugger
  */
 function handleOpenRAG(args: string[], context: CommandContext): CommandResult {
+  void args;
+  void context;
   return {
     handled: true,
     preventAction: true,
@@ -151,6 +171,8 @@ function handleOpenViewer(
   args: string[],
   context: CommandContext,
 ): CommandResult {
+  void args;
+  void context;
   return {
     handled: true,
     preventAction: true,
@@ -165,6 +187,8 @@ function handleOpenRules(
   args: string[],
   context: CommandContext,
 ): CommandResult {
+  void args;
+  void context;
   return {
     handled: true,
     preventAction: true,
@@ -191,7 +215,7 @@ function handleForceUpdate(
   }
 
   const confirmMessage =
-    t("commands.sudo.confirm", { prompt: prompt }) ||
+    t("commands.sudo.confirm", { prompt }) ||
     `⚠️ FORCE UPDATE ⚠️\n\nYou are about to force the following change:\n"${prompt}"\n\nThis will bypass standard game logic and consistency checks.\n\nAre you sure?`;
 
   return {
@@ -206,19 +230,21 @@ function handleForceUpdate(
  * /help - Show available commands
  */
 function handleHelp(args: string[], context: CommandContext): CommandResult {
+  void args;
   const { t } = context;
 
-  const helpText =
-    t("commands.help") ||
-    `Available Commands:
-/god - Toggle God Mode (all actions succeed, NPCs obey)
-/unlock - Reveal all hidden information
-/edit - Open GameState editor
-/rag - Open RAG Debugger
-/view - Open Game State Viewer
-/rules - Open Custom Rules Editor
-/sudo <prompt> - Force world update (one-time)
-/help - Show this help message`;
+  const fallbackHelpText = [
+    "Available Commands:",
+    ...COMMAND_DEFINITIONS.map(({ cmd, desc }) => {
+      if (cmd === "/sudo") {
+        return `${cmd} <prompt> - ${desc}`;
+      }
+      return `${cmd} - ${desc}`;
+    }),
+  ].join("\n");
+
+  const translatedHelp = t("commands.help");
+  const helpText = translatedHelp || fallbackHelpText;
 
   return {
     handled: true,
@@ -255,7 +281,7 @@ export function executeCommandAction(
     case "open_rag":
     case "open_viewer":
     case "open_rules":
-      // This is handled by the UI component
+    case "force_update":
       break;
 
     case "none":

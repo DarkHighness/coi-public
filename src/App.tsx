@@ -506,7 +506,6 @@ function AppContent() {
                     setImportFile(file);
                     setIsSaveManagerOpen(true);
                   }}
-                  onOpenSaves={() => setIsSaveManagerOpen(true)}
                   onSettings={() => setIsSettingsOpen(true)}
                   latestSave={
                     saveSlots.length > 0

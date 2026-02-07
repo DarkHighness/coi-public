@@ -251,6 +251,7 @@ export const useGameAction = ({
           language,
           vfsSession,
           currentSlotId,
+          currentForkId,
         );
 
         // Update logs if summarization occurred
@@ -592,9 +593,6 @@ export const useGameAction = ({
           // CRITICAL: Update ref immediately to ensure generateImageForNode can see the new node
           gameStateRef.current = updatedState;
 
-          // Trigger save
-          triggerSave();
-
           return updatedState;
         });
 
@@ -732,6 +730,7 @@ export const useGameAction = ({
           language,
           vfsSession,
           currentSlotId,
+          gameStateRef.current.forkId ?? 0,
           true, // FORCE SUMMARIZE
         );
 

@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameState, StorySegment, TokenUsage } from "../types";
-import { createModelNode } from "./gameActionHelpers";
+
+const summarizeContextMock = vi.hoisted(() => vi.fn());
+
+vi.mock("../services/aiService", () => ({
+  summarizeContext: summarizeContextMock,
+}));
+
+import { createModelNode, handleSummarization } from "./gameActionHelpers";
 
 const baseUsage: TokenUsage = {
   promptTokens: 10,
@@ -93,6 +100,31 @@ const createMinimalGameState = (overrides: Partial<GameState> = {}): GameState =
     ...overrides,
   };
 };
+
+const createSummary = (id: string, toIndex: number) =>
+  ({
+    id,
+    displayText: "summary",
+    visible: {
+      narrative: "narrative",
+      majorEvents: [],
+      characterDevelopment: "",
+      worldState: "",
+    },
+    hidden: {
+      truthNarrative: "",
+      hiddenPlots: [],
+      npcActions: [],
+      worldTruth: "",
+      unrevealed: [],
+    },
+    nodeRange: { fromIndex: 0, toIndex },
+    lastSummarizedIndex: toIndex + 1,
+  }) as any;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("createModelNode", () => {
   it("throws when finalState is missing", () => {
@@ -189,5 +221,114 @@ describe("createModelNode", () => {
       ambience: "forest",
     });
     expect(modelNode.stateSnapshot?.atmosphere.envTheme).toBe("horror");
+  });
+});
+
+describe("handleSummarization", () => {
+  const aiSettings = {
+    story: { providerId: "p1", modelId: "m1" },
+    extra: { autoCompactEnabled: true, autoCompactThreshold: 0.7 },
+  } as any;
+
+  it("uses explicit currentForkId instead of gameState.forkId", async () => {
+    const parentNode = {
+      id: "model-parent",
+      parentId: null,
+      role: "model",
+      text: "parent",
+      choices: [],
+      segmentIdx: 0,
+      summarizedIndex: 0,
+      summaries: [],
+      usage: { promptTokens: 100 },
+      timestamp: 0,
+      ending: "continue",
+    } as any;
+
+    const gameState = createMinimalGameState({
+      nodes: { [parentNode.id]: parentNode },
+      activeNodeId: parentNode.id,
+      forkId: 1,
+    });
+
+    summarizeContextMock.mockResolvedValue({
+      summary: createSummary("s1", 0),
+      logs: [],
+    });
+
+    await handleSummarization(
+      gameState,
+      parentNode.id,
+      "user-temp",
+      "Inspect the room",
+      [],
+      0,
+      false,
+      aiSettings,
+      "en",
+      {} as any,
+      "slot-1",
+      7,
+      true,
+    );
+
+    expect(summarizeContextMock).toHaveBeenCalledWith(
+      expect.objectContaining({ forkId: 7 }),
+    );
+  });
+
+  it("keeps compact boundary on committed nodes only and excludes pending action", async () => {
+    const parentNode = {
+      id: "model-parent",
+      parentId: null,
+      role: "model",
+      text: "parent",
+      choices: [],
+      segmentIdx: 0,
+      summarizedIndex: 0,
+      summaries: [],
+      usage: { promptTokens: 100 },
+      timestamp: 0,
+      ending: "continue",
+    } as any;
+
+    const gameState = createMinimalGameState({
+      nodes: { [parentNode.id]: parentNode },
+      activeNodeId: parentNode.id,
+      forkId: 0,
+    });
+
+    summarizeContextMock.mockResolvedValue({
+      summary: createSummary("s2", 0),
+      logs: [],
+    });
+
+    const result = await handleSummarization(
+      gameState,
+      parentNode.id,
+      "user-temp",
+      "Pending player action",
+      [],
+      0,
+      false,
+      aiSettings,
+      "en",
+      {} as any,
+      "slot-1",
+      0,
+      true,
+    );
+
+    expect(summarizeContextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodeRange: { fromIndex: 0, toIndex: 0 },
+        pendingPlayerAction: {
+          segmentIdx: 1,
+          text: "Pending player action",
+        },
+      }),
+    );
+    expect(result.lastIndex).toBe(1);
+    expect(result.contextNodes).toHaveLength(2);
   });
 });

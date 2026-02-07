@@ -98,6 +98,19 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
   const generateId = () =>
     `rule_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
+  const commitRules = (updater: (currentRules: CustomRule[]) => CustomRule[]) => {
+    const currentRules = gameState.customRules || [];
+    const nextRules = updater(currentRules);
+    const nextState = applyVfsStateEdit({
+      session: vfsSession,
+      section: "customRules",
+      data: nextRules,
+      baseState: gameState,
+    });
+    applyVfsMutation(nextState);
+    return nextRules;
+  };
+
   // Add new rule
   const handleAddRule = () => {
     if (!newTitle.trim() || !newContent.trim()) {
@@ -115,14 +128,7 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       createdAt: Date.now(),
     };
 
-    const nextRules = [...(gameState.customRules || []), newRule];
-    const nextState = applyVfsStateEdit({
-      session: vfsSession,
-      section: "customRules",
-      data: nextRules,
-      baseState: gameState,
-    });
-    applyVfsMutation(nextState);
+    commitRules((currentRules) => [...currentRules, newRule]);
 
     setNewTitle("");
     setNewContent("");
@@ -136,18 +142,13 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
       return;
     }
 
-    const nextRules = (gameState.customRules || []).map((r) =>
-      r.id === editingRule.id
-        ? { ...r, title: newTitle.trim(), content: newContent.trim() }
-        : r,
+    commitRules((currentRules) =>
+      currentRules.map((rule) =>
+        rule.id === editingRule.id
+          ? { ...rule, title: newTitle.trim(), content: newContent.trim() }
+          : rule,
+      ),
     );
-    const nextState = applyVfsStateEdit({
-      session: vfsSession,
-      section: "customRules",
-      data: nextRules,
-      baseState: gameState,
-    });
-    applyVfsMutation(nextState);
 
     setEditingRule(null);
     setNewTitle("");
@@ -158,29 +159,17 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
 
   // Delete rule
   const handleDeleteRule = (id: string) => {
-    const nextRules = (gameState.customRules || []).filter((r) => r.id !== id);
-    const nextState = applyVfsStateEdit({
-      session: vfsSession,
-      section: "customRules",
-      data: nextRules,
-      baseState: gameState,
-    });
-    applyVfsMutation(nextState);
+    commitRules((currentRules) => currentRules.filter((rule) => rule.id !== id));
     onShowToast?.(t("rules.deleted"), "info");
   };
 
   // Toggle rule enabled
   const handleToggleRule = (id: string) => {
-    const nextRules = (gameState.customRules || []).map((r) =>
-      r.id === id ? { ...r, enabled: !r.enabled } : r,
+    commitRules((currentRules) =>
+      currentRules.map((rule) =>
+        rule.id === id ? { ...rule, enabled: !rule.enabled } : rule,
+      ),
     );
-    const nextState = applyVfsStateEdit({
-      session: vfsSession,
-      section: "customRules",
-      data: nextRules,
-      baseState: gameState,
-    });
-    applyVfsMutation(nextState);
   };
 
   // Start editing a rule

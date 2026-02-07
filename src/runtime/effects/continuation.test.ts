@@ -209,4 +209,14 @@ describe("runLoadSlotForPlay", () => {
       reason: "runtime.loadSlot",
     });
   });
+
+  it("returns invalid-state when load succeeds but has neither outline nor outlineConversation", async () => {
+    const deps = createLoadDeps({
+      loadSlot: vi.fn(async () => ({ success: true })),
+    });
+
+    const result = await runLoadSlotForPlay(deps as any, "slot-4");
+
+    expect(result).toBe("invalid-state");
+  });
 });

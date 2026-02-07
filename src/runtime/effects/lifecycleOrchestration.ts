@@ -3,7 +3,7 @@ import type { TFunction } from "i18next";
 import { THEMES, LANG_MAP } from "../../utils/constants";
 import { preloadAudio } from "../../utils/audioLoader";
 import { saveImage } from "../../utils/imageStorage";
-import { getThemeName } from "../../services/ai/utils";
+import { getThemeName, IMAGE_BASED_THEME } from "../../services/ai/utils";
 import { HistoryCorruptedError } from "../../services/ai/contextCompressor";
 import type { OutlinePhaseProgress } from "../../services/aiService";
 import type { AISettings, GameState } from "../../types";
@@ -50,6 +50,30 @@ interface LifecycleActionsDeps {
   resetState: (theme: string) => void;
 }
 
+interface BuildOpeningStateParams {
+  outline: any;
+  logs: any[];
+  themeConfig: any;
+  theme: string;
+  language: string;
+  customContext?: string;
+  seedImageId?: string;
+  includeCustomContextInPrompt?: boolean;
+  clearLiveToolCalls?: boolean;
+}
+
+interface CommitOutlineStateParams {
+  saveId: string;
+  outline: any;
+  themeConfig: any;
+  theme: string;
+  language: string;
+  customContext?: string;
+  nextState: GameState;
+  seedImageId?: string;
+  logPrefix: string;
+}
+
 export function createLifecycleActions({
   aiSettings,
   language,
@@ -69,6 +93,96 @@ export function createLifecycleActions({
 }: LifecycleActionsDeps) {
   const confirmAction: Confirm = confirm ?? ((message?: string) => window.confirm(message));
 
+  const buildOpeningState = ({
+    outline,
+    logs,
+    themeConfig,
+    theme,
+    language,
+    customContext,
+    seedImageId,
+    includeCustomContextInPrompt = false,
+    clearLiveToolCalls = false,
+  }: BuildOpeningStateParams): GameState => {
+    const hydratedState = buildOutlineHydratedState({
+      baseState: gameStateRef.current,
+      outline,
+      logs,
+      themeConfig,
+      language,
+      customContext,
+      themeOverride: theme,
+      seedImageId,
+      clearLiveToolCalls,
+    });
+
+    const { firstNode, openingAtmosphere, fallbackPrompt } =
+      buildOpeningNarrativeSegment({
+        outline,
+        baseState: hydratedState,
+        theme,
+        t,
+        customContext,
+        includeCustomContextInPrompt,
+        seedImageId,
+      });
+
+    try {
+      vfsSession.mergeJson("world/global.json", {
+        initialPrompt: fallbackPrompt,
+      });
+    } catch (error) {
+      console.warn("[Lifecycle] Failed to persist initialPrompt in VFS", error);
+    }
+
+    return applyOpeningNarrativeState(
+      hydratedState,
+      firstNode,
+      openingAtmosphere,
+      fallbackPrompt,
+    );
+  };
+
+  const commitOutlineState = async ({
+    saveId,
+    outline,
+    themeConfig,
+    theme,
+    language,
+    customContext,
+    nextState,
+    seedImageId,
+    logPrefix,
+  }: CommitOutlineStateParams): Promise<void> => {
+    gameStateRef.current = nextState;
+    setGameState(nextState);
+    navigate("/game");
+
+    try {
+      await persistOutlineCheckpoint({
+        outline,
+        themeConfig,
+        theme,
+        language,
+        customContext,
+        saveId,
+        nextState,
+        vfsSession,
+        saveToSlot,
+        seedImageId,
+      });
+      console.log(`[${logPrefix}] Outline checkpoint saved`);
+    } catch (error) {
+      console.error(`[${logPrefix}] Failed to save outline checkpoint`, error);
+    }
+
+    if (aiSettings.embedding?.enabled) {
+      indexInitialEntities(nextState, saveId).catch((error) => {
+        console.error(`[${logPrefix}] Failed to index initial entities:`, error);
+      });
+    }
+  };
+
   const startNewGame = async (
     initialTheme?: string,
     customContext?: string,
@@ -80,7 +194,7 @@ export function createLifecycleActions({
   ): Promise<void> => {
     let selectedTheme: string;
     if (seedImage && !initialTheme) {
-      selectedTheme = "";
+      selectedTheme = IMAGE_BASED_THEME;
     } else {
       const selectableThemeKeys = Object.keys(THEMES).filter(
         (key) => key !== "custom",
@@ -102,7 +216,7 @@ export function createLifecycleActions({
       );
     }
 
-    const displayTheme = selectedTheme || "ImageBased";
+    const displayTheme = selectedTheme || IMAGE_BASED_THEME;
     const persistedTheme = selectedTheme || "fantasy";
 
     const slotId = existingSlotId || createSaveSlot(displayTheme);
@@ -291,111 +405,37 @@ export function createLifecycleActions({
     }
 
     try {
-      setGameState((prev) =>
-        buildOutlineHydratedState({
-          baseState: prev,
-          outline,
-          logs,
-          themeConfig,
-          language,
-          customContext,
-          themeOverride: selectedTheme,
-          seedImageId,
-        }),
+      const nextState = buildOpeningState({
+        outline,
+        logs,
+        themeConfig,
+        theme: selectedTheme,
+        language,
+        customContext,
+        seedImageId,
+      });
+
+      await commitOutlineState({
+        saveId: slotId,
+        outline,
+        themeConfig,
+        theme: selectedTheme,
+        language,
+        customContext,
+        nextState,
+        seedImageId,
+        logPrefix: "StartNewGame",
+      });
+
+      console.log(
+        "[StartNewGame] First segment created from Phase 9 openingNarrative",
       );
-
-      setTimeout(async () => {
-        try {
-          const nextState = {
-            ...gameStateRef.current,
-            outline,
-            themeConfig,
-            outlineConversation: undefined,
-          };
-          await persistOutlineCheckpoint({
-            outline,
-            themeConfig,
-            theme: selectedTheme,
-            language,
-            customContext,
-            saveId: slotId,
-            nextState,
-            vfsSession,
-            saveToSlot,
-            seedImageId,
-          });
-          console.log("[StartNewGame] Outline checkpoint saved successfully");
-        } catch (e) {
-          console.error("[StartNewGame] Failed to save outline checkpoint", e);
-        }
-      }, 50);
-
-      navigate("/game");
-
-      setTimeout(async () => {
-        try {
-          const { firstNode, openingAtmosphere, fallbackPrompt } =
-            buildOpeningNarrativeSegment({
-              outline,
-              baseState: gameStateRef.current,
-              theme: selectedTheme,
-              t,
-              seedImageId,
-            });
-
-          try {
-            vfsSession.mergeJson("world/global.json", {
-              initialPrompt: fallbackPrompt,
-            });
-          } catch (e) {
-            console.warn("[StartNewGame] Failed to persist initialPrompt in VFS", e);
-          }
-
-          setGameState((prev) =>
-            applyOpeningNarrativeState(
-              prev,
-              firstNode,
-              openingAtmosphere,
-              fallbackPrompt,
-            ),
-          );
-
-          console.log(
-            "[StartNewGame] First segment created from Phase 9 openingNarrative",
-          );
-
-          setTimeout(async () => {
-            try {
-              await saveToSlot(slotId, gameStateRef.current);
-              console.log("[StartNewGame] First segment auto-saved successfully");
-            } catch (saveError) {
-              console.error(
-                "[StartNewGame] Failed to auto-save after first segment:",
-                saveError,
-              );
-            }
-          }, 100);
-
-          if (aiSettings.embedding?.enabled) {
-            indexInitialEntities(gameStateRef.current, slotId).catch((error) => {
-              console.error("[RAG Init] Failed to index initial entities:", error);
-            });
-          }
-        } catch (error) {
-          console.error("Unexpected error during first segment creation", error);
-          const message = t("initializing.errors.firstSegmentFailed");
-          showToast(message, "error", 5000);
-          setGameState((prev) => ({
-            ...prev,
-            isProcessing: false,
-            liveToolCalls: [],
-            error: message,
-          }));
-        }
-      }, 100);
     } catch (e) {
       console.error("Post-outline processing failed", e);
-      const message = t("initializing.errors.postOutlineProcessingFailed");
+      const message =
+        e instanceof Error && e.message.includes("opening narrative")
+          ? t("initializing.errors.firstSegmentFailed")
+          : t("initializing.errors.postOutlineProcessingFailed");
       showToast(message, "error", 5000);
       deleteSlot(slotId);
       setCurrentSlotId(null);
@@ -495,78 +535,31 @@ export function createLifecycleActions({
         customContext,
       );
 
-      const nextState = buildOutlineHydratedState({
-        baseState: gameStateRef.current,
+      const nextState = buildOpeningState({
         outline,
         logs,
         themeConfig: resolvedThemeConfig,
+        theme,
         language: savedConversation.language,
         customContext,
+        includeCustomContextInPrompt: true,
         clearLiveToolCalls: true,
       });
 
-      setGameState(nextState);
+      await commitOutlineState({
+        saveId: currentSlotId!,
+        outline,
+        themeConfig: resolvedThemeConfig,
+        theme,
+        language: savedConversation.language,
+        customContext,
+        nextState,
+        logPrefix: "ResumeOutline",
+      });
 
-      setTimeout(async () => {
-        await persistOutlineCheckpoint({
-          outline,
-          themeConfig: resolvedThemeConfig,
-          theme,
-          language: savedConversation.language,
-          customContext,
-          saveId: currentSlotId!,
-          nextState,
-          vfsSession,
-          saveToSlot,
-        });
-        console.log("[ResumeOutline] Outline checkpoint saved");
-      }, 50);
-
-      navigate("/game");
-
-      setTimeout(async () => {
-        try {
-          const { firstNode, openingAtmosphere, fallbackPrompt } =
-            buildOpeningNarrativeSegment({
-              outline,
-              baseState: gameStateRef.current,
-              theme,
-              t,
-              customContext,
-              includeCustomContextInPrompt: true,
-            });
-
-          try {
-            vfsSession.mergeJson("world/global.json", {
-              initialPrompt: fallbackPrompt,
-            });
-          } catch (e) {
-            console.warn("[ResumeOutline] Failed to persist initialPrompt in VFS", e);
-          }
-
-          setGameState((prev) =>
-            applyOpeningNarrativeState(
-              prev,
-              firstNode,
-              openingAtmosphere,
-              fallbackPrompt,
-            ),
-          );
-
-          console.log(
-            "[ResumeOutline] First segment created from Phase 9 openingNarrative",
-          );
-        } catch (error) {
-          console.error("First segment creation error after resume", error);
-          const message = t("initializing.errors.firstSegmentFailed");
-          setGameState((prev) => ({
-            ...prev,
-            isProcessing: false,
-            liveToolCalls: [],
-            error: message,
-          }));
-        }
-      }, 100);
+      console.log(
+        "[ResumeOutline] First segment created from Phase 9 openingNarrative",
+      );
     } catch (e) {
       console.error("[ResumeOutline] Resume failed", e);
 

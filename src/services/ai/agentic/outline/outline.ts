@@ -3,7 +3,6 @@ import {
   LogEntry,
   StoryOutline,
   PartialStoryOutline,
-  StorySummary,
   StorySegment,
   GameState,
   TokenUsage,
@@ -1261,84 +1260,5 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
   return { outline, logs, themeConfig: resolvedThemeConfig, usage: totalUsage };
 };
 
-/**
- * 总结上下文 (Agentic Loop 版本)
- *
- * 采用 agentic loop 模式：
- * - 初始只传递上一轮摘要和本轮对话概要
- * - AI 自主决定需要查询什么信息
- * - 两个阶段：query（查询）和 finish（完成）
- *
- * @param previousSummary 之前的摘要
- * @param segmentsToSummarize 需要总结的片段
- * @param nodeRange 节点范围
- * @param language 语言
- * @param settings 设置对象（必需）
- * @param gameState 完整游戏状态（用于查询）
- */
-export const summarizeContext = async (
-  input: {
-    vfsSession: VfsSession;
-    slotId: string;
-    forkId: number;
-    baseSummaries: StorySummary[];
-    baseIndex: number;
-    nodeRange: { fromIndex: number; toIndex: number };
-    language: string;
-    settings: AISettings;
-    pendingPlayerAction?: { segmentIdx: number; text: string } | null;
-    mode?: import("../summary/summaryLoop").SummaryLoopMode;
-  },
-): Promise<{
-  summary: StorySummary | null;
-  logs: LogEntry[];
-  error?: string;
-}> => {
-  const { runSummaryAgenticLoop } = await import("../summary/summary");
 
-  try {
-    const result = await runSummaryAgenticLoop({
-      vfsSession: input.vfsSession,
-      slotId: input.slotId,
-      forkId: input.forkId,
-      nodeRange: input.nodeRange,
-      baseSummaries: input.baseSummaries,
-      baseIndex: input.baseIndex,
-      language: input.language,
-      settings: input.settings,
-      pendingPlayerAction: input.pendingPlayerAction,
-    }, { mode: input.mode });
-
-    // Check for null summary (failure)
-    if (!result.summary) {
-      return {
-        summary: null,
-        logs: result.logs,
-        error: "Summary generation failed",
-      };
-    }
-
-    return {
-      summary: result.summary,
-      logs: result.logs,
-    };
-  } catch (e) {
-    const error = e instanceof Error ? e : new Error(String(e));
-    console.error("Summary agentic loop failed", error);
-
-    const providerInfo = getProviderConfig(input.settings, "story");
-    return {
-      summary: null,
-      logs: [
-        createLogEntry({
-          provider: providerInfo?.instance.protocol || "openai",
-          model: providerInfo?.modelId || "unknown",
-          endpoint: "summary-error",
-          stage: "error",
-          request: { error: error.message },
-        }),
-      ],
-      error: error.message,
-    };
-  }
-};
+export { summarizeContext } from "../summary/summaryAdapter";

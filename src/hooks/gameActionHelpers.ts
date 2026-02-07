@@ -184,6 +184,7 @@ export const handleSummarization = async (
   language: LanguageCode,
   vfsSession: VfsSession,
   slotId: string | null,
+  currentForkId: number,
   forceSummarize: boolean = false,
 ): Promise<{
   effectiveSummaries: StorySummary[];
@@ -195,7 +196,8 @@ export const handleSummarization = async (
 }> => {
   const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
 
-  let contextNodes = deriveHistory(gameState.nodes, effectiveParentId);
+  const committedContextNodes = deriveHistory(gameState.nodes, effectiveParentId);
+  let contextNodes = [...committedContextNodes];
 
   // Create temp user node for context calculation (only if not forced or if we have an action)
   if (!isInit && action) {
@@ -222,7 +224,7 @@ export const handleSummarization = async (
   let summarySnapshot: StorySummary | undefined;
   let logs: any[] = [];
 
-  const totalLength = contextNodes.length;
+  const committedLength = committedContextNodes.length;
 
   let shouldSummarize = forceSummarize;
   const autoCompactEnabled = aiSettings.extra?.autoCompactEnabled ?? true;
@@ -280,50 +282,52 @@ export const handleSummarization = async (
   }
 
   if (shouldSummarize) {
-    // Node range being summarized
-    const nodeRange = {
-      fromIndex: lastIndex,
-      toIndex: totalLength - 1,
-    };
+    const hasCommittedRange = committedLength > baseIndex;
 
-    // Call Summary Service with agentic loop
-    const pendingPlayerAction =
-      !isInit && typeof action === "string" && action.trim().length > 0
-        ? { segmentIdx: nodeRange.toIndex, text: action }
-        : null;
-
-    const sumResult = await summarizeContext({
-      vfsSession,
-      slotId: slotId || "default",
-      forkId: gameState.forkId ?? 0,
-      baseSummaries,
-      baseIndex,
-      nodeRange,
-      language: LANG_MAP[language],
-      settings: aiSettings,
-      pendingPlayerAction,
-      mode: forceSummarize ? "session_compact" : "auto",
-    });
-
-    // Push the new summary object if successful
-    if (sumResult.summary) {
-      effectiveSummaries.push(sumResult.summary);
-      summarySnapshot = sumResult.summary;
-    }
-
-    lastIndex = totalLength;
-    logs = sumResult.logs;
-
-    // Return error if present
-    if (sumResult.error) {
-      return {
-        effectiveSummaries,
-        lastIndex: baseIndex, // RESET lastIndex so we retry next time
-        summarySnapshot: undefined,
-        contextNodes,
-        logs: sumResult.logs,
-        error: sumResult.error,
+    if (hasCommittedRange) {
+      const nodeRange = {
+        fromIndex: baseIndex,
+        toIndex: committedLength - 1,
       };
+
+      const pendingPlayerAction =
+        !isInit && typeof action === "string" && action.trim().length > 0
+          ? { segmentIdx: committedLength, text: action }
+          : null;
+
+      const sumResult = await summarizeContext({
+        vfsSession,
+        slotId: slotId || "default",
+        forkId: currentForkId,
+        baseSummaries,
+        baseIndex,
+        nodeRange,
+        language: LANG_MAP[language],
+        settings: aiSettings,
+        pendingPlayerAction,
+        mode: forceSummarize ? "session_compact" : "auto",
+      });
+
+      if (sumResult.summary) {
+        effectiveSummaries.push(sumResult.summary);
+        summarySnapshot = sumResult.summary;
+      }
+
+      lastIndex = committedLength;
+      logs = sumResult.logs;
+
+      if (sumResult.error) {
+        return {
+          effectiveSummaries,
+          lastIndex: baseIndex,
+          summarySnapshot: undefined,
+          contextNodes,
+          logs: sumResult.logs,
+          error: sumResult.error,
+        };
+      }
+    } else {
+      lastIndex = Math.max(baseIndex, committedLength);
     }
   } else {
     // Ensure lastIndex is at least baseIndex to prevent regression

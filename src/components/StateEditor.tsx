@@ -45,12 +45,21 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [allowOutlineEdit, setAllowOutlineEdit] = useState(false);
   const [allowConversationEdit, setAllowConversationEdit] = useState(false);
   const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
+  const [editingPath, setEditingPath] = useState<string | null>(null);
 
   const canEditOutline = gameState.godMode || allowOutlineEdit;
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    setSnapshotVersion((version) => version + 1);
+  }, [gameState, isOpen]);
+
   const snapshot = useMemo<VfsFileMap>(() => {
     return vfsSession.snapshotAll();
-  }, [vfsSession]);
+  }, [vfsSession, snapshotVersion]);
 
   const filteredSnapshot = useMemo<VfsFileMap>(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -93,6 +102,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setExpandedPaths([""]);
       setError(null);
       setHasChanges(false);
+      setEditingPath(null);
     }
   }, [isOpen]);
 
@@ -134,6 +144,11 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setFileContent("");
       setError(null);
       setHasChanges(false);
+      setEditingPath(null);
+      return;
+    }
+
+    if (hasChanges && selectedPath === editingPath) {
       return;
     }
 
@@ -143,6 +158,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setFileContentType("text/plain");
       setError(null);
       setHasChanges(false);
+      setEditingPath(selectedPath);
       return;
     }
 
@@ -150,7 +166,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     setFileContentType(file.contentType);
     setError(null);
     setHasChanges(false);
-  }, [isOpen, vfsSession, selectedPath, snapshot]);
+    setEditingPath(selectedPath);
+  }, [
+    editingPath,
+    hasChanges,
+    isOpen,
+    selectedPath,
+    snapshot,
+    vfsSession,
+  ]);
 
   if (!isOpen) return null;
 
@@ -168,6 +192,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
     setFileContent(value);
     setHasChanges(true);
+    if (selectedPath) {
+      setEditingPath(selectedPath);
+    }
 
     if (fileContentType === "application/json") {
       try {

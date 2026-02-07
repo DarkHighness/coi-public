@@ -4,9 +4,9 @@ import { GameState, StorySegment } from "../types";
 import {
   parseCommand,
   executeCommandAction,
-  CommandResult,
   CommandContext,
   CommandAction,
+  COMMAND_DEFINITIONS,
 } from "../utils/commands";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -27,16 +27,6 @@ interface ActionPanelProps {
   onForceUpdate?: (prompt: string) => void;
   onJumpToSegment?: (segmentId: string) => void;
 }
-
-const SUPPORTED_COMMANDS = [
-  { cmd: "/god", desc: "Toggle God Mode" },
-  { cmd: "/unlock", desc: "Unlock All Info" },
-  { cmd: "/edit", desc: "Edit State" },
-  { cmd: "/rag", desc: "RAG Debugger" },
-  { cmd: "/view", desc: "View State" },
-  { cmd: "/rules", desc: "Custom Rules" },
-  { cmd: "/sudo", desc: "Force Update" },
-];
 
 export const ActionPanel: React.FC<ActionPanelProps> = ({
   onAction,
@@ -79,6 +69,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const hasChoices = availableChoices.length > 0;
   const customChoiceIndex = availableChoices.length + 1;
   const showCommandHints = customInput.startsWith("/");
+  const commandHints = COMMAND_DEFINITIONS;
 
   const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
   const contextWindowTokens = (() => {
@@ -242,16 +233,110 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     }
   }, []);
 
+  const handleCommandAction = useCallback(
+    (action: CommandAction) => {
+      switch (action.type) {
+        case "open_editor":
+          onOpenStateEditor?.();
+          return;
+        case "open_rag":
+          onOpenRAG?.();
+          return;
+        case "open_viewer":
+          onOpenViewer?.();
+          return;
+        case "open_rules":
+          onOpenRules?.();
+          return;
+        case "force_update":
+          onForceUpdate?.(action.prompt);
+          return;
+        case "none":
+          return;
+        default:
+          executeCommandAction(action, gameState, {
+            toggleGodMode,
+            unlockAll,
+          });
+
+          if (action.type === "god_mode" || action.type === "unlock_all") {
+            onTriggerSave?.();
+          }
+
+          const successMessage =
+            action.type === "god_mode"
+              ? action.enable
+                ? t("commands.godMode.enabled") || "🔱 GOD MODE ENABLED"
+                : t("commands.godMode.disabled") || "God Mode disabled"
+              : action.type === "unlock_all"
+                ? t("commands.unlock.success") ||
+                  "🔓 All hidden information unlocked!"
+                : "";
+
+          if (successMessage) {
+            onShowToast?.(successMessage, "success");
+          }
+      }
+    },
+    [
+      gameState,
+      onForceUpdate,
+      onOpenRAG,
+      onOpenRules,
+      onOpenStateEditor,
+      onOpenViewer,
+      onShowToast,
+      onTriggerSave,
+      t,
+      toggleGodMode,
+      unlockAll,
+    ],
+  );
+
+  const normalizeJumpTarget = useCallback((value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (trimmed === "start" || trimmed === "end") {
+      return trimmed;
+    }
+
+    if (/^\d+$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    if (/^[a-zA-Z0-9_./-]+$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    return null;
+  }, []);
+
+  const submitJumpToSegment = useCallback(
+    (value: string) => {
+      const target = normalizeJumpTarget(value);
+      if (!target || !onJumpToSegment) {
+        return false;
+      }
+
+      onJumpToSegment(target);
+      setIsJumpOpen(false);
+      setJumpInputValue("");
+      return true;
+    },
+    [normalizeJumpTarget, onJumpToSegment],
+  );
+
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customInput.trim()) return;
 
-    // Check for commands first
     const commandResult = parseCommand(customInput, commandContext);
     if (commandResult.handled) {
       clearInput();
 
-      // If command needs confirmation, show confirmation dialog
       if (commandResult.action && commandResult.message) {
         setPendingCommand({
           message: commandResult.message,
@@ -260,41 +345,20 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         return;
       }
 
-      // If command just shows a message (like /help), show it via toast
+      if (commandResult.action) {
+        handleCommandAction(commandResult.action);
+      }
+
       if (commandResult.message) {
         onShowToast?.(commandResult.message, "info");
-        return;
       }
 
-      // If command opens editor, trigger it
-      if (commandResult.action?.type === "open_editor") {
-        onOpenStateEditor?.();
-        return;
-      }
-
-      if (commandResult.action?.type === "open_rag") {
-        onOpenRAG?.();
-        return;
-      }
-
-      if (commandResult.action?.type === "open_viewer") {
-        onOpenViewer?.();
-        return;
-      }
-
-      if (commandResult.action?.type === "open_rules") {
-        onOpenRules?.();
-        return;
-      }
-
-      // If command doesn't prevent action, continue with normal flow
       if (!commandResult.preventAction) {
         onAction(customInput);
       }
       return;
     }
 
-    // Normal action
     onAction(customInput);
     clearInput();
   };
@@ -302,46 +366,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const handleConfirmCommand = () => {
     if (!pendingCommand) return;
 
-    const { action } = pendingCommand;
-
-    // Handle editor separately since it doesn't modify state
-    if (action.type === "open_editor") {
-      onOpenStateEditor?.();
-    } else if (action.type === "open_rag") {
-      onOpenRAG?.();
-    } else if (action.type === "open_viewer") {
-      onOpenViewer?.();
-    } else if (action.type === "open_rules") {
-      onOpenRules?.();
-    } else if (action.type === "force_update") {
-      onForceUpdate?.(action.prompt);
-    } else {
-      executeCommandAction(action, gameState, {
-        toggleGodMode,
-        unlockAll,
-      });
-
-      // Trigger save for state-modifying commands (/god, /unlock)
-      if (action.type === "god_mode" || action.type === "unlock_all") {
-        onTriggerSave?.();
-      }
-
-      // Show success message
-      const successMessage =
-        action.type === "god_mode"
-          ? action.enable
-            ? t("commands.godMode.enabled") || "🔱 GOD MODE ENABLED"
-            : t("commands.godMode.disabled") || "God Mode disabled"
-          : action.type === "unlock_all"
-            ? t("commands.unlock.success") ||
-              "🔓 All hidden information unlocked!"
-            : "";
-
-      if (successMessage) {
-        onShowToast?.(successMessage, "success");
-      }
-    }
-
+    handleCommandAction(pendingCommand.action);
     setPendingCommand(null);
   };
 
@@ -419,7 +444,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           {showCommandHints && hasChoices && (
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-theme-text-secondary/80">
-              {SUPPORTED_COMMANDS.map((cmd) => (
+              {commandHints.map((cmd) => (
                 <button
                   key={cmd.cmd}
                   type="button"
@@ -751,9 +776,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                           onChange={(e) => setJumpInputValue(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              onJumpToSegment(jumpInputValue);
-                              setIsJumpOpen(false);
-                              setJumpInputValue("");
+                              submitJumpToSegment(jumpInputValue);
                             } else if (e.key === "Escape") {
                               setIsJumpOpen(false);
                             }
@@ -762,11 +785,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                         />
                         <button
                           onClick={() => {
-                            if (jumpInputValue) {
-                              onJumpToSegment(jumpInputValue);
-                              setIsJumpOpen(false);
-                              setJumpInputValue("");
-                            }
+                            submitJumpToSegment(jumpInputValue);
                           }}
                           className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 transition-colors"
                         >
@@ -942,7 +961,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             <div
               className={`flex flex-wrap gap-x-3 gap-y-1 px-2 text-[11px] text-theme-text-secondary/80 ${hasChoices ? "mx-auto max-w-[72ch]" : "justify-center"}`}
             >
-              {SUPPORTED_COMMANDS.map((cmd) => (
+              {commandHints.map((cmd) => (
                 <button
                   key={cmd.cmd}
                   onClick={() => setCustomInput(cmd.cmd + " ")}

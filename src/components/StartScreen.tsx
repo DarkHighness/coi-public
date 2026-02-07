@@ -5,6 +5,7 @@ import React, {
   Suspense,
   useEffect,
   useMemo,
+  useCallback,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
@@ -20,6 +21,7 @@ import { BUILD_INFO } from "../utils/constants/buildInfo";
 import { getImage } from "../utils/imageStorage";
 import { getThemeName } from "../services/ai/utils";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { IMAGE_BASED_THEME } from "../services/ai/utils";
 import { useSettings } from "../hooks/useSettings";
 import { useTutorialContextOptional } from "../contexts/TutorialContext";
 import { useTutorialTarget } from "../hooks/useTutorial";
@@ -89,7 +91,6 @@ interface StartScreenProps {
   ) => void;
   onContinue: () => void;
   onLoad: (file: File) => void;
-  onOpenSaves: () => void;
   onSettings: () => void;
   latestSave?: SaveSlot;
   onThemePreview?: (theme: string | null) => void;
@@ -104,7 +105,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   onStart,
   onContinue,
   onLoad,
-  onOpenSaves,
   onSettings,
   latestSave,
   onThemePreview,
@@ -123,11 +123,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [seedImage, setSeedImage] = useState<Blob | null>(null);
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [originalTheme, setOriginalTheme] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t, i18n } = useTranslation();
+  const startTimerRef = useRef<number | null>(null);
+  const { t } = useTranslation();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const { settings, updateSettings } = useSettings();
+  const { settings } = useSettings();
   const tutorial = useTutorialContextOptional();
   const selectableThemes = useMemo(
     () =>
@@ -184,9 +184,33 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
   const [isZooming, setIsZooming] = useState(false);
 
-  // Enter theme selection mode - store original theme and set to fantasy
+  const clearStartTimer = useCallback(() => {
+    if (startTimerRef.current !== null) {
+      window.clearTimeout(startTimerRef.current);
+      startTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearStartTimer();
+    };
+  }, [clearStartTimer]);
+
+  const scheduleStart = useCallback(
+    (callback: () => void) => {
+      clearStartTimer();
+      setIsZooming(true);
+      startTimerRef.current = window.setTimeout(() => {
+        startTimerRef.current = null;
+        callback();
+      }, 1500);
+    },
+    [clearStartTimer],
+  );
+
+  // Enter theme selection mode and set to fantasy preview
   const enterThemeSelect = () => {
-    setOriginalTheme(null); // Will be captured by the current preview state in parent
     setMode("theme_select");
     onThemePreview?.("fantasy"); // Set to fantasy as default
   };
@@ -202,10 +226,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     customContext?: string,
     protagonistFeature?: string,
   ) => {
-    setIsZooming(true);
-    setTimeout(() => {
+    scheduleStart(() => {
       onStart(theme, customContext, seedImage || undefined, protagonistFeature);
-    }, 1500); // Match animation duration
+    });
   };
 
   // Handle image upload confirmation - start game directly (image IS the theme)
@@ -214,10 +237,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     setIsImageUploadOpen(false);
     // When starting from image, we bypass theme selection entirely
     // The image itself provides all the context via Phase 0
-    setIsZooming(true);
-    setTimeout(() => {
-      onStart("", undefined, imageBlob); // Empty theme - Phase 0 will generate world from image
-    }, 1500);
+    scheduleStart(() => {
+      onStart(IMAGE_BASED_THEME, undefined, imageBlob);
+    });
   };
 
   // Dynamic background style
