@@ -1,5 +1,6 @@
 import type { VfsFileMap } from "../../services/vfs/types";
 import { normalizeVfsPath } from "../../services/vfs/utils";
+import { vfsPolicyEngine } from "../../services/vfs/core/policyEngine";
 
 export type VfsTreeNode = {
   name: string;
@@ -145,28 +146,29 @@ export const buildVfsTree = (files: VfsFileMap): VfsTreeNode => {
   return finalizeTree(root);
 };
 
-export const isReadonlyPath = (path: string): boolean => {
+export const isReadonlyPath = (
+  path: string,
+  options?: { editorSessionToken?: string | null },
+): boolean => {
   const normalized = stripCurrentPrefix(path);
-
-  if (normalized === "skills" || normalized.startsWith("skills/")) {
-    return true;
+  if (!normalized) {
+    return false;
   }
 
-  if (normalized === "refs" || normalized.startsWith("refs/")) {
-    return true;
+  if (options?.editorSessionToken === undefined) {
+    const classification = vfsPolicyEngine.canRead(normalized).classification;
+    return (
+      classification.permissionClass === "immutable_readonly" ||
+      classification.permissionClass === "finish_guarded"
+    );
   }
 
-  if (normalized.startsWith("conversation/")) {
-    return true;
-  }
+  const decision = vfsPolicyEngine.canWrite(normalized, {
+    actor: "user_editor",
+    mode: "normal",
+    editorSessionToken: options.editorSessionToken ?? null,
+    allowFinishGuardedWrite: false,
+  });
 
-  if (normalized === "outline/progress.json") {
-    return true;
-  }
-
-  if (normalized === "summary/state.json") {
-    return true;
-  }
-
-  return false;
+  return !decision.allowed;
 };

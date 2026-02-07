@@ -48,6 +48,8 @@ export const generateForceUpdate = async (
   const sudoContext: TurnContext = {
     ...context,
     userAction: `[SUDO] ${prompt}`,
+    vfsMode: context.vfsMode ?? "sudo",
+    vfsElevationToken: context.vfsElevationToken ?? null,
   };
 
   // Use the same adventure turn generation

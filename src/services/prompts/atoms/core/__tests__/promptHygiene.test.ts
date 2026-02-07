@@ -51,5 +51,13 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("current/conversation/*");
     expect(content).not.toContain("write both files via `vfs_write`/`vfs_edit`");
     expect(content).not.toContain("or conversation writes");
+
+    // Permission contract clarity
+    expect(content).toContain("immutable_readonly");
+    expect(content).toContain("default_editable");
+    expect(content).toContain("elevated_editable");
+    expect(content).toContain("one-time user-confirmed token");
+    expect(content).toContain("skills/**");
+    expect(content).toContain("refs/**");
   });
 });

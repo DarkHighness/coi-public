@@ -14,6 +14,7 @@
 import type { GameState, GameResponse, AISettings } from "../../types";
 import type { ZodToolDefinition } from "../providers/types";
 import type { VfsSession } from "../vfs/vfsSession";
+import type { VfsActor, VfsMode } from "../vfs/core/types";
 
 // ============================================================================
 // Types
@@ -36,6 +37,12 @@ export interface ToolContext {
   vfsSession: VfsSession;
   /** Required command skill paths that must be read in current epoch */
   requiredCommandSkillPaths?: string[];
+  /** VFS actor identity for policy checks (defaults to ai in tool handlers) */
+  vfsActor?: VfsActor;
+  /** VFS mode for policy checks */
+  vfsMode?: VfsMode;
+  /** One-time elevation token for current AI request */
+  vfsElevationToken?: string | null;
 }
 
 /**

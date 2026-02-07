@@ -13,6 +13,9 @@ import { normalizeVfsPath, hashContent } from "./utils";
 import { deepMergeJson } from "./merge";
 import { buildGlobalVfsSkills } from "./globalSkills";
 import { buildGlobalVfsRefs } from "./globalRefs";
+import { vfsPathRegistry } from "./core/pathRegistry";
+import { vfsPolicyEngine } from "./core/policyEngine";
+import type { VfsWriteContext } from "./core/types";
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
@@ -69,6 +72,38 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
 
   return false;
 };
+
+const DEFAULT_SYSTEM_WRITE_CONTEXT: VfsWriteContext = {
+  actor: "system",
+  mode: "normal",
+  allowFinishGuardedWrite: true,
+};
+
+export class VfsWriteAccessError extends Error {
+  public readonly code:
+    | "IMMUTABLE_READONLY"
+    | "ELEVATION_REQUIRED"
+    | "FINISH_GUARD_REQUIRED"
+    | "EDITOR_CONFIRM_REQUIRED";
+
+  constructor(
+    code:
+      | "IMMUTABLE_READONLY"
+      | "ELEVATION_REQUIRED"
+      | "FINISH_GUARD_REQUIRED"
+      | "EDITOR_CONFIRM_REQUIRED",
+    message: string,
+  ) {
+    super(message);
+    this.name = "VfsWriteAccessError";
+    this.code = code;
+  }
+}
+
+export interface VfsWriteOptions {
+  writeContext?: VfsWriteContext;
+}
+
 
 export interface VfsSearchMatch {
   path: string;
@@ -155,6 +190,7 @@ export class VfsSession {
     string,
     "added" | "deleted" | "modified"
   >();
+  private activeWriteContext: VfsWriteContext | null = null;
 
   constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
     this.semanticIndexer = options?.semanticIndexer;
@@ -295,25 +331,54 @@ export class VfsSession {
     return drained;
   }
 
-  private isReadOnlyPath(path: string): boolean {
-    const normalized = normalizeVfsPath(path);
-    return (
-      normalized === "skills" ||
-      normalized.startsWith("skills/") ||
-      normalized === "refs" ||
-      normalized.startsWith("refs/")
-    );
-  }
-
-  private assertWritablePath(path: string): void {
-    const normalized = normalizeVfsPath(path);
-    if (this.isReadOnlyPath(normalized)) {
-      throw new Error(`Path is read-only: ${normalized}`);
+  public withWriteContext<T>(context: VfsWriteContext, action: () => T): T {
+    const previous = this.activeWriteContext;
+    this.activeWriteContext = context;
+    try {
+      return action();
+    } finally {
+      this.activeWriteContext = previous;
     }
   }
 
-  public writeFile(path: string, content: string, contentType: VfsContentType) {
-    this.assertWritablePath(path);
+  private resolveWriteContext(override?: VfsWriteContext): VfsWriteContext {
+    if (override) {
+      return override;
+    }
+    if (this.activeWriteContext) {
+      return this.activeWriteContext;
+    }
+    return DEFAULT_SYSTEM_WRITE_CONTEXT;
+  }
+
+  private isImmutableReadOnlyPath(path: string): boolean {
+    return vfsPathRegistry.isImmutableReadonly(path);
+  }
+
+  private assertWritablePath(path: string, options?: VfsWriteOptions): void {
+    const normalized = normalizeVfsPath(path);
+    const decision = vfsPolicyEngine.canWrite(
+      normalized,
+      this.resolveWriteContext(options?.writeContext),
+    );
+
+    if (!decision.allowed) {
+      const errorCode =
+        decision.code === "OK" ? "IMMUTABLE_READONLY" : decision.code;
+      throw new VfsWriteAccessError(
+        errorCode,
+        `${decision.reason} (${normalized})`,
+      );
+    }
+  }
+
+  public writeFile(
+    path: string,
+    content: string,
+    contentType: VfsContentType,
+    options?: VfsWriteOptions,
+  ) {
+    this.assertWritablePath(path, options);
     const normalized = normalizeVfsPath(path);
     const hash = hashContent(content);
     this.files[normalized] = {
@@ -347,16 +412,16 @@ export class VfsSession {
   public restore(snapshot: VfsFileMap): void {
     const next = cloneFiles(snapshot);
     for (const path of Object.keys(next)) {
-      if (this.isReadOnlyPath(path)) {
+      if (this.isImmutableReadOnlyPath(path)) {
         delete next[path];
       }
     }
     this.files = next;
   }
 
-  public renameFile(from: string, to: string): void {
-    this.assertWritablePath(from);
-    this.assertWritablePath(to);
+  public renameFile(from: string, to: string, options?: VfsWriteOptions): void {
+    this.assertWritablePath(from, options);
+    this.assertWritablePath(to, options);
     const normalizedFrom = normalizeVfsPath(from);
     const normalizedTo = normalizeVfsPath(to);
     const file = this.files[normalizedFrom];
@@ -374,8 +439,8 @@ export class VfsSession {
     delete this.files[normalizedFrom];
   }
 
-  public deleteFile(path: string): void {
-    this.assertWritablePath(path);
+  public deleteFile(path: string, options?: VfsWriteOptions): void {
+    this.assertWritablePath(path, options);
     const normalized = normalizeVfsPath(path);
     if (!this.files[normalized]) {
       throw new Error(`File not found: ${normalized}`);
@@ -383,8 +448,12 @@ export class VfsSession {
     delete this.files[normalized];
   }
 
-  public applyJsonPatch(path: string, patchOps: Operation[]): void {
-    this.assertWritablePath(path);
+  public applyJsonPatch(
+    path: string,
+    patchOps: Operation[],
+    options?: VfsWriteOptions,
+  ): void {
+    this.assertWritablePath(path, options);
     const file = this.readFile(path);
     if (!file) {
       throw new Error(`File not found: ${normalizeVfsPath(path)}`);
@@ -411,11 +480,15 @@ export class VfsSession {
       throw new Error(`Unknown keys found after validation: ${file.path}`);
     }
 
-    this.writeFile(file.path, JSON.stringify(validated), file.contentType);
+    this.writeFile(file.path, JSON.stringify(validated), file.contentType, options);
   }
 
-  public mergeJson(path: string, content: Record<string, unknown>): void {
-    this.assertWritablePath(path);
+  public mergeJson(
+    path: string,
+    content: Record<string, unknown>,
+    options?: VfsWriteOptions,
+  ): void {
+    this.assertWritablePath(path, options);
     if (Array.isArray(content) || content === null || typeof content !== "object") {
       throw new Error("Merge content must be a JSON object");
     }
@@ -448,7 +521,7 @@ export class VfsSession {
       throw new Error(`Unknown keys found after validation: ${normalized}`);
     }
 
-    this.writeFile(normalized, JSON.stringify(validated), contentType);
+    this.writeFile(normalized, JSON.stringify(validated), contentType, options);
   }
 
   public list(path: string): string[] {

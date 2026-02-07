@@ -1,5 +1,6 @@
 import type { VfsFile, VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
+import { vfsPathRegistry } from "./core/pathRegistry";
 
 const cloneFile = (file: VfsFile): VfsFile => ({ ...file });
 
@@ -19,55 +20,30 @@ export const stripCurrentPrefix = (path: string): string => {
   return normalized;
 };
 
-const SHARED_MUTABLE_EXACT_PATHS = new Set([
-  "world/theme_config.json",
-  "outline/outline.json",
-  "outline/progress.json",
-  "world/runtime/custom_rules_ack_state.json",
-]);
-
-const SHARED_MUTABLE_PREFIXES = [
-  "custom_rules/",
-  // Legacy location for back-compat migrations.
-  "world/custom_rules/",
-];
-
-const SHARED_READONLY_PREFIXES = ["skills/", "refs/"];
-
-const SHARED_READONLY_EXACT_PATHS = new Set(["skills", "refs"]);
-
 export const isSharedMutablePath = (path: string): boolean => {
   const normalized = stripCurrentPrefix(path);
   if (!normalized) return false;
-  if (SHARED_MUTABLE_EXACT_PATHS.has(normalized)) {
-    return true;
-  }
-  return SHARED_MUTABLE_PREFIXES.some((prefix) =>
-    normalized.startsWith(prefix),
+
+  const classification = vfsPathRegistry.classify(normalized);
+  return (
+    classification.scope === "shared" &&
+    classification.permissionClass !== "immutable_readonly"
   );
 };
 
 export const isSharedReadOnlyPath = (path: string): boolean => {
   const normalized = stripCurrentPrefix(path);
   if (!normalized) return false;
-  if (SHARED_READONLY_EXACT_PATHS.has(normalized)) {
-    return true;
-  }
-  return SHARED_READONLY_PREFIXES.some((prefix) =>
-    normalized.startsWith(prefix),
-  );
+
+  return vfsPathRegistry.classify(normalized).permissionClass === "immutable_readonly";
 };
 
 export const isForkedSnapshotPath = (path: string): boolean => {
   const normalized = stripCurrentPrefix(path);
   if (!normalized) return false;
-  if (isSharedReadOnlyPath(normalized)) {
-    return false;
-  }
-  if (isSharedMutablePath(normalized)) {
-    return false;
-  }
-  return true;
+
+  const classification = vfsPathRegistry.classify(normalized);
+  return classification.scope === "fork";
 };
 
 export interface PartitionedVfsFileMap {
@@ -86,13 +62,14 @@ export const partitionVfsFileMapByScope = (
   for (const file of Object.values(files)) {
     const normalized = normalizeVfsPath(file.path);
     const normalizedFile = cloneWithPath(file, normalized);
+    const classification = vfsPathRegistry.classify(normalized);
 
-    if (isSharedReadOnlyPath(normalized)) {
+    if (classification.permissionClass === "immutable_readonly") {
       sharedReadonly[normalized] = normalizedFile;
       continue;
     }
 
-    if (isSharedMutablePath(normalized)) {
+    if (classification.scope === "shared") {
       sharedMutable[normalized] = normalizedFile;
       continue;
     }

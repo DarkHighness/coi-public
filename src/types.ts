@@ -762,6 +762,10 @@ export interface TurnContext {
   vfsSession: VfsSession;
   /** Optional real-time callback for currently executing tool calls */
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
+  /** VFS runtime mode used by policy engine */
+  vfsMode?: "normal" | "god" | "sudo";
+  /** Optional one-time elevation token for elevated writes */
+  vfsElevationToken?: string | null;
 }
 
 export interface GameStateSnapshot {

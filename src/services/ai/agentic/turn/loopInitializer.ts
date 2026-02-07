@@ -11,6 +11,7 @@ import type {
   GameResponse,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
+import type { VfsMode } from "../../../vfs/core/types";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { ALL_DEFINED_TOOLS } from "../../../tools";
@@ -46,6 +47,10 @@ export interface LoopState {
   isCleanupMode: boolean;
   /** Required command skill paths for this loop */
   requiredCommandSkillPaths: string[];
+  /** Active VFS mode for policy checks */
+  vfsMode: VfsMode;
+  /** One-time elevation token for this request (optional) */
+  vfsElevationToken?: string | null;
 }
 
 // ============================================================================
@@ -61,6 +66,8 @@ export function createLoopState(
   isSudoMode: boolean,
   isCleanupMode: boolean = false,
   vfsSession: VfsSession,
+  vfsMode?: VfsMode,
+  vfsElevationToken?: string | null,
 ): LoopState {
   const budgetState = createBudgetState(settings, {
     loopType: isCleanupMode ? "cleanup" : "turn",
@@ -73,6 +80,7 @@ export function createLoopState(
     isCleanupMode,
   });
   const finishToolName = VFS_TOOLSETS.turn.finishToolName;
+  const resolvedVfsMode: VfsMode = vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
   const conversationMarker = getConversationMarker(vfsSession);
   const requiredCommandSkillPaths = isCleanupMode
     ? ["skills/commands/cleanup/SKILL.md"]
@@ -97,6 +105,8 @@ export function createLoopState(
     finishToolName,
     isRAGEnabled,
     requiredCommandSkillPaths,
+    vfsMode: resolvedVfsMode,
+    vfsElevationToken: vfsElevationToken ?? null,
   };
 }
 

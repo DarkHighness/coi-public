@@ -50,7 +50,7 @@ describe("vfs tree builder", () => {
     expect(isReadonlyPath("skills/theme/x/SKILL.md")).toBe(true);
     expect(isReadonlyPath("conversation/index.json")).toBe(true);
     expect(isReadonlyPath("refs/atmosphere/options.md")).toBe(true);
-    expect(isReadonlyPath("outline/progress.json")).toBe(true);
+    expect(isReadonlyPath("outline/progress.json")).toBe(false);
     expect(isReadonlyPath("summary/state.json")).toBe(true);
     expect(isReadonlyPath("outline/outline.json")).toBe(false);
     expect(isReadonlyPath("world/characters/char:player/profile.json")).toBe(false);

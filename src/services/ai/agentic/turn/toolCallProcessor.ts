@@ -103,6 +103,9 @@ export function executeGenericTool(
       settings,
       vfsSession: loopState.vfsSession,
       requiredCommandSkillPaths: loopState.requiredCommandSkillPaths,
+      vfsActor: "ai",
+      vfsMode: loopState.vfsMode,
+      vfsElevationToken: loopState.vfsElevationToken ?? null,
     };
     return dispatchToolCall(name, args, toolContext);
   }

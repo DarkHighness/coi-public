@@ -25,6 +25,7 @@ import { useRuntimeContext } from "../../runtime/context";
 import { useSettings } from "../../hooks/useSettings";
 import { useTutorialContextOptional } from "../../contexts/TutorialContext";
 import { createGamePageTutorialFlow } from "../tutorial/tutorialFlows";
+import { vfsElevationTokenManager } from "../../services/vfs/core/elevation";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
@@ -144,6 +145,7 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
   const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
   const [isStateEditorOpen, setIsStateEditorOpen] = useState(false);
+  const [stateEditorSessionToken, setStateEditorSessionToken] = useState<string | null>(null);
   const [isRAGDebuggerOpen, setIsRAGDebuggerOpen] = useState(false);
   const [isGameStateViewerOpen, setIsGameStateViewerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -448,6 +450,40 @@ export const GamePage: React.FC<GamePageProps> = ({
     showToast(t("imageDeleted", "Image deleted successfully"), "info");
   };
 
+  const handleOpenStateEditor = () => {
+    const confirmed =
+      typeof window !== "undefined"
+        ? window.confirm(
+            t("stateEditor.openConfirm") ||
+              "State Editor can modify game state. Continue to open this editor session?",
+          )
+        : false;
+
+    if (!confirmed) {
+      return;
+    }
+
+    const token = vfsElevationTokenManager.issueEditorSessionToken();
+    setStateEditorSessionToken(token);
+    setIsStateEditorOpen(true);
+  };
+
+  const handleCloseStateEditor = () => {
+    if (stateEditorSessionToken) {
+      vfsElevationTokenManager.revokeEditorSessionToken(stateEditorSessionToken);
+    }
+    setStateEditorSessionToken(null);
+    setIsStateEditorOpen(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (stateEditorSessionToken) {
+        vfsElevationTokenManager.revokeEditorSessionToken(stateEditorSessionToken);
+      }
+    };
+  }, [stateEditorSessionToken]);
+
   return (
     <div className="flex flex-1 h-full overflow-hidden relative z-10">
       <Suspense
@@ -487,7 +523,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onVeoScript={() => setIsVeoScriptOpen(true)}
             onViewedSegmentChange={onViewedSegmentChange}
             onShowToast={(msg, type) => showToast(msg, type)}
-            onOpenStateEditor={() => setIsStateEditorOpen(true)}
+            onOpenStateEditor={handleOpenStateEditor}
             onOpenRAG={() => setIsRAGDebuggerOpen(true)}
             onOpenViewer={() => setIsGameStateViewerOpen(true)}
             onOpenGallery={() => setIsGalleryOpen(true)}
@@ -520,7 +556,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onVeoScript={() => setIsVeoScriptOpen(true)}
             onViewedSegmentChange={onViewedSegmentChange}
             onShowToast={(msg, type) => showToast(msg, type)}
-            onOpenStateEditor={() => setIsStateEditorOpen(true)}
+            onOpenStateEditor={handleOpenStateEditor}
             onOpenRAG={() => setIsRAGDebuggerOpen(true)}
             onOpenViewer={() => setIsGameStateViewerOpen(true)}
             onOpenGallery={() => setIsGalleryOpen(true)}
@@ -579,9 +615,10 @@ export const GamePage: React.FC<GamePageProps> = ({
         {isStateEditorOpen && (
           <StateEditor
             isOpen={isStateEditorOpen}
-            onClose={() => setIsStateEditorOpen(false)}
+            onClose={handleCloseStateEditor}
             gameState={gameState}
             vfsSession={vfsSession}
+            editorSessionToken={stateEditorSessionToken}
             applyVfsMutation={engineActions.applyVfsMutation}
             onShowToast={(msg, type) => showToast(msg, type)}
           />

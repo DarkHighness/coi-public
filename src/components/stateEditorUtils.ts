@@ -1,4 +1,5 @@
 import type { GameState } from "../types";
+import type { VfsWriteContext } from "../services/vfs/core/types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import type { VfsContentType } from "../services/vfs/types";
 import { applySectionEdit } from "../services/vfs/editor";
@@ -25,7 +26,10 @@ interface ApplyVfsStateEditParams {
   section: EditableVfsSection;
   data: unknown;
   baseState: GameState;
-  options?: { allowOutlineEdit?: boolean };
+  options?: {
+    allowOutlineEdit?: boolean;
+    writeContext?: VfsWriteContext;
+  };
 }
 
 interface ApplyVfsFileEditParams {
@@ -34,6 +38,7 @@ interface ApplyVfsFileEditParams {
   content: string;
   contentType: VfsContentType;
   baseState: GameState;
+  writeContext?: VfsWriteContext;
 }
 
 export const applyVfsStateEdit = ({
@@ -54,8 +59,9 @@ export const applyVfsFileEdit = ({
   content,
   contentType,
   baseState,
+  writeContext,
 }: ApplyVfsFileEditParams): GameState => {
-  writeVfsFile(session, path, content, contentType);
+  writeVfsFile(session, path, content, contentType, writeContext);
   const derived = deriveGameStateFromVfs(session.snapshot());
   return mergeDerivedViewState(baseState, derived);
 };

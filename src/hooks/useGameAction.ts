@@ -13,6 +13,7 @@ import {
   TokenUsage,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
+import { vfsElevationTokenManager } from "../services/vfs/core/elevation";
 import { generateAdventureTurn } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { LANG_MAP } from "../utils/constants";
@@ -612,6 +613,25 @@ export const useGameAction = ({
           ...gameStateRef.current,
         };
 
+        const runtimeVfsMode: "normal" | "god" = gameStateRef.current.godMode
+          ? "god"
+          : "normal";
+        let vfsElevationToken: string | null = null;
+
+        if (runtimeVfsMode === "god") {
+          const allowElevatedWrite =
+            typeof window !== "undefined"
+              ? window.confirm(
+                  t("commands.godMode.elevationConfirm") ||
+                    "God mode is active. Allow elevated VFS writes for this request?",
+                )
+              : false;
+
+          if (allowElevatedWrite) {
+            vfsElevationToken = vfsElevationTokenManager.issueAiElevationToken();
+          }
+        }
+
         // Generate Turn - pass GameState directly with TurnContext
         const {
           response,
@@ -630,6 +650,8 @@ export const useGameAction = ({
           isInit: isInit,
           vfsSession,
           onToolCallsUpdate: onLiveToolCallsUpdate,
+          vfsMode: runtimeVfsMode,
+          vfsElevationToken,
         });
 
         persistUsageToActiveTurn(usage);

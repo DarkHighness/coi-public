@@ -22,6 +22,7 @@ import type {
   TurnContext,
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
+import { vfsElevationTokenManager } from "../../services/vfs/core/elevation";
 
 type ShowToast = (
   message: string,
@@ -316,6 +317,8 @@ export function createCommandActions({
         true,
       );
 
+      const sudoElevationToken = vfsElevationTokenManager.issueAiElevationToken();
+
       const context: TurnContext = {
         recentHistory: fullHistory,
         userAction: prompt,
@@ -331,6 +334,8 @@ export function createCommandActions({
             liveToolCalls: toolCalls,
           }));
         },
+        vfsMode: "sudo",
+        vfsElevationToken: sudoElevationToken,
       };
 
       const { response, logs, recovery } = await generateForceUpdate(
@@ -485,6 +490,7 @@ export function createCommandActions({
             liveToolCalls: toolCalls,
           }));
         },
+        vfsMode: "normal",
       };
 
       const { response, logs, changedEntities, recovery } = await generateEntityCleanup(

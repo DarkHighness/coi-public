@@ -3,6 +3,7 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
+import { VFS_TOOLSETS, formatVfsToolCapabilitiesForPrompt } from "../../../vfsToolsets";
 
 export interface ToolUsageInput {
   finishToolName?: string;
@@ -14,6 +15,9 @@ export const toolUsage: Atom<ToolUsageInput> = (input) => {
   return `
 <tool_usage>
   **FILE-ONLY TOOLING (VFS)**:
+  ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools)}
+  - Permission classes: \`immutable_readonly\` (never writable), \`default_editable\` (AI default writable), \`elevated_editable\` (requires one-time user-confirmed token in \`/god\` or \`/sudo\`), \`finish_guarded\` (write only via finish tools).
+  - \`skills/**\` and \`refs/**\` are permanently read-only in all modes.
   - Use \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\` (text/regex/fuzzy/semantic), \`vfs_grep\` to inspect.
   - Use \`vfs_write\` to create/replace JSON files.
   - Use \`vfs_edit\` with JSON Patch (RFC 6902) to update existing JSON.

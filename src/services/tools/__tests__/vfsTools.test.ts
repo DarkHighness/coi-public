@@ -22,6 +22,7 @@ import {
   VFS_SUBMIT_OUTLINE_PHASE_TOOLS,
   ALL_DEFINED_TOOLS,
 } from "../../tools";
+import { vfsToolCapabilityRegistry } from "../../vfs/core/toolCapabilityRegistry";
 
 describe("VFS tools", () => {
   it("defines VFS tool names", () => {
@@ -120,4 +121,34 @@ describe("VFS tools", () => {
     });
     expect(editResult.success).toBe(true);
   });
+
+  it("embeds permission contract into vfs tool descriptions", () => {
+    expect(VFS_LS_TOOL.description).toContain("Permission contract:");
+    expect(VFS_LS_TOOL.description).toContain("read-only");
+    expect(VFS_WRITE_TOOL.description).toContain("elevated_editable requires one-time user-confirmed token");
+    expect(VFS_COMMIT_TURN_TOOL.description).toContain("finish protocol tool");
+  });
+
+  it("keeps tool schema descriptions aligned with capability registry", () => {
+    for (const tool of ALL_DEFINED_TOOLS) {
+      const capability = vfsToolCapabilityRegistry.get(tool.name);
+      expect(capability, `missing capability for ${tool.name}`).toBeDefined();
+      if (!capability) {
+        continue;
+      }
+
+      if (capability.readOnly) {
+        expect(tool.description).toContain("read-only");
+      }
+
+      if (capability.needsElevationFor.includes("elevated_editable")) {
+        expect(tool.description).toContain("elevated_editable requires one-time user-confirmed token");
+      }
+
+      if (capability.isFinishTool) {
+        expect(tool.description).toContain("finish protocol tool");
+      }
+    }
+  });
+
 });

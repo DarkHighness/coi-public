@@ -20,6 +20,10 @@ export interface ToolCallError {
     | "ALREADY_EXISTS"
     | "INVALID_ACTION"
     | "INVALID_DATA"
+    | "ELEVATION_REQUIRED"
+    | "IMMUTABLE_READONLY"
+    | "FINISH_GUARD_REQUIRED"
+    | "EDITOR_CONFIRM_REQUIRED"
     | "UNKNOWN";
 }
 

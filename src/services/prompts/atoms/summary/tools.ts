@@ -7,7 +7,11 @@
  */
 
 import type { Atom } from "../types";
-import { VFS_TOOLSETS, formatVfsToolsForPrompt } from "../../../vfsToolsets";
+import {
+  VFS_TOOLSETS,
+  formatVfsToolCapabilitiesForPrompt,
+  formatVfsToolsForPrompt,
+} from "../../../vfsToolsets";
 
 /**
  * 摘要工具说明 - 无参数
@@ -17,6 +21,9 @@ You have these tools available:
 
 Tool allowlist for this loop:
 ${formatVfsToolsForPrompt(VFS_TOOLSETS.summary.tools)}
+
+Tool capability contract:
+${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.summary.tools)}
 
 1. \`vfs_ls_entries\` - Get a compact catalog of entities by category (read-only)
 2. \`vfs_read\` / \`vfs_read_many\` / \`vfs_read_json\` - Read specific VFS files/fields for details

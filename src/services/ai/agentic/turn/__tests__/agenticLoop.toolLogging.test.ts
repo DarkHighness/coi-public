@@ -127,9 +127,10 @@ const createVfsSession = () => {
   return {
     snapshot: () => snapshots[Math.min(cursor, snapshots.length - 1)],
     checkpoint: vi.fn(),
-    rollback: vi.fn(),
+    rollback: vi.fn(() => true),
     beginReadEpoch: vi.fn(),
     bindConversationSession: vi.fn(),
+    drainOutOfBandReadInvalidations: vi.fn(() => []),
     noteToolSeen: vi.fn(),
     markConversationTouched: vi.fn(() => {
       cursor = 1;

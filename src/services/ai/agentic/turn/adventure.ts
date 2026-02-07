@@ -301,6 +301,8 @@ export const generateAdventureTurn = async (
       context.vfsSession,
       retconAckPending,
       context.onToolCallsUpdate,
+      context.vfsMode,
+      context.vfsElevationToken ?? null,
     );
 
     const newMessages = result._conversationHistory.slice(activeHistory.length);
@@ -400,6 +402,8 @@ export const runAgenticLoop = async (
     reason?: CustomRulesAckPendingReason;
   },
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void,
+  vfsMode?: "normal" | "god" | "sudo",
+  vfsElevationToken?: string | null,
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
   return runAgenticLoopRefactored({
@@ -417,5 +421,7 @@ export const runAgenticLoop = async (
     vfsSession,
     retconAckPending,
     onToolCallsUpdate,
+    vfsMode,
+    vfsElevationToken: vfsElevationToken ?? null,
   });
 };

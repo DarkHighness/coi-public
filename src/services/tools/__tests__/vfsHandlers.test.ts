@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
+import { vfsElevationTokenManager } from "../../vfs/core/elevation";
 import { dispatchToolCall, dispatchToolCallAsync } from "../handlers";
 import { pickHintSignatureLines } from "../../__tests__/utils/schemaHint";
 
@@ -373,7 +374,7 @@ describe("VFS handlers", () => {
     ) as { success: boolean; code?: string; error?: string };
 
     expect(writeResult.success).toBe(false);
-    expect(writeResult.code).toBe("INVALID_ACTION");
+    expect(writeResult.code).toBe("IMMUTABLE_READONLY");
     expect(writeResult.error ?? "").toContain("read-only");
   });
 
@@ -570,7 +571,11 @@ describe("VFS handlers", () => {
 
   it("keeps a stable vfs_schema hint signature for world/global.json", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_schema",
@@ -1032,7 +1037,11 @@ describe("VFS handlers", () => {
 
   it("finishes summary via vfs_finish_summary and writes summary/state.json", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_finish_summary",
@@ -1070,7 +1079,11 @@ describe("VFS handlers", () => {
 
   it("rejects vfs_finish_summary when lastSummarizedIndex does not match nodeRange", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_finish_summary",
@@ -1131,7 +1144,11 @@ describe("VFS handlers", () => {
 
   it("returns INVALID_DATA for invalid vfs_grep regex", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_grep",
@@ -1279,21 +1296,16 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     session.writeFile(
-      "conversation/turn.json",
+      "outline/progress.json",
       JSON.stringify({
-        turn: 1,
-        forkId: 0,
-        timestamp: 123,
-        user: { text: "hi", inputId: "u1" },
-        model: { text: "yo", outputId: "m1" },
-        toolCalls: ["a", "b"],
+        checkpoints: ["a", "b"],
       }),
       "application/json",
     );
 
     dispatchToolCall(
       "vfs_read",
-      { path: "current/conversation/turn.json" },
+      { path: "current/outline/progress.json" },
       ctx,
     );
 
@@ -1302,8 +1314,10 @@ describe("VFS handlers", () => {
       {
         files: [
           {
-            path: "current/conversation/turn.json",
-            content: { toolCalls: ["c"] },
+            path: "current/outline/progress.json",
+            content: {
+              checkpoints: ["c"],
+            },
           },
         ],
       },
@@ -1313,14 +1327,18 @@ describe("VFS handlers", () => {
     expect(mergeResult.success).toBe(true);
 
     const updated = JSON.parse(
-      session.readFile("conversation/turn.json")!.content,
+      session.readFile("outline/progress.json")!.content,
     );
-    expect(updated.toolCalls).toEqual(["c"]);
+    expect(updated.checkpoints).toEqual(["c"]);
   });
 
   it("self-heals missing conversation index on vfs_commit_turn", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_commit_turn",
@@ -1353,7 +1371,11 @@ describe("VFS handlers", () => {
 
   it("applies mixed ops atomically via vfs_tx (write + commit_turn)", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_tx",
@@ -1401,7 +1423,11 @@ describe("VFS handlers", () => {
 
   it("rejects vfs_tx when commit_turn is not the last op", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_tx",
@@ -1544,7 +1570,7 @@ describe("VFS handlers", () => {
     expect(ok.success).toBe(true);
   });
 
-  it("allows vfs_text_edit on writable text outside world after read", () => {
+  it("keeps vfs_text_edit blocked on finish-guarded conversation text paths", () => {
     const session = new VfsSession();
     session.writeFile("conversation/scratch.txt", "A\nB", "text/plain");
     const ctx = { vfsSession: session };
@@ -1585,7 +1611,8 @@ describe("VFS handlers", () => {
       ctx,
     ) as { success: boolean };
 
-    expect(edited.success).toBe(true);
+    expect(edited.success).toBe(false);
+    expect((edited as any).code).toBe("FINISH_GUARD_REQUIRED");
 
     const verify = dispatchToolCall(
       "vfs_read",
@@ -1594,12 +1621,16 @@ describe("VFS handlers", () => {
     ) as { success: boolean; data?: { content?: string } };
 
     expect(verify.success).toBe(true);
-    expect(verify.data?.content).toBe("A\nC");
+    expect(verify.data?.content).toBe("A\nB");
   });
 
   it("can append a marker block via vfs_text_edit replace_between when markers are missing", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_text_edit",
@@ -1740,7 +1771,7 @@ describe("VFS handlers", () => {
   });
 
 
-  it("allows vfs_append on writable text outside world after read", () => {
+  it("keeps vfs_append blocked on finish-guarded conversation text paths", () => {
     const session = new VfsSession();
     session.writeFile("conversation/scratch.md", "# Scratch", "text/markdown");
     const ctx = { vfsSession: session };
@@ -1776,9 +1807,10 @@ describe("VFS handlers", () => {
         ],
       },
       ctx,
-    ) as { success: boolean };
+    ) as { success: boolean; code?: string };
 
-    expect(ok.success).toBe(true);
+    expect(ok.success).toBe(false);
+    expect(ok.code).toBe("FINISH_GUARD_REQUIRED");
 
     const read = dispatchToolCall(
       "vfs_read",
@@ -1787,7 +1819,7 @@ describe("VFS handlers", () => {
     ) as { success: boolean; data?: { content?: string } };
 
     expect(read.success).toBe(true);
-    expect(read.data?.content).toBe("# Scratch\n- item");
+    expect(read.data?.content).toBe("# Scratch");
   });
 
   it("supports vfs_text_patch with read fence and base guard", () => {
@@ -2024,7 +2056,11 @@ describe("VFS handlers", () => {
 
   it("submits outline phase 0 through phase-specific tool", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_submit_outline_phase_0",
@@ -2054,7 +2090,11 @@ describe("VFS handlers", () => {
 
   it("returns path-level validation errors for outline submit tool", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_submit_outline_phase_0",
@@ -2084,7 +2124,11 @@ describe("VFS handlers", () => {
       }),
       "application/json",
     );
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_commit_turn",
@@ -2116,7 +2160,11 @@ describe("VFS handlers", () => {
       }),
       "application/json",
     );
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_commit_turn",
@@ -2165,7 +2213,11 @@ describe("VFS handlers", () => {
       }),
       "application/json",
     );
-    const ctx = { vfsSession: session };
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+    };
 
     const result = dispatchToolCall(
       "vfs_tx",

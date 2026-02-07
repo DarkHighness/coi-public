@@ -201,6 +201,8 @@ export const generateEntityCleanup = async (
   const cleanupContext: TurnContext = {
     ...context,
     userAction: cleanupPrompt,
+    vfsMode: context.vfsMode ?? "normal",
+    vfsElevationToken: context.vfsElevationToken ?? null,
   };
 
   // Use the same adventure turn generation

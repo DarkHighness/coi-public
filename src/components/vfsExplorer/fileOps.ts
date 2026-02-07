@@ -1,3 +1,4 @@
+import type { VfsWriteContext } from "../../services/vfs/core/types";
 import type { VfsContentType } from "../../services/vfs/types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
 import { getSchemaForPath } from "../../services/vfs/schemas";
@@ -33,6 +34,7 @@ export const writeVfsFile = (
   path: string,
   content: string,
   contentType: VfsContentType,
+  writeContext?: VfsWriteContext,
 ): void => {
   if (contentType === "application/json") {
     let parsed: unknown;
@@ -54,5 +56,5 @@ export const writeVfsFile = (
     }
   }
 
-  session.writeFile(path, content, contentType);
+  session.writeFile(path, content, contentType, { writeContext });
 };

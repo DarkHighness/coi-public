@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getSchemaForPath } from "../../vfs/schemas";
 import { toCurrentPath } from "../../vfs/currentAlias";
 import { normalizeVfsPath } from "../../vfs/utils";
+import { vfsPathRegistry } from "../../vfs/core/pathRegistry";
 import type { VfsContentType, VfsFile } from "../../vfs/types";
 import type { VfsSession } from "../../vfs/vfsSession";
 import { createError, type ToolCallError } from "../toolResult";
@@ -17,12 +18,7 @@ export type MutationOperation =
 
 const isReadOnlyToolPath = (path: string): boolean => {
   const normalized = normalizeVfsPath(path);
-  return (
-    normalized === "skills" ||
-    normalized.startsWith("skills/") ||
-    normalized === "refs" ||
-    normalized.startsWith("refs/")
-  );
+  return vfsPathRegistry.isImmutableReadonly(normalized);
 };
 
 const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {

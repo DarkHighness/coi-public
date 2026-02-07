@@ -68,6 +68,7 @@ describe("stateEditorUtils", () => {
       "world/global.json",
       "{}",
       "application/json",
+      undefined,
     );
     expect(deriveGameStateFromVfs).toHaveBeenCalledWith(session.snapshot());
     expect(mergeDerivedViewState).toHaveBeenCalledWith(

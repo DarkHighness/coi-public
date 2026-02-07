@@ -29,15 +29,61 @@ import {
   outlinePhase8Schema,
   outlinePhase9Schema,
 } from "./schemas";
+import { vfsToolCapabilityRegistry } from "./vfs/core/toolCapabilityRegistry";
 
 // ============================================================================
 // Type-Safe Tool Definition Helper
 // ============================================================================
 
+const buildVfsToolPermissionContract = (toolName: string): string | null => {
+  const capability = vfsToolCapabilityRegistry.get(toolName);
+  if (!capability) {
+    return null;
+  }
+
+  const clauses: string[] = [];
+
+  if (capability.readOnly) {
+    clauses.push("read-only");
+  } else {
+    clauses.push(`writes ${capability.mayWriteClasses.join(", ")}`);
+  }
+
+  if (capability.needsElevationFor.includes("elevated_editable")) {
+    clauses.push(
+      "elevated_editable requires one-time user-confirmed token in /god or /sudo",
+    );
+  }
+
+  if (capability.isFinishTool) {
+    clauses.push("finish protocol tool");
+  } else if (capability.mayWriteClasses.includes("finish_guarded")) {
+    clauses.push("finish_guarded writable only via commit/finish protocol");
+  }
+
+  if (capability.immutableZones.length > 0) {
+    clauses.push(`immutable zones blocked: ${capability.immutableZones.join(", ")}`);
+  }
+
+  return `Permission contract: ${clauses.join("; ")}.`;
+};
+
 export function defineTool<TParams extends ZodObject<ZodRawShape>>(
   definition: TypedToolDefinition<TParams>,
 ): TypedToolDefinition<TParams> {
-  return definition;
+  if (!definition.name.startsWith("vfs_")) {
+    return definition;
+  }
+
+  const contract = buildVfsToolPermissionContract(definition.name);
+  if (!contract) {
+    return definition;
+  }
+
+  return {
+    ...definition,
+    description: `${definition.description} ${contract}`,
+  };
 }
 
 export function toRuntimeTool(

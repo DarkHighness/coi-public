@@ -37,7 +37,7 @@ import {
 import type { VfsFileMap } from "../../vfs/types";
 import { stripCurrentPath, toCurrentPath } from "../../vfs/currentAlias";
 import { normalizeVfsPath } from "../../vfs/utils";
-import { VfsSession } from "../../vfs/vfsSession";
+import { VfsSession, VfsWriteAccessError } from "../../vfs/vfsSession";
 import { getSchemaForPath } from "../../vfs/schemas";
 import Fuse from "fuse.js";
 import { getRAGService } from "../../rag";
@@ -61,7 +61,7 @@ import {
   writeConversationIndex,
   writeTurnFile,
 } from "../../vfs/conversation";
-import { registerToolHandler, type ToolContext } from "../toolHandlerRegistry";
+import { type ToolContext } from "../toolHandlerRegistry";
 import { getVfsSchemaHint } from "../../providers/utils";
 import {
   ensureTextFile,
@@ -72,6 +72,9 @@ import {
 } from "./vfsMutationGuard";
 import type { Operation } from "fast-json-patch";
 import { applyCustomRulesRetconAck } from "../../customRulesAckState";
+import { vfsPathRegistry } from "../../vfs/core/pathRegistry";
+import { vfsToolRouter } from "../../vfs/core/toolRouter";
+import type { VfsWriteContext } from "../../vfs/core/types";
 
 interface VfsMatch {
   path: string;
@@ -97,6 +100,17 @@ const commitSession = (target: VfsSession, source: VfsSession): void => {
 
 const getSession = (ctx: ToolContext): VfsSession => ctx.vfsSession;
 
+const resolveAiWriteContext = (
+  ctx: ToolContext,
+  overrides: Partial<VfsWriteContext> = {},
+): VfsWriteContext => ({
+  actor: ctx.vfsActor ?? "ai",
+  mode: ctx.vfsMode ?? "normal",
+  elevationToken: ctx.vfsElevationToken ?? null,
+  allowFinishGuardedWrite: false,
+  ...overrides,
+});
+
 const requireToolSeenForExistingFile = (
   session: VfsSession,
   path: string,
@@ -110,6 +124,22 @@ const requireToolSeenForExistingFile = (
     | "delete",
 ): ToolCallResult<never> | null => {
   return requireReadBeforeMutateForExistingFile(session, path, operation);
+};
+
+const ensureNotFinishGuardedMutation = (
+  path: string,
+  toolName: string,
+): ToolCallResult<never> | null => {
+  const normalized = normalizeVfsPath(path);
+  const classification = vfsPathRegistry.classify(normalized);
+  if (classification.permissionClass !== "finish_guarded") {
+    return null;
+  }
+
+  return createError(
+    `${toolName}: ${toCurrentPath(normalized)} is finish-guarded. Use finish protocol tools to mutate conversation/summary state.`,
+    "FINISH_GUARD_REQUIRED",
+  );
 };
 
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
@@ -1027,22 +1057,25 @@ const resolveCurrentPath = (
 const withAtomicSession = <T>(
   ctx: ToolContext,
   action: (draft: VfsSession) => ToolCallResult<T>,
+  options?: { writeContext?: VfsWriteContext },
 ): ToolCallResult<T> => {
   const session = getSession(ctx);
   const draft = cloneSession(session);
+  const writeContext = options?.writeContext ?? resolveAiWriteContext(ctx);
 
   try {
-    const result = action(draft);
+    const result = draft.withWriteContext(writeContext, () => action(draft));
     if (!result.success) {
       return result;
     }
     commitSession(session, draft);
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (message.startsWith("Path is read-only:")) {
-      return createError(message, "INVALID_ACTION");
+    if (error instanceof VfsWriteAccessError) {
+      return createError(error.message, error.code);
     }
+
+    const message = error instanceof Error ? error.message : String(error);
     return createError(message, "UNKNOWN");
   }
 };
@@ -1061,7 +1094,7 @@ const isWritePayloadError = (
     | { ok: false; error: ToolCallError },
 ): result is { ok: false; error: ToolCallError } => !result.ok;
 
-registerToolHandler(VFS_LS_ENTRIES_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_LS_ENTRIES_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_ls_entries", args);
   const limitPerCategory =
@@ -1105,7 +1138,7 @@ registerToolHandler(VFS_LS_ENTRIES_TOOL, (args, ctx) => {
   return createSuccess({ categories }, "VFS catalog listed");
 });
 
-registerToolHandler(VFS_SUGGEST_DUPLICATES_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_SUGGEST_DUPLICATES_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_suggest_duplicates", args);
   const threshold =
@@ -1222,7 +1255,7 @@ registerToolHandler(VFS_SUGGEST_DUPLICATES_TOOL, (args, ctx) => {
   );
 });
 
-registerToolHandler(VFS_FINISH_SUMMARY_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_FINISH_SUMMARY_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_finish_summary", args);
   const nodeRange = typedArgs.nodeRange;
 
@@ -1237,42 +1270,50 @@ registerToolHandler(VFS_FINISH_SUMMARY_TOOL, (args, ctx) => {
     );
   }
 
-  return withAtomicSession(ctx, (draft) => {
-    const existingFile = draft.readFile("summary/state.json");
-    const parsed = existingFile ? safeParseJson(existingFile.content) : null;
-    const existingState = parsed as any;
-    const existingSummaries = Array.isArray(existingState?.summaries)
-      ? existingState.summaries
-      : [];
+  return withAtomicSession(
+    ctx,
+    (draft) => {
+      const existingFile = draft.readFile("summary/state.json");
+      const parsed = existingFile ? safeParseJson(existingFile.content) : null;
+      const existingState = parsed as any;
+      const existingSummaries = Array.isArray(existingState?.summaries)
+        ? existingState.summaries
+        : [];
 
-    const maxId = existingSummaries.reduce((max: number, summary: any) => {
-      const id = summary?.id;
-      return typeof id === "number" && Number.isFinite(id) ? Math.max(max, id) : max;
-    }, -1);
-    const nextId = maxId + 1;
+      const maxId = existingSummaries.reduce((max: number, summary: any) => {
+        const id = summary?.id;
+        return typeof id === "number" && Number.isFinite(id)
+          ? Math.max(max, id)
+          : max;
+      }, -1);
+      const nextId = maxId + 1;
 
-    const summary = {
-      id: nextId,
-      createdAt: Date.now(),
-      displayText: typedArgs.displayText,
-      visible: typedArgs.visible,
-      hidden: typedArgs.hidden,
-      timeRange: typedArgs.timeRange ?? null,
-      nodeRange: typedArgs.nodeRange,
-    };
+      const summary = {
+        id: nextId,
+        createdAt: Date.now(),
+        displayText: typedArgs.displayText,
+        visible: typedArgs.visible,
+        hidden: typedArgs.hidden,
+        timeRange: typedArgs.timeRange ?? null,
+        nodeRange: typedArgs.nodeRange,
+      };
 
-    const nextSummaries = [...existingSummaries, summary];
+      const nextSummaries = [...existingSummaries, summary];
 
-    draft.mergeJson("summary/state.json", {
-      summaries: nextSummaries,
-      lastSummarizedIndex: typedArgs.lastSummarizedIndex,
-    });
+      draft.mergeJson("summary/state.json", {
+        summaries: nextSummaries,
+        lastSummarizedIndex: typedArgs.lastSummarizedIndex,
+      });
 
-    return createSuccess(
-      { summary, path: "current/summary/state.json" },
-      "Summary state updated",
-    );
-  });
+      return createSuccess(
+        { summary, path: "current/summary/state.json" },
+        "Summary state updated",
+      );
+    },
+    {
+      writeContext: resolveAiWriteContext(ctx, { allowFinishGuardedWrite: true }),
+    },
+  );
 });
 
 const OUTLINE_PHASE_SCHEMAS = [
@@ -1319,9 +1360,7 @@ const OUTLINE_SUBMIT_DEFS = VFS_SUBMIT_OUTLINE_PHASE_TOOLS.map((tool, phase) => 
 }));
 
 for (const { tool, phase, schema } of OUTLINE_SUBMIT_DEFS) {
-  registerToolHandler(tool, (args, ctx) => {
-    const session = getSession(ctx);
-
+  vfsToolRouter.register(tool, (args, ctx) => {
     const parsedArgs = tool.parameters.safeParse(args);
     if (!parsedArgs.success) {
       return createError(
@@ -1338,12 +1377,20 @@ for (const { tool, phase, schema } of OUTLINE_SUBMIT_DEFS) {
       );
     }
 
-    const path = `outline/phases/phase${phase}.json`;
-    session.writeFile(path, JSON.stringify(parsedData.data), "application/json");
+    return withAtomicSession(
+      ctx,
+      (draft) => {
+        const path = `outline/phases/phase${phase}.json`;
+        draft.writeFile(path, JSON.stringify(parsedData.data), "application/json");
 
-    return createSuccess(
-      { phase, path: toCurrentPath(path) },
-      `Outline phase ${phase} submitted`,
+        return createSuccess(
+          { phase, path: toCurrentPath(path) },
+          `Outline phase ${phase} submitted`,
+        );
+      },
+      {
+        writeContext: resolveAiWriteContext(ctx),
+      },
     );
   });
 }
@@ -1608,7 +1655,7 @@ const searchSemanticWithRag = async (
 // VFS Handlers
 // ============================================================================
 
-registerToolHandler(VFS_LS_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_ls", args);
   const resolved = resolveCurrentPath(typedArgs.path);
@@ -1619,7 +1666,7 @@ registerToolHandler(VFS_LS_TOOL, (args, ctx) => {
   return createSuccess({ entries }, "VFS entries listed");
 });
 
-registerToolHandler(VFS_READ_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_read", args);
   const resolved = resolveCurrentPath(typedArgs.path);
@@ -1672,7 +1719,7 @@ registerToolHandler(VFS_READ_TOOL, (args, ctx) => {
   );
 });
 
-registerToolHandler(VFS_SCHEMA_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_SCHEMA_TOOL, (args, ctx) => {
   void ctx;
   const typedArgs = getTypedArgs("vfs_schema", args);
 
@@ -1700,7 +1747,7 @@ registerToolHandler(VFS_SCHEMA_TOOL, (args, ctx) => {
   return createSuccess({ schemas, missing }, "VFS schema described");
 });
 
-registerToolHandler(VFS_STAT_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_STAT_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_stat", args);
   const snapshot = session.snapshotAll();
@@ -1771,7 +1818,7 @@ registerToolHandler(VFS_STAT_TOOL, (args, ctx) => {
   return createSuccess({ stats, missing }, "VFS stat complete");
 });
 
-registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_GLOB_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_glob", args);
   const limit = typedArgs.limit ?? 200;
@@ -1859,7 +1906,7 @@ registerToolHandler(VFS_GLOB_TOOL, (args, ctx) => {
   );
 });
 
-registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_READ_JSON_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_read_json", args);
   const resolved = resolveCurrentPath(typedArgs.path);
@@ -1933,7 +1980,7 @@ registerToolHandler(VFS_READ_JSON_TOOL, (args, ctx) => {
   );
 });
 
-registerToolHandler(VFS_READ_MANY_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_READ_MANY_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_read_many", args);
   const maxChars = typedArgs.maxChars;
@@ -1982,7 +2029,7 @@ registerToolHandler(VFS_READ_MANY_TOOL, (args, ctx) => {
   return createSuccess({ files, missing }, "VFS files read");
 });
 
-registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
+vfsToolRouter.register(VFS_SEARCH_TOOL, async (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_search", args);
   const limit = typedArgs.limit ?? 20;
@@ -2078,7 +2125,7 @@ registerToolHandler(VFS_SEARCH_TOOL, async (args, ctx) => {
   return createSuccess({ results }, "VFS search complete");
 });
 
-registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_GREP_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_grep", args);
   const limit = typedArgs.limit ?? 20;
@@ -2110,7 +2157,7 @@ registerToolHandler(VFS_GREP_TOOL, (args, ctx) => {
   return createSuccess({ results: mapped }, "VFS grep complete");
 });
 
-registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_write", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2193,7 +2240,7 @@ const ensureSeparatorNewline = (left: string, right: string): string => {
   return "\n";
 };
 
-registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_APPEND_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_append", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2257,7 +2304,7 @@ registerToolHandler(VFS_APPEND_TOOL, (args, ctx) => {
   });
 });
 
-registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_text_edit", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2496,7 +2543,7 @@ registerToolHandler(VFS_TEXT_EDIT_TOOL, (args, ctx) => {
   });
 });
 
-registerToolHandler(VFS_TEXT_PATCH_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_TEXT_PATCH_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_text_patch", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2580,7 +2627,7 @@ registerToolHandler(VFS_TEXT_PATCH_TOOL, (args, ctx) => {
   });
 });
 
-registerToolHandler(VFS_EDIT_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_EDIT_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_edit", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2607,7 +2654,7 @@ registerToolHandler(VFS_EDIT_TOOL, (args, ctx) => {
   });
 });
 
-registerToolHandler(VFS_MERGE_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_MERGE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_merge", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2630,7 +2677,7 @@ registerToolHandler(VFS_MERGE_TOOL, (args, ctx) => {
   });
 });
 
-registerToolHandler(VFS_MOVE_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_MOVE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_move", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2650,10 +2697,10 @@ registerToolHandler(VFS_MOVE_TOOL, (args, ctx) => {
       try {
         draft.renameFile(from, to);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (message.startsWith("Path is read-only:")) {
-          return createError(message, "INVALID_ACTION");
+        if (error instanceof VfsWriteAccessError) {
+          return createError(error.message, error.code);
         }
+        const message = error instanceof Error ? error.message : String(error);
         return createError(message, "NOT_FOUND");
       }
       draft.renameToolSeenPath(from, to);
@@ -2664,7 +2711,7 @@ registerToolHandler(VFS_MOVE_TOOL, (args, ctx) => {
   });
 });
 
-registerToolHandler(VFS_DELETE_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_DELETE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_delete", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -2683,10 +2730,10 @@ registerToolHandler(VFS_DELETE_TOOL, (args, ctx) => {
       try {
         draft.deleteFile(normalized);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (message.startsWith("Path is read-only:")) {
-          return createError(message, "INVALID_ACTION");
+        if (error instanceof VfsWriteAccessError) {
+          return createError(error.message, error.code);
         }
+        const message = error instanceof Error ? error.message : String(error);
         return createError(message, "NOT_FOUND");
       }
       draft.forgetToolSeenPath(normalized);
@@ -2697,10 +2744,12 @@ registerToolHandler(VFS_DELETE_TOOL, (args, ctx) => {
   });
 });
 
-registerToolHandler(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_commit_turn", args);
 
-  return withAtomicSession(ctx, (draft) => {
+  return withAtomicSession(
+    ctx,
+    (draft) => {
     const normalizedRetconAck =
       typedArgs.retconAck &&
       typeof typedArgs.retconAck.hash === "string" &&
@@ -2786,17 +2835,24 @@ registerToolHandler(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
       },
     });
 
-    return createSuccess(
-      { turnId, forkId, turnNumber },
-      "Turn committed to conversation",
-    );
-  });
+      return createSuccess(
+        { turnId, forkId, turnNumber },
+        "Turn committed to conversation",
+      );
+    },
+    {
+      writeContext: resolveAiWriteContext(ctx, { allowFinishGuardedWrite: true }),
+    },
+  );
 });
 
-registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
+vfsToolRouter.register(VFS_TX_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_tx", args);
+  const hasCommitTurn = typedArgs.ops.some((op) => op.op === "commit_turn");
 
-  return withAtomicSession(ctx, (draft) => {
+  return withAtomicSession(
+    ctx,
+    (draft) => {
     const commitIndices = typedArgs.ops
       .map((op, index) => ({ index, op }))
       .filter((entry) => entry.op.op === "commit_turn")
@@ -2826,6 +2882,13 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (isPathResolveError(resolved)) {
           return resolved.error;
         }
+        const finishGuardError = ensureNotFinishGuardedMutation(
+          resolved.path,
+          "vfs_tx write",
+        );
+        if (finishGuardError) {
+          return finishGuardError;
+        }
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "overwrite");
         if (seenError) {
           return seenError;
@@ -2852,6 +2915,13 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (isPathResolveError(resolved)) {
           return resolved.error;
         }
+        const finishGuardError = ensureNotFinishGuardedMutation(
+          resolved.path,
+          "vfs_tx edit",
+        );
+        if (finishGuardError) {
+          return finishGuardError;
+        }
         const existing = draft.readFile(resolved.path);
         if (!existing) {
           return createError(`File not found: ${op.path}`, "NOT_FOUND");
@@ -2869,6 +2939,13 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         const resolved = resolveCurrentPath(op.path);
         if (isPathResolveError(resolved)) {
           return resolved.error;
+        }
+        const finishGuardError = ensureNotFinishGuardedMutation(
+          resolved.path,
+          "vfs_tx merge",
+        );
+        if (finishGuardError) {
+          return finishGuardError;
         }
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "merge");
         if (seenError) {
@@ -2888,15 +2965,29 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (isPathResolveError(resolvedTo)) {
           return resolvedTo.error;
         }
+        const finishGuardFromError = ensureNotFinishGuardedMutation(
+          resolvedFrom.path,
+          "vfs_tx move",
+        );
+        if (finishGuardFromError) {
+          return finishGuardFromError;
+        }
+        const finishGuardToError = ensureNotFinishGuardedMutation(
+          resolvedTo.path,
+          "vfs_tx move",
+        );
+        if (finishGuardToError) {
+          return finishGuardToError;
+        }
         const from = normalizeVfsPath(resolvedFrom.path);
         const to = normalizeVfsPath(resolvedTo.path);
         try {
           draft.renameFile(from, to);
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          if (message.startsWith("Path is read-only:")) {
-            return createError(message, "INVALID_ACTION");
+          if (error instanceof VfsWriteAccessError) {
+            return createError(error.message, error.code);
           }
+          const message = error instanceof Error ? error.message : String(error);
           return createError(message, "NOT_FOUND");
         }
         draft.renameToolSeenPath(from, to);
@@ -2909,6 +3000,13 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         if (isPathResolveError(resolved)) {
           return resolved.error;
         }
+        const finishGuardError = ensureNotFinishGuardedMutation(
+          resolved.path,
+          "vfs_tx delete",
+        );
+        if (finishGuardError) {
+          return finishGuardError;
+        }
         const normalized = normalizeVfsPath(resolved.path);
         const seenError = requireToolSeenForExistingFile(draft, normalized, "delete");
         if (seenError) {
@@ -2917,10 +3015,10 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
         try {
           draft.deleteFile(normalized);
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          if (message.startsWith("Path is read-only:")) {
-            return createError(message, "INVALID_ACTION");
+          if (error instanceof VfsWriteAccessError) {
+            return createError(error.message, error.code);
           }
+          const message = error instanceof Error ? error.message : String(error);
           return createError(message, "NOT_FOUND");
         }
         draft.forgetToolSeenPath(normalized);
@@ -3021,9 +3119,15 @@ registerToolHandler(VFS_TX_TOOL, (args, ctx) => {
       return createError(`vfs_tx: unknown op: ${(op as any).op}`, "INVALID_DATA");
     }
 
-    return createSuccess(
-      { written, edited, merged, moved, deleted, committed },
-      "VFS transaction applied",
-    );
-  });
+      return createSuccess(
+        { written, edited, merged, moved, deleted, committed },
+        "VFS transaction applied",
+      );
+    },
+    {
+      writeContext: resolveAiWriteContext(ctx, {
+        allowFinishGuardedWrite: hasCommitTurn,
+      }),
+    },
+  );
 });

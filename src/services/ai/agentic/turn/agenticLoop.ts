@@ -75,6 +75,8 @@ export interface AgenticLoopConfig {
   vfsSession: VfsSession;
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
   retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
+  vfsMode?: "normal" | "god" | "sudo";
+  vfsElevationToken?: string | null;
 }
 
 export interface AgenticLoopResult {
@@ -106,6 +108,8 @@ export async function runAgenticLoopRefactored(
     sessionId,
     onToolCallsUpdate,
     retconAckPending,
+    vfsMode,
+    vfsElevationToken,
   } = config;
 
   // Initialize provider
@@ -118,6 +122,8 @@ export async function runAgenticLoopRefactored(
     isSudoMode,
     isCleanupMode,
     config.vfsSession,
+    vfsMode,
+    vfsElevationToken ?? null,
   );
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
@@ -327,6 +333,8 @@ interface ProcessToolCallsParams {
   allLogs: LogEntry[];
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
   retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
+  vfsMode?: "normal" | "god" | "sudo";
+  vfsElevationToken?: string | null;
 }
 
 interface ProcessToolCallsResult {

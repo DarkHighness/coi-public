@@ -8,6 +8,7 @@ import type { OnMount } from "@monaco-editor/react";
 import { ZodError } from "zod";
 import { useTranslation } from "react-i18next";
 import type { GameState } from "../types";
+import type { VfsWriteContext } from "../services/vfs/core/types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import type { VfsContentType, VfsFileMap } from "../services/vfs/types";
 import {
@@ -30,6 +31,7 @@ interface StateEditorProps {
   onClose: () => void;
   gameState: GameState;
   vfsSession: VfsSession;
+  editorSessionToken: string | null;
   applyVfsMutation: (nextState: GameState) => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
 }
@@ -39,6 +41,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   onClose,
   gameState,
   vfsSession,
+  editorSessionToken,
   applyVfsMutation,
   onShowToast,
 }) => {
@@ -51,9 +54,6 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [confirmedReadonlyPath, setConfirmedReadonlyPath] = useState<
-    string | null
-  >(null);
   const [markdownMode, setMarkdownMode] = useState<"edit" | "preview">("edit");
   const [mobileView, setMobileView] = useState<"files" | "editor">("editor");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
@@ -92,6 +92,16 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     return vfsSession.snapshotAll();
   }, [vfsSession, snapshotVersion]);
 
+  const editorWriteContext: VfsWriteContext = useMemo(
+    () => ({
+      actor: "user_editor",
+      mode: "normal",
+      editorSessionToken,
+      allowFinishGuardedWrite: false,
+    }),
+    [editorSessionToken],
+  );
+
   const filteredSnapshot = useMemo<VfsFileMap>(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
@@ -121,18 +131,14 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   const hasSearch = searchQuery.trim().length > 0;
   const selectedPathIsProtected = selectedPath
-    ? isReadonlyPath(selectedPath)
+    ? isReadonlyPath(selectedPath, { editorSessionToken })
     : false;
-  const hasReadonlyOverride =
-    !!selectedPath && confirmedReadonlyPath === selectedPath;
-  const pathReadOnly =
-    !selectedPath || (selectedPathIsProtected && !hasReadonlyOverride);
+  const pathReadOnly = !selectedPath || selectedPathIsProtected;
   const isReadOnly = pathReadOnly || !isEditMode;
 
   useEffect(() => {
     if (!isOpen) {
       setIsEditMode(false);
-      setConfirmedReadonlyPath(null);
       setMarkdownMode("edit");
       setMobileView("editor");
       setSearchQuery("");
@@ -290,6 +296,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       return;
     }
 
+    if (!editorSessionToken) {
+      onShowToast?.(
+        t("stateEditor.sessionConfirmRequired") ||
+          "Editor confirmation expired. Reopen the editor to continue editing.",
+        "error",
+      );
+      return;
+    }
+
     if (error) {
       onShowToast?.(fixErrorsMessage, "error");
       return;
@@ -304,6 +319,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         content: fileContent,
         contentType: fileContentType,
         baseState: gameState,
+        writeContext: editorWriteContext,
       });
 
       const after = vfsSession.readFile(selectedPath);
@@ -339,6 +355,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   };
 
   const handleCreateRuleTemplate = () => {
+    if (!editorSessionToken) {
+      onShowToast?.(
+        t("stateEditor.sessionConfirmRequired") ||
+          "Editor confirmation expired. Reopen the editor to continue editing.",
+        "error",
+      );
+      return;
+    }
+
     const suggestedTitle = (
       window.prompt(
         t("stateEditor.createRuleTemplatePrompt") ||
@@ -368,6 +393,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         content: markdown,
         contentType: "text/markdown",
         baseState: gameState,
+        writeContext: editorWriteContext,
       });
 
       applyVfsMutation(nextState);
@@ -400,19 +426,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       return;
     }
 
-    if (selectedPathIsProtected && !hasReadonlyOverride) {
-      const confirmReadonlyEditMessage =
-        t("stateEditor.confirmReadonlyEdit") ||
-        "This is a protected file. Editing it may break game state. Continue to enable editing for this file?";
-      if (!window.confirm(confirmReadonlyEditMessage)) {
-        return;
-      }
-      setConfirmedReadonlyPath(selectedPath);
+    if (selectedPathIsProtected) {
       onShowToast?.(
-        t("stateEditor.readonlyOverrideEnabled") ||
-          "Protected file editing enabled for this file.",
+        t("stateEditor.readOnlyByPolicy") ||
+          "This path is protected by VFS policy and cannot be edited from State Editor.",
         "info",
       );
+      return;
     }
 
     setIsEditMode(true);
@@ -473,7 +493,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const padding = { paddingLeft: `${depth * 12}px` };
 
     if (isFolder) {
-      const readonly = isReadonlyPath(node.path);
+      const readonly = isReadonlyPath(node.path, { editorSessionToken });
       return (
         <div key={node.path || "root"}>
           <button
@@ -502,7 +522,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       );
     }
 
-    const readonly = isReadonlyPath(node.path);
+    const readonly = isReadonlyPath(node.path, { editorSessionToken });
     const isSelected = node.path === selectedPath;
 
     return (
@@ -690,18 +710,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                     {t("stateEditor.unsaved") || "Unsaved"}
                   </span>
                 )}
-                {selectedPathIsProtected && !hasReadonlyOverride && (
+                {!isEditMode && (
                   <span className="px-2 py-0.5 bg-theme-info/15 text-theme-info text-[11px] rounded-full border border-theme-info/20">
-                    {t("stateEditor.readOnly") || "Read Only"}
-                  </span>
-                )}
-                {!selectedPathIsProtected && !isEditMode && (
-                  <span className="px-2 py-0.5 bg-theme-info/15 text-theme-info text-[11px] rounded-full border border-theme-info/20">
-                    {t("stateEditor.readOnly") || "Read Only"}
-                  </span>
-                )}
-                {selectedPathIsProtected && hasReadonlyOverride && !isEditMode && (
-                  <span className="px-2 py-0.5 bg-theme-warning/15 text-theme-warning text-[11px] rounded-full border border-theme-warning/20">
                     {t("stateEditor.readOnly") || "Read Only"}
                   </span>
                 )}

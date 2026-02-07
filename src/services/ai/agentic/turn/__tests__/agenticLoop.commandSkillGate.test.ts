@@ -129,9 +129,10 @@ const createVfsSession = (hasSeenSkill: boolean) => {
   return {
     snapshot: () => snapshots[Math.min(cursor, snapshots.length - 1)],
     checkpoint: vi.fn(),
-    rollback: vi.fn(),
+    rollback: vi.fn(() => true),
     beginReadEpoch: vi.fn(),
     bindConversationSession: vi.fn(),
+    drainOutOfBandReadInvalidations: vi.fn(() => []),
     noteToolSeen: vi.fn(),
     hasToolSeenInCurrentEpoch: vi.fn((path: string) =>
       hasSeenSkill && path === "skills/commands/sudo/SKILL.md",
