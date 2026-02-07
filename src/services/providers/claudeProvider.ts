@@ -87,6 +87,110 @@ export function createClaudeClient(config: ClaudeConfig): Anthropic {
   });
 }
 
+const readUsageNumber = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): number | undefined => {
+  if (!usage) return undefined;
+  for (const key of keys) {
+    const value = usage[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return Math.max(0, Math.floor(value));
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+  }
+  return undefined;
+};
+
+const hasAnyUsageField = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): boolean => {
+  if (!usage) return false;
+  return keys.some((key) => usage[key] !== undefined);
+};
+
+const CLAUDE_PROMPT_KEYS = [
+  "input_tokens",
+  "inputTokens",
+  "prompt_tokens",
+  "promptTokens",
+] as const;
+const CLAUDE_COMPLETION_KEYS = [
+  "output_tokens",
+  "outputTokens",
+  "completion_tokens",
+  "completionTokens",
+] as const;
+const CLAUDE_TOTAL_KEYS = ["total_tokens", "totalTokens"] as const;
+const CLAUDE_CACHE_READ_KEYS = [
+  "cache_read_input_tokens",
+  "cacheReadInputTokens",
+] as const;
+const CLAUDE_CACHE_WRITE_KEYS = [
+  "cache_creation_input_tokens",
+  "cacheCreationInputTokens",
+] as const;
+const CLAUDE_ALL_USAGE_KEYS = [
+  ...CLAUDE_PROMPT_KEYS,
+  ...CLAUDE_COMPLETION_KEYS,
+  ...CLAUDE_TOTAL_KEYS,
+  ...CLAUDE_CACHE_READ_KEYS,
+  ...CLAUDE_CACHE_WRITE_KEYS,
+] as const;
+
+export function parseClaudeUsage(usageMetadata: unknown): TokenUsage {
+  const usage =
+    usageMetadata && typeof usageMetadata === "object"
+      ? (usageMetadata as Record<string, unknown>)
+      : null;
+
+  const prompt = readUsageNumber(usage, [...CLAUDE_PROMPT_KEYS]);
+  const completion = readUsageNumber(usage, [...CLAUDE_COMPLETION_KEYS]);
+  const total = readUsageNumber(usage, [...CLAUDE_TOTAL_KEYS]);
+  const cacheRead = readUsageNumber(usage, [...CLAUDE_CACHE_READ_KEYS]);
+  const cacheWrite = readUsageNumber(usage, [...CLAUDE_CACHE_WRITE_KEYS]);
+
+  let promptTokens = prompt ?? 0;
+  let completionTokens = completion ?? 0;
+  let totalTokens = total ?? 0;
+
+  if (
+    completionTokens <= 0 &&
+    totalTokens > 0 &&
+    promptTokens > 0 &&
+    totalTokens >= promptTokens
+  ) {
+    completionTokens = totalTokens - promptTokens;
+  }
+
+  if (totalTokens <= 0) {
+    totalTokens = promptTokens + completionTokens;
+  }
+
+  if (promptTokens <= 0 && totalTokens > 0 && completionTokens <= 0) {
+    promptTokens = totalTokens;
+  }
+
+  const hasKnownUsageKeys = hasAnyUsageField(usage, [...CLAUDE_ALL_USAGE_KEYS]);
+  const hasPositiveSignal =
+    promptTokens > 0 || completionTokens > 0 || totalTokens > 0;
+
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    ...(typeof cacheRead === "number" ? { cacheRead } : {}),
+    ...(typeof cacheWrite === "number" ? { cacheWrite } : {}),
+    reported: hasKnownUsageKeys || hasPositiveSignal,
+  };
+}
+
 // ============================================================================
 // Connection Validation
 // ============================================================================
@@ -438,18 +542,38 @@ Answer the user's request using relevant tools (if they are available). Before c
           } else if (event.type === "message_delta") {
             // 更新使用量
             if (event.usage) {
-              usage.completionTokens = event.usage.output_tokens || 0;
-              usage.reported = true;
+              const deltaUsage = parseClaudeUsage(event.usage);
+              if (deltaUsage.reported) {
+                usage.completionTokens = Math.max(
+                  usage.completionTokens,
+                  deltaUsage.completionTokens,
+                );
+                if (typeof deltaUsage.cacheRead === "number") {
+                  usage.cacheRead = deltaUsage.cacheRead;
+                }
+                if (typeof deltaUsage.cacheWrite === "number") {
+                  usage.cacheWrite = deltaUsage.cacheWrite;
+                }
+                usage.reported = true;
+              }
             }
           } else if (event.type === "message_start") {
             // 初始使用量
             if (event.message.usage) {
-              usage.promptTokens = event.message.usage.input_tokens || 0;
-              usage.cacheWrite =
-                (event.message.usage as any).cache_creation_input_tokens || 0;
-              usage.cacheRead =
-                (event.message.usage as any).cache_read_input_tokens || 0;
-              usage.reported = true;
+              const startUsage = parseClaudeUsage(event.message.usage);
+              if (startUsage.reported) {
+                usage.promptTokens = Math.max(
+                  usage.promptTokens,
+                  startUsage.promptTokens,
+                );
+                if (typeof startUsage.cacheWrite === "number") {
+                  usage.cacheWrite = startUsage.cacheWrite;
+                }
+                if (typeof startUsage.cacheRead === "number") {
+                  usage.cacheRead = startUsage.cacheRead;
+                }
+                usage.reported = true;
+              }
             }
           }
         }
@@ -513,16 +637,7 @@ Answer the user's request using relevant tools (if they are available). Before c
         // 检查停止原因
         handleStopReason(response.stop_reason, response.stop_sequence);
 
-        usage = {
-          promptTokens: response.usage.input_tokens || 0,
-          completionTokens: response.usage.output_tokens || 0,
-          totalTokens:
-            (response.usage.input_tokens || 0) +
-            (response.usage.output_tokens || 0),
-          cacheWrite: (response.usage as any).cache_creation_input_tokens || 0,
-          cacheRead: (response.usage as any).cache_read_input_tokens || 0,
-          reported: Boolean(response.usage),
-        };
+        usage = parseClaudeUsage(response.usage);
       }
 
       console.log(`[Claude] Generation complete. Usage:`, usage);

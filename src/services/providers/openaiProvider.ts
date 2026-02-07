@@ -88,6 +88,143 @@ export function createOpenAIClient(config: OpenAIConfig): OpenAI {
   });
 }
 
+const readUsageNumber = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): number | undefined => {
+  if (!usage) return undefined;
+  for (const key of keys) {
+    const value = usage[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return Math.max(0, Math.floor(value));
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+  }
+  return undefined;
+};
+
+const readNestedUsageNumber = (
+  usage: Record<string, unknown> | null | undefined,
+  paths: ReadonlyArray<ReadonlyArray<string>>,
+): number | undefined => {
+  if (!usage) return undefined;
+  for (const path of paths) {
+    let current: unknown = usage;
+    for (const key of path) {
+      if (!current || typeof current !== "object") {
+        current = undefined;
+        break;
+      }
+      current = (current as Record<string, unknown>)[key];
+    }
+    if (typeof current === "number" && Number.isFinite(current)) {
+      return Math.max(0, Math.floor(current));
+    }
+    if (typeof current === "string" && current.trim().length > 0) {
+      const parsed = Number(current);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+  }
+  return undefined;
+};
+
+const hasAnyUsageField = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): boolean => {
+  if (!usage) return false;
+  return keys.some((key) => usage[key] !== undefined);
+};
+
+const OPENAI_PROMPT_KEYS = [
+  "prompt_tokens",
+  "promptTokens",
+  "input_tokens",
+  "inputTokens",
+] as const;
+const OPENAI_COMPLETION_KEYS = [
+  "completion_tokens",
+  "completionTokens",
+  "output_tokens",
+  "outputTokens",
+] as const;
+const OPENAI_TOTAL_KEYS = ["total_tokens", "totalTokens"] as const;
+const OPENAI_CACHE_READ_KEYS = [
+  "cached_tokens",
+  "cache_read_tokens",
+  "cacheReadTokens",
+] as const;
+const OPENAI_CACHE_READ_NESTED_PATHS = [
+  ["prompt_tokens_details", "cached_tokens"],
+  ["promptTokensDetails", "cachedTokens"],
+  ["input_tokens_details", "cached_tokens"],
+  ["inputTokensDetails", "cachedTokens"],
+] as const;
+const OPENAI_ALL_USAGE_KEYS = [
+  ...OPENAI_PROMPT_KEYS,
+  ...OPENAI_COMPLETION_KEYS,
+  ...OPENAI_TOTAL_KEYS,
+  ...OPENAI_CACHE_READ_KEYS,
+] as const;
+
+export function parseOpenAIUsage(usageMetadata: unknown): TokenUsage {
+  const usage =
+    usageMetadata && typeof usageMetadata === "object"
+      ? (usageMetadata as Record<string, unknown>)
+      : null;
+
+  const prompt = readUsageNumber(usage, [...OPENAI_PROMPT_KEYS]);
+  const completion = readUsageNumber(usage, [...OPENAI_COMPLETION_KEYS]);
+  const total = readUsageNumber(usage, [...OPENAI_TOTAL_KEYS]);
+  const cacheReadDirect = readUsageNumber(usage, [...OPENAI_CACHE_READ_KEYS]);
+  const cacheReadNested = readNestedUsageNumber(usage, [
+    ...OPENAI_CACHE_READ_NESTED_PATHS,
+  ]);
+
+  let promptTokens = prompt ?? 0;
+  let completionTokens = completion ?? 0;
+  let totalTokens = total ?? 0;
+
+  if (
+    completionTokens <= 0 &&
+    totalTokens > 0 &&
+    promptTokens > 0 &&
+    totalTokens >= promptTokens
+  ) {
+    completionTokens = totalTokens - promptTokens;
+  }
+
+  if (totalTokens <= 0) {
+    totalTokens = promptTokens + completionTokens;
+  }
+
+  if (promptTokens <= 0 && totalTokens > 0 && completionTokens <= 0) {
+    promptTokens = totalTokens;
+  }
+
+  const cacheRead =
+    typeof cacheReadDirect === "number" ? cacheReadDirect : cacheReadNested;
+
+  const hasKnownUsageKeys = hasAnyUsageField(usage, [...OPENAI_ALL_USAGE_KEYS]);
+  const hasPositiveSignal =
+    promptTokens > 0 || completionTokens > 0 || totalTokens > 0;
+
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    ...(typeof cacheRead === "number" ? { cacheRead } : {}),
+    reported: hasKnownUsageKeys || hasPositiveSignal,
+  };
+}
+
 // ============================================================================
 // Connection Validation
 // ============================================================================
@@ -589,13 +726,7 @@ export async function generateContent(
 
           // 更新使用量
           if (chunk.usage) {
-            usage = {
-              promptTokens: chunk.usage.prompt_tokens || 0,
-              completionTokens: chunk.usage.completion_tokens || 0,
-              totalTokens: chunk.usage.total_tokens || 0,
-              cacheRead: chunk.usage.prompt_tokens_details?.cached_tokens || 0,
-              reported: true,
-            };
+            usage = parseOpenAIUsage(chunk.usage);
           }
         }
 
@@ -658,13 +789,7 @@ export async function generateContent(
           throw new SafetyFilterError("openai");
         }
 
-        usage = {
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0,
-          cacheRead: response.usage?.prompt_tokens_details?.cached_tokens || 0,
-          reported: Boolean(response.usage),
-        };
+        usage = parseOpenAIUsage(response.usage);
 
         // 提取 reasoning content (OpenAI o1/o3 系列)
         if (isReasoning && (message as any)?.reasoning_content) {
@@ -1208,11 +1333,7 @@ export async function generateImage(
       if (markdownMatch) {
         return {
           url: markdownMatch[1],
-          usage: {
-            promptTokens: response.usage?.prompt_tokens || 0,
-            completionTokens: response.usage?.completion_tokens || 0,
-            totalTokens: response.usage?.total_tokens || 0,
-          },
+          usage: parseOpenAIUsage(response.usage),
           raw: response,
         };
       }
@@ -1222,11 +1343,7 @@ export async function generateImage(
       if (urlMatch) {
         return {
           url: urlMatch[0],
-          usage: {
-            promptTokens: response.usage?.prompt_tokens || 0,
-            completionTokens: response.usage?.completion_tokens || 0,
-            totalTokens: response.usage?.total_tokens || 0,
-          },
+          usage: parseOpenAIUsage(response.usage),
           raw: response,
         };
       }
@@ -1241,11 +1358,7 @@ export async function generateImage(
           : `data:image/jpeg;base64,${content}`;
         return {
           url,
-          usage: {
-            promptTokens: response.usage?.prompt_tokens || 0,
-            completionTokens: response.usage?.completion_tokens || 0,
-            totalTokens: response.usage?.total_tokens || 0,
-          },
+          usage: parseOpenAIUsage(response.usage),
           raw: response,
         };
       }
@@ -1503,10 +1616,13 @@ export async function generateEmbedding(
 
   return {
     embeddings,
-    usage: {
-      promptTokens: response.usage?.prompt_tokens || 0,
-      totalTokens: response.usage?.total_tokens || 0,
-    },
+    usage: (() => {
+      const parsedUsage = parseOpenAIUsage(response.usage);
+      return {
+        promptTokens: parsedUsage.promptTokens,
+        totalTokens: parsedUsage.totalTokens,
+      };
+    })(),
   };
 }
 

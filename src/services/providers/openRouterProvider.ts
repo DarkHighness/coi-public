@@ -89,6 +89,148 @@ export interface OpenRouterContentGenerationResponse {
   usage: TokenUsage;
   raw: unknown;
 }
+const readUsageNumber = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): number | undefined => {
+  if (!usage) return undefined;
+  for (const key of keys) {
+    const value = usage[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return Math.max(0, Math.floor(value));
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+  }
+  return undefined;
+};
+
+const readNestedUsageNumber = (
+  usage: Record<string, unknown> | null | undefined,
+  paths: ReadonlyArray<ReadonlyArray<string>>,
+): number | undefined => {
+  if (!usage) return undefined;
+  for (const path of paths) {
+    let current: unknown = usage;
+    for (const key of path) {
+      if (!current || typeof current !== "object") {
+        current = undefined;
+        break;
+      }
+      current = (current as Record<string, unknown>)[key];
+    }
+    if (typeof current === "number" && Number.isFinite(current)) {
+      return Math.max(0, Math.floor(current));
+    }
+    if (typeof current === "string" && current.trim().length > 0) {
+      const parsed = Number(current);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+  }
+  return undefined;
+};
+
+const hasAnyUsageField = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): boolean => {
+  if (!usage) return false;
+  return keys.some((key) => usage[key] !== undefined);
+};
+
+const OPENROUTER_PROMPT_KEYS = [
+  "promptTokens",
+  "prompt_tokens",
+  "inputTokens",
+  "input_tokens",
+] as const;
+const OPENROUTER_COMPLETION_KEYS = [
+  "completionTokens",
+  "completion_tokens",
+  "outputTokens",
+  "output_tokens",
+] as const;
+const OPENROUTER_TOTAL_KEYS = ["totalTokens", "total_tokens"] as const;
+const OPENROUTER_CACHE_READ_KEYS = [
+  "cacheReadInputTokens",
+  "cache_read_input_tokens",
+  "cacheReadTokens",
+] as const;
+const OPENROUTER_CACHE_WRITE_KEYS = [
+  "cacheCreationInputTokens",
+  "cache_creation_input_tokens",
+  "cacheWriteTokens",
+] as const;
+const OPENROUTER_CACHE_READ_NESTED_PATHS = [
+  ["prompt_tokens_details", "cached_tokens"],
+  ["promptTokensDetails", "cachedTokens"],
+] as const;
+const OPENROUTER_ALL_USAGE_KEYS = [
+  ...OPENROUTER_PROMPT_KEYS,
+  ...OPENROUTER_COMPLETION_KEYS,
+  ...OPENROUTER_TOTAL_KEYS,
+  ...OPENROUTER_CACHE_READ_KEYS,
+  ...OPENROUTER_CACHE_WRITE_KEYS,
+] as const;
+
+export function parseOpenRouterUsage(usageMetadata: unknown): TokenUsage {
+  const usage =
+    usageMetadata && typeof usageMetadata === "object"
+      ? (usageMetadata as Record<string, unknown>)
+      : null;
+
+  const prompt = readUsageNumber(usage, [...OPENROUTER_PROMPT_KEYS]);
+  const completion = readUsageNumber(usage, [...OPENROUTER_COMPLETION_KEYS]);
+  const total = readUsageNumber(usage, [...OPENROUTER_TOTAL_KEYS]);
+  const cacheReadDirect = readUsageNumber(usage, [...OPENROUTER_CACHE_READ_KEYS]);
+  const cacheReadNested = readNestedUsageNumber(usage, [
+    ...OPENROUTER_CACHE_READ_NESTED_PATHS,
+  ]);
+  const cacheWrite = readUsageNumber(usage, [...OPENROUTER_CACHE_WRITE_KEYS]);
+
+  let promptTokens = prompt ?? 0;
+  let completionTokens = completion ?? 0;
+  let totalTokens = total ?? 0;
+
+  if (
+    completionTokens <= 0 &&
+    totalTokens > 0 &&
+    promptTokens > 0 &&
+    totalTokens >= promptTokens
+  ) {
+    completionTokens = totalTokens - promptTokens;
+  }
+
+  if (totalTokens <= 0) {
+    totalTokens = promptTokens + completionTokens;
+  }
+
+  if (promptTokens <= 0 && totalTokens > 0 && completionTokens <= 0) {
+    promptTokens = totalTokens;
+  }
+
+  const cacheRead =
+    typeof cacheReadDirect === "number" ? cacheReadDirect : cacheReadNested;
+
+  const hasKnownUsageKeys = hasAnyUsageField(usage, [...OPENROUTER_ALL_USAGE_KEYS]);
+  const hasPositiveSignal =
+    promptTokens > 0 || completionTokens > 0 || totalTokens > 0;
+
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    ...(typeof cacheRead === "number" ? { cacheRead } : {}),
+    ...(typeof cacheWrite === "number" ? { cacheWrite } : {}),
+    reported: hasKnownUsageKeys || hasPositiveSignal,
+  };
+}
 // ============================================================================
 // Connection Validation
 // ============================================================================
@@ -387,14 +529,7 @@ async function handleNonStreamingResponse(
   if (choice?.finishReason === "content_filter") {
     throw new SafetyFilterError("openrouter");
   }
-  const usage: TokenUsage = {
-    promptTokens: data.usage?.promptTokens || 0,
-    completionTokens: data.usage?.completionTokens || 0,
-    totalTokens: data.usage?.totalTokens || 0,
-    cacheRead: data.usage?.cacheReadInputTokens || 0,
-    cacheWrite: data.usage?.cacheCreationInputTokens || 0,
-    reported: Boolean(data.usage),
-  };
+  const usage = parseOpenRouterUsage(data.usage);
 
   // 提取 reasoning content (如果存在)
   let reasoningContent = "";
@@ -506,14 +641,7 @@ async function handleStreamingResponse(
         }
       }
       if (chunk.usage) {
-        usage = {
-          promptTokens: chunk.usage.promptTokens || 0,
-          completionTokens: chunk.usage.completionTokens || 0,
-          totalTokens: chunk.usage.totalTokens || 0,
-          cacheRead: chunk.usage.cacheReadInputTokens || 0,
-          cacheWrite: chunk.usage.cacheCreationInputTokens || 0,
-          reported: true,
-        };
+        usage = parseOpenRouterUsage(chunk.usage);
       }
     }
   } catch (e) {
@@ -741,18 +869,7 @@ export async function generateImage(
           data.choices[0].message.images[0].imageUrl?.url ||
           data.choices[0].message.images[0].image_url?.url,
         raw: data,
-        usage: data.usage
-          ? {
-              promptTokens:
-                data.usage.promptTokens || data.usage.prompt_tokens || 0,
-              completionTokens:
-                data.usage.completionTokens ||
-                data.usage.completion_tokens ||
-                0,
-              totalTokens:
-                data.usage.totalTokens || data.usage.total_tokens || 0,
-            }
-          : undefined,
+        usage: data.usage ? parseOpenRouterUsage(data.usage) : undefined,
       };
     }
     // Fallback: Check if URL is in content (some models)
@@ -1050,11 +1167,13 @@ export async function generateEmbedding(
 
     return {
       embeddings,
-      usage: {
-        promptTokens:
-          data.usage?.prompt_tokens || data.usage?.promptTokens || 0,
-        totalTokens: data.usage?.total_tokens || data.usage?.totalTokens || 0,
-      },
+      usage: (() => {
+        const parsedUsage = parseOpenRouterUsage(data.usage);
+        return {
+          promptTokens: parsedUsage.promptTokens,
+          totalTokens: parsedUsage.totalTokens,
+        };
+      })(),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
