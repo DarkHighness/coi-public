@@ -49,6 +49,7 @@ export interface OpenAISchema {
   items?: OpenAISchema;
   enum?: string[];
   additionalProperties?: boolean | OpenAISchema;
+  anyOf?: OpenAISchema[];
   // Index signature to satisfy Record<string, unknown> constraint
   [key: string]: unknown;
 }
@@ -77,6 +78,45 @@ function createOpenAIJsonValueSchema(description?: string): OpenAISchema {
   };
   if (description) result.description = description;
   return result;
+}
+
+function dedupeSchemas(schemas: OpenAISchema[]): OpenAISchema[] {
+  const seen = new Set<string>();
+  const deduped: OpenAISchema[] = [];
+
+  for (const schema of schemas) {
+    const key = JSON.stringify(schema);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(schema);
+  }
+
+  return deduped;
+}
+
+function buildAnyOfSchema(
+  options: ZodTypeAny[],
+  compiler: (schema: ZodTypeAny, isOptionalField?: boolean) => OpenAISchema,
+  label: string,
+): OpenAISchema {
+  const variants = dedupeSchemas(options.map((opt) => compiler(opt, false)));
+
+  if (variants.length === 0) {
+    return { type: "string" };
+  }
+
+  if (variants.length === 1) {
+    return variants[0];
+  }
+
+  console.warn(
+    `${label} schema encountered generic union; converting to anyOf for better fidelity.`,
+  );
+
+  return {
+    type: "object",
+    anyOf: variants,
+  };
 }
 
 function createGeminiJsonValueSchema(description?: string): Schema {
@@ -912,12 +952,12 @@ function processZodToGeminiCompatible(
       return result;
     }
 
-    // Default fallback: first option
     if (options.length > 0) {
-      console.warn(
-        "Gemini Compatible schema does not support generic union types. Falling back to first option.",
+      return buildAnyOfSchema(
+        options,
+        processZodToGeminiCompatible,
+        "Gemini Compatible",
       );
-      return processZodToGeminiCompatible(options[0]);
     }
     return { type: "string" };
   }
@@ -1356,10 +1396,11 @@ function processZodToClaudeCompatible(
     }
 
     if (options.length > 0) {
-      console.warn(
-        "Claude Compatible schema does not support generic union types. Falling back to first option.",
+      return buildAnyOfSchema(
+        options,
+        processZodToClaudeCompatible,
+        "Claude Compatible",
       );
-      return processZodToClaudeCompatible(options[0]);
     }
     return { type: "string" };
   }

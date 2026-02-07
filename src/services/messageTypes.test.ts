@@ -87,6 +87,7 @@ describe("messageTypes", () => {
       parts: [
         {
           functionResponse: {
+            id: "call_2",
             name: "vfs_read",
             response: { content: { ok: true } },
           },
@@ -140,6 +141,31 @@ describe("messageTypes", () => {
         },
       ],
     });
+  });
+
+  it("preserves tool result id in Gemini round-trip", () => {
+    const source = createToolResponseMessage([
+      { toolCallId: "call_123", name: "vfs_read", content: { ok: true } },
+    ]);
+
+    const gemini = toGeminiFormat([source]);
+    const unified = fromGeminiFormat(gemini);
+
+    expect(unified).toEqual([
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool_result",
+            toolResult: {
+              id: "call_123",
+              name: "vfs_read",
+              content: { ok: true },
+            },
+          },
+        ],
+      },
+    ]);
   });
 
   it("converts unified messages to openai format", () => {
@@ -267,6 +293,31 @@ describe("messageTypes", () => {
       role: "user",
       content: [{ type: "text", text: "plain" }],
     });
+  });
+
+  it("restores structured tool result content from OpenAI format", () => {
+    const source = createToolResponseMessage([
+      { toolCallId: "call_9", name: "vfs_json", content: { k: [1, 2, 3] } },
+    ]);
+
+    const openai = toOpenAIFormat([source]);
+    const unified = fromOpenAIFormat(openai);
+
+    expect(unified).toEqual([
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool_result",
+            toolResult: {
+              id: "call_9",
+              name: "unknown",
+              content: { k: [1, 2, 3] },
+            },
+          },
+        ],
+      },
+    ]);
   });
 
   it("extracts system instruction and removes system content messages", () => {

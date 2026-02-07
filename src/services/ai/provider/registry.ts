@@ -97,6 +97,7 @@ export function createProviderConfig(
       return {
         apiKey: instance.apiKey,
         baseUrl: instance.baseUrl || undefined,
+        compatibleImageGeneration: instance.compatibleImageGeneration,
       };
     case "openai":
       return {
@@ -107,6 +108,7 @@ export function createProviderConfig(
         geminiMessageFormat: instance.geminiMessageFormat,
         claudeCompatibility: instance.claudeCompatibility,
         claudeMessageFormat: instance.claudeMessageFormat,
+        compatibleImageGeneration: instance.compatibleImageGeneration,
       };
     case "openrouter":
       return {

@@ -173,6 +173,7 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
             .filter((p): p is ToolResponsePart => p.type === "tool_result")
             .map((p) => ({
               functionResponse: {
+                id: p.toolResult.id,
                 name: p.toolResult.name,
                 response: { content: p.toolResult.content },
               },
@@ -416,6 +417,24 @@ export const fromGeminiFormat = (geminiMessages: any[]): UnifiedMessage[] => {
  * Convert OpenAI format to UnifiedMessage array
  */
 export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
+  const parseMaybeJson = (value: unknown): unknown => {
+    if (typeof value !== "string") return value;
+
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+
+    // Only parse structured JSON payloads that were previously stringified
+    if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+      return value;
+    }
+
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
+  };
+
   return openaiMessages.map((msg) => {
     const content: MessagePart[] = [];
 
@@ -426,7 +445,7 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
         toolResult: {
           id: msg.tool_call_id,
           name: msg.name || "unknown", // OpenAI tool messages don't always have name
-          content: msg.content,
+          content: parseMaybeJson(msg.content),
         },
       });
       return { role: "tool" as MessageRole, content };

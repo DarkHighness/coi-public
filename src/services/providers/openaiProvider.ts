@@ -349,13 +349,20 @@ export async function generateContent(
       }
 
       // 转换消息格式
-      // 注意: 始终使用标准 OpenAI 格式，因为 OpenAI SDK 无法产生 Claude/Gemini 原生格式
-      // 消息格式转换应由代理服务（如 OpenRouter, LiteLLM）处理
-      // 兼容模式主要影响: schema 格式 (无 additionalProperties) 和 strict 设置 (false)
+      // 默认使用标准 OpenAI 格式；当兼容开关开启时可在客户端执行 Claude/Gemini 格式转换
       // Reasoning 模型使用 developer message 而不是 system message
+      const useGeminiMessageFormat =
+        !!config.geminiMessageFormat && isGemini && !isReasoning;
+      const useClaudeMessageFormat =
+        !!config.claudeMessageFormat && isClaude && !isReasoning;
+
       const messages = isReasoning
         ? convertToReasoningMessages(systemInstruction, contents)
-        : convertToOpenAIMessages(systemInstruction, contents);
+        : useClaudeMessageFormat
+          ? convertToClaudeCompatibleMessages(systemInstruction, contents)
+          : useGeminiMessageFormat
+            ? convertToGeminiCompatibleMessages(systemInstruction, contents)
+            : convertToOpenAIMessages(systemInstruction, contents);
 
       // 转换工具定义 - 兼容模式处理
       let tools: ChatCompletionTool[] | undefined;
@@ -476,7 +483,7 @@ export async function generateContent(
       let reasoningContent = ""; // Reasoning content (OpenAI o1/o3)
 
       console.log(
-        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude})`,
+        `[OpenAI] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${tools ? "yes" : "no"}, useCompat: ${useCompat} (Gemini: ${isGemini}, Claude: ${isClaude}), messageFormat: ${useClaudeMessageFormat ? "claude" : useGeminiMessageFormat ? "gemini" : isReasoning ? "reasoning" : "openai"}`,
       );
 
       if (useCompat && schema && !tools) {
@@ -1089,18 +1096,17 @@ function convertToGeminiCompatibleMessages(
         if (part.type === "tool_result") {
           const tr = part as {
             type: "tool_result";
-            toolResult: { id: string; content: unknown };
+            toolResult: { id: string; name: string; content: unknown };
           };
           // Gemini 格式: 使用 function role 和 functionResponse 结构
           result.push({
             role: "user", // OpenAI compatible format uses user for function responses
             content: JSON.stringify({
               type: "function_response",
-              name: tr.toolResult.id.split("_")[2] || "function", // 从 id 提取函数名
-              response:
-                typeof tr.toolResult.content === "string"
-                  ? tr.toolResult.content
-                  : JSON.stringify(tr.toolResult.content),
+              name: tr.toolResult.name || "function",
+              response: {
+                content: tr.toolResult.content,
+              },
             }),
           });
         }

@@ -171,6 +171,29 @@ describe("provider registry", () => {
       apiKey: "key",
       baseUrl: "https://api.example.com",
     });
+
+    expect(
+      createProviderConfig(
+        createInstance({
+          protocol: "gemini",
+          compatibleImageGeneration: true,
+        }),
+      ),
+    ).toMatchObject({
+      compatibleImageGeneration: true,
+    });
+
+    expect(
+      createProviderConfig(
+        createInstance({
+          protocol: "openai",
+          compatibleImageGeneration: true,
+        }),
+      ),
+    ).toMatchObject({
+      compatibleImageGeneration: true,
+    });
+
     expect(
       createProviderConfig(createInstance({ protocol: "openrouter" })),
     ).toEqual({ apiKey: "key" });

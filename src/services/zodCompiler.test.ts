@@ -106,6 +106,51 @@ describe("zodToGeminiCompatibleSchema", () => {
     const result = zodToGeminiCompatibleSchema(nullableSchema);
     expect(result.properties!.description).toHaveProperty("nullable", true);
   });
+
+  it("should preserve primitive unions via anyOf", () => {
+    const result = zodToGeminiCompatibleSchema(
+      z.union([z.string(), z.number()]),
+    );
+
+    expect(result.anyOf).toEqual([{ type: "string" }, { type: "number" }]);
+  });
+
+  it("should dedupe duplicate union branches in anyOf", () => {
+    const result = zodToGeminiCompatibleSchema(
+      z.union([z.string(), z.string(), z.number()]),
+    );
+
+    expect(result.anyOf).toEqual([{ type: "string" }, { type: "number" }]);
+  });
+
+  it("should preserve mixed object and scalar unions via anyOf", () => {
+    const result = zodToGeminiCompatibleSchema(
+      z.union([
+        z.object({ kind: z.literal("file"), path: z.string() }),
+        z.string(),
+      ]),
+    );
+
+    expect(result.anyOf?.[0]).toMatchObject({
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: ["file"] },
+        path: { type: "string" },
+      },
+    });
+    expect(result.anyOf?.[1]).toEqual({ type: "string" });
+  });
+
+  it("should keep nested union fields as anyOf", () => {
+    const result = zodToGeminiCompatibleSchema(
+      z.object({ payload: z.union([z.string(), z.number()]) }),
+    );
+
+    expect(result.properties?.payload?.anyOf).toEqual([
+      { type: "string" },
+      { type: "number" },
+    ]);
+  });
 });
 
 describe("zodToClaudeCompatibleSchema", () => {
@@ -139,6 +184,51 @@ describe("zodToClaudeCompatibleSchema", () => {
     expect(Object.keys(claudeResult.properties!)).toEqual(
       Object.keys(geminiResult.properties!),
     );
+  });
+
+  it("should preserve primitive unions via anyOf", () => {
+    const result = zodToClaudeCompatibleSchema(
+      z.union([z.string(), z.number()]),
+    );
+
+    expect(result.anyOf).toEqual([{ type: "string" }, { type: "number" }]);
+  });
+
+  it("should dedupe duplicate union branches in anyOf", () => {
+    const result = zodToClaudeCompatibleSchema(
+      z.union([z.string(), z.string(), z.number()]),
+    );
+
+    expect(result.anyOf).toEqual([{ type: "string" }, { type: "number" }]);
+  });
+
+  it("should preserve mixed object and scalar unions via anyOf", () => {
+    const result = zodToClaudeCompatibleSchema(
+      z.union([
+        z.object({ kind: z.literal("file"), path: z.string() }),
+        z.string(),
+      ]),
+    );
+
+    expect(result.anyOf?.[0]).toMatchObject({
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: ["file"] },
+        path: { type: "string" },
+      },
+    });
+    expect(result.anyOf?.[1]).toEqual({ type: "string" });
+  });
+
+  it("should keep nested union fields as anyOf", () => {
+    const result = zodToClaudeCompatibleSchema(
+      z.object({ payload: z.union([z.string(), z.number()]) }),
+    );
+
+    expect(result.properties?.payload?.anyOf).toEqual([
+      { type: "string" },
+      { type: "number" },
+    ]);
   });
 });
 
@@ -248,8 +338,12 @@ describe("Claude vs Gemini Independence", () => {
 
     // Both should have been called with different warning prefixes
     const calls = consoleSpy.mock.calls;
-    expect(calls.some((call) => call[0].includes("Gemini"))).toBe(true);
-    expect(calls.some((call) => call[0].includes("Claude"))).toBe(true);
+    expect(calls.some((call) => String(call[0]).includes("Gemini"))).toBe(
+      true,
+    );
+    expect(calls.some((call) => String(call[0]).includes("Claude"))).toBe(
+      true,
+    );
 
     consoleSpy.mockRestore();
   });

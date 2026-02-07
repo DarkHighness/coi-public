@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { OpenAIConfig } from "./types";
 
 let lastCreateParams: any = null;
 
@@ -80,5 +81,153 @@ describe("openaiProvider streaming usage", () => {
       totalTokens: 5,
       cacheRead: 1,
     });
+  });
+
+  it("applies gemini message format conversion when enabled", async () => {
+    const { generateContent } = await import("./openaiProvider");
+
+    const config: OpenAIConfig = {
+      apiKey: "test",
+      baseUrl: "https://api.openai.com/v1",
+      geminiCompatibility: true,
+      geminiMessageFormat: true,
+    };
+
+    await generateContent(
+      config,
+      "gemini-2.5-pro",
+      "sys",
+      [
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool_use",
+              toolUse: {
+                id: "call_1",
+                name: "vfs_read",
+                args: { path: "a" },
+              },
+            },
+          ],
+        },
+        {
+          role: "tool",
+          content: [
+            {
+              type: "tool_result",
+              toolResult: {
+                id: "call_1",
+                name: "vfs_read",
+                content: { ok: true },
+              },
+            },
+          ],
+        },
+      ] as any,
+      undefined,
+      undefined,
+    );
+
+    expect(lastCreateParams?.messages).toEqual([
+      { role: "system", content: "sys" },
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: {
+              name: "vfs_read",
+              arguments: JSON.stringify({ path: "a" }),
+            },
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          type: "function_response",
+          name: "vfs_read",
+          response: { content: { ok: true } },
+        }),
+      },
+    ]);
+  });
+
+  it("applies claude message format conversion when enabled", async () => {
+    const { generateContent } = await import("./openaiProvider");
+
+    const config: OpenAIConfig = {
+      apiKey: "test",
+      baseUrl: "https://api.openai.com/v1",
+      claudeCompatibility: true,
+      claudeMessageFormat: true,
+    };
+
+    await generateContent(
+      config,
+      "claude-3-5-sonnet",
+      "sys",
+      [
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool_use",
+              toolUse: {
+                id: "call_2",
+                name: "vfs_ls",
+                args: { path: "current" },
+              },
+            },
+          ],
+        },
+        {
+          role: "tool",
+          content: [
+            {
+              type: "tool_result",
+              toolResult: {
+                id: "call_2",
+                name: "vfs_ls",
+                content: "ok",
+              },
+            },
+          ],
+        },
+      ] as any,
+      undefined,
+      undefined,
+    );
+
+    expect(lastCreateParams?.messages).toEqual([
+      { role: "system", content: "sys" },
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [
+          {
+            id: "call_2",
+            type: "function",
+            function: {
+              name: "vfs_ls",
+              arguments: JSON.stringify({ path: "current" }),
+            },
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: JSON.stringify([
+          {
+            type: "tool_result",
+            tool_use_id: "call_2",
+            content: "ok",
+          },
+        ]),
+      },
+    ]);
   });
 });
