@@ -147,6 +147,8 @@ export interface PhasedOutlineOptions {
   seedImageBase64?: string;
   /** Optional protagonist feature/role selected by user */
   protagonistFeature?: string;
+  /** Optional suffix to force a fresh session namespace (e.g. recovery retry). */
+  sessionTag?: string;
   /** Real-time hook for current round tool calls */
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
@@ -646,9 +648,15 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
 
   // Determine session ID with slotId for isolation if provided
   const baseSessionId = options.resumeFrom ? "outline-resume" : "outline-new";
-  const outlineSessionId = options.slotId
-    ? `${baseSessionId}-${options.slotId}`
+  const normalizedSessionTag = options.sessionTag
+    ? options.sessionTag.replace(/[^a-zA-Z0-9_-]/g, "-")
+    : "";
+  const taggedBaseSessionId = normalizedSessionTag
+    ? `${baseSessionId}-${normalizedSessionTag}`
     : baseSessionId;
+  const outlineSessionId = options.slotId
+    ? `${taggedBaseSessionId}-${options.slotId}`
+    : taggedBaseSessionId;
 
   // If starting fresh, explicitly invalidate the "outline-new" session to clear any previous game's outline history
   if (!options.resumeFrom) {

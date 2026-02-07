@@ -375,6 +375,7 @@ Answer the user's request using relevant tools (if they are available). Before c
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0,
+        reported: false,
       };
       let rawResponse: Message | AsyncIterable<MessageStreamEvent>;
       let thinkingContent = ""; // Claude Extended Thinking content
@@ -438,6 +439,7 @@ Answer the user's request using relevant tools (if they are available). Before c
             // 更新使用量
             if (event.usage) {
               usage.completionTokens = event.usage.output_tokens || 0;
+              usage.reported = true;
             }
           } else if (event.type === "message_start") {
             // 初始使用量
@@ -447,6 +449,7 @@ Answer the user's request using relevant tools (if they are available). Before c
                 (event.message.usage as any).cache_creation_input_tokens || 0;
               usage.cacheRead =
                 (event.message.usage as any).cache_read_input_tokens || 0;
+              usage.reported = true;
             }
           }
         }
@@ -518,6 +521,7 @@ Answer the user's request using relevant tools (if they are available). Before c
             (response.usage.output_tokens || 0),
           cacheWrite: (response.usage as any).cache_creation_input_tokens || 0,
           cacheRead: (response.usage as any).cache_read_input_tokens || 0,
+          reported: Boolean(response.usage),
         };
       }
 

@@ -235,7 +235,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
         {/* Toggle Button */}
         <button
           onClick={() => onUpdateUIState("sidebarCollapsed", !sidebarCollapsed)}
-          className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 w-8 h-16 bg-theme-surface/80 backdrop-blur border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-colors z-40 shadow-lg opacity-70 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
+          className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 w-8 h-16 bg-theme-surface backdrop-blur border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-colors z-40 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
           title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           <svg
@@ -339,7 +339,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           onClick={() =>
             onUpdateUIState("timelineCollapsed", !timelineCollapsed)
           }
-          className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 w-8 h-16 bg-theme-surface/80 backdrop-blur border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-colors z-40 shadow-lg opacity-70 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
+          className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 w-8 h-16 bg-theme-surface backdrop-blur border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-colors z-40 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
           title={timelineCollapsed ? "Expand Timeline" : "Collapse Timeline"}
         >
           <svg

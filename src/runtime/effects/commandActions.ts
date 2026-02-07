@@ -102,6 +102,31 @@ export function createCommandActions({
     return normalized.length > 0 ? normalized : [fallbackChoice];
   };
 
+  const emitRecoveryNotice = (
+    mode: "sudo" | "cleanup",
+    recovery?: { recovered?: boolean; kind?: string; finalLevel?: number; attempts?: unknown[]; durationMs?: number },
+  ) => {
+    if (!recovery?.recovered) return;
+
+    console.info("[TurnRecovery][Command]", {
+      mode,
+      kind: recovery.kind,
+      finalLevel: recovery.finalLevel,
+      attemptCount: Array.isArray(recovery.attempts) ? recovery.attempts.length : 0,
+      durationMs: recovery.durationMs,
+      recovered: recovery.recovered,
+    });
+
+    showToast(
+      t("game.info.autoRecoverySuccess", {
+        defaultValue:
+          "Auto-recovery succeeded. Continued from the latest stable checkpoint.",
+      }),
+      "info",
+      3500,
+    );
+  };
+
   const buildSystemNode = ({
     id,
     parentId,
@@ -308,7 +333,7 @@ export function createCommandActions({
         },
       };
 
-      const { response, logs } = await generateForceUpdate(
+      const { response, logs, recovery } = await generateForceUpdate(
         prompt,
         gameStateRef.current,
         context,
@@ -392,6 +417,7 @@ export function createCommandActions({
         };
       });
 
+      emitRecoveryNotice("sudo", recovery);
       triggerSave();
       return { success: true };
     } catch (error: unknown) {
@@ -461,7 +487,7 @@ export function createCommandActions({
         },
       };
 
-      const { response, logs, changedEntities } = await generateEntityCleanup(
+      const { response, logs, changedEntities, recovery } = await generateEntityCleanup(
         gameStateRef.current,
         context,
       );
@@ -542,6 +568,7 @@ export function createCommandActions({
         );
       }
 
+      emitRecoveryNotice("cleanup", recovery);
       triggerSave();
       return { success: true };
     } catch (error: unknown) {

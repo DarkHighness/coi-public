@@ -5,15 +5,66 @@ import {
   CharacterSkill,
   CharacterCondition,
   HiddenTrait,
+  Location,
 } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
+import { resolveLocationDisplayName } from "../../utils/entityDisplay";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
+  locations?: Location[];
   themeFont: string;
 }
+
+const DISPLAY_PLACEHOLDER_VALUES = new Set([
+  "",
+  "loading...",
+  "initializing...",
+  "pending",
+  "unknown",
+  "加载中",
+  "初始化中",
+  "未知",
+  "待定",
+]);
+
+const normalizeDisplayText = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+};
+
+const isDisplayPlaceholder = (value: unknown): boolean => {
+  const normalized = normalizeDisplayText(value);
+  if (!normalized) {
+    return true;
+  }
+  return DISPLAY_PLACEHOLDER_VALUES.has(normalized.toLowerCase());
+};
+
+const pickDisplayValue = (
+  candidates: unknown[],
+  fallback: string,
+): string => {
+  for (const candidate of candidates) {
+    const normalized = normalizeDisplayText(candidate);
+    if (!normalized) {
+      continue;
+    }
+    if (isDisplayPlaceholder(normalized)) {
+      continue;
+    }
+    return normalized;
+  }
+  return fallback;
+};
 
 const colorMap: Record<string, string> = {
   red: "from-red-600 to-red-500",
@@ -740,12 +791,27 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
 
 export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   character,
+  locations,
   themeFont,
 }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
 
   if (!character) return null;
+
+  const unknownText = t("unknown") || "Unknown";
+  const titleText = pickDisplayValue([character.title], unknownText);
+  const professionText = pickDisplayValue([character.profession], unknownText);
+  const raceText = normalizeDisplayText(character.race) ?? "";
+  const ageText = normalizeDisplayText(character.age) ?? "";
+  const statusText = pickDisplayValue([character.status], unknownText);
+
+  const rawCurrentLocation = pickDisplayValue([character.currentLocation], "");
+  const currentLocationText = rawCurrentLocation
+    ? resolveLocationDisplayName(rawCurrentLocation, {
+        locations: locations || [],
+      })
+    : "";
 
   return (
     <div>
@@ -813,7 +879,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                     {t("gameViewer.titleLabel") || "Title"}
                   </span>
                   <span className="text-xs text-theme-primary font-semibold text-right break-words whitespace-normal">
-                    {character.title}
+                    {titleText}
                   </span>
                 </div>
 
@@ -822,7 +888,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                     {t("gameViewer.profession") || t("role") || "Role"}
                   </span>
                   <span className="text-xs text-theme-text text-right break-words whitespace-normal">
-                    {character.profession}
+                    {professionText}
                   </span>
                 </div>
 
@@ -831,7 +897,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                     {t("gameViewer.race") || t("race") || "Race"}
                   </span>
                   <span className="text-xs text-theme-text text-right break-words whitespace-normal">
-                    {character.race}
+                    {raceText}
                   </span>
                 </div>
 
@@ -840,7 +906,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                     {t("gameViewer.age") || t("age") || "Age"}
                   </span>
                   <span className="text-xs text-theme-text text-right break-words whitespace-normal">
-                    {character.age}
+                    {ageText}
                   </span>
                 </div>
 
@@ -849,11 +915,11 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                     {t("gameViewer.status") || t("status") || "Status"}
                   </span>
                   <span className="text-xs text-theme-primary font-medium text-right break-words whitespace-normal">
-                    {character.status}
+                    {statusText}
                   </span>
                 </div>
 
-                {character.currentLocation && (
+                {currentLocationText && (
                   <div className="py-2 flex items-start justify-between gap-3">
                     <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                       {t("gameViewer.currentLocation") || "Location"}
@@ -878,7 +944,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      {character.currentLocation}
+                      {currentLocationText}
                     </span>
                   </div>
                 )}

@@ -1,6 +1,60 @@
 import type { GameState, StorySegment } from "../types";
 import { deriveHistory } from "../utils/storyUtils";
 
+const PLACEHOLDER_CHARACTER_VALUES = new Set([
+  "",
+  "loading...",
+  "initializing...",
+  "pending",
+  "unknown",
+  "加载中",
+  "初始化中",
+  "未知",
+  "待定",
+]);
+
+const normalizeCharacterValue = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+};
+
+const isPlaceholderCharacterValue = (value: unknown): boolean => {
+  const normalized = normalizeCharacterValue(value);
+  if (!normalized) {
+    return true;
+  }
+  return PLACEHOLDER_CHARACTER_VALUES.has(normalized.toLowerCase());
+};
+
+const mergeCharacterWithFallback = (
+  baseCharacter: GameState["character"],
+  derivedCharacter: GameState["character"],
+): GameState["character"] => {
+  const nextCharacter = {
+    ...derivedCharacter,
+  } as GameState["character"];
+
+  const fallbackFields: Array<
+    "title" | "profession" | "race" | "age" | "status" | "currentLocation"
+  > = ["title", "profession", "race", "age", "status", "currentLocation"];
+
+  for (const field of fallbackFields) {
+    const derivedValue = (derivedCharacter as any)?.[field];
+    const baseValue = (baseCharacter as any)?.[field];
+    if (isPlaceholderCharacterValue(derivedValue) && !isPlaceholderCharacterValue(baseValue)) {
+      (nextCharacter as any)[field] = baseValue;
+    }
+  }
+
+  return nextCharacter;
+};
+
 const mergeNodeExtras = (
   base: StorySegment | undefined,
   derived: StorySegment,
@@ -48,6 +102,7 @@ export const mergeDerivedViewState = (
     ...derived,
     nodes: mergedNodes,
     currentFork: activeNodeId ? deriveHistory(mergedNodes, activeNodeId) : [],
+    character: mergeCharacterWithFallback(base.character, derived.character),
     uiState: base.uiState,
     summaries: derived.summaries,
     lastSummarizedIndex: derived.lastSummarizedIndex,

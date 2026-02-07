@@ -18,20 +18,10 @@ interface CarouselItem {
 }
 
 const LINE_STEP_PX = 24;
-const MAX_VISIBLE_DISTANCE = 2.2;
-
-const toInputString = (input: Record<string, any>): string => {
-  try {
-    const json = JSON.stringify(input || {});
-    if (!json) return "{}";
-    return json.length > 140 ? `${json.slice(0, 137)}...` : json;
-  } catch {
-    return "{}";
-  }
-};
 
 const formatCall = (call: ToolCallRecord): string => {
-  return `${call.name}(${toInputString(call.input || {})})`;
+  // Hide detailed params to avoid leaking story details
+  return `${call.name}(...)`;
 };
 
 const getCallStatus = (call: ToolCallRecord): ToolCallStatus => {
@@ -58,45 +48,21 @@ const getStatusPrefix = (status: ToolCallStatus): string => {
   return "●";
 };
 
-const getActiveStatusTextClass = (status: ToolCallStatus): string => {
-  if (status === "success") return "text-emerald-300";
-  if (status === "failed") return "text-red-300";
-  return "text-theme-primary/95";
-};
-
-const getInactiveStatusTextClass = (status: ToolCallStatus): string => {
-  if (status === "success") return "text-emerald-300/45";
-  if (status === "failed") return "text-red-300/45";
-  return "text-theme-muted/60";
-};
-
-const getActiveGlowStyle = (status: ToolCallStatus): React.CSSProperties => {
+const getStatusClass = (status: ToolCallStatus, active: boolean): string => {
   if (status === "success") {
-    return {
-      textShadow:
-        "0 0 10px rgba(52, 211, 153, 0.7), 0 0 20px rgba(16, 185, 129, 0.38)",
-    };
+    return active ? "text-emerald-300" : "text-emerald-300/55";
   }
   if (status === "failed") {
-    return {
-      textShadow:
-        "0 0 10px rgba(248, 113, 113, 0.72), 0 0 20px rgba(239, 68, 68, 0.38)",
-    };
+    return active ? "text-red-300" : "text-red-300/55";
   }
-  return {
-    textShadow:
-      "0 0 10px rgba(var(--theme-primary-rgb,251,146,60),0.72), 0 0 20px rgba(var(--theme-primary-rgb,251,146,60),0.36)",
-  };
+  return active ? "text-theme-primary/90" : "text-theme-muted/70";
 };
 
-const toCarouselItem = (call: ToolCallRecord, index: number): CarouselItem => {
-  const status = getCallStatus(call);
-  return {
-    key: `${call.timestamp}-${call.name}-${index}`,
-    text: `${getStatusPrefix(status)} ${formatCall(call)}`,
-    status,
-  };
-};
+const toCarouselItem = (call: ToolCallRecord, index: number): CarouselItem => ({
+  key: `${call.timestamp}-${call.name}-${index}`,
+  text: formatCall(call),
+  status: getCallStatus(call),
+});
 
 export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
   calls,
@@ -108,7 +74,7 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
   const emptyItem = useMemo<CarouselItem>(
     () => ({
       key: "empty",
-      text: `● ${emptyText}`,
+      text: emptyText,
       status: "running",
     }),
     [emptyText],
@@ -118,14 +84,17 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
     () => (calls.length > 0 ? calls.map(toCarouselItem) : [emptyItem]),
     [calls, emptyItem],
   );
+
   const itemsKey = useMemo(
     () => items.map((item) => `${item.status}:${item.text}`).join("\u001f"),
     [items],
   );
+
   const safeItems = useMemo(
     () => (items.length > 0 ? items : [emptyItem]),
-    [itemsKey, emptyItem],
+    [items, emptyItem],
   );
+
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -140,110 +109,64 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
     return () => window.clearInterval(timerId);
   }, [safeItems.length, intervalMs]);
 
-  const positionedLines = useMemo(() => {
+  const visibleLines = useMemo(() => {
     const length = safeItems.length;
+    if (length === 0) return [] as Array<{
+      offset: number;
+      index: number;
+      item: CarouselItem;
+    }>;
 
-    return safeItems.map((item, index) => {
-      let offset = index - activeIndex;
-      if (length > 1) {
-        const half = length / 2;
-        if (offset > half) offset -= length;
-        if (offset < -half) offset += length;
-      }
+    const offsets =
+      length <= 1 ? [0] : length === 2 ? [-1, 0] : [-1, 0, 1];
 
-      const distance = Math.abs(offset);
-      return {
-        item,
-        index,
-        offset,
-        distance,
-      };
+    return offsets.map((offset) => {
+      const index = (activeIndex + offset + length * 10) % length;
+      return { offset, index, item: safeItems[index] };
     });
   }, [safeItems, activeIndex]);
 
   return (
     <div className={`w-full max-w-2xl ${className}`}>
-      <div className="text-center mb-2">
-        <span className="text-[10px] uppercase tracking-[0.24em] text-theme-primary/80 font-semibold">
+      <div className="text-center mb-1">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-theme-muted font-medium">
           {label || "Agent Tool Calls"}
         </span>
       </div>
 
-      <div className="relative h-28 md:h-32 overflow-hidden">
-        <div className="absolute inset-x-5 top-1/2 -translate-y-1/2 h-10 rounded-xl bg-theme-primary/10 blur-md" />
-        <div className="absolute inset-x-10 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-theme-primary/70 to-transparent" />
+      <div className="relative h-20 overflow-hidden">
+        {visibleLines.map(({ offset, item, index }) => {
+          const isActive = offset === 0;
 
-        <div className="relative h-full">
-          {positionedLines.map(({ item, index, offset, distance }) => {
-            const isActive = distance < 0.001;
-            const isVisible = distance <= MAX_VISIBLE_DISTANCE;
-            if (!isVisible) return null;
-
-            const opacity =
-              distance === 0
-                ? 1
-                : distance <= 1
-                  ? 0.48
-                  : distance <= 2
-                    ? 0.2
-                    : 0;
-            const scale =
-              distance === 0 ? 1 : distance <= 1 ? 0.97 : 0.94;
-
-            const textClass = isActive
-              ? getActiveStatusTextClass(item.status)
-              : getInactiveStatusTextClass(item.status);
-
-            return (
+          return (
+            <div
+              key={`${item.key}-${index}-${offset}`}
+              className="absolute inset-x-0 top-1/2 transition-all duration-300 ease-out"
+              style={{
+                transform: `translateY(calc(-50% + ${offset * LINE_STEP_PX}px))`,
+                opacity: isActive ? 1 : 0.45,
+              }}
+            >
               <div
-                key={`${item.key}-${index}`}
-                className="absolute inset-x-0 top-1/2 px-2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                style={{
-                  transform: `translateY(calc(-50% + ${offset * LINE_STEP_PX}px)) scale(${scale})`,
-                  opacity,
-                }}
+                className={`text-center font-mono leading-relaxed break-all px-2 ${
+                  isActive ? "text-[12px] md:text-sm text-theme-text" : "text-[11px] md:text-xs"
+                }`}
               >
-                <code
-                  className={`block text-center font-mono leading-relaxed break-all select-none ${isActive ? "text-[12px] md:text-sm" : "text-[11px] md:text-xs"} ${textClass}`}
-                >
-                  <span
-                    className={isActive ? "tool-call-lyrics-breathe" : ""}
-                    style={isActive ? getActiveGlowStyle(item.status) : undefined}
-                  >
-                    {item.text}
-                  </span>
-                </code>
+                <span className={getStatusClass(item.status, isActive)}>
+                  {getStatusPrefix(item.status)}
+                </span>
+                <span className="ml-2 text-theme-text/90">{item.text}</span>
               </div>
-            );
-          })}
-        </div>
-
+            </div>
+          );
+        })}
       </div>
 
-      <div className="mt-2 flex items-center justify-center gap-2 text-[10px] text-theme-muted font-mono">
+      <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-theme-muted font-mono">
         <span>{activeIndex + 1}</span>
         <span>/</span>
         <span>{safeItems.length}</span>
       </div>
-
-      <style>{`
-        @keyframes tool-call-lyrics-breathe {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.035);
-            opacity: 0.92;
-          }
-        }
-
-        .tool-call-lyrics-breathe {
-          display: inline-block;
-          transform-origin: center;
-          animation: tool-call-lyrics-breathe 2.2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };

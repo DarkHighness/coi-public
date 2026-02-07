@@ -17,6 +17,7 @@ const idUsage = `
     ✅ VFS file paths: \`vfs_write({ files: [{ path: "current/world/characters/char:player/inventory/inv_sword_of_kings.json", ... }] })\`
     ✅ VFS file edits: \`vfs_edit({ edits: [{ path: "current/world/characters/char:marcus/profile.json", patch: [...] }] })\`
     ✅ Entity \`currentLocation\` field (references location ID): \`{ currentLocation: "loc_tavern" }\`
+    ✅ Timeline \`involvedEntities\` arrays (entity references): \`["char:player", "char:marcus", "loc_tavern"]\`
 
     **WHERE IDs MUST NEVER APPEAR**:
     ❌ \`narrative\` field: "You see npc_marcus approaching..." → WRONG!
@@ -24,6 +25,7 @@ const idUsage = `
     ❌ \`hidden.secrets\`: ["loc_cellar contains treasure"] → WRONG!
     ❌ \`choices[].text\`: "Talk to npc_captain" → WRONG!
     ❌ Any player-facing text whatsoever
+    ❌ \`timeline.involvedEntities\`: ["Marcus", "Tavern"] → WRONG! (must be IDs)
 
     **CORRECT EXAMPLES**:
     ✅ narrative: "You see **Marcus** approaching..." (use visible.name)

@@ -79,7 +79,11 @@ export function createLoopState(
     budgetState,
     accumulatedResponse,
     changedEntities: new Map(),
-    totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    totalUsage: {
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+    },
     activeTools,
     isSudoMode,
     isCleanupMode,
@@ -151,5 +155,10 @@ export function accumulateUsage(
     totalUsage.promptTokens += usage.promptTokens || 0;
     totalUsage.completionTokens += usage.completionTokens || 0;
     totalUsage.totalTokens += usage.totalTokens || 0;
+    if (usage.reported === true) {
+      totalUsage.reported = true;
+    } else if (usage.reported === false && totalUsage.reported !== true) {
+      totalUsage.reported = false;
+    }
   }
 }

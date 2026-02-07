@@ -4,6 +4,7 @@ import {
   TurnContext,
   GameResponse,
   LogEntry,
+  TurnRecoveryTrace,
 } from "../../../../types";
 
 import { generateAdventureTurn, AgenticLoopResult } from "../turn/adventure";
@@ -20,6 +21,7 @@ export interface ForceUpdateResult {
   logs: LogEntry[];
   usage: TokenUsage;
   changedEntities: Array<{ id: string; type: string }>;
+  recovery?: TurnRecoveryTrace;
 }
 
 /**
@@ -71,5 +73,6 @@ export const generateForceUpdate = async (
     logs: result.logs,
     usage: result.usage,
     changedEntities: result.changedEntities,
+    ...(result.recovery ? { recovery: result.recovery } : {}),
   };
 };

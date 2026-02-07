@@ -339,6 +339,7 @@ export async function generateContent(
               promptTokens: 0,
               completionTokens: 0,
               totalTokens: 0,
+              reported: false,
             },
             raw: imageRes.raw || {},
           };
@@ -427,6 +428,7 @@ export async function generateContent(
         completionTokens: usageMetadata?.candidatesTokenCount || 0,
         totalTokens: usageMetadata?.totalTokenCount || 0,
         cacheRead: (usageMetadata as any)?.cachedContentTokenCount || 0,
+        reported: Boolean(usageMetadata),
       };
 
       console.log(`[Gemini] Generation complete. Usage:`, usage);

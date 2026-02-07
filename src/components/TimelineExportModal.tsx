@@ -20,6 +20,8 @@ import { useTranslation } from "react-i18next";
 import { StorySegment } from "../types";
 import { useImageURL } from "../hooks/useImageStorage";
 import { useIsMobile } from "../hooks/useMediaQuery";
+import { useOptionalRuntimeContext } from "../runtime/context";
+import { resolveLocationDisplayName } from "../utils/entityDisplay";
 
 interface TimelineExportModalProps {
   segments: StorySegment[];
@@ -56,6 +58,14 @@ const TimelineSelectItem: React.FC<{
   const { url: imageUrl } = useImageURL(segment.imageId);
   const displayUrl = imageUrl || segment.imageUrl;
   const { t } = useTranslation();
+
+  const runtime = useOptionalRuntimeContext();
+  const knownLocations = runtime?.state.gameState.locations ?? [];
+  const locationDisplay = segment.stateSnapshot?.currentLocation
+    ? resolveLocationDisplayName(segment.stateSnapshot.currentLocation, {
+        locations: knownLocations,
+      })
+    : "";
 
   const handleClick = () => {
     if (selectionMode) {
@@ -117,7 +127,7 @@ const TimelineSelectItem: React.FC<{
             <>
               <span>•</span>
               <span className="truncate">
-                {segment.stateSnapshot.currentLocation}
+                {locationDisplay}
               </span>
             </>
           )}

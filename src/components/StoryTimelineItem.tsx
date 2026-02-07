@@ -4,6 +4,8 @@ import { StorySegment } from "../types";
 import { useTranslation } from "react-i18next";
 import { MarkdownText } from "./render/MarkdownText";
 import { useImageURL } from "../hooks/useImageStorage";
+import { useOptionalRuntimeContext } from "../runtime/context";
+import { resolveLocationDisplayName } from "../utils/entityDisplay";
 
 interface StoryTimelineItemProps {
   segment: StorySegment;
@@ -41,6 +43,14 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
   const { t } = useTranslation();
   const { url: resolvedUrl } = useImageURL(segment.imageId);
   const displayUrl = resolvedUrl || segment.imageUrl;
+
+  const runtime = useOptionalRuntimeContext();
+  const knownLocations = runtime?.state.gameState.locations ?? [];
+  const snapshotLocationDisplay = segment.stateSnapshot?.currentLocation
+    ? resolveLocationDisplayName(segment.stateSnapshot.currentLocation, {
+        locations: knownLocations,
+      })
+    : "";
 
   const isSystemRole = segment.role === "system";
   const isModelRole = segment.role === "model";
@@ -291,7 +301,7 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
                 {t("timeline.turn")} {segment.stateSnapshot.turnNumber}
               </span>
               <span className="text-theme-text-secondary font-serif italic">
-                {segment.stateSnapshot.currentLocation}
+                {snapshotLocationDisplay}
               </span>
             </>
           )}

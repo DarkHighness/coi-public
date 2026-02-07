@@ -302,6 +302,167 @@ describe("createLifecycleActions", () => {
     expect(deps.gameStateRef.current.outlineConversation).toBeUndefined();
   });
 
+  it("retries resume with sanitized checkpoint after history corruption", async () => {
+    runOutlineGenerationPhasedMock
+      .mockRejectedValueOnce(new HistoryCorruptedError(new Error("bad history")))
+      .mockResolvedValueOnce(makeOutlineResult());
+
+    const deps = createBaseDeps();
+    deps.gameStateRef.current.outlineConversation = {
+      ...deps.gameStateRef.current.outlineConversation,
+      conversationHistory: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "[OUTLINE GENERATION TASK]" }],
+        },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool_use",
+              toolUse: { id: "call-1", name: "submit_outline_phase_3", args: {} },
+            },
+            { type: "text", text: "Trying phase" },
+          ],
+        },
+        {
+          role: "tool",
+          content: [
+            {
+              type: "tool_result",
+              toolResult: {
+                id: "call-1",
+                content: { success: false, error: "malformed" },
+              },
+            },
+          ],
+        },
+      ],
+    } as any;
+
+    const actions = createLifecycleActions(deps as any);
+    await actions.resumeOutlineGeneration();
+
+    expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
+    const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
+    expect(retryCall?.sessionTag).toContain("history-recovery-");
+    expect(retryCall?.logPrefix).toBe("ResumeOutlineRecovery");
+    expect(retryCall?.resumeFrom?.liveToolCalls).toEqual([]);
+    expect(retryCall?.resumeFrom?.conversationHistory).toEqual([
+      {
+        role: "user",
+        content: [{ type: "text", text: "[OUTLINE GENERATION TASK]" }],
+      },
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "Trying phase" }],
+      },
+    ]);
+    expect(deps.showToast).not.toHaveBeenCalledWith(
+      "initializing.errors.historyCacheCorruptedResume",
+      "error",
+      5000,
+    );
+    expect(deps.navigate).toHaveBeenCalledWith("/game");
+  });
+
+  it("retries resume after context-length failure with trimmed checkpoint", async () => {
+    runOutlineGenerationPhasedMock
+      .mockRejectedValueOnce(new Error("context_length_exceeded: too many tokens"))
+      .mockResolvedValueOnce(makeOutlineResult());
+
+    const deps = createBaseDeps();
+    deps.gameStateRef.current.outlineConversation = {
+      ...deps.gameStateRef.current.outlineConversation,
+      conversationHistory: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "[OUTLINE GENERATION TASK]" }],
+        },
+        ...Array.from({ length: 30 }, (_, idx) => ({
+          role: idx % 2 === 0 ? "assistant" : "user",
+          content: [
+            { type: "text", text: `phase-msg-${idx}` },
+            ...(idx === 3
+              ? [
+                  {
+                    type: "tool_use",
+                    toolUse: {
+                      id: "bad-call",
+                      name: "submit_outline_phase_3",
+                      args: {},
+                    },
+                  },
+                ]
+              : []),
+          ],
+        })),
+      ],
+      liveToolCalls: [
+        {
+          name: "submit_outline_phase_3",
+          input: {},
+          output: null,
+          timestamp: Date.now(),
+        },
+      ],
+    } as any;
+
+    const actions = createLifecycleActions(deps as any);
+    await actions.resumeOutlineGeneration();
+
+    expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
+    const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
+    expect(retryCall?.sessionTag).toContain("context-recovery-");
+    expect(retryCall?.resumeFrom?.liveToolCalls).toEqual([]);
+    expect(retryCall?.resumeFrom?.conversationHistory.length).toBeLessThanOrEqual(24);
+    expect(
+      retryCall?.resumeFrom?.conversationHistory.some((msg: any) => msg.role === "tool"),
+    ).toBe(false);
+    expect(deps.navigate).toHaveBeenCalledWith("/game");
+  });
+
+  it("retries resume after transient provider/network failure", async () => {
+    runOutlineGenerationPhasedMock
+      .mockRejectedValueOnce(new Error("429 rate limit exceeded"))
+      .mockResolvedValueOnce(makeOutlineResult());
+
+    const deps = createBaseDeps();
+    deps.gameStateRef.current.outlineConversation = {
+      ...deps.gameStateRef.current.outlineConversation,
+      conversationHistory: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "[OUTLINE GENERATION TASK]" }],
+        },
+        {
+          role: "assistant",
+          content: [{ type: "text", text: "phase in progress" }],
+        },
+      ],
+      liveToolCalls: [
+        {
+          name: "submit_outline_phase_4",
+          input: { demo: true },
+          output: null,
+          timestamp: Date.now(),
+        },
+      ],
+    } as any;
+
+    const actions = createLifecycleActions(deps as any);
+    await actions.resumeOutlineGeneration();
+
+    expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
+    const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
+    expect(retryCall?.sessionTag).toContain("transient-recovery-");
+    expect(retryCall?.resumeFrom?.conversationHistory).toEqual(
+      deps.gameStateRef.current.outlineConversation.conversationHistory,
+    );
+    expect(retryCall?.resumeFrom?.liveToolCalls).toEqual([]);
+    expect(deps.navigate).toHaveBeenCalledWith("/game");
+  });
+
   it("retries startNewGame from scratch when no saved progress", async () => {
     const deps = createBaseDeps();
     deps.gameStateRef.current.outlineConversation = undefined;

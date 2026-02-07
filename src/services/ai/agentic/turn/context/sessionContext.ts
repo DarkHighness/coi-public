@@ -193,6 +193,23 @@ function getActiveHistory(
 }
 
 /**
+ * Rollback to the latest stable turn anchor (checkpoint).
+ * Returns refreshed history on success; otherwise null.
+ */
+export function rollbackToTurnAnchor(
+  sessionId: string,
+  protocol: ProviderProtocol,
+  vfsSession: VfsSession,
+): UnifiedMessage[] | null {
+  sessionManager.rollbackToLastCheckpoint(sessionId);
+  const rolledBack = rollbackVfsSessionToCheckpoint(sessionId, vfsSession);
+  if (!rolledBack) {
+    return null;
+  }
+  return getActiveHistory(sessionId, protocol);
+}
+
+/**
  * Detect and handle retry (regenerate) action
  */
 export function handleRetryDetection(
@@ -227,11 +244,14 @@ export function handleRetryDetection(
     console.log(
       `[SessionContext] Retry detected! Rolling back to last checkpoint.`,
     );
-    sessionManager.rollbackToLastCheckpoint(sessionId);
-    rollbackVfsSessionToCheckpoint(sessionId, vfsSession);
-
-    // Refresh history after rollback
-    return getActiveHistory(sessionId, protocol);
+    const rolledBackHistory = rollbackToTurnAnchor(
+      sessionId,
+      protocol,
+      vfsSession,
+    );
+    if (rolledBackHistory) {
+      return rolledBackHistory;
+    }
   }
 
   return activeHistory;

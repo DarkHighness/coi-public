@@ -125,7 +125,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const commandHints = COMMAND_DEFINITIONS;
 
   const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
-  const contextWindowTokens = (() => {
+  const contextWindowResolution = (() => {
     const provider = aiSettings.providers.instances.find(
       (p) => p.id === aiSettings.story.providerId,
     );
@@ -138,8 +138,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       modelId: aiSettings.story.modelId,
       providerReportedContextLength: ctx,
       fallback: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
-    }).value;
+    });
   })();
+  const contextWindowTokens = contextWindowResolution.value;
   const autoCompactEnabled = aiSettings.extra?.autoCompactEnabled ?? true;
   const autoCompactThreshold = aiSettings.extra?.autoCompactThreshold ?? 0.7;
 
@@ -151,20 +152,32 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const lastPromptTokens = (() => {
     for (let i = currentHistory.length - 1; i >= 0; i--) {
       const seg = currentHistory[i];
-      if (seg?.role === "model" && typeof seg.usage?.promptTokens === "number") {
-        return seg.usage.promptTokens;
+      if (seg?.role !== "model" || typeof seg.usage?.promptTokens !== "number") {
+        continue;
+      }
+
+      const usage = seg.usage;
+      const hasLegacyPositiveSignal =
+        (usage.promptTokens || 0) > 0 ||
+        (usage.totalTokens || 0) > 0 ||
+        (usage.completionTokens || 0) > 0;
+
+      if (usage.reported === true || (usage.reported !== false && hasLegacyPositiveSignal)) {
+        return usage.promptTokens;
       }
     }
     return null;
   })();
 
-  const usageRatio =
-    typeof lastPromptTokens === "number" && lastPromptTokens > 0
-      ? lastPromptTokens / contextWindowTokens
-      : null;
+  const hasPromptUsage =
+    typeof lastPromptTokens === "number" && lastPromptTokens >= 0;
+
+  const usageRatio = hasPromptUsage
+    ? lastPromptTokens / contextWindowTokens
+    : null;
 
   const tokensToThreshold =
-    autoCompactEnabled && typeof lastPromptTokens === "number" && lastPromptTokens > 0
+    autoCompactEnabled && hasPromptUsage
       ? Math.max(0, thresholdTokens - lastPromptTokens)
       : null;
 
@@ -852,32 +865,30 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   ? "text-theme-warning"
                   : "text-theme-muted",
               ].join(" ")}
-              title={
+              title={[
                 usageRatio !== null
-                  ? [
-                      `${t("contextUsage") || "Context"}: ${lastPromptTokens?.toLocaleString()}/${contextWindowTokens.toLocaleString()} (${Math.round(
-                        usageRatio * 100,
-                      )}%)`,
-                      autoCompactEnabled
-                        ? `Auto: ${Math.round(autoCompactThreshold * 100)}% (${thresholdTokens.toLocaleString()})`
-                        : "Auto: off",
-                      tokensToThreshold !== null
-                        ? `${t("tokensToCompact") || "To compact"}: ${tokensToThreshold.toLocaleString()}`
-                        : "",
-                      lastCompactId !== null
-                        ? `${t("lastCompact") || "Last"}: #${lastCompactId}${lastCompactAt ? ` (${new Date(lastCompactAt).toLocaleString()})` : ""}`
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join("\n")
-                  : `${t("contextUsage") || "Context"}: —`
-              }
+                  ? `${t("contextUsage") || "Context"}: ${lastPromptTokens?.toLocaleString()}/${contextWindowTokens.toLocaleString()} (${Math.round(
+                      usageRatio * 100,
+                    )}%)`
+                  : `${t("contextUsage") || "Context"}: —/${contextWindowTokens.toLocaleString()}`,
+                autoCompactEnabled
+                  ? `Auto: ${Math.round(autoCompactThreshold * 100)}% (${thresholdTokens.toLocaleString()})`
+                  : "Auto: off",
+                tokensToThreshold !== null
+                  ? `${t("tokensToCompact") || "To compact"}: ${tokensToThreshold.toLocaleString()}`
+                  : "",
+                lastCompactId !== null
+                  ? `${t("lastCompact") || "Last"}: #${lastCompactId}${lastCompactAt ? ` (${new Date(lastCompactAt).toLocaleString()})` : ""}`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join("\n")}
             >
               {/* Mobile: short + glanceable */}
               <span className="sm:hidden">
                 {t("contextUsage") || "Context"}:{" "}
                 {usageRatio === null
-                  ? "—"
+                  ? `—/${formatTokens(contextWindowTokens, "compact")}`
                   : [
                       `${Math.round(usageRatio * 100)}%`,
                       tokensToThreshold !== null
@@ -893,7 +904,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               <span className="hidden sm:inline">
                 {t("contextUsage") || "Context"}:{" "}
                 {usageRatio === null
-                  ? "—"
+                  ? `—/${formatTokens(contextWindowTokens, "full")}`
                   : `${formatTokens(lastPromptTokens!, "full")}/${formatTokens(contextWindowTokens, "full")} (${Math.round(
                       usageRatio * 100,
                     )}%)`}

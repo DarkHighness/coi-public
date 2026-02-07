@@ -2,6 +2,22 @@ import { describe, it, expect } from "vitest";
 import { buildVfsTree, isReadonlyPath } from "../vfsExplorer/tree";
 
 describe("vfs tree builder", () => {
+  it("includes core directories even when snapshot is empty", () => {
+    const tree = buildVfsTree({});
+    const rootNames = (tree.children || []).map((n) => n.name);
+
+    expect(rootNames).toEqual(
+      expect.arrayContaining([
+        "world",
+        "conversation",
+        "outline",
+        "summary",
+        "refs",
+        "skills",
+      ]),
+    );
+  });
+
   it("builds a current/ rooted tree from snapshot paths", () => {
     const tree = buildVfsTree({
       "world/global.json": { path: "world/global.json" } as any,
@@ -29,8 +45,12 @@ describe("vfs tree builder", () => {
     expect(questFolder?.children?.some((n) => n.name === "notes.md")).toBe(true);
   });
 
-  it("marks outline/conversation as readonly by default", () => {
-    expect(isReadonlyPath("outline/outline.json", false, false)).toBe(true);
-    expect(isReadonlyPath("conversation/index.json", false, false)).toBe(true);
+  it("enforces system readonly boundaries", () => {
+    expect(isReadonlyPath("skills/theme/x/SKILL.md")).toBe(true);
+    expect(isReadonlyPath("conversation/index.json")).toBe(true);
+    expect(isReadonlyPath("outline/progress.json")).toBe(true);
+    expect(isReadonlyPath("summary/state.json")).toBe(true);
+    expect(isReadonlyPath("outline/outline.json")).toBe(false);
+    expect(isReadonlyPath("world/characters/char:player/profile.json")).toBe(false);
   });
 });

@@ -555,6 +555,12 @@ export interface TokenUsage {
   totalTokens: number;
   cacheRead?: number;
   cacheWrite?: number;
+  /**
+   * Whether this usage payload is reported by provider API.
+   * false means token counts are unknown placeholders (typically 0s),
+   * and should not drive context-threshold decisions.
+   */
+  reported?: boolean;
 }
 
 // Individual tool call record

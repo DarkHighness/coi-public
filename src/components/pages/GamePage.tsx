@@ -362,6 +362,18 @@ export const GamePage: React.FC<GamePageProps> = ({
 
   const handlePlayerAction = async (action: string) => {
     const result = await handleAction(action);
+    if (result === null) {
+      console.warn("[GamePage] Player action returned null (ignored)", {
+        turnNumber: gameState.turnNumber,
+        isProcessing: gameState.isProcessing,
+        isTranslating,
+        actionPreview:
+          typeof action === "string"
+            ? action.slice(0, 120)
+            : String(action).slice(0, 120),
+      });
+      return;
+    }
     if (result) {
       if (result.success === false) {
         // Error case - show error toast

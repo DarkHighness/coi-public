@@ -63,4 +63,29 @@ describe("generateEntityCleanup", () => {
     const [, calledContext] = mockedGenerateAdventureTurn.mock.calls[0] as any[];
     expect(calledContext.userAction).not.toBe("ignored");
   });
+
+  it("passes recovery trace through when cleanup recovered", async () => {
+    const recovery = {
+      attempts: [{ level: 2, kind: "context", attempt: 3, timestamp: Date.now() }],
+      finalLevel: 2,
+      kind: "context",
+      recovered: true,
+      durationMs: 88,
+    };
+
+    mockedGenerateAdventureTurn.mockResolvedValue({
+      response: { narrative: "ok", choices: [] },
+      logs: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      changedEntities: [],
+      _conversationHistory: [],
+      recovery,
+    } as any);
+
+    const result = await generateEntityCleanup({} as any, {
+      userAction: "ignored",
+    } as any);
+
+    expect(result.recovery).toEqual(recovery);
+  });
 });

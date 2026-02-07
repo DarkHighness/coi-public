@@ -1,17 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { TimelineEvent } from "../../types";
+import { GameState, TimelineEvent } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
+import { resolveEntityDisplayName } from "../../utils/entityDisplay";
 
 interface TimelineEventsPanelProps {
   events?: TimelineEvent[];
+  gameState: Pick<
+    GameState,
+    | "playerActorId"
+    | "character"
+    | "actors"
+    | "npcs"
+    | "locations"
+    | "quests"
+    | "knowledge"
+    | "factions"
+    | "timeline"
+    | "inventory"
+  >;
   themeFont: string;
 }
 
 // Sub-component for individual timeline events
-const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
+const TimelineEventCard: React.FC<{
+  event: TimelineEvent;
+  gameState: TimelineEventsPanelProps["gameState"];
+}> = ({ event, gameState }) => {
   const { t } = useTranslation();
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
@@ -140,7 +157,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
                   key={idx}
                   className="text-[10px] text-theme-text/70 px-1"
                 >
-                  {entityId}
+                  {resolveEntityDisplayName(entityId, gameState)}
                 </span>
               ))}
             </div>
@@ -240,6 +257,7 @@ const TimelineEventCard: React.FC<{ event: TimelineEvent }> = ({ event }) => {
 
 export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
   events,
+  gameState,
   themeFont,
 }) => {
   const { t } = useTranslation();
@@ -318,7 +336,11 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
             </div>
           ) : (
             recentEvents.map((event) => (
-              <TimelineEventCard key={event.id} event={event} />
+              <TimelineEventCard
+                key={event.id}
+                event={event}
+                gameState={gameState}
+              />
             ))
           )}
         </div>

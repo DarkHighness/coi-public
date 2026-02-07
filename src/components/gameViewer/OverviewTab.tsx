@@ -7,6 +7,7 @@ import React from "react";
 import { GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { resolveLocationDisplayName } from "../../utils/entityDisplay";
 import { Section, InfoRow, SubsectionLabel, EmptyState } from "./helpers";
 
 interface OverviewTabProps {
@@ -24,8 +25,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 }) => {
   const outline = gameState.outline;
   const char = gameState.character;
-  const currentLoc = gameState.locations.find(
-    (loc) => loc.id === gameState.currentLocation,
+  const currentLocationDisplay = resolveLocationDisplayName(
+    gameState.currentLocation,
+    gameState,
   );
 
   return (
@@ -46,7 +48,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <InfoRow label={t("gameViewer.time")} value={gameState.time} />
         <InfoRow
           label={t("gameViewer.currentLocation")}
-          value={currentLoc?.name || gameState.currentLocation}
+          value={currentLocationDisplay}
         />
         {outline?.premise && (
           <InfoRow label={t("gameViewer.premise")} value={outline.premise} />

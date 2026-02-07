@@ -93,11 +93,46 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.themeConfig?.name).toBe("Wuxia");
     expect(state.customRules).toHaveLength(1);
     expect(state.character.name).toBe("Arin");
+    expect(state.character.age).toBe("21");
+    expect(state.character.race).toBe("Human Male");
+    expect(state.character.age).not.toBe("Unknown");
+    expect(state.character.race).not.toBe("Unknown");
     expect(state.character.skills).toEqual([]);
     expect(state.character.conditions).toEqual([]);
     expect(state.inventory).toHaveLength(1);
     expect(state.inventory[0]?.id).toBe("inv_key");
     expect(state.actors).toHaveLength(1);
+  });
+
+  it("does not synthesize 'Unknown' for missing player age/race", () => {
+    const files: VfsFileMap = {
+      "world/characters/char:player/profile.json": makeJsonFile(
+        "world/characters/char:player/profile.json",
+        {
+          id: "char:player",
+          kind: "player",
+          currentLocation: "loc:inn",
+          knownBy: ["char:player"],
+          visible: {
+            name: "Arin",
+            title: "Wanderer",
+            status: "Healthy",
+            attributes: [],
+            appearance: "Travel-worn",
+            profession: "Scout",
+            background: "Raised on the frontier.",
+          },
+          relations: [],
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+
+    expect(state.character.age).toBe("");
+    expect(state.character.race).toBe("");
+    expect(state.character.age).not.toBe("Unknown");
+    expect(state.character.race).not.toBe("Unknown");
   });
 
   it("throws on legacy world/character.json saves", () => {
@@ -167,7 +202,16 @@ describe("deriveGameStateFromVfs", () => {
           parentTurnId: "fork-0/turn-0",
           createdAt: 2,
           userAction: "go",
-          assistant: { narrative: "ok", choices: [] },
+          assistant: {
+            narrative: "ok",
+            choices: [],
+            usage: {
+              promptTokens: 321,
+              completionTokens: 123,
+              totalTokens: 444,
+              reported: true,
+            },
+          },
         },
       ),
     };
@@ -216,7 +260,16 @@ describe("deriveGameStateFromVfs", () => {
           parentTurnId: "fork-0/turn-0",
           createdAt: 2,
           userAction: "go",
-          assistant: { narrative: "ok", choices: [] },
+          assistant: {
+            narrative: "ok",
+            choices: [],
+            usage: {
+              promptTokens: 321,
+              completionTokens: 123,
+              totalTokens: 444,
+              reported: true,
+            },
+          },
         },
       ),
     };
@@ -225,6 +278,12 @@ describe("deriveGameStateFromVfs", () => {
 
     expect(state.activeNodeId).toContain("fork-0/turn-1");
     expect(state.currentFork.length).toBeGreaterThan(0);
+    expect(state.nodes["model-fork-0/turn-1"]?.usage).toMatchObject({
+      promptTokens: 321,
+      completionTokens: 123,
+      totalTokens: 444,
+      reported: true,
+    });
   });
 
   it("derives outline progress and outline data", () => {

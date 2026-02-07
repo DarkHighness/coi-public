@@ -67,4 +67,29 @@ describe("generateForceUpdate", () => {
 
     expect((result.response as any).finalState).toBe(existingFinalState);
   });
+
+  it("passes recovery trace through when adventure turn recovered", async () => {
+    const recovery = {
+      attempts: [{ level: 1, kind: "history", attempt: 2, timestamp: Date.now() }],
+      finalLevel: 1,
+      kind: "history",
+      recovered: true,
+      durationMs: 42,
+    };
+
+    mockedGenerateAdventureTurn.mockResolvedValue({
+      response: { narrative: "ok", choices: [] },
+      logs: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      changedEntities: [],
+      _conversationHistory: [],
+      recovery,
+    } as any);
+
+    const result = await generateForceUpdate("noop", {} as any, {
+      userAction: "ignored",
+    } as any);
+
+    expect(result.recovery).toEqual(recovery);
+  });
 });

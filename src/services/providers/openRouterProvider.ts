@@ -393,6 +393,7 @@ async function handleNonStreamingResponse(
     totalTokens: data.usage?.totalTokens || 0,
     cacheRead: data.usage?.cacheReadInputTokens || 0,
     cacheWrite: data.usage?.cacheCreationInputTokens || 0,
+    reported: Boolean(data.usage),
   };
 
   // 提取 reasoning content (如果存在)
@@ -465,6 +466,7 @@ async function handleStreamingResponse(
     promptTokens: 0,
     completionTokens: 0,
     totalTokens: 0,
+    reported: false,
   };
   const accumulatedToolCalls: Map<
     number,
@@ -510,6 +512,7 @@ async function handleStreamingResponse(
           totalTokens: chunk.usage.totalTokens || 0,
           cacheRead: chunk.usage.cacheReadInputTokens || 0,
           cacheWrite: chunk.usage.cacheCreationInputTokens || 0,
+          reported: true,
         };
       }
     }

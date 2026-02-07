@@ -192,9 +192,9 @@ export const RulesEditorModal: React.FC<RulesEditorModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-      <div className="vn-scroll-surface vn-scroll-edge border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[85vh] flex flex-col overflow-hidden">
+      <div className="border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-divider/60 flex items-center justify-between gap-2 bg-transparent">
+        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-divider/60 flex items-center justify-between gap-2 bg-theme-background">
           <div className="min-w-0">
             <h2 className="text-base sm:text-lg font-[var(--font-fantasy)] tracking-[0.18em] uppercase text-theme-primary truncate">
               {t("rules.title")}

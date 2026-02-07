@@ -14,6 +14,7 @@ import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
 import { RAGPanel } from "./sidebar/RAGPanel";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
 import { useRuntimeContext } from "../runtime/context";
+import { resolveLocationDisplayName } from "../utils/entityDisplay";
 
 interface SidebarProps {
   // Callbacks only - state comes from context
@@ -60,7 +61,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const showSystemFooter = gameState.uiState?.showSystemFooter !== false;
 
   const activeQuest = gameState.quests?.find((q) => q.status === "active");
-  const itemContext = `Theme: ${gameState.theme}. Quest: ${activeQuest?.title || "None"}. Location: ${gameState.currentLocation}.`;
+  const locationContext = resolveLocationDisplayName(gameState.currentLocation, gameState);
+  const itemContext = `Theme: ${gameState.theme}. Quest: ${activeQuest?.title || "None"}. Location: ${locationContext}.`;
 
   const embeddingProgress = useEmbeddingStatus();
 
@@ -178,6 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <section className="py-3">
               <CharacterPanel
                 character={character}
+                locations={gameState.locations || []}
                 themeFont={currentThemeConfig.fontClass}
               />
             </section>
@@ -186,6 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <section className="py-3">
             <TimelineEventsPanel
               events={gameState.timeline}
+              gameState={gameState}
               themeFont={currentThemeConfig.fontClass}
             />
           </section>

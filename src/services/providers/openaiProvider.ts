@@ -342,6 +342,7 @@ export async function generateContent(
               promptTokens: 0,
               completionTokens: 0,
               totalTokens: 0,
+              reported: false,
             },
             raw: imageRes.raw as any,
           };
@@ -475,6 +476,7 @@ export async function generateContent(
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0,
+        reported: false,
       };
       let rawResponse:
         | ChatCompletion
@@ -592,6 +594,7 @@ export async function generateContent(
               completionTokens: chunk.usage.completion_tokens || 0,
               totalTokens: chunk.usage.total_tokens || 0,
               cacheRead: chunk.usage.prompt_tokens_details?.cached_tokens || 0,
+              reported: true,
             };
           }
         }
@@ -660,6 +663,7 @@ export async function generateContent(
           completionTokens: response.usage?.completion_tokens || 0,
           totalTokens: response.usage?.total_tokens || 0,
           cacheRead: response.usage?.prompt_tokens_details?.cached_tokens || 0,
+          reported: Boolean(response.usage),
         };
 
         // 提取 reasoning content (OpenAI o1/o3 系列)

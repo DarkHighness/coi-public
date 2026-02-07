@@ -10,6 +10,7 @@ import {
   LanguageCode,
   ToolCallRecord,
   TurnRecoveryTrace,
+  TokenUsage,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { generateAdventureTurn } from "../services/aiService";
@@ -17,6 +18,7 @@ import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { LANG_MAP } from "../utils/constants";
 import { deriveHistory } from "../utils/storyUtils";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
+import { readConversationIndex, readTurnFile, writeTurnFile } from "../services/vfs/conversation";
 import {
   updateProviderStats,
   handleForking,
@@ -78,6 +80,91 @@ export const useGameAction = ({
       if (!error || typeof error !== "object") return undefined;
       return (error as { recoveryKind?: string }).recoveryKind;
     };
+
+  const normalizeUsageForPersistence = (
+    usage: TokenUsage,
+  ): TokenUsage => {
+    const normalize = (value: unknown): number => {
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return 0;
+      }
+      return Math.max(0, Math.floor(value));
+    };
+
+    const cacheRead =
+      typeof usage.cacheRead === "number" && Number.isFinite(usage.cacheRead)
+        ? Math.max(0, Math.floor(usage.cacheRead))
+        : undefined;
+    const cacheWrite =
+      typeof usage.cacheWrite === "number" && Number.isFinite(usage.cacheWrite)
+        ? Math.max(0, Math.floor(usage.cacheWrite))
+        : undefined;
+
+    return {
+      promptTokens: normalize(usage.promptTokens),
+      completionTokens: normalize(usage.completionTokens),
+      totalTokens: normalize(usage.totalTokens),
+      ...(typeof cacheRead === "number" ? { cacheRead } : {}),
+      ...(typeof cacheWrite === "number" ? { cacheWrite } : {}),
+      reported: usage.reported === true,
+    };
+  };
+
+  const isSameUsage = (
+    current: TokenUsage | undefined,
+    next: TokenUsage,
+  ): boolean => {
+    if (!current) return false;
+
+    return (
+      current.promptTokens === next.promptTokens &&
+      current.completionTokens === next.completionTokens &&
+      current.totalTokens === next.totalTokens &&
+      current.cacheRead === next.cacheRead &&
+      current.cacheWrite === next.cacheWrite &&
+      current.reported === next.reported
+    );
+  };
+
+  const persistUsageToActiveTurn = useCallback(
+    (usage: TokenUsage) => {
+      const snapshot = vfsSession.snapshot();
+      const index = readConversationIndex(snapshot);
+      if (!index?.activeTurnId) {
+        return;
+      }
+
+      const matched = /fork-(\d+)\/turn-(\d+)/.exec(index.activeTurnId);
+      if (!matched) {
+        return;
+      }
+
+      const forkId = Number(matched[1]);
+      const turnNumber = Number(matched[2]);
+      if (!Number.isFinite(forkId) || !Number.isFinite(turnNumber)) {
+        return;
+      }
+
+      const turn = readTurnFile(snapshot, forkId, turnNumber);
+      if (!turn) {
+        return;
+      }
+
+      const normalizedUsage = normalizeUsageForPersistence(usage);
+      if (isSameUsage(turn.assistant.usage, normalizedUsage)) {
+        return;
+      }
+
+      writeTurnFile(vfsSession, forkId, turnNumber, {
+        ...turn,
+        assistant: {
+          ...turn.assistant,
+          usage: normalizedUsage,
+        },
+      });
+    },
+    [vfsSession],
+  );
 
   const maybeRelaxLearnedContextWindow = useCallback(() => {
     const providerId = aiSettings.story.providerId;
@@ -358,7 +445,12 @@ export const useGameAction = ({
             imagePrompt: "",
             role: "user",
             timestamp: Date.now(),
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            usage: {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              reported: false,
+            },
             summaries: baseSummaries,
             summarizedIndex: baseIndex,
             ending: "continue",
@@ -540,6 +632,7 @@ export const useGameAction = ({
           onToolCallsUpdate: onLiveToolCallsUpdate,
         });
 
+        persistUsageToActiveTurn(usage);
         maybeRelaxLearnedContextWindow();
 
         if (recovery?.recovered) {
@@ -882,6 +975,7 @@ export const useGameAction = ({
       aiSettings,
       maybeRelaxLearnedContextWindow,
       recordLearnedOverflow,
+      persistUsageToActiveTurn,
       handleSaveSettings,
       language,
       isTranslating,

@@ -95,9 +95,9 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
 
   return (
     <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-      <div className="vn-scroll-surface vn-scroll-edge border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[90vh] flex flex-col overflow-hidden bg-theme-bg">
+      <div className="vn-scroll-edge border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-5xl h-full sm:h-[90vh] flex flex-col overflow-hidden bg-theme-surface">
         {/* Header */}
-        <div className="flex-none px-4 py-3 sm:p-5 border-b border-theme-divider/60 flex items-center justify-between bg-transparent">
+        <div className="flex-none px-4 py-3 sm:p-5 border-b border-theme-divider/60 flex items-center justify-between bg-theme-surface-highlight/30">
           <div className="flex items-center gap-3 sm:gap-4">
             <span className="text-2xl sm:text-3xl" aria-hidden="true">
               📖
@@ -132,7 +132,7 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Tab Bar */}
-        <div className="flex-none border-b border-theme-divider/60 bg-transparent overflow-x-auto scrollbar-hide">
+        <div className="flex-none border-b border-theme-divider/60 bg-theme-surface/80 overflow-x-auto scrollbar-hide">
           <div className="flex px-2 min-w-full">
             {(Object.keys(TAB_CONFIGS) as ViewTab[]).map((tab) => {
               const config = TAB_CONFIGS[tab];
@@ -160,12 +160,12 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-transparent">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-theme-bg/85">
           {renderTabContent()}
         </div>
 
         {/* Footer */}
-        <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-divider/60 bg-transparent flex items-center justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
+        <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-divider/60 bg-theme-surface/80 flex items-center justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
           <div className="text-xs text-theme-text-secondary font-mono">
             {t("gameViewer.turnInfo", { turn: gameState.turnNumber }) ||
               `Turn ${gameState.turnNumber}`}

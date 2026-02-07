@@ -24,6 +24,7 @@ interface RunOutlineGenerationParams {
   resumeFrom?: OutlineConversationState;
   seedImageBase64?: string;
   protagonistFeature?: string;
+  sessionTag?: string;
   logPrefix: string;
 }
 
@@ -42,6 +43,7 @@ export async function runOutlineGenerationPhased({
   resumeFrom,
   seedImageBase64,
   protagonistFeature,
+  sessionTag,
   logPrefix,
 }: RunOutlineGenerationParams) {
   return generateStoryOutlinePhased(theme, language, customContext, t, {
@@ -52,6 +54,7 @@ export async function runOutlineGenerationPhased({
     slotId,
     seedImageBase64,
     protagonistFeature,
+    sessionTag,
     onToolCallsUpdate: (toolCalls) => {
       setGameState((prev) => ({
         ...prev,

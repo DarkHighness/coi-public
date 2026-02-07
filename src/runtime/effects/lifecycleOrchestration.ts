@@ -4,11 +4,21 @@ import { THEMES, LANG_MAP } from "../../utils/constants";
 import { preloadAudio } from "../../utils/audioLoader";
 import { saveImage } from "../../utils/imageStorage";
 import { getThemeName, IMAGE_BASED_THEME } from "../../services/ai/utils";
-import { HistoryCorruptedError } from "../../services/ai/contextCompressor";
+import {
+  ContextOverflowError,
+  HistoryCorruptedError,
+  isContextLengthError,
+  isInvalidArgumentError,
+} from "../../services/ai/contextCompressor";
 import type { OutlinePhaseProgress } from "../../services/aiService";
-import type { AISettings, GameState } from "../../types";
+import type {
+  AISettings,
+  GameState,
+  OutlineConversationState,
+  UnifiedMessage,
+} from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
-import { clearOutlineProgress } from "../../services/vfs/outline";
+import { clearOutlineProgress, writeOutlineProgress } from "../../services/vfs/outline";
 import { seedVfsSessionFromDefaults } from "../../services/vfs/seed";
 import {
   applyOpeningNarrativeState,
@@ -92,6 +102,116 @@ export function createLifecycleActions({
   resetState,
 }: LifecycleActionsDeps) {
   const confirmAction: Confirm = confirm ?? ((message?: string) => window.confirm(message));
+
+  const sanitizeOutlineConversationForRecovery = (
+    conversation: OutlineConversationState,
+  ): OutlineConversationState | null => {
+    const sanitizedHistory: UnifiedMessage[] = [];
+
+    for (const message of conversation.conversationHistory || []) {
+      if (!message || typeof message !== "object") continue;
+      if (message.role === "tool") continue;
+
+      const nextContent = (Array.isArray(message.content) ? message.content : []).filter(
+        (part) => {
+          if (!part || typeof part !== "object") return false;
+          if (part.type === "tool_use" || part.type === "tool_result") {
+            return false;
+          }
+          if (
+            part.type === "text" &&
+            typeof part.text === "string" &&
+            (part.text.startsWith("[SYSTEM: BUDGET STATUS]") ||
+              part.text.startsWith("[SYSTEM: BUDGET UPDATE]"))
+          ) {
+            return false;
+          }
+          return true;
+        },
+      );
+
+      if (nextContent.length === 0) continue;
+      sanitizedHistory.push({
+        ...message,
+        content: nextContent,
+      });
+    }
+
+    if (sanitizedHistory.length === 0) {
+      return null;
+    }
+
+    return {
+      ...conversation,
+      conversationHistory: sanitizedHistory,
+      liveToolCalls: [],
+    };
+  };
+
+  type ResumeRecoveryKind = "history" | "context" | "transient";
+
+  const TRANSIENT_RESUME_ERROR_PATTERN =
+    /timeout|timed out|network|econnreset|connection reset|ehostunreach|enotfound|socket hang up|429|rate limit|overloaded|temporarily unavailable|service unavailable|502|503|504|gateway timeout|aborted/i;
+
+  const getErrorMessage = (error: unknown): string =>
+    error instanceof Error ? error.message : String(error || "");
+
+  const isTransientResumeError = (error: unknown): boolean => {
+    const msg = getErrorMessage(error);
+    return TRANSIENT_RESUME_ERROR_PATTERN.test(msg);
+  };
+
+  const getResumeRecoveryKind = (error: unknown): ResumeRecoveryKind | null => {
+    if (error instanceof HistoryCorruptedError || isInvalidArgumentError(error)) {
+      return "history";
+    }
+    if (error instanceof ContextOverflowError || isContextLengthError(error)) {
+      return "context";
+    }
+    if (isTransientResumeError(error)) {
+      return "transient";
+    }
+    return null;
+  };
+
+  const trimConversationForContextRecovery = (
+    conversation: OutlineConversationState,
+  ): OutlineConversationState => {
+    const history = conversation.conversationHistory || [];
+    const maxMessages = 24;
+    if (history.length <= maxMessages) return conversation;
+
+    const head = history.slice(0, 2);
+    const tail = history.slice(-(maxMessages - head.length));
+    const trimmedHistory = [...head, ...tail];
+
+    return {
+      ...conversation,
+      conversationHistory: trimmedHistory,
+      liveToolCalls: [],
+    };
+  };
+
+  const buildRecoveryConversation = (
+    conversation: OutlineConversationState,
+    kind: ResumeRecoveryKind,
+  ): OutlineConversationState | null => {
+    if (kind === "transient") {
+      return {
+        ...conversation,
+        liveToolCalls: [],
+      };
+    }
+
+    const sanitized = sanitizeOutlineConversationForRecovery(conversation);
+    if (!sanitized) return null;
+
+    if (kind === "context") {
+      return trimConversationForContextRecovery(sanitized);
+    }
+
+    return sanitized;
+  };
 
   const buildOpeningState = ({
     outline,
@@ -337,13 +457,8 @@ export function createLifecycleActions({
       const isHistoryCorrupted = outlineError instanceof HistoryCorruptedError;
       if (isHistoryCorrupted) {
         console.log(
-          "[StartNewGame] History corrupted - clearing saved conversation state",
+          "[StartNewGame] History corrupted - preserving checkpoint for resume recovery",
         );
-        clearOutlineProgress(vfsSession);
-        setGameState((prev) => ({
-          ...prev,
-          outlineConversation: undefined,
-        }));
       }
 
       const outlineFailedMessage = isHistoryCorrupted
@@ -355,16 +470,12 @@ export function createLifecycleActions({
         ...prev,
         isProcessing: false,
         liveToolCalls: [],
-        outlineConversation: isHistoryCorrupted
-          ? undefined
-          : prev.outlineConversation,
       }));
 
       const savedConversation = gameStateRef.current.outlineConversation;
-      const hasProgress =
-        !isHistoryCorrupted &&
-        savedConversation &&
-        savedConversation.currentPhase > 0;
+      const hasProgress = Boolean(
+        savedConversation && savedConversation.currentPhase > 0,
+      );
 
       const retryMessage = hasProgress
         ? `${outlineFailedMessage}\n\n${t("initializing.errors.retryWithProgress", { phase: savedConversation.currentPhase })}`
@@ -512,10 +623,14 @@ export function createLifecycleActions({
     }));
     navigate("/initializing");
 
-    try {
+    const runResumeAttempt = async (
+      resumeFrom: OutlineConversationState,
+      logPrefix: string,
+      sessionTag?: string,
+    ) => {
       const { outline, logs, themeConfig } = await runOutlineGenerationPhased({
         theme,
-        language: savedConversation.language,
+        language: resumeFrom.language,
         customContext,
         t,
         aiSettings,
@@ -525,11 +640,12 @@ export function createLifecycleActions({
         gameStateRef,
         saveToSlot,
         onPhaseProgress,
-        resumeFrom: savedConversation,
-        logPrefix: "ResumeOutline",
+        resumeFrom,
+        sessionTag,
+        logPrefix,
       });
 
-      console.log("[ResumeOutline] Outline generation completed", outline);
+      console.log(`[${logPrefix}] Outline generation completed`, outline);
       const resolvedThemeConfig = applyCustomContextThemeOverrides(
         themeConfig,
         customContext,
@@ -540,7 +656,7 @@ export function createLifecycleActions({
         logs,
         themeConfig: resolvedThemeConfig,
         theme,
-        language: savedConversation.language,
+        language: resumeFrom.language,
         customContext,
         includeCustomContextInPrompt: true,
         clearLiveToolCalls: true,
@@ -551,42 +667,94 @@ export function createLifecycleActions({
         outline,
         themeConfig: resolvedThemeConfig,
         theme,
-        language: savedConversation.language,
+        language: resumeFrom.language,
         customContext,
         nextState,
-        logPrefix: "ResumeOutline",
+        logPrefix,
       });
 
       console.log(
-        "[ResumeOutline] First segment created from Phase 9 openingNarrative",
+        `[${logPrefix}] First segment created from Phase 9 openingNarrative`,
       );
-    } catch (e) {
-      console.error("[ResumeOutline] Resume failed", e);
+    };
 
-      const isHistoryCorrupted = e instanceof HistoryCorruptedError;
-      if (isHistoryCorrupted) {
-        console.log(
-          "[ResumeOutline] History corrupted - clearing saved conversation state",
+    let finalError: unknown;
+
+    try {
+      await runResumeAttempt(savedConversation, "ResumeOutline");
+      return;
+    } catch (resumeError) {
+      console.error("[ResumeOutline] Resume failed", resumeError);
+      finalError = resumeError;
+
+      const recoveryKind = getResumeRecoveryKind(resumeError);
+      if (recoveryKind) {
+        const recoveryConversation = buildRecoveryConversation(
+          savedConversation,
+          recoveryKind,
         );
-        clearOutlineProgress(vfsSession);
+
+        if (recoveryConversation) {
+          console.log(
+            `[ResumeOutline] Retrying with ${recoveryKind} recovery checkpoint (phase ${recoveryConversation.currentPhase}, messages ${savedConversation.conversationHistory.length} -> ${recoveryConversation.conversationHistory.length})`,
+          );
+
+          const recoveryState = {
+            ...gameStateRef.current,
+            isProcessing: true,
+            outlineConversation: recoveryConversation,
+            liveToolCalls: [],
+          };
+          gameStateRef.current = recoveryState;
+          setGameState(recoveryState);
+          writeOutlineProgress(vfsSession, recoveryConversation);
+
+          try {
+            await runResumeAttempt(
+              recoveryConversation,
+              "ResumeOutlineRecovery",
+              `${recoveryKind}-recovery-${Date.now()}`,
+            );
+            return;
+          } catch (recoveryError) {
+            console.error(
+              `[ResumeOutline] ${recoveryKind} recovery retry failed`,
+              recoveryError,
+            );
+            finalError = recoveryError;
+          }
+        } else {
+          console.warn(
+            `[ResumeOutline] No recoverable messages remained for ${recoveryKind} recovery`,
+          );
+        }
       }
-
-      const resumeErrorMsg = isHistoryCorrupted
-        ? t("initializing.errors.historyCacheCorruptedResume")
-        : t("initializing.errors.resumeFailed");
-      showToast(resumeErrorMsg, "error", 5000);
-
-      setGameState((prev) => ({
-        ...prev,
-        error: resumeErrorMsg,
-        isProcessing: false,
-        liveToolCalls: [],
-        outlineConversation: isHistoryCorrupted
-          ? undefined
-          : prev.outlineConversation,
-      }));
-      navigate("/");
     }
+
+    const shouldClearCorruptedProgress =
+      finalError instanceof HistoryCorruptedError || isInvalidArgumentError(finalError);
+    if (shouldClearCorruptedProgress) {
+      console.log(
+        "[ResumeOutline] History corrupted - clearing saved conversation state",
+      );
+      clearOutlineProgress(vfsSession);
+    }
+
+    const resumeErrorMsg = shouldClearCorruptedProgress
+      ? t("initializing.errors.historyCacheCorruptedResume")
+      : t("initializing.errors.resumeFailed");
+    showToast(resumeErrorMsg, "error", 5000);
+
+    setGameState((prev) => ({
+      ...prev,
+      error: resumeErrorMsg,
+      isProcessing: false,
+      liveToolCalls: [],
+      outlineConversation: shouldClearCorruptedProgress
+        ? undefined
+        : prev.outlineConversation,
+    }));
+    navigate("/");
   };
 
   return {

@@ -293,8 +293,16 @@ export const handleSummarization = async (
       effectiveParentId && gameState.nodes[effectiveParentId]
         ? gameState.nodes[effectiveParentId]
         : null;
-    const lastPromptTokens =
-      parentNode?.role === "model" ? parentNode.usage?.promptTokens : undefined;
+    const parentUsage = parentNode?.role === "model" ? parentNode.usage : undefined;
+    const usageIsReported =
+      parentUsage?.reported === true ||
+      (parentUsage?.reported !== false &&
+        ((parentUsage?.promptTokens || 0) > 0 ||
+          (parentUsage?.completionTokens || 0) > 0 ||
+          (parentUsage?.totalTokens || 0) > 0));
+    const lastPromptTokens = usageIsReported
+      ? parentUsage?.promptTokens
+      : undefined;
 
     if (typeof lastPromptTokens === "number" && lastPromptTokens > 0) {
       const contextLengthTokens = await resolveContextLengthTokens();

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useToast } from "../../contexts/ToastContext";
 import type { RuntimeActions, RuntimeState } from "../state";
 
@@ -11,6 +12,7 @@ export function useRuntimeLifecycleEffects({
   state,
   actions,
 }: RuntimeLifecycleParams) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
 
   const lastInitializedConfigRef = useRef<string>("");
@@ -65,7 +67,10 @@ export function useRuntimeLifecycleEffects({
     if (!state.rag.isInitialized) return;
 
     const shouldIndex = window.confirm(
-      "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment.",
+      t(
+        "runtime.embeddingEnabledIndexPrompt",
+        "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment.",
+      ),
     );
 
     if (shouldIndex && state.currentSlotId) {
@@ -92,10 +97,19 @@ export function useRuntimeLifecycleEffects({
             await actions.rag.updateDocuments(state.gameState, storyNodeIds);
           }
 
-          showToast("Indexed existing documents", "info");
+          showToast(
+            t("runtime.indexedExistingDocuments", "Indexed existing documents"),
+            "info",
+          );
         } catch (error) {
           console.error("[RuntimeLifecycle] Failed to index existing content:", error);
-          showToast("Failed to index existing content", "error");
+          showToast(
+            t(
+              "runtime.failedToIndexExistingContent",
+              "Failed to index existing content",
+            ),
+            "error",
+          );
         }
       };
 
@@ -108,16 +122,27 @@ export function useRuntimeLifecycleEffects({
     state.currentSlotId,
     actions.rag,
     showToast,
+    t,
   ]);
 
   useEffect(() => {
     if (state.rag.modelMismatch) {
-      const message = `RAG model mismatch detected. Stored: ${state.rag.modelMismatch.storedModel}; Current: ${state.rag.modelMismatch.currentModel}. Rebuild now?`;
+      const message = t("runtime.ragModelMismatchPrompt", {
+        defaultValue:
+          "RAG model mismatch detected. Stored: {{storedModel}}; Current: {{currentModel}}. Rebuild now?",
+        storedModel: state.rag.modelMismatch.storedModel,
+        currentModel: state.rag.modelMismatch.currentModel,
+      });
 
       if (window.confirm(message)) {
         actions.rag.handleModelMismatch("rebuild");
       } else {
-        const disableRAG = window.confirm("Disable RAG for this session?");
+        const disableRAG = window.confirm(
+          t(
+            "runtime.disableRagPrompt",
+            "Disable RAG for this session?",
+          ),
+        );
         if (disableRAG) {
           actions.rag.handleModelMismatch("disable");
           actions.handleSaveSettings({
@@ -129,16 +154,21 @@ export function useRuntimeLifecycleEffects({
         }
       }
     }
-  }, [state.rag.modelMismatch, actions.rag, actions, state.aiSettings]);
+  }, [state.rag.modelMismatch, actions.rag, actions, state.aiSettings, t]);
 
   useEffect(() => {
     if (state.rag.storageOverflow) {
-      const message = `RAG storage overflow: ${state.rag.storageOverflow.currentTotal}/${state.rag.storageOverflow.maxTotal}. Delete old save indexes now?`;
+      const message = t("runtime.ragStorageOverflowPrompt", {
+        defaultValue:
+          "RAG storage overflow: {{currentTotal}}/{{maxTotal}}. Delete old save indexes now?",
+        currentTotal: state.rag.storageOverflow.currentTotal,
+        maxTotal: state.rag.storageOverflow.maxTotal,
+      });
       if (window.confirm(message)) {
         actions.rag.handleStorageOverflow(
           state.rag.storageOverflow.suggestedDeletions,
         );
       }
     }
-  }, [state.rag.storageOverflow, actions.rag]);
+  }, [state.rag.storageOverflow, actions.rag, t]);
 }

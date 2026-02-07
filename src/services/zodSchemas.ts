@@ -1277,6 +1277,29 @@ export const relationEdgeSchema = z.discriminatedUnion("kind", [
   relationAttitudeSchema,
 ]);
 
+const REQUIRED_VISIBLE_PLACEHOLDER_VALUES = new Set([
+  "",
+  "unknown",
+  "loading...",
+  "initializing...",
+  "pending",
+  "未知",
+  "加载中",
+  "初始化中",
+  "待定",
+]);
+
+const isMissingRequiredVisibleField = (value: unknown): boolean => {
+  if (typeof value !== "string") {
+    return true;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return true;
+  }
+  return REQUIRED_VISIBLE_PLACEHOLDER_VALUES.has(trimmed.toLowerCase());
+};
+
 export const actorVisibleSchema = z.object({
   name: z.string().describe("Name the protagonist knows."),
   title: z.string().nullish().describe("Surface title/role (player-facing)."),
@@ -1613,6 +1636,53 @@ export const actorBundleSchema = z.object({
     .describe("Actor inventory items (instances)."),
 });
 
+const requiredConcretePlayerString = (fieldPath: string) =>
+  z
+    .string()
+    .trim()
+    .min(1)
+    .refine((value) => !isMissingRequiredVisibleField(value), {
+      message: `${fieldPath} is REQUIRED and must be a concrete value (not Unknown/placeholder)`,
+    });
+
+export const strictPlayerVisibleSchema = actorVisibleSchema.extend({
+  name: requiredConcretePlayerString("player.profile.visible.name"),
+  title: requiredConcretePlayerString("player.profile.visible.title"),
+  age: requiredConcretePlayerString("player.profile.visible.age"),
+  profession: requiredConcretePlayerString("player.profile.visible.profession"),
+  background: requiredConcretePlayerString("player.profile.visible.background"),
+  race: requiredConcretePlayerString("player.profile.visible.race"),
+  appearance: requiredConcretePlayerString("player.profile.visible.appearance"),
+  status: requiredConcretePlayerString("player.profile.visible.status"),
+  attributes: z
+    .array(characterAttributeSchema)
+    .describe("Player-facing attributes/stats (required; can be empty)."),
+});
+
+export const strictPlayerProfileSchema = actorProfileSchema.extend({
+  id: z.literal("char:player"),
+  kind: z.literal("player"),
+  currentLocation: requiredConcretePlayerString("player.profile.currentLocation"),
+  visible: strictPlayerVisibleSchema,
+});
+
+export const strictPlayerBundleSchema = actorBundleSchema.extend({
+  profile: strictPlayerProfileSchema,
+  skills: z.array(skillSchema).describe("Player skills (required; can be empty)."),
+  conditions: z
+    .array(conditionSchema)
+    .describe("Player conditions (required; can be empty)."),
+  traits: z
+    .array(hiddenTraitSchema)
+    .default([])
+    .describe("Player hidden traits (optional; defaults to empty)."),
+  inventory: z
+    .array(inventoryItemSchema)
+    .default([])
+    .describe("Player inventory items (optional; defaults to empty)."),
+});
+
+
 /** 故事大纲 Schema (Actor-first; no legacy NPC/inventory globals) */
 export const storyOutlineSchema = z.object({
   title: z.string().describe("A creative title for the adventure."),
@@ -1632,7 +1702,7 @@ export const storyOutlineSchema = z.object({
   worldSetting: worldSettingSchema.describe("Dual-layer world setting."),
 
   // Actors (player + NPCs)
-  player: actorBundleSchema.describe("The player actor bundle."),
+  player: strictPlayerBundleSchema.describe("The player actor bundle."),
   npcs: z.array(actorBundleSchema).describe("Initial NPC actor bundles (1-2)."),
   placeholders: z
     .array(placeholderSchema)
@@ -1791,7 +1861,7 @@ export const outlinePhase1Schema = z.object({
  * 完整的角色信息
  */
 export const outlinePhase2Schema = z.object({
-  player: actorBundleSchema.describe(
+  player: strictPlayerBundleSchema.describe(
     "The player actor bundle (profile + skills/conditions/traits + inventory). Player id MUST be 'char:player'.",
   ),
 });

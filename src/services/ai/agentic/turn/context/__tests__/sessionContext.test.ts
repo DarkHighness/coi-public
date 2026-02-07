@@ -4,6 +4,7 @@ import {
   appendToHistory,
   createCheckpoint,
   handleRetryDetection,
+  rollbackToTurnAnchor,
   setupSession,
 } from "../sessionContext";
 
@@ -71,6 +72,7 @@ describe("sessionContext", () => {
       messages.map((_, idx) => ({ role: "model", parts: [{ text: `gemini-${idx}` }] })),
     );
     messageTypesMock.fromGeminiFormat.mockReturnValue([]);
+    runtimeCheckpointMock.rollbackVfsSessionToCheckpoint.mockReturnValue(true);
   });
 
   it("initializes empty session with hydrated history and clears init session", async () => {
@@ -268,5 +270,20 @@ describe("sessionContext", () => {
       "session-1",
       [{ role: "model", parts: [] }],
     );
+  });
+
+  it("returns null when vfs checkpoint rollback is unavailable", () => {
+    runtimeCheckpointMock.rollbackVfsSessionToCheckpoint.mockReturnValue(false);
+
+    const result = rollbackToTurnAnchor(
+      "session-1",
+      "openai",
+      {} as any,
+    );
+
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledWith(
+      "session-1",
+    );
+    expect(result).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   actorProfileSchema,
+  strictPlayerProfileSchema,
   inventoryItemSchema,
   knowledgeEntrySchema,
   skillSchema,
@@ -18,6 +19,58 @@ describe("vfs schemas", () => {
   it("normalizes actor profile paths before matching", () => {
     const schema = getSchemaForPath("/world/characters//char:npc_1//profile.json");
     expect(schema).toBe(actorProfileSchema);
+  });
+
+  it("matches player profile path to strict player schema", () => {
+    const schema = getSchemaForPath("world/characters/char:player/profile.json");
+    expect(schema).toBe(strictPlayerProfileSchema);
+  });
+
+  it("rejects player profile when required visible fields are missing", () => {
+    const schema = getSchemaForPath("world/characters/char:player/profile.json");
+    expect(() =>
+      schema.parse({
+        id: "char:player",
+        kind: "player",
+        currentLocation: "loc:start",
+        knownBy: ["char:player"],
+        visible: {
+          name: "Arin",
+          age: "21",
+          profession: "Scout",
+          background: "Raised in borderlands.",
+          race: "Human",
+          appearance: "Lean and weathered.",
+          status: "Alert",
+          attributes: [],
+        },
+        relations: [],
+      }),
+    ).toThrow();
+  });
+
+  it("rejects player profile placeholders for required fields", () => {
+    const schema = getSchemaForPath("world/characters/char:player/profile.json");
+    expect(() =>
+      schema.parse({
+        id: "char:player",
+        kind: "player",
+        currentLocation: "Unknown",
+        knownBy: ["char:player"],
+        visible: {
+          name: "Arin",
+          title: "Wanderer",
+          age: "Unknown",
+          profession: "Scout",
+          background: "Raised in borderlands.",
+          race: "未知",
+          appearance: "Lean and weathered.",
+          status: "Pending",
+          attributes: [],
+        },
+        relations: [],
+      }),
+    ).toThrow();
   });
 
   it("matches knowledge paths to knowledge entry schema", () => {

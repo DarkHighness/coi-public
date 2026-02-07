@@ -34,6 +34,7 @@ export { buildInitialContext, buildTurnMessages } from "./messageBuilder";
 export {
   setupSession,
   handleRetryDetection,
+  rollbackToTurnAnchor,
   createCheckpoint,
   appendToHistory,
 } from "./sessionContext";

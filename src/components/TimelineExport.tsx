@@ -11,6 +11,8 @@ import { MarkdownText } from "./render/MarkdownText";
 import html2canvas from "html2canvas";
 import { useTranslation } from "react-i18next";
 import { getImage } from "../utils/imageStorage";
+import { useOptionalRuntimeContext } from "../runtime/context";
+import { resolveLocationDisplayName } from "../utils/entityDisplay";
 
 export interface TimelineExportRef {
   startExport: (
@@ -49,6 +51,15 @@ export const TimelineExport = forwardRef<
     const [exportChunk, setExportChunk] = useState<StorySegment[]>([]);
     const exportContainerRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
+
+    const runtime = useOptionalRuntimeContext();
+    const knownLocations = runtime?.state.gameState.locations ?? [];
+    const resolveExportLocation = (locationRef: string | undefined): string => {
+      if (!locationRef) {
+        return "";
+      }
+      return resolveLocationDisplayName(locationRef, { locations: knownLocations });
+    };
 
     const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
     // Use envTheme directly from story theme for consistent visual styling
@@ -509,7 +520,7 @@ export const TimelineExport = forwardRef<
                         className="w-1 h-1 rounded-full"
                         style={{ backgroundColor: "#475569" }} // slate-600
                       ></span>
-                      <span>{seg.stateSnapshot?.currentLocation}</span>
+                      <span>{resolveExportLocation(seg.stateSnapshot?.currentLocation)}</span>
                     </div>
                   </div>
 

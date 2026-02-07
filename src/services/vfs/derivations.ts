@@ -14,6 +14,7 @@ import type {
   Placeholder,
   Quest,
   TimelineEvent,
+  TokenUsage,
 } from "@/types";
 import { DEFAULT_CHARACTER } from "@/utils/constants";
 import { deriveHistory } from "@/utils/storyUtils";
@@ -39,6 +40,40 @@ const DEFAULT_FORK_TREE = {
 const DEFAULT_ATMOSPHERE: AtmosphereObject = {
   envTheme: "fantasy",
   ambience: "quiet",
+};
+
+const normalizeTokenUsage = (usage: unknown): TokenUsage | undefined => {
+  if (!usage || typeof usage !== "object") {
+    return undefined;
+  }
+
+  const source = usage as Record<string, unknown>;
+  const normalizeNumber = (value: unknown): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return 0;
+    }
+    return Math.max(0, Math.floor(value));
+  };
+
+  const cacheRead =
+    typeof source.cacheRead === "number" && Number.isFinite(source.cacheRead)
+      ? Math.max(0, Math.floor(source.cacheRead))
+      : undefined;
+  const cacheWrite =
+    typeof source.cacheWrite === "number" && Number.isFinite(source.cacheWrite)
+      ? Math.max(0, Math.floor(source.cacheWrite))
+      : undefined;
+
+  return {
+    promptTokens: normalizeNumber(source.promptTokens),
+    completionTokens: normalizeNumber(source.completionTokens),
+    totalTokens: normalizeNumber(source.totalTokens),
+    ...(typeof cacheRead === "number" ? { cacheRead } : {}),
+    ...(typeof cacheWrite === "number" ? { cacheWrite } : {}),
+    ...(typeof source.reported === "boolean"
+      ? { reported: source.reported }
+      : {}),
+  };
 };
 
 const createBaseGameState = (): GameState => ({
@@ -96,6 +131,66 @@ const createBaseGameState = (): GameState => ({
   forkTree: DEFAULT_FORK_TREE,
   customRules: [],
 });
+
+const PLACEHOLDER_CHARACTER_VALUES = new Set([
+  "",
+  "loading...",
+  "initializing...",
+  "pending",
+  "unknown",
+  "加载中",
+  "初始化中",
+  "未知",
+  "待定",
+]);
+
+const normalizeCharacterText = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+};
+
+const isPlaceholderCharacterText = (value: unknown): boolean => {
+  const normalized = normalizeCharacterText(value);
+  if (!normalized) {
+    return true;
+  }
+  return PLACEHOLDER_CHARACTER_VALUES.has(normalized.toLowerCase());
+};
+
+const pickMeaningfulCharacterText = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    const normalized = normalizeCharacterText(value);
+    if (!normalized) {
+      continue;
+    }
+    if (isPlaceholderCharacterText(normalized)) {
+      continue;
+    }
+    return normalized;
+  }
+  return undefined;
+};
+
+const warnMissingPlayerRequiredField = (
+  field: "age" | "race",
+  value: unknown,
+  details: Record<string, unknown>,
+): void => {
+  if (!isPlaceholderCharacterText(value)) {
+    return;
+  }
+  console.warn(`[VFS] Player required field missing: ${field}`, {
+    field,
+    value,
+    ...details,
+  });
+};
 
 const parseJsonFile = (file: VfsFile): unknown | null => {
   if (file.contentType !== "application/json") {
@@ -192,6 +287,7 @@ const deriveConversationNodes = (
       role: "model",
       timestamp: turn.createdAt,
       segmentIdx,
+      usage: normalizeTokenUsage((turn.assistant as any).usage),
       atmosphere: turn.assistant.atmosphere as any,
       narrativeTone: turn.assistant.narrativeTone,
       ending: (turn.assistant.ending as any) || "continue",
@@ -681,26 +777,102 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
     // Backfill CharacterStatus for legacy UI panels (CharacterPanel).
     const visible = (playerBundle.profile as any)?.visible ?? {};
+    const profile = (playerBundle.profile as any) ?? {};
+    const outlinePlayer = (state.outline as any)?.player?.profile ?? {};
+    const outlineVisible = outlinePlayer?.visible ?? {};
     const base = (state.character ?? DEFAULT_CHARACTER) as any;
+
+    const title =
+      pickMeaningfulCharacterText(
+        visible.title,
+        visible.roleTag,
+        outlineVisible.title,
+        outlineVisible.roleTag,
+        base.title,
+      ) ?? "";
+
+    const age =
+      pickMeaningfulCharacterText(visible.age, outlineVisible.age, base.age) ?? "";
+
+    const profession =
+      pickMeaningfulCharacterText(
+        visible.profession,
+        visible.roleTag,
+        outlineVisible.profession,
+        outlineVisible.roleTag,
+        base.profession,
+      ) ?? "";
+
+    const race =
+      pickMeaningfulCharacterText(visible.race, outlineVisible.race, base.race) ?? "";
+
+    const background =
+      pickMeaningfulCharacterText(
+        visible.background,
+        outlineVisible.background,
+        base.background,
+      ) ?? "";
+
+    const status =
+      pickMeaningfulCharacterText(visible.status, outlineVisible.status, base.status) ??
+      "";
+
+    const appearance =
+      pickMeaningfulCharacterText(
+        visible.appearance,
+        visible.description,
+        outlineVisible.appearance,
+        outlineVisible.description,
+        base.appearance,
+      ) ?? (base.appearance || "");
+
+    const currentLocation =
+      pickMeaningfulCharacterText(
+        profile.currentLocation,
+        outlinePlayer.currentLocation,
+        state.currentLocation,
+        base.currentLocation,
+      ) ?? "";
+
     state.character = {
       ...base,
-      name: visible.name ?? base.name,
-      title: visible.title ?? base.title,
-      status: visible.status ?? base.status,
-      appearance: visible.appearance ?? base.appearance,
+      name: pickMeaningfulCharacterText(visible.name, outlineVisible.name, base.name) ??
+        base.name,
+      title,
+      status,
+      appearance,
       attributes: Array.isArray(visible.attributes) ? visible.attributes : [],
       skills: Array.isArray(playerBundle.skills) ? playerBundle.skills : [],
       conditions: Array.isArray(playerBundle.conditions)
         ? playerBundle.conditions
         : [],
       hiddenTraits: Array.isArray(playerBundle.traits) ? playerBundle.traits : [],
-      currentLocation:
-        (playerBundle.profile as any)?.currentLocation ?? state.currentLocation,
-      age: visible.age ?? "Unknown",
-      profession: visible.profession ?? "Unknown",
-      background: visible.background ?? "",
-      race: visible.race ?? "Unknown",
+      currentLocation,
+      age,
+      profession,
+      background,
+      race,
     } as any;
+
+    if (
+      isPlaceholderCharacterText(state.currentLocation) &&
+      !isPlaceholderCharacterText(currentLocation)
+    ) {
+      state.currentLocation = currentLocation;
+    }
+
+    warnMissingPlayerRequiredField("age", state.character.age, {
+      source: "playerBundle",
+      playerActorId: state.playerActorId,
+      visibleAge: visible.age,
+      outlineAge: outlineVisible.age,
+    });
+    warnMissingPlayerRequiredField("race", state.character.race, {
+      source: "playerBundle",
+      playerActorId: state.playerActorId,
+      visibleRace: visible.race,
+      outlineRace: outlineVisible.race,
+    });
   }
 
   // Derive NPC list for sidebar panels from actor bundles.
@@ -783,6 +955,59 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     if ((outline as any).narrativeScale) {
       state.narrativeScale = (outline as any).narrativeScale;
     }
+
+    const outlineVisible = (outline as any)?.player?.profile?.visible ?? {};
+    const outlineProfile = (outline as any)?.player?.profile ?? {};
+    const currentCharacter = (state.character ?? DEFAULT_CHARACTER) as any;
+
+    state.character = {
+      ...currentCharacter,
+      title:
+        pickMeaningfulCharacterText(
+          currentCharacter.title,
+          outlineVisible.title,
+          outlineVisible.roleTag,
+        ) ?? "",
+      age:
+        pickMeaningfulCharacterText(currentCharacter.age, outlineVisible.age) ?? "",
+      profession:
+        pickMeaningfulCharacterText(
+          currentCharacter.profession,
+          outlineVisible.profession,
+          outlineVisible.roleTag,
+        ) ?? "",
+      race:
+        pickMeaningfulCharacterText(currentCharacter.race, outlineVisible.race) ?? "",
+      background:
+        pickMeaningfulCharacterText(
+          currentCharacter.background,
+          outlineVisible.background,
+        ) ?? "",
+      currentLocation:
+        pickMeaningfulCharacterText(
+          currentCharacter.currentLocation,
+          outlineProfile.currentLocation,
+          state.currentLocation,
+        ) ?? "",
+    } as any;
+
+    if (
+      isPlaceholderCharacterText(state.currentLocation) &&
+      !isPlaceholderCharacterText(state.character.currentLocation)
+    ) {
+      state.currentLocation = state.character.currentLocation;
+    }
+
+    warnMissingPlayerRequiredField("age", state.character.age, {
+      source: "outlineFallback",
+      playerActorId: state.playerActorId,
+      outlineAge: outlineVisible.age,
+    });
+    warnMissingPlayerRequiredField("race", state.character.race, {
+      source: "outlineFallback",
+      playerActorId: state.playerActorId,
+      outlineRace: outlineVisible.race,
+    });
   }
 
   // Fallback: if the save has an outline but no conversation index/turns,

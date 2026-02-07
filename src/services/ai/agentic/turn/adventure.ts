@@ -9,6 +9,8 @@ import {
   GameResponse,
   ToolCallRecord,
   CustomRulesAckPendingReason,
+  TurnRecoveryKind,
+  TurnRecoveryTrace,
 } from "../../../../types";
 
 import { isContextLengthError } from "../../contextCompressor";
@@ -38,6 +40,7 @@ import {
   buildTurnMessages,
   setupSession,
   handleRetryDetection,
+  rollbackToTurnAnchor,
   createCheckpoint,
   appendToHistory,
 } from "./context";
@@ -50,6 +53,13 @@ import {
 } from "../../../prompts/runtimeFloor";
 import { syncCustomRulesAckState } from "../../../customRulesAckState";
 
+import {
+  executeTurnWithRecovery,
+  getRecoveryKind,
+  getRecoveryTrace,
+} from "./turnRecoveryRunner";
+
+
 // ============================================================================
 // Turn Context and Agentic Loop
 // ============================================================================
@@ -60,6 +70,7 @@ export interface AgenticLoopResult {
   usage: TokenUsage;
   changedEntities: Array<{ id: string; type: string }>;
   _conversationHistory: UnifiedMessage[];
+  recovery?: TurnRecoveryTrace;
 }
 
 /**
@@ -243,7 +254,7 @@ export const generateAdventureTurn = async (
   };
 
   // === SESSION-BASED HISTORY MANAGEMENT (Using new modular context) ===
-  const { sessionId, activeHistory: initialHistory } = await setupSession({
+  const sessionSetupOptions = {
     slotId: context.slotId,
     forkId: gameState.forkId ?? 0,
     providerId: instance.id,
@@ -253,12 +264,16 @@ export const generateAdventureTurn = async (
     contextMessages,
     recentHistory: context.recentHistory,
     isInit: context.isInit,
-  });
+  };
+
+  const { sessionId, activeHistory: initialHistory } = await setupSession(
+    sessionSetupOptions,
+  );
 
   context.vfsSession.bindConversationSession(sessionId);
 
   // Handle retry detection
-  const activeHistory = handleRetryDetection(
+  let activeHistory = handleRetryDetection(
     sessionId,
     initialHistory,
     context.userAction,
@@ -266,18 +281,14 @@ export const generateAdventureTurn = async (
     context.vfsSession,
   );
 
-  // Create checkpoint before new turn
-  createCheckpoint(sessionId, context.vfsSession);
-
-  // Construct request context
-  const fullContext = [...activeHistory, userMessage];
-
   // Detect SUDO mode
   const isSudoMode = context.userAction.startsWith("[SUDO]");
   const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
 
-  // Run agentic loop
-  try {
+  const executeSingleAttempt = async (): Promise<AgenticLoopResult> => {
+    createCheckpoint(sessionId, context.vfsSession);
+
+    const fullContext = [...activeHistory, userMessage];
     const result = await runAgenticLoop(
       instance.protocol,
       instance,
@@ -295,21 +306,77 @@ export const generateAdventureTurn = async (
       context.onToolCallsUpdate,
     );
 
-    // Append new messages to session history
     const newMessages = result._conversationHistory.slice(activeHistory.length);
     console.log(
       `[Adventure] Appending ${newMessages.length} new messages to history.`,
     );
     appendToHistory(sessionId, newMessages, instance.protocol);
 
+    activeHistory = result._conversationHistory;
     return result;
-  } catch (e: any) {
-    if (isContextLengthError(e)) {
+  };
+
+  const resetSessionForRecovery = async (kind: TurnRecoveryKind) => {
+    if (kind === "context") {
       await sessionManager.onContextOverflow(sessionId);
       context.vfsSession.beginReadEpoch("context_overflow");
-      throw new Error("CONTEXT_LENGTH_EXCEEDED: " + e.message);
+    } else {
+      await sessionManager.invalidate(sessionId, "manual_clear");
+      context.vfsSession.beginReadEpoch("manual_invalidate");
     }
-    throw e;
+
+    const refreshedSession = await setupSession({
+      ...sessionSetupOptions,
+      isInit: false,
+    });
+    context.vfsSession.bindConversationSession(refreshedSession.sessionId);
+    activeHistory = refreshedSession.activeHistory;
+  };
+
+  try {
+    const { result, recovery } = await executeTurnWithRecovery({
+      execute: executeSingleAttempt,
+      rollbackToAnchor: () => {
+        const rolledBackHistory = rollbackToTurnAnchor(
+          sessionId,
+          instance.protocol,
+          context.vfsSession,
+        );
+        if (!rolledBackHistory) return false;
+        activeHistory = rolledBackHistory;
+        return true;
+      },
+      resetSession: resetSessionForRecovery,
+      onLog: (payload) => {
+        console.log("[TurnRecovery]", {
+          sessionId,
+          forkId: gameState.forkId ?? 0,
+          actionMode: isSudoMode ? "sudo" : isCleanupMode ? "cleanup" : "normal",
+          ...payload,
+        });
+      },
+    });
+
+    return {
+      ...result,
+      recovery,
+    };
+  } catch (error: unknown) {
+    const recoveryKind = getRecoveryKind(error);
+    const recoveryTrace = getRecoveryTrace(error);
+
+    if (recoveryKind === "context" || isContextLengthError(error)) {
+      await sessionManager.onContextOverflow(sessionId);
+      context.vfsSession.beginReadEpoch("context_overflow");
+      const contextError = new Error(
+        `CONTEXT_LENGTH_EXCEEDED: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      (contextError as any).recovery = recoveryTrace;
+      (contextError as any).recoveryKind = recoveryKind || "context";
+      throw contextError;
+    }
+
+    throw error;
   }
 };
 

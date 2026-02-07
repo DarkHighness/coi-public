@@ -2,7 +2,7 @@ import type { VfsFileMap } from "./types";
 import { VfsSession } from "./vfsSession";
 import { stripCurrentPath } from "./currentAlias";
 import { normalizeVfsPath } from "./utils";
-import type { ForkTree } from "@/types";
+import type { ForkTree, TokenUsage } from "@/types";
 
 export interface ConversationIndex {
   activeForkId: number;
@@ -26,6 +26,7 @@ export interface TurnFile {
     atmosphere?: unknown;
     ending?: string;
     forceEnd?: boolean;
+    usage?: TokenUsage;
   };
   media?: Record<string, unknown>;
   meta?: Record<string, unknown>;

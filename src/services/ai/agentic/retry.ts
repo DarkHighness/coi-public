@@ -55,6 +55,7 @@ export async function callWithAgenticRetry(
     completionTokens: 0,
     totalTokens: 0,
   };
+  let sawExplicitUnknownUsage = false;
 
   while (attempt <= maxRetries) {
     const response = await provider.generateChat({
@@ -66,6 +67,11 @@ export async function callWithAgenticRetry(
     totalUsage.promptTokens += response.usage.promptTokens || 0;
     totalUsage.completionTokens += response.usage.completionTokens || 0;
     totalUsage.totalTokens += response.usage.totalTokens || 0;
+    if (response.usage.reported === true) {
+      totalUsage.reported = true;
+    } else if (response.usage.reported === false) {
+      sawExplicitUnknownUsage = true;
+    }
 
     let result = response.result;
     let functionCalls =
@@ -215,7 +221,12 @@ export async function callWithAgenticRetry(
       // Success!
       return {
         ...response,
-        usage: totalUsage,
+        usage:
+          totalUsage.reported === true
+            ? totalUsage
+            : sawExplicitUnknownUsage
+              ? { ...totalUsage, reported: false }
+              : totalUsage,
         retries: attempt,
       };
     }
