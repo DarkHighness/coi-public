@@ -260,7 +260,7 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
                                   : "bg-theme-surface text-theme-muted"
                       }`}
                     >
-                      {t(`conditionType.${cond.type}`, {
+                      {t(`sidebar.conditionType.${cond.type}`, {
                         defaultValue: cond.type,
                       })}
                     </span>
