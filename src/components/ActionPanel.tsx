@@ -892,43 +892,49 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                           className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-divider/60 hover:bg-theme-surface/10 transition-colors"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
-                              {idx + 1}
-                            </div>
-
                             <button
+                              type="button"
                               onClick={() => onAction(label)}
-                              className="flex-1 text-left text-theme-text font-serif leading-6 md:leading-7"
+                              disabled={isDisabled}
+                              className="flex-1 flex items-start gap-3 text-left text-theme-text font-serif leading-6 md:leading-7 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <div className="text-[15px] md:text-base font-medium">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    p: ({ children }) => (
-                                      <span className="inline">{children}</span>
-                                    ),
-                                    strong: ({ children }) => (
-                                      <span className="font-bold">{children}</span>
-                                    ),
-                                    em: ({ children }) => (
-                                      <span className="italic">{children}</span>
-                                    ),
-                                  }}
-                                >
-                                  {label}
-                                </ReactMarkdown>
+                              <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
+                                {idx + 1}
                               </div>
-                              {(rawChoice as any).consequence &&
-                                gameState.unlockMode && (
-                                  <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
-                                    {(rawChoice as any).consequence}
-                                  </div>
-                                )}
+
+                              <div className="flex-1">
+                                <div className="text-[15px] md:text-base font-medium">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      p: ({ children }) => (
+                                        <span className="inline">{children}</span>
+                                      ),
+                                      strong: ({ children }) => (
+                                        <span className="font-bold">{children}</span>
+                                      ),
+                                      em: ({ children }) => (
+                                        <span className="italic">{children}</span>
+                                      ),
+                                    }}
+                                  >
+                                    {label}
+                                  </ReactMarkdown>
+                                </div>
+                                {(rawChoice as any).consequence &&
+                                  gameState.unlockMode && (
+                                    <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
+                                      {(rawChoice as any).consequence}
+                                    </div>
+                                  )}
+                              </div>
                             </button>
 
                             <button
+                              type="button"
                               onClick={(e) => handleRollClick(e, label)}
-                              className="flex-none mt-0.5 p-1.5 text-theme-text-secondary hover:text-theme-primary opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity"
+                              disabled={isDisabled}
+                              className="flex-none mt-0.5 p-1.5 text-theme-text-secondary hover:text-theme-primary opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity disabled:opacity-30"
                               title={t("roll")}
                             >
                               <svg
