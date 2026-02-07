@@ -49,7 +49,6 @@ You are in AGENTIC MODE (VFS-only).
    ${formatVfsToolsForPrompt(VFS_TOOLSETS.turn.tools)}
 2. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_stat\`, \`vfs_glob\`, \`vfs_read\`/\`vfs_read_many\` (optionally with \`start\`+\`offset\` or \`maxChars\`), \`vfs_read_json\` (for specific fields), \`vfs_search\`, \`vfs_grep\` before changing files.
    - Atmosphere reference data is available under \`current/refs/atmosphere/\` (use \`vfs_ls\` / \`vfs_read\` / \`vfs_search\` instead of inlining long descriptions).
-   - Custom rule packs are under \`current/custom_rules/NN-*/RULES.md\` (lower \`NN\` = higher priority). This is a strong reminder: when category intent matches, read relevant packs first.
 3. **STATE CHANGES = FILE CHANGES**: Update JSON under \`current/world/\` with \`vfs_write\` or \`vfs_edit\` (JSON Patch).
 4. **FINISH RULE**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op.
 5. **CONVERSATION WRITE GUARD**: Do NOT write \`current/conversation/*\` via generic \`vfs_write\`/\`vfs_edit\`/\`vfs_merge\`/\`vfs_move\`/\`vfs_delete\`.

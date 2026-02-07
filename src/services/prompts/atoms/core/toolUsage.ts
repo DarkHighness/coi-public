@@ -26,6 +26,11 @@ export const toolUsage: Atom<ToolUsageInput> = (input) => {
   - World state lives under \`current/world/\`.
   - Conversation state is finalized ONLY through finish tools.
 
+  **CUSTOM RULE PACKS (SHARED LAYER)**:
+  - User-defined rule packs live under \`current/custom_rules/NN-*/RULES.md\` (lower \`NN\` = higher priority).
+  - Strong reminder: when turn intent matches a rule category, read relevant low-\`NN\` packs first via \`vfs_read\`/\`vfs_read_many\`.
+  - This is not a hard gate; if no pack is relevant, proceed with normal inspection flow.
+
   **TURN COMPLETION**:
   - Your LAST tool call must be \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op.
   - Do NOT write \`current/conversation/*\` via generic mutation tools.

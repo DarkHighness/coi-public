@@ -13,6 +13,7 @@ describe("systemMessages atoms", () => {
     const legacySearchTool = ["search", "tool"].join("_");
     expect(content).toContain("vfs_write");
     expect(content).toContain("current/conversation/");
+    expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).not.toContain(legacySearchTool);
   });
