@@ -115,6 +115,16 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - `docs/how_to_add_story_theme.md`: How to add a story theme
 - `docs/SCHEMA_DOCS.md`: Schema documentation
 
+## ⚙️ Model Context Window Notes
+
+- Context window overrides are scoped by **provider + model** (not global).
+- The app resolves context window in this order:
+  1. Manual override for current `providerId + modelId`
+  2. Provider-reported metadata (if API returns it)
+  3. Built-in model defaults map (curated snapshot)
+  4. Fallback `32000`
+- In **Settings → Models**, use **Copy Default Map** to copy the built-in mapping JSON.
+
 ## 📄 License
 
 This project is licensed under the MIT License.

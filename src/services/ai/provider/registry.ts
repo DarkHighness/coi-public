@@ -32,6 +32,8 @@ import {
   validateConnection as validateClaudeConnection,
 } from "../../providers/claudeProvider";
 
+import { applyDefaultContextWindowsToModels } from "../../modelContextWindows";
+
 interface ModelListCacheEntry {
   timestamp: number;
   configHash: string;
@@ -176,7 +178,10 @@ export async function getModelsForInstance(
 
   switch (instance.protocol) {
     case "gemini": {
-      const models = await getGeminiModels(config as GeminiConfig);
+      const models = applyDefaultContextWindowsToModels(
+        instance.protocol,
+        await getGeminiModels(config as GeminiConfig),
+      );
       MODEL_LIST_CACHE[cacheKey] = {
         timestamp: Date.now(),
         configHash,
@@ -185,7 +190,10 @@ export async function getModelsForInstance(
       return models;
     }
     case "openai": {
-      const models = await getOpenAIModels(config as OpenAIConfig);
+      const models = applyDefaultContextWindowsToModels(
+        instance.protocol,
+        await getOpenAIModels(config as OpenAIConfig),
+      );
       MODEL_LIST_CACHE[cacheKey] = {
         timestamp: Date.now(),
         configHash,
@@ -194,7 +202,10 @@ export async function getModelsForInstance(
       return models;
     }
     case "openrouter": {
-      const models = await getOpenRouterModels(config as OpenRouterConfig);
+      const models = applyDefaultContextWindowsToModels(
+        instance.protocol,
+        await getOpenRouterModels(config as OpenRouterConfig),
+      );
       MODEL_LIST_CACHE[cacheKey] = {
         timestamp: Date.now(),
         configHash,
@@ -203,7 +214,10 @@ export async function getModelsForInstance(
       return models;
     }
     case "claude": {
-      const models = await getClaudeModels(config as ClaudeConfig);
+      const models = applyDefaultContextWindowsToModels(
+        instance.protocol,
+        await getClaudeModels(config as ClaudeConfig),
+      );
       MODEL_LIST_CACHE[cacheKey] = {
         timestamp: Date.now(),
         configHash,

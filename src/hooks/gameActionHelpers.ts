@@ -20,6 +20,7 @@ import {
   getModelsForInstance,
   getProviderInstance,
 } from "../services/ai/provider/registry";
+import { resolveModelContextWindowTokens } from "../services/modelContextWindows";
 
 /**
  * Safely notify session manager that a summary was created.
@@ -231,27 +232,57 @@ export const handleSummarization = async (
   const autoCompactThreshold = aiSettings.extra?.autoCompactThreshold ?? 0.7;
 
   const resolveContextLengthTokens = async (): Promise<number | null> => {
-    const override = aiSettings.maxContextTokens;
-    if (typeof override === "number" && Number.isFinite(override) && override > 0) {
-      return override;
-    }
+    const startedAt = Date.now();
 
     const storyProvider = getProviderInstance(
       aiSettings,
       aiSettings.story.providerId,
     );
-    if (!storyProvider) return DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS;
+    if (!storyProvider) {
+      console.debug("[Summarization] Context length resolved", {
+        source: "fallback.noProvider",
+        value: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
+        elapsedMs: Date.now() - startedAt,
+      });
+      return DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS;
+    }
 
     try {
       const models = await getModelsForInstance(storyProvider);
       const modelInfo = models.find((m) => m.id === aiSettings.story.modelId);
-      const ctx = modelInfo?.contextLength;
-      return typeof ctx === "number" && Number.isFinite(ctx) && ctx > 0
-        ? ctx
-        : DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS;
+      const resolution = resolveModelContextWindowTokens({
+        settings: aiSettings,
+        providerId: aiSettings.story.providerId,
+        providerProtocol: storyProvider.protocol,
+        modelId: aiSettings.story.modelId,
+        providerReportedContextLength: modelInfo?.contextLength,
+        fallback: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
+      });
+      console.debug("[Summarization] Context length resolved", {
+        source: resolution.source,
+        value: resolution.value,
+        providerId: storyProvider.id,
+        modelId: aiSettings.story.modelId,
+        elapsedMs: Date.now() - startedAt,
+      });
+      return resolution.value;
     } catch (error) {
       console.warn("[Summarization] Failed to resolve model context length", error);
-      return DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS;
+      const resolution = resolveModelContextWindowTokens({
+        settings: aiSettings,
+        providerId: aiSettings.story.providerId,
+        providerProtocol: storyProvider.protocol,
+        modelId: aiSettings.story.modelId,
+        fallback: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
+      });
+      console.debug("[Summarization] Context length resolved", {
+        source: resolution.source,
+        value: resolution.value,
+        providerId: storyProvider.id,
+        modelId: aiSettings.story.modelId,
+        elapsedMs: Date.now() - startedAt,
+      });
+      return resolution.value;
     }
   };
 

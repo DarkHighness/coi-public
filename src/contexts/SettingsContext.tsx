@@ -10,6 +10,9 @@ import { useTranslation } from "react-i18next";
 import { AISettings, ModelInfo, LanguageCode } from "../types";
 import { DEFAULTS } from "../utils/constants";
 import { getModels } from "../services/aiService";
+import {
+  upsertPerModelContextWindowOverride,
+} from "../services/modelContextWindows";
 
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
@@ -54,6 +57,22 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
   delete sanitized.freshSegmentCount;
   delete sanitized.contextLen;
 
+  if (
+    typeof sanitized.maxContextTokens === "number" &&
+    Number.isFinite(sanitized.maxContextTokens) &&
+    sanitized.maxContextTokens > 0 &&
+    parsed.story?.providerId &&
+    parsed.story?.modelId
+  ) {
+    sanitized.modelContextWindows = upsertPerModelContextWindowOverride(
+      sanitized.modelContextWindows,
+      parsed.story.providerId,
+      parsed.story.modelId,
+      sanitized.maxContextTokens,
+    );
+  }
+  delete sanitized.maxContextTokens;
+
   const legacyExtra = (parsed.extra || {}) as Record<string, unknown>;
   const migratedExtra: Record<string, unknown> = {
     ...DEFAULTS.extra,
@@ -79,6 +98,18 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
   return {
     ...DEFAULTS,
     ...sanitized,
+    modelContextWindows: {
+      ...(DEFAULTS.modelContextWindows || {}),
+      ...(sanitized.modelContextWindows || {}),
+    },
+    learnedModelContextWindows: {
+      ...(DEFAULTS.learnedModelContextWindows || {}),
+      ...(sanitized.learnedModelContextWindows || {}),
+    },
+    learnedModelContextSuccessStreaks: {
+      ...(DEFAULTS.learnedModelContextSuccessStreaks || {}),
+      ...(sanitized.learnedModelContextSuccessStreaks || {}),
+    },
     providers: {
       ...DEFAULTS.providers,
       ...(sanitized.providers || {}),

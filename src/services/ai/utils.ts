@@ -39,6 +39,8 @@ import {
   validateConnection as validateClaudeConnection,
 } from "../providers/claudeProvider";
 
+import { applyDefaultContextWindowsToModels } from "../modelContextWindows";
+
 // ============================================================================
 // Configuration Types
 // ============================================================================
@@ -409,6 +411,8 @@ export const getModels = async (
       default:
         throw new Error(`Unknown protocol: ${instance.protocol}`);
     }
+
+    models = applyDefaultContextWindowsToModels(instance.protocol, models);
 
     // 缓存结果
     modelCache[cacheKey] = {

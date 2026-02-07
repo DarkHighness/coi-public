@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
+import { resolveModelContextWindowTokens } from "../services/modelContextWindows";
 
 interface ActionPanelProps {
   onAction: (action: string) => void;
@@ -125,12 +126,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
   const contextWindowTokens = (() => {
-    if (typeof aiSettings.maxContextTokens === "number" && aiSettings.maxContextTokens > 0) {
-      return aiSettings.maxContextTokens;
-    }
+    const provider = aiSettings.providers.instances.find(
+      (p) => p.id === aiSettings.story.providerId,
+    );
     const models = providerModels?.[aiSettings.story.providerId];
     const ctx = models?.find((m) => m.id === aiSettings.story.modelId)?.contextLength;
-    return typeof ctx === "number" && ctx > 0 ? ctx : DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS;
+    return resolveModelContextWindowTokens({
+      settings: aiSettings,
+      providerId: aiSettings.story.providerId,
+      providerProtocol: provider?.protocol,
+      modelId: aiSettings.story.modelId,
+      providerReportedContextLength: ctx,
+      fallback: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
+    }).value;
   })();
   const autoCompactEnabled = aiSettings.extra?.autoCompactEnabled ?? true;
   const autoCompactThreshold = aiSettings.extra?.autoCompactThreshold ?? 0.7;

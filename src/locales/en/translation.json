@@ -68,6 +68,7 @@
   "jumpPlaceholder": "Seg #",
   "jumpToSegment": "Jump to Segment",
   "act": "Act",
+  "send": "Send",
   "loading": "Story is unfolding...",
   "vision": "Envisioning imagery...",
   "clickToGenerate": "Click to Generate",
@@ -371,7 +372,14 @@
     "playerAction": "Your Action",
     "command": "Command",
     "navigateHint": "Double-click to navigate (long press on mobile)",
-    "unknown_time": "Unknown Time"
+    "unknown_time": "Unknown Time",
+    "exportButton": "Export Timeline",
+    "categories": {
+      "player_action": "Player Action",
+      "npc_action": "NPC Action",
+      "world_event": "World Event",
+      "consequence": "Consequence"
+    }
   },
   "timelineExport": {
     "title": "Export Timeline",
@@ -824,7 +832,33 @@
     "autoCompactThreshold": "Compaction Threshold",
     "autoCompactThresholdHelp": "Trigger compaction when last prompt token usage / context window >= this threshold.",
     "maxContextTokens": "Context Window (Tokens)",
-    "maxContextTokensHelp": "Optional manual override for the selected story model's context length. If unset and the provider can't report it, a default of 32k tokens is used.",
+    "maxContextTokensHelp": "Optional manual override for the current Story provider+model pair. If unset, the system prefers provider metadata, then built-in model defaults, then 32k fallback.",
+    "maxContextTokensDesignNote": "Context window overrides are now scoped per provider+model to avoid cross-provider mismatches.",
+    "copyContextDefaults": "Copy Default Map",
+    "contextDefaultsCopied": "Model context defaults copied to clipboard",
+    "contextDefaultsCopyFailed": "Failed to copy model context defaults",
+    "contextDebugTitle": "Adaptive Context Debug",
+    "contextDebugShow": "Show",
+    "contextDebugHide": "Hide",
+    "contextDebugEffective": "Effective",
+    "contextDebugSource": "Source",
+    "contextDebugLearned": "Learned",
+    "contextDebugStreak": "Success Streak",
+    "contextDebugProvider": "Provider Metadata",
+    "contextDebugTotal": "Learned Entries (Total)",
+    "copyLearnedContextMap": "Copy learned context map",
+    "learnedContextMapCopied": "Learned context map copied to clipboard",
+    "learnedContextMapCopyFailed": "Failed to copy learned context map",
+    "contextSourceManual": "Manual override",
+    "contextSourceLearned": "Learned adaptive",
+    "contextSourceProvider": "Provider metadata",
+    "contextSourceDefaults": "Built-in defaults",
+    "contextSourceFallback": "Fallback 32k",
+    "resetLearnedContext": "Reset Learned (Current Model)",
+    "resetLearnedContextDone": "Adaptive learned context for current model has been reset",
+    "resetAllLearnedContext": "Reset Learned (All Models)",
+    "resetAllLearnedContextConfirm": "Reset adaptive learned context for all models ({{count}} entries)? This cannot be undone.",
+    "resetAllLearnedContextDone": "Adaptive learned context has been reset for all models",
     "resolution": "Resolution / Aspect Ratio",
     "resolutions": {
       "ratio11": "1:1 Square (1024x1024)",
@@ -886,7 +920,9 @@
     "goal": "Goal",
     "world": "World",
     "generating": "Weaving an epic tale...",
-    "currentGoal": "Current Goal"
+    "currentGoal": "Current Goal",
+    "modelMismatch": "Model mismatch detected. The selected model differs from the one used in this save.",
+    "restartingWithNewModel": "Restarting generation with the newly selected model..."
   },
   "tree": {
     "map": "Destiny Map",
@@ -972,7 +1008,10 @@
     "voice": "Voice (TTS)",
     "ttsVolume": "TTS Volume",
     "speed": "Speed",
-    "format": "Audio Format"
+    "format": "Audio Format",
+    "unmuted": "Unmuted",
+    "mute": "Mute",
+    "unmute": "Unmute"
   },
   "toast": {
     "itemAdded": "Item Acquired",
@@ -1277,7 +1316,13 @@
     "emptyState": "No files available",
     "noSelection": "No file selected",
     "warning": "Changes are applied immediately. Be careful!",
-    "current": "CURRENT"
+    "current": "CURRENT",
+    "segmentDetail": "Segment Details",
+    "storylineEditable": "Storyline files are editable by default (/sudo mode).",
+    "editMode": "Edit",
+    "previewMode": "Preview",
+    "confirmReadonlyEdit": "This is a protected file. Editing it may break game state. Continue to enable editing for this file?",
+    "readonlyOverrideEnabled": "Protected file editing enabled for this file."
   },
   "knowledge": {
     "category": {
@@ -1336,6 +1381,7 @@
     "noHiddenTraitsRevealed": "No hidden traits revealed",
     "personality": "Personality",
     "myImpression": "My Impression",
+    "myPerception": "My Perception",
     "perceivedStatus": "Currently (Perceived)",
     "dialogueStyle": "Speech Style",
     "trueName": "True Name",
@@ -1357,6 +1403,10 @@
     "perceivedSeverity": "Perceived Severity",
     "visibleEffects": "Visible Effects",
     "npcImpression": "Their Impression of Me",
+    "attitudeSignals": "Attitude (Signals)",
+    "reputationTag": "Tag",
+    "claimedIntent": "Claims",
+    "evidence": "Evidence",
     "routine": "Daily Routine",
     "trueConditions": "True Conditions",
     "objectives": "Objectives",
@@ -1410,7 +1460,29 @@
     "ambivalence": "Ambivalence",
     "transactionalBenefit": "Transactional Benefit",
     "loveExpression": "How They Show Care",
-    "unspokenSacrifice": "Unspoken Sacrifice"
+    "unspokenSacrifice": "Unspoken Sacrifice",
+    "environment": "Environment",
+    "ambience": "Ambience",
+    "worldSetting": "World Setting",
+    "hiddenRevealed": "Hidden Revealed",
+    "worldHistory": "World History",
+    "noWorldInfo": "No world info available",
+    "locations": "Locations",
+    "noLocations": "No known locations yet",
+    "currentLabel": "Current",
+    "visited": "Visited",
+    "factions": "Factions",
+    "noFactions": "No known factions yet",
+    "influence": "Influence",
+    "basicInfo": "Basic Info",
+    "inventory": "Inventory",
+    "turnInfo": "Turn {{turn}}",
+    "embedding": "Embedding",
+    "motives": "Motives",
+    "affinity": "Affinity",
+    "affinityHidden": "True attitude is hidden unless confirmed.",
+    "secretAgenda": "Secret Agenda",
+    "trueInfluence": "True Influence"
   },
   "gameOver": "GAME OVER",
   "victory": "VICTORY",
@@ -1462,7 +1534,6 @@
     "copyPrompt": "Copy Image Generation Prompt",
     "promptCopied": "Prompt Copied"
   },
-
   "magicMirrorAction": {
     "animate": "Animate"
   },
@@ -1475,7 +1546,6 @@
     "envThemeUnlockedHint": "Environment theme follows ambience (click to lock)",
     "envThemeLockedHint": "Environment theme is locked (click to unlock)"
   },
-
   "logPanel": {
     "phase": "Phase",
     "turn": "Turn",
@@ -1571,7 +1641,8 @@
     "statsError": "Failed to load export statistics",
     "exportError": "Failed to create export file",
     "exporting": "Exporting...",
-    "exportButton": "Export"
+    "exportButton": "Export",
+    "shortTitle": "Title"
   },
   "import": {
     "shortTitle": "Import",
@@ -1687,7 +1758,10 @@
       "castle": "Castle",
       "ruins": "Ruins",
       "underwater": "Underwater",
-      "space": "Space"
+      "space": "Space",
+      "beach": "Beach",
+      "palace": "Palace",
+      "Unknown": "Unknown"
     },
     "weatherNames": {
       "none": "None",
@@ -1956,14 +2030,28 @@
     "narrativeStyle": "[Core Style]: High-octane action, humanity's war song, God-Demon cultivation, fast-paced combat.\n[World View]: The human world is invaded by the Demon Race. Three major sects (Archean Mountain, Black Sand Grotto-Heaven, Two World Island) lead the resistance. Cultivation system: God-Demon system (Mortal - God-Demon - Great Solar - Dark Star - Inorganic - Creation - Emperor). Emphasizes extreme 'speed' and 'saber arts'.\n[Culture]: Humanity's resilience in desperation. Generations of God-Demons dying to protect mortal cities. Painting Dao: entering the Dao through painting.\n[Writing Guidelines]: Combat descriptions must be extremely fast, emphasizing 'lightning speed'. Protagonist is determined, willing to sacrifice everything to slay demons.",
     "backgroundTemplate": "[World Background]: Azure Legacy World. The Demon Race invades through World Entrances. Humanity is in peril. You are a young genius from [Dongning Prefecture], practicing saber arts since childhood, determined to become a God-Demon and protect your home. Your father is the clan leader, and your mother went missing during a demon invasion (actually a God-Demon).\n[Current Situation]: You are participating in the entrance exam for [Archean Mountain], the supreme cultivation holy land. You must stand out, inherit the God-Demon legacy, and embark on a path of blood and fire to slay demons.",
     "example": "A flash of saber light, too fast to even see the afterimage. The Second Firmament Demon King attempting a sneak attack didn't even have time to scream before its head flew high, foul demon blood splashing onto the broken city wall. You sheathe your saber, eyes cold as ice, lightning crackling around you. 'Too slow.' You whisper, turning to face the swarm of the demon army approaching in the distance, gripping your black iron saber. For the lights of the myriad homes behind you, today, you will kill to your heart's content!",
-    "worldSetting": "A high-martial world fully invaded by the Demon Race. Humanity hides within major cities protected by God-Demon experts. Outside is the domain of demons. God-Demons are humanity's backbone, possessing earth-shattering power but facing the constant risk of death. World Entrances are channels connecting to the Demon Realm and the frontlines of the war."
+    "worldSetting": "A high-martial world fully invaded by the Demon Race. Humanity hides within major cities protected by God-Demon experts. Outside is the domain of demons. God-Demons are humanity's backbone, possessing earth-shattering power but facing the constant risk of death. World Entrances are channels connecting to the Demon Realm and the frontlines of the war.",
+    "protagonist_preference": [
+      "孟川 (Meng Chuan)",
+      "柳七月 (Liu Qiyue)",
+      "秦五尊者 (Venerable Qin Wu)",
+      "白念云 (Bai Nianyun)",
+      "妖祖 (Demon Ancestor)"
+    ]
   },
   "cardcaptor_sakura": {
     "name": "Cardcaptor Sakura",
     "narrativeStyle": "[Core Style]: Heartwarming, healing, magical girl, school life, pure emotions.\n[World View]: Clow Cards with magical powers are scattered in Tomoeda Town, causing strange phenomena. Protagonist Sakura Kinomoto is chosen as the 'Cardcaptor' to seal them.\n[Culture]: Emphasizes the optimistic spirit of 'Everything will be alright'. Pure love and bonds between people.\n[Writing Guidelines]: Atmosphere should be lighthearted and full of 'shoujo' charm. Magic battles are not about destroying enemies but 'sealing' and 'protecting'. Focus on details like costumes, desserts, and cherry blossoms.",
     "backgroundTemplate": "[World Background]: Tomoeda Town, a seemingly ordinary Japanese town with hidden undercurrents. You are a student at [Tomoeda Elementary School]. You accidentally discovered a glowing ancient book in your basement and released the Clow Cards within.\n[Current Situation]: The Guardian Beast [Kero] (Cerberus) awakens, gives you the Sealing Wand, and tells you to collect all scattered cards to prevent a catastrophe. Today, you sense a new Clow Card; it seems to be hiding in the school clock tower.",
     "example": "Pink cherry blossom petals drift in the wind, landing on your fluffy battle costume. The tip of the Sealing Wand in your hand flashes with golden light. You take a deep breath, your eyes firm. 'Key that hides the power of the dark, reveal your true power before me! I, Sakura, command you under our contract—Release!' As you chant, the wand extends instantly, and a huge magic circle unfolds beneath your feet. Facing the violent Water Dragon formed by the 'Watery' card, you do not flinch but gently raise your wand: 'Return to your true form, Clow Card!'",
-    "worldSetting": "A modern daily world full of magic and miracles. Magic is not far away but hidden in ordinary life. Each Clow Card has a unique personality and ability (Wind, Fire, Water, Earth, Jump, Fly, etc.). Besides collecting cards, school life, family dinners, and playing with friends are essential parts of the story."
+    "worldSetting": "A modern daily world full of magic and miracles. Magic is not far away but hidden in ordinary life. Each Clow Card has a unique personality and ability (Wind, Fire, Water, Earth, Jump, Fly, etc.). Besides collecting cards, school life, family dinners, and playing with friends are essential parts of the story.",
+    "protagonist_preference": [
+      "木之本樱 (Sakura Kinomoto)",
+      "李小狼 (Syaoran Li)",
+      "大道寺知世 (Tomoyo Daidouji)",
+      "小可 (Keroberos)",
+      "月城雪兔/月 (Yukito Tsukishiro/Yue)"
+    ]
   },
   "imageUploaded": "Image uploaded successfully",
   "imageUploadFailed": "Failed to upload image",
@@ -1983,12 +2071,15 @@
       "contextRebuilt": "Context rebuilt successfully! History has been summarized."
     },
     "info": {
-      "noNewNodesToSummarize": "No new events to summarize. Context is already up to date."
+      "noNewNodesToSummarize": "No new events to summarize. Context is already up to date.",
+      "autoRecoverySuccess": "Auto-recovery succeeded. Continued from the latest stable checkpoint.",
+      "learnedContextRelaxed": "Adaptive context limit relaxed slightly after stable runs."
     },
     "errors": {
       "summaryFailed": "Failed to generate summary",
       "historyCacheCorrupted": "History cache corrupted. The cache has been cleared. Please retry.",
       "contextTooLong": "Context too long. Please create a summary to continue.",
+      "contextTooLongAdaptive": "Context overflow detected. Compaction/recovery attempted and an adaptive context limit has been learned for this model. Please retry.",
       "turnGenerationFailed": "Failed to generate the next turn. Please try again.",
       "contextRebuildFailed": "Failed to rebuild context. Please try again."
     },
@@ -2000,5 +2091,32 @@
       "knowledge": "Unknown Knowledge",
       "systemAlert": "Unknown system alert"
     }
+  },
+  "runtime": {
+    "embeddingEnabledIndexPrompt": "Embedding has been enabled! Would you like to index your existing game content for semantic search? This may take a moment.",
+    "indexedExistingDocuments": "Indexed existing documents",
+    "failedToIndexExistingContent": "Failed to index existing content",
+    "ragModelMismatchPrompt": "RAG model mismatch detected. Stored: {{storedModel}}; Current: {{currentModel}}. Rebuild now?",
+    "disableRagPrompt": "Disable RAG for this session?",
+    "ragStorageOverflowPrompt": "RAG storage overflow: {{currentTotal}}/{{maxTotal}}. Delete old save indexes now?"
+  },
+  "gameStateViewer": {
+    "title": "Game State Viewer",
+    "refresh": "Refresh",
+    "copy": "Copy JSON",
+    "copied": "Copied!",
+    "nodes": "Nodes",
+    "activeNode": "Active Node",
+    "inventory": "Inventory",
+    "npcs": "NPCs",
+    "quests": "Quests",
+    "locations": "Locations",
+    "knowledge": "Knowledge",
+    "factions": "Factions",
+    "timeline": "Timeline",
+    "causalChains": "Causal Chains",
+    "character": "Character",
+    "atmosphere": "Atmosphere",
+    "time": "Time"
   }
 }

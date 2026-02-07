@@ -77,6 +77,9 @@ export const DEFAULT_PROVIDERS: ProviderManagement = {
 // Default Models
 export const DEFAULTS: AISettings = {
   providers: DEFAULT_PROVIDERS,
+  modelContextWindows: {},
+  learnedModelContextWindows: {},
+  learnedModelContextSuccessStreaks: {},
   story: {
     providerId: "provider-1",
     modelId: "gemini-2.5-flash",

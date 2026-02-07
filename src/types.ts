@@ -313,6 +313,30 @@ export type ActionResult =
   | { success: true; stateChanges: StateChanges }
   | { success: false; error: string };
 
+export type TurnRecoveryKind =
+  | "history"
+  | "context"
+  | "transient"
+  | "turn_not_committed"
+  | "unknown";
+
+export interface TurnRecoveryAttempt {
+  level: number;
+  kind: TurnRecoveryKind;
+  attempt: number;
+  error?: string;
+  delayMs?: number;
+  timestamp: number;
+}
+
+export interface TurnRecoveryTrace {
+  attempts: TurnRecoveryAttempt[];
+  finalLevel: number;
+  kind: TurnRecoveryKind;
+  recovered: boolean;
+  durationMs: number;
+}
+
 /**
  * Resolved theme configuration from i18n at outline generation time.
  * Stored in GameState to avoid runtime i18n lookups and support imageBased themes.
@@ -1173,7 +1197,24 @@ export interface AISettings {
   // Multi-Provider Management
   providers: ProviderManagement;
 
-  maxContextTokens?: number; // Optional override for model context window (tokens)
+  /**
+   * Optional per-provider+model context window overrides.
+   * Key format: `${providerId}::${modelId.toLowerCase()}`
+   */
+  modelContextWindows?: Record<string, number>;
+
+  /**
+   * Runtime-learned effective context windows inferred from overflow errors.
+   * Key format: `${providerId}::${modelId.toLowerCase()}`.
+   * These are auto-managed by the app and always lower-bounded to positive ints.
+   */
+  learnedModelContextWindows?: Record<string, number>;
+
+  /**
+   * Consecutive non-overflow turn count for each provider+model key.
+   * Used to slowly relax learnedModelContextWindows after stable runs.
+   */
+  learnedModelContextSuccessStreaks?: Record<string, number>;
 
   story: FunctionConfig;
   lore: FunctionConfig;

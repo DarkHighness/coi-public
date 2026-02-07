@@ -4,6 +4,15 @@ import { filterModels } from "../../services/aiService";
 import { FunctionKey } from "./types";
 import { AISettings } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
+import {
+  buildModelContextWindowKey,
+  getCopyableModelContextWindowDefaults,
+  getLearnedModelContextWindow,
+  getModelContextWindowDefaultsMeta,
+  getPerModelContextWindowOverride,
+  resolveModelContextWindowTokens,
+  upsertPerModelContextWindowOverride,
+} from "../../services/modelContextWindows";
 
 interface SettingsModelsProps {
   showToast: (msg: string, type?: "info" | "error") => void;
@@ -13,6 +22,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
   showToast,
 }) => {
   const { t } = useTranslation();
+  const [isContextDebugOpen, setIsContextDebugOpen] = React.useState(false);
   const {
     settings: currentSettings,
     updateSettings: onUpdateSettings,
@@ -117,6 +127,161 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     (p) => p.enabled && p.apiKey && p.apiKey.trim() !== "",
   );
   const hasNoAvailableProviders = availableProviders.length === 0;
+
+  const storyProvider = getProviderById(currentSettings.story.providerId);
+  const storyModelId = currentSettings.story.modelId;
+  const storyProviderModelMetadata =
+    providerModels[currentSettings.story.providerId]?.find(
+      (m) => m.id === storyModelId,
+    )?.contextLength;
+  const currentContextOverride = getPerModelContextWindowOverride(
+    currentSettings,
+    currentSettings.story.providerId,
+    storyModelId,
+  );
+  const currentLearnedContext = getLearnedModelContextWindow(
+    currentSettings,
+    currentSettings.story.providerId,
+    storyModelId,
+  );
+  const currentContextKey = buildModelContextWindowKey(
+    currentSettings.story.providerId,
+    storyModelId,
+  );
+  const currentLearnedSuccessStreak = currentContextKey
+    ? currentSettings.learnedModelContextSuccessStreaks?.[currentContextKey] || 0
+    : 0;
+  const learnedTotalCount = Object.keys(
+    currentSettings.learnedModelContextWindows || {},
+  ).length;
+  const contextResolution = resolveModelContextWindowTokens({
+    settings: currentSettings,
+    providerId: currentSettings.story.providerId,
+    providerProtocol: storyProvider?.protocol,
+    modelId: storyModelId,
+    providerReportedContextLength: storyProviderModelMetadata,
+    fallback: 32000,
+  });
+  const contextSourceLabel = (() => {
+    switch (contextResolution.source) {
+      case "settings.modelContextWindows":
+        return t("models.contextSourceManual") || "Manual override";
+      case "settings.learnedModelContextWindows":
+        return t("models.contextSourceLearned") || "Learned adaptive";
+      case "provider.modelMetadata":
+        return t("models.contextSourceProvider") || "Provider metadata";
+      case "defaults.modelMap":
+        return t("models.contextSourceDefaults") || "Built-in defaults";
+      default:
+        return t("models.contextSourceFallback") || "Fallback";
+    }
+  })();
+
+  const compactActionButtonClass =
+    "px-1 py-1 text-xs font-bold uppercase tracking-widest border-b border-transparent transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+
+  const copyModelContextWindowDefaults = async () => {
+    try {
+      const payload = {
+        meta: getModelContextWindowDefaultsMeta(),
+        defaults: getCopyableModelContextWindowDefaults(),
+      };
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      showToast(
+        t("models.contextDefaultsCopied") ||
+          "Model context defaults copied to clipboard",
+        "info",
+      );
+    } catch (error) {
+      console.error("Failed to copy model context defaults", error);
+      showToast(
+        t("models.contextDefaultsCopyFailed") ||
+          "Failed to copy model context defaults",
+        "error",
+      );
+    }
+  };
+
+  const resetCurrentLearnedContext = () => {
+    if (!currentContextKey) {
+      return;
+    }
+
+    const nextLearned = {
+      ...(currentSettings.learnedModelContextWindows || {}),
+    };
+    const nextStreaks = {
+      ...(currentSettings.learnedModelContextSuccessStreaks || {}),
+    };
+
+    delete nextLearned[currentContextKey];
+    delete nextStreaks[currentContextKey];
+
+    onUpdateSettings({
+      ...currentSettings,
+      learnedModelContextWindows: nextLearned,
+      learnedModelContextSuccessStreaks: nextStreaks,
+    });
+
+    showToast(
+      t("models.resetLearnedContextDone") ||
+        "Adaptive learned context for current model has been reset",
+      "info",
+    );
+  };
+
+  const copyLearnedContextMap = async () => {
+    if (learnedTotalCount === 0) {
+      return;
+    }
+
+    try {
+      const payload = currentSettings.learnedModelContextWindows || {};
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      showToast(
+        t("models.learnedContextMapCopied") ||
+          "Learned context map copied to clipboard",
+        "info",
+      );
+    } catch (error) {
+      console.error("Failed to copy learned context map", error);
+      showToast(
+        t("models.learnedContextMapCopyFailed") ||
+          "Failed to copy learned context map",
+        "error",
+      );
+    }
+  };
+
+  const resetAllLearnedContext = () => {
+    const learnedCount = learnedTotalCount;
+
+    if (learnedCount === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      t("models.resetAllLearnedContextConfirm", {
+        count: learnedCount,
+      }) ||
+        `Reset adaptive learned context for all models (${learnedCount} entries)? This cannot be undone.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    onUpdateSettings({
+      ...currentSettings,
+      learnedModelContextWindows: {},
+      learnedModelContextSuccessStreaks: {},
+    });
+
+    showToast(
+      t("models.resetAllLearnedContextDone") ||
+        "Adaptive learned context has been reset for all models",
+      "info",
+    );
+  };
 
   return (
     <div className="space-y-6 animate-slide-in">
@@ -314,35 +479,157 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         </div>
 
         {/* Context Window Override */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center gap-3">
-            <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
-              {t("models.maxContextTokens")}
-            </label>
+        <div className="space-y-4 pt-4 border-t border-theme-border/25">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="space-y-1">
+              <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+                {t("models.maxContextTokens")}
+              </label>
+              <p className="text-[11px] text-theme-muted font-mono">
+                {storyProvider
+                  ? `${storyProvider.name} (${storyProvider.protocol}) / ${
+                      storyModelId || "-"
+                    }`
+                  : `- / ${storyModelId || "-"}`}
+              </p>
+            </div>
             <input
               type="number"
               min="0"
               step="256"
               placeholder="auto"
-              value={currentSettings.maxContextTokens ?? ""}
+              value={currentContextOverride ?? ""}
               onChange={(e) => {
                 const raw = e.target.value;
                 const next =
                   raw.trim() === "" ? undefined : parseInt(raw, 10);
                 onUpdateSettings({
                   ...currentSettings,
-                  maxContextTokens:
-                    typeof next === "number" && Number.isFinite(next) && next > 0
-                      ? next
-                      : undefined,
+                  modelContextWindows: upsertPerModelContextWindowOverride(
+                    currentSettings.modelContextWindows,
+                    currentSettings.story.providerId,
+                    storyModelId,
+                    next,
+                  ),
                 });
               }}
-              className="w-32 bg-theme-bg border border-theme-border rounded px-2 py-1 text-theme-text font-mono text-sm"
+              className="w-full sm:w-36 bg-theme-bg border border-theme-border rounded px-2 py-1 text-theme-text font-mono text-sm"
+              disabled={!storyModelId}
             />
           </div>
-          <p className="text-xs text-theme-muted italic">
-            {t("models.maxContextTokensHelp")}
-          </p>
+
+          <div className="space-y-1">
+            <p className="text-xs text-theme-muted italic">
+              {t("models.maxContextTokensHelp")}
+            </p>
+            <p className="text-xs text-theme-muted italic">
+              {t("models.maxContextTokensDesignNote")}
+            </p>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-bold text-theme-text uppercase tracking-widest">
+                {t("models.contextDebugTitle") || "Adaptive Context Debug"}
+              </p>
+              <button
+                onClick={() => setIsContextDebugOpen((prev) => !prev)}
+                className="text-[10px] font-bold uppercase tracking-widest text-theme-muted hover:text-theme-primary border-b border-transparent hover:border-theme-primary/50 transition-colors"
+              >
+                {isContextDebugOpen
+                  ? t("models.contextDebugHide") || "Hide"
+                  : t("models.contextDebugShow") || "Show"}
+              </button>
+            </div>
+
+            {isContextDebugOpen && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-0.5">
+                <div className="flex items-center justify-between gap-2 py-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("models.contextDebugEffective") || "Effective"}
+                  </span>
+                  <span className="text-xs text-theme-text font-mono">
+                    {contextResolution.value.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 py-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("models.contextDebugSource") || "Source"}
+                  </span>
+                  <span className="text-xs text-theme-text">{contextSourceLabel}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 py-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("models.contextDebugLearned") || "Learned"}
+                  </span>
+                  <span className="text-xs text-theme-text font-mono">
+                    {typeof currentLearnedContext === "number"
+                      ? currentLearnedContext.toLocaleString()
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 py-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("models.contextDebugStreak") || "Success Streak"}
+                  </span>
+                  <span className="text-xs text-theme-text font-mono">
+                    {currentLearnedSuccessStreak}/3
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 py-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("models.contextDebugProvider") || "Provider Metadata"}
+                  </span>
+                  <span className="text-xs text-theme-text font-mono">
+                    {typeof storyProviderModelMetadata === "number"
+                      ? storyProviderModelMetadata.toLocaleString()
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 py-0.5">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("models.contextDebugTotal") || "Learned Entries (Total)"}
+                  </span>
+                  <button
+                    onClick={copyLearnedContextMap}
+                    disabled={learnedTotalCount === 0}
+                    className="text-theme-text font-mono underline underline-offset-2 decoration-dotted hover:text-theme-primary disabled:no-underline disabled:opacity-60 disabled:cursor-not-allowed"
+                    title={
+                      t("models.copyLearnedContextMap") ||
+                      "Copy learned context map"
+                    }
+                  >
+                    {learnedTotalCount}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <button
+              onClick={copyModelContextWindowDefaults}
+              className={`${compactActionButtonClass} text-theme-primary hover:text-theme-primary-hover hover:border-theme-primary/60`}
+            >
+              {t("models.copyContextDefaults") || "Copy Default Map"}
+            </button>
+            <button
+              onClick={resetCurrentLearnedContext}
+              disabled={typeof currentLearnedContext !== "number"}
+              className={`${compactActionButtonClass} text-theme-muted hover:text-theme-primary hover:border-theme-primary/60`}
+            >
+              {t("models.resetLearnedContext") ||
+                "Reset Learned (Current Model)"}
+            </button>
+            <button
+              onClick={resetAllLearnedContext}
+              disabled={learnedTotalCount === 0}
+              className={`${compactActionButtonClass} text-yellow-500 hover:text-yellow-400 hover:border-yellow-500/70`}
+            >
+              {t("models.resetAllLearnedContext") ||
+                "Reset Learned (All Models)"}
+            </button>
+          </div>
         </div>
 
       </div>
@@ -656,7 +943,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                       <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
                         {t("models.imageTimeout")}
                       </label>
-                      <span className="text-xs text-theme-text font-mono">
+                      <span className="text-theme-text font-mono">
                         {currentSettings.imageTimeout || 60}s
                       </span>
                     </div>

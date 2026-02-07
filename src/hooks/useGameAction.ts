@@ -9,6 +9,7 @@ import {
   GameState,
   LanguageCode,
   ToolCallRecord,
+  TurnRecoveryTrace,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { generateAdventureTurn } from "../services/aiService";
@@ -25,6 +26,14 @@ import {
 } from "./gameActionHelpers";
 import { mergeDerivedViewState } from "./vfsViewState";
 import { sessionManager } from "../services/ai/sessionManager";
+import {
+  buildModelContextWindowKey,
+  deriveLearnedContextWindowFromOverflow,
+  parseContextOverflowDiagnostics,
+  relaxLearnedContextWindowOnSuccess,
+  resolveModelContextWindowUpperBound,
+  upsertLearnedModelContextWindow,
+} from "../services/modelContextWindows";
 
 interface UseGameActionProps {
   gameState: GameState;
@@ -59,6 +68,141 @@ export const useGameAction = ({
   const { t } = useTranslation();
   const { showToast } = useToast();
 
+  const getRecoveryTrace = (error: unknown): TurnRecoveryTrace | undefined => {
+    if (!error || typeof error !== "object") return undefined;
+    return (error as { recovery?: TurnRecoveryTrace }).recovery;
+  };
+
+  const getRecoveryKind =
+    (error: unknown): string | undefined => {
+      if (!error || typeof error !== "object") return undefined;
+      return (error as { recoveryKind?: string }).recoveryKind;
+    };
+
+  const maybeRelaxLearnedContextWindow = useCallback(() => {
+    const providerId = aiSettings.story.providerId;
+    const modelId = aiSettings.story.modelId;
+    const key = buildModelContextWindowKey(providerId, modelId);
+    if (!key) return;
+
+    const currentLearned = aiSettings.learnedModelContextWindows?.[key];
+    if (
+      typeof currentLearned !== "number" ||
+      !Number.isFinite(currentLearned) ||
+      currentLearned <= 0
+    ) {
+      return;
+    }
+
+    const currentStreak =
+      aiSettings.learnedModelContextSuccessStreaks?.[key] || 0;
+    const provider = aiSettings.providers.instances.find(
+      (p) => p.id === providerId,
+    );
+
+    const result = relaxLearnedContextWindowOnSuccess({
+      currentLearned,
+      successStreak: currentStreak,
+      providerProtocol: provider?.protocol,
+      modelId,
+      fallback: 32000,
+    });
+
+    const shouldPersist =
+      result.nextLearned !== currentLearned ||
+      result.relaxed ||
+      result.nextSuccessStreak !== currentStreak;
+    if (!shouldPersist) {
+      return;
+    }
+
+    const nextStreaks = {
+      ...(aiSettings.learnedModelContextSuccessStreaks || {}),
+      [key]: result.nextSuccessStreak,
+    };
+
+    const nextLearned = {
+      ...(aiSettings.learnedModelContextWindows || {}),
+      [key]: result.nextLearned,
+    };
+
+    handleSaveSettings({
+      ...aiSettings,
+      learnedModelContextWindows: nextLearned,
+      learnedModelContextSuccessStreaks: nextStreaks,
+    });
+
+    if (result.relaxed) {
+      console.info("[ContextWindow][Learned] Relaxed learned limit", {
+        providerId,
+        modelId,
+        previous: currentLearned,
+        next: result.nextLearned,
+      });
+      showToast(t("game.info.learnedContextRelaxed"), "info", 2500);
+    }
+  }, [aiSettings, handleSaveSettings, showToast, t]);
+
+  const recordLearnedOverflow = useCallback(
+    (error: unknown) => {
+      const diagnostics = parseContextOverflowDiagnostics(error);
+      const learnedLimit = deriveLearnedContextWindowFromOverflow(diagnostics);
+      if (!learnedLimit) {
+        return;
+      }
+
+      const providerId = aiSettings.story.providerId;
+      const modelId = aiSettings.story.modelId;
+      const key = buildModelContextWindowKey(providerId, modelId);
+      if (!key) {
+        return;
+      }
+
+      const provider = aiSettings.providers.instances.find(
+        (p) => p.id === providerId,
+      );
+      const learnedUpperBound = resolveModelContextWindowUpperBound({
+        settings: aiSettings,
+        providerId,
+        providerProtocol: provider?.protocol,
+        modelId,
+        fallback: 32000,
+      });
+
+      const prevLearned = aiSettings.learnedModelContextWindows?.[key];
+      const nextLearnedMap = upsertLearnedModelContextWindow(
+        aiSettings.learnedModelContextWindows,
+        providerId,
+        modelId,
+        learnedLimit,
+        learnedUpperBound,
+      );
+      const nextLearned = nextLearnedMap[key];
+
+      const nextSettings: AISettings = {
+        ...aiSettings,
+        learnedModelContextWindows: nextLearnedMap,
+        learnedModelContextSuccessStreaks: {
+          ...(aiSettings.learnedModelContextSuccessStreaks || {}),
+          [key]: 0,
+        },
+      };
+      handleSaveSettings(nextSettings);
+
+      if (!prevLearned || (nextLearned && nextLearned < prevLearned)) {
+        console.info("[ContextWindow][Learned] Updated learned limit", {
+          providerId,
+          modelId,
+          learnedLimit: nextLearned,
+          previousLimit: prevLearned,
+          upperBound: learnedUpperBound,
+          diagnostics,
+        });
+      }
+    },
+    [aiSettings, handleSaveSettings],
+  );
+
   // Ref to access latest state in async callbacks/closures
   const gameStateRef = useRef(gameState);
   const processingRef = useRef(false);
@@ -84,12 +228,31 @@ export const useGameAction = ({
       });
 
       // Check both the ref (immediate) and state (persisted)
+      const blockedByProcessingRef = processingRef.current && !isInit;
+      const blockedByGameStateProcessing =
+        gameStateRef.current.isProcessing && !isInit;
+      const blockedByTranslating = isTranslating;
       if (
-        (processingRef.current && !isInit) ||
-        (gameStateRef.current.isProcessing && !isInit) ||
-        isTranslating
-      )
+        blockedByProcessingRef ||
+        blockedByGameStateProcessing ||
+        blockedByTranslating
+      ) {
+        console.warn("[useGameAction] handleAction ignored", {
+          reason: {
+            processingRef: blockedByProcessingRef,
+            gameStateProcessing: blockedByGameStateProcessing,
+            translating: blockedByTranslating,
+          },
+          isInit,
+          turnNumber: gameStateRef.current.turnNumber,
+          activeNodeId: gameStateRef.current.activeNodeId,
+          actionPreview:
+            typeof action === "string"
+              ? action.slice(0, 120)
+              : String(action).slice(0, 120),
+        });
         return null;
+      }
 
       // Immediately lock
       if (!isInit) processingRef.current = true;
@@ -363,6 +526,7 @@ export const useGameAction = ({
           logs: turnLogs,
           usage,
           changedEntities,
+          recovery,
         } = await generateAdventureTurn(effectiveGameState, {
           recentHistory: segmentsToSend,
           userAction: action,
@@ -375,6 +539,27 @@ export const useGameAction = ({
           vfsSession,
           onToolCallsUpdate: onLiveToolCallsUpdate,
         });
+
+        maybeRelaxLearnedContextWindow();
+
+        if (recovery?.recovered) {
+          console.info("[TurnRecovery][GameAction]", {
+            mode: "normal",
+            kind: recovery.kind,
+            finalLevel: recovery.finalLevel,
+            attemptCount: recovery.attempts.length,
+            durationMs: recovery.durationMs,
+            recovered: recovery.recovered,
+          });
+          showToast(
+            t("game.info.autoRecoverySuccess", {
+              defaultValue:
+                "Auto-recovery succeeded. Continued from the latest stable checkpoint.",
+            }),
+            "info",
+            3500,
+          );
+        }
 
         // ===== STATE UPDATE =====
         const vfsSnapshot = vfsSession.snapshot();
@@ -627,15 +812,34 @@ export const useGameAction = ({
         console.error("Game Loop Error:", error);
         const debugErrorMsg =
           error instanceof Error ? error.message : String(error);
+        const recoveryTrace = getRecoveryTrace(error);
+        const recoveryKind = getRecoveryKind(error);
 
         // Check for history corrupted error (e.g., invalid argument errors)
-        const isHistoryCorrupted = error instanceof HistoryCorruptedError;
+        const isHistoryCorrupted =
+          error instanceof HistoryCorruptedError || recoveryKind === "history";
+
+        const isContextOverflow =
+          debugErrorMsg.includes("CONTEXT_LENGTH_EXCEEDED") ||
+          recoveryKind === "context";
+
+        if (isContextOverflow) {
+          recordLearnedOverflow(error);
+        }
+
+        if (recoveryTrace) {
+          console.warn("[TurnRecovery][GameAction] final_failure", {
+            mode: "normal",
+            kind: recoveryKind,
+            finalLevel: recoveryTrace.finalLevel,
+            attemptCount: recoveryTrace.attempts.length,
+            durationMs: recoveryTrace.durationMs,
+            recovered: recoveryTrace.recovered,
+          });
+        }
 
         // Check for context overflow
-        if (
-          debugErrorMsg.includes("CONTEXT_LENGTH_EXCEEDED") ||
-          isHistoryCorrupted
-        ) {
+        if (isContextOverflow || isHistoryCorrupted) {
           console.log(
             `[Context] ${isHistoryCorrupted ? "History corrupted" : "Overflow"} detected - session manager will handle cache clearing`,
           );
@@ -643,7 +847,7 @@ export const useGameAction = ({
           showToast(
             isHistoryCorrupted
               ? t("game.errors.historyCacheCorrupted")
-              : t("game.errors.contextTooLong"),
+              : t("game.errors.contextTooLongAdaptive"),
             "warning",
             5000,
           );
@@ -653,8 +857,8 @@ export const useGameAction = ({
 
         const userFacingErrorMessage = isHistoryCorrupted
           ? t("game.errors.historyCacheCorrupted")
-          : debugErrorMsg.includes("CONTEXT_LENGTH_EXCEEDED")
-            ? t("game.errors.contextTooLong")
+          : isContextOverflow
+            ? t("game.errors.contextTooLongAdaptive")
             : t("game.errors.turnGenerationFailed");
 
         setGameState((prev) => ({
@@ -676,6 +880,8 @@ export const useGameAction = ({
     },
     [
       aiSettings,
+      maybeRelaxLearnedContextWindow,
+      recordLearnedOverflow,
       handleSaveSettings,
       language,
       isTranslating,

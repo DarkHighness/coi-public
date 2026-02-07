@@ -69,6 +69,7 @@
   "jumpToSegment": "跳转段落",
   "placeholder": "或者书写你自己的道路...",
   "act": "行动",
+  "send": "发送",
   "loading": "故事正在展开...",
   "vision": "正在构想画面...",
   "clickToGenerate": "点击生成",
@@ -103,17 +104,50 @@
     "waitingToolCalls": "等待工具调用中...",
     "outline": {
       "phase": {
-        "0": { "name": "解析图片", "desc": "分析上传的图片以激发故事世界" },
-        "1": { "name": "构建世界", "desc": "建立世界基础与设定" },
-        "2": { "name": "创建角色", "desc": "设计主角与背景故事" },
-        "3": { "name": "绘制地图", "desc": "创建初始地点" },
-        "4": { "name": "建立势力", "desc": "设定主要派系" },
-        "5": { "name": "人物角色", "desc": "创建初始NPC" },
-        "6": { "name": "准备物品", "desc": "生成初始物品" },
-        "7": { "name": "编织任务", "desc": "生成初始任务" },
-        "8": { "name": "汇集知识", "desc": "整理世界见闻" },
-        "9": { "name": "最终润色", "desc": "设定时间线与氛围" },
-        "10": { "name": "开启故事", "desc": "生成开场叙事" }
+        "0": {
+          "name": "解析图片",
+          "desc": "分析上传的图片以激发故事世界"
+        },
+        "1": {
+          "name": "构建世界",
+          "desc": "建立世界基础与设定"
+        },
+        "2": {
+          "name": "创建角色",
+          "desc": "设计主角与背景故事"
+        },
+        "3": {
+          "name": "绘制地图",
+          "desc": "创建初始地点"
+        },
+        "4": {
+          "name": "建立势力",
+          "desc": "设定主要派系"
+        },
+        "5": {
+          "name": "人物角色",
+          "desc": "创建初始NPC"
+        },
+        "6": {
+          "name": "准备物品",
+          "desc": "生成初始物品"
+        },
+        "7": {
+          "name": "编织任务",
+          "desc": "生成初始任务"
+        },
+        "8": {
+          "name": "汇集知识",
+          "desc": "整理世界见闻"
+        },
+        "9": {
+          "name": "最终润色",
+          "desc": "设定时间线与氛围"
+        },
+        "10": {
+          "name": "开启故事",
+          "desc": "生成开场叙事"
+        }
       }
     },
     "phaseDescriptions": {
@@ -367,7 +401,9 @@
     "outputImages": "输出图片",
     "previewNote": "导出第 {{start}} 到第 {{end}} 段将生成 {{images}} 张图片",
     "exporting": "正在导出...",
-    "exportButton": "导出"
+    "exportButton": "导出",
+    "minSegmentsLabel": "最少片段",
+    "maxSegmentsLabel": "最多片段"
   },
   "character": {
     "title": "角色状态",
@@ -676,7 +712,8 @@
     "claudeMessageFormat": "Claude 消息格式转换",
     "claudeMessageFormatHelp": "由客户端转换消息格式。仅当代理不自动转换时启用（如 OpenRouter 不需要）。",
     "compatibleImageGeneration": "兼容性图片生成",
-    "compatibleImageGenerationHelp": "使用对话 API 生成图片 (支持 gemini-3-pro-image)。"
+    "compatibleImageGenerationHelp": "使用对话 API 生成图片 (支持 gemini-3-pro-image)。",
+    "baseUrlPlaceholder": "基础 URL（可选）"
   },
   "search": "搜索",
   "noResults": "未找到结果",
@@ -724,7 +761,6 @@
   "skipSelection": "跳过 / 无偏好",
   "back": "返回",
   "availableRoles": "可选身份",
-
   "gameStateViewer": {
     "title": "游戏状态查看器",
     "refresh": "刷新",
@@ -834,7 +870,33 @@
     "autoCompactThreshold": "压缩触发阈值",
     "autoCompactThresholdHelp": "当上一轮 promptTokens / 上下文窗口 >= 该阈值时触发压缩。",
     "maxContextTokens": "上下文窗口（Tokens）",
-    "maxContextTokensHelp": "可选：手动覆盖当前故事模型的上下文长度。如果未设置且 Provider 无法提供该信息，将默认使用 32000 tokens。",
+    "maxContextTokensHelp": "可选：按当前“故事 Provider + 模型”手动覆盖上下文窗口。未设置时，系统会优先使用 Provider 元数据，其次内置模型默认值，最后回退到 32000 tokens。",
+    "maxContextTokensDesignNote": "上下文窗口覆盖现已按 provider+model 作用域存储，避免不同 provider 之间串用。",
+    "copyContextDefaults": "复制默认映射",
+    "contextDefaultsCopied": "已复制模型上下文默认映射到剪贴板",
+    "contextDefaultsCopyFailed": "复制模型上下文默认映射失败",
+    "contextDebugTitle": "上下文自适应调试",
+    "contextDebugShow": "展开",
+    "contextDebugHide": "收起",
+    "contextDebugEffective": "当前生效",
+    "contextDebugSource": "来源",
+    "contextDebugLearned": "学习值",
+    "contextDebugStreak": "成功计数",
+    "contextDebugProvider": "Provider 元数据",
+    "contextDebugTotal": "学习记录总数",
+    "copyLearnedContextMap": "复制学习上下文映射",
+    "learnedContextMapCopied": "已复制学习上下文映射到剪贴板",
+    "learnedContextMapCopyFailed": "复制学习上下文映射失败",
+    "contextSourceManual": "手动覆盖",
+    "contextSourceLearned": "自适应学习值",
+    "contextSourceProvider": "Provider 元数据",
+    "contextSourceDefaults": "内置默认映射",
+    "contextSourceFallback": "回退 32k",
+    "resetLearnedContext": "重置当前模型学习值",
+    "resetLearnedContextDone": "已重置当前模型的自适应学习上下文",
+    "resetAllLearnedContext": "重置全部模型学习值",
+    "resetAllLearnedContextConfirm": "确定要重置全部模型的自适应学习上下文吗？将清空 {{count}} 条记录，此操作不可撤销。",
+    "resetAllLearnedContextDone": "已重置全部模型的自适应学习上下文",
     "resolution": "分辨率 / 宽高比",
     "resolutions": {
       "ratio11": "1:1 正方形 (1024x1024)",
@@ -1050,9 +1112,14 @@
     "clearSessionCache": "清空会话缓存",
     "sessionCache": "会话缓存",
     "sessionCacheDesc": "缓存历史会话已在继续游戏时更好的命中前缀缓存",
-    "clearSessionCacheError": "清空会话缓存失败。"
+    "clearSessionCacheError": "清空会话缓存失败。",
+    "export": "导出数据",
+    "exportDesc": "将设置与存档导出为文件。",
+    "import": "导入数据",
+    "importDesc": "从文件导入设置与存档。",
+    "importSuccess": "数据导入成功",
+    "importError": "数据导入失败"
   },
-
   "customTips": "添加细节以指导你的冒险故事",
   "tip": "提示",
   "customWritingTips": "描述你想要探索的角色、场景、情节转折或主题。AI 将把这些元素融入你的故事中。",
@@ -1127,7 +1194,8 @@
     "causedBy": "起因",
     "noEvents": "暂无近期事件记录。",
     "hiddenTruth": "隐藏真相",
-    "secretObjective": "隐藏目标"
+    "secretObjective": "隐藏目标",
+    "conditions": "状态条件"
   },
   "faction": {
     "members": "成员",
@@ -1140,7 +1208,6 @@
     "componentDescription": "此部分遇到错误。您可以重试或继续使用应用的其他部分。",
     "retry": "重试"
   },
-
   "hidden": {
     "truth": "隐藏真相",
     "secrets": "秘密",
@@ -1286,7 +1353,13 @@
     "newFolder": "新建文件夹",
     "rename": "重命名",
     "delete": "删除",
-    "segmentDetail": "片段详情"
+    "segmentDetail": "片段详情",
+    "current": "当前",
+    "storylineEditable": "剧情文件默认可编辑（/sudo 模式）。",
+    "editMode": "编辑",
+    "previewMode": "预览",
+    "confirmReadonlyEdit": "这是受保护文件，编辑可能破坏游戏状态。是否继续并为当前文件启用编辑？",
+    "readonlyOverrideEnabled": "已为当前受保护文件启用编辑。"
   },
   "secretAgenda": "隐藏议程",
   "knowledge": {
@@ -1380,6 +1453,7 @@
     "personality": "性格",
     "motives": "动机",
     "affinity": "好感度",
+    "affinityHidden": "真实态度在确认前会保持隐藏。",
     "secretAgenda": "隐藏议程",
     "trueInfluence": "真实影响",
     "hiddenFeatures": "隐藏特性",
@@ -1410,9 +1484,14 @@
     "perceivedSeverity": "感知严重程度",
     "visibleEffects": "可见效果",
     "myImpression": "我的印象",
+    "myPerception": "我的判断",
     "perceivedStatus": "近况（你的认知）",
     "dialogueStyle": "说话风格",
     "npcImpression": "TA对你的印象",
+    "attitudeSignals": "态度（表层信号）",
+    "reputationTag": "标签",
+    "claimedIntent": "声称",
+    "evidence": "依据",
     "routine": "日常行动",
     "trueConditions": "真实条件",
     "objectives": "目标",
@@ -1451,7 +1530,6 @@
   "endingHint": "你可以从之前的节点分支尝试不同的路线",
   "endingFinal": "这个故事已经结束了",
   "unlocked": "已解锁",
-
   "tokenStats": {
     "promptTokens": "提示词 Token",
     "completionTokens": "生成 Token",
@@ -1532,12 +1610,15 @@
       "outline-phase6": "大纲 - 编织任务",
       "outline-phase7": "大纲 - 汇集知识",
       "outline-phase8": "大纲 - 时间线与氛围",
-      "outline-phase9": "大纲 - 开启故事"
+      "outline-phase9": "大纲 - 开启故事",
+      "cleanup-complete": "清理完成"
     },
     "newest": "最新",
     "oldest": "最早",
     "sortNewest": "显示最新优先",
-    "sortOldest": "显示最早优先"
+    "sortOldest": "显示最早优先",
+    "toolLabel": "工具",
+    "resolution": "分辨率"
   },
   "new-game": "旅程尚未开始...",
   "saveManager": {
@@ -1658,6 +1739,69 @@
       "unconscious": "昏迷",
       "tired": "疲劳",
       "dead": "死亡"
+    },
+    "ambienceNames": {
+      "cave": "Cave",
+      "city": "City",
+      "office": "Office",
+      "hospital": "Hospital",
+      "courtroom": "Courtroom",
+      "studio": "Studio",
+      "nightclub": "Nightclub",
+      "cafe": "Cafe",
+      "laboratory": "Laboratory",
+      "subway": "Subway",
+      "combat": "Combat",
+      "desert": "Desert",
+      "dungeon": "Dungeon",
+      "forest": "Forest",
+      "horror": "Horror",
+      "market": "Market",
+      "mystical": "Mystical",
+      "ocean": "Ocean",
+      "quiet": "Quiet",
+      "rain": "Rain",
+      "scifi": "Sci-Fi",
+      "snow": "Snow",
+      "storm": "Storm",
+      "tavern": "Tavern",
+      "mountain": "Mountain",
+      "swamp": "Swamp",
+      "village": "Village",
+      "temple": "Temple",
+      "castle": "Castle",
+      "ruins": "Ruins",
+      "underwater": "Underwater",
+      "space": "Space",
+      "beach": "Beach",
+      "palace": "Palace",
+      "Unknown": "Unknown"
+    },
+    "weatherNames": {
+      "none": "None",
+      "rain": "Rain",
+      "snow": "Snow",
+      "fog": "Fog",
+      "embers": "Embers",
+      "flicker": "Flicker",
+      "sunny": "Sunny",
+      "clear": "Clear",
+      "partly_cloudy": "Partly Cloudy",
+      "cloudy": "Cloudy",
+      "overcast": "Overcast",
+      "drizzle": "Drizzle",
+      "heavy_rain": "Heavy Rain",
+      "thunderstorm": "Thunderstorm",
+      "light_snow": "Light Snow",
+      "heavy_snow": "Heavy Snow",
+      "blizzard": "Blizzard",
+      "mist": "Mist",
+      "haze": "Haze",
+      "windy": "Windy",
+      "gale": "Gale",
+      "dust_storm": "Dust Storm",
+      "sandstorm": "Sandstorm",
+      "storm": "Storm"
     }
   },
   "common": {
@@ -1674,7 +1818,12 @@
     "yes": "是",
     "no": "否",
     "enabled": "已启用",
-    "disabled": "已禁用"
+    "disabled": "已禁用",
+    "theme": "主题",
+    "sudo": "特权",
+    "preview": "预览",
+    "branch": "分支",
+    "ms": "毫秒"
   },
   "app": {
     "errors": {
@@ -1741,7 +1890,30 @@
     "editDocument": "编辑文档",
     "confirmDelete": "确定要删除此文档吗?",
     "updateFailed": "更新文档失败",
-    "deleteFailed": "删除文档失败"
+    "deleteFailed": "删除文档失败",
+    "columns": {
+      "type": "类型",
+      "entityId": "实体 ID",
+      "content": "内容",
+      "version": "版本",
+      "actions": "操作",
+      "importance": "重要度",
+      "importanceScale": "重要度（0-1）"
+    },
+    "labels": {
+      "fork": "分支",
+      "turn": "回合",
+      "importance": "重要度"
+    },
+    "filters": {
+      "story": "剧情",
+      "npc": "NPC",
+      "location": "地点",
+      "item": "物品",
+      "knowledge": "见闻",
+      "quest": "任务",
+      "event": "事件"
+    }
   },
   "rag": {
     "title": "RAG 系统",
@@ -1865,7 +2037,6 @@
     "promptTokens": "输入 Token",
     "completionTokens": "输出 Token",
     "cacheRead": "缓存读取",
-
     "cacheWrite": "缓存写入"
   },
   "imageUploaded": "图片上传成功",
@@ -1886,12 +2057,15 @@
       "contextRebuilt": "上下文重建成功！故事已总结并清理历史。"
     },
     "info": {
-      "noNewNodesToSummarize": "没有显著的新事件需要总结。上下文已处于精简状态。"
+      "noNewNodesToSummarize": "没有显著的新事件需要总结。上下文已处于精简状态。",
+      "autoRecoverySuccess": "已自动恢复并继续生成（基于最近稳定检查点）。",
+      "learnedContextRelaxed": "连续稳定运行后，已小幅放宽自适应上下文上限。"
     },
     "errors": {
       "summaryFailed": "摘要生成失败",
       "historyCacheCorrupted": "历史缓存已损坏，已清空缓存。请重试。",
       "contextTooLong": "上下文过长。请创建总结以继续。",
+      "contextTooLongAdaptive": "检测到上下文溢出。系统已尝试压缩/恢复，并为该模型学习了更保守的上下文上限。请重试。",
       "turnGenerationFailed": "生成下一回合失败。请重试。",
       "contextRebuildFailed": "重建上下文失败。请重试。"
     },
@@ -1903,5 +2077,46 @@
       "knowledge": "未知知识",
       "systemAlert": "未知系统提示"
     }
+  },
+  "runtime": {
+    "embeddingEnabledIndexPrompt": "已启用嵌入功能！是否为现有游戏内容建立语义检索索引？这可能需要一些时间。",
+    "indexedExistingDocuments": "已为现有文档建立索引",
+    "failedToIndexExistingContent": "为现有内容建立索引失败",
+    "ragModelMismatchPrompt": "检测到 RAG 模型不匹配。已存储：{{storedModel}}；当前：{{currentModel}}。是否立即重建？",
+    "disableRagPrompt": "是否在本次会话中禁用 RAG？",
+    "ragStorageOverflowPrompt": "RAG 存储超限：{{currentTotal}}/{{maxTotal}}。是否立即删除旧存档索引？"
+  },
+  "pagination": {
+    "previous": "上一页",
+    "next": "下一页",
+    "last": "末页"
+  },
+  "cang_yuan_tu": {
+    "name": "《沧元图》",
+    "narrativeStyle": "【核心风格】：高燃热血、人族战歌、神魔修炼、快节奏战斗。\n【语言风格】：简洁有力，强调速度与力量。战斗描写注重画面感和打击感。对话体现人族在绝境中的坚守和牺牲精神。\n【影视风格】：特效炸裂的神魔法相，如雷霆般耀眼的刀光，废墟般的城池，如潮水般涌来的妖族大军，悲壮的BGM。",
+    "backgroundTemplate": "【世界背景】：沧元界，一个人族被妖族全面入侵的高武世界。世界入口连接着妖界，无数妖族从中涌出，屠戮生灵。人族只能依托关隘和城池苦苦支撑，而神魔是人族唯一的希望。\n【主角经历】：你是东宁府孟家的少主孟川，自幼苦修快刀，立志斩尽天下妖族。你的母亲为了保护你被妖族抓走（实为神魔）。你凭借惊人的毅力和天赋，考入人族圣地元初山，成为了一名强大的神魔。你镇守城池，救援四方，在生死边缘一次次突破。最终，你将要在世界入口前，面对妖族的最强攻势，守护身后的人族世界。\n【关键故事情节】：\n1. **东宁府之变**：妖族突袭家乡，你初展锋芒，斩杀狼妖。\n2. **元初山考核**：在千军万马过独木桥的选拔中脱颖而出，拜入尊者门下。\n3. **世界间隙**：在连接两界的危险地带与妖王厮杀，磨练技艺。\n4. **决战黑沙**：为了救援同门，你一人一刀杀入敌阵，七进七出。\n【关键 NPC 角色】：\n1. **柳七月**：你的青梅竹马，拥有凤凰血脉的神箭手，与你并肩作战的道侣。\n2. **秦五尊者**：元初山掌教，你的师尊，人族的顶梁柱，为了守护世界耗尽心血。\n3. **妖祖**：妖界的统治者，冷酷无情，视人族为蝼蚁。",
+    "example": "孟川站在残破的城墙上，手中的斩妖刀还在滴血。前方是密密麻麻、一眼望不到头的妖族大军，那凶戾的咆哮声震得城墙瑟瑟发抖。'师兄，我们撤吧，守不住了！' 身旁的师弟绝望地喊道。孟川回头看了一眼身后灯火通明的万家灯火，眼中闪过一丝决绝。'撤？我就站在家里，还能撤到哪去？' 他深吸一口气，周身雷霆炸裂，化作一道刺目的光芒冲向了妖潮。'元初山弟子孟川，在此死战！'",
+    "worldSetting": "【世界观】：神魔体系（凡俗、无漏、丹云、不灭、大日、暗星、无间、造化、帝君）。三大宗派（元初山、黑沙洞天、两界岛）。妖族入侵的末世背景。\n【整体剧情脉络】：'少年立志 -> 拜入宗门 -> 下山斩妖 -> 镇守一方 -> 救援世界 -> 斩杀妖祖 -> 成就帝君'。",
+    "protagonist_preference": [
+      "孟川 (Meng Chuan)",
+      "柳七月 (Liu Qiyue)",
+      "秦五尊者 (Venerable Qin Wu)",
+      "白念云 (Bai Nianyun)",
+      "妖祖 (Demon Ancestor)"
+    ]
+  },
+  "cardcaptor_sakura": {
+    "name": "《魔卡少女樱》",
+    "narrativeStyle": "【核心风格】：温馨治愈、魔法少女、校园生活、纯真情感。\n【语言风格】：可爱、轻快、充满少女心。咒语吟唱充满仪式感（'隐藏着黑暗力量的钥匙啊...'）。强调'绝对没问题'的乐天精神。\n【影视风格】：漫天飞舞的樱花，华丽百变的战斗服装，精致的魔法阵特效，柔和明亮的滤镜，温馨的BGM。",
+    "backgroundTemplate": "【世界背景】：友枝町，通过魔法与现实交织的现代小镇。库洛牌（Clow Cards）是魔法师库洛里多创造的具有自我意识的魔法卡牌，一旦解封就会引发骚乱。\n【主角经历】：你是木之本樱，友枝小学的学生。因为意外打开了古书，释放了库洛牌。被封印兽小可任命为'库洛魔法使'。你必须收集所有散落的卡牌。在收集过程中，你遇到了转学生李小狼，从竞争对手变成了伙伴。后来，你将库洛牌转变为属于你自己的小樱牌。最终，在面对艾力欧的考验时，你发现了爱的真谛，成为了最强的魔法师。\n【关键故事情节】：\n1. **卡牌解封**：地下室的秘密，风吹散了卡牌，冒险开始。\n2. **最好的朋友**：知世为你制作战斗服，拍摄你的英姿，无条件的信任。\n3. **最后的审判**：面对月（审判者），你用'不愿意伤害任何人'的信念通过了考验。\n4. **透明牌篇**：新的冒险，卡牌透明化，神秘的梦境。\n【关键 NPC 角色】：\n1. **李小狼**：来自香港的道士，傲娇但可靠，默默守护你。\n2. **大道寺知世**：你的闺蜜，拥有'看到小樱幸福就是我最大幸福'的究极摄影师。\n3. **小可（可鲁贝洛斯）**：封印兽，贪吃甜食的布偶，变身后威猛帅气。\n4. **月城雪兔/月**：温柔的邻家大哥哥，也是冷酷的审判者。",
+    "example": "巨大的水龙在操场上肆虐，卷起千层浪。'小樱，小心！' 知世在远处喊道。你紧握着鸟头杖，裙摆在风中飞舞。'封印解除！' 法杖化作长杖。你深吸一口气，眼神坚定而不带一丝敌意。从口袋里抽出一张卡牌：'风啊，请成为束缚它的锁链吧！Windy！' 绿色的风之精灵温柔地缠绕住水龙，将它的狂暴平息。'恢复你本来的面貌，库洛牌！'",
+    "worldSetting": "【世界观】：魔法与日常共存。库洛牌体系（风火水地等元素）。封印解除咒语。星星的力量。情感与羁绊是魔法的源泉。\n【整体剧情脉络】：'释放卡牌 -> 收集卡牌（库洛牌篇） -> 最后的审判 -> 转变卡牌（小樱牌篇） -> 透明牌篇'。",
+    "protagonist_preference": [
+      "木之本樱 (Sakura Kinomoto)",
+      "李小狼 (Syaoran Li)",
+      "大道寺知世 (Tomoyo Daidouji)",
+      "小可 (Keroberos)",
+      "月城雪兔/月 (Yukito Tsukishiro/Yue)"
+    ]
   }
 }
