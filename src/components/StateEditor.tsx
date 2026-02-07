@@ -4,9 +4,6 @@
  */
 
 import React, { useEffect, useMemo, useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
-import { json as jsonLanguage } from "@codemirror/lang-json";
-import { markdown as markdownLanguage } from "@codemirror/lang-markdown";
 import { ZodError } from "zod";
 import { useTranslation } from "react-i18next";
 import type { GameState } from "../types";
@@ -334,16 +331,6 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     fileContentType === "text/markdown" ||
     (selectedPath?.toLowerCase().endsWith(".md") ?? false);
 
-  const editorExtensions = useMemo(() => {
-    if (fileContentType === "application/json") {
-      return [jsonLanguage()];
-    }
-    if (isMarkdownFile) {
-      return [markdownLanguage()];
-    }
-    return [];
-  }, [fileContentType, isMarkdownFile]);
-
   const toggleFolder = (path: string) => {
     if (path === "") return;
     setExpandedPaths((prev) => {
@@ -626,37 +613,17 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 <div className="h-full overflow-auto p-4 text-sm text-theme-text state-editor-scroll-y">
                   <MarkdownText content={fileContent || ""} />
                 </div>
-              ) : isReadOnly ? (
+              ) : (
                 <textarea
                   value={fileContent}
-                  readOnly
+                  onChange={(event) => handleContentChange(event.target.value)}
+                  readOnly={isReadOnly}
                   className={`w-full h-full p-4 bg-transparent text-theme-text font-mono text-sm leading-relaxed resize-none focus:outline-none overflow-auto state-editor-scroll-y ${
                     error ? "border-2 border-theme-error/50" : ""
-                  } opacity-85`}
+                  } ${isReadOnly ? "opacity-85" : "opacity-100"}`}
                   spellCheck={false}
                   placeholder={t("loadingGeneric") || "Loading..."}
                 />
-              ) : (
-                <div
-                  className={`h-full state-editor-cm ${
-                    isReadOnly ? "opacity-80" : ""
-                  } ${error ? "border-2 border-theme-error/50" : ""}`}
-                >
-                  <CodeMirror
-                    value={fileContent}
-                    height="100%"
-                    extensions={editorExtensions}
-                    readOnly={false}
-                    onChange={(value) => handleContentChange(value)}
-                    basicSetup={{
-                      lineNumbers: true,
-                      foldGutter: true,
-                      highlightActiveLine: true,
-                      highlightActiveLineGutter: true,
-                    }}
-                    placeholder={t("loadingGeneric") || "Loading..."}
-                  />
-                </div>
               )}
               {error && (
                 <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
