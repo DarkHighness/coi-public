@@ -58,6 +58,27 @@ describe("VFS global skills generator", () => {
 
     expect(stateManagementSkill).toContain("## STATE MANAGEMENT");
     expect(stateManagementSkill).not.toContain('<rule name="STATE MANAGEMENT">');
+
+    const commandSudo = seeds.find(
+      (seed) => seed.path === "skills/commands/sudo/SKILL.md",
+    )?.content;
+    const commandSudoChecklist = seeds.find(
+      (seed) => seed.path === "skills/commands/sudo/CHECKLIST.md",
+    )?.content;
+    const commandSudoExamples = seeds.find(
+      (seed) => seed.path === "skills/commands/sudo/EXAMPLES.md",
+    )?.content;
+    const commandSudoRef = seeds.find(
+      (seed) =>
+        seed.path === "skills/commands/sudo/references/coverage-audit.md",
+    )?.content;
+
+    expect(commandSudo).toContain("name: commands-sudo");
+    expect(commandSudo).toContain("domain: commands");
+    expect(commandSudo).toContain("vfs_search");
+    expect(commandSudoChecklist).toContain("residual verification");
+    expect(commandSudoExamples).toContain("Protagonist rename across world files");
+    expect(commandSudoRef).toContain("Coverage Audit for /sudo");
   });
 
   it("includes generated skill entries inside global skills index", () => {

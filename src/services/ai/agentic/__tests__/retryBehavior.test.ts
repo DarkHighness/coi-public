@@ -99,6 +99,39 @@ describe("callWithAgenticRetry behavior", () => {
     );
   });
 
+  it("estimates prompt usage when provider does not report usage", async () => {
+    const provider = createProvider([
+      {
+        result: {
+          content: "Narrative only",
+        },
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          reported: false,
+        },
+        raw: null,
+      },
+    ]);
+
+    const history = [createUserMessage("seed")];
+
+    const result = await callWithAgenticRetry(
+      provider,
+      makeRequest() as any,
+      history,
+      { maxRetries: 0 },
+    );
+
+    expect(result.retries).toBe(0);
+    expect(result.usage.reported).toBe(false);
+    expect(result.usage.promptTokens).toBeGreaterThan(0);
+    expect(result.usage.totalTokens).toBeGreaterThanOrEqual(
+      result.usage.promptTokens,
+    );
+  });
+
   it("appends assistant+user feedback on missing required tool and calls onRetry", async () => {
     const provider = createProvider([
       {

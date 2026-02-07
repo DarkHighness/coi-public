@@ -84,6 +84,10 @@ describe("VfsSession", () => {
       "core-identity",
       "gm-knowledge",
       "gm-fail-forward",
+      "commands-sudo",
+      "commands-cleanup",
+      "commands-unlock",
+      "commands-god",
       "craft-writing",
       "craft-scene-beats",
       "craft-reveals-foreshadowing",
@@ -110,6 +114,7 @@ expect(session.list("skills")).toEqual(
         "gm",
         "worldbuilding",
         "craft",
+        "commands",
         "npc",
         "conditional",
         "theme",
@@ -117,6 +122,19 @@ expect(session.list("skills")).toEqual(
     );
 
     expect(session.list("skills/gm/state-management")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+
+    expect(session.list("skills/commands/sudo")).toEqual(
+      expect.arrayContaining([
+        "SKILL.md",
+        "CHECKLIST.md",
+        "EXAMPLES.md",
+        "references",
+      ]),
+    );
+
+    expect(session.list("skills/commands/unlock")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
 

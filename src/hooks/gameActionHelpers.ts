@@ -286,23 +286,19 @@ export const handleSummarization = async (
     }
   };
 
-  // Token-Usage Trigger (no estimation): use real promptTokens from previous model response,
-  // divided by model context length.
+  // Token-Usage Trigger: use last promptTokens from previous model response
+  // (provider-reported or retry-layer estimation fallback), divided by model context length.
   if (!shouldSummarize && autoCompactEnabled) {
     const parentNode =
       effectiveParentId && gameState.nodes[effectiveParentId]
         ? gameState.nodes[effectiveParentId]
         : null;
     const parentUsage = parentNode?.role === "model" ? parentNode.usage : undefined;
-    const usageIsReported =
-      parentUsage?.reported === true ||
-      (parentUsage?.reported !== false &&
-        ((parentUsage?.promptTokens || 0) > 0 ||
-          (parentUsage?.completionTokens || 0) > 0 ||
-          (parentUsage?.totalTokens || 0) > 0));
-    const lastPromptTokens = usageIsReported
-      ? parentUsage?.promptTokens
-      : undefined;
+    const lastPromptTokens =
+      typeof parentUsage?.promptTokens === "number" &&
+      parentUsage.promptTokens > 0
+        ? parentUsage.promptTokens
+        : undefined;
 
     if (typeof lastPromptTokens === "number" && lastPromptTokens > 0) {
       const contextLengthTokens = await resolveContextLengthTokens();

@@ -162,7 +162,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         (usage.totalTokens || 0) > 0 ||
         (usage.completionTokens || 0) > 0;
 
-      if (usage.reported === true || (usage.reported !== false && hasLegacyPositiveSignal)) {
+      // Prefer any positive promptTokens (provider-reported or estimated fallback).
+      if ((usage.promptTokens || 0) > 0) {
+        return usage.promptTokens;
+      }
+
+      // Backward compatibility for older payloads without explicit reported flag.
+      if (usage.reported !== false && hasLegacyPositiveSignal) {
         return usage.promptTokens;
       }
     }

@@ -26,6 +26,172 @@ export interface RetryResult extends ChatGenerateResponse {
   retries: number;
 }
 
+const toNonNegativeInt = (value: unknown): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.floor(value));
+};
+
+const estimateTokensFromChars = (charCount: number): number => {
+  if (!Number.isFinite(charCount) || charCount <= 0) {
+    return 0;
+  }
+  return Math.max(1, Math.ceil(charCount / 4));
+};
+
+const stringifyForEstimation = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value ?? "");
+  }
+};
+
+const estimatePromptTokens = (
+  request: ChatGenerateRequest,
+  history: UnifiedMessage[],
+): number => {
+  let chars = request.systemInstruction.length;
+
+  for (const message of history) {
+    chars += message.role.length;
+    for (const part of message.content) {
+      if (part.type === "text") {
+        chars += part.text.length;
+      } else if (part.type === "tool_use") {
+        chars += part.toolUse.name.length;
+        chars += stringifyForEstimation(part.toolUse.args).length;
+      } else if (part.type === "tool_result") {
+        chars += part.toolResult.id.length;
+        chars += stringifyForEstimation(part.toolResult.content).length;
+      } else {
+        chars += stringifyForEstimation(part).length;
+      }
+    }
+  }
+
+  if (Array.isArray(request.tools)) {
+    for (const tool of request.tools) {
+      chars += tool.name.length;
+      chars += tool.description.length;
+      chars += stringifyForEstimation(tool.parameters).length;
+    }
+  }
+
+  const base = estimateTokensFromChars(chars);
+  const perMessageOverhead = history.length * 8;
+  return Math.max(1, base + perMessageOverhead);
+};
+
+const estimateCompletionTokens = (
+  result: ChatGenerateResponse["result"],
+): number => {
+  if (typeof result === "string") {
+    return estimateTokensFromChars(result.length);
+  }
+  if (!result || typeof result !== "object") {
+    return 0;
+  }
+
+  const payload = result as Record<string, unknown>;
+  const snippets: string[] = [];
+
+  if (typeof payload.content === "string") {
+    snippets.push(payload.content);
+  }
+  if (typeof payload.text === "string") {
+    snippets.push(payload.text);
+  }
+  if (typeof payload.narrative === "string") {
+    snippets.push(payload.narrative);
+  }
+
+  if (Array.isArray((payload as { functionCalls?: unknown[] }).functionCalls)) {
+    snippets.push(stringifyForEstimation((payload as { functionCalls?: unknown[] }).functionCalls));
+  }
+
+  if (snippets.length === 0) {
+    snippets.push(stringifyForEstimation(payload));
+  }
+
+  const totalChars = snippets.reduce((acc, item) => acc + item.length, 0);
+  return estimateTokensFromChars(totalChars);
+};
+
+const normalizeUsageForAccounting = (
+  usage: TokenUsage,
+  request: ChatGenerateRequest,
+  history: UnifiedMessage[],
+  result: ChatGenerateResponse["result"],
+): TokenUsage => {
+  const normalized: TokenUsage = {
+    promptTokens: toNonNegativeInt(usage.promptTokens),
+    completionTokens: toNonNegativeInt(usage.completionTokens),
+    totalTokens: toNonNegativeInt(usage.totalTokens),
+    ...(typeof usage.cacheRead === "number"
+      ? { cacheRead: toNonNegativeInt(usage.cacheRead) }
+      : {}),
+    ...(typeof usage.cacheWrite === "number"
+      ? { cacheWrite: toNonNegativeInt(usage.cacheWrite) }
+      : {}),
+    ...(typeof usage.reported === "boolean" ? { reported: usage.reported } : {}),
+  };
+
+  const hasPositiveSignal =
+    normalized.promptTokens > 0 ||
+    normalized.completionTokens > 0 ||
+    normalized.totalTokens > 0;
+  const shouldTreatAsReported =
+    normalized.reported === true ||
+    (typeof normalized.reported !== "boolean" && hasPositiveSignal);
+
+  if (shouldTreatAsReported) {
+    if (normalized.totalTokens <= 0) {
+      normalized.totalTokens =
+        normalized.promptTokens + normalized.completionTokens;
+    }
+    return normalized;
+  }
+
+  let estimated = false;
+
+  if (normalized.promptTokens <= 0) {
+    normalized.promptTokens = estimatePromptTokens(request, history);
+    estimated = true;
+  }
+
+  if (normalized.completionTokens <= 0) {
+    const completionEstimate = estimateCompletionTokens(result);
+    if (completionEstimate > 0) {
+      normalized.completionTokens = completionEstimate;
+      estimated = true;
+    }
+  }
+
+  const estimatedTotal =
+    normalized.promptTokens + normalized.completionTokens;
+  if (normalized.totalTokens < estimatedTotal) {
+    normalized.totalTokens = estimatedTotal;
+    estimated = true;
+  }
+
+  normalized.reported = false;
+
+  if (estimated) {
+    console.warn("[AgenticRetry] Provider usage incomplete, applied token estimation", {
+      promptTokens: normalized.promptTokens,
+      completionTokens: normalized.completionTokens,
+      totalTokens: normalized.totalTokens,
+    });
+  }
+
+  return normalized;
+};
+
 /**
  * Executes an AI chat generation with agentic retry logic.
  *
@@ -63,13 +229,20 @@ export async function callWithAgenticRetry(
       messages: history as unknown[],
     });
 
+    const normalizedUsage = normalizeUsageForAccounting(
+      response.usage,
+      request,
+      history,
+      response.result,
+    );
+
     // Accumulate usage
-    totalUsage.promptTokens += response.usage.promptTokens || 0;
-    totalUsage.completionTokens += response.usage.completionTokens || 0;
-    totalUsage.totalTokens += response.usage.totalTokens || 0;
-    if (response.usage.reported === true) {
+    totalUsage.promptTokens += normalizedUsage.promptTokens || 0;
+    totalUsage.completionTokens += normalizedUsage.completionTokens || 0;
+    totalUsage.totalTokens += normalizedUsage.totalTokens || 0;
+    if (normalizedUsage.reported === true) {
       totalUsage.reported = true;
-    } else if (response.usage.reported === false) {
+    } else if (normalizedUsage.reported === false) {
       sawExplicitUnknownUsage = true;
     }
 
