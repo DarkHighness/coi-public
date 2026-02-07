@@ -83,6 +83,127 @@ export function createGeminiClient(config: GeminiConfig): GoogleGenAI {
 /** 兼容旧 API 的别名 */
 export const getGeminiClient = createGeminiClient;
 
+const readUsageNumber = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): number | undefined => {
+  if (!usage) return undefined;
+  for (const key of keys) {
+    const value = usage[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return Math.max(0, Math.floor(value));
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+  }
+  return undefined;
+};
+
+const hasAnyUsageField = (
+  usage: Record<string, unknown> | null | undefined,
+  keys: string[],
+): boolean => {
+  if (!usage) return false;
+  return keys.some((key) => usage[key] !== undefined);
+};
+
+const GEMINI_PROMPT_KEYS = [
+  "promptTokenCount",
+  "prompt_token_count",
+  "inputTokenCount",
+  "input_token_count",
+] as const;
+const GEMINI_COMPLETION_KEYS = [
+  "candidatesTokenCount",
+  "candidates_token_count",
+  "outputTokenCount",
+  "output_token_count",
+] as const;
+const GEMINI_TOTAL_KEYS = [
+  "totalTokenCount",
+  "total_token_count",
+] as const;
+const GEMINI_CACHE_READ_KEYS = [
+  "cachedContentTokenCount",
+  "cached_content_token_count",
+] as const;
+const GEMINI_TOOL_USE_PROMPT_KEYS = [
+  "toolUsePromptTokenCount",
+  "tool_use_prompt_token_count",
+] as const;
+const GEMINI_THOUGHTS_KEYS = [
+  "thoughtsTokenCount",
+  "thoughts_token_count",
+] as const;
+const GEMINI_ALL_USAGE_KEYS = [
+  ...GEMINI_PROMPT_KEYS,
+  ...GEMINI_COMPLETION_KEYS,
+  ...GEMINI_TOTAL_KEYS,
+  ...GEMINI_CACHE_READ_KEYS,
+  ...GEMINI_TOOL_USE_PROMPT_KEYS,
+  ...GEMINI_THOUGHTS_KEYS,
+];
+
+export function parseGeminiUsageMetadata(usageMetadata: unknown): TokenUsage {
+  const usage =
+    usageMetadata && typeof usageMetadata === "object"
+      ? (usageMetadata as Record<string, unknown>)
+      : null;
+
+  const prompt = readUsageNumber(usage, [...GEMINI_PROMPT_KEYS]);
+  const completion = readUsageNumber(usage, [...GEMINI_COMPLETION_KEYS]);
+  const total = readUsageNumber(usage, [...GEMINI_TOTAL_KEYS]);
+  const cacheRead = readUsageNumber(usage, [...GEMINI_CACHE_READ_KEYS]);
+  const toolUsePrompt =
+    readUsageNumber(usage, [...GEMINI_TOOL_USE_PROMPT_KEYS]) || 0;
+  const thoughts = readUsageNumber(usage, [...GEMINI_THOUGHTS_KEYS]) || 0;
+
+  let promptTokens = prompt ?? 0;
+  let completionTokens = completion ?? 0;
+  let totalTokens = total ?? 0;
+
+  if (promptTokens <= 0 && toolUsePrompt > 0) {
+    promptTokens = toolUsePrompt;
+  }
+
+  if (completionTokens <= 0 && thoughts > 0) {
+    completionTokens = thoughts;
+  }
+
+  if (
+    completionTokens <= 0 &&
+    totalTokens > 0 &&
+    promptTokens > 0 &&
+    totalTokens >= promptTokens
+  ) {
+    completionTokens = totalTokens - promptTokens;
+  }
+
+  if (totalTokens <= 0) {
+    totalTokens = promptTokens + completionTokens;
+  }
+
+  if (promptTokens <= 0 && totalTokens > 0 && completionTokens <= 0) {
+    promptTokens = totalTokens;
+  }
+
+  const hasKnownUsageKeys = hasAnyUsageField(usage, [...GEMINI_ALL_USAGE_KEYS]);
+  const hasPositiveSignal =
+    promptTokens > 0 || completionTokens > 0 || totalTokens > 0;
+
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    ...(typeof cacheRead === "number" ? { cacheRead } : {}),
+    reported: hasKnownUsageKeys || hasPositiveSignal,
+  };
+}
+
 // ============================================================================
 // Connection Validation
 // ============================================================================
@@ -386,7 +507,11 @@ export async function generateContent(
         });
 
         rawResponse = response;
-        usageMetadata = response.usageMetadata || null;
+        usageMetadata =
+          response.usageMetadata ||
+          (response as any).usage_metadata ||
+          (response as any).usage ||
+          null;
 
         // 处理响应
         const candidate = response.candidates?.[0];
@@ -423,13 +548,7 @@ export async function generateContent(
         }
       }
 
-      const usage: TokenUsage = {
-        promptTokens: usageMetadata?.promptTokenCount || 0,
-        completionTokens: usageMetadata?.candidatesTokenCount || 0,
-        totalTokens: usageMetadata?.totalTokenCount || 0,
-        cacheRead: (usageMetadata as any)?.cachedContentTokenCount || 0,
-        reported: Boolean(usageMetadata),
-      };
+      const usage = parseGeminiUsageMetadata(usageMetadata);
 
       console.log(`[Gemini] Generation complete. Usage:`, usage);
 
@@ -540,8 +659,12 @@ async function streamGeneration(
     }
 
     // 捕获使用量
-    if (chunk.usageMetadata) {
-      usage = chunk.usageMetadata;
+    const chunkUsage =
+      chunk.usageMetadata ||
+      (chunk as any).usage_metadata ||
+      (chunk as any).usage;
+    if (chunkUsage) {
+      usage = chunkUsage;
     }
   }
 
@@ -768,11 +891,11 @@ export async function generateImage(
         const url = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
         return {
           url,
-          usage: {
-            promptTokens: response.usageMetadata?.promptTokenCount || 0,
-            completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
-            totalTokens: response.usageMetadata?.totalTokenCount || 0,
-          },
+          usage: parseGeminiUsageMetadata(
+            response.usageMetadata ||
+              (response as any).usage_metadata ||
+              (response as any).usage,
+          ),
           raw: response,
         };
       }
@@ -918,11 +1041,11 @@ export async function generateSpeech(
     throw new AIProviderError("No audio content generated", "gemini");
   }
 
-  const usage: TokenUsage = {
-    promptTokens: response.usageMetadata?.promptTokenCount || 0,
-    completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
-    totalTokens: response.usageMetadata?.totalTokenCount || 0,
-  };
+  const usage = parseGeminiUsageMetadata(
+    response.usageMetadata ||
+      (response as any).usage_metadata ||
+      (response as any).usage,
+  );
 
   // 将 base64 转换为 ArrayBuffer
   const audioBuffer = decodeBase64ToBuffer(base64Audio);
