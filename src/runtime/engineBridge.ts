@@ -52,6 +52,7 @@ export function buildRuntimeEngineActionsFromSource(
     resumeOutlineGeneration: engine.resumeOutlineGeneration,
     handleSaveSettings: engine.handleSaveSettings,
     loadSlot: engine.loadSlot,
+    renameSlot: engine.renameSlot,
     deleteSlot: engine.deleteSlot,
     refreshSlots: engine.refreshSlots,
     toggleThemeMode: engine.toggleThemeMode,

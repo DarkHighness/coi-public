@@ -98,6 +98,7 @@ interface StartScreenProps {
   saveSlots?: SaveSlot[];
   onSwitchSlot?: (id: string) => void;
   onDeleteSlot?: (id: string) => void;
+  onRenameSlot?: (id: string, name: string) => Promise<boolean>;
   onRefreshSlots?: () => Promise<SaveSlot[]>;
 }
 
@@ -112,6 +113,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   saveSlots = [],
   onSwitchSlot,
   onDeleteSlot,
+  onRenameSlot,
   onRefreshSlots,
 }) => {
   const [mode, setMode] = useState<"main" | "theme_select">("main");
@@ -651,6 +653,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               setIsSaveManagerOpen(false);
             }}
             onDelete={onDeleteSlot || (() => {})}
+            onRename={onRenameSlot}
             onClose={() => setIsSaveManagerOpen(false)}
             onImportComplete={async (result: ImportResult) => {
               if (result.success && onRefreshSlots) {

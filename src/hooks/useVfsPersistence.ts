@@ -29,6 +29,31 @@ import { getRAGService } from "../services/rag";
 import { loadRuntimeStats, persistRuntimeStats } from "./runtimeStatsStore";
 import { buildRestoredGameState } from "./vfsRestoreState";
 
+const GENERATED_SAVE_NAME_PATTERN = /^save(?:\s+\d+)?$/i;
+
+export const normalizeSlotName = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+export const shouldReplaceGeneratedSlotName = (value: unknown): boolean => {
+  const normalized = normalizeSlotName(value);
+  if (!normalized) return true;
+  return GENERATED_SAVE_NAME_PATTERN.test(normalized);
+};
+
+export const deriveSlotNameFromState = (
+  state:
+    | Pick<GameState, "outline" | "currentLocation">
+    | null
+    | undefined,
+): string | null => {
+  const outlineTitle = normalizeSlotName(state?.outline?.title);
+  if (outlineTitle) return outlineTitle;
+  return normalizeSlotName(state?.currentLocation);
+};
+
 export const useVfsPersistence = (
   gameState: GameState,
   setGameState: React.Dispatch<React.SetStateAction<GameState>>,
@@ -46,6 +71,36 @@ export const useVfsPersistence = (
   const isRestoringRef = useRef(false);
   const uiStateSaveTimeoutRef = useRef<number | null>(null);
   const { t } = useTranslation();
+
+  const loadLatestSnapshotForSaveId = useCallback(async (saveId: string) => {
+    const latestMeta = await loadMetadata<{
+      forkId?: unknown;
+      turn?: unknown;
+    }>(`vfs_latest:${saveId}`);
+
+    if (
+      latestMeta &&
+      typeof latestMeta.forkId === "number" &&
+      typeof latestMeta.turn === "number"
+    ) {
+      const snapshot = await vfsStoreRef.current.loadSnapshot(
+        saveId,
+        latestMeta.forkId,
+        latestMeta.turn,
+      );
+      if (snapshot) return snapshot;
+    }
+
+    const indexes = await vfsStoreRef.current.listSnapshots(saveId, 0);
+    const latest = indexes[indexes.length - 1];
+    if (!latest) return null;
+
+    return await vfsStoreRef.current.loadSnapshot(
+      latest.saveId,
+      latest.forkId,
+      latest.turn,
+    );
+  }, []);
 
   const latestSlotId = useMemo(() => {
     if (saveSlots.length === 0) return null;
@@ -139,6 +194,7 @@ export const useVfsPersistence = (
       // Keep it best-effort and lightweight.
       try {
         const now = Date.now();
+        const derivedName = deriveSlotNameFromState(snapshotState);
         const currentFork = snapshotState.currentFork ?? [];
         const lastModel = [...currentFork]
           .reverse()
@@ -162,6 +218,10 @@ export const useVfsPersistence = (
               ? {
                   ...slot,
                   timestamp: now,
+                  name:
+                    derivedName && shouldReplaceGeneratedSlotName(slot.name)
+                      ? derivedName
+                      : slot.name,
                   theme: slot.theme || snapshotState.theme || "fantasy",
                   summary: summary || slot.summary,
                   previewImage:
@@ -236,46 +296,14 @@ export const useVfsPersistence = (
 
           for (const saveId of candidateIds) {
             try {
-              const latestMeta = await loadMetadata<{
-                forkId?: unknown;
-                turn?: unknown;
-              }>(`vfs_latest:${saveId}`);
-
-              let snapshot = null as Awaited<
-                ReturnType<typeof vfsStoreRef.current.loadSnapshot>
-              >;
-
-              if (
-                latestMeta &&
-                typeof latestMeta.forkId === "number" &&
-                typeof latestMeta.turn === "number"
-              ) {
-                snapshot = await vfsStoreRef.current.loadSnapshot(
-                  saveId,
-                  latestMeta.forkId,
-                  latestMeta.turn,
-                );
-              }
-
-              if (!snapshot) {
-                const indexes = await vfsStoreRef.current.listSnapshots(saveId, 0);
-                const latest = indexes[indexes.length - 1];
-                if (latest) {
-                  snapshot = await vfsStoreRef.current.loadSnapshot(
-                    latest.saveId,
-                    latest.forkId,
-                    latest.turn,
-                  );
-                }
-              }
+              const snapshot = await loadLatestSnapshotForSaveId(saveId);
 
               const derived =
                 snapshot ? deriveGameStateFromVfs(snapshot.files) : null;
 
               const theme = derived?.theme || "fantasy";
               const title =
-                derived?.outline?.title ||
-                derived?.currentLocation ||
+                deriveSlotNameFromState(derived) ||
                 t("saves.title", "Save");
 
               const summary =
@@ -308,9 +336,63 @@ export const useVfsPersistence = (
           return inferred;
         };
 
+        const hydratePlaceholderSlotNames = async (
+          existingSlots: SaveSlot[],
+        ): Promise<SaveSlot[]> => {
+          let changed = false;
+
+          const updatedSlots = await Promise.all(
+            existingSlots.map(async (slot) => {
+              if (!slot || !shouldReplaceGeneratedSlotName(slot.name)) {
+                return slot;
+              }
+
+              try {
+                const snapshot = await loadLatestSnapshotForSaveId(slot.id);
+                if (!snapshot) return slot;
+
+                const derived = deriveGameStateFromVfs(snapshot.files);
+                const derivedName = deriveSlotNameFromState(derived);
+                if (!derivedName || derivedName === slot.name) {
+                  return slot;
+                }
+
+                changed = true;
+                return {
+                  ...slot,
+                  name: derivedName,
+                };
+              } catch (error) {
+                console.warn(
+                  "[VFS Persistence] Failed to hydrate slot title:",
+                  slot.id,
+                  error,
+                );
+                return slot;
+              }
+            }),
+          );
+
+          if (changed) {
+            try {
+              await saveMetadata("slots", updatedSlots);
+            } catch (error) {
+              console.warn(
+                "[VFS Persistence] Failed to persist hydrated slot titles:",
+                error,
+              );
+            }
+          }
+
+          return updatedSlots;
+        };
+
         let slots = await loadMetadata("slots");
         if (!slots || !Array.isArray(slots) || slots.length === 0) {
           slots = await inferSlotsIfMissing();
+        }
+        if (slots && Array.isArray(slots) && slots.length > 0) {
+          slots = await hydratePlaceholderSlotNames(slots);
         }
 
         // Cleanup: remove ghost slots that have no backing data in VFS.
@@ -342,42 +424,7 @@ export const useVfsPersistence = (
           }
 
           if (lastSlotId && typeof lastSlotId === "string") {
-            const latestMeta = await loadMetadata<{
-              forkId?: unknown;
-              turn?: unknown;
-            }>(`vfs_latest:${lastSlotId}`);
-
-            let snapshot = null as Awaited<
-              ReturnType<typeof vfsStoreRef.current.loadSnapshot>
-            >;
-
-            if (
-              latestMeta &&
-              typeof latestMeta.forkId === "number" &&
-              typeof latestMeta.turn === "number"
-            ) {
-              snapshot = await vfsStoreRef.current.loadSnapshot(
-                lastSlotId,
-                latestMeta.forkId,
-                latestMeta.turn,
-              );
-            }
-
-            // Fallback for older saves: default to fork-0 latest.
-            if (!snapshot) {
-              const indexes = await vfsStoreRef.current.listSnapshots(
-                lastSlotId,
-                0,
-              );
-              const latest = indexes[indexes.length - 1];
-              if (latest) {
-                snapshot = await vfsStoreRef.current.loadSnapshot(
-                  latest.saveId,
-                  latest.forkId,
-                  latest.turn,
-                );
-              }
-            }
+            const snapshot = await loadLatestSnapshotForSaveId(lastSlotId);
 
             if (snapshot) {
               restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
@@ -419,8 +466,9 @@ export const useVfsPersistence = (
                 const summary = truncated
                   ? `${truncated}${normalizedFull.length > 160 ? "…" : ""}`
                   : "";
+                const derivedName = deriveSlotNameFromState(derived);
 
-                if (summary) {
+                if (summary || derivedName) {
                   const now = Date.now();
                   setSaveSlots((prev) => {
                     const updated = prev.map((slot) =>
@@ -430,11 +478,13 @@ export const useVfsPersistence = (
                             timestamp: snapshot.createdAt || slot.timestamp || now,
                             theme: slot.theme || derived.theme || "fantasy",
                             name:
-                              slot.name ||
-                              derived.outline?.title ||
-                              derived.currentLocation ||
+                              (derivedName &&
+                              shouldReplaceGeneratedSlotName(slot.name)
+                                ? derivedName
+                                : slot.name) ||
+                              derivedName ||
                               t("saves.title", "Save"),
-                            summary,
+                            summary: summary || slot.summary,
                             previewImage:
                               slot.previewImage ||
                               derived.seedImageId ||
@@ -478,7 +528,7 @@ export const useVfsPersistence = (
     };
 
     loadInitialData();
-  }, [mergeUiState, setGameState]);
+  }, [loadLatestSnapshotForSaveId, mergeUiState, setGameState]);
 
   // Persist current slot ID
   useEffect(() => {
@@ -584,6 +634,47 @@ export const useVfsPersistence = (
     return id;
   };
 
+  const renameSlot = useCallback(async (id: string, nextName: string) => {
+    const normalizedName = normalizeSlotName(nextName);
+    if (!normalizedName) return false;
+
+    let hasTarget = false;
+    let changed = false;
+    let updatedSlots: SaveSlot[] | null = null;
+
+    setSaveSlots((prev) => {
+      const updated = prev.map((slot) => {
+        if (slot.id !== id) return slot;
+        hasTarget = true;
+        if (slot.name === normalizedName) {
+          return slot;
+        }
+        changed = true;
+        return {
+          ...slot,
+          name: normalizedName,
+        };
+      });
+
+      if (changed) {
+        updatedSlots = updated;
+      }
+
+      return changed ? updated : prev;
+    });
+
+    if (!hasTarget) return false;
+    if (!changed || !updatedSlots) return true;
+
+    try {
+      await saveMetadata("slots", updatedSlots);
+      return true;
+    } catch (error) {
+      console.error("[VFS Persistence] Failed to rename slot:", error);
+      return false;
+    }
+  }, []);
+
   const loadSlot = async (
     id: string,
   ): Promise<{
@@ -598,39 +689,7 @@ export const useVfsPersistence = (
   }> => {
     try {
       isRestoringRef.current = true;
-      const latestMeta = await loadMetadata<{
-        forkId?: unknown;
-        turn?: unknown;
-      }>(`vfs_latest:${id}`);
-
-      let snapshot = null as Awaited<
-        ReturnType<typeof vfsStoreRef.current.loadSnapshot>
-      >;
-
-      if (
-        latestMeta &&
-        typeof latestMeta.forkId === "number" &&
-        typeof latestMeta.turn === "number"
-      ) {
-        snapshot = await vfsStoreRef.current.loadSnapshot(
-          id,
-          latestMeta.forkId,
-          latestMeta.turn,
-        );
-      }
-
-      // Fallback for older saves: default to fork-0 latest.
-      if (!snapshot) {
-        const indexes = await vfsStoreRef.current.listSnapshots(id, 0);
-        const latest = indexes[indexes.length - 1];
-        if (latest) {
-          snapshot = await vfsStoreRef.current.loadSnapshot(
-            latest.saveId,
-            latest.forkId,
-            latest.turn,
-          );
-        }
-      }
+      const snapshot = await loadLatestSnapshotForSaveId(id);
 
       if (!snapshot) {
         console.warn("[VFS Persistence] No snapshot found for slot:", id);
@@ -652,6 +711,36 @@ export const useVfsPersistence = (
       );
 
       setCurrentSlotId(id);
+
+      const derivedName = deriveSlotNameFromState(derived);
+      if (derivedName) {
+        setSaveSlots((prev) => {
+          let changed = false;
+          const updated = prev.map((slot) => {
+            if (slot.id !== id) return slot;
+            if (!shouldReplaceGeneratedSlotName(slot.name)) return slot;
+            if (slot.name === derivedName) return slot;
+            changed = true;
+            return {
+              ...slot,
+              name: derivedName,
+            };
+          });
+
+          if (changed) {
+            saveMetadata("slots", updated).catch((error) => {
+              console.warn(
+                "[VFS Persistence] Failed to persist slot title on load:",
+                error,
+              );
+            });
+            return updated;
+          }
+
+          return prev;
+        });
+      }
+
       return {
         success: true,
         hasOutline: Boolean(derived.outline),
@@ -778,6 +867,7 @@ export const useVfsPersistence = (
     currentSlotId,
     setCurrentSlotId,
     createSaveSlot,
+    renameSlot,
     loadSlot,
     deleteSlot,
     clearAllSaves,

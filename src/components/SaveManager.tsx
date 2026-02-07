@@ -6,12 +6,14 @@ import { MarkdownText } from "./render/MarkdownText";
 import { ExportOptionsModal } from "./ExportOptionsModal";
 import { ImportSaveModal } from "./ImportSaveModal";
 import { getThemeName } from "../services/ai/utils";
+import { useToast } from "./Toast";
 
 interface SaveManagerProps {
   slots: SaveSlot[];
   currentSlotId: string | null;
   onSwitch: (id: string) => void | Promise<void> | Promise<any>;
   onDelete: (id: string) => void;
+  onRename?: (id: string, name: string) => Promise<boolean>;
   onClose: () => void;
   onImportComplete?: (result: ImportResult) => void;
   /** Pre-selected file to import - opens ImportSaveModal automatically */
@@ -23,18 +25,37 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
   currentSlotId,
   onSwitch,
   onDelete,
+  onRename,
   onClose,
   onImportComplete,
   initialImportFile,
 }) => {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [exportingSlot, setExportingSlot] = useState<SaveSlot | null>(null);
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [highlightedSlotId, setHighlightedSlotId] = useState<string | null>(
+    null,
+  );
+  const slotCardRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+  const renameHighlightTimeoutRef = React.useRef<number | null>(null);
   // Open import modal immediately if initialImportFile is provided
   const [isImportModalOpen, setIsImportModalOpen] =
     useState(!!initialImportFile);
   const [importFile, setImportFile] = useState<File | undefined>(
     initialImportFile,
   );
+
+  React.useEffect(() => {
+    return () => {
+      if (renameHighlightTimeoutRef.current) {
+        window.clearTimeout(renameHighlightTimeoutRef.current);
+        renameHighlightTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const handleExportClick = (slot: SaveSlot) => {
     setExportingSlot(slot);
@@ -44,6 +65,84 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
     setIsImportModalOpen(false);
     if (onImportComplete) {
       onImportComplete(result);
+    }
+  };
+
+  const startRename = (slot: SaveSlot) => {
+    setEditingSlotId(slot.id);
+    setEditingName(slot.name);
+  };
+
+  const cancelRename = () => {
+    if (isRenaming) return;
+    setEditingSlotId(null);
+    setEditingName("");
+  };
+
+  const submitRename = async (slotId: string) => {
+    if (!onRename || isRenaming) return;
+    const nextName = editingName.trim();
+    if (!nextName) {
+      showToast(
+        t("saveManager.renameEmpty") || "Save name cannot be empty",
+        "error",
+      );
+      return;
+    }
+
+    const currentName = slots.find((slot) => slot.id === slotId)?.name?.trim();
+    if (currentName && currentName === nextName) {
+      setEditingSlotId(null);
+      setEditingName("");
+      return;
+    }
+
+    setIsRenaming(true);
+    try {
+      const ok = await onRename(slotId, nextName);
+      if (ok) {
+        const activeElement = document.activeElement;
+        if (activeElement instanceof HTMLElement) {
+          activeElement.blur();
+        }
+
+        setEditingSlotId(null);
+        setEditingName("");
+
+        if (renameHighlightTimeoutRef.current) {
+          window.clearTimeout(renameHighlightTimeoutRef.current);
+          renameHighlightTimeoutRef.current = null;
+        }
+        setHighlightedSlotId(slotId);
+        renameHighlightTimeoutRef.current = window.setTimeout(() => {
+          setHighlightedSlotId((prev) => (prev === slotId ? null : prev));
+          renameHighlightTimeoutRef.current = null;
+        }, 300);
+
+        if (window.matchMedia("(max-width: 768px)").matches) {
+          requestAnimationFrame(() => {
+            slotCardRefs.current[slotId]?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          });
+        }
+
+        showToast(t("saveManager.renameSuccess") || "Save renamed", "success");
+      } else {
+        showToast(
+          t("saveManager.renameError") || "Failed to rename save",
+          "error",
+        );
+      }
+    } catch (error) {
+      console.error("[SaveManager] Failed to rename save:", error);
+      showToast(
+        t("saveManager.renameError") || "Failed to rename save",
+        "error",
+      );
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -121,10 +220,17 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
               return (
                 <div
                   key={slot.id}
+                  ref={(element) => {
+                    slotCardRefs.current[slot.id] = element;
+                  }}
                   className={`relative rounded-lg border-2 overflow-hidden transition-all ${
                     isCurrent
                       ? "border-theme-primary bg-theme-primary/5 shadow-lg shadow-theme-primary/20"
                       : "border-theme-border hover:border-theme-muted bg-theme-bg"
+                  } ${
+                    highlightedSlotId === slot.id
+                      ? "ring-1 ring-theme-primary/45 shadow shadow-theme-primary/15"
+                      : ""
                   }`}
                 >
                   {/* Preview Image Background */}
@@ -147,7 +253,30 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-theme-text text-base flex items-center gap-2">
-                            {slot.name}
+                            {editingSlotId === slot.id ? (
+                              <input
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    submitRename(slot.id);
+                                  }
+                                  if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    cancelRename();
+                                  }
+                                }}
+                                autoFocus
+                                className="min-w-[12rem] bg-theme-bg border border-theme-primary/60 rounded px-2 py-1 text-sm text-theme-text focus:border-theme-primary outline-none"
+                                placeholder={t("saveManager.renamePlaceholder") || "Save name"}
+                                maxLength={80}
+                                disabled={isRenaming}
+                              />
+                            ) : (
+                              slot.name
+                            )}
                             {isCurrent && (
                               <span className="text-[10px] bg-theme-primary text-theme-bg px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                                 {t("saveManager.current") || "Current"}
@@ -219,6 +348,84 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                               ></path>
                             </svg>
                           </button>
+                          {onRename &&
+                            (editingSlotId === slot.id ? (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    submitRename(slot.id);
+                                  }}
+                                  disabled={
+                                    isRenaming ||
+                                    !editingName.trim() ||
+                                    editingName.trim() === slot.name.trim()
+                                  }
+                                  className="p-1.5 text-theme-text-secondary hover:text-green-500 hover:bg-green-500/10 rounded transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                                  title={t("saveManager.renameConfirm") || "Save name"}
+                                >
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M5 13l4 4L19 7"
+                                    ></path>
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    cancelRename();
+                                  }}
+                                  disabled={isRenaming}
+                                  className="p-1.5 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight/60 rounded transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                                  title={t("cancel")}
+                                >
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M6 18L18 6M6 6l12 12"
+                                    ></path>
+                                  </svg>
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startRename(slot);
+                                }}
+                                className="p-1.5 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-primary/10 rounded transition-colors"
+                                title={t("saveManager.rename") || "Rename"}
+                              >
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  ></path>
+                                </svg>
+                              </button>
+                            ))}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

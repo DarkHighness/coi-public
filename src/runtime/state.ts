@@ -113,6 +113,7 @@ export interface RuntimeEngineActions {
     forkId?: number;
     forkTree?: ForkTree;
   }>;
+  renameSlot: (id: string, name: string) => Promise<boolean>;
   deleteSlot: (id: string) => void;
   refreshSlots: () => Promise<SaveSlot[]>;
   toggleThemeMode: () => void;
@@ -286,4 +287,3 @@ export interface RuntimeContextValue {
   state: RuntimeState;
   actions: RuntimeActions;
 }
-

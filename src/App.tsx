@@ -519,6 +519,7 @@ function AppContent() {
                   saveSlots={saveSlots}
                   onSwitchSlot={handleLoadSlot}
                   onDeleteSlot={deleteSlot}
+                  onRenameSlot={engineActions.renameSlot}
                   onRefreshSlots={refreshSlots}
                 />
               </SectionErrorBoundary>
@@ -575,6 +576,7 @@ function AppContent() {
             currentSlotId={null}
             onSwitch={handleLoadSlot}
             onDelete={deleteSlot}
+            onRename={engineActions.renameSlot}
             onClose={() => {
               setIsSaveManagerOpen(false);
               setImportFile(null);

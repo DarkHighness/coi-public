@@ -29,6 +29,7 @@ function createEngineSource() {
     resumeOutlineGeneration: vi.fn(),
     handleSaveSettings: vi.fn(),
     loadSlot: vi.fn(),
+    renameSlot: vi.fn(async () => true),
     deleteSlot: vi.fn(),
     refreshSlots: vi.fn(),
     toggleThemeMode: vi.fn(),
@@ -78,6 +79,7 @@ describe("engineBridge", () => {
     const actions = buildRuntimeEngineActionsFromSource(source);
 
     expect(actions.startNewGame).toBe(source.startNewGame);
+    expect(actions.renameSlot).toBe(source.renameSlot);
     expect(actions.updateUiState).toBe(source.updateUiState);
     expect(actions.applyVfsDerivedState).toBe(source.applyVfsDerivedState);
   });
