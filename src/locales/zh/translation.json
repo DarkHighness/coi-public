@@ -1286,7 +1286,7 @@
       "confirm": "⚠️ SUDO ⚠️\n\n你正在试图强制以下变更:\n\"{{prompt}}\"\n\n这将绕过标准游戏框架和世界一致性。\n\n确定吗？",
       "missingPrompt": "使用方法: /sudo <prompt>"
     },
-    "help": "可用命令：\n/god - 切换上帝模式（行动必成功，NPC服从）\n/unlock - 显示所有隐藏信息\n/edit - 打开状态编辑器\n/rules - 打开自定义规则\n/help - 显示帮助信息"
+    "help": "可用命令：\n/god - 切换上帝模式（行动必成功，NPC服从）\n/unlock - 显示所有隐藏信息\n/edit - 打开状态编辑器\n/help - 显示帮助信息"
   },
   "rules": {
     "short": "规则",
@@ -1383,7 +1383,11 @@
     "mobileEditor": "编辑器",
     "mobileBackToFiles": "返回文件列表",
     "confirmReadonlyEdit": "这是受保护文件，编辑可能破坏游戏状态。是否继续并为当前文件启用编辑？",
-    "readonlyOverrideEnabled": "已为当前受保护文件启用编辑。"
+    "readonlyOverrideEnabled": "已为当前受保护文件启用编辑。",
+    "createRuleTemplate": "+ 规则",
+    "createRuleTemplatePrompt": "请输入新的自定义规则分类标题：",
+    "createRuleTemplateCreated": "已创建自定义规则模板",
+    "createRuleTemplateFailed": "创建自定义规则模板失败"
   },
   "secretAgenda": "隐藏议程",
   "knowledge": {

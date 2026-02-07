@@ -5,6 +5,7 @@ import {
   injectNormalTurnInstruction,
   injectReadyConsequences,
   injectRetconAckRequired,
+  injectOutOfBandReadInvalidations,
   injectSudoModeInstruction,
 } from "../contextInjector";
 
@@ -70,6 +71,19 @@ describe("contextInjector", () => {
     expect(getText(history[0])).toContain("RETCON_ACK_REQUIRED");
     expect(getText(history[0])).toContain("hash_123");
     expect(getText(history[0])).toContain("retconAck");
+  });
+
+  it("injects out-of-band file invalidation reminders", () => {
+    const history: any[] = [];
+
+    injectOutOfBandReadInvalidations(history, [
+      { path: "world/notes.md", changeType: "modified" },
+    ]);
+
+    expect(history).toHaveLength(1);
+    expect(getText(history[0])).toContain("EXTERNAL_FILE_CHANGES");
+    expect(getText(history[0])).toContain("current/world/notes.md");
+    expect(getText(history[0])).toContain("re-read it first");
   });
 
   it("keeps ready consequences injection as no-op", () => {

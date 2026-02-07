@@ -1,17 +1,13 @@
 import type {
-  CustomRule,
   CustomRulesAckPendingReason,
   CustomRulesAckState,
 } from "../types";
 import type { VfsSession } from "./vfs/vfsSession";
-import { hashContent } from "./vfs/utils";
+import type { VfsFileMap } from "./vfs/types";
+import { hashContent, normalizeVfsPath } from "./vfs/utils";
 
 export const CUSTOM_RULES_ACK_STATE_PATH =
   "world/runtime/custom_rules_ack_state.json";
-
-export interface CustomRulesAckSignature {
-  customRules?: CustomRule[];
-}
 
 export interface CustomRulesAckSignatureDigest {
   effectiveHash: string;
@@ -26,32 +22,35 @@ export interface RetconAckPayload {
 const normalizeText = (value?: string): string =>
   typeof value === "string" ? value.trim() : "";
 
-const normalizeCustomRules = (rules?: CustomRule[]): string => {
-  if (!Array.isArray(rules) || rules.length === 0) {
-    return "[]";
+const isCustomRulesContentPath = (path: string): boolean => {
+  const normalized = normalizeVfsPath(path);
+
+  if (normalized.startsWith("custom_rules/")) {
+    return normalized !== "custom_rules/README.md";
   }
 
-  const normalized = rules
-    .map((rule) => ({
-      id: typeof rule?.id === "string" ? rule.id : "",
-      category: typeof rule?.category === "string" ? rule.category : "",
-      title: typeof rule?.title === "string" ? rule.title : "",
-      content: typeof rule?.content === "string" ? rule.content : "",
-      enabled: Boolean(rule?.enabled),
-      priority:
-        typeof rule?.priority === "number" && Number.isFinite(rule.priority)
-          ? rule.priority
-          : 0,
-    }))
-    .sort((left, right) => {
-      const categoryDiff = left.category.localeCompare(right.category);
-      if (categoryDiff !== 0) return categoryDiff;
-      const priorityDiff = left.priority - right.priority;
-      if (priorityDiff !== 0) return priorityDiff;
-      return left.id.localeCompare(right.id);
-    });
+  if (normalized.startsWith("world/custom_rules/")) {
+    return true;
+  }
 
-  return JSON.stringify(normalized);
+  return false;
+};
+
+const normalizeCustomRulesFileSet = (files: VfsFileMap): string => {
+  const entries = Object.values(files)
+    .map((file) => {
+      const path = normalizeVfsPath(file.path);
+      return {
+        path,
+        hash: typeof file.hash === "string" && file.hash.trim()
+          ? file.hash
+          : hashContent(file.content),
+      };
+    })
+    .filter((entry) => isCustomRulesContentPath(entry.path))
+    .sort((left, right) => left.path.localeCompare(right.path));
+
+  return JSON.stringify(entries);
 };
 
 const parseState = (raw: unknown): CustomRulesAckState | null => {
@@ -113,9 +112,11 @@ const writeState = (session: VfsSession, state: CustomRulesAckState): void => {
 };
 
 export const buildCustomRulesAckSignature = (
-  input: CustomRulesAckSignature,
+  session: VfsSession,
 ): CustomRulesAckSignatureDigest => {
-  const customRulesHash = hashContent(normalizeCustomRules(input.customRules));
+  const fileSet = normalizeCustomRulesFileSet(session.snapshot());
+  const customRulesHash = hashContent(fileSet);
+
   return {
     effectiveHash: customRulesHash,
     customRulesHash,
@@ -131,9 +132,8 @@ export const getCustomRulesAckState = (
 
 export const syncCustomRulesAckState = (
   session: VfsSession,
-  signature: CustomRulesAckSignature,
 ): CustomRulesAckState => {
-  const digest = buildCustomRulesAckSignature(signature);
+  const digest = buildCustomRulesAckSignature(session);
   const previous = getCustomRulesAckState(session);
   const now = Date.now();
 

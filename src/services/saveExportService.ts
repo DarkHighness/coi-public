@@ -35,7 +35,12 @@ import type { RAGExportData } from "./rag/types";
 import { IndexedDbVfsStore } from "./vfs/store";
 import type { VfsSnapshot } from "./vfs/types";
 import { VfsSession } from "./vfs/vfsSession";
-import { restoreVfsSessionFromSnapshot, saveVfsSessionSnapshot } from "./vfs/persistence";
+import {
+  applySharedMutableStateToSession,
+  extractSharedMutableStateFromSnapshot,
+  restoreVfsSessionFromSnapshot,
+  saveVfsSessionSnapshot,
+} from "./vfs/persistence";
 import { deriveGameStateFromVfs } from "./vfs/derivations";
 import { seedVfsSessionFromGameState } from "./vfs/seed";
 import { writeOutlineFile, writeOutlineProgress } from "./vfs/outline";
@@ -133,6 +138,29 @@ const listVfsSnapshotIndexEntries = async (
   });
 };
 
+const loadSharedMutableStateForSave = async (
+  saveId: string,
+  latestSnapshot?: VfsSnapshot | null,
+): Promise<Record<string, any> | null> => {
+  try {
+    const stored = await loadMetadata<{ files?: unknown }>(`vfs_shared:${saveId}`);
+    if (stored?.files && typeof stored.files === "object") {
+      return stored.files as Record<string, any>;
+    }
+  } catch (error) {
+    console.warn("[SaveExport] Failed to load vfs_shared metadata:", error);
+  }
+
+  if (latestSnapshot) {
+    const inferred = extractSharedMutableStateFromSnapshot(latestSnapshot as any);
+    if (Object.keys(inferred).length > 0) {
+      return inferred as Record<string, any>;
+    }
+  }
+
+  return null;
+};
+
 const loadDerivedStateFromLatestVfsSnapshot = async (
   saveId: string,
 ): Promise<{ state: VersionedGameState; latest: VfsLatestMeta } | null> => {
@@ -147,6 +175,12 @@ const loadDerivedStateFromLatestVfsSnapshot = async (
 
   const session = new VfsSession();
   restoreVfsSessionFromSnapshot(session, snapshot);
+
+  const shared = await loadSharedMutableStateForSave(saveId, snapshot);
+  if (shared) {
+    applySharedMutableStateToSession(session, shared as any);
+  }
+
   const derived = deriveGameStateFromVfs(session.snapshot()) as VersionedGameState;
   if (!derived._saveVersion) {
     derived._saveVersion = {
@@ -210,6 +244,25 @@ const writeVfsSnapshotsToZip = async (
       );
     }
   }
+
+  let latestSnapshot: VfsSnapshot | null = null;
+  if (latest) {
+    latestSnapshot = await store.loadSnapshot(saveId, latest.forkId, latest.turn);
+  }
+
+  const shared = await loadSharedMutableStateForSave(saveId, latestSnapshot);
+  zip.file(
+    "vfs/shared.json",
+    JSON.stringify(
+      {
+        version: 1,
+        updatedAt: Date.now(),
+        files: shared ?? {},
+      },
+      null,
+      2,
+    ),
+  );
 
   return { snapshotCount: written, latest };
 };
@@ -983,6 +1036,23 @@ export async function importSave(
       const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
       const latestMeta = bundle?.latest ?? null;
       const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
+
+      let importedSharedFiles: Record<string, any> | null = null;
+      const sharedFile = zip.file("vfs/shared.json");
+      if (sharedFile) {
+        try {
+          const sharedJson = await sharedFile.async("text");
+          const sharedPayload = JSON.parse(sharedJson) as {
+            files?: unknown;
+          };
+          if (sharedPayload?.files && typeof sharedPayload.files === "object") {
+            importedSharedFiles = sharedPayload.files as Record<string, any>;
+          }
+        } catch (error) {
+          console.warn("[SaveImport] Failed to parse vfs/shared.json:", error);
+          warnings.push("Failed to parse vfs/shared.json. Shared VFS layer will be rebuilt.");
+        }
+      }
       if (snapshots.length === 0) {
         return {
           success: false,
@@ -1041,6 +1111,8 @@ export async function importSave(
         }
       }
 
+      let sharedForSave: Record<string, any> | null = importedSharedFiles;
+
       if (latestForkId !== null && latestTurn !== null) {
         await saveMetadata(`vfs_latest:${newSlotId}`, {
           forkId: latestForkId,
@@ -1056,8 +1128,20 @@ export async function importSave(
             latestTurn,
           );
           if (latestSnapshot) {
+            if (!sharedForSave) {
+              const inferred = extractSharedMutableStateFromSnapshot(latestSnapshot as any);
+              sharedForSave =
+                Object.keys(inferred).length > 0
+                  ? (inferred as Record<string, any>)
+                  : null;
+            }
+
             const session = new VfsSession();
             restoreVfsSessionFromSnapshot(session, latestSnapshot);
+            if (sharedForSave) {
+              applySharedMutableStateToSession(session, sharedForSave as any);
+            }
+
             const derived = deriveGameStateFromVfs(session.snapshot()) as any;
             derivedTheme = typeof derived?.theme === "string" ? derived.theme : undefined;
             derivedName =
@@ -1077,6 +1161,12 @@ export async function importSave(
           console.warn("[SaveImport] Failed to derive slot info from VFS snapshot:", err);
         }
       }
+
+      await saveMetadata(`vfs_shared:${newSlotId}`, {
+        files: sharedForSave ?? {},
+        updatedAt: Date.now(),
+        importedFromArchive: true,
+      });
 
       console.log(`[SaveImport] Imported ${imported} VFS snapshots`);
     } catch (error) {

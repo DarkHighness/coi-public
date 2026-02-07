@@ -1,4 +1,10 @@
 import type { VfsSession } from "./vfsSession";
+import {
+  buildCustomRulePackMarkdown,
+  CUSTOM_RULES_README_CONTENT,
+  CUSTOM_RULES_README_PATH,
+  toCustomRulePackPath,
+} from "./customRules";
 
 type SectionName =
   | "global"
@@ -102,7 +108,7 @@ const listSections: Record<
   knowledge: { prefix: "world/knowledge", idField: "id" },
   factions: { prefix: "world/factions", idField: "id" },
   timeline: { prefix: "world/timeline", idField: "id" },
-  customRules: { prefix: "world/custom_rules", idField: "id" },
+  customRules: { prefix: "custom_rules", idField: "id" },
   causalChains: { prefix: "world/causal_chains", idField: "chainId" },
 };
 
@@ -233,15 +239,40 @@ export const applySectionEdit = (
       throw new Error(`Section "${section}" expects an array.`);
     }
 
-    clearDir(session, "world/custom_rules");
+    clearDir(session, "custom_rules");
+
+    if (!session.readFile(CUSTOM_RULES_README_PATH)) {
+      session.writeFile(
+        CUSTOM_RULES_README_PATH,
+        CUSTOM_RULES_README_CONTENT,
+        "text/markdown",
+      );
+    }
 
     for (const rule of data as any[]) {
       if (!rule || typeof rule !== "object") continue;
       const id = (rule as any).id;
+      const title = (rule as any).title;
+      const content = (rule as any).content;
+      const priority =
+        typeof (rule as any).priority === "number" ? (rule as any).priority : 99;
       if (typeof id !== "string" || id.trim().length === 0) {
         throw new Error("Missing id for custom rule entry.");
       }
-      writeJson(session, `world/custom_rules/${id.trim()}.json`, rule);
+
+      const path = toCustomRulePackPath(priority, title || id);
+      const markdown = buildCustomRulePackMarkdown({
+        category: title || id,
+        whenToApply: "Use when this category is relevant to the current scene.",
+        rules:
+          typeof content === "string" && content.trim().length > 0
+            ? content
+                .split(/\r?\n/)
+                .map((line: string) => line.trim())
+                .filter(Boolean)
+            : [],
+      });
+      session.writeFile(path, markdown, "text/markdown");
     }
     return;
   }

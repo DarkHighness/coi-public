@@ -151,7 +151,6 @@ export const generateAdventureTurn = async (
     playerMaliceProfile,
     playerMalicePreset: settings.extra?.playerMalicePreset,
     playerMaliceIntensity: settings.extra?.playerMaliceIntensity,
-    customRules: gameState.customRules,
     isNSFW: settings.extra?.nsfw,
     godMode: gameState.godMode,
     crossSaveProfile: settings.playerProfile,
@@ -206,9 +205,7 @@ export const generateAdventureTurn = async (
     baseSystemInstruction,
   });
 
-  const customRulesAckState = syncCustomRulesAckState(context.vfsSession, {
-    customRules: gameState.customRules ?? [],
-  });
+  const customRulesAckState = syncCustomRulesAckState(context.vfsSession);
   const retconAckPending = customRulesAckState.pendingHash
     ? {
         hash: customRulesAckState.pendingHash,
@@ -231,12 +228,12 @@ export const generateAdventureTurn = async (
     context.userAction,
   );
 
-  // Log injected rules and NSFW mode
+  // Log active custom rules and NSFW mode
   const enabledRules = (gameState.customRules || []).filter((r) => r.enabled);
   const nsfwEnabled = settings.extra?.nsfw || false;
   if (enabledRules.length > 0) {
     console.log(
-      `[CustomRules] Injected ${enabledRules.length} rules:`,
+      `[CustomRules] Active ${enabledRules.length} rules:`,
       enabledRules.map((r) => `[${r.category}] ${r.title}`),
     );
   }

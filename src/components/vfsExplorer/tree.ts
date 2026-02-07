@@ -34,7 +34,7 @@ const DEFAULT_DIRECTORY_PATHS = [
   "world/factions",
   "world/timeline",
   "world/causal_chains",
-  "world/custom_rules",
+  "custom_rules",
   "conversation",
   "conversation/turns",
   "outline",
@@ -149,6 +149,10 @@ export const isReadonlyPath = (path: string): boolean => {
   const normalized = stripCurrentPrefix(path);
 
   if (normalized === "skills" || normalized.startsWith("skills/")) {
+    return true;
+  }
+
+  if (normalized === "refs" || normalized.startsWith("refs/")) {
     return true;
   }
 

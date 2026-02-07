@@ -37,6 +37,7 @@ import {
   injectBudgetStatus,
   injectNoToolCallError,
   injectRetconAckRequired,
+  injectOutOfBandReadInvalidations,
 } from "./contextInjector";
 import {
   checkBudgetExhaustion,
@@ -131,6 +132,15 @@ export async function runAgenticLoopRefactored(
         conversationHistory,
         retconAckPending.hash,
         retconAckPending.reason,
+      );
+    }
+
+    const outOfBandInvalidations =
+      config.vfsSession.drainOutOfBandReadInvalidations();
+    if (outOfBandInvalidations.length > 0) {
+      injectOutOfBandReadInvalidations(
+        conversationHistory,
+        outOfBandInvalidations,
       );
     }
 
@@ -379,12 +389,13 @@ async function processToolCalls(
   const finishToolName = loopState.finishToolName;
 
   const skillGate = checkCommandSkillReadGate(functionCalls, loopState);
-  if (!skillGate.ok) {
+  if ("error" in skillGate) {
+    const gateError = skillGate.error;
     return {
       responses: functionCalls.map((call) => ({
         toolCallId: call.id,
         name: call.name,
-        content: skillGate.error,
+        content: gateError,
       })),
       turnFinished: false,
     };

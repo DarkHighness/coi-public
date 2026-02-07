@@ -17,7 +17,12 @@ export type MutationOperation =
 
 const isReadOnlyToolPath = (path: string): boolean => {
   const normalized = normalizeVfsPath(path);
-  return normalized === "skills" || normalized.startsWith("skills/");
+  return (
+    normalized === "skills" ||
+    normalized.startsWith("skills/") ||
+    normalized === "refs" ||
+    normalized.startsWith("refs/")
+  );
 };
 
 const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {

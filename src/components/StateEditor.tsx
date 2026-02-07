@@ -17,6 +17,10 @@ import {
 } from "./vfsExplorer/tree";
 import { formatVfsContent, readVfsFile } from "./vfsExplorer/fileOps";
 import { applyVfsFileEdit } from "./stateEditorUtils";
+import {
+  buildCustomRulePackMarkdown,
+  getCustomRulePackTemplatePath,
+} from "../services/vfs/customRules";
 import { MarkdownText } from "./render/MarkdownText";
 
 const MonacoEditor = React.lazy(() => import("@monaco-editor/react"));
@@ -291,6 +295,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       return;
     }
 
+    const before = vfsSession.readFile(selectedPath);
+
     try {
       const nextState = applyVfsFileEdit({
         session: vfsSession,
@@ -299,6 +305,20 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         contentType: fileContentType,
         baseState: gameState,
       });
+
+      const after = vfsSession.readFile(selectedPath);
+      let changeType: "added" | "deleted" | "modified" | null = null;
+      if (!before && after) {
+        changeType = "added";
+      } else if (before && !after) {
+        changeType = "deleted";
+      } else if (before && after && before.hash !== after.hash) {
+        changeType = "modified";
+      }
+      if (changeType) {
+        vfsSession.noteOutOfBandMutation(selectedPath, changeType);
+      }
+
       applyVfsMutation(nextState);
       setHasChanges(false);
       setError(null);
@@ -315,6 +335,58 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             : applyFailedMessage;
       setError(message);
       onShowToast?.(message, "error");
+    }
+  };
+
+  const handleCreateRuleTemplate = () => {
+    const suggestedTitle = (
+      window.prompt(
+        t("stateEditor.createRuleTemplatePrompt") ||
+          "Enter a title for the new custom rule category:",
+      ) || ""
+    ).trim();
+
+    if (!suggestedTitle) {
+      return;
+    }
+
+    const templatePath = getCustomRulePackTemplatePath(
+      Object.keys(snapshot),
+      suggestedTitle,
+    );
+
+    const markdown = buildCustomRulePackMarkdown({
+      category: suggestedTitle,
+      whenToApply: "When this category becomes relevant to the current scene.",
+      rules: [],
+    });
+
+    try {
+      const nextState = applyVfsFileEdit({
+        session: vfsSession,
+        path: templatePath,
+        content: markdown,
+        contentType: "text/markdown",
+        baseState: gameState,
+      });
+
+      applyVfsMutation(nextState);
+      setSelectedPath(templatePath);
+      setMobileView("editor");
+      setIsEditMode(true);
+      setError(null);
+      setHasChanges(false);
+      onShowToast?.(
+        t("stateEditor.createRuleTemplateCreated") ||
+          "Custom rule template created",
+        "success",
+      );
+    } catch {
+      onShowToast?.(
+        t("stateEditor.createRuleTemplateFailed") ||
+          "Failed to create custom rule template",
+        "error",
+      );
     }
   };
 
@@ -557,8 +629,21 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             className={`${mobileView === "files" ? "flex" : "hidden"} md:flex w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-theme-surface/80 flex-col min-h-0`}
           >
             <div className="p-3 border-b border-theme-divider/60 bg-theme-surface-highlight/20">
-              <div className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wide mb-2">
-                {t("stateEditor.fileTree") || "File Tree"}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wide">
+                  {t("stateEditor.fileTree") || "File Tree"}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCreateRuleTemplate}
+                  className="shrink-0 rounded-md border border-theme-divider/60 px-2 py-1 text-[11px] text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20 transition-colors"
+                  title={
+                    t("stateEditor.createRuleTemplate") ||
+                    "Create custom rule template"
+                  }
+                >
+                  {t("stateEditor.createRuleTemplate") || "+ Rule"}
+                </button>
               </div>
               <input
                 value={searchQuery}

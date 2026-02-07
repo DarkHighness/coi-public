@@ -19,7 +19,6 @@ export type CommandAction =
   | { type: "open_editor" }
   | { type: "open_rag" }
   | { type: "open_viewer" }
-  | { type: "open_rules" }
   | { type: "force_update"; prompt: string }
   | { type: "none" };
 
@@ -49,7 +48,6 @@ const COMMAND_DEFINITION_ENTRIES: InternalCommandDefinition[] = [
   { cmd: "/edit", desc: "Edit State", handler: handleOpenEditor },
   { cmd: "/rag", desc: "RAG Debugger", handler: handleOpenRAG },
   { cmd: "/view", desc: "View State", handler: handleOpenViewer },
-  { cmd: "/rules", desc: "Custom Rules", handler: handleOpenRules },
   { cmd: "/sudo", desc: "Force Update", handler: handleForceUpdate },
   { cmd: "/help", desc: "Show Help", handler: handleHelp },
 ];
@@ -202,22 +200,6 @@ function handleOpenViewer(
 }
 
 /**
- * /rules - Open Custom Rules Editor
- */
-function handleOpenRules(
-  args: string[],
-  context: CommandContext,
-): CommandResult {
-  void args;
-  void context;
-  return {
-    handled: true,
-    preventAction: true,
-    action: { type: "open_rules" },
-  };
-}
-
-/**
  * /sudo - Force World Update
  */
 function handleForceUpdate(
@@ -301,7 +283,6 @@ export function executeCommandAction(
     case "open_editor":
     case "open_rag":
     case "open_viewer":
-    case "open_rules":
     case "force_update":
       break;
 

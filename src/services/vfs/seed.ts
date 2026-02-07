@@ -12,7 +12,12 @@ import type {
 import { DEFAULT_CHARACTER } from "@/utils/constants";
 import { VfsSession } from "./vfsSession";
 import { writeConversationIndex, writeForkTree, writeTurnFile } from "./conversation";
-import { seedAtmosphereRefs } from "./refs/atmosphere";
+import {
+  buildCustomRulePackMarkdown,
+  CUSTOM_RULES_README_CONTENT,
+  CUSTOM_RULES_README_PATH,
+  toCustomRulePackPath,
+} from "./customRules";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
@@ -23,6 +28,16 @@ const ensureGlobalNotes = (session: VfsSession): void => {
   // Keep it empty by default; the AI may populate it when needed.
   if (!session.readFile("world/notes.md")) {
     session.writeFile("world/notes.md", "", "text/markdown");
+  }
+};
+
+const ensureCustomRulesReadme = (session: VfsSession): void => {
+  if (!session.readFile(CUSTOM_RULES_README_PATH)) {
+    session.writeFile(
+      CUSTOM_RULES_README_PATH,
+      CUSTOM_RULES_README_CONTENT,
+      "text/markdown",
+    );
   }
 };
 
@@ -177,8 +192,8 @@ export const seedVfsSessionFromGameState = (
   session: VfsSession,
   state: GameState,
 ): void => {
-  seedAtmosphereRefs(session);
   ensureGlobalNotes(session);
+  ensureCustomRulesReadme(session);
 
   writeJson(session, "world/global.json", {
     time: state.time,
@@ -206,8 +221,25 @@ export const seedVfsSessionFromGameState = (
   if (Array.isArray(state.customRules)) {
     for (const rule of state.customRules as any[]) {
       const id = (rule as any)?.id;
+      const title = (rule as any)?.title;
+      const content = (rule as any)?.content;
+      const priority =
+        typeof (rule as any)?.priority === "number" ? (rule as any).priority : 99;
       if (typeof id !== "string" || id.trim().length === 0) continue;
-      writeJson(session, `world/custom_rules/${id.trim()}.json`, rule);
+
+      const packPath = toCustomRulePackPath(priority, title || id);
+      const markdown = buildCustomRulePackMarkdown({
+        category: title || id,
+        whenToApply: "Use when this category is relevant to the current scene.",
+        rules:
+          typeof content === "string" && content.trim().length > 0
+            ? content
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean)
+            : [],
+      });
+      session.writeFile(packPath, markdown, "text/markdown");
     }
   }
 
@@ -291,8 +323,8 @@ export const seedVfsSessionFromGameState = (
 };
 
 export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
-  seedAtmosphereRefs(session);
   ensureGlobalNotes(session);
+  ensureCustomRulesReadme(session);
 
   writeJson(session, "world/global.json", {
     time: "Day 1, 08:00",
@@ -375,8 +407,8 @@ export const seedVfsSessionFromOutline = (
     narrativeScale?: GameState["narrativeScale"];
   },
 ): void => {
-  seedAtmosphereRefs(session);
   ensureGlobalNotes(session);
+  ensureCustomRulesReadme(session);
 
   writeJson(session, "world/global.json", {
     time: options.time,

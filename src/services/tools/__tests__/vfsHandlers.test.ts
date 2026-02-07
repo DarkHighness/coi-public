@@ -36,16 +36,6 @@ const createValidThemeConfig = () => ({
   isRestricted: false,
 });
 
-const createValidCustomRule = (id: string) => ({
-  id,
-  category: "custom",
-  title: id,
-  content: "Rule content",
-  enabled: true,
-  priority: 1,
-  createdAt: 1,
-});
-
 describe("VFS handlers", () => {
   it("writes and reads files via dispatch", () => {
     const session = new VfsSession();
@@ -693,9 +683,18 @@ describe("VFS handlers", () => {
             contentType: "text/plain",
           },
           {
-            path: "current/world/custom_rules/rule:1.json",
-            content: JSON.stringify(createValidCustomRule("rule:1")),
-            contentType: "application/json",
+            path: "current/custom_rules/00-core/RULES.md",
+            content: [
+              "## What This Category Is",
+              "Core continuity constraints.",
+              "",
+              "## When This Category Applies",
+              "Whenever continuity conflicts appear.",
+              "",
+              "## Specific Rules",
+              "- Keep timeline causality intact.",
+            ].join("\n"),
+            contentType: "text/markdown",
           },
         ],
       },
@@ -704,7 +703,7 @@ describe("VFS handlers", () => {
 
     const globResult = dispatchToolCall(
       "vfs_glob",
-      { patterns: ["world/**/*.json"] },
+      { patterns: ["world/**/*.json", "custom_rules/**/*.md"] },
       ctx,
     ) as {
       success: boolean;
@@ -715,7 +714,7 @@ describe("VFS handlers", () => {
     expect(globResult.data?.truncated).toBe(false);
     expect(globResult.data?.totalMatches).toBe(2);
     expect(globResult.data?.matches).toEqual([
-      "current/world/custom_rules/rule:1.json",
+      "current/custom_rules/00-core/RULES.md",
       "current/world/theme_config.json",
     ]);
   });
@@ -734,9 +733,18 @@ describe("VFS handlers", () => {
             contentType: "application/json",
           },
           {
-            path: "current/world/custom_rules/rule:2.json",
-            content: JSON.stringify(createValidCustomRule("rule:2")),
-            contentType: "application/json",
+            path: "current/custom_rules/01-style/RULES.md",
+            content: [
+              "## What This Category Is",
+              "Writing style constraints.",
+              "",
+              "## When This Category Applies",
+              "Whenever narration is generated.",
+              "",
+              "## Specific Rules",
+              "- Keep tense consistent.",
+            ].join("\n"),
+            contentType: "text/markdown",
           },
         ],
       },
@@ -746,8 +754,8 @@ describe("VFS handlers", () => {
     const globResult = dispatchToolCall(
       "vfs_glob",
       {
-        patterns: ["world/**/*.json"],
-        excludePatterns: ["world/custom_rules/**"],
+        patterns: ["world/**/*.json", "custom_rules/**/*.md"],
+        excludePatterns: ["custom_rules/**"],
       },
       ctx,
     ) as {
@@ -866,7 +874,17 @@ describe("VFS handlers", () => {
               kind: "player",
               currentLocation: "loc:1",
               knownBy: ["char:player"],
-              visible: { name: "Hero" },
+              visible: {
+                name: "Hero",
+                title: "Wanderer",
+                status: "Ready",
+                attributes: [],
+                appearance: "Travel-worn",
+                age: "21",
+                profession: "Scout",
+                background: "Raised on the frontier.",
+                race: "Human",
+              },
               relations: [],
             }),
             contentType: "application/json",

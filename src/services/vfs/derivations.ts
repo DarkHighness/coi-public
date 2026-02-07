@@ -23,6 +23,7 @@ import type { VfsFile, VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
 import { readConversationIndex, readTurnFile } from "./conversation";
 import { readOutlineFile, readOutlineProgress } from "./outline";
+import { deriveCustomRulesFromVfs } from "./customRules";
 
 const DEFAULT_FORK_TREE = {
   nodes: {
@@ -336,7 +337,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const factionDefinitions: Faction[] = [];
   const timelineDefinitions: TimelineEvent[] = [];
   const causalChainDefinitions: CausalChain[] = [];
-  const customRules: CustomRule[] = [];
 
   // Per-actor views (player only for UI derivation)
   const playerQuestViews = new Map<string, any>();
@@ -437,8 +437,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
-    if (pathWithoutCurrent.startsWith("world/custom_rules/")) {
-      customRules.push(data as CustomRule);
+    if (
+      pathWithoutCurrent.startsWith("world/custom_rules/") ||
+      pathWithoutCurrent.startsWith("custom_rules/")
+    ) {
       continue;
     }
 
@@ -609,7 +611,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
   }
 
-  state.customRules = customRules;
+  state.customRules = deriveCustomRulesFromVfs(files);
 
   // Merge canonical entities with player views into UI-friendly view models.
   const playerId = state.playerActorId;

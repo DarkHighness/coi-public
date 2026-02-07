@@ -1248,7 +1248,7 @@
       "confirm": "⚠️ SUDO ⚠️\n\nYou are about to force the following change:\n\"{{prompt}}\"\n\nThis will bypass standard game logic and consistency checks.\n\nAre you sure?",
       "missingPrompt": "Usage: /sudo <prompt>"
     },
-    "help": "Available Commands:\n/god - Toggle God Mode (all actions succeed, NPCs obey)\n/unlock - Reveal all hidden information\n/edit - Open GameState editor\n/rules - Open Custom Rules Editor\n/help - Show this help message"
+    "help": "Available Commands:\n/god - Toggle God Mode (all actions succeed, NPCs obey)\n/unlock - Reveal all hidden information\n/edit - Open GameState editor\n/help - Show this help message"
   },
   "rules": {
     "short": "Rules",
@@ -1345,7 +1345,11 @@
     "mobileEditor": "Editor",
     "mobileBackToFiles": "Back to files",
     "confirmReadonlyEdit": "This is a protected file. Editing it may break game state. Continue to enable editing for this file?",
-    "readonlyOverrideEnabled": "Protected file editing enabled for this file."
+    "readonlyOverrideEnabled": "Protected file editing enabled for this file.",
+    "createRuleTemplate": "+ Rule",
+    "createRuleTemplatePrompt": "Enter a title for the new custom rule category:",
+    "createRuleTemplateCreated": "Custom rule template created",
+    "createRuleTemplateFailed": "Failed to create custom rule template"
   },
   "knowledge": {
     "category": {

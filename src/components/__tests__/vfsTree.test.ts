@@ -12,6 +12,7 @@ describe("vfs tree builder", () => {
         "conversation",
         "outline",
         "summary",
+        "custom_rules",
         "refs",
         "skills",
       ]),
@@ -48,6 +49,7 @@ describe("vfs tree builder", () => {
   it("enforces system readonly boundaries", () => {
     expect(isReadonlyPath("skills/theme/x/SKILL.md")).toBe(true);
     expect(isReadonlyPath("conversation/index.json")).toBe(true);
+    expect(isReadonlyPath("refs/atmosphere/options.md")).toBe(true);
     expect(isReadonlyPath("outline/progress.json")).toBe(true);
     expect(isReadonlyPath("summary/state.json")).toBe(true);
     expect(isReadonlyPath("outline/outline.json")).toBe(false);

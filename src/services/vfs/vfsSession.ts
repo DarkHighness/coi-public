@@ -12,6 +12,7 @@ import {
 import { normalizeVfsPath, hashContent } from "./utils";
 import { deepMergeJson } from "./merge";
 import { buildGlobalVfsSkills } from "./globalSkills";
+import { buildGlobalVfsRefs } from "./globalRefs";
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
@@ -142,11 +143,18 @@ const collectMatches = (
 
 export class VfsSession {
   private files: VfsFileMap = {};
-  private readonlyFiles: VfsFileMap = buildGlobalVfsSkills();
+  private readonlyFiles: VfsFileMap = mergeFiles(
+    buildGlobalVfsSkills(),
+    buildGlobalVfsRefs(),
+  );
   private semanticIndexer?: VfsSemanticIndexer;
   private currentReadEpoch = 0;
   private seenByEpoch = new Map<string, number>();
   private boundConversationSessionId: string | null = null;
+  private outOfBandReadInvalidations = new Map<
+    string,
+    "added" | "deleted" | "modified"
+  >();
 
   constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
     this.semanticIndexer = options?.semanticIndexer;
@@ -155,6 +163,7 @@ export class VfsSession {
   public noteToolSeen(path: string): void {
     const normalized = normalizeVfsPath(path);
     this.seenByEpoch.set(normalized, this.currentReadEpoch);
+    this.outOfBandReadInvalidations.delete(normalized);
   }
 
   public noteToolSeenMany(paths: string[]): void {
@@ -222,6 +231,8 @@ export class VfsSession {
       }
       this.seenByEpoch.set(normalizeVfsPath(path), Math.floor(epoch));
     }
+
+    this.outOfBandReadInvalidations.clear();
   }
 
   public beginReadEpoch(_reason: VfsReadEpochReason): void {
@@ -256,9 +267,42 @@ export class VfsSession {
     this.seenByEpoch.delete(normalizeVfsPath(path));
   }
 
+  public noteOutOfBandMutation(
+    path: string,
+    changeType: "added" | "deleted" | "modified",
+  ): void {
+    const normalized = normalizeVfsPath(path);
+    if (!normalized) {
+      return;
+    }
+
+    if (!this.hasToolSeenInCurrentEpoch(normalized)) {
+      return;
+    }
+
+    this.seenByEpoch.delete(normalized);
+    this.outOfBandReadInvalidations.set(normalized, changeType);
+  }
+
+  public drainOutOfBandReadInvalidations(): Array<{
+    path: string;
+    changeType: "added" | "deleted" | "modified";
+  }> {
+    const drained = Array.from(this.outOfBandReadInvalidations.entries())
+      .map(([path, changeType]) => ({ path, changeType }))
+      .sort((a, b) => a.path.localeCompare(b.path));
+    this.outOfBandReadInvalidations.clear();
+    return drained;
+  }
+
   private isReadOnlyPath(path: string): boolean {
     const normalized = normalizeVfsPath(path);
-    return normalized === "skills" || normalized.startsWith("skills/");
+    return (
+      normalized === "skills" ||
+      normalized.startsWith("skills/") ||
+      normalized === "refs" ||
+      normalized.startsWith("refs/")
+    );
   }
 
   private assertWritablePath(path: string): void {

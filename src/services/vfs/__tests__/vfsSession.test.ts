@@ -25,10 +25,10 @@ describe("VfsSession", () => {
     const listSlash = session.list("/");
 
     expect(listEmpty).toEqual(
-      expect.arrayContaining(["world", "local", "root.txt", "skills"]),
+      expect.arrayContaining(["world", "local", "root.txt", "skills", "refs"]),
     );
     expect(listSlash).toEqual(
-      expect.arrayContaining(["world", "local", "root.txt", "skills"]),
+      expect.arrayContaining(["world", "local", "root.txt", "skills", "refs"]),
     );
     expect(new Set(listEmpty).size).toBe(listEmpty.length);
   });
@@ -169,7 +169,18 @@ expect(session.list("skills")).toEqual(
     expect(Object.keys(snapshot).some((p) => p.startsWith("skills/"))).toBe(false);
   });
 
-  it("drops skills/** entries when restoring snapshots", () => {
+  it("treats refs/** as read-only virtual files", () => {
+    const session = new VfsSession();
+
+    expect(session.readFile("refs/atmosphere/options.md")?.contentType).toBe(
+      "text/markdown",
+    );
+    expect(() =>
+      session.writeFile("refs/custom.md", "nope", "text/markdown"),
+    ).toThrow(/read-only/i);
+  });
+
+  it("drops read-only virtual entries when restoring snapshots", () => {
     const session = new VfsSession();
     session.restore({
       "skills/evil.txt": {
@@ -177,6 +188,14 @@ expect(session.list("skills")).toEqual(
         content: "evil",
         contentType: "text/plain",
         hash: "deadbeef",
+        size: 4,
+        updatedAt: 0,
+      },
+      "refs/evil.md": {
+        path: "refs/evil.md",
+        content: "evil",
+        contentType: "text/markdown",
+        hash: "evil",
         size: 4,
         updatedAt: 0,
       },
@@ -191,9 +210,33 @@ expect(session.list("skills")).toEqual(
     });
 
     expect(session.readFile("skills/evil.txt")).toBeNull();
+    expect(session.readFile("refs/evil.md")).toBeNull();
     expect(session.readFile("world/global.json")).toBeTruthy();
   });
 
+  it("tracks out-of-band read invalidations for seen files", () => {
+    const session = new VfsSession();
+
+    session.noteToolSeen("world/notes.md");
+    session.noteOutOfBandMutation("world/notes.md", "modified");
+
+    expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(false);
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([
+      { path: "world/notes.md", changeType: "modified" },
+    ]);
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([]);
+
+    session.noteToolSeen("world/notes.md");
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([]);
+  });
+
+  it("ignores out-of-band invalidations for unseen files", () => {
+    const session = new VfsSession();
+
+    session.noteOutOfBandMutation("world/notes.md", "modified");
+
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([]);
+  });
 
   it("invalidates seen paths when read epoch advances", () => {
     const session = new VfsSession();

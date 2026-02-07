@@ -15,6 +15,15 @@ const makeJsonFile = (path: string, data: unknown) => {
   };
 };
 
+const makeMarkdownFile = (path: string, content: string) => ({
+  path,
+  content,
+  contentType: "text/markdown" as const,
+  hash: hashContent(content),
+  size: content.length,
+  updatedAt: 0,
+});
+
 describe("deriveGameStateFromVfs", () => {
   it("derives global, actors, and player inventory state", () => {
     const files: VfsFileMap = {
@@ -35,17 +44,18 @@ describe("deriveGameStateFromVfs", () => {
         example: "test example",
         isRestricted: false,
       }),
-      "world/custom_rules/rule_1.json": makeJsonFile(
-        "world/custom_rules/rule_1.json",
-        {
-          id: "rule_1",
-          category: "systemCore",
-          title: "Rule 1",
-          content: "Do X",
-          enabled: true,
-          priority: 0,
-          createdAt: 1,
-        },
+      "custom_rules/00-core/RULES.md": makeMarkdownFile(
+        "custom_rules/00-core/RULES.md",
+        [
+          "## What This Category Is",
+          "Core continuity constraints.",
+          "",
+          "## When This Category Applies",
+          "Whenever continuity conflicts appear.",
+          "",
+          "## Specific Rules",
+          "- Do X",
+        ].join("\n"),
       ),
       "world/characters/char:player/profile.json": makeJsonFile(
         "world/characters/char:player/profile.json",

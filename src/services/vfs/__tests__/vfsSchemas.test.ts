@@ -104,18 +104,21 @@ describe("vfs schemas", () => {
     ).not.toThrow();
   });
 
-  it("matches custom rules paths to custom rule schema", () => {
-    const schema = getSchemaForPath("world/custom_rules/rule_1.json");
+  it("matches custom rule pack markdown paths", () => {
+    const schema = getSchemaForPath("custom_rules/00-core/RULES.md");
     expect(() =>
-      schema.parse({
-        id: "rule_1",
-        category: "systemCore",
-        title: "Rule 1",
-        content: "Do X",
-        enabled: true,
-        priority: 0,
-        createdAt: 1,
-      }),
+      schema.parse(
+        [
+          "## What This Category Is",
+          "Core continuity constraints.",
+          "",
+          "## When This Category Applies",
+          "Whenever continuity conflicts appear.",
+          "",
+          "## Specific Rules",
+          "- Keep timeline causality intact.",
+        ].join("\n"),
+      ),
     ).not.toThrow();
   });
 

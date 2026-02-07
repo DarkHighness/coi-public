@@ -103,6 +103,39 @@ export function injectRetconAckRequired(
 }
 
 /**
+ * Inject one-shot reminder for files that were read in this epoch
+ * and then mutated out-of-band (for example via StateEditor).
+ */
+export function injectOutOfBandReadInvalidations(
+  history: UnifiedMessage[],
+  invalidations: Array<{
+    path: string;
+    changeType: "added" | "deleted" | "modified";
+  }>,
+): void {
+  if (!invalidations.length) {
+    return;
+  }
+
+  const lines = invalidations.map(({ path, changeType }) => {
+    const currentPath = path.startsWith("current/") ? path : `current/${path}`;
+    return `- ${currentPath} (${changeType})`;
+  });
+
+  history.push(
+    createUserMessage(
+      [
+        "[SYSTEM: EXTERNAL_FILE_CHANGES]",
+        "Files you already read in this epoch were changed externally:",
+        ...lines,
+        "If you need to edit any listed file again, re-read it first via vfs_read/vfs_read_many.",
+        "If a file is not needed for this turn, you do not need to re-read it.",
+      ].join("\n"),
+    ),
+  );
+}
+
+/**
  * Inject ready consequences from causal chains
  */
 export function injectReadyConsequences(

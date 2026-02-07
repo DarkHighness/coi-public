@@ -42,7 +42,6 @@ interface MobileGameLayoutProps {
   onOpenStateEditor?: () => void;
   onOpenRAG?: () => void;
   onOpenViewer?: () => void;
-  onOpenRules?: () => void;
   onOpenGallery?: () => void;
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
@@ -76,7 +75,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onOpenStateEditor,
   onOpenRAG,
   onOpenViewer,
-  onOpenRules,
   onOpenGallery,
   onForceUpdate,
   onImageUpload,
@@ -181,7 +179,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onOpenStateEditor={onOpenStateEditor}
             onOpenRAG={onOpenRAG}
             onOpenViewer={onOpenViewer}
-            onOpenRules={onOpenRules}
             onTriggerSave={triggerSave}
             onRetry={onRetry}
             onRebuildContext={onRebuildContext}

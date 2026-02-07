@@ -5,8 +5,12 @@ import {
   weatherEffectSchema,
 } from "@/services/zodSchemas";
 import type { VfsSession } from "../vfsSession";
+import { isSharedReadOnlyPath } from "../pathScopes";
 
 const writeText = (session: VfsSession, path: string, value: string) => {
+  if (isSharedReadOnlyPath(path)) {
+    return;
+  }
   session.writeFile(path, value, path.endsWith(".md") ? "text/markdown" : "text/plain");
 };
 
