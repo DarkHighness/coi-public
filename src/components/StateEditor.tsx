@@ -3,7 +3,10 @@
  * Allows direct JSON/text editing through a file tree interface
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { json as jsonLanguage } from "@codemirror/lang-json";
+import { markdown as markdownLanguage } from "@codemirror/lang-markdown";
 import { ZodError } from "zod";
 import { useTranslation } from "react-i18next";
 import type { GameState } from "../types";
@@ -16,6 +19,7 @@ import {
 } from "./vfsExplorer/tree";
 import { formatVfsContent, readVfsFile } from "./vfsExplorer/fileOps";
 import { applyVfsFileEdit } from "./stateEditorUtils";
+import { MarkdownText } from "./render/MarkdownText";
 
 interface StateEditorProps {
   isOpen: boolean;
@@ -42,13 +46,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     useState<VfsContentType>("application/json");
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
-  const [allowOutlineEdit, setAllowOutlineEdit] = useState(false);
-  const [allowConversationEdit, setAllowConversationEdit] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [confirmedReadonlyPath, setConfirmedReadonlyPath] = useState<
+    string | null
+  >(null);
+  const [markdownMode, setMarkdownMode] = useState<"edit" | "preview">("edit");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
   const [snapshotVersion, setSnapshotVersion] = useState(0);
   const [editingPath, setEditingPath] = useState<string | null>(null);
-
-  const canEditOutline = gameState.godMode || allowOutlineEdit;
+  const editorContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -89,14 +95,20 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   );
 
   const hasSearch = searchQuery.trim().length > 0;
-  const isReadOnly =
-    !selectedPath ||
-    isReadonlyPath(selectedPath, canEditOutline, allowConversationEdit);
+  const selectedPathIsProtected = selectedPath
+    ? isReadonlyPath(selectedPath)
+    : false;
+  const hasReadonlyOverride =
+    !!selectedPath && confirmedReadonlyPath === selectedPath;
+  const pathReadOnly =
+    !selectedPath || (selectedPathIsProtected && !hasReadonlyOverride);
+  const isReadOnly = pathReadOnly || !isEditMode;
 
   useEffect(() => {
     if (!isOpen) {
-      setAllowOutlineEdit(false);
-      setAllowConversationEdit(false);
+      setIsEditMode(false);
+      setConfirmedReadonlyPath(null);
+      setMarkdownMode("edit");
       setSearchQuery("");
       setSelectedPath(null);
       setExpandedPaths([""]);
@@ -120,6 +132,16 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setSelectedPath(filePaths[0]);
     }
   }, [isOpen, filePaths, filteredSnapshot, selectedPath]);
+
+  useEffect(() => {
+    setMarkdownMode("edit");
+  }, [selectedPath]);
+
+  useEffect(() => {
+    if (pathReadOnly && isEditMode) {
+      setIsEditMode(false);
+    }
+  }, [isEditMode, pathReadOnly]);
 
   useEffect(() => {
     if (!selectedPath) {
@@ -274,10 +296,87 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
   };
 
+  const handleToggleEditMode = () => {
+    if (!selectedPath) {
+      return;
+    }
+
+    if (isEditMode) {
+      setIsEditMode(false);
+      return;
+    }
+
+    if (selectedPathIsProtected && !hasReadonlyOverride) {
+      const confirmReadonlyEditMessage =
+        t("stateEditor.confirmReadonlyEdit") ||
+        "This is a protected file. Editing it may break game state. Continue to enable editing for this file?";
+      if (!window.confirm(confirmReadonlyEditMessage)) {
+        return;
+      }
+      setConfirmedReadonlyPath(selectedPath);
+      onShowToast?.(
+        t("stateEditor.readonlyOverrideEnabled") ||
+          "Protected file editing enabled for this file.",
+        "info",
+      );
+    }
+
+    setIsEditMode(true);
+  };
+
+  const handleEditorWheelCapture: React.WheelEventHandler<HTMLDivElement> = (
+    event,
+  ) => {
+    const container = editorContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const scroller = container.querySelector<HTMLElement>(".cm-scroller");
+    if (!scroller) {
+      return;
+    }
+
+    const canScrollY = scroller.scrollHeight > scroller.clientHeight + 1;
+    const canScrollX = scroller.scrollWidth > scroller.clientWidth + 1;
+    if (!canScrollY && !canScrollX) {
+      return;
+    }
+
+    const beforeTop = scroller.scrollTop;
+    const beforeLeft = scroller.scrollLeft;
+
+    if (canScrollY && event.deltaY !== 0) {
+      scroller.scrollTop += event.deltaY;
+    }
+    if (canScrollX && event.deltaX !== 0) {
+      scroller.scrollLeft += event.deltaX;
+    }
+
+    if (scroller.scrollTop !== beforeTop || scroller.scrollLeft !== beforeLeft) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
   const lineCount = useMemo(
     () => (fileContent ? fileContent.split("\n").length : 0),
     [fileContent],
   );
+
+  const isMarkdownFile =
+    fileContentType === "text/markdown" ||
+    (selectedPath?.toLowerCase().endsWith(".md") ?? false);
+
+  const editorExtensions = useMemo(() => {
+    if (fileContentType === "application/json") {
+      return [jsonLanguage()];
+    }
+    if (isMarkdownFile) {
+      return [markdownLanguage()];
+    }
+    return [];
+  }, [fileContentType, isMarkdownFile]);
 
   const toggleFolder = (path: string) => {
     if (path === "") return;
@@ -300,11 +399,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const padding = { paddingLeft: `${depth * 12}px` };
 
     if (isFolder) {
-      const readonly = isReadonlyPath(
-        node.path,
-        canEditOutline,
-        allowConversationEdit,
-      );
+      const readonly = isReadonlyPath(node.path);
       return (
         <div key={node.path || "root"}>
           <button
@@ -333,11 +428,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       );
     }
 
-    const readonly = isReadonlyPath(
-      node.path,
-      canEditOutline,
-      allowConversationEdit,
-    );
+    const readonly = isReadonlyPath(node.path);
     const isSelected = node.path === selectedPath;
 
     return (
@@ -365,9 +456,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   return (
     <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-      <div className="vn-scroll-surface vn-scroll-edge border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-6xl h-full sm:h-[85vh] flex flex-col overflow-hidden bg-theme-bg">
+      <div className="vn-scroll-edge border border-theme-divider/60 rounded-none sm:rounded-lg shadow-none w-full max-w-6xl h-full sm:h-[85vh] flex flex-col overflow-hidden bg-theme-surface">
         {/* Header */}
-        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-divider/60 flex items-center justify-between bg-transparent">
+        <div className="flex-none px-4 py-3 sm:p-4 border-b border-theme-divider/60 flex items-center justify-between bg-theme-surface-highlight/30">
           <div className="flex items-center gap-3">
             <span className="text-2xl" aria-hidden="true">
               🛠️
@@ -382,31 +473,56 @@ export const StateEditor: React.FC<StateEditorProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-3 -m-1 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleEditMode}
+              disabled={!selectedPath}
+              className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                !selectedPath
+                  ? "border-theme-divider/60 text-theme-muted cursor-not-allowed"
+                  : isEditMode
+                    ? "bg-theme-primary/20 text-theme-primary border-theme-primary/40 hover:bg-theme-primary/25"
+                    : "bg-theme-bg/30 text-theme-text-secondary border-theme-divider/60 hover:bg-theme-bg/45"
+              }`}
+              title={
+                !selectedPath
+                  ? t("stateEditor.readOnly") || "Read Only"
+                  : isEditMode
+                    ? t("stateEditor.editMode") || "Edit"
+                    : t("stateEditor.readOnly") || "Read Only"
+              }
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+              {isEditMode
+                ? t("stateEditor.editMode") || "Edit"
+                : t("stateEditor.readOnly") || "Read Only"}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-3 -m-1 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Body */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* File Tree */}
-          <div className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-transparent flex flex-col">
-            <div className="p-3 border-b border-theme-divider/60">
+          <div className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-theme-surface/80 flex flex-col min-h-0">
+            <div className="p-3 border-b border-theme-divider/60 bg-theme-surface-highlight/20">
               <div className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wide mb-2">
                 {t("stateEditor.fileTree") || "File Tree"}
               </div>
@@ -431,9 +547,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
 
           {/* Editor Area */}
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0">
             {/* Toolbar */}
-            <div className="flex-none px-4 py-2.5 border-b border-theme-divider/60 bg-transparent flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex-none px-4 py-2.5 border-b border-theme-divider/60 bg-theme-surface/80 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2 overflow-hidden">
                 <span className="font-mono text-xs text-theme-text-secondary">
                   {selectedPath || t("stateEditor.noSelection") || "No file"}
@@ -446,54 +562,87 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                     {t("stateEditor.unsaved") || "Unsaved"}
                   </span>
                 )}
-                {isReadOnly && (
+                {selectedPathIsProtected && !hasReadonlyOverride && (
                   <span className="px-2 py-0.5 bg-theme-info/15 text-theme-info text-[11px] rounded-full border border-theme-info/20">
                     {t("stateEditor.readOnly") || "Read Only"}
                   </span>
                 )}
+                {!selectedPathIsProtected && !isEditMode && (
+                  <span className="px-2 py-0.5 bg-theme-info/15 text-theme-info text-[11px] rounded-full border border-theme-info/20">
+                    {t("stateEditor.readOnly") || "Read Only"}
+                  </span>
+                )}
+                {selectedPathIsProtected && hasReadonlyOverride && !isEditMode && (
+                  <span className="px-2 py-0.5 bg-theme-warning/15 text-theme-warning text-[11px] rounded-full border border-theme-warning/20">
+                    {t("stateEditor.readOnly") || "Read Only"}
+                  </span>
+                )}
+                {isEditMode && (
+                  <span className="px-2 py-0.5 bg-theme-success/15 text-theme-success text-[11px] rounded-full border border-theme-success/20">
+                    {t("stateEditor.editMode") || "Edit"}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3 flex-wrap text-[11px] sm:text-xs text-theme-text-secondary">
-                {!gameState.godMode && (
-                  <label className="flex items-center gap-2 select-none">
-                    <input
-                      type="checkbox"
-                      checked={allowOutlineEdit}
-                      onChange={(e) => setAllowOutlineEdit(e.target.checked)}
-                      className="accent-theme-primary"
-                    />
-                    <span>
-                      {t("stateEditor.allowOutlineEdit") ||
-                        "Allow /sudo outline edit"}
-                    </span>
-                  </label>
+                {isMarkdownFile && (
+                  <div className="inline-flex items-center rounded-md border border-theme-divider/60 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setMarkdownMode("edit")}
+                      className={`px-2.5 py-1 transition-colors ${
+                        markdownMode === "edit"
+                          ? "bg-theme-primary/20 text-theme-primary"
+                          : "text-theme-text-secondary hover:bg-theme-bg/20"
+                      }`}
+                    >
+                      {t("stateEditor.editMode") || "Edit"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMarkdownMode("preview")}
+                      className={`px-2.5 py-1 transition-colors ${
+                        markdownMode === "preview"
+                          ? "bg-theme-primary/20 text-theme-primary"
+                          : "text-theme-text-secondary hover:bg-theme-bg/20"
+                      }`}
+                    >
+                      {t("stateEditor.previewMode") || "Preview"}
+                    </button>
+                  </div>
                 )}
-                <label className="flex items-center gap-2 select-none">
-                  <input
-                    type="checkbox"
-                    checked={allowConversationEdit}
-                    onChange={(e) => setAllowConversationEdit(e.target.checked)}
-                    className="accent-theme-primary"
-                  />
-                  <span>
-                    {t("stateEditor.unlockConversationEdit") ||
-                      "Unlock conversation editing"}
-                  </span>
-                </label>
               </div>
             </div>
 
             {/* Editor */}
-            <div className="flex-1 overflow-hidden relative">
-              <textarea
-                value={fileContent}
-                onChange={(e) => handleContentChange(e.target.value)}
-                readOnly={isReadOnly}
-                className={`w-full h-full p-4 bg-transparent text-theme-text font-mono text-sm leading-relaxed resize-none focus:outline-none ${
-                  error ? "border-2 border-theme-error/50" : ""
-                } ${isReadOnly ? "cursor-default opacity-80" : ""}`}
-                spellCheck={false}
-                placeholder={t("loadingGeneric") || "Loading..."}
-              />
+            <div className="flex-1 overflow-hidden relative bg-theme-bg/80 min-h-0">
+              {isMarkdownFile && markdownMode === "preview" ? (
+                <div className="h-full overflow-auto p-4 text-sm text-theme-text">
+                  <MarkdownText content={fileContent || ""} />
+                </div>
+              ) : (
+                <div
+                  ref={editorContainerRef}
+                  onWheelCapture={handleEditorWheelCapture}
+                  className={`h-full state-editor-cm ${
+                    isReadOnly ? "opacity-80" : ""
+                  } ${error ? "border-2 border-theme-error/50" : ""}`}
+                >
+                  <CodeMirror
+                    value={fileContent}
+                    height="100%"
+                    extensions={editorExtensions}
+                    readOnly={isReadOnly}
+                    onChange={(value) => handleContentChange(value)}
+                    basicSetup={{
+                      lineNumbers: true,
+                      foldGutter: true,
+                      highlightActiveLine: true,
+                      highlightActiveLineGutter: true,
+                    }}
+                    placeholder={t("loadingGeneric") || "Loading..."}
+                  />
+                </div>
+              )}
               {error && (
                 <div className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-theme-error/20 border-t border-theme-error/50 text-theme-error text-xs">
                   <span aria-hidden="true">!</span> {error}
@@ -502,7 +651,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </div>
 
             {/* Footer Actions */}
-            <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-divider/60 bg-transparent flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
+            <div className="flex-none px-4 py-3 sm:p-4 border-t border-theme-divider/60 bg-theme-surface/80 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pb-[calc(12px+env(safe-area-inset-bottom))]">
               <div className="text-[11px] sm:text-xs text-theme-text-secondary">
                 <span aria-hidden="true">!</span>{" "}
                 {t("stateEditor.warning") ||
