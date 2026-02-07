@@ -617,18 +617,8 @@ async function processToolCalls(
       onToolCallsUpdate?.([...liveToolCalls]);
     }
 
-    const responseFromVfs = buildResponseFromVfs(
-      loopState.vfsSession,
-      loopState.conversationMarker,
-    );
-    if (responseFromVfs) {
-      loopState.accumulatedResponse = responseFromVfs;
-      turnFinished = true;
-      onToolCallsUpdate?.([]);
-      break;
-    }
-
-    // Log tool usage
+    // Log tool usage before checking finish state so the final commit tool
+    // is also recorded in the persisted log list.
     allLogs.push(
       createLogEntry({
         provider: protocol,
@@ -642,6 +632,17 @@ async function processToolCalls(
         turnNumber: gameState.turnNumber,
       }),
     );
+
+    const responseFromVfs = buildResponseFromVfs(
+      loopState.vfsSession,
+      loopState.conversationMarker,
+    );
+    if (responseFromVfs) {
+      loopState.accumulatedResponse = responseFromVfs;
+      turnFinished = true;
+      onToolCallsUpdate?.([]);
+      break;
+    }
   }
 
   if (!turnFinished) {
