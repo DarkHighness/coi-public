@@ -1,0 +1,74 @@
+import { describe, expect, it, vi } from "vitest";
+import { ALL_DEFINED_TOOLS } from "../../tools";
+import {
+  zodToGemini,
+  zodToOpenAISchema,
+  zodToGeminiCompatibleSchema,
+  zodToClaudeCompatibleSchema,
+} from "../../zodCompiler";
+
+const serialize = (value: unknown): string => JSON.stringify(value);
+
+const forbiddenOutputPattern = /"type"\s*:\s*"any"|"type"\s*:\s*"unknown"|Record<string,\s*any>|Array<\s*any\s*>|Array<\s*unknown\s*>/i;
+
+describe("provider schema guardrails", () => {
+  it("keeps OpenAI/Gemini/Claude compatible tool schemas free of any/unknown textual types", () => {
+    const offenders: Array<{
+      provider: string;
+      tool: string;
+      output: string;
+    }> = [];
+
+    for (const tool of ALL_DEFINED_TOOLS) {
+      const outputs = [
+        {
+          provider: "openai",
+          schema: zodToOpenAISchema(tool.parameters, true),
+        },
+        {
+          provider: "gemini-compatible",
+          schema: zodToGeminiCompatibleSchema(tool.parameters),
+        },
+        {
+          provider: "claude-compatible",
+          schema: zodToClaudeCompatibleSchema(tool.parameters),
+        },
+      ];
+
+      for (const output of outputs) {
+        const text = serialize(output.schema);
+        if (forbiddenOutputPattern.test(text)) {
+          offenders.push({
+            provider: output.provider,
+            tool: tool.name,
+            output: text,
+          });
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("does not emit 'Unknown Zod type' warnings when compiling tool schemas", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    try {
+      for (const tool of ALL_DEFINED_TOOLS) {
+        zodToGemini(tool.parameters);
+        zodToOpenAISchema(tool.parameters, true);
+        zodToGeminiCompatibleSchema(tool.parameters);
+        zodToClaudeCompatibleSchema(tool.parameters);
+      }
+
+      const unknownTypeWarnings = warnSpy.mock.calls.filter((call) => {
+        const message = String(call[0] ?? "");
+        return message.includes("Unknown Zod type");
+      });
+
+      expect(unknownTypeWarnings).toEqual([]);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+});

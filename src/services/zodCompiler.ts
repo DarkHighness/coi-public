@@ -19,6 +19,7 @@ import {
   ZodOptional,
   ZodNullable,
   ZodDefault,
+  ZodLazy,
   ZodString,
   ZodNumber,
   ZodBoolean,
@@ -59,6 +60,38 @@ export interface OpenAIResponseFormat {
     strict: boolean;
     schema: OpenAISchema;
   };
+}
+
+const OPENAI_JSON_VALUE_TYPES = [
+  "string",
+  "number",
+  "boolean",
+  "object",
+  "array",
+  "null",
+] as const;
+
+function createOpenAIJsonValueSchema(description?: string): OpenAISchema {
+  const result: OpenAISchema = {
+    type: [...OPENAI_JSON_VALUE_TYPES],
+  };
+  if (description) result.description = description;
+  return result;
+}
+
+function createGeminiJsonValueSchema(description?: string): Schema {
+  const result: Schema = {
+    anyOf: [
+      { type: Type.STRING },
+      { type: Type.NUMBER },
+      { type: Type.BOOLEAN },
+      { type: Type.OBJECT },
+      { type: Type.ARRAY },
+      { type: Type.NULL },
+    ],
+  };
+  if (description) result.description = description;
+  return result;
 }
 
 // ============================================================================
@@ -106,6 +139,11 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
     return processZodToGemini((schema as ZodDefault<any>)._def.innerType);
+  }
+
+  // Handle lazy
+  if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    return createGeminiJsonValueSchema(schema.description || "Any JSON value");
   }
 
   // Handle string
@@ -324,6 +362,23 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     return result;
   }
 
+  // Handle record
+  if (schema instanceof ZodRecord || typeName === "ZodRecord") {
+    const result: Schema = { type: Type.OBJECT };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle any/unknown
+  if (
+    schema instanceof ZodAny ||
+    typeName === "ZodAny" ||
+    schema instanceof ZodUnknown ||
+    typeName === "ZodUnknown"
+  ) {
+    return createGeminiJsonValueSchema(schema.description || "Any value");
+  }
+
   // Fallback
   console.warn(`Unknown Zod type for Gemini: ${typeName}`);
   return { type: Type.STRING };
@@ -410,6 +465,11 @@ function processZodToOpenAI(
       strict,
       true,
     );
+  }
+
+  // Handle lazy
+  if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    return createOpenAIJsonValueSchema(schema.description || "Any JSON value");
   }
 
   // Handle string
@@ -669,14 +729,7 @@ function processZodToOpenAI(
     schema instanceof ZodUnknown ||
     typeName === "ZodUnknown"
   ) {
-    const result: OpenAISchema = {
-      type: "object",
-      description: schema.description || "Any value",
-    };
-    if (strict && isOptionalField) {
-      result.type = ["object", "null"];
-    }
-    return result;
+    return createOpenAIJsonValueSchema(schema.description || "Any value");
   }
 
   // Fallback
@@ -753,6 +806,11 @@ function processZodToGeminiCompatible(
       (schema as ZodDefault<any>)._def.innerType,
       true,
     );
+  }
+
+  // Handle lazy
+  if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    return createOpenAIJsonValueSchema(schema.description || "Any JSON value");
   }
 
   // Handle string
@@ -899,7 +957,7 @@ function processZodToGeminiCompatible(
     schema instanceof ZodUnknown ||
     typeName === "ZodUnknown"
   ) {
-    return { type: "object", description: schema.description || "Any value" };
+    return createOpenAIJsonValueSchema(schema.description || "Any value");
   }
 
   // Handle discriminated union - Merge strategies similar to Native Gemini
@@ -1042,6 +1100,20 @@ function processZodToGeminiCompatible(
     return result;
   }
 
+  // Handle record
+  if (schema instanceof ZodRecord || typeName === "ZodRecord") {
+    const valueSchema = (schema as ZodRecord<any>)._def.valueType;
+    const result: OpenAISchema = {
+      type: "object",
+      additionalProperties: processZodToGeminiCompatible(
+        valueSchema,
+        false,
+      ),
+    };
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
   // Fallback
   console.warn(`Unknown Zod type for Gemini Compatible: ${typeName}`);
   return { type: "string" };
@@ -1177,6 +1249,11 @@ function processZodToClaudeCompatible(
       (schema as ZodDefault<any>)._def.innerType,
       true,
     );
+  }
+
+  // Handle lazy
+  if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    return createOpenAIJsonValueSchema(schema.description || "Any JSON value");
   }
 
   // Handle string
@@ -1322,7 +1399,7 @@ function processZodToClaudeCompatible(
     schema instanceof ZodUnknown ||
     typeName === "ZodUnknown"
   ) {
-    return { type: "object", description: schema.description || "Any value" };
+    return createOpenAIJsonValueSchema(schema.description || "Any value");
   }
 
   // Handle discriminated union - Merge strategies
@@ -1455,6 +1532,17 @@ function processZodToClaudeCompatible(
       result.required = required;
     }
 
+    if (schema.description) result.description = schema.description;
+    return result;
+  }
+
+  // Handle record
+  if (schema instanceof ZodRecord || typeName === "ZodRecord") {
+    const valueSchema = (schema as ZodRecord<any>)._def.valueType;
+    const result: OpenAISchema = {
+      type: "object",
+      additionalProperties: processZodToClaudeCompatible(valueSchema, false),
+    };
     if (schema.description) result.description = schema.description;
     return result;
   }

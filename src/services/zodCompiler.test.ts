@@ -73,7 +73,14 @@ describe("zodToOpenAISchema", () => {
 
     const result = zodToOpenAISchema(unknownSchema);
 
-    expect(result.type).toBe("object");
+    expect(result.type).toEqual([
+      "string",
+      "number",
+      "boolean",
+      "object",
+      "array",
+      "null",
+    ]);
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });

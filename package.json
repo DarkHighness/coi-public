@@ -8,15 +8,20 @@
     "build": "node scripts/generate-build-info.js && vite build",
     "preview": "vite preview",
     "lint:i18n": "node scripts/lint-i18n.js",
-    "lint": "pnpm lint:i18n"
+    "lint": "pnpm lint:i18n",
+    "test:guardrails": "vitest run src/services/providers/__tests__/toolSchemaHint.test.ts src/services/providers/__tests__/allToolSchemaHints.test.ts src/services/providers/__tests__/providerSchemaGuardrails.test.ts src/services/prompts/__tests__/outlineToolInstructionConsistency.test.ts src/services/prompts/__tests__/toolCallingPromptGuardrails.test.ts src/services/ai/agentic/outline/__tests__/outlineTaskInstructionGuardrails.test.ts src/services/vfs/__tests__/vfsSchemaGuardrails.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.0",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-markdown": "^6.3.4",
+    "@codemirror/view": "^6.38.6",
     "@electric-sql/pglite": "^0.3.14",
     "@google/genai": "^1.30.0",
     "@openrouter/sdk": "^0.3.7",
     "@tailwindcss/vite": "^4.1.17",
     "@toon-format/toon": "^2.0.1",
+    "@uiw/react-codemirror": "^4.24.2",
     "fast-json-patch": "^3.1.1",
     "framer-motion": "^12.23.24",
     "fuse.js": "^7.1.0",

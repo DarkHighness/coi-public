@@ -17,6 +17,7 @@ import type {
   InferToolParams,
 } from "./providers/types";
 import {
+  atmosphereSchema,
   outlinePhase0Schema,
   outlinePhase1Schema,
   outlinePhase2Schema,
@@ -110,12 +111,23 @@ const vfsContentTypeSchema = z.enum([
   "text/markdown",
 ]);
 
+const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(jsonValueSchema),
+    z.record(jsonValueSchema),
+  ]),
+);
+
 const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
   z
     .object({
       op: z.literal("add"),
       path: z.string().describe("JSON Pointer path."),
-      value: z.unknown().describe("Value for add."),
+      value: jsonValueSchema.describe("JSON value for add."),
       from: z.string().nullish().describe("Ignored for add."),
     })
     .strict(),
@@ -123,7 +135,7 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
     .object({
       op: z.literal("replace"),
       path: z.string().describe("JSON Pointer path."),
-      value: z.unknown().describe("Value for replace."),
+      value: jsonValueSchema.describe("JSON value for replace."),
       from: z.string().nullish().describe("Ignored for replace."),
     })
     .strict(),
@@ -131,7 +143,7 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
     .object({
       op: z.literal("test"),
       path: z.string().describe("JSON Pointer path."),
-      value: z.unknown().describe("Value for test."),
+      value: jsonValueSchema.describe("JSON value for test."),
       from: z.string().nullish().describe("Ignored for test."),
     })
     .strict(),
@@ -693,7 +705,9 @@ const vfsTxOpSchema = z.discriminatedUnion("op", [
     .object({
       op: z.literal("merge"),
       path: vfsFilePathSchema.describe("JSON file path."),
-      content: z.record(z.any()).describe("JSON object to merge."),
+      content: z
+        .record(jsonValueSchema)
+        .describe("JSON object to merge."),
     })
     .strict(),
   z
@@ -733,7 +747,7 @@ const vfsTxOpSchema = z.discriminatedUnion("op", [
             .max(4)
             .describe("2-4 player choices for the next step."),
           narrativeTone: z.string().nullish(),
-          atmosphere: z.unknown().nullish(),
+          atmosphere: atmosphereSchema.nullish(),
           ending: z.string().nullish(),
           forceEnd: z.boolean().nullish(),
         })
@@ -770,7 +784,7 @@ export const VFS_MERGE_TOOL = defineTool({
         z.object({
           path: vfsFilePathSchema.describe("JSON file path."),
           content: z
-            .record(z.any())
+            .record(jsonValueSchema)
             .describe("JSON object to merge into the file."),
         }),
       )
@@ -831,7 +845,7 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
           .max(4)
           .describe("2-4 player choices for the next step."),
         narrativeTone: z.string().nullish(),
-        atmosphere: z.unknown().nullish(),
+        atmosphere: atmosphereSchema.nullish(),
         ending: z.string().nullish(),
         forceEnd: z.boolean().nullish(),
       })

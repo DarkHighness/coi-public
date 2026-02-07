@@ -3,6 +3,11 @@ import {
   ZodError,
   ZodObject,
   ZodOptional,
+  ZodAny,
+  ZodUnknown,
+  ZodLazy,
+  ZodDefault,
+  ZodEffects,
   ZodArray,
   ZodUnion,
   ZodEnum,
@@ -199,15 +204,47 @@ const INTERNAL_FIELDS = new Set([
 
 const VFS_INTERNAL_FIELDS = new Set(["createdAt", "updatedAt", "modifiedAt", "lastAccess"]);
 
-function getGenericTypeHintVfs(schema: ZodTypeAny, indent: string = ""): string {
-  // Unwrap optional/nullable
-  if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
-    return getGenericTypeHintVfs(schema._def.innerType, indent);
+function unwrapHintSchema(schema: ZodTypeAny): {
+  schema: ZodTypeAny;
+  isOptional: boolean;
+} {
+  let current: ZodTypeAny = schema;
+  let isOptional = false;
+
+  while (true) {
+    if (current instanceof ZodOptional) {
+      isOptional = true;
+      current = current._def.innerType;
+      continue;
+    }
+    if (current instanceof ZodNullable) {
+      current = current._def.innerType;
+      continue;
+    }
+    if (current instanceof ZodDefault) {
+      isOptional = true;
+      current = current._def.innerType;
+      continue;
+    }
+    if (current instanceof ZodEffects) {
+      current = current._def.schema;
+      continue;
+    }
+    break;
   }
+
+  return { schema: current, isOptional };
+}
+
+function getGenericTypeHintVfs(schema: ZodTypeAny, indent: string = ""): string {
+  schema = unwrapHintSchema(schema).schema;
 
   if (schema instanceof ZodString) return "string";
   if (schema instanceof ZodNumber) return "number";
   if (schema instanceof ZodBoolean) return "boolean";
+  if (schema instanceof ZodLazy) return "JsonValue";
+  if (schema instanceof ZodAny || schema instanceof ZodUnknown)
+    return "JsonValue";
   if (schema instanceof ZodNull) return "null";
   if (schema instanceof ZodLiteral) {
     const value = schema._def.value;
@@ -247,7 +284,11 @@ function getGenericTypeHintVfs(schema: ZodTypeAny, indent: string = ""): string 
     )}`;
   }
   if (schema instanceof ZodRecord) {
-    return "Record<string, any>";
+    const valueSchema = (schema as any)?._def?.valueType;
+    const valueHint = valueSchema
+      ? getGenericTypeHintVfs(valueSchema as ZodTypeAny, indent)
+      : "JsonValue";
+    return `Record<string, ${valueHint}>`;
   }
 
   return "any";
@@ -274,17 +315,11 @@ export function getVfsSchemaHint(
       })
       .map(([key, value]) => {
         let fieldSchema = value as ZodTypeAny;
-        let isOptional = fieldSchema instanceof ZodOptional;
+        const unwrapped = unwrapHintSchema(fieldSchema);
+        let isOptional = unwrapped.isOptional;
         let description = fieldSchema.description;
 
-        let innerSchema = fieldSchema;
-        while (
-          innerSchema instanceof ZodOptional ||
-          innerSchema instanceof ZodNullable
-        ) {
-          if (innerSchema instanceof ZodOptional) isOptional = true;
-          innerSchema = innerSchema._def.innerType;
-        }
+        let innerSchema = unwrapped.schema;
 
         if (!description) description = innerSchema.description;
 
@@ -338,18 +373,12 @@ export function getToolSchemaHint(
       })
       .map(([key, value]) => {
         let fieldSchema = value as ZodTypeAny;
-        let isOptional = fieldSchema instanceof ZodOptional;
+        const unwrapped = unwrapHintSchema(fieldSchema);
+        let isOptional = unwrapped.isOptional;
         let description = fieldSchema.description;
 
-        // Unwrap optional/nullable for type handling
-        let innerSchema = fieldSchema;
-        while (
-          innerSchema instanceof ZodOptional ||
-          innerSchema instanceof ZodNullable
-        ) {
-          if (innerSchema instanceof ZodOptional) isOptional = true;
-          innerSchema = innerSchema._def.innerType;
-        }
+        // Unwrap wrappers for type handling
+        let innerSchema = unwrapped.schema;
 
         // Use innerSchema for description if main schema has none
         if (!description) description = innerSchema.description;
@@ -385,14 +414,14 @@ export function getToolSchemaHint(
  * Internal helper for type hints
  */
 function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
-  // Unwrap optional/nullable
-  if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
-    return getGenericTypeHint(schema._def.innerType, indent);
-  }
+  schema = unwrapHintSchema(schema).schema;
 
   if (schema instanceof ZodString) return "string";
   if (schema instanceof ZodNumber) return "number";
   if (schema instanceof ZodBoolean) return "boolean";
+  if (schema instanceof ZodLazy) return "JsonValue";
+  if (schema instanceof ZodAny || schema instanceof ZodUnknown)
+    return "JsonValue";
   if (schema instanceof ZodNull) return "null";
   if (schema instanceof ZodLiteral) {
     const value = schema._def.value;
@@ -432,7 +461,11 @@ function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
     )}`;
   }
   if (schema instanceof ZodRecord) {
-    return "Record<string, any>";
+    const valueSchema = (schema as any)?._def?.valueType;
+    const valueHint = valueSchema
+      ? getGenericTypeHint(valueSchema as ZodTypeAny, indent)
+      : "JsonValue";
+    return `Record<string, ${valueHint}>`;
   }
 
   return "any";

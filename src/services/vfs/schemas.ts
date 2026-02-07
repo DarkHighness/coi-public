@@ -20,11 +20,23 @@ import {
   hiddenTraitSchema,
   atmosphereSchema,
   actorProfileSchema,
+  strictPlayerProfileSchema,
   placeholderSchema,
   storyOutlineSchema,
   storySummarySchema,
 } from "../zodSchemas";
 import { normalizeVfsPath } from "./utils";
+
+const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(jsonValueSchema),
+    z.record(jsonValueSchema),
+  ]),
+);
 
 const GlobalSchema = z.object({
   time: z.string(),
@@ -81,7 +93,7 @@ const ConversationTurnSchema = z.object({
   timestamp: z.number(),
   user: z.object({ text: z.string(), inputId: z.string() }),
   model: z.object({ text: z.string(), outputId: z.string() }),
-  toolCalls: z.array(z.any()).default([]),
+  toolCalls: z.array(jsonValueSchema).default([]),
   references: z.record(z.array(z.string())).optional(),
 });
 
@@ -105,6 +117,10 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
   { pattern: /^world\/timeline\/[^/]+\.json$/, schema: timelineEventSchema },
   { pattern: /^world\/causal_chains\/[^/]+\.json$/, schema: causalChainSchema },
   { pattern: /^world\/placeholders\/[^/]+\.json$/, schema: placeholderSchema },
+  {
+    pattern: /^world\/characters\/char:player\/profile\.json$/,
+    schema: strictPlayerProfileSchema,
+  },
   {
     pattern: /^world\/characters\/[^/]+\/profile\.json$/,
     schema: actorProfileSchema,
@@ -150,7 +166,7 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
   { pattern: /^world\/global\.json$/, schema: GlobalSchema },
   { pattern: /^summary\/state\.json$/, schema: SummaryStateSchema },
   { pattern: /^outline\/outline\.json$/, schema: storyOutlineSchema },
-  { pattern: /^outline\/progress\.json$/, schema: z.any() },
+  { pattern: /^outline\/progress\.json$/, schema: jsonValueSchema },
   { pattern: /^conversation\/turn\.json$/, schema: ConversationTurnSchema },
 ];
 
