@@ -3,7 +3,11 @@ import type { LogEntry, TokenUsage } from "../types";
 export interface RuntimeStatsSnapshot {
   tokenUsage: TokenUsage;
   logs: LogEntry[];
+  unlockMode: boolean;
+  godMode: boolean;
 }
+
+const normalizeBoolean = (value: unknown): boolean => value === true;
 
 export const normalizeTokenUsage = (value: unknown): TokenUsage => {
   const source =
@@ -49,6 +53,7 @@ export const parseRuntimeStats = (value: unknown): RuntimeStatsSnapshot => {
   return {
     tokenUsage: normalizeTokenUsage(source.tokenUsage),
     logs: normalizeLogs(source.logs),
+    unlockMode: normalizeBoolean(source.unlockMode),
+    godMode: normalizeBoolean(source.godMode),
   };
 };
-

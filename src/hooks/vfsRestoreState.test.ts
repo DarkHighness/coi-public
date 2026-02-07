@@ -134,6 +134,8 @@ describe("vfs restore runtime stats integration", () => {
         quests: { pinnedIds: [], customOrder: [] },
         feedLayout: "stack",
       },
+      unlockMode: true,
+      godMode: true,
     });
 
     const derived = makeState({
@@ -168,6 +170,37 @@ describe("vfs restore runtime stats integration", () => {
     });
     expect(restored.logs).toHaveLength(1);
     expect(restored.logs[0].id).toBe("turn-log-1");
+    expect(restored.unlockMode).toBe(false);
+    expect(restored.godMode).toBe(false);
+  });
+
+  it("restores unlockMode and godMode from runtime stats", async () => {
+    const slotId = "slot-modes";
+
+    await persistRuntimeStats(slotId, {
+      tokenUsage: {
+        promptTokens: 1,
+        completionTokens: 2,
+        totalTokens: 3,
+        cacheRead: 0,
+        cacheWrite: 0,
+      },
+      logs: [],
+      unlockMode: true,
+      godMode: true,
+    } as any);
+
+    const runtimeStats = await loadRuntimeStats(slotId);
+
+    const restored = buildRestoredGameState({
+      previous: makeState({ unlockMode: false, godMode: false }),
+      derived: makeState({ unlockMode: false, godMode: false }),
+      storedUiState: {},
+      runtimeStats,
+      mergeUiState: (base) => base,
+    });
+
+    expect(restored.unlockMode).toBe(true);
+    expect(restored.godMode).toBe(true);
   });
 });
-

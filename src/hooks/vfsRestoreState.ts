@@ -37,5 +37,7 @@ export const buildRestoredGameState = ({
     ...merged,
     tokenUsage: runtimeStats.tokenUsage,
     logs: runtimeStats.logs,
+    unlockMode: runtimeStats.unlockMode,
+    godMode: runtimeStats.godMode,
   };
 };

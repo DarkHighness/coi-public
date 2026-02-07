@@ -11,59 +11,6 @@ interface DomainMutationDeps {
   triggerSave: () => void;
 }
 
-function applyUnlockAllState(prev: GameState): GameState {
-  const newState = { ...prev };
-
-  newState.inventory = prev.inventory.map((item) => ({
-    ...item,
-    unlocked: true,
-    highlight: true,
-  }));
-
-  newState.npcs = prev.npcs.map((relation) => ({
-    ...relation,
-    unlocked: true,
-    highlight: true,
-  }));
-
-  newState.locations = prev.locations.map((location) => ({
-    ...location,
-    unlocked: true,
-    highlight: true,
-  }));
-
-  newState.quests = prev.quests.map((quest) => ({
-    ...quest,
-    unlocked: true,
-    highlight: true,
-  }));
-
-  newState.knowledge = prev.knowledge.map((entry) => ({
-    ...entry,
-    unlocked: true,
-    highlight: true,
-  }));
-
-  newState.factions = prev.factions.map((faction) => ({
-    ...faction,
-    unlocked: true,
-    highlight: true,
-  }));
-
-  if (newState.character?.hiddenTraits) {
-    newState.character = {
-      ...newState.character,
-      hiddenTraits: newState.character.hiddenTraits.map((trait) => ({
-        ...trait,
-        unlocked: true,
-      })),
-    };
-  }
-
-  newState.unlockMode = true;
-  return newState;
-}
-
 export function createDomainMutationActions({
   setGameState,
   triggerSave,
@@ -140,8 +87,14 @@ export function createDomainMutationActions({
     maybePersistMutation(options?.persist, true);
   };
 
-  const unlockAll = (options?: DomainMutationOptions) => {
-    setGameState((prev) => applyUnlockAllState(prev));
+  const setUnlockMode = (
+    enable: boolean,
+    options?: DomainMutationOptions,
+  ) => {
+    setGameState((prev) => ({
+      ...prev,
+      unlockMode: enable,
+    }));
     maybePersistMutation(options?.persist, true);
   };
 
@@ -163,7 +116,7 @@ export function createDomainMutationActions({
     updateNodeMeta,
     setVeoScript,
     toggleGodMode,
-    unlockAll,
+    setUnlockMode,
     applyVfsMutation,
     applyVfsDerivedState,
   };

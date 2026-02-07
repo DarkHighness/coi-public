@@ -55,7 +55,7 @@ function createEngineSource() {
     updateNodeMeta: vi.fn(),
     setVeoScript: vi.fn(),
     toggleGodMode: vi.fn(),
-    unlockAll: vi.fn(),
+    setUnlockMode: vi.fn(),
     applyVfsMutation: vi.fn(),
     applyVfsDerivedState: vi.fn(),
   } as any;

@@ -73,10 +73,10 @@ export function useRuntimeActions({
     [engineActions, markMutation],
   );
 
-  const unlockAll = useCallback<RuntimeActions["unlockAll"]>(
-    (options) => {
-      engineActions.unlockAll(options);
-      markMutation("domain", options?.reason ?? "unlockAll");
+  const setUnlockMode = useCallback<RuntimeActions["setUnlockMode"]>(
+    (enable, options) => {
+      engineActions.setUnlockMode(enable, options);
+      markMutation("domain", options?.reason ?? "unlockMode");
     },
     [engineActions, markMutation],
   );
@@ -190,7 +190,7 @@ export function useRuntimeActions({
       updateNodeMeta,
       setVeoScript,
       toggleGodMode,
-      unlockAll,
+      setUnlockMode,
       applyVfsMutation,
       applyVfsDerivedState,
       syncRagSaveContext,
@@ -206,7 +206,7 @@ export function useRuntimeActions({
       updateNodeMeta,
       setVeoScript,
       toggleGodMode,
-      unlockAll,
+      setUnlockMode,
       applyVfsMutation,
       applyVfsDerivedState,
       syncRagSaveContext,

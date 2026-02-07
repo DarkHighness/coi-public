@@ -96,5 +96,32 @@ describe("loopInitializer", () => {
       retriesMax: 3,
       loopIterationsMax: 20,
     });
+    expect(state.requiredCommandSkillPaths).toEqual([]);
+  });
+
+  it("sets required command skill path for sudo/cleanup modes", () => {
+    const vfsSession = new VfsSession();
+
+    const sudoState = createLoopState(
+      {} as any,
+      { embedding: { enabled: false } } as any,
+      true,
+      false,
+      vfsSession,
+    );
+    expect(sudoState.requiredCommandSkillPaths).toEqual([
+      "skills/commands/sudo/SKILL.md",
+    ]);
+
+    const cleanupState = createLoopState(
+      {} as any,
+      { embedding: { enabled: false } } as any,
+      false,
+      true,
+      vfsSession,
+    );
+    expect(cleanupState.requiredCommandSkillPaths).toEqual([
+      "skills/commands/cleanup/SKILL.md",
+    ]);
   });
 });

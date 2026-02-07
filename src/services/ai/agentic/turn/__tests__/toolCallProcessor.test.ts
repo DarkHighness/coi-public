@@ -27,6 +27,7 @@ const createContext = () => ({
     accumulatedResponse: { narrative: "" },
     changedEntities: new Map<string, string>(),
     vfsSession: {},
+    requiredCommandSkillPaths: ["skills/commands/sudo/SKILL.md"],
   },
   gameState: { forkId: 0 },
   settings: { story: { modelId: "m1" } },
@@ -88,6 +89,7 @@ describe("toolCallProcessor", () => {
         gameState: ctx.gameState,
         settings: ctx.settings,
         vfsSession: ctx.loopState.vfsSession,
+        requiredCommandSkillPaths: ctx.loopState.requiredCommandSkillPaths,
       }),
     );
     expect(result).toEqual({ success: true, data: 123 });

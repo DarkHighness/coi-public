@@ -16,14 +16,26 @@ describe("contextInjector", () => {
     const history: any[] = [];
 
     injectSudoModeInstruction(history);
-    injectNormalTurnInstruction(history, "vfs_commit_turn", false);
-    injectNormalTurnInstruction(history, "vfs_commit_turn", true);
+    injectNormalTurnInstruction(history, "vfs_commit_turn", false, {
+      godMode: true,
+      unlockMode: true,
+    });
+    injectNormalTurnInstruction(history, "vfs_commit_turn", true, {
+      godMode: false,
+      unlockMode: false,
+    });
 
-    expect(history).toHaveLength(3);
+    expect(history).toHaveLength(6);
     expect(history.every((msg) => msg.role === "user")).toBe(true);
     expect(getText(history[0])).toContain("FORCE UPDATE MODE");
-    expect(getText(history[1])).toContain("[SYSTEM: TOOL USAGE INSTRUCTION]");
-    expect(getText(history[2])).toContain("[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]");
+    expect(getText(history[1])).toContain("COMMAND SKILL REQUIRED");
+    expect(getText(history[2])).toContain("[SYSTEM: TOOL USAGE INSTRUCTION]");
+    expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[3])).toContain("You are currently in God mode.");
+    expect(getText(history[3])).toContain("commands/god/SKILL.md");
+    expect(getText(history[3])).toContain("commands/unlock/SKILL.md");
+    expect(getText(history[4])).toContain("[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]");
+    expect(getText(history[5])).toContain("COMMAND SKILL REQUIRED");
   });
 
   it("injects budget and no-tool-call messages", () => {

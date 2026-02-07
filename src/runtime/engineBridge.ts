@@ -11,7 +11,7 @@ type MutationBridgeActions = Pick<
   | "updateNodeMeta"
   | "setVeoScript"
   | "toggleGodMode"
-  | "unlockAll"
+  | "setUnlockMode"
   | "applyVfsMutation"
   | "applyVfsDerivedState"
 >;
@@ -78,7 +78,7 @@ export function buildRuntimeEngineActionsFromSource(
     updateNodeMeta: engine.updateNodeMeta,
     setVeoScript: engine.setVeoScript,
     toggleGodMode: engine.toggleGodMode,
-    unlockAll: engine.unlockAll,
+    setUnlockMode: engine.setUnlockMode,
     applyVfsMutation: engine.applyVfsMutation,
     applyVfsDerivedState: engine.applyVfsDerivedState,
   };

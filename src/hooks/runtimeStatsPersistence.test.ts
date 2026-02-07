@@ -62,6 +62,8 @@ describe("runtime stats persistence", () => {
 
     expect(parsed.tokenUsage.totalTokens).toBe(50);
     expect(parsed.logs).toHaveLength(1);
+    expect(parsed.unlockMode).toBe(false);
+    expect(parsed.godMode).toBe(false);
 
     const fallback = parseRuntimeStats(undefined);
     expect(fallback.tokenUsage).toEqual({
@@ -72,6 +74,19 @@ describe("runtime stats persistence", () => {
       cacheWrite: 0,
     });
     expect(fallback.logs).toEqual([]);
+    expect(fallback.unlockMode).toBe(false);
+    expect(fallback.godMode).toBe(false);
+  });
+
+  it("parses unlock/god mode booleans", () => {
+    const parsed = parseRuntimeStats({
+      tokenUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      logs: [],
+      unlockMode: true,
+      godMode: true,
+    });
+
+    expect(parsed.unlockMode).toBe(true);
+    expect(parsed.godMode).toBe(true);
   });
 });
-

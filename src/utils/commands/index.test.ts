@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   COMMAND_DEFINITIONS,
+  executeCommandAction,
   parseCommand,
   type CommandContext,
 } from "./index";
@@ -12,7 +13,7 @@ function createContext(overrides: Partial<CommandContext> = {}): CommandContext 
     } as any,
     runtimeActions: {
       toggleGodMode: vi.fn(),
-      unlockAll: vi.fn(),
+      setUnlockMode: vi.fn(),
     },
     t: () => "",
     ...overrides,
@@ -69,5 +70,53 @@ describe("commands", () => {
     expect(confirmGod.action).toMatchObject({ type: "god_mode" });
     expect(typeof confirmGod.message).toBe("string");
     expect(confirmGod.preventAction).toBe(true);
+
+    const unlockOn = parseCommand("/unlock on", context);
+    expect(unlockOn.action).toMatchObject({
+      type: "unlock_mode",
+      mode: "on",
+      enable: true,
+    });
+
+    const unlockOff = parseCommand(
+      "/unlock off",
+      createContext({ gameState: { unlockMode: true } as any }),
+    );
+    expect(unlockOff.action).toMatchObject({
+      type: "unlock_mode",
+      mode: "off",
+      enable: false,
+    });
+
+    const unlockToggle = parseCommand(
+      "/unlock toggle",
+      createContext({ gameState: { unlockMode: false } as any }),
+    );
+    expect(unlockToggle.action).toMatchObject({
+      type: "unlock_mode",
+      mode: "toggle",
+      enable: true,
+    });
+
+    const unlockBad = parseCommand("/unlock nope", context);
+    expect(unlockBad.message).toContain("Usage: /unlock [on|off|toggle]");
+  });
+
+  it("executes unlock mode action via runtime setUnlockMode", () => {
+    const runtimeActions = {
+      toggleGodMode: vi.fn(),
+      setUnlockMode: vi.fn(),
+    };
+
+    executeCommandAction(
+      { type: "unlock_mode", mode: "on", enable: true },
+      {} as any,
+      runtimeActions as any,
+    );
+
+    expect(runtimeActions.setUnlockMode).toHaveBeenCalledWith(true, {
+      reason: "command.unlock_mode.on",
+      persist: true,
+    });
   });
 });

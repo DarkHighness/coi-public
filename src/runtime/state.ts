@@ -259,7 +259,10 @@ export interface RuntimeActions
     enable: boolean,
     options?: RuntimeMutationOptions,
   ) => void;
-  unlockAll: (options?: RuntimeMutationOptions) => void;
+  setUnlockMode: (
+    enable: boolean,
+    options?: RuntimeMutationOptions,
+  ) => void;
   applyVfsMutation: (
     nextState: GameState,
     options?: RuntimeMutationOptions,

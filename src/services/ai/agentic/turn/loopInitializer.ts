@@ -44,6 +44,8 @@ export interface LoopState {
   isRAGEnabled: boolean;
   /** Whether in CLEANUP mode */
   isCleanupMode: boolean;
+  /** Required command skill paths for this loop */
+  requiredCommandSkillPaths: string[];
 }
 
 // ============================================================================
@@ -72,6 +74,11 @@ export function createLoopState(
   });
   const finishToolName = VFS_TOOLSETS.turn.finishToolName;
   const conversationMarker = getConversationMarker(vfsSession);
+  const requiredCommandSkillPaths = isCleanupMode
+    ? ["skills/commands/cleanup/SKILL.md"]
+    : isSudoMode
+      ? ["skills/commands/sudo/SKILL.md"]
+      : [];
 
   return {
     vfsSession,
@@ -89,6 +96,7 @@ export function createLoopState(
     isCleanupMode,
     finishToolName,
     isRAGEnabled,
+    requiredCommandSkillPaths,
   };
 }
 

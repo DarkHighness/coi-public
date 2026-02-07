@@ -370,7 +370,7 @@ export const useRuntimeEngine = () => {
     updateNodeMeta: domainMutations.updateNodeMeta,
     setVeoScript: domainMutations.setVeoScript,
     toggleGodMode: domainMutations.toggleGodMode,
-    unlockAll: domainMutations.unlockAll,
+    setUnlockMode: domainMutations.setUnlockMode,
     applyVfsMutation: domainMutations.applyVfsMutation,
     applyVfsDerivedState: domainMutations.applyVfsDerivedState,
   };

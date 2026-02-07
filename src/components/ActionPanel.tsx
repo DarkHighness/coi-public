@@ -97,7 +97,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 }) => {
   const { state, actions } = useRuntimeContext();
   const { gameState, currentHistory, isTranslating, aiSettings } = state;
-  const { toggleGodMode, unlockAll } = actions;
+  const { toggleGodMode, setUnlockMode } = actions;
   const { providerModels } = useSettingsContext();
   const [isJumpOpen, setIsJumpOpen] = useState(false);
   const [jumpInputValue, setJumpInputValue] = useState("");
@@ -234,7 +234,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   // Command context for command parsing
   const commandContext: CommandContext = {
     gameState,
-    runtimeActions: { toggleGodMode, unlockAll },
+    runtimeActions: { toggleGodMode, setUnlockMode },
     t,
   };
 
@@ -335,10 +335,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         default:
           executeCommandAction(action, gameState, {
             toggleGodMode,
-            unlockAll,
+            setUnlockMode,
           });
 
-          if (action.type === "god_mode" || action.type === "unlock_all") {
+          if (action.type === "god_mode" || action.type === "unlock_mode") {
             onTriggerSave?.();
           }
 
@@ -347,9 +347,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               ? action.enable
                 ? t("commands.godMode.enabled") || "🔱 GOD MODE ENABLED"
                 : t("commands.godMode.disabled") || "God Mode disabled"
-              : action.type === "unlock_all"
+              : action.type === "unlock_mode"
                 ? t("commands.unlock.success") ||
-                  "🔓 All hidden information unlocked!"
+                  `🔓 Unlock mode ${action.enable ? "enabled" : "disabled"}.`
                 : "";
 
           if (successMessage) {
@@ -368,7 +368,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       onTriggerSave,
       t,
       toggleGodMode,
-      unlockAll,
+      setUnlockMode,
     ],
   );
 
@@ -488,7 +488,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   const commandTone =
     pendingCommand?.action.type === "god_mode" ||
-    pendingCommand?.action.type === "unlock_all" ||
+    pendingCommand?.action.type === "unlock_mode" ||
     pendingCommand?.action.type === "force_update"
       ? "danger"
       : "warning";
@@ -498,8 +498,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       ? pendingCommand.action.enable
         ? t("commands.godMode.titleEnable") || "Enable God Mode"
         : t("commands.godMode.titleDisable") || "Disable God Mode"
-      : pendingCommand?.action.type === "unlock_all"
-        ? t("commands.unlock.title") || "Unlock Hidden Information"
+      : pendingCommand?.action.type === "unlock_mode"
+        ? t("commands.unlock.title") || "Set Unlock Mode"
         : pendingCommand?.action.type === "force_update"
           ? t("commands.sudo.title") || "Force World Update"
           : t("commands.confirmTitle") || "Confirm Command";
@@ -507,7 +507,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const commandBadge =
     pendingCommand?.action.type === "god_mode"
       ? t("commands.godMode.short") || "/god"
-      : pendingCommand?.action.type === "unlock_all"
+      : pendingCommand?.action.type === "unlock_mode"
         ? t("commands.unlock.short") || "/unlock"
         : pendingCommand?.action.type === "force_update"
           ? t("commands.sudo.short") || "/sudo"
@@ -518,8 +518,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       ? pendingCommand.action.enable
         ? t("commands.godMode.confirmEnableCta") || "Enable"
         : t("commands.godMode.confirmDisableCta") || "Disable"
-      : pendingCommand?.action.type === "unlock_all"
-        ? t("commands.unlock.confirmCta") || "Unlock all"
+      : pendingCommand?.action.type === "unlock_mode"
+        ? t("commands.unlock.confirmCta") || "Apply unlock mode"
         : pendingCommand?.action.type === "force_update"
           ? t("commands.sudo.confirmCta") || "Apply update"
           : t("confirm") || "Confirm";
@@ -531,9 +531,11 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           "All actions will succeed and world consistency constraints become permissive."
         : t("commands.godMode.disableSummary") ||
           "Return to normal success/failure logic and standard world constraints."
-      : pendingCommand?.action.type === "unlock_all"
+      : pendingCommand?.action.type === "unlock_mode"
         ? t("commands.unlock.summary") ||
-          "Reveal hidden traits, motives, and secret state across the current world."
+          (pendingCommand.action.enable
+            ? "Unlock mode is ON. Hidden information may be shown in viewer panels."
+            : "Unlock mode is OFF. Hidden information follows normal discovery flow.")
         : pendingCommand?.action.type === "force_update"
           ? t("commands.sudo.summary") ||
             "Apply a direct world instruction that bypasses normal progression checks."

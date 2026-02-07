@@ -102,6 +102,7 @@ export function executeGenericTool(
       gameState,
       settings,
       vfsSession: loopState.vfsSession,
+      requiredCommandSkillPaths: loopState.requiredCommandSkillPaths,
     };
     return dispatchToolCall(name, args, toolContext);
   }

@@ -34,6 +34,8 @@ export interface ToolContext {
   settings?: AISettings;
   /** VFS session for file-based tools */
   vfsSession: VfsSession;
+  /** Required command skill paths that must be read in current epoch */
+  requiredCommandSkillPaths?: string[];
 }
 
 /**

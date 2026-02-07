@@ -142,6 +142,10 @@ export async function runAgenticLoopRefactored(
         conversationHistory,
         loopState.finishToolName,
         isCleanupMode,
+        {
+          godMode: gameState.godMode === true,
+          unlockMode: gameState.unlockMode === true,
+        },
       );
     }
 
@@ -320,6 +324,41 @@ interface ProcessToolCallsResult {
   turnFinished: boolean;
 }
 
+function checkCommandSkillReadGate(
+  functionCalls: ToolCallResult[],
+  loopState: LoopState,
+): { ok: true } | { ok: false; error: { success: false; error: string; code: string } } {
+  const required = loopState.requiredCommandSkillPaths;
+  if (!required || required.length === 0) {
+    return { ok: true };
+  }
+
+  const readTools = new Set(["vfs_read", "vfs_read_many", "vfs_read_json"]);
+  const hasNonReadCall = functionCalls.some((call) => !readTools.has(call.name));
+  if (!hasNonReadCall) {
+    return { ok: true };
+  }
+
+  const missing = required.filter(
+    (path) => !loopState.vfsSession.hasToolSeenInCurrentEpoch(path),
+  );
+
+  if (missing.length === 0) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    error: {
+      success: false,
+      error: `[ERROR: COMMAND_SKILL_NOT_READ] You must read required command skill file(s) in current epoch before non-read tools: ${missing
+        .map((p) => `current/${p}`)
+        .join(", ")}. Use vfs_read/vfs_read_many first.`,
+      code: "SKILL_NOT_READ",
+    },
+  };
+}
+
 async function processToolCalls(
   params: ProcessToolCallsParams,
 ): Promise<ProcessToolCallsResult> {
@@ -338,6 +377,18 @@ async function processToolCalls(
   } = params;
 
   const finishToolName = loopState.finishToolName;
+
+  const skillGate = checkCommandSkillReadGate(functionCalls, loopState);
+  if (!skillGate.ok) {
+    return {
+      responses: functionCalls.map((call) => ({
+        toolCallId: call.id,
+        name: call.name,
+        content: skillGate.error,
+      })),
+      turnFinished: false,
+    };
+  }
 
   const isTxCommitTurnCall = (call: ToolCallResult): boolean => {
     if (call.name !== "vfs_tx") return false;

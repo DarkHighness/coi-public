@@ -39,6 +39,8 @@ describe("runtimeStatsStore", () => {
           endpoint: "turn",
         },
       ],
+      unlockMode: true,
+      godMode: false,
     } as any);
 
     expect(indexedDbMock.saveMetadata).toHaveBeenCalledTimes(1);
@@ -49,6 +51,8 @@ describe("runtimeStatsStore", () => {
         logs: expect.arrayContaining([
           expect.objectContaining({ id: "log-1", endpoint: "turn" }),
         ]),
+        unlockMode: true,
+        godMode: false,
       }),
     );
   });
@@ -69,6 +73,8 @@ describe("runtimeStatsStore", () => {
           endpoint: "summary",
         },
       ],
+      unlockMode: true,
+      godMode: true,
     });
 
     const result = await loadRuntimeStats("slot-77");
@@ -79,10 +85,11 @@ describe("runtimeStatsStore", () => {
     );
     expect(result.tokenUsage.totalTokens).toBe(15);
     expect(result.logs[0]?.id).toBe("log-a");
+    expect(result.unlockMode).toBe(true);
+    expect(result.godMode).toBe(true);
   });
 
   it("exports deterministic metadata key", () => {
     expect(runtimeStatsKey("abc")).toBe("runtime_stats:abc");
   });
 });
-

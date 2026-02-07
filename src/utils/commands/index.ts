@@ -15,7 +15,7 @@ export interface CommandResult {
 
 export type CommandAction =
   | { type: "god_mode"; enable: boolean }
-  | { type: "unlock_all" }
+  | { type: "unlock_mode"; mode: "on" | "off" | "toggle"; enable: boolean }
   | { type: "open_editor" }
   | { type: "open_rag" }
   | { type: "open_viewer" }
@@ -25,7 +25,7 @@ export type CommandAction =
 
 export interface CommandContext {
   gameState: GameState;
-  runtimeActions: Pick<RuntimeActions, "toggleGodMode" | "unlockAll">;
+  runtimeActions: Pick<RuntimeActions, "toggleGodMode" | "setUnlockMode">;
   t: (key: string, values?: Record<string, string>) => string;
 }
 
@@ -45,7 +45,7 @@ interface InternalCommandDefinition extends CommandDefinition {
 
 const COMMAND_DEFINITION_ENTRIES: InternalCommandDefinition[] = [
   { cmd: "/god", desc: "Toggle God Mode", handler: handleGodMode },
-  { cmd: "/unlock", desc: "Unlock All Info", handler: handleUnlockAll },
+  { cmd: "/unlock", desc: "Toggle Unlock Mode", handler: handleUnlockMode },
   { cmd: "/edit", desc: "Edit State", handler: handleOpenEditor },
   { cmd: "/rag", desc: "RAG Debugger", handler: handleOpenRAG },
   { cmd: "/view", desc: "View State", handler: handleOpenViewer },
@@ -114,23 +114,44 @@ function handleGodMode(args: string[], context: CommandContext): CommandResult {
 }
 
 /**
- * /unlock - Unlock all hidden information
+ * /unlock - Toggle unlock mode (on|off|toggle)
  */
-function handleUnlockAll(
+function handleUnlockMode(
   args: string[],
   context: CommandContext,
 ): CommandResult {
-  void args;
-  const { t } = context;
+  const { t, gameState } = context;
+
+  const modeArg = (args[0] || "toggle").toLowerCase();
+  if (!(["on", "off", "toggle"] as const).includes(modeArg as any)) {
+    return {
+      handled: true,
+      preventAction: true,
+      message:
+        t("commands.unlock.invalidMode") ||
+        "Usage: /unlock [on|off|toggle]",
+    };
+  }
+
+  const mode = modeArg as "on" | "off" | "toggle";
+  const currentUnlockMode = gameState.unlockMode ?? false;
+  const enable =
+    mode === "on" ? true : mode === "off" ? false : !currentUnlockMode;
+
+  const summary = enable
+    ? t("commands.unlock.enableSummary") ||
+      "Unlock Mode ON: hidden information can be displayed in views."
+    : t("commands.unlock.disableSummary") ||
+      "Unlock Mode OFF: hidden information follows normal reveal rules.";
 
   const confirmMessage =
     t("commands.unlock.confirm") ||
-    "⚠️ UNLOCK ALL ⚠️\n\nThis will reveal ALL hidden information:\n• Item secrets and true nature\n• NPC true personalities and motives\n• Location hidden features\n• Quest true objectives\n• Knowledge hidden truths\n\nThis cannot be undone and may spoil the story.\n\nAre you sure?";
+    `⚠️ UNLOCK MODE ⚠️\n\nRequested mode: ${mode}\nResult: ${enable ? "ON" : "OFF"}\n\n${summary}\n\nContinue?`;
 
   return {
     handled: true,
     preventAction: true,
-    action: { type: "unlock_all" },
+    action: { type: "unlock_mode", mode, enable },
     message: confirmMessage,
   };
 }
@@ -259,7 +280,7 @@ function handleHelp(args: string[], context: CommandContext): CommandResult {
 export function executeCommandAction(
   action: CommandAction,
   gameState: GameState,
-  runtimeActions: Pick<RuntimeActions, "toggleGodMode" | "unlockAll">,
+  runtimeActions: Pick<RuntimeActions, "toggleGodMode" | "setUnlockMode">,
 ): void {
   void gameState;
   switch (action.type) {
@@ -270,9 +291,9 @@ export function executeCommandAction(
       });
       break;
 
-    case "unlock_all":
-      runtimeActions.unlockAll({
-        reason: "command.unlock_all",
+    case "unlock_mode":
+      runtimeActions.setUnlockMode(action.enable, {
+        reason: `command.unlock_mode.${action.mode}`,
         persist: true,
       });
       break;

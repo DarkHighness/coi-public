@@ -27,6 +27,14 @@ export function injectSudoModeInstruction(
   history: UnifiedMessage[],
 ): void {
   history.push(createUserMessage(sudoModeInstruction({ toolsetId: "turn" })));
+  history.push(
+    createUserMessage(
+      [
+        "[SYSTEM: COMMAND SKILL REQUIRED]",
+        "Before any non-read tool call, read: `current/skills/commands/sudo/SKILL.md`",
+      ].join("\n"),
+    ),
+  );
 }
 
 /**
@@ -36,6 +44,7 @@ export function injectNormalTurnInstruction(
   history: UnifiedMessage[],
   finishToolName: string,
   isCleanupMode: boolean = false,
+  modeFlags?: { godMode?: boolean; unlockMode?: boolean },
 ): void {
   history.push(
     createUserMessage(
@@ -44,6 +53,35 @@ export function injectNormalTurnInstruction(
       }),
     ),
   );
+
+  if (isCleanupMode) {
+    history.push(
+      createUserMessage(
+        [
+          "[SYSTEM: COMMAND SKILL REQUIRED]",
+          "Before any cleanup mutation, read: `current/skills/commands/cleanup/SKILL.md`",
+        ].join("\n"),
+      ),
+    );
+  }
+
+  const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
+  if (modeFlags?.godMode) {
+    modeSkillLines.push(
+      "You are currently in God mode.",
+      "Read: `current/skills/commands/god/SKILL.md`",
+    );
+  }
+  if (modeFlags?.unlockMode) {
+    modeSkillLines.push(
+      "Unlock mode is currently ON.",
+      "Read: `current/skills/commands/unlock/SKILL.md`",
+    );
+  }
+
+  if (modeSkillLines.length > 1) {
+    history.push(createUserMessage(modeSkillLines.join("\n")));
+  }
 }
 
 /**

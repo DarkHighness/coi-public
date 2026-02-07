@@ -36,6 +36,7 @@ describe("systemMessages atoms", () => {
     const content = sudoModeInstruction({});
     const legacyForceUpdateTool = ["complete", "force", "update"].join("_");
     expect(content).toContain("vfs_write");
+    expect(content).toContain("already prefixed with **[SUDO]**");
     expect(content).not.toContain(legacyForceUpdateTool);
   });
 });
