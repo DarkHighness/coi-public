@@ -1,5 +1,5 @@
 import type { OutlinePhaseProgress } from "../../services/aiService";
-import type { ForkTree, GameState, SaveSlot } from "../../types";
+import type { ForkTree, GameState, SavePresetProfile, SaveSlot } from "../../types";
 import type { RuntimeContinueResult, RuntimeLoadSlotResult } from "../state";
 
 export interface ContinuationCallbacks {
@@ -30,6 +30,9 @@ interface ContinueGameDeps {
     onStream?: (text: string) => void,
     onPhaseProgress?: (progress: OutlinePhaseProgress) => void,
     existingSlotId?: string,
+    seedImage?: Blob,
+    protagonistFeature?: string,
+    presetProfile?: SavePresetProfile,
   ) => Promise<void>;
   syncRagSaveContext: (params: {
     saveId: string;
@@ -119,6 +122,9 @@ export async function runContinueGame(
         callbacks?.onStream,
         callbacks?.onPhaseProgress,
         deps.currentSlotId,
+        undefined,
+        undefined,
+        deps.gameState.presetProfile,
       );
       return "started-outline";
     }

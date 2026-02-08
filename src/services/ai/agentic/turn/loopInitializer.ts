@@ -17,6 +17,7 @@ import { BudgetState, createBudgetState } from "../budgetUtils";
 import { ALL_DEFINED_TOOLS } from "../../../tools";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
 import { getConversationMarker, type ConversationMarker } from "./resultAccumulator";
+import type { ActivePresetSkillRequirement } from "../../utils";
 
 // ============================================================================
 // Types
@@ -47,6 +48,10 @@ export interface LoopState {
   isCleanupMode: boolean;
   /** Required command skill paths for this loop */
   requiredCommandSkillPaths: string[];
+  /** Required preset skill paths for this loop */
+  requiredPresetSkillPaths: string[];
+  /** Active preset requirements with source metadata */
+  requiredPresetSkillRequirements?: ActivePresetSkillRequirement[];
   /** Active VFS mode for policy checks */
   vfsMode: VfsMode;
   /** One-time elevation token for this request (optional) */
@@ -66,8 +71,10 @@ export function createLoopState(
   isSudoMode: boolean,
   isCleanupMode: boolean = false,
   vfsSession: VfsSession,
+  requiredPresetSkillPaths: string[] = [],
   vfsMode?: VfsMode,
   vfsElevationToken?: string | null,
+  requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
 ): LoopState {
   const budgetState = createBudgetState(settings, {
     loopType: isCleanupMode ? "cleanup" : "turn",
@@ -87,6 +94,23 @@ export function createLoopState(
     : isSudoMode
       ? ["skills/commands/sudo/SKILL.md"]
       : [];
+  const uniqueRequiredPresetSkillPaths = Array.from(
+    new Set(
+      (requiredPresetSkillPaths || [])
+        .map((path) => path.trim())
+        .filter((path) => path.length > 0),
+    ),
+  );
+  const uniqueRequiredPresetSkillRequirements = Array.from(
+    new Map(
+      (requiredPresetSkillRequirements || [])
+        .filter((entry) => entry && entry.path && entry.tag && entry.profile)
+        .map((entry) => [
+          `${entry.path}::${entry.tag}::${entry.profile}::${entry.source}`,
+          entry,
+        ]),
+    ).values(),
+  );
 
   return {
     vfsSession,
@@ -105,6 +129,8 @@ export function createLoopState(
     finishToolName,
     isRAGEnabled,
     requiredCommandSkillPaths,
+    requiredPresetSkillPaths: uniqueRequiredPresetSkillPaths,
+    requiredPresetSkillRequirements: uniqueRequiredPresetSkillRequirements,
     vfsMode: resolvedVfsMode,
     vfsElevationToken: vfsElevationToken ?? null,
   };

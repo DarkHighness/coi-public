@@ -49,6 +49,35 @@ const GlobalSchema = z.object({
   language: z.string().optional(),
   customContext: z.string().optional(),
   seedImageId: z.string().optional(),
+  presetProfile: z
+    .object({
+      narrativeStylePreset: z.enum([
+        "theme",
+        "cinematic",
+        "literary",
+        "noir",
+        "brutal",
+        "cozy",
+        "cdrama",
+        "minimal",
+      ]),
+      worldDispositionPreset: z.enum([
+        "theme",
+        "benevolent",
+        "mixed",
+        "cynical",
+      ]),
+      playerMalicePreset: z.enum([
+        "theme",
+        "intimidation",
+        "bureaucratic",
+        "manipulation",
+        "sabotage",
+      ]),
+      playerMaliceIntensity: z.enum(["light", "standard", "heavy"]),
+      locked: z.literal(true),
+    })
+    .optional(),
   narrativeScale: z.enum(["epic", "intimate", "balanced"]).optional(),
   initialPrompt: z.string().optional(),
 });

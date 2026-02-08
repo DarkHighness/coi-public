@@ -96,6 +96,9 @@ describe("runContinueGame", () => {
       stream,
       phase,
       "slot-current",
+      undefined,
+      undefined,
+      undefined,
     );
   });
 

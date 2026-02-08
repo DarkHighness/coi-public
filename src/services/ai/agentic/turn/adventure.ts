@@ -27,6 +27,9 @@ import {
   resolveNarrativeStyle,
   resolveWorldDisposition,
   resolvePlayerMaliceProfile,
+  resolveEffectivePresetProfile,
+  resolveActivePresetSkillRequirements,
+  type ActivePresetSkillRequirement,
   pickModelMatchedPrompt,
 } from "../../utils";
 
@@ -103,23 +106,47 @@ export const generateAdventureTurn = async (
       ? narrativeStyleOverride.trim()
       : resolvedThemeConfig?.narrativeStyle || fallbackThemeConfig.narrativeStyle;
 
+  const effectivePresetProfile = resolveEffectivePresetProfile({
+    customContext: gameState.customContext,
+    presetProfile: gameState.presetProfile,
+    settings,
+  });
+
+  const effectiveNarrativeStylePreset =
+    effectivePresetProfile.narrativeStylePreset.value;
+  const effectiveWorldDispositionPreset =
+    effectivePresetProfile.worldDispositionPreset.value;
+  const effectivePlayerMalicePreset =
+    effectivePresetProfile.playerMalicePreset.value;
+  const effectivePlayerMaliceIntensity =
+    effectivePresetProfile.playerMaliceIntensity.value;
+
   const narrativeStyle =
     resolveNarrativeStyle({
       themeStyle: baseNarrativeStyle,
-      preset: settings.extra?.narrativeStylePreset,
+      preset:
+        effectiveNarrativeStylePreset === "theme"
+          ? undefined
+          : effectiveNarrativeStylePreset,
       language: context.language,
       customContext: gameState.customContext,
     }) || baseNarrativeStyle;
 
   const worldDisposition = resolveWorldDisposition({
-    preset: settings.extra?.worldDispositionPreset,
+    preset:
+      effectiveWorldDispositionPreset === "theme"
+        ? undefined
+        : effectiveWorldDispositionPreset,
     language: context.language,
     customContext: gameState.customContext,
   });
 
   const playerMaliceProfile = resolvePlayerMaliceProfile({
-    preset: settings.extra?.playerMalicePreset,
-    intensity: settings.extra?.playerMaliceIntensity,
+    preset:
+      effectivePlayerMalicePreset === "theme"
+        ? undefined
+        : effectivePlayerMalicePreset,
+    intensity: effectivePlayerMaliceIntensity,
     language: context.language,
     customContext: gameState.customContext,
   });
@@ -147,10 +174,10 @@ export const generateAdventureTurn = async (
     example,
     worldSetting,
     worldDisposition,
-    worldDispositionPreset: settings.extra?.worldDispositionPreset,
+    worldDispositionPreset: effectiveWorldDispositionPreset,
     playerMaliceProfile,
-    playerMalicePreset: settings.extra?.playerMalicePreset,
-    playerMaliceIntensity: settings.extra?.playerMaliceIntensity,
+    playerMalicePreset: effectivePlayerMalicePreset,
+    playerMaliceIntensity: effectivePlayerMaliceIntensity,
     isNSFW: settings.extra?.nsfw,
     godMode: gameState.godMode,
     crossSaveProfile: settings.playerProfile,
@@ -281,6 +308,14 @@ export const generateAdventureTurn = async (
   // Detect SUDO mode
   const isSudoMode = context.userAction.startsWith("[SUDO]");
   const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
+  const requiredPresetSkillRequirements = resolveActivePresetSkillRequirements({
+    settings,
+    presetProfile: gameState.presetProfile,
+    customContext: gameState.customContext,
+  });
+  const requiredPresetSkillPaths = requiredPresetSkillRequirements.map(
+    (entry) => entry.path,
+  );
 
   const executeSingleAttempt = async (): Promise<AgenticLoopResult> => {
     createCheckpoint(sessionId, context.vfsSession);
@@ -303,6 +338,8 @@ export const generateAdventureTurn = async (
       context.onToolCallsUpdate,
       context.vfsMode,
       context.vfsElevationToken ?? null,
+      requiredPresetSkillPaths,
+      requiredPresetSkillRequirements,
     );
 
     const newMessages = result._conversationHistory.slice(activeHistory.length);
@@ -404,6 +441,8 @@ export const runAgenticLoop = async (
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void,
   vfsMode?: "normal" | "god" | "sudo",
   vfsElevationToken?: string | null,
+  requiredPresetSkillPaths: string[] = [],
+  requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
   return runAgenticLoopRefactored({
@@ -423,5 +462,7 @@ export const runAgenticLoop = async (
     onToolCallsUpdate,
     vfsMode,
     vfsElevationToken: vfsElevationToken ?? null,
+    requiredPresetSkillPaths,
+    requiredPresetSkillRequirements,
   });
 };

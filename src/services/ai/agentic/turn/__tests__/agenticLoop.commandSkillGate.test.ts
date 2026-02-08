@@ -134,9 +134,13 @@ const createVfsSession = (hasSeenSkill: boolean) => {
     bindConversationSession: vi.fn(),
     drainOutOfBandReadInvalidations: vi.fn(() => []),
     noteToolSeen: vi.fn(),
-    hasToolSeenInCurrentEpoch: vi.fn((path: string) =>
-      hasSeenSkill && path === "skills/commands/sudo/SKILL.md",
-    ),
+    hasToolSeenInCurrentEpoch: vi.fn((path: string) => {
+      if (!hasSeenSkill) return false;
+      return (
+        path === "skills/commands/sudo/SKILL.md" ||
+        path === "skills/presets/narrative-style/SKILL.md"
+      );
+    }),
     markConversationTouched: vi.fn(() => {
       cursor = 1;
     }),
@@ -283,5 +287,43 @@ describe("agenticLoop command skill gate", () => {
 
     expect(result.response.narrative).toBe("new narrative");
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalled();
+  });
+
+  it("blocks non-read tools when preset skill is required but unread", async () => {
+    const vfsSession = createVfsSession(false);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-1",
+          name: "vfs_edit",
+          args: { edits: [] },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-preset-gate",
+        vfsSession,
+        requiredPresetSkillPaths: ["skills/presets/narrative-style/SKILL.md"],
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
   });
 });

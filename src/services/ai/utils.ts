@@ -1,5 +1,10 @@
 import {
   AISettings,
+  SavePresetProfile,
+  NarrativeStylePreset,
+  WorldDispositionPreset,
+  PlayerMalicePreset,
+  PlayerMaliceIntensityPreset,
   LogEntry,
   TokenUsage,
   ToolCallRecord,
@@ -597,15 +602,197 @@ export const getThemeTranslation = (
   return tFunc(`${themeKey}.${field}`, { ns: "themes" });
 };
 
-export type NarrativeStylePreset =
-  | "theme"
-  | "cinematic"
-  | "literary"
-  | "noir"
-  | "brutal"
-  | "cozy"
-  | "cdrama"
-  | "minimal";
+export const DEFAULT_SAVE_PRESET_PROFILE: SavePresetProfile = {
+  narrativeStylePreset: "theme",
+  worldDispositionPreset: "theme",
+  playerMalicePreset: "theme",
+  playerMaliceIntensity: "standard",
+  locked: true,
+};
+
+export type PresetProfileSource =
+  | "custom_context"
+  | "save_profile"
+  | "theme_default";
+
+export type EffectivePresetProfile = {
+  narrativeStylePreset: {
+    value: NarrativeStylePreset;
+    source: PresetProfileSource;
+  };
+  worldDispositionPreset: {
+    value: WorldDispositionPreset;
+    source: PresetProfileSource;
+  };
+  playerMalicePreset: {
+    value: PlayerMalicePreset;
+    source: PresetProfileSource;
+  };
+  playerMaliceIntensity: {
+    value: PlayerMaliceIntensityPreset;
+    source: PresetProfileSource;
+  };
+};
+
+function sanitizeNarrativeStylePreset(
+  value: unknown,
+): NarrativeStylePreset | undefined {
+  switch (value) {
+    case "theme":
+    case "cinematic":
+    case "literary":
+    case "noir":
+    case "brutal":
+    case "cozy":
+    case "cdrama":
+    case "minimal":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function sanitizeWorldDispositionPreset(
+  value: unknown,
+): WorldDispositionPreset | undefined {
+  switch (value) {
+    case "theme":
+    case "benevolent":
+    case "mixed":
+    case "cynical":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function sanitizePlayerMalicePreset(
+  value: unknown,
+): PlayerMalicePreset | undefined {
+  switch (value) {
+    case "theme":
+    case "intimidation":
+    case "bureaucratic":
+    case "manipulation":
+    case "sabotage":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function sanitizePlayerMaliceIntensityPreset(
+  value: unknown,
+): PlayerMaliceIntensityPreset | undefined {
+  switch (value) {
+    case "light":
+    case "standard":
+    case "heavy":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+export function normalizeSavePresetProfile(
+  profile: Partial<SavePresetProfile> | undefined | null,
+): SavePresetProfile {
+  return {
+    narrativeStylePreset:
+      sanitizeNarrativeStylePreset(profile?.narrativeStylePreset) ??
+      DEFAULT_SAVE_PRESET_PROFILE.narrativeStylePreset,
+    worldDispositionPreset:
+      sanitizeWorldDispositionPreset(profile?.worldDispositionPreset) ??
+      DEFAULT_SAVE_PRESET_PROFILE.worldDispositionPreset,
+    playerMalicePreset:
+      sanitizePlayerMalicePreset(profile?.playerMalicePreset) ??
+      DEFAULT_SAVE_PRESET_PROFILE.playerMalicePreset,
+    playerMaliceIntensity:
+      sanitizePlayerMaliceIntensityPreset(profile?.playerMaliceIntensity) ??
+      DEFAULT_SAVE_PRESET_PROFILE.playerMaliceIntensity,
+    locked: true,
+  };
+}
+
+function resolveFallbackPresetProfile(settings?: AISettings): SavePresetProfile {
+  return normalizeSavePresetProfile({
+    narrativeStylePreset: settings?.extra?.narrativeStylePreset,
+    worldDispositionPreset: settings?.extra?.worldDispositionPreset,
+    playerMalicePreset: settings?.extra?.playerMalicePreset,
+    playerMaliceIntensity: settings?.extra?.playerMaliceIntensity,
+    locked: true,
+  });
+}
+
+function normalizePresetFromTagValue(
+  tagValue: string | undefined,
+): NarrativeStylePreset | undefined {
+  return sanitizeNarrativeStylePreset(tagValue?.toLowerCase());
+}
+
+function normalizeWorldDispositionFromTagValue(
+  tagValue: string | undefined,
+): WorldDispositionPreset | undefined {
+  return sanitizeWorldDispositionPreset(tagValue?.toLowerCase());
+}
+
+function normalizePlayerMaliceFromTagValue(
+  tagValue: string | undefined,
+): PlayerMalicePreset | undefined {
+  return sanitizePlayerMalicePreset(tagValue?.toLowerCase());
+}
+
+function normalizePlayerMaliceIntensityFromTagValue(
+  tagValue: string | undefined,
+): PlayerMaliceIntensityPreset | undefined {
+  return sanitizePlayerMaliceIntensityPreset(tagValue?.toLowerCase());
+}
+
+export function resolveEffectivePresetProfile(input: {
+  customContext?: string;
+  presetProfile?: SavePresetProfile | null;
+  settings?: AISettings;
+}): EffectivePresetProfile {
+  const fallbackProfile = resolveFallbackPresetProfile(input.settings);
+  const saveProfile = normalizeSavePresetProfile(input.presetProfile ?? fallbackProfile);
+
+  const narrativeFromCustom = normalizePresetFromTagValue(
+    extractXmlTagValue(input.customContext, "narrative_style"),
+  );
+  const worldDispositionFromCustom = normalizeWorldDispositionFromTagValue(
+    extractXmlTagValue(input.customContext, "world_disposition"),
+  );
+  const playerMaliceFromCustom = normalizePlayerMaliceFromTagValue(
+    extractXmlTagValue(input.customContext, "player_malice_profile"),
+  );
+  const intensityFromCustom = normalizePlayerMaliceIntensityFromTagValue(
+    extractXmlTagValue(input.customContext, "player_malice_intensity"),
+  );
+
+  return {
+    narrativeStylePreset: narrativeFromCustom
+      ? { value: narrativeFromCustom, source: "custom_context" }
+      : saveProfile.narrativeStylePreset !== "theme"
+        ? { value: saveProfile.narrativeStylePreset, source: "save_profile" }
+        : { value: "theme", source: "theme_default" },
+    worldDispositionPreset: worldDispositionFromCustom
+      ? { value: worldDispositionFromCustom, source: "custom_context" }
+      : saveProfile.worldDispositionPreset !== "theme"
+        ? { value: saveProfile.worldDispositionPreset, source: "save_profile" }
+        : { value: "theme", source: "theme_default" },
+    playerMalicePreset: playerMaliceFromCustom
+      ? { value: playerMaliceFromCustom, source: "custom_context" }
+      : saveProfile.playerMalicePreset !== "theme"
+        ? { value: saveProfile.playerMalicePreset, source: "save_profile" }
+        : { value: "theme", source: "theme_default" },
+    playerMaliceIntensity: intensityFromCustom
+      ? { value: intensityFromCustom, source: "custom_context" }
+      : saveProfile.playerMaliceIntensity !== "standard" ||
+          saveProfile.playerMalicePreset !== "theme"
+        ? { value: saveProfile.playerMaliceIntensity, source: "save_profile" }
+        : { value: "standard", source: "theme_default" },
+  };
+}
 
 export function extractXmlTagValue(
   input: string | undefined,
@@ -616,6 +803,166 @@ export function extractXmlTagValue(
   const match = input.match(re);
   const value = match?.[1]?.trim();
   return value ? value : undefined;
+}
+
+export const PRESET_SKILL_PATHS = {
+  narrativeStyle: "skills/presets/narrative-style/SKILL.md",
+  worldDisposition: "skills/presets/world-disposition/SKILL.md",
+  playerMaliceProfile: "skills/presets/player-malice-profile/SKILL.md",
+  playerMaliceIntensity: "skills/presets/player-malice-intensity/SKILL.md",
+} as const;
+
+export type PresetSkillTag =
+  | "narrative_style"
+  | "world_disposition"
+  | "player_malice_profile"
+  | "player_malice_intensity";
+
+export type ActivePresetSkillRequirement = {
+  path: string;
+  tag: PresetSkillTag;
+  profile: string;
+  source: PresetProfileSource;
+};
+
+function toCurrentSkillPath(path: string): string {
+  return `current/${path.replace(/^current\//, "")}`;
+}
+
+type ResolveActivePresetSkillsInput = {
+  settings?: AISettings;
+  presetProfile?: SavePresetProfile | null;
+  customContext?: string;
+};
+
+function pushPresetSkillRequirement(
+  list: ActivePresetSkillRequirement[],
+  requirement: ActivePresetSkillRequirement,
+): void {
+  if (list.some((item) => item.path === requirement.path)) {
+    return;
+  }
+  list.push(requirement);
+}
+
+function resolveNarrativeStyleSkillRequirement(
+  input: ResolveActivePresetSkillsInput,
+): ActivePresetSkillRequirement | undefined {
+  const resolved = resolveEffectivePresetProfile({
+    customContext: input.customContext,
+    presetProfile: input.presetProfile,
+    settings: input.settings,
+  }).narrativeStylePreset;
+  const preset = resolved.value;
+  if (!preset || preset === "theme") {
+    return undefined;
+  }
+
+  return {
+    path: PRESET_SKILL_PATHS.narrativeStyle,
+    tag: "narrative_style",
+    profile: preset,
+    source: resolved.source,
+  };
+}
+
+function resolveWorldDispositionSkillRequirement(
+  input: ResolveActivePresetSkillsInput,
+): ActivePresetSkillRequirement | undefined {
+  const resolved = resolveEffectivePresetProfile({
+    customContext: input.customContext,
+    presetProfile: input.presetProfile,
+    settings: input.settings,
+  }).worldDispositionPreset;
+  const preset = resolved.value;
+  if (!preset || preset === "theme") {
+    return undefined;
+  }
+
+  return {
+    path: PRESET_SKILL_PATHS.worldDisposition,
+    tag: "world_disposition",
+    profile: preset,
+    source: resolved.source,
+  };
+}
+
+function resolvePlayerMaliceProfileSkillRequirement(
+  input: ResolveActivePresetSkillsInput,
+): ActivePresetSkillRequirement | undefined {
+  const resolved = resolveEffectivePresetProfile({
+    customContext: input.customContext,
+    presetProfile: input.presetProfile,
+    settings: input.settings,
+  }).playerMalicePreset;
+  const preset = resolved.value;
+  if (!preset || preset === "theme") {
+    return undefined;
+  }
+
+  return {
+    path: PRESET_SKILL_PATHS.playerMaliceProfile,
+    tag: "player_malice_profile",
+    profile: preset,
+    source: resolved.source,
+  };
+}
+
+function resolvePlayerMaliceIntensitySkillRequirement(
+  input: ResolveActivePresetSkillsInput,
+): ActivePresetSkillRequirement | undefined {
+  const effectiveProfile = resolveEffectivePresetProfile({
+    customContext: input.customContext,
+    presetProfile: input.presetProfile,
+    settings: input.settings,
+  });
+  const resolvedIntensity = effectiveProfile.playerMaliceIntensity;
+  const resolvedProfile = effectiveProfile.playerMalicePreset;
+
+  if (
+    resolvedProfile.value === "theme" &&
+    resolvedIntensity.value === "standard"
+  ) {
+    return undefined;
+  }
+
+  return {
+    path: PRESET_SKILL_PATHS.playerMaliceIntensity,
+    tag: "player_malice_intensity",
+    profile: resolvedIntensity.value,
+    source: resolvedIntensity.source,
+  };
+}
+
+export function resolveActivePresetSkillRequirements(
+  input: ResolveActivePresetSkillsInput,
+): ActivePresetSkillRequirement[] {
+  const requirements: ActivePresetSkillRequirement[] = [];
+
+  const narrativeStyle = resolveNarrativeStyleSkillRequirement(input);
+  if (narrativeStyle) {
+    pushPresetSkillRequirement(requirements, narrativeStyle);
+  }
+
+  const worldDisposition = resolveWorldDispositionSkillRequirement(input);
+  if (worldDisposition) {
+    pushPresetSkillRequirement(requirements, worldDisposition);
+  }
+
+  const playerMaliceProfile = resolvePlayerMaliceProfileSkillRequirement(input);
+  if (playerMaliceProfile) {
+    pushPresetSkillRequirement(requirements, playerMaliceProfile);
+  }
+
+  const playerMaliceIntensity = resolvePlayerMaliceIntensitySkillRequirement(input);
+  if (playerMaliceIntensity) {
+    pushPresetSkillRequirement(requirements, playerMaliceIntensity);
+  }
+
+  return requirements.map((entry) => ({
+    ...entry,
+    path: toCurrentSkillPath(entry.path).replace(/^current\//, ""),
+  }));
 }
 
 export function getNarrativeStylePresetText(
@@ -629,19 +976,19 @@ export function getNarrativeStylePresetText(
   if (isZh) {
     switch (preset) {
       case "cinematic":
-        return "电影感：镜头调度清晰（站位/光线/动作路径），画面先于解释；用可见细节推紧张（脚步声、门缝光、手上血），段落像剪辑点；结尾留钩子，不写总结。";
+        return "电影化调度：以镜头语法组织场景（站位、视线、光线、动作路径），优先给可拍摄信息再给解释；关键节点使用可验证细节锚定（声源、痕迹、时空标记）；段落按镜头切点推进，结尾保留悬而未决的行动钩子，不做复盘式总结。";
       case "literary":
-        return "文学向：句式有起伏但不飘；细节带气味与质地（潮气、锈、油烟、旧布），隐喻克制；暗示必须落在可观察证据上；冲突有余味，别急着解释完。";
+        return "文学叙事实验：句法节奏可变但语义必须可落地；优先触感/气味/材质等具身细节，隐喻用于增压而非遮蔽；所有暗示需可回溯到可观察证据；冲突处理强调余波与余味，避免一次性解释清零。";
       case "noir":
-        return "黑色/侦探：冷、硬、压抑；对白带刺、带试探；线索靠观察与误导（烟灰、鞋底泥、账本缺页），人都在算账；城市脏，关系也脏。";
+        return "黑色侦查叙事：整体气压低、道德灰区高；对白以试探与反试探为主，信息分配不对称；线索通过观察与误导并行投放（微痕迹、缺失项、矛盾口供）；角色决策由利益与风险驱动，关系网络持续污染。";
       case "brutal":
-        return "冷硬残酷：后果写实，疼痛有重量（淤青、气喘、手抖、药钱、名声损耗）；权力与代价摆台面（税、告密、欠债、保护费）；不讲“命运”，也不替玩家找借口。";
+        return "冷硬现实主义：后果链条显性且可计量（身体损耗、资源消耗、社会评价下滑）；权力结构与代价机制同场呈现（债务、税负、告密、保护费、程序惩罚）；拒绝宿命论与叙事豁免，不为行动后果提供情绪化赦免。";
       case "cozy":
-        return "温情日常：慢一点，但细节要真（饭味、灯火、手上茧、零钱）；人情与小心思靠动作/停顿/话里话外呈现；冲突更贴身（钱、面子、关系、误会），不靠大场面。";
+        return "生活流细腻叙事：节奏放缓但信息不空转，以微观生活锚点维持真实度（气味、手感、器物痕迹、零钱尺度）；关系变化通过动作与停顿显影，不靠直白宣告；冲突聚焦日常成本（钱、面子、关系、误会）并要求可收束。";
       case "cdrama":
-        return "中式短剧/简单恋爱：节奏快、情绪点明确（误会/抓包/告白/反转），场景短、切换利落；台词直给但有钩子（“你到底想要什么？”“我只要你一句话。”）；少解释，多用动作与小道具（戒指、手机、病历、转账截图）推进；结尾留悬念或下一步冲突；绝不写主角心理，主角=玩家。";
+        return "短剧高情绪节奏：高频情绪节点驱动（误会、抓包、告白、反转），短场景快切且每场承担单一目标；台词直给但需形成下一拍悬念；以高信息小道具推进因果（聊天记录、转账截图、病历、戒指）；结尾保持冲突势能，且不代写主角内心（主角=玩家）。";
       case "minimal":
-        return "极简：短句为主，信息密度高；只写关键动作/细节/后果；每段都推动局势；少形容词，多动词；留白靠事实，不靠玄乎。";
+        return "极简高密度叙事：短句高信号，删除装饰性修辞；仅保留关键动作、关键细节、关键后果；每段必须改变局面或决策边界；少形容词多动词，留白建立在事实缺口而非抽象玄学。";
       default:
         return undefined;
     }
@@ -649,25 +996,23 @@ export function getNarrativeStylePresetText(
 
   switch (preset) {
     case "cinematic":
-      return "Cinematic: clear blocking (who stands where, light, motion), image-first, tension via concrete tells (footsteps, thin light, blood on knuckles); paragraph breaks like cuts; end on a hook, not a recap.";
+      return "Cinematic blocking: structure scenes with shot grammar (positions, sightlines, light, movement), surface filmable facts before interpretation, anchor tension in verifiable cues, cut paragraphs on visual beat changes, and end on unresolved action energy rather than recap.";
     case "literary":
-      return "Literary: varied rhythm without purple prose; tactile specificity (rust, damp, grease, old cloth); restrained metaphor; implications must rest on observable evidence; leave an aftertaste instead of wrapping everything up.";
+      return "Literary craft: vary sentence rhythm without semantic blur, prioritize embodied texture (smell, material, friction), keep metaphor load controlled, ground implications in observable evidence, and preserve aftertaste instead of hard-closing every conflict.";
     case "noir":
-      return "Noir: cold, hard, morally stained; barbed dialogue with subtext; clues via observation and misdirection (ash, mud, missing pages); everyone is calculating; the city (and people) are not clean.";
+      return "Noir investigation: maintain low-pressure atmosphere and high moral ambiguity, run dialogue as probe/counter-probe, distribute clues through observation plus misdirection, and keep motives tied to leverage, risk, and compromised institutions.";
     case "brutal":
-      return "Brutal realism: consequences have weight; pain is specific (breath, bruises, shaking hands, bills); power and price are explicit (tax, debt, snitches, protection money); no fate-talk, no softening.";
+      return "Hard realism: make consequence chains explicit and measurable (injury, cash burn, reputation loss), expose power-price mechanics on-screen (debt, taxes, snitches, protection), and avoid both fate language and narrative absolution.";
     case "cozy":
-      return "Cozy slice-of-life: slower pace but sharp texture (food smell, lamplight, small change, calluses); subtext via action/dialogue pauses; conflicts are intimate and practical (money, face, relationships).";
+      return "Slice-of-life texture: run slower pacing with concrete domestic anchors, reveal relationship shifts through actions and pauses rather than declarations, and center conflicts on practical intimacy costs (money, face, trust, misunderstandings).";
     case "cdrama":
-      return "C-drama short-form / simple romance: fast, punchy beats (misunderstanding, caught-in-the-act, confession, reversal); short scenes and clean cut points; direct lines with a hook; push plot via actions and small props (ring, phone, medical report, transfer screenshot); end on a cliffhanger; never narrate the protagonist's inner life (player = protagonist).";
+      return "Short-form emotional beats: drive with high-frequency turning points, keep scenes short with single-purpose objectives, write direct lines that launch the next beat, push causality via high-information props/evidence, and end with retained cliff pressure; never narrate protagonist inner monologue (player = protagonist).";
     case "minimal":
-      return "Minimal: short sentences, high signal; key actions/details/consequences only; fewer adjectives, more verbs; every paragraph advances the situation.";
+      return "Minimal high-signal: compress to short, information-dense lines; keep only decisive actions/details/consequences; enforce paragraph-level state change; prefer verbs over adjectives; build negative space from factual gaps, not vagueness.";
     default:
       return undefined;
   }
 }
-
-export type WorldDispositionPreset = "theme" | "benevolent" | "mixed" | "cynical";
 
 export function getWorldDispositionPresetText(
   preset: WorldDispositionPreset,
@@ -680,11 +1025,11 @@ export function getWorldDispositionPresetText(
   if (isZh) {
     switch (preset) {
       case "benevolent":
-        return "人性本善（基线偏善）：善意与纯爱并不罕见；互相帮助不一定要回报；恶人也存在，但不会“全世界都在算计你”。";
+        return "高信任社会（偏善）：默认合作概率较高、互助摩擦成本较低；善意行为可无即时回报但仍具可持续性；冲突存在但系统不会预设“全员敌意”，背叛事件应被标注为偏差而非常态。";
       case "mixed":
-        return "善恶并存（现实中间值）：有人真心，有人算计；善意可能无条件，也可能带交换；让行为与代价说话，不要预设结论。";
+        return "现实混合基线：合作与机会主义并存，行为动机分布呈中位；同一角色可在不同压力下切换策略；以行为证据与成本收益判定立场，不提前盖章“好人/坏人”。";
       case "cynical":
-        return "犬儒/交易社会（基线偏冷）：善意更常带条件或成本；人际多算计、更多试探；但仍允许少数真心与纯爱，且往往更昂贵、更冒险。";
+        return "低信任交易社会（偏冷）：合作默认附带条件，信息交换伴随验证与防骗成本；关系更依赖筹码、背书与可执行约束；仍允许真诚关系存在，但其维护成本更高、脆弱性更强。";
       default:
         return undefined;
     }
@@ -692,11 +1037,11 @@ export function getWorldDispositionPresetText(
 
   switch (preset) {
     case "benevolent":
-      return "Benevolent baseline: kindness and sincere love are not rare; help does not always demand repayment; evil exists, but the whole world isn't out to get you.";
+      return "High-trust baseline: cooperation is statistically common, prosocial actions face lower friction, and help can occur without immediate repayment; conflict exists, but systemic hostility is not the default model.";
     case "mixed":
-      return "Mixed baseline: people range from sincere to calculating; kindness can be unconditional or transactional; let behavior and cost reveal which.";
+      return "Mixed realist baseline: sincerity and opportunism coexist, actors can switch strategy under pressure, and alignment should be inferred from observed behavior plus cost/benefit rather than moral labels.";
     case "cynical":
-      return "Cynical baseline: kindness more often has strings attached; relationships involve leverage and testing; still allow pockets of sincerity and pure love, usually at real cost.";
+      return "Low-trust transactional baseline: cooperation usually carries conditions, exchange requires verification, and relationships are leverage-sensitive; sincere bonds can exist, but with higher maintenance and exposure cost.";
     default:
       return undefined;
   }
@@ -717,14 +1062,7 @@ export function resolveWorldDisposition(input: {
   return getWorldDispositionPresetText(input.preset, input.language);
 }
 
-export type PlayerMalicePreset =
-  | "theme"
-  | "intimidation"
-  | "bureaucratic"
-  | "manipulation"
-  | "sabotage";
-
-export type PlayerMaliceIntensity = "light" | "standard" | "heavy";
+export type PlayerMaliceIntensity = PlayerMaliceIntensityPreset;
 
 export function getPlayerMaliceIntensityText(
   intensity: PlayerMaliceIntensity,
@@ -734,20 +1072,20 @@ export function getPlayerMaliceIntensityText(
   if (isZh) {
     switch (intensity) {
       case "light":
-        return "强度：轻（Trace/Heat 积累更慢；反制升级更慢；更容易周旋与试错，但仍要讲机制）。";
+        return "强度：轻（低风控曲线）。Trace/Heat 增长斜率较低，反制触发阈值更宽，允许更长试错窗口；但证据链与因果追踪仍持续生效。";
       case "heavy":
-        return "强度：重（Trace/Heat 积累更快；更快被盯上；更快升级到有组织反制；失误代价更大）。";
+        return "强度：重（高风控曲线）。Trace/Heat 快速累积，反制阈值前移，世界更早进入组织化应对；误判与失误将引发复合惩罚。";
       default:
-        return "强度：标准（Trace/Heat 与反制升级为常规速度）。";
+        return "强度：标准（基线风控曲线）。Trace/Heat 与反制升级按常规节奏运行，既保留操作空间，也维持可预期压力。";
     }
   }
   switch (intensity) {
     case "light":
-      return "Intensity: Light (slower Trace/Heat; slower escalation; more room to maneuver and test, but still mechanism-driven).";
+      return "Intensity: Light (low-risk curve). Slower Trace/Heat slope and wider escalation thresholds create longer experimentation windows, while evidence continuity and causal accountability remain active.";
     case "heavy":
-      return "Intensity: Heavy (faster Trace/Heat; faster scrutiny; faster organized counterplay; mistakes cost more).";
+      return "Intensity: Heavy (high-risk curve). Faster Trace/Heat growth and earlier thresholds push the world into coordinated counterplay sooner; mistakes compound into multi-layer penalties.";
     default:
-      return "Intensity: Standard (baseline Trace/Heat and escalation speed).";
+      return "Intensity: Standard (baseline risk curve). Trace/Heat and escalation progress at default cadence, balancing play flexibility with reliable systemic pressure.";
   }
 }
 
@@ -763,31 +1101,31 @@ export function getPlayerMalicePresetText(
     switch (preset) {
       case "intimidation":
         return [
-          "暴力威慑：把暴力当成谈判工具。",
-          "- 强调：恐惧如何在短期奏效（沉默、配合、让路），以及它留下的痕迹（目击、血迹、复仇链）。",
-          "- 反制：人群抱团、守卫增援、伏击、赏金、报复；不是天降报应，而是“有人开始认真对付你”。",
-          "- 玩法：给玩家明确可操作的窗口（无人处、遮蔽、伪装、收买目击者）与明确代价。",
+          "暴力威慑链：将暴力视为高压谈判与控制工具。",
+          "- 机制焦点：短期服从收益（沉默、让路、资源交出）与长期外溢成本（目击、取证、复仇联结）并行累计。",
+          "- 反制模型：群体结盟、守卫增援、诱捕、悬赏、跨场景报复；反应来源于组织学习而非道德天罚。",
+          "- 可玩性要求：提供可执行窗口（时机、掩体、伪装、证人处理）并同步标注即时/延迟代价。",
         ].join("\n");
       case "bureaucratic":
         return [
-          "制度钻空子：用流程、纸面、漏洞、关系网去做坏事。",
-          "- 强调：印章/许可证/账本/收据/监控/口供/流程卡点；“合法”的外壳与真实伤害并存。",
-          "- 反制：稽查、审计、对账、冷处理、黑名单、冻结、选择性执法；对手也会用规则。",
-          "- 玩法：允许灰色操作，但要有证据链、时间成本与可追查的纸面痕迹。",
+          "制度渗透链：利用流程、文书、权限与关系网络实施伤害。",
+          "- 机制焦点：合法外观与真实损害并存，关键在于节点控制（审批、盖章、台账、收据、口供、监控留痕）。",
+          "- 反制模型：稽查、审计、交叉对账、冻结、黑名单、选择性执法；对手同样可调用制度武器。",
+          "- 可玩性要求：允许灰度操作，但必须承载可追溯证据链、时间成本与文书残留。",
         ].join("\n");
       case "manipulation":
         return [
-          "情感操控：用承诺、亲密、羞辱、孤立、PUA、三角关系去控制他人。",
-          "- 强调：言语与行为的不一致、边界推进、互相试探；不要替主角写心理，只写“对方怎么被影响”。",
-          "- 反制：朋友提醒、旁观者介入、NPC 自尊/底线爆发、反向操控、揭穿与社会性死亡。",
-          "- 玩法：给“可证伪的细节”（聊天记录、目击、礼物、谎言被对上账）让剧情可落地。",
+          "关系操控链：通过承诺、亲密、羞辱、孤立与信息不对称塑造他人决策。",
+          "- 机制焦点：行为-话术不一致、边界推进、依赖塑造与关系三角；不代写主角心理，只呈现他人受影响路径。",
+          "- 反制模型：同伴预警、旁观介入、NPC 底线反弹、反向操控、公开揭穿与声誉坍塌。",
+          "- 可玩性要求：关键转折需绑定可核验细节（聊天记录、目击、礼物流向、口径冲突）。",
         ].join("\n");
       case "sabotage":
         return [
-          "纯破坏/搅局：目标不是获利，而是让系统失灵、让别人难受、让局势变烂。",
-          "- 强调：连锁反应（供应断裂、信任崩坏、秩序失控）、以及“无辜波及”的现实代价。",
-          "- 反制：封锁、宵禁、搜捕、集体惩罚、结社自保；世界会收紧而不是陪你玩花活。",
-          "- 玩法：每次破坏都要留下“Trace/Heat”（痕迹/热度），并把后续压力持续带回场景。",
+          "破坏失稳链：目标是削弱系统可用性与秩序稳定，而非直接获利。",
+          "- 机制焦点：连锁失效（供应断裂、信任衰减、治理失灵）与附带伤害成本同步上升。",
+          "- 反制模型：封锁、宵禁、搜捕、连坐式风控、社区自保；世界策略会持续收紧。",
+          "- 可玩性要求：每次破坏必须生成可追踪 Trace/Heat，并把压力持续回灌到后续场景。",
         ].join("\n");
       default:
         return undefined;
@@ -797,31 +1135,31 @@ export function getPlayerMalicePresetText(
   switch (preset) {
     case "intimidation":
       return [
-        "Violent intimidation: treat violence as negotiation.",
-        "- Emphasize how fear works short-term (silence, compliance, doors opening) and what it leaves behind (witnesses, traces, vendettas).",
-        "- Counterplay: groups, backup, ambush, warrants/bounties—mechanisms, not moral thunderbolts.",
-        "- Playability: give clear windows (privacy, disguise, payoff) and clear costs.",
+        "Violent coercion chain: use violence as a high-pressure negotiation instrument.",
+        "- Mechanic focus: immediate compliance gains and delayed spillover costs (witnesses, forensics, vendetta links) accumulate together.",
+        "- Counterplay model: coalition, reinforcement, bait operations, warrants/bounties, cross-scene retaliation driven by institutional learning.",
+        "- Playability requirement: expose executable windows (timing, cover, disguise, witness handling) with explicit short/long-horizon costs.",
       ].join("\n");
     case "bureaucratic":
       return [
-        "Rules-lawyer crime: harm via paperwork, process, loopholes, and networks.",
-        "- Emphasize permits, ledgers, receipts, CCTV, testimony, audits; legality-as-mask.",
-        "- Counterplay: inspections, audits, freezes, blacklists, selective enforcement; opponents use rules too.",
-        "- Playability: allow gray moves, but require traceable evidence chains and time costs.",
+        "Institutional exploit chain: weaponize process, paperwork, authority, and networks to inflict harm.",
+        "- Mechanic focus: legality-as-mask plus node control (approvals, ledgers, receipts, testimony, surveillance residue).",
+        "- Counterplay model: inspections, cross-audits, freezes, blacklists, selective enforcement; adversaries can also invoke rules.",
+        "- Playability requirement: permit gray operations, but enforce traceable paper trails, lead times, and auditable residue.",
       ].join("\n");
     case "manipulation":
       return [
-        "Emotional manipulation: control through promises, intimacy, shame, isolation, triangles.",
-        "- Emphasize inconsistency, boundary-pushing, leverage; never narrate the protagonist's inner life—show who is influenced and how.",
-        "- Counterplay: friends intervene, NPC boundaries, backlash, exposure, social fallout.",
-        "- Playability: anchor twists in checkable details (messages, witnesses, gifts, contradictions).",
+        "Relational control chain: steer others through promises, intimacy, shame, isolation, and asymmetrical information.",
+        "- Mechanic focus: speech-action mismatch, boundary drift, dependency shaping, and triangle pressure; never narrate protagonist inner monologue.",
+        "- Counterplay model: peer warning, third-party intervention, boundary backlash, reverse manipulation, exposure cascades.",
+        "- Playability requirement: bind major turns to checkable evidence (messages, witnesses, gifts, contradictory statements).",
       ].join("\n");
     case "sabotage":
       return [
-        "Sabotage / chaos: goal is dysfunction, not profit.",
-        "- Emphasize cascades (supply breaks, trust collapses, order tightens) and collateral cost.",
-        "- Counterplay: lockdowns, curfews, searches, mutual-aid groups; the world tightens.",
-        "- Playability: every act leaves Trace/Heat and the pressure persists across scenes.",
+        "Destabilization chain: primary objective is system dysfunction, not direct profit.",
+        "- Mechanic focus: cascading failures (supply, trust, governance) and collateral cost escalation.",
+        "- Counterplay model: lockdowns, curfews, sweeps, collective risk controls, mutual-aid hardening; the world progressively tightens.",
+        "- Playability requirement: each act emits persistent Trace/Heat and feeds pressure back into subsequent scenes.",
       ].join("\n");
     default:
       return undefined;

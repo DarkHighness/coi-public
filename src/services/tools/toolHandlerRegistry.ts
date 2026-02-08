@@ -37,6 +37,8 @@ export interface ToolContext {
   vfsSession: VfsSession;
   /** Required command skill paths that must be read in current epoch */
   requiredCommandSkillPaths?: string[];
+  /** Required preset skill paths that must be read in current epoch */
+  requiredPresetSkillPaths?: string[];
   /** VFS actor identity for policy checks (defaults to ai in tool handlers) */
   vfsActor?: VfsActor;
   /** VFS mode for policy checks */

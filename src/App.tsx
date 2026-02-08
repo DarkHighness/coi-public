@@ -24,6 +24,7 @@ import {
 } from "./components/common/ErrorBoundary";
 import { RuntimeProvider, useRuntimeContext } from "./runtime/context";
 import type { RuntimeValidationMode } from "./runtime/state";
+import type { SavePresetProfile } from "./types";
 import { presentProviderValidationResult } from "./runtime/effects/providerValidationUi";
 import {
   ConnectedToastContainer,
@@ -372,6 +373,7 @@ function AppContent() {
     customContext?: string,
     seedImage?: Blob,
     protagonistFeature?: string,
+    presetProfile?: SavePresetProfile,
   ) => {
     if (await performValidation("start")) {
       setStreamedText("");
@@ -393,6 +395,7 @@ function AppContent() {
         undefined, // existingSlotId - not resuming
         seedImage, // Pass seedImage blob for IndexedDB storage
         protagonistFeature,
+        presetProfile,
       );
     }
   };

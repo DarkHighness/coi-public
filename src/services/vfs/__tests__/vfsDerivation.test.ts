@@ -34,6 +34,13 @@ describe("deriveGameStateFromVfs", () => {
         atmosphere: { envTheme: "wuxia", ambience: "rainy" },
         turnNumber: 3,
         forkId: 1,
+        presetProfile: {
+          narrativeStylePreset: "cinematic",
+          worldDispositionPreset: "mixed",
+          playerMalicePreset: "manipulation",
+          playerMaliceIntensity: "heavy",
+          locked: true,
+        },
         initialPrompt: "Begin.",
       }),
       "world/theme_config.json": makeJsonFile("world/theme_config.json", {
@@ -100,6 +107,13 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.turnNumber).toBe(3);
     expect(state.forkId).toBe(1);
     expect(state.initialPrompt).toBe("Begin.");
+    expect(state.presetProfile).toEqual({
+      narrativeStylePreset: "cinematic",
+      worldDispositionPreset: "mixed",
+      playerMalicePreset: "manipulation",
+      playerMaliceIntensity: "heavy",
+      locked: true,
+    });
     expect(state.themeConfig?.name).toBe("Wuxia");
     expect(state.customRules).toHaveLength(1);
     expect(state.character.name).toBe("Arin");

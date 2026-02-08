@@ -5,6 +5,7 @@ import type {
   GameState,
   LanguageCode,
   SaveSlot,
+  SavePresetProfile,
   StorySegment,
   UIState,
   ThemeConfig,
@@ -100,6 +101,7 @@ export interface RuntimeEngineActions {
     existingSlotId?: string,
     seedImage?: Blob,
     protagonistFeature?: string,
+    presetProfile?: SavePresetProfile,
   ) => Promise<void>;
   resumeOutlineGeneration: (
     onStream?: (text: string) => void,

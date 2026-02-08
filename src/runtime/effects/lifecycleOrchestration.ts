@@ -3,7 +3,11 @@ import type { TFunction } from "i18next";
 import { THEMES, LANG_MAP } from "../../utils/constants";
 import { preloadAudio } from "../../utils/audioLoader";
 import { saveImage } from "../../utils/imageStorage";
-import { getThemeName, IMAGE_BASED_THEME } from "../../services/ai/utils";
+import {
+  getThemeName,
+  IMAGE_BASED_THEME,
+  normalizeSavePresetProfile,
+} from "../../services/ai/utils";
 import {
   ContextOverflowError,
   HistoryCorruptedError,
@@ -15,6 +19,7 @@ import type {
   AISettings,
   GameState,
   OutlineConversationState,
+  SavePresetProfile,
   UnifiedMessage,
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
@@ -68,6 +73,7 @@ interface BuildOpeningStateParams {
   language: string;
   customContext?: string;
   seedImageId?: string;
+  presetProfile?: SavePresetProfile;
   includeCustomContextInPrompt?: boolean;
   clearLiveToolCalls?: boolean;
 }
@@ -221,6 +227,7 @@ export function createLifecycleActions({
     language,
     customContext,
     seedImageId,
+    presetProfile,
     includeCustomContextInPrompt = false,
     clearLiveToolCalls = false,
   }: BuildOpeningStateParams): GameState => {
@@ -236,10 +243,15 @@ export function createLifecycleActions({
       clearLiveToolCalls,
     });
 
+    const hydratedWithPresetProfile = hydratedState;
+    hydratedWithPresetProfile.presetProfile = normalizeSavePresetProfile(
+      presetProfile,
+    );
+
     const { firstNode, openingAtmosphere, fallbackPrompt } =
       buildOpeningNarrativeSegment({
         outline,
-        baseState: hydratedState,
+        baseState: hydratedWithPresetProfile,
         theme,
         t,
         customContext,
@@ -256,7 +268,7 @@ export function createLifecycleActions({
     }
 
     return applyOpeningNarrativeState(
-      hydratedState,
+      hydratedWithPresetProfile,
       firstNode,
       openingAtmosphere,
       fallbackPrompt,
@@ -311,6 +323,7 @@ export function createLifecycleActions({
     existingSlotId?: string,
     seedImage?: Blob,
     protagonistFeature?: string,
+    presetProfile?: SavePresetProfile,
   ): Promise<void> => {
     let selectedTheme: string;
     if (seedImage && !initialTheme) {
@@ -342,6 +355,10 @@ export function createLifecycleActions({
     const slotId = existingSlotId || createSaveSlot(displayTheme);
     setCurrentSlotId(slotId);
 
+    const normalizedPresetProfile = normalizeSavePresetProfile(
+      presetProfile ?? gameStateRef.current.presetProfile,
+    );
+
     try {
       vfsSession.restore({});
       seedVfsSessionFromDefaults(vfsSession);
@@ -356,6 +373,7 @@ export function createLifecycleActions({
           forkId: 0,
           language,
           customContext,
+          presetProfile: normalizedPresetProfile,
         }),
         "application/json",
       );
@@ -384,17 +402,24 @@ export function createLifecycleActions({
         theme: persistedTheme,
         language,
         customContext,
+        presetProfile: normalizedPresetProfile,
       });
     } catch (e) {
       console.warn("[StartNewGame] Failed to persist initial save snapshot", e);
     }
 
     resetState(displayTheme);
-    setGameState((prev) => ({
-      ...prev,
-      isProcessing: true,
-      liveToolCalls: [],
-    }));
+    setGameState((prev) => {
+      const nextState = {
+        ...prev,
+        customContext,
+        presetProfile: normalizedPresetProfile,
+        isProcessing: true,
+        liveToolCalls: [],
+      };
+      gameStateRef.current = nextState;
+      return nextState;
+    });
 
     navigate("/initializing");
 
@@ -441,6 +466,7 @@ export function createLifecycleActions({
         onPhaseProgress,
         seedImageBase64,
         protagonistFeature,
+        presetProfile: normalizedPresetProfile,
         logPrefix: "StartNewGame",
       });
 
@@ -506,6 +532,7 @@ export function createLifecycleActions({
           slotId,
           seedImage,
           protagonistFeature,
+          normalizedPresetProfile,
         );
       }
 
@@ -524,6 +551,7 @@ export function createLifecycleActions({
         language,
         customContext,
         seedImageId,
+        presetProfile: normalizedPresetProfile,
       });
 
       await commitOutlineState({
@@ -604,6 +632,9 @@ export function createLifecycleActions({
           onStream,
           onPhaseProgress,
           currentSlotId || undefined,
+          undefined,
+          undefined,
+          gameStateRef.current.presetProfile,
         );
       }
 
@@ -641,6 +672,7 @@ export function createLifecycleActions({
         saveToSlot,
         onPhaseProgress,
         resumeFrom,
+        presetProfile: gameStateRef.current.presetProfile,
         sessionTag,
         logPrefix,
       });
@@ -658,6 +690,7 @@ export function createLifecycleActions({
         theme,
         language: resumeFrom.language,
         customContext,
+        presetProfile: gameStateRef.current.presetProfile,
         includeCustomContextInPrompt: true,
         clearLiveToolCalls: true,
       });

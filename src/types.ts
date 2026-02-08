@@ -356,6 +356,39 @@ export interface ResolvedThemeConfig {
   isRestricted: boolean;
 }
 
+export type NarrativeStylePreset =
+  | "theme"
+  | "cinematic"
+  | "literary"
+  | "noir"
+  | "brutal"
+  | "cozy"
+  | "cdrama"
+  | "minimal";
+
+export type WorldDispositionPreset =
+  | "theme"
+  | "benevolent"
+  | "mixed"
+  | "cynical";
+
+export type PlayerMalicePreset =
+  | "theme"
+  | "intimidation"
+  | "bureaucratic"
+  | "manipulation"
+  | "sabotage";
+
+export type PlayerMaliceIntensityPreset = "light" | "standard" | "heavy";
+
+export interface SavePresetProfile {
+  narrativeStylePreset: NarrativeStylePreset;
+  worldDispositionPreset: WorldDispositionPreset;
+  playerMalicePreset: PlayerMalicePreset;
+  playerMaliceIntensity: PlayerMaliceIntensityPreset;
+  locked: true;
+}
+
 export interface GameState {
   // Tree Structure: ID -> Segment
   nodes: Record<string, StorySegment>;
@@ -402,6 +435,7 @@ export interface GameState {
   // Game Context (for save/load and continuity)
   language: string; // Language code used for this game (e.g. "en", "zh")
   customContext?: string; // User-provided custom context for story generation
+  presetProfile?: SavePresetProfile; // Per-save preset profile chosen at game start
   seedImageId?: string; // ID of user-uploaded starting image (stored in IndexedDB)
 
   // Theme configuration (resolved at outline generation, avoids i18n lookups)
@@ -1288,37 +1322,24 @@ export interface AISettings {
      * Narrative style preset. Applies a concise, model-robust style override on top of theme defaults.
      * If customContext includes <narrative_style>, that takes priority.
      */
-    narrativeStylePreset?:
-      | "theme"
-      | "cinematic"
-      | "literary"
-      | "noir"
-      | "brutal"
-      | "cozy"
-      | "cdrama"
-      | "minimal";
+    narrativeStylePreset?: NarrativeStylePreset;
     /**
      * World disposition preset. Sets a small explicit baseline for "human nature" and social tone.
      * If customContext includes <world_disposition>, that takes priority.
      */
-    worldDispositionPreset?: "theme" | "benevolent" | "mixed" | "cynical";
+    worldDispositionPreset?: WorldDispositionPreset;
     /**
      * Player malice playstyle preset. Biases how the simulation supports malicious play
      * (crime, coercion, manipulation) with clear mechanisms and believable counterplay.
      * This is a supplement, not a forced role: the player may still act otherwise.
      * If customContext includes <player_malice_profile>, that takes priority.
      */
-    playerMalicePreset?:
-      | "theme"
-      | "intimidation"
-      | "bureaucratic"
-      | "manipulation"
-      | "sabotage";
+    playerMalicePreset?: PlayerMalicePreset;
     /**
      * Player malice intensity. Controls how fast Trace/Heat accumulates and how quickly counterplay escalates.
      * If customContext includes <player_malice_intensity>, that takes priority.
      */
-    playerMaliceIntensity?: "light" | "standard" | "heavy";
+    playerMaliceIntensity?: PlayerMaliceIntensityPreset;
     // Tutorial completion flags
     tutorialStartScreenCompleted?: boolean; // StartScreen tutorial has been completed
     tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed

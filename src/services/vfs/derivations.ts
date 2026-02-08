@@ -13,6 +13,7 @@ import type {
   NPC,
   Placeholder,
   Quest,
+  SavePresetProfile,
   TimelineEvent,
   TokenUsage,
 } from "@/types";
@@ -43,6 +44,32 @@ const DEFAULT_ATMOSPHERE: AtmosphereObject = {
   envTheme: "fantasy",
   ambience: "quiet",
 };
+
+const DEFAULT_SAVE_PRESET_PROFILE: SavePresetProfile = {
+  narrativeStylePreset: "theme",
+  worldDispositionPreset: "theme",
+  playerMalicePreset: "theme",
+  playerMaliceIntensity: "standard",
+  locked: true,
+};
+
+const normalizeSavePresetProfile = (
+  profile: Partial<SavePresetProfile> | undefined,
+): SavePresetProfile => ({
+  narrativeStylePreset:
+    profile?.narrativeStylePreset ??
+    DEFAULT_SAVE_PRESET_PROFILE.narrativeStylePreset,
+  worldDispositionPreset:
+    profile?.worldDispositionPreset ??
+    DEFAULT_SAVE_PRESET_PROFILE.worldDispositionPreset,
+  playerMalicePreset:
+    profile?.playerMalicePreset ??
+    DEFAULT_SAVE_PRESET_PROFILE.playerMalicePreset,
+  playerMaliceIntensity:
+    profile?.playerMaliceIntensity ??
+    DEFAULT_SAVE_PRESET_PROFILE.playerMaliceIntensity,
+  locked: true,
+});
 
 const normalizeTokenUsage = (usage: unknown): TokenUsage | undefined => {
   if (!usage || typeof usage !== "object") {
@@ -117,6 +144,7 @@ const createBaseGameState = (): GameState => ({
   theme: "fantasy",
   time: "Day 1, 08:00",
   language: "zh",
+  presetProfile: DEFAULT_SAVE_PRESET_PROFILE,
   tokenUsage: {
     promptTokens: 0,
     completionTokens: 0,
@@ -374,6 +402,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         forkId?: number;
         language?: string;
         customContext?: string;
+        presetProfile?: Partial<SavePresetProfile>;
         seedImageId?: string;
         narrativeScale?: GameState["narrativeScale"];
         initialPrompt?: string;
@@ -409,6 +438,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       if (typeof globalData.customContext === "string") {
         state.customContext = globalData.customContext;
       }
+      state.presetProfile = normalizeSavePresetProfile(globalData.presetProfile);
       if (typeof globalData.seedImageId === "string") {
         state.seedImageId = globalData.seedImageId;
       }

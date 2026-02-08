@@ -17,16 +17,30 @@ describe("contextInjector", () => {
     const history: any[] = [];
 
     injectSudoModeInstruction(history);
-    injectNormalTurnInstruction(history, "vfs_commit_turn", false, {
-      godMode: true,
-      unlockMode: true,
-    });
+    injectNormalTurnInstruction(
+      history,
+      "vfs_commit_turn",
+      false,
+      {
+        godMode: true,
+        unlockMode: true,
+      },
+      ["skills/presets/narrative-style/SKILL.md"],
+      [
+        {
+          path: "skills/presets/narrative-style/SKILL.md",
+          tag: "narrative_style",
+          profile: "cinematic",
+          source: "save_profile",
+        },
+      ],
+    );
     injectNormalTurnInstruction(history, "vfs_commit_turn", true, {
       godMode: false,
       unlockMode: false,
     });
 
-    expect(history).toHaveLength(6);
+    expect(history).toHaveLength(8);
     expect(history.every((msg) => msg.role === "user")).toBe(true);
     expect(getText(history[0])).toContain("FORCE UPDATE MODE");
     expect(getText(history[1])).toContain("COMMAND SKILL REQUIRED");
@@ -35,8 +49,12 @@ describe("contextInjector", () => {
     expect(getText(history[3])).toContain("You are currently in God mode.");
     expect(getText(history[3])).toContain("commands/god/SKILL.md");
     expect(getText(history[3])).toContain("commands/unlock/SKILL.md");
-    expect(getText(history[4])).toContain("[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]");
-    expect(getText(history[5])).toContain("COMMAND SKILL REQUIRED");
+    expect(getText(history[4])).toContain("PRESET SKILLS ACTIVE");
+    expect(getText(history[4])).toContain("skills/presets/narrative-style/SKILL.md");
+    expect(getText(history[5])).toContain("PRESET PROFILES ACTIVE");
+    expect(getText(history[5])).toContain("<narrative_style> profile=cinematic source=save_profile");
+    expect(getText(history[6])).toContain("[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]");
+    expect(getText(history[7])).toContain("COMMAND SKILL REQUIRED");
   });
 
   it("injects budget and no-tool-call messages", () => {

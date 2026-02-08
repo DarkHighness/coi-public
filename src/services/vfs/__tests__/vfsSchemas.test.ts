@@ -104,6 +104,27 @@ describe("vfs schemas", () => {
     ).not.toThrow();
   });
 
+  it("accepts save-level presetProfile in global schema", () => {
+    const schema = getSchemaForPath("world/global.json");
+    expect(() =>
+      schema.parse({
+        time: "t",
+        theme: "fantasy",
+        currentLocation: "loc:1",
+        atmosphere: { envTheme: "fantasy", ambience: "quiet" },
+        turnNumber: 0,
+        forkId: 0,
+        presetProfile: {
+          narrativeStylePreset: "cinematic",
+          worldDispositionPreset: "mixed",
+          playerMalicePreset: "manipulation",
+          playerMaliceIntensity: "heavy",
+          locked: true,
+        },
+      }),
+    ).not.toThrow();
+  });
+
   it("matches custom rule pack markdown paths", () => {
     const schema = getSchemaForPath("custom_rules/00-core/RULES.md");
     expect(() =>

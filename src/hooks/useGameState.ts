@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GameState, StoryOutline, CharacterStatus, ForkTree } from "../types";
 import { DEFAULT_CHARACTER } from "../utils/constants";
+import { DEFAULT_SAVE_PRESET_PROFILE } from "../services/ai/utils";
 
 // Default fork tree (original timeline)
 const INITIAL_FORK_TREE: ForkTree = {
@@ -62,6 +63,7 @@ const INITIAL_STATE: GameState = {
   // Game Context
   language: "zh", // Default language
   customContext: undefined, // No custom context by default
+  presetProfile: DEFAULT_SAVE_PRESET_PROFILE,
 
   tokenUsage: {
     promptTokens: 0,
@@ -114,6 +116,7 @@ export const useGameState = () => {
       unlockMode: false,
       // Custom rules (preserve from previous or start empty)
       customRules: [],
+      presetProfile: DEFAULT_SAVE_PRESET_PROFILE,
     });
   };
 

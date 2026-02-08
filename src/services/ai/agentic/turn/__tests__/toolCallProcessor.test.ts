@@ -28,6 +28,7 @@ const createContext = () => ({
     changedEntities: new Map<string, string>(),
     vfsSession: {},
     requiredCommandSkillPaths: ["skills/commands/sudo/SKILL.md"],
+    requiredPresetSkillPaths: ["skills/presets/narrative-style/SKILL.md"],
   },
   gameState: { forkId: 0 },
   settings: { story: { modelId: "m1" } },
@@ -90,6 +91,7 @@ describe("toolCallProcessor", () => {
         settings: ctx.settings,
         vfsSession: ctx.loopState.vfsSession,
         requiredCommandSkillPaths: ctx.loopState.requiredCommandSkillPaths,
+        requiredPresetSkillPaths: ctx.loopState.requiredPresetSkillPaths,
       }),
     );
     expect(result).toEqual({ success: true, data: 123 });

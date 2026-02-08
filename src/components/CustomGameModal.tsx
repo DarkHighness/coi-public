@@ -1,10 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { SavePresetProfile } from "../types";
+import {
+  DEFAULT_SAVE_PRESET_PROFILE,
+  normalizeSavePresetProfile,
+} from "../services/ai/utils";
+import { PresetProfileFields } from "./PresetProfileFields";
 
 interface CustomGameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onStart: (options: { customContext?: string; protagonistRole?: string }) => void;
+  onStart: (options: {
+    customContext?: string;
+    protagonistRole?: string;
+    presetProfile?: SavePresetProfile;
+  }) => void;
 }
 
 const GAMEPLAY_PRESET_KEYS = [
@@ -105,6 +115,8 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
   const [rules, setRules] = useState("");
   const [openingScene, setOpeningScene] = useState("");
   const [legacyText, setLegacyText] = useState("");
+  const [presetProfile, setPresetProfile] =
+    useState<SavePresetProfile>(DEFAULT_SAVE_PRESET_PROFILE);
 
   const fieldLabelClassName =
     "block text-xs font-bold uppercase tracking-wider text-theme-text-secondary mb-2";
@@ -176,6 +188,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
     onStart({
       customContext: selectedContext ? selectedContext : undefined,
       protagonistRole: protagonistRole.trim() || undefined,
+      presetProfile: normalizeSavePresetProfile(presetProfile),
     });
   };
 
@@ -201,7 +214,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
           <button
             onClick={onClose}
             className="p-2.5 text-theme-text-secondary hover:text-theme-text transition-colors rounded-xl hover:bg-theme-surface-highlight/60 shrink-0"
-            aria-label={t("close", "Close")}
+            aria-label={t("close")}
           >
             <svg
               className="w-6 h-6"
@@ -326,8 +339,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
             </div>
           )}
 
-          {mode === "structured" && (
-            <button
+          <button
               type="button"
               onClick={() => setShowAdvanced((v) => !v)}
               className="w-full flex items-center justify-between py-3 border-y border-theme-divider/60 hover:bg-theme-surface-highlight/25 transition-colors"
@@ -350,10 +362,11 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                 />
               </svg>
             </button>
-          )}
 
-          {mode === "structured" && showAdvanced && (
+          {showAdvanced && (
             <div className="space-y-4 animate-fade-in pt-1">
+              {mode === "structured" && (
+                <>
               <div>
                 <label className={fieldLabelClassName}>
                   {t("customGame.fields.narrativeStyle")}
@@ -364,6 +377,9 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                   placeholder={t("customGame.placeholders.narrativeStyle")}
                   className={`${textareaClassName} h-24`}
                 />
+                <p className="mt-2 text-[11px] text-theme-text-secondary leading-relaxed">
+                  {t("customGame.narrativeStyleOverrideHint")}
+                </p>
               </div>
 
               <div>
@@ -461,6 +477,28 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
                   onChange={(e) => setOpeningScene(e.target.value)}
                   placeholder={t("customGame.placeholders.openingScene")}
                   className={`${textareaClassName} h-24`}
+                />
+              </div>
+                </>
+              )}
+
+              <div
+                className={
+                  mode === "structured"
+                    ? "pt-4 border-t border-theme-divider/60"
+                    : ""
+                }
+              >
+                <div className="text-xs font-bold uppercase tracking-wider text-theme-text-secondary mb-2">
+                  {t("presetProfile.sectionTitle")}
+                </div>
+                <p className="text-[11px] text-theme-text-secondary mb-3 leading-relaxed">
+                  {t("presetProfile.priorityHint")}
+                </p>
+                <PresetProfileFields
+                  value={presetProfile}
+                  onChange={setPresetProfile}
+                  showHelp={false}
                 />
               </div>
             </div>

@@ -5,6 +5,7 @@
  */
 
 import type { CustomRulesAckPendingReason, UnifiedMessage } from "../../../../types";
+import type { ActivePresetSkillRequirement } from "../../utils";
 import { createUserMessage } from "../../../messageTypes";
 import { generateBudgetPrompt, BudgetState } from "../budgetUtils";
 import {
@@ -45,6 +46,8 @@ export function injectNormalTurnInstruction(
   finishToolName: string,
   isCleanupMode: boolean = false,
   modeFlags?: { godMode?: boolean; unlockMode?: boolean },
+  requiredPresetSkillPaths: string[] = [],
+  requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
 ): void {
   history.push(
     createUserMessage(
@@ -81,6 +84,27 @@ export function injectNormalTurnInstruction(
 
   if (modeSkillLines.length > 1) {
     history.push(createUserMessage(modeSkillLines.join("\n")));
+  }
+
+  if (requiredPresetSkillPaths.length > 0) {
+    const lines = [
+      "[SYSTEM: PRESET SKILLS ACTIVE]",
+      "Before non-read tool calls, load active preset skills:",
+      ...requiredPresetSkillPaths.map((path) => `- current/${path}`),
+    ];
+    history.push(createUserMessage(lines.join("\n")));
+  }
+
+  if (requiredPresetSkillRequirements.length > 0) {
+    const lines = [
+      "[SYSTEM: PRESET PROFILES ACTIVE]",
+      "Apply active profile mapping by tag (custom_context > save_profile > theme_default):",
+      ...requiredPresetSkillRequirements.map(
+        (entry) =>
+          `- <${entry.tag}> profile=${entry.profile} source=${entry.source} skill=current/${entry.path}`,
+      ),
+    ];
+    history.push(createUserMessage(lines.join("\n")));
   }
 }
 

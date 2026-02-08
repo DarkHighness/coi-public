@@ -22,7 +22,7 @@ import type { ToolCallResult } from "../../../providers/types";
 import { UnifiedMessage } from "../../../messageTypes";
 
 import { sessionManager } from "../../sessionManager";
-import { createLogEntry } from "../../utils";
+import { createLogEntry, type ActivePresetSkillRequirement } from "../../utils";
 import {
   createToolCallMessage,
   createToolResponseMessage,
@@ -77,6 +77,8 @@ export interface AgenticLoopConfig {
   retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
   vfsMode?: "normal" | "god" | "sudo";
   vfsElevationToken?: string | null;
+  requiredPresetSkillPaths?: string[];
+  requiredPresetSkillRequirements?: ActivePresetSkillRequirement[];
 }
 
 export interface AgenticLoopResult {
@@ -110,6 +112,8 @@ export async function runAgenticLoopRefactored(
     retconAckPending,
     vfsMode,
     vfsElevationToken,
+    requiredPresetSkillPaths,
+    requiredPresetSkillRequirements,
   } = config;
 
   // Initialize provider
@@ -122,8 +126,10 @@ export async function runAgenticLoopRefactored(
     isSudoMode,
     isCleanupMode,
     config.vfsSession,
+    requiredPresetSkillPaths ?? [],
     vfsMode,
     vfsElevationToken ?? null,
+    requiredPresetSkillRequirements ?? [],
   );
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
@@ -162,6 +168,8 @@ export async function runAgenticLoopRefactored(
           godMode: gameState.godMode === true,
           unlockMode: gameState.unlockMode === true,
         },
+        loopState.requiredPresetSkillPaths,
+        loopState.requiredPresetSkillRequirements ?? [],
       );
     }
 
@@ -377,6 +385,41 @@ function checkCommandSkillReadGate(
   };
 }
 
+function checkPresetSkillReadGate(
+  functionCalls: ToolCallResult[],
+  loopState: LoopState,
+): { ok: true } | { ok: false; error: { success: false; error: string; code: string } } {
+  const required = loopState.requiredPresetSkillPaths;
+  if (!required || required.length === 0) {
+    return { ok: true };
+  }
+
+  const readTools = new Set(["vfs_read", "vfs_read_many", "vfs_read_json"]);
+  const hasNonReadCall = functionCalls.some((call) => !readTools.has(call.name));
+  if (!hasNonReadCall) {
+    return { ok: true };
+  }
+
+  const missing = required.filter(
+    (path) => !loopState.vfsSession.hasToolSeenInCurrentEpoch(path),
+  );
+
+  if (missing.length === 0) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    error: {
+      success: false,
+      error: `[ERROR: PRESET_SKILL_NOT_READ] Active preset skill file(s) must be read in current epoch before non-read tools: ${missing
+        .map((p) => `current/${p}`)
+        .join(", ")}. Use vfs_read/vfs_read_many first.`,
+      code: "PRESET_SKILL_NOT_READ",
+    },
+  };
+}
+
 async function processToolCalls(
   params: ProcessToolCallsParams,
 ): Promise<ProcessToolCallsResult> {
@@ -399,6 +442,19 @@ async function processToolCalls(
   const skillGate = checkCommandSkillReadGate(functionCalls, loopState);
   if ("error" in skillGate) {
     const gateError = skillGate.error;
+    return {
+      responses: functionCalls.map((call) => ({
+        toolCallId: call.id,
+        name: call.name,
+        content: gateError,
+      })),
+      turnFinished: false,
+    };
+  }
+
+  const presetSkillGate = checkPresetSkillReadGate(functionCalls, loopState);
+  if ("error" in presetSkillGate) {
+    const gateError = presetSkillGate.error;
     return {
       responses: functionCalls.map((call) => ({
         toolCallId: call.id,

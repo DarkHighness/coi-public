@@ -103,6 +103,7 @@ export function executeGenericTool(
       settings,
       vfsSession: loopState.vfsSession,
       requiredCommandSkillPaths: loopState.requiredCommandSkillPaths,
+      requiredPresetSkillPaths: loopState.requiredPresetSkillPaths,
       vfsActor: "ai",
       vfsMode: loopState.vfsMode,
       vfsElevationToken: loopState.vfsElevationToken ?? null,

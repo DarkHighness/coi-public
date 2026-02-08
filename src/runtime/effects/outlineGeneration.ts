@@ -6,6 +6,7 @@ import type {
   AISettings,
   GameState,
   OutlineConversationState,
+  SavePresetProfile,
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
 
@@ -24,6 +25,7 @@ interface RunOutlineGenerationParams {
   resumeFrom?: OutlineConversationState;
   seedImageBase64?: string;
   protagonistFeature?: string;
+  presetProfile?: SavePresetProfile;
   sessionTag?: string;
   logPrefix: string;
 }
@@ -43,6 +45,7 @@ export async function runOutlineGenerationPhased({
   resumeFrom,
   seedImageBase64,
   protagonistFeature,
+  presetProfile,
   sessionTag,
   logPrefix,
 }: RunOutlineGenerationParams) {
@@ -54,6 +57,7 @@ export async function runOutlineGenerationPhased({
     slotId,
     seedImageBase64,
     protagonistFeature,
+    presetProfile,
     sessionTag,
     onToolCallsUpdate: (toolCalls) => {
       setGameState((prev) => ({

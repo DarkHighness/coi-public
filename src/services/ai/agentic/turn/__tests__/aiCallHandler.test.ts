@@ -49,6 +49,7 @@ const createLoopState = () =>
       loopIterationsMax: 10,
     },
     finishToolName: "vfs_commit_turn",
+    requiredPresetSkillPaths: [],
   }) as any;
 
 const baseUsage = {

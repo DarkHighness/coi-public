@@ -86,6 +86,7 @@ describe("loopInitializer", () => {
       false,
       false,
       vfsSession,
+      [],
     );
 
     expect(state.conversationMarker).toBeNull();
@@ -97,6 +98,8 @@ describe("loopInitializer", () => {
       loopIterationsMax: 20,
     });
     expect(state.requiredCommandSkillPaths).toEqual([]);
+    expect(state.requiredPresetSkillPaths).toEqual([]);
+    expect(state.requiredPresetSkillRequirements).toEqual([]);
   });
 
   it("sets required command skill path for sudo/cleanup modes", () => {
@@ -108,6 +111,7 @@ describe("loopInitializer", () => {
       true,
       false,
       vfsSession,
+      [],
     );
     expect(sudoState.requiredCommandSkillPaths).toEqual([
       "skills/commands/sudo/SKILL.md",
@@ -119,9 +123,56 @@ describe("loopInitializer", () => {
       false,
       true,
       vfsSession,
+      [],
     );
     expect(cleanupState.requiredCommandSkillPaths).toEqual([
       "skills/commands/cleanup/SKILL.md",
+    ]);
+  });
+
+  it("stores required preset skill paths with deduplication", () => {
+    const vfsSession = new VfsSession();
+
+    const state = createLoopState(
+      {} as any,
+      { embedding: { enabled: false } } as any,
+      false,
+      false,
+      vfsSession,
+      [
+        "skills/presets/narrative-style/SKILL.md",
+        "skills/presets/narrative-style/SKILL.md",
+        "skills/presets/world-disposition/SKILL.md",
+      ],
+      undefined,
+      null,
+      [
+        {
+          path: "skills/presets/narrative-style/SKILL.md",
+          tag: "narrative_style",
+          profile: "cinematic",
+          source: "save_profile",
+        },
+        {
+          path: "skills/presets/narrative-style/SKILL.md",
+          tag: "narrative_style",
+          profile: "cinematic",
+          source: "save_profile",
+        },
+      ],
+    );
+
+    expect(state.requiredPresetSkillPaths).toEqual([
+      "skills/presets/narrative-style/SKILL.md",
+      "skills/presets/world-disposition/SKILL.md",
+    ]);
+    expect(state.requiredPresetSkillRequirements).toEqual([
+      {
+        path: "skills/presets/narrative-style/SKILL.md",
+        tag: "narrative_style",
+        profile: "cinematic",
+        source: "save_profile",
+      },
     ]);
   });
 });

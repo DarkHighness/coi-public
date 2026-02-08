@@ -341,7 +341,8 @@
         "horror": "恐怖",
         "sliceOfLife": "日常"
       }
-    }
+    },
+    "narrativeStyleOverrideHint": "该字段会覆盖“叙事风格预设”（仅覆盖该维度）。"
   },
   "imageUpload": {
     "title": "以图启程",
@@ -551,40 +552,40 @@
       "detailedDescription": "详细描述",
       "detailedDescriptionHelp": "强制 AI 为角色和环境生成更详细、感官丰富的描述。",
       "narrativeStylePreset": "叙事风格",
-      "narrativeStylePresetHelp": "在题材默认风格上追加一个简明的风格补充。若自定义上下文包含 <narrative_style>，将优先生效。",
+      "narrativeStylePresetHelp": "为题材默认文风增加“写作方法级”补充：镜头组织、信息密度、细节锚点与收束方式。该项是增强层，不替代题材设定；若自定义上下文包含 <narrative_style>，则以其为准。",
       "narrativeStylePresetOptions": {
         "theme": "题材默认",
-        "cinematic": "电影感",
-        "literary": "文学向",
-        "noir": "黑色/侦探",
-        "brutal": "冷硬残酷",
-        "cozy": "温情日常",
-        "cdrama": "中式短剧/简单恋爱",
-        "minimal": "极简"
+        "cinematic": "电影化调度",
+        "literary": "文学叙事实验",
+        "noir": "黑色侦查叙事",
+        "brutal": "冷硬现实主义",
+        "cozy": "生活流细腻叙事",
+        "cdrama": "短剧高情绪节奏",
+        "minimal": "极简高密度叙事"
       },
-      "worldDispositionPreset": "世界人性基线",
-      "worldDispositionPresetHelp": "为“人性/社会氛围”增加一个明确的基线补充（不替换题材设定）。若自定义上下文包含 <world_disposition>，将优先生效。",
+      "worldDispositionPreset": "世界行为基线",
+      "worldDispositionPresetHelp": "为世界的人性分布与社会互动设置“行为基线”（合作概率、机会主义比例、背叛成本）。仅作为默认概率框架，不覆盖题材设定；若自定义上下文包含 <world_disposition>，则以其为准。",
       "worldDispositionPresetOptions": {
         "theme": "题材默认",
-        "benevolent": "人性本善",
-        "mixed": "善恶并存",
-        "cynical": "交易社会"
+        "benevolent": "高信任社会（偏善）",
+        "mixed": "现实混合基线",
+        "cynical": "低信任交易社会（偏冷）"
       },
-      "playerMalicePreset": "恶意玩法策略包",
-      "playerMalicePresetHelp": "为“恶意/犯罪/操控”等玩法增加可执行的机制偏好（证据链、热度、反制、升级节奏）。这是补充，不强制玩家必须这么玩。若自定义上下文包含 <player_malice_profile>，将优先生效。",
+      "playerMalicePreset": "越界玩法机制模板",
+      "playerMalicePresetHelp": "为“恶意/犯罪/操控”玩法注入可执行机制模板：行动链、证据面、风控压力、对抗升级与失败代价。仅补充系统倾向，不强制玩家路线；若自定义上下文包含 <player_malice_profile>，则以其为准。",
       "playerMalicePresetOptions": {
         "theme": "题材默认",
-        "intimidation": "暴力威慑",
-        "bureaucratic": "制度钻空子",
-        "manipulation": "情感操控",
-        "sabotage": "纯破坏/搅局"
+        "intimidation": "暴力威慑链",
+        "bureaucratic": "制度渗透链",
+        "manipulation": "关系操控链",
+        "sabotage": "破坏失稳链"
       },
-      "playerMaliceIntensity": "恶意玩法强度",
-      "playerMaliceIntensityHelp": "控制 Trace/Heat 的积累速度与世界反制升级频率。轻=更容易周旋；重=更快被盯上、更快升级。若自定义上下文包含 <player_malice_intensity>，将优先生效。",
+      "playerMaliceIntensity": "越界玩法强度（风控曲线）",
+      "playerMaliceIntensityHelp": "控制 Trace/Heat 的增长斜率与世界反制升级阈值。轻=更长试错窗口；重=更快进入高压对抗。若自定义上下文包含 <player_malice_intensity>，则以其为准。",
       "playerMaliceIntensityOptions": {
-        "light": "轻（慢热度）",
-        "standard": "标准",
-        "heavy": "重（快热度）"
+        "light": "轻（低风控）",
+        "standard": "标准（基线风控）",
+        "heavy": "重（高风控）"
       },
       "nsfw": "NSFW 模式",
       "nsfwHelp": "启用NSFW内容生成。",
@@ -2161,5 +2162,13 @@
       "小可 (Keroberos)",
       "月城雪兔/月 (Yukito Tsukishiro/Yue)"
     ]
+  },
+  "presetProfile": {
+    "sectionTitle": "存档预设（本存档固定）",
+    "priorityHint": "按维度优先级：自定义上下文标签 > 存档预设 > 主题默认。",
+    "modal": {
+      "title": "预设档案（存档锁定）",
+      "subtitle": "这些预设在当前存档内固定生效。按维度优先级：自定义上下文标签 > 存档预设 > 主题默认。"
+    }
   }
 }

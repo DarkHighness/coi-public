@@ -103,4 +103,56 @@ describe("VFS global skills generator", () => {
       });
     }
   });
+
+  it("registers preset runtime skills in generator and index", () => {
+    const seeds = generateVfsSkillSeeds();
+    const entries = getSkillIndexEntries();
+
+    expect(
+      seeds.some(
+        (seed) => seed.path === "skills/presets/narrative-style/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) => seed.path === "skills/presets/world-disposition/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path === "skills/presets/player-malice-profile/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path === "skills/presets/player-malice-intensity/SKILL.md",
+      ),
+    ).toBe(true);
+
+    expect(
+      entries.some(
+        (entry) => entry.path === "current/skills/presets/narrative-style/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      entries.some(
+        (entry) => entry.path === "current/skills/presets/world-disposition/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      entries.some(
+        (entry) =>
+          entry.path === "current/skills/presets/player-malice-profile/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      entries.some(
+        (entry) =>
+          entry.path ===
+          "current/skills/presets/player-malice-intensity/SKILL.md",
+      ),
+    ).toBe(true);
+  });
 });

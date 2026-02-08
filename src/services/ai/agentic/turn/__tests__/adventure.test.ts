@@ -37,11 +37,17 @@ describe("runAgenticLoop", () => {
       false,
       "session-1",
       vfsSession,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      [],
     );
 
     expect(mock).toHaveBeenCalledWith(
       expect.objectContaining({
         vfsSession,
+        requiredPresetSkillPaths: [],
       }),
     );
   });

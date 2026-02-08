@@ -6,6 +6,7 @@ import type {
   KnowledgeEntry,
   Location,
   Quest,
+  SavePresetProfile,
   StoryOutline,
   TimelineEvent,
 } from "@/types";
@@ -22,6 +23,32 @@ import {
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
 };
+
+const DEFAULT_SAVE_PRESET_PROFILE: SavePresetProfile = {
+  narrativeStylePreset: "theme",
+  worldDispositionPreset: "theme",
+  playerMalicePreset: "theme",
+  playerMaliceIntensity: "standard",
+  locked: true,
+};
+
+const normalizePresetProfile = (
+  profile: Partial<SavePresetProfile> | undefined | null,
+): SavePresetProfile => ({
+  narrativeStylePreset:
+    profile?.narrativeStylePreset ??
+    DEFAULT_SAVE_PRESET_PROFILE.narrativeStylePreset,
+  worldDispositionPreset:
+    profile?.worldDispositionPreset ??
+    DEFAULT_SAVE_PRESET_PROFILE.worldDispositionPreset,
+  playerMalicePreset:
+    profile?.playerMalicePreset ??
+    DEFAULT_SAVE_PRESET_PROFILE.playerMalicePreset,
+  playerMaliceIntensity:
+    profile?.playerMaliceIntensity ??
+    DEFAULT_SAVE_PRESET_PROFILE.playerMaliceIntensity,
+  locked: true,
+});
 
 const ensureGlobalNotes = (session: VfsSession): void => {
   // Notes are a flexible scratch pad (markdown).
@@ -205,6 +232,7 @@ export const seedVfsSessionFromGameState = (
     forkId: state.forkId,
     language: state.language,
     customContext: state.customContext,
+    presetProfile: normalizePresetProfile(state.presetProfile),
     seedImageId: state.seedImageId,
     narrativeScale: state.narrativeScale,
     initialPrompt: state.initialPrompt,
@@ -334,6 +362,7 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
     atmosphere: { envTheme: "fantasy", ambience: "quiet" },
     turnNumber: 0,
     forkId: 0,
+    presetProfile: DEFAULT_SAVE_PRESET_PROFILE,
   });
 
   writeJson(session, "summary/state.json", {
@@ -404,6 +433,7 @@ export const seedVfsSessionFromOutline = (
     atmosphere: AtmosphereObject;
     language?: string;
     customContext?: string;
+    presetProfile?: SavePresetProfile;
     seedImageId?: string;
     narrativeScale?: GameState["narrativeScale"];
   },
@@ -420,6 +450,7 @@ export const seedVfsSessionFromOutline = (
     forkId: 0,
     language: options.language,
     customContext: options.customContext,
+    presetProfile: normalizePresetProfile(options.presetProfile),
     seedImageId: options.seedImageId,
     narrativeScale: options.narrativeScale,
   });

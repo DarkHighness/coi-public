@@ -12,6 +12,7 @@ import {
   OutlineConversationState,
   ResolvedThemeConfig,
   ToolCallRecord,
+  SavePresetProfile,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import { writeOutlineProgress } from "../../../vfs/outline";
@@ -62,6 +63,7 @@ import {
   resolveNarrativeStyle,
   resolveWorldDisposition,
   resolvePlayerMaliceProfile,
+  resolveEffectivePresetProfile,
   pickModelMatchedPrompt,
 } from "../../utils";
 
@@ -147,6 +149,8 @@ export interface PhasedOutlineOptions {
   seedImageBase64?: string;
   /** Optional protagonist feature/role selected by user */
   protagonistFeature?: string;
+  /** Optional save-level preset profile selected at game start */
+  presetProfile?: SavePresetProfile;
   /** Optional suffix to force a fresh session namespace (e.g. recovery retry). */
   sessionTag?: string;
   /** Real-time hook for current round tool calls */
@@ -423,23 +427,46 @@ export const generateStoryOutlinePhased = async (
   }
 
   // Build system instruction
+  const effectivePresetProfile = resolveEffectivePresetProfile({
+    customContext,
+    presetProfile: options.presetProfile,
+    settings,
+  });
+  const effectiveNarrativeStylePreset =
+    effectivePresetProfile.narrativeStylePreset.value;
+  const effectiveWorldDispositionPreset =
+    effectivePresetProfile.worldDispositionPreset.value;
+  const effectivePlayerMalicePreset =
+    effectivePresetProfile.playerMalicePreset.value;
+  const effectivePlayerMaliceIntensity =
+    effectivePresetProfile.playerMaliceIntensity.value;
+
   const resolvedNarrativeStyle =
     resolveNarrativeStyle({
       themeStyle: themeDataNarrativeStyle,
-      preset: settings.extra?.narrativeStylePreset,
+      preset:
+        effectiveNarrativeStylePreset === "theme"
+          ? undefined
+          : effectiveNarrativeStylePreset,
       language,
       customContext,
     }) || themeDataNarrativeStyle;
 
   const worldDisposition = resolveWorldDisposition({
-    preset: settings.extra?.worldDispositionPreset,
+    preset:
+      effectiveWorldDispositionPreset === "theme"
+        ? undefined
+        : effectiveWorldDispositionPreset,
     language,
     customContext,
   });
 
   const playerMaliceProfile = resolvePlayerMaliceProfile({
-    preset: settings.extra?.playerMalicePreset,
-    intensity: settings.extra?.playerMaliceIntensity,
+    preset:
+      effectivePlayerMalicePreset === "theme"
+        ? undefined
+        : effectivePlayerMalicePreset,
+    intensity: effectivePlayerMaliceIntensity,
     language,
     customContext,
   });
@@ -458,10 +485,10 @@ export const generateStoryOutlinePhased = async (
     protagonistFeature: options.protagonistFeature,
     themeCategory: themeConfig?.categories?.[0],
     themeKey: theme,
-    worldDispositionPreset: settings.extra?.worldDispositionPreset,
+    worldDispositionPreset: effectiveWorldDispositionPreset,
     playerMaliceProfile,
-    playerMalicePreset: settings.extra?.playerMalicePreset,
-    playerMaliceIntensity: settings.extra?.playerMaliceIntensity,
+    playerMalicePreset: effectivePlayerMalicePreset,
+    playerMaliceIntensity: effectivePlayerMaliceIntensity,
     vfsReadOnly: readOnlyVfsEnabled
       ? { enabled: true, allowedRoots: readOnlyVfsAllowPrefixes }
       : undefined,
