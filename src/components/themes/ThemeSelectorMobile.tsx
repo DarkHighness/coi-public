@@ -170,21 +170,21 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                     <button
                       key={themeKey}
                       onClick={() => openThemeDetail(themeKey)}
-                      className="w-full py-3 text-left flex items-start gap-3 hover:text-theme-primary transition-colors"
+                      className="group w-full py-3.5 px-0.5 text-left flex items-start gap-3 hover:text-theme-primary hover:bg-theme-surface-highlight/10 transition-colors"
                     >
-                      <div className="h-8 w-8 shrink-0 grid place-items-center text-lg leading-none">
+                      <div className="mt-0.5 h-8 w-8 shrink-0 grid place-items-center text-[18px] leading-none">
                         {icon}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold text-theme-text truncate">
+                        <div className="text-sm font-semibold text-theme-text tracking-[0.01em] truncate">
                           {name}
                         </div>
-                        <div className="mt-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+                        <div className="mt-1 text-xs text-theme-text-secondary leading-[1.45] line-clamp-2">
                           {description}
                         </div>
                       </div>
                       <svg
-                        className="w-4 h-4 text-theme-text-secondary shrink-0 mt-0.5"
+                        className="w-4 h-4 text-theme-text-secondary opacity-45 group-hover:opacity-75 group-hover:translate-x-0.5 transition-all shrink-0 mt-1"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -227,8 +227,13 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
             </button>
 
             <div className="min-w-0 flex-1 text-center">
-              <div className="text-xs text-theme-text-secondary uppercase tracking-[0.12em]">
+              <div className="text-[10px] text-theme-text-secondary uppercase tracking-[0.12em]">
                 {t("themePreview", "Theme Preview")}
+              </div>
+              <div className="mt-0.5 text-sm font-semibold text-theme-primary truncate">
+                {previewData
+                  ? t(`${previewThemeKey}.name`, { ns: "themes" })
+                  : t("randomTheme")}
               </div>
             </div>
 
@@ -236,26 +241,14 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-20">
-            <section className="pt-4">
+            <section className="pt-3.5">
               <div className="flex items-start gap-3">
-                <div className="h-9 w-9 shrink-0 grid place-items-center text-xl leading-none">
+                <div className="mt-0.5 h-9 w-9 shrink-0 grid place-items-center text-[20px] leading-none">
                   {previewData ? getValidIcon(previewData.icon, "📖") : "🎲"}
                 </div>
-                <div className="min-w-0">
-                  <h3 className="text-lg font-semibold text-theme-primary truncate">
-                    {previewData
-                      ? t(`${previewThemeKey}.name`, { ns: "themes" })
-                      : t("randomTheme")}
-                  </h3>
-                  <p className="mt-1 text-sm text-theme-text-secondary leading-relaxed">
-                    {previewData
-                      ? t(
-                          "themeSelectionHint",
-                          "Preview details and start when ready.",
-                        )
-                      : t("randomThemeDesc")}
-                  </p>
-                </div>
+                <p className="text-xs text-theme-text-secondary leading-relaxed">
+                  {previewData ? t("themeSelectionHint") : t("randomThemeDesc")}
+                </p>
               </div>
             </section>
 
@@ -265,7 +258,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                   <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
                     {t("narrativeStyle")}
                   </div>
-                  <div className="text-sm text-theme-text leading-7">
+                  <div className="text-[13px] text-theme-text leading-[1.8]">
                     <MarkdownText
                       content={t(`${previewThemeKey}.narrativeStyle`, {
                         ns: "themes",
@@ -278,7 +271,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                   <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
                     {t("worldSetting")}
                   </div>
-                  <div className="text-sm text-theme-text leading-7">
+                  <div className="text-[13px] text-theme-text leading-[1.8]">
                     <MarkdownText
                       content={t(`${previewThemeKey}.worldSetting`, {
                         ns: "themes",
@@ -291,7 +284,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                   <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
                     {t("themeExample")}
                   </div>
-                  <div className="text-sm text-theme-text leading-7">
+                  <div className="text-[13px] text-theme-text leading-[1.8]">
                     <MarkdownText
                       content={t(`${previewThemeKey}.example`, {
                         ns: "themes",
@@ -303,10 +296,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
             ) : (
               <section className="pt-4 border-t border-theme-divider/60 mt-4">
                 <div className="text-sm text-theme-text-secondary leading-7">
-                  {t(
-                    "randomThemePanelDesc",
-                    "Pick random to start instantly. We will choose a world and tone for you.",
-                  )}
+                  {t("randomThemePanelDesc")}
                 </div>
               </section>
             )}

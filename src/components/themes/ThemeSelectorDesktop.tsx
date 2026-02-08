@@ -155,7 +155,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
       </div>
 
       <div className="flex-1 min-h-0 px-4 md:px-6 pb-3">
-        <div className="max-w-[1320px] mx-auto h-full border border-theme-divider/60 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="max-w-[1320px] mx-auto h-full border border-theme-divider/70 bg-theme-bg grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
           <section className="min-h-0 overflow-hidden flex flex-col">
             <div className="shrink-0 px-3 md:px-4 py-2 border-b border-theme-divider/60 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary">
               <span>{t("selectTheme")}</span>
@@ -190,28 +190,30 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                       <button
                         key={themeKey}
                         onClick={() => setSelectedTheme(themeKey)}
-                        className={`w-full text-left px-3 md:px-4 py-3 flex items-start gap-3 transition-colors ${
+                        className={`group relative w-full text-left px-3 md:px-4 py-3.5 flex items-start gap-3 transition-colors ${
                           isActive
-                            ? "bg-theme-primary/10 text-theme-primary"
+                            ? "bg-theme-surface-highlight/15 text-theme-primary before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-theme-primary"
                             : "text-theme-text hover:text-theme-primary hover:bg-theme-surface-highlight/10"
                         }`}
                       >
-                        <div className="h-8 w-8 shrink-0 grid place-items-center text-lg leading-none">
+                        <div className="mt-0.5 h-8 w-8 shrink-0 grid place-items-center text-[18px] leading-none">
                           {icon}
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold truncate">{name}</div>
-                          <div className="mt-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+                          <div className="text-sm font-semibold tracking-[0.01em] truncate">
+                            {name}
+                          </div>
+                          <div className="mt-1 text-xs text-theme-text-secondary leading-[1.45] line-clamp-2">
                             {description}
                           </div>
                         </div>
 
                         <svg
-                          className={`w-4 h-4 shrink-0 mt-0.5 transition-opacity ${
+                          className={`w-4 h-4 shrink-0 mt-1 transition-all ${
                             isActive
                               ? "opacity-100 text-theme-primary"
-                              : "opacity-45 text-theme-text-secondary"
+                              : "opacity-35 text-theme-text-secondary group-hover:opacity-70 group-hover:translate-x-0.5"
                           }`}
                           fill="none"
                           stroke="currentColor"
@@ -233,8 +235,8 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
           </section>
 
           <aside className="min-h-0 overflow-hidden flex flex-col border-t lg:border-t-0 lg:border-l border-theme-divider/60">
-            <div className="shrink-0 px-4 py-3 border-b border-theme-divider/60 flex items-start gap-3">
-              <div className="h-9 w-9 shrink-0 grid place-items-center text-xl leading-none">
+            <div className="shrink-0 px-4 md:px-5 py-3 border-b border-theme-divider/60 flex items-start gap-3">
+              <div className="mt-0.5 h-9 w-9 shrink-0 grid place-items-center text-[20px] leading-none">
                 {previewData ? getValidIcon(previewData.icon, "📖") : "🎲"}
               </div>
 
@@ -243,7 +245,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                   {t("themePreview", "Theme Preview")}
                 </div>
                 <h3
-                  className={`text-lg font-semibold text-theme-primary truncate ${
+                  className={`text-[1.05rem] font-semibold text-theme-primary truncate ${
                     previewData
                       ? ENV_THEMES[previewData.envTheme]?.fontClass || "font-sans"
                       : "font-sans"
@@ -255,10 +257,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                 </h3>
                 <p className="mt-1 text-xs text-theme-text-secondary leading-relaxed">
                   {previewData
-                    ? t(
-                        "themeSelectionHint",
-                        "Preview details and start when ready.",
-                      )
+                    ? t("themeSelectionHint")
                     : t("randomThemeDesc")}
                 </p>
               </div>
@@ -267,11 +266,11 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               {previewData ? (
                 <>
-                  <section className="px-4 py-4 border-b border-theme-divider/60">
+                  <section className="px-4 md:px-5 py-3.5 border-b border-theme-divider/60">
                     <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
                       {t("narrativeStyle")}
                     </div>
-                    <div className="text-sm text-theme-text leading-7">
+                    <div className="text-[13px] md:text-sm text-theme-text leading-[1.8]">
                       <MarkdownText
                         content={t(`${previewThemeKey}.narrativeStyle`, {
                           ns: "themes",
@@ -280,11 +279,11 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     </div>
                   </section>
 
-                  <section className="px-4 py-4 border-b border-theme-divider/60">
+                  <section className="px-4 md:px-5 py-3.5 border-b border-theme-divider/60">
                     <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
                       {t("worldSetting")}
                     </div>
-                    <div className="text-sm text-theme-text leading-7">
+                    <div className="text-[13px] md:text-sm text-theme-text leading-[1.8]">
                       <MarkdownText
                         content={t(`${previewThemeKey}.worldSetting`, {
                           ns: "themes",
@@ -293,11 +292,11 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     </div>
                   </section>
 
-                  <section className="px-4 py-4 border-b border-theme-divider/60">
+                  <section className="px-4 md:px-5 py-3.5 border-b border-theme-divider/60">
                     <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
                       {t("themeExample")}
                     </div>
-                    <div className="text-sm text-theme-text leading-7">
+                    <div className="text-[13px] md:text-sm text-theme-text leading-[1.8]">
                       <MarkdownText
                         content={t(`${previewThemeKey}.example`, {
                           ns: "themes",
@@ -317,7 +316,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     }
 
                     return (
-                      <section className="px-4 py-4">
+                      <section className="px-4 md:px-5 py-3.5">
                         <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
                           {t("availableRoles", "Possible Identities")}
                         </div>
@@ -341,11 +340,8 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                   })()}
                 </>
               ) : (
-                <section className="px-4 py-4 text-sm text-theme-text-secondary leading-7">
-                  {t(
-                    "randomThemePanelDesc",
-                    "Pick random to start instantly. We will choose a world and tone for you.",
-                  )}
+                <section className="px-4 md:px-5 py-4 text-sm text-theme-text-secondary leading-7">
+                  {t("randomThemePanelDesc")}
                 </section>
               )}
             </div>

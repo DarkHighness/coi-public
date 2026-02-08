@@ -341,8 +341,7 @@
         "horror": "Horror",
         "sliceOfLife": "Slice of Life"
       }
-    },
-    "narrativeStyleOverrideHint": "This field overrides the Narrative Style preset (this dimension only)."
+    }
   },
   "imageUpload": {
     "title": "Start from Image",
@@ -356,6 +355,8 @@
   "startFromImage": "Start from Image",
   "randomTheme": "Random",
   "randomThemeDesc": "Let fate decide your adventure",
+  "themeSelectionHint": "Preview details and start when ready.",
+  "randomThemePanelDesc": "Pick random to start instantly. We will choose a world and tone for you.",
   "startGame": "Start Adventure",
   "themePreview": "Preview",
   "themeStart": "Start",
@@ -550,40 +551,40 @@
       "detailedDescription": "Detailed Descriptions",
       "detailedDescriptionHelp": "Force AI to generate more detailed, sensory-rich descriptions for characters and environments.",
       "narrativeStylePreset": "Narrative Style",
-      "narrativeStylePresetHelp": "Add a method-level writing layer on top of the theme default: scene blocking, information density, sensory anchors, and ending cadence. This augments (not replaces) theme rules. Per-game <narrative_style> in custom context takes precedence.",
+      "narrativeStylePresetHelp": "Add a concise style add-on to the theme default. Per-game <narrative_style> in custom context overrides this.",
       "narrativeStylePresetOptions": {
         "theme": "Theme Default",
-        "cinematic": "Cinematic Blocking",
-        "literary": "Literary Craft",
-        "noir": "Noir Investigation",
-        "brutal": "Hard Realism",
-        "cozy": "Slice-of-Life Texture",
-        "cdrama": "Short-Form Emotional Beats",
-        "minimal": "Minimal High-Signal"
+        "cinematic": "Cinematic",
+        "literary": "Literary",
+        "noir": "Noir",
+        "brutal": "Brutal",
+        "cozy": "Cozy",
+        "cdrama": "C-Drama / Simple Romance",
+        "minimal": "Minimal"
       },
-      "worldDispositionPreset": "World Behavior Baseline",
-      "worldDispositionPresetHelp": "Set a default behavioral probability model for society (cooperation rate, opportunism share, betrayal cost). This is a baseline layer and does not replace theme setting. Per-game <world_disposition> in custom context takes precedence.",
+      "worldDispositionPreset": "World Disposition",
+      "worldDispositionPresetHelp": "Add an explicit baseline for human nature and social tone (supplement to theme, not a replacement). Per-game <world_disposition> in custom context overrides this.",
       "worldDispositionPresetOptions": {
         "theme": "Theme Default",
-        "benevolent": "High-Trust (Warm)",
-        "mixed": "Mixed Realist",
-        "cynical": "Low-Trust Transactional"
+        "benevolent": "Benevolent",
+        "mixed": "Mixed",
+        "cynical": "Cynical"
       },
-      "playerMalicePreset": "Transgressive Play Model",
-      "playerMalicePresetHelp": "Inject an executable transgressive-play framework: action chain, evidence surface, risk pressure, counterplay ladder, and failure cost. This biases system behavior but never forces player route. Per-game <player_malice_profile> in custom context takes precedence.",
+      "playerMalicePreset": "Malice Playstyle",
+      "playerMalicePresetHelp": "Add a concrete, playable bias for malicious/criminal play (trace, heat, counterplay, escalation). Supplement only; does not force the player. Per-game <player_malice_profile> in custom context overrides this.",
       "playerMalicePresetOptions": {
         "theme": "Theme Default",
-        "intimidation": "Violent Coercion Chain",
-        "bureaucratic": "Institutional Exploit Chain",
-        "manipulation": "Relational Control Chain",
-        "sabotage": "Destabilization Chain"
+        "intimidation": "Violent Intimidation",
+        "bureaucratic": "Rules-Lawyer Crime",
+        "manipulation": "Emotional Manipulation",
+        "sabotage": "Sabotage / Chaos"
       },
-      "playerMaliceIntensity": "Transgressive Intensity (Risk Curve)",
-      "playerMaliceIntensityHelp": "Controls Trace/Heat slope and counterplay escalation thresholds. Light = wider experimentation window; Heavy = faster entry into high-pressure response. Per-game <player_malice_intensity> in custom context takes precedence.",
+      "playerMaliceIntensity": "Malice Intensity",
+      "playerMaliceIntensityHelp": "Controls Trace/Heat accumulation and how quickly counterplay escalates. Light = more room to maneuver; Heavy = faster scrutiny and escalation. Per-game <player_malice_intensity> in custom context overrides this.",
       "playerMaliceIntensityOptions": {
-        "light": "Light (Low Risk)",
-        "standard": "Standard (Baseline Risk)",
-        "heavy": "Heavy (High Risk)"
+        "light": "Light (Slow Heat)",
+        "standard": "Standard",
+        "heavy": "Heavy (Fast Heat)"
       },
       "nsfw": "NSFW Mode",
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
@@ -2162,13 +2163,5 @@
     "character": "Character",
     "atmosphere": "Atmosphere",
     "time": "Time"
-  },
-  "presetProfile": {
-    "sectionTitle": "Save Preset Profile (Fixed for this Save)",
-    "priorityHint": "Priority per tag: custom context > save profile > theme default.",
-    "modal": {
-      "title": "Preset Profile (Save-Locked)",
-      "subtitle": "These presets are fixed for this save. Priority per tag: custom context > save profile > theme default."
-    }
   }
 }
