@@ -22,50 +22,40 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
   const envTheme = ENV_THEMES[themeConfig.envTheme];
   const primaryColor = envTheme?.vars["--theme-primary"] || "#f59e0b";
 
-  let lineClampClass = isDesktop ? "line-clamp-8" : "line-clamp-4";
+  const lineClampClass = isDesktop ? "line-clamp-6" : "line-clamp-2";
 
   return (
     <button
       onClick={() => onPreview(themeKey)}
-      className="group relative w-full h-full text-left transition-all duration-300 hover:scale-[1.01] theme-card"
+      className="group relative w-full h-full text-left transition-colors theme-card"
       data-theme-key={themeKey}
     >
-      {/* Card Background with Gradient Border */}
       <div
-        className="absolute -inset-[1px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"
-        style={{
-          background: `linear-gradient(45deg, ${primaryColor}, transparent 60%)`,
-        }}
-      ></div>
-
-      <div
-        className={`relative h-full p-4 md:p-6 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-primary/50 transition-colors overflow-hidden ${isDesktop ? "h-[250px]" : "h-[80px]"}`}
-        style={
-          {
-            "--theme-primary": primaryColor,
-          } as React.CSSProperties
-        }
+        className={`relative h-full rounded-xl border border-theme-divider/60 bg-theme-surface/10 hover:bg-theme-surface-highlight/15 hover:border-theme-primary/40 transition-colors overflow-hidden ${
+          isDesktop ? "h-[220px]" : "h-[96px]"
+        }`}
       >
-        {/* Hover Glow Effect */}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at top right, ${primaryColor}15, transparent 70%)`,
-          }}
-        ></div>
+        <div className="absolute inset-y-0 left-0 w-1 bg-theme-primary/35 group-hover:bg-theme-primary/70 transition-colors" />
 
-        <div className="flex items-start justify-between gap-4 relative z-10">
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at top right, ${primaryColor}22, transparent 62%)`,
+          }}
+        />
+
+        <div className="relative z-10 h-full p-3.5 md:p-4 flex items-start gap-3.5">
+          <div className="h-10 w-10 md:h-11 md:w-11 shrink-0 rounded-lg border border-theme-divider/60 bg-theme-surface-highlight/15 grid place-items-center text-xl md:text-2xl leading-none">
+            {getValidIcon(themeConfig.icon, "📖")}
+          </div>
+
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg">
-                {getValidIcon(themeConfig.icon, "📖")}
-              </span>
-              <h3 className="text-lg md:text-xl font-bold text-theme-text group-hover:text-theme-primary transition-colors truncate">
-                {t(`${themeKey}.name`, { ns: "themes" })}
-              </h3>
-            </div>
+            <h3 className="text-sm md:text-base font-semibold text-theme-text group-hover:text-theme-primary transition-colors truncate leading-tight">
+              {t(`${themeKey}.name`, { ns: "themes" })}
+            </h3>
+
             <div
-              className={`text-xs md:text-sm text-theme-muted group-hover:text-theme-text/80 transition-colors ${lineClampClass}`}
+              className={`mt-1.5 text-[11px] md:text-xs leading-relaxed text-theme-text-secondary group-hover:text-theme-text transition-colors ${lineClampClass}`}
             >
               <MarkdownText
                 content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}

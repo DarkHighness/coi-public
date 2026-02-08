@@ -23,45 +23,20 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
 
   return (
     <div
-      className={`sticky top-0 z-20 p-4 transition-all duration-300 ${
-        isScrolled
-          ? `backdrop-blur-sm border-b border-theme-border ${!isDesktop ? "shadow-lg" : ""}`
-          : "backdrop-blur-sm"
+      className={`sticky top-0 z-20 transition-all duration-300 ${
+        isScrolled ? "shadow-[0_4px_14px_rgba(0,0,0,0.15)]" : ""
       }`}
     >
-      <div className="max-w-5xl mx-auto w-full flex flex-col gap-4">
-        {/* Search Bar */}
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <svg
-              className="w-5 h-5 text-theme-muted group-focus-within:text-theme-primary transition-colors duration-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t("searchThemes") || "Search themes..."}
-            className="block w-full pl-11 pr-10 py-3 border border-theme-border rounded-xl leading-5 bg-theme-surface text-theme-text placeholder-theme-muted/50 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-theme-primary sm:text-sm transition-all duration-300"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-theme-muted hover:text-theme-text rounded-xl hover:bg-theme-surface-highlight/60 transition-all"
-              aria-label={t("clear", "Clear")}
-            >
+      <div
+        className={`w-full border-y border-theme-divider/60 bg-theme-surface/10 backdrop-blur-md ${
+          isDesktop ? "px-4 py-3" : "px-3 py-2.5"
+        }`}
+      >
+        <div className="max-w-5xl mx-auto w-full flex flex-col gap-2.5">
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 text-theme-text-secondary group-focus-within:text-theme-primary transition-colors"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -70,29 +45,58 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
-            </button>
-          )}
-        </div>
+            </div>
 
-        {/* Category Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-theme-primary/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-theme-primary/40">
-          {CATEGORY_KEYS.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all border flex-shrink-0 ${
-                selectedCategory === cat
-                  ? "bg-theme-primary text-theme-bg border-theme-primary shadow-[0_0_10px_rgba(var(--theme-primary-rgb),0.3)]"
-                  : "bg-theme-surface-highlight/30 text-theme-muted border-transparent hover:border-theme-border hover:text-theme-text hover:bg-theme-surface-highlight/50"
-              }`}
-            >
-              {t(`categories.${cat}`) ||
-                cat.charAt(0).toUpperCase() + cat.slice(1)}
-            </button>
-          ))}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("searchThemes") || "Search themes..."}
+              className="block h-10 w-full rounded-lg border border-theme-divider/60 bg-theme-bg/70 pl-9 pr-10 text-sm text-theme-text placeholder-theme-text-secondary/70 transition-colors focus:outline-none focus:border-theme-primary/60 focus:bg-theme-bg"
+            />
+
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 grid place-items-center rounded-md text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+                aria-label={t("clear", "Clear")}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-theme-primary/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-theme-primary/35">
+            {CATEGORY_KEYS.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`h-9 px-3 rounded-lg border text-[11px] font-bold uppercase tracking-[0.08em] whitespace-nowrap transition-colors shrink-0 ${
+                  selectedCategory === cat
+                    ? "bg-theme-surface-highlight/35 border-theme-primary/45 text-theme-primary"
+                    : "bg-transparent border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:border-theme-border hover:bg-theme-surface-highlight/15"
+                }`}
+              >
+                {t(`categories.${cat}`) ||
+                  cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

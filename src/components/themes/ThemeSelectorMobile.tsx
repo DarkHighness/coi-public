@@ -88,9 +88,9 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
   const previewData = previewTheme ? themes[previewTheme] : null;
 
   return (
-    <div className="w-full h-full relative flex flex-col">
+    <div className="w-full h-full relative flex flex-col bg-theme-bg/95 backdrop-blur-xl">
       {/* Header Area */}
-      <div className="shrink-0 z-10 backdrop-blur-md">
+      <div className="shrink-0 z-10 border-b border-theme-divider/60 bg-theme-surface/10 backdrop-blur-md">
         <ThemeFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -103,10 +103,10 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3">
           <div
             key={`page-${currentPage}`}
-            className="max-w-5xl mx-auto w-full flex flex-col gap-3 animate-fade-in"
+            className="max-w-5xl mx-auto w-full flex flex-col gap-2.5 animate-fade-in"
           >
             {/* Random Option - only on first page */}
             {selectedCategory === "all" &&
@@ -114,22 +114,35 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
               currentPage === 0 && (
                 <button
                   onClick={() => onSelect("")}
-                  className="relative w-full h-[80px] p-4 rounded-xl border border-theme-primary/30 hover:border-theme-primary transition-all text-left group overflow-hidden bg-linear-to-r from-theme-surface-highlight/50 to-theme-bg hover:shadow-[0_0_15px_rgba(var(--theme-primary-rgb),0.2)] flex items-center gap-4 animate-slide-in"
+                  className="relative w-full h-[96px] rounded-xl border border-theme-divider/60 bg-theme-surface/10 hover:bg-theme-surface-highlight/15 hover:border-theme-primary/40 transition-colors text-left group overflow-hidden animate-slide-in"
                   style={{ animationDelay: "0ms" }}
                 >
-                  <div className="w-12 h-12 rounded-full bg-theme-primary/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shrink-0">
-                    🎲
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-theme-primary uppercase tracking-wider text-base">
-                      {t("randomTheme")}
+                  <div className="absolute inset-y-0 left-0 w-1 bg-theme-primary/40 group-hover:bg-theme-primary/70 transition-colors" />
+                  <div className="relative h-full px-3 py-2.5 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg border border-theme-divider/60 bg-theme-surface-highlight/15 grid place-items-center text-xl leading-none shrink-0">
+                      🎲
                     </div>
-                    <div className="text-xs text-theme-muted truncate">
-                      {t("randomThemeDesc")}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-theme-primary uppercase tracking-[0.1em]">
+                        {t("randomTheme")}
+                      </div>
+                      <div className="mt-1 text-[11px] leading-relaxed text-theme-text-secondary line-clamp-2">
+                        {t("randomThemeDesc")}
+                      </div>
                     </div>
-                  </div>
-                  <div className="px-4 py-2 rounded-lg bg-theme-primary/10 text-theme-primary text-xs font-bold uppercase tracking-wider group-hover:bg-theme-primary group-hover:text-theme-bg transition-all shrink-0">
-                    {t("surpriseMe")}
+                    <svg
+                      className="w-4 h-4 text-theme-primary shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                   </div>
                 </button>
               )}
@@ -152,7 +165,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
         </div>
 
         {/* Pagination Controls */}
-        <div className="shrink-0 px-4 py-2 backdrop-blur-sm border-t border-theme-border pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+        <div className="shrink-0 px-3 py-2.5 border-t border-theme-divider/60 bg-theme-surface/10 backdrop-blur-sm pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

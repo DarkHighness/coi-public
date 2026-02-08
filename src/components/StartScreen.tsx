@@ -14,23 +14,18 @@ import { ThemeSelector } from "./ThemeSelector";
 import { CustomGameModal } from "./CustomGameModal";
 import { CustomContextModal } from "./CustomContextModal";
 import { ImageUploadModal } from "./ImageUploadModal";
-import { SaveSlot, ImportResult, SavePresetProfile } from "../types";
+import { SaveSlot, ImportResult } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
 import { getImage } from "../utils/imageStorage";
-import {
-  DEFAULT_SAVE_PRESET_PROFILE,
-  getThemeName,
-  IMAGE_BASED_THEME,
-  normalizeSavePresetProfile,
-} from "../services/ai/utils";
+import { getThemeName } from "../services/ai/utils";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { IMAGE_BASED_THEME } from "../services/ai/utils";
 import { useSettings } from "../hooks/useSettings";
 import { useTutorialContextOptional } from "../contexts/TutorialContext";
 import { useTutorialTarget } from "../hooks/useTutorial";
 import { createStartScreenTutorialFlow } from "./tutorial/tutorialFlows";
-import { PresetProfileModal } from "./PresetProfileModal";
 
 // Lazy load PhotoGalleryModal for code splitting
 const PhotoGalleryModal = lazy(() =>
@@ -93,7 +88,6 @@ interface StartScreenProps {
     customContext?: string,
     seedImage?: Blob,
     protagonistFeature?: string,
-    presetProfile?: SavePresetProfile,
   ) => void;
   onContinue: () => void;
   onLoad: (file: File) => void;
@@ -131,14 +125,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [seedImage, setSeedImage] = useState<Blob | null>(null);
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
-  const [pendingStart, setPendingStart] = useState<{
-    theme: string;
-    customContext?: string;
-    protagonistFeature?: string;
-  } | null>(null);
-  const [presetProfileDraft, setPresetProfileDraft] =
-    useState<SavePresetProfile>(DEFAULT_SAVE_PRESET_PROFILE);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const startTimerRef = useRef<number | null>(null);
   const { t } = useTranslation();
@@ -241,49 +227,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     theme: string,
     customContext?: string,
     protagonistFeature?: string,
-    presetProfile?: SavePresetProfile,
   ) => {
     scheduleStart(() => {
-      onStart(
-        theme,
-        customContext,
-        seedImage || undefined,
-        protagonistFeature,
-        presetProfile,
-      );
+      onStart(theme, customContext, seedImage || undefined, protagonistFeature);
     });
-  };
-
-  const openPresetProfileModal = (
-    theme: string,
-    nextCustomContext?: string,
-    protagonistFeature?: string,
-  ) => {
-    setPendingStart({
-      theme,
-      customContext: nextCustomContext,
-      protagonistFeature,
-    });
-    setPresetProfileDraft(
-      normalizeSavePresetProfile(DEFAULT_SAVE_PRESET_PROFILE),
-    );
-    setIsPresetModalOpen(true);
-  };
-
-  const handleConfirmPresetProfile = (profile: SavePresetProfile) => {
-    if (!pendingStart) {
-      setIsPresetModalOpen(false);
-      return;
-    }
-
-    setIsPresetModalOpen(false);
-    handleStart(
-      pendingStart.theme,
-      pendingStart.customContext,
-      pendingStart.protagonistFeature,
-      profile,
-    );
-    setPendingStart(null);
   };
 
   // Handle image upload confirmation - start game directly (image IS the theme)
@@ -572,14 +519,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             </div>
           ) : (
             <div className="flex flex-col h-full animate-slide-in">
-              <div className="flex items-center justify-between mb-4 shrink-0">
+              <div className="flex items-center justify-between mb-3 shrink-0 border-b border-theme-divider/60 pb-3">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={exitThemeSelect}
-                    className="text-theme-text-secondary hover:text-theme-text transition-colors"
+                    className="h-9 w-9 grid place-items-center rounded-lg border border-theme-divider/60 text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors"
                   >
                     <svg
-                      className="w-6 h-6"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -592,7 +539,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       ></path>
                     </svg>
                   </button>
-                  <h3 className="text-sm uppercase tracking-widest text-theme-text-secondary">
+                  <h3 className="text-[11px] uppercase tracking-[0.16em] text-theme-text-secondary">
                     {t("selectTheme")}
                   </h3>
                 </div>
@@ -600,7 +547,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 {/* Customize Button */}
                 <button
                   onClick={() => setIsCustomContextModalOpen(true)}
-                  className="relative px-1 py-2 text-theme-text-secondary hover:text-theme-primary transition-colors text-xs uppercase tracking-wider font-bold flex items-center gap-2 border-b border-theme-divider/60 hover:border-theme-primary/60"
+                  className="relative h-9 px-3 rounded-lg border border-theme-divider/60 text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors text-[11px] uppercase tracking-[0.12em] font-bold flex items-center gap-2"
                 >
                   <svg
                     className="w-4 h-4"
@@ -627,7 +574,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                   <ThemeSelector
                     themes={selectableThemes}
                     onSelect={(theme, role) =>
-                      openPresetProfileModal(theme, customContext, role)
+                      handleStart(theme, customContext, role)
                     }
                     onPreviewTheme={onThemePreview}
                     onBack={exitThemeSelect}
@@ -649,9 +596,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         <div className="absolute inset-0 z-50 animate-fade-in">
           <ThemeSelector
             themes={selectableThemes}
-            onSelect={(theme, role) =>
-              openPresetProfileModal(theme, customContext, role)
-            }
+            onSelect={(theme, role) => handleStart(theme, customContext, role)}
             onPreviewTheme={onThemePreview}
             onBack={exitThemeSelect}
           />
@@ -670,20 +615,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       <CustomGameModal
         isOpen={isCustomGameModalOpen}
         onClose={() => setIsCustomGameModalOpen(false)}
-        onStart={({ customContext, protagonistRole, presetProfile }) => {
+        onStart={({ customContext, protagonistRole }) => {
           setIsCustomGameModalOpen(false);
-          handleStart("custom", customContext, protagonistRole, presetProfile);
+          handleStart("custom", customContext, protagonistRole);
         }}
-      />
-
-      <PresetProfileModal
-        isOpen={isPresetModalOpen}
-        initialProfile={presetProfileDraft}
-        onClose={() => {
-          setIsPresetModalOpen(false);
-          setPendingStart(null);
-        }}
-        onConfirm={handleConfirmPresetProfile}
       />
 
       {/* Custom Context Modal */}
