@@ -1240,6 +1240,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🔫",
     categories: ["modern", "movie"],
   },
+  debrief_room_mute_key: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "foundation",
+    defaultAtmosphere: { envTheme: "foundation", ambience: "combat" },
+    icon: "🔇",
+    categories: ["modern", "suspense", "movie"],
+  },
   courtroom_thriller: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1448,6 +1461,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🧭",
     categories: ["modern", "suspense"],
   },
+  monument_counterproof: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "patriotic",
+    defaultAtmosphere: { envTheme: "patriotic", ambience: "city" },
+    icon: "🗿",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
   patriotism: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1538,6 +1564,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "war", ambience: "combat" },
     icon: "🚩",
     categories: ["modern"],
+  },
+  promotion_season_last_mission: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "office" },
+    icon: "🧾",
+    categories: ["modern", "suspense", "movie"],
   },
   promotion_eve_dossier: {
     themeParams: {
@@ -2332,6 +2371,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🔁",
     categories: ["modern", "scifi", "suspense"],
   },
+  city_defense_trending_board: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "city" },
+    icon: "🔥",
+    categories: ["modern", "scifi", "suspense"],
+  },
   cyberghost: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -2461,6 +2513,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "rose", ambience: "quiet" },
     icon: "🍬",
     categories: ["modern"],
+  },
+  clear_stage_then_arrest: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "city" },
+    icon: "🚨",
+    categories: ["modern", "suspense", "movie"],
   },
   same_sex_love: {
     themeParams: {
@@ -2722,6 +2787,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🗳️",
     categories: ["modern", "suspense", "chinese_short_drama"],
   },
+  medal_assembly_line: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "courtroom" },
+    icon: "🏅",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
   medal_and_wanted_order: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -2760,6 +2838,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "modern", ambience: "office" },
     icon: "🏢",
     categories: ["modern", "chinese_short_drama"],
+  },
+  night_shift_scoreboard: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "office" },
+    icon: "🌙",
+    categories: ["modern", "suspense", "novel"],
   },
   night_patrol_beacon: {
     themeParams: {
@@ -2812,6 +2903,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "gold", ambience: "city" },
     icon: "🧹", // Cleaner icon to represent the 'hidden' aspect
     categories: ["modern", "slap_face"],
+  },
+  hero_badge_probation: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "city" },
+    icon: "🪪",
+    categories: ["modern", "suspense", "novel"],
+  },
+  hero_weekly_blackbox: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "studio" },
+    icon: "📈",
+    categories: ["modern", "suspense", "movie"],
   },
   animal_pov: {
     themeParams: {
@@ -2903,6 +3020,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "modern", ambience: "city" },
     icon: "⚔️",
     categories: ["modern", "chinese_short_drama"],
+  },
+  casualty_budget_council: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "city" },
+    icon: "📉",
+    categories: ["modern", "suspense", "novel"],
   },
   true_false_heiress: {
     themeParams: {
@@ -3619,6 +3749,45 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🕸️",
     categories: ["scifi", "suspense", "movie"],
   },
+  lighthouse_shutdown_protocol: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
+    icon: "🗼",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  low_dimension_honeymoon_route: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
+    icon: "💍",
+    categories: ["scifi", "novel", "movie"],
+  },
+  channel_nine_observatory: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
+    icon: "📡",
+    categories: ["scifi", "suspense", "movie"],
+  },
   storm_command_grid: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -3788,6 +3957,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🧠",
     categories: ["scifi", "suspense", "movie"],
   },
+  fake_shutdown_takeover: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "studio" },
+    icon: "🕳️",
+    categories: ["scifi", "suspense", "movie"],
+  },
   rookie_hero_debrief: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -3799,6 +3981,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "foundation",
     defaultAtmosphere: { envTheme: "foundation", ambience: "combat" },
     icon: "📝",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  apocalypse_program_grid: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "space" },
+    icon: "📺",
     categories: ["scifi", "suspense", "movie"],
   },
   heartbeat_off_script: {
@@ -3865,6 +4060,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "scifi", ambience: "desert" },
     icon: "🧪",
     categories: ["scifi", "suspense", "romance"],
+  },
+  breakscreen_countdown: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "studio" },
+    icon: "⏳",
+    categories: ["scifi", "suspense", "movie"],
   },
   stellar_justice_pact: {
     themeParams: {
@@ -4048,6 +4256,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🎬",
     categories: ["scifi", "suspense", "movie"],
   },
+  ratings_oracle_court: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "courtroom" },
+    icon: "⚖️",
+    categories: ["scifi", "suspense", "movie"],
+  },
   ratings_forge_hero: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4151,6 +4372,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "cyberpunk", ambience: "city" },
     icon: "🚨",
     categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
+  unaired_archive_room: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "quiet" },
+    icon: "🎞️",
+    categories: ["scifi", "suspense", "novel"],
   },
   gentle_patient_zero: {
     themeParams: {
@@ -4308,6 +4542,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🪐",
     categories: ["scifi"],
   },
+  sample_romance_incident: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "laboratory" },
+    icon: "🧬",
+    categories: ["scifi", "suspense", "novel"],
+  },
   cosmic_channel_shutdown: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4371,6 +4618,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "villain",
     defaultAtmosphere: { envTheme: "villain", ambience: "city" },
     icon: "👁️",
+    categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
+  final_season_cut_rights: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "courtroom" },
+    icon: "✂️",
     categories: ["scifi", "suspense", "chinese_short_drama"],
   },
   abo_academy_omega_instructor: {
