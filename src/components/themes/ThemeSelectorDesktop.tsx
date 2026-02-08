@@ -118,12 +118,12 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative flex flex-col bg-theme-bg/95 backdrop-blur-xl z-[100]">
-      <div className="shrink-0 z-10 px-4 py-3 md:px-6 md:py-4 flex items-center gap-3">
+    <div className="w-full h-full relative flex flex-col bg-theme-bg text-theme-text z-[100]">
+      <div className="shrink-0 px-4 md:px-6 pt-3 pb-2 border-b border-theme-divider/60 flex items-start gap-3">
         {onBack && (
           <button
             onClick={onBack}
-            className="h-9 w-9 grid place-items-center rounded-lg border border-theme-divider/60 text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors"
+            className="h-9 w-9 grid place-items-center text-theme-text-secondary hover:text-theme-primary transition-colors"
             aria-label={t("back", "Back")}
           >
             <svg
@@ -142,7 +142,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
           </button>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <ThemeFilters
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -154,21 +154,21 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 px-4 md:px-6 pb-4">
-        <div className="max-w-[1320px] mx-auto h-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_390px] xl:grid-cols-[minmax(0,1fr)_430px] gap-4">
-          <section className="min-h-0 rounded-2xl border border-theme-divider/60 bg-theme-surface/10 backdrop-blur-sm overflow-hidden flex flex-col">
-            <div className="shrink-0 px-4 py-3 border-b border-theme-divider/60 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 pb-24">
+          <section className="pt-2">
+            <div className="py-2 border-b border-theme-divider/60 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary">
               <span>{t("selectTheme")}</span>
               <span>{selectorItems.length}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2.5 space-y-2">
-              {selectorItems.length === 0 ? (
-                <div className="h-full min-h-44 rounded-xl border border-dashed border-theme-divider/60 grid place-items-center text-sm text-theme-text-secondary">
-                  {t("noThemesFound", "No themes found")}
-                </div>
-              ) : (
-                selectorItems.map((themeKey) => {
+            {selectorItems.length === 0 ? (
+              <div className="py-8 text-sm text-theme-text-secondary border-b border-theme-divider/60">
+                {t("noThemesFound", "No themes found")}
+              </div>
+            ) : (
+              <div className="divide-y divide-theme-divider/60">
+                {selectorItems.map((themeKey) => {
                   const isRandom = themeKey === RANDOM_THEME_KEY;
                   const isActive = selectedTheme === themeKey;
                   const icon = isRandom
@@ -189,28 +189,28 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     <button
                       key={themeKey}
                       onClick={() => setSelectedTheme(themeKey)}
-                      className={`w-full text-left rounded-xl border px-3 py-3 flex items-start gap-3 transition-colors ${
+                      className={`w-full text-left py-3 flex items-start gap-3 transition-colors ${
                         isActive
-                          ? "border-theme-primary/45 bg-theme-primary/12"
-                          : "border-theme-divider/60 bg-theme-surface/15 hover:bg-theme-surface-highlight/15 hover:border-theme-border"
+                          ? "text-theme-primary"
+                          : "text-theme-text hover:text-theme-primary"
                       }`}
                     >
-                      <div className="h-10 w-10 shrink-0 rounded-lg border border-theme-divider/60 bg-theme-surface-highlight/15 grid place-items-center text-xl leading-none">
+                      <div className="h-8 w-8 shrink-0 grid place-items-center text-lg leading-none">
                         {icon}
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold text-theme-text truncate">
-                          {name}
-                        </div>
+                        <div className="text-sm font-semibold truncate">{name}</div>
                         <div className="mt-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
                           {description}
                         </div>
                       </div>
 
                       <svg
-                        className={`w-4 h-4 shrink-0 mt-0.5 transition-colors ${
-                          isActive ? "text-theme-primary" : "text-theme-text-secondary"
+                        className={`w-4 h-4 shrink-0 mt-0.5 transition-opacity ${
+                          isActive
+                            ? "opacity-100 text-theme-primary"
+                            : "opacity-45 text-theme-text-secondary"
                         }`}
                         fill="none"
                         stroke="currentColor"
@@ -225,17 +225,19 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                       </svg>
                     </button>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </section>
 
-          <aside className="min-h-0 rounded-2xl border border-theme-divider/60 bg-theme-surface/10 backdrop-blur-sm overflow-hidden flex flex-col">
-            <div className="shrink-0 px-5 py-4 border-b border-theme-divider/60 flex items-start gap-3.5">
-              <div className="h-12 w-12 rounded-xl border border-theme-divider/60 bg-theme-surface-highlight/15 grid place-items-center text-2xl leading-none shrink-0">
-                {previewData
-                  ? getValidIcon(previewData.icon, "📖")
-                  : "🎲"}
+          <section className="pt-5">
+            <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary">
+              {t("themePreview", "Theme Preview")}
+            </div>
+
+            <div className="mt-2 flex items-start gap-3">
+              <div className="h-9 w-9 shrink-0 grid place-items-center text-xl leading-none">
+                {previewData ? getValidIcon(previewData.icon, "📖") : "🎲"}
               </div>
 
               <div className="min-w-0">
@@ -250,7 +252,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     ? t(`${previewThemeKey}.name`, { ns: "themes" })
                     : t("randomTheme")}
                 </h3>
-                <p className="mt-1 text-xs text-theme-text-secondary leading-relaxed">
+                <p className="mt-1 text-sm text-theme-text-secondary leading-relaxed">
                   {previewData
                     ? t(
                         "themeSelectionHint",
@@ -260,105 +262,107 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                 </p>
               </div>
             </div>
+          </section>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-4 space-y-4">
-              {previewData ? (
-                <>
-                  <div>
-                    <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-1.5">
-                      {t("narrativeStyle")}
-                    </div>
-                    <div className="text-sm text-theme-text leading-7">
-                      <MarkdownText
-                        content={t(`${previewThemeKey}.narrativeStyle`, {
-                          ns: "themes",
-                        })}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-1.5">
-                      {t("worldSetting")}
-                    </div>
-                    <div className="text-sm text-theme-text leading-7">
-                      <MarkdownText
-                        content={t(`${previewThemeKey}.worldSetting`, {
-                          ns: "themes",
-                        })}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-1.5">
-                      {t("themeExample")}
-                    </div>
-                    <div className="rounded-xl border border-theme-divider/60 bg-theme-bg/45 p-3.5 text-sm text-theme-text leading-7">
-                      <MarkdownText
-                        content={t(`${previewThemeKey}.example`, {
-                          ns: "themes",
-                        })}
-                      />
-                    </div>
-                  </div>
-
-                  {(() => {
-                    const roles = t(`${previewThemeKey}.protagonist_preference`, {
-                      ns: "themes",
-                      returnObjects: true,
-                    }) as string[] | undefined;
-
-                    if (!Array.isArray(roles) || roles.length === 0) {
-                      return null;
-                    }
-
-                    return (
-                      <div>
-                        <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
-                          {t("availableRoles", "Possible Identities")}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {roles.slice(0, 8).map((role, index) => (
-                            <span
-                              key={index}
-                              className="px-2.5 py-1 rounded-md border border-theme-divider/60 bg-theme-surface-highlight/15 text-[11px] text-theme-text-secondary"
-                            >
-                              {role.split(" (")[0]}
-                            </span>
-                          ))}
-                          {roles.length > 8 && (
-                            <span className="px-2.5 py-1 text-[11px] text-theme-text-secondary">
-                              +{roles.length - 8}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </>
-              ) : (
-                <div className="rounded-xl border border-theme-divider/60 bg-theme-bg/45 p-3.5 text-sm text-theme-text-secondary leading-7">
-                  {t(
-                    "randomThemePanelDesc",
-                    "Pick random to start instantly. We will choose a world and tone for you.",
-                  )}
+          {previewData ? (
+            <>
+              <section className="pt-5 border-t border-theme-divider/60 mt-5">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
+                  {t("narrativeStyle")}
                 </div>
-              )}
-            </div>
+                <div className="text-sm text-theme-text leading-7">
+                  <MarkdownText
+                    content={t(`${previewThemeKey}.narrativeStyle`, {
+                      ns: "themes",
+                    })}
+                  />
+                </div>
+              </section>
 
-            <div className="shrink-0 p-4 border-t border-theme-divider/60">
-              <button
-                onClick={handleStart}
-                disabled={!selectedTheme}
-                className="w-full h-11 rounded-lg bg-theme-primary/90 text-theme-bg text-sm font-semibold uppercase tracking-[0.12em] hover:bg-theme-primary active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {selectedTheme === RANDOM_THEME_KEY
-                  ? t("surpriseMe")
-                  : t("startAdventure")}
-              </button>
-            </div>
-          </aside>
+              <section className="pt-5 border-t border-theme-divider/60 mt-5">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
+                  {t("worldSetting")}
+                </div>
+                <div className="text-sm text-theme-text leading-7">
+                  <MarkdownText
+                    content={t(`${previewThemeKey}.worldSetting`, {
+                      ns: "themes",
+                    })}
+                  />
+                </div>
+              </section>
+
+              <section className="pt-5 border-t border-theme-divider/60 mt-5">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
+                  {t("themeExample")}
+                </div>
+                <div className="text-sm text-theme-text leading-7">
+                  <MarkdownText
+                    content={t(`${previewThemeKey}.example`, {
+                      ns: "themes",
+                    })}
+                  />
+                </div>
+              </section>
+
+              {(() => {
+                const roles = t(`${previewThemeKey}.protagonist_preference`, {
+                  ns: "themes",
+                  returnObjects: true,
+                }) as string[] | undefined;
+
+                if (!Array.isArray(roles) || roles.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <section className="pt-5 border-t border-theme-divider/60 mt-5">
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
+                      {t("availableRoles", "Possible Identities")}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {roles.slice(0, 8).map((role, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-0.5 text-xs text-theme-text-secondary border border-theme-divider/60"
+                        >
+                          {role.split(" (")[0]}
+                        </span>
+                      ))}
+                      {roles.length > 8 && (
+                        <span className="px-2 py-0.5 text-xs text-theme-text-secondary">
+                          +{roles.length - 8}
+                        </span>
+                      )}
+                    </div>
+                  </section>
+                );
+              })()}
+            </>
+          ) : (
+            <section className="pt-5 border-t border-theme-divider/60 mt-5">
+              <div className="text-sm text-theme-text-secondary leading-7">
+                {t(
+                  "randomThemePanelDesc",
+                  "Pick random to start instantly. We will choose a world and tone for you.",
+                )}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+
+      <div className="shrink-0 border-t border-theme-divider/60 bg-theme-bg">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3">
+          <button
+            onClick={handleStart}
+            disabled={!selectedTheme}
+            className="w-full h-11 text-sm tracking-[0.12em] font-semibold uppercase border border-theme-primary/45 text-theme-primary hover:bg-theme-primary/12 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            {selectedTheme === RANDOM_THEME_KEY
+              ? t("surpriseMe")
+              : t("startAdventure")}
+          </button>
         </div>
       </div>
 
