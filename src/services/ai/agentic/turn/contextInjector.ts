@@ -48,6 +48,11 @@ export function injectNormalTurnInstruction(
   modeFlags?: { godMode?: boolean; unlockMode?: boolean },
   requiredPresetSkillPaths: string[] = [],
   requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
+  contextMeta?: {
+    forkId?: number;
+    turnNumber?: number;
+    mode?: "normal" | "cleanup";
+  },
 ): void {
   history.push(
     createUserMessage(
@@ -63,6 +68,29 @@ export function injectNormalTurnInstruction(
         [
           "[SYSTEM: COMMAND SKILL REQUIRED]",
           "Before any cleanup mutation, read: `current/skills/commands/cleanup/SKILL.md`",
+        ].join("\n"),
+      ),
+    );
+
+    history.push(
+      createUserMessage(
+        [
+          "[SYSTEM: CLEANUP CONSISTENCY ANCHOR]",
+          "Cleanup is a maintenance turn, not a story rewrite.",
+          `- Target forkId: ${
+            typeof contextMeta?.forkId === "number" ? contextMeta.forkId : "unknown"
+          }`,
+          `- Target turnNumber: ${
+            typeof contextMeta?.turnNumber === "number"
+              ? contextMeta.turnNumber
+              : "unknown"
+          }`,
+          "- Read current/conversation/index.json first, then only read/write current fork conversation files.",
+          "- NEVER read from or mutate other forks while cleaning this fork.",
+          "- Preserve narrative continuity with existing world state and conversation files.",
+          "- Do NOT fabricate new lore/conflicts unrelated to deduplication/consolidation.",
+          "- Verify entities via read-only VFS tools before mutation (vfs_ls_entries / vfs_suggest_duplicates / vfs_read_many).",
+          "- Keep player-visible log narrative generic; do not leak hidden truths.",
         ].join("\n"),
       ),
     );

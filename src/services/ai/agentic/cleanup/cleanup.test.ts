@@ -33,6 +33,10 @@ describe("generateEntityCleanup", () => {
     expect(calledContext.slotId).toBe("slot-clean");
     expect(typeof calledContext.userAction).toBe("string");
     expect(calledContext.userAction.startsWith("[CLEANUP]")).toBe(true);
+    expect(calledContext.userAction).toContain("<cleanup_anchor>");
+    expect(calledContext.userAction).toContain("<target_fork_id>7</target_fork_id>");
+    expect(calledContext.userAction).toContain("required_first_read");
+    expect(calledContext.userAction).toContain("Never read/mutate other forks");
     expect(calledContext.userAction).toContain("vfs_ls_entries");
     expect(calledContext.userAction).toContain("vfs_suggest_duplicates");
     expect(calledContext.userAction).toContain("CRITICAL NARRATIVE PRIVACY RULE");

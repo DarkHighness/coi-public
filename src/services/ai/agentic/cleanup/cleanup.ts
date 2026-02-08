@@ -28,8 +28,21 @@ export interface CleanupResult {
  * Build the cleanup prompt with XML entity context and examples
  */
 function buildCleanupPrompt(state: GameState): string {
-  void state;
+  const targetForkId =
+    typeof (state as any)?.forkId === "number" ? (state as any).forkId : "unknown";
+  const targetTurnNumber =
+    typeof (state as any)?.turnNumber === "number"
+      ? (state as any).turnNumber
+      : "unknown";
+
   return `[CLEANUP] Analyze the current VFS state and perform entity cleanup (deduplication + consolidation).
+
+<cleanup_anchor>
+  <target_fork_id>${targetForkId}</target_fork_id>
+  <target_turn_number>${targetTurnNumber}</target_turn_number>
+  <required_first_read>current/conversation/index.json</required_first_read>
+  <scope_rule>Operate only on current fork data. Never read/mutate other forks during cleanup.</scope_rule>
+</cleanup_anchor>
 
 <workflow>
   0) Before any cleanup mutation, read command protocol:

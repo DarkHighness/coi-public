@@ -34,13 +34,30 @@ describe("contextInjector", () => {
           source: "save_profile",
         },
       ],
+      {
+        forkId: 0,
+        turnNumber: 12,
+        mode: "normal",
+      },
     );
-    injectNormalTurnInstruction(history, "vfs_commit_turn", true, {
-      godMode: false,
-      unlockMode: false,
-    });
+    injectNormalTurnInstruction(
+      history,
+      "vfs_commit_turn",
+      true,
+      {
+        godMode: false,
+        unlockMode: false,
+      },
+      [],
+      [],
+      {
+        forkId: 3,
+        turnNumber: 27,
+        mode: "cleanup",
+      },
+    );
 
-    expect(history).toHaveLength(8);
+    expect(history).toHaveLength(9);
     expect(history.every((msg) => msg.role === "user")).toBe(true);
     expect(getText(history[0])).toContain("FORCE UPDATE MODE");
     expect(getText(history[1])).toContain("COMMAND SKILL REQUIRED");
@@ -55,6 +72,9 @@ describe("contextInjector", () => {
     expect(getText(history[5])).toContain("<narrative_style> profile=cinematic source=save_profile");
     expect(getText(history[6])).toContain("[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]");
     expect(getText(history[7])).toContain("COMMAND SKILL REQUIRED");
+    expect(getText(history[8])).toContain("CLEANUP CONSISTENCY ANCHOR");
+    expect(getText(history[8])).toContain("Target forkId: 3");
+    expect(getText(history[8])).toContain("Target turnNumber: 27");
   });
 
   it("injects budget and no-tool-call messages", () => {

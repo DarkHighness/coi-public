@@ -173,6 +173,11 @@ const READ_ONLY_VFS_TOOL_NAMES = new Set(
   READ_ONLY_VFS_TOOL_DEFS.map((t) => t.name),
 );
 
+const OUTLINE_PHASE_READ_ROOTS = [
+  "outline/phases",
+  "shared/narrative/outline/phases",
+];
+
 const OUTLINE_SUBMIT_TOOL_DEFS = [...VFS_SUBMIT_OUTLINE_PHASE_TOOLS];
 const OUTLINE_SUBMIT_TOOL_NAMES = new Set(
   OUTLINE_SUBMIT_TOOL_DEFS.map((t) => t.name),
@@ -214,7 +219,7 @@ const getOutlineDefaultReadOnlyAllowPrefixes = (
   // Keep defaults simple and not overly strict:
   // - `skills/**` is a built-in read-only library intended to improve generation quality.
   // - `refs/**` is a read-only reference pack(s) seeded into VFS (e.g. atmosphere).
-  const prefixes: string[] = ["skills", "refs"];
+  const prefixes: string[] = ["skills", "refs", ...OUTLINE_PHASE_READ_ROOTS];
 
   // Theme skills are optional and only useful when we have a stable theme key.
   if (!isImageBasedFlow && theme && theme !== IMAGE_BASED_THEME) {
@@ -222,6 +227,108 @@ const getOutlineDefaultReadOnlyAllowPrefixes = (
   }
 
   return prefixes;
+};
+
+const OUTLINE_RESUME_ANCHOR_MARKER = "[OUTLINE RESUME ANCHOR]";
+
+const safeJsonStringify = (value: unknown): string => {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value ?? "");
+  }
+};
+
+const truncateText = (value: string, maxChars: number): string => {
+  if (value.length <= maxChars) return value;
+  return `${value.slice(0, maxChars)}…`;
+};
+
+const getOutlinePhaseArtifactPaths = (phaseNum: number) => ({
+  currentPath: `current/outline/phases/phase${phaseNum}.json`,
+  sharedPath: `shared/narrative/outline/phases/phase${phaseNum}.json`,
+});
+
+const formatOutlinePhaseArtifactChecklist = (phaseNumbers: number[]): string => {
+  if (phaseNumbers.length === 0) return "- none";
+  return phaseNumbers
+    .map((phaseNum) => {
+      const { currentPath, sharedPath } = getOutlinePhaseArtifactPaths(phaseNum);
+      return `- Phase ${phaseNum}: ${currentPath} (fallback: ${sharedPath})`;
+    })
+    .join("\n");
+};
+
+const buildOutlineResumeAnchor = (
+  currentPhase: number,
+  partial: PartialStoryOutline,
+): string => {
+  const safeCurrentPhase = Math.max(0, Math.min(9, Math.floor(currentPhase)));
+  const currentSubmitTool = `vfs_submit_outline_phase_${safeCurrentPhase}`;
+
+  const completedPhaseNumbers = Array.from({ length: 10 }, (_, idx) => idx).filter(
+    (phaseNum) =>
+      phaseNum < safeCurrentPhase &&
+      (partial as any)?.[`phase${phaseNum}`] !== undefined,
+  );
+
+  const missingCompletedPhases = Array.from(
+    { length: safeCurrentPhase },
+    (_, idx) => idx,
+  ).filter(
+    (phaseNum) => (partial as any)?.[`phase${phaseNum}`] === undefined,
+  );
+
+  const remainingPhases = Array.from(
+    { length: Math.max(0, 10 - safeCurrentPhase) },
+    (_, idx) => safeCurrentPhase + idx,
+  );
+
+  const completedPhasePreview = completedPhaseNumbers
+    .map((phaseNum) => {
+      const raw = safeJsonStringify((partial as any)?.[`phase${phaseNum}`]);
+      return `<phase_${phaseNum}>${truncateText(raw, 1400)}</phase_${phaseNum}>`;
+    })
+    .join("\n");
+
+  return `${OUTLINE_RESUME_ANCHOR_MARKER}
+You are RESUMING an interrupted outline generation session.
+
+Current phase: ${safeCurrentPhase}
+Current submit tool: ${currentSubmitTool}
+Completed phases: ${completedPhaseNumbers.length > 0 ? completedPhaseNumbers.join(", ") : "none"}
+Missing completed artifacts (should re-read/repair before submit): ${
+    missingCompletedPhases.length > 0
+      ? missingCompletedPhases.join(", ")
+      : "none"
+  }
+Remaining phases (including current): ${remainingPhases.join(", ")}
+
+Authoritative progress checkpoint:
+- current/outline/progress.json
+
+Phase artifact lookup (completed):
+${formatOutlinePhaseArtifactChecklist(completedPhaseNumbers)}
+
+Current-phase artifact targets:
+- ${getOutlinePhaseArtifactPaths(safeCurrentPhase).currentPath}
+- ${getOutlinePhaseArtifactPaths(safeCurrentPhase).sharedPath}
+
+Read order (recommended):
+1) Read current/outline/progress.json to confirm resume checkpoint.
+2) Read completed phase files listed above to rebuild continuity.
+3) If a file is missing under current/, read the shared/ fallback path.
+4) Then call ONLY ${currentSubmitTool} for this phase.
+
+Rules:
+- Continue from the CURRENT phase only. Do NOT regenerate completed phases.
+- Do NOT call submit tools for other phases.
+- Keep story continuity consistent with completed phase artifacts.
+- If details are missing, read phase artifacts first via read-only VFS tools, then submit.
+- Outline generation is pre-fork global setup; do NOT use conversation fork turn files as source of truth.
+
+Completed phase snapshots (may be truncated; use VFS reads for full details):
+${completedPhasePreview || "<none/>"}`;
 };
 
 const extractGlobRoot = (pattern: string): string => {
@@ -351,6 +458,32 @@ const formatOutlineSubmitValidationError = (error: unknown): string => {
       return path ? `${path}: ${message}` : message;
     })
     .join("; ");
+};
+
+const userMessageContainsText = (
+  message: UnifiedMessage,
+  text: string,
+): boolean => {
+  if (message.role !== "user") return false;
+  const content = (message as any).content;
+  if (typeof content === "string") return content.includes(text);
+  if (!Array.isArray(content)) return false;
+  return content.some(
+    (part) =>
+      part?.type === "text" &&
+      typeof part?.text === "string" &&
+      part.text.includes(text),
+  );
+};
+
+const hasRecentPhasePromptMarker = (
+  history: UnifiedMessage[],
+  phase: number,
+  lookback: number,
+): boolean => {
+  const marker = `[PHASE ${phase} `;
+  const window = lookback > 0 ? history.slice(-lookback) : history;
+  return window.some((message) => userMessageContainsText(message, marker));
 };
 
 /**
@@ -545,6 +678,16 @@ export const generateStoryOutlinePhased = async (
     currentPhase = options.resumeFrom.currentPhase;
     liveToolCalls = [...(options.resumeFrom.liveToolCalls || [])];
     console.log(`[OutlineAgentic] Resuming from phase ${currentPhase}`);
+
+    const hasResumeAnchor = conversationHistory.some((msg) =>
+      userMessageContainsText(msg, OUTLINE_RESUME_ANCHOR_MARKER),
+    );
+    if (!hasResumeAnchor) {
+      conversationHistory.push(
+        createUserMessage(buildOutlineResumeAnchor(currentPhase, partial)),
+      );
+    }
+
     options.onToolCallsUpdate?.(liveToolCalls);
   } else {
     // Start fresh
@@ -865,24 +1008,15 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
       options.protagonistFeature,
     );
     if (phasePrompt) {
-      // Avoid duplicating the phase prompt on resume.
-      const marker = `[PHASE ${phaseNum} `;
-      const hasMarker = conversationHistory.some((msg) => {
-        if (msg.role !== "user") return false;
-        const content = (msg as any).content;
-        if (typeof content === "string") return content.includes(marker);
-        if (Array.isArray(content)) {
-          return content.some(
-            (c) =>
-              c?.type === "text" &&
-              typeof c?.text === "string" &&
-              c.text.includes(marker),
-          );
-        }
-        return false;
-      });
-      if (!hasMarker) {
-        // Phase prompts include the submission tool instructions.
+      // Resume/recovery runs can carry stale prompts from older phases.
+      // Re-anchor the active phase prompt so the model keeps the correct submit tool.
+      const hasRecentMarker = hasRecentPhasePromptMarker(
+        conversationHistory,
+        phaseNum,
+        12,
+      );
+      const shouldInjectPrompt = Boolean(options.resumeFrom) || !hasRecentMarker;
+      if (shouldInjectPrompt) {
         conversationHistory.push(createUserMessage(phasePrompt));
       }
     }

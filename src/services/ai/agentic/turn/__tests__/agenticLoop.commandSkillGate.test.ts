@@ -289,6 +289,43 @@ describe("agenticLoop command skill gate", () => {
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalled();
   });
 
+  it("blocks cross-fork path references during cleanup turns", async () => {
+    const vfsSession = createVfsSession(true);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-cross-fork-read",
+          name: "vfs_read_json",
+          args: { path: "conversation/turns/fork-3/turn-1.json" },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-cleanup-cross-fork",
+        vfsSession,
+        isCleanupMode: true,
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+  });
+
   it("blocks non-read tools when preset skill is required but unread", async () => {
     const vfsSession = createVfsSession(false);
 

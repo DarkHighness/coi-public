@@ -181,6 +181,15 @@ export async function runAgenticLoopRefactored(
         },
         loopState.requiredPresetSkillPaths,
         loopState.requiredPresetSkillRequirements ?? [],
+        {
+          forkId:
+            typeof gameState.forkId === "number" ? gameState.forkId : undefined,
+          turnNumber:
+            typeof gameState.turnNumber === "number"
+              ? gameState.turnNumber
+              : undefined,
+          mode: isCleanupMode ? "cleanup" : "normal",
+        },
       );
     }
 
@@ -367,6 +376,75 @@ interface ProcessToolCallsResult {
   responses: Array<{ toolCallId: string; name: string; content: unknown }>;
   turnFinished: boolean;
 }
+
+const extractTurnPathCandidates = (value: unknown, key?: string): string[] => {
+  const PATH_KEYS = new Set([
+    "path",
+    "paths",
+    "from",
+    "to",
+    "patterns",
+    "excludePatterns",
+  ]);
+
+  if (typeof value === "string") {
+    return key && PATH_KEYS.has(key) ? [value] : [];
+  }
+
+  if (Array.isArray(value)) {
+    if (key && PATH_KEYS.has(key)) {
+      return value.flatMap((entry) =>
+        typeof entry === "string" ? [entry] : extractTurnPathCandidates(entry),
+      );
+    }
+    return value.flatMap((entry) => extractTurnPathCandidates(entry));
+  }
+
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  return Object.entries(value as Record<string, unknown>).flatMap(([k, v]) =>
+    extractTurnPathCandidates(v, k),
+  );
+};
+
+const extractForkRefsFromTurnPath = (candidate: string): number[] => {
+  const refs = new Set<number>();
+  const canonicalPattern = /\bforks\/(\d+)\b/g;
+  const conversationPattern = /\bconversation\/turns\/fork-(\d+)\b/g;
+
+  for (const pattern of [canonicalPattern, conversationPattern]) {
+    let match: RegExpExecArray | null = null;
+    while ((match = pattern.exec(candidate)) !== null) {
+      const forkId = Number(match[1]);
+      if (Number.isFinite(forkId)) {
+        refs.add(forkId);
+      }
+    }
+  }
+
+  return Array.from(refs.values());
+};
+
+const findTurnCrossForkViolations = (
+  args: unknown,
+  targetForkId: number,
+): Array<{ path: string; forkId: number }> => {
+  const candidates = extractTurnPathCandidates(args);
+  const violations: Array<{ path: string; forkId: number }> = [];
+
+  for (const candidate of candidates) {
+    const refs = extractForkRefsFromTurnPath(candidate);
+    for (const forkId of refs) {
+      if (forkId !== targetForkId) {
+        violations.push({ path: candidate, forkId });
+      }
+    }
+  }
+
+  return violations;
+};
 
 function checkCommandSkillReadGate(
   functionCalls: ToolCallResult[],
@@ -675,6 +753,39 @@ async function processToolCalls(
   const conversationTouched = functionCalls.flatMap((call) =>
     getConversationTouchedPaths(call),
   );
+
+  const targetForkId =
+    typeof gameState.forkId === "number" ? gameState.forkId : 0;
+
+  for (const call of functionCalls) {
+    const crossForkViolations = findTurnCrossForkViolations(
+      call.args,
+      targetForkId,
+    );
+    if (crossForkViolations.length > 0) {
+      const details = crossForkViolations
+        .slice(0, 3)
+        .map((item) => `fork=${item.forkId} path="${item.path}"`)
+        .join("; ");
+
+      const error = {
+        success: false,
+        error:
+          `[ERROR: CROSS_FORK_ACCESS_BLOCKED] Current turn is scoped to fork ${targetForkId}. ` +
+          `Cross-fork path references are not allowed (${details}). Read/write only current fork paths.`,
+        code: "INVALID_ACTION",
+      };
+
+      return {
+        responses: functionCalls.map((toolCall) => ({
+          toolCallId: toolCall.id,
+          name: toolCall.name,
+          content: error,
+        })),
+        turnFinished: false,
+      };
+    }
+  }
 
   if (conversationTouched.length > 0) {
     const unique = Array.from(new Set(conversationTouched));
