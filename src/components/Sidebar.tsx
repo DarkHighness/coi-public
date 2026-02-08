@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
             </div>
             <h1
-              className={`mt-2 text-sm md:text-base text-theme-primary ${currentThemeConfig.fontClass} tracking-wide leading-snug pr-2 overflow-hidden [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]`}
+              className={`mt-2 text-sm md:text-base text-theme-primary ${currentThemeConfig.fontClass} tracking-wide leading-snug pr-2 truncate`}
               title={gameState.outline?.title || t("title")}
             >
               {gameState.outline?.title || t("title")}
@@ -82,27 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="mt-2 h-px w-20 bg-theme-divider/70"></div>
           </div>
 
-          <div className="hidden md:flex shrink-0 items-center gap-2">
-            <button
-              onClick={() => onUpdateUIState("showSystemFooter", !showDesktopMenu)}
-              className="h-9 w-9 grid place-items-center rounded-md border border-transparent text-theme-text-secondary/65 hover:text-theme-primary hover:bg-theme-surface-highlight/15 hover:border-theme-divider/70 transition-colors"
-              title={showDesktopMenu ? t("hideSystem") : t("showSystem")}
-              aria-label={showDesktopMenu ? t("hideSystem") : t("showSystem")}
-            >
-              <svg
-                className={`w-4 h-4 transition-transform ${showDesktopMenu ? "rotate-180" : "rotate-0"}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+          <div className="hidden md:flex shrink-0 items-center">
             <LanguageSelector
               variant="compact"
               disabled={isTranslating || gameState.isProcessing}
@@ -298,6 +278,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </span>
         <div className="flex items-center divide-x divide-theme-divider/60">
+          <button
+            onClick={() => onUpdateUIState("showSystemFooter", !showDesktopMenu)}
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-[11px] uppercase tracking-wide font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+            title={showDesktopMenu ? t("hideSystem") : t("showSystem")}
+            aria-label={showDesktopMenu ? t("hideSystem") : t("showSystem")}
+          >
+            <svg
+              className={`w-3.5 h-3.5 transition-transform ${showDesktopMenu ? "rotate-180" : "rotate-0"}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+            <span>{t("menu")}</span>
+          </button>
           <button
             onClick={onOpenLogs}
             className="px-3 py-2 text-[11px] uppercase tracking-wide font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
