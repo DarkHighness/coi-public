@@ -308,7 +308,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <div className="shrink-0 px-6 pt-3 pb-3 border-t border-theme-divider/60 bg-theme-surface/10 hidden md:block">
+      <div
+        className={`shrink-0 px-6 pt-3 pb-3 border-t border-theme-divider/60 bg-theme-surface/10 hidden ${showDesktopMenu ? "md:block" : "md:hidden"}`}
+      >
         <div className="text-[10px] uppercase tracking-[0.16em] text-theme-text-secondary mb-2">
           {t("menu")}
         </div>
