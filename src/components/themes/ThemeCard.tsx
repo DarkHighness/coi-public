@@ -22,7 +22,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
   const envTheme = ENV_THEMES[themeConfig.envTheme];
   const primaryColor = envTheme?.vars["--theme-primary"] || "#f59e0b";
 
-  const lineClampClass = isDesktop ? "line-clamp-5" : "line-clamp-2";
+  const lineClampClass = isDesktop ? "line-clamp-4" : "line-clamp-2";
 
   return (
     <button
@@ -32,7 +32,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
     >
       <div
         className={`relative h-full rounded-2xl border border-theme-divider/60 bg-gradient-to-br from-theme-surface/35 to-theme-bg/40 hover:bg-theme-surface-highlight/12 hover:border-theme-primary/40 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition-all overflow-hidden ${
-          isDesktop ? "h-full min-h-[232px]" : "h-[104px]"
+          isDesktop ? "h-full min-h-[188px]" : "h-[104px]"
         }`}
       >
         <div className="absolute inset-y-0 left-0 w-1.5 bg-theme-primary/32 group-hover:bg-theme-primary/65 transition-colors" />

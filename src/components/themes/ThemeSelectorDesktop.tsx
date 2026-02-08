@@ -138,7 +138,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-6 py-3">
           <div
             key={`page-${currentPage}`}
-            className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-[232px] gap-4 animate-fade-in"
+            className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-[188px] gap-4 animate-fade-in"
           >
             {/* Random Option - only on first page */}
             {selectedCategory === "all" &&
@@ -160,7 +160,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                         <div className="text-sm font-semibold text-theme-primary uppercase tracking-[0.11em]">
                           {t("randomTheme")}
                         </div>
-                        <div className="mt-1.5 text-xs leading-relaxed text-theme-text-secondary line-clamp-4">
+                        <div className="mt-1.5 text-xs leading-relaxed text-theme-text-secondary line-clamp-3">
                           {t("randomThemeDesc")}
                         </div>
                       </div>
