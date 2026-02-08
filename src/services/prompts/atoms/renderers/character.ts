@@ -3,8 +3,8 @@
  * Entity Rendering Atom: Character Renderer
  * ============================================================================
  *
- * Character (主角) 实体渲染 - 用于 RAG 和上下文构建。
- * 主角通常只有 visible 层（玩家完全了解自己），但 hiddenTraits 需要特殊处理。
+ * Character (Protagonist) entity rendering - for RAG and context building.
+ * Protagonist usually only has visible layer (player fully knows themselves), but hiddenTraits needs special handling.
  */
 
 import type { Atom, Character } from "../types";
@@ -14,7 +14,7 @@ export type RenderCharacterInput = {
 };
 
 /**
- * 渲染 Character 的 visible 层（基本信息）
+ * Render Character's visible layer (basic info)
  */
 export const renderCharacterVisible: Atom<RenderCharacterInput> = ({
   character,
@@ -57,14 +57,14 @@ ${lines.join("\n")}
 };
 
 /**
- * 渲染 Character 的 hidden 层（hiddenTraits 和未解锁的能力）
+ * Render Character's hidden layer (hiddenTraits and unlocked abilities)
  */
 export const renderCharacterHidden: Atom<RenderCharacterInput> = ({
   character,
 }) => {
   const lines: string[] = [];
 
-  // Hidden traits (潜在特质)
+  // Hidden traits
   if (character.hiddenTraits?.length) {
     const traitStrs = character.hiddenTraits.map((t) => {
       const effects = t.effects?.join(", ") || "";
@@ -93,7 +93,7 @@ ${lines.join("\n")}
 };
 
 /**
- * 渲染 Character 完整信息（visible + hidden）
+ * Render full Character info (visible + hidden)
  */
 export const renderCharacterFull: Atom<RenderCharacterInput> = ({
   character,

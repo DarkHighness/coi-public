@@ -1,32 +1,32 @@
 /**
  * ============================================================================
- * Atom Types - 原子类型定义
+ * Atom Types - Atomic Type Definitions
  * ============================================================================
  *
- * Atom（原子）是最小不可分割的 prompt 片段。
- * 每个 Atom 是一个函数，接收自定义的输入类型，返回渲染后的 prompt 字符串。
+ * Atom is the smallest indivisible prompt fragment.
+ * Each Atom is a function that receives a custom input type and returns a rendered prompt string.
  *
- * 设计原则：
- * 1. 每个 Atom 定义自己的输入类型，无统一 Context
- * 2. 逻辑分离：逻辑上不连贯的内容拆分为独立 Atom
- * 3. 可组合：多个 Atom 可以组合成更大的 prompt
+ * Design Principles:
+ * 1. Each Atom defines its own input type, no unified Context.
+ * 2. Logic Separation: Logically incoherent content is split into independent Atoms.
+ * 3. Composable: Multiple Atoms can be combined into a larger prompt.
  */
 
 /**
- * Atom - 最小不可分割的 prompt 片段
+ * Atom - Smallest indivisible prompt fragment
  *
- * @template TInput - 原子的输入类型，每个原子自定义
- * @param input - 渲染此原子所需的参数
- * @returns 渲染后的 prompt 字符串
+ * @template TInput - Atom input type, custom for each atom
+ * @param input - Parameters required to render this atom
+ * @returns Rendered prompt string
  *
  * @example
- * // 定义一个简单的 Atom
+ * // Define a simple Atom
  * type GreetingInput = { name: string; language: string };
  * const greeting: Atom<GreetingInput> = ({ name, language }) =>
  *   language === 'zh' ? `你好，${name}！` : `Hello, ${name}!`;
  *
  * @example
- * // 无参数的 Atom
+ * // Atom without parameters
  * const dualLayerReality: Atom<void> = () => `
  * <dual_layer_reality>
  * Every entity has TWO layers: Visible and Hidden.
@@ -35,51 +35,51 @@
 export type Atom<TInput = void> = (input: TInput) => string;
 
 // ============================================================================
-// Skill Output Types - 用于 VFS skill 多文件生成
+// Skill Output Types - For VFS skill multi-file generation
 // ============================================================================
 
 /**
  * Before/After example for skills
  */
 export interface SkillExample {
-  /** 场景描述 */
+  /** Scenario description */
   scenario?: string;
-  /** 错误做法 */
+  /** Wrong approach */
   wrong: string;
-  /** 正确做法 */
+  /** Right approach */
   right: string;
 }
 
 /**
- * SkillOutput - Skill 的结构化输出
+ * SkillOutput - Structured output of Skill
  *
- * 用于 VFS skill 生成器，产生多个文件：
+ * Used for VFS skill generator, producing multiple files:
  * - SKILL.md (main content)
  * - CHECKLIST.md (optional)
  * - EXAMPLES.md (optional)
  */
 export interface SkillOutput {
-  /** 主内容 - 用于 SKILL.md */
+  /** Main content - for SKILL.md */
   main: string;
 
-  /** Quick Start - 60秒工作流（可选，嵌入 SKILL.md） */
+  /** Quick Start - 60s workflow (optional, embedded in SKILL.md) */
   quickStart?: string;
 
-  /** 检查清单 - 用于 CHECKLIST.md（可选） */
+  /** Checklist - for CHECKLIST.md (optional) */
   checklist?: string[];
 
-  /** Before/After 示例 - 用于 EXAMPLES.md（可选） */
+  /** Before/After examples - for EXAMPLES.md (optional) */
   examples?: SkillExample[];
 
-  /** 参考资料 - 用于 references/*.md（可选） */
+  /** References - for references/*.md (optional) */
   references?: Record<string, string>;
 }
 
 /**
- * SkillAtom - 返回结构化输出的 Skill 原子
+ * SkillAtom - Skill Atom returning structured output
  *
- * @template TInput - 原子的输入类型
- * @returns SkillOutput 结构化内容
+ * @template TInput - Atom input type
+ * @returns SkillOutput structured content
  *
  * @example
  * const gmKnowledgeSkill: SkillAtom<void> = () => ({
@@ -91,30 +91,30 @@ export interface SkillOutput {
 export type SkillAtom<TInput = void> = (input: TInput) => SkillOutput;
 
 /**
- * AtomDefinition - 原子的元数据定义（用于注册和文档）
+ * AtomDefinition - Atom metadata definition (for registration and documentation)
  *
- * @template TInput - 原子的输入类型
+ * @template TInput - Atom input type
  */
 export interface AtomDefinition<TInput = void> {
-  /** 唯一标识符，如 'dual_layer_reality', 'render_npc_visible' */
+  /** Unique identifier, e.g., 'dual_layer_reality', 'render_npc_visible' */
   id: string;
 
-  /** 人类可读名称 */
+  /** Human readable name */
   name: string;
 
-  /** 用途描述 */
+  /** Usage description */
   description: string;
 
-  /** 原子函数 */
+  /** Atom function */
   atom: Atom<TInput>;
 
-  /** 预估 token 数（用于预算计算） */
+  /** Estimated tokens (for budget calculation) */
   estimatedTokens?: number;
 
-  /** 依赖的其他原子 ID（用于自动加载） */
+  /** IDs of other dependent atoms (for auto-loading) */
   dependencies?: string[];
 
-  /** 标签，用于分类和搜索 */
+  /** Tags, for classification and search */
   tags?: string[];
 }
 

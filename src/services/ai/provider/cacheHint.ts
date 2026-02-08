@@ -23,8 +23,8 @@ export function buildCacheHint(
 
   switch (protocol) {
     case "gemini":
-      // 这里的 cachedContentName 目前仅作为 hint 标识符。
-      // 如果未来接入 @google/genai 的 cached content API，可用它作为 key 映射。
+      // cachedContentName here is currently only used as a hint identifier.
+      // If @google/genai cached content API is integrated in the future, it can be used as a key mapping.
       return { protocol: "gemini", cachedContentName: `coi:${key}` };
     case "openai":
       return { protocol: "openai", cacheKey: `coi:${key}` };

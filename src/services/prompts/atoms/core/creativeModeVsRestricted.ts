@@ -3,8 +3,8 @@
  * Core Atom: Creative vs Restricted Mode
  * ============================================================================
  *
- * 创意模式 vs 受限模式的切换。
- * 用于 StoryOutline 控制 AI 的创作自由度。
+ * Switching between Creative Mode and Restricted Mode.
+ * Used for StoryOutline to control AI creative freedom.
  */
 
 import type { Atom } from "../types";
@@ -15,13 +15,13 @@ export type CreativeModeInput = {
 };
 
 /**
- * 创意模式 vs 受限模式
+ * Creative Mode vs Restricted Mode
  */
 export const creativeModeVsRestricted: Atom<CreativeModeInput> = ({
   isRestricted,
   isRestrictedTheme,
 }) => {
-  // IP 受限主题 (Priority 1)
+  // IP Restricted Theme (Priority 1)
   if (isRestrictedTheme) {
     return `
 <mode_strict>
@@ -39,7 +39,7 @@ export const creativeModeVsRestricted: Atom<CreativeModeInput> = ({
 `;
   }
 
-  // 普通严格模式 (Priority 2)
+  // Normal Strict Mode (Priority 2)
   if (isRestricted) {
     return `
 <mode_strict>
@@ -54,7 +54,7 @@ export const creativeModeVsRestricted: Atom<CreativeModeInput> = ({
 `;
   }
 
-  // 创意模式（默认）
+  // Creative Mode (Default)
   return `
 <mode_creative>
   <guidelines>

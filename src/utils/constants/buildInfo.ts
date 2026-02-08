@@ -2,6 +2,6 @@
 // Do not edit manually
 
 export const BUILD_INFO = {
-  "gitHash": "c25656c",
+  "gitHash": "dd7dceb",
   "buildTime": "2026-02-08"
 };
