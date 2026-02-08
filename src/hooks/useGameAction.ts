@@ -617,6 +617,14 @@ export const useGameAction = ({
           ? "god"
           : "normal";
         let vfsElevationToken: string | null = null;
+        let vfsElevationIntent:
+          | "god_turn"
+          | "sudo_command"
+          | "outline_submit"
+          | "history_rewrite"
+          | "editor_session"
+          | undefined;
+        let vfsElevationScopeTemplateIds: string[] | "all_elevated" | undefined;
 
         if (runtimeVfsMode === "god") {
           const allowElevatedWrite =
@@ -628,7 +636,12 @@ export const useGameAction = ({
               : false;
 
           if (allowElevatedWrite) {
-            vfsElevationToken = vfsElevationTokenManager.issueAiElevationToken();
+            vfsElevationIntent = "god_turn";
+            vfsElevationScopeTemplateIds = "all_elevated";
+            vfsElevationToken = vfsElevationTokenManager.issueAiElevationToken({
+              intent: "god_turn",
+              scopeTemplateIds: "all_elevated",
+            });
           }
         }
 
@@ -652,6 +665,8 @@ export const useGameAction = ({
           onToolCallsUpdate: onLiveToolCallsUpdate,
           vfsMode: runtimeVfsMode,
           vfsElevationToken,
+          vfsElevationIntent,
+          vfsElevationScopeTemplateIds,
         });
 
         persistUsageToActiveTurn(usage);

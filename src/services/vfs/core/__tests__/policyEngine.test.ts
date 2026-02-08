@@ -11,7 +11,7 @@ describe("vfsPolicyEngine", () => {
     const decision = vfsPolicyEngine.canWrite("skills/README.md", {
       actor: "ai",
       mode: "sudo",
-      elevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      elevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     });
 
     expect(decision.allowed).toBe(false);
@@ -54,11 +54,13 @@ describe("vfsPolicyEngine", () => {
     expect(denied.allowed).toBe(false);
     expect(denied.code).toBe("ELEVATION_REQUIRED");
 
-    const token = vfsElevationTokenManager.issueAiElevationToken();
+    const token = vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" });
     const batchContext = {
       actor: "ai" as const,
       mode: "sudo" as const,
       elevationToken: token,
+      elevationIntent: "sudo_command" as const,
+      elevationScopeTemplateIds: "all_elevated" as const,
     };
 
     const first = vfsPolicyEngine.canWrite("outline/phases/phase0.json", batchContext);
@@ -76,6 +78,8 @@ describe("vfsPolicyEngine", () => {
         actor: "ai",
         mode: "sudo",
         elevationToken: token,
+        elevationIntent: "sudo_command",
+        elevationScopeTemplateIds: "all_elevated",
       },
     );
     expect(reusedTokenInNewContext.allowed).toBe(false);
@@ -115,6 +119,72 @@ describe("vfsPolicyEngine", () => {
     });
     expect(allowed.allowed).toBe(true);
     expect(allowed.code).toBe("OK");
+  });
+
+  it("rejects elevated writes when intent mismatches", () => {
+    const token = vfsElevationTokenManager.issueAiElevationToken({
+      intent: "sudo_command",
+      scopeTemplateIds: "all_elevated",
+    });
+
+    const decision = vfsPolicyEngine.canWrite("outline/phases/phase0.json", {
+      actor: "ai",
+      mode: "sudo",
+      elevationToken: token,
+      elevationIntent: "outline_submit",
+      elevationScopeTemplateIds: ["template.narrative.outline.phases"],
+    });
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.code).toBe("ELEVATION_REQUIRED");
+  });
+
+  it("rejects elevated writes when scope excludes template", () => {
+    const token = vfsElevationTokenManager.issueAiElevationToken({
+      intent: "outline_submit",
+      scopeTemplateIds: ["template.narrative.outline.phases"],
+    });
+
+    const decision = vfsPolicyEngine.canWrite(
+      "forks/0/ops/history_rewrites/req-1.json",
+      {
+        actor: "ai",
+        mode: "sudo",
+        elevationToken: token,
+        elevationIntent: "outline_submit",
+        elevationScopeTemplateIds: ["template.narrative.outline.phases"],
+      },
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.code).toBe("ELEVATION_REQUIRED");
+  });
+
+  it("reuses granted elevated scope only within same request context", () => {
+    const token = vfsElevationTokenManager.issueAiElevationToken({
+      intent: "outline_submit",
+      scopeTemplateIds: ["template.narrative.outline.phases"],
+    });
+    const context = {
+      actor: "ai" as const,
+      mode: "sudo" as const,
+      elevationToken: token,
+      elevationIntent: "outline_submit" as const,
+      elevationScopeTemplateIds: ["template.narrative.outline.phases"],
+    };
+
+    const first = vfsPolicyEngine.canWrite("outline/phases/phase0.json", context);
+    expect(first.allowed).toBe(true);
+
+    const second = vfsPolicyEngine.canWrite("outline/phases/phase1.json", context);
+    expect(second.allowed).toBe(true);
+
+    const deniedOutsideScope = vfsPolicyEngine.canWrite(
+      "forks/0/ops/history_rewrites/req-2.json",
+      context,
+    );
+    expect(deniedOutsideScope.allowed).toBe(false);
+    expect(deniedOutsideScope.code).toBe("ELEVATION_REQUIRED");
   });
 
   it("enforces allowed operations declared by resource templates", () => {

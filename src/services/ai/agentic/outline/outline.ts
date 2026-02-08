@@ -42,6 +42,7 @@ import {
 } from "../../../tools";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { normalizeVfsPath } from "../../../vfs/utils";
+import { vfsElevationTokenManager } from "../../../vfs/core/elevation";
 import {
   outlinePhase0Schema,
   outlinePhase1Schema,
@@ -1082,6 +1083,16 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
               vfsSession,
               settings,
               gameState: { forkId: -1, turnNumber: 0 } as any,
+              vfsActor: "ai",
+              vfsMode: "sudo",
+              vfsElevationIntent: "outline_submit",
+              vfsElevationScopeTemplateIds: [
+                "template.narrative.outline.phases",
+              ],
+              vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({
+                intent: "outline_submit",
+                scopeTemplateIds: ["template.narrative.outline.phases"],
+              }),
             });
 
             if ((output as any)?.success === true) {
@@ -1119,6 +1130,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
               vfsSession,
               settings,
               gameState: { forkId: -1, turnNumber: 0 } as any,
+              vfsActor: "ai",
+              vfsMode: "normal",
             });
             toolResponses.push({
               toolCallId: tc.id!,

@@ -2,6 +2,13 @@ export type VfsActor = "ai" | "user_editor" | "system";
 
 export type VfsMode = "normal" | "god" | "sudo";
 
+export type VfsElevationIntent =
+  | "outline_submit"
+  | "sudo_command"
+  | "god_turn"
+  | "history_rewrite"
+  | "editor_session";
+
 export type VfsPermissionClass =
   | "immutable_readonly"
   | "default_editable"
@@ -74,7 +81,11 @@ export interface VfsWriteContext {
   actor: VfsActor;
   mode: VfsMode;
   elevationToken?: string | null;
+  elevationIntent?: VfsElevationIntent;
+  elevationScopeTemplateIds?: string[] | "all_elevated";
   elevationGranted?: boolean;
+  elevationGrantedIntent?: VfsElevationIntent;
+  elevationGrantedScopeTemplateIds?: string[] | "all_elevated";
   editorSessionToken?: string | null;
   allowFinishGuardedWrite?: boolean;
   activeForkId?: number;
@@ -150,7 +161,7 @@ export interface VfsToolCapability {
   mayWriteClasses: VfsPermissionClass[];
   needsElevationFor: VfsPermissionClass[];
   immutableZones: string[];
-  toolsets: Array<"turn" | "cleanup" | "summary">;
+  toolsets: Array<"turn" | "cleanup" | "summary" | "outline">;
   isFinishTool?: boolean;
 }
 

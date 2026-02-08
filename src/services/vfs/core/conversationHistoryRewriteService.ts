@@ -41,6 +41,9 @@ const withRewritePrivileges = (
   ...context,
   operation: "history_rewrite",
   allowFinishGuardedWrite: true,
+  elevationIntent: context.elevationIntent ?? "history_rewrite",
+  elevationScopeTemplateIds:
+    context.elevationScopeTemplateIds ?? "all_elevated",
 });
 
 const normalizeConversationIndex = (index: ConversationIndex): ConversationIndex => {
@@ -157,6 +160,10 @@ export class ConversationHistoryRewriteService {
         ...options.writeContext,
         activeForkId,
         operation: "history_rewrite",
+        elevationIntent:
+          options.writeContext.elevationIntent ?? "history_rewrite",
+        elevationScopeTemplateIds:
+          options.writeContext.elevationScopeTemplateIds ?? "all_elevated",
       },
       () => {
         session.writeFile(

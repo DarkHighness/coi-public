@@ -15,5 +15,22 @@ describe("outline task instruction guardrails", () => {
     expect(source).toContain("Do NOT return the schema as a JSON text block");
     expect(source).not.toMatch(/ONLY THE RAW JSON/i);
   });
-});
 
+  it("uses elevated VFS context for phase submit writes", () => {
+    const outlineDriverPath = path.resolve(__dirname, "../outline.ts");
+    const source = fs.readFileSync(outlineDriverPath, "utf8");
+
+    expect(source).toContain('vfsMode: "sudo"');
+    expect(source).toContain("issueAiElevationToken");
+    expect(source).toContain('vfsElevationIntent: "outline_submit"');
+    expect(source).toContain('"template.narrative.outline.phases"');
+  });
+
+  it("does not elevate read-only VFS calls in outline flow", () => {
+    const outlineDriverPath = path.resolve(__dirname, "../outline.ts");
+    const source = fs.readFileSync(outlineDriverPath, "utf8");
+
+    expect(source).toContain('if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(tc.name))');
+    expect(source).toContain('vfsMode: "normal"');
+  });
+});

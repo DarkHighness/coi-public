@@ -41,6 +41,7 @@ describe("runAgenticLoop", () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       [],
     );
 

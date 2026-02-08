@@ -14,7 +14,12 @@
 import type { GameState, GameResponse, AISettings } from "../../types";
 import type { ZodToolDefinition } from "../providers/types";
 import type { VfsSession } from "../vfs/vfsSession";
-import type { VfsActor, VfsMode } from "../vfs/core/types";
+import type {
+  VfsActor,
+  VfsElevationIntent,
+  VfsMode,
+} from "../vfs/core/types";
+import type { VfsElevationScopeTemplateIds } from "../vfs/core/elevation";
 
 // ============================================================================
 // Types
@@ -45,6 +50,10 @@ export interface ToolContext {
   vfsMode?: VfsMode;
   /** One-time elevation token for current AI request */
   vfsElevationToken?: string | null;
+  /** Optional elevation intent bound to the token */
+  vfsElevationIntent?: VfsElevationIntent;
+  /** Optional elevation template scope bound to the token */
+  vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
 }
 
 /**

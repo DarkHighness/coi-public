@@ -7,6 +7,7 @@ const deriveGameStateFromVfsMock = vi.hoisted(() => vi.fn());
 const mergeDerivedViewStateMock = vi.hoisted(() => vi.fn());
 const createStateSnapshotMock = vi.hoisted(() => vi.fn());
 const updateRAGDocumentsBackgroundMock = vi.hoisted(() => vi.fn());
+const rebuildSessionsAfterHeavyMutationMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../services/aiService", () => ({
   generateForceUpdate: generateForceUpdateMock,
@@ -32,6 +33,15 @@ vi.mock("../../utils/snapshotManager", async (importOriginal) => {
 vi.mock("./ragDocuments", () => ({
   updateRAGDocumentsBackground: updateRAGDocumentsBackgroundMock,
 }));
+
+vi.mock("../../hooks/gameActionHelpers", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../hooks/gameActionHelpers")>();
+  return {
+    ...actual,
+    rebuildSessionsAfterHeavyMutation: rebuildSessionsAfterHeavyMutationMock,
+  };
+});
 
 function createBaseGameState() {
   const rootNode = {
@@ -132,6 +142,7 @@ function createDeps(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  rebuildSessionsAfterHeavyMutationMock.mockResolvedValue(undefined);
 
   createStateSnapshotMock.mockReturnValue({ snap: true });
   deriveGameStateFromVfsMock.mockImplementation(() => ({
@@ -182,6 +193,12 @@ describe("commandActions", () => {
     expect(commandNode?.text).toBe("Shift weather to thunderstorm");
     expect(systemNode?.text).toBe("World updated.");
     expect(deps.gameStateRef.current.activeNodeId).toBe(systemNode?.id);
+    expect(rebuildSessionsAfterHeavyMutationMock).toHaveBeenCalledTimes(1);
+    expect(rebuildSessionsAfterHeavyMutationMock).toHaveBeenCalledWith(
+      deps.aiSettings,
+      "slot-1",
+      0,
+    );
     expect(deps.triggerSave).toHaveBeenCalledTimes(1);
   });
 
@@ -245,6 +262,12 @@ describe("commandActions", () => {
       "conversation/fork-0/turn-0.json",
       "baseline",
       "application/json",
+    );
+    expect(rebuildSessionsAfterHeavyMutationMock).toHaveBeenCalledTimes(1);
+    expect(rebuildSessionsAfterHeavyMutationMock).toHaveBeenCalledWith(
+      deps.aiSettings,
+      "slot-1",
+      0,
     );
     expect(deps.triggerSave).toHaveBeenCalledTimes(1);
   });

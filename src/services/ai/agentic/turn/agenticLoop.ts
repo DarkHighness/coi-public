@@ -77,6 +77,13 @@ export interface AgenticLoopConfig {
   retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
   vfsMode?: "normal" | "god" | "sudo";
   vfsElevationToken?: string | null;
+  vfsElevationIntent?:
+    | "outline_submit"
+    | "sudo_command"
+    | "god_turn"
+    | "history_rewrite"
+    | "editor_session";
+  vfsElevationScopeTemplateIds?: string[] | "all_elevated";
   requiredPresetSkillPaths?: string[];
   requiredPresetSkillRequirements?: ActivePresetSkillRequirement[];
 }
@@ -112,6 +119,8 @@ export async function runAgenticLoopRefactored(
     retconAckPending,
     vfsMode,
     vfsElevationToken,
+    vfsElevationIntent,
+    vfsElevationScopeTemplateIds,
     requiredPresetSkillPaths,
     requiredPresetSkillRequirements,
   } = config;
@@ -130,6 +139,8 @@ export async function runAgenticLoopRefactored(
     vfsMode,
     vfsElevationToken ?? null,
     requiredPresetSkillRequirements ?? [],
+    vfsElevationIntent,
+    vfsElevationScopeTemplateIds,
   );
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
@@ -343,6 +354,13 @@ interface ProcessToolCallsParams {
   retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
   vfsMode?: "normal" | "god" | "sudo";
   vfsElevationToken?: string | null;
+  vfsElevationIntent?:
+    | "outline_submit"
+    | "sudo_command"
+    | "god_turn"
+    | "history_rewrite"
+    | "editor_session";
+  vfsElevationScopeTemplateIds?: string[] | "all_elevated";
 }
 
 interface ProcessToolCallsResult {

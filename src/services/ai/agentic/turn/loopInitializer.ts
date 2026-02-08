@@ -11,7 +11,8 @@ import type {
   GameResponse,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
-import type { VfsMode } from "../../../vfs/core/types";
+import type { VfsElevationIntent, VfsMode } from "../../../vfs/core/types";
+import type { VfsElevationScopeTemplateIds } from "../../../vfs/core/elevation";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { ALL_DEFINED_TOOLS } from "../../../tools";
@@ -56,6 +57,10 @@ export interface LoopState {
   vfsMode: VfsMode;
   /** One-time elevation token for this request (optional) */
   vfsElevationToken?: string | null;
+  /** Declared elevation intent for current request token */
+  vfsElevationIntent?: VfsElevationIntent;
+  /** Declared elevation scope for current request token */
+  vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
 }
 
 // ============================================================================
@@ -75,6 +80,8 @@ export function createLoopState(
   vfsMode?: VfsMode,
   vfsElevationToken?: string | null,
   requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
+  vfsElevationIntent?: VfsElevationIntent,
+  vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds,
 ): LoopState {
   const budgetState = createBudgetState(settings, {
     loopType: isCleanupMode ? "cleanup" : "turn",
@@ -133,6 +140,8 @@ export function createLoopState(
     requiredPresetSkillRequirements: uniqueRequiredPresetSkillRequirements,
     vfsMode: resolvedVfsMode,
     vfsElevationToken: vfsElevationToken ?? null,
+    vfsElevationIntent,
+    vfsElevationScopeTemplateIds,
   };
 }
 

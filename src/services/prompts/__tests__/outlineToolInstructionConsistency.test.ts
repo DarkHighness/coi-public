@@ -9,6 +9,7 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).not.toContain("Failure to output raw JSON");
     expect(prompt).toContain("You MUST call the currently provided submit tool");
     expect(prompt).toContain("Return no extra text outside the tool call");
+    expect(prompt).toContain("outline generation flow");
+    expect(prompt).toContain("does NOT apply to normal turn/cleanup/summary flows");
   });
 });
-

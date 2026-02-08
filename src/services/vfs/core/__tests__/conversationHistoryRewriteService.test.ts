@@ -8,11 +8,17 @@ import {
 import { VfsSession } from "../../vfsSession";
 import { conversationHistoryRewriteService } from "../conversationHistoryRewriteService";
 import { vfsElevationTokenManager } from "../elevation";
+import { VfsWriteAccessError } from "../../vfsSession";
 
 const createElevatedContext = () => ({
   actor: "ai" as const,
   mode: "sudo" as const,
-  elevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+  elevationIntent: "history_rewrite" as const,
+  elevationScopeTemplateIds: "all_elevated" as const,
+  elevationToken: vfsElevationTokenManager.issueAiElevationToken({
+    intent: "history_rewrite",
+    scopeTemplateIds: "all_elevated",
+  }),
 });
 
 describe("conversationHistoryRewriteService", () => {
@@ -103,5 +109,27 @@ describe("conversationHistoryRewriteService", () => {
     expect(path.startsWith("forks/0/ops/history_rewrites/")).toBe(true);
     const file = session.readFile(path);
     expect(file).not.toBeNull();
+  });
+
+  it("denies rewrite event writes when token intent mismatches", () => {
+    const session = new VfsSession();
+
+    expect(() =>
+      conversationHistoryRewriteService.recordRewriteEvent(session, {
+        requestId: "req:2",
+        reason: "unit-test",
+        payload: { ok: true },
+        writeContext: {
+          actor: "ai",
+          mode: "sudo",
+          elevationIntent: "history_rewrite",
+          elevationScopeTemplateIds: "all_elevated",
+          elevationToken: vfsElevationTokenManager.issueAiElevationToken({
+            intent: "sudo_command",
+            scopeTemplateIds: "all_elevated",
+          }),
+        },
+      }),
+    ).toThrow(VfsWriteAccessError);
   });
 });

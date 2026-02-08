@@ -51,23 +51,34 @@ vi.mock("@/services/prompts/skills", () => ({
   buildCoreSystemInstructionWithSkills: vi.fn(() => "SYSTEM"),
 }));
 
-vi.mock("@/services/ai/utils", () => ({
-  getProviderConfig: vi.fn(() => ({
-    instance: { id: "provider-1", protocol: "openai" },
-    modelId: "model-1",
-  })),
-  resolveThemeConfig: vi.fn(() => ({
-    narrativeStyle: "style",
-    backgroundTemplate: "bg",
-    example: "example",
-    worldSetting: "world",
-    isRestricted: false,
-  })),
-  resolveNarrativeStyle: vi.fn(() => "style"),
-  resolveWorldDisposition: vi.fn(() => "disposition"),
-  resolvePlayerMaliceProfile: vi.fn(() => "malice"),
-  pickModelMatchedPrompt: vi.fn(() => undefined),
-}));
+vi.mock("@/services/ai/utils", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+
+  return {
+    ...actual,
+    getProviderConfig: vi.fn(() => ({
+      instance: { id: "provider-1", protocol: "openai" },
+      modelId: "model-1",
+    })),
+    resolveThemeConfig: vi.fn(() => ({
+      narrativeStyle: "style",
+      backgroundTemplate: "bg",
+      example: "example",
+      worldSetting: "world",
+      isRestricted: false,
+    })),
+    resolveNarrativeStyle: vi.fn(() => "style"),
+    resolveWorldDisposition: vi.fn(() => "disposition"),
+    resolvePlayerMaliceProfile: vi.fn(() => "malice"),
+    resolveEffectivePresetProfile: vi.fn(() => ({
+      narrativeStylePreset: { value: "theme", source: "theme_default" },
+      worldDispositionPreset: { value: "theme", source: "theme_default" },
+      playerMalicePreset: { value: "theme", source: "theme_default" },
+      playerMaliceIntensity: { value: "standard", source: "theme_default" },
+    })),
+    pickModelMatchedPrompt: vi.fn(() => undefined),
+  };
+});
 
 vi.mock("@/services/prompts/runtimeFloor", () => ({
   composeSystemInstruction: vi.fn(() => "SYSTEM"),

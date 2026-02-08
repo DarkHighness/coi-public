@@ -2,12 +2,44 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameState, StorySegment, TokenUsage } from "../types";
 
 const summarizeContextMock = vi.hoisted(() => vi.fn());
+const getProviderConfigMock = vi.hoisted(() => vi.fn());
+const getProviderInstanceMock = vi.hoisted(() => vi.fn());
+const sessionManagerMock = vi.hoisted(() => ({
+  getOrCreateSession: vi.fn(),
+  onSummaryCreated: vi.fn(),
+  invalidate: vi.fn(),
+}));
 
 vi.mock("../services/aiService", () => ({
   summarizeContext: summarizeContextMock,
 }));
 
-import { createModelNode, handleSummarization } from "./gameActionHelpers";
+vi.mock("../services/ai/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../services/ai/utils")>();
+  return {
+    ...actual,
+    getProviderConfig: getProviderConfigMock,
+  };
+});
+
+vi.mock("../services/ai/provider/registry", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../services/ai/provider/registry")>();
+  return {
+    ...actual,
+    getProviderInstance: getProviderInstanceMock,
+  };
+});
+
+vi.mock("../services/ai/sessionManager", () => ({
+  sessionManager: sessionManagerMock,
+}));
+
+import {
+  createModelNode,
+  handleSummarization,
+  notifySessionSummaryCreated,
+} from "./gameActionHelpers";
 
 const baseUsage: TokenUsage = {
   promptTokens: 10,
@@ -124,6 +156,16 @@ const createSummary = (id: string, toIndex: number) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getProviderConfigMock.mockReturnValue({
+    instance: { id: "provider-1", protocol: "openai" },
+    modelId: "model-1",
+  });
+  getProviderInstanceMock.mockReturnValue({ id: "provider-1", protocol: "openai" });
+  sessionManagerMock.getOrCreateSession.mockResolvedValue({
+    id: "slot-1:0:provider-1:model-1",
+  });
+  sessionManagerMock.onSummaryCreated.mockResolvedValue(undefined);
+  sessionManagerMock.invalidate.mockResolvedValue(undefined);
 });
 
 describe("createModelNode", () => {
@@ -330,5 +372,47 @@ describe("handleSummarization", () => {
     );
     expect(result.lastIndex).toBe(1);
     expect(result.contextNodes).toHaveLength(2);
+  });
+});
+
+describe("notifySessionSummaryCreated", () => {
+  it("invalidates summary and cleanup sessions after summary creation", async () => {
+    const vfsSession = { beginReadEpoch: vi.fn() } as any;
+
+    await notifySessionSummaryCreated(
+      {
+        story: {
+          providerId: "provider-1",
+          modelId: "model-1",
+        },
+        providers: {
+          instances: [
+            {
+              id: "provider-1",
+              protocol: "openai",
+              enabled: true,
+            },
+          ],
+          defaultProviderId: "provider-1",
+        },
+      } as any,
+      "slot-1",
+      0,
+      "summary-1",
+      vfsSession,
+    );
+
+    expect(sessionManagerMock.onSummaryCreated).toHaveBeenCalledWith(
+      "slot-1:0:provider-1:model-1",
+      "summary-1",
+    );
+    expect(sessionManagerMock.getOrCreateSession).toHaveBeenCalledWith(
+      expect.objectContaining({ slotId: "slot-1:summary" }),
+    );
+    expect(sessionManagerMock.getOrCreateSession).toHaveBeenCalledWith(
+      expect.objectContaining({ slotId: "slot-1:cleanup" }),
+    );
+    expect(sessionManagerMock.invalidate).toHaveBeenCalledTimes(2);
+    expect(vfsSession.beginReadEpoch).toHaveBeenCalledWith("summary_created");
   });
 });

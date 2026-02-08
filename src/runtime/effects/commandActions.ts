@@ -6,6 +6,7 @@ import { deriveHistory } from "../../utils/storyUtils";
 import { LANG_MAP } from "../../utils/constants";
 import { createFork, createStateSnapshot } from "../../utils/snapshotManager";
 import { mergeDerivedViewState } from "../../hooks/vfsViewState";
+import { rebuildSessionsAfterHeavyMutation } from "../../hooks/gameActionHelpers";
 import {
   normalizeAtmosphere,
   type AtmosphereObject,
@@ -317,7 +318,10 @@ export function createCommandActions({
         true,
       );
 
-      const sudoElevationToken = vfsElevationTokenManager.issueAiElevationToken();
+      const sudoElevationToken = vfsElevationTokenManager.issueAiElevationToken({
+        intent: "sudo_command",
+        scopeTemplateIds: "all_elevated",
+      });
 
       const context: TurnContext = {
         recentHistory: fullHistory,
@@ -336,12 +340,20 @@ export function createCommandActions({
         },
         vfsMode: "sudo",
         vfsElevationToken: sudoElevationToken,
+        vfsElevationIntent: "sudo_command",
+        vfsElevationScopeTemplateIds: "all_elevated",
       };
 
       const { response, logs, recovery } = await generateForceUpdate(
         prompt,
         gameStateRef.current,
         context,
+      );
+
+      await rebuildSessionsAfterHeavyMutation(
+        aiSettings,
+        currentSlotId || "default",
+        gameStateRef.current.forkId ?? 0,
       );
 
       if (logs && logs.length > 0) {
@@ -496,6 +508,12 @@ export function createCommandActions({
       const { response, logs, changedEntities, recovery } = await generateEntityCleanup(
         gameStateRef.current,
         context,
+      );
+
+      await rebuildSessionsAfterHeavyMutation(
+        aiSettings,
+        currentSlotId || "default",
+        gameStateRef.current.forkId ?? 0,
       );
 
       const afterCleanupSnapshot = vfsSession.snapshot();

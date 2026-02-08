@@ -107,6 +107,8 @@ export function executeGenericTool(
       vfsActor: "ai",
       vfsMode: loopState.vfsMode,
       vfsElevationToken: loopState.vfsElevationToken ?? null,
+      vfsElevationIntent: loopState.vfsElevationIntent,
+      vfsElevationScopeTemplateIds: loopState.vfsElevationScopeTemplateIds,
     };
     return dispatchToolCall(name, args, toolContext);
   }

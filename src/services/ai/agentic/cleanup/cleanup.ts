@@ -32,6 +32,9 @@ function buildCleanupPrompt(state: GameState): string {
   return `[CLEANUP] Analyze the current VFS state and perform entity cleanup (deduplication + consolidation).
 
 <workflow>
+  0) Before any cleanup mutation, read command protocol:
+     - \`current/skills/commands/cleanup/SKILL.md\`
+
   1) Use \`vfs_ls_entries\` to get a COMPLETE catalog by category (IDs + names + status).
      This is more reliable than guessing IDs, and avoids missing "extra" objects.
 

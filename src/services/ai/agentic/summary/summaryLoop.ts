@@ -350,6 +350,8 @@ async function runSummaryLoopCore(options: {
           forkId,
           turnNumber: typeof turnNumber === "number" ? turnNumber : 0,
         } as any,
+        vfsActor: "ai" as const,
+        vfsMode: "normal" as const,
       };
 
       for (const call of functionCalls) {

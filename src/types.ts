@@ -1,5 +1,7 @@
 import type { AtmosphereObject } from "./utils/constants/atmosphere";
 import type { VfsSession } from "./services/vfs/vfsSession";
+import type { VfsElevationIntent } from "./services/vfs/core/types";
+import type { VfsElevationScopeTemplateIds } from "./services/vfs/core/elevation";
 
 // ============================================================================
 // 版本化时间戳类型
@@ -800,6 +802,10 @@ export interface TurnContext {
   vfsMode?: "normal" | "god" | "sudo";
   /** Optional one-time elevation token for elevated writes */
   vfsElevationToken?: string | null;
+  /** Optional declared intent for elevation token */
+  vfsElevationIntent?: VfsElevationIntent;
+  /** Optional declared template scope for elevation token */
+  vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
 }
 
 export interface GameStateSnapshot {

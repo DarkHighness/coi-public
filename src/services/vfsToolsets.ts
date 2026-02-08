@@ -10,7 +10,7 @@
 
 import { vfsToolCapabilityRegistry } from "./vfs/core/toolCapabilityRegistry";
 
-export type VfsToolsetId = "turn" | "cleanup" | "summary";
+export type VfsToolsetId = "turn" | "cleanup" | "summary" | "outline";
 
 export interface VfsToolset {
   tools: string[];
@@ -57,6 +57,27 @@ const SUMMARY_TOOL_ORDER = [
   "vfs_finish_summary",
 ] as const;
 
+const OUTLINE_TOOL_ORDER = [
+  "vfs_ls",
+  "vfs_stat",
+  "vfs_glob",
+  "vfs_read",
+  "vfs_read_many",
+  "vfs_read_json",
+  "vfs_search",
+  "vfs_grep",
+  "vfs_submit_outline_phase_0",
+  "vfs_submit_outline_phase_1",
+  "vfs_submit_outline_phase_2",
+  "vfs_submit_outline_phase_3",
+  "vfs_submit_outline_phase_4",
+  "vfs_submit_outline_phase_5",
+  "vfs_submit_outline_phase_6",
+  "vfs_submit_outline_phase_7",
+  "vfs_submit_outline_phase_8",
+  "vfs_submit_outline_phase_9",
+] as const;
+
 const ensureRegisteredTool = (toolName: string): string => {
   if (!vfsToolCapabilityRegistry.get(toolName)) {
     throw new Error(`Missing VFS capability registration for tool: ${toolName}`);
@@ -76,6 +97,10 @@ export const VFS_TOOLSETS: Record<VfsToolsetId, VfsToolset> = {
   summary: {
     tools: SUMMARY_TOOL_ORDER.map(ensureRegisteredTool),
     finishToolName: "vfs_finish_summary",
+  },
+  outline: {
+    tools: OUTLINE_TOOL_ORDER.map(ensureRegisteredTool),
+    finishToolName: "vfs_submit_outline_phase_0",
   },
 };
 

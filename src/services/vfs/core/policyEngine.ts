@@ -1,6 +1,7 @@
 import { vfsElevationTokenManager } from "./elevation";
 import { vfsPathRegistry } from "./pathRegistry";
 import type {
+  VfsElevationIntent,
   VfsReadPolicyDecision,
   VfsWriteContext,
   VfsWriteOperation,
@@ -42,6 +43,39 @@ const buildReadDecision = (
 const resolveRequestedOperation = (
   context: VfsWriteContext,
 ): VfsWriteOperation => context.operation ?? "write";
+
+const scopeAllowsTemplate = (
+  scope: string[] | "all_elevated" | undefined,
+  templateId: string,
+): boolean => {
+  if (!scope) {
+    return false;
+  }
+
+  if (scope === "all_elevated") {
+    return true;
+  }
+
+  return scope.includes(templateId);
+};
+
+const resolveExpectedIntent = (
+  context: VfsWriteContext,
+): Exclude<VfsElevationIntent, "editor_session"> => {
+  if (context.elevationIntent) {
+    return context.elevationIntent as Exclude<VfsElevationIntent, "editor_session">;
+  }
+
+  if (context.mode === "sudo") {
+    return "sudo_command";
+  }
+
+  if (context.mode === "god") {
+    return "god_turn";
+  }
+
+  return "sudo_command";
+};
 
 export class VfsPolicyEngine {
   public canRead(path: string, context?: VfsWriteContext): VfsReadPolicyDecision {
@@ -155,7 +189,18 @@ export class VfsPolicyEngine {
         };
       }
 
-      if (context.elevationGranted === true) {
+      const expectedIntent = resolveExpectedIntent(context);
+      const expectedScope =
+        context.elevationScopeTemplateIds ?? [classification.templateId];
+
+      if (
+        context.elevationGranted === true &&
+        context.elevationGrantedIntent === expectedIntent &&
+        scopeAllowsTemplate(
+          context.elevationGrantedScopeTemplateIds,
+          classification.templateId,
+        )
+      ) {
         return {
           allowed: true,
           code: "OK",
@@ -174,7 +219,13 @@ export class VfsPolicyEngine {
         };
       }
 
-      if (!vfsElevationTokenManager.consumeAiElevationToken(context.elevationToken)) {
+      if (
+        !vfsElevationTokenManager.consumeAiElevationToken(context.elevationToken, {
+          templateId: classification.templateId,
+          requiredIntent: expectedIntent,
+          requiredScopeTemplateIds: expectedScope,
+        })
+      ) {
         return {
           allowed: false,
           code: "ELEVATION_REQUIRED",
@@ -185,6 +236,8 @@ export class VfsPolicyEngine {
       }
 
       context.elevationGranted = true;
+      context.elevationGrantedIntent = expectedIntent;
+      context.elevationGrantedScopeTemplateIds = expectedScope;
       context.elevationToken = null;
 
       return {

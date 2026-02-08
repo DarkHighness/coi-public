@@ -10,10 +10,14 @@ describe("vfsToolsets", () => {
     expect(VFS_TOOLSETS.turn.tools).toContain(VFS_TOOLSETS.turn.finishToolName);
     expect(VFS_TOOLSETS.cleanup.tools).toContain(VFS_TOOLSETS.cleanup.finishToolName);
     expect(VFS_TOOLSETS.summary.tools).toContain(VFS_TOOLSETS.summary.finishToolName);
+    expect(VFS_TOOLSETS.outline.tools).toContain(VFS_TOOLSETS.outline.finishToolName);
 
     expect(VFS_TOOLSETS.turn.tools).not.toContain("vfs_finish_summary");
     expect(VFS_TOOLSETS.cleanup.tools).not.toContain("vfs_finish_summary");
     expect(VFS_TOOLSETS.summary.tools).toContain("vfs_finish_summary");
+    expect(VFS_TOOLSETS.outline.tools).toContain("vfs_submit_outline_phase_9");
+    expect(VFS_TOOLSETS.outline.tools).not.toContain("vfs_commit_turn");
+    expect(VFS_TOOLSETS.outline.tools).not.toContain("vfs_finish_summary");
   });
 
   it("formats tool list for prompts with markdown bullets", () => {

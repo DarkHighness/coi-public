@@ -574,7 +574,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -1048,7 +1048,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -1090,7 +1090,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -1155,7 +1155,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -1345,7 +1345,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -1382,7 +1382,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -1434,7 +1434,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -1637,7 +1637,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -2067,7 +2067,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -2101,7 +2101,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -2135,7 +2135,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -2171,7 +2171,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(
@@ -2224,7 +2224,7 @@ describe("VFS handlers", () => {
     const ctx = {
       vfsSession: session,
       vfsMode: "sudo" as const,
-      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken(),
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
     };
 
     const result = dispatchToolCall(

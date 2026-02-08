@@ -15,7 +15,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_stat",
@@ -24,7 +24,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_glob",
@@ -33,7 +33,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_schema",
@@ -60,7 +60,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_read_many",
@@ -69,7 +69,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_read_json",
@@ -78,7 +78,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_search",
@@ -87,7 +87,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_grep",
@@ -96,7 +96,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary"],
+    toolsets: ["turn", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_suggest_duplicates",
@@ -222,7 +222,7 @@ for (let phase = 0; phase <= 9; phase += 1) {
     mayWriteClasses: ["elevated_editable"],
     needsElevationFor: ["elevated_editable"],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup"],
+    toolsets: ["outline"],
   });
 }
 
@@ -239,16 +239,23 @@ export class VfsToolCapabilityRegistry {
     return this.byName.get(toolName);
   }
 
+  /**
+   * Capability registry is the single source for tool permission prose.
+   * Prompts/tool schema descriptions should be generated from this registry,
+   * not hand-maintained in scattered prompt files.
+   */
   public list(): VfsToolCapability[] {
     return Array.from(this.byName.values());
   }
 
-  public listForToolset(toolset: "turn" | "cleanup" | "summary"): VfsToolCapability[] {
+  public listForToolset(
+    toolset: "turn" | "cleanup" | "summary" | "outline",
+  ): VfsToolCapability[] {
     return this.list().filter((capability) => capability.toolsets.includes(toolset));
   }
 
   public listToolNamesForToolset(
-    toolset: "turn" | "cleanup" | "summary",
+    toolset: "turn" | "cleanup" | "summary" | "outline",
   ): string[] {
     return this.listForToolset(toolset).map((capability) => capability.toolName);
   }

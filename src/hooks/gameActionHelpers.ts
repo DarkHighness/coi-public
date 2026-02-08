@@ -20,7 +20,57 @@ import {
   getModelsForInstance,
   getProviderInstance,
 } from "../services/ai/provider/registry";
+import { getProviderConfig } from "../services/ai/utils";
 import { resolveModelContextWindowTokens } from "../services/modelContextWindows";
+
+const rebuildSessionIfPresent = async (
+  aiSettings: AISettings,
+  slotId: string,
+  forkId: number,
+  mode: "story" | "summary" | "cleanup",
+): Promise<void> => {
+  if (!aiSettings || !aiSettings.story || !aiSettings.providers) {
+    return;
+  }
+
+  let providerInfo: ReturnType<typeof getProviderConfig> | null = null;
+  try {
+    providerInfo = getProviderConfig(aiSettings, "story");
+  } catch {
+    return;
+  }
+
+  if (!providerInfo) {
+    return;
+  }
+
+  const targetSlotId =
+    mode === "story"
+      ? slotId
+      : mode === "summary"
+        ? `${slotId}:summary`
+        : `${slotId}:cleanup`;
+
+  const session = await sessionManager.getOrCreateSession({
+    slotId: targetSlotId,
+    forkId,
+    providerId: providerInfo.instance.id,
+    modelId: providerInfo.modelId,
+    protocol: providerInfo.instance.protocol,
+  });
+
+  await sessionManager.invalidate(session.id, "manual_clear");
+};
+
+export const rebuildSessionsAfterHeavyMutation = async (
+  aiSettings: AISettings,
+  slotId: string,
+  forkId: number,
+): Promise<void> => {
+  await rebuildSessionIfPresent(aiSettings, slotId, forkId, "story");
+  await rebuildSessionIfPresent(aiSettings, slotId, forkId, "summary");
+  await rebuildSessionIfPresent(aiSettings, slotId, forkId, "cleanup");
+};
 
 /**
  * Safely notify session manager that a summary was created.
@@ -64,6 +114,8 @@ export const notifySessionSummaryCreated = async (
 
   // Now we can safely call onSummaryCreated
   await sessionManager.onSummaryCreated(storySession.id, String(summaryId));
+  await rebuildSessionIfPresent(aiSettings, slotId, forkId, "summary");
+  await rebuildSessionIfPresent(aiSettings, slotId, forkId, "cleanup");
   vfsSession.beginReadEpoch("summary_created");
 };
 

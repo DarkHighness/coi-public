@@ -107,6 +107,8 @@ const resolveAiWriteContext = (
   actor: ctx.vfsActor ?? "ai",
   mode: ctx.vfsMode ?? "normal",
   elevationToken: ctx.vfsElevationToken ?? null,
+  elevationIntent: ctx.vfsElevationIntent,
+  elevationScopeTemplateIds: ctx.vfsElevationScopeTemplateIds,
   allowFinishGuardedWrite: false,
   activeForkId:
     typeof ctx.gameState?.forkId === "number"

@@ -260,26 +260,26 @@ const DEFAULT_RESOURCE_TEMPLATES: VfsResourceTemplate[] = [
   },
   {
     id: "template.fallback.shared",
-    description: "Shared fallback resources",
+    description: "Shared fallback resources (read-only until explicitly registered)",
     patterns: ["shared/**"],
     domain: "runtime",
     shape: "text_blob",
     criticality: "secondary",
     retention: "save",
-    permissionClass: "default_editable",
-    allowedWriteOps: [...DEFAULT_MUTABLE_OPS],
+    permissionClass: "immutable_readonly",
+    allowedWriteOps: [],
     scope: "shared",
   },
   {
     id: "template.fallback.fork",
-    description: "Fork fallback resources",
+    description: "Fork fallback resources (read-only until explicitly registered)",
     patterns: ["forks/*/**", "**"],
     domain: "runtime",
     shape: "text_blob",
     criticality: "ephemeral",
     retention: "session",
-    permissionClass: "default_editable",
-    allowedWriteOps: [...DEFAULT_MUTABLE_OPS],
+    permissionClass: "immutable_readonly",
+    allowedWriteOps: [],
     scope: "fork",
   },
 ];
@@ -295,6 +295,10 @@ export class VfsResourceTemplateRegistry {
     return this.templates.map(({ matches: _matches, ...rest }) => ({ ...rest }));
   }
 
+  /**
+   * Returns exactly one template for every canonical path.
+   * Ordering of templates is intentional: specific templates before fallbacks.
+   */
   public match(canonicalPath: string): VfsResourceTemplate {
     const normalized = normalizeVfsPath(canonicalPath);
     const matched =

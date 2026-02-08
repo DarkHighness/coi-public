@@ -338,6 +338,8 @@ export const generateAdventureTurn = async (
       context.onToolCallsUpdate,
       context.vfsMode,
       context.vfsElevationToken ?? null,
+      context.vfsElevationIntent,
+      context.vfsElevationScopeTemplateIds,
       requiredPresetSkillPaths,
       requiredPresetSkillRequirements,
     );
@@ -441,6 +443,13 @@ export const runAgenticLoop = async (
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void,
   vfsMode?: "normal" | "god" | "sudo",
   vfsElevationToken?: string | null,
+  vfsElevationIntent?:
+    | "outline_submit"
+    | "sudo_command"
+    | "god_turn"
+    | "history_rewrite"
+    | "editor_session",
+  vfsElevationScopeTemplateIds?: string[] | "all_elevated",
   requiredPresetSkillPaths: string[] = [],
   requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
 ): Promise<AgenticLoopResult> => {
@@ -462,6 +471,8 @@ export const runAgenticLoop = async (
     onToolCallsUpdate,
     vfsMode,
     vfsElevationToken: vfsElevationToken ?? null,
+    vfsElevationIntent,
+    vfsElevationScopeTemplateIds,
     requiredPresetSkillPaths,
     requiredPresetSkillRequirements,
   });

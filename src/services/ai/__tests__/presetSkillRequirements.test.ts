@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SavePresetProfile } from "../../types";
+import type { SavePresetProfile } from "../../../types";
 import {
   DEFAULT_SAVE_PRESET_PROFILE,
   resolveActivePresetSkillRequirements,

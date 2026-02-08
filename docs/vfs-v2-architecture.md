@@ -515,3 +515,186 @@ This keeps tooling output, prompt instructions, and policy runtime in lock-step.
 - `src/services/prompts/atoms/core/__tests__/stateManagement.test.ts`
 - `src/services/prompts/atoms/core/__tests__/systemMessages.test.ts`
 - `src/services/prompts/skills/__tests__/builder.test.ts`
+
+## 17. VFS v2.2.3 一次性修复收口（提权闭环 + 双 Summary + 流程隔离）
+
+### 17.1 提权闭环（intent + scope + 一次性 token）
+
+核心改动：
+- `src/services/vfs/core/types.ts`
+  - 新增 `VfsElevationIntent`：
+    - `outline_submit | sudo_command | god_turn | history_rewrite | editor_session`
+  - `VfsWriteContext` 增加：
+    - `elevationIntent`
+    - `elevationScopeTemplateIds`
+    - `elevationGrantedIntent`
+    - `elevationGrantedScopeTemplateIds`
+- `src/services/vfs/core/elevation.ts`
+  - `issueAiElevationToken({ intent, scopeTemplateIds, consumeOnUse? })`
+  - `consumeAiElevationToken(token, { requiredIntent, requiredScopeTemplateIds, templateId })`
+- `src/services/vfs/core/policyEngine.ts`
+  - elevated 判定从 `mode + token` 升级为 `mode + token + intent + scope + templateId`
+  - 首次消费 token 成功后，批次内通过 `elevationGrantedIntent/scope` 复用授权
+
+结果：
+- token 不能跨意图复用（如 `sudo_command` token 不能写 `outline_submit` 专用范围）。
+- token 不能跨模板越权写入。
+- `skills/refs` 依旧全局永久只读。
+
+### 17.2 Outline 最小权限修复（例外仅在 outline 流程）
+
+- `src/services/ai/agentic/outline/outline.ts`
+  - 仅 phase submit 工具调用注入：
+    - `vfsMode: "sudo"`
+    - `vfsElevationIntent: "outline_submit"`
+    - `vfsElevationScopeTemplateIds: ["template.narrative.outline.phases"]`
+    - `issueAiElevationToken({ intent: "outline_submit", scopeTemplateIds: ["template.narrative.outline.phases"] })`
+  - 只读 VFS 工具调用保持 `vfsMode: "normal"`，不带提权。
+
+### 17.3 双 Summary 模式与 cleanup 对齐
+
+- `src/services/ai/agentic/summary/summaryLoop.ts`
+  - 保留双实现：`session_compact` / `query_summary`，`auto` 优先 compact 失败再回退 query。
+  - summary tool dispatch 显式传 `vfsActor: "ai"` 与 `vfsMode`。
+- `src/services/ai/agentic/summary/summaryContext.ts`
+  - 增加命令技能前置：`current/skills/commands/summary/SKILL.md`。
+- `src/services/ai/agentic/cleanup/cleanup.ts`
+  - cleanup 指令同样采用命令技能化入口。
+
+### 17.4 Summary/Cleanup 后会话重建
+
+- `src/hooks/gameActionHelpers.ts`
+  - 新增 `rebuildSessionsAfterHeavyMutation(aiSettings, slotId, forkId)`。
+  - `notifySessionSummaryCreated(...)` 在 story 会话 summary 通知后，额外重建 `:summary` 与 `:cleanup` 会话。
+- `src/runtime/effects/commandActions.ts`
+  - force update 与 cleanup 完成后调用 `rebuildSessionsAfterHeavyMutation(...)`。
+
+效果：summary/cleanup 完成后不复用旧缓存会话。
+
+### 17.5 Prompt 流程隔离（outline 特例只在 outline prompt）
+
+- `src/services/prompts/storyOutline.ts`
+  - 显式声明 outline phase-submit 提权例外仅限 outline 生成流程。
+- turn/cleanup/runtime 的 system prompt 不再声明 outline 特例，以免泄漏。
+
+### 17.6 时序图（提权闭环 + 双 summary + cleanup 重建）
+
+#### A) Outline phase submit（受控提权，最小 scope）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as "User"
+    participant O as "OutlineLoop"
+    participant T as "ElevationTokenManager"
+    participant H as "vfsHandlers"
+    participant P as "PolicyEngine"
+    participant V as "VfsSession"
+
+    U->>O: 触发 outline 生成
+    O->>T: issueAiElevationToken(intent=outline_submit, scope=[outline.phases])
+    T-->>O: one-time token
+    O->>H: vfs_submit_outline_phase_* (mode=sudo, intent/scope/token)
+    H->>V: write phase file
+    V->>P: canWrite(elevated path, intent/scope/template)
+    P-->>V: allow + consume token + grant batch scope
+    V-->>H: write success
+    H-->>O: submit success
+
+    Note over O,H: 同轮只读工具调用保持 normal，不携带提权上下文
+```
+
+#### B) Summary auto 双模式（compact -> query fallback）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as "SummaryRunner(auto)"
+    participant SM as "SessionManager"
+    participant L as "SummaryLoop"
+    participant VH as "vfsHandlers"
+
+    S->>SM: 尝试 story session (session_compact)
+    alt compact 可用
+        S->>L: run(mode=session_compact)
+    else compact 失败/超长/历史损坏
+        S->>SM: 切换 slotId=:summary
+        S->>L: run(mode=query_summary)
+    end
+
+    L->>VH: 读取所需 VFS 信息（read-only）
+    L->>VH: vfs_finish_summary (LAST)
+    VH-->>L: summary persisted
+    L-->>S: summary result
+```
+
+#### C) Cleanup/ForceUpdate 后会话重建
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as "CommandAction"
+    participant G as "gameActionHelpers"
+    participant SM as "SessionManager"
+
+    C->>G: rebuildSessionsAfterHeavyMutation(slot,fork)
+    G->>SM: getOrCreate(story)
+    G->>SM: invalidate(story)
+    G->>SM: getOrCreate(:summary)
+    G->>SM: invalidate(:summary)
+    G->>SM: getOrCreate(:cleanup)
+    G->>SM: invalidate(:cleanup)
+    G-->>C: done
+```
+
+### 17.7 关键验证
+
+- `src/services/vfs/core/__tests__/policyEngine.test.ts`
+  - 增加 intent/scope/template 约束与批次复用测试。
+- `src/services/vfs/core/__tests__/elevation.test.ts`
+  - 增加 token intent/scope 绑定校验。
+- `src/services/vfs/core/__tests__/conversationHistoryRewriteService.test.ts`
+  - 对齐 `history_rewrite` intent/scope。
+- `src/services/ai/agentic/outline/__tests__/outlineTaskInstructionGuardrails.test.ts`
+  - 断言 outline submit 使用 `outline_submit + template scope`。
+- `src/services/prompts/atoms/core/__tests__/flowIsolation.test.ts`
+  - 断言 outline 特例仅在 outline prompt，可防止泄漏到 turn/cleanup/runtime。
+
+本轮结果：
+- Outline 提交 elevated 可写恢复且受最小权限约束；
+- 非 outline 流程不再暴露该提权例外；
+- 双 Summary 模式与 cleanup 的会话生命周期策略一致；
+- 全量测试与类型检查通过。
+
+## 18. v2.2.3 收尾规范（注册中心与扩展约束）
+
+为防止架构回退到 scattered 逻辑，本轮补充以下硬性约束：
+
+1. **路径与权限元数据只在模板层定义**
+   - `VfsResourceTemplateRegistry` 是路径 -> 资源语义的唯一事实源。
+   - `VfsPathRegistry` / `VfsResourceRegistry` 只做投影，不允许新增特判分支。
+
+2. **工具权限文案只从能力注册生成**
+   - `VfsToolCapabilityRegistry` 是 prompt/tool schema 权限文案唯一来源。
+   - 禁止在 turn/cleanup/system prompt 中手工复制权限细节。
+
+3. **流程特例隔离**
+   - outline elevated phase-submit 例外仅存在于 outline prompt。
+   - turn/cleanup/runtime floor 不重复该例外文本，避免能力误导。
+
+4. **会话重建统一入口**
+   - summary/cleanup/force-update 等“重突变”操作后统一调用
+     `rebuildSessionsAfterHeavyMutation(...)`。
+
+5. **无效内部 API 清理**
+   - 移除未使用的 `sessionManager.invalidateByConfig(...)`，避免误用和维护噪音。
+
+6. **P2：Fallback 默认拒写（deny-by-default）**
+   - `template.fallback.shared` 与 `template.fallback.fork` 调整为 `immutable_readonly`。
+   - 任何未显式注册模板的新路径默认只读，必须先在模板注册中心声明后才能写入。
+
+7. **P3：Outline 独立 toolset 分层**
+   - 为能力注册新增 `outline` toolset 维度。
+   - `vfs_submit_outline_phase_*` 从 `turn/cleanup` 迁移至 `outline`。
+   - 仅 outline 允许的只读工具（`vfs_ls`/`vfs_stat`/`vfs_glob`/`vfs_read*`/`vfs_search`/`vfs_grep`）声明为 `outline` 可用。
+   - `VFS_TOOLSETS` 新增 `outline` allowlist，避免后续能力误并入 turn/cleanup。

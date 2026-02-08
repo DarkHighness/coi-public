@@ -24,12 +24,20 @@ const toDescriptor = (
 });
 
 export class VfsResourceRegistry {
+  /**
+   * Resource descriptors are derived from registered templates.
+   * Avoid adding ad-hoc resource rules outside the template registry.
+   */
   public list(): VfsResourceDescriptor[] {
     return vfsResourceTemplateRegistry
       .list()
       .map((template) => toDescriptor(template));
   }
 
+  /**
+   * Resource matching always resolves to canonical path first,
+   * then binds to a single resource template.
+   */
   public match(path: string, options?: { activeForkId?: number }): VfsResourceMatch {
     const resolved = resolveVfsPath(path, { activeForkId: options?.activeForkId });
     const template = vfsResourceTemplateRegistry.match(resolved.canonicalPath);

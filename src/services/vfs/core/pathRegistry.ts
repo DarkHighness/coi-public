@@ -21,6 +21,10 @@ export interface VfsClassifyOptions {
 }
 
 export class VfsPathRegistry {
+  /**
+   * Path classification is fully template-driven.
+   * This registry projects `VfsResourceTemplateRegistry` into path-centric views.
+   */
   public listRules(): VfsListRuleEntry[] {
     return vfsResourceTemplateRegistry
       .list()
@@ -40,6 +44,10 @@ export class VfsPathRegistry {
       );
   }
 
+  /**
+   * Single source of truth for path permission/scope metadata:
+   * resolve path -> match resource template -> project classification.
+   */
   public classify(path: string, options?: VfsClassifyOptions): VfsPathClassification {
     const resolved = resolveVfsPath(path, { activeForkId: options?.activeForkId });
     const template = vfsResourceTemplateRegistry.match(resolved.canonicalPath);
