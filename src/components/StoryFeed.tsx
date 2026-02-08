@@ -592,6 +592,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           setLayout={setLayout}
           activeIndex={activeIndex}
           totalSegments={currentHistory.length}
+          turnNumber={gameState.turnNumber}
           atmosphere={currentHistory[activeIndex]?.atmosphere}
           currentAmbience={currentAmbience}
           theme={gameState.theme}

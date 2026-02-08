@@ -11,6 +11,7 @@ interface FeedHeaderProps {
   setLayout: (layout: FeedLayout) => void;
   activeIndex: number;
   totalSegments: number;
+  turnNumber?: number;
   /** Unified atmosphere object */
   atmosphere?: AtmosphereObject;
   /** Current playing ambience key (from audio system) */
@@ -29,6 +30,7 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
   setLayout,
   activeIndex,
   totalSegments,
+  turnNumber,
   atmosphere,
   currentAmbience,
   theme,
@@ -75,9 +77,11 @@ export const FeedHeader: React.FC<FeedHeaderProps> = ({
             {t("turn")}:
           </span>
           <span className="text-theme-primary">
-            {layout === "stack"
-              ? `${activeIndex + 1} / ${totalSegments}`
-              : totalSegments}
+            {typeof turnNumber === "number"
+              ? turnNumber
+              : layout === "stack"
+                ? `${activeIndex + 1} / ${totalSegments}`
+                : totalSegments}
           </span>
         </div>
 

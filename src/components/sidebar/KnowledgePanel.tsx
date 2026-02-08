@@ -114,7 +114,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
             title={isPinned ? t("unpin") : t("pin")}
           >
             <svg
-              className="w-3 h-3"
+              className="w-4 h-4"
               fill={isPinned ? "currentColor" : "none"}
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -370,22 +370,22 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsEditMode(!isEditMode);
             }}
-            className={`p-1 rounded transition-colors ${
+            className={`h-8 w-8 grid place-items-center rounded transition-colors ${
               isEditMode
                 ? "bg-theme-primary text-theme-bg"
-                : "text-theme-text-secondary hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
             {isEditMode ? (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -399,7 +399,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
               </svg>
             ) : (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -420,11 +420,11 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-theme-text-secondary hover:text-theme-primary p-1"
+              className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
               title={t("viewAll")}
             >
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -439,7 +439,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             </button>
           )}
 
-          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
+          <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
             <svg
               className={`w-5 h-5 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""

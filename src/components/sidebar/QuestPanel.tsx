@@ -138,7 +138,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               title={options?.isPinned ? t("unpin") : t("pin")}
             >
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill={options?.isPinned ? "currentColor" : "none"}
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -181,7 +181,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                   title={t("unlocked") || "Unlocked"}
                 >
                   <svg
-                    className="w-3 h-3"
+                    className="w-4 h-4"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -238,7 +238,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 <div className="mt-3 space-y-2 border-t border-theme-unlocked/20 pt-2">
                   <div className="flex items-center gap-1 text-theme-unlocked text-[10px] uppercase tracking-wider font-bold mb-1">
                     <svg
-                      className="w-3 h-3"
+                      className="w-4 h-4"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -342,22 +342,22 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsEditMode(!isEditMode);
             }}
-            className={`p-1 rounded transition-colors ${
+            className={`h-8 w-8 grid place-items-center rounded transition-colors ${
               isEditMode
                 ? "bg-theme-primary text-theme-bg"
-                : "text-theme-text-secondary hover:text-theme-primary"
+                : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
             }`}
             title={isEditMode ? t("done") : t("edit")}
           >
             {isEditMode ? (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -371,7 +371,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               </svg>
             ) : (
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -392,11 +392,11 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="text-theme-text-secondary hover:text-theme-primary p-1"
+              className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
               title={t("viewAll")}
             >
               <svg
-                className="w-3 h-3"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -410,9 +410,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               </svg>
             </button>
           )}
-          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
+          <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${
+              className={`w-5 h-5 transition-transform duration-300 ${
                 isOpen ? "rotate-180" : ""
               }`}
               fill="none"

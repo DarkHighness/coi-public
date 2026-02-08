@@ -70,8 +70,8 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="text-theme-text-secondary group-hover:text-theme-primary p-1 transition-colors">
+        <div className="flex items-center justify-end shrink-0 min-w-8">
+          <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
             <svg
               className={`w-5 h-5 transition-transform duration-300 ${
                 expanded ? "rotate-180" : ""
