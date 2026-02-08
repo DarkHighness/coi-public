@@ -772,6 +772,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🌾",
     categories: ["ancient", "novel"],
   },
+  burial_lottery_protocol: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "snow" },
+    icon: "⚱️",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
   secret_crush: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -837,6 +850,58 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "💼",
     categories: ["modern", "romance"],
   },
+  betrayal_immunity_pass: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "courtroom" },
+    icon: "🪪",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
+  abandoned_frontline_roster: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "war",
+    defaultAtmosphere: { envTheme: "war", ambience: "combat" },
+    icon: "📋",
+    categories: ["modern", "suspense", "movie"],
+  },
+  collapsing_vow_archive: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "quiet" },
+    icon: "📚",
+    categories: ["modern", "suspense", "novel"],
+  },
+  smile_before_collapse: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "rain" },
+    icon: "🙂",
+    categories: ["modern", "suspense", "novel"],
+  },
   frontier_medicine: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -849,6 +914,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "modern", ambience: "village" },
     icon: "🩺",
     categories: ["modern"],
+  },
+  irreversible_sunrise_order: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "city" },
+    icon: "🌇",
+    categories: ["modern", "suspense", "movie"],
   },
   chaebol_revenge: {
     themeParams: {
@@ -927,6 +1005,45 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "war", ambience: "city" },
     icon: "🛡️",
     categories: ["modern"],
+  },
+  evacuation_tax_queue: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "office" },
+    icon: "🧾",
+    categories: ["modern", "suspense", "novel"],
+  },
+  sinking_law_citadel: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "courtroom" },
+    icon: "🏛️",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
+  drowned_border_post: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "storm" },
+    icon: "🧊",
+    categories: ["modern", "suspense", "movie"],
   },
   urban_planning: {
     themeParams: {
@@ -1110,6 +1227,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "📷",
     categories: ["modern", "suspense"],
   },
+  winter_no_return_train: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "snow" },
+    icon: "🚆",
+    categories: ["modern", "suspense", "movie"],
+  },
   construction_worker_tycoon: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1175,6 +1305,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "❤️",
     categories: ["modern"],
   },
+  blackout_mercy_bureau: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "office" },
+    icon: "🗄️",
+    categories: ["modern", "suspense", "novel"],
+  },
+  broken_oath_subway: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "subway" },
+    icon: "🚉",
+    categories: ["modern", "suspense", "movie"],
+  },
   evil_mother_in_law: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1226,6 +1382,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "intrigue", ambience: "office" },
     icon: "📊",
     categories: ["modern", "suspense", "chinese_short_drama"],
+  },
+  ruined_classroom_watch: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "school" },
+    icon: "🏫",
+    categories: ["modern", "suspense", "novel"],
   },
   hong_kong_noir: {
     themeParams: {
@@ -1279,6 +1448,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🧪",
     categories: ["modern"],
   },
+  confession_latency_case: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "rain" },
+    icon: "💬",
+    categories: ["modern", "suspense", "novel"],
+  },
   supply_chain_tycoon: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1304,6 +1486,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "modern", ambience: "city" },
     icon: "🔙",
     categories: ["modern", "fantasy"],
+  },
+  transit_seal_operation: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "subway" },
+    icon: "🚇",
+    categories: ["modern", "suspense", "movie"],
   },
   coastal_fisherman_city_girl: {
     themeParams: {
@@ -1409,6 +1604,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🐕‍🦺",
     categories: ["modern", "suspense", "romance"],
   },
+  red_snow_supply_route: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "snow" },
+    icon: "🧱",
+    categories: ["modern", "suspense", "movie"],
+  },
   stepmother_warmth: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1435,6 +1643,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "📹",
     categories: ["modern"],
   },
+  ashen_playground_watch: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "school" },
+    icon: "🛝",
+    categories: ["modern", "suspense", "novel"],
+  },
   gray_harbor_arms_ledger: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1447,6 +1668,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "war", ambience: "city" },
     icon: "📒",
     categories: ["modern", "suspense", "novel"],
+  },
+  ash_archive_hearing: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "quiet" },
+    icon: "📂",
+    categories: ["modern", "suspense", "novel"],
+  },
+  fireline_proxy_vote: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "patriotic",
+    defaultAtmosphere: { envTheme: "patriotic", ambience: "city" },
+    icon: "🗳️",
+    categories: ["modern", "suspense", "chinese_short_drama"],
   },
   expedition_logistics: {
     themeParams: {
@@ -1511,6 +1758,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "intrigue",
     defaultAtmosphere: { envTheme: "intrigue", ambience: "office" },
     icon: "🎭",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
+  after_scream_census: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "office" },
+    icon: "📋",
     categories: ["modern", "suspense", "chinese_short_drama"],
   },
   prison_warden_dangerous_prisoner: {
@@ -1591,6 +1851,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🗂️",
     categories: ["modern", "suspense", "novel"],
   },
+  silence_taxidermy_museum: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "quiet" },
+    icon: "🦴",
+    categories: ["modern", "suspense", "novel"],
+  },
+  quiet_hospital_pact: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "foundation",
+    defaultAtmosphere: { envTheme: "foundation", ambience: "hospital" },
+    icon: "🏥",
+    categories: ["modern", "suspense", "novel"],
+  },
   nineties_truck_driver_beauty: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1629,6 +1915,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "violet", ambience: "mystical" },
     icon: "🤝",
     categories: ["modern", "chinese_short_drama"],
+  },
+  rescue_bid_tender: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "office" },
+    icon: "📑",
+    categories: ["modern", "suspense", "chinese_short_drama"],
   },
   cold_soldier_warm_marriage: {
     themeParams: {
@@ -1707,6 +2006,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "modern", ambience: "city" },
     icon: "⚖️",
     categories: ["modern"],
+  },
+  failed_dawn_rehearsal: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "rain" },
+    icon: "🌄",
+    categories: ["modern", "suspense", "movie"],
   },
   dating_simulation: {
     themeParams: {
@@ -1799,6 +2111,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "👯",
     categories: ["modern", "chinese_short_drama"],
   },
+  rescue_contract_stairwell: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "city" },
+    icon: "🧯",
+    categories: ["modern", "suspense", "novel"],
+  },
   cs_grad_journey: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1877,6 +2202,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🐾",
     categories: ["modern", "fantasy", "chinese_short_drama"],
   },
+  blindfold_evacuation_map: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "office" },
+    icon: "🗺️",
+    categories: ["modern", "suspense", "novel"],
+  },
   republican_spy_shadows: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -1928,6 +2266,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "rose", ambience: "mystical" },
     icon: "🎀",
     categories: ["modern", "fantasy"],
+  },
+  drowning_city_bulletin: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "storm" },
+    icon: "🌊",
+    categories: ["modern", "suspense", "movie"],
   },
   seventies_rough_guy_city_youth: {
     themeParams: {
@@ -2189,6 +2540,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🏀",
     categories: ["modern", "movie"],
   },
+  mercy_denial_ledger: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "courtroom" },
+    icon: "📒",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
+  honor_points_embargo: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "courtroom" },
+    icon: "🪙",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
   funeral_director: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -2423,6 +2800,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "💞",
     categories: ["modern", "chinese_short_drama"],
   },
+  dead_harvest_rail: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "snow" },
+    icon: "🚃",
+    categories: ["modern", "suspense", "chinese_short_drama"],
+  },
   fortune_teller: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -2435,6 +2825,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "wuxia", ambience: "mystical" },
     icon: "☯️",
     categories: ["modern", "mystery"],
+  },
+  collapsed_bridge_manifest: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "storm" },
+    icon: "🌉",
+    categories: ["modern", "suspense", "movie"],
   },
   secret_agent_wife: {
     themeParams: {
@@ -2592,6 +2995,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "💻",
     categories: ["modern", "romance"],
   },
+  hazard_rehearsal_shift: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "office" },
+    icon: "📝",
+    categories: ["modern", "suspense", "movie"],
+  },
   entertainment_tycoon: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -2618,6 +3034,58 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🦹",
     categories: ["modern", "suspense"],
   },
+  unending_funeral_shift: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "quiet" },
+    icon: "⚱️",
+    categories: ["modern", "suspense", "novel"],
+  },
+  faceless_border_hospital: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "hospital" },
+    icon: "😶",
+    categories: ["modern", "suspense", "novel"],
+  },
+  nameless_town_bell: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "horror",
+    defaultAtmosphere: { envTheme: "horror", ambience: "rain" },
+    icon: "🔔",
+    categories: ["modern", "suspense", "novel"],
+  },
+  no_rescue_tomorrow: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "rain" },
+    icon: "🕯️",
+    categories: ["modern", "suspense", "movie"],
+  },
   infinite_flow_survival_partners: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -2630,6 +3098,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "horror", ambience: "dungeon" },
     icon: "♾️",
     categories: ["modern", "suspense", "horror"],
+  },
+  starless_clock_tower: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "rain" },
+    icon: "🕰️",
+    categories: ["modern", "suspense", "novel"],
   },
   taxi_driver: {
     themeParams: {
@@ -2644,6 +3125,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🚕",
     categories: ["modern"],
   },
+  hope_termination_notice: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "courtroom" },
+    icon: "📄",
+    categories: ["modern", "suspense", "novel"],
+  },
   system_stream: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -2656,6 +3150,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "scifi", ambience: "scifi" },
     icon: "🤖",
     categories: ["modern", "fantasy", "chinese_short_drama"],
+  },
+  no_light_after_shift: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "city" },
+    icon: "🌑",
+    categories: ["modern", "suspense", "chinese_short_drama"],
   },
   love_after_marriage: {
     themeParams: {
@@ -2682,6 +3189,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "nature", ambience: "forest" },
     icon: "🚜",
     categories: ["modern", "chinese_short_drama"],
+  },
+  squad_echo_line: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "combat" },
+    icon: "🎖️",
+    categories: ["modern", "suspense", "movie"],
   },
   school_bully: {
     themeParams: {
@@ -2721,6 +3241,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "cold", ambience: "quiet" },
     icon: "🧠",
     categories: ["modern"],
+  },
+  signal_hostage_protocol: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "office" },
+    icon: "📡",
+    categories: ["modern", "suspense", "novel"],
   },
   metaphysics: {
     themeParams: {
@@ -2826,6 +3359,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🍡",
     categories: ["modern"],
   },
+  salt_kingdom_quarry: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "wasteland",
+    defaultAtmosphere: { envTheme: "wasteland", ambience: "desert" },
+    icon: "🧂",
+    categories: ["modern", "suspense", "novel"],
+  },
   industry_elite: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -2917,6 +3463,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🪪",
     categories: ["modern", "suspense", "novel"],
   },
+  hero_trophy_audit: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "modern",
+    defaultAtmosphere: { envTheme: "modern", ambience: "office" },
+    icon: "🏆",
+    categories: ["modern", "suspense", "novel"],
+  },
   hero_weekly_blackbox: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -2995,6 +3554,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🎤",
     categories: ["modern", "novel", "romance"],
   },
+  no_witness_after_rain: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "rain" },
+    icon: "🌧️",
+    categories: ["modern", "suspense", "movie"],
+  },
   rain_alley_testimony: {
     themeParams: {
       physicsHarshness: "realistic",
@@ -3046,6 +3618,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "intrigue", ambience: "city" },
     icon: "👭",
     categories: ["modern", "chinese_short_drama"],
+  },
+  witness_erasure_week: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "office" },
+    icon: "🧹",
+    categories: ["modern", "suspense", "novel"],
   },
   livestream_survival: {
     themeParams: {
@@ -3124,6 +3709,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "gold", ambience: "city" },
     icon: "👨‍👩‍👧",
     categories: ["modern", "chinese_short_drama"],
+  },
+  final_goodbye_checkpoint: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cold",
+    defaultAtmosphere: { envTheme: "cold", ambience: "snow" },
+    icon: "🛂",
+    categories: ["modern", "suspense", "novel"],
+  },
+  debt_of_last_rescue: {
+    themeParams: {
+      physicsHarshness: "realistic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "intrigue",
+    defaultAtmosphere: { envTheme: "intrigue", ambience: "courtroom" },
+    icon: "💳",
+    categories: ["modern", "suspense", "novel"],
   },
   omegaverse: {
     themeParams: {
@@ -3710,6 +4321,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🥋",
     categories: ["wuxia", "novel"],
   },
+  bone_lantern_parade: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "city" },
+    icon: "🏮",
+    categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
   whitecoat_special_ops: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -3723,6 +4347,58 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🧬",
     categories: ["scifi", "suspense", "movie"],
   },
+  grief_revenue_model: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "studio" },
+    icon: "💸",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  impossible_morning_bulletin: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "studio" },
+    icon: "📡",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  sleeper_city_shutdown: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "city" },
+    icon: "😴",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  city_backup_episode: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "scifi" },
+    icon: "💾",
+    categories: ["scifi", "suspense", "novel"],
+  },
   city_of_two_spiders: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -3734,6 +4410,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "mystery",
     defaultAtmosphere: { envTheme: "mystery", ambience: "city" },
     icon: "🕷️",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  wormhole_funeral_bureau: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "hospital" },
+    icon: "🕳️",
     categories: ["scifi", "suspense", "movie"],
   },
   outside_the_window_web: {
@@ -3788,6 +4477,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "📡",
     categories: ["scifi", "suspense", "movie"],
   },
+  anti_viewer_uprising: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "city" },
+    icon: "📣",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  ruin_signal_liturgy: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "temple" },
+    icon: "📻",
+    categories: ["scifi", "suspense", "novel"],
+  },
   storm_command_grid: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -3814,6 +4529,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "👾",
     categories: ["scifi", "suspense", "movie"],
   },
+  orphan_signal_grid: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "city" },
+    icon: "📶",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  bone_reef_customs: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "danger",
+    defaultAtmosphere: { envTheme: "danger", ambience: "ocean" },
+    icon: "🪸",
+    categories: ["scifi", "suspense", "movie"],
+  },
   observatory_lovers: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -3826,6 +4567,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
     icon: "📡",
     categories: ["scifi", "novel", "movie"],
+  },
+  observer_exit_clause: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "space" },
+    icon: "🚪",
+    categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
+  spectator_rights_tribunal: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "courtroom" },
+    icon: "🧿",
+    categories: ["scifi", "suspense", "movie"],
   },
   after_the_light_wave: {
     themeParams: {
@@ -3892,6 +4659,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🤖",
     categories: ["scifi"],
   },
+  black_tide_orphanage: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "city" },
+    icon: "🌊",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  black_comet_kindergarten: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "school" },
+    icon: "☄️",
+    categories: ["scifi", "suspense", "novel"],
+  },
   black_sun_rider: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -3916,6 +4709,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "foundation",
     defaultAtmosphere: { envTheme: "foundation", ambience: "hospital" },
     icon: "🩺",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  ash_tide_semaphore: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "ocean",
+    defaultAtmosphere: { envTheme: "ocean", ambience: "storm" },
+    icon: "🚩",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  ash_clock_protocol: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "storm" },
+    icon: "⏳",
     categories: ["scifi", "suspense", "movie"],
   },
   mecha_side_by_side: {
@@ -3943,6 +4762,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "scifi", ambience: "combat" },
     icon: "🤖",
     categories: ["scifi", "novel"],
+  },
+  memory_famine_quarantine: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "quiet" },
+    icon: "🧠",
+    categories: ["scifi", "suspense", "novel"],
   },
   memory_heist: {
     themeParams: {
@@ -3996,6 +4828,71 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "📺",
     categories: ["scifi", "suspense", "movie"],
   },
+  emergency_love_immunity: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "foundation",
+    defaultAtmosphere: { envTheme: "foundation", ambience: "hospital" },
+    icon: "❤️‍🩹",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  silent_siren_city: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "city" },
+    icon: "🔕",
+    categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
+  mirror_channel_overwrite: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "studio" },
+    icon: "🪞",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  mirror_plague_colony: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "hospital" },
+    icon: "🪞",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  scripted_retreat_route: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
+    icon: "🚀",
+    categories: ["scifi", "suspense", "movie"],
+  },
   heartbeat_off_script: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4009,6 +4906,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "💓",
     categories: ["scifi", "novel", "romance"],
   },
+  despair_public_channel: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "studio" },
+    icon: "📺",
+    categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
+  despair_training_camp: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "foundation",
+    defaultAtmosphere: { envTheme: "foundation", ambience: "laboratory" },
+    icon: "🪖",
+    categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
   scifi_pastoral_space_farm: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4021,6 +4944,110 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "scifi", ambience: "quiet" },
     icon: "🥬",
     categories: ["scifi", "romance", "slice_of_life"],
+  },
+  city_of_empty_shelters: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "city" },
+    icon: "🏚️",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  hollow_prayer_satellite: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
+    icon: "🛐",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  hollow_sun_observatory: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "laboratory" },
+    icon: "🌞",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  mercy_blackout_order: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "city" },
+    icon: "⚫",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  fracture_ocean_oracle: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "storm" },
+    icon: "🌊",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  blind_constellation_archive: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "laboratory" },
+    icon: "🗃️",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  famine_of_names: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "quiet" },
+    icon: "🪪",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  last_tide_inventory: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "office" },
+    icon: "📒",
+    categories: ["scifi", "suspense", "novel"],
   },
   apocalypse_experiment_zombie_king: {
     themeParams: {
@@ -4061,6 +5088,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🧪",
     categories: ["scifi", "suspense", "romance"],
   },
+  drowned_scriptorium: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "ruins" },
+    icon: "📜",
+    categories: ["scifi", "suspense", "novel"],
+  },
   breakscreen_countdown: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4085,6 +5125,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "interstellar",
     defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
     icon: "🌌",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  end_of_mercy_clause: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "courtroom" },
+    icon: "⚰️",
     categories: ["scifi", "suspense", "movie"],
   },
   cyberpunk_hacker_ai_love: {
@@ -4152,6 +5205,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🦾",
     categories: ["scifi", "anime"],
   },
+  dawn_after_censored_cut: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "neutral",
+      npcAutonomyLevel: "balanced",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "quiet" },
+    icon: "🌅",
+    categories: ["scifi", "suspense", "novel"],
+  },
   deepsea_beacon_project: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4191,6 +5257,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🌊",
     categories: ["scifi", "suspense"],
   },
+  deep_fog_harvest: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "quiet" },
+    icon: "🌫️",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  abyss_tide_chapel: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "abyssal",
+    defaultAtmosphere: { envTheme: "abyssal", ambience: "ocean" },
+    icon: "⛪",
+    categories: ["scifi", "suspense", "movie"],
+  },
   divine_algorithm: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4202,6 +5294,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "cyberpunk",
     defaultAtmosphere: { envTheme: "cyberpunk", ambience: "laboratory" },
     icon: "🤖",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  godless_lighthouse_shift: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "mystery",
+    defaultAtmosphere: { envTheme: "mystery", ambience: "storm" },
+    icon: "🗼",
     categories: ["scifi", "suspense", "movie"],
   },
   timeloop: {
@@ -4256,6 +5361,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🎬",
     categories: ["scifi", "suspense", "movie"],
   },
+  rating_blackout_city: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "city" },
+    icon: "🌃",
+    categories: ["scifi", "suspense", "movie"],
+  },
   ratings_oracle_court: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4294,6 +5412,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "scifi", ambience: "combat" },
     icon: "🏍️",
     categories: ["scifi", "movie"],
+  },
+  dead_frequency_market: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "subway" },
+    icon: "📻",
+    categories: ["scifi", "suspense", "movie"],
   },
   space_salvage: {
     themeParams: {
@@ -4360,6 +5491,45 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🏍️",
     categories: ["scifi", "movie"],
   },
+  devouring_archive_station: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "cyberpunk",
+    defaultAtmosphere: { envTheme: "cyberpunk", ambience: "subway" },
+    icon: "🎫",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  star_eater_labor_union: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "foundation",
+    defaultAtmosphere: { envTheme: "foundation", ambience: "space" },
+    icon: "⚙️",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  dead_channel_romance: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "subway" },
+    icon: "📼",
+    categories: ["scifi", "suspense", "novel"],
+  },
   fake_rescue_syndicate: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4398,6 +5568,32 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "foundation", ambience: "laboratory" },
     icon: "🧪",
     categories: ["scifi", "suspense", "movie"],
+  },
+  prayerless_orbit_school: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "school" },
+    icon: "🛰️",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  aftercare_without_memory: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "hospital" },
+    icon: "🫧",
+    categories: ["scifi", "suspense", "novel"],
   },
   nameless_meteor_plan: {
     themeParams: {
@@ -4542,6 +5738,45 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     icon: "🪐",
     categories: ["scifi"],
   },
+  rust_moon_refinery: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "foundation",
+    defaultAtmosphere: { envTheme: "foundation", ambience: "laboratory" },
+    icon: "🛢️",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  void_siren_buoy: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "space" },
+    icon: "🛰️",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  mute_whale_court: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "abyssal",
+    defaultAtmosphere: { envTheme: "abyssal", ambience: "courtroom" },
+    icon: "🐋",
+    categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
   sample_romance_incident: {
     themeParams: {
       physicsHarshness: "cinematic",
@@ -4553,6 +5788,19 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     envTheme: "liminal",
     defaultAtmosphere: { envTheme: "liminal", ambience: "laboratory" },
     icon: "🧬",
+    categories: ["scifi", "suspense", "novel"],
+  },
+  sample_retention_clause: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "liminal",
+    defaultAtmosphere: { envTheme: "liminal", ambience: "laboratory" },
+    icon: "🧾",
     categories: ["scifi", "suspense", "novel"],
   },
   cosmic_channel_shutdown: {
@@ -4619,6 +5867,58 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     defaultAtmosphere: { envTheme: "villain", ambience: "city" },
     icon: "👁️",
     categories: ["scifi", "suspense", "chinese_short_drama"],
+  },
+  moonfall_quarantine_zone: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "apocalypse",
+    defaultAtmosphere: { envTheme: "apocalypse", ambience: "laboratory" },
+    icon: "🌕",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  midnight_fossil_signal: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "interstellar",
+    defaultAtmosphere: { envTheme: "interstellar", ambience: "scifi" },
+    icon: "🦴",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  last_shelter_lottery: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "foundation",
+    defaultAtmosphere: { envTheme: "foundation", ambience: "hospital" },
+    icon: "🎟️",
+    categories: ["scifi", "suspense", "movie"],
+  },
+  final_noise_blackbox: {
+    themeParams: {
+      physicsHarshness: "cinematic",
+      worldIndifference: "hostile",
+      npcAutonomyLevel: "independent",
+      socialComplexity: "intricate",
+      economicComplexity: "advanced",
+    },
+    envTheme: "villain",
+    defaultAtmosphere: { envTheme: "villain", ambience: "studio" },
+    icon: "📼",
+    categories: ["scifi", "suspense", "movie"],
   },
   final_season_cut_rights: {
     themeParams: {
