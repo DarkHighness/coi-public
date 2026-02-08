@@ -4,8 +4,10 @@ import { StoryThemeConfig } from "../../types";
 import { CategoryKey } from "../../utils/constants/themes";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { ThemeFilters } from "./ThemeFilters";
+import { buildFilteredThemeKeys } from "./themeSort";
 import { MarkdownText } from "../render/MarkdownText";
 import { RoleSelectionModal } from "./RoleSelectionModal";
+import { useThemePreferences } from "./useThemePreferences";
 
 const RANDOM_THEME_KEY = "__random_theme__";
 
@@ -38,29 +40,28 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
   const [roleSelectionTheme, setRoleSelectionTheme] = useState<string | null>(
     null,
   );
+  const {
+    sortMode,
+    setSortMode,
+    favoriteSet,
+    toggleFavoriteTheme,
+    usageByTheme,
+    markThemeUsed,
+  } = useThemePreferences();
 
-  const filteredThemes = useMemo(() => {
-    let keys = Object.keys(themes);
-
-    if (selectedCategory !== "all") {
-      keys = keys.filter((key) =>
-        themes[key].categories?.includes(selectedCategory),
-      );
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      keys = keys.filter((key) => {
-        const name = t(`${key}.name`, { ns: "themes" }).toLowerCase();
-        const style = t(`${key}.narrativeStyle`, {
-          ns: "themes",
-        }).toLowerCase();
-        return name.includes(query) || style.includes(query);
-      });
-    }
-
-    return keys;
-  }, [themes, searchQuery, selectedCategory, t]);
+  const filteredThemes = useMemo(
+    () =>
+      buildFilteredThemeKeys({
+        themes,
+        selectedCategory,
+        searchQuery,
+        sortMode,
+        favoriteThemeKeys: favoriteSet,
+        usageByTheme,
+        t,
+      }),
+    [themes, selectedCategory, searchQuery, sortMode, favoriteSet, usageByTheme, t],
+  );
 
   const showRandomOption = selectedCategory === "all" && !searchQuery.trim();
 
@@ -133,6 +134,8 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
               setSearchQuery={setSearchQuery}
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}
+              sortMode={sortMode}
+              setSortMode={setSortMode}
               isScrolled={false}
               isDesktop={false}
             />
@@ -152,6 +155,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
               <div className="divide-y divide-theme-divider/60">
                 {selectorItems.map((themeKey) => {
                   const isRandom = themeKey === RANDOM_THEME_KEY;
+                  const isFavorite = !isRandom && favoriteSet.has(themeKey);
                   const icon = isRandom
                     ? "🎲"
                     : getValidIcon(themes[themeKey]?.icon, "📖");
@@ -176,8 +180,13 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                         {icon}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold text-theme-text tracking-[0.01em] truncate">
+                        <div className="text-sm font-semibold text-theme-text tracking-[0.01em] truncate flex items-center gap-1">
                           {name}
+                          {isFavorite && (
+                            <span className="text-theme-primary/90" aria-hidden>
+                              ★
+                            </span>
+                          )}
                         </div>
                         <div className="mt-1 text-xs text-theme-text-secondary leading-[1.45] line-clamp-2">
                           {description}
@@ -237,7 +246,38 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
               </div>
             </div>
 
-            <div className="w-8" />
+            {previewData && previewThemeKey ? (
+              <button
+                onClick={() => toggleFavoriteTheme(previewThemeKey)}
+                className={`h-8 w-8 shrink-0 grid place-items-center border border-theme-divider/60 transition-colors ${
+                  favoriteSet.has(previewThemeKey)
+                    ? "text-theme-primary border-theme-primary/60 bg-theme-primary/10"
+                    : "text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45"
+                }`}
+                aria-label={
+                  favoriteSet.has(previewThemeKey)
+                    ? t("themeSort.unfavorite", "取消收藏")
+                    : t("themeSort.favorite", "收藏")
+                }
+                title={
+                  favoriteSet.has(previewThemeKey)
+                    ? t("themeSort.unfavorite", "取消收藏")
+                    : t("themeSort.favorite", "收藏")
+                }
+              >
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 20 20"
+                  fill={favoriteSet.has(previewThemeKey) ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.08 3.324a1 1 0 00.95.69h3.495c.969 0 1.371 1.24.588 1.81l-2.828 2.055a1 1 0 00-.364 1.118l1.08 3.324c.3.921-.755 1.688-1.54 1.118l-2.829-2.055a1 1 0 00-1.175 0l-2.828 2.055c-.784.57-1.838-.197-1.539-1.118l1.08-3.324a1 1 0 00-.364-1.118L2.935 8.75c-.783-.57-.38-1.81.588-1.81h3.494a1 1 0 00.951-.69l1.08-3.324z" />
+                </svg>
+              </button>
+            ) : (
+              <div className="w-8" />
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-20">
@@ -327,6 +367,9 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
             return Array.isArray(result) ? (result as string[]) : [];
           })()}
           onSelect={(role) => {
+            if (roleSelectionTheme) {
+              markThemeUsed(roleSelectionTheme);
+            }
             onSelect(roleSelectionTheme, role);
             setShowRoleSelection(false);
             setRoleSelectionTheme(null);

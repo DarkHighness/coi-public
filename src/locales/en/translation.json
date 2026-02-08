@@ -356,6 +356,22 @@
   "startFromImage": "Start from Image",
   "randomTheme": "Random",
   "randomThemeDesc": "Let fate decide your adventure",
+  "themeSort": {
+    "label": "Sort",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite",
+    "favoriteBadge": "Favorited",
+    "options": {
+      "category": "Category first",
+      "nameAsc": "Name (A-Z)",
+      "nameDesc": "Name (Z-A)",
+      "favoritesFirst": "Favorites first",
+      "recentFirst": "Recently used first",
+      "ipFirst": "IP themes first",
+      "nonIpFirst": "Original themes first",
+      "relevance": "Search relevance"
+    }
+  },
   "themeSelectionHint": "Preview details and start when ready.",
   "randomThemePanelDesc": "Pick random to start instantly. We will choose a world and tone for you.",
   "startGame": "Start Adventure",

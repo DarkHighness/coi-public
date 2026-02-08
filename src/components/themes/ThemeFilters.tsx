@@ -1,12 +1,18 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { CATEGORY_KEYS, CategoryKey } from "../../utils/constants/themes";
+import {
+  THEME_SORT_OPTIONS,
+  ThemeSortMode,
+} from "./themeSort";
 
 interface ThemeFiltersProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedCategory: CategoryKey;
   setSelectedCategory: (category: CategoryKey) => void;
+  sortMode: ThemeSortMode;
+  setSortMode: (mode: ThemeSortMode) => void;
   isScrolled: boolean;
   isDesktop: boolean;
 }
@@ -16,6 +22,8 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
   setSearchQuery,
   selectedCategory,
   setSelectedCategory,
+  sortMode,
+  setSortMode,
   isScrolled,
   isDesktop,
 }) => {
@@ -91,6 +99,28 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
                 category.charAt(0).toUpperCase() + category.slice(1)}
             </button>
           ))}
+        </div>
+
+        <div className="mt-1 pb-1 flex items-center justify-end">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-[0.08em] text-theme-text-secondary">
+              {t("themeSort.label", "排序")}
+            </span>
+            <select
+              value={sortMode}
+              onChange={(event) => setSortMode(event.target.value as ThemeSortMode)}
+              className={`h-7 px-2 text-xs border border-theme-divider/70 bg-theme-bg text-theme-text focus:outline-none focus:border-theme-primary/60 ${
+                isDesktop ? "min-w-[150px]" : "min-w-[132px]"
+              }`}
+              aria-label={t("themeSort.label", "排序")}
+            >
+              {THEME_SORT_OPTIONS.map((mode) => (
+                <option key={mode} value={mode}>
+                  {t(`themeSort.options.${mode}`)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </div>
