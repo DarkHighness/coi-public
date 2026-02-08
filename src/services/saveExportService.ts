@@ -35,6 +35,7 @@ import type { RAGExportData } from "./rag/types";
 import { IndexedDbVfsStore } from "./vfs/store";
 import type { VfsSnapshot } from "./vfs/types";
 import { VfsSession } from "./vfs/vfsSession";
+import { hashContent } from "./vfs/utils";
 import {
   applySharedMutableStateToSession,
   extractSharedMutableStateFromSnapshot,
@@ -70,6 +71,127 @@ interface VfsExportBundleIndex {
   latest: VfsLatestMeta | null;
   snapshots: VfsExportIndexEntry[];
 }
+
+type SnapshotImageTransformOptions = {
+  remapImageIds?: Map<string, string>;
+  stripImageReferences?: boolean;
+};
+
+const IMAGE_REFERENCE_KEYS = new Set([
+  "imageId",
+  "imageUrl",
+  "seedImageId",
+  "previewImage",
+]);
+
+const transformJsonValueForImageReferences = (
+  value: unknown,
+  options: SnapshotImageTransformOptions,
+): unknown => {
+  if (typeof value === "string") {
+    const mapped = options.remapImageIds?.get(value);
+    return mapped ?? value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      transformJsonValueForImageReferences(item, options),
+    );
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const nextObject: Record<string, unknown> = {};
+  for (const [key, rawChild] of Object.entries(value as Record<string, unknown>)) {
+    if (options.stripImageReferences && IMAGE_REFERENCE_KEYS.has(key)) {
+      continue;
+    }
+
+    nextObject[key] = transformJsonValueForImageReferences(rawChild, options);
+  }
+
+  return nextObject;
+};
+
+const rewriteSnapshotImageReferences = (
+  snapshot: VfsSnapshot,
+  options: SnapshotImageTransformOptions,
+): VfsSnapshot => {
+  const shouldRemap = (options.remapImageIds?.size ?? 0) > 0;
+  const shouldStrip = options.stripImageReferences;
+
+  if (!shouldRemap && !shouldStrip) {
+    return snapshot;
+  }
+
+  const nextFiles = { ...snapshot.files };
+  let changed = false;
+
+  for (const [path, file] of Object.entries(snapshot.files)) {
+    if (file.contentType !== "application/json") {
+      continue;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(file.content);
+    } catch {
+      continue;
+    }
+
+    const transformed = transformJsonValueForImageReferences(parsed, options);
+    const nextContent = JSON.stringify(transformed);
+    if (nextContent === file.content) {
+      continue;
+    }
+
+    changed = true;
+    nextFiles[path] = {
+      ...file,
+      content: nextContent,
+      hash: hashContent(nextContent),
+      size: nextContent.length,
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (!changed) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    files: nextFiles,
+  };
+};
+
+const isValidExportManifest = (value: unknown): value is ExportManifest => {
+  if (!value || typeof value !== "object") return false;
+  const manifest = value as any;
+
+  if (typeof manifest.version !== "number") return false;
+  if (typeof manifest.exportDate !== "string") return false;
+  if (typeof manifest.appVersion !== "string") return false;
+  if (typeof manifest.saveVersion !== "number") return false;
+
+  if (!manifest.slot || typeof manifest.slot !== "object") return false;
+  if (typeof manifest.slot.name !== "string") return false;
+  if (typeof manifest.slot.theme !== "string") return false;
+
+  if (!manifest.includes || typeof manifest.includes !== "object") return false;
+  if (typeof manifest.includes.images !== "boolean") return false;
+  if (typeof manifest.includes.embeddings !== "boolean") return false;
+  if (typeof manifest.includes.logs !== "boolean") return false;
+
+  if (!manifest.stats || typeof manifest.stats !== "object") return false;
+  if (typeof manifest.stats.nodeCount !== "number") return false;
+  if (typeof manifest.stats.imageCount !== "number") return false;
+  if (typeof manifest.stats.embeddingCount !== "number") return false;
+
+  return true;
+};
 
 const isValidLatestMeta = (value: unknown): value is VfsLatestMeta => {
   if (!value || typeof value !== "object") return false;
@@ -195,6 +317,7 @@ const loadDerivedStateFromLatestVfsSnapshot = async (
 const writeVfsSnapshotsToZip = async (
   zip: JSZip,
   saveId: string,
+  options?: { includeImages: boolean },
 ): Promise<{
   snapshotCount: number;
   latest: VfsLatestMeta | null;
@@ -231,10 +354,18 @@ const writeVfsSnapshotsToZip = async (
         );
         continue;
       }
+
+      const snapshotForExport =
+        options?.includeImages === false
+          ? rewriteSnapshotImageReferences(snapshot, {
+              stripImageReferences: true,
+            })
+          : snapshot;
+
       const forkFolder = snapshotsRoot.folder(`fork-${entry.forkId}`);
       forkFolder?.file(
         `turn-${entry.turn}.json`,
-        JSON.stringify(snapshot, null, 2),
+        JSON.stringify(snapshotForExport, null, 2),
       );
       written += 1;
     } catch (error) {
@@ -717,7 +848,9 @@ export async function exportSave(
 
     // Add VFS snapshots if present (required for VFS-based restores/forking).
     try {
-      const { snapshotCount } = await writeVfsSnapshotsToZip(zip, slotId);
+      const { snapshotCount } = await writeVfsSnapshotsToZip(zip, slotId, {
+        includeImages: options.includeImages,
+      });
       console.log(`[SaveExport] Exported ${snapshotCount} VFS snapshots`);
     } catch (error) {
       console.warn("[SaveExport] Failed to export VFS snapshots:", error);
@@ -820,6 +953,15 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     try {
       manifest = JSON.parse(manifestJson);
     } catch {
+      pushError(
+        "import.errors.invalidManifest",
+        undefined,
+        "Invalid manifest.json format.",
+      );
+      return { valid: false, errors, warnings, errorsI18n, warningsI18n };
+    }
+
+    if (!isValidExportManifest(manifest)) {
       pushError(
         "import.errors.invalidManifest",
         undefined,
@@ -974,10 +1116,11 @@ export async function importSave(
     const zip = await JSZip.loadAsync(file);
 
     // Import images if present
+    let imageIdMapping = new Map<string, string>();
     if (manifest.includes.images) {
       const imagesFolder = zip.folder("images");
       if (imagesFolder) {
-        await importImages(imagesFolder, newSlotId);
+        imageIdMapping = await importImages(imagesFolder, newSlotId);
       }
     }
 
@@ -1079,8 +1222,13 @@ export async function importSave(
         const snapshotJson = await snapshotFile.async("text");
         const snapshot = JSON.parse(snapshotJson) as VfsSnapshot;
         if (!snapshot || typeof snapshot !== "object") continue;
-        snapshot.saveId = newSlotId;
-        await store.saveSnapshot(snapshot);
+
+        const snapshotWithMappedImages = rewriteSnapshotImageReferences(snapshot, {
+          remapImageIds: imageIdMapping,
+        });
+
+        snapshotWithMappedImages.saveId = newSlotId;
+        await store.saveSnapshot(snapshotWithMappedImages);
         imported += 1;
       }
 
@@ -1187,7 +1335,11 @@ export async function importSave(
       timestamp: Date.now(),
       theme: derivedTheme || manifest.slot.theme,
       summary: derivedSummary || manifest.slot.summary || "",
-      previewImage: derivedPreviewImage || manifest.slot.previewImage,
+      previewImage:
+        derivedPreviewImage ||
+        (manifest.slot.previewImage
+          ? imageIdMapping.get(manifest.slot.previewImage) || manifest.slot.previewImage
+          : undefined),
     };
 
     // Update slots metadata
@@ -1224,13 +1376,18 @@ async function importImages(
   const mapping = new Map<string, string>();
 
   const files = Object.keys(imagesFolder.files);
+  const folderPrefix = imagesFolder.root || "";
   const imageFiles = files.filter(
-    (f) => !f.endsWith(".meta.json") && !f.endsWith("/"),
+    (f) =>
+      f.startsWith(folderPrefix) && !f.endsWith(".meta.json") && !f.endsWith("/"),
   );
 
   for (const filename of imageFiles) {
     try {
-      const file = imagesFolder.file(filename);
+      const relativePath = filename.startsWith(folderPrefix)
+        ? filename.slice(folderPrefix.length)
+        : filename;
+      const file = imagesFolder.file(relativePath);
       if (!file) continue;
 
       // Extract old ID from filename
