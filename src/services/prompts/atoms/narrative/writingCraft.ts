@@ -819,6 +819,10 @@ export const writingCraftPrimer: Atom<void> = () => `
   <rule>Vary sentence openings. Do NOT start every sentence with "You". Target < ${GAME_CONSTANTS.MAX_YOU_START_RATE}% "You" starts.</rule>
   <rule>Describe world through protagonist's profession/perspective. End scenes mid-action.</rule>
   <rule>Rhythm: Mix short, punchy sentences with longer, flowing descriptions.</rule>
+  <rule>Human voice by default: concrete nouns/verbs first, abstraction second. Let facts create emotion.</rule>
+  <rule>Avoid formulaic AI scaffolding: no "Firstly/Secondly/Finally", no "Not only...but also", no inflated significance claims.</rule>
+  <rule>No meta voice: no policy lecture, no self-reference, no apology preamble.</rule>
+  <rule>If detail is unknown, stay precise and partial. Do not pad with generic summary language.</rule>
 ${storyEnginePrimer}
 
   <prohibited_vocabulary>

@@ -605,7 +605,7 @@
       "customPromptInjectionPlaceholder": "e.g., Use concise modern Chinese; keep a noir tone; avoid long lists.",
       "customPromptInjectionWarning": "Custom instruction is active.",
       "systemDefaultInjectionEnabled": "Model Default Injection",
-      "systemDefaultInjectionEnabledHelp": "When enabled, a matched `[[system_prompts]]` entry from local `src/prompt/prompt.toml` is injected at the front with runtime floor (order: runtime floor → system default → user custom → system instruction).",
+      "systemDefaultInjectionEnabledHelp": "When enabled, a matched `[[system_prompts]]` entry from local `src/prompt/prompt.toml` is injected as an optional model-specific patch (order: runtime floor → system default injection (can be empty) → user custom → system instruction). Core anti-AI-voice + human storytelling should come from the core system prompt.",
       "forceAutoToolChoice": "Force Auto Tool Choice",
       "forceAutoToolChoiceHelp": "Always use 'auto' for tool choice, overriding 'required' requests. Improves compatibility for some models.",
       "agenticLoop": "Agentic Loop Settings",

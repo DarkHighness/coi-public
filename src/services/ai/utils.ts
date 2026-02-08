@@ -1227,6 +1227,10 @@ export function pickModelMatchedPrompt(
   const loweredModelId = (modelId || "").toLowerCase();
   if (!loweredModelId) return undefined;
 
+  // Multiple entries may match the same modelId.
+  // Deterministic policy: scan top-to-bottom and return the first matched NON-EMPTY prompt.
+  // This keeps prompt.toml usable as an optional per-model override layer where
+  // empty prompts mean "no extra injection" by default.
   for (const entry of entries) {
     const keywords = Array.isArray(entry?.keywords) ? entry.keywords : [];
     const prompt = typeof entry?.prompt === "string" ? entry.prompt : "";
