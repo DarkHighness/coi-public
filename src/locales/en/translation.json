@@ -277,6 +277,7 @@
   "startQuote": "Every choice ripples through infinity. Where will your story begin?",
   "selectTheme": "Select Genre",
   "searchThemes": "Search themes...",
+  "noThemesFound": "No themes found",
   "categories": {
     "all": "All",
     "ancient": "Ancient",

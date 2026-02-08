@@ -276,6 +276,7 @@
   "startQuote": "每一个选择都在无限中激起涟漪。你的故事将从何处开始？",
   "selectTheme": "选择题材",
   "searchThemes": "搜索题材...",
+  "noThemesFound": "未找到匹配题材",
   "categories": {
     "all": "全部",
     "ancient": "古风",
