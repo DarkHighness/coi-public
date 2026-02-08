@@ -120,7 +120,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
         onDragEnd={handleDragEnd}
       >
         <div
-          className="py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-start justify-between gap-2"
+          className="py-2 pl-2 pr-1 min-h-[2.25rem] cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-center justify-between gap-3"
           onClick={() => toggleQuest(q.id, isModal)}
         >
           {/* Pin button - only show in edit mode or if pinned */}
@@ -130,7 +130,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                 e.stopPropagation();
                 options.onPin!();
               }}
-              className={`p-1 rounded transition-colors shrink-0 mt-0.5 ${
+              className={`p-1 rounded transition-colors shrink-0 ${
                 options?.isPinned
                   ? "text-theme-primary"
                   : "text-theme-text-secondary hover:text-theme-primary"
@@ -152,7 +152,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
               </svg>
             </button>
           )}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span
                 className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
@@ -166,13 +166,13 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
                   : t("sideQuest") || "Side"}
               </span>
               <span
-                className="font-bold text-theme-text text-xs break-words whitespace-normal"
+                className="font-bold text-theme-text text-xs flex items-center gap-1.5 min-w-0"
                 title={q.title}
               >
-                <span className="mr-1">
+                <span className="ui-emoji-slot">
                   {getValidIcon(q.icon, q.type === "main" ? "🎯" : "📜")}
                 </span>
-                {q.title}
+                <span className="break-words whitespace-normal">{q.title}</span>
               </span>
               {/* Unlocked indicator */}
               {q.unlocked && (
@@ -196,7 +196,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             </div>
           </div>
           <svg
-            className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-1 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-theme-text-secondary shrink-0 transition-transform duration-200 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

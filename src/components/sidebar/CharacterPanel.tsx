@@ -323,10 +323,10 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
       `}
       onClick={handleClick}
     >
-      <div className="py-2 pl-2 pr-1 flex items-start justify-between gap-2">
+      <div className="py-2 pl-2 pr-1 flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-base leading-none shrink-0">
+            <span className="ui-emoji-slot">
               {getValidIcon(skill.icon, "⭐")}
             </span>
             <span className="text-xs text-theme-text font-bold break-words whitespace-normal">
@@ -502,13 +502,13 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
     >
       <div className="py-2 pl-2 pr-1">
         <div className="flex justify-between items-start gap-2">
-          <span className="font-bold flex items-center gap-2 text-xs text-theme-text">
+          <span className="font-bold flex items-center gap-2 text-xs text-theme-text min-w-0">
             {condition.icon && getValidIcon(condition.icon, "") ? (
-              <span className="mr-1 text-base">
+              <span className="ui-emoji-slot">
                 {getValidIcon(condition.icon, "")}
               </span>
             ) : (
-              <span className="opacity-90">{icon}</span>
+              <span className="ui-emoji-slot opacity-90">{icon}</span>
             )}
             {condition.name}
             {condition.unlocked && (
@@ -716,7 +716,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
         <div className="flex justify-between items-start gap-2">
           <span className="font-bold flex items-center gap-2 text-xs text-theme-text min-w-0">
             {trait.icon && (
-              <span className="mr-1 text-base">
+              <span className="ui-emoji-slot">
                 {getValidIcon(trait.icon, "🧩")}
               </span>
             )}

@@ -254,6 +254,17 @@ input:disabled {
   border-right: 1px solid color-mix(in srgb, var(--theme-divider) 60%, transparent);
 }
 
+.ui-emoji-slot {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+  font-size: 1rem;
+}
+
 /* --- Environmental Effects --- */
 
 /* Rain */

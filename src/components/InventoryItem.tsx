@@ -74,7 +74,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
       onDragStart={isEditMode && onDragStart ? onDragStart : undefined}
     >
       <div
-        className="flex justify-between items-center py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors"
+        className="flex justify-between items-center min-h-[2.25rem] py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors"
         onClick={handleClick}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -93,15 +93,15 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
               d="M9 5l7 7-7 7"
             />
           </svg>
-          <span className="font-bold text-theme-text text-sm flex items-center gap-1 break-words whitespace-normal">
-            <span className="mr-1 text-base">
+          <span className="font-bold text-theme-text text-sm flex items-center gap-1.5 leading-tight break-words whitespace-normal">
+            <span className="ui-emoji-slot">
               {getValidIcon(item.icon, "📦")}
             </span>
             {item.name}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 shrink-0 min-w-8">
           {onPin && (
             <button
               onClick={(e) => {

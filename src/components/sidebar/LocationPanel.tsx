@@ -93,7 +93,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
       <div className="flex-1 min-w-0">
         <button
           onClick={handleToggle}
-          className={`w-full text-left pl-2 pr-1 py-2 flex justify-between items-center focus:outline-none hover:bg-theme-surface-highlight/20 transition-colors ${
+          className={`w-full text-left pl-2 pr-1 py-2 min-h-[2.25rem] flex justify-between items-center focus:outline-none hover:bg-theme-surface-highlight/20 transition-colors ${
             isCurrent ? "text-theme-primary" : ""
           }`}
         >
@@ -102,11 +102,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-theme-primary animate-pulse shrink-0"></span>
             )}
             <span
-              className={`font-bold tracking-wide text-xs flex items-center gap-1 break-words whitespace-normal ${
+              className={`font-bold tracking-wide text-xs flex items-center gap-1.5 leading-tight min-w-0 break-words whitespace-normal ${
                 isCurrent ? "text-theme-primary" : "text-theme-text"
               }`}
             >
-              <span className="mr-1 text-base">
+              <span className="ui-emoji-slot">
                 {getValidIcon(locationData.icon, "📍")}
               </span>
               {item.name}

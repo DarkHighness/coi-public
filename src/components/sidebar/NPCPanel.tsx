@@ -142,7 +142,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
       onClick={handleToggle}
     >
       <div className="flex-1 min-w-0 py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors">
-        <div className="flex justify-between items-center mb-1">
+        <div className="flex justify-between items-center min-h-[1.75rem] mb-1">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <svg
               className={`w-3.5 h-3.5 text-theme-text-secondary transition-transform duration-200 ${
@@ -160,10 +160,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
               />
             </svg>
             <span
-              className="font-bold text-theme-text text-xs flex items-center gap-1 break-words whitespace-normal"
+              className="font-bold text-theme-text text-xs flex items-center gap-1.5 leading-tight min-w-0 break-words whitespace-normal"
               title={rel.visible?.name || t("unknown") || "Unknown"}
             >
-              <span className="mr-1 text-base">
+              <span className="ui-emoji-slot">
                 {getValidIcon(rel.icon, "👤")}
               </span>
               {rel.visible?.name || t("unknown") || "Unknown"}
@@ -178,7 +178,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
               )}
             </span>
             <span
-              className="text-[10px] uppercase tracking-wider bg-theme-bg/40 px-2 py-0.5 rounded text-theme-primary border border-theme-divider/60 max-w-[120px] truncate cursor-help"
+              className="text-[10px] uppercase tracking-wider bg-theme-bg/40 px-2 py-0.5 rounded text-theme-primary border border-theme-divider/60 max-w-[120px] truncate cursor-help shrink-0"
               title={
                 rel.visible?.roleTag ||
                 rel.visible?.profession ||

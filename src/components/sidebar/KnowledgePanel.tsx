@@ -96,7 +96,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
       onDragEnd={handleDragEnd}
     >
       <div
-        className="py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-center justify-between gap-3"
+        className="py-2 pl-2 pr-1 min-h-[2.25rem] cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-center justify-between gap-3"
         onClick={handleToggle}
       >
         {/* Pin button - only show in edit mode or if pinned */}
@@ -129,14 +129,14 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-1">
-            <span className="text-lg">
+          <div className="flex items-center gap-2.5">
+            <span className="ui-emoji-slot">
               {isValidEmoji(k.icon)
                 ? k.icon
                 : CATEGORY_ICONS[k.category] || "📖"}
             </span>
-            <h4 className="text-xs font-bold text-theme-primary truncate flex items-center gap-2">
-              {k.title}
+            <h4 className="text-xs font-bold text-theme-primary flex items-center gap-2 min-w-0">
+              <span className="truncate">{k.title}</span>
               {k.unlocked && (
                 <svg
                   className="w-3.5 h-3.5 text-theme-primary"
@@ -150,7 +150,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
           </div>
         </div>
         <svg
-          className={`w-5 h-5 text-theme-text-secondary transition-transform duration-300 ${
+          className={`w-5 h-5 text-theme-text-secondary shrink-0 transition-transform duration-300 ${
             expandedSet.has(k.id) ? "rotate-180" : ""
           }`}
           fill="none"

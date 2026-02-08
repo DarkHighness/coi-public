@@ -110,7 +110,7 @@ const TimelineEventCard: React.FC<{
         {/* Event Name (if available) */}
         {event.name && (
           <div className="text-xs font-bold text-theme-text mb-1 break-words whitespace-normal">
-            <span className="mr-1.5 inline-block">
+            <span className="ui-emoji-slot mr-1.5 align-middle">
               {getValidIcon(event.icon, "📅")}
             </span>
             {event.name}
@@ -119,7 +119,7 @@ const TimelineEventCard: React.FC<{
 
         <div className="text-xs text-theme-text/90 leading-relaxed">
           {!event.name && (
-            <span className="mr-1.5 inline-block">
+            <span className="ui-emoji-slot mr-1.5 align-middle">
               {getValidIcon(event.icon, "📅")}
             </span>
           )}
