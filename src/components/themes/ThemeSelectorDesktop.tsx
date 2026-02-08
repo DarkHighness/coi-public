@@ -119,7 +119,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
 
   return (
     <div className="w-full h-full relative flex flex-col bg-theme-bg text-theme-text z-[100]">
-      <div className="shrink-0 px-4 md:px-6 pt-3 pb-2 border-b border-theme-divider/60 flex items-start gap-3">
+      <div className="shrink-0 px-4 md:px-6 pt-3 pb-2 flex items-start gap-3">
         {onBack && (
           <button
             onClick={onBack}
@@ -155,7 +155,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
       </div>
 
       <div className="flex-1 min-h-0 px-4 md:px-6 pb-3">
-        <div className="max-w-[1320px] mx-auto h-full border border-theme-divider/70 bg-theme-bg grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="max-w-[1320px] mx-auto h-full bg-theme-bg grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
           <section className="min-h-0 overflow-hidden flex flex-col">
             <div className="shrink-0 px-3 md:px-4 py-2 border-b border-theme-divider/60 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary">
               <span>{t("selectTheme")}</span>

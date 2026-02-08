@@ -127,7 +127,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
     <div className="w-full h-full relative flex flex-col bg-theme-bg text-theme-text">
       {mode === "list" ? (
         <>
-          <div className="shrink-0 px-3 pt-2 pb-1 border-b border-theme-divider/60">
+          <div className="shrink-0 px-2 pt-2 pb-1 border-b border-theme-divider/60">
             <ThemeFilters
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -138,7 +138,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-3">
             <div className="py-2 border-b border-theme-divider/60 text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary flex items-center justify-between">
               <span>{t("selectTheme")}</span>
               <span>{selectorItems.length}</span>
@@ -170,7 +170,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                     <button
                       key={themeKey}
                       onClick={() => openThemeDetail(themeKey)}
-                      className="group w-full py-3.5 px-0.5 text-left flex items-start gap-3 hover:text-theme-primary hover:bg-theme-surface-highlight/10 transition-colors"
+                      className="group w-full py-3.5 px-0 text-left flex items-start gap-3 hover:text-theme-primary hover:bg-theme-surface-highlight/10 transition-colors"
                     >
                       <div className="mt-0.5 h-8 w-8 shrink-0 grid place-items-center text-[18px] leading-none">
                         {icon}
@@ -205,7 +205,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
         </>
       ) : (
         <>
-          <div className="shrink-0 px-3 py-2 border-b border-theme-divider/60 flex items-center justify-between gap-3">
+          <div className="shrink-0 px-2 py-2 border-b border-theme-divider/60 flex items-center justify-between gap-3">
             <button
               onClick={() => setMode("list")}
               className="h-8 w-8 grid place-items-center text-theme-text-secondary hover:text-theme-primary transition-colors"
@@ -240,7 +240,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
             <div className="w-8" />
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-20">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-20">
             <section className="pt-3.5">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 h-9 w-9 shrink-0 grid place-items-center text-[20px] leading-none">
@@ -302,7 +302,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
             )}
           </div>
 
-          <div className="shrink-0 px-3 py-2.5 border-t border-theme-divider/60 bg-theme-bg pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
+          <div className="shrink-0 px-2 py-2.5 border-t border-theme-divider/60 bg-theme-bg pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
             <button
               onClick={handleStart}
               disabled={!activeTheme}
