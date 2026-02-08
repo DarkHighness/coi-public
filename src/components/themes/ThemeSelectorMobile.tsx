@@ -90,7 +90,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
   return (
     <div className="w-full h-full relative flex flex-col bg-theme-bg/95 backdrop-blur-xl">
       {/* Header Area */}
-      <div className="shrink-0 z-10 border-b border-theme-divider/60 bg-theme-surface/10 backdrop-blur-md">
+      <div className="shrink-0 z-10">
         <ThemeFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -103,10 +103,10 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-2.5">
           <div
             key={`page-${currentPage}`}
-            className="max-w-5xl mx-auto w-full flex flex-col gap-2.5 animate-fade-in"
+            className="max-w-5xl mx-auto w-full flex flex-col gap-3 animate-fade-in"
           >
             {/* Random Option - only on first page */}
             {selectedCategory === "all" &&
@@ -114,16 +114,16 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
               currentPage === 0 && (
                 <button
                   onClick={() => onSelect("")}
-                  className="relative w-full h-[96px] rounded-xl border border-theme-divider/60 bg-theme-surface/10 hover:bg-theme-surface-highlight/15 hover:border-theme-primary/40 transition-colors text-left group overflow-hidden animate-slide-in"
+                  className="relative w-full h-[104px] rounded-2xl border border-theme-divider/60 bg-gradient-to-br from-theme-surface/35 to-theme-bg/40 hover:bg-theme-surface-highlight/12 hover:border-theme-primary/40 transition-colors text-left group overflow-hidden animate-slide-in"
                   style={{ animationDelay: "0ms" }}
                 >
-                  <div className="absolute inset-y-0 left-0 w-1 bg-theme-primary/40 group-hover:bg-theme-primary/70 transition-colors" />
-                  <div className="relative h-full px-3 py-2.5 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg border border-theme-divider/60 bg-theme-surface-highlight/15 grid place-items-center text-xl leading-none shrink-0">
+                  <div className="absolute inset-y-0 left-0 w-1.5 bg-theme-primary/35 group-hover:bg-theme-primary/65 transition-colors" />
+                  <div className="relative h-full px-3.5 py-2.5 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl border border-theme-divider/60 bg-theme-surface-highlight/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] grid place-items-center text-xl leading-none shrink-0">
                       🎲
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-theme-primary uppercase tracking-[0.1em]">
+                      <div className="text-sm font-semibold text-theme-primary uppercase tracking-[0.08em]">
                         {t("randomTheme")}
                       </div>
                       <div className="mt-1 text-[11px] leading-relaxed text-theme-text-secondary line-clamp-2">
@@ -165,7 +165,7 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
         </div>
 
         {/* Pagination Controls */}
-        <div className="shrink-0 px-3 py-2.5 border-t border-theme-divider/60 bg-theme-surface/10 backdrop-blur-sm pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
+        <div className="shrink-0 px-3 py-2.5 border-t border-theme-divider/60 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

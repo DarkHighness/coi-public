@@ -99,7 +99,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
   const content = (
     <div className="w-full h-full relative flex flex-col bg-theme-bg/95 backdrop-blur-xl z-[100]">
       {/* Header Area - Fixed on Desktop */}
-      <div className="shrink-0 z-10 border-b border-theme-divider/60 bg-theme-surface/10 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 flex items-center gap-3">
+      <div className="shrink-0 z-10 px-4 py-3 md:px-6 md:py-4 flex items-center gap-3">
         {onBack && (
           <button
             onClick={onBack}
@@ -135,7 +135,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-6 py-4">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-6 py-3">
           <div
             key={`page-${currentPage}`}
             className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in"
@@ -146,17 +146,18 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
               currentPage === 0 && (
                 <button
                   onClick={() => onSelect("")}
-                  className="relative w-full h-[220px] rounded-xl border border-theme-divider/60 bg-theme-surface/10 hover:bg-theme-surface-highlight/15 hover:border-theme-primary/40 transition-colors text-left group overflow-hidden animate-slide-in"
+                  className="relative w-full h-[232px] rounded-2xl border border-theme-divider/60 bg-gradient-to-br from-theme-surface/35 to-theme-bg/40 hover:bg-theme-surface-highlight/12 hover:border-theme-primary/40 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition-all text-left group overflow-hidden animate-slide-in"
                   style={{ animationDelay: "0ms" }}
                 >
-                  <div className="absolute inset-y-0 left-0 w-1 bg-theme-primary/40 group-hover:bg-theme-primary/70 transition-colors" />
+                  <div className="absolute inset-y-0 left-0 w-1.5 bg-theme-primary/35 group-hover:bg-theme-primary/65 transition-colors" />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-[radial-gradient(circle_at_top_right,rgba(var(--theme-primary-rgb),0.2),transparent_60%)]" />
                   <div className="relative h-full p-4 flex flex-col justify-between gap-4">
                     <div className="flex items-start gap-3.5">
-                      <div className="h-11 w-11 rounded-lg border border-theme-divider/60 bg-theme-surface-highlight/15 grid place-items-center text-2xl leading-none shrink-0">
+                      <div className="h-12 w-12 rounded-xl border border-theme-divider/60 bg-theme-surface-highlight/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] grid place-items-center text-2xl leading-none shrink-0">
                         🎲
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-theme-primary uppercase tracking-[0.12em]">
+                        <div className="text-sm font-semibold text-theme-primary uppercase tracking-[0.11em]">
                           {t("randomTheme")}
                         </div>
                         <div className="mt-1.5 text-xs leading-relaxed text-theme-text-secondary line-clamp-4">
@@ -165,7 +166,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-theme-primary">
-                      <span className="h-8 px-3 inline-flex items-center rounded-lg border border-theme-primary/45 bg-theme-surface-highlight/20 text-[11px] font-bold uppercase tracking-[0.1em]">
+                      <span className="h-8 px-3 inline-flex items-center rounded-lg border border-theme-primary/40 bg-theme-primary/12 text-[11px] font-semibold tracking-[0.08em]">
                         {t("surpriseMe")}
                       </span>
                       <svg
@@ -204,7 +205,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         </div>
 
         {/* Pagination Controls */}
-        <div className="shrink-0 px-4 md:px-6 py-3 border-t border-theme-divider/60 bg-theme-surface/10 backdrop-blur-sm">
+        <div className="shrink-0 px-4 md:px-6 py-3 border-t border-theme-divider/60">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

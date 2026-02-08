@@ -24,15 +24,11 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
   return (
     <div
       className={`sticky top-0 z-20 transition-all duration-300 ${
-        isScrolled ? "shadow-[0_4px_14px_rgba(0,0,0,0.15)]" : ""
+        isScrolled ? "shadow-[0_8px_20px_rgba(0,0,0,0.18)]" : ""
       }`}
     >
-      <div
-        className={`w-full border-y border-theme-divider/60 bg-theme-surface/10 backdrop-blur-md ${
-          isDesktop ? "px-4 py-3" : "px-3 py-2.5"
-        }`}
-      >
-        <div className="max-w-5xl mx-auto w-full flex flex-col gap-2.5">
+      <div className={isDesktop ? "px-1 py-1" : "px-0.5 py-1"}>
+        <div className="max-w-5xl mx-auto w-full rounded-xl border border-theme-divider/60 bg-theme-bg/65 backdrop-blur-md p-2.5">
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
@@ -55,13 +51,13 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("searchThemes") || "Search themes..."}
-              className="block h-10 w-full rounded-lg border border-theme-divider/60 bg-theme-bg/70 pl-9 pr-10 text-sm text-theme-text placeholder-theme-text-secondary/70 transition-colors focus:outline-none focus:border-theme-primary/60 focus:bg-theme-bg"
+              className="block h-10 w-full rounded-lg border border-theme-divider/70 bg-theme-surface/35 pl-9 pr-10 text-sm text-theme-text placeholder-theme-text-secondary/70 transition-colors focus:outline-none focus:border-theme-primary/55 focus:ring-2 focus:ring-theme-primary/20"
             />
 
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 grid place-items-center rounded-md text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 grid place-items-center rounded-md text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/20 transition-colors"
                 aria-label={t("clear", "Clear")}
               >
                 <svg
@@ -81,15 +77,15 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-theme-primary/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-theme-primary/35">
+          <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-theme-primary/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-theme-primary/35">
             {CATEGORY_KEYS.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`h-9 px-3 rounded-lg border text-[11px] font-bold uppercase tracking-[0.08em] whitespace-nowrap transition-colors shrink-0 ${
+                className={`h-8 px-3 rounded-md border text-[11px] font-semibold tracking-[0.04em] whitespace-nowrap transition-colors shrink-0 ${
                   selectedCategory === cat
-                    ? "bg-theme-surface-highlight/35 border-theme-primary/45 text-theme-primary"
-                    : "bg-transparent border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:border-theme-border hover:bg-theme-surface-highlight/15"
+                    ? "bg-theme-primary/14 border-theme-primary/40 text-theme-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                    : "bg-theme-surface/20 border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:border-theme-border hover:bg-theme-surface-highlight/15"
                 }`}
               >
                 {t(`categories.${cat}`) ||

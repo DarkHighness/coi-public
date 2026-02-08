@@ -519,11 +519,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             </div>
           ) : (
             <div className="flex flex-col h-full animate-slide-in">
-              <div className="flex items-center justify-between mb-3 shrink-0 border-b border-theme-divider/60 pb-3">
+              <div className="flex items-center justify-between mb-4 shrink-0 border-b border-theme-divider/60 pb-3.5">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={exitThemeSelect}
-                    className="h-9 w-9 grid place-items-center rounded-lg border border-theme-divider/60 text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors"
+                    className="h-9 w-9 grid place-items-center rounded-xl border border-theme-divider/60 text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors"
                   >
                     <svg
                       className="w-5 h-5"
@@ -539,7 +539,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       ></path>
                     </svg>
                   </button>
-                  <h3 className="text-[11px] uppercase tracking-[0.16em] text-theme-text-secondary">
+                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-theme-text-secondary/90">
                     {t("selectTheme")}
                   </h3>
                 </div>
@@ -547,7 +547,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 {/* Customize Button */}
                 <button
                   onClick={() => setIsCustomContextModalOpen(true)}
-                  className="relative h-9 px-3 rounded-lg border border-theme-divider/60 text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors text-[11px] uppercase tracking-[0.12em] font-bold flex items-center gap-2"
+                  className="relative h-9 px-3.5 rounded-xl border border-theme-divider/60 bg-theme-surface/5 text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors text-[11px] uppercase tracking-[0.1em] font-semibold flex items-center gap-2"
                 >
                   <svg
                     className="w-4 h-4"

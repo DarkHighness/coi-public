@@ -65,7 +65,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 0}
-        className="h-8 w-8 grid place-items-center rounded-lg border border-theme-divider/60 bg-transparent text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+        className="h-9 w-9 grid place-items-center rounded-xl border border-theme-divider/60 bg-transparent text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
         aria-label={t("pagination.previous")}
       >
         <svg
@@ -96,9 +96,9 @@ export const Pagination: React.FC<PaginationProps> = ({
             <button
               key={page}
               onClick={() => onPageChange(page)}
-              className={`h-8 min-w-[2rem] px-2 rounded-lg border text-xs font-semibold transition-colors ${
+              className={`h-9 min-w-[2.1rem] px-2 rounded-xl border text-xs font-semibold transition-colors ${
                 currentPage === page
-                  ? "bg-theme-surface-highlight/35 border-theme-primary/45 text-theme-primary"
+                  ? "bg-theme-primary/14 border-theme-primary/42 text-theme-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                   : "bg-transparent border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface-highlight/15 hover:border-theme-border"
               }`}
             >
@@ -111,7 +111,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages - 1}
-        className="h-8 w-8 grid place-items-center rounded-lg border border-theme-divider/60 bg-transparent text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+        className="h-9 w-9 grid place-items-center rounded-xl border border-theme-divider/60 bg-transparent text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
         aria-label={t("pagination.next")}
       >
         <svg
@@ -132,7 +132,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       {currentPage < totalPages - 2 && (
         <button
           onClick={() => onPageChange(totalPages - 1)}
-          className="h-8 w-8 grid place-items-center rounded-lg border border-theme-divider/60 bg-transparent text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors"
+          className="h-9 w-9 grid place-items-center rounded-xl border border-theme-divider/60 bg-transparent text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/45 hover:bg-theme-surface-highlight/15 transition-colors"
           aria-label={t("pagination.last")}
         >
           <svg
