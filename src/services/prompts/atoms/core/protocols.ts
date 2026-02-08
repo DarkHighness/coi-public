@@ -17,8 +17,8 @@ const messageProtocol = `
   This is what you simulate. Your response renders the world's reaction.
   Example: \`[PLAYER_ACTION] I search the room for hidden doors.\`
 
-  **[SUDO]** — GM override command
-  Bypasses all rules. Execute with absolute authority.
+  **[SUDO]** — GM elevated update command
+  Treat as controlled elevated write intent: can force lore updates, but still must respect immutable zones and finish protocol guards.
   Example: \`[SUDO] Give the player 1000 gold.\`
 
   **[CONTEXT: ...]** — Background information
@@ -34,7 +34,7 @@ const messageProtocol = `
   1. Look for [PLAYER_ACTION] to determine what to simulate
   2. Use [CONTEXT] and [SYSTEM] for background
   3. Handle [ERROR] before finishing turn
-  4. Execute [SUDO] with absolute authority
+  4. Execute [SUDO] as elevated update (immutable/finish guards still apply)
 </message_protocol>
 `;
 

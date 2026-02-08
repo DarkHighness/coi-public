@@ -98,8 +98,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       mode: "normal",
       editorSessionToken,
       allowFinishGuardedWrite: false,
+      activeForkId: gameState.forkId,
     }),
-    [editorSessionToken],
+    [editorSessionToken, gameState.forkId],
   );
 
   const filteredSnapshot = useMemo<VfsFileMap>(() => {
@@ -131,7 +132,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   const hasSearch = searchQuery.trim().length > 0;
   const selectedPathIsProtected = selectedPath
-    ? isReadonlyPath(selectedPath, { editorSessionToken })
+    ? isReadonlyPath(selectedPath, { editorSessionToken, activeForkId: gameState.forkId })
     : false;
   const pathReadOnly = !selectedPath || selectedPathIsProtected;
   const isReadOnly = pathReadOnly || !isEditMode;
@@ -493,7 +494,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const padding = { paddingLeft: `${depth * 12}px` };
 
     if (isFolder) {
-      const readonly = isReadonlyPath(node.path, { editorSessionToken });
+      const readonly = isReadonlyPath(node.path, { editorSessionToken, activeForkId: gameState.forkId });
       return (
         <div key={node.path || "root"}>
           <button
@@ -522,7 +523,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       );
     }
 
-    const readonly = isReadonlyPath(node.path, { editorSessionToken });
+    const readonly = isReadonlyPath(node.path, { editorSessionToken, activeForkId: gameState.forkId });
     const isSelected = node.path === selectedPath;
 
     return (

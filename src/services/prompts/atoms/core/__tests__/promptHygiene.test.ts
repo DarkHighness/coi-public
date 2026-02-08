@@ -42,13 +42,14 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("vfs_text_edit");
     expect(content).toContain("vfs_text_patch");
     expect(content).toContain("current/summary/state.json");
+    expect(content).toContain("forks/{activeFork}/story/world/**");
     expect(content).toContain("current/world/global.json");
     expect(content).toContain('vfs_glob patterns=["current/**/notes.md"]');
 
     // Turn finish protocol should avoid generic conversation writes
     expect(content).toContain("vfs_commit_turn");
     expect(content).toContain("vfs_tx");
-    expect(content).toContain("current/conversation/*");
+    expect(content).toContain("current/conversation/**");
     expect(content).not.toContain("write both files via `vfs_write`/`vfs_edit`");
     expect(content).not.toContain("or conversation writes");
 

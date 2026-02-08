@@ -1,6 +1,11 @@
 import type { VfsToolCapability } from "./types";
 
-const IMMUTABLE_ZONES = ["skills/**", "refs/**"];
+const IMMUTABLE_ZONES = [
+  "shared/system/skills/**",
+  "shared/system/refs/**",
+  "skills/**",
+  "refs/**",
+];
 
 const CAPABILITIES: VfsToolCapability[] = [
   {
@@ -260,6 +265,7 @@ export class VfsToolCapabilityRegistry {
       clauses.push("read-only");
     } else {
       clauses.push(`writes: ${capability.mayWriteClasses.join(", ")}`);
+      clauses.push("resource-template operation contracts enforced");
     }
 
     if (capability.needsElevationFor.includes("elevated_editable")) {

@@ -1,6 +1,7 @@
 import type { CustomRule } from "@/types";
 import type { VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
+import { canonicalToLogicalVfsPath } from "./core/pathResolver";
 
 const SECTION_CATEGORY = "## What This Category Is";
 const SECTION_WHEN = "## When This Category Applies";
@@ -152,8 +153,11 @@ export const deriveCustomRulesFromVfs = (files: VfsFileMap): CustomRule[] => {
 
   for (const file of Object.values(files)) {
     const normalizedPath = normalizeVfsPath(file.path);
+    const logicalPath = canonicalToLogicalVfsPath(normalizedPath, {
+      looseFork: true,
+    });
 
-    if (normalizedPath.startsWith("world/custom_rules/") && normalizedPath.endsWith(".json")) {
+    if (logicalPath.startsWith("world/custom_rules/") && logicalPath.endsWith(".json")) {
       try {
         const parsed = JSON.parse(file.content) as CustomRule;
         rules.push(parsed);
@@ -163,7 +167,7 @@ export const deriveCustomRulesFromVfs = (files: VfsFileMap): CustomRule[] => {
       continue;
     }
 
-    const folder = extractPackFolderFromPath(normalizedPath);
+    const folder = extractPackFolderFromPath(logicalPath);
     if (!folder) {
       continue;
     }

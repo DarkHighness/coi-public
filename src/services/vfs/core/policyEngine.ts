@@ -3,15 +3,19 @@ import { vfsPathRegistry } from "./pathRegistry";
 import type {
   VfsReadPolicyDecision,
   VfsWriteContext,
+  VfsWriteOperation,
   VfsWritePolicyDecision,
 } from "./types";
 
 const buildWriteDecision = (
   input: Omit<VfsWritePolicyDecision, "classification"> & {
     path: string;
+    context: VfsWriteContext;
   },
 ): VfsWritePolicyDecision => {
-  const classification = vfsPathRegistry.classify(input.path);
+  const classification = vfsPathRegistry.classify(input.path, {
+    activeForkId: input.context.activeForkId,
+  });
   return {
     allowed: input.allowed,
     code: input.code,
@@ -20,8 +24,13 @@ const buildWriteDecision = (
   };
 };
 
-const buildReadDecision = (path: string): VfsReadPolicyDecision => {
-  const classification = vfsPathRegistry.classify(path);
+const buildReadDecision = (
+  path: string,
+  context?: VfsWriteContext,
+): VfsReadPolicyDecision => {
+  const classification = vfsPathRegistry.classify(path, {
+    activeForkId: context?.activeForkId,
+  });
   return {
     allowed: true,
     code: "OK",
@@ -30,20 +39,25 @@ const buildReadDecision = (path: string): VfsReadPolicyDecision => {
   };
 };
 
+const resolveRequestedOperation = (
+  context: VfsWriteContext,
+): VfsWriteOperation => context.operation ?? "write";
+
 export class VfsPolicyEngine {
-  public canRead(path: string): VfsReadPolicyDecision {
-    return buildReadDecision(path);
+  public canRead(path: string, context?: VfsWriteContext): VfsReadPolicyDecision {
+    return buildReadDecision(path, context);
   }
 
   public canWrite(path: string, context: VfsWriteContext): VfsWritePolicyDecision {
-    const classification = vfsPathRegistry.classify(path);
+    const classification = vfsPathRegistry.classify(path, {
+      activeForkId: context.activeForkId,
+    });
 
     if (classification.permissionClass === "immutable_readonly") {
       return {
         allowed: false,
         code: "IMMUTABLE_READONLY",
-        reason:
-          "Path is permanently read-only (immutable zone: skills/refs).",
+        reason: "Path is permanently read-only (immutable zone: skills/refs).",
         classification,
       };
     }
@@ -53,6 +67,16 @@ export class VfsPolicyEngine {
         allowed: true,
         code: "OK",
         reason: "System actor bypasses mutable path restrictions.",
+        classification,
+      };
+    }
+
+    const requestedOperation = resolveRequestedOperation(context);
+    if (!classification.allowedWriteOps.includes(requestedOperation)) {
+      return {
+        allowed: false,
+        code: "FINISH_GUARD_REQUIRED",
+        reason: `Operation '${requestedOperation}' is not allowed for this resource template. Allowed operations: ${classification.allowedWriteOps.join(", ")}.`,
         classification,
       };
     }
@@ -94,8 +118,7 @@ export class VfsPolicyEngine {
         return {
           allowed: false,
           code: "EDITOR_CONFIRM_REQUIRED",
-          reason:
-            "StateEditor write requires per-open confirmation token.",
+          reason: "StateEditor write requires per-open confirmation token.",
           classification,
         };
       }
@@ -151,9 +174,7 @@ export class VfsPolicyEngine {
         };
       }
 
-      if (
-        !vfsElevationTokenManager.consumeAiElevationToken(context.elevationToken)
-      ) {
+      if (!vfsElevationTokenManager.consumeAiElevationToken(context.elevationToken)) {
         return {
           allowed: false,
           code: "ELEVATION_REQUIRED",
@@ -176,6 +197,7 @@ export class VfsPolicyEngine {
 
     return buildWriteDecision({
       path,
+      context,
       allowed: false,
       code: "IMMUTABLE_READONLY",
       reason: "Unhandled permission class.",

@@ -5,7 +5,7 @@
  *
  * The game loop has migrated to a VFS-backed state model. The agentic loop may
  * ONLY use `vfs_*` tools to inspect and modify state, and ends a turn by
- * writing `current/conversation/*` files (see prompts + buildResponseFromVfs).
+ * writing finish-guarded conversation/summary files through protocol tools
  *
  * Legacy entity mutation tools were intentionally removed.
  */
@@ -35,6 +35,19 @@ import { vfsToolCapabilityRegistry } from "./vfs/core/toolCapabilityRegistry";
 // Type-Safe Tool Definition Helper
 // ============================================================================
 
+const OPERATION_HINTS_BY_TOOL: Record<string, string> = {
+  vfs_write: "write",
+  vfs_append: "write",
+  vfs_text_edit: "write",
+  vfs_text_patch: "write",
+  vfs_edit: "json_patch",
+  vfs_merge: "json_merge",
+  vfs_move: "move",
+  vfs_delete: "delete",
+  vfs_commit_turn: "finish_commit",
+  vfs_finish_summary: "finish_summary",
+};
+
 const buildVfsToolPermissionContract = (toolName: string): string | null => {
   const capability = vfsToolCapabilityRegistry.get(toolName);
   if (!capability) {
@@ -47,6 +60,13 @@ const buildVfsToolPermissionContract = (toolName: string): string | null => {
     clauses.push("read-only");
   } else {
     clauses.push(`writes ${capability.mayWriteClasses.join(", ")}`);
+    const operationHint = OPERATION_HINTS_BY_TOOL[toolName];
+    if (operationHint) {
+      clauses.push(`declared operation=${operationHint}`);
+    } else if (toolName === "vfs_tx") {
+      clauses.push("mixed operations (write/json_patch/json_merge/move/delete/commit_turn)");
+    }
+    clauses.push("resource-template operation contracts enforced");
   }
 
   if (capability.needsElevationFor.includes("elevated_editable")) {
@@ -143,7 +163,9 @@ export const generateEntityId = (type: EntityType, num: number): string => {
 
 const vfsPathSchema = z
   .string()
-  .describe("VFS path (leading/trailing slashes are ok).");
+  .describe(
+    "VFS path (supports canonical `shared/**` / `forks/{id}/**` and alias `current/**`; leading/trailing slashes are ok).",
+  );
 
 const vfsOptionalPathSchema = vfsPathSchema
   .nullish()
@@ -266,7 +288,7 @@ export const VFS_SCHEMA_TOOL = defineTool({
         .array(vfsPathSchema)
         .min(1)
         .describe(
-          "Paths to describe. Prefer paths under current/; if omitted, current/ is assumed.",
+          "Paths to describe. Supports canonical (`shared/**`, `forks/{id}/**`) and alias (`current/**`, or logical shorthand).",
         ),
     })
     .strict(),
@@ -282,7 +304,7 @@ export const VFS_STAT_TOOL = defineTool({
         .array(vfsPathSchema)
         .min(1)
         .describe(
-          "Paths to stat. Prefer paths under current/; if omitted, current/ is assumed.",
+          "Paths to stat. Supports canonical (`shared/**`, `forks/{id}/**`) and alias (`current/**`, or logical shorthand).",
         ),
     })
     .strict(),
@@ -291,14 +313,14 @@ export const VFS_STAT_TOOL = defineTool({
 export const VFS_GLOB_TOOL = defineTool({
   name: "vfs_glob",
   description:
-    "Find VFS files matching glob pattern(s) (supports **, *, ?). Prefer current/ prefix; if omitted, current/ is assumed.",
+    "Find VFS files matching glob pattern(s) (supports **, *, ?). Supports canonical and alias paths.",
   parameters: z
     .object({
       patterns: z
         .array(z.string().min(1))
         .min(1)
         .describe(
-          'Glob patterns (e.g. "current/world/**/*.json" or "world/**/*.json").',
+          'Glob patterns (e.g. "current/world/**/*.json", "forks/*/story/world/**/*.json", or "world/**/*.json").',
         ),
       excludePatterns: z
         .array(z.string().min(1))
@@ -1043,7 +1065,7 @@ const summaryHiddenToolSchema = z
 export const VFS_FINISH_SUMMARY_TOOL = defineTool({
   name: "vfs_finish_summary",
   description:
-    "Finish the summary loop by appending a StorySummary and updating current/summary/state.json. This tool MUST be your LAST tool call.",
+    "Finish the summary loop by appending a StorySummary and updating forks/{activeFork}/story/summary/state.json (alias: current/summary/state.json). This tool MUST be your LAST tool call.",
   parameters: z
     .object({
       id: z
@@ -1084,7 +1106,7 @@ const buildOutlineSubmitTool = <TSchema extends ZodObject<ZodRawShape>>(
 ) =>
   defineTool({
     name: `vfs_submit_outline_phase_${phase}`,
-    description: `Submit outline phase ${phase} payload. Validates and writes to current/outline/phases/phase${phase}.json (VFS).`,
+    description: `Submit outline phase ${phase} payload. Validates and writes to shared/narrative/outline/phases/phase${phase}.json (alias: current/outline/phases/phase${phase}.json).`,
     parameters: z
       .object({
         data: schema.describe(`Outline phase ${phase} payload JSON object.`),

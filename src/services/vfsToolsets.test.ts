@@ -36,6 +36,9 @@ describe("vfsToolsets", () => {
     const output = formatVfsToolCapabilitiesForPrompt(["vfs_write"]);
 
     expect(output).toContain("elevated_editable requires one-time user-confirmed token");
-    expect(output).toContain("immutable: skills/**, refs/**");
+    expect(output).toContain("resource-template operation contracts enforced");
+    expect(output).toContain("immutable: shared/system/skills/**");
+    expect(output).toContain("skills/**");
+    expect(output).toContain("refs/**");
   });
 });

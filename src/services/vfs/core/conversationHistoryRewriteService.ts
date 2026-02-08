@@ -39,6 +39,7 @@ const withRewritePrivileges = (
   context: VfsWriteContext,
 ): VfsWriteContext => ({
   ...context,
+  operation: "history_rewrite",
   allowFinishGuardedWrite: true,
 });
 
@@ -109,7 +110,9 @@ export class ConversationHistoryRewriteService {
     );
 
     session.withWriteContext(withRewritePrivileges(writeContext), () => {
-      writeTurnFile(session, forkId, turnNumber, nextTurn);
+      writeTurnFile(session, forkId, turnNumber, nextTurn, {
+        operation: "history_rewrite",
+      });
     });
 
     return nextTurn;
@@ -126,7 +129,7 @@ export class ConversationHistoryRewriteService {
     const nextIndex = normalizeConversationIndex(mutate({ ...existing }));
 
     session.withWriteContext(withRewritePrivileges(writeContext), () => {
-      writeConversationIndex(session, nextIndex);
+      writeConversationIndex(session, nextIndex, { operation: "history_rewrite" });
     });
 
     return nextIndex;
@@ -143,20 +146,32 @@ export class ConversationHistoryRewriteService {
   ): string {
     const timestamp = Date.now();
     const safeId = options.requestId.replace(/[^a-zA-Z0-9_-]/g, "_");
-    const path = `conversation/history_rewrites/${timestamp}-${safeId}.json`;
+    const activeForkId =
+      typeof options.writeContext.activeForkId === "number"
+        ? options.writeContext.activeForkId
+        : session.getActiveForkId();
+    const path = `forks/${activeForkId}/ops/history_rewrites/${timestamp}-${safeId}.json`;
 
-    session.withWriteContext(options.writeContext, () => {
-      session.writeFile(
-        path,
-        JSON.stringify({
-          requestId: options.requestId,
-          reason: options.reason,
-          createdAt: timestamp,
-          payload: options.payload,
-        }),
-        "application/json",
-      );
-    });
+    session.withWriteContext(
+      {
+        ...options.writeContext,
+        activeForkId,
+        operation: "history_rewrite",
+      },
+      () => {
+        session.writeFile(
+          path,
+          JSON.stringify({
+            requestId: options.requestId,
+            reason: options.reason,
+            createdAt: timestamp,
+            payload: options.payload,
+          }),
+          "application/json",
+          { operation: "history_rewrite" },
+        );
+      },
+    );
 
     return path;
   }

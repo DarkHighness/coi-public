@@ -82,10 +82,27 @@ describe("vfsPolicyEngine", () => {
     expect(reusedTokenInNewContext.code).toBe("ELEVATION_REQUIRED");
   });
 
+  it("applies identical permissions for alias and canonical paths", () => {
+    const alias = vfsPolicyEngine.canWrite("world/global.json", {
+      actor: "ai",
+      mode: "normal",
+      activeForkId: 2,
+    });
+    const canonical = vfsPolicyEngine.canWrite("forks/2/story/world/global.json", {
+      actor: "ai",
+      mode: "normal",
+      activeForkId: 2,
+    });
+
+    expect(alias.allowed).toBe(canonical.allowed);
+    expect(alias.code).toBe(canonical.code);
+  });
+
   it("enforces finish-guarded paths unless explicitly enabled", () => {
     const blocked = vfsPolicyEngine.canWrite("conversation/index.json", {
       actor: "ai",
       mode: "normal",
+      operation: "finish_commit",
     });
     expect(blocked.allowed).toBe(false);
     expect(blocked.code).toBe("FINISH_GUARD_REQUIRED");
@@ -93,9 +110,30 @@ describe("vfsPolicyEngine", () => {
     const allowed = vfsPolicyEngine.canWrite("conversation/index.json", {
       actor: "ai",
       mode: "normal",
+      operation: "finish_commit",
       allowFinishGuardedWrite: true,
     });
     expect(allowed.allowed).toBe(true);
     expect(allowed.code).toBe("OK");
+  });
+
+  it("enforces allowed operations declared by resource templates", () => {
+    const deniedWrite = vfsPolicyEngine.canWrite("summary/state.json", {
+      actor: "ai",
+      mode: "normal",
+      allowFinishGuardedWrite: true,
+      operation: "write",
+    });
+    expect(deniedWrite.allowed).toBe(false);
+    expect(deniedWrite.code).toBe("FINISH_GUARD_REQUIRED");
+
+    const allowedSummary = vfsPolicyEngine.canWrite("summary/state.json", {
+      actor: "ai",
+      mode: "normal",
+      allowFinishGuardedWrite: true,
+      operation: "finish_summary",
+    });
+    expect(allowedSummary.allowed).toBe(true);
+    expect(allowedSummary.code).toBe("OK");
   });
 });

@@ -192,6 +192,7 @@ export const seedVfsSessionFromGameState = (
   session: VfsSession,
   state: GameState,
 ): void => {
+  session.setActiveForkId(state.forkId ?? 0);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
 

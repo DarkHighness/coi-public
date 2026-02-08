@@ -657,10 +657,18 @@ describe("VFS handlers", () => {
       kind: "file",
       path: "current/world/global.json",
       contentType: "application/json",
+      classification: {
+        permissionClass: "default_editable",
+        scope: "fork",
+      },
     });
     expect(statResult.data?.stats?.[1]).toMatchObject({
       kind: "dir",
       path: "current/world",
+      classification: {
+        permissionClass: "default_editable",
+        scope: "fork",
+      },
     });
     const dir = statResult.data?.stats?.[1] as
       | undefined

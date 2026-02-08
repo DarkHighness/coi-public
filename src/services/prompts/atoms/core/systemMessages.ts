@@ -25,6 +25,22 @@ export interface RetconAckSystemMessageInput {
   pendingReason?: string;
 }
 
+const PATH_MODEL_BLOCK = [
+  "- Canonical paths: `shared/**` and `forks/{forkId}/**`.",
+  "- Alias paths: `current/**` are accepted and auto-resolved to canonical active-fork/shared locations.",
+].join("\n   ");
+
+const PERMISSION_MODEL_BLOCK = [
+  "- `immutable_readonly` is always read-only (`shared/system/skills/**`, `shared/system/refs/**`; alias views `skills/**`, `refs/**`).",
+  "- `default_editable` is writable by default for AI.",
+  "- `elevated_editable` requires one-time user-confirmed token in `/god` or `/sudo`.",
+  "- `finish_guarded` is writable only through finish protocol tools.",
+  "- Resource templates enforce operation-level contracts (e.g. conversation=`finish_commit`, summary=`finish_summary`, rewrite=`history_rewrite`).",
+].join("\n   ");
+
+const CONVERSATION_GUARD_LINE =
+  "**DO NOT** write finish-guarded conversation/summary paths (`shared/narrative/conversation/*.json`, `forks/{activeFork}/story/conversation/**`, `forks/{activeFork}/story/summary/state.json`; alias `current/conversation/**`, `current/summary/state.json`) via generic write/edit/merge/move/delete tools.";
+
 /**
  * SUDO Mode Instruction
  */
@@ -37,15 +53,14 @@ This is a **GM COMMAND**. You must:
    ${formatVfsToolsForPrompt(VFS_TOOLSETS[toolsetId].tools)}
 3. Respect this **TOOL CAPABILITY CONTRACT** (runtime source of truth):
    ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools)}
-4. **PERMISSION MODEL**:
-   - \`immutable_readonly\` is always read-only (\`current/skills/**\`, \`current/refs/**\`).
-   - \`default_editable\` is writable by default.
-   - \`elevated_editable\` requires one-time user-confirmed token in \`/god\` or \`/sudo\`.
-   - \`finish_guarded\` is writable only through finish protocol tools.
-5. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
-6. Apply changes with absolute authority - if the command contradicts existing lore, **OVERWRITE IT**.
-7. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
-8. **DO NOT** write \`current/conversation/*\` via generic write/edit/merge/move/delete tools.
+4. **PATH MODEL**:
+   ${PATH_MODEL_BLOCK}
+5. **PERMISSION MODEL**:
+   ${PERMISSION_MODEL_BLOCK}
+6. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
+7. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
+8. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
+9. ${CONVERSATION_GUARD_LINE}
 `;
 
 /**
@@ -60,23 +75,22 @@ You are in AGENTIC MODE (VFS-only).
    ${formatVfsToolsForPrompt(VFS_TOOLSETS.turn.tools)}
 2. Respect this **TOOL CAPABILITY CONTRACT**:
    ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools)}
-3. **PERMISSION MODEL**:
-   - \`immutable_readonly\` is always read-only (\`current/skills/**\`, \`current/refs/**\`).
-   - \`default_editable\` is writable by default for AI.
-   - \`elevated_editable\` requires one-time user-confirmed token in \`/god\` or \`/sudo\`.
-   - \`finish_guarded\` is writable only through finish protocol tools.
-4. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_stat\`, \`vfs_glob\`, \`vfs_read\`/\`vfs_read_many\` (optionally with \`start\`+\`offset\` or \`maxChars\`), \`vfs_read_json\` (for specific fields), \`vfs_search\`, \`vfs_grep\` before changing files.
-   - Atmosphere reference data is available under \`current/refs/atmosphere/\` (use \`vfs_ls\` / \`vfs_read\` / \`vfs_search\` instead of inlining long descriptions).
-5. **STATE CHANGES = FILE CHANGES**: Update JSON under \`current/world/\` with \`vfs_write\` or \`vfs_edit\` (JSON Patch).
-6. **FINISH RULE**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op.
-7. **CONVERSATION WRITE GUARD**: Do NOT write \`current/conversation/*\` via generic \`vfs_write\`/\`vfs_edit\`/\`vfs_merge\`/\`vfs_move\`/\`vfs_delete\`.
-8. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
-9. **NO DUPLICATES**: Check existing files before adding new entities.
-10. **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update the relevant world files directly.
+3. **PATH MODEL**:
+   ${PATH_MODEL_BLOCK}
+4. **PERMISSION MODEL**:
+   ${PERMISSION_MODEL_BLOCK}
+5. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_stat\`, \`vfs_glob\`, \`vfs_read\`/\`vfs_read_many\` (optionally with \`start\`+\`offset\` or \`maxChars\`), \`vfs_read_json\` (for specific fields), \`vfs_search\`, \`vfs_grep\` before changing files.
+   - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
+6. **STATE CHANGES = FILE CHANGES**: Update world JSON under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) with \`vfs_write\` or \`vfs_edit\` (JSON Patch).
+7. **FINISH RULE**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op.
+8. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
+9. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
+10. **NO DUPLICATES**: Check existing files before adding new entities.
+11. **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly.
 
 <examples>
 - Example (inspect → edit → finish):
-  1) \`vfs_search\` within \`current/world/\` for a name/ID
+  1) \`vfs_search\` within \`current/world/\` (or canonical fork world path) for a name/ID
   2) \`vfs_edit\` to patch the exact JSON pointer(s)
   3) \`${finishToolName || "vfs_commit_turn"}\` with { userAction, assistant: { narrative, choices } } as the LAST call
 </examples>
@@ -94,15 +108,14 @@ You are in CLEANUP MODE (VFS-only).
    ${formatVfsToolsForPrompt(VFS_TOOLSETS.cleanup.tools)}
 2. Respect this **TOOL CAPABILITY CONTRACT**:
    ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.cleanup.tools)}
-3. **PERMISSION MODEL**:
-   - \`immutable_readonly\` is always read-only (\`current/skills/**\`, \`current/refs/**\`).
-   - \`default_editable\` is writable by default for AI.
-   - \`elevated_editable\` requires one-time user-confirmed token in \`/god\` or \`/sudo\`.
-   - \`finish_guarded\` is writable only through finish protocol tools.
-4. **READ-ONLY FIRST**: Use \`vfs_ls_entries\` / \`vfs_suggest_duplicates\` / \`vfs_search\` / \`vfs_grep\` / \`vfs_read_json\` to locate and verify.
-5. **APPLY FIXES**: Use \`vfs_edit\` (JSON Patch) / \`vfs_merge\` / \`vfs_move\` / \`vfs_delete\` as needed.
-6. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\` (or \`vfs_tx\` with \`commit_turn\` as the LAST op).
-7. **CONVERSATION WRITE GUARD**: Do NOT write \`current/conversation/*\` via generic mutation tools.
+3. **PATH MODEL**:
+   ${PATH_MODEL_BLOCK}
+4. **PERMISSION MODEL**:
+   ${PERMISSION_MODEL_BLOCK}
+5. **READ-ONLY FIRST**: Use \`vfs_ls_entries\` / \`vfs_suggest_duplicates\` / \`vfs_search\` / \`vfs_grep\` / \`vfs_read_json\` to locate and verify.
+6. **APPLY FIXES**: Use \`vfs_edit\` (JSON Patch) / \`vfs_merge\` / \`vfs_move\` / \`vfs_delete\` as needed.
+7. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\` (or \`vfs_tx\` with \`commit_turn\` as the LAST op).
+8. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 
 <examples>
 - Example (find duplicates → fix → finish):
@@ -121,7 +134,7 @@ export const pendingConsequencesMessage: Atom<SystemMessageInput> = ({
 }) => {
   if (!readyConsequences || readyConsequences.length === 0) return "";
   const list = readyConsequences.join("\n");
-  return `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${list}\n\nUpdate the relevant files under \`current/world/\` directly to apply these consequences.`;
+  return `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${list}\n\nUpdate relevant world files under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) to apply these consequences.`;
 };
 
 /**

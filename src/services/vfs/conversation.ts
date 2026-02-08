@@ -1,7 +1,7 @@
 import type { VfsFileMap } from "./types";
-import { VfsSession } from "./vfsSession";
-import { stripCurrentPath } from "./currentAlias";
+import { VfsSession, type VfsWriteOptions } from "./vfsSession";
 import { normalizeVfsPath } from "./utils";
+import { canonicalToLogicalVfsPath, toCanonicalVfsPath } from "./core/pathResolver";
 import type { ForkTree, TokenUsage } from "@/types";
 
 export interface ConversationIndex {
@@ -32,9 +32,9 @@ export interface TurnFile {
   meta?: Record<string, unknown>;
 }
 
-const INDEX_PATH = "current/conversation/index.json";
-const FORK_TREE_PATH = "current/conversation/fork_tree.json";
-const TURN_ROOT = "current/conversation/turns";
+const INDEX_PATH = "conversation/index.json";
+const FORK_TREE_PATH = "conversation/fork_tree.json";
+const TURN_ROOT = "conversation/turns";
 
 export const buildTurnId = (forkId: number, turn: number): string =>
   `fork-${forkId}/turn-${turn}`;
@@ -42,18 +42,25 @@ export const buildTurnId = (forkId: number, turn: number): string =>
 export const buildTurnPath = (forkId: number, turn: number): string =>
   `${TURN_ROOT}/${buildTurnId(forkId, turn)}.json`;
 
-const resolveRelativePath = (path: string): string =>
-  normalizeVfsPath(stripCurrentPath(path));
+const resolveRelativePath = (path: string): string => normalizeVfsPath(path);
 
 const findFile = (files: VfsFileMap, path: string) => {
   const normalized = normalizeVfsPath(path);
-  const relative = resolveRelativePath(path);
-  const candidates = new Set<string>([relative, normalized]);
-  if (normalized.startsWith("current/")) {
-    candidates.add(normalizeVfsPath(stripCurrentPath(normalized)));
-  } else {
-    candidates.add(normalizeVfsPath(`current/${normalized}`));
-  }
+  const canonical = toCanonicalVfsPath(normalized, { activeForkId: 0 });
+  const logical = canonicalToLogicalVfsPath(canonical, {
+    activeForkId: 0,
+    looseFork: true,
+  });
+
+  const candidates = Array.from(
+    new Set([
+      normalized,
+      logical,
+      canonical,
+      normalizeVfsPath(`current/${normalized}`),
+      normalizeVfsPath(`current/${logical}`),
+    ]),
+  ).filter(Boolean);
 
   for (const candidate of candidates) {
     const file = files[candidate];
@@ -78,11 +85,14 @@ const parseJson = <T>(files: VfsFileMap, path: string): T | null => {
 export const writeConversationIndex = (
   session: VfsSession,
   index: ConversationIndex,
+  options?: VfsWriteOptions,
 ): void => {
+  session.setActiveForkId(index.activeForkId ?? 0);
   session.writeFile(
     resolveRelativePath(INDEX_PATH),
     JSON.stringify(index),
     "application/json",
+    options,
   );
 };
 
@@ -90,11 +100,16 @@ export const readConversationIndex = (
   files: VfsFileMap,
 ): ConversationIndex | null => parseJson<ConversationIndex>(files, INDEX_PATH);
 
-export const writeForkTree = (session: VfsSession, tree: ForkTree): void => {
+export const writeForkTree = (
+  session: VfsSession,
+  tree: ForkTree,
+  options?: VfsWriteOptions,
+): void => {
   session.writeFile(
     resolveRelativePath(FORK_TREE_PATH),
     JSON.stringify(tree),
     "application/json",
+    options,
   );
 };
 
@@ -106,11 +121,13 @@ export const writeTurnFile = (
   forkId: number,
   turn: number,
   data: TurnFile,
+  options?: VfsWriteOptions,
 ): void => {
   session.writeFile(
     resolveRelativePath(buildTurnPath(forkId, turn)),
     JSON.stringify(data),
     "application/json",
+    options,
   );
 };
 

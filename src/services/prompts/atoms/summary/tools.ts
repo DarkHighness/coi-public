@@ -30,7 +30,7 @@ ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.summary.tools)}
 3. \`vfs_stat\` / \`vfs_glob\` - Find files and check metadata without reading content
 4. \`vfs_schema\` - Inspect expected JSON fields for a path (read-only)
 5. \`vfs_search\` / \`vfs_grep\` - Find details in the VFS (read-only)
-6. \`vfs_finish_summary\` - Finish by appending a summary to \`current/summary/state.json\`
+6. \`vfs_finish_summary\` - Finish by appending a summary and updating \`forks/{activeFork}/story/summary/state.json\` (alias: \`current/summary/state.json\`; template requires \`finish_summary\` operation)
 
 When you have enough information, call \`vfs_finish_summary\` to complete the summary.
 It MUST be your LAST tool call.

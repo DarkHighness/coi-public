@@ -100,7 +100,7 @@ describe("conversationHistoryRewriteService", () => {
       writeContext: createElevatedContext(),
     });
 
-    expect(path.startsWith("conversation/history_rewrites/")).toBe(true);
+    expect(path.startsWith("forks/0/ops/history_rewrites/")).toBe(true);
     const file = session.readFile(path);
     expect(file).not.toBeNull();
   });

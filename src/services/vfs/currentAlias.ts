@@ -1,19 +1,30 @@
-import { normalizeVfsPath } from "./utils";
+import {
+  resolveVfsPath,
+  toCanonicalVfsPath,
+  toCurrentDisplayPath,
+  toLogicalVfsPath,
+} from "./core/pathResolver";
 
-const CURRENT_ROOT = "current";
+export const toCurrentPath = (
+  path: string,
+  options?: { activeForkId?: number },
+): string => toCurrentDisplayPath(path, { activeForkId: options?.activeForkId });
 
-export const toCurrentPath = (path: string): string => {
-  const normalized = normalizeVfsPath(path);
-  return normalized ? `${CURRENT_ROOT}/${normalized}` : CURRENT_ROOT;
+export const stripCurrentPath = (
+  path?: string,
+  options?: { activeForkId?: number },
+): string => {
+  const input = path ?? "current";
+  return toLogicalVfsPath(input, { activeForkId: options?.activeForkId });
 };
 
-export const stripCurrentPath = (path?: string): string => {
-  const normalized = normalizeVfsPath(path ?? CURRENT_ROOT);
-  if (normalized === CURRENT_ROOT) {
-    return "";
-  }
-  if (normalized.startsWith(`${CURRENT_ROOT}/`)) {
-    return normalized.slice(CURRENT_ROOT.length + 1);
-  }
-  throw new Error(`Path must be under ${CURRENT_ROOT}/`);
-};
+export const toCanonicalPath = (
+  path: string,
+  options?: { activeForkId?: number },
+): string => toCanonicalVfsPath(path, { activeForkId: options?.activeForkId });
+
+export const resolveCurrentPath = (
+  path: string,
+  options?: { activeForkId?: number },
+): ReturnType<typeof resolveVfsPath> =>
+  resolveVfsPath(path, { activeForkId: options?.activeForkId });

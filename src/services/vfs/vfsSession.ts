@@ -15,7 +15,8 @@ import { buildGlobalVfsSkills } from "./globalSkills";
 import { buildGlobalVfsRefs } from "./globalRefs";
 import { vfsPathRegistry } from "./core/pathRegistry";
 import { vfsPolicyEngine } from "./core/policyEngine";
-import type { VfsWriteContext } from "./core/types";
+import { canonicalToLogicalVfsPath, resolveVfsPath, toCanonicalVfsPath } from "./core/pathResolver";
+import type { VfsWriteContext, VfsWriteOperation } from "./core/types";
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
@@ -34,6 +35,40 @@ const mergeFiles = (a: VfsFileMap, b: VfsFileMap): VfsFileMap => {
     merged[path] = { ...file };
   }
   return merged;
+};
+
+
+const canonicalizeFileMap = (
+  files: VfsFileMap,
+  activeForkId: number,
+): VfsFileMap => {
+  const canonical: VfsFileMap = {};
+  for (const file of Object.values(files)) {
+    const canonicalPath = toCanonicalVfsPath(file.path, { activeForkId });
+    canonical[canonicalPath] = {
+      ...file,
+      path: canonicalPath,
+    };
+  }
+  return canonical;
+};
+
+const toDisplayFileMap = (
+  files: VfsFileMap,
+  activeForkId: number,
+): VfsFileMap => {
+  const display: VfsFileMap = {};
+  for (const file of Object.values(files)) {
+    const displayPath = canonicalToLogicalVfsPath(file.path, {
+      activeForkId,
+    });
+    const normalizedDisplayPath = normalizeVfsPath(displayPath || file.path);
+    display[normalizedDisplayPath] = {
+      ...file,
+      path: normalizedDisplayPath,
+    };
+  }
+  return display;
 };
 
 const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
@@ -102,6 +137,7 @@ export class VfsWriteAccessError extends Error {
 
 export interface VfsWriteOptions {
   writeContext?: VfsWriteContext;
+  operation?: VfsWriteOperation;
 }
 
 
@@ -178,9 +214,10 @@ const collectMatches = (
 
 export class VfsSession {
   private files: VfsFileMap = {};
-  private readonlyFiles: VfsFileMap = mergeFiles(
-    buildGlobalVfsSkills(),
-    buildGlobalVfsRefs(),
+  private activeForkId = 0;
+  private readonlyFiles: VfsFileMap = canonicalizeFileMap(
+    mergeFiles(buildGlobalVfsSkills(), buildGlobalVfsRefs()),
+    0,
   );
   private semanticIndexer?: VfsSemanticIndexer;
   private currentReadEpoch = 0;
@@ -196,10 +233,33 @@ export class VfsSession {
     this.semanticIndexer = options?.semanticIndexer;
   }
 
+  public setActiveForkId(forkId: number): void {
+    this.activeForkId = Number.isFinite(forkId) && forkId >= 0 ? Math.floor(forkId) : 0;
+  }
+
+  public getActiveForkId(): number {
+    return this.activeForkId;
+  }
+
+  private resolveCanonicalPath(path: string, override?: VfsWriteContext): string {
+    const context = override ?? this.activeWriteContext ?? DEFAULT_SYSTEM_WRITE_CONTEXT;
+    const activeForkId =
+      typeof context.activeForkId === "number" ? context.activeForkId : this.activeForkId;
+    return toCanonicalVfsPath(path, { activeForkId });
+  }
+
+  private toDisplayPath(path: string): string {
+    return normalizeVfsPath(
+      canonicalToLogicalVfsPath(path, {
+        activeForkId: this.activeForkId,
+      }) || path,
+    );
+  }
+
   public noteToolSeen(path: string): void {
-    const normalized = normalizeVfsPath(path);
-    this.seenByEpoch.set(normalized, this.currentReadEpoch);
-    this.outOfBandReadInvalidations.delete(normalized);
+    const canonicalPath = this.resolveCanonicalPath(path);
+    this.seenByEpoch.set(canonicalPath, this.currentReadEpoch);
+    this.outOfBandReadInvalidations.delete(canonicalPath);
   }
 
   public noteToolSeenMany(paths: string[]): void {
@@ -213,15 +273,15 @@ export class VfsSession {
   }
 
   public hasToolSeenInCurrentEpoch(path: string): boolean {
-    const normalized = normalizeVfsPath(path);
-    return this.seenByEpoch.get(normalized) === this.currentReadEpoch;
+    const canonicalPath = this.resolveCanonicalPath(path);
+    return this.seenByEpoch.get(canonicalPath) === this.currentReadEpoch;
   }
 
   public snapshotToolSeenPaths(): string[] {
     const paths: string[] = [];
     for (const [path, epoch] of this.seenByEpoch.entries()) {
       if (epoch === this.currentReadEpoch) {
-        paths.push(path);
+        paths.push(this.toDisplayPath(path));
       }
     }
     return paths;
@@ -230,8 +290,8 @@ export class VfsSession {
   public restoreToolSeenPaths(paths: string[]): void {
     this.seenByEpoch.clear();
     for (const path of paths) {
-      const normalized = normalizeVfsPath(path);
-      this.seenByEpoch.set(normalized, this.currentReadEpoch);
+      const canonicalPath = this.resolveCanonicalPath(path);
+      this.seenByEpoch.set(canonicalPath, this.currentReadEpoch);
     }
   }
 
@@ -265,7 +325,8 @@ export class VfsSession {
       if (typeof epoch !== "number" || !Number.isFinite(epoch)) {
         continue;
       }
-      this.seenByEpoch.set(normalizeVfsPath(path), Math.floor(epoch));
+      const canonicalPath = this.resolveCanonicalPath(path);
+      this.seenByEpoch.set(canonicalPath, Math.floor(epoch));
     }
 
     this.outOfBandReadInvalidations.clear();
@@ -289,35 +350,35 @@ export class VfsSession {
   }
 
   public renameToolSeenPath(from: string, to: string): void {
-    const normalizedFrom = normalizeVfsPath(from);
-    const normalizedTo = normalizeVfsPath(to);
-    const epoch = this.seenByEpoch.get(normalizedFrom);
+    const canonicalFrom = this.resolveCanonicalPath(from);
+    const canonicalTo = this.resolveCanonicalPath(to);
+    const epoch = this.seenByEpoch.get(canonicalFrom);
     if (epoch === undefined) {
       return;
     }
-    this.seenByEpoch.delete(normalizedFrom);
-    this.seenByEpoch.set(normalizedTo, epoch);
+    this.seenByEpoch.delete(canonicalFrom);
+    this.seenByEpoch.set(canonicalTo, epoch);
   }
 
   public forgetToolSeenPath(path: string): void {
-    this.seenByEpoch.delete(normalizeVfsPath(path));
+    this.seenByEpoch.delete(this.resolveCanonicalPath(path));
   }
 
   public noteOutOfBandMutation(
     path: string,
     changeType: "added" | "deleted" | "modified",
   ): void {
-    const normalized = normalizeVfsPath(path);
-    if (!normalized) {
+    const canonicalPath = this.resolveCanonicalPath(path);
+    if (!canonicalPath) {
       return;
     }
 
-    if (!this.hasToolSeenInCurrentEpoch(normalized)) {
+    if (!this.hasToolSeenInCurrentEpoch(canonicalPath)) {
       return;
     }
 
-    this.seenByEpoch.delete(normalized);
-    this.outOfBandReadInvalidations.set(normalized, changeType);
+    this.seenByEpoch.delete(canonicalPath);
+    this.outOfBandReadInvalidations.set(canonicalPath, changeType);
   }
 
   public drainOutOfBandReadInvalidations(): Array<{
@@ -325,7 +386,10 @@ export class VfsSession {
     changeType: "added" | "deleted" | "modified";
   }> {
     const drained = Array.from(this.outOfBandReadInvalidations.entries())
-      .map(([path, changeType]) => ({ path, changeType }))
+      .map(([path, changeType]) => ({
+        path: this.toDisplayPath(path),
+        changeType,
+      }))
       .sort((a, b) => a.path.localeCompare(b.path));
     this.outOfBandReadInvalidations.clear();
     return drained;
@@ -333,43 +397,79 @@ export class VfsSession {
 
   public withWriteContext<T>(context: VfsWriteContext, action: () => T): T {
     const previous = this.activeWriteContext;
+    const previousForkId = this.activeForkId;
     this.activeWriteContext = context;
+    if (typeof context.activeForkId === "number") {
+      this.activeForkId = context.activeForkId;
+    }
     try {
       return action();
     } finally {
       this.activeWriteContext = previous;
+      this.activeForkId = previousForkId;
     }
   }
 
   private resolveWriteContext(override?: VfsWriteContext): VfsWriteContext {
     if (override) {
-      return override;
+      return {
+        ...override,
+        activeForkId:
+          typeof override.activeForkId === "number"
+            ? override.activeForkId
+            : this.activeForkId,
+      };
     }
     if (this.activeWriteContext) {
-      return this.activeWriteContext;
+      return {
+        ...this.activeWriteContext,
+        activeForkId:
+          typeof this.activeWriteContext.activeForkId === "number"
+            ? this.activeWriteContext.activeForkId
+            : this.activeForkId,
+      };
     }
-    return DEFAULT_SYSTEM_WRITE_CONTEXT;
+    return {
+      ...DEFAULT_SYSTEM_WRITE_CONTEXT,
+      activeForkId: this.activeForkId,
+    };
   }
 
   private isImmutableReadOnlyPath(path: string): boolean {
-    return vfsPathRegistry.isImmutableReadonly(path);
+    const canonicalPath = this.resolveCanonicalPath(path);
+    return vfsPathRegistry.isImmutableReadonly(canonicalPath, {
+      activeForkId: this.activeForkId,
+    });
   }
 
-  private assertWritablePath(path: string, options?: VfsWriteOptions): void {
-    const normalized = normalizeVfsPath(path);
-    const decision = vfsPolicyEngine.canWrite(
-      normalized,
-      this.resolveWriteContext(options?.writeContext),
-    );
+  private assertWritablePath(
+    path: string,
+    options?: VfsWriteOptions,
+    fallbackOperation: VfsWriteOperation = "write",
+  ): string {
+    const writeContext = this.resolveWriteContext(options?.writeContext);
+    const canonicalPath = this.resolveCanonicalPath(path, writeContext);
+    const requestedOperation =
+      options?.operation ?? writeContext.operation ?? fallbackOperation;
+    const decision = vfsPolicyEngine.canWrite(canonicalPath, {
+      ...writeContext,
+      operation: requestedOperation,
+      activeForkId:
+        typeof writeContext.activeForkId === "number"
+          ? writeContext.activeForkId
+          : this.activeForkId,
+    });
 
     if (!decision.allowed) {
       const errorCode =
         decision.code === "OK" ? "IMMUTABLE_READONLY" : decision.code;
       throw new VfsWriteAccessError(
         errorCode,
-        `${decision.reason} (${normalized})`,
+        `${decision.reason} (${canonicalPath})`,
       );
     }
+
+    return canonicalPath;
   }
 
   public writeFile(
@@ -378,11 +478,10 @@ export class VfsSession {
     contentType: VfsContentType,
     options?: VfsWriteOptions,
   ) {
-    this.assertWritablePath(path, options);
-    const normalized = normalizeVfsPath(path);
+    const canonicalPath = this.assertWritablePath(path, options, "write");
     const hash = hashContent(content);
-    this.files[normalized] = {
-      path: normalized,
+    this.files[canonicalPath] = {
+      path: canonicalPath,
       content,
       contentType,
       hash,
@@ -392,12 +491,29 @@ export class VfsSession {
   }
 
   public readFile(path: string): VfsFile | null {
-    const normalized = normalizeVfsPath(path);
-    const file = this.files[normalized] ?? this.readonlyFiles[normalized];
-    return file ? { ...file } : null;
+    const canonicalPath = this.resolveCanonicalPath(path);
+    const file = this.files[canonicalPath] ?? this.readonlyFiles[canonicalPath];
+    if (!file) {
+      return null;
+    }
+
+    const normalizedInput = normalizeVfsPath(path);
+    const pathForRead =
+      normalizedInput.startsWith("shared/") || normalizedInput.startsWith("forks/")
+        ? canonicalPath
+        : this.toDisplayPath(canonicalPath);
+
+    return {
+      ...file,
+      path: pathForRead,
+    };
   }
 
   public snapshot(): VfsFileMap {
+    return toDisplayFileMap(this.files, this.activeForkId);
+  }
+
+  public snapshotCanonical(): VfsFileMap {
     return cloneFiles(this.files);
   }
 
@@ -406,46 +522,56 @@ export class VfsSession {
    * This is intended for read-only tooling (ls/stat/glob/search), NOT persistence.
    */
   public snapshotAll(): VfsFileMap {
+    return mergeFiles(
+      toDisplayFileMap(this.readonlyFiles, this.activeForkId),
+      toDisplayFileMap(this.files, this.activeForkId),
+    );
+  }
+
+  public snapshotAllCanonical(): VfsFileMap {
     return mergeFiles(this.readonlyFiles, this.files);
   }
 
   public restore(snapshot: VfsFileMap): void {
-    const next = cloneFiles(snapshot);
-    for (const path of Object.keys(next)) {
-      if (this.isImmutableReadOnlyPath(path)) {
-        delete next[path];
+    const next: VfsFileMap = {};
+    for (const file of Object.values(snapshot)) {
+      const canonicalPath = this.resolveCanonicalPath(file.path);
+      if (this.isImmutableReadOnlyPath(canonicalPath)) {
+        continue;
       }
+
+      next[canonicalPath] = {
+        ...file,
+        path: canonicalPath,
+      };
     }
     this.files = next;
   }
 
   public renameFile(from: string, to: string, options?: VfsWriteOptions): void {
-    this.assertWritablePath(from, options);
-    this.assertWritablePath(to, options);
-    const normalizedFrom = normalizeVfsPath(from);
-    const normalizedTo = normalizeVfsPath(to);
-    const file = this.files[normalizedFrom];
+    const canonicalFrom = this.assertWritablePath(from, options, "move");
+    const canonicalTo = this.assertWritablePath(to, options, "move");
+    const file = this.files[canonicalFrom];
     if (!file) {
-      throw new Error(`File not found: ${normalizedFrom}`);
+      throw new Error(`File not found: ${canonicalFrom}`);
     }
-    if (normalizedFrom === normalizedTo) {
+    if (canonicalFrom === canonicalTo) {
       return;
     }
-    this.files[normalizedTo] = {
+    this.files[canonicalTo] = {
       ...file,
-      path: normalizedTo,
+      path: canonicalTo,
       updatedAt: Date.now(),
     };
-    delete this.files[normalizedFrom];
+    delete this.files[canonicalFrom];
   }
 
   public deleteFile(path: string, options?: VfsWriteOptions): void {
-    this.assertWritablePath(path, options);
-    const normalized = normalizeVfsPath(path);
-    if (!this.files[normalized]) {
-      throw new Error(`File not found: ${normalized}`);
+    const canonicalPath = this.assertWritablePath(path, options, "delete");
+    if (!this.files[canonicalPath]) {
+      throw new Error(`File not found: ${canonicalPath}`);
     }
-    delete this.files[normalized];
+    delete this.files[canonicalPath];
   }
 
   public applyJsonPatch(
@@ -453,34 +579,37 @@ export class VfsSession {
     patchOps: Operation[],
     options?: VfsWriteOptions,
   ): void {
-    this.assertWritablePath(path, options);
-    const file = this.readFile(path);
+    const canonicalPath = this.assertWritablePath(path, options, "json_patch");
+    const file = this.files[canonicalPath] ?? this.readonlyFiles[canonicalPath];
     if (!file) {
-      throw new Error(`File not found: ${normalizeVfsPath(path)}`);
+      throw new Error(`File not found: ${canonicalPath}`);
     }
 
     if (file.contentType !== "application/json") {
-      throw new Error(`File is not JSON: ${file.path}`);
+      throw new Error(`File is not JSON: ${canonicalPath}`);
     }
 
     let document: unknown;
     try {
       document = JSON.parse(file.content);
     } catch (error) {
-      throw new Error(`Invalid JSON content: ${file.path}`, { cause: error });
+      throw new Error(`Invalid JSON content: ${canonicalPath}`, { cause: error });
     }
 
     const patched = applyPatch(document, patchOps, true, false).newDocument;
-    const schema = getSchemaForPath(file.path);
+    const schema = getSchemaForPath(canonicalPath);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
     const validated = strictSchema.parse(patched);
 
     if (hasUnknownKeys(patched, validated)) {
-      throw new Error(`Unknown keys found after validation: ${file.path}`);
+      throw new Error(`Unknown keys found after validation: ${canonicalPath}`);
     }
 
-    this.writeFile(file.path, JSON.stringify(validated), file.contentType, options);
+    this.writeFile(canonicalPath, JSON.stringify(validated), file.contentType, {
+      ...options,
+      operation: options?.operation ?? "json_patch",
+    });
   }
 
   public mergeJson(
@@ -488,51 +617,62 @@ export class VfsSession {
     content: Record<string, unknown>,
     options?: VfsWriteOptions,
   ): void {
-    this.assertWritablePath(path, options);
+    const canonicalPath = this.assertWritablePath(path, options, "json_merge");
     if (Array.isArray(content) || content === null || typeof content !== "object") {
       throw new Error("Merge content must be a JSON object");
     }
 
-    const normalized = normalizeVfsPath(path);
-    const file = this.readFile(normalized);
+    const file = this.files[canonicalPath] ?? this.readonlyFiles[canonicalPath];
     let document: unknown = {};
     let contentType: VfsContentType = "application/json";
 
     if (file) {
       if (file.contentType !== "application/json") {
-        throw new Error(`File is not JSON: ${file.path}`);
+        throw new Error(`File is not JSON: ${canonicalPath}`);
       }
 
       try {
         document = JSON.parse(file.content);
       } catch (error) {
-        throw new Error(`Invalid JSON content: ${file.path}`, { cause: error });
+        throw new Error(`Invalid JSON content: ${canonicalPath}`, { cause: error });
       }
       contentType = file.contentType;
     }
 
     const merged = deepMergeJson(document, content);
-    const schema = getSchemaForPath(normalized);
+    const schema = getSchemaForPath(canonicalPath);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
     const validated = strictSchema.parse(merged);
 
     if (hasUnknownKeys(merged, validated)) {
-      throw new Error(`Unknown keys found after validation: ${normalized}`);
+      throw new Error(`Unknown keys found after validation: ${canonicalPath}`);
     }
 
-    this.writeFile(normalized, JSON.stringify(validated), contentType, options);
+    this.writeFile(canonicalPath, JSON.stringify(validated), contentType, {
+      ...options,
+      operation: options?.operation ?? "json_merge",
+    });
   }
 
   public list(path: string): string[] {
+    const displaySnapshot = this.snapshotAll();
     const normalized = normalizeVfsPath(path);
-    if (normalized === "") {
-      const entries = Object.keys(this.snapshotAll()).map((p) => p.split("/")[0]);
+    const resolvedPrefix =
+      normalized === ""
+        ? ""
+        : canonicalToLogicalVfsPath(
+            this.resolveCanonicalPath(normalized),
+            { activeForkId: this.activeForkId },
+          ) || normalized;
+
+    if (!resolvedPrefix) {
+      const entries = Object.keys(displaySnapshot).map((p) => p.split("/")[0]);
       return Array.from(new Set(entries));
     }
 
-    const prefix = normalized.replace(/\/$/, "");
-    const entries = Object.keys(this.snapshotAll())
+    const prefix = normalizeVfsPath(resolvedPrefix).replace(/\/$/, "");
+    const entries = Object.keys(displaySnapshot)
       .filter((p) => p.startsWith(prefix + "/"))
       .map((p) => p.slice(prefix.length + 1))
       .map((p) => p.split("/")[0])
@@ -567,7 +707,20 @@ export class VfsSession {
       }
     }
 
-    return collectMatches(this.files, path, (line) => line.includes(query), limit);
+    const displaySnapshot = this.snapshot();
+    const scopePath =
+      typeof path === "string" && path.trim().length > 0
+        ? canonicalToLogicalVfsPath(this.resolveCanonicalPath(path), {
+            activeForkId: this.activeForkId,
+          })
+        : undefined;
+
+    return collectMatches(
+      displaySnapshot,
+      scopePath,
+      (line) => line.includes(query),
+      limit,
+    );
   }
 
   public grep(regex: RegExp, options: VfsGrepOptions = {}): VfsSearchMatch[] {
@@ -575,6 +728,13 @@ export class VfsSession {
     if (limit <= 0) {
       return [];
     }
-    return collectMatches(this.files, path, makeRegexMatcher(regex), limit);
+    const displaySnapshot = this.snapshot();
+    const scopePath =
+      typeof path === "string" && path.trim().length > 0
+        ? canonicalToLogicalVfsPath(this.resolveCanonicalPath(path), {
+            activeForkId: this.activeForkId,
+          })
+        : undefined;
+    return collectMatches(displaySnapshot, scopePath, makeRegexMatcher(regex), limit);
   }
 }

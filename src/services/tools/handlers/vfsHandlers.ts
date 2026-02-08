@@ -108,6 +108,10 @@ const resolveAiWriteContext = (
   mode: ctx.vfsMode ?? "normal",
   elevationToken: ctx.vfsElevationToken ?? null,
   allowFinishGuardedWrite: false,
+  activeForkId:
+    typeof ctx.gameState?.forkId === "number"
+      ? ctx.gameState.forkId
+      : ctx.vfsSession.getActiveForkId(),
   ...overrides,
 });
 
@@ -340,6 +344,7 @@ const deriveConversationIndexFromSnapshot = (
 
 const ensureConversationIndex = (
   draft: VfsSession,
+  options?: { operation?: "finish_commit" | "history_rewrite" },
 ): ConversationIndex => {
   const snapshot = draft.snapshot();
   const existing = readConversationIndex(snapshot);
@@ -348,7 +353,7 @@ const ensureConversationIndex = (
   }
 
   const { index } = deriveConversationIndexFromSnapshot(snapshot);
-  writeConversationIndex(draft, index);
+  writeConversationIndex(draft, index, options?.operation ? { operation: options.operation } : undefined);
 
   // Ensure the active turn file exists (best-effort). This keeps downstream
   // consumers robust when migrating from older snapshots.
@@ -358,15 +363,21 @@ const ensureConversationIndex = (
     const turnNumber = Number(match[2]);
     const existingTurn = readTurnFile(snapshot, forkId, turnNumber);
     if (!existingTurn) {
-      writeTurnFile(draft, forkId, turnNumber, {
-        turnId: index.activeTurnId,
+      writeTurnFile(
+        draft,
         forkId,
         turnNumber,
-        parentTurnId: null,
-        createdAt: Date.now(),
-        userAction: "",
-        assistant: { narrative: "", choices: [] },
-      });
+        {
+          turnId: index.activeTurnId,
+          forkId,
+          turnNumber,
+          parentTurnId: null,
+          createdAt: Date.now(),
+          userAction: "",
+          assistant: { narrative: "", choices: [] },
+        },
+        options?.operation ? { operation: options.operation } : undefined,
+      );
     }
   }
 
@@ -1300,10 +1311,14 @@ vfsToolRouter.register(VFS_FINISH_SUMMARY_TOOL, (args, ctx) => {
 
       const nextSummaries = [...existingSummaries, summary];
 
-      draft.mergeJson("summary/state.json", {
-        summaries: nextSummaries,
-        lastSummarizedIndex: typedArgs.lastSummarizedIndex,
-      });
+      draft.mergeJson(
+        "summary/state.json",
+        {
+          summaries: nextSummaries,
+          lastSummarizedIndex: typedArgs.lastSummarizedIndex,
+        },
+        { operation: "finish_summary" },
+      );
 
       return createSuccess(
         { summary, path: "current/summary/state.json" },
@@ -1720,10 +1735,24 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
 });
 
 vfsToolRouter.register(VFS_SCHEMA_TOOL, (args, ctx) => {
-  void ctx;
+  const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_schema", args);
 
-  const schemas: Array<{ path: string; hint: string }> = [];
+  const schemas: Array<{
+    path: string;
+    hint: string;
+    classification: {
+      canonicalPath: string;
+      templateId: string;
+      permissionClass: string;
+      scope: string;
+      domain: string;
+      resourceShape: string;
+      criticality: string;
+      retention: string;
+      allowedWriteOps: string[];
+    };
+  }> = [];
   const missing: Array<{ path: string; error: string }> = [];
 
   for (const inputPath of typedArgs.paths) {
@@ -1734,9 +1763,26 @@ vfsToolRouter.register(VFS_SCHEMA_TOOL, (args, ctx) => {
 
     try {
       const schema = getSchemaForPath(resolved.path);
+      const classification = vfsPathRegistry.classify(resolved.path, {
+        activeForkId:
+          typeof ctx.gameState?.forkId === "number"
+            ? ctx.gameState.forkId
+            : session.getActiveForkId(),
+      });
       schemas.push({
         path: toCurrentPath(resolved.path),
         hint: getVfsSchemaHint(schema),
+        classification: {
+          canonicalPath: classification.canonicalPath,
+          templateId: classification.templateId,
+          permissionClass: classification.permissionClass,
+          scope: classification.scope,
+          domain: classification.domain,
+          resourceShape: classification.resourceShape,
+          criticality: classification.criticality,
+          retention: classification.retention,
+          allowedWriteOps: [...classification.allowedWriteOps],
+        },
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1762,15 +1808,60 @@ vfsToolRouter.register(VFS_STAT_TOOL, (args, ctx) => {
         size: number;
         hash: string;
         updatedAt: number;
+        classification: {
+          canonicalPath: string;
+          templateId: string;
+          permissionClass: string;
+          scope: string;
+          domain: string;
+          resourceShape: string;
+          criticality: string;
+          retention: string;
+          allowedWriteOps: string[];
+        };
       }
     | {
         kind: "dir";
         path: string;
         fileCount: number;
         entries: string[];
+        classification: {
+          canonicalPath: string;
+          templateId: string;
+          permissionClass: string;
+          scope: string;
+          domain: string;
+          resourceShape: string;
+          criticality: string;
+          retention: string;
+          allowedWriteOps: string[];
+        };
       }
   > = [];
   const missing: string[] = [];
+
+  const activeForkIdForClassification =
+    typeof ctx.gameState?.forkId === "number"
+      ? ctx.gameState.forkId
+      : session.getActiveForkId();
+
+  const classifyPath = (path: string) => {
+    const classification = vfsPathRegistry.classify(path, {
+      activeForkId: activeForkIdForClassification,
+    });
+
+    return {
+      canonicalPath: classification.canonicalPath,
+      templateId: classification.templateId,
+      permissionClass: classification.permissionClass,
+      scope: classification.scope,
+      domain: classification.domain,
+      resourceShape: classification.resourceShape,
+      criticality: classification.criticality,
+      retention: classification.retention,
+      allowedWriteOps: [...classification.allowedWriteOps],
+    };
+  };
 
   for (const inputPath of typedArgs.paths) {
     const resolved = resolveCurrentPathLoose(inputPath);
@@ -1789,6 +1880,7 @@ vfsToolRouter.register(VFS_STAT_TOOL, (args, ctx) => {
         size: file.size,
         hash: file.hash,
         updatedAt: file.updatedAt,
+        classification: classifyPath(normalized),
       });
       continue;
     }
@@ -1812,6 +1904,7 @@ vfsToolRouter.register(VFS_STAT_TOOL, (args, ctx) => {
       path: toCurrentPath(prefix),
       fileCount,
       entries,
+      classification: classifyPath(prefix),
     });
   }
 
@@ -1995,6 +2088,29 @@ vfsToolRouter.register(VFS_READ_MANY_TOOL, (args, ctx) => {
     updatedAt: number;
   }> = [];
   const missing: string[] = [];
+
+  const activeForkIdForClassification =
+    typeof ctx.gameState?.forkId === "number"
+      ? ctx.gameState.forkId
+      : session.getActiveForkId();
+
+  const classifyPath = (path: string) => {
+    const classification = vfsPathRegistry.classify(path, {
+      activeForkId: activeForkIdForClassification,
+    });
+
+    return {
+      canonicalPath: classification.canonicalPath,
+      templateId: classification.templateId,
+      permissionClass: classification.permissionClass,
+      scope: classification.scope,
+      domain: classification.domain,
+      resourceShape: classification.resourceShape,
+      criticality: classification.criticality,
+      retention: classification.retention,
+      allowedWriteOps: [...classification.allowedWriteOps],
+    };
+  };
 
   for (const inputPath of typedArgs.paths) {
     const resolved = resolveCurrentPath(inputPath);
@@ -2772,7 +2888,7 @@ vfsToolRouter.register(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
       return createError(retconAckResult.message, retconAckResult.code);
     }
 
-    const existingIndex = ensureConversationIndex(draft);
+    const existingIndex = ensureConversationIndex(draft, { operation: "finish_commit" });
 
     const forkId = existingIndex.activeForkId ?? 0;
     const forkKey = String(forkId);
@@ -2798,42 +2914,52 @@ vfsToolRouter.register(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
           ? order[order.length - 1]
           : null;
 
-    writeTurnFile(draft, forkId, turnNumber, {
-      turnId,
+    writeTurnFile(
+      draft,
       forkId,
       turnNumber,
-      parentTurnId,
-      createdAt: typedArgs.createdAt ?? Date.now(),
-      userAction: typedArgs.userAction,
-      assistant: typedArgs.assistant as {
-        narrative: string;
-        choices: unknown[];
-        narrativeTone?: string;
-        atmosphere?: unknown;
-        ending?: string;
-        forceEnd?: boolean;
+      {
+        turnId,
+        forkId,
+        turnNumber,
+        parentTurnId,
+        createdAt: typedArgs.createdAt ?? Date.now(),
+        userAction: typedArgs.userAction,
+        assistant: typedArgs.assistant as {
+          narrative: string;
+          choices: unknown[];
+          narrativeTone?: string;
+          atmosphere?: unknown;
+          ending?: string;
+          forceEnd?: boolean;
+        },
       },
-    });
+      { operation: "finish_commit" },
+    );
 
     const nextOrder = order.includes(turnId) ? order : [...order, turnId];
 
-    writeConversationIndex(draft, {
-      ...existingIndex,
-      activeForkId: forkId,
-      activeTurnId: turnId,
-      rootTurnIdByFork:
-        existingIndex.rootTurnIdByFork?.[forkKey] != null
-          ? existingIndex.rootTurnIdByFork
-          : { ...existingIndex.rootTurnIdByFork, [forkKey]: turnId },
-      latestTurnNumberByFork: {
-        ...existingIndex.latestTurnNumberByFork,
-        [forkKey]: turnNumber,
+    writeConversationIndex(
+      draft,
+      {
+        ...existingIndex,
+        activeForkId: forkId,
+        activeTurnId: turnId,
+        rootTurnIdByFork:
+          existingIndex.rootTurnIdByFork?.[forkKey] != null
+            ? existingIndex.rootTurnIdByFork
+            : { ...existingIndex.rootTurnIdByFork, [forkKey]: turnId },
+        latestTurnNumberByFork: {
+          ...existingIndex.latestTurnNumberByFork,
+          [forkKey]: turnNumber,
+        },
+        turnOrderByFork: {
+          ...existingIndex.turnOrderByFork,
+          [forkKey]: nextOrder,
+        },
       },
-      turnOrderByFork: {
-        ...existingIndex.turnOrderByFork,
-        [forkKey]: nextOrder,
-      },
-    });
+      { operation: "finish_commit" },
+    );
 
       return createSuccess(
         { turnId, forkId, turnNumber },
@@ -3049,7 +3175,7 @@ vfsToolRouter.register(VFS_TX_TOOL, (args, ctx) => {
           return createError(retconAckResult.message, retconAckResult.code);
         }
 
-        const existingIndex = ensureConversationIndex(draft);
+        const existingIndex = ensureConversationIndex(draft, { operation: "finish_commit" });
 
         const forkId = existingIndex.activeForkId ?? 0;
         const forkKey = String(forkId);
@@ -3075,42 +3201,52 @@ vfsToolRouter.register(VFS_TX_TOOL, (args, ctx) => {
               ? order[order.length - 1]
               : null;
 
-        writeTurnFile(draft, forkId, turnNumber, {
-          turnId,
+        writeTurnFile(
+          draft,
           forkId,
           turnNumber,
-          parentTurnId,
-          createdAt: op.createdAt ?? Date.now(),
-          userAction: op.userAction,
-          assistant: op.assistant as {
-            narrative: string;
-            choices: unknown[];
-            narrativeTone?: string;
-            atmosphere?: unknown;
-            ending?: string;
-            forceEnd?: boolean;
+          {
+            turnId,
+            forkId,
+            turnNumber,
+            parentTurnId,
+            createdAt: op.createdAt ?? Date.now(),
+            userAction: op.userAction,
+            assistant: op.assistant as {
+              narrative: string;
+              choices: unknown[];
+              narrativeTone?: string;
+              atmosphere?: unknown;
+              ending?: string;
+              forceEnd?: boolean;
+            },
           },
-        });
+          { operation: "finish_commit" },
+        );
 
         const nextOrder = order.includes(turnId) ? order : [...order, turnId];
 
-        writeConversationIndex(draft, {
-          ...existingIndex,
-          activeForkId: forkId,
-          activeTurnId: turnId,
-          rootTurnIdByFork:
-            existingIndex.rootTurnIdByFork?.[forkKey] != null
-              ? existingIndex.rootTurnIdByFork
-              : { ...existingIndex.rootTurnIdByFork, [forkKey]: turnId },
-          latestTurnNumberByFork: {
-            ...existingIndex.latestTurnNumberByFork,
-            [forkKey]: turnNumber,
+        writeConversationIndex(
+          draft,
+          {
+            ...existingIndex,
+            activeForkId: forkId,
+            activeTurnId: turnId,
+            rootTurnIdByFork:
+              existingIndex.rootTurnIdByFork?.[forkKey] != null
+                ? existingIndex.rootTurnIdByFork
+                : { ...existingIndex.rootTurnIdByFork, [forkKey]: turnId },
+            latestTurnNumberByFork: {
+              ...existingIndex.latestTurnNumberByFork,
+              [forkKey]: turnNumber,
+            },
+            turnOrderByFork: {
+              ...existingIndex.turnOrderByFork,
+              [forkKey]: nextOrder,
+            },
           },
-          turnOrderByFork: {
-            ...existingIndex.turnOrderByFork,
-            [forkKey]: nextOrder,
-          },
-        });
+          { operation: "finish_commit" },
+        );
 
         committed = { turnId, forkId, turnNumber };
         continue;

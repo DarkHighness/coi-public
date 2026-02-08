@@ -1,6 +1,7 @@
 import type { VfsFile, VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
 import { vfsPathRegistry } from "./core/pathRegistry";
+import { resolveVfsPath, toLogicalVfsPath } from "./core/pathResolver";
 
 const cloneFile = (file: VfsFile): VfsFile => ({ ...file });
 
@@ -10,21 +11,22 @@ const cloneWithPath = (file: VfsFile, path: string): VfsFile => ({
 });
 
 export const stripCurrentPrefix = (path: string): string => {
-  const normalized = normalizeVfsPath(path);
-  if (normalized === "current") {
-    return "";
-  }
-  if (normalized.startsWith("current/")) {
-    return normalized.slice("current/".length);
-  }
-  return normalized;
+  const logical = toLogicalVfsPath(path);
+  return normalizeVfsPath(logical);
+};
+
+const classifyPath = (path: string) => {
+  const resolved = resolveVfsPath(path);
+  return vfsPathRegistry.classify(resolved.canonicalPath, {
+    activeForkId: resolved.activeForkId,
+  });
 };
 
 export const isSharedMutablePath = (path: string): boolean => {
-  const normalized = stripCurrentPrefix(path);
+  const normalized = normalizeVfsPath(path);
   if (!normalized) return false;
 
-  const classification = vfsPathRegistry.classify(normalized);
+  const classification = classifyPath(normalized);
   return (
     classification.scope === "shared" &&
     classification.permissionClass !== "immutable_readonly"
@@ -32,17 +34,17 @@ export const isSharedMutablePath = (path: string): boolean => {
 };
 
 export const isSharedReadOnlyPath = (path: string): boolean => {
-  const normalized = stripCurrentPrefix(path);
+  const normalized = normalizeVfsPath(path);
   if (!normalized) return false;
 
-  return vfsPathRegistry.classify(normalized).permissionClass === "immutable_readonly";
+  return classifyPath(normalized).permissionClass === "immutable_readonly";
 };
 
 export const isForkedSnapshotPath = (path: string): boolean => {
-  const normalized = stripCurrentPrefix(path);
+  const normalized = normalizeVfsPath(path);
   if (!normalized) return false;
 
-  const classification = vfsPathRegistry.classify(normalized);
+  const classification = classifyPath(normalized);
   return classification.scope === "fork";
 };
 
@@ -62,7 +64,7 @@ export const partitionVfsFileMapByScope = (
   for (const file of Object.values(files)) {
     const normalized = normalizeVfsPath(file.path);
     const normalizedFile = cloneWithPath(file, normalized);
-    const classification = vfsPathRegistry.classify(normalized);
+    const classification = classifyPath(normalized);
 
     if (classification.permissionClass === "immutable_readonly") {
       sharedReadonly[normalized] = normalizedFile;

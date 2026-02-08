@@ -9,7 +9,7 @@ const TURN_RUNTIME_FLOOR = `<runtime_floor>
 You MUST follow these runtime protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
 - End turns ONLY via \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
-- Do NOT write to \`current/conversation/*\` via generic write/edit/merge/move/delete tools.
+- Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - If a tool returns an error, fix and retry before finishing the turn.
 </runtime_floor>`;
 
@@ -49,4 +49,3 @@ export const composeSystemInstruction = (
 
   return blocks.join("\n\n");
 };
-

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { stripCurrentPath, toCurrentPath } from "../currentAlias";
+import { stripCurrentPath, toCanonicalPath, toCurrentPath } from "../currentAlias";
 
 describe("current alias", () => {
   it("prefixes and strips current paths", () => {
@@ -16,7 +16,15 @@ describe("current alias", () => {
     expect(stripCurrentPath("current")).toBe("");
   });
 
-  it("rejects non-current paths", () => {
-    expect(() => stripCurrentPath("world/global.json")).toThrow();
+  it("accepts canonical paths and projects back to current display", () => {
+    expect(stripCurrentPath("shared/system/skills/README.md")).toBe(
+      "skills/README.md",
+    );
+    expect(toCurrentPath("shared/narrative/outline/outline.json")).toBe(
+      "current/outline/outline.json",
+    );
+    expect(toCanonicalPath("current/world/global.json", { activeForkId: 3 })).toBe(
+      "forks/3/story/world/global.json",
+    );
   });
 });

@@ -146,6 +146,7 @@ export const restoreVfsSessionFromSnapshot = (
     }
     forkedOnly[normalizedPath] = { ...file, path: normalizedPath };
   }
+  session.setActiveForkId(snapshot.forkId);
   session.restore(forkedOnly);
   session.beginReadEpoch("snapshot_restore");
 };

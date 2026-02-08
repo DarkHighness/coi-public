@@ -148,7 +148,7 @@ export const buildVfsTree = (files: VfsFileMap): VfsTreeNode => {
 
 export const isReadonlyPath = (
   path: string,
-  options?: { editorSessionToken?: string | null },
+  options?: { editorSessionToken?: string | null; activeForkId?: number },
 ): boolean => {
   const normalized = stripCurrentPrefix(path);
   if (!normalized) {
@@ -156,7 +156,11 @@ export const isReadonlyPath = (
   }
 
   if (options?.editorSessionToken === undefined) {
-    const classification = vfsPolicyEngine.canRead(normalized).classification;
+    const classification = vfsPolicyEngine.canRead(normalized, {
+      actor: "ai",
+      mode: "normal",
+      activeForkId: options?.activeForkId,
+    }).classification;
     return (
       classification.permissionClass === "immutable_readonly" ||
       classification.permissionClass === "finish_guarded"
@@ -168,6 +172,7 @@ export const isReadonlyPath = (
     mode: "normal",
     editorSessionToken: options.editorSessionToken ?? null,
     allowFinishGuardedWrite: false,
+    activeForkId: options?.activeForkId,
   });
 
   return !decision.allowed;

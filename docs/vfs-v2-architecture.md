@@ -293,3 +293,209 @@ sequenceDiagram
 - 不引入持久化授权状态（避免越权残留）。
 - 不允许跳过 VFS 直接写会话核心文件。
 
+
+---
+
+## 13. VFS v2.1 实施结果（资源分层 + 挂载内核）
+
+### 13.1 新增核心组件
+
+- `src/services/vfs/core/mountRegistry.ts`
+  - 定义 canonical 与 `current/*` alias 挂载。
+- `src/services/vfs/core/pathResolver.ts`
+  - 统一路径解析：输入可为 `current/*`、legacy 相对路径、canonical。
+  - 输出 `canonicalPath + logicalPath + displayPath + mountKind`。
+- `src/services/vfs/core/resourceTemplateRegistry.ts`
+  - 用资源模板（domain/shape/scope/permissionClass/patterns）驱动分类。
+
+### 13.2 Canonical 路径映射（已落地）
+
+- `skills/**` -> `shared/system/skills/**`
+- `refs/**` -> `shared/system/refs/**`
+- `custom_rules/**` -> `shared/config/custom_rules/**`
+- `world/theme_config.json` -> `shared/config/theme/theme_config.json`
+- `outline/**` -> `shared/narrative/outline/**`
+- `world/**` -> `forks/{forkId}/story/world/**`
+- `conversation/**` -> `forks/{forkId}/story/conversation/**`
+- `summary/state.json` -> `forks/{forkId}/story/summary/state.json`
+- `conversation/history_rewrites/**` -> `forks/{forkId}/ops/history_rewrites/**`
+
+> 对外仍支持 `current/*` 与 legacy 路径输入，内部统一解析为 canonical。
+
+### 13.3 策略与会话层改造
+
+- `VfsPathRegistry` 改为模板驱动分类（模板二次分类器）。
+- `VfsResourceRegistry` 改为模板匹配入口。
+- `VfsPolicyEngine` 基于解析后的 canonical 分类判定权限。
+- `VfsSession`：
+  - 内部存储 canonical key；
+  - `snapshot()` / `snapshotAll()` 输出逻辑视图路径（兼容调用方）；
+  - `snapshotCanonical()` / `snapshotAllCanonical()` 可用于内核调试；
+  - `restore()` 接受 legacy/canonical 输入并统一写入 canonical。
+
+### 13.4 提权与 finish 协议状态
+
+- AI elevated 写仍需 `/god` 或 `/sudo` + 一次性 token。
+- StateEditor 每次打开确认 token，关闭即失效。
+- `finish_guarded` 仅 finish 协议可写。
+- rewrite 事件写入 canonical 路径：`forks/{id}/ops/history_rewrites/**`。
+
+### 13.5 v2.1 事务/收口时序图
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant AI as "AI"
+    participant H as "vfsHandlers"
+    participant R as "PathResolver"
+    participant P as "PolicyEngine"
+    participant S as "VfsSession"
+
+    AI->>H: vfs_tx(ops)
+    loop each op
+        H->>R: resolve(path, activeForkId)
+        R-->>H: canonicalPath
+        H->>P: canWrite(canonicalPath, context)
+        alt denied
+            P-->>H: ELEVATION_REQUIRED / FINISH_GUARD_REQUIRED / IMMUTABLE_READONLY
+            H-->>AI: error
+        else allowed
+            P-->>H: OK
+            H->>S: apply op on canonical path
+        end
+    end
+    alt last op is commit_turn
+        H->>S: withWriteContext(allowFinishGuardedWrite=true)
+        S-->>H: commit success
+    end
+    H-->>AI: tx result
+```
+
+### 13.6 v2.1 新增测试
+
+- `src/services/vfs/core/__tests__/pathResolver.test.ts`
+- `src/services/vfs/core/__tests__/resourceTemplateRegistry.test.ts`
+- `src/services/vfs/core/__tests__/pathRegistry.test.ts`
+- 更新：`currentAlias`、`conversationHistoryRewriteService`、`vfsConversation` 等测试以适配新路径语义。
+
+## 14. VFS v2.2 补充：资源分层细化 + 操作级策略
+
+### 14.1 新增模板维度（已落地）
+
+每个 `VfsResourceTemplate` 现包含：
+
+- `criticality`: `core | secondary | ephemeral`
+- `retention`: `session | save | archival`
+- `allowedWriteOps`: 写操作白名单（示例：`write` / `json_patch` / `json_merge` / `move` / `delete` / `finish_commit` / `finish_summary` / `history_rewrite`）
+
+这使资源从“仅路径匹配”升级为“路径 + 生命周期 + 关键级别 + 操作能力”四维模型。
+
+### 14.2 操作级权限判定（已落地）
+
+`VfsPolicyEngine.canWrite()` 现在先判断操作是否在模板白名单中，再执行权限类判定：
+
+1. `immutable_readonly` 永拒绝
+2. `operation ∈ allowedWriteOps` 才可继续
+3. `finish_guarded` 仍要求 `allowFinishGuardedWrite=true`
+4. `elevated_editable` 仍要求 `/god|/sudo + one-time token`
+
+> 说明：错误码保持不扩展，操作不允许时复用 `FINISH_GUARD_REQUIRED`。
+
+### 14.3 关键模板策略示例（已落地）
+
+- `shared/system/skills/**` / `shared/system/refs/**`
+  - `criticality=core`, `retention=archival`, `allowedWriteOps=[]`
+- `forks/*/story/conversation/**`
+  - `permissionClass=finish_guarded`
+  - `allowedWriteOps=[finish_commit, history_rewrite]`
+- `forks/*/story/summary/state.json`
+  - `permissionClass=finish_guarded`
+  - `allowedWriteOps=[finish_summary]`
+- `forks/*/ops/history_rewrites/**`
+  - `permissionClass=elevated_editable`
+  - `retention=archival`
+  - `allowedWriteOps` 包含 `history_rewrite`
+
+### 14.4 收口/修订写入通道（已落地）
+
+- `vfs_commit_turn` 与 `vfs_tx` 内 `commit_turn` 分支
+  - 对 conversation/index/turn 写入显式标记 `operation=finish_commit`
+- `vfs_finish_summary`
+  - 对 summary 写入显式标记 `operation=finish_summary`
+- `ConversationHistoryRewriteService`
+  - 改写 turn/index 与 rewrite event 均标记 `operation=history_rewrite`
+
+### 14.5 v2.2 操作白名单时序图
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant AI as "AI"
+    participant H as "vfsHandlers"
+    participant S as "VfsSession"
+    participant P as "VfsPolicyEngine"
+
+    AI->>H: vfs_finish_summary(...)
+    H->>S: mergeJson(path=summary/state.json, operation=finish_summary)
+    S->>P: canWrite(path, context{operation=finish_summary, allowFinishGuardedWrite=true})
+
+    alt operation 不在模板白名单
+        P-->>S: deny(FINISH_GUARD_REQUIRED)
+        S-->>H: throw VfsWriteAccessError
+        H-->>AI: error
+    else operation 合法 + finish_guard 放行
+        P-->>S: allow
+        S-->>H: write success
+        H-->>AI: success
+    end
+```
+
+### 14.6 v2.2 验证状态
+
+- 新增/更新测试已覆盖：
+  - `policyEngine` 操作白名单断言
+  - `resourceTemplateRegistry` 新维度断言
+  - `resourceRegistry/pathRegistry` 元数据投影断言
+- 全量验证：
+  - `pnpm -s vitest run` ✅
+  - `pnpm -s tsc --noEmit` ✅
+
+### 14.7 Tool Introspection Alignment (v2.2)
+
+- `vfs_schema` now returns `classification` metadata per path:
+  - `templateId`, `permissionClass`, `scope`, `domain`, `resourceShape`, `criticality`, `retention`, `allowedWriteOps`.
+- `vfs_stat` now returns the same `classification` metadata for both file and directory stats.
+- Tool contracts injected by `defineTool()` now include operation hints (when static) and explicitly state that template-level operation contracts are enforced at runtime.
+
+This keeps tooling output, prompt instructions, and policy runtime in lock-step.
+
+## 15. Prompt 文案统一基线（v2.2 收口）
+
+为避免“提示词写法”与“运行时策略”漂移，后续所有 prompt/tool 文案必须遵循以下统一口径：
+
+1. **路径口径统一**
+   - 必须同时声明 canonical 与 alias：
+     - canonical：`shared/**`、`forks/{forkId}/**`
+     - alias：`current/**`
+   - 业务示例可使用 `current/**`，但必须说明其会解析到 canonical。
+
+2. **权限口径统一**
+   - 固定四类：`immutable_readonly` / `default_editable` / `elevated_editable` / `finish_guarded`
+   - `immutable_readonly` 永远包含：`shared/system/skills/**`、`shared/system/refs/**`（含 alias 视图）。
+   - `elevated_editable` 必须明确：`/god` 或 `/sudo` + 一次性确认 token。
+
+3. **finish 与操作白名单口径统一**
+   - conversation 收口：`finish_commit`
+   - summary 收口：`finish_summary`
+   - history rewrite：`history_rewrite`
+   - prompt 必须禁止通用写工具直写 finish_guarded 路径。
+
+4. **工具说明来源统一**
+   - 工具能力说明以 `VfsToolCapabilityRegistry` 为唯一来源。
+   - schema 文案通过 `defineTool()` 自动注入权限契约，不手写分叉版本。
+
+5. **回归检查统一**
+   - 变更 prompt/tool 文案后，至少运行：
+     - `pnpm -s vitest run src/services/prompts/atoms/core/__tests__/promptHygiene.test.ts`
+     - `pnpm -s vitest run src/services/prompts/atoms/core/__tests__/systemMessages.test.ts`
+     - `pnpm -s vitest run src/services/tools/__tests__/vfsTools.test.ts`

@@ -21,6 +21,7 @@ import { deriveHistory } from "@/utils/storyUtils";
 import type { StorySegment } from "@/types";
 import type { VfsFile, VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
+import { canonicalToLogicalVfsPath } from "./core/pathResolver";
 import { readConversationIndex, readTurnFile } from "./conversation";
 import { readOutlineFile, readOutlineProgress } from "./outline";
 import { deriveCustomRulesFromVfs } from "./customRules";
@@ -205,8 +206,15 @@ const parseJsonFile = (file: VfsFile): unknown | null => {
   }
 };
 
-const stripCurrentPrefix = (path: string): string =>
-  path.startsWith("current/") ? path.slice("current/".length) : path;
+const stripCurrentPrefix = (path: string): string => {
+  const normalized = normalizeVfsPath(path);
+  if (normalized.startsWith("current/")) {
+    return normalized.slice("current/".length);
+  }
+  return canonicalToLogicalVfsPath(normalized, {
+    looseFork: true,
+  });
+};
 
 const parseTurnId = (
   turnId: string,

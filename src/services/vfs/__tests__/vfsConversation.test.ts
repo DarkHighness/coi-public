@@ -13,7 +13,7 @@ describe("VFS conversation helpers", () => {
   it("builds ids and paths", () => {
     expect(buildTurnId(0, 3)).toBe("fork-0/turn-3");
     expect(buildTurnPath(0, 3)).toBe(
-      "current/conversation/turns/fork-0/turn-3.json",
+      "conversation/turns/fork-0/turn-3.json",
     );
   });
 

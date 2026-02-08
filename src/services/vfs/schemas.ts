@@ -26,6 +26,7 @@ import {
   storySummarySchema,
 } from "../zodSchemas";
 import { normalizeVfsPath } from "./utils";
+import { canonicalToLogicalVfsPath } from "./core/pathResolver";
 
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -147,11 +148,19 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
 
 export function getSchemaForPath(path: string): z.ZodSchema {
   const normalizedPath = normalizeVfsPath(path);
-  const match = schemaRegistry.find((entry) =>
-    entry.pattern.test(normalizedPath),
+  const logicalPath = canonicalToLogicalVfsPath(normalizedPath, {
+    looseFork: true,
+  });
+  const candidatePaths = Array.from(
+    new Set([normalizedPath, normalizeVfsPath(logicalPath)]),
   );
-  if (!match) {
-    throw new Error(`No schema registered for path: ${normalizedPath}`);
+
+  for (const candidate of candidatePaths) {
+    const match = schemaRegistry.find((entry) => entry.pattern.test(candidate));
+    if (match) {
+      return match.schema;
+    }
   }
-  return match.schema;
+
+  throw new Error(`No schema registered for path: ${normalizedPath}`);
 }
