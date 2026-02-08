@@ -120,7 +120,7 @@ const terminology = `
 
 export const protocolsPrimer: Atom<void> = () => `
 <protocols>
-  MESSAGES: [PLAYER_ACTION] = simulate, [SUDO] = override, [ERROR] = fix before finish.
+  MESSAGES: [PLAYER_ACTION] = simulate, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
   TOOLS: Every turn MUST call tools. Query before create. Handle errors.
   TWO "YOU": In rules = AI. In narrative = protagonist.
 </protocols>

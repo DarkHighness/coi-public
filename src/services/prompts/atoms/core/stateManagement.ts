@@ -6,6 +6,7 @@ import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const stateManagement: Atom<void> = () => `
   <rule name="STATE MANAGEMENT">
+    - **PATH MODEL**: Canonical paths are \`shared/**\` + \`forks/{forkId}/**\`; \`current/**\` is an alias view that resolves to canonical locations.
     - Output ONLY changes (DELTAS).
     - **PROACTIVE UPDATE PRINCIPLE**: ALWAYS update state IMMEDIATELY when events occur. Do NOT delay updates.
       * When a character gains/loses an item → update inventory in the SAME turn.
@@ -110,15 +111,15 @@ export const stateManagement: Atom<void> = () => `
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
       * Inspect before you change: \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\`, \`vfs_grep\`.
-      * Always reference explicit file paths under \`current/\` (e.g., \`current/world/characters/char:someone/profile.json\`).
+      * Always reference explicit VFS paths (canonical preferred: \`forks/{activeFork}/story/world/**\`; alias \`current/world/**\` is also accepted).
       * After each turn, finish with \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
-      * Do NOT write \`current/conversation/*\` via generic mutation tools.
+      * Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
 
     - **VFS OUTLINE RULES (MANDATORY)**:
       * The outline is immutable once generated. Do NOT edit it by default.
       * You may edit the outline ONLY in sudo or god mode AND only when the user explicitly asks you to.
-      * If you edit the outline, write to \`current/outline/outline.json\` and reconcile related \`current/world/\` files to stay consistent.
-      * During outline generation, save progress to \`current/outline/progress.json\`.
+      * If you edit the outline, write to \`shared/narrative/outline/outline.json\` (alias: \`current/outline/outline.json\`) and reconcile related world files.
+      * During outline generation, save progress to \`shared/narrative/outline/progress.json\` (alias: \`current/outline/progress.json\`).
 
     - **WORLD INDIFFERENCE (MECHANICAL - NOT NPC BEHAVIOR)**:
       * **CLARIFICATION**: This is about SYSTEM consequences, not about how NPCs behave. NPCs can still show kindness—see HUMANITY_AND_HOPE.

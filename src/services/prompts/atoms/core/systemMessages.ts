@@ -48,7 +48,7 @@ export const sudoModeInstruction: Atom<SystemMessageInput> = ({
   toolsetId = "turn",
 } = {}) => `[SYSTEM: FORCE UPDATE MODE (/sudo)]
 This is a **GM COMMAND**. You must:
-1. The user action is already prefixed with **[SUDO]**. Treat it as a forced update payload and bypass normal simulation constraints.
+1. The user action is already prefixed with **[SUDO]**. Treat it as a forced elevated update payload, while still respecting immutable/finish policy constraints.
 2. Use **VFS-only tools** (this loop's allowlist):
    ${formatVfsToolsForPrompt(VFS_TOOLSETS[toolsetId].tools)}
 3. Respect this **TOOL CAPABILITY CONTRACT** (runtime source of truth):

@@ -102,8 +102,8 @@ export const renderEntityContext: Atom<EntityContextInput> = (input) => {
 
   return `<current_entities>
 This section lists all currently tracked entities in the game world.
-Use these IDs when editing the corresponding JSON files under \`current/world/\`
-(via \`vfs_read\`/\`vfs_edit\`/\`vfs_write\`). If you need to create a new entity,
+Use these IDs when editing the corresponding JSON files under canonical \`forks/{activeFork}/story/world/**\`
+(alias: \`current/world/**\`) via \`vfs_read\`/\`vfs_edit\`/\`vfs_write\`. If you need to create a new entity,
 generate a new unique ID and write a new file in the appropriate folder.
 
 For NPCs: "name" is what player knows, "trueName" is the hidden true name (GM only).

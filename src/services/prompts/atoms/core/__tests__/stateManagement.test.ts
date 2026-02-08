@@ -11,15 +11,20 @@ describe("stateManagement atom", () => {
     expect(content).toContain("JSON Patch");
     expect(content).toContain("vfs_delete");
     expect(content).toContain("current/world/");
+    expect(content).toContain("forks/{forkId}/**");
+    expect(content).toContain("current/**");
     expect(content).toContain("vfs_commit_turn");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).toContain("omit optional fields");
+    expect(content).toContain("shared/narrative/conversation/*.json");
   });
 
   it("documents outline immutability and VFS outline paths", () => {
     const content = stateManagement();
     expect(content).toContain("current/outline/outline.json");
     expect(content).toContain("current/outline/progress.json");
+    expect(content).toContain("shared/narrative/outline/outline.json");
+    expect(content).toContain("shared/narrative/outline/progress.json");
     expect(content).toContain("outline is immutable");
     expect(content).toContain("sudo");
     expect(content).toContain("god mode");

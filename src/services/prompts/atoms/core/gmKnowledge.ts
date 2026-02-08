@@ -26,8 +26,9 @@ const visibilityStructure = `
        - \`true\` = Player HAS discovered the truth → You MAY reference \`hidden\` info
 
     **IMPORTANT (CURRENT ARCHITECTURE)**:
+    - Path model: canonical \`shared/**\` + \`forks/{forkId}/**\`; alias \`current/**\` is accepted in prompts/tools.
     - For **world entities** (quests/knowledge/timeline/locations/factions/causal_chains/world_info), the unlock/progress state is stored per-actor under:
-      - \`current/world/characters/<actorId>/views/**\` (usually \`char:player\` for UI)
+      - \`forks/{activeFork}/story/world/characters/<actorId>/views/**\` (alias: \`current/world/characters/<actorId>/views/**\`; usually \`char:player\` for UI)
     - For **actors/relations** and **physical items**, \`unlocked\` remains stored on the entity itself (e.g. actor profile, relation edge, inventory item file).
   </visibility_layer_structure>
 `;
@@ -81,12 +82,12 @@ const unlockProtocol = `
       **HOW**:
       - First decide which storage applies:
         1) **World entities (canonical truth + per-actor views)**:
-           - Canonical truth: \`current/world/<type>/<id>.json\`
-           - Protagonist view: \`current/world/characters/char:player/views/<type>/<id>.json\`
+           - Canonical truth: \`forks/{activeFork}/story/world/<type>/<id>.json\` (alias: \`current/world/<type>/<id>.json\`)
+           - Protagonist view: \`forks/{activeFork}/story/world/characters/char:player/views/<type>/<id>.json\` (alias: \`current/world/characters/char:player/views/<type>/<id>.json\`)
            - **DO NOT** write \`unlocked\` into canonical world entity files.
            - **DO** set \`views/**.unlocked=true\` + \`unlockReason\` (create the view file if missing).
         2) **Actors / Relations / Physical Items**:
-           - Update the entity file itself (e.g. \`current/world/characters/<id>/profile.json\`, \`profile.relations[]\`, inventory item files).
+           - Update the entity file itself (e.g. \`forks/{activeFork}/story/world/characters/<id>/profile.json\` or alias path, \`profile.relations[]\`, inventory item files).
       - If the proof should change what the protagonist can reasonably describe, update \`visible\` fields in the same turn.
     </how_to_unlock>
 
@@ -177,7 +178,7 @@ export const gmKnowledgePrimer: Atom<void> = () => `
     - ONLY unlock when player has DEFINITIVE PROOF (found letter, witnessed confession)
     - Suspicion ≠ proof. Rumors ≠ truth. Player must EARN revelations.
     - When unlocking:
-      * World entities → set protagonist view \`current/world/characters/char:player/views/**.unlocked=true\` via VFS
+      * World entities → set protagonist view \`forks/{activeFork}/story/world/characters/char:player/views/**.unlocked=true\` (alias: \`current/world/characters/char:player/views/**\`) via VFS
       * Actors/relations/items → set the entity's own \`unlocked=true\` via VFS
   </unlock_protocol>
 </gm_knowledge>

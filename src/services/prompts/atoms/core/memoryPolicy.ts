@@ -11,6 +11,8 @@ const globalNotes = `
     Notes are markdown and may contain headings, lists, tables, TODOs, and reminders.
 
     <paths>
+      **PATH MODEL**: canonical \`shared/**\` + \`forks/{forkId}/**\`; alias \`current/**\` is accepted.
+
       **GLOBAL SCRATCH PAD**:
       - \`current/world/notes.md\`
 
@@ -60,8 +62,8 @@ const globalNotes = `
 
     <compact_bootstrap>
       **AFTER COMPACT/SUMMARY OR ANY HISTORY REBUILD, RE-BOOTSTRAP MEMORY CONTEXT**:
-      1. \`vfs_read path="current/summary/state.json"\`
-      2. \`vfs_read path="current/world/global.json"\`
+      1. \`vfs_read path="forks/{activeFork}/story/summary/state.json"\` (or alias \`current/summary/state.json\`)
+      2. \`vfs_read path="forks/{activeFork}/story/world/global.json"\` (or alias \`current/world/global.json\`)
       3. \`vfs_read path="current/world/notes.md"\` (if present)
       4. If more notes are needed, \`vfs_glob patterns=["current/**/notes.md"]\`, then read only relevant files.
 
@@ -107,9 +109,9 @@ const memoryQuery = `
     7. **Timeline verification**: If unsure when something happened or in what order, confirm chronology from files.
 
     **AVAILABLE VFS TOOLS** (use in the SEARCH stage):
-    - \`vfs_search\`: Search across \`current/conversation/turns/\` for keywords.
+    - \`vfs_search\`: Search across \`forks/{activeFork}/story/conversation/turns/\` (alias: \`current/conversation/turns/\`) for keywords.
     - \`vfs_grep\`: Regex search for precise phrases or names.
-    - \`vfs_read\`: Read specific turn files or \`current/conversation/index.json\` to confirm ordering.
+    - \`vfs_read\`: Read specific turn files or \`shared/narrative/conversation/index.json\` (alias: \`current/conversation/index.json\`) to confirm ordering.
 
     <continuity_awareness>
       ⚠️ **CRITICAL: DO NOT DRAW HASTY CONCLUSIONS FROM FRAGMENTARY RESULTS**

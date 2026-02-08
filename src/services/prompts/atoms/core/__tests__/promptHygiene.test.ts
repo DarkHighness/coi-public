@@ -1,22 +1,28 @@
 import { describe, it, expect } from "vitest";
 import {
+  gmKnowledge,
   idAndEntityPolicy,
   memoryPolicy,
   outputFormat,
+  protocols,
   protocolsPrimer,
   roleInstruction,
+  stateManagement,
   toolUsage,
 } from "../index";
 
 describe("core prompt hygiene", () => {
-  it("removes deprecated tool references from core prompts", () => {
+  it("removes deprecated tool references and keeps VFS contract aligned", () => {
     const content = [
       roleInstruction(),
       protocolsPrimer(),
+      protocols(),
       outputFormat({ language: "en" }),
       toolUsage({ finishToolName: "vfs_commit_turn" }),
       idAndEntityPolicy(),
       memoryPolicy(),
+      stateManagement(),
+      gmKnowledge(),
     ].join("\n");
 
     const legacyFinishTool = ["finish", "turn"].join("_");
@@ -24,6 +30,7 @@ describe("core prompt hygiene", () => {
     const legacyActivateTool = ["activate", "skill"].join("_");
     const legacyForceUpdateTool = ["complete", "force", "update"].join("_");
     const legacyRagSearchTool = ["rag", "search"].join("_");
+
     expect(content).not.toContain(legacyFinishTool);
     expect(content).not.toContain(legacySearchTool);
     expect(content).not.toContain(legacyActivateTool);
@@ -33,6 +40,11 @@ describe("core prompt hygiene", () => {
     expect(content).not.toContain("query_");
     expect(content).not.toContain("add_");
     expect(content).toContain("vfs_");
+
+    // Canonical + alias path model
+    expect(content).toContain("shared/**");
+    expect(content).toContain("forks/{forkId}/**");
+    expect(content).toContain("current/**");
 
     // Notes scratch pad policy (VFS markdown)
     expect(content).toContain("current/world/notes.md");
@@ -50,6 +62,7 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("vfs_commit_turn");
     expect(content).toContain("vfs_tx");
     expect(content).toContain("current/conversation/**");
+    expect(content).toContain("shared/narrative/conversation/*.json");
     expect(content).not.toContain("write both files via `vfs_write`/`vfs_edit`");
     expect(content).not.toContain("or conversation writes");
 
@@ -60,5 +73,10 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("one-time user-confirmed token");
     expect(content).toContain("skills/**");
     expect(content).toContain("refs/**");
+
+    // SUDO semantics must remain controlled (not hard bypass)
+    expect(content).toContain("elevated update");
+    expect(content).toContain("immutable/finish guards");
+    expect(content).not.toContain("Bypasses all game rules and simulation logic");
   });
 });

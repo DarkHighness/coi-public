@@ -499,3 +499,19 @@ This keeps tooling output, prompt instructions, and policy runtime in lock-step.
      - `pnpm -s vitest run src/services/prompts/atoms/core/__tests__/promptHygiene.test.ts`
      - `pnpm -s vitest run src/services/prompts/atoms/core/__tests__/systemMessages.test.ts`
      - `pnpm -s vitest run src/services/tools/__tests__/vfsTools.test.ts`
+
+## 16. Prompt 全域收口（v2.2+）
+
+本轮在已有 `toolUsage/systemMessages/runtimeFloor/outputFormat` 基础上，继续完成全域口径统一：
+
+- `stateManagement`：补充 canonical/alias 路径模型、finish-guarded 禁写说明、outline canonical 写入路径。
+- `memoryPolicy`：补充 canonical/alias 路径模型、summary/world bootstrap canonical 路径、conversation 搜索 canonical + alias。
+- `gmKnowledge`：补充 canonical/alias 说明，统一 unlock 写入示例到 canonical + alias 对照。
+- `entityContext`：统一实体编辑路径说明为 canonical 主路径 + alias 视图。
+- `protocols`：`[SUDO]` 明确为受控提权入口（immutable/finish 保护仍生效），不再描述为硬绕过。
+
+对应回归测试已增强并通过：
+- `src/services/prompts/atoms/core/__tests__/promptHygiene.test.ts`
+- `src/services/prompts/atoms/core/__tests__/stateManagement.test.ts`
+- `src/services/prompts/atoms/core/__tests__/systemMessages.test.ts`
+- `src/services/prompts/skills/__tests__/builder.test.ts`
