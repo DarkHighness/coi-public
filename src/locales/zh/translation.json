@@ -84,7 +84,7 @@
   "storyNotStarted": "故事尚未开始。点击下方按钮开启你的冒险。",
   "startAdventure": "开启冒险",
   "error": "与宇宙的连接中断了... (API 错误，请重试)",
-  "builtWith": "由 Gemini 3 Pro 驱动",
+  "builtWith": "由 AI 驱动",
   "magicMirror": {
     "title": "生成视频 (Veo)",
     "artifact": "神器",
