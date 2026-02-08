@@ -154,95 +154,96 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 pb-24">
-          <section className="pt-2">
-            <div className="py-2 border-b border-theme-divider/60 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary">
+      <div className="flex-1 min-h-0 px-4 md:px-6 pb-3">
+        <div className="max-w-[1320px] mx-auto h-full border border-theme-divider/60 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <section className="min-h-0 overflow-hidden flex flex-col">
+            <div className="shrink-0 px-3 md:px-4 py-2 border-b border-theme-divider/60 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary">
               <span>{t("selectTheme")}</span>
               <span>{selectorItems.length}</span>
             </div>
 
-            {selectorItems.length === 0 ? (
-              <div className="py-8 text-sm text-theme-text-secondary border-b border-theme-divider/60">
-                {t("noThemesFound", "No themes found")}
-              </div>
-            ) : (
-              <div className="divide-y divide-theme-divider/60">
-                {selectorItems.map((themeKey) => {
-                  const isRandom = themeKey === RANDOM_THEME_KEY;
-                  const isActive = selectedTheme === themeKey;
-                  const icon = isRandom
-                    ? "🎲"
-                    : getValidIcon(themes[themeKey]?.icon, "📖");
-                  const name = isRandom
-                    ? t("randomTheme")
-                    : t(`${themeKey}.name`, { ns: "themes" });
-                  const description = isRandom
-                    ? t("randomThemeDesc")
-                    : stripMarkdown(
-                        t(`${themeKey}.narrativeStyle`, {
-                          ns: "themes",
-                        }) as string,
-                      );
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {selectorItems.length === 0 ? (
+                <div className="px-4 py-8 text-sm text-theme-text-secondary">
+                  {t("noThemesFound", "No themes found")}
+                </div>
+              ) : (
+                <div className="divide-y divide-theme-divider/60">
+                  {selectorItems.map((themeKey) => {
+                    const isRandom = themeKey === RANDOM_THEME_KEY;
+                    const isActive = selectedTheme === themeKey;
+                    const icon = isRandom
+                      ? "🎲"
+                      : getValidIcon(themes[themeKey]?.icon, "📖");
+                    const name = isRandom
+                      ? t("randomTheme")
+                      : t(`${themeKey}.name`, { ns: "themes" });
+                    const description = isRandom
+                      ? t("randomThemeDesc")
+                      : stripMarkdown(
+                          t(`${themeKey}.narrativeStyle`, {
+                            ns: "themes",
+                          }) as string,
+                        );
 
-                  return (
-                    <button
-                      key={themeKey}
-                      onClick={() => setSelectedTheme(themeKey)}
-                      className={`w-full text-left py-3 flex items-start gap-3 transition-colors ${
-                        isActive
-                          ? "text-theme-primary"
-                          : "text-theme-text hover:text-theme-primary"
-                      }`}
-                    >
-                      <div className="h-8 w-8 shrink-0 grid place-items-center text-lg leading-none">
-                        {icon}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold truncate">{name}</div>
-                        <div className="mt-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
-                          {description}
-                        </div>
-                      </div>
-
-                      <svg
-                        className={`w-4 h-4 shrink-0 mt-0.5 transition-opacity ${
+                    return (
+                      <button
+                        key={themeKey}
+                        onClick={() => setSelectedTheme(themeKey)}
+                        className={`w-full text-left px-3 md:px-4 py-3 flex items-start gap-3 transition-colors ${
                           isActive
-                            ? "opacity-100 text-theme-primary"
-                            : "opacity-45 text-theme-text-secondary"
+                            ? "bg-theme-primary/10 text-theme-primary"
+                            : "text-theme-text hover:text-theme-primary hover:bg-theme-surface-highlight/10"
                         }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                        <div className="h-8 w-8 shrink-0 grid place-items-center text-lg leading-none">
+                          {icon}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold truncate">{name}</div>
+                          <div className="mt-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+                            {description}
+                          </div>
+                        </div>
+
+                        <svg
+                          className={`w-4 h-4 shrink-0 mt-0.5 transition-opacity ${
+                            isActive
+                              ? "opacity-100 text-theme-primary"
+                              : "opacity-45 text-theme-text-secondary"
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </section>
 
-          <section className="pt-5">
-            <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary">
-              {t("themePreview", "Theme Preview")}
-            </div>
-
-            <div className="mt-2 flex items-start gap-3">
+          <aside className="min-h-0 overflow-hidden flex flex-col border-t lg:border-t-0 lg:border-l border-theme-divider/60">
+            <div className="shrink-0 px-4 py-3 border-b border-theme-divider/60 flex items-start gap-3">
               <div className="h-9 w-9 shrink-0 grid place-items-center text-xl leading-none">
                 {previewData ? getValidIcon(previewData.icon, "📖") : "🎲"}
               </div>
 
               <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-1">
+                  {t("themePreview", "Theme Preview")}
+                </div>
                 <h3
-                  className={`text-xl font-semibold text-theme-primary truncate ${
+                  className={`text-lg font-semibold text-theme-primary truncate ${
                     previewData
                       ? ENV_THEMES[previewData.envTheme]?.fontClass || "font-sans"
                       : "font-sans"
@@ -252,7 +253,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     ? t(`${previewThemeKey}.name`, { ns: "themes" })
                     : t("randomTheme")}
                 </h3>
-                <p className="mt-1 text-sm text-theme-text-secondary leading-relaxed">
+                <p className="mt-1 text-xs text-theme-text-secondary leading-relaxed">
                   {previewData
                     ? t(
                         "themeSelectionHint",
@@ -262,107 +263,105 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                 </p>
               </div>
             </div>
-          </section>
 
-          {previewData ? (
-            <>
-              <section className="pt-5 border-t border-theme-divider/60 mt-5">
-                <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
-                  {t("narrativeStyle")}
-                </div>
-                <div className="text-sm text-theme-text leading-7">
-                  <MarkdownText
-                    content={t(`${previewThemeKey}.narrativeStyle`, {
-                      ns: "themes",
-                    })}
-                  />
-                </div>
-              </section>
-
-              <section className="pt-5 border-t border-theme-divider/60 mt-5">
-                <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
-                  {t("worldSetting")}
-                </div>
-                <div className="text-sm text-theme-text leading-7">
-                  <MarkdownText
-                    content={t(`${previewThemeKey}.worldSetting`, {
-                      ns: "themes",
-                    })}
-                  />
-                </div>
-              </section>
-
-              <section className="pt-5 border-t border-theme-divider/60 mt-5">
-                <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
-                  {t("themeExample")}
-                </div>
-                <div className="text-sm text-theme-text leading-7">
-                  <MarkdownText
-                    content={t(`${previewThemeKey}.example`, {
-                      ns: "themes",
-                    })}
-                  />
-                </div>
-              </section>
-
-              {(() => {
-                const roles = t(`${previewThemeKey}.protagonist_preference`, {
-                  ns: "themes",
-                  returnObjects: true,
-                }) as string[] | undefined;
-
-                if (!Array.isArray(roles) || roles.length === 0) {
-                  return null;
-                }
-
-                return (
-                  <section className="pt-5 border-t border-theme-divider/60 mt-5">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {previewData ? (
+                <>
+                  <section className="px-4 py-4 border-b border-theme-divider/60">
                     <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
-                      {t("availableRoles", "Possible Identities")}
+                      {t("narrativeStyle")}
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {roles.slice(0, 8).map((role, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-0.5 text-xs text-theme-text-secondary border border-theme-divider/60"
-                        >
-                          {role.split(" (")[0]}
-                        </span>
-                      ))}
-                      {roles.length > 8 && (
-                        <span className="px-2 py-0.5 text-xs text-theme-text-secondary">
-                          +{roles.length - 8}
-                        </span>
-                      )}
+                    <div className="text-sm text-theme-text leading-7">
+                      <MarkdownText
+                        content={t(`${previewThemeKey}.narrativeStyle`, {
+                          ns: "themes",
+                        })}
+                      />
                     </div>
                   </section>
-                );
-              })()}
-            </>
-          ) : (
-            <section className="pt-5 border-t border-theme-divider/60 mt-5">
-              <div className="text-sm text-theme-text-secondary leading-7">
-                {t(
-                  "randomThemePanelDesc",
-                  "Pick random to start instantly. We will choose a world and tone for you.",
-                )}
-              </div>
-            </section>
-          )}
-        </div>
-      </div>
 
-      <div className="shrink-0 border-t border-theme-divider/60 bg-theme-bg">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3">
-          <button
-            onClick={handleStart}
-            disabled={!selectedTheme}
-            className="w-full h-11 text-sm tracking-[0.12em] font-semibold uppercase border border-theme-primary/45 text-theme-primary hover:bg-theme-primary/12 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
-          >
-            {selectedTheme === RANDOM_THEME_KEY
-              ? t("surpriseMe")
-              : t("startAdventure")}
-          </button>
+                  <section className="px-4 py-4 border-b border-theme-divider/60">
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
+                      {t("worldSetting")}
+                    </div>
+                    <div className="text-sm text-theme-text leading-7">
+                      <MarkdownText
+                        content={t(`${previewThemeKey}.worldSetting`, {
+                          ns: "themes",
+                        })}
+                      />
+                    </div>
+                  </section>
+
+                  <section className="px-4 py-4 border-b border-theme-divider/60">
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
+                      {t("themeExample")}
+                    </div>
+                    <div className="text-sm text-theme-text leading-7">
+                      <MarkdownText
+                        content={t(`${previewThemeKey}.example`, {
+                          ns: "themes",
+                        })}
+                      />
+                    </div>
+                  </section>
+
+                  {(() => {
+                    const roles = t(`${previewThemeKey}.protagonist_preference`, {
+                      ns: "themes",
+                      returnObjects: true,
+                    }) as string[] | undefined;
+
+                    if (!Array.isArray(roles) || roles.length === 0) {
+                      return null;
+                    }
+
+                    return (
+                      <section className="px-4 py-4">
+                        <div className="text-[10px] uppercase tracking-[0.14em] text-theme-text-secondary mb-2">
+                          {t("availableRoles", "Possible Identities")}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {roles.slice(0, 8).map((role, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-0.5 text-xs text-theme-text-secondary border border-theme-divider/60"
+                            >
+                              {role.split(" (")[0]}
+                            </span>
+                          ))}
+                          {roles.length > 8 && (
+                            <span className="px-2 py-0.5 text-xs text-theme-text-secondary">
+                              +{roles.length - 8}
+                            </span>
+                          )}
+                        </div>
+                      </section>
+                    );
+                  })()}
+                </>
+              ) : (
+                <section className="px-4 py-4 text-sm text-theme-text-secondary leading-7">
+                  {t(
+                    "randomThemePanelDesc",
+                    "Pick random to start instantly. We will choose a world and tone for you.",
+                  )}
+                </section>
+              )}
+            </div>
+
+            <div className="shrink-0 p-3 border-t border-theme-divider/60">
+              <button
+                onClick={handleStart}
+                disabled={!selectedTheme}
+                className="w-full h-11 text-sm tracking-[0.12em] font-semibold uppercase border border-theme-primary/45 text-theme-primary hover:bg-theme-primary/12 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+              >
+                {selectedTheme === RANDOM_THEME_KEY
+                  ? t("surpriseMe")
+                  : t("startAdventure")}
+              </button>
+            </div>
+          </aside>
         </div>
       </div>
 
