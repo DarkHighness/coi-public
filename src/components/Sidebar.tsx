@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
-import { UIState, ListState, LanguageCode } from "../types";
+import { UIState } from "../types";
 import { LanguageSelector } from "./LanguageSelector";
 import { CharacterPanel } from "./sidebar/CharacterPanel";
 import { QuestPanel } from "./sidebar/QuestPanel";
@@ -27,7 +27,6 @@ interface SidebarProps {
   onOpenLogs: () => void;
   onOpenViewer?: () => void;
   onOpenGallery?: () => void;
-  currentAmbience?: string;
   onUpdateUIState: <K extends keyof UIState>(
     section: K,
     newState: UIState[K],
@@ -45,7 +44,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenLogs,
   onOpenViewer,
   onOpenGallery,
-  currentAmbience,
   onUpdateUIState,
   onVeoScript,
 }) => {
@@ -57,8 +55,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { setLanguage } = actions;
 
   const { character } = gameState;
-  // Default to true if undefined
-  const showSystemFooter = gameState.uiState?.showSystemFooter !== false;
 
   const activeQuest = gameState.quests?.find((q) => q.status === "active");
   const locationContext = resolveLocationDisplayName(gameState.currentLocation, gameState);
@@ -68,52 +64,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="px-4 py-3 md:px-5 md:py-4 border-b border-theme-divider/60 bg-theme-surface/5 flex items-center justify-center relative shrink-0 min-h-[76px]">
-        <h1
-          className={`text-xl md:text-2xl text-theme-primary ${currentThemeConfig.fontClass} tracking-wider text-center leading-none`}
-        >
-          {t("titleShort")}
-          <div className="text-[11px] md:text-xs text-theme-text-secondary font-mono text-center mt-2 flex flex-col gap-0.5 max-w-[28ch] md:max-w-[36ch] mx-auto leading-snug">
-            {/* Mobile View (Stacked) */}
-            <div className="md:hidden flex flex-col gap-0.5">
-              <div className="truncate">{gameState.outline?.title}</div>
+      <div className="relative px-4 py-3 md:px-5 md:py-4 border-b border-theme-divider/60 bg-theme-surface/5 shrink-0 min-h-[76px]">
+        <div className="w-full flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center rounded-full border border-theme-divider/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-theme-primary font-semibold">
+                {t("titleShort")}
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.16em] text-theme-text-secondary">
+                {t("summarySnapshot")}
+              </span>
             </div>
-
-            {/* Desktop View (Single Line) */}
-            <div className="hidden md:block">
-              <div className="truncate">{gameState.outline?.title}</div>
-            </div>
+            <h1
+              className={`mt-2 text-sm md:text-base text-theme-primary ${currentThemeConfig.fontClass} tracking-wide leading-snug truncate`}
+              title={gameState.outline?.title || t("title")}
+            >
+              {gameState.outline?.title || t("title")}
+            </h1>
+            <div className="mt-2 h-px w-20 bg-theme-divider/70"></div>
           </div>
-          <div className="mt-3 h-px w-16 mx-auto bg-theme-divider/70"></div>
-        </h1>
 
-        <div className="absolute right-4 top-3 hidden md:block">
+          <div className="hidden md:block shrink-0">
+            <LanguageSelector
+              variant="compact"
+              disabled={isTranslating || gameState.isProcessing}
+              onChange={setLanguage}
+            />
+          </div>
+        </div>
+
+        <div className="absolute right-3 top-3 md:hidden flex items-center gap-1">
           <LanguageSelector
+            variant="compact"
             disabled={isTranslating || gameState.isProcessing}
             onChange={setLanguage}
           />
-        </div>
-        <div className="absolute right-3 top-3 md:hidden flex items-center gap-1">
-          <button
-            className="h-9 px-2.5 text-[11px] tracking-wide font-bold text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors flex items-center gap-1"
-            onClick={onNewGame}
-            title={t("mainMenu")}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-            {t("mainMenu")}
-          </button>
           <button
             className="h-9 w-9 grid place-items-center text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
             onClick={onCloseMobile}
@@ -296,14 +281,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </span>
         <div className="flex items-center divide-x divide-theme-divider/60">
           <button
-            onClick={() =>
-              onUpdateUIState("showSystemFooter", !showSystemFooter)
-            }
-            className="px-3 py-2 text-[11px] uppercase tracking-wide font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
-          >
-            {showSystemFooter ? t("hideSystem") : t("showSystem")}
-          </button>
-          <button
             onClick={onOpenLogs}
             className="px-3 py-2 text-[11px] uppercase tracking-wide font-bold hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
           >
@@ -313,6 +290,127 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="shrink-0 px-6 pt-3 pb-3 border-t border-theme-divider/60 bg-theme-surface/10 hidden md:block">
+        <div className="mb-2">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-theme-text-secondary mb-2">
+            {t("menu")}
+          </div>
+          <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
+            <button
+              onClick={onNewGame}
+              className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+              title={t("mainMenu")}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <svg
+                  className="w-4 h-4 text-theme-primary shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+                <span className="text-sm truncate">{t("mainMenu")}</span>
+              </span>
+              <svg
+                className="w-4 h-4 text-theme-text-secondary shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+
+            <button
+              onClick={onOpenSaves}
+              className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+              title={t("saveGame")}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <svg
+                  className="w-4 h-4 text-theme-primary shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                  />
+                </svg>
+                <span className="text-sm truncate">{t("saveGame")}</span>
+              </span>
+              <svg
+                className="w-4 h-4 text-theme-text-secondary shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+
+            <button
+              onClick={onSettings}
+              className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
+              title={t("settings.title")}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <svg
+                  className="w-4 h-4 text-theme-primary shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <span className="text-sm truncate">{t("settings.title")}</span>
+              </span>
+              <svg
+                className="w-4 h-4 text-theme-text-secondary shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <div className="border-t border-theme-divider/60 divide-y divide-theme-divider/60 mb-3">
           <button
             onClick={onOpenMap}
@@ -430,26 +528,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        <div
-          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-            showSystemFooter
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <SystemFooter
-              themeFont={currentThemeConfig.fontClass}
-              onMagicMirror={onMagicMirror}
-              onNewGame={onNewGame}
-              onSave={onOpenSaves}
-              onSettings={onSettings}
-              onCloseMobile={onCloseMobile}
-              currentAmbience={currentAmbience}
-              onVeoScript={onVeoScript}
-            />
-          </div>
-        </div>
+        <SystemFooter
+          themeFont={currentThemeConfig.fontClass}
+          onMagicMirror={onMagicMirror}
+          onCloseMobile={onCloseMobile}
+          onVeoScript={onVeoScript}
+        />
       </div>
     </div>
   );

@@ -5,31 +5,28 @@ import { BUILD_INFO } from "../../utils/constants";
 interface SystemFooterProps {
   themeFont: string;
   onMagicMirror: () => void;
-  onNewGame: () => void;
-  onSave: () => void;
-  onSettings: () => void;
   onCloseMobile: () => void;
-  currentAmbience?: string;
   onVeoScript: () => void;
 }
 
 export const SystemFooter: React.FC<SystemFooterProps> = ({
   themeFont,
   onMagicMirror,
-  onNewGame,
-  onSave,
-  onSettings,
   onCloseMobile,
-  currentAmbience,
   onVeoScript,
 }) => {
   const { t } = useTranslation();
 
+  const openAndCloseOnMobile = (action: () => void) => {
+    action();
+    onCloseMobile();
+  };
+
   return (
-    <div className="shrink-0 px-4 pt-3 pb-4 border-t border-theme-divider/60 bg-theme-surface/10 mt-auto space-y-4">
+    <div className="shrink-0 px-4 pt-2 pb-4 border-t border-theme-divider/60 bg-theme-surface/10 mt-auto space-y-3">
       <div>
         <h2
-          className={`text-theme-primary uppercase text-xs font-bold tracking-widest mb-2 flex items-center ${themeFont}`}
+          className={`text-theme-primary uppercase text-[10px] font-bold tracking-[0.16em] mb-2 flex items-center ${themeFont}`}
         >
           <svg
             className="w-4 h-4 mr-2"
@@ -53,12 +50,9 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           {t("system")}
         </h2>
 
-        <div className="border-t border-theme-divider/60 divide-y divide-theme-divider/60">
+        <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
           <button
-            onClick={() => {
-              onMagicMirror();
-              onCloseMobile();
-            }}
+            onClick={() => openAndCloseOnMobile(onMagicMirror)}
             className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
             title={t("magicMirror.title")}
           >
@@ -94,10 +88,7 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
           </button>
 
           <button
-            onClick={() => {
-              onVeoScript();
-              onCloseMobile();
-            }}
+            onClick={() => openAndCloseOnMobile(onVeoScript)}
             className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
             title={t("veoScript.title")}
           >
@@ -131,75 +122,9 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
               />
             </svg>
           </button>
-
-          <button
-            onClick={() => {
-              onNewGame();
-              onCloseMobile();
-            }}
-            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
-          >
-            <span className="text-sm">{t("mainMenu")}</span>
-            <svg
-              className="w-4 h-4 text-theme-text-secondary shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-
-          <button
-            onClick={onSave}
-            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
-          >
-            <span className="text-sm">{t("saveGame")}</span>
-            <svg
-              className="w-4 h-4 text-theme-text-secondary shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => {
-              onSettings();
-              onCloseMobile();
-            }}
-            className="w-full py-2.5 pl-2 pr-1 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/20 transition-colors text-theme-text"
-          >
-            <span className="text-sm">{t("settings.title")}</span>
-            <svg
-              className="w-4 h-4 text-theme-text-secondary shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
         </div>
 
-        <div className="mt-3 pt-2 border-t border-theme-divider/60 text-[10px] text-theme-text-secondary text-center">
+        <div className="mt-2 pt-2 border-t border-theme-divider/60 text-[10px] text-theme-text-secondary text-center">
           {t("builtWith")}
           <div className="opacity-60 mt-1 font-mono">
             {BUILD_INFO.gitHash} ({BUILD_INFO.buildTime})

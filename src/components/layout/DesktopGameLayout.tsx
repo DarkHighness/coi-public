@@ -216,7 +216,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onOpenLogs={onOpenLogs}
             onOpenViewer={onOpenViewer}
             onOpenGallery={onOpenGallery}
-            currentAmbience={currentAmbience}
             onUpdateUIState={onUpdateUIState}
             onVeoScript={onVeoScript}
           />

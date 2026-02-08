@@ -214,7 +214,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onOpenMap={onOpenMap}
           onOpenLogs={onOpenLogs}
           onOpenViewer={onOpenViewer}
-          currentAmbience={currentAmbience}
           onUpdateUIState={onUpdateUIState}
           onVeoScript={onVeoScript}
         />
@@ -227,214 +226,334 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 overflow-y-auto ${mobileTab === "menu" ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="p-6 pb-24">
-          <h2
-            className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass} mb-8`}
-          >
-            {t("menu")}
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={onOpenMap}
-              className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <h2
+              className={`text-2xl text-theme-primary ${currentThemeConfig.fontClass}`}
             >
-              <svg
-                className="w-8 h-8 text-theme-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7"
-                ></path>
-              </svg>
-              <span className="text-sm font-bold uppercase">
-                {t("tree.map")}
-              </span>
-            </button>
-            <button
-              onClick={onOpenSaves}
-              className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
-            >
-              <svg
-                className="w-8 h-8 text-theme-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-                ></path>
-              </svg>
-              <span className="text-sm font-bold uppercase">
-                {t("saves.title")}
-              </span>
-            </button>
-            <button
-              onClick={onSettings}
-              className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
-            >
-              <svg
-                className="w-8 h-8 text-theme-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                ></path>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                ></path>
-              </svg>
-              <span className="text-sm font-bold uppercase">
-                {t("settings.title")}
-              </span>
-            </button>
+              {t("menu")}
+            </h2>
             <button
               onClick={onOpenLogs}
-              className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
+              className="h-10 px-3 border border-theme-divider/60 rounded-md text-xs font-bold uppercase tracking-wide text-theme-text-secondary hover:text-theme-primary hover:border-theme-primary/40 transition-colors"
             >
-              <svg
-                className="w-8 h-8 text-theme-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                ></path>
-              </svg>
-              <span className="text-sm font-bold uppercase">
-                {t("logs.title")}
-              </span>
-            </button>
-            <button
-              onClick={onMagicMirror}
-              className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
-            >
-              <svg
-                className="w-8 h-8 text-theme-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                ></path>
-              </svg>
-              <span className="text-sm font-bold uppercase">
-                {t("magicMirror.title")}
-              </span>
-            </button>
-            <button
-              onClick={onVeoScript}
-              className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
-            >
-              <svg
-                className="w-8 h-8 text-theme-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
-                ></path>
-              </svg>
-              <span className="text-sm font-bold uppercase">
-                {t("veoScript.title")}
-              </span>
-            </button>
-            {onOpenViewer && (
-              <button
-                onClick={onOpenViewer}
-                className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
-              >
-                <svg
-                  className="w-8 h-8 text-theme-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  ></path>
-                </svg>
-                <span className="text-sm font-bold uppercase">
-                  {t("gameViewer.title") || "State"}
-                </span>
-              </button>
-            )}
-            {onOpenGallery && (
-              <button
-                onClick={onOpenGallery}
-                className="p-4 bg-theme-surface border border-theme-border rounded flex flex-col items-center gap-2 aspect-square justify-center hover:border-theme-primary transition-colors"
-              >
-                <svg
-                  className="w-8 h-8 text-theme-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="text-sm font-bold uppercase">
-                  {t("gallery.title")}
-                </span>
-              </button>
-            )}
-            <button
-              onClick={onNewGame}
-              className="col-span-2 p-4 bg-theme-surface border border-theme-border rounded flex flex-row items-center gap-2 justify-center hover:bg-theme-surface-highlight transition-colors mt-4"
-            >
-              <svg
-                className="w-5 h-5 text-theme-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                ></path>
-              </svg>
-              <span className="text-sm font-bold uppercase text-theme-text">
-                {t("mainMenu")}
-              </span>
+              {t("viewLogs")}
             </button>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="space-y-5">
+            <section>
+              <h3 className="text-[11px] uppercase tracking-[0.16em] text-theme-text-secondary mb-2">
+                {t("menu")}
+              </h3>
+              <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
+                <button
+                  onClick={onNewGame}
+                  className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-theme-text">
+                    <svg
+                      className="w-5 h-5 text-theme-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      />
+                    </svg>
+                    <span className="text-base">{t("mainMenu")}</span>
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={onOpenSaves}
+                  className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-theme-text">
+                    <svg
+                      className="w-5 h-5 text-theme-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                      />
+                    </svg>
+                    <span className="text-base">{t("saveGame")}</span>
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={onSettings}
+                  className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-theme-text">
+                    <svg
+                      className="w-5 h-5 text-theme-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    <span className="text-base">{t("settings.title")}</span>
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-[11px] uppercase tracking-[0.16em] text-theme-text-secondary mb-2">
+                {t("status")}
+              </h3>
+              <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
+                <button
+                  onClick={onOpenMap}
+                  className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-theme-text">
+                    <svg
+                      className="w-5 h-5 text-theme-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7"
+                      ></path>
+                    </svg>
+                    <span className="text-base">{t("tree.viewMap")}</span>
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+
+                {onOpenViewer && (
+                  <button
+                    onClick={onOpenViewer}
+                    className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5 text-theme-text">
+                      <svg
+                        className="w-5 h-5 text-theme-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                        ></path>
+                      </svg>
+                      <span className="text-base">{t("gameViewer.title") || "State"}</span>
+                    </span>
+                    <svg
+                      className="w-4 h-4 text-theme-text-secondary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                )}
+
+                {onOpenGallery && (
+                  <button
+                    onClick={onOpenGallery}
+                    className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5 text-theme-text">
+                      <svg
+                        className="w-5 h-5 text-theme-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="text-base">{t("gallery.title")}</span>
+                    </span>
+                    <svg
+                      className="w-4 h-4 text-theme-text-secondary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-[11px] uppercase tracking-[0.16em] text-theme-text-secondary mb-2">
+                {t("system")}
+              </h3>
+              <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
+                <button
+                  onClick={onMagicMirror}
+                  className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-theme-text">
+                    <svg
+                      className="w-5 h-5 text-theme-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      ></path>
+                    </svg>
+                    <span className="text-base">{t("magicMirror.title")}</span>
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={onVeoScript}
+                  className="w-full py-3 px-2 flex items-center justify-between gap-3 hover:bg-theme-surface-highlight/15 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-theme-text">
+                    <svg
+                      className="w-5 h-5 text-theme-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+                      ></path>
+                    </svg>
+                    <span className="text-base">{t("veoScript.title")}</span>
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-theme-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <div className="mt-8 text-center border-t border-theme-divider/60 pt-4">
             <div className="text-xs text-theme-muted">{t("builtWith")}</div>
             <div className="text-[10px] text-theme-muted/50 mt-1">
               {BUILD_INFO.gitHash} ({BUILD_INFO.buildTime})
