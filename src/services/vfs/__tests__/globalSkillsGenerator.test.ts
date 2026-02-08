@@ -75,6 +75,9 @@ describe("VFS global skills generator", () => {
     const commandSummary = seeds.find(
       (seed) => seed.path === "skills/commands/summary/SKILL.md",
     )?.content;
+    const commandCompact = seeds.find(
+      (seed) => seed.path === "skills/commands/compact/SKILL.md",
+    )?.content;
 
     expect(commandSudo).toContain("name: commands-sudo");
     expect(commandSudo).toContain("domain: commands");
@@ -83,8 +86,11 @@ describe("VFS global skills generator", () => {
     expect(commandSudoExamples).toContain("Protagonist rename across world files");
     expect(commandSudoRef).toContain("Coverage Audit for /sudo");
     expect(commandSummary).toContain("name: commands-summary");
-    expect(commandSummary).toContain("session-compact");
+    expect(commandSummary).toContain("query_summary");
     expect(commandSummary).toContain("vfs_finish_summary");
+    expect(commandCompact).toContain("name: commands-compact");
+    expect(commandCompact).toContain("session_compact");
+    expect(commandCompact).toContain("current session history in context");
   });
 
   it("includes generated skill entries inside global skills index", () => {

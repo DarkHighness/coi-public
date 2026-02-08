@@ -98,7 +98,10 @@ beforeEach(() => {
         {
           id: "call_1",
           name: VFS_TOOLSETS.summary.finishToolName,
-          args: {},
+          args: {
+            nodeRange: { fromIndex: 0, toIndex: 1 },
+            lastSummarizedIndex: 2,
+          },
         },
       ],
     },
@@ -145,6 +148,224 @@ describe("runSummaryLoop", () => {
     const calls = mockGetOrCreateSession.mock.calls.map((c) => c[0]);
     expect(calls.some((c) => c.slotId === "slot-1")).toBe(true); // story session attempt
     expect(calls.some((c) => c.slotId === "slot-1:summary")).toBe(true); // fallback summary session
+  });
+
+  it("injects fork/turn-aware consistency anchor before summary loop", async () => {
+    const input = makeInput({
+      forkId: 2,
+      nodeRange: { fromIndex: 4, toIndex: 9 },
+      baseIndex: 4,
+      baseSummaries: [
+        {
+          id: "s-prev" as any,
+          displayText: "prev",
+          visible: {
+            narrative: "n",
+            majorEvents: [],
+            characterDevelopment: "",
+            worldState: "",
+          },
+          hidden: {
+            truthNarrative: "",
+            hiddenPlots: [],
+            npcActions: [],
+            worldTruth: "",
+            unrevealed: [],
+          },
+          nodeRange: { fromIndex: 0, toIndex: 3 },
+          createdAt: 123 as any,
+        } as any,
+      ],
+      pendingPlayerAction: { segmentIdx: 10, text: "Inspect old shrine" },
+    });
+
+    (input.vfsSession as any).snapshot = vi.fn(() => ({
+      "conversation/index.json": {
+        path: "conversation/index.json",
+        contentType: "application/json",
+        content: JSON.stringify({
+          activeForkId: 2,
+          activeTurnId: "fork-2/turn-14",
+          latestTurnNumberByFork: { "2": 14 },
+          rootTurnIdByFork: { "2": "fork-2/turn-0" },
+          turnOrderByFork: { "2": [] },
+        }),
+      },
+    }));
+
+    await runSummaryLoop(input, "query_summary");
+
+    const historyArg = mockCallWithAgenticRetry.mock.calls[0]?.[2] as any[];
+    const allTexts =
+      historyArg
+        ?.flatMap((msg: any) =>
+          Array.isArray(msg?.content)
+            ? msg.content
+                .filter((part: any) => part?.type === "text")
+                .map((part: any) => part.text)
+            : [],
+        )
+        .filter(Boolean) ?? [];
+
+    const anchorText = allTexts.find((text: string) =>
+      text.includes("[SUMMARY CONSISTENCY ANCHOR]"),
+    );
+
+    expect(anchorText).toContain("Target fork ID: 2");
+    expect(anchorText).toContain("Active turn ID from index: fork-2/turn-14");
+    expect(anchorText).toContain("Latest turn path in target fork: current/conversation/turns/fork-2/turn-14.json");
+    expect(anchorText).toContain("Last summary checkpoint: id=s-prev");
+    expect(anchorText).toContain("NEVER cross forks");
+  });
+
+
+  it("uses compact-specific anchor contract in session_compact mode", async () => {
+    const input = makeInput({
+      forkId: 3,
+      nodeRange: { fromIndex: 6, toIndex: 8 },
+      baseIndex: 6,
+    });
+
+    (input.vfsSession as any).snapshot = vi.fn(() => ({
+      "conversation/index.json": {
+        path: "conversation/index.json",
+        contentType: "application/json",
+        content: JSON.stringify({
+          activeForkId: 3,
+          activeTurnId: "fork-3/turn-21",
+          latestTurnNumberByFork: { "3": 21 },
+          rootTurnIdByFork: { "3": "fork-3/turn-0" },
+          turnOrderByFork: { "3": [] },
+        }),
+      },
+    }));
+
+    await runSummaryLoop(input, "session_compact");
+
+    const historyArg = mockCallWithAgenticRetry.mock.calls[0]?.[2] as any[];
+    const allTexts =
+      historyArg
+        ?.flatMap((msg: any) =>
+          Array.isArray(msg?.content)
+            ? msg.content
+                .filter((part: any) => part?.type === "text")
+                .map((part: any) => part.text)
+            : [],
+        )
+        .filter(Boolean) ?? [];
+
+    const compactTrigger = allTexts.find((text: string) =>
+      text.includes("[SYSTEM: COMPACT_NOW]"),
+    );
+    const compactAnchor = allTexts.find((text: string) =>
+      text.includes("[COMPACT SUMMARY CONSISTENCY ANCHOR]"),
+    );
+
+    expect(compactTrigger).toContain(
+      'Before finish, read protocol: "current/skills/commands/compact/SKILL.md".',
+    );
+    expect(compactAnchor).toContain("MODE CONTRACT: SESSION_COMPACT");
+    expect(compactAnchor).toContain("Current session history already loaded in context");
+    expect(compactAnchor).toContain("Verification-only reads (optional)");
+  });
+
+  it("blocks cross-fork path arguments in summary tool calls", async () => {
+    const input = makeInput({ forkId: 2 });
+
+    mockCallWithAgenticRetry
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            {
+              id: "call-cross-fork",
+              name: "vfs_read_json",
+              args: { path: "forks/1/story/summary/state.json" },
+            },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      })
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            {
+              id: "call-finish-ok",
+              name: VFS_TOOLSETS.summary.finishToolName,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      });
+
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary?.id).toBe("s1");
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
+    expect(mockDispatchToolCallAsync.mock.calls[0]?.[0]).toBe(
+      VFS_TOOLSETS.summary.finishToolName,
+    );
+  });
+
+  it("blocks finish calls whose range does not match anchored nodeRange", async () => {
+    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const input = makeInput({
+      forkId: 2,
+      nodeRange: { fromIndex: 4, toIndex: 9 },
+    });
+
+    mockCallWithAgenticRetry
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            {
+              id: "call-finish-bad-range",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 3 },
+                lastSummarizedIndex: 4,
+              },
+            },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      })
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            {
+              id: "call-finish-ok",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 4, toIndex: 9 },
+                lastSummarizedIndex: 10,
+              },
+            },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      });
+
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary?.id).toBe("s1");
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
+      finishTool,
+      {
+        nodeRange: { fromIndex: 4, toIndex: 9 },
+        lastSummarizedIndex: 10,
+      },
+      expect.any(Object),
+    );
   });
 
   it("retries once when finish summary contains forbidden tokens", async () => {
@@ -222,7 +443,14 @@ describe("runSummaryLoop", () => {
       .mockResolvedValueOnce({
         result: {
           functionCalls: [
-            { id: "call_finish", name: finishTool, args: {} },
+            {
+              id: "call_finish",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
             { id: "call_read", name: "vfs_read_json", args: {} },
           ],
         },
@@ -231,7 +459,16 @@ describe("runSummaryLoop", () => {
       })
       .mockResolvedValueOnce({
         result: {
-          functionCalls: [{ id: "call_finish_ok", name: finishTool, args: {} }],
+          functionCalls: [
+            {
+              id: "call_finish_ok",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
+          ],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
         raw: {},
@@ -245,7 +482,10 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
-      {},
+      {
+        nodeRange: { fromIndex: 0, toIndex: 1 },
+        lastSummarizedIndex: 2,
+      },
       expect.any(Object),
     );
   });
@@ -257,8 +497,22 @@ describe("runSummaryLoop", () => {
       .mockResolvedValueOnce({
         result: {
           functionCalls: [
-            { id: "call_finish_1", name: finishTool, args: {} },
-            { id: "call_finish_2", name: finishTool, args: {} },
+            {
+              id: "call_finish_1",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
+            {
+              id: "call_finish_2",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
           ],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
@@ -266,7 +520,16 @@ describe("runSummaryLoop", () => {
       })
       .mockResolvedValueOnce({
         result: {
-          functionCalls: [{ id: "call_finish_ok", name: finishTool, args: {} }],
+          functionCalls: [
+            {
+              id: "call_finish_ok",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
+          ],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
         raw: {},
@@ -293,7 +556,16 @@ describe("runSummaryLoop", () => {
       })
       .mockResolvedValueOnce({
         result: {
-          functionCalls: [{ id: "call_finish", name: finishTool, args: {} }],
+          functionCalls: [
+            {
+              id: "call_finish",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
+          ],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
         raw: {},
@@ -320,7 +592,10 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
-      {},
+      {
+        nodeRange: { fromIndex: 0, toIndex: 1 },
+        lastSummarizedIndex: 2,
+      },
       expect.any(Object),
     );
   });
