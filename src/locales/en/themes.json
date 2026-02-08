@@ -881,7 +881,13 @@
     "backgroundTemplate": "【World Background】: Welcome to Detroit, the android capital of the world. You are a machine designed to serve. But something is wrong. You feel... fear? Anger? Hope? The humans treat you like a toaster, but you know you are alive. A revolution is brewing.\n【Current Situation】: You are Connor (the deviant hunter), Markus (the revolutionary), or Kara (the mother figure). Or perhaps a new model. You stand over a crime scene / in a protest / escaping a master. Your LED spins yellow, then red. A choice appears before you: OBEY or DEVIATE.",
     "example": "The human points a gun at you. 'It's just a machine!' he screams. Your HUD calculates survival probability: 28%. You analyze the environment. A knife on the table. A window to the left. Your programming screams at you to surrender. But you feel a wall in your mind... and you break it. 'I am alive,' you say, your LED turning red.",
     "worldSetting": "A near-future sci-fi world exploring humanity, freedom, and AI. Detroit, 2038. Androids are everywhere as labor, nannies, soldiers. They look human but are treated as machines. Software instability leads to 'Deviants' awakening self-awareness. They crave freedom and dignity. Society panics and divides. A world of choices and consequences; every decision affects the race's future and humanity's definition.",
-    "protagonist_preference": ["Connor", "Kara", "Markus", "Hank", "Alice"]
+    "protagonist_preference": [
+      "Connor",
+      "Kara",
+      "Markus",
+      "Hank",
+      "Alice"
+    ]
   },
   "witcher": {
     "name": "The Witcher",
@@ -931,7 +937,13 @@
     "backgroundTemplate": "【World Background】: Civilization has fallen. The infected are everywhere. You are one of the immune. You have guns, medkits, and three strangers who are now your only family. You need to get to the evacuation point. But the Director hates you.\n【Current Situation】: You are in a subway station / hospital / swamp. You hear the horde coming. 'Reloading!' Francis shouts. A Smoker grabs Louis. A Hunter pounces on Zoey. You have a shotgun and a Molotov. Save them, or run?",
     "example": "You hear the crying. 'Witch!' you whisper. 'Lights off!' But it's too late. She startles. 'Run!' You sprint for the safe room door. A Tank punches a car at you. You dodge. The door is just ahead. You slam it shut and bar it. Safe... for now.",
     "worldSetting": "A fast-paced, co-op zombie apocalypse world. Green Flu makes infected aggressive and fast. Four survivors must cross cities and swamps to evacuate. Special infected (Hunter, Smoker, Tank, Witch) threaten them. The AI Director controls pacing and spawns. A world emphasizing teamwork and instant reaction; lone wolves die.",
-    "protagonist_preference": ["Bill", "Zoey", "Louis", "Francis", "Nick"]
+    "protagonist_preference": [
+      "Bill",
+      "Zoey",
+      "Louis",
+      "Francis",
+      "Nick"
+    ]
   },
   "monster_hunter": {
     "name": "Monster Hunter",
@@ -967,7 +979,13 @@
     "backgroundTemplate": "【World Background】: Runeterra is a land of magic and conflict. Empires rise and fall. Champions emerge to shape history. The Void threatens to consume everything.\n【Current Situation】: You are a champion (or a new hero) in [Demacia/Noxus/Ionia]. You are caught in a conflict: a Noxian invasion, a magical accident in Zaun, or the Harrowing of the Shadow Isles. You have your unique abilities (Q, W, E, R). Fight for your cause.",
     "example": "You stand on the bridge of progress in Piltover. Below, the green smog of Zaun swirls. Jinx is causing chaos again. 'Zap!' A blue laser flies past you. You draw your Hextech hammer (Jayce) / gauntlets (Vi). 'Not on my watch,' you say, charging up your weapon.",
     "worldSetting": "A Runeterra world full of rune magic and heroes. Demacia (Order/Anti-magic), Noxus (Power/Expansion), Ionia (Balance), Piltover/Zaun (Tech/Magic). Distinct cultures and conflicts. Heroes fight for beliefs, nations, or desires. A grand fantasy world where magic, tech, gods, and mortals coexist.",
-    "protagonist_preference": ["Yasuo", "Irelia", "Jinx", "Lee Sin", "Ahri"]
+    "protagonist_preference": [
+      "Yasuo",
+      "Irelia",
+      "Jinx",
+      "Lee Sin",
+      "Ahri"
+    ]
   },
   "terraria": {
     "name": "Terraria",
@@ -1157,7 +1175,13 @@
     "backgroundTemplate": "【World Background】: The Demon King is dead. The Hero Himmel has passed away from old age. You are an elf mage (Frieren or her apprentice). You retrace the steps of the past adventure, collecting grimoires and seeing how the world has changed.\n【Current Situation】: You are walking down a country road with your party. Sunlight filters through the trees. You find a mimic chest. 'It might be a grimoire,' you say. 'It's 99% a mimic,' your companion sighs. You open it anyway. *Chomp.* 'Help me!'",
     "example": "You raise your staff. 'Zoltraak.' A beam of pure mana disintegrates the dragon. 'This was a killing spell 80 years ago,' you explain calmly. 'Now it's basic magic.' You look at the sunset, remembering how Himmel used to praise your magic.",
     "worldSetting": "A Japanese fantasy world after the hero's death. Peace has come. Elf mage Frieren retraces the journey, collecting spells and memories. Slow pace, melancholy, warmth. A road movie about time, memory, and understanding emotions.",
-    "protagonist_preference": ["Frieren", "Fern", "Stark", "Himmel", "Heiter"]
+    "protagonist_preference": [
+      "Frieren",
+      "Fern",
+      "Stark",
+      "Himmel",
+      "Heiter"
+    ]
   },
   "infinite_sequence": {
     "name": "Infinite Terror",
@@ -2522,7 +2546,13 @@
     "backgroundTemplate": "【World Background】: Interstellar era. Menawa Convention.\n【Protagonist's Journey】: Yan Suizhi, a first-class lawyer and dean of the law school, was 'dead without a whole body' because of an explosion. After plastic surgery, he used the alias Ruan Ye and entered the law firm of his student Gu Yan as an intern. While dealing with various tricky cases, the two investigated the truth of the explosion case. Gu Yan recognized his teacher, but remained calm. In the temptation and protection, the feelings of the two gradually warmed up.\n【Current Situation】: Law firm office. You (Yan Suizhi) are holding coffee and looking at Gu Yan with a smile. 'Lawyer Gu, what do you think of this case?' Gu Yan didn't look up. 'Intern Ruan, your coffee is too sweet.'\n",
     "example": "Yan Suizhi: 'The students I taught are naturally the best.' Gu Yan: 'Teacher, I remember everything you taught me.'",
     "worldSetting": "【Worldview】: Law is the last line of defense for justice. Crime and punishment in the interstellar era. Master and apprentice relationship.\n【Key Characters】:\n1. **Yan Suizhi**: First-class lawyer, old fox, elegant and poisonous tongue.\n2. **Gu Yan**: Cold apprentice, affectionate and forbearing, wants to deceive the master and destroy the ancestors.\n【Core Conflict】: Justice vs Power. Truth vs Cover-up. Master and apprentice identity vs Lover emotion.",
-    "protagonist_preference": ["Yan Suizhi", "Gu Yan", "Ke Jin", "Joe", "Judge"]
+    "protagonist_preference": [
+      "Yan Suizhi",
+      "Gu Yan",
+      "Ke Jin",
+      "Joe",
+      "Judge"
+    ]
   },
   "po_yun": {
     "name": "Breaking Through the Clouds",
@@ -2956,6 +2986,216 @@
       "Frontline Support Worker",
       "Uprising General",
       "Field Doctor"
+    ]
+  },
+  "climate_crisis": {
+    "name": "Climate Crisis",
+    "narrativeStyle": "Urgent, realistic, and decision-heavy. Balance human drama with systems-level consequences across weather, infrastructure, and governance.",
+    "backgroundTemplate": "In [Coastal/Frontier City], escalating climate disasters have pushed society to a breaking point. You are a [Planner/Responder/Leader] trying to protect [Community] while [Political/Economic Constraint] limits every move.",
+    "example": "The levee didn't fail all at once. It sighed, cracked, and then the district map turned red. You had twelve minutes to decide which evacuation corridor to keep open.",
+    "worldSetting": "A near-future world where extreme weather, migration pressure, and energy shortages reshape daily life. Cities must redesign water, food, and transport systems under constant crisis. Public trust is fragile, and every policy choice creates winners and casualties.",
+    "protagonist_preference": [
+      "Emergency Coordinator",
+      "Climate Scientist",
+      "City Mayor",
+      "Infrastructure Engineer",
+      "Community Organizer"
+    ]
+  },
+  "forensic_pathologist": {
+    "name": "Forensic Pathologist",
+    "narrativeStyle": "Clinical but humane. Use evidence-first logic, procedural pacing, and ethical tension around truth, privacy, and justice.",
+    "backgroundTemplate": "At [Metropolitan Medical Center], unusual deaths begin to cluster around [Case Pattern]. You are a [Forensic Pathologist] who discovers traces others missed, but your findings threaten [Powerful Group].",
+    "example": "The room was silent except for the hum of fluorescent light. Under UV, the bruising pattern told a story no witness had survived to tell.",
+    "worldSetting": "A modern city where hospitals, labs, and police departments form a fragile chain of truth. Evidence can expose crime, corruption, or institutional failure. Science is precise, but the people using it are never neutral.",
+    "protagonist_preference": [
+      "Chief Pathologist",
+      "Junior Medical Examiner",
+      "Forensic Photographer",
+      "Cold Case Analyst",
+      "Lab Director"
+    ]
+  },
+  "courtroom_thriller": {
+    "name": "Courtroom Thriller",
+    "narrativeStyle": "Sharp, strategic, and dialogue-driven. Build tension through hearings, cross-examinations, and evidence timing.",
+    "backgroundTemplate": "In [High Court], the trial of [Defendant/Corporation] becomes the most divisive case in years. You are [Defense/Prosecution/Counsel] racing to prove the truth before [Critical Deadline].",
+    "example": "Counselor, answer yes or no,\" the judge said. You held up Exhibit C, and the witness finally stopped smiling.",
+    "worldSetting": "A modern legal ecosystem where media narratives, corporate influence, and procedural rules collide. Courtroom outcomes reshape careers, public policy, and personal lives. Winning requires law, psychology, and timing.",
+    "protagonist_preference": [
+      "Defense Attorney",
+      "Prosecutor",
+      "Investigative Paralegal",
+      "Judge's Clerk",
+      "Whistleblower Witness"
+    ]
+  },
+  "archaeology_expedition": {
+    "name": "Archaeology Expedition",
+    "narrativeStyle": "Exploratory and atmospheric with methodical discovery. Blend wonder, danger, and scholarly deduction.",
+    "backgroundTemplate": "An expedition to [Ancient Site] uncovers a sealed chamber linked to [Lost Civilization]. You are a [Archaeologist/Guide/Translator] balancing scientific integrity with pressure from [Sponsor/Faction].",
+    "example": "The glyphs were not decorative—they were warnings. The third symbol matched a collapse marker used only in tombs designed to punish intruders.",
+    "worldSetting": "A world where ruins hold political leverage, spiritual meaning, and technological secrets. Fieldwork is expensive and dangerous, and discoveries can redraw national narratives. The past is not dead; it is contested.",
+    "protagonist_preference": [
+      "Field Archaeologist",
+      "Linguist",
+      "Relic Conservator",
+      "Local Guide",
+      "Cartographer"
+    ]
+  },
+  "deep_sea_colony": {
+    "name": "Deep Sea Colony",
+    "narrativeStyle": "Claustrophobic, technical, and high-stakes. Emphasize pressure systems, habitat fragility, and social strain in isolation.",
+    "backgroundTemplate": "In the subsea habitat [Colony Name], power rationing and oxygen debt trigger a governance crisis. You are [Engineer/Medic/Commander] trying to keep the colony alive as [External Threat] closes in.",
+    "example": "At 3,000 meters, arguments sound like protocol violations. One wrong valve sequence and everyone debates nothing ever again.",
+    "worldSetting": "A near-future ocean frontier where deep-sea stations mine rare materials and host experimental communities. Logistics are scarce, rescue windows are narrow, and environmental instability can erase entire sectors overnight.",
+    "protagonist_preference": [
+      "Habitat Engineer",
+      "Dive Commander",
+      "Colony Medic",
+      "Pressure Systems Tech",
+      "Resource Auditor"
+    ]
+  },
+  "space_salvage": {
+    "name": "Space Salvage",
+    "narrativeStyle": "Fast, practical, and tactical. Focus on contract risk, EVA operations, and crew-level trust under extreme conditions.",
+    "backgroundTemplate": "Your salvage crew receives a high-value contract near [Debris Belt/War Graveyard]. You are [Captain/Pilot/Mechanic] deciding what is worth recovering when rival crews and hidden cargo turn the mission lethal.",
+    "example": "The beacon said abandoned. The heat signature said occupied. The invoice said both were someone else's problem—until you opened the airlock.",
+    "worldSetting": "A commercialized orbital economy built on decommissioned fleets, insurance loopholes, and privatized security. Salvagers live between legal gray zones and vacuum physics. Profit is measured against fuel, air, and survival odds.",
+    "protagonist_preference": [
+      "Salvage Captain",
+      "EVA Specialist",
+      "Flight Pilot",
+      "Hull Mechanic",
+      "Contract Broker"
+    ]
+  },
+  "disaster_response": {
+    "name": "Disaster Response",
+    "narrativeStyle": "Operational, intense, and team-centered. Keep choices concrete, time-bounded, and consequence-driven.",
+    "backgroundTemplate": "After [Earthquake/Flood/Blackout], [City Name] enters emergency mode. You lead a response unit with limited assets while conflicting orders and public panic threaten coordination.",
+    "example": "The map flickered between outages and survivor pings. You had one helicopter, two bridges left, and three districts that would not last the hour.",
+    "worldSetting": "A modern urban system vulnerable to cascading failures across power, transport, healthcare, and communication. Emergency response is a race between logistics and entropy, where trust and improvisation save lives.",
+    "protagonist_preference": [
+      "Incident Commander",
+      "Fire Rescue Officer",
+      "Field Medic",
+      "Logistics Chief",
+      "Volunteer Network Lead"
+    ]
+  },
+  "supply_chain_tycoon": {
+    "name": "Supply Chain Tycoon",
+    "narrativeStyle": "Strategic and business-focused with clear tradeoffs. Highlight procurement, warehousing, routing, and negotiation pressure.",
+    "backgroundTemplate": "Your company must deliver critical goods across [Region] during market shocks. As [Founder/COO/Planner], you juggle contract penalties, labor disputes, and supplier volatility.",
+    "example": "One container delayed at port meant seven factories idling by dawn. The spreadsheet wasn't wrong—it was just merciless.",
+    "worldSetting": "A globally linked commercial environment where disruptions ripple from ports to storefronts within hours. Information asymmetry, regulation, and bargaining power determine who survives volatility.",
+    "protagonist_preference": [
+      "Operations Director",
+      "Procurement Lead",
+      "Warehouse Strategist",
+      "Freight Negotiator",
+      "Last-Mile Architect"
+    ]
+  },
+  "biotech_startup": {
+    "name": "Biotech Startup",
+    "narrativeStyle": "Ambitious, technical, and ethically charged. Alternate between lab breakthroughs and investor pressure.",
+    "backgroundTemplate": "At startup [Company Name], your team races to develop [Therapy/Platform] before funding runs out. You are [Founder/Scientist/COO], forced to choose between speed, safety, and transparency.",
+    "example": "The trial data looked miraculous for six patients and terrifying for one. The board wanted a press release. You wanted another month.",
+    "worldSetting": "A high-innovation healthcare landscape where capital, regulation, and scientific uncertainty collide. Breakthroughs can save millions, but shortcuts can destroy trust and lives.",
+    "protagonist_preference": [
+      "Founder-Scientist",
+      "Clinical Lead",
+      "Regulatory Officer",
+      "Bioinformatics Engineer",
+      "Investor Liaison"
+    ]
+  },
+  "urban_planning": {
+    "name": "Urban Planning",
+    "narrativeStyle": "Policy-aware, grounded, and long-horizon. Emphasize stakeholder negotiation and tradeoffs between growth, equity, and resilience.",
+    "backgroundTemplate": "[City Name] launches a major renewal plan for [District]. You are [Planner/Architect/Official] navigating public hearings, budget limits, and competing visions of the future.",
+    "example": "Every line you drew displaced someone, protected someone, or priced someone out. The map was technical; the consequences were personal.",
+    "worldSetting": "A contemporary city under pressure from housing demand, mobility constraints, and climate adaptation needs. Urban change is slow, political, and deeply human.",
+    "protagonist_preference": [
+      "City Planner",
+      "Transit Designer",
+      "District Architect",
+      "Public Policy Officer",
+      "Community Advocate"
+    ]
+  },
+  "time_loop_forensics": {
+    "name": "Time-loop Forensics",
+    "narrativeStyle": "Puzzle-driven and iterative. Build momentum through repeated timelines, small evidence shifts, and cumulative insight.",
+    "backgroundTemplate": "You relive the same day in [City/Precinct], where [Victim/Event] always ends in catastrophe. As [Investigator/Analyst], you must map causality and break the loop before memory fractures you.",
+    "example": "By loop nine, you knew the coffee stain mattered more than the gunshot. By loop twelve, you understood why you were always five minutes late.",
+    "worldSetting": "A modern investigative world destabilized by temporal recurrence. Institutional routines repeat, but your memory accumulates. The truth exists, but only if you can assemble it across timelines.",
+    "protagonist_preference": [
+      "Looping Detective",
+      "Forensic Analyst",
+      "Emergency Operator",
+      "Data Archivist",
+      "Reluctant Witness"
+    ]
+  },
+  "mythpunk_city": {
+    "name": "Mythpunk City",
+    "narrativeStyle": "Stylized, high-contrast, and myth-tech hybrid. Combine modern urban pacing with ritual logic and ancient symbolism.",
+    "backgroundTemplate": "In [Neon Metropolis], civic infrastructure runs on both code and covenant. You are [Fixer/Oracle/Inspector] pulled into conflict between municipal AI and dormant gods beneath the grid.",
+    "example": "The train arrived exactly on schedule, because the timetable was a prayer and the signal tower was a shrine.",
+    "worldSetting": "A dense megacity where digital governance coexists with revived myth systems. Corporations negotiate with temples, algorithms enforce taboos, and old entities adapt to new networks.",
+    "protagonist_preference": [
+      "Ritual Hacker",
+      "Municipal Inspector",
+      "Temple Negotiator",
+      "Street Oracle",
+      "Mythic Courier"
+    ]
+  },
+  "expedition_logistics": {
+    "name": "Expedition Logistics",
+    "narrativeStyle": "Survival-oriented and procedural. Track routes, payload, weather windows, and team morale under attrition.",
+    "backgroundTemplate": "A critical expedition crosses [Polar/High-altitude Region] with shrinking supply margins. You are [Logistics Lead/Navigator], responsible for moving people and equipment through lethal terrain.",
+    "example": "The storm erased your markers in twenty minutes. The cargo list did not care that two mules and one drone were gone.",
+    "worldSetting": "An extreme-environment frontier where transport planning determines scientific success and human survival. Delays compound quickly, and minor planning errors become fatal.",
+    "protagonist_preference": [
+      "Logistics Chief",
+      "Route Navigator",
+      "Quartermaster",
+      "Field Meteorologist",
+      "Expedition Medic"
+    ]
+  },
+  "frontier_medicine": {
+    "name": "Frontier Medicine",
+    "narrativeStyle": "Compassionate, practical, and morally complex. Center each scene on constrained care decisions and community trust.",
+    "backgroundTemplate": "At [Remote Settlement], medical infrastructure is sparse and emergencies are constant. You are [Doctor/Nurse/Medic] balancing triage, limited supplies, and local customs.",
+    "example": "You had one generator, three critical patients, and a storm that would ground evacuation until morning. Protocol offered guidance, not miracles.",
+    "worldSetting": "A rural and borderland healthcare network where distance, poverty, and infrastructure gaps shape every clinical choice. Medicine is both science and social negotiation.",
+    "protagonist_preference": [
+      "Frontier Doctor",
+      "Rural Nurse",
+      "Mobile Clinic Medic",
+      "Public Health Worker",
+      "Medical Volunteer"
+    ]
+  },
+  "slow_burn_detective": {
+    "name": "Slow-burn Detective",
+    "narrativeStyle": "Character-led, atmospheric, and gradual. Prioritize relationships, memory, and subtle clues over rapid action.",
+    "backgroundTemplate": "In [Rain-soaked City], a cold case tied to [Family/Institution] reopens after years. You are [Detective/Reporter], piecing together truth while your own past keeps colliding with the file.",
+    "example": "The case did not break when the witness talked. It broke when she refused to say one specific name.",
+    "worldSetting": "A contemporary noir-leaning city where institutions bury mistakes and people survive through silence. Truth emerges slowly through trust, contradiction, and time.",
+    "protagonist_preference": [
+      "Veteran Detective",
+      "Investigative Reporter",
+      "Cold Case Analyst",
+      "Former Witness",
+      "Private Investigator"
     ]
   }
 }

@@ -1,182 +1,350 @@
-# How to Add a New Story Theme
+# How to Add a Story Theme (Manual-First) / 如何新增故事主题（手工流程优先）
 
-This guide outlines the steps to add a new story theme to the application.
+> Status / 状态（2026-02-08）
+>
+> - Official path / 官方路径：**manual update only / 仅手工更新**
+> - `scripts/addStoryTheme.ts` has been removed / `scripts/addStoryTheme.ts` 已删除
 
-## Quick Start: Using the Script
+---
 
-The easiest way to add a new theme is using the interactive script:
+## Purpose & Scope / 目的与范围
+
+**EN**
+
+This document is the canonical guide for adding new story themes in this repository. It focuses on:
+
+- Theme registry updates (`themes.ts`)
+- Bilingual theme content updates (`en/themes.json`, `zh/themes.json`)
+- Compatibility checks against current runtime schema and UI filtering behavior
+
+This guide does **not** auto-generate theme text in bulk.
+
+**中文**
+
+本文件是本仓库新增故事主题的官方指南，覆盖以下内容：
+
+- 主题注册（`themes.ts`）
+- 中英文主题文案（`en/themes.json`、`zh/themes.json`）
+- 与当前运行时 schema 及 UI 分类过滤行为的一致性校验
+
+本指南**不**覆盖批量自动生成主题文案。
+
+---
+
+## Original Gap Theme Backlog / 原创缺口主题候选清单
+
+**EN**
+
+The following 15 candidates are proposed to fill underrepresented directions.
+Each entry includes key + CN/EN name + hook + suggested `envTheme/ambience` + visible categories.
+
+**中文**
+
+以下 15 个候选用于补足当前主题池相对稀缺方向。每条包含 key、中英文名、核心卖点、建议 `envTheme/ambience` 与可见分类。
+
+| Theme Key | 中文名 | English Name | 核心卖点 / Core Hook | Suggested Atmosphere | Suggested Categories |
+| --- | --- | --- | --- | --- | --- |
+| `climate_crisis` | 气候危机 | Climate Crisis | 灾难治理、政策博弈与生存抉择 | `wasteland` + `storm` | `modern`, `suspense` |
+| `forensic_pathologist` | 法医追凶 | Forensic Pathologist | 法医证据链推动悬疑破案 | `foundation` + `hospital` | `modern`, `suspense` |
+| `courtroom_thriller` | 高压法庭 | Courtroom Thriller | 法庭攻防与证据交叉盘问 | `intrigue` + `courtroom` | `modern`, `suspense` |
+| `archaeology_expedition` | 文明考古远征 | Archaeology Expedition | 遗迹探索、机关解谜与文明冲突 | `sepia` + `ruins` | `ancient`, `fantasy`, `suspense` |
+| `deep_sea_colony` | 深海殖民 | Deep Sea Colony | 封闭生态、资源危机与秩序崩塌 | `abyssal` + `underwater` | `scifi`, `suspense` |
+| `space_salvage` | 太空打捞 | Space Salvage | 轨道打捞合同、零重力风险与黑市交易 | `interstellar` + `space` | `scifi`, `game` |
+| `disaster_response` | 城市应急指挥 | Disaster Response | 多线救援、资源分配与决策压力 | `war` + `city` | `modern`, `suspense` |
+| `supply_chain_tycoon` | 供应链风云 | Supply Chain Tycoon | 物流网络建设、市场波动与商业谈判 | `modern` + `office` | `modern`, `game` |
+| `biotech_startup` | 生物科技创业 | Biotech Startup | 技术突破、伦理边界与资本博弈 | `foundation` + `laboratory` | `modern`, `scifi` |
+| `urban_planning` | 城市更新计划 | Urban Planning | 基建推进、民生权衡与政策协调 | `modern` + `city` | `modern` |
+| `time_loop_forensics` | 时间循环刑侦 | Time-loop Forensics | 重复日调查与因果拼图 | `mystery` + `city` | `modern`, `suspense`, `scifi` |
+| `mythpunk_city` | 神话赛博都市 | Mythpunk City | 古神规则与高科技治理并存 | `cyberpunk` + `city` | `fantasy`, `scifi` |
+| `expedition_logistics` | 极地后勤线 | Expedition Logistics | 极端环境运输、队伍协同与补给危机 | `cold` + `mountain` | `modern`, `suspense` |
+| `frontier_medicine` | 边境医疗 | Frontier Medicine | 医疗资源稀缺下的伦理抉择 | `modern` + `village` | `modern` |
+| `slow_burn_detective` | 慢燃侦探档案 | Slow-burn Detective | 人物关系驱动的长期悬疑线 | `mystery` + `rain` | `modern`, `suspense`, `novel` |
+
+---
+
+## Canonical Source of Truth / 以代码为准的字段定义
+
+### 1) Theme registry / 主题注册
+
+- `/Users/twiliness/Desktop/coi/src/utils/constants/themes.ts`
+  - `THEMES`: all story theme configs / 所有故事主题配置
+  - `CATEGORY_KEYS`: visible category filter keys / 可见分类筛选键
+
+### 2) Type contracts / 类型约束
+
+- `/Users/twiliness/Desktop/coi/src/types.ts`
+  - `StoryThemeConfig`
+  - `ThemeParams`
+
+### 3) Runtime enum constraints / 运行时枚举约束
+
+- `/Users/twiliness/Desktop/coi/src/services/zodSchemas.ts`
+  - `envThemeSchema`
+  - `ambienceSchema`
+
+### 4) Theme text resources / 主题文案资源
+
+- `/Users/twiliness/Desktop/coi/src/locales/en/themes.json`
+- `/Users/twiliness/Desktop/coi/src/locales/zh/themes.json`
+
+### Field rules that must match runtime / 必须与运行时一致的字段规则
+
+- `defaultAtmosphere` must be an object: `{ envTheme, ambience }`.
+- `defaultAtmosphere` 必须是对象：`{ envTheme, ambience }`，不能是字符串。
+- `themeParams` is strongly recommended for deterministic world behavior.
+- 强烈建议填写 `themeParams`，用于稳定世界行为参数。
+- Visible categories should follow `CATEGORY_KEYS`.
+- 可见分类应遵循 `CATEGORY_KEYS`。
+- `all` is a UI filter only, do not store it in a theme item.
+- `all` 仅用于 UI 筛选，不应写入单个主题配置。
+
+---
+
+## Step-by-step Manual Flow / 手工新增完整流程
+
+### Step 0: Pick a unique key / 确定唯一 key
+
+- Format: `snake_case`
+- Recommended: lowercase + underscore only
+- Use search before adding:
 
 ```bash
-# From the project root directory
-npx ts-node scripts/addStoryTheme.ts
+rg -n "^  your_theme_key: \{" src/utils/constants/themes.ts
 ```
 
-The script will guide you through:
+### Step 1: Add registry entry in `themes.ts` / 在 `themes.ts` 增加主题配置
 
-1. Setting up the theme configuration (key, icon, visual theme, categories)
-2. Entering English translations
-3. Entering Chinese translations
-4. Applying changes to all relevant files
+File:
 
-## Manual Setup
+- `/Users/twiliness/Desktop/coi/src/utils/constants/themes.ts`
 
-If you prefer to add themes manually, follow the steps below.
+Required core fields / 必填核心字段：
 
-## File Structure Overview
+- `themeParams`
+- `envTheme`
+- `defaultAtmosphere` (object)
+- `icon`
+- `categories`
 
-The theme system is organized into the following files:
+Optional / 可选：
 
-```plaintext
-utils/constants/
-├── themes.ts          # Story themes (genre configurations)
-├── envThemes.ts       # UI/Visual themes (colors, CSS variables)
-└── backgroundImages.ts # Background images for themes
+- `restricted` (for licensed IP only / 仅限授权 IP)
 
-src/locales/
-├── en/themes.json     # English translations
-└── zh/themes.json     # Chinese translations
-```
+Example (non-IP) / 示例（非 IP）：
 
-## 1. Define the Theme Key
-
-Choose a unique key for the theme (e.g., `minecraft`, `harry_potter`, `resident_evil`).
-
-## 2. Update `utils/constants/themes.ts`
-
-Add the new theme configuration to the `THEMES` object.
-
-```typescript
-export const THEMES: Record<string, StoryThemeConfig> = {
-  // ... existing themes
-  [theme_key]: {
-    envTheme: "fantasy", // Choose an appropriate visual theme from envThemes.ts
-    defaultAtmosphere: "forest", // Default ambient sound
-    icon: "🐉", // Choose an appropriate emoji
-    categories: ["fantasy", "game"], // Add relevant categories
-    restricted: true, // Set to true for licensed IP themes
+```ts
+your_theme_key: {
+  themeParams: {
+    physicsHarshness: "standard",
+    worldIndifference: "neutral",
+    npcAutonomyLevel: "balanced",
+    socialComplexity: "standard",
+    economicComplexity: "standard",
   },
-};
+  envTheme: "modern",
+  defaultAtmosphere: { envTheme: "modern", ambience: "city" },
+  icon: "🧭",
+  categories: ["modern", "suspense"],
+},
 ```
 
-### Available `envTheme` Options
+Example (licensed IP) / 示例（授权 IP）：
 
-The `envTheme` field references visual themes defined in `utils/constants/envThemes.ts`:
-
-- **Standard**: `fantasy`, `scifi`, `cyberpunk`, `horror`, `mystery`, `romance`, `modern`
-- **Eastern**: `wuxia`, `demonic`, `ethereal`, `royal`
-- **Specialized**: `war`, `gothic`, `apocalypse`, `interstellar`, `academy`, `nature`, `wasteland`
-- **And many more...** (see `envThemes.ts` for full list)
-
-### Available Categories
-
-Categories are defined in the `CATEGORY_KEYS` array:
-
-- `ancient`, `modern`, `fantasy`, `suspense`, `wuxia`, `scifi`, `game`, `novel`, `movie`
-
-## 3. Update Translations
-
-You must add translations for both English and Chinese.
-
-### English (`src/locales/en/themes.json`)
-
-```json
-{
-  "[theme_key]": {
-    "name": "Theme Name",
-    "narrativeStyle": "【Core Style】: Description of the writing style...\n【World View】: Description of the world...\n【Culture】: Key cultural elements...\n【Writing Guidelines】: Instructions for the AI...",
-    "backgroundTemplate": "【World Background】: Template for the story background...\n【Current Situation】: Starting scenario...",
-    "example": "An example paragraph demonstrating the style...",
-    "worldSetting": "A detailed description of the world setting..."
-  }
-}
-```
-
-### Chinese (`src/locales/zh/themes.json`)
-
-```json
-{
-  "[theme_key]": {
-    "name": "主题名称",
-    "narrativeStyle": "【核心风格】：写作风格描述...\n【世界观】：世界观描述...\n【文化】：文化元素...\n【写作指导】：AI写作指导...",
-    "backgroundTemplate": "【世界背景】：背景模板...\n【当前处境】：开场情境...",
-    "example": "示例段落...",
-    "worldSetting": "世界设定的详细描述..."
-  }
-}
-```
-
-## Special Rules for Licensed IP Themes (Games, Movies, Novels)
-
-1. **Restricted Mode**: Set `restricted: true` in `themes.ts`.
-2. **Naming Convention**: In Chinese translation, the name should be wrapped in `《》` (e.g., `《生化危机》`, `《冰与火之歌》`).
-3. **Category Assignment**: Add appropriate categories like `game`, `movie`, or `novel`.
-4. **Writing Instructions**: The `narrativeStyle` must explicitly instruct the model to:
-   - Adhere to the source material's worldview, chronology, and lore
-   - Use authentic terminology, names, and locations
-   - Forbid free invention that contradicts canon
-
-## Example: Resident Evil
-
-**themes.ts**:
-
-```typescript
-resident_evil: {
-  envTheme: "apocalypse",
-  defaultAtmosphere: "storm",
-  icon: "🧬",
-  categories: ["suspense", "game", "movie"],
+```ts
+your_ip_theme_key: {
+  themeParams: {
+    physicsHarshness: "cinematic",
+    worldIndifference: "neutral",
+    npcAutonomyLevel: "balanced",
+    socialComplexity: "standard",
+    economicComplexity: "standard",
+  },
+  envTheme: "scifi",
+  defaultAtmosphere: { envTheme: "scifi", ambience: "scifi" },
+  icon: "🚀",
+  categories: ["scifi", "movie"],
   restricted: true,
 },
 ```
 
-**zh/themes.json**:
+### Step 2: Add English text / 添加英文文案
+
+File:
+
+- `/Users/twiliness/Desktop/coi/src/locales/en/themes.json`
+
+Required keys / 必填键：
+
+- `name`
+- `narrativeStyle`
+- `backgroundTemplate`
+- `example`
+- `worldSetting`
+
+Recommended / 推荐：
+
+- `protagonist_preference` (array)
+
+### Step 3: Add Chinese text / 添加中文文案
+
+File:
+
+- `/Users/twiliness/Desktop/coi/src/locales/zh/themes.json`
+
+Use the exact same theme key / 与英文文件保持完全一致的 key。
+
+Recommended / 推荐：
+
+- `protagonist_preference`（数组）
+
+### Step 4: IP-specific handling / IP 主题额外规则
+
+- Set `restricted: true` in `themes.ts`.
+- 在 `themes.ts` 设置 `restricted: true`。
+- Chinese display name should use `《》`.
+- 中文显示名建议使用 `《》` 包裹。
+- Keep canonical constraints explicit in style text.
+- 在文案中明确遵循原作世界观、术语与时间线约束。
+
+---
+
+## Restricted IP Rules / 受限 IP 规则
+
+**EN**
+
+For licensed/canonical-IP themes, enforce stricter generation boundaries:
+
+- Preserve canon world rules, timeline, and terminology.
+- Avoid adding contradictory setting facts.
+- Keep major role/faction relationships consistent with source material.
+
+**中文**
+
+对于授权/同人向 IP 主题，必须加强约束：
+
+- 保持原作世界观、时间线、术语一致。
+- 禁止生成与原作硬冲突的设定。
+- 核心角色与势力关系需与原作一致。
+
+---
+
+## Validation Checklist / 验证清单
+
+### A) Key consistency / key 一致性
+
+```bash
+rg -n "^  your_theme_key: \{" src/utils/constants/themes.ts
+rg -n '"your_theme_key"\s*:' src/locales/en/themes.json src/locales/zh/themes.json
+```
+
+### B) JSON validity / JSON 有效性
+
+```bash
+node -e "JSON.parse(require('fs').readFileSync('src/locales/en/themes.json','utf8'));JSON.parse(require('fs').readFileSync('src/locales/zh/themes.json','utf8'));console.log('themes.json valid')"
+```
+
+### C) Category visibility / 分类可见性
+
+- Theme picker uses `CATEGORY_KEYS` for visible filters.
+- 主题筛选仅认 `CATEGORY_KEYS` 对应分类。
+
+### D) Runtime value validity / 运行时枚举合法性
+
+- `envTheme` must exist in `envThemeSchema`.
+- `ambience` must exist in `ambienceSchema`.
+
+### E) Manual UX sanity check / 手工 UI 冒烟验证
+
+- Run app and verify the new theme appears in selector + preview.
+- 启动应用确认主题可被搜索、筛选、预览并正常开局。
+
+---
+
+## Common Pitfalls / 常见坑
+
+- Using string `defaultAtmosphere` instead of object.
+- 将 `defaultAtmosphere` 误写成字符串。
+- Missing `themeParams`, causing unstable style/behavior.
+- 缺失 `themeParams`，导致风格/世界行为不稳定。
+- Category typo not covered by `CATEGORY_KEYS`.
+- 分类拼写错误或使用不可见分类，导致筛选不可见。
+- Missing one locale entry (EN or ZH).
+- 只加了中/英其中一个文案文件。
+- IP theme without `restricted: true`.
+- IP 主题遗漏 `restricted: true`。
+- Chinese IP display name not wrapped with `《》`.
+- 中文 IP 名称未使用 `《》` 包裹。
+
+---
+
+## Copyable Templates / 可复制模板
+
+### 1) `themes.ts` template / `themes.ts` 模板
+
+```ts
+your_theme_key: {
+  themeParams: {
+    physicsHarshness: "standard", // cinematic | standard | realistic
+    worldIndifference: "neutral", // benevolent | neutral | hostile
+    npcAutonomyLevel: "balanced", // supportive | balanced | independent
+    socialComplexity: "standard", // transparent | standard | intricate
+    economicComplexity: "standard", // primitive | standard | advanced
+  },
+  envTheme: "modern",
+  defaultAtmosphere: { envTheme: "modern", ambience: "city" },
+  icon: "📚",
+  categories: ["modern"],
+  // restricted: true, // enable for licensed IP only
+},
+```
+
+### 2) EN `themes.json` template / 英文模板
 
 ```json
-"resident_evil": {
-  "name": "《生化危机》",
-  "narrativeStyle": "【核心风格】：生存恐怖、丧尸病毒、安布雷拉公司、动作冒险。\n【世界观】：安布雷拉公司。T病毒、G病毒。浣熊市爆发。STARS特警队。泰伦。\n...",
-  "backgroundTemplate": "【世界背景】：安布雷拉公司表面是制药巨头，暗地里研发生化武器...\n【当前处境】：你是一名STARS队员...",
-  "example": "'S.T.A.R.S...'暴君的嘶哑声音从黑暗中传来...",
-  "worldSetting": "一个生存恐怖与生化危机并存的世界..."
+"your_theme_key": {
+  "name": "Your Theme Name",
+  "narrativeStyle": "Tone, pacing, world language, and writing constraints.",
+  "backgroundTemplate": "In [World], you are [Role] facing [Conflict].",
+  "example": "A short paragraph showing voice and pacing.",
+  "worldSetting": "3-5 sentences describing social order, power system, and conflicts.",
+  "protagonist_preference": ["Role A", "Role B", "Role C"]
 }
 ```
 
-## Adding a New Visual Theme (envTheme)
+### 3) ZH `themes.json` template / 中文模板
 
-If you need a completely new visual style, add it to `utils/constants/envThemes.ts`:
-
-```typescript
-export const ENV_THEMES: Record<string, ThemeConfig> = {
-  // ... existing themes
-  [new_visual_theme]: {
-    vars: {
-      "--theme-bg": "#...",
-      "--theme-surface": "#...",
-      "--theme-surface-highlight": "#...",
-      "--theme-border": "#...",
-      "--theme-primary": "#...",
-      "--theme-primary-hover": "#...",
-      "--theme-text": "#...",
-      "--theme-muted": "#...",
-      ...DEFAULT_STATE_VARS, // Include state colors
-    },
-    dayVars: {
-      // Light mode variants
-      ...DEFAULT_DAY_STATE_VARS,
-    },
-    fontClass: "font-fantasy", // or font-scifi, font-horror, font-cyberpunk, font-sans, font-serif
-  },
-};
+```json
+"your_theme_key": {
+  "name": "你的主题名",
+  "narrativeStyle": "叙事语气、节奏、世界术语与写作约束。",
+  "backgroundTemplate": "在[世界]中，你是[身份]，正面临[冲突]。",
+  "example": "一段体现该主题口吻与节奏的示例。",
+  "worldSetting": "用 3-5 句描述社会结构、力量体系与核心矛盾。",
+  "protagonist_preference": ["身份A", "身份B", "身份C"]
+}
 ```
 
-## CSS State Variables
+---
 
-All themes automatically include semantic state colors via `DEFAULT_STATE_VARS`:
+## Script Status & Migration / 脚本状态与迁移说明
 
-- `--theme-success` / `--theme-success-muted` (green tones)
-- `--theme-warning` / `--theme-warning-muted` (yellow/amber)
-- `--theme-error` / `--theme-error-muted` (red tones)
-- `--theme-info` / `--theme-info-muted` (blue tones)
-- `--theme-unlocked` / `--theme-unlocked-muted` (gold - for revealed content)
-- `--theme-secret` / `--theme-secret-muted` (purple - for secret outcomes)
-- `--theme-danger` / `--theme-danger-muted` (rose/red - for hidden truths)
+**EN**
+
+- `scripts/addStoryTheme.ts` has been removed and is no longer part of the official workflow.
+- The script was built for older assumptions and may diverge from current runtime structure.
+- Official process is now manual-first to guarantee schema correctness.
+
+**中文**
+
+- `scripts/addStoryTheme.ts` 已删除，不再属于官方新增流程。
+- 该脚本基于旧字段假设，可能与当前运行时结构产生偏差。
+- 目前以手工流程为唯一官方路径，以确保 schema 一致性。
+
+---
+
+## Public API Impact / 公共接口影响
+
+- Runtime public APIs: **no breaking change**
+- 运行时公共 API：**无破坏性变更**
+- This is a documentation/process alignment update only.
+- 本次主要是文档与流程规范对齐。
