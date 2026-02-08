@@ -607,7 +607,7 @@
       "customPromptInjectionPlaceholder": "例如：用简洁的中文叙述，语气冷峻，避免长句……",
       "customPromptInjectionWarning": "自定义指令已启用。",
       "systemDefaultInjectionEnabled": "模型默认注入",
-      "systemDefaultInjectionEnabledHelp": "启用后，会按模型 ID 匹配并注入本地 `src/prompt/prompt.toml` 的 `[[system_prompts]]`（顺序：Runtime Floor → 系统默认 → 用户自定义 → 系统指令）。",
+      "systemDefaultInjectionEnabledHelp": "启用后，会按模型 ID 匹配并注入本地 `src/prompt/prompt.toml` 的 `[[system_prompts]]` 作为额外模型补丁（顺序：Runtime Floor → 系统默认注入（可为空）→ 用户自定义 → 系统指令）。核心“去 AI 味 + 人味叙事”应由系统核心提示词负责。",
       "forceAutoToolChoice": "强制自动工具选择",
       "forceAutoToolChoiceHelp": "始终将工具选择设置为 'auto'，忽略 'required' 请求。提高某些模型的兼容性。",
       "agenticLoop": "代理循环设置",
