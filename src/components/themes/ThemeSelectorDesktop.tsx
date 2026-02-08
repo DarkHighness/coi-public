@@ -138,7 +138,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-6 py-3">
           <div
             key={`page-${currentPage}`}
-            className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in"
+            className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-[232px] gap-4 animate-fade-in"
           >
             {/* Random Option - only on first page */}
             {selectedCategory === "all" &&
@@ -146,7 +146,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
               currentPage === 0 && (
                 <button
                   onClick={() => onSelect("")}
-                  className="relative w-full h-[232px] rounded-2xl border border-theme-divider/60 bg-gradient-to-br from-theme-surface/35 to-theme-bg/40 hover:bg-theme-surface-highlight/12 hover:border-theme-primary/40 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition-all text-left group overflow-hidden animate-slide-in"
+                  className="relative w-full h-full rounded-2xl border border-theme-divider/60 bg-gradient-to-br from-theme-surface/35 to-theme-bg/40 hover:bg-theme-surface-highlight/12 hover:border-theme-primary/40 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition-all text-left group overflow-hidden animate-slide-in"
                   style={{ animationDelay: "0ms" }}
                 >
                   <div className="absolute inset-y-0 left-0 w-1.5 bg-theme-primary/35 group-hover:bg-theme-primary/65 transition-colors" />
@@ -190,7 +190,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
             {currentThemes.map((key, index) => (
               <div
                 key={key}
-                className="animate-slide-in"
+                className="animate-slide-in h-full"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <ThemeCard
