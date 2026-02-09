@@ -5,6 +5,7 @@ import {
   CUSTOM_RULES_README_PATH,
   toCustomRulePackPath,
 } from "./customRules";
+import { ensureDirectoryScaffolds } from "./directoryScaffolds";
 
 type SectionName =
   | "global"
@@ -43,13 +44,19 @@ const writeJson = (session: VfsSession, path: string, value: unknown): void => {
 };
 
 const clearDir = (session: VfsSession, prefix: string): void => {
-  const entries = session.list(prefix);
-  for (const entry of entries) {
-    const path = `${prefix}/${entry}`;
-    if (session.readFile(path)) {
-      session.deleteFile(path);
+  const walk = (directoryPath: string): void => {
+    const entries = session.list(directoryPath);
+    for (const entry of entries) {
+      const path = `${directoryPath}/${entry}`;
+      if (session.readFile(path)) {
+        session.deleteFile(path);
+        continue;
+      }
+      walk(path);
     }
-  }
+  };
+
+  walk(prefix);
 };
 
 const PLAYER_ID = "char:player";
@@ -240,6 +247,7 @@ export const applySectionEdit = (
     }
 
     clearDir(session, "custom_rules");
+    ensureDirectoryScaffolds(session);
 
     if (!session.readFile(CUSTOM_RULES_README_PATH)) {
       session.writeFile(

@@ -54,4 +54,22 @@ describe("vfs editor helper", () => {
     applySectionEdit(session, "outline", { title: "New" }, { allowOutlineEdit: true });
     expect(session.readFile("outline/outline.json")).toBeTruthy();
   });
+
+  it("rebuilds custom_rules with scaffold folders after section replace", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "custom_rules/legacy-pack/RULES.md",
+      "# Legacy",
+      "text/markdown",
+    );
+
+    applySectionEdit(session, "customRules", []);
+
+    expect(session.readFile("custom_rules/legacy-pack/RULES.md")).toBeNull();
+    expect(session.readFile("custom_rules/README.md")).toBeTruthy();
+    expect(session.readFile("custom_rules/00-system-core/README.md")).toBeTruthy();
+    expect(session.readFile("custom_rules/12-custom/README.md")).toBeTruthy();
+    expect(session.readFile("custom_rules/00-system-core/RULES.md")).toBeNull();
+  });
+
 });

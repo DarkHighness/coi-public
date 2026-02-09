@@ -1,7 +1,13 @@
 import type { CustomRule } from "@/types";
+import type { RuleCategory } from "@/types";
 import type { VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
 import { canonicalToLogicalVfsPath } from "./core/pathResolver";
+import {
+  CUSTOM_RULE_CATEGORY_PRESETS,
+  getCustomRuleCategoryDirectoryPath,
+  getCustomRuleCategoryPreset,
+} from "./directoryScaffolds";
 
 const SECTION_CATEGORY = "## What This Category Is";
 const SECTION_WHEN = "## When This Category Applies";
@@ -108,6 +114,24 @@ const inferCategoryTag = (category: string): CustomRule["category"] => {
   return "custom";
 };
 
+const inferCategoryTagFromFolder = (folderName: string): CustomRule["category"] | null => {
+  const match = /^(\d{2})-/.exec(folderName);
+  if (!match) {
+    return null;
+  }
+
+  const byPriority = CUSTOM_RULE_CATEGORY_PRESETS.find(
+    (preset) => preset.priority === Number.parseInt(match[1] ?? "-1", 10),
+  );
+  if (byPriority) {
+    return byPriority.category;
+  }
+
+  const slug = folderName.replace(/^\d{2}-/, "");
+  const bySlug = CUSTOM_RULE_CATEGORY_PRESETS.find((preset) => preset.slug === slug);
+  return bySlug?.category ?? null;
+};
+
 const parsePriorityFromFolder = (folderName: string): number => {
   const match = /^(\d{2,})-/.exec(folderName);
   if (!match) return 999;
@@ -137,10 +161,13 @@ const toCustomRuleFromPack = (
     return null;
   }
 
+  const categoryFromFolder = inferCategoryTagFromFolder(folder);
+  const fallbackTitleFromFolder = folder.replace(/^\d{2}-/, "").replace(/-/g, " ");
+
   return {
     id: `pack:${folder}`,
-    category: inferCategoryTag(parsed.category),
-    title: parsed.category.trim() || folder,
+    category: categoryFromFolder ?? inferCategoryTag(parsed.category),
+    title: parsed.category.trim() || fallbackTitleFromFolder || folder,
     content: parsed.rules.join("\n"),
     enabled: true,
     priority: parsePriorityFromFolder(folder),
@@ -228,4 +255,28 @@ export const getCustomRulePackTemplatePath = (
       : -1;
 
   return toCustomRulePackPath(maxPrefix + 1, suggestedTitle);
+};
+
+export const toCustomRulePackPathForCategory = (category: RuleCategory): string => {
+  const directoryPath = getCustomRuleCategoryDirectoryPath(category);
+  return `${directoryPath}/RULES.md`;
+};
+
+export const buildCustomRulePackMarkdownForCategory = (
+  category: RuleCategory,
+): string => {
+  const preset = getCustomRuleCategoryPreset(category);
+  if (!preset) {
+    return buildCustomRulePackMarkdown({
+      category: "Custom",
+      whenToApply: "When this category becomes relevant to the current scene.",
+      rules: [],
+    });
+  }
+
+  return buildCustomRulePackMarkdown({
+    category: preset.title,
+    whenToApply: preset.whenToApply,
+    rules: preset.starterRules,
+  });
 };

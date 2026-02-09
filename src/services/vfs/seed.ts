@@ -19,6 +19,7 @@ import {
   CUSTOM_RULES_README_PATH,
   toCustomRulePackPath,
 } from "./customRules";
+import { ensureDirectoryScaffolds } from "./directoryScaffolds";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
@@ -66,6 +67,10 @@ const ensureCustomRulesReadme = (session: VfsSession): void => {
       "text/markdown",
     );
   }
+};
+
+const ensureDirectoryStructure = (session: VfsSession): void => {
+  ensureDirectoryScaffolds(session);
 };
 
 const writeEntities = <T extends { id?: string }>(
@@ -220,6 +225,7 @@ export const seedVfsSessionFromGameState = (
   state: GameState,
 ): void => {
   session.setActiveForkId(state.forkId ?? 0);
+  ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
 
@@ -352,6 +358,7 @@ export const seedVfsSessionFromGameState = (
 };
 
 export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
+  ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
 
@@ -438,6 +445,7 @@ export const seedVfsSessionFromOutline = (
     narrativeScale?: GameState["narrativeScale"];
   },
 ): void => {
+  ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
 

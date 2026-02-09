@@ -3,7 +3,7 @@
  * Allows direct JSON/text editing through a file tree interface
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { OnMount } from "@monaco-editor/react";
 import { ZodError } from "zod";
 import { useTranslation } from "react-i18next";
@@ -11,20 +11,43 @@ import type { GameState } from "../types";
 import type { VfsWriteContext } from "../services/vfs/core/types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import type { VfsContentType, VfsFileMap } from "../services/vfs/types";
-import {
-  buildVfsTree,
-  isReadonlyPath,
-  type VfsTreeNode,
-} from "./vfsExplorer/tree";
+import { buildVfsTree, type VfsTreeNode } from "./vfsExplorer/tree";
 import { formatVfsContent, readVfsFile } from "./vfsExplorer/fileOps";
-import { applyVfsFileEdit } from "./stateEditorUtils";
 import {
-  buildCustomRulePackMarkdown,
-  getCustomRulePackTemplatePath,
+  applyVfsBatchMoveFiles,
+  applyVfsCreateFile,
+  applyVfsCreateFolder,
+  applyVfsDeletePath,
+  applyVfsFileEdit,
+  applyVfsRenamePath,
+} from "./stateEditorUtils";
+import {
+  buildCustomRulePackMarkdownForCategory,
+  toCustomRulePackPathForCategory,
 } from "../services/vfs/customRules";
+import { normalizeVfsPath } from "../services/vfs/utils";
+import {
+  CUSTOM_RULE_CATEGORY_PRESETS,
+  getCustomRuleCategoryPresetFromPath,
+} from "../services/vfs/directoryScaffolds";
+import {
+  getDirectoryPathCapabilities,
+  getFilePathCapabilities,
+} from "./vfsExplorer/capabilities";
 import { MarkdownText } from "./render/MarkdownText";
+import { buildNodeActions, type NodeActionItem } from "./vfsExplorer/nodeActions";
 
 const MonacoEditor = React.lazy(() => import("@monaco-editor/react"));
+
+interface NodeActionContext {
+  path: string;
+  nodeType: "file" | "folder";
+}
+
+interface ContextMenuState extends NodeActionContext {
+  x: number;
+  y: number;
+}
 
 interface StateEditorProps {
   isOpen: boolean;
@@ -59,6 +82,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
   const [snapshotVersion, setSnapshotVersion] = useState(0);
   const [editingPath, setEditingPath] = useState<string | null>(null);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchSelectedPaths, setBatchSelectedPaths] = useState<string[]>([]);
+  const [batchDestinationMode, setBatchDestinationMode] = useState(false);
+  const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
+  const [mobileActionSheetState, setMobileActionSheetState] =
+    useState<NodeActionContext | null>(null);
+  const contextMenuTriggerRef = useRef<HTMLElement | null>(null);
   const [isDesktop, setIsDesktop] = useState(() => {
     if (typeof window === "undefined") {
       return true;
@@ -131,10 +161,108 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   );
 
   const hasSearch = searchQuery.trim().length > 0;
-  const selectedPathIsProtected = selectedPath
-    ? isReadonlyPath(selectedPath, { editorSessionToken, activeForkId: gameState.forkId })
-    : false;
-  const pathReadOnly = !selectedPath || selectedPathIsProtected;
+  const capabilityContext = useMemo(
+    () => ({ editorSessionToken, activeForkId: gameState.forkId }),
+    [editorSessionToken, gameState.forkId],
+  );
+
+  const selectedPathNormalized = useMemo(
+    () => (selectedPath ? normalizeVfsPath(selectedPath) : null),
+    [selectedPath],
+  );
+
+  const selectedIsDirectory = useMemo(() => {
+    if (!selectedPathNormalized) {
+      return false;
+    }
+    if (snapshot[selectedPathNormalized]) {
+      return false;
+    }
+    const prefix = `${selectedPathNormalized}/`;
+    return Object.keys(snapshot).some((path) => normalizeVfsPath(path).startsWith(prefix));
+  }, [selectedPathNormalized, snapshot]);
+
+  const isDirectoryPath = (path: string): boolean => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath || snapshot[normalizedPath]) {
+      return false;
+    }
+    const prefix = `${normalizedPath}/`;
+    return Object.keys(snapshot).some((candidatePath) =>
+      normalizeVfsPath(candidatePath).startsWith(prefix),
+    );
+  };
+
+  const pathExistsInSnapshot = (path: string): boolean => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath) {
+      return false;
+    }
+    return Boolean(snapshot[normalizedPath]) || isDirectoryPath(normalizedPath);
+  };
+
+  const batchSelectedSet = useMemo(
+    () => new Set(batchSelectedPaths.map((path) => normalizeVfsPath(path))),
+    [batchSelectedPaths],
+  );
+
+  const selectedBatchCount = batchSelectedPaths.length;
+
+  const selectedPathCapabilities = useMemo(() => {
+    if (!selectedPathNormalized) {
+      return null;
+    }
+    if (selectedIsDirectory) {
+      return getDirectoryPathCapabilities(
+        selectedPathNormalized,
+        snapshot,
+        capabilityContext,
+      );
+    }
+    return getFilePathCapabilities(selectedPathNormalized, capabilityContext);
+  }, [selectedPathNormalized, selectedIsDirectory, snapshot, capabilityContext]);
+
+  const createTargetDirectory = useMemo(() => {
+    if (!selectedPathNormalized) {
+      return "";
+    }
+    if (selectedIsDirectory) {
+      return selectedPathNormalized;
+    }
+    const parts = selectedPathNormalized.split("/");
+    parts.pop();
+    return parts.join("/");
+  }, [selectedPathNormalized, selectedIsDirectory]);
+
+  const createTargetCapabilities = useMemo(
+    () =>
+      getDirectoryPathCapabilities(
+        createTargetDirectory,
+        snapshot,
+        capabilityContext,
+      ),
+    [createTargetDirectory, snapshot, capabilityContext],
+  );
+
+  const customRulesDirectoryCapabilities = useMemo(
+    () => getDirectoryPathCapabilities("custom_rules", snapshot, capabilityContext),
+    [snapshot, capabilityContext],
+  );
+
+  const canCreateInTargetDirectory = createTargetCapabilities.canCreateChild;
+  const createBlockedReason = createTargetCapabilities.createChildReason;
+  const hasWritableSession = Boolean(editorSessionToken);
+  const sessionConfirmReason =
+    t("stateEditor.sessionConfirmRequired") ||
+    "Editor confirmation expired. Reopen the editor to continue editing.";
+  const canRenameSelected = selectedPathCapabilities?.canRenameMove ?? false;
+  const canMoveSelected = selectedPathCapabilities?.canRenameMove ?? false;
+  const canDeleteSelected = selectedPathCapabilities?.canDelete ?? false;
+  const canCopySelectedPath = Boolean(selectedPathNormalized);
+  const canBatchMoveSelected = hasWritableSession && selectedBatchCount > 0;
+
+  const pathReadOnly =
+    !selectedPath || selectedIsDirectory || !(selectedPathCapabilities?.canEdit ?? false);
   const isReadOnly = pathReadOnly || !isEditMode;
 
   useEffect(() => {
@@ -148,8 +276,90 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setError(null);
       setHasChanges(false);
       setEditingPath(null);
+      setBatchMode(false);
+      setBatchSelectedPaths([]);
+      setBatchDestinationMode(false);
+      setContextMenuState(null);
+      setMobileActionSheetState(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (batchMode) {
+      return;
+    }
+    if (batchSelectedPaths.length > 0) {
+      setBatchSelectedPaths([]);
+    }
+    if (batchDestinationMode) {
+      setBatchDestinationMode(false);
+    }
+  }, [batchDestinationMode, batchMode, batchSelectedPaths.length]);
+
+  useEffect(() => {
+    if (!isDesktop && contextMenuState) {
+      setContextMenuState(null);
+    }
+  }, [contextMenuState, isDesktop]);
+
+  useEffect(() => {
+    if (!contextMenuState) {
+      return;
+    }
+
+    const close = () => {
+      setContextMenuState(null);
+      const trigger = contextMenuTriggerRef.current;
+      if (trigger) {
+        window.requestAnimationFrame(() => {
+          trigger.focus();
+        });
+      }
+    };
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-state-editor-context-menu='true']")) {
+        return;
+      }
+      close();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [contextMenuState]);
+
+  useEffect(() => {
+    if (!mobileActionSheetState) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileActionSheetState(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileActionSheetState]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -161,10 +371,39 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       return;
     }
 
-    if (!selectedPath || !filteredSnapshot[selectedPath]) {
+    if (!selectedPath) {
+      setSelectedPath(filePaths[0]);
+      return;
+    }
+
+    if (filteredSnapshot[selectedPath]) {
+      return;
+    }
+
+    const normalized = normalizeVfsPath(selectedPath);
+    const directoryPrefix = `${normalized}/`;
+    const selectedIsFolder = Object.keys(snapshot).some((path) =>
+      normalizeVfsPath(path).startsWith(directoryPrefix),
+    );
+
+    if (!selectedIsFolder) {
       setSelectedPath(filePaths[0]);
     }
-  }, [isOpen, filePaths, filteredSnapshot, selectedPath]);
+  }, [isOpen, filePaths, filteredSnapshot, selectedPath, snapshot]);
+
+  useEffect(() => {
+    setBatchSelectedPaths((prev) =>
+      prev.filter((path, index, array) => {
+        const normalizedPath = normalizeVfsPath(path);
+        return (
+          normalizedPath.length > 0 &&
+          array.findIndex((item) => normalizeVfsPath(item) === normalizedPath) ===
+            index &&
+          pathExistsInSnapshot(normalizedPath)
+        );
+      }),
+    );
+  }, [snapshot]);
 
   useEffect(() => {
     setMarkdownMode("edit");
@@ -355,37 +594,567 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
   };
 
-  const handleCreateRuleTemplate = () => {
-    if (!editorSessionToken) {
+  const withPendingEditGuard = (nextAction: () => void): boolean => {
+    if (!hasChanges || !selectedPath) {
+      return true;
+    }
+
+    const shouldDiscard =
+      typeof window !== "undefined"
+        ? window.confirm(
+            t("stateEditor.confirmDiscardUnsaved") ||
+              "You have unsaved changes. Discard them and continue?",
+          )
+        : false;
+
+    if (!shouldDiscard) {
+      return false;
+    }
+
+    setHasChanges(false);
+    setError(null);
+    nextAction();
+    return true;
+  };
+
+  const updateSnapshotAndSelect = (nextPath: string | null) => {
+    setSnapshotVersion((version) => version + 1);
+    setSelectedPath(nextPath);
+    setEditingPath(nextPath);
+    setMobileView("editor");
+  };
+
+  const ensureWritableSession = (): boolean => {
+    if (editorSessionToken) {
+      return true;
+    }
+    onShowToast?.(
+      t("stateEditor.sessionConfirmRequired") ||
+        "Editor confirmation expired. Reopen the editor to continue editing.",
+      "error",
+    );
+    return false;
+  };
+
+  const handleCreateFile = () => {
+    handleCreateFileInDirectory(createTargetDirectory);
+  };
+
+  const handleCreateFolder = () => {
+    handleCreateFolderInDirectory(createTargetDirectory);
+  };
+
+  const handleCreateFileInDirectory = (directoryPath: string) => {
+    if (!ensureWritableSession()) {
+      return;
+    }
+
+    withPendingEditGuard(() => {
+      const normalizedDirectory = normalizeVfsPath(directoryPath);
+      const directoryCaps = getDirectoryPathCapabilities(
+        normalizedDirectory,
+        snapshot,
+        capabilityContext,
+      );
+      if (!directoryCaps.canCreateChild) {
+        onShowToast?.(
+          directoryCaps.createChildReason ||
+            t("stateEditor.createBlocked") ||
+            "Cannot create items in this folder",
+          "info",
+        );
+        return;
+      }
+
+      const defaultName = "new-file.md";
+      const input =
+        window.prompt(
+          t("stateEditor.newFilePrompt") ||
+            "Enter the file name (can include subfolders):",
+          defaultName,
+        ) ?? "";
+      const trimmed = input.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      const targetPath = normalizeVfsPath(
+        normalizedDirectory ? `${normalizedDirectory}/${trimmed}` : trimmed,
+      );
+      if (!targetPath || targetPath.endsWith("/")) {
+        onShowToast?.(t("stateEditor.invalidPath") || "Invalid path", "error");
+        return;
+      }
+
+      const extension = targetPath.split(".").pop()?.toLowerCase();
+      const contentType: VfsContentType =
+        extension === "json"
+          ? "application/json"
+          : extension === "md"
+            ? "text/markdown"
+            : "text/plain";
+      const initialContent = contentType === "application/json" ? "{}" : "";
+
+      try {
+        const nextState = applyVfsCreateFile({
+          session: vfsSession,
+          path: targetPath,
+          content: initialContent,
+          contentType,
+          baseState: gameState,
+          writeContext: editorWriteContext,
+        });
+        applyVfsMutation(nextState);
+        updateSnapshotAndSelect(targetPath);
+        setIsEditMode(true);
+        onShowToast?.(t("stateEditor.newFileCreated") || "File created", "success");
+      } catch (err) {
+        onShowToast?.(
+          err instanceof Error
+            ? err.message
+            : t("stateEditor.newFileFailed") || "Failed to create file",
+          "error",
+        );
+      }
+    });
+  };
+
+  const handleCreateFolderInDirectory = (directoryPath: string) => {
+    if (!ensureWritableSession()) {
+      return;
+    }
+
+    withPendingEditGuard(() => {
+      const normalizedDirectory = normalizeVfsPath(directoryPath);
+      const directoryCaps = getDirectoryPathCapabilities(
+        normalizedDirectory,
+        snapshot,
+        capabilityContext,
+      );
+      if (!directoryCaps.canCreateChild) {
+        onShowToast?.(
+          directoryCaps.createChildReason ||
+            t("stateEditor.createBlocked") ||
+            "Cannot create items in this folder",
+          "info",
+        );
+        return;
+      }
+
+      const input =
+        window.prompt(
+          t("stateEditor.newFolderPrompt") ||
+            "Enter the folder name (can include nested paths):",
+        ) ?? "";
+      const trimmed = input.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      const targetPath = normalizeVfsPath(
+        normalizedDirectory ? `${normalizedDirectory}/${trimmed}` : trimmed,
+      );
+      if (!targetPath) {
+        onShowToast?.(t("stateEditor.invalidPath") || "Invalid path", "error");
+        return;
+      }
+
+      try {
+        const nextState = applyVfsCreateFolder({
+          session: vfsSession,
+          path: targetPath,
+          baseState: gameState,
+          writeContext: editorWriteContext,
+        });
+        applyVfsMutation(nextState);
+        updateSnapshotAndSelect(`${targetPath}/README.md`);
+        setIsEditMode(true);
+        onShowToast?.(
+          t("stateEditor.newFolderCreated") || "Folder created with README",
+          "success",
+        );
+      } catch (err) {
+        onShowToast?.(
+          err instanceof Error
+            ? err.message
+            : t("stateEditor.newFolderFailed") || "Failed to create folder",
+          "error",
+        );
+      }
+    });
+  };
+
+  const handleRenamePath = (path: string, isFolder: boolean) => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath) {
+      return;
+    }
+
+    const caps = isFolder
+      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      : getFilePathCapabilities(normalizedPath, capabilityContext);
+
+    if (!ensureWritableSession()) {
+      return;
+    }
+
+    if (!caps.canRenameMove) {
       onShowToast?.(
-        t("stateEditor.sessionConfirmRequired") ||
-          "Editor confirmation expired. Reopen the editor to continue editing.",
-        "error",
+        caps.renameMoveReason ||
+          t("stateEditor.renameBlocked") ||
+          "Renaming is not allowed for this path",
+        "info",
       );
       return;
     }
 
-    const suggestedTitle = (
-      window.prompt(
-        t("stateEditor.createRuleTemplatePrompt") ||
-          "Enter a title for the new custom rule category:",
-      ) || ""
-    ).trim();
+    withPendingEditGuard(() => {
+      const currentName = normalizedPath.split("/").pop() ?? normalizedPath;
+      const input =
+        window.prompt(
+          t("stateEditor.renamePrompt") || "Enter a new name:",
+          currentName,
+        ) ?? "";
+      const trimmed = input.trim();
+      if (!trimmed || trimmed === currentName) {
+        return;
+      }
 
-    if (!suggestedTitle) {
+      const baseDir = normalizedPath.split("/").slice(0, -1).join("/");
+      const targetPath = normalizeVfsPath(baseDir ? `${baseDir}/${trimmed}` : trimmed);
+
+      try {
+        const nextState = applyVfsRenamePath({
+          session: vfsSession,
+          fromPath: normalizedPath,
+          toPath: targetPath,
+          isFolder,
+          baseState: gameState,
+          writeContext: editorWriteContext,
+        });
+        applyVfsMutation(nextState);
+
+        const selectedAfter = isFolder ? `${targetPath}/README.md` : targetPath;
+        updateSnapshotAndSelect(selectedAfter);
+        onShowToast?.(t("stateEditor.renameSuccess") || "Renamed", "success");
+      } catch (err) {
+        onShowToast?.(
+          err instanceof Error
+            ? err.message
+            : t("stateEditor.renameFailed") || "Failed to rename",
+          "error",
+        );
+      }
+    });
+  };
+
+  const handleMovePath = (path: string, isFolder: boolean) => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath) {
       return;
     }
 
-    const templatePath = getCustomRulePackTemplatePath(
-      Object.keys(snapshot),
-      suggestedTitle,
-    );
+    const caps = isFolder
+      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      : getFilePathCapabilities(normalizedPath, capabilityContext);
 
-    const markdown = buildCustomRulePackMarkdown({
-      category: suggestedTitle,
-      whenToApply: "When this category becomes relevant to the current scene.",
-      rules: [],
+    if (!ensureWritableSession()) {
+      return;
+    }
+
+    if (!caps.canRenameMove) {
+      onShowToast?.(
+        caps.renameMoveReason ||
+          t("stateEditor.moveBlocked") ||
+          "Move is not allowed for this path",
+        "info",
+      );
+      return;
+    }
+
+    withPendingEditGuard(() => {
+      const input =
+        window.prompt(
+          t("stateEditor.movePrompt") ||
+            "Enter destination path, or a directory path to keep current name:",
+          normalizedPath,
+        ) ?? "";
+      const trimmedInput = input.trim();
+      const normalizedInput = normalizeVfsPath(trimmedInput);
+      if (!normalizedInput) {
+        onShowToast?.(t("stateEditor.invalidPath") || "Invalid path", "error");
+        return;
+      }
+
+      const currentName = normalizedPath.split("/").pop() ?? normalizedPath;
+      const looksLikeDirectory =
+        trimmedInput.endsWith("/") ||
+        Object.keys(snapshot).some((candidatePath) =>
+          normalizeVfsPath(candidatePath).startsWith(`${normalizedInput}/`),
+        );
+
+      const targetPath = looksLikeDirectory
+        ? normalizeVfsPath(`${normalizedInput}/${currentName}`)
+        : normalizedInput;
+
+      if (targetPath === normalizedPath) {
+        return;
+      }
+
+      try {
+        const nextState = applyVfsRenamePath({
+          session: vfsSession,
+          fromPath: normalizedPath,
+          toPath: targetPath,
+          isFolder,
+          baseState: gameState,
+          writeContext: editorWriteContext,
+        });
+        applyVfsMutation(nextState);
+
+        const selectedAfter = isFolder ? `${targetPath}/README.md` : targetPath;
+        updateSnapshotAndSelect(selectedAfter);
+        onShowToast?.(t("stateEditor.moveSuccess") || "Moved", "success");
+      } catch (err) {
+        onShowToast?.(
+          err instanceof Error
+            ? err.message
+            : t("stateEditor.moveFailed") || "Failed to move",
+          "error",
+        );
+      }
     });
+  };
+
+  const handleDeletePath = (path: string, isFolder: boolean) => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath) {
+      return;
+    }
+
+    const caps = isFolder
+      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      : getFilePathCapabilities(normalizedPath, capabilityContext);
+
+    if (!ensureWritableSession()) {
+      return;
+    }
+
+    if (!caps.canDelete) {
+      onShowToast?.(
+        caps.deleteReason ||
+          t("stateEditor.deleteBlocked") ||
+          "Delete is not allowed for this path",
+        "info",
+      );
+      return;
+    }
+
+    withPendingEditGuard(() => {
+      const confirmed = window.confirm(
+        t("stateEditor.deleteConfirm") ||
+          "Delete selected path? This cannot be undone.",
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const nextState = applyVfsDeletePath({
+          session: vfsSession,
+          path: normalizedPath,
+          isFolder,
+          baseState: gameState,
+          writeContext: editorWriteContext,
+        });
+        applyVfsMutation(nextState);
+
+        const remaining = Object.keys(vfsSession.snapshotAll()).sort();
+        updateSnapshotAndSelect(remaining[0] ?? null);
+        setIsEditMode(false);
+        onShowToast?.(t("stateEditor.deleteSuccess") || "Deleted", "success");
+      } catch (err) {
+        onShowToast?.(
+          err instanceof Error
+            ? err.message
+            : t("stateEditor.deleteFailed") || "Failed to delete",
+          "error",
+        );
+      }
+    });
+  };
+
+  const handleCopySpecificPath = async (path: string) => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath) {
+      onShowToast?.(t("stateEditor.copyPathFailed") || "Failed to copy path", "error");
+      return;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(normalizedPath);
+      }
+      onShowToast?.(t("stateEditor.copyPathSuccess") || "Path copied", "success");
+    } catch {
+      onShowToast?.(t("stateEditor.copyPathFailed") || "Failed to copy path", "error");
+    }
+  };
+
+  const handleRenameSelected = () => {
+    if (!selectedPathNormalized) {
+      return;
+    }
+    handleRenamePath(selectedPathNormalized, selectedIsDirectory);
+  };
+
+  const getMoveTargetPathForDirectory = (
+    directoryPath: string,
+  ): string | null => {
+    if (!selectedPathNormalized) {
+      return null;
+    }
+    const currentName =
+      selectedPathNormalized.split("/").pop() ?? selectedPathNormalized;
+    const normalizedDirectoryPath = normalizeVfsPath(directoryPath);
+    return normalizeVfsPath(
+      normalizedDirectoryPath
+        ? `${normalizedDirectoryPath}/${currentName}`
+        : currentName,
+    );
+  };
+
+  const getMoveHereBlockedReason = (directoryPath: string): string | null => {
+    if (!hasWritableSession) {
+      return (
+        t("stateEditor.sessionConfirmRequired") ||
+        "Editor confirmation expired. Reopen the editor to continue editing."
+      );
+    }
+
+    if (!selectedPathNormalized || !selectedPathCapabilities) {
+      return t("stateEditor.noSelection") || "No file selected";
+    }
+
+    if (!selectedPathCapabilities.canRenameMove) {
+      return (
+        selectedPathCapabilities.renameMoveReason ||
+        t("stateEditor.moveBlocked") ||
+        "Move is not allowed for this path"
+      );
+    }
+
+    const directoryCaps = getDirectoryPathCapabilities(
+      directoryPath,
+      snapshot,
+      capabilityContext,
+    );
+    if (!directoryCaps.canCreateChild) {
+      return (
+        directoryCaps.createChildReason ||
+        t("stateEditor.createBlocked") ||
+        "Cannot create items in this folder"
+      );
+    }
+
+    if (
+      selectedIsDirectory &&
+      (directoryPath === selectedPathNormalized ||
+        directoryPath.startsWith(`${selectedPathNormalized}/`))
+    ) {
+      return (
+        t("stateEditor.moveIntoSelfBlocked") ||
+        "Cannot move a folder into itself."
+      );
+    }
+
+    const targetPath = getMoveTargetPathForDirectory(directoryPath);
+    if (!targetPath || targetPath === selectedPathNormalized) {
+      return (
+        t("stateEditor.moveAlreadyInFolder") ||
+        "Selected item is already in this folder"
+      );
+    }
+
+    return null;
+  };
+
+  const handleMoveSelectedToDirectory = (directoryPath: string) => {
+    const blockedReason = getMoveHereBlockedReason(directoryPath);
+    if (blockedReason) {
+      onShowToast?.(blockedReason, "info");
+      return;
+    }
+
+    withPendingEditGuard(() => {
+      const fromPath = selectedPathNormalized;
+      const targetPath = getMoveTargetPathForDirectory(directoryPath);
+      if (!fromPath || !targetPath || targetPath === fromPath) {
+        return;
+      }
+
+      try {
+        const nextState = applyVfsRenamePath({
+          session: vfsSession,
+          fromPath,
+          toPath: targetPath,
+          isFolder: selectedIsDirectory,
+          baseState: gameState,
+          writeContext: editorWriteContext,
+        });
+        applyVfsMutation(nextState);
+
+        const selectedAfter = selectedIsDirectory
+          ? `${targetPath}/README.md`
+          : targetPath;
+        updateSnapshotAndSelect(selectedAfter);
+        onShowToast?.(t("stateEditor.moveSuccess") || "Moved", "success");
+      } catch (err) {
+        onShowToast?.(
+          err instanceof Error
+            ? err.message
+            : t("stateEditor.moveFailed") || "Failed to move",
+          "error",
+        );
+      }
+    });
+  };
+
+  const handleMoveSelected = () => {
+    if (!selectedPathNormalized) {
+      return;
+    }
+    handleMovePath(selectedPathNormalized, selectedIsDirectory);
+  };
+
+  const handleDeleteSelected = () => {
+    if (!selectedPathNormalized) {
+      return;
+    }
+    handleDeletePath(selectedPathNormalized, selectedIsDirectory);
+  };
+
+  const handleCopyPath = async () => {
+    if (!selectedPathNormalized) {
+      return;
+    }
+    await handleCopySpecificPath(selectedPathNormalized);
+  };
+
+  const handleRefresh = () => {
+    setSnapshotVersion((version) => version + 1);
+    onShowToast?.(t("stateEditor.refreshSuccess") || "File tree refreshed", "info");
+  };
+
+  const canCreateRuleTemplate = customRulesDirectoryCapabilities.canCreateChild;
+  const createRuleTemplateBlockedReason =
+    customRulesDirectoryCapabilities.createChildReason;
+
+  const createRuleTemplateForCategory = (
+    category: Parameters<typeof toCustomRulePackPathForCategory>[0],
+  ) => {
+    const templatePath = toCustomRulePackPathForCategory(category);
+    const markdown = buildCustomRulePackMarkdownForCategory(category);
 
     try {
       const nextState = applyVfsFileEdit({
@@ -398,8 +1167,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       });
 
       applyVfsMutation(nextState);
-      setSelectedPath(templatePath);
-      setMobileView("editor");
+      updateSnapshotAndSelect(templatePath);
       setIsEditMode(true);
       setError(null);
       setHasChanges(false);
@@ -408,13 +1176,522 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           "Custom rule template created",
         "success",
       );
+      return true;
     } catch {
       onShowToast?.(
         t("stateEditor.createRuleTemplateFailed") ||
           "Failed to create custom rule template",
         "error",
       );
+      return false;
     }
+  };
+
+  const handleCreateRuleTemplate = () => {
+    if (!editorSessionToken) {
+      onShowToast?.(sessionConfirmReason, "error");
+      return;
+    }
+
+    if (!canCreateRuleTemplate) {
+      onShowToast?.(
+        createRuleTemplateBlockedReason ||
+          t("stateEditor.createRuleTemplateBlocked") ||
+          "Cannot create rule templates in the current session",
+        "info",
+      );
+      return;
+    }
+
+    const currentPreset = selectedPathNormalized
+      ? getCustomRuleCategoryPresetFromPath(selectedPathNormalized)
+      : null;
+
+    const choices = CUSTOM_RULE_CATEGORY_PRESETS.map(
+      (preset) => `${preset.priority.toString().padStart(2, "0")}: ${preset.title}`,
+    ).join("\n");
+
+    const defaultChoice = currentPreset
+      ? `${currentPreset.priority.toString().padStart(2, "0")}`
+      : "00";
+    const categoryPrompt =
+      t("stateEditor.createRuleTemplateCategoryPrompt") ||
+      "Choose rule category prefix:";
+
+    const selectedCode =
+      window.prompt(`${categoryPrompt}\n${choices}`, defaultChoice)?.trim() ?? "";
+
+    if (!selectedCode) {
+      return;
+    }
+
+    const normalizedCode = selectedCode.padStart(2, "0");
+    const selectedPreset = CUSTOM_RULE_CATEGORY_PRESETS.find(
+      (preset) => String(preset.priority).padStart(2, "0") === normalizedCode,
+    );
+
+    if (!selectedPreset) {
+      onShowToast?.(
+        t("stateEditor.createRuleTemplateInvalidCategory") || "Invalid category",
+        "error",
+      );
+      return;
+    }
+
+    createRuleTemplateForCategory(selectedPreset.category);
+  };
+
+  const handleCreateRuleTemplateInDirectory = (directoryPath: string) => {
+    const normalizedDirectory = normalizeVfsPath(directoryPath);
+    const preset = getCustomRuleCategoryPresetFromPath(normalizedDirectory);
+    if (!preset) {
+      onShowToast?.(
+        t("stateEditor.createRuleTemplateInvalidCategory") || "Invalid category",
+        "info",
+      );
+      return;
+    }
+
+    if (!ensureWritableSession()) {
+      return;
+    }
+
+    const directoryCaps = getDirectoryPathCapabilities(
+      normalizedDirectory,
+      snapshot,
+      capabilityContext,
+    );
+    if (!directoryCaps.canCreateChild) {
+      onShowToast?.(
+        directoryCaps.createChildReason ||
+          t("stateEditor.createRuleTemplateBlocked") ||
+          "Cannot create rule templates in the current session",
+        "info",
+      );
+      return;
+    }
+
+    createRuleTemplateForCategory(preset.category);
+  };
+
+  const toggleBatchPath = (path: string) => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath) {
+      return;
+    }
+
+    if (!snapshot[normalizedPath]) {
+      onShowToast?.(t("stateEditor.batchMoveOnlyFiles") || "Batch move only supports files", "info");
+      return;
+    }
+
+    setBatchSelectedPaths((prev) => {
+      const normalizedPrev = prev.map((item) => normalizeVfsPath(item));
+      if (normalizedPrev.includes(normalizedPath)) {
+        return prev.filter((item) => normalizeVfsPath(item) !== normalizedPath);
+      }
+      return [...prev, normalizedPath];
+    });
+  };
+
+  const handleToggleBatchMode = () => {
+    if (!batchMode) {
+      setBatchMode(true);
+      return;
+    }
+    setBatchMode(false);
+    setBatchSelectedPaths([]);
+    setBatchDestinationMode(false);
+  };
+
+  const handleStartBatchDestinationMode = () => {
+    if (!hasWritableSession) {
+      onShowToast?.(sessionConfirmReason, "error");
+      return;
+    }
+    if (selectedBatchCount === 0) {
+      onShowToast?.(
+        t("stateEditor.batchMoveNoSelection") || "Select at least one file",
+        "info",
+      );
+      return;
+    }
+    setBatchDestinationMode(true);
+    onShowToast?.(
+      t("stateEditor.batchMoveSelectDestination") ||
+        "Select a target folder for batch move",
+      "info",
+    );
+  };
+
+  const handleCancelBatchDestinationMode = () => {
+    setBatchDestinationMode(false);
+  };
+
+  const handleBatchMoveToDirectory = (targetDirectory: string) => {
+    if (!hasWritableSession) {
+      onShowToast?.(sessionConfirmReason, "error");
+      return;
+    }
+
+    const normalizedTargetDirectory = normalizeVfsPath(targetDirectory);
+    if (!normalizedTargetDirectory) {
+      onShowToast?.(t("stateEditor.invalidPath") || "Invalid path", "error");
+      return;
+    }
+
+    if (selectedBatchCount === 0) {
+      onShowToast?.(
+        t("stateEditor.batchMoveNoSelection") || "Select at least one file",
+        "info",
+      );
+      return;
+    }
+
+    const directoryCaps = getDirectoryPathCapabilities(
+      normalizedTargetDirectory,
+      snapshot,
+      capabilityContext,
+    );
+
+    if (!directoryCaps.canCreateChild) {
+      onShowToast?.(
+        directoryCaps.createChildReason ||
+          t("stateEditor.batchMoveBlocked") ||
+          "Batch move is blocked for this destination",
+        "info",
+      );
+      return;
+    }
+
+    const normalizedSources = batchSelectedPaths.map((sourcePath) =>
+      normalizeVfsPath(sourcePath),
+    );
+
+    for (const sourcePath of normalizedSources) {
+      const sourceFile = snapshot[sourcePath];
+      if (!sourceFile) {
+        onShowToast?.(
+          t("stateEditor.batchMoveOnlyFiles") || "Batch move only supports files",
+          "info",
+        );
+        return;
+      }
+
+      const sourceCaps = getFilePathCapabilities(sourcePath, capabilityContext);
+      if (!sourceCaps.canRenameMove) {
+        onShowToast?.(
+          sourceCaps.renameMoveReason ||
+            t("stateEditor.batchMoveBlocked") ||
+            "Batch move is blocked",
+          "info",
+        );
+        return;
+      }
+    }
+
+    const defaultConfirmMessage = `Move ${normalizedSources.length} files to ${normalizedTargetDirectory}?`;
+    const confirmMessage =
+      t("stateEditor.batchMoveConfirm", {
+        count: normalizedSources.length,
+        target: normalizedTargetDirectory,
+      }) || defaultConfirmMessage;
+
+    const confirmed = window.confirm(confirmMessage);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const nextState = applyVfsBatchMoveFiles({
+        session: vfsSession,
+        sourcePaths: normalizedSources,
+        targetDirectory: normalizedTargetDirectory,
+        baseState: gameState,
+        writeContext: editorWriteContext,
+      });
+      applyVfsMutation(nextState);
+
+      const firstMovedSource = normalizedSources[0] ?? null;
+      const firstName = firstMovedSource?.split("/").pop() ?? null;
+      const nextSelected = firstName
+        ? normalizeVfsPath(`${normalizedTargetDirectory}/${firstName}`)
+        : null;
+
+      updateSnapshotAndSelect(nextSelected);
+      setBatchSelectedPaths([]);
+      setBatchDestinationMode(false);
+      onShowToast?.(
+        t("stateEditor.batchMoveSuccess", { count: normalizedSources.length }) ||
+          `Moved ${normalizedSources.length} files`,
+        "success",
+      );
+    } catch (err) {
+      onShowToast?.(
+        err instanceof Error
+          ? `${t("stateEditor.batchMoveFailed") || "Batch move failed"}: ${err.message}`
+          : t("stateEditor.batchMoveFailed") || "Batch move failed",
+        "error",
+      );
+    }
+  };
+
+  const openDesktopContextMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    path: string,
+    nodeType: "file" | "folder",
+  ) => {
+    if (!isDesktop) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menuWidth = 260;
+    const viewportPadding = 8;
+    const x = Math.min(
+      event.clientX,
+      window.innerWidth - menuWidth - viewportPadding,
+    );
+    const y = Math.max(viewportPadding, event.clientY);
+
+    contextMenuTriggerRef.current = event.currentTarget as HTMLElement;
+    setContextMenuState({
+      path: normalizeVfsPath(path),
+      nodeType,
+      x,
+      y,
+    });
+    setMobileActionSheetState(null);
+  };
+
+  const openMobileActionSheet = (path: string, nodeType: "file" | "folder") => {
+    setMobileActionSheetState({ path: normalizeVfsPath(path), nodeType });
+    setContextMenuState(null);
+  };
+
+  const closeDesktopContextMenu = () => {
+    setContextMenuState(null);
+    const trigger = contextMenuTriggerRef.current;
+    if (trigger) {
+      window.requestAnimationFrame(() => {
+        trigger.focus();
+      });
+    }
+  };
+
+  const closeMobileActionSheet = () => {
+    setMobileActionSheetState(null);
+  };
+
+  const buildActionsForNode = (context: NodeActionContext): NodeActionItem[] => {
+    const normalizedPath = normalizeVfsPath(context.path);
+    const isFolder = context.nodeType === "folder";
+    const isRoot = isFolder && normalizedPath === "";
+    const isCustomRulesCategoryFolder = Boolean(
+      isFolder && getCustomRuleCategoryPresetFromPath(normalizedPath),
+    );
+
+    const directoryCaps = isFolder
+      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      : null;
+    const fileCaps = !isFolder
+      ? getFilePathCapabilities(normalizedPath, capabilityContext)
+      : null;
+
+    const moveHereBlockedReason =
+      isFolder && normalizedPath ? getMoveHereBlockedReason(normalizedPath) : null;
+
+    const canWriteToDirectory = directoryCaps?.canCreateChild ?? false;
+    const directoryBlockedReason =
+      directoryCaps?.createChildReason ||
+      t("stateEditor.createBlocked") ||
+      "Cannot create items in this folder";
+
+    const fileInBatch = batchSelectedSet.has(normalizedPath);
+
+    const writableBlockedReason = sessionConfirmReason;
+
+    const folderActions = buildNodeActions({
+      nodeType: "folder",
+      actions: {
+        select: {
+          show: !isRoot,
+          onSelect: () => {
+            setSelectedPath(normalizedPath);
+            setMobileView("editor");
+          },
+        },
+        new_file_here: {
+          show: !isRoot,
+          enabled: hasWritableSession && canWriteToDirectory,
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : directoryBlockedReason,
+          onSelect: () => {
+            handleCreateFileInDirectory(normalizedPath);
+          },
+        },
+        new_folder_here: {
+          show: !isRoot,
+          enabled: hasWritableSession && canWriteToDirectory,
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : directoryBlockedReason,
+          onSelect: () => {
+            handleCreateFolderInDirectory(normalizedPath);
+          },
+        },
+        quick_rule_template_here: {
+          show: !isRoot && isCustomRulesCategoryFolder,
+          enabled: hasWritableSession && canWriteToDirectory,
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : directoryBlockedReason,
+          onSelect: () => {
+            handleCreateRuleTemplateInDirectory(normalizedPath);
+          },
+        },
+        move_here: {
+          show: !isRoot && Boolean(selectedPathNormalized),
+          enabled: !moveHereBlockedReason,
+          disabledReason:
+            moveHereBlockedReason ||
+            t("stateEditor.moveBlocked") ||
+            "Move is not allowed for this path",
+          onSelect: () => {
+            handleMoveSelectedToDirectory(normalizedPath);
+          },
+        },
+        rename: {
+          show: !isRoot,
+          enabled: hasWritableSession && Boolean(directoryCaps?.canRenameMove),
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : directoryCaps?.renameMoveReason ||
+              t("stateEditor.renameBlocked") ||
+              "Renaming is not allowed for this path",
+          onSelect: () => {
+            handleRenamePath(normalizedPath, true);
+          },
+        },
+        move: {
+          show: !isRoot,
+          enabled: hasWritableSession && Boolean(directoryCaps?.canRenameMove),
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : directoryCaps?.renameMoveReason ||
+              t("stateEditor.moveBlocked") ||
+              "Move is not allowed for this path",
+          onSelect: () => {
+            handleMovePath(normalizedPath, true);
+          },
+        },
+        delete: {
+          show: !isRoot,
+          enabled: hasWritableSession && Boolean(directoryCaps?.canDelete),
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : directoryCaps?.deleteReason ||
+              t("stateEditor.deleteBlocked") ||
+              "Delete is not allowed for this path",
+          onSelect: () => {
+            handleDeletePath(normalizedPath, true);
+          },
+        },
+        copy_path: {
+          show: !isRoot,
+          enabled: Boolean(normalizedPath),
+          disabledReason:
+            t("stateEditor.noSelection") ||
+            "No file selected",
+          onSelect: () => {
+            void handleCopySpecificPath(normalizedPath);
+          },
+        },
+      },
+    });
+
+    const fileActions = buildNodeActions({
+      nodeType: "file",
+      actions: {
+        rename: {
+          enabled: hasWritableSession && Boolean(fileCaps?.canRenameMove),
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : fileCaps?.renameMoveReason ||
+              t("stateEditor.renameBlocked") ||
+              "Renaming is not allowed for this path",
+          onSelect: () => {
+            handleRenamePath(normalizedPath, false);
+          },
+        },
+        move: {
+          enabled: hasWritableSession && Boolean(fileCaps?.canRenameMove),
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : fileCaps?.renameMoveReason ||
+              t("stateEditor.moveBlocked") ||
+              "Move is not allowed for this path",
+          onSelect: () => {
+            handleMovePath(normalizedPath, false);
+          },
+        },
+        delete: {
+          enabled: hasWritableSession && Boolean(fileCaps?.canDelete),
+          disabledReason: !hasWritableSession
+            ? writableBlockedReason
+            : fileCaps?.deleteReason ||
+              t("stateEditor.deleteBlocked") ||
+              "Delete is not allowed for this path",
+          onSelect: () => {
+            handleDeletePath(normalizedPath, false);
+          },
+        },
+        copy_path: {
+          enabled: Boolean(normalizedPath),
+          disabledReason:
+            t("stateEditor.noSelection") ||
+            "No file selected",
+          onSelect: () => {
+            void handleCopySpecificPath(normalizedPath);
+          },
+        },
+        add_to_batch: {
+          show: !fileInBatch,
+          enabled: Boolean(snapshot[normalizedPath]),
+          disabledReason:
+            t("stateEditor.batchMoveOnlyFiles") ||
+            "Batch move only supports files",
+          onSelect: () => {
+            setBatchMode(true);
+            toggleBatchPath(normalizedPath);
+          },
+        },
+        remove_from_batch: {
+          show: fileInBatch,
+          enabled: true,
+          onSelect: () => {
+            toggleBatchPath(normalizedPath);
+          },
+        },
+      },
+    });
+
+    return context.nodeType === "folder" ? folderActions : fileActions;
+  };
+
+  const runNodeAction = (
+    action: NodeActionItem,
+    source: "desktop" | "mobile",
+  ) => {
+    action.onSelect();
+    if (source === "desktop") {
+      closeDesktopContextMenu();
+      return;
+    }
+    closeMobileActionSheet();
   };
 
   const handleToggleEditMode = () => {
@@ -427,9 +1704,19 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       return;
     }
 
-    if (selectedPathIsProtected) {
+    if (selectedIsDirectory) {
       onShowToast?.(
-        t("stateEditor.readOnlyByPolicy") ||
+        t("stateEditor.directoryNotEditable") ||
+          "Folders are not directly editable. Select a file instead.",
+        "info",
+      );
+      return;
+    }
+
+    if (!selectedPathCapabilities?.canEdit) {
+      onShowToast?.(
+        selectedPathCapabilities?.editReason ||
+          t("stateEditor.readOnlyByPolicy") ||
           "This path is protected by VFS policy and cannot be edited from State Editor.",
         "info",
       );
@@ -490,67 +1777,177 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const renderTreeNode = (node: VfsTreeNode, depth = 0): React.ReactNode => {
     const isFolder = node.kind === "folder";
     const isRoot = node.path === "";
+    const normalizedPath = normalizeVfsPath(node.path);
     const expanded = isRoot || hasSearch || expandedPaths.includes(node.path);
     const padding = { paddingLeft: `${depth * 12}px` };
 
     if (isFolder) {
-      const readonly = isReadonlyPath(node.path, { editorSessionToken, activeForkId: gameState.forkId });
+      const caps = getDirectoryPathCapabilities(node.path, snapshot, capabilityContext);
+      const readonly = !caps.canCreateChild;
+      const batchDestinationBlockedReason = !hasWritableSession
+        ? sessionConfirmReason
+        : !caps.canCreateChild
+          ? caps.createChildReason ||
+            t("stateEditor.batchMoveBlocked") ||
+            "Batch move is blocked for this destination"
+          : selectedBatchCount === 0
+            ? t("stateEditor.batchMoveNoSelection") || "Select at least one file"
+            : null;
+      const canChooseBatchDestination = !isRoot && !batchDestinationBlockedReason;
+
       return (
         <div key={node.path || "root"}>
-          <button
-            type="button"
-            onClick={() => toggleFolder(node.path)}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
-              isRoot
-                ? "text-theme-text-secondary font-semibold border-transparent"
-                : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-divider/60"
+          <div
+            className={`w-full flex items-center gap-2 px-2 py-1.5 ${
+              batchDestinationMode && !isRoot
+                ? "bg-theme-primary/5"
+                : ""
             }`}
             style={padding}
+            onContextMenu={(event) => {
+              if (isRoot) {
+                return;
+              }
+              openDesktopContextMenu(event, normalizedPath, "folder");
+            }}
           >
-            <span className="w-3 text-[10px] font-mono">
-              {expanded ? "v" : ">"}
-            </span>
-            <span className="truncate flex-1">{node.name}</span>
-            {readonly && (
-              <span className="text-[10px] text-theme-info">
-                {t("stateEditor.readOnly") || "Read Only"}
+            <button
+              type="button"
+              onClick={() => toggleFolder(node.path)}
+              className={`flex-1 flex items-center gap-2 text-left text-xs transition-colors border-l-2 ${
+                isRoot
+                  ? "text-theme-text-secondary font-semibold border-transparent"
+                  : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-divider/60"
+              }`}
+            >
+              <span className="w-3 text-[10px] font-mono">
+                {expanded ? "v" : ">"}
               </span>
+              <span className="truncate flex-1">{node.name}</span>
+              {readonly && (
+                <span className="text-[10px] text-theme-info">
+                  {t("stateEditor.readOnly") || "Read Only"}
+                </span>
+              )}
+            </button>
+            {!isRoot && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPath(normalizedPath);
+                  setMobileView("editor");
+                }}
+                className="hidden md:inline-flex shrink-0 px-2 py-1 text-[10px] rounded border border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                title={t("stateEditor.selectFolder") || "Select folder"}
+              >
+                {t("stateEditor.select") || "Select"}
+              </button>
             )}
-          </button>
+            {batchDestinationMode && !isRoot && (
+              <button
+                type="button"
+                onClick={() => handleBatchMoveToDirectory(normalizedPath)}
+                disabled={!canChooseBatchDestination}
+                className={`shrink-0 px-2 py-1 text-[10px] rounded border transition-colors ${
+                  canChooseBatchDestination
+                    ? "border-theme-primary/40 text-theme-primary hover:bg-theme-primary/10"
+                    : "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                }`}
+                title={
+                  canChooseBatchDestination
+                    ? t("stateEditor.batchMoveSelectDestination") ||
+                      "Select destination"
+                    : batchDestinationBlockedReason ||
+                      t("stateEditor.batchMoveBlocked") ||
+                      "Batch move is blocked"
+                }
+              >
+                {t("stateEditor.batchDestinationMode") || "Destination Mode"}
+              </button>
+            )}
+            {!isRoot && (
+              <button
+                type="button"
+                onClick={() => openMobileActionSheet(normalizedPath, "folder")}
+                className="md:hidden shrink-0 px-2 py-1 text-xs rounded border border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                title={t("stateEditor.moreActions") || "More actions"}
+              >
+                ⋯
+              </button>
+            )}
+          </div>
           {expanded &&
             node.children?.map((child) => renderTreeNode(child, depth + 1))}
         </div>
       );
     }
 
-    const readonly = isReadonlyPath(node.path, { editorSessionToken, activeForkId: gameState.forkId });
+    const caps = getFilePathCapabilities(node.path, capabilityContext);
+    const readonly = !caps.canEdit;
     const isSelected = node.path === selectedPath;
+    const inBatch = batchSelectedSet.has(normalizedPath);
 
     return (
-      <button
+      <div
         key={node.path}
-        type="button"
-        onClick={() => {
-          setSelectedPath(node.path);
-          setMobileView("editor");
-        }}
-        className={`w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
-          isSelected
-            ? "bg-theme-primary/10 text-theme-primary border-theme-primary"
-            : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-divider/60"
-        }`}
+        className="w-full flex items-center gap-2"
         style={padding}
+        onContextMenu={(event) => openDesktopContextMenu(event, normalizedPath, "file")}
       >
-        <span className="w-3 text-[10px] font-mono">-</span>
-        <span className="truncate flex-1">{node.name}</span>
-        {readonly && (
-          <span className="text-[10px] text-theme-info">
-            {t("stateEditor.readOnly") || "Read Only"}
-          </span>
+        {batchMode && (
+          <label className="shrink-0 flex items-center" title={t("stateEditor.batchMode") || "Batch mode"}>
+            <input
+              type="checkbox"
+              checked={inBatch}
+              onChange={() => toggleBatchPath(normalizedPath)}
+              className="h-3.5 w-3.5 rounded border-theme-divider/60 bg-theme-bg/30 text-theme-primary focus:ring-theme-primary/50"
+            />
+          </label>
         )}
-      </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedPath(normalizedPath);
+            setMobileView("editor");
+          }}
+          className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors border-l-2 ${
+            isSelected
+              ? "bg-theme-primary/10 text-theme-primary border-theme-primary"
+              : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/10 border-transparent hover:border-theme-divider/60"
+          }`}
+        >
+          <span className="w-3 text-[10px] font-mono">-</span>
+          <span className="truncate flex-1">{node.name}</span>
+          {readonly && (
+            <span className="text-[10px] text-theme-info">
+              {t("stateEditor.readOnly") || "Read Only"}
+            </span>
+          )}
+          {batchMode && inBatch && (
+            <span className="text-[10px] text-theme-primary">
+              {t("stateEditor.batchMode") || "Batch"}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => openMobileActionSheet(normalizedPath, "file")}
+          className="md:hidden shrink-0 px-2 py-1 text-xs rounded border border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+          title={t("stateEditor.moreActions") || "More actions"}
+        >
+          ⋯
+        </button>
+      </div>
     );
   };
+
+  const contextMenuActions = contextMenuState
+    ? buildActionsForNode(contextMenuState)
+    : [];
+
+  const mobileActionSheetActions = mobileActionSheetState
+    ? buildActionsForNode(mobileActionSheetState)
+    : [];
 
   return (
     <div className="fixed inset-0 z-[80] ui-overlay backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
@@ -650,20 +2047,214 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             className={`${mobileView === "files" ? "flex" : "hidden"} md:flex w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-theme-surface/80 flex-col min-h-0`}
           >
             <div className="p-3 border-b border-theme-divider/60 bg-theme-surface-highlight/20">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wide">
-                  {t("stateEditor.fileTree") || "File Tree"}
-                </div>
+              <div className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wide mb-2">
+                {t("stateEditor.fileTree") || "File Tree"}
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <button
+                  type="button"
+                  onClick={handleCreateFile}
+                  disabled={!hasWritableSession || !canCreateInTargetDirectory}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    !hasWritableSession || !canCreateInTargetDirectory
+                      ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
+                  title={
+                    !hasWritableSession
+                      ? sessionConfirmReason
+                      : !canCreateInTargetDirectory
+                        ? createBlockedReason ||
+                          t("stateEditor.createBlocked") ||
+                          "Cannot create items in this folder"
+                        : t("stateEditor.newFile") || "New File"
+                  }
+                >
+                  {t("stateEditor.newFile") || "New File"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateFolder}
+                  disabled={!hasWritableSession || !canCreateInTargetDirectory}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    !hasWritableSession || !canCreateInTargetDirectory
+                      ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
+                  title={
+                    !hasWritableSession
+                      ? sessionConfirmReason
+                      : !canCreateInTargetDirectory
+                        ? createBlockedReason ||
+                          t("stateEditor.createBlocked") ||
+                          "Cannot create items in this folder"
+                        : t("stateEditor.newFolder") || "New Folder"
+                  }
+                >
+                  {t("stateEditor.newFolder") || "New Folder"}
+                </button>
                 <button
                   type="button"
                   onClick={handleCreateRuleTemplate}
-                  className="shrink-0 rounded-md border border-theme-divider/60 px-2 py-1 text-[11px] text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20 transition-colors"
+                  disabled={!hasWritableSession || !canCreateRuleTemplate}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    !hasWritableSession || !canCreateRuleTemplate
+                      ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
                   title={
-                    t("stateEditor.createRuleTemplate") ||
-                    "Create custom rule template"
+                    !hasWritableSession
+                      ? sessionConfirmReason
+                      : !canCreateRuleTemplate
+                        ? createRuleTemplateBlockedReason ||
+                          t("stateEditor.createRuleTemplateBlocked") ||
+                          "Cannot create rule templates in the current session"
+                        : t("stateEditor.createRuleTemplate") || "Quick Rule Template"
                   }
                 >
-                  {t("stateEditor.createRuleTemplate") || "+ Rule"}
+                  {t("stateEditor.createRuleTemplate") || "Quick Rule Template"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="rounded-md border border-theme-divider/60 px-2 py-1 text-[11px] text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20 transition-colors"
+                  title={t("stateEditor.refresh") || "Refresh"}
+                >
+                  {t("stateEditor.refresh") || "Refresh"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleBatchMode}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    batchMode
+                      ? "border-theme-primary/40 text-theme-primary bg-theme-primary/10"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
+                  title={t("stateEditor.batchMode") || "Batch mode"}
+                >
+                  {t("stateEditor.batchMode") || "Batch"}
+                </button>
+                {batchMode && (
+                  <button
+                    type="button"
+                    onClick={
+                      batchDestinationMode
+                        ? handleCancelBatchDestinationMode
+                        : handleStartBatchDestinationMode
+                    }
+                    disabled={!canBatchMoveSelected && !batchDestinationMode}
+                    className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                      !canBatchMoveSelected && !batchDestinationMode
+                        ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                        : batchDestinationMode
+                          ? "border-theme-warning/40 text-theme-warning hover:bg-theme-warning/10"
+                          : "border-theme-primary/40 text-theme-primary hover:bg-theme-primary/10"
+                    }`}
+                    title={
+                      batchDestinationMode
+                        ? t("stateEditor.batchDestinationMode") || "Destination mode"
+                        : !canBatchMoveSelected
+                          ? t("stateEditor.batchMoveNoSelection") || "Select at least one file"
+                          : t("stateEditor.batchMove") || "Move selected"
+                    }
+                  >
+                    {batchDestinationMode
+                      ? t("stateEditor.batchDestinationMode") || "Destination Mode"
+                      : t("stateEditor.batchMove") || "Move Selected"}
+                  </button>
+                )}
+              </div>
+              {batchMode && (
+                <div className="mb-2 text-[11px] text-theme-text-secondary">
+                  {batchDestinationMode
+                    ? t("stateEditor.batchMoveSelectDestination") ||
+                      "Select a target folder in the tree"
+                    : t("stateEditor.batchSelectHint") ||
+                      "Select files, then choose Move Selected"}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5 mb-2 md:hidden">
+                <button
+                  type="button"
+                  onClick={handleRenameSelected}
+                  disabled={!hasWritableSession || !selectedPathNormalized || !canRenameSelected}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    !hasWritableSession || !selectedPathNormalized || !canRenameSelected
+                      ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
+                  title={
+                    !hasWritableSession
+                      ? sessionConfirmReason
+                      : !selectedPathNormalized
+                        ? t("stateEditor.noSelection") || "No file selected"
+                        : selectedPathCapabilities?.renameMoveReason ||
+                          t("stateEditor.rename") ||
+                          "Rename"
+                  }
+                >
+                  {t("stateEditor.rename") || "Rename"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleMoveSelected}
+                  disabled={!hasWritableSession || !selectedPathNormalized || !canMoveSelected}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    !hasWritableSession || !selectedPathNormalized || !canMoveSelected
+                      ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
+                  title={
+                    !hasWritableSession
+                      ? sessionConfirmReason
+                      : !selectedPathNormalized
+                        ? t("stateEditor.noSelection") || "No file selected"
+                        : selectedPathCapabilities?.renameMoveReason ||
+                          t("stateEditor.move") ||
+                          "Move"
+                  }
+                >
+                  {t("stateEditor.move") || "Move"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteSelected}
+                  disabled={!hasWritableSession || !selectedPathNormalized || !canDeleteSelected}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    !hasWritableSession || !selectedPathNormalized || !canDeleteSelected
+                      ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
+                  title={
+                    !hasWritableSession
+                      ? sessionConfirmReason
+                      : !selectedPathNormalized
+                        ? t("stateEditor.noSelection") || "No file selected"
+                        : selectedPathCapabilities?.deleteReason ||
+                          t("stateEditor.delete") ||
+                          "Delete"
+                  }
+                >
+                  {t("stateEditor.delete") || "Delete"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleCopyPath();
+                  }}
+                  disabled={!canCopySelectedPath}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    !canCopySelectedPath
+                      ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
+                      : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                  }`}
+                  title={
+                    selectedPathNormalized ||
+                    t("stateEditor.noSelection") ||
+                    "No file selected"
+                  }
+                >
+                  {t("stateEditor.copyPath") || "Copy Path"}
                 </button>
               </div>
               <input
@@ -854,6 +2445,115 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
         </div>
       </div>
+
+      {contextMenuState && isDesktop && (
+        <div
+          data-state-editor-context-menu="true"
+          className="hidden md:block fixed z-[95] min-w-[230px] max-w-[320px] rounded-md border border-theme-divider/60 bg-theme-surface/95 shadow-xl backdrop-blur-sm"
+          style={{ left: contextMenuState.x, top: contextMenuState.y }}
+          role="menu"
+        >
+          <div className="px-3 py-2 text-[11px] font-semibold text-theme-text-secondary border-b border-theme-divider/60">
+            {t("stateEditor.contextMenuTitle") || "Actions"}
+          </div>
+          <div className="py-1 max-h-[340px] overflow-auto">
+            {contextMenuActions.length > 0 ? (
+              contextMenuActions.map((action) => {
+                const label = t(action.labelKey) || action.fallbackLabel;
+                return (
+                  <button
+                    key={`${contextMenuState.path}-${action.id}`}
+                    type="button"
+                    role="menuitem"
+                    disabled={action.disabled}
+                    onClick={() => runNodeAction(action, "desktop")}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                      action.disabled
+                        ? "text-theme-muted cursor-not-allowed"
+                        : action.danger
+                          ? "text-theme-error hover:bg-theme-error/10"
+                          : "text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
+                    }`}
+                    title={
+                      action.disabled
+                        ? action.disabledReason ||
+                          t("stateEditor.batchMoveBlocked") ||
+                          "Action is currently unavailable"
+                        : label
+                    }
+                  >
+                    <div>{label}</div>
+                    {action.disabled && action.disabledReason && (
+                      <div className="mt-0.5 text-[10px] text-theme-muted">
+                        {action.disabledReason}
+                      </div>
+                    )}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-3 py-2 text-xs text-theme-text-secondary">
+                {t("stateEditor.emptyState") || "No files available"}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {mobileActionSheetState && (
+        <div className="md:hidden fixed inset-0 z-[95] flex items-end">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/45"
+            onClick={closeMobileActionSheet}
+            aria-label={t("stateEditor.moreActions") || "More actions"}
+          />
+          <div className="relative w-full rounded-t-xl border-t border-theme-divider/60 bg-theme-surface/95 backdrop-blur-sm pb-[calc(12px+env(safe-area-inset-bottom))]">
+            <div className="px-4 py-3 border-b border-theme-divider/60">
+              <div className="text-sm font-semibold text-theme-text">
+                {t("stateEditor.moreActions") || "More actions"}
+              </div>
+              <div className="mt-1 text-[11px] text-theme-text-secondary font-mono break-all">
+                {mobileActionSheetState.path}
+              </div>
+            </div>
+            <div className="max-h-[58vh] overflow-auto p-2">
+              {mobileActionSheetActions.map((action) => {
+                const label = t(action.labelKey) || action.fallbackLabel;
+                return (
+                  <button
+                    key={`${mobileActionSheetState.path}-${action.id}`}
+                    type="button"
+                    disabled={action.disabled}
+                    onClick={() => runNodeAction(action, "mobile")}
+                    className={`w-full text-left rounded-md px-3 py-2.5 text-sm transition-colors mb-1 last:mb-0 ${
+                      action.disabled
+                        ? "text-theme-muted bg-theme-bg/15 cursor-not-allowed"
+                        : action.danger
+                          ? "text-theme-error bg-theme-error/5"
+                          : "text-theme-text-secondary bg-theme-bg/10"
+                    }`}
+                    title={
+                      action.disabled
+                        ? action.disabledReason ||
+                          t("stateEditor.batchMoveBlocked") ||
+                          "Action is currently unavailable"
+                        : label
+                    }
+                  >
+                    <div>{label}</div>
+                    {action.disabled && action.disabledReason && (
+                      <div className="mt-0.5 text-[11px] text-theme-muted">
+                        {action.disabledReason}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
