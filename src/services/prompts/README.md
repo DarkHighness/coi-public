@@ -20,6 +20,13 @@ This directory contains the modularized prompt generation logic for the AI Game 
 - **Strict/Creative Modes**: Support for restricted (faithful) or creative (randomized) generation.
 - **Skills Architecture**: Modular prompt system with lazy-loading and conditional activation.
 
+## Theme Skills Policy
+
+- Turn/Outline prompts include an optional theme-skill selection protocol: read `current/skills/index.json` first, then selectively read `0~2` `current/skills/theme/**/SKILL.md` files when needed.
+- Theme archetype skills (e.g. `face-slapping-reversal`, `tragic-angst`, `healing-redemption`) are optional enhancement layers for pacing/conflict/tone.
+- Theme skills are soft guidance only (no hard blocking gate).
+- This differs from command/preset runtime constraints, which can still enforce strict read-before-write behavior in their own flows.
+
 ## Usage
 
 Import from the directory root:

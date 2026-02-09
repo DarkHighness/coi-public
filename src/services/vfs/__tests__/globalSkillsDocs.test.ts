@@ -19,9 +19,21 @@ describe("VFS global skills docs", () => {
   it("keeps theme skills as real skills with When to Use", () => {
     const files = buildGlobalVfsSkills(0);
     const cyberpunk = files["skills/theme/cyberpunk/SKILL.md"]?.content ?? "";
+    const faceSlapping =
+      files["skills/theme/face-slapping-reversal/SKILL.md"]?.content ?? "";
+    const ipFaithful =
+      files["skills/theme/ip-faithful-adaptation/SKILL.md"]?.content ?? "";
     expect(cyberpunk).toContain("# Cyberpunk Theme");
     expect(cyberpunk).toContain("## When to Use");
     expect(cyberpunk).toContain("## Checklist");
+    expect(faceSlapping).toContain("# Face-Slapping Reversal Theme");
+    expect(faceSlapping).toContain("## Anti-patterns");
+    expect(faceSlapping).toContain("## Checklist");
+    expect(faceSlapping).toContain("tags: [theme, face-slapping-reversal, shuangwen]");
+    expect(ipFaithful).toContain("# IP Faithful Adaptation Theme");
+    expect(ipFaithful).toContain("## When to Use");
+    expect(ipFaithful).toContain("## Anti-patterns");
+    expect(ipFaithful).toContain("tags: [theme, ip-faithful-adaptation, ip]");
   });
 
   it("ships preset runtime skills as VFS-registered documents", () => {

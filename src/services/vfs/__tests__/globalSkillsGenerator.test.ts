@@ -114,6 +114,43 @@ describe("VFS global skills generator", () => {
         tags: entry.tags,
       });
     }
+
+    expect(parsed.skills).toContainEqual({
+      id: "theme-face-slapping-reversal",
+      path: "current/skills/theme/face-slapping-reversal/SKILL.md",
+      title: "Face Slapping Reversal Theme",
+      tags: ["theme", "face-slapping-reversal"],
+    });
+    expect(parsed.skills).toContainEqual({
+      id: "theme-tragic-angst",
+      path: "current/skills/theme/tragic-angst/SKILL.md",
+      title: "Tragic Angst Theme",
+      tags: ["theme", "tragic-angst"],
+    });
+    expect(parsed.skills).toContainEqual({
+      id: "theme-healing-redemption",
+      path: "current/skills/theme/healing-redemption/SKILL.md",
+      title: "Healing Redemption Theme",
+      tags: ["theme", "healing-redemption"],
+    });
+    expect(parsed.skills).toContainEqual({
+      id: "theme-mystery-horror",
+      path: "current/skills/theme/mystery-horror/SKILL.md",
+      title: "Mystery Horror Theme",
+      tags: ["theme", "mystery-horror"],
+    });
+    expect(parsed.skills).toContainEqual({
+      id: "theme-epic-worldbuilding",
+      path: "current/skills/theme/epic-worldbuilding/SKILL.md",
+      title: "Epic Worldbuilding Theme",
+      tags: ["theme", "epic-worldbuilding"],
+    });
+    expect(parsed.skills).toContainEqual({
+      id: "theme-ip-faithful-adaptation",
+      path: "current/skills/theme/ip-faithful-adaptation/SKILL.md",
+      title: "Ip Faithful Adaptation Theme",
+      tags: ["theme", "ip-faithful-adaptation"],
+    });
   });
 
   it("registers preset runtime skills in generator and index", () => {

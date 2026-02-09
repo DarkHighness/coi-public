@@ -304,6 +304,30 @@ VFS 中存的是 canonical data。UI 需要的 `GameState` 是派生产物：
 
 ---
 
+## 11. Theme Skills 自主选读机制（无强门禁）
+
+在 `skills/theme/**` 下，系统提供主题类技能（含通用 genre 与 archetype 扩展）。
+
+- 发现入口：先读 `current/skills/index.json`
+- 选读方式：AI 按当前回合题材/冲突/节奏需求，自主选读 `0~2` 个 `current/skills/theme/**/SKILL.md`
+- 读写边界：`current/skills/**` 仍是只读参考资料，不参与状态写入
+
+### 为什么不做主题强门禁
+
+主题技能用于“风格/机制增强”，不是每回合都必须前置读取：
+
+- 避免误拦截：轻量回合或简单题材不应因未读 theme skill 被阻断
+- 保持流畅：减少不必要的机械读取，降低回合摩擦
+- 兼容旧逻辑：现有 command/preset 强门禁保持不变，主题层保持软引导
+
+### 推荐读取顺序
+
+1. `current/skills/index.json`（发现相关 skill）
+2. `current/skills/theme/<slug>/SKILL.md`（按需选读）
+3. 必要时再读 `current/skills/worldbuilding/**` 与 `current/skills/craft/**`
+
+---
+
 ## Appendix A：相关文件索引（快速跳转）
 - 工具定义：`src/services/tools.ts`
 - 工具 toolset allowlist：`src/services/vfsToolsets.ts`
@@ -315,4 +339,3 @@ VFS 中存的是 canonical data。UI 需要的 `GameState` 是派生产物：
 - VFS 持久化：`src/services/vfs/persistence.ts`
 - VFS seeding：`src/services/vfs/seed.ts`
 - refs/atmosphere：`src/services/vfs/refs/atmosphere.ts`
-

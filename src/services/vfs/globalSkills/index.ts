@@ -36,6 +36,7 @@ type ThemeSkillDef = {
   slug: string;
   title: string;
   description: string;
+  aliases?: string[];
   whenToLoad: string;
   coreConstraints: string[];
   pressureMechanisms: string[];
@@ -386,6 +387,144 @@ const THEME_DEPTH: Record<string, ThemeDepth> = {
       "At least one relationship shifts by 1% (trust, belonging, understanding).",
       "A place constraint matters (hours, weather, money, transit, noise).",
       "A repair action occurs after friction (small restitution, not instant harmony).",
+    ],
+  },
+  "face-slapping-reversal": {
+    scenePatterns: [
+      "Opening mechanics: start from visible humiliation/underestimation, then plant one reversible leverage seed.",
+      "Reversal chain: suppression → small proof → public turn → accountability.",
+      "Status gate pressure: titles/credentials/lineage block access until proof breaks one gate.",
+      "Receipt play: every comeback leaves an auditable object (recording, seal, witness, ledger).",
+      "Crowd energy curve: private confidence rises before public recognition catches up.",
+      "Countermove discipline: opponents retaliate procedurally (audits, bans, social exclusion), not as cartoon villains.",
+    ],
+    clocks: [
+      "Now: take short-term loss to secure long-term leverage.",
+      "24h: first concrete win flips one access gate.",
+      "7 days: procedural backlash or public vindication reshapes status.",
+      "Long tail: reversal success creates scrutiny and new rivals.",
+    ],
+    checklist: [
+      "Opening includes clear suppression and a plausible reason others underestimate the protagonist.",
+      "Each reversal is paid by preparation, receipts, or alliances (no instant omnipotence).",
+      "Public opinion changes through visible events, not narration-only claims.",
+      "At least one gate remains hard after each win to preserve pressure.",
+      "Consequences persist: winning today creates tomorrow's retaliation or expectation.",
+    ],
+  },
+  "tragic-angst": {
+    scenePatterns: [
+      "Opening mechanics: set an attachment + an irreconcilable pressure (duty, timing, survival, class).",
+      "Misunderstanding with incentives: concealment protects someone, but compounds damage.",
+      "Deferred truth: revelations arrive late enough to hurt, early enough to change choices.",
+      "Harm ledger: emotional wounds map to concrete losses (status, shelter, trust, custody, safety).",
+      "No-villain tragedy: multiple actors pursue reasonable goals that collide.",
+      "Repair attempt with friction: apology + restitution + boundary, and forgiveness may still fail.",
+    ],
+    clocks: [
+      "Now: choose between honesty and immediate protection.",
+      "48h: silence creates secondary damage (rumor, mistrust, procedural penalty).",
+      "7 days: accumulated hurt forces rupture or costly confrontation.",
+      "Long tail: scars alter future intimacy, alliances, and life trajectory.",
+    ],
+    checklist: [
+      "Pain is tied to character values and concrete stakes, not abstract suffering.",
+      "Every major misunderstanding has a believable incentive and cost.",
+      "Characters retain agency; tragedy comes from choices under constraint.",
+      "At least one repair path exists, even if it fails.",
+      "Emotional beats change future options (trust, access, social standing).",
+    ],
+  },
+  "healing-redemption": {
+    scenePatterns: [
+      "Opening mechanics: establish wound + safe anchor + one small actionable step.",
+      "Micro-repair loop: trigger → grounding action → support response → measured progress.",
+      "Boundary-respect scenes: care is explicit, consent-based, and specific.",
+      "Competence return: regained routine skill signals healing better than speeches.",
+      "Setback without reset: relapse changes pace but does not erase prior progress.",
+      "Community scaffolding: clinics, peers, family, mentors provide imperfect support with limits.",
+    ],
+    clocks: [
+      "Now: one manageable care action is chosen.",
+      "This week: routines and support obligations test commitment.",
+      "This month: identity shifts from survival-only to purpose and contribution.",
+      "Long tail: healed choices reshape relationships and social role.",
+    ],
+    checklist: [
+      "Healing is shown through behavior change, not declarations alone.",
+      "Support has boundaries and costs; helpers are not infinitely available.",
+      "Setbacks are meaningful but non-catastrophic by default.",
+      "Progress is incremental and accumulative.",
+      "Redemption includes restitution where harm was caused.",
+    ],
+  },
+  "mystery-horror": {
+    scenePatterns: [
+      "Opening mechanics: present one unsettling anomaly + one practical investigation task.",
+      "Dual-lane pressure: every clue increases understanding and exposure at the same time.",
+      "Evidence decay under dread: waiting changes both facts and threat behavior.",
+      "Rule-fragment reveals: each new rule of the threat clarifies one tactic and closes another.",
+      "Institutional denial vs panic: authorities underreact publicly while private containment escalates.",
+      "Sanity/social erosion: fear degrades trust, witness reliability, and coordination.",
+    ],
+    clocks: [
+      "Now: gain a clue at the cost of safety/exposure.",
+      "Tonight: threat adapts to your current tactic.",
+      "3 days: containment or outbreak phase changes access and movement.",
+      "Long tail: truth leaves stigma, quarantine records, and recurring risk.",
+    ],
+    checklist: [
+      "Clues are fair and actionable, but never fully remove dread.",
+      "Threat rules are consistent and revealed in partial layers.",
+      "Safety is temporary; each refuge has a failure mode.",
+      "Investigation choices produce tangible tradeoffs.",
+      "Aftermath persists (injury, records, trauma, social consequences).",
+    ],
+  },
+  "epic-worldbuilding": {
+    scenePatterns: [
+      "Opening mechanics: frame one world-scale tension (empire, faith, ecology, technology) through a local scene.",
+      "Layered institutions: at least two authorities conflict over legitimacy and enforcement.",
+      "History residue chain: old settlement/war/catastrophe creates today's constraints.",
+      "Macro-to-micro linkage: policy or warfront shifts alter local prices, routes, and loyalties.",
+      "Frontier + center contrast: rules differ by distance from power center.",
+      "Long campaign arcs: victories solve one layer while unlocking deeper systemic debt.",
+    ],
+    clocks: [
+      "Now: local gate choice reveals one systemic pressure.",
+      "7 days: faction/institution reactions shift access and alliances.",
+      "1 season: resource, climate, or political cycles change strategic map.",
+      "Long tail: regime, doctrine, and infrastructure transitions reshape eras.",
+    ],
+    checklist: [
+      "World scale is expressed through concrete local consequences.",
+      "Institutions have capacity limits, procedures, and incentives.",
+      "At least one long-tail obligation carries across arcs.",
+      "Geography/logistics meaningfully constrain strategy.",
+      "Lore reveals create new playable decisions, not exposition-only blocks.",
+    ],
+  },
+  "ip-faithful-adaptation": {
+    scenePatterns: [
+      "Opening mechanics: anchor iconic premise, then open one player-driven branch that stays canon-compatible.",
+      "Canon boundary card: immutable pillars vs flexible interpretation zones.",
+      "Voice and motif carryover: recurring symbols, rhetoric, and relationship dynamics stay recognizable.",
+      "Constraint-driven invention: new content must explain why it could coexist with known events.",
+      "Character integrity gate: actions must remain legible under the source character logic.",
+      "Fan-trust loop: every deviation has an in-world reason and a continuity receipt.",
+    ],
+    clocks: [
+      "Now: establish one canonical anchor in scene action.",
+      "This arc: branch while preserving core pillars and tone signatures.",
+      "Major reveal: reconcile new material with known timeline/relationships.",
+      "Long tail: accumulated deviations are reviewed against canon integrity.",
+    ],
+    checklist: [
+      "Source pillars are explicit before major divergence.",
+      "New elements preserve character voice, motives, and world logic.",
+      "Deviations include continuity receipts (timeline, witness, record, consequence).",
+      "Adaptation avoids direct copy-paste while remaining recognizably faithful.",
+      "Player agency can redirect outcomes without breaking core canon identity.",
     ],
   },
   "era-modern": {
@@ -993,7 +1132,7 @@ function escapeYamlBlock(s: string): string {
 }
 
 function buildThemeFrontmatter(def: ThemeSkillDef): string {
-  const tags = ["theme", def.slug].join(", ");
+  const tags = ["theme", def.slug, ...(def.aliases ?? [])].join(", ");
   return `---
 name: theme-${def.slug}
 version: 1.0.0
@@ -1696,6 +1835,384 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
           wrong: `You help your neighbor and everyone is happy.`,
           right:
             "You help your neighbor—so you miss your shift. The manager docks your pay. Now you must choose: apologize and swallow pride, ask for a favor, or take a second job that costs time with friends.",
+        },
+      ],
+    },
+    {
+      slug: "face-slapping-reversal",
+      title: "Face-Slapping Reversal",
+      aliases: ["shuangwen"],
+      description:
+        "Face-slapping reversal stories deliver earned status flips: the underestimated protagonist collects receipts, survives suppression, and reverses power in public view.",
+      whenToLoad:
+        "When the narrative needs high-satisfaction reversals, status humiliation payback, and momentum built from visible wins.",
+      coreConstraints: [
+        "Reversals must be earned through preparation, leverage, or receipts.",
+        "Opposition uses realistic social/procedural power, not cartoon omnipotence.",
+        "Each win changes gates but also increases scrutiny.",
+        "Public recognition lags behind private competence.",
+      ],
+      pressureMechanisms: [
+        "Status barriers (titles, credentials, lineage, gatekeepers).",
+        "Procedural retaliation (audits, bans, social exclusion, procurement blocks).",
+        "Expectation inflation (today's miracle becomes tomorrow's baseline).",
+        "Rival coalition behavior after public embarrassment.",
+      ],
+      level1: [
+        "Open with a concrete humiliation + a hidden capability seed.",
+        "Define one first-turn reversal that is small but undeniable.",
+        "Bind momentum to evidence objects (recording, witness, ledger, seal).",
+        "Write the key fields with reversal logic: narrativeStyle/backgroundTemplate/example/worldSetting/protagonist_preference.",
+      ],
+      level2: [
+        "Chain reversals via procedural checkpoints, not pure speeches.",
+        "Keep one unresolved gate after each victory to preserve tension.",
+        "Turn crowd reaction into a mechanic (doors open/close by reputation).",
+        "Make antagonist countermoves rational and legible.",
+      ],
+      advanced: [
+        "Run a public-proof ladder (private clue → local witness → institutional acknowledgment).",
+        "Make victories reshape market/institution incentives, not only emotions.",
+        "Use delayed blowback arcs: audits, alliances, succession politics.",
+        "Keep protagonist growth beyond revenge (responsibility after elevation).",
+      ],
+      antiPatterns: [
+        "Instant invincibility with no setup or receipts.",
+        "One-note humiliation loops with no structural change.",
+        "Opponents becoming stupid only to enable payoff.",
+        "Payback scenes that erase long-tail consequences.",
+      ],
+      templates: [
+        {
+          name: "Reversal Ladder",
+          body: `- Public humiliation vector:
+- Hidden leverage seed:
+- First undeniable proof:
+- Countermove expected:
+- Next gate to break:`,
+        },
+      ],
+      examples: [
+        {
+          scenario: "Earned reversal",
+          wrong: `Everyone suddenly respects you after one speech.`,
+          right:
+            "The board mocks your proposal—until you produce signed shipment logs and a live vendor call. One director switches sides immediately; two others open an audit instead of conceding. You win access, not total victory.",
+        },
+      ],
+    },
+    {
+      slug: "tragic-angst",
+      title: "Tragic Angst",
+      aliases: ["nuewen"],
+      description:
+        "Tragic angst stories intensify emotional stakes through incompatible duties, delayed truths, and costly choices where everyone loses something meaningful.",
+      whenToLoad:
+        "When the core appeal is heartbreak, regret, and emotionally high-pressure decisions under social or moral constraints.",
+      coreConstraints: [
+        "Pain must connect to values and relationships, not random suffering.",
+        "Misunderstandings need believable incentives for concealment.",
+        "Major reveals reframe choices without invalidating prior facts.",
+        "Characters keep agency under constraint.",
+      ],
+      pressureMechanisms: [
+        "Duty vs desire conflicts (family, law, class, survival).",
+        "Timing windows that close before full truth arrives.",
+        "Social punishment systems (reputation, custody, inheritance, legitimacy).",
+        "Emotional debt accumulation after each compromise.",
+      ],
+      level1: [
+        "Define one attachment and one irreconcilable external pressure.",
+        "Design one concealment that protects now but harms later.",
+        "Create a rupture trigger tied to a concrete deadline.",
+        "Write the key fields with emotional causality: narrativeStyle/backgroundTemplate/example/worldSetting/protagonist_preference.",
+      ],
+      level2: [
+        "Run harm as ledgered consequences (trust, access, safety, status).",
+        "Stage repair attempts with restitution and boundary friction.",
+        "Use partial truths that empower third-party interference.",
+        "Keep each tragic beat choice-driven, not fate-only.",
+      ],
+      advanced: [
+        "Build multi-arc tragedy where early mercy creates later costs.",
+        "Let institutions weaponize private pain procedurally.",
+        "Tie emotional climax to irreversible civic/familial outcomes.",
+        "End with transformed identity, not only broken romance.",
+      ],
+      antiPatterns: [
+        "Suffering porn without character logic.",
+        "Random amnesia/accidents used only as cheap pain triggers.",
+        "Immediate forgiveness that ignores prior harm.",
+        "Villain-of-the-week replacing relational tragedy mechanics.",
+      ],
+      templates: [
+        {
+          name: "Delayed Truth Trap",
+          body: `- What is concealed:
+- Why concealment seems necessary now:
+- Deadline before reveal loses value:
+- Who pays first:
+- Long-tail scar:`,
+        },
+      ],
+      examples: [
+        {
+          scenario: "Constraint-driven heartbreak",
+          wrong: `They separate because fate is cruel.`,
+          right:
+            "She forges his discharge papers to save him from conscription, but the forgery implicates her brother's unit. By the time he learns the truth, the tribunal date is tomorrow and testifying can save only one of them.",
+        },
+      ],
+    },
+    {
+      slug: "healing-redemption",
+      title: "Healing Redemption",
+      aliases: ["zhiyu"],
+      description:
+        "Healing redemption stories focus on recovery with boundaries: gradual repair, accountable change, and renewed purpose built through repeated small actions.",
+      whenToLoad:
+        "When the narrative aims for comfort, growth, and credible redemption arcs instead of escalation-heavy conflict.",
+      coreConstraints: [
+        "Healing is incremental and behavior-based.",
+        "Support systems have capacity limits and boundaries.",
+        "Setbacks alter pace but do not hard-reset all progress.",
+        "Redemption requires restitution where harm occurred.",
+      ],
+      pressureMechanisms: [
+        "Routine maintenance (therapy, work shifts, medication, check-ins).",
+        "Trigger management under real-life obligations.",
+        "Trust rebuilding with skeptical stakeholders.",
+        "Resource constraints around care access.",
+      ],
+      level1: [
+        "Open with one wound, one safe anchor, one actionable step.",
+        "Define one routine that demonstrates progress.",
+        "Define one restitution action with a measurable cost.",
+        "Write the key fields to emphasize recovery loops: narrativeStyle/backgroundTemplate/example/worldSetting/protagonist_preference.",
+      ],
+      level2: [
+        "Use micro-repair scenes: trigger → coping action → relational response.",
+        "Show care through consent-respecting behavior, not rescue fantasies.",
+        "Keep setbacks specific and solvable through support + effort.",
+        "Link progress to regained competence and community contribution.",
+      ],
+      advanced: [
+        "Design long arcs where identity shifts from survival to stewardship.",
+        "Let forgiven relationships still keep boundaries and memory.",
+        "Use institutions (clinic/school/work) as imperfect but useful scaffolds.",
+        "Make purpose sustainable through systems, not one epiphany.",
+      ],
+      antiPatterns: [
+        "Miracle healing that skips process and accountability.",
+        "Helpers with infinite patience/resources and no needs.",
+        "Setbacks that fully erase prior growth for drama spikes.",
+        "Redemption declared without restitution to harmed parties.",
+      ],
+      templates: [
+        {
+          name: "Recovery Loop",
+          body: `- Trigger:
+- Grounding action:
+- Support contact:
+- Small win this week:
+- Next boundary to respect:`,
+        },
+      ],
+      examples: [
+        {
+          scenario: "Accountable redemption",
+          wrong: `He apologizes once and everything is fine.`,
+          right:
+            "He apologizes, then volunteers the night shift for a month to cover the losses he caused, attends every review meeting, and accepts that trust returns in stages. His friend helps—but still keeps account access revoked.",
+        },
+      ],
+    },
+    {
+      slug: "mystery-horror",
+      title: "Mystery Horror",
+      aliases: ["xuanyi"],
+      description:
+        "Mystery horror combines fair investigation with escalating dread: each clue increases understanding while narrowing safety.",
+      whenToLoad:
+        "When the story needs both clue-solving and fear escalation (unknown threat, unreliable safety, institutional coverups).",
+      coreConstraints: [
+        "Clues are discoverable and fair.",
+        "Threat rules are consistent but partially revealed.",
+        "Safety is temporary and costly.",
+        "Investigation actions increase exposure.",
+      ],
+      pressureMechanisms: [
+        "Evidence decay and contamination.",
+        "Threat adaptation to repeated tactics.",
+        "Institutional denial/public panic divergence.",
+        "Trust erosion among witnesses/allies.",
+      ],
+      level1: [
+        "Open with one anomaly and one practical next lead.",
+        "Define one temporary refuge and its failure condition.",
+        "Define a fear clock: sign → contact → breach → aftermath.",
+        "Write key fields with clue+dread coupling: narrativeStyle/backgroundTemplate/example/worldSetting/protagonist_preference.",
+      ],
+      level2: [
+        "Reveal threat rules in fragments that change tactics.",
+        "Make each clue purchase cost time, safety, or social credibility.",
+        "Let institutions respond procedurally (contain, deny, exploit).",
+        "Use witness unreliability with reasons (fear, coercion, stigma).",
+      ],
+      advanced: [
+        "Run dual clocks: evidence integrity and containment collapse.",
+        "Make truth itself dangerous via legal/social fallout.",
+        "Tie final confrontation to a proof decision, not only combat.",
+        "Design aftermath scars that persist into future arcs.",
+      ],
+      antiPatterns: [
+        "Jump-scare spam with no investigable structure.",
+        "Omniscient exposition that removes uncertainty too early.",
+        "Threat behavior changing randomly between scenes.",
+        "Clean endings that erase trauma and institutional residue.",
+      ],
+      templates: [
+        {
+          name: "Clue-Exposure Pair",
+          body: `- Clue acquired:
+- Acquisition cost:
+- Exposure created:
+- Temporary safety step:
+- What fails next if delayed:`,
+        },
+      ],
+      examples: [
+        {
+          scenario: "Fair clues under dread",
+          wrong: `You find a clue and the danger pauses.`,
+          right:
+            "The tape confirms the corridor pattern—but playback triggers the building's quarantine protocol. Doors seal, power reroutes, and your witness refuses to stay unless you destroy the only copy.",
+        },
+      ],
+    },
+    {
+      slug: "epic-worldbuilding",
+      title: "Epic Worldbuilding",
+      aliases: ["shishi"],
+      description:
+        "Epic worldbuilding scales from local scenes to civilizational forces: institutions, logistics, myths, and historical residue all push player choices.",
+      whenToLoad:
+        "When the campaign needs grand scope (empires, sects, wars, epochs) while keeping scenes playable and choice-driven.",
+      coreConstraints: [
+        "World-scale forces must manifest as local constraints.",
+        "Institutions need procedures, capacity limits, and incentives.",
+        "History creates present-day residue and obligations.",
+        "Logistics/geography shape strategy and access.",
+      ],
+      pressureMechanisms: [
+        "Faction competition across legal, military, and economic fronts.",
+        "Seasonal/resource cycles affecting campaigns.",
+        "Center vs frontier governance differences.",
+        "Legitimacy contests (ritual, law, archive, force).",
+      ],
+      level1: [
+        "Pick one world-scale tension and show it through one local gate scene.",
+        "Define two authorities with conflicting legitimacy claims.",
+        "Define one logistics chokepoint and who controls it.",
+        "Write key fields for scale coherence: narrativeStyle/backgroundTemplate/example/worldSetting/protagonist_preference.",
+      ],
+      level2: [
+        "Link policy or war shifts to concrete prices/routes/jobs.",
+        "Make lore reveals unlock new choices, not passive exposition.",
+        "Use multi-era residue chains to explain current institutions.",
+        "Keep faction behavior procedural and interest-driven.",
+      ],
+      advanced: [
+        "Run season-length clocks for campaigns, harvests, doctrine, and succession.",
+        "Design obligation webs that survive regime changes.",
+        "Model how infrastructure transitions reshape social hierarchy.",
+        "Allow player interventions to redirect history without flattening complexity.",
+      ],
+      antiPatterns: [
+        "Lore dumps disconnected from scene decisions.",
+        "Empire-scale claims without logistics/capacity grounding.",
+        "Monolithic factions with no internal splits.",
+        "World change that never affects daily life.",
+      ],
+      templates: [
+        {
+          name: "Macro-to-Micro Link",
+          body: `- World-scale pressure:
+- Local gate it creates:
+- Institution enforcing it:
+- Immediate player tradeoff:
+- Long-tail obligation:`,
+        },
+      ],
+      examples: [
+        {
+          scenario: "Playable grand scale",
+          wrong: `The empire is unstable.`,
+          right:
+            "The imperial grain decree cuts border rations by 20%. Overnight, convoy permits triple in price, militia recruitment spikes, and your town's temple starts issuing debt-marked meal tokens.",
+        },
+      ],
+    },
+    {
+      slug: "ip-faithful-adaptation",
+      title: "IP Faithful Adaptation",
+      aliases: ["ip"],
+      description:
+        "IP-faithful adaptation preserves source identity while enabling player-driven branches through continuity-aware invention.",
+      whenToLoad:
+        "When adapting known IP/worlds where tone, character logic, and canon pillars must remain recognizable.",
+      coreConstraints: [
+        "Canon pillars are explicit before divergence.",
+        "Character voice/motivation remains source-legible.",
+        "New content must coexist with known timeline and world logic.",
+        "Player agency can branch outcomes without breaking identity core.",
+      ],
+      pressureMechanisms: [
+        "Continuity checks across timeline, institutions, and relationships.",
+        "Fan-trust risk when deviating without receipts.",
+        "Adaptation boundaries: immutable pillars vs flexible zones.",
+        "Trademarked iconic beats requiring reinterpretation, not copy-paste.",
+      ],
+      level1: [
+        "Declare 3 canonical anchors and 1 flexible branch zone.",
+        "Define one continuity receipt method (record, witness, timeline note).",
+        "Define one branch choice that changes route but keeps tone identity.",
+        "Write key fields with canon alignment: narrativeStyle/backgroundTemplate/example/worldSetting/protagonist_preference.",
+      ],
+      level2: [
+        "Use source motifs/rhetoric to keep recognizability without literal cloning.",
+        "Make deviations explicit with in-world causes and consequences.",
+        "Protect core character integrity under stress decisions.",
+        "Track canon pressure as a design clock each arc.",
+      ],
+      advanced: [
+        "Model alternate corridor planning that preserves thematic invariants.",
+        "Let new factions/events stress but not erase canonical foundations.",
+        "Maintain adaptation ledger for unresolved continuity debts.",
+        "Use player choices to reinterpret destiny while preserving franchise identity.",
+      ],
+      antiPatterns: [
+        "Direct copying of signature scenes/dialogue as a substitute for design.",
+        "Name-skin adaptation with broken world logic.",
+        "Character actions that violate established motivation without cause.",
+        "Canon purism that removes all meaningful player agency.",
+      ],
+      templates: [
+        {
+          name: "Canon Boundary Card",
+          body: `- Immutable pillar:
+- Flexible zone:
+- Proposed deviation:
+- Continuity receipt:
+- Player agency branch outcome:`,
+        },
+      ],
+      examples: [
+        {
+          scenario: "Faithful but branchable",
+          wrong: `Recreate the original arc beat-for-beat.`,
+          right:
+            "The mentor still disappears at the canonical midpoint, but because the player secured archive access earlier, the disappearance is reframed as a staged extraction. The same theme remains; route and suspects change.",
         },
       ],
     },
