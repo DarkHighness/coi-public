@@ -13,6 +13,7 @@ import {
   OutlineConversationState,
   ResolvedThemeConfig,
 } from "../../../../types";
+import type { VfsSession } from "../../../vfs/vfsSession";
 
 import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import {
@@ -778,6 +779,7 @@ export const summarizeContext = async (
   language: string,
   settings: AISettings,
   gameState: GameState,
+  vfsSession?: VfsSession,
 ): Promise<{
   summary: StorySummary | null;
   logs: LogEntry[];
@@ -793,6 +795,7 @@ export const summarizeContext = async (
       nodeRange,
       language,
       settings,
+      vfsSession,
     });
 
     // Check for null summary (failure)

@@ -1878,9 +1878,37 @@ export function findQueryToolsForEntities(
  * Summary can only use query/list tools + finish_summary
  */
 export function getSummaryTools(): ZodToolDefinition[] {
-  return [
+  return getSummaryToolsForStrategy("compact");
+}
+
+export type SummaryToolStrategy = "compact" | "query_summary";
+
+/**
+ * Get summary tools based on strategy.
+ * - compact: minimal tools for in-context summarization
+ * - query_summary: includes anchored retrieval + VFS read tools for fallback reconstruction
+ */
+export function getSummaryToolsForStrategy(
+  strategy: SummaryToolStrategy,
+): ZodToolDefinition[] {
+  const compactTools: ZodToolDefinition[] = [
     SUMMARY_QUERY_SEGMENTS_TOOL,
     SUMMARY_QUERY_STATE_TOOL,
+    FINISH_SUMMARY_TOOL,
+  ];
+
+  if (strategy === "compact") {
+    return compactTools;
+  }
+
+  return [
+    SUMMARY_QUERY_STATE_TOOL,
+    QUERY_TURN_TOOL,
+    QUERY_SUMMARY_TOOL,
+    VFS_LS_TOOL,
+    VFS_READ_TOOL,
+    VFS_SEARCH_TOOL,
+    VFS_GREP_TOOL,
     FINISH_SUMMARY_TOOL,
   ];
 }

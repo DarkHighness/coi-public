@@ -189,8 +189,26 @@ ${chains}
  */
 function buildCleanupPrompt(state: GameState): string {
   const entityXml = buildEntityXml(state);
+  const turnNumber = state.turnNumber ?? 0;
+  const forkId = state.forkId ?? 0;
+  const summaryCount = state.summaries?.length ?? 0;
+  const latestSummary =
+    summaryCount > 0 ? state.summaries[summaryCount - 1] : null;
+  const latestRange = latestSummary?.nodeRange
+    ? `${latestSummary.nodeRange.fromIndex}-${latestSummary.nodeRange.toIndex}`
+    : "none";
+  const activeNodeId = state.activeNodeId || "unknown";
 
   return `[CLEANUP] Analyze the current game state and perform entity cleanup.
+
+<anchors>
+  <turn fork="${forkId}" number="${turnNumber}" active_node_id="${activeNodeId}" />
+  <latest_summary count="${summaryCount}" node_range="${latestRange}" />
+  <instructions>
+    Use the anchor metadata to stay consistent with the current timeline.
+    If uncertain, call query_turn / query_story and verify files via vfs_read before changing entities.
+  </instructions>
+</anchors>
 
 <current_entities HINT="Each section shows: query/update/remove tools to use">
   ${entityXml}
@@ -199,6 +217,13 @@ function buildCleanupPrompt(state: GameState): string {
 <task>
 Identify and merge duplicate or redundant entities. For each entity type, the XML attributes show which tools to use.
 </task>
+
+<cleanup_protocol>
+1. Inspect: run query/list/read tools to confirm duplicates before editing.
+2. Repair iteratively: apply small updates/removals, then re-query to verify consistency.
+3. Resolve contradictions: if repeated entities/NPC aliases conflict, merge to one canonical record and preserve player-visible knowledge.
+4. Repeat until no obvious inconsistency remains in queried ranges.
+</cleanup_protocol>
 
 <deduplication_examples>
   <example type="inventory">

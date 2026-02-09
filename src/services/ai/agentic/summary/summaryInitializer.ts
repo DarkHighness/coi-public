@@ -8,8 +8,9 @@ import type { AISettings, TokenUsage } from "../../../../types";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { GameDatabase } from "../../../gameDatabase";
 import { BudgetState, createBudgetState } from "../budgetUtils";
-import { getSummaryTools } from "../../../tools";
+import { getSummaryToolsForStrategy } from "../../../tools";
 import type { SummaryLoopInput } from "./summary";
+import type { VfsSession } from "../../../vfs/vfsSession";
 
 // ============================================================================
 // Types
@@ -17,6 +18,8 @@ import type { SummaryLoopInput } from "./summary";
 
 export interface SummaryLoopState {
   db: GameDatabase;
+  gameState: SummaryLoopInput["gameState"];
+  vfsSession?: VfsSession;
   budgetState: BudgetState;
   totalUsage: TokenUsage;
   activeTools: ZodToolDefinition[];
@@ -29,7 +32,7 @@ export interface SummaryLoopState {
 export function createSummaryLoopState(
   input: SummaryLoopInput,
 ): SummaryLoopState {
-  const { gameState, settings } = input;
+  const { gameState, settings, strategy } = input;
 
   const db = new GameDatabase({
     ...gameState,
@@ -42,9 +45,11 @@ export function createSummaryLoopState(
 
   return {
     db,
+    gameState,
+    vfsSession: input.vfsSession,
     budgetState: createBudgetState(settings),
     totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    activeTools: getSummaryTools(),
+    activeTools: getSummaryToolsForStrategy(strategy ?? "compact"),
   };
 }
 

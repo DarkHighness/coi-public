@@ -4,7 +4,7 @@
  * Functions for building summary context and instructions.
  */
 
-import type { SummaryLoopInput } from "./summary";
+import type { SummaryLoopInput, SummaryStrategy } from "./summary";
 
 // Atoms
 import {
@@ -24,7 +24,37 @@ export function getSummarySystemInstruction(
   liteMode?: boolean,
   nsfw?: boolean,
   detailedDescription?: boolean,
+  strategy: SummaryStrategy = "compact",
 ): string {
+  const strategyInstruction =
+    strategy === "compact"
+      ? `<strategy>
+PRIMARY STRATEGY: **COMPACT (highest priority)**
+- You are running in compact mode.
+- Continue from the existing conversation context and produce summary with minimal extra querying.
+- Prefer reading the provided segments directly and finish quickly.
+- Only call extra query tools if absolutely necessary for factual correctness.
+</strategy>`
+      : `<strategy>
+FALLBACK STRATEGY: **QUERY_SUMMARY**
+- Compact mode was unavailable (typically context overflow/history incompatibility).
+- You MUST reconstruct summary via anchored retrieval tools.
+
+ANCHORS (must respect):
+- Current node range: use provided \`node_range\` as your target coverage.
+- Previous summary anchor: use \`<previous_summary>\` as baseline.
+- Turn anchor: call \`query_turn\` first to confirm where you are.
+
+RETRIEVAL PROTOCOL:
+1) Call \`query_turn\` to anchor fork/turn/summary count.
+2) Use \`query_summary\` for older summary context (if needed).
+3) Use \`vfs_read\` (and \`vfs_ls\`/\`vfs_search\`/\`vfs_grep\` when needed) to read concrete turn files and world files.
+4) Optionally use \`summary_query_state\` for current entity snapshots.
+5) Call \`finish_summary\` only after coverage is consistent with anchors.
+
+Do not guess missing facts when files/tools can verify them.
+</strategy>`;
+
   return `You are a diligent chronicler tasked with summarizing story events in a world simulation.
 ${liteMode ? "Focus on core facts and essential plot points only. Be concise." : ""}
 ${nsfw ? "Maintain neutrality even when summarizing mature or violent content." : ""}
@@ -45,12 +75,19 @@ You are the GM - you know everything. Your job is to:
 <tools>
 You have these tools available:
 
-1. \`summary_query_segments\` - Examine specific turns in detail (use sparingly, segments already provided in context)
-2. \`summary_query_state\` - Check current entity states (inventory, npcs, etc.)
-3. \`finish_summary\` - Complete the summary with your results
+1. \`summary_query_state\` - Check current entity states (inventory, npcs, etc.)
+2. \`query_turn\` - Read current turn/fork/summary anchor metadata
+3. \`query_summary\` - Retrieve older summaries outside latest context
+4. \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\` - Read exact files when fallback reconstruction is needed
+5. \`finish_summary\` - Complete the summary with your results
+
+In compact strategy, \`summary_query_segments\` may be available for spot checks.
+In query_summary strategy, prefer anchors + file reads instead of re-querying inline segments.
 
 When you have enough information, call \`finish_summary\` to complete the summary.
 </tools>
+
+${strategyInstruction}
 
 <critical_rules>
 - VISIBLE layer: Only what the protagonist directly witnessed, learned, or experienced
@@ -84,8 +121,20 @@ ${languageEnforcement({ language })}`;
  * Lists ALL segments with clear turn markers so AI doesn't need to query them
  */
 export function buildSummaryInitialContext(input: SummaryLoopInput): string {
-  const { previousSummary, segmentsToSummarize, nodeRange } = input;
+  const {
+    previousSummary,
+    segmentsToSummarize,
+    nodeRange,
+    gameState,
+    strategy = "compact",
+  } = input;
   const parts: string[] = [];
+
+  parts.push(`<anchors>
+<turn fork_id="${gameState.forkId ?? 0}" number="${gameState.turnNumber ?? 0}" active_node_id="${gameState.activeNodeId || "unknown"}" />
+<summary_count total="${gameState.summaries?.length ?? 0}" />
+<target_node_range from="${nodeRange.fromIndex}" to="${nodeRange.toIndex}" />
+</anchors>`);
 
   // Previous summary
   if (previousSummary) {
@@ -124,6 +173,36 @@ ${previousSummary.nodeRange ? `<node_range from="${previousSummary.nodeRange.fro
   const startLocation =
     firstSegment?.stateSnapshot?.currentLocation || "Unknown";
   const endLocation = lastSegment?.stateSnapshot?.currentLocation || "Unknown";
+
+  if (strategy === "query_summary") {
+    const manifestItems: string[] = [];
+    for (let i = 0; i < segmentsToSummarize.length; i++) {
+      const seg = segmentsToSummarize[i];
+      const turnNum = seg.segmentIdx ?? nodeRange.fromIndex + i;
+      manifestItems.push(
+        `  <segment turn="${turnNum}" role="${seg.role || "unknown"}" path="current/conversation/turns/fork-${gameState.forkId ?? 0}/turn-${turnNum}.json" />`,
+      );
+    }
+
+    parts.push(`<segments_anchor mode="query_summary_fallback" count="${segmentCount}" node_range="${nodeRange.fromIndex}-${nodeRange.toIndex}">
+<metadata>
+  <time_range from="${startTime}" to="${endTime}" />
+  <location_change from="${startLocation}" to="${endLocation}" />
+</metadata>
+
+<important_notice>
+This is fallback mode after compact-context failure.
+Segment FULL TEXT is intentionally omitted to avoid another overflow.
+Use anchors + query tools (query_turn/query_summary/vfs_read etc.) to reconstruct facts.
+</important_notice>
+
+<segment_manifest>
+${manifestItems.join("\n")}
+</segment_manifest>
+</segments_anchor>`);
+
+    return parts.join("\n\n");
+  }
 
   // Build segment list with clear markers
   const segmentListItems: string[] = [];

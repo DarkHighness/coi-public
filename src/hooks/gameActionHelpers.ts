@@ -5,6 +5,7 @@ import {
   StorySummary,
   LanguageCode,
 } from "../types";
+import type { VfsSession } from "../services/vfs/vfsSession";
 import { createFork, createStateSnapshot } from "../utils/snapshotManager";
 import { getRAGService } from "../services/rag";
 import { deriveHistory } from "../utils/storyUtils";
@@ -176,6 +177,7 @@ export const handleSummarization = async (
   isInit: boolean,
   aiSettings: AISettings,
   language: LanguageCode,
+  vfsSession: VfsSession | undefined,
   forceSummarize: boolean = false,
 ): Promise<{
   effectiveSummaries: StorySummary[];
@@ -250,6 +252,7 @@ export const handleSummarization = async (
       LANG_MAP[language],
       aiSettings,
       gameState,
+      vfsSession,
     );
 
     // Push the new summary object if successful

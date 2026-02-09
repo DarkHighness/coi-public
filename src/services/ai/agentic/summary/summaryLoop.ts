@@ -41,6 +41,10 @@ import {
 } from "./summaryContext";
 import { executeSummaryToolCall } from "./summaryToolHandler";
 
+// Ensure handlers are registered for summary fallback queries
+import "../../../tools/handlers/vfsHandlers";
+import "../../../tools/handlers/storyQueryHandlers";
+
 // ============================================================================
 // Main Loop
 // ============================================================================
@@ -48,7 +52,7 @@ import { executeSummaryToolCall } from "./summaryToolHandler";
 export async function runSummaryLoopRefactored(
   input: SummaryLoopInput,
 ): Promise<SummaryAgenticLoopResult> {
-  const { settings, language } = input;
+  const { settings, language, strategy = "compact" } = input;
 
   // Get provider
   const providerInfo = getProviderConfig(settings, "story");
@@ -73,6 +77,7 @@ export async function runSummaryLoopRefactored(
     settings.extra?.liteMode,
     settings.extra?.nsfw,
     settings.extra?.detailedDescription,
+    strategy,
   );
 
   // Build initial context - all segments provided upfront
@@ -153,6 +158,7 @@ export async function runSummaryLoopRefactored(
         provider: instance.protocol,
         model: modelId,
         endpoint: `summary-iteration-${iterationNum}`,
+        stage: strategy,
         response: raw,
         usage,
       }),
@@ -218,6 +224,7 @@ export async function runSummaryLoopRefactored(
             provider: instance.protocol,
             model: modelId,
             endpoint: "summary_tool",
+            stage: strategy,
             toolName: call.name,
             toolInput: call.args,
             toolOutput: output,
@@ -237,5 +244,6 @@ export async function runSummaryLoopRefactored(
     summary: finalSummary,
     logs: allLogs,
     usage: loopState.totalUsage,
+    strategyUsed: strategy,
   };
 }

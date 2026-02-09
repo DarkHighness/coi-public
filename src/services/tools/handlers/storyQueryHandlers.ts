@@ -219,6 +219,29 @@ registerToolHandler(QUERY_SUMMARY_TOOL, (args, ctx) => {
 
   const typedArgs = getTypedArgs("query_summary", args);
   const { keyword, nodeRange, limit = 5, page = 1, order = "desc" } = typedArgs;
+  const latestSummary = summaries[latestIdx];
+
+  if (!keyword && !nodeRange) {
+    return {
+      success: true,
+      hasSummary: true,
+      totalSummaries: summaries.length,
+      alreadyInContext: true,
+      results: [],
+      latestSummaryBrief: latestSummary
+        ? {
+            nodeRange: latestSummary.nodeRange,
+            timeRange: latestSummary.timeRange,
+            displayText:
+              latestSummary.displayText?.substring(0, 120) +
+              (latestSummary.displayText?.length > 120 ? "..." : ""),
+          }
+        : null,
+      message:
+        "Latest summary is already in context. Provide keyword/nodeRange to fetch older summaries.",
+      hint: "Use query_turn first, then query_summary with keyword or nodeRange anchor.",
+    };
+  }
 
   // Filter (exclude latest)
   let filtered = summaries

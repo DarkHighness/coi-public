@@ -233,6 +233,7 @@ export const useGameAction = ({
           isInit,
           aiSettings,
           language,
+          vfsSession,
         );
 
         // Update logs if summarization occurred
@@ -695,6 +696,7 @@ export const useGameAction = ({
           false,
           aiSettings,
           language,
+          vfsSession,
           true, // FORCE SUMMARIZE
         );
 

@@ -5,7 +5,6 @@
  * Stage-less design: only query/list tools + finish_summary.
  */
 
-import type { UnifiedMessage } from "../../../../types";
 import type { SummaryLoopInput } from "./summary";
 import type { SummaryLoopState } from "./summaryInitializer";
 import {
@@ -24,7 +23,7 @@ export function executeSummaryToolCall(
   input: SummaryLoopInput,
   loopState: SummaryLoopState,
 ): unknown {
-  const { db } = loopState;
+  const { db, vfsSession } = loopState;
   const { segmentsToSummarize, nodeRange } = input;
 
   // Handle segment queries with redundancy check
@@ -47,6 +46,7 @@ export function executeSummaryToolCall(
     const ctx: ToolContext = {
       db,
       gameState: input.gameState,
+      vfsSession,
     };
     return dispatchToolCall(name, args, ctx);
   }

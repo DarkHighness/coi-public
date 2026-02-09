@@ -21,6 +21,11 @@ import {
   StorySegment,
   GameState,
 } from "../../../../types";
+import type { VfsSession } from "../../../vfs/vfsSession";
+import {
+  isContextLengthError,
+  isInvalidArgumentError,
+} from "../../contextCompressor";
 
 // Import refactored loop
 import { runSummaryLoopRefactored } from "./summaryLoop";
@@ -33,7 +38,10 @@ export interface SummaryAgenticLoopResult {
   summary: StorySummary | null;
   logs: LogEntry[];
   usage: TokenUsage;
+  strategyUsed: SummaryStrategy;
 }
+
+export type SummaryStrategy = "compact" | "query_summary";
 
 export interface SummaryLoopInput {
   /** Previous summary (the one before the segments being summarized) */
@@ -48,7 +56,26 @@ export interface SummaryLoopInput {
   language: string;
   /** AI Settings */
   settings: AISettings;
+  /** VFS session (optional, enables vfs_* tools in fallback mode) */
+  vfsSession?: VfsSession;
+  /** Explicit strategy override (normally auto-selected by runSummaryAgenticLoop) */
+  strategy?: SummaryStrategy;
 }
+
+const combineUsage = (
+  base: TokenUsage,
+  extra?: TokenUsage,
+): TokenUsage => ({
+  promptTokens: base.promptTokens + (extra?.promptTokens || 0),
+  completionTokens: base.completionTokens + (extra?.completionTokens || 0),
+  totalTokens: base.totalTokens + (extra?.totalTokens || 0),
+  cacheRead: (base.cacheRead || 0) + (extra?.cacheRead || 0),
+  cacheWrite: (base.cacheWrite || 0) + (extra?.cacheWrite || 0),
+});
+
+const canFallbackToQuerySummary = (error: unknown): boolean => {
+  return isContextLengthError(error) || isInvalidArgumentError(error);
+};
 
 // ============================================================================
 // Main Agentic Loop
@@ -65,6 +92,50 @@ export interface SummaryLoopInput {
 export const runSummaryAgenticLoop = async (
   input: SummaryLoopInput,
 ): Promise<SummaryAgenticLoopResult> => {
-  // Delegate to refactored loop
-  return runSummaryLoopRefactored(input);
+  // Explicit strategy (used by tests/internal callers)
+  if (input.strategy) {
+    return runSummaryLoopRefactored(input);
+  }
+
+  // 1) Compact first: summarize directly in the original context (best/cheapest path)
+  let compactResult: SummaryAgenticLoopResult | null = null;
+  try {
+    compactResult = await runSummaryLoopRefactored({
+      ...input,
+      strategy: "compact",
+    });
+    if (compactResult.summary) {
+      return compactResult;
+    }
+
+    console.warn(
+      "[Summary] Compact mode returned no summary, falling back to query_summary mode.",
+    );
+  } catch (error) {
+    if (!canFallbackToQuerySummary(error)) {
+      throw error;
+    }
+
+    console.warn(
+      "[Summary] Compact mode failed with context/history issue, falling back to query_summary mode.",
+      error,
+    );
+  }
+
+  // 2) Fallback: query summary mode with anchors + tool-driven retrieval
+  const queryResult = await runSummaryLoopRefactored({
+    ...input,
+    strategy: "query_summary",
+  });
+
+  if (!compactResult) {
+    return queryResult;
+  }
+
+  return {
+    summary: queryResult.summary,
+    logs: [...compactResult.logs, ...queryResult.logs],
+    usage: combineUsage(compactResult.usage, queryResult.usage),
+    strategyUsed: queryResult.strategyUsed,
+  };
 };
