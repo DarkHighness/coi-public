@@ -632,8 +632,14 @@
       "maxAgenticRoundsHelp": "代理循环的最大轮数（默认：20）",
       "clearerSearchTool": "清晰搜索工具",
       "clearerSearchToolHelp": "在搜索结果中返回详细的工具元数据（描述、Schema），帮助 AI 发现可用工具。",
-      "maxErrorRetries": "最大错误重试次数",
-      "maxErrorRetriesHelp": "发生错误时的最大重试次数（默认：3）",
+      "turnRetryLimit": "回合重试次数",
+      "turnRetryLimitHelp": "普通回合循环的重试上限（默认：3）",
+      "outlinePhaseRetryLimit": "大纲阶段重试次数",
+      "outlinePhaseRetryLimitHelp": "每个 StoryOutline Phase 的重试上限（默认：3）",
+      "cleanupRetryLimit": "清理重试次数",
+      "cleanupRetryLimitHelp": "Cleanup 循环的重试上限（默认：5）",
+      "summaryRetryLimit": "摘要重试次数",
+      "summaryRetryLimitHelp": "Summary/Compact/Query 循环的重试上限（默认：5）",
       "maxToolCalls": "最大工具调用次数",
       "maxToolCallsHelp": "每个代理循环的最大工具调用总数（默认：50）",
       "resetTutorials": "重置新手教程",
@@ -2179,13 +2185,18 @@
       "autoRecoverySuccess": "已自动恢复并继续生成（基于最近稳定检查点）。",
       "learnedContextRelaxed": "连续稳定运行后，已小幅放宽自适应上下文上限。"
     },
+    "recovery": {
+      "turnRetryBoostConfirm": "本回合未成功提交。是否使用临时 +30% 工具/轮次预算再重试一次？",
+      "sessionRebuildConfirm": "恢复仍然失败。是否重建会话上下文后再试？"
+    },
     "errors": {
       "summaryFailed": "摘要生成失败",
       "historyCacheCorrupted": "历史缓存已损坏，已清空缓存。请重试。",
       "contextTooLong": "上下文过长。请创建总结以继续。",
       "contextTooLongAdaptive": "检测到上下文溢出。系统已尝试压缩/恢复，并为该模型学习了更保守的上下文上限。请重试。",
       "turnGenerationFailed": "生成下一回合失败。请重试。",
-      "contextRebuildFailed": "重建上下文失败。请重试。"
+      "contextRebuildFailed": "重建上下文失败。请重试。",
+      "unknownProviderManualRetry": "未知提供商错误，请手动重试。"
     },
     "unknown": {
       "item": "未知物品",

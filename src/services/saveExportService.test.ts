@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
 
-const saveMetadataMock = vi.fn(async () => undefined);
-const loadMetadataMock = vi.fn(async () => null);
+const saveMetadataMock = vi.fn<(key: string, value: any) => Promise<void>>(
+  async () => undefined,
+);
+const loadMetadataMock = vi.fn<(key: string) => Promise<any>>(
+  async () => null,
+);
 
 const vfsMetaRowsRef: { rows: any[] } = { rows: [] };
 

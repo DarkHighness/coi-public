@@ -33,7 +33,7 @@ const createSettings = () =>
     extra: {
       maxToolCalls: 50,
       maxAgenticRounds: 20,
-      maxErrorRetries: 3,
+      turnRetryLimit: 3,
     },
     embedding: { enabled: false },
   }) as any;

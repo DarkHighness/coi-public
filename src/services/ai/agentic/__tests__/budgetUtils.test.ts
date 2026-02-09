@@ -17,7 +17,7 @@ describe("budgetUtils", () => {
 
     expect(summaryDefaults).toMatchObject({
       toolCallsMax: 90,
-      retriesMax: 3,
+      retriesMax: 5,
       loopIterationsMax: 25,
       toolCallsUsed: 0,
       retriesUsed: 0,
@@ -28,7 +28,7 @@ describe("budgetUtils", () => {
       {
         extra: {
           maxToolCalls: 7,
-          maxErrorRetries: 2,
+          turnRetryLimit: 2,
           maxAgenticRounds: 5,
         },
       } as any,

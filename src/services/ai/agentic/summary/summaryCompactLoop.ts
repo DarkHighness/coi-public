@@ -383,6 +383,11 @@ async function runSummaryLoopCore(options: {
 
     const iterationNum = loopState.budgetState.loopIterationsUsed + 1;
 
+    const remainingRetries = Math.max(
+      0,
+      loopState.budgetState.retriesMax - loopState.budgetState.retriesUsed,
+    );
+
     const { result, usage, raw } = await callWithAgenticRetry(
       provider,
       {
@@ -399,10 +404,15 @@ async function runSummaryLoopCore(options: {
       },
       conversationHistory,
       {
-        maxRetries: loopState.budgetState.retriesMax,
+        maxRetries: remainingRetries,
         requiredToolName: mustFinishNow ? finishToolName : undefined,
-        onRetry: (msg, count) => {
+        finishToolName,
+        onRetry: (msg, count, meta) => {
           console.warn(`[SummaryLoop] Retry ${count}: ${msg}`);
+          if (meta?.silent) {
+            return;
+          }
+
           incrementRetries(loopState.budgetState);
           conversationHistory.push(
             createUserMessage(
@@ -567,7 +577,25 @@ async function runSummaryLoopCore(options: {
         vfsMode: "normal" as const,
       };
 
+      let hasPriorToolFailure = false;
+
       for (const call of functionCalls) {
+        if (call.name === finishToolName && hasPriorToolFailure) {
+          toolResponses.push({
+            toolCallId: call.id,
+            name: call.name,
+            content: {
+              success: false,
+              error:
+                `[ERROR: FINISH_BLOCKED_BY_PREVIOUS_FAILURE] One or more tool calls before finish failed in this batch. ` +
+                `Fix those failures first, then call "${finishToolName}" again as the LAST tool call.`,
+              code: "INVALID_ACTION",
+            },
+          });
+          hasPriorToolFailure = true;
+          continue;
+        }
+
         const crossForkViolations = findSummaryCrossForkViolations(call.args, forkId);
         if (crossForkViolations.length > 0) {
           const details = crossForkViolations
@@ -585,6 +613,7 @@ async function runSummaryLoopCore(options: {
               code: "INVALID_ACTION",
             },
           });
+          hasPriorToolFailure = true;
           continue;
         }
 
@@ -594,20 +623,36 @@ async function runSummaryLoopCore(options: {
             input.nodeRange,
           );
           if (!finishRangeValidation.ok) {
+            const failure = finishRangeValidation as {
+              ok: false;
+              error: string;
+              code: "INVALID_DATA";
+            };
+
             toolResponses.push({
               toolCallId: call.id,
               name: call.name,
               content: {
                 success: false,
-                error: finishRangeValidation.error,
-                code: finishRangeValidation.code,
+                error: failure.error,
+                code: failure.code,
               },
             });
+            hasPriorToolFailure = true;
             continue;
           }
         }
 
         const output = await dispatchToolCallAsync(call.name, call.args, toolCtx);
+
+        const isToolFailure =
+          !!output &&
+          typeof output === "object" &&
+          "success" in (output as any) &&
+          (output as any).success === false;
+        if (isToolFailure) {
+          hasPriorToolFailure = true;
+        }
 
         if (call.name === finishToolName && output && (output as any).success) {
           const produced = (output as any).data?.summary ?? null;
@@ -644,6 +689,7 @@ async function runSummaryLoopCore(options: {
                   code: "INVALID_SUMMARY",
                 },
               });
+              hasPriorToolFailure = true;
               allLogs.push(
                 createLogEntry({
                   provider: providerProtocol,
@@ -755,4 +801,3 @@ export async function runCompactSummaryLoop(
     modeLabel: "session_compact",
   });
 }
-

@@ -33,7 +33,7 @@ const createSettings = () =>
     extra: {
       maxToolCalls: 20,
       maxAgenticRounds: 10,
-      maxErrorRetries: 3,
+      turnRetryLimit: 3,
     },
     embedding: { enabled: false },
   }) as any;
@@ -142,6 +142,101 @@ const createVfsSession = () => {
 describe("agenticLoop tool logging", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("blocks finish execution when previous tool in same batch failed", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-read-fail",
+            name: "vfs_read",
+            args: { path: "current/world/global.json" },
+          },
+          {
+            id: "call-finish-blocked",
+            name: "vfs_commit_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 4,
+          completionTokens: 2,
+          totalTokens: 6,
+        },
+        functionCalls: [
+          {
+            id: "call-finish-ok",
+            name: "vfs_commit_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_read") {
+        return { success: false, error: "read failed", code: "READ_FAILED" };
+      }
+
+      if (name === "vfs_commit_turn") {
+        vfsSession.markConversationTouched();
+        return { success: true };
+      }
+
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(2);
+    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
+      "vfs_read",
+      "vfs_commit_turn",
+    ]);
+
+    const blockedFinishLog = result.logs.find(
+      (log) =>
+        log.endpoint === "tool_execution" &&
+        log.toolName === "vfs_commit_turn" &&
+        String((log as any).toolOutput?.error || "").includes(
+          "FINISH_BLOCKED_BY_PREVIOUS_FAILURE",
+        ),
+    );
+    expect(blockedFinishLog).toBeDefined();
   });
 
   it("records all tool calls including final commit tool", async () => {

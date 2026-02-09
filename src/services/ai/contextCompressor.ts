@@ -47,8 +47,7 @@ export function isInvalidArgumentError(error: any): boolean {
     // OpenAI
     msg.includes("invalid_request_error") ||
     msg.includes("invalid request") ||
-    // General malformed content errors
-    msg.includes("malformed") ||
+    // General history/message corruption errors
     msg.includes("does not match schema") ||
     msg.includes("unexpected role") ||
     msg.includes("invalid message") ||

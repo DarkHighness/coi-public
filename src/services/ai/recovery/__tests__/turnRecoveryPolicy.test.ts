@@ -19,6 +19,9 @@ describe("turnRecoveryPolicy", () => {
     expect(classifyTurnError(new Error("INVALID_ARGUMENT: malformed payload"))).toBe(
       "history",
     );
+    expect(classifyTurnError(new Error("MALFORMED_TOOL_CALL: invalid json"))).toBe(
+      "unknown",
+    );
 
     expect(classifyTurnError(new ContextOverflowError(new Error("too many tokens")))).toBe(
       "context",

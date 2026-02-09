@@ -188,6 +188,27 @@ describe("generateAdventureTurn recovery wiring", () => {
     getRecoveryTraceMock.mockReturnValue(undefined);
   });
 
+  it("forwards recovery confirmation wiring to runner", async () => {
+    const confirmRecoveryAction = vi.fn().mockReturnValue(true);
+    const context = makeContext();
+    context.confirmRecoveryAction = confirmRecoveryAction;
+
+    await generateAdventureTurn(baseGameState, context);
+
+    const callArgs = executeTurnWithRecoveryMock.mock.calls[0]?.[0] as
+      | Record<string, unknown>
+      | undefined;
+
+    expect(callArgs?.confirmRecoveryAction).toBe(confirmRecoveryAction);
+    expect(typeof callArgs?.executeWithRetryBoost).toBe("function");
+    expect(callArgs?.messages).toEqual(
+      expect.objectContaining({
+        turnRetryBoost: "game.recovery.turnRetryBoostConfirm",
+        sessionRebuild: "game.recovery.sessionRebuildConfirm",
+      }),
+    );
+  });
+
   it("passes recovery metadata through on successful execution", async () => {
     executeTurnWithRecoveryMock.mockImplementationOnce(
       async ({ execute }: { execute: () => Promise<unknown> }) => {

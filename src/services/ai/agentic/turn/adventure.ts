@@ -317,7 +317,9 @@ export const generateAdventureTurn = async (
     (entry) => entry.path,
   );
 
-  const executeSingleAttempt = async (): Promise<AgenticLoopResult> => {
+  const executeSingleAttempt = async (
+    attemptSettings: AISettings = context.settings,
+  ): Promise<AgenticLoopResult> => {
     createCheckpoint(sessionId, context.vfsSession);
 
     const fullContext = [...activeHistory, userMessage];
@@ -329,7 +331,7 @@ export const generateAdventureTurn = async (
       fullContext,
       gameState,
       generationDetails,
-      context.settings,
+      attemptSettings,
       isSudoMode,
       isCleanupMode,
       sessionId,
@@ -354,6 +356,27 @@ export const generateAdventureTurn = async (
     return result;
   };
 
+  const executeWithRetryBoost = async (): Promise<AgenticLoopResult> => {
+    const baseExtra = context.settings.extra || {};
+    const baseToolCalls =
+      typeof baseExtra.maxToolCalls === "number" ? baseExtra.maxToolCalls : 50;
+    const baseRounds =
+      typeof baseExtra.maxAgenticRounds === "number"
+        ? baseExtra.maxAgenticRounds
+        : 20;
+
+    const boostedSettings: AISettings = {
+      ...context.settings,
+      extra: {
+        ...baseExtra,
+        maxToolCalls: Math.max(1, Math.ceil(baseToolCalls * 1.3)),
+        maxAgenticRounds: Math.max(1, Math.ceil(baseRounds * 1.3)),
+      },
+    };
+
+    return executeSingleAttempt(boostedSettings);
+  };
+
   const resetSessionForRecovery = async (kind: TurnRecoveryKind) => {
     if (kind === "context") {
       await sessionManager.onContextOverflow(sessionId);
@@ -371,9 +394,18 @@ export const generateAdventureTurn = async (
     activeHistory = refreshedSession.activeHistory;
   };
 
+  const turnRetryBoostMessage =
+    context.tFunc("game.recovery.turnRetryBoostConfirm") ||
+    "Turn was not committed. Retry once with temporary +30% tool/round budget?";
+
+  const sessionRebuildMessage =
+    context.tFunc("game.recovery.sessionRebuildConfirm") ||
+    "Recovery still failed. Rebuild session context and retry?";
+
   try {
     const { result, recovery } = await executeTurnWithRecovery({
       execute: executeSingleAttempt,
+      executeWithRetryBoost,
       rollbackToAnchor: () => {
         const rolledBackHistory = rollbackToTurnAnchor(
           sessionId,
@@ -385,6 +417,11 @@ export const generateAdventureTurn = async (
         return true;
       },
       resetSession: resetSessionForRecovery,
+      confirmRecoveryAction: context.confirmRecoveryAction,
+      messages: {
+        turnRetryBoost: turnRetryBoostMessage,
+        sessionRebuild: sessionRebuildMessage,
+      },
       onLog: (payload) => {
         console.log("[TurnRecovery]", {
           sessionId,

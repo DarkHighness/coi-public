@@ -191,6 +191,9 @@ const getOutlineSubmitToolByPhase = (phase: number): ZodToolDefinition => {
   return tool;
 };
 
+const submitToolNameByPhase = (phase: number): string =>
+  getOutlineSubmitToolByPhase(phase).name;
+
 const stripOutlineCurrentPrefix = (path?: string): string => {
   const normalized = normalizeVfsPath(path ?? "");
   if (!normalized) return "";
@@ -898,7 +901,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
   const callAIWithRetry = async (
     phaseNum: number,
     tools: ZodToolDefinition[],
-    opts?: { requiredToolName?: string; endpointSuffix?: string },
+    opts?: {
+      requiredToolName?: string;
+      endpointSuffix?: string;
+      maxRetries?: number;
+    },
   ) => {
     const provider = sessionManager.getProvider(outlineSession.id, instance);
     const effectiveToolChoice = sessionManager.getEffectiveToolChoice(
@@ -928,19 +935,21 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
       },
       conversationHistory,
       {
-        maxRetries: budgetState.retriesMax,
+        maxRetries: opts?.maxRetries ?? budgetState.retriesMax,
         requiredToolName: opts?.requiredToolName,
-        onRetry: (err, count) => {
+        finishToolName: submitToolNameByPhase(phaseNum),
+        onRetry: (err, count, meta) => {
           console.warn(
-            `[OutlineAgentic] Retry ${count}/${budgetState.retriesMax} due to: ${err}`,
+            `[OutlineAgentic] Retry ${count}/${opts?.maxRetries ?? budgetState.retriesMax} due to: ${err}`,
           );
-          // 1. Increment retries in budget state
+          if (meta?.silent) {
+            return;
+          }
+
           incrementRetries(budgetState);
 
-          // 2. Generate updated budget prompt
           const retryBudgetPrompt = generateBudgetPrompt(budgetState);
 
-          // 3. Inject into history so the model sees it BEFORE the next attempt
           conversationHistory.push(
             createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryBudgetPrompt}`),
           );
@@ -1025,8 +1034,12 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
       reportProgress(phaseNum, "generating");
 
       let phaseSubmitted = false;
+      if (budgetState.retriesUsed !== 0) {
+        budgetState.retriesUsed = 0;
+      }
 
       while (!phaseSubmitted) {
+
         const budgetCheck = checkBudgetExhaustion(budgetState);
         if (budgetCheck.exhausted) {
           console.warn(`[OutlineAgentic] ${budgetCheck.message}`);
@@ -1056,6 +1069,10 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
         const { result, log } = await callAIWithRetry(phaseNum, activeTools, {
           requiredToolName: mustFinishNow ? submitTool.name : undefined,
           endpointSuffix: `iter-${budgetState.loopIterationsUsed + 1}`,
+          maxRetries: Math.max(
+            0,
+            budgetState.retriesMax - budgetState.retriesUsed,
+          ),
         });
 
         if (log) logs.push(log);

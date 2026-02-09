@@ -11,7 +11,7 @@ describe("summaryInitializer", () => {
       settings: {
         extra: {
           maxToolCalls: 17,
-          maxErrorRetries: 4,
+          summaryRetryLimit: 4,
           maxAgenticRounds: 9,
         },
       },

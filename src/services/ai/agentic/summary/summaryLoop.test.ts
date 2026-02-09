@@ -543,6 +543,93 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
   });
 
+  it("blocks finish when earlier tools in the same batch fail", async () => {
+    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+
+    mockCallWithAgenticRetry
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            { id: "call_read", name: "vfs_read_json", args: {} },
+            {
+              id: "call_finish_blocked",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      })
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [
+            {
+              id: "call_finish_ok",
+              name: finishTool,
+              args: {
+                nodeRange: { fromIndex: 0, toIndex: 1 },
+                lastSummarizedIndex: 2,
+              },
+            },
+          ],
+        },
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        raw: {},
+      });
+
+    mockDispatchToolCallAsync.mockImplementation(async (name: string) => {
+      if (name === "vfs_read_json") {
+        return {
+          success: false,
+          error: "read failed",
+          code: "READ_FAILED",
+        };
+      }
+
+      if (name === finishTool) {
+        return {
+          success: true,
+          data: {
+            summary: {
+              id: "s1",
+              displayText: "OK",
+              visible: {
+                narrative: "ok",
+                majorEvents: [],
+                characterDevelopment: "",
+                worldState: "",
+              },
+              hidden: {
+                truthNarrative: "",
+                hiddenPlots: [],
+                npcActions: [],
+                worldTruth: "",
+                unrevealed: [],
+              },
+              nodeRange: { fromIndex: 0, toIndex: 1 },
+              lastSummarizedIndex: 2,
+            },
+          },
+        };
+      }
+
+      return { success: false, error: "unexpected tool" };
+    });
+
+    const input = makeInput();
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary?.id).toBe("s1");
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(2);
+    expect(mockDispatchToolCallAsync.mock.calls[0]?.[0]).toBe("vfs_read_json");
+    expect(mockDispatchToolCallAsync.mock.calls[1]?.[0]).toBe(finishTool);
+  });
+
   it("enforces finish-only mode when budget is critically low", async () => {
     const finishTool = VFS_TOOLSETS.summary.finishToolName;
 
@@ -577,7 +664,7 @@ describe("runSummaryLoop", () => {
         extra: {
           maxToolCalls: 2,
           maxAgenticRounds: 3,
-          maxErrorRetries: 3,
+          summaryRetryLimit: 3,
         },
       } as any,
     });

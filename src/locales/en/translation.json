@@ -630,8 +630,14 @@
       "maxAgenticRoundsHelp": "Maximum number of rounds for agentic loop (default: 20)",
       "clearerSearchTool": "Clearer Search Tool",
       "clearerSearchToolHelp": "Return detailed tool metadata (description, schema) in search results to help AI discovery.",
-      "maxErrorRetries": "Max Error Retries",
-      "maxErrorRetriesHelp": "Maximum retry attempts on error (default: 3)",
+      "turnRetryLimit": "Turn Retry Limit",
+      "turnRetryLimitHelp": "Retry limit for normal turn loops (default: 3)",
+      "outlinePhaseRetryLimit": "Outline Phase Retry Limit",
+      "outlinePhaseRetryLimitHelp": "Retry limit for each outline phase (default: 3)",
+      "cleanupRetryLimit": "Cleanup Retry Limit",
+      "cleanupRetryLimitHelp": "Retry limit for cleanup loops (default: 5)",
+      "summaryRetryLimit": "Summary Retry Limit",
+      "summaryRetryLimitHelp": "Retry limit for summary loops (default: 5)",
       "maxToolCalls": "Max Tool Calls",
       "maxToolCallsHelp": "Maximum total tool calls per agentic loop (default: 50)",
       "resetTutorials": "Reset Tutorials",
@@ -2193,13 +2199,18 @@
       "autoRecoverySuccess": "Auto-recovery succeeded. Continued from the latest stable checkpoint.",
       "learnedContextRelaxed": "Adaptive context limit relaxed slightly after stable runs."
     },
+    "recovery": {
+      "turnRetryBoostConfirm": "Turn was not committed. Retry once with temporary +30% tool/round budget?",
+      "sessionRebuildConfirm": "Recovery still failed. Rebuild session context and retry?"
+    },
     "errors": {
       "summaryFailed": "Failed to generate summary",
       "historyCacheCorrupted": "History cache corrupted. The cache has been cleared. Please retry.",
       "contextTooLong": "Context too long. Please create a summary to continue.",
       "contextTooLongAdaptive": "Context overflow detected. Compaction/recovery attempted and an adaptive context limit has been learned for this model. Please retry.",
       "turnGenerationFailed": "Failed to generate the next turn. Please try again.",
-      "contextRebuildFailed": "Failed to rebuild context. Please try again."
+      "contextRebuildFailed": "Failed to rebuild context. Please try again.",
+      "unknownProviderManualRetry": "Unknown provider error. Please retry manually."
     },
     "unknown": {
       "item": "Unknown Item",

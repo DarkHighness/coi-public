@@ -12,8 +12,17 @@ import {
 
 export interface TurnRecoveryRunnerParams<Result> {
   execute: () => Promise<Result>;
+  executeWithRetryBoost?: () => Promise<Result>;
   rollbackToAnchor: () => boolean;
   resetSession: (kind: TurnRecoveryKind) => Promise<void>;
+  confirmRecoveryAction?: (request: {
+    type: "turn_retry_boost" | "session_rebuild";
+    message: string;
+  }) => boolean | Promise<boolean>;
+  messages?: {
+    turnRetryBoost?: string;
+    sessionRebuild?: string;
+  };
   maxDurationMs?: number;
   sleep?: (ms: number) => Promise<void>;
   onLog?: (payload: Record<string, unknown>) => void;
@@ -28,6 +37,12 @@ const defaultSleep = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+
+const DEFAULT_TURN_RETRY_BOOST_MESSAGE =
+  "Turn was not committed. Retry once with temporary +30% tool/round budget?";
+
+const DEFAULT_SESSION_REBUILD_MESSAGE =
+  "Recovery still failed. Rebuild session context and retry?";
 
 const toErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error || "");
@@ -73,8 +88,11 @@ export function annotateRecoveryError(
 
 export async function executeTurnWithRecovery<Result>({
   execute,
+  executeWithRetryBoost,
   rollbackToAnchor,
   resetSession,
+  confirmRecoveryAction,
+  messages,
   maxDurationMs = TURN_RECOVERY_MAX_DURATION_MS,
   sleep = defaultSleep,
   onLog,
@@ -101,12 +119,13 @@ export async function executeTurnWithRecovery<Result>({
     kind: TurnRecoveryKind,
     attemptNo: number,
     delayMs?: number,
+    runner: () => Promise<Result> = execute,
   ): Promise<Result> => {
     try {
       if (typeof delayMs === "number" && delayMs > 0) {
         await sleep(delayMs);
       }
-      const result = await execute();
+      const result = await runner();
       attempts.push(createAttemptRecord(level, kind, attemptNo, undefined, delayMs));
       onLog?.({
         phase: "attempt_success",
@@ -132,8 +151,30 @@ export async function executeTurnWithRecovery<Result>({
     }
   };
 
+  const confirmAction = async (
+    type: "turn_retry_boost" | "session_rebuild",
+    message: string,
+  ): Promise<boolean> => {
+    if (!confirmRecoveryAction) {
+      return false;
+    }
+
+    try {
+      return Boolean(
+        await Promise.resolve(confirmRecoveryAction({ type, message })),
+      );
+    } catch {
+      return false;
+    }
+  };
+
   let lastError: unknown;
   let errorKind: TurnRecoveryKind = "unknown";
+
+  const failWithTrace = (): never => {
+    const recovery = finalizeRecovery(false, 3, errorKind);
+    throw annotateRecoveryError(lastError, recovery, errorKind);
+  };
 
   try {
     const result = await runAttempt(0, "unknown", 1);
@@ -147,11 +188,9 @@ export async function executeTurnWithRecovery<Result>({
   }
 
   if (!isTurnRecoveryRetryable(errorKind) || !withinTimeBudget()) {
-    const recovery = finalizeRecovery(false, 3, errorKind);
-    throw annotateRecoveryError(lastError, recovery, errorKind);
+    failWithTrace();
   }
 
-  // Transient path: only backoff retries
   if (errorKind === "transient") {
     const plan = getTurnRecoveryPlan(errorKind);
     for (let index = 0; index < plan.transientBackoffMs.length; index += 1) {
@@ -174,19 +213,54 @@ export async function executeTurnWithRecovery<Result>({
     }
 
     if (errorKind === "transient") {
-      const recovery = finalizeRecovery(false, 3, "transient");
-      throw annotateRecoveryError(lastError, recovery, "transient");
+      failWithTrace();
     }
 
     if (!isTurnRecoveryRetryable(errorKind) || !withinTimeBudget()) {
-      const recovery = finalizeRecovery(false, 3, errorKind);
-      throw annotateRecoveryError(lastError, recovery, errorKind);
+      failWithTrace();
+    }
+  }
+
+  if (errorKind === "turn_not_committed" && withinTimeBudget()) {
+    const approved = await confirmAction(
+      "turn_retry_boost",
+      messages?.turnRetryBoost ?? DEFAULT_TURN_RETRY_BOOST_MESSAGE,
+    );
+
+    onLog?.({
+      phase: "turn_retry_boost_confirmation",
+      level: 1,
+      kind: errorKind,
+      approved,
+      elapsedMs: Date.now() - startedAt,
+    });
+
+    if (approved) {
+      try {
+        const result = await runAttempt(
+          1,
+          "turn_not_committed",
+          2,
+          undefined,
+          executeWithRetryBoost ?? execute,
+        );
+
+        return {
+          result,
+          recovery: finalizeRecovery(true, 1, "turn_not_committed"),
+        };
+      } catch (error) {
+        lastError = error;
+        errorKind = classifyTurnError(error);
+        if (!isTurnRecoveryRetryable(errorKind) || !withinTimeBudget()) {
+          failWithTrace();
+        }
+      }
     }
   }
 
   const plan = getTurnRecoveryPlan(errorKind);
 
-  // Level 1: rollback retry
   for (let rollbackAttempt = 0; rollbackAttempt < plan.maxRollbackRetries; rollbackAttempt += 1) {
     if (!withinTimeBudget()) break;
 
@@ -220,9 +294,26 @@ export async function executeTurnWithRecovery<Result>({
     }
   }
 
-  // Level 2: session reset retry
   for (let resetAttempt = 0; resetAttempt < plan.maxSessionResetRetries; resetAttempt += 1) {
     if (!withinTimeBudget()) break;
+
+    const approved = await confirmAction(
+      "session_rebuild",
+      messages?.sessionRebuild ?? DEFAULT_SESSION_REBUILD_MESSAGE,
+    );
+
+    onLog?.({
+      phase: "session_rebuild_confirmation",
+      level: 2,
+      kind: errorKind,
+      attempt: resetAttempt + 1,
+      approved,
+      elapsedMs: Date.now() - startedAt,
+    });
+
+    if (!approved) {
+      break;
+    }
 
     await resetSession(errorKind);
     const rolledBack = rollbackToAnchor();
@@ -256,6 +347,5 @@ export async function executeTurnWithRecovery<Result>({
     }
   }
 
-  const recovery = finalizeRecovery(false, 3, errorKind);
-  throw annotateRecoveryError(lastError, recovery, errorKind);
+  failWithTrace();
 }

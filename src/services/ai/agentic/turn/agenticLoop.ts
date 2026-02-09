@@ -815,6 +815,7 @@ async function processToolCalls(
     content: unknown;
   }> = [];
   let turnFinished = false;
+  let hasPriorToolFailure = false;
 
   const liveToolCalls: ToolCallRecord[] = functionCalls.map((call) => ({
     name: call.name,
@@ -834,27 +835,42 @@ async function processToolCalls(
     let output: unknown;
     let isError = false;
 
-    try {
-      output = await Promise.resolve(
-        executeGenericTool(call.name, call.args, toolCtx),
-      );
-
-      // Check for errors
-      if (
-        output &&
-        typeof output === "object" &&
-        "success" in output &&
-        (output as any).success === false
-      ) {
-        isError = true;
-      }
-    } catch (err: any) {
+    if (isFinishToolCall(call) && hasPriorToolFailure) {
       output = {
         success: false,
-        error: `Tool execution failed: ${err.message}`,
-        code: "EXECUTION_ERROR",
+        error:
+          `[ERROR: FINISH_BLOCKED_BY_PREVIOUS_FAILURE] One or more tool calls before finish failed in this batch. ` +
+          `Fix those failures first, then call "${finishToolName}" again as the LAST tool call.`,
+        code: "INVALID_ACTION",
       };
       isError = true;
+    } else {
+      try {
+        output = await Promise.resolve(
+          executeGenericTool(call.name, call.args, toolCtx),
+        );
+
+        // Check for errors
+        if (
+          output &&
+          typeof output === "object" &&
+          "success" in output &&
+          (output as any).success === false
+        ) {
+          isError = true;
+        }
+      } catch (err: any) {
+        output = {
+          success: false,
+          error: `Tool execution failed: ${err.message}`,
+          code: "EXECUTION_ERROR",
+        };
+        isError = true;
+      }
+    }
+
+    if (isError) {
+      hasPriorToolFailure = true;
     }
 
     responses.push({

@@ -1375,29 +1375,71 @@ async function importImages(
 ): Promise<Map<string, string>> {
   const mapping = new Map<string, string>();
 
-  const files = Object.keys(imagesFolder.files);
-  const folderPrefix = imagesFolder.root || "";
-  const imageFiles = files.filter(
-    (f) =>
-      f.startsWith(folderPrefix) && !f.endsWith(".meta.json") && !f.endsWith("/"),
+  const rootPrefix =
+    typeof (imagesFolder as { root?: unknown }).root === "string"
+      ? ((imagesFolder as { root?: string }).root ?? "")
+      : "";
+
+  const allFiles = Object.values(imagesFolder.files);
+  const isUnderRoot = (name: string) =>
+    !rootPrefix || name.startsWith(rootPrefix);
+  const toRelative = (name: string) =>
+    rootPrefix && name.startsWith(rootPrefix)
+      ? name.slice(rootPrefix.length)
+      : name;
+
+  const imageFiles = allFiles.filter(
+    (file) =>
+      !file.dir &&
+      isUnderRoot(file.name) &&
+      !file.name.endsWith(".meta.json"),
   );
 
-  for (const filename of imageFiles) {
-    try {
-      const relativePath = filename.startsWith(folderPrefix)
-        ? filename.slice(folderPrefix.length)
-        : filename;
-      const file = imagesFolder.file(relativePath);
-      if (!file) continue;
+  const findMetaFile = (filename: string, oldId: string) => {
+    const relativeName = toRelative(filename);
+    const sameFolderMetaAbsolute = filename.replace(
+      /\.(png|jpg|jpeg|webp)$/i,
+      ".meta.json",
+    );
+    const sameFolderMetaRelative = relativeName.replace(
+      /\.(png|jpg|jpeg|webp)$/i,
+      ".meta.json",
+    );
 
-      // Extract old ID from filename
+    const candidateNames = new Set<string>([
+      sameFolderMetaAbsolute,
+      sameFolderMetaRelative,
+      `${oldId}.meta.json`,
+      rootPrefix ? `${rootPrefix}${oldId}.meta.json` : `${oldId}.meta.json`,
+      `images/${oldId}.meta.json`,
+    ]);
+
+    const exact = allFiles.find(
+      (file) => !file.dir && candidateNames.has(file.name),
+    );
+    if (exact) {
+      return exact;
+    }
+
+    return allFiles.find(
+      (file) =>
+        !file.dir &&
+        isUnderRoot(file.name) &&
+        (file.name.endsWith(`/${oldId}.meta.json`) ||
+          toRelative(file.name) === `${oldId}.meta.json`),
+    );
+  };
+
+  for (const imageFile of imageFiles) {
+    const filename = imageFile.name;
+
+    try {
       const oldId = filename
         .replace(/\.(png|jpg|jpeg|webp)$/i, "")
         .split("/")
         .pop()!;
 
-      // Load metadata if present
-      const metaFile = imagesFolder.file(`${oldId}.meta.json`);
+      const metaFile = findMetaFile(filename, oldId);
       let metadata: any = {};
       if (metaFile) {
         try {
@@ -1407,10 +1449,8 @@ async function importImages(
         }
       }
 
-      // Load image blob
-      const blob = await file.async("blob");
+      const blob = await imageFile.async("blob");
 
-      // Save with new saveId
       const newId = await saveImage(blob, {
         saveId: newSaveId,
         forkId: metadata.forkId || 0,
@@ -1430,6 +1470,7 @@ async function importImages(
   console.log(`[SaveImport] Imported ${mapping.size} images`);
   return mapping;
 }
+
 
 /**
  * Update image references in nodes with new IDs

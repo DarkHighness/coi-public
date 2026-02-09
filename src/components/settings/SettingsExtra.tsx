@@ -394,26 +394,107 @@ export const SettingsExtra: React.FC = () => {
             />
           </div>
 
-          {/* Max Error Retries */}
+          {/* Turn Retry Limit */}
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs text-theme-text">
-                {t("settings.extra.maxErrorRetries") || "Max Error Retries"}
+                {t("settings.extra.turnRetryLimit") || "Turn Retry Limit"}
               </div>
               <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.maxErrorRetriesHelp") ||
-                  "Maximum retry attempts on error (default: 3)"}
+                {t("settings.extra.turnRetryLimitHelp") ||
+                  "Retry limit for normal turn loops (default: 3)"}
               </div>
             </div>
             <input
               type="number"
               min={0}
-              max={10}
-              value={extra.maxErrorRetries ?? 3}
+              max={20}
+              value={extra.turnRetryLimit ?? 3}
               onChange={(e) =>
                 updateExtra(
-                  "maxErrorRetries",
-                  Math.max(0, Math.min(10, parseInt(e.target.value) || 3)),
+                  "turnRetryLimit",
+                  Math.max(0, Math.min(20, parseInt(e.target.value) || 3)),
+                )
+              }
+              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+            />
+          </div>
+
+          {/* Outline Phase Retry Limit */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-theme-text">
+                {t("settings.extra.outlinePhaseRetryLimit") ||
+                  "Outline Phase Retry Limit"}
+              </div>
+              <div className="text-[10px] text-theme-muted">
+                {t("settings.extra.outlinePhaseRetryLimitHelp") ||
+                  "Retry limit for each outline phase (default: 3)"}
+              </div>
+            </div>
+            <input
+              type="number"
+              min={0}
+              max={20}
+              value={extra.outlinePhaseRetryLimit ?? 3}
+              onChange={(e) =>
+                updateExtra(
+                  "outlinePhaseRetryLimit",
+                  Math.max(0, Math.min(20, parseInt(e.target.value) || 3)),
+                )
+              }
+              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+            />
+          </div>
+
+          {/* Cleanup Retry Limit */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-theme-text">
+                {t("settings.extra.cleanupRetryLimit") ||
+                  "Cleanup Retry Limit"}
+              </div>
+              <div className="text-[10px] text-theme-muted">
+                {t("settings.extra.cleanupRetryLimitHelp") ||
+                  "Retry limit for cleanup loops (default: 5)"}
+              </div>
+            </div>
+            <input
+              type="number"
+              min={0}
+              max={20}
+              value={extra.cleanupRetryLimit ?? 5}
+              onChange={(e) =>
+                updateExtra(
+                  "cleanupRetryLimit",
+                  Math.max(0, Math.min(20, parseInt(e.target.value) || 5)),
+                )
+              }
+              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+            />
+          </div>
+
+          {/* Summary Retry Limit */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-theme-text">
+                {t("settings.extra.summaryRetryLimit") ||
+                  "Summary Retry Limit"}
+              </div>
+              <div className="text-[10px] text-theme-muted">
+                {t("settings.extra.summaryRetryLimitHelp") ||
+                  "Retry limit for summary loops (default: 5)"}
+              </div>
+            </div>
+            <input
+              type="number"
+              min={0}
+              max={20}
+              value={extra.summaryRetryLimit ?? 5}
+              onChange={(e) =>
+                updateExtra(
+                  "summaryRetryLimit",
+                  Math.max(0, Math.min(20, parseInt(e.target.value) || 5)),
                 )
               }
               className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"

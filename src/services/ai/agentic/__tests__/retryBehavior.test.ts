@@ -30,6 +30,9 @@ const createProvider = (responses: Array<any>) => {
       if (!next) {
         throw new Error("No queued response");
       }
+      if (next instanceof Error) {
+        throw next;
+      }
       return next;
     }),
   } as any;
@@ -167,6 +170,76 @@ describe("callWithAgenticRetry behavior", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(onRetry.mock.calls[0]?.[0]).toContain("NO_TOOL_CALL");
     expect(onRetry.mock.calls[0]?.[1]).toBe(1);
+  });
+
+  it("retries malformed provider errors with raw feedback in history", async () => {
+    const provider = createProvider([
+      new Error("MALFORMED_TOOL_CALL: invalid JSON payload"),
+      {
+        result: {
+          functionCalls: [{ id: "call_2", name: toolName, args: { foo: "ok" } }],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    const history: any[] = [];
+
+    const result = await callWithAgenticRetry(provider, makeRequest() as any, history, {
+      requiredToolName: toolName,
+      maxRetries: 1,
+      finishToolName: "vfs_commit_turn",
+    });
+
+    expect(result.retries).toBe(1);
+    expect(history).toHaveLength(2);
+    expect(history[0]?.role).toBe("assistant");
+    const feedbackText =
+      history[1]?.content?.find((part: any) => part.type === "text")?.text ?? "";
+    expect(feedbackText).toContain("MALFORMED_TOOL_CALL");
+    expect(feedbackText).toContain("Raw provider error: MALFORMED_TOOL_CALL: invalid JSON payload");
+    expect(feedbackText).toContain('If you call "vfs_commit_turn", it must be the LAST tool call.');
+  });
+
+  it("throws unknown provider errors without automatic retry", async () => {
+    const provider = createProvider([new Error("backend panic without classification")]);
+
+    await expect(
+      callWithAgenticRetry(provider, makeRequest() as any, [], { maxRetries: 2 }),
+    ).rejects.toThrow("[ERROR: UNKNOWN_PROVIDER_ERROR]");
+
+    expect(provider.generateChat).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps history unchanged for silent provider retries", async () => {
+    const provider = createProvider([
+      new Error("429 rate limit exceeded"),
+      {
+        result: {
+          functionCalls: [{ id: "call_ok", name: toolName, args: { foo: "ok" } }],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    const onRetry = vi.fn();
+    const history = [createUserMessage("seed")];
+
+    const result = await callWithAgenticRetry(provider, makeRequest() as any, history, {
+      requiredToolName: toolName,
+      maxRetries: 1,
+      onRetry,
+    });
+
+    expect(result.retries).toBe(1);
+    expect(history).toHaveLength(1);
+    expect(onRetry).toHaveBeenCalledWith(
+      expect.stringContaining("429"),
+      1,
+      expect.objectContaining({ silent: true, classification: "silent_retry" }),
+    );
   });
 
   it("prunes history back to initial length after exhausting retries", async () => {

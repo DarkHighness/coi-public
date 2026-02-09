@@ -616,6 +616,14 @@ export const useGameAction = ({
         const runtimeVfsMode: "normal" | "god" = gameStateRef.current.godMode
           ? "god"
           : "normal";
+        const confirmRecoveryAction = ({
+          type: _type,
+          message,
+        }: {
+          type: "turn_retry_boost" | "session_rebuild";
+          message: string;
+        }) =>
+          typeof window !== "undefined" ? window.confirm(message) : false;
         let vfsElevationToken: string | null = null;
         let vfsElevationIntent:
           | "god_turn"
@@ -667,6 +675,7 @@ export const useGameAction = ({
           vfsElevationToken,
           vfsElevationIntent,
           vfsElevationScopeTemplateIds,
+          confirmRecoveryAction,
         });
 
         persistUsageToActiveTurn(usage);
@@ -953,6 +962,10 @@ export const useGameAction = ({
           debugErrorMsg.includes("CONTEXT_LENGTH_EXCEEDED") ||
           recoveryKind === "context";
 
+        const isUnknownProviderError = debugErrorMsg.includes(
+          "[ERROR: UNKNOWN_PROVIDER_ERROR]",
+        );
+
         if (isContextOverflow) {
           recordLearnedOverflow(error);
         }
@@ -982,14 +995,22 @@ export const useGameAction = ({
             5000,
           );
         } else {
-          showToast(t("game.errors.turnGenerationFailed"), "error", 5000);
+          showToast(
+            isUnknownProviderError
+              ? t("game.errors.unknownProviderManualRetry")
+              : t("game.errors.turnGenerationFailed"),
+            "error",
+            5000,
+          );
         }
 
         const userFacingErrorMessage = isHistoryCorrupted
           ? t("game.errors.historyCacheCorrupted")
           : isContextOverflow
             ? t("game.errors.contextTooLongAdaptive")
-            : t("game.errors.turnGenerationFailed");
+            : isUnknownProviderError
+              ? t("game.errors.unknownProviderManualRetry")
+              : t("game.errors.turnGenerationFailed");
 
         setGameState((prev) => ({
           ...prev,

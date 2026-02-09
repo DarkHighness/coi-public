@@ -155,6 +155,38 @@ describe("handleAICall", () => {
     ).rejects.toBeInstanceOf(HistoryCorruptedError);
   });
 
+  it("ignores silent retries for budget counters and history", async () => {
+    const conversationHistory: UnifiedMessage[] = [];
+    const loopState = createLoopState();
+
+    mockedCallWithAgenticRetry.mockImplementation(
+      async (_provider, _request, _history, options) => {
+        options?.onRetry?.("429 rate limit", 1, {
+          silent: true,
+          classification: "silent_retry",
+        });
+        return {
+          result: { text: "ok", functionCalls: [] },
+          usage: baseUsage,
+          retries: 1,
+        } as any;
+      },
+    );
+
+    await handleAICall({
+      provider: {} as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      conversationHistory,
+      loopState,
+      settings: createSettings(),
+      sessionId: "session-1",
+    });
+
+    expect(loopState.budgetState.retriesUsed).toBe(0);
+    expect(conversationHistory).toHaveLength(0);
+  });
+
   it("injects budget update message and increments retry counter via onRetry", async () => {
     const conversationHistory: UnifiedMessage[] = [];
     const loopState = createLoopState();

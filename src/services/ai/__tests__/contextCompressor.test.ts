@@ -33,6 +33,9 @@ describe("contextCompressor error classifiers", () => {
     expect(isInvalidArgumentError(new Error("rate limit exceeded"))).toBe(
       false,
     );
+    expect(isInvalidArgumentError(new Error("MALFORMED_TOOL_CALL: bad args"))).toBe(
+      false,
+    );
   });
 
   it("requires rebuild when either classifier matches", () => {

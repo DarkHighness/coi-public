@@ -129,6 +129,15 @@ export function createCommandActions({
     );
   };
 
+  const confirmRecoveryAction = ({
+    type: _type,
+    message,
+  }: {
+    type: "turn_retry_boost" | "session_rebuild";
+    message: string;
+  }) =>
+    typeof window !== "undefined" ? window.confirm(message) : false;
+
   const buildSystemNode = ({
     id,
     parentId,
@@ -342,6 +351,7 @@ export function createCommandActions({
         vfsElevationToken: sudoElevationToken,
         vfsElevationIntent: "sudo_command",
         vfsElevationScopeTemplateIds: "all_elevated",
+        confirmRecoveryAction,
       };
 
       const { response, logs, recovery } = await generateForceUpdate(
@@ -503,6 +513,7 @@ export function createCommandActions({
           }));
         },
         vfsMode: "normal",
+        confirmRecoveryAction,
       };
 
       const { response, logs, changedEntities, recovery } = await generateEntityCleanup(

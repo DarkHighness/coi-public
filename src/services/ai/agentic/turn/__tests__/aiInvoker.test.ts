@@ -98,6 +98,36 @@ describe("aiInvoker", () => {
     });
   });
 
+  it("ignores silent retries when updating budget/history", async () => {
+    mockedCallWithAgenticRetry.mockImplementation(
+      async (_provider, _request, _history, options) => {
+        options?.onRetry?.("429 rate limit", 1, {
+          silent: true,
+          classification: "silent_retry",
+        });
+        return {
+          result: { content: "fallback" },
+          usage,
+          retries: 1,
+        } as any;
+      },
+    );
+
+    const history: any[] = [];
+    const budgetState = createBudgetState();
+
+    await invokeAI(
+      {} as any,
+      createConfig() as any,
+      history,
+      budgetState as any,
+      "vfs_commit_turn",
+    );
+
+    expect(budgetState.retriesUsed).toBe(0);
+    expect(history).toHaveLength(0);
+  });
+
   it("injects budget update prompt and increments retry count via onRetry", async () => {
     mockedCallWithAgenticRetry.mockImplementation(
       async (_provider, _request, _history, options) => {
