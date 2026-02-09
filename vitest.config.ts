@@ -7,7 +7,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    coverage: {
+      enabled: false,
+      provider: "v8",
+      reportsDirectory: "coverage",
+      reporter: ["text-summary", "json-summary"],
+      reportOnFailure: true,
+    },
   },
   resolve: {
     alias: {

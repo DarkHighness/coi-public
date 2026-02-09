@@ -13,17 +13,37 @@ export type AgenticLoopType = "turn" | "cleanup" | "summary" | "outline";
 
 type BudgetDefaults = {
   maxToolCalls: number;
-  maxErrorRetries: number;
+  maxRetries: number;
   maxAgenticRounds: number;
 };
 
 // Default budgets (only used when settings.extra does not override them)
 const DEFAULT_BUDGETS: Record<AgenticLoopType, BudgetDefaults> = {
-  turn: { maxToolCalls: 50, maxErrorRetries: 3, maxAgenticRounds: 20 },
-  cleanup: { maxToolCalls: 90, maxErrorRetries: 3, maxAgenticRounds: 25 },
-  summary: { maxToolCalls: 90, maxErrorRetries: 3, maxAgenticRounds: 25 },
-  outline: { maxToolCalls: 18, maxErrorRetries: 3, maxAgenticRounds: 18 },
+  turn: { maxToolCalls: 50, maxRetries: 3, maxAgenticRounds: 20 },
+  cleanup: { maxToolCalls: 90, maxRetries: 5, maxAgenticRounds: 25 },
+  summary: { maxToolCalls: 90, maxRetries: 5, maxAgenticRounds: 25 },
+  outline: { maxToolCalls: 18, maxRetries: 3, maxAgenticRounds: 18 },
 };
+
+function resolveRetryLimit(
+  settings: AISettings,
+  loopType: AgenticLoopType,
+  defaults: BudgetDefaults,
+): number {
+  const extra = settings.extra;
+  if (!extra) return defaults.maxRetries;
+
+  if (loopType === "turn") {
+    return extra.turnRetryLimit ?? defaults.maxRetries;
+  }
+  if (loopType === "cleanup") {
+    return extra.cleanupRetryLimit ?? defaults.maxRetries;
+  }
+  if (loopType === "summary") {
+    return extra.summaryRetryLimit ?? defaults.maxRetries;
+  }
+  return extra.outlinePhaseRetryLimit ?? defaults.maxRetries;
+}
 
 /** Budget state for tracking tool calls, retries, and loop iterations */
 export interface BudgetState {
@@ -46,7 +66,7 @@ export function createBudgetState(
     toolCallsUsed: 0,
     toolCallsMax: settings.extra?.maxToolCalls ?? defaults.maxToolCalls,
     retriesUsed: 0,
-    retriesMax: settings.extra?.maxErrorRetries ?? defaults.maxErrorRetries,
+    retriesMax: resolveRetryLimit(settings, loopType, defaults),
     loopIterationsUsed: 0,
     loopIterationsMax: settings.extra?.maxAgenticRounds ?? defaults.maxAgenticRounds,
   };

@@ -68,6 +68,10 @@ export async function invokeAI(
   }));
 
   try {
+    const remainingRetries = Math.max(
+      0,
+      budgetState.retriesMax - budgetState.retriesUsed,
+    );
     const resp = await callWithAgenticRetry(
       provider,
       {
@@ -85,12 +89,15 @@ export async function invokeAI(
       },
       history,
       {
-        maxRetries: budgetState.retriesMax,
-        onRetry: (err, count) => {
+        maxRetries: remainingRetries,
+        finishToolName,
+        onRetry: (err, count, meta) => {
           console.warn(
-            `[AIInvoker] Retry ${count}/${budgetState.retriesMax}: ${err}`,
+            `[AIInvoker] Retry ${count}/${remainingRetries}: ${err}`,
           );
-          incrementRetries(budgetState);
+          if (!meta?.silent) {
+            incrementRetries(budgetState);
+          }
           const retryPrompt = generateBudgetPrompt(budgetState, finishToolName);
           history.push(
             createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryPrompt}`),

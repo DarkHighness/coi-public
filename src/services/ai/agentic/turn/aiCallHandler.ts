@@ -73,6 +73,10 @@ export async function handleAICall(
 
   try {
     const storyCfg = settings.story;
+    const remainingRetries = Math.max(
+      0,
+      loopState.budgetState.retriesMax - loopState.budgetState.retriesUsed,
+    );
     const resp = await callWithAgenticRetry(
       provider,
       {
@@ -90,13 +94,16 @@ export async function handleAICall(
       },
       conversationHistory,
       {
-        maxRetries: loopState.budgetState.retriesMax,
+        maxRetries: remainingRetries,
         requiredToolName,
-        onRetry: (err, count) => {
+        finishToolName: loopState.finishToolName,
+        onRetry: (err, count, meta) => {
           console.warn(
-            `[AICall] Retry ${count}/${loopState.budgetState.retriesMax}: ${err}`,
+            `[AICall] Retry ${count}/${remainingRetries}: ${err}`,
           );
-          incrementRetries(loopState.budgetState);
+          if (!meta?.silent) {
+            incrementRetries(loopState.budgetState);
+          }
           const retryPrompt = generateBudgetPrompt(
             loopState.budgetState,
             loopState.finishToolName,

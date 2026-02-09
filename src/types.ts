@@ -806,6 +806,11 @@ export interface TurnContext {
   vfsElevationIntent?: VfsElevationIntent;
   /** Optional declared template scope for elevation token */
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
+  /** Optional user confirmation hook for recovery actions */
+  confirmRecoveryAction?: (request: {
+    type: "turn_retry_boost" | "session_rebuild";
+    message: string;
+  }) => boolean | Promise<boolean>;
 }
 
 export interface GameStateSnapshot {
@@ -1323,7 +1328,10 @@ export interface AISettings {
     toolCallCarousel?: boolean; // Show tool-call style carousel while AI is generating (default: true)
     maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
-    maxErrorRetries?: number; // Maximum number of error retries in agentic loop (default: 3)
+    turnRetryLimit?: number; // Retry limit for normal turn loops (default: 3)
+    outlinePhaseRetryLimit?: number; // Retry limit for each outline phase (default: 3)
+    cleanupRetryLimit?: number; // Retry limit for cleanup loops (default: 5)
+    summaryRetryLimit?: number; // Retry limit for summary/compact/query loops (default: 5)
     /**
      * Narrative style preset. Applies a concise, model-robust style override on top of theme defaults.
      * If customContext includes <narrative_style>, that takes priority.

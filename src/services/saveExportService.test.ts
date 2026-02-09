@@ -358,3 +358,223 @@ describe("saveExportService", () => {
     expect(turnJson.assistant.imageUrl).toBeUndefined();
   });
 });
+
+describe("saveExportService validation edge cases", () => {
+  it("validateImport rejects unsupported file extension", async () => {
+    const { validateImport } = await import("./saveExportService");
+
+    const file = Object.assign(new Uint8Array([1, 2, 3]), {
+      name: "save.txt",
+    }) as unknown as File;
+
+    const result = await validateImport(file);
+
+    expect(result.valid).toBe(false);
+    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.unsupportedFormat");
+  });
+
+  it("validateImport warns when export version is newer than supported", async () => {
+    const { validateImport } = await import("./saveExportService");
+
+    const zip = new JSZip();
+    zip.file(
+      "manifest.json",
+      JSON.stringify(
+        {
+          ...createValidManifest(),
+          version: 999,
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "vfs/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          latest: { forkId: 0, turn: 0 },
+          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "vfs/snapshots/fork-0/turn-0.json",
+      JSON.stringify(makeSnapshot("slot-x"), null, 2),
+    );
+
+    const file = await createZipFile(zip, "warn-version.zip");
+    const result = await validateImport(file);
+
+    expect(result.valid).toBe(true);
+    expect(
+      result.warningsI18n?.some(
+        (warning) => warning.key === "import.warnings.newerVersion",
+      ),
+    ).toBe(true);
+  });
+
+  it("validateImport rejects when latest snapshot file is missing", async () => {
+    const { validateImport } = await import("./saveExportService");
+
+    const zip = new JSZip();
+    zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
+    zip.file(
+      "vfs/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          latest: { forkId: 9, turn: 9 },
+          snapshots: [{ forkId: 9, turn: 9, createdAt: 1 }],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const file = await createZipFile(zip, "missing-snapshot.zip");
+    const result = await validateImport(file);
+
+    expect(result.valid).toBe(false);
+    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.missingSnapshotFile");
+  });
+
+  it("importSave keeps working and reports embeddings parse warning", async () => {
+    const { importSave } = await import("./saveExportService");
+
+    const zip = new JSZip();
+    zip.file(
+      "manifest.json",
+      JSON.stringify(
+        {
+          ...createValidManifest(),
+          includes: {
+            images: false,
+            embeddings: true,
+            logs: false,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "vfs/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          latest: { forkId: 0, turn: 0 },
+          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "vfs/snapshots/fork-0/turn-0.json",
+      JSON.stringify(makeSnapshot("slot-old"), null, 2),
+    );
+    zip.file("embeddings.json", "{not-json");
+
+    const file = await createZipFile(zip, "embeddings-broken.zip");
+    const result = await importSave(file, []);
+
+    expect(result.success).toBe(true);
+    expect(result.warningsI18n?.some((warning) => warning.key === "import.warnings.embeddingsRegen")).toBe(true);
+  });
+});
+
+describe("saveExportService import/export additional branches", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    savedSnapshots.length = 0;
+    sourceSnapshots.clear();
+    vfsMetaRowsRef.rows = [];
+    loadMetadataMock.mockImplementation(async () => null);
+  });
+
+  it("validateImport reports parseFailed for unreadable zip bytes", async () => {
+    const { validateImport } = await import("./saveExportService");
+
+    const brokenFile = Object.assign(new Uint8Array([0, 1, 2, 3]), {
+      name: "broken.zip",
+    }) as unknown as File;
+
+    const result = await validateImport(brokenFile);
+
+    expect(result.valid).toBe(false);
+    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.parseFailed");
+  });
+
+  it("validateImport rejects unreadable vfs index payload", async () => {
+    const { validateImport } = await import("./saveExportService");
+
+    const zip = new JSZip();
+    zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
+    zip.file("vfs/index.json", "{not-json");
+
+    const file = await createZipFile(zip, "bad-index.zip");
+    const result = await validateImport(file);
+
+    expect(result.valid).toBe(false);
+    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.unreadableVfsIndex");
+  });
+
+  it("importSave returns noSnapshotsImported when index entries are unusable", async () => {
+    const { importSave } = await import("./saveExportService");
+
+    const zip = new JSZip();
+    zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
+    zip.file(
+      "vfs/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          latest: null,
+          snapshots: [{ createdAt: 1 }],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const file = await createZipFile(zip, "no-snapshot-import.zip");
+    const result = await importSave(file, []);
+
+    expect(result.success).toBe(false);
+    expect(result.errorI18n?.key).toBe("import.errors.noSnapshotsImported");
+  });
+
+  it("importSave returns vfsImportFailed when snapshot persistence throws", async () => {
+    const { importSave } = await import("./saveExportService");
+
+    saveSnapshotMock.mockRejectedValueOnce(new Error("persist failed"));
+
+    const zip = new JSZip();
+    zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
+    zip.file(
+      "vfs/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          latest: { forkId: 0, turn: 0 },
+          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "vfs/snapshots/fork-0/turn-0.json",
+      JSON.stringify(makeSnapshot("slot-old"), null, 2),
+    );
+
+    const file = await createZipFile(zip, "persist-fail.zip");
+    const result = await importSave(file, []);
+
+    expect(result.success).toBe(false);
+    expect(result.errorI18n?.key).toBe("import.errors.vfsImportFailed");
+  });
+});

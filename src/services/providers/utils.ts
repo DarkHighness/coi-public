@@ -105,8 +105,7 @@ function isRetryableError(error: unknown): boolean {
     if (
       error.code === "SAFETY" ||
       error.code === "UNSUPPORTED" ||
-      error.code === "QUOTA_EXHAUSTED" ||
-      error.code === "MALFORMED_TOOL_CALL"
+      error.code === "QUOTA_EXHAUSTED"
     ) {
       return false;
     }

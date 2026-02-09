@@ -385,6 +385,11 @@ async function runSummaryLoopCore(options: {
 
     const iterationNum = loopState.budgetState.loopIterationsUsed + 1;
 
+    const remainingRetries = Math.max(
+      0,
+      loopState.budgetState.retriesMax - loopState.budgetState.retriesUsed,
+    );
+
     const { result, usage, raw } = await callWithAgenticRetry(
       provider,
       {
@@ -401,11 +406,14 @@ async function runSummaryLoopCore(options: {
       },
       conversationHistory,
       {
-        maxRetries: loopState.budgetState.retriesMax,
+        maxRetries: remainingRetries,
         requiredToolName: mustFinishNow ? finishToolName : undefined,
-        onRetry: (msg, count) => {
+        finishToolName,
+        onRetry: (msg, count, meta) => {
           console.warn(`[SummaryLoop] Retry ${count}: ${msg}`);
-          incrementRetries(loopState.budgetState);
+          if (!meta?.silent) {
+            incrementRetries(loopState.budgetState);
+          }
           conversationHistory.push(
             createUserMessage(
               `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState, finishToolName)}`,
@@ -742,4 +750,3 @@ export async function runQuerySummaryLoop(input: SummaryLoopInput): Promise<Summ
     modeLabel: "query_summary",
   });
 }
-

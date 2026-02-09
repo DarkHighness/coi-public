@@ -14,12 +14,25 @@ import {
 import { ToolCallResult } from "../../providers/types";
 import { extractJson } from "../utils";
 import { formatZodError, getToolInfo } from "../../providers/utils";
+import {
+  AgenticErrorKind,
+  buildMalformedToolCallFeedback,
+  classifyAgenticError,
+} from "./errorPolicy";
 
 export interface RetryOptions {
   maxRetries?: number;
   requiredToolName?: string;
+  finishToolName?: string;
   schema?: ZodSchema; // Root schema for direct output or forced tool
-  onRetry?: (error: string, attempt: number) => void;
+  onRetry?: (
+    error: string,
+    attempt: number,
+    metadata?: {
+      silent?: boolean;
+      classification?: AgenticErrorKind;
+    },
+  ) => void;
 }
 
 export interface RetryResult extends ChatGenerateResponse {
@@ -210,6 +223,7 @@ export async function callWithAgenticRetry(
   const {
     maxRetries = 3,
     requiredToolName,
+    finishToolName,
     schema: rootSchema,
     onRetry,
   } = options;
@@ -224,10 +238,70 @@ export async function callWithAgenticRetry(
   let sawExplicitUnknownUsage = false;
 
   while (attempt <= maxRetries) {
-    const response = await provider.generateChat({
-      ...request,
-      messages: history as unknown[],
-    });
+    let response: ChatGenerateResponse;
+    try {
+      response = await provider.generateChat({
+        ...request,
+        messages: history as unknown[],
+      });
+    } catch (providerError) {
+      const classified = classifyAgenticError(providerError);
+      const isRetryable =
+        classified.kind === "silent_retry" ||
+        classified.kind === "model_fixable";
+
+      if (!isRetryable || attempt >= maxRetries) {
+        const fallback =
+          providerError instanceof Error
+            ? providerError
+            : new Error(String(providerError));
+
+        if (classified.kind === "unknown") {
+          throw new Error(
+            `[ERROR: UNKNOWN_PROVIDER_ERROR] ${classified.rawMessage || fallback.message}`,
+          );
+        }
+
+        throw fallback;
+      }
+
+      attempt++;
+
+      if (classified.kind === "silent_retry") {
+        console.warn(
+          `[AgenticRetry] Silent retry ${attempt}/${maxRetries}: ${classified.rawMessage}`,
+        );
+        if (onRetry) {
+          onRetry(classified.rawMessage, attempt, {
+            silent: true,
+            classification: classified.kind,
+          });
+        }
+        continue;
+      }
+
+      const feedback = classified.isMalformedToolCall
+        ? buildMalformedToolCallFeedback({
+            rawMessage: classified.rawMessage,
+            finishToolName,
+          })
+        : `[ERROR: PROVIDER_CALL_FAILED] ${classified.rawMessage}`;
+
+      history.push(
+        createAssistantMessage(
+          "[No response generated - provider rejected this attempt]",
+        ),
+      );
+      history.push(createUserMessage(feedback));
+
+      if (onRetry) {
+        onRetry(feedback, attempt, {
+          silent: false,
+          classification: classified.kind,
+        });
+      }
+      continue;
+    }
 
     const normalizedUsage = normalizeUsageForAccounting(
       response.usage,
@@ -457,7 +531,12 @@ export async function callWithAgenticRetry(
 
     // Execute onRetry callback AFTER error messages are in history
     // This allows the callback to inject new prompts (e.g. Budget Status) that appear AFTER the error
-    if (onRetry) onRetry(errorMessage, attempt);
+      if (onRetry) {
+        onRetry(errorMessage, attempt, {
+          silent: false,
+          classification: "model_fixable",
+        });
+      }
   }
 
   throw new Error("Maximum retries exceeded");
