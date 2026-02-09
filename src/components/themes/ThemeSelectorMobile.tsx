@@ -10,6 +10,7 @@ import { RoleSelectionModal } from "./RoleSelectionModal";
 import { useThemePreferences } from "./useThemePreferences";
 
 const RANDOM_THEME_KEY = "__random_theme__";
+const CUSTOM_THEME_KEY = "custom";
 
 type MobileMode = "list" | "detail";
 
@@ -117,6 +118,12 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
 
     if (activeTheme === RANDOM_THEME_KEY) {
       onSelect("");
+      return;
+    }
+
+    if (activeTheme === CUSTOM_THEME_KEY) {
+      markThemeUsed(activeTheme);
+      onSelect(activeTheme, "");
       return;
     }
 

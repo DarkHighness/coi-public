@@ -6,6 +6,8 @@ import { MarkdownText } from "../render/MarkdownText";
 import { RoleSelectionModal } from "./RoleSelectionModal";
 import i18n from "../../utils/i18n";
 
+const CUSTOM_THEME_KEY = "custom";
+
 interface ThemePreviewModalProps {
   themeKey: string;
   themeConfig: StoryThemeConfig;
@@ -38,6 +40,12 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
     Array.isArray(protagonistPreferences) && protagonistPreferences.length > 0;
 
   const handleStartClick = () => {
+    if (themeKey === CUSTOM_THEME_KEY) {
+      onSelect(themeKey, "");
+      onClose();
+      return;
+    }
+
     setShowRoleSelection(true);
   };
 

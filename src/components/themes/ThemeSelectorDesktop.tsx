@@ -11,6 +11,7 @@ import { RoleSelectionModal } from "./RoleSelectionModal";
 import { useThemePreferences } from "./useThemePreferences";
 
 const RANDOM_THEME_KEY = "__random_theme__";
+const CUSTOM_THEME_KEY = "custom";
 
 interface ThemeSelectorDesktopProps {
   themes: Record<string, StoryThemeConfig>;
@@ -111,6 +112,12 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
 
     if (selectedTheme === RANDOM_THEME_KEY) {
       onSelect("");
+      return;
+    }
+
+    if (selectedTheme === CUSTOM_THEME_KEY) {
+      markThemeUsed(selectedTheme);
+      onSelect(selectedTheme, "");
       return;
     }
 
