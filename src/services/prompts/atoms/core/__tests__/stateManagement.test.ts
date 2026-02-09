@@ -19,15 +19,15 @@ describe("stateManagement atom", () => {
     expect(content).toContain("shared/narrative/conversation/*.json");
   });
 
-  it("documents outline immutability and VFS outline paths", () => {
+  it("documents outline guidance with player-first adaptation protocol", () => {
     const content = stateManagement();
     expect(content).toContain("current/outline/outline.json");
+    expect(content).toContain("current/outline/story_outline/plan.md");
     expect(content).toContain("current/outline/progress.json");
-    expect(content).toContain("shared/narrative/outline/outline.json");
-    expect(content).toContain("shared/narrative/outline/progress.json");
-    expect(content).toContain("outline is immutable");
-    expect(content).toContain("sudo");
-    expect(content).toContain("god mode");
+    expect(content).toContain("plan.md is guidance");
+    expect(content).toContain("Natural recovery");
+    expect(content).toContain("Revise `plan.md`");
+    expect(content).toContain("No deus-ex-machina corrections");
     expect(content).toContain("from only for move/copy");
   });
 });

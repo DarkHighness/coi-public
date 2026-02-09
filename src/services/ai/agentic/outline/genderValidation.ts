@@ -144,7 +144,7 @@ export const validateGenderPreferencePhase2 = (
 
   if (!raceSignal.hasMale && !raceSignal.hasFemale) {
     return (
-      `Phase 2: visible.race must explicitly include protagonist gender (${expectedGenderLabel(expectedGender)}), ` +
+      `Phase 3: visible.race must explicitly include protagonist gender (${expectedGenderLabel(expectedGender)}), ` +
       `but visible.race is "${String(playerVisible?.race ?? "")}".`
     );
   }
@@ -173,7 +173,7 @@ export const validateGenderPreferencePhase2 = (
         : "Use a role/title descriptor, not spouse labels.";
 
     return (
-      `Phase 2: ${field.path} should not use relationship identity terms (current: "${String(field.value ?? "")}"). ` +
+      `Phase 3: ${field.path} should not use relationship identity terms (current: "${String(field.value ?? "")}"). ` +
       guidance
     );
   }
@@ -185,7 +185,7 @@ export const validateGenderPreferencePhase2 = (
     const signal = detectGenderSignal(fieldText);
     if (signal.hasMale && signal.hasFemale) {
       return (
-        `Phase 2: Gender signal conflict in ${field.path} - value "${String(field.value)}" contains mixed male/female labels. ` +
+        `Phase 3: Gender signal conflict in ${field.path} - value "${String(field.value)}" contains mixed male/female labels. ` +
         `Please resubmit with a single protagonist gender: ${expectedGenderLabel(expectedGender)}.`
       );
     }
@@ -198,7 +198,7 @@ export const validateGenderPreferencePhase2 = (
 
     if (detectedGender !== null && detectedGender !== expectedGender) {
       return (
-        `Phase 2: Gender mismatch in ${field.path} - value "${String(field.value)}" conflicts with required protagonist gender ` +
+        `Phase 3: Gender mismatch in ${field.path} - value "${String(field.value)}" conflicts with required protagonist gender ` +
         `${expectedGenderLabel(expectedGender)}. Ensure all gendered self-labels remain consistent.`
       );
     }

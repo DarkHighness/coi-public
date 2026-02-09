@@ -17,6 +17,9 @@ describe("vfs tree builder", () => {
         "skills",
       ]),
     );
+
+    const outline = (tree.children || []).find((n) => n.name === "outline");
+    expect(outline?.children?.some((n) => n.name === "story_outline")).toBe(true);
   });
 
   it("builds a current/ rooted tree from snapshot paths", () => {
@@ -53,6 +56,7 @@ describe("vfs tree builder", () => {
     expect(isReadonlyPath("outline/progress.json")).toBe(false);
     expect(isReadonlyPath("summary/state.json")).toBe(true);
     expect(isReadonlyPath("outline/outline.json")).toBe(false);
+    expect(isReadonlyPath("outline/story_outline/plan.md")).toBe(false);
     expect(isReadonlyPath("world/characters/char:player/profile.json")).toBe(false);
   });
 });

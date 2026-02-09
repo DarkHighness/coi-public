@@ -10,26 +10,37 @@ describe("outlineMerge", () => {
     ).toThrow("Cannot merge incomplete outline phases");
   });
 
-  it("merges phases with ids/unlocked defaults and relation hydration", () => {
+  it("merges reordered phases with ids/unlocked defaults and relation hydration", () => {
     const partial = {
       phase1: {
-        title: "Demo",
-        initialTime: "Dawn",
-        premise: "Premise",
-        narrativeScale: "local",
-        worldSetting: {
-          era: "era",
-          geography: "geo",
-          socialFabric: "social",
-          extraordinaryRules: "rules",
-        },
-        mainGoal: {
-          objective: "goal",
-          stakes: "stakes",
-          urgency: "urgent",
+        storyPlanMarkdown: "# Plan",
+        planningMetadata: {
+          structureVersion: "v2",
+          branchStrategy: "adaptive",
+          endingFlexibility: "high",
+          recoveryPolicy: {
+            allowNaturalRecovery: true,
+            allowOutlineRevision: true,
+            forbidDeusExMachina: true,
+          },
         },
       },
       phase2: {
+        title: "Demo",
+        initialTime: "Dawn",
+        premise: "Premise",
+        narrativeScale: "balanced",
+        worldSetting: {
+          visible: { description: "World visible" },
+          hidden: { truth: "World truth" },
+          history: "Ancient history",
+        },
+        mainGoal: {
+          visible: { objective: "goal", stakes: "stakes", urgency: "urgent" },
+          hidden: { trueObjective: "true goal" },
+        },
+      },
+      phase3: {
         player: {
           profile: { name: "Hero" },
           skills: [{ name: "Sword" }, { id: "skill:4", name: "Archery" }],
@@ -38,13 +49,13 @@ describe("outlineMerge", () => {
           inventory: [{ name: "Potion" }],
         },
       },
-      phase3: {
+      phase4: {
         locations: [{ id: "loc:5", name: "Gate" }, { name: "Square" }],
       },
-      phase4: {
+      phase5: {
         factions: [{ name: "Guild" }],
       },
-      phase5: {
+      phase6: {
         playerPerceptions: [{ targetId: "npc:1", attitude: "neutral" }],
         npcs: [
           {
@@ -57,10 +68,8 @@ describe("outlineMerge", () => {
         ],
         placeholders: [{ name: "Mysterious Stranger" }],
       },
-      phase6: {
-        quests: [{ name: "Find Map" }],
-      },
       phase7: {
+        quests: [{ name: "Find Map" }],
         knowledge: [{ title: "Secret Passage" }],
       },
       phase8: {
@@ -72,12 +81,16 @@ describe("outlineMerge", () => {
         },
       },
       phase9: {
-        openingNarrative: "The story begins.",
+        openingNarrative: {
+          narrative: "The story begins.",
+          choices: [{ text: "Look around" }, { text: "Move forward" }],
+        },
       },
     } as any;
 
     const merged = mergeOutlinePhases(partial);
 
+    expect(merged.title).toBe("Demo");
     expect(merged.player.profile.id).toBe("char:player");
     expect(merged.player.profile.kind).toBe("player");
     expect(Array.isArray(merged.player.profile.relations)).toBe(true);
@@ -107,6 +120,6 @@ describe("outlineMerge", () => {
 
     expect(merged.placeholders[0]?.id).toBe("ph:1");
     expect(merged.placeholders[0]?.unlocked).toBe(false);
-    expect(merged.openingNarrative).toBe("The story begins.");
+    expect((merged.openingNarrative as any)?.narrative).toBe("The story begins.");
   });
 });

@@ -488,12 +488,14 @@ export interface GameState {
 
 /** State for resuming outline generation after failure */
 export interface OutlineConversationState {
+  /** Schema version for outline phase contracts. v2 is the reordered 1-9 pipeline. */
+  phaseSchemaVersion?: number;
   theme: string;
   language: string;
   customContext?: string;
   conversationHistory: UnifiedMessage[];
   partial: PartialStoryOutline;
-  currentPhase: number; // 1-9, indicates which phase to resume from
+  currentPhase: number; // 0-9, indicates which phase to resume from
   /** Model ID used for this outline generation (for mismatch detection) */
   modelId?: string;
   /** Provider ID used for this outline generation (for mismatch detection) */

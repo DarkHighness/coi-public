@@ -28,6 +28,28 @@ describe("vfsPolicyEngine", () => {
     expect(decision.code).toBe("OK");
   });
 
+  it("allows AI writes to outline story plan in normal mode", () => {
+    const decision = vfsPolicyEngine.canWrite("outline/story_outline/plan.md", {
+      actor: "ai",
+      mode: "normal",
+    });
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.code).toBe("OK");
+  });
+
+  it("allows writing outline story plan in normal editor flow", () => {
+    const sessionToken = vfsElevationTokenManager.issueEditorSessionToken();
+    const decision = vfsPolicyEngine.canWrite("outline/story_outline/plan.md", {
+      actor: "user_editor",
+      mode: "normal",
+      editorSessionToken: sessionToken,
+    });
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.code).toBe("OK");
+  });
+
   it("requires editor confirmation token for user_editor writes", () => {
     const withoutToken = vfsPolicyEngine.canWrite("world/global.json", {
       actor: "user_editor",

@@ -6,8 +6,6 @@
 
 import type { StoryOutline, PartialStoryOutline } from "../../../../types";
 import type {
-  OutlinePhase0,
-  OutlinePhase1,
   OutlinePhase2,
   OutlinePhase3,
   OutlinePhase4,
@@ -119,7 +117,6 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     throw new Error("Cannot merge incomplete outline phases");
   }
 
-  const p1 = partial.phase1 as OutlinePhase1;
   const p2 = partial.phase2 as OutlinePhase2;
   const p3 = partial.phase3 as OutlinePhase3;
   const p4 = partial.phase4 as OutlinePhase4;
@@ -129,14 +126,14 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p8 = partial.phase8 as OutlinePhase8;
   const p9 = partial.phase9 as OutlinePhase9;
 
-  const preparedPlayer = prepareActorBundle((p2 as any).player as any, {
+  const preparedPlayer = prepareActorBundle((p3 as any).player as any, {
     requiredKind: "player",
     requiredId: "char:player",
     idPrefix: "char:player",
   }) as any;
 
-  const playerPerceptions = Array.isArray((p5 as any).playerPerceptions)
-    ? ((p5 as any).playerPerceptions as any[])
+  const playerPerceptions = Array.isArray((p6 as any).playerPerceptions)
+    ? ((p6 as any).playerPerceptions as any[])
     : [];
 
   if (playerPerceptions.length > 0) {
@@ -150,28 +147,28 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   }
 
   const outline: StoryOutline = {
-    // Phase 1: World Foundation
-    title: p1.title,
-    initialTime: p1.initialTime,
-    premise: p1.premise,
-    narrativeScale: p1.narrativeScale,
-    worldSetting: p1.worldSetting as StoryOutline["worldSetting"],
-    mainGoal: p1.mainGoal as StoryOutline["mainGoal"],
+    // Phase 2: World foundation
+    title: p2.title,
+    initialTime: p2.initialTime,
+    premise: p2.premise,
+    narrativeScale: p2.narrativeScale,
+    worldSetting: p2.worldSetting as StoryOutline["worldSetting"],
+    mainGoal: p2.mainGoal as StoryOutline["mainGoal"],
 
-    // Phase 2: Player actor bundle
+    // Phase 3: Player actor bundle
     player: preparedPlayer as any,
 
-    // Phase 3-8: Entities
+    // Phase 4-8: Entities
     locations: prepareEntities(
-      p3.locations as StoryOutline["locations"],
+      p4.locations as StoryOutline["locations"],
       "loc",
     ) as StoryOutline["locations"],
     factions: prepareEntities(
-      p4.factions as StoryOutline["factions"],
+      p5.factions as StoryOutline["factions"],
       "fac",
     ) as StoryOutline["factions"],
     quests: prepareEntities(
-      (p6 as any).quests as StoryOutline["quests"],
+      (p7 as any).quests as StoryOutline["quests"],
       "quest",
     ) as StoryOutline["quests"],
     knowledge: prepareEntities(
@@ -185,9 +182,9 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     initialAtmosphere:
       (p8 as any).initialAtmosphere as StoryOutline["initialAtmosphere"],
 
-    // Phase 5: NPCs + placeholders
-    npcs: Array.isArray((p5 as any).npcs)
-      ? ((p5 as any).npcs as any[]).map((bundle, idx) =>
+    // Phase 6: NPCs + placeholders
+    npcs: Array.isArray((p6 as any).npcs)
+      ? ((p6 as any).npcs as any[]).map((bundle, idx) =>
           prepareActorBundle(bundle as any, {
             requiredKind: "npc",
             requiredId:
@@ -198,8 +195,8 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
           }),
         )
       : ([] as any),
-    placeholders: Array.isArray((p5 as any).placeholders)
-      ? ((p5 as any).placeholders as any[]).map((ph, idx) => ({
+    placeholders: Array.isArray((p6 as any).placeholders)
+      ? ((p6 as any).placeholders as any[]).map((ph, idx) => ({
           ...ph,
           id:
             typeof ph?.id === "string" && ph.id.trim()

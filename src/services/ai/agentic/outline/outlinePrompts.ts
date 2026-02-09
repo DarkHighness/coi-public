@@ -7,11 +7,11 @@
 import {
   getOutlinePhase0Prompt,
   getOutlinePhase1Prompt,
+  getOutlinePhase2WorldFoundationPrompt,
   getOutlinePhase2Prompt,
   getOutlinePhase3Prompt,
   getOutlinePhase4Prompt,
   getOutlinePhase5Prompt,
-  getOutlinePhase6Prompt,
   getOutlinePhase7Prompt,
   getOutlinePhase8Prompt,
   getOutlinePhase9Prompt,
@@ -42,15 +42,22 @@ export function getPhasePrompt(
         submitToolName,
       );
     case 2:
-      return getOutlinePhase2Prompt(protagonistFeature, submitToolName);
+      return getOutlinePhase2WorldFoundationPrompt(
+        theme,
+        language,
+        customContext,
+        hasImageContext,
+        protagonistFeature,
+        submitToolName,
+      );
     case 3:
-      return getOutlinePhase3Prompt(submitToolName);
+      return getOutlinePhase2Prompt(protagonistFeature, submitToolName);
     case 4:
-      return getOutlinePhase4Prompt(submitToolName);
+      return getOutlinePhase3Prompt(submitToolName);
     case 5:
-      return getOutlinePhase5Prompt(submitToolName);
+      return getOutlinePhase4Prompt(submitToolName);
     case 6:
-      return getOutlinePhase6Prompt(submitToolName);
+      return getOutlinePhase5Prompt(submitToolName);
     case 7:
       return getOutlinePhase7Prompt(submitToolName);
     case 8:

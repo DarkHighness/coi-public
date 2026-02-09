@@ -74,6 +74,12 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("skills/**");
     expect(content).toContain("refs/**");
 
+    // Outline adaptation protocol must be present in runtime prompts
+    expect(content).toContain("current/outline/story_outline/plan.md");
+    expect(content).toContain("plan.md is guidance");
+    expect(content).toContain("Natural recovery");
+    expect(content).toContain("No deus-ex-machina corrections");
+
     // SUDO semantics must remain controlled (not hard bypass)
     expect(content).toContain("elevated update");
     expect(content).toContain("immutable/finish guards");

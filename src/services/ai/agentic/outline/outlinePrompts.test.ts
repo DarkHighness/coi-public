@@ -4,11 +4,11 @@ import { getPhasePrompt } from "./outlinePrompts";
 const promptsMock = vi.hoisted(() => ({
   getOutlinePhase0Prompt: vi.fn(),
   getOutlinePhase1Prompt: vi.fn(),
+  getOutlinePhase2WorldFoundationPrompt: vi.fn(),
   getOutlinePhase2Prompt: vi.fn(),
   getOutlinePhase3Prompt: vi.fn(),
   getOutlinePhase4Prompt: vi.fn(),
   getOutlinePhase5Prompt: vi.fn(),
-  getOutlinePhase6Prompt: vi.fn(),
   getOutlinePhase7Prompt: vi.fn(),
   getOutlinePhase8Prompt: vi.fn(),
   getOutlinePhase9Prompt: vi.fn(),
@@ -17,11 +17,12 @@ const promptsMock = vi.hoisted(() => ({
 vi.mock("../../../prompts/index", () => ({
   getOutlinePhase0Prompt: promptsMock.getOutlinePhase0Prompt,
   getOutlinePhase1Prompt: promptsMock.getOutlinePhase1Prompt,
+  getOutlinePhase2WorldFoundationPrompt:
+    promptsMock.getOutlinePhase2WorldFoundationPrompt,
   getOutlinePhase2Prompt: promptsMock.getOutlinePhase2Prompt,
   getOutlinePhase3Prompt: promptsMock.getOutlinePhase3Prompt,
   getOutlinePhase4Prompt: promptsMock.getOutlinePhase4Prompt,
   getOutlinePhase5Prompt: promptsMock.getOutlinePhase5Prompt,
-  getOutlinePhase6Prompt: promptsMock.getOutlinePhase6Prompt,
   getOutlinePhase7Prompt: promptsMock.getOutlinePhase7Prompt,
   getOutlinePhase8Prompt: promptsMock.getOutlinePhase8Prompt,
   getOutlinePhase9Prompt: promptsMock.getOutlinePhase9Prompt,
@@ -32,11 +33,11 @@ describe("outlinePrompts", () => {
     vi.clearAllMocks();
     promptsMock.getOutlinePhase0Prompt.mockReturnValue("p0");
     promptsMock.getOutlinePhase1Prompt.mockReturnValue("p1");
-    promptsMock.getOutlinePhase2Prompt.mockReturnValue("p2");
-    promptsMock.getOutlinePhase3Prompt.mockReturnValue("p3");
-    promptsMock.getOutlinePhase4Prompt.mockReturnValue("p4");
-    promptsMock.getOutlinePhase5Prompt.mockReturnValue("p5");
-    promptsMock.getOutlinePhase6Prompt.mockReturnValue("p6");
+    promptsMock.getOutlinePhase2WorldFoundationPrompt.mockReturnValue("p2");
+    promptsMock.getOutlinePhase2Prompt.mockReturnValue("p3");
+    promptsMock.getOutlinePhase3Prompt.mockReturnValue("p4");
+    promptsMock.getOutlinePhase4Prompt.mockReturnValue("p5");
+    promptsMock.getOutlinePhase5Prompt.mockReturnValue("p6");
     promptsMock.getOutlinePhase7Prompt.mockReturnValue("p7");
     promptsMock.getOutlinePhase8Prompt.mockReturnValue("p8");
     promptsMock.getOutlinePhase9Prompt.mockReturnValue("p9");
@@ -75,26 +76,43 @@ describe("outlinePrompts", () => {
         "th",
         "en",
         "vfs_submit_outline_phase_2",
-        undefined,
+        "ctx2",
         false,
         "hero",
       ),
     ).toBe("p2");
-    expect(promptsMock.getOutlinePhase2Prompt).toHaveBeenCalledWith(
+    expect(promptsMock.getOutlinePhase2WorldFoundationPrompt).toHaveBeenCalledWith(
+      "th",
+      "en",
+      "ctx2",
+      false,
       "hero",
       "vfs_submit_outline_phase_2",
     );
 
-    expect(getPhasePrompt(3, "th", "en", "vfs_submit_outline_phase_3")).toBe(
-      "p3",
-    );
-    expect(promptsMock.getOutlinePhase3Prompt).toHaveBeenCalledWith(
+    expect(
+      getPhasePrompt(
+        3,
+        "th",
+        "en",
+        "vfs_submit_outline_phase_3",
+        undefined,
+        false,
+        "hero",
+      ),
+    ).toBe("p3");
+    expect(promptsMock.getOutlinePhase2Prompt).toHaveBeenCalledWith(
+      "hero",
       "vfs_submit_outline_phase_3",
     );
 
     expect(getPhasePrompt(4, "th", "en", "vfs_submit_outline_phase_4")).toBe(
       "p4",
     );
+    expect(promptsMock.getOutlinePhase3Prompt).toHaveBeenCalledWith(
+      "vfs_submit_outline_phase_4",
+    );
+
     expect(getPhasePrompt(5, "th", "en", "vfs_submit_outline_phase_5")).toBe(
       "p5",
     );

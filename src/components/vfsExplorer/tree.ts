@@ -39,6 +39,7 @@ const DEFAULT_DIRECTORY_PATHS = [
   "conversation",
   "conversation/turns",
   "outline",
+  "outline/story_outline",
   "summary",
   "refs",
   "skills",

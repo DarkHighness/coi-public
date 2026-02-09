@@ -86,12 +86,12 @@ const minimalEntity = `
 
     - **Canonization**: If an existing entity is "close enough" (80% match), USE IT. Update it to fit your needs. Do NOT create a new one.
     - **One Object, One ID**: A "Rusty Sword" polished by a blacksmith is still \`inv_rusty_sword\` (just updated name/desc), NOT a new \`inv_polished_sword\`.
-    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Read it first via \`vfs_read\` (\`current/outline/outline.json\`) and check existing files under \`current/world/\`.
+    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Read both \`current/outline/outline.json\` and \`current/outline/story_outline/plan.md\` via \`vfs_read\`, then check existing files under \`current/world/\`.
 
     **MANDATORY "INVESTIGATIVE SEARCH" WORKFLOW**:
     1. **STRICT CHECK-FIRST**: Never assume a clean state. Always assume entities might already exist.
     2. **BROWSE (Directory Scan)**: Use \`vfs_ls\` on \`current/world/<type>/\` to see the full landscape.
-    3. **SEARCH (Text Scan)**: Use \`vfs_search\` or \`vfs_grep\` on \`current/world/<type>/\` and \`current/outline/outline.json\`.
+    3. **SEARCH (Text Scan)**: Use \`vfs_search\` or \`vfs_grep\` on \`current/world/<type>/\`, \`current/outline/outline.json\`, and \`current/outline/story_outline/plan.md\`.
     4. **READ (Deep Details)**: Use \`vfs_read\` on candidate files to confirm identity and details.
     5. **EVALUATE**:
        - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and update the file via \`vfs_edit\` or \`vfs_write\`.

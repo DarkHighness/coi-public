@@ -2096,6 +2096,89 @@ describe("VFS handlers", () => {
     expect(saved?.contentType).toBe("application/json");
   });
 
+  it("submits outline phase 1 and writes both phase json and plan markdown", () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
+    };
+
+    const result = dispatchToolCall(
+      "vfs_submit_outline_phase_1",
+      {
+        data: {
+          storyPlanMarkdown: "# Story Plan\n\n## Arc Roadmap\n- Beat A",
+          planningMetadata: {
+            structureVersion: "v2",
+            branchStrategy: "adaptive",
+            endingFlexibility: "high",
+            recoveryPolicy: {
+              allowNaturalRecovery: true,
+              allowOutlineRevision: true,
+              forbidDeusExMachina: true,
+            },
+          },
+        },
+      },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: { phase?: number; path?: string; planPath?: string };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.phase).toBe(1);
+    expect(result.data?.path).toBe("current/outline/phases/phase1.json");
+    expect(result.data?.planPath).toBe("current/outline/story_outline/plan.md");
+
+    const savedJson = session.readFile("outline/phases/phase1.json");
+    expect(savedJson).not.toBeNull();
+    expect(savedJson?.contentType).toBe("application/json");
+
+    const savedPlan = session.readFile("outline/story_outline/plan.md");
+    expect(savedPlan).not.toBeNull();
+    expect(savedPlan?.contentType).toBe("text/markdown");
+    expect(savedPlan?.content).toContain("# Story Plan");
+  });
+
+  it("validates reordered phase 6 and 7 payload contracts", () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      vfsMode: "sudo" as const,
+      vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
+    };
+
+    const phase6Invalid = dispatchToolCall(
+      "vfs_submit_outline_phase_6",
+      {
+        data: {
+          quests: [],
+        },
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(phase6Invalid.success).toBe(false);
+    expect(phase6Invalid.code).toBe("INVALID_DATA");
+    expect(phase6Invalid.error ?? "").toContain("data.npcs");
+
+    const phase7Invalid = dispatchToolCall(
+      "vfs_submit_outline_phase_7",
+      {
+        data: {
+          knowledge: [],
+        },
+      },
+      ctx,
+    ) as { success: boolean; code?: string; error?: string };
+
+    expect(phase7Invalid.success).toBe(false);
+    expect(phase7Invalid.code).toBe("INVALID_DATA");
+    expect(phase7Invalid.error ?? "").toContain("data.quests");
+  });
+
   it("returns path-level validation errors for outline submit tool", () => {
     const session = new VfsSession();
     const ctx = {

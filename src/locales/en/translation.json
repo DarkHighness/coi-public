@@ -110,127 +110,116 @@
       "phase": {
         "0": {
           "name": "Interpreting Image",
-          "desc": "Analyzing the uploaded image to inspire the story world"
+          "desc": "Analyzing the uploaded image to derive world seeds"
         },
         "1": {
-          "name": "Creating World",
-          "desc": "Establishing world foundation and setting"
+          "name": "Master Story Plan",
+          "desc": "Creating the full campaign-scale story plan in Markdown"
         },
         "2": {
-          "name": "Creating Character",
-          "desc": "Designing protagonist and backstory"
+          "name": "World Foundation",
+          "desc": "Defining title, premise, timeline anchor, and core goal"
         },
         "3": {
-          "name": "Building Locations",
-          "desc": "Creating locations"
+          "name": "Player Actor",
+          "desc": "Building the protagonist actor bundle"
         },
         "4": {
-          "name": "Establishing Factions",
-          "desc": "Setting up major power groups"
+          "name": "Locations",
+          "desc": "Building initial location network and constraints"
         },
         "5": {
-          "name": "Weaving Relationships",
-          "desc": "Creating initial NPCs"
+          "name": "Factions",
+          "desc": "Defining faction structures and agendas"
         },
         "6": {
-          "name": "Gathering Inventory",
-          "desc": "Preparing starting items"
+          "name": "NPCs & Relationships",
+          "desc": "Creating key NPC bundles and relation tension"
         },
         "7": {
-          "name": "Designing Quests",
-          "desc": "Generating initial objectives"
+          "name": "Quests & Knowledge",
+          "desc": "Generating initial quests and knowledge graph together"
         },
         "8": {
-          "name": "Compiling Knowledge",
-          "desc": "Gathering world lore"
+          "name": "Timeline & Atmosphere",
+          "desc": "Setting historical anchors, pressure, and mood"
         },
         "9": {
-          "name": "Finalizing Atmosphere",
-          "desc": "Setting timeline and mood"
-        },
-        "10": {
-          "name": "Opening Scene",
-          "desc": "Generating the opening narrative"
+          "name": "Opening Narrative",
+          "desc": "Generating opening scene and first choices"
         }
       }
     },
     "phaseDescriptions": {
       "0": [
-        "Peering into the image's depths...",
-        "Extracting colors and atmosphere...",
-        "Translating visual elements into narrative...",
-        "Discovering the world hidden in pixels...",
-        "Letting the image speak its story..."
+        "Reading visual clues from the seed image...",
+        "Extracting atmosphere, motifs, and world texture...",
+        "Translating composition into narrative signals...",
+        "Converting imagery into playable story seeds...",
+        "Preparing image-based continuity anchors..."
       ],
       "1": [
-        "Weaving the fabric of reality...",
-        "Establishing the laws of magic and nature...",
-        "Shaping mountains, rivers, and forgotten ruins...",
-        "Breathing life into ancient legends...",
-        "Defining the boundaries between light and shadow..."
+        "Drafting the master story plan...",
+        "Designing branch corridors and ending lanes...",
+        "Setting continuity anchors for long-form play...",
+        "Balancing structure with player freedom...",
+        "Building the campaign-level plot backbone..."
       ],
       "2": [
-        "Sculpting the hero's destiny...",
-        "Inscribing hidden traits and secret powers...",
-        "Forging bonds of fate and fortune...",
-        "Awakening dormant memories...",
-        "Setting the stage for legendary deeds..."
+        "Locking in world foundation and premise...",
+        "Defining timeline start and core objective...",
+        "Aligning baseline truth with the story plan...",
+        "Establishing the world’s hidden fault lines...",
+        "Turning concept into playable world rules..."
       ],
       "3": [
-        "Populating realms with wonders and dangers...",
-        "Establishing factions vying for power...",
-        "Creating sanctuaries and forbidden zones...",
-        "Mapping the paths between worlds...",
-        "Hiding treasures in forgotten corners..."
+        "Shaping the player actor bundle...",
+        "Finalizing profile, skills, and initial state...",
+        "Grounding identity in world constraints...",
+        "Preparing first-turn playable agency...",
+        "Linking character setup to long-term arcs..."
       ],
       "4": [
-        "Weaving the web of alliances and enmities...",
-        "Distributing artifacts of power...",
-        "Establishing the hierarchy of realms...",
-        "Creating bonds that transcend time...",
-        "Planting seeds of future conflicts..."
+        "Building the location network...",
+        "Placing traversal routes and constraints...",
+        "Seeding visible and hidden spatial truths...",
+        "Defining where conflicts can unfold...",
+        "Connecting geography to mission flow..."
       ],
       "5": [
-        "Inscribing quests in the book of fate...",
-        "Revealing fragments of ancient prophecy...",
-        "Setting the cosmic clock in motion...",
-        "Preparing trials for the worthy...",
-        "The chronicles await your arrival..."
+        "Establishing factions and power structures...",
+        "Mapping public goals and hidden agendas...",
+        "Planting future alliance and conflict pressure...",
+        "Balancing institutions against player intent...",
+        "Linking faction motives to world stakes..."
       ],
       "6": [
-        "Gathering starting equipment...",
-        "Forging unique items...",
-        "Discovering ancient artifacts...",
-        "Packing essential supplies...",
-        "Unlocking hidden potential..."
+        "Introducing key NPCs and tensions...",
+        "Binding relational signals and hidden affinity...",
+        "Preparing social friction for branching play...",
+        "Encoding trust, suspicion, and leverage...",
+        "Grounding personalities in systemic pressure..."
       ],
       "7": [
-        "Outlining the hero's journey...",
-        "Setting initial challenges...",
-        "Defining the path ahead...",
-        "Creating opportunities for adventure...",
-        "Establishing the call to action..."
+        "Composing quests and knowledge graph...",
+        "Pairing objectives with reveal ladders...",
+        "Aligning missions with plan branch corridors...",
+        "Setting discovery paths and uncertainty...",
+        "Preparing actionable hooks for early turns..."
       ],
       "8": [
-        "Compiling world lore...",
-        "Recording ancient history...",
-        "Gathering rumors and legends...",
-        "Defining common knowledge...",
-        "Uncovering forgotten truths..."
+        "Assembling timeline and atmosphere baseline...",
+        "Pinning historical anchors and urgency pressure...",
+        "Defining sensory tone for scene continuity...",
+        "Linking past events to present momentum...",
+        "Preparing emotional cadence for opening..."
       ],
       "9": [
-        "Setting the mood and tone...",
-        "Establishing the timeline...",
-        "Creating the atmosphere...",
-        "Finalizing the world state...",
-        "Preparing for the adventure..."
-      ],
-      "10": [
-        "Crafting the opening...",
-        "Setting the initial scene...",
-        "Awakening the protagonist...",
-        "The wheels of fate begin to turn...",
-        "Your story is about to begin..."
+        "Writing the opening narrative scene...",
+        "Presenting meaningful first-turn choices...",
+        "Aligning launch tone with world and plan...",
+        "Ensuring immediate agency and momentum...",
+        "Preparing the player to shape the story..."
       ]
     },
     "errors": {
@@ -1700,13 +1689,13 @@
       "summary-complete": "Summary - Complete",
       "summary-error": "Summary - Error",
       "outline-phase0": "Outline - Image Based",
-      "outline-phase1": "Outline - World Foundation",
-      "outline-phase2": "Outline - Player Actor",
-      "outline-phase3": "Outline - Locations",
-      "outline-phase4": "Outline - Factions",
-      "outline-phase5": "Outline - NPCs & Relationships",
-      "outline-phase6": "Outline - Quests",
-      "outline-phase7": "Outline - Knowledge",
+      "outline-phase1": "Outline - Master Story Plan",
+      "outline-phase2": "Outline - World Foundation",
+      "outline-phase3": "Outline - Player Actor",
+      "outline-phase4": "Outline - Locations",
+      "outline-phase5": "Outline - Factions",
+      "outline-phase6": "Outline - NPCs & Relationships",
+      "outline-phase7": "Outline - Quests & Knowledge",
       "outline-phase8": "Outline - Timeline & Atmosphere",
       "outline-phase9": "Outline - Opening Narrative"
     },

@@ -1832,10 +1832,49 @@ export const outlinePhase0Schema = z.object({
 });
 
 /**
- * Phase 1: 世界基础设定
- * 包含故事的基本框架：标题、前提、世界观、时间、主要目标
+ * Phase 1: 故事总纲（可演进）
+ * 生成完整剧情大纲 markdown（指导性，不是硬约束）
  */
 export const outlinePhase1Schema = z.object({
+  storyPlanMarkdown: z
+    .string()
+    .describe(
+      "A complete, detailed Markdown story plan (plan.md style) that preserves long-range continuity while allowing player-driven divergence.",
+    ),
+  planningMetadata: z
+    .object({
+      structureVersion: z
+        .literal("v2")
+        .describe("Story plan structure version."),
+      branchStrategy: z
+        .enum(["guided", "adaptive", "player-led"])
+        .describe("Branch handling strategy when player choices diverge."),
+      endingFlexibility: z
+        .enum(["low", "medium", "high"])
+        .describe("How far the ending may shift based on player behavior."),
+      recoveryPolicy: z
+        .object({
+          allowNaturalRecovery: z
+            .boolean()
+            .describe("Allow non-forced narrative recovery back to existing arcs."),
+          allowOutlineRevision: z
+            .boolean()
+            .describe("Allow revising plan.md when player intent changes trajectory."),
+          forbidDeusExMachina: z
+            .boolean()
+            .describe("Forbid deus-ex-machina corrections.")
+            .default(true),
+        })
+        .describe("Core policy for handling outline divergence in runtime."),
+    })
+    .describe("Machine-readable governance metadata for the story plan."),
+});
+
+/**
+ * Phase 2: 世界基础设定
+ * 包含故事的基本框架：标题、前提、世界观、时间、主要目标
+ */
+export const outlinePhase2Schema = z.object({
   title: z.string().describe("A creative title for the adventure."),
   initialTime: z
     .string()
@@ -1857,20 +1896,20 @@ export const outlinePhase1Schema = z.object({
 });
 
 /**
- * Phase 2: 主角角色
+ * Phase 3: 主角角色
  * 完整的角色信息
  */
-export const outlinePhase2Schema = z.object({
+export const outlinePhase3Schema = z.object({
   player: strictPlayerBundleSchema.describe(
     "The player actor bundle (profile + skills/conditions/traits + inventory). Player id MUST be 'char:player'.",
   ),
 });
 
 /**
- * Phase 3: 地点
+ * Phase 4: 地点
  * 初始地点
  */
-export const outlinePhase3Schema = z.object({
+export const outlinePhase4Schema = z.object({
   locations: z
     .array(locationSchema)
     .describe(
@@ -1879,10 +1918,10 @@ export const outlinePhase3Schema = z.object({
 });
 
 /**
- * Phase 4: 阵营
+ * Phase 5: 阵营
  * 主要势力
  */
-export const outlinePhase4Schema = z.object({
+export const outlinePhase5Schema = z.object({
   factions: z
     .array(factionSchema)
     .describe(
@@ -1891,10 +1930,10 @@ export const outlinePhase4Schema = z.object({
 });
 
 /**
- * Phase 5: 关系 (NPC)
+ * Phase 6: 关系 (NPC)
  * NPC关系
  */
-export const outlinePhase5Schema = z.object({
+export const outlinePhase6Schema = z.object({
   npcs: z
     .array(actorBundleSchema)
     .describe(
@@ -1915,22 +1954,15 @@ export const outlinePhase5Schema = z.object({
 });
 
 /**
- * Phase 6: 任务
- * 初始任务
+ * Phase 7: 任务 + 知识
+ * 聚合任务图与初始知识图
  */
-export const outlinePhase6Schema = z.object({
+export const outlinePhase7Schema = z.object({
   quests: z
     .array(questSchema)
     .describe(
       "1-2 initial quests (at least one main quest). Include visible and hidden objectives.",
     ),
-});
-
-/**
- * Phase 7: 知识
- * 世界知识
- */
-export const outlinePhase7Schema = z.object({
   knowledge: z
     .array(knowledgeEntrySchema)
     .describe(

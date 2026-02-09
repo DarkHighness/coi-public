@@ -29,6 +29,23 @@ describe("pathResolver", () => {
     expect(resolved.displayPath).toBe("current/outline/outline.json");
   });
 
+  it("maps outline story plan alias and canonical paths", () => {
+    const alias = resolveVfsPath("current/outline/story_outline/plan.md", {
+      activeForkId: 0,
+    });
+
+    expect(alias.canonicalPath).toBe(
+      "shared/narrative/outline/story_outline/plan.md",
+    );
+    expect(alias.logicalPath).toBe("outline/story_outline/plan.md");
+
+    const canonical = resolveVfsPath(
+      "shared/narrative/outline/story_outline/plan.md",
+      { activeForkId: 0 },
+    );
+    expect(canonical.displayPath).toBe("current/outline/story_outline/plan.md");
+  });
+
   it("maps legacy logical paths into canonical paths", () => {
     expect(toCanonicalVfsPath("world/theme_config.json", { activeForkId: 1 })).toBe(
       "shared/config/theme/theme_config.json",

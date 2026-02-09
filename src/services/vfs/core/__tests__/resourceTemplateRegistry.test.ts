@@ -25,7 +25,7 @@ describe("vfsResourceTemplateRegistry", () => {
     expect(summary.allowedWriteOps).toEqual(["finish_summary"]);
   });
 
-  it("matches elevated templates for outline and history rewrites", () => {
+  it("matches elevated templates for outline phases and history rewrites", () => {
     const outline = vfsResourceTemplateRegistry.match("shared/narrative/outline/phases/phase0.json");
     expect(outline.permissionClass).toBe("elevated_editable");
     expect(outline.criticality).toBe("core");
@@ -36,6 +36,17 @@ describe("vfsResourceTemplateRegistry", () => {
     expect(rewrite.permissionClass).toBe("elevated_editable");
     expect(rewrite.domain).toBe("ops");
     expect(rewrite.retention).toBe("archival");
+  });
+
+  it("matches editable outline story plan template", () => {
+    const plan = vfsResourceTemplateRegistry.match(
+      "shared/narrative/outline/story_outline/plan.md",
+    );
+
+    expect(plan.id).toBe("template.narrative.outline.story_plan");
+    expect(plan.permissionClass).toBe("default_editable");
+    expect(plan.shape).toBe("markdown_doc");
+    expect(plan.allowedWriteOps).toContain("write");
   });
 
   it("falls back to fork runtime template for unmatched paths", () => {

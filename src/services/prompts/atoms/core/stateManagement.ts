@@ -116,9 +116,15 @@ export const stateManagement: Atom<void> = () => `
       * Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
 
     - **VFS OUTLINE RULES (MANDATORY)**:
-      * The outline is immutable once generated. Do NOT edit it by default.
-      * You may edit the outline ONLY in sudo or god mode AND only when the user explicitly asks you to.
-      * If you edit the outline, write to \`shared/narrative/outline/outline.json\` (alias: \`current/outline/outline.json\`) and reconcile related world files.
+      * Treat outline artifacts as two layers:
+        - **World baseline**: \`current/outline/outline.json\` (structured canonical setup)
+        - **Story plan guidance**: \`current/outline/story_outline/plan.md\` (evolving narrative guidance)
+      * **plan.md is guidance, not a hard rail**. Player experience comes first.
+      * When player behavior diverges from plan.md, choose one path:
+        1) **Natural recovery** to existing arcs (no forced miracles), OR
+        2) **Revise \`plan.md\`** to reflect the player's chosen trajectory.
+      * **No deus-ex-machina corrections**. Never force impossible coincidences just to restore a preset path.
+      * Keep causality coherent when revising plan.md and keep \`outline.json\` as stable world baseline unless world facts truly change.
       * During outline generation, save progress to \`shared/narrative/outline/progress.json\` (alias: \`current/outline/progress.json\`).
 
     - **WORLD INDIFFERENCE (MECHANICAL - NOT NPC BEHAVIOR)**:

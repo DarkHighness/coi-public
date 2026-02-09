@@ -36,6 +36,7 @@ import {
 } from "../toolResult";
 import type { VfsFileMap } from "../../vfs/types";
 import { stripCurrentPath, toCurrentPath } from "../../vfs/currentAlias";
+import { writeOutlineStoryPlan } from "../../vfs/outline";
 import { normalizeVfsPath } from "../../vfs/utils";
 import { VfsSession, VfsWriteAccessError } from "../../vfs/vfsSession";
 import { getSchemaForPath } from "../../vfs/schemas";
@@ -1400,8 +1401,19 @@ for (const { tool, phase, schema } of OUTLINE_SUBMIT_DEFS) {
         const path = `outline/phases/phase${phase}.json`;
         draft.writeFile(path, JSON.stringify(parsedData.data), "application/json");
 
+        let planPath: string | undefined;
+        if (phase === 1) {
+          const storyPlanMarkdown = (parsedData.data as any)?.storyPlanMarkdown;
+          if (typeof storyPlanMarkdown === "string") {
+            writeOutlineStoryPlan(draft, storyPlanMarkdown);
+            planPath = toCurrentPath("outline/story_outline/plan.md");
+          }
+        }
+
         return createSuccess(
-          { phase, path: toCurrentPath(path) },
+          planPath
+            ? { phase, path: toCurrentPath(path), planPath }
+            : { phase, path: toCurrentPath(path) },
           `Outline phase ${phase} submitted`,
         );
       },

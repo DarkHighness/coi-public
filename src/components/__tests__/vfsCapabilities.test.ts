@@ -42,6 +42,18 @@ describe("vfs capabilities", () => {
     expect(capabilities.deleteReason).toContain("Scaffold");
   });
 
+
+  it("marks outline story plan as editable", () => {
+    const capabilities = getFilePathCapabilities(
+      "outline/story_outline/plan.md",
+      createContext(),
+    );
+
+    expect(capabilities.canEdit).toBe(true);
+    expect(capabilities.canRenameMove).toBe(true);
+    expect(capabilities.canDelete).toBe(true);
+  });
+
   it("allows non-scaffold folder operations even with README marker", () => {
     const session = new VfsSession();
     session.writeFile(

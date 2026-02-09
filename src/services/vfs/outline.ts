@@ -11,6 +11,7 @@ interface OutlineProgressFile {
 
 const OUTLINE_PATH = "current/outline/outline.json";
 const OUTLINE_PROGRESS_PATH = "current/outline/progress.json";
+const OUTLINE_STORY_PLAN_PATH = "current/outline/story_outline/plan.md";
 
 const resolveRelativePath = (path: string): string =>
   normalizeVfsPath(stripCurrentPath(path));
@@ -58,6 +59,32 @@ export const writeOutlineFile = (
 
 export const readOutlineFile = (files: VfsFileMap): StoryOutline | null =>
   parseJson<StoryOutline>(files, OUTLINE_PATH);
+
+export const writeOutlineStoryPlan = (
+  session: VfsSession,
+  storyPlanMarkdown: string,
+): void => {
+  session.writeFile(
+    resolveRelativePath(OUTLINE_STORY_PLAN_PATH),
+    storyPlanMarkdown,
+    "text/markdown",
+  );
+};
+
+export const readOutlineStoryPlan = (files: VfsFileMap): string | null => {
+  const file = findFile(files, OUTLINE_STORY_PLAN_PATH);
+  if (!file) return null;
+  return file.content;
+};
+
+export const shouldRestartOutlineFromPhase1 = (
+  conversation: OutlineConversationState | null | undefined,
+  expectedSchemaVersion: number,
+): boolean =>
+  Boolean(
+    conversation &&
+      Number(conversation.phaseSchemaVersion ?? -1) !== expectedSchemaVersion,
+  );
 
 export const writeOutlineProgress = (
   session: VfsSession,

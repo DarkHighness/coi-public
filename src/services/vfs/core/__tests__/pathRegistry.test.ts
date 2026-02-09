@@ -15,6 +15,15 @@ describe("vfsPathRegistry", () => {
     expect(result.retention).toBe("save");
   });
 
+  it("classifies outline story plan as editable shared markdown", () => {
+    const result = vfsPathRegistry.classify("current/outline/story_outline/plan.md");
+
+    expect(result.canonicalPath).toBe("shared/narrative/outline/story_outline/plan.md");
+    expect(result.scope).toBe("shared");
+    expect(result.permissionClass).toBe("default_editable");
+    expect(result.domain).toBe("narrative");
+  });
+
   it("classifies immutable and finish-guarded zones", () => {
     const immutable = vfsPathRegistry.classify("current/skills/index.json");
     expect(immutable.permissionClass).toBe("immutable_readonly");

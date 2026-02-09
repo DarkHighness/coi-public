@@ -15,7 +15,10 @@ import {
   SavePresetProfile,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
-import { writeOutlineProgress } from "../../../vfs/outline";
+import {
+  shouldRestartOutlineFromPhase1,
+  writeOutlineProgress,
+} from "../../../vfs/outline";
 
 import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import {
@@ -111,6 +114,8 @@ const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase8Schema,
   outlinePhase9Schema,
 ] as const;
+
+const OUTLINE_PHASE_SCHEMA_VERSION = 2;
 
 // ============================================================================
 // Phased Story Outline Generation
@@ -269,22 +274,22 @@ const buildOutlineResumeAnchor = (
   const safeCurrentPhase = Math.max(0, Math.min(9, Math.floor(currentPhase)));
   const currentSubmitTool = `vfs_submit_outline_phase_${safeCurrentPhase}`;
 
-  const completedPhaseNumbers = Array.from({ length: 10 }, (_, idx) => idx).filter(
-    (phaseNum) =>
-      phaseNum < safeCurrentPhase &&
-      (partial as any)?.[`phase${phaseNum}`] !== undefined,
-  );
+  const phaseStart =
+    safeCurrentPhase === 0 || (partial as any)?.phase0 !== undefined ? 0 : 1;
+
+  const completedPhaseNumbers = Array.from(
+    { length: Math.max(0, safeCurrentPhase - phaseStart) },
+    (_, idx) => phaseStart + idx,
+  ).filter((phaseNum) => (partial as any)?.[`phase${phaseNum}`] !== undefined);
 
   const missingCompletedPhases = Array.from(
-    { length: safeCurrentPhase },
-    (_, idx) => idx,
-  ).filter(
-    (phaseNum) => (partial as any)?.[`phase${phaseNum}`] === undefined,
-  );
+    { length: Math.max(0, safeCurrentPhase - phaseStart) },
+    (_, idx) => phaseStart + idx,
+  ).filter((phaseNum) => (partial as any)?.[`phase${phaseNum}`] === undefined);
 
   const remainingPhases = Array.from(
-    { length: Math.max(0, 10 - safeCurrentPhase) },
-    (_, idx) => safeCurrentPhase + idx,
+    { length: Math.max(0, 10 - Math.max(safeCurrentPhase, phaseStart)) },
+    (_, idx) => Math.max(safeCurrentPhase, phaseStart) + idx,
   );
 
   const completedPhasePreview = completedPhaseNumbers
@@ -520,12 +525,28 @@ export const generateStoryOutlinePhased = async (
   const { instance, modelId } = providerInfo;
   const logs: LogEntry[] = [];
 
+  const requestedResume = options.resumeFrom;
+  const shouldRestartFromPhase1 = shouldRestartOutlineFromPhase1(
+    requestedResume,
+    OUTLINE_PHASE_SCHEMA_VERSION,
+  );
+  if (shouldRestartFromPhase1) {
+    console.warn(
+      `[OutlineAgentic] Resume checkpoint schema mismatch (got v${String(
+        requestedResume?.phaseSchemaVersion ?? "unknown",
+      )}, expected v${OUTLINE_PHASE_SCHEMA_VERSION}). Restarting from Phase 1.`,
+    );
+  }
+
+  const resumeFrom = shouldRestartFromPhase1 ? undefined : requestedResume;
+
   // Image-based flow can be:
   // - brand new start with seedImageBase64 (Phase 0)
   // - resume from a checkpoint that already contains Phase 0 or is currently at Phase 0
   const isImageBasedFlow = (() => {
-    if (options?.seedImageBase64 && !theme) return true;
-    const resume = options?.resumeFrom;
+    if (shouldRestartFromPhase1) return false;
+    if (options.seedImageBase64 && !theme) return true;
+    const resume = resumeFrom;
     if (!resume) return false;
     if (theme === IMAGE_BASED_THEME) return true;
     if (theme) return false;
@@ -674,12 +695,12 @@ export const generateStoryOutlinePhased = async (
   let currentPhase: number;
   let liveToolCalls: ToolCallRecord[] = [];
 
-  if (options.resumeFrom) {
+  if (resumeFrom) {
     // Resume from checkpoint
-    conversationHistory = [...options.resumeFrom.conversationHistory];
-    partial = { ...options.resumeFrom.partial };
-    currentPhase = options.resumeFrom.currentPhase;
-    liveToolCalls = [...(options.resumeFrom.liveToolCalls || [])];
+    conversationHistory = [...resumeFrom.conversationHistory];
+    partial = { ...resumeFrom.partial };
+    currentPhase = resumeFrom.currentPhase;
+    liveToolCalls = [...(resumeFrom.liveToolCalls || [])];
     console.log(`[OutlineAgentic] Resuming from phase ${currentPhase}`);
 
     const hasResumeAnchor = conversationHistory.some((msg) =>
@@ -701,7 +722,7 @@ export const generateStoryOutlinePhased = async (
 
     // If seedImage provided, start at Phase 0 (image interpretation)
     // Otherwise start at Phase 1 (normal flow)
-    const hasImage = !!options.seedImageBase64;
+    const hasImage = shouldRestartFromPhase1 ? false : Boolean(options.seedImageBase64);
     currentPhase = hasImage ? 0 : 1;
 
     // Build initial task message
@@ -775,6 +796,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
   // Helper to save checkpoint
   const saveCheckpoint = async (phase: number) => {
     const checkpoint: OutlineConversationState = {
+      phaseSchemaVersion: OUTLINE_PHASE_SCHEMA_VERSION,
       theme,
       language,
       customContext,
@@ -808,7 +830,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
     error?: string,
   ) => {
     if (options?.onPhaseProgress) {
-      const totalPhases = isImageBasedFlow ? 11 : 10;
+      const totalPhases = isImageBasedFlow ? 10 : 9;
       options.onPhaseProgress({
         phase,
         totalPhases,
@@ -821,7 +843,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
   };
 
   // Determine session ID with slotId for isolation if provided
-  const baseSessionId = options.resumeFrom ? "outline-resume" : "outline-new";
+  const baseSessionId = resumeFrom ? "outline-resume" : "outline-new";
   const normalizedSessionTag = options.sessionTag
     ? options.sessionTag.replace(/[^a-zA-Z0-9_-]/g, "-")
     : "";
@@ -833,7 +855,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
     : taggedBaseSessionId;
 
   // If starting fresh, explicitly invalidate the "outline-new" session to clear any previous game's outline history
-  if (!options.resumeFrom) {
+  if (!resumeFrom) {
     console.log(
       `[OutlineAgentic] Starting fresh: invalidating old "${outlineSessionId}" session if exists`,
     );
@@ -871,7 +893,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
   });
 
   // If it's a new session but for some reason still has history (e.g. static ID reuse), clear it
-  if (!options.resumeFrom && !sessionManager.isEmpty(outlineSession.id)) {
+  if (!resumeFrom && !sessionManager.isEmpty(outlineSession.id)) {
     console.log(
       `[OutlineAgentic] Static ID "outline-new" has stale history, clearing...`,
     );
@@ -890,7 +912,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
 
   // Save an initial checkpoint so "exit & re-enter" can resume even if Phase 1 fails
   // before completing and producing a checkpoint.
-  if (!options.resumeFrom) {
+  if (!resumeFrom) {
     console.log(
       `[OutlineAgentic] Saving initial checkpoint at phase ${currentPhase}`,
     );
@@ -1013,7 +1035,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
       language,
       submitTool.name,
       customContext,
-      !!options.seedImageBase64,
+      isImageBasedFlow,
       options.protagonistFeature,
     );
     if (phasePrompt) {
@@ -1024,7 +1046,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
         phaseNum,
         12,
       );
-      const shouldInjectPrompt = Boolean(options.resumeFrom) || !hasRecentMarker;
+      const shouldInjectPrompt = Boolean(resumeFrom) || !hasRecentMarker;
       if (shouldInjectPrompt) {
         conversationHistory.push(createUserMessage(phasePrompt));
       }
@@ -1212,7 +1234,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do
             const validatedData = validatedDataParsed.data;
 
             // Phase 2: Additional gender validation
-            if (phaseNum === 2 && settings.extra?.genderPreference) {
+            if (phaseNum === 3 && settings.extra?.genderPreference) {
               const genderPref = settings.extra.genderPreference;
               if (genderPref === "male" || genderPref === "female") {
                 const genderError = validateGenderPreferencePhase2(
