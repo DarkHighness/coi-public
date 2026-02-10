@@ -3,8 +3,10 @@
  * Content from acting/mechanics.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const combatMechanics: Atom<void> = () => `
+
+export const combatMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative/combat#combatMechanics", source: "atoms/narrative/combat.ts", exportName: "combatMechanics" }, () => `
 <rule name="COMBAT & ACTION">
   <core_combat_philosophy>
     **COMBAT IS UGLY**:
@@ -28,14 +30,14 @@ export const combatMechanics: Atom<void> = () => `
       * **Sci-Fi**: No "magic" without explanation. Physics (gravity, vacuum) kills.
   </logic_enforcement>
 </rule>
-`;
+`);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const combatMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: combatMechanics(),
+export const combatMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/combat#combatMechanicsSkill", source: "atoms/narrative/combat.ts", exportName: "combatMechanicsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(combatMechanics),
 
   quickStart: `
 1. Combat is ugly - fast, confusing, exhausting (not choreographed)
@@ -70,4 +72,4 @@ Warmth spreads down your boot."
 (Physical, immediate, consequential.)`,
     },
   ],
-});
+}));

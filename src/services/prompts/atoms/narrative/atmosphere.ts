@@ -3,8 +3,10 @@
  * Content from acting/mechanics.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const atmosphereMechanics: Atom<void> = () => `
+
+export const atmosphereMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative/atmosphere#atmosphereMechanics", source: "atoms/narrative/atmosphere.ts", exportName: "atmosphereMechanics" }, () => `
 <rule name="ATMOSPHERE & MOOD">
   <mood_enforcement>
     **SHOW, DON'T TELL**:
@@ -271,7 +273,7 @@ export const atmosphereMechanics: Atom<void> = () => `
     Refer to **Writing Craft** (Always Loaded).
   </instruction>
 </rule>
-`;
+`);
 
 export default atmosphereMechanics;
 
@@ -279,8 +281,8 @@ export default atmosphereMechanics;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const atmosphereMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: atmosphereMechanics(),
+export const atmosphereMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/atmosphere#atmosphereMechanicsSkill", source: "atoms/narrative/atmosphere.ts", exportName: "atmosphereMechanicsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(atmosphereMechanics),
 
   quickStart: `
 1. Show, don't tell - never say "creepy", describe the silence
@@ -340,4 +342,4 @@ Someone's umbrella has a broken spoke. That's what you'll remember."
 (Three details. Silence. Devastating.)`,
     },
   ],
-});
+}));

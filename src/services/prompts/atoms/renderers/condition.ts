@@ -13,6 +13,8 @@
  */
 
 import type { Atom, Condition } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderConditionInput = {
   condition: Condition;
@@ -21,7 +23,7 @@ export type RenderConditionInput = {
 /**
  * 渲染 Condition 的 visible 层
  */
-export const renderConditionVisible: Atom<RenderConditionInput> = ({
+export const renderConditionVisible: Atom<RenderConditionInput> = defineAtom({ atomId: "atoms/renderers/condition#renderConditionVisible", source: "atoms/renderers/condition.ts", exportName: "renderConditionVisible" }, ({
   condition,
 }) => {
   const v = condition.visible;
@@ -45,12 +47,12 @@ export const renderConditionVisible: Atom<RenderConditionInput> = ({
   return `<condition id="${condition.id}" layer="visible">
 ${lines.join("\n")}
 </condition>`;
-};
+});
 
 /**
  * 渲染 Condition 的 hidden 层
  */
-export const renderConditionHidden: Atom<RenderConditionInput> = ({
+export const renderConditionHidden: Atom<RenderConditionInput> = defineAtom({ atomId: "atoms/renderers/condition#renderConditionHidden", source: "atoms/renderers/condition.ts", exportName: "renderConditionHidden" }, ({
   condition,
 }) => {
   const h = condition.hidden;
@@ -71,12 +73,12 @@ export const renderConditionHidden: Atom<RenderConditionInput> = ({
   return `<condition id="${condition.id}" layer="hidden">
 ${lines.join("\n")}
 </condition>`;
-};
+});
 
 /**
  * 渲染 Condition 完整信息（visible + hidden）
  */
-export const renderConditionFull: Atom<RenderConditionInput> = ({
+export const renderConditionFull: Atom<RenderConditionInput> = defineAtom({ atomId: "atoms/renderers/condition#renderConditionFull", source: "atoms/renderers/condition.ts", exportName: "renderConditionFull" }, ({
   condition,
 }) => {
   const v = condition.visible;
@@ -123,6 +125,6 @@ ${visibleLines.join("\n")}
 ${hiddenLines.join("\n")}
 </hidden>
 </condition>`;
-};
+});
 
 export default renderConditionFull;

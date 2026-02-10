@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const financeBanking: Atom<void> = () => `
+
+export const financeBanking: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/financeBanking#financeBanking", source: "atoms/worldbuilding/financeBanking.ts", exportName: "financeBanking" }, () => `
 <worldbuilding_context>
 **FINANCE & BANKING (Receipts, Trust, and Freeze Power)**
 
@@ -91,17 +93,17 @@ Use a response ladder:
 - One fraud vector (how to fake/steal):
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const financeBankingPrimer: Atom<void> = () =>
+export const financeBankingPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/financeBanking#financeBankingPrimer", source: "atoms/worldbuilding/financeBanking.ts", exportName: "financeBankingPrimer" }, () =>
   `
 <worldbuilding_context>
 **FINANCE PRIMER**: Money systems are ledgers + identity proof + audits + freeze power. Debt creates clocks; transfers create receipts.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const financeBankingSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: financeBanking(),
+export const financeBankingSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/financeBanking#financeBankingSkill", source: "atoms/worldbuilding/financeBanking.ts", exportName: "financeBankingSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(financeBanking),
   quickStart: `
 1) Define the ledger authority and identity proof
 2) Add a debt clock (payment date + default ladder)
@@ -132,4 +134,4 @@ or move assets through a letter-of-credit broker who demands collateral."`,
 You can negotiate a restructuring, trade a favor to an auditor, or accept seizure to buy time."`,
     },
   ],
-});
+}));

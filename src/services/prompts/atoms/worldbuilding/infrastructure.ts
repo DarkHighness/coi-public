@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const infrastructure: Atom<void> = () => `
+
+export const infrastructure: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/infrastructure#infrastructure", source: "atoms/worldbuilding/infrastructure.ts", exportName: "infrastructure" }, () => `
 <worldbuilding_context>
 **INFRASTRUCTURE & SERVICES (Capacity + Bottlenecks)**
 
@@ -76,17 +78,17 @@ Play hooks:
 - Who controls access (permits/rationing):
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const infrastructurePrimer: Atom<void> = () =>
+export const infrastructurePrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/infrastructure#infrastructurePrimer", source: "atoms/worldbuilding/infrastructure.ts", exportName: "infrastructurePrimer" }, () =>
   `
 <worldbuilding_context>
 **INFRA PRIMER**: Define capacity + bottlenecks + controllers. Infrastructure failures should cascade into choices and consequences.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const infrastructureSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: infrastructure(),
+export const infrastructureSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/infrastructure#infrastructureSkill", source: "atoms/worldbuilding/infrastructure.ts", exportName: "infrastructureSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(infrastructure),
   quickStart: `
 1) Pick 2 critical services (water + power is enough)
 2) Give each a bottleneck controller (who rations, who profits)
@@ -116,4 +118,4 @@ The slums get none. Generators require ration cards. A black-market broker sells
 but the security chief tracks serial numbers."`,
     },
   ],
-});
+}));

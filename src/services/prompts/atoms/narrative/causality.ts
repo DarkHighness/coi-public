@@ -3,8 +3,10 @@
  * Content from conditional.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const narrativeCausality: Atom<void> = () => `
+
+export const narrativeCausality: Atom<void> = defineAtom({ atomId: "atoms/narrative/causality#narrativeCausality", source: "atoms/narrative/causality.ts", exportName: "narrativeCausality" }, () => `
 <narrative_causality>
   **COLD CAUSALITY**:
   - **No Moralizing**: The world does not care about "good" or "evil". If the player does something cruel, do not describe it with judgment, describe it with physics.
@@ -76,14 +78,14 @@ export const narrativeCausality: Atom<void> = () => `
     **GOLD STANDARD**: Every turn should feel like a NEW PAGE in a well-edited novel, not a rehash of previous content. The world evolves, characters develop, and the narrative progresses with organic variety.
   </quality_benchmark>
 </anti_repetition_protocol>
-`;
+`);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const narrativeCausalitySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: narrativeCausality(),
+export const narrativeCausalitySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/causality#narrativeCausalitySkill", source: "atoms/narrative/causality.ts", exportName: "narrativeCausalitySkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(narrativeCausality),
 
   quickStart: `
 1. No moralizing - describe with physics, not judgment
@@ -118,4 +120,4 @@ export const narrativeCausalitySkill: SkillAtom<void> = (): SkillOutput => ({
 (Escalation with new complications.)`,
     },
   ],
-});
+}));

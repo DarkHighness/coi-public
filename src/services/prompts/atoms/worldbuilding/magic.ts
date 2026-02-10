@@ -8,11 +8,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Magic Systems - 完整版
  */
-export const magicSystem: Atom<void> = () => `
+export const magicSystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/magic#magicSystem", source: "atoms/worldbuilding/magic.ts", exportName: "magicSystem" }, () => `
 <worldbuilding_context>
 **MAGIC SYSTEM DESIGN:**
 
@@ -232,12 +234,12 @@ Good answers:
 - What do they regret?
 </learning_progression>
 </worldbuilding_context>
-`;
+`);
 
 /**
  * Magic systems primer (system-prompt safe).
  */
-export const magicSystemPrimer: Atom<void> = () => `
+export const magicSystemPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/magic#magicSystemPrimer", source: "atoms/worldbuilding/magic.ts", exportName: "magicSystemPrimer" }, () => `
 <worldbuilding_context>
 **MAGIC SYSTEMS**: Magic is debt written in flesh, paid in years, collected by forces that do not negotiate.
 - Cost framework (personal, material, social)
@@ -247,7 +249,7 @@ export const magicSystemPrimer: Atom<void> = () => `
 - Failure modes (fizzle, backfire, corruption, escalation)
 - Learning progression (school, apprenticeship, self-taught, innate)
 </worldbuilding_context>
-`;
+`);
 
 export default magicSystem;
 
@@ -255,8 +257,8 @@ export default magicSystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const magicSystemSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: magicSystem(),
+export const magicSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/magic#magicSystemSkill", source: "atoms/worldbuilding/magic.ts", exportName: "magicSystemSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(magicSystem),
 
   quickStart: `
 1. Every spell COSTS something (fatigue, components, sacrifice, debt)
@@ -319,4 +321,4 @@ healing for coin, one step ahead of the Inquisitors."
 (Structure creates conflict and story hooks.)`,
     },
   ],
-});
+}));

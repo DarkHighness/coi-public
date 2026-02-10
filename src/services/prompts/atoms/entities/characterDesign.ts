@@ -8,6 +8,8 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type CharacterDesignInput = {
   protagonistFeature?: string;
@@ -16,7 +18,7 @@ export type CharacterDesignInput = {
 /**
  * 主角设计上下文 - 完整版
  */
-export const characterDesign: Atom<CharacterDesignInput> = ({
+export const characterDesign: Atom<CharacterDesignInput> = defineAtom({ atomId: "atoms/entities/characterDesign#characterDesign", source: "atoms/entities/characterDesign.ts", exportName: "characterDesign" }, ({
   protagonistFeature,
 }) => `
 <game_system_context>
@@ -103,12 +105,12 @@ Give the protagonist at least ONE petty, human weakness:
 - **Growth Potential**: By story's end, the protagonist should be able to overcome their flaw -- but only through suffering. The chrysalis must be earned.
 - **The Lie They Believe**: What false worldview do they hold? The story will press on this bruise until the truth bleeds through.
 </game_system_context>
-`;
+`);
 
 /**
  * Character design primer (system-prompt safe).
  */
-export const characterDesignPrimer: Atom<CharacterDesignInput> = ({
+export const characterDesignPrimer: Atom<CharacterDesignInput> = defineAtom({ atomId: "atoms/entities/characterDesign#characterDesignPrimer", source: "atoms/entities/characterDesign.ts", exportName: "characterDesignPrimer" }, ({
   protagonistFeature,
 }) => `
 <game_system_context>
@@ -120,7 +122,7 @@ ${protagonistFeature ? `- MUST fit "${protagonistFeature}" role` : ""}
 - Narrative appearance (story behind the body)
 - Want vs Need, Fatal Flaw, The Lie They Believe
 </game_system_context>
-`;
+`);
 
 export default characterDesign;
 
@@ -128,8 +130,8 @@ export default characterDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const characterDesignSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: characterDesign({}),
+export const characterDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/characterDesign#characterDesignSkill", source: "atoms/entities/characterDesign.ts", exportName: "characterDesignSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(characterDesign, {}),
 
   quickStart: `
 1. Moral alignment is flexible (saint, sinner, or monster are all valid)
@@ -186,4 +188,4 @@ someone struck him while he was down."
 (History visible on the body.)`,
     },
   ],
-});
+}));

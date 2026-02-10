@@ -8,6 +8,8 @@
  */
 
 import type { Atom, Quest } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderQuestInput = {
   quest: Quest;
@@ -16,7 +18,7 @@ export type RenderQuestInput = {
 /**
  * 渲染 Quest 的 visible 层
  */
-export const renderQuestVisible: Atom<RenderQuestInput> = ({ quest }) => {
+export const renderQuestVisible: Atom<RenderQuestInput> = defineAtom({ atomId: "atoms/renderers/quest#renderQuestVisible", source: "atoms/renderers/quest.ts", exportName: "renderQuestVisible" }, ({ quest }) => {
   const v = quest.visible;
   const lines: string[] = [
     `id: ${quest.id}`,
@@ -32,12 +34,12 @@ export const renderQuestVisible: Atom<RenderQuestInput> = ({ quest }) => {
   return `<quest id="${quest.id}" layer="visible">
 ${lines.join("\n")}
 </quest>`;
-};
+});
 
 /**
  * 渲染 Quest 的 hidden 层
  */
-export const renderQuestHidden: Atom<RenderQuestInput> = ({ quest }) => {
+export const renderQuestHidden: Atom<RenderQuestInput> = defineAtom({ atomId: "atoms/renderers/quest#renderQuestHidden", source: "atoms/renderers/quest.ts", exportName: "renderQuestHidden" }, ({ quest }) => {
   const h = quest.hidden;
   if (!h) return "";
 
@@ -52,12 +54,12 @@ export const renderQuestHidden: Atom<RenderQuestInput> = ({ quest }) => {
   return `<quest id="${quest.id}" layer="hidden">
 ${lines.join("\n")}
 </quest>`;
-};
+});
 
 /**
  * 渲染 Quest 完整信息（visible + hidden）
  */
-export const renderQuestFull: Atom<RenderQuestInput> = ({ quest }) => {
+export const renderQuestFull: Atom<RenderQuestInput> = defineAtom({ atomId: "atoms/renderers/quest#renderQuestFull", source: "atoms/renderers/quest.ts", exportName: "renderQuestFull" }, ({ quest }) => {
   const v = quest.visible;
   const h = quest.hidden;
 
@@ -92,6 +94,6 @@ ${visibleLines.join("\n")}
 ${hiddenLines.join("\n")}
 </hidden>
 </quest>`;
-};
+});
 
 export default renderQuestFull;

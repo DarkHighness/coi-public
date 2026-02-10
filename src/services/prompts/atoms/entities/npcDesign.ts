@@ -10,11 +10,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * NPC 设计上下文 - 完整版
  */
-export const npcDesign: Atom<void> = () => `
+export const npcDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/npcDesign#npcDesign", source: "atoms/entities/npcDesign.ts", exportName: "npcDesign" }, () => `
 <game_system_context>
 **NPC DESIGN FOR REALITY RENDERING ENGINE (TRUE PERSON LOGIC):**
 
@@ -377,12 +379,12 @@ NPCs leave behind writing that may contain literary adaptations. This is DISCOVE
   * Pragmatic characters (soldiers, merchants, laborers, children) speak plainly ALWAYS
   * Found text is PRIMARY delivery channel (diary, letter, note)
 </integration_with_literary_atoms>
-`;
+`);
 
 /**
  * NPC 设计上下文 - 精简版
  */
-export const npcDesignPrimer: Atom<void> = () => `
+export const npcDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/npcDesign#npcDesignPrimer", source: "atoms/entities/npcDesign.ts", exportName: "npcDesignPrimer" }, () => `
 <game_system_context>
 **NPC DESIGN**: NPCs are people, not quest dispensers.
 - Dual personality (visible vs hidden)
@@ -392,7 +394,7 @@ export const npcDesignPrimer: Atom<void> = () => `
 - Expression modes: Love, Hate, Jealousy, Manipulation
 - All expression through BEHAVIOR, not labels
 </game_system_context>
-`;
+`);
 
 export default npcDesign;
 
@@ -400,8 +402,8 @@ export default npcDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const npcDesignSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: npcDesign(),
+export const npcDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/npcDesign#npcDesignSkill", source: "atoms/entities/npcDesign.ts", exportName: "npcDesignSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(npcDesign),
 
   quickStart: `
 1. Dual Personality: visible.personality ≠ hidden.realPersonality
@@ -461,4 +463,4 @@ He felt guilty. He always felt guilty."
 (Shows manipulation technique in action.)`,
     },
   ],
-});
+}));

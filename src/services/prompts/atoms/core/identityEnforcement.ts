@@ -4,6 +4,8 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface IdentityEnforcementInput {
   protagonist?: {
@@ -15,7 +17,7 @@ export interface IdentityEnforcementInput {
   protagonistFeature?: string;
 }
 
-export const identityEnforcement: Atom<IdentityEnforcementInput> = ({
+export const identityEnforcement: Atom<IdentityEnforcementInput> = defineAtom({ atomId: "atoms/core/identityEnforcement#identityEnforcement", source: "atoms/core/identityEnforcement.ts", exportName: "identityEnforcement" }, ({
   protagonist,
   backgroundTemplate,
   protagonistFeature,
@@ -93,4 +95,4 @@ ${
   }
 </identity_enforcement>
 `;
-};
+});

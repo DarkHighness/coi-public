@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const classStatus: Atom<void> = () => `
+
+export const classStatus: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/classStatus#classStatus", source: "atoms/worldbuilding/classStatus.ts", exportName: "classStatus" }, () => `
 <worldbuilding_context>
 **CLASS & STATUS (The invisible architecture of who matters)**
 
@@ -75,17 +77,17 @@ Mobility always has gatekeepers and costs.
 - Audit/verification:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const classStatusPrimer: Atom<void> = () =>
+export const classStatusPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/classStatus#classStatusPrimer", source: "atoms/worldbuilding/classStatus.ts", exportName: "classStatusPrimer" }, () =>
   `
 <worldbuilding_context>
 **STATUS PRIMER**: Define markers + gates + enforcement. Status must create concrete permissions/constraints and mobility paths with gatekeepers.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const classStatusSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: classStatus(),
+export const classStatusSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/classStatus#classStatusSkill", source: "atoms/worldbuilding/classStatus.ts", exportName: "classStatusSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(classStatus),
   quickStart: `
 1) Define 3 tiers (upper/middle/lower) with one privilege + one constraint each
 2) Define 3 identity markers (visible/behavioral/document)
@@ -115,4 +117,4 @@ It costs 3 months of tutoring and a sponsor signature.
 Fail and your name goes on a 'risk list' that increases searches at checkpoints."`,
     },
   ],
-});
+}));

@@ -8,11 +8,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * History Systems - 完整版
  */
-export const historySystem: Atom<void> = () => `
+export const historySystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/history#historySystem", source: "atoms/worldbuilding/history.ts", exportName: "historySystem" }, () => `
 <worldbuilding_context>
 **HISTORY & LEGENDS DESIGN:**
 
@@ -219,12 +221,12 @@ What happened then doesn't stay buried; it leaks through cracks in the present l
 - Wisdom from past mistakes
 </gm_use>
 </worldbuilding_context>
-`;
+`);
 
 /**
  * History Systems - 精简版
  */
-export const historySystemLite: Atom<void> = () => `
+export const historySystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/history#historySystemLite", source: "atoms/worldbuilding/history.ts", exportName: "historySystemLite" }, () => `
 <worldbuilding_context>
 **HISTORY & LEGENDS**: History is not past—it is residue. The dead have opinions, and the ground does not forget.
 - Living history (ruins, grudges, traditions from trauma)
@@ -235,7 +237,7 @@ export const historySystemLite: Atom<void> = () => `
 - Historical trauma (cultural scars, manifestations, recovery)
 - GM use (pacing, motivation, constraint, resource)
 </worldbuilding_context>
-`;
+`);
 
 export default historySystem;
 
@@ -243,8 +245,8 @@ export default historySystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const historySystemSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: historySystem(),
+export const historySystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/history#historySystemSkill", source: "atoms/worldbuilding/history.ts", exportName: "historySystemSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(historySystem),
 
   quickStart: `
 1. History is residue (past shapes present through ruins, grudges, traditions)
@@ -308,4 +310,4 @@ When the stranger drank from the shared flagon, silence fell."
 (Trauma creates behavior that affects current events.)`,
     },
   ],
-});
+}));

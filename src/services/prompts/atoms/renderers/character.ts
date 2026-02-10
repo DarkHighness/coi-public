@@ -8,6 +8,8 @@
  */
 
 import type { Atom, Character } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderCharacterInput = {
   character: Character;
@@ -16,9 +18,9 @@ export type RenderCharacterInput = {
 /**
  * Render Character's visible layer (basic info)
  */
-export const renderCharacterVisible: Atom<RenderCharacterInput> = ({
+export const renderCharacterVisible: Atom<RenderCharacterInput> = defineAtom({ atomId: "atoms/renderers/character#renderCharacterVisible", source: "atoms/renderers/character.ts", exportName: "renderCharacterVisible" }, ({
   character,
-}) => {
+}, trace) => {
   const lines: string[] = [
     `name: ${character.name}`,
     `title: ${character.title}`,
@@ -54,14 +56,14 @@ export const renderCharacterVisible: Atom<RenderCharacterInput> = ({
   return `<protagonist layer="visible">
 ${lines.join("\n")}
 </protagonist>`;
-};
+});
 
 /**
  * Render Character's hidden layer (hiddenTraits and unlocked abilities)
  */
-export const renderCharacterHidden: Atom<RenderCharacterInput> = ({
+export const renderCharacterHidden: Atom<RenderCharacterInput> = defineAtom({ atomId: "atoms/renderers/character#renderCharacterHidden", source: "atoms/renderers/character.ts", exportName: "renderCharacterHidden" }, ({
   character,
-}) => {
+}, trace) => {
   const lines: string[] = [];
 
   // Hidden traits
@@ -90,16 +92,16 @@ export const renderCharacterHidden: Atom<RenderCharacterInput> = ({
   return `<protagonist layer="hidden">
 ${lines.join("\n")}
 </protagonist>`;
-};
+});
 
 /**
  * Render full Character info (visible + hidden)
  */
-export const renderCharacterFull: Atom<RenderCharacterInput> = ({
+export const renderCharacterFull: Atom<RenderCharacterInput> = defineAtom({ atomId: "atoms/renderers/character#renderCharacterFull", source: "atoms/renderers/character.ts", exportName: "renderCharacterFull" }, ({
   character,
-}) => {
-  const visibleContent = renderCharacterVisible({ character });
-  const hiddenContent = renderCharacterHidden({ character });
+}, trace) => {
+  const visibleContent = trace.record(renderCharacterVisible, { character });
+  const hiddenContent = trace.record(renderCharacterHidden, { character });
 
   if (!hiddenContent) return visibleContent;
 
@@ -119,6 +121,6 @@ ${character.currentLocation ? `currentLocation: ${character.currentLocation}` : 
 ${character.hiddenTraits?.length ? `hiddenTraits: ${JSON.stringify(character.hiddenTraits)}` : ""}
 </hidden>
 </protagonist>`;
-};
+});
 
 export default renderCharacterFull;

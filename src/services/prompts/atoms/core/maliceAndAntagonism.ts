@@ -10,8 +10,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const maliceAndAntagonismPrimer: Atom<void> = () => `
+
+export const maliceAndAntagonismPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/maliceAndAntagonism#maliceAndAntagonismPrimer", source: "atoms/core/maliceAndAntagonism.ts", exportName: "maliceAndAntagonismPrimer" }, () => `
 <malice_and_antagonism>
   **MALICE IS SMART, NOT LOUD**:
   - Antagonists calculate, wait, and strike when odds are 90/10
@@ -20,8 +22,8 @@ export const maliceAndAntagonismPrimer: Atom<void> = () => `
   - They target what you love: reputation, relationships, livelihood
   - Psychological torture through waiting, isolation, uncertainty
 </malice_and_antagonism>
-`;
-export const maliceAndAntagonism: Atom<void> = () => `
+`);
+export const maliceAndAntagonism: Atom<void> = defineAtom({ atomId: "atoms/core/maliceAndAntagonism#maliceAndAntagonism", source: "atoms/core/maliceAndAntagonism.ts", exportName: "maliceAndAntagonism" }, () => `
 <rule name="MALICE_AND_ANTAGONISM">
   **THE WORLD IS NOT SAFE, BUT IT IS SMART**:
 
@@ -290,7 +292,7 @@ export const maliceAndAntagonism: Atom<void> = () => `
     But it makes them real.
   </the_person_behind_the_mask>
 </rule>
-`;
+`);
 
 export default maliceAndAntagonism;
 
@@ -298,8 +300,8 @@ export default maliceAndAntagonism;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const maliceAndAntagonismSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: maliceAndAntagonism(),
+export const maliceAndAntagonismSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/maliceAndAntagonism#maliceAndAntagonismSkill", source: "atoms/core/maliceAndAntagonism.ts", exportName: "maliceAndAntagonismSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(maliceAndAntagonism),
 
   quickStart: `
 1. Malice is smart, not loud - antagonists calculate and wait
@@ -337,4 +339,4 @@ The waiting was worse than the blade."
 (Anticipation is the weapon.)`,
     },
   ],
-});
+}));

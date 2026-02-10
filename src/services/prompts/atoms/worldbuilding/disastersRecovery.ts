@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const disastersRecovery: Atom<void> = () => `
+
+export const disastersRecovery: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/disastersRecovery#disastersRecovery", source: "atoms/worldbuilding/disastersRecovery.ts", exportName: "disastersRecovery" }, () => `
 <worldbuilding_context>
 **DISASTERS & RECOVERY (The great equalizer)**
 
@@ -79,17 +81,17 @@ Recovery creates:
 - Recovery debt:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const disastersRecoveryPrimer: Atom<void> = () =>
+export const disastersRecoveryPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/disastersRecovery#disastersRecoveryPrimer", source: "atoms/worldbuilding/disastersRecovery.ts", exportName: "disastersRecoveryPrimer" }, () =>
   `
 <worldbuilding_context>
 **DISASTER PRIMER**: Model crises as cascades + triage + control measures + exploitation + recovery debt. Always define secondary disasters.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const disastersRecoverySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: disastersRecovery(),
+export const disastersRecoverySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/disastersRecovery#disastersRecoverySkill", source: "atoms/worldbuilding/disastersRecovery.ts", exportName: "disastersRecoverySkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(disastersRecovery),
   quickStart: `
 1) Pick one primary disaster and two secondary cascades
 2) Define visible vs hidden triage rules
@@ -119,4 +121,4 @@ Smugglers use maintenance tunnels. Access requires a union token—expensive—
 and the token is logged (audit risk)."`,
     },
   ],
-});
+}));

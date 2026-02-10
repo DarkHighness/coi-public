@@ -7,11 +7,13 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * 深度强制规则 - 无参数
  */
-export const depthEnforcement: Atom<void> = () => `
+export const depthEnforcement: Atom<void> = defineAtom({ atomId: "atoms/core/depthEnforcement#depthEnforcement", source: "atoms/core/depthEnforcement.ts", exportName: "depthEnforcement" }, () => `
 <depth_enforcement>
   <instruction>**NO SURFACE SUMMARY**: write scenes, not recaps.</instruction>
   <instruction>**STATE MUST MOVE**: every turn changes something concrete (gained/lost/learned/moved/broken).</instruction>
@@ -20,6 +22,6 @@ export const depthEnforcement: Atom<void> = () => `
   <instruction>**ROOTED DETAIL**: any claim must be anchored by an observable detail (who/what/where/how).</instruction>
   <instruction>Every entity needs a reason to exist: desire + leverage + vulnerability. And a past—everything "became".</instruction>
 </depth_enforcement>
-`;
+`);
 
 export default depthEnforcement;

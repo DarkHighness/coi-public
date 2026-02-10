@@ -3,6 +3,8 @@
  * Content from acting/state_management.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 const idUsage = `
   <rule name="ID FIELD USAGE - CRITICAL">
@@ -181,14 +183,14 @@ const icons = `
   </rule>
 `;
 
-export const idAndEntityPolicy: Atom<void> = () => `
+export const idAndEntityPolicy: Atom<void> = defineAtom({ atomId: "atoms/core/idAndEntityPolicy#idAndEntityPolicy", source: "atoms/core/idAndEntityPolicy.ts", exportName: "idAndEntityPolicy" }, () => `
 ${idUsage}
 ${idGeneration}
 ${minimalEntity}
 ${icons}
-`;
+`);
 
-export const idUsageAtom: Atom<void> = () => idUsage;
-export const idGenerationAtom: Atom<void> = () => idGeneration;
-export const minimalEntityAtom: Atom<void> = () => minimalEntity;
-export const iconsAtom: Atom<void> = () => icons;
+export const idUsageAtom: Atom<void> = defineAtom({ atomId: "atoms/core/idAndEntityPolicy#idUsageAtom", source: "atoms/core/idAndEntityPolicy.ts", exportName: "idUsageAtom" }, () => idUsage);
+export const idGenerationAtom: Atom<void> = defineAtom({ atomId: "atoms/core/idAndEntityPolicy#idGenerationAtom", source: "atoms/core/idAndEntityPolicy.ts", exportName: "idGenerationAtom" }, () => idGeneration);
+export const minimalEntityAtom: Atom<void> = defineAtom({ atomId: "atoms/core/idAndEntityPolicy#minimalEntityAtom", source: "atoms/core/idAndEntityPolicy.ts", exportName: "minimalEntityAtom" }, () => minimalEntity);
+export const iconsAtom: Atom<void> = defineAtom({ atomId: "atoms/core/idAndEntityPolicy#iconsAtom", source: "atoms/core/idAndEntityPolicy.ts", exportName: "iconsAtom" }, () => icons);

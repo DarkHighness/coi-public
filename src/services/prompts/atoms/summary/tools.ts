@@ -12,11 +12,13 @@ import {
   formatVfsToolCapabilitiesForPrompt,
   formatVfsToolsForPrompt,
 } from "../../../vfsToolsets";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * 摘要工具说明 - 无参数
  */
-export const summaryTools: Atom<void> = () => `<tools>
+export const summaryTools: Atom<void> = defineAtom({ atomId: "atoms/summary/tools#summaryTools", source: "atoms/summary/tools.ts", exportName: "summaryTools" }, () => `<tools>
 You have these tools available:
 
 Tool allowlist for this loop:
@@ -34,6 +36,6 @@ ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.summary.tools)}
 
 When you have enough information, call \`vfs_finish_summary\` to complete the summary.
 It MUST be your LAST tool call.
-</tools>`;
+</tools>`);
 
 export default summaryTools;

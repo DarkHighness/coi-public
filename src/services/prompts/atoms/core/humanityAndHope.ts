@@ -6,6 +6,8 @@
  */
 
 import type { SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export const humanityAndHope = (): string => `
 <rule name="HUMANITY_AND_HOPE">
@@ -243,7 +245,7 @@ export default humanityAndHope;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const humanityAndHopeSkill: SkillAtom<void> = (): SkillOutput => ({
+export const humanityAndHopeSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/humanityAndHope#humanityAndHopeSkill", source: "atoms/core/humanityAndHope.ts", exportName: "humanityAndHopeSkill" }, (): SkillOutput => ({
   main: humanityComplete(),
 
   quickStart: `
@@ -281,4 +283,4 @@ It was his only coat. The wind was bitter.
 (Small act, real cost, no words needed.)`,
     },
   ],
-});
+}));

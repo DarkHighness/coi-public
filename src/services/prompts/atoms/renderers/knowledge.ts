@@ -12,6 +12,8 @@
  */
 
 import type { Atom, Knowledge } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderKnowledgeInput = {
   knowledge: Knowledge;
@@ -20,7 +22,7 @@ export type RenderKnowledgeInput = {
 /**
  * 渲染 Knowledge 的 visible 层
  */
-export const renderKnowledgeVisible: Atom<RenderKnowledgeInput> = ({
+export const renderKnowledgeVisible: Atom<RenderKnowledgeInput> = defineAtom({ atomId: "atoms/renderers/knowledge#renderKnowledgeVisible", source: "atoms/renderers/knowledge.ts", exportName: "renderKnowledgeVisible" }, ({
   knowledge,
 }) => {
   const v = knowledge.visible;
@@ -40,12 +42,12 @@ export const renderKnowledgeVisible: Atom<RenderKnowledgeInput> = ({
   return `<knowledge id="${knowledge.id}" layer="visible">
 ${lines.join("\n")}
 </knowledge>`;
-};
+});
 
 /**
  * 渲染 Knowledge 的 hidden 层
  */
-export const renderKnowledgeHidden: Atom<RenderKnowledgeInput> = ({
+export const renderKnowledgeHidden: Atom<RenderKnowledgeInput> = defineAtom({ atomId: "atoms/renderers/knowledge#renderKnowledgeHidden", source: "atoms/renderers/knowledge.ts", exportName: "renderKnowledgeHidden" }, ({
   knowledge,
 }) => {
   const h = knowledge.hidden;
@@ -62,12 +64,12 @@ export const renderKnowledgeHidden: Atom<RenderKnowledgeInput> = ({
   return `<knowledge id="${knowledge.id}" layer="hidden">
 ${lines.join("\n")}
 </knowledge>`;
-};
+});
 
 /**
  * 渲染 Knowledge 完整信息（visible + hidden）
  */
-export const renderKnowledgeFull: Atom<RenderKnowledgeInput> = ({
+export const renderKnowledgeFull: Atom<RenderKnowledgeInput> = defineAtom({ atomId: "atoms/renderers/knowledge#renderKnowledgeFull", source: "atoms/renderers/knowledge.ts", exportName: "renderKnowledgeFull" }, ({
   knowledge,
 }) => {
   const v = knowledge.visible;
@@ -105,6 +107,6 @@ ${visibleLines.join("\n")}
 ${hiddenLines.join("\n")}
 </hidden>
 </knowledge>`;
-};
+});
 
 export default renderKnowledgeFull;

@@ -3,8 +3,10 @@
  * Content from acting/mechanics.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const dialogueMechanics: Atom<void> = () => `
+
+export const dialogueMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative/dialogue#dialogueMechanics", source: "atoms/narrative/dialogue.ts", exportName: "dialogueMechanics" }, () => `
 <rule name="DIALOGUE_MECHANICS">
   <!-- Detailed Dialogue Style is in Writing Craft -->
   <instruction>
@@ -182,14 +184,14 @@ export const dialogueMechanics: Atom<void> = () => `
     - Works with **writingCraft**: Dialogue is action, subtext, testing, trading, hiding
   </integration_with_other_atoms>
 </rule>
-`;
+`);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const dialogueMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: dialogueMechanics(),
+export const dialogueMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/dialogue#dialogueMechanicsSkill", source: "atoms/narrative/dialogue.ts", exportName: "dialogueMechanicsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(dialogueMechanics),
 
   quickStart: `
 1. Show accent through syntax, not phonetic spelling
@@ -222,4 +224,4 @@ export const dialogueMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
 (Words say one thing, body says another.)`,
     },
   ],
-});
+}));

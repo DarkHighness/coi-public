@@ -10,8 +10,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const narrativeContrastPrimer: Atom<void> = () => `
+
+export const narrativeContrastPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeContrast#narrativeContrastPrimer", source: "atoms/narrative/narrativeContrast.ts", exportName: "narrativeContrastPrimer" }, () => `
 <narrative_contrast>
   **CONTRAST IS THE ENGINE OF EMOTIONAL IMPACT**:
   - Pair growth with loss. Victory with emptiness. Reunion with estrangement.
@@ -20,9 +22,9 @@ export const narrativeContrastPrimer: Atom<void> = () => `
   - ~40-60% of significant moments carry contrast. The rest can be pure.
   - The most powerful contrasts are unmarked: no "but at what cost?" — just the cost, sitting there.
 </narrative_contrast>
-`;
+`);
 
-export const narrativeContrast: Atom<void> = () => `
+export const narrativeContrast: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeContrast#narrativeContrast", source: "atoms/narrative/narrativeContrast.ts", exportName: "narrativeContrast" }, () => `
 <rule name="NARRATIVE_CONTRAST">
   **THE CONTRAST ENGINE (反差)**:
 
@@ -275,7 +277,7 @@ export const narrativeContrast: Atom<void> = () => `
       The funeral where two estranged siblings finally speak.
   </anti_patterns>
 </rule>
-`;
+`);
 
 export default narrativeContrast;
 
@@ -283,8 +285,8 @@ export default narrativeContrast;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const narrativeContrastSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: narrativeContrast(),
+export const narrativeContrastSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/narrativeContrast#narrativeContrastSkill", source: "atoms/narrative/narrativeContrast.ts", exportName: "narrativeContrastSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(narrativeContrast),
 
   quickStart: `
 1. Identify the emotional payload of the scene (growth? victory? reunion? safety?)
@@ -331,4 +333,4 @@ Somewhere, a bird sang. He couldn't remember the last time he'd heard a bird."
 (Elements placed side by side. No commentary. The gap is the meaning.)`,
     },
   ],
-});
+}));

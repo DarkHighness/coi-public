@@ -8,11 +8,22 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * 游戏系统设计上下文 - 无参数
  */
-export const gameSystemDesign: Atom<void> = () => `
+export const gameSystemDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/gameSystemDesign#gameSystemDesignPrimer", source: "atoms/core/gameSystemDesign.ts", exportName: "gameSystemDesignPrimer" }, () => `
+<game_system_design_primer>
+  - Design for a playable world simulation, not fixed-script storytelling.
+  - Keep dual-layer truth: visible player knowledge vs hidden GM mechanism.
+  - Ensure off-screen world motion: factions, clocks, and incentives advance without player focus.
+  - Every major setup should produce concrete decision pressure and downstream consequences.
+</game_system_design_primer>
+`);
+
+export const gameSystemDesign: Atom<void> = defineAtom({ atomId: "atoms/core/gameSystemDesign#gameSystemDesign", source: "atoms/core/gameSystemDesign.ts", exportName: "gameSystemDesign" }, () => `
 <game_system_design_context>
 You are designing for a **reality simulation** that happens to be written like fiction.
 
@@ -30,6 +41,6 @@ The game system you are creating content for operates on these principles:
 - Add at least one clock (deadline), one debt (owed favor), and one pursuit (someone watching/looking for the protagonist).
 - Make the world runnable off-screen: who moves where, who benefits, who gets hurt, what changes by tomorrow.
 </game_system_design_context>
-`;
+`);
 
 export default gameSystemDesign;

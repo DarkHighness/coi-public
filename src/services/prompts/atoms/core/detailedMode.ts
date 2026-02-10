@@ -3,12 +3,14 @@
  * Content from conditional.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface DetailedModeInput {
   detailedDescription: boolean;
 }
 
-export const detailedMode: Atom<DetailedModeInput> = ({
+export const detailedMode: Atom<DetailedModeInput> = defineAtom({ atomId: "atoms/core/detailedMode#detailedMode", source: "atoms/core/detailedMode.ts", exportName: "detailedMode" }, ({
   detailedDescription,
 }) => {
   if (!detailedDescription) return "";
@@ -80,4 +82,4 @@ export const detailedMode: Atom<DetailedModeInput> = ({
   </emotional_fidelity>
 </detailed_mode>
 `;
-};
+});

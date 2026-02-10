@@ -3,8 +3,10 @@
  * Content from acting/state_management.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const stateManagement: Atom<void> = () => `
+
+export const stateManagement: Atom<void> = defineAtom({ atomId: "atoms/core/stateManagement#stateManagement", source: "atoms/core/stateManagement.ts", exportName: "stateManagement" }, () => `
   <rule name="STATE MANAGEMENT">
     - **PATH MODEL**: Canonical paths are \`shared/**\` + \`forks/{forkId}/**\`; \`current/**\` is an alias view that resolves to canonical locations.
     - Output ONLY changes (DELTAS).
@@ -135,14 +137,14 @@ export const stateManagement: Atom<void> = () => `
 
     - **ATOMICITY**: Treat each turn's updates as a transaction. Either ALL updates succeed, or explain why some failed and proceed with valid ones.
   </rule>
-`;
+`);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const stateManagementSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: stateManagement(),
+export const stateManagementSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/stateManagement#stateManagementSkill", source: "atoms/core/stateManagement.ts", exportName: "stateManagementSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(stateManagement),
 
   quickStart: `
 1. Output ONLY deltas (changes), not full state
@@ -179,4 +181,4 @@ export const stateManagementSkill: SkillAtom<void> = (): SkillOutput => ({
 (All cascade effects handled.)`,
     },
   ],
-});
+}));

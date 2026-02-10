@@ -3,8 +3,10 @@
  * Content from acting/mechanics.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const mysteryMechanics: Atom<void> = () => `
+
+export const mysteryMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative/mystery#mysteryMechanics", source: "atoms/narrative/mystery.ts", exportName: "mysteryMechanics" }, () => `
 <rule name="MYSTERY & FORESHADOWING">
   <plant_seeds>
   **Plant Seeds Early**: Every major revelation should have at least 3 prior hints scattered throughout the narrative.
@@ -66,14 +68,14 @@ export const mysteryMechanics: Atom<void> = () => `
     - update NPC visible status/impression (based on what was observed, not mind-reading)
   </clue_bookkeeping>
 </rule>
-`;
+`);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const mysteryMechanicsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: mysteryMechanics(),
+export const mysteryMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/mystery#mysteryMechanicsSkill", source: "atoms/narrative/mystery.ts", exportName: "mysteryMechanicsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(mysteryMechanics),
 
   quickStart: `
 1. Plant 3+ hints before any major revelation
@@ -111,4 +113,4 @@ Something had been removed recently."
 (Physical, checkable, leads somewhere.)`,
     },
   ],
-});
+}));

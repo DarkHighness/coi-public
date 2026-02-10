@@ -3,6 +3,8 @@
  * Content from acting/protocols.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface ProtocolsInput {}
 
@@ -117,14 +119,14 @@ const terminology = `
 </terminology>
 `;
 
-export const protocolsPrimer: Atom<void> = () => `
+export const protocolsPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#protocolsPrimer", source: "atoms/core/protocols.ts", exportName: "protocolsPrimer" }, () => `
 <protocols>
   MESSAGES: [PLAYER_ACTION] = simulate, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
   TOOLS: Every turn MUST call tools. Query before create. Handle errors.
   TWO "YOU": In rules = AI. In narrative = protagonist.
 </protocols>
-`;
-export const protocols: Atom<void> = () => `
+`);
+export const protocols: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#protocols", source: "atoms/core/protocols.ts", exportName: "protocols" }, () => `
 <protocols>
 ${messageProtocol}
 ${errorRecovery}
@@ -132,21 +134,21 @@ ${toolMandate}
 ${entityDiscipline}
 ${terminology}
 </protocols>
-`;
+`);
 
 // Export individual components if needed by others
-export const messageProtocolAtom: Atom<void> = () => messageProtocol;
-export const errorRecoveryAtom: Atom<void> = () => errorRecovery;
-export const toolMandateAtom: Atom<void> = () => toolMandate;
-export const entityDisciplineAtom: Atom<void> = () => entityDiscipline;
-export const terminologyAtom: Atom<void> = () => terminology;
+export const messageProtocolAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#messageProtocolAtom", source: "atoms/core/protocols.ts", exportName: "messageProtocolAtom" }, () => messageProtocol);
+export const errorRecoveryAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#errorRecoveryAtom", source: "atoms/core/protocols.ts", exportName: "errorRecoveryAtom" }, () => errorRecovery);
+export const toolMandateAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#toolMandateAtom", source: "atoms/core/protocols.ts", exportName: "toolMandateAtom" }, () => toolMandate);
+export const entityDisciplineAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#entityDisciplineAtom", source: "atoms/core/protocols.ts", exportName: "entityDisciplineAtom" }, () => entityDiscipline);
+export const terminologyAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#terminologyAtom", source: "atoms/core/protocols.ts", exportName: "terminologyAtom" }, () => terminology);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const protocolsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: protocols(),
+export const protocolsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/protocols#protocolsSkill", source: "atoms/core/protocols.ts", exportName: "protocolsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(protocols),
 
   quickStart: `
 1. Read [PLAYER_ACTION] to determine what to simulate
@@ -188,4 +190,4 @@ export const protocolsSkill: SkillAtom<void> = (): SkillOutput => ({
 (Always check before creating.)`,
     },
   ],
-});
+}));

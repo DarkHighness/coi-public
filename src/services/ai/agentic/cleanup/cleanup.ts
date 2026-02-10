@@ -8,6 +8,7 @@ import {
 } from "../../../../types";
 
 import { generateAdventureTurn, AgenticLoopResult } from "../turn/adventure";
+import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
 
 // ============================================================================
 // Entity Cleanup Logic - Thin wrapper over generateAdventureTurn
@@ -24,18 +25,27 @@ export interface CleanupResult {
   recovery?: TurnRecoveryTrace;
 }
 
-/**
- * Build the cleanup prompt with XML entity context and examples
- */
-function buildCleanupPrompt(state: GameState): string {
-  const targetForkId =
-    typeof (state as any)?.forkId === "number" ? (state as any).forkId : "unknown";
-  const targetTurnNumber =
-    typeof (state as any)?.turnNumber === "number"
-      ? (state as any).turnNumber
-      : "unknown";
+type CleanupPromptInput = {
+  state: GameState;
+};
 
-  return `[CLEANUP] Analyze the current VFS state and perform entity cleanup (deduplication + consolidation).
+const cleanupPromptAtom = defineAtom(
+  {
+    atomId: "atoms/cleanup/system#buildCleanupPrompt",
+    source: "ai/agentic/cleanup/cleanup.ts",
+    exportName: "cleanupPromptAtom",
+  },
+  ({ state }: CleanupPromptInput) => {
+    const targetForkId =
+      typeof (state as any)?.forkId === "number"
+        ? (state as any).forkId
+        : "unknown";
+    const targetTurnNumber =
+      typeof (state as any)?.turnNumber === "number"
+        ? (state as any).turnNumber
+        : "unknown";
+
+    return `[CLEANUP] Analyze the current VFS state and perform entity cleanup (deduplication + consolidation).
 
 <cleanup_anchor>
   <target_fork_id>${targetForkId}</target_fork_id>
@@ -194,6 +204,16 @@ Required fields:
 - narrative: Summary of cleanup actions (e.g., "Merged 2 duplicate items, consolidated 1 NPC")
 - choices: Provide 2-4 safe player choices (e.g., "Continue", "Travel", "Rest", "Inspect inventory")
 </output>`;
+  },
+);
+
+/**
+ * Build the cleanup prompt with XML entity context and examples
+ */
+function buildCleanupPrompt(state: GameState): string {
+  return runPromptWithTrace("cleanup.system", () =>
+    cleanupPromptAtom({ state }),
+  );
 }
 
 /**

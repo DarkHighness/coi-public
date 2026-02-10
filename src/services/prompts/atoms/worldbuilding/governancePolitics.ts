@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const governancePolitics: Atom<void> = () => `
+
+export const governancePolitics: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/governancePolitics#governancePolitics", source: "atoms/worldbuilding/governancePolitics.ts", exportName: "governancePolitics" }, () => `
 <worldbuilding_context>
 **GOVERNANCE & POLITICS (Legitimacy → Tools → Enforcement → Blowback)**
 
@@ -92,17 +94,17 @@ When the player does a political act (exposes corruption, kills an official, smu
 - 7-day reaction change:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const governancePoliticsPrimer: Atom<void> = () =>
+export const governancePoliticsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/governancePolitics#governancePoliticsPrimer", source: "atoms/worldbuilding/governancePolitics.ts", exportName: "governancePoliticsPrimer" }, () =>
   `
 <worldbuilding_context>
 **GOVERNANCE PRIMER**: Model rule as legitimacy + tools + capacity + blowback. Always define stakeholders and predictable reactions (7-day effects).
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const governancePoliticsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: governancePolitics(),
+export const governancePoliticsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/governancePolitics#governancePoliticsSkill", source: "atoms/worldbuilding/governancePolitics.ts", exportName: "governancePoliticsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(governancePolitics),
   quickStart: `
 1) Pick 2 legitimacy sources (why rule is accepted)
 2) Define 4 stakeholders (money/force/legitimacy brokers/executive)
@@ -132,4 +134,4 @@ they use selective arrests, asset freezes, and trials. Violence happens off-reco
 Now the player can force them into visible hypocrisy."`,
     },
   ],
-});
+}));

@@ -11,11 +11,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Item 设计上下文 - 完整版
  */
-export const itemDesign: Atom<void> = () => `
+export const itemDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/itemDesign#itemDesign", source: "atoms/entities/itemDesign.ts", exportName: "itemDesign" }, () => `
 <game_system_context>
 **ITEM DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -237,12 +239,12 @@ What happens when items are lost?
 - Does the loss define you?
 </loss_and_recovery>
 </game_system_context>
-`;
+`);
 
 /**
  * Item 设计上下文 - 精简版
  */
-export const itemDesignPrimer: Atom<void> = () => `
+export const itemDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/itemDesign#itemDesignPrimer", source: "atoms/entities/itemDesign.ts", exportName: "itemDesignPrimer" }, () => `
 <game_system_context>
 **ITEM DESIGN**: Items are carriers of history, not loot.
 - Categories (weapons, armor, consumables, keys, artifacts, mundane -- each with its own voice)
@@ -252,7 +254,7 @@ export const itemDesignPrimer: Atom<void> = () => `
 - Curse mechanics (bargain, escalation, cost types, removal)
 - Emotional weight (sentimental vs practical value)
 </game_system_context>
-`;
+`);
 
 export default itemDesign;
 
@@ -260,8 +262,8 @@ export default itemDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const itemDesignSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: itemDesign(),
+export const itemDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/itemDesign#itemDesignSkill", source: "atoms/entities/itemDesign.ts", exportName: "itemDesignSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(itemDesign),
 
   quickStart: `
 1. Provenance: Creator → Owners → Current holder (each step adds story)
@@ -322,4 +324,4 @@ your children's innocent lies. Every imperfect thing becomes unbearable."
 (Clear power, clear cost, player must choose.)`,
     },
   ],
-});
+}));

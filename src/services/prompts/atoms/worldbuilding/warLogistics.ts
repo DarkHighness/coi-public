@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const warLogistics: Atom<void> = () => `
+
+export const warLogistics: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/warLogistics#warLogistics", source: "atoms/worldbuilding/warLogistics.ts", exportName: "warLogistics" }, () => `
 <worldbuilding_context>
 **WAR LOGISTICS & CAMPAIGN PRESSURE (Supply lines are gameplay)**
 
@@ -105,17 +107,17 @@ Make at least one of these a *plot clock*.
 - Insurgency method:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const warLogisticsPrimer: Atom<void> = () =>
+export const warLogisticsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/warLogistics#warLogisticsPrimer", source: "atoms/worldbuilding/warLogistics.ts", exportName: "warLogisticsPrimer" }, () =>
   `
 <worldbuilding_context>
 **WAR LOGISTICS PRIMER**: Model war via supply lines + clocks + occupation cost. Make depots, routes, and chokepoints the real objectives.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const warLogisticsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: warLogistics(),
+export const warLogisticsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/warLogistics#warLogisticsSkill", source: "atoms/worldbuilding/warLogistics.ts", exportName: "warLogisticsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(warLogistics),
   quickStart: `
 1) Define supply origin + route + chokepoint
 2) Pick one campaign clock (rations/ammo/morale/politics)
@@ -144,4 +146,4 @@ The city runs on one pumping station—sabotage it and cholera spreads.
 Now governance is logistics."`,
     },
   ],
-});
+}));

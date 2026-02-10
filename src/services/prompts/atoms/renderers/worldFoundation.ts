@@ -8,6 +8,8 @@
 
 import type { Atom, GameState } from "../types";
 import { toToon } from "../../toon";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderWorldFoundationInput = {
   outline?: GameState["outline"];
@@ -17,7 +19,7 @@ export type RenderWorldFoundationInput = {
 /**
  * Render basic world foundation
  */
-export const renderWorldFoundation: Atom<RenderWorldFoundationInput> = ({
+export const renderWorldFoundation: Atom<RenderWorldFoundationInput> = defineAtom({ atomId: "atoms/renderers/worldFoundation#renderWorldFoundation", source: "atoms/renderers/worldFoundation.ts", exportName: "renderWorldFoundation" }, ({
   outline,
 }) => {
   if (!outline) return "";
@@ -28,12 +30,12 @@ export const renderWorldFoundation: Atom<RenderWorldFoundationInput> = ({
 <main_goal>${toToon(outline.mainGoal)}</main_goal>
 <world_setting>${toToon(outline.worldSetting)}</world_setting>
 </world_foundation>`;
-};
+});
 
 /**
  * Render God Mode context
  */
-export const renderGodMode: Atom<RenderWorldFoundationInput> = ({
+export const renderGodMode: Atom<RenderWorldFoundationInput> = defineAtom({ atomId: "atoms/renderers/worldFoundation#renderGodMode", source: "atoms/renderers/worldFoundation.ts", exportName: "renderGodMode" }, ({
   godMode,
 }) => {
   if (!godMode) return "";
@@ -41,4 +43,4 @@ export const renderGodMode: Atom<RenderWorldFoundationInput> = ({
   return `<god_mode>
 GOD MODE ACTIVE: Player has absolute power. All actions succeed. NPCs obey unconditionally.
 </god_mode>`;
-};
+});

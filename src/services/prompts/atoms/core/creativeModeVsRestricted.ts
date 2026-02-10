@@ -8,16 +8,48 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type CreativeModeInput = {
   isRestricted: boolean;
   isRestrictedTheme?: boolean;
 };
 
+export const creativeModeVsRestrictedPrimer: Atom<CreativeModeInput> = defineAtom({ atomId: "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedPrimer", source: "atoms/core/creativeModeVsRestricted.ts", exportName: "creativeModeVsRestrictedPrimer" }, ({
+  isRestricted,
+  isRestrictedTheme,
+}) => {
+  if (isRestrictedTheme) {
+    return `
+<mode_primer>
+  - Strict restricted-IP mode: preserve canon convergence points and source mechanics.
+  - Allow agency in route and local outcomes, but keep major historical anchors consistent.
+</mode_primer>
+`;
+  }
+
+  if (isRestricted) {
+    return `
+<mode_primer>
+  - Strict mode: stay within established setting/tone and avoid out-of-bound improvisation.
+  - Keep continuity and avoid generic trope injection unless explicitly in-theme.
+</mode_primer>
+`;
+  }
+
+  return `
+<mode_primer>
+  - Creative mode: prioritize originality while preserving established continuity.
+  - Mode changes affect future content only; do not retcon previously established facts.
+</mode_primer>
+`;
+});
+
 /**
  * Creative Mode vs Restricted Mode
  */
-export const creativeModeVsRestricted: Atom<CreativeModeInput> = ({
+export const creativeModeVsRestricted: Atom<CreativeModeInput> = defineAtom({ atomId: "atoms/core/creativeModeVsRestricted#creativeModeVsRestricted", source: "atoms/core/creativeModeVsRestricted.ts", exportName: "creativeModeVsRestricted" }, ({
   isRestricted,
   isRestrictedTheme,
 }) => {
@@ -88,6 +120,6 @@ export const creativeModeVsRestricted: Atom<CreativeModeInput> = ({
   </general_rule>
 </mode_switching_protocol>
 `;
-};
+});
 
 export default creativeModeVsRestricted;

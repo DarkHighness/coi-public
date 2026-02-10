@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const sceneBeatsObjectives: Atom<void> = () => `
+
+export const sceneBeatsObjectives: Atom<void> = defineAtom({ atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectives", source: "atoms/narrative/sceneBeatsObjectives.ts", exportName: "sceneBeatsObjectives" }, () => `
 <craft_context>
 **SCENE BEATS & OBJECTIVES (Engines, Not Vibes)**
 
@@ -53,17 +55,17 @@ Avoid:
 - Truth vs relationship (expose vs protect)
 </endings>
 </craft_context>
-`;
+`);
 
-export const sceneBeatsObjectivesPrimer: Atom<void> = () =>
+export const sceneBeatsObjectivesPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesPrimer", source: "atoms/narrative/sceneBeatsObjectives.ts", exportName: "sceneBeatsObjectivesPrimer" }, () =>
   `
 <craft_context>
 **SCENE PRIMER**: Every scene needs objective + gate + cost + result + decision hook. Use fail-forward; no dead ends.
 </craft_context>
-`.trim();
+`.trim());
 
-export const sceneBeatsObjectivesSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: sceneBeatsObjectives(),
+export const sceneBeatsObjectivesSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesSkill", source: "atoms/narrative/sceneBeatsObjectives.ts", exportName: "sceneBeatsObjectivesSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(sceneBeatsObjectives),
   quickStart: `
 1) Write the objective in 7 words
 2) Add one explicit gate (law/status/process/tech)
@@ -87,4 +89,4 @@ Your attempt leaves scratches; a guard will inspect in 24 hours (new clock).
 You can return tonight with a bribe, or go find the janitor who has the key."`,
     },
   ],
-});
+}));

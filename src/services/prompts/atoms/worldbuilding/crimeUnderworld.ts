@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const crimeUnderworld: Atom<void> = () => `
+
+export const crimeUnderworld: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworld", source: "atoms/worldbuilding/crimeUnderworld.ts", exportName: "crimeUnderworld" }, () => `
 <worldbuilding_context>
 **CRIME & UNDERWORLD (Order for a price, loyalty until a better price)**
 
@@ -75,17 +77,17 @@ Always define:
 - Audit risk:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const crimeUnderworldPrimer: Atom<void> = () =>
+export const crimeUnderworldPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldPrimer", source: "atoms/worldbuilding/crimeUnderworld.ts", exportName: "crimeUnderworldPrimer" }, () =>
   `
 <worldbuilding_context>
 **UNDERWORLD PRIMER**: Model the underworld as services + violence + information. Define brokers, protection, informants, and laundering with audit risk.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const crimeUnderworldSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: crimeUnderworld(),
+export const crimeUnderworldSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldSkill", source: "atoms/worldbuilding/crimeUnderworld.ts", exportName: "crimeUnderworldSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(crimeUnderworld),
   quickStart: `
 1) Pick one prohibited good and one broker
 2) Define one protection model (what it buys, what it punishes)
@@ -114,4 +116,4 @@ Break it and they don’t kill you—they burn your supplier and spread your nam
 The boss tests new hires with a fake leak. Fail and you vanish."`,
     },
   ],
-});
+}));

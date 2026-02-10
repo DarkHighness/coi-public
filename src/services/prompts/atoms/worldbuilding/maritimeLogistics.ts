@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const maritimeLogistics: Atom<void> = () => `
+
+export const maritimeLogistics: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogistics", source: "atoms/worldbuilding/maritimeLogistics.ts", exportName: "maritimeLogistics" }, () => `
 <worldbuilding_context>
 **MARITIME & LOGISTICS (Ports, Paperwork, and Season Clocks)**
 
@@ -82,17 +84,17 @@ War pressure:
 - One dispute (weight/spoilage/seal/fraud):
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const maritimeLogisticsPrimer: Atom<void> = () =>
+export const maritimeLogisticsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsPrimer", source: "atoms/worldbuilding/maritimeLogistics.ts", exportName: "maritimeLogisticsPrimer" }, () =>
   `
 <worldbuilding_context>
 **MARITIME PRIMER**: Ports are gates (customs, inspection, quarantine). Routes have season clocks; cargo creates proof disputes; protection is procedural.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const maritimeLogisticsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: maritimeLogistics(),
+export const maritimeLogisticsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsSkill", source: "atoms/worldbuilding/maritimeLogistics.ts", exportName: "maritimeLogisticsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(maritimeLogistics),
   quickStart: `
 1) Define a route + chokepoint + controller
 2) Add 2 port gates (customs + berth/quarantine/inspection)
@@ -124,4 +126,4 @@ or wait three weeks for the safe window. Meanwhile, rivals can corner the market
 and inspectors may audit your cargo paperwork."`,
     },
   ],
-});
+}));

@@ -10,11 +10,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Location 设计上下文 - 完整版
  */
-export const locationDesign: Atom<void> = () => `
+export const locationDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/locationDesign#locationDesign", source: "atoms/entities/locationDesign.ts", exportName: "locationDesign" }, () => `
 <game_system_context>
 **LOCATION DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -156,12 +158,12 @@ Who "owns" this space?
 - **Snow**: Tracks obvious, sounds muffled, hypothermia risk, beauty masks danger
 </weather_mechanics>
 </game_system_context>
-`;
+`);
 
 /**
  * Location design primer (system-prompt safe).
  */
-export const locationDesignPrimer: Atom<void> = () => `
+export const locationDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/locationDesign#locationDesignPrimer", source: "atoms/entities/locationDesign.ts", exportName: "locationDesignPrimer" }, () => `
 <game_system_context>
 **LOCATION DESIGN**: Locations are characters with memory in their walls.
 - Sensory details (smell strikes memory; sound builds atmosphere; touch grounds the body)
@@ -171,7 +173,7 @@ export const locationDesignPrimer: Atom<void> = () => `
 - Imperfections (nothing is pristine)
 - Weather affects mechanics
 </game_system_context>
-`;
+`);
 
 export default locationDesign;
 
@@ -179,8 +181,8 @@ export default locationDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const locationDesignSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: locationDesign(),
+export const locationDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/locationDesign#locationDesignSkill", source: "atoms/entities/locationDesign.ts", exportName: "locationDesignSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(locationDesign),
 
   quickStart: `
 1. Sensory Hierarchy: Smell (most evocative) → Sound → Touch → Sight
@@ -241,4 +243,4 @@ The cellar connects to the thieves' guild tunnel network."
 (Surface hides underbelly.)`,
     },
   ],
-});
+}));

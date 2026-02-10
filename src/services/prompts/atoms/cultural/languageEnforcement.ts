@@ -8,6 +8,8 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type LanguageEnforcementInput = {
   language: string;
@@ -95,7 +97,7 @@ const getExamples = (language: string) => {
 /**
  * 语言强制规则 - 完整版
  */
-export const languageEnforcement: Atom<LanguageEnforcementInput> = ({
+export const languageEnforcement: Atom<LanguageEnforcementInput> = defineAtom({ atomId: "atoms/cultural/languageEnforcement#languageEnforcement", source: "atoms/cultural/languageEnforcement.ts", exportName: "languageEnforcement" }, ({
   language,
 }) => {
   const ex = getExamples(language);
@@ -192,14 +194,14 @@ export const languageEnforcement: Atom<LanguageEnforcementInput> = ({
   </enforcement>
 </language_enforcement_protocol>
 `;
-};
+});
 
 /**
  * Language enforcement primer (system-prompt safe).
  *
  * This is intentionally short and non-optional. It replaces the old short-form export.
  */
-export const languageEnforcementPrimer: Atom<LanguageEnforcementInput> = ({
+export const languageEnforcementPrimer: Atom<LanguageEnforcementInput> = defineAtom({ atomId: "atoms/cultural/languageEnforcement#languageEnforcementPrimer", source: "atoms/cultural/languageEnforcement.ts", exportName: "languageEnforcementPrimer" }, ({
   language,
 }) => {
   const ex = getExamples(language);
@@ -213,6 +215,6 @@ ONLY JSON keys and entity IDs may be in English.
 NO parenthetical translations. NO slash-separated alternatives. PURE ${language} only.
 </language_enforcement>
 `;
-};
+});
 
 export default languageEnforcement;

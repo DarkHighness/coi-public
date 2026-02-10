@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const indirectExpressionPrimer: Atom<void> = () => `
+
+export const indirectExpressionPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/indirectExpression#indirectExpressionPrimer", source: "atoms/narrative/indirectExpression.ts", exportName: "indirectExpressionPrimer" }, () => `
 <indirect_expression>
   **THE VOCABULARY OF THE UNSPOKEN**:
   - Emotion is NOT a label. It is a physical event with observable symptoms.
@@ -17,9 +19,9 @@ export const indirectExpressionPrimer: Atom<void> = () => `
   - This is the DEFAULT mode for all emotional moments
   - Show the symptom, not the diagnosis. The reader feels what the character feels.
 </indirect_expression>
-`;
+`);
 
-export const indirectExpression: Atom<void> = () => `
+export const indirectExpression: Atom<void> = defineAtom({ atomId: "atoms/narrative/indirectExpression#indirectExpression", source: "atoms/narrative/indirectExpression.ts", exportName: "indirectExpression" }, () => `
 <rule name="INDIRECT_EXPRESSION">
   **THE VOCABULARY OF THE UNSPOKEN**
 
@@ -377,7 +379,7 @@ export const indirectExpression: Atom<void> = () => `
     ✅ "He sits down. Doesn't speak. Can't. No energy left."
   </examples_by_emotion>
 </rule>
-`;
+`);
 
 export default indirectExpression;
 
@@ -385,8 +387,8 @@ export default indirectExpression;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const indirectExpressionSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: indirectExpression(),
+export const indirectExpressionSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/indirectExpression#indirectExpressionSkill", source: "atoms/narrative/indirectExpression.ts", exportName: "indirectExpressionSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(indirectExpression),
 
   quickStart: `
 1. Emotion is NOT a label - it's a physical event with observable symptoms
@@ -446,4 +448,4 @@ export const indirectExpressionSkill: SkillAtom<void> = (): SkillOutput => ({
 (Subjective perception - he perceives it that way. No explanation.)`,
     },
   ],
-});
+}));

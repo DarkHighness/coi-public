@@ -3,13 +3,15 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface OutputFormatInput {
   language: string;
   finishToolName?: string;
 }
 
-export const outputFormat: Atom<OutputFormatInput> = ({
+export const outputFormat: Atom<OutputFormatInput> = defineAtom({ atomId: "atoms/core/outputFormat#outputFormat", source: "atoms/core/outputFormat.ts", exportName: "outputFormat" }, ({
   language,
   finishToolName,
 }) => {
@@ -54,4 +56,4 @@ export const outputFormat: Atom<OutputFormatInput> = ({
   </rules>
 </output_format>
 `;
-};
+});

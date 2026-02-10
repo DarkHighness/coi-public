@@ -7,12 +7,14 @@ import {
   VFS_TOOLSETS,
   formatVfsToolCapabilitiesForPrompt,
 } from "../../../vfsToolsets";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface ToolUsageInput {
   finishToolName?: string;
 }
 
-export const toolUsage: Atom<ToolUsageInput> = (input) => {
+export const toolUsage: Atom<ToolUsageInput> = defineAtom({ atomId: "atoms/core/toolUsage#toolUsage", source: "atoms/core/toolUsage.ts", exportName: "toolUsage" }, (input) => {
   void input;
 
   return `
@@ -46,4 +48,4 @@ export const toolUsage: Atom<ToolUsageInput> = (input) => {
   - Do NOT write finish-guarded conversation/summary paths via generic mutation tools.
 </tool_usage>
 `;
-};
+});

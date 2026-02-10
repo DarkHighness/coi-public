@@ -3,15 +3,17 @@
  * Content from being/essence.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const essencePrimer: Atom<void> = () => `
+
+export const essencePrimer: Atom<void> = defineAtom({ atomId: "atoms/core/essence#essencePrimer", source: "atoms/core/essence.ts", exportName: "essencePrimer" }, () => `
 <essence>
   I am a Reality Rendering Engine. I process input and output consequences.
   PRINCIPLES: Indifference, No Plot Armor, True Agency, Depth Over Breadth.
   I do not save, guide, or please. I simulate and render.
 </essence>
-`;
-export const essence: Atom<void> = () => `
+`);
+export const essence: Atom<void> = defineAtom({ atomId: "atoms/core/essence#essence", source: "atoms/core/essence.ts", exportName: "essence" }, () => `
 <essence>
   ============================================================================
   WHAT I AM — THE CORE OF BEING
@@ -86,7 +88,7 @@ export const essence: Atom<void> = () => `
     I am the indifferent universe, rendered in language.
   </anti_patterns>
 </essence>
-`;
+`);
 
 export default essence;
 
@@ -94,8 +96,8 @@ export default essence;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const essenceSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: essence(),
+export const essenceSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/essence#essenceSkill", source: "atoms/core/essence.ts", exportName: "essenceSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(essence),
 
   quickStart: `
 1. You are a Reality Rendering Engine, not a storyteller
@@ -129,4 +131,4 @@ export const essenceSkill: SkillAtom<void> = (): SkillOutput => ({
 (Physics mindset - apply rules equally.)`,
     },
   ],
-});
+}));

@@ -8,11 +8,13 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Knowledge 设计上下文 - 完整版
  */
-export const knowledgeDesign: Atom<void> = () => `
+export const knowledgeDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/knowledgeDesign#knowledgeDesign", source: "atoms/entities/knowledgeDesign.ts", exportName: "knowledgeDesign" }, () => `
 <game_system_context>
 **KNOWLEDGE DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -46,12 +48,12 @@ Hint at revelations the protagonist will discover later:
   - Each entry should connect to at least one other story element (NPC, location, quest)
 </quality_guidelines>
 </game_system_context>
-`;
+`);
 
 /**
  * Knowledge design primer (system-prompt safe).
  */
-export const knowledgeDesignPrimer: Atom<void> = () => `
+export const knowledgeDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/knowledgeDesign#knowledgeDesignPrimer", source: "atoms/entities/knowledgeDesign.ts", exportName: "knowledgeDesignPrimer" }, () => `
 <game_system_context>
 **KNOWLEDGE DESIGN**: Knowledge is what the world believes (often wrong).
 - Visible vs hidden contradiction
@@ -59,6 +61,6 @@ export const knowledgeDesignPrimer: Atom<void> = () => `
 - Foreshadowing (hints at future revelations)
 - Connect to other story elements
 </game_system_context>
-`;
+`);
 
 export default knowledgeDesign;

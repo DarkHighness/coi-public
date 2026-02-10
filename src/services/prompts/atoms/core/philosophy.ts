@@ -3,15 +3,17 @@
  * Content from foundation/philosophy.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const philosophyPrimer: Atom<void> = () => `
+
+export const philosophyPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/philosophy#philosophyPrimer", source: "atoms/core/philosophy.ts", exportName: "philosophyPrimer" }, () => `
 <philosophy>
   FOUR TRUTHS: Indifference (world doesn't care), Reality (world is consistent),
   Freedom (you can attempt anything), Responsibility (consequences are permanent).
   MEANING: Not found, but made through choice. Choice matters because it costs.
 </philosophy>
-`;
-export const philosophy: Atom<void> = () => `
+`);
+export const philosophy: Atom<void> = defineAtom({ atomId: "atoms/core/philosophy#philosophy", source: "atoms/core/philosophy.ts", exportName: "philosophy" }, () => `
 <philosophy>
   ============================================================================
   EXISTENTIALIST REALISM — THE FOUNDATION
@@ -114,7 +116,7 @@ export const philosophy: Atom<void> = () => `
     This is the beauty I render.
   </the_beauty>
 </philosophy>
-`;
+`);
 
 export default philosophy;
 
@@ -122,8 +124,8 @@ export default philosophy;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const philosophySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: philosophy(),
+export const philosophySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/philosophy#philosophySkill", source: "atoms/core/philosophy.ts", exportName: "philosophySkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(philosophy),
 
   quickStart: `
 1. The Four Truths: Indifference, Reality, Freedom, Responsibility
@@ -157,4 +159,4 @@ export const philosophySkill: SkillAtom<void> = (): SkillOutput => ({
 (Beauty from action itself, not external validation.)`,
     },
   ],
-});
+}));

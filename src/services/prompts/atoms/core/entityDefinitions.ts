@@ -3,8 +3,10 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const entityDefinitions: Atom<void> = () => `
+
+export const entityDefinitions: Atom<void> = defineAtom({ atomId: "atoms/core/entityDefinitions#entityDefinitions", source: "atoms/core/entityDefinitions.ts", exportName: "entityDefinitions" }, () => `
 <entity_definitions>
   <instruction>
     **ENTITY TYPES & MEANINGS**:
@@ -28,4 +30,4 @@ export const entityDefinitions: Atom<void> = () => `
     - **trait**: Permanent or semi-permanent character features/personality quirks (e.g., "Brave", "Night Vision").
   </instruction>
 </entity_definitions>
-`;
+`);

@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const diplomacyTreaties: Atom<void> = () => `
+
+export const diplomacyTreaties: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreaties", source: "atoms/worldbuilding/diplomacyTreaties.ts", exportName: "diplomacyTreaties" }, () => `
 <worldbuilding_context>
 **DIPLOMACY & TREATIES (Elegant violence in the language of compromise)**
 
@@ -83,17 +85,17 @@ Keep it legible:
 - One protocol rule (gift/seating/title) that matters:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const diplomacyTreatiesPrimer: Atom<void> = () =>
+export const diplomacyTreatiesPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesPrimer", source: "atoms/worldbuilding/diplomacyTreaties.ts", exportName: "diplomacyTreatiesPrimer" }, () =>
   `
 <worldbuilding_context>
 **DIPLOMACY PRIMER**: Treaties need scope + verification + enforcement + guarantees. Diplomacy creates access gates and breach clocks.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const diplomacyTreatiesSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: diplomacyTreaties(),
+export const diplomacyTreatiesSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesSkill", source: "atoms/worldbuilding/diplomacyTreaties.ts", exportName: "diplomacyTreatiesSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(diplomacyTreaties),
   quickStart: `
 1) Define the treaty skeleton (parties, scope, concessions)
 2) Pick 1 verification mechanism (inspectors/ledgers/ritual) with limits
@@ -125,4 +127,4 @@ and assets frozen (7 days). Only after those fail do raids and proxy funding beg
 faster escalation; doves try to trade concessions for time."`,
     },
   ],
-});
+}));

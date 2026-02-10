@@ -18,6 +18,7 @@ import {
   lightingContext,
   weatherEffects,
 } from "./atoms/image";
+import { defineAtom, runPromptWithTrace } from "./trace/runtime";
 
 /**
  * NPC info extracted from AI prompt or game state
@@ -207,242 +208,332 @@ const getThemeStyleReference = (
  * @param gameState Game state (provides world, location, protagonist context, etc.)
  * @param snapshot Optional state snapshot (for history replay)
  */
+type SceneImagePromptInput = {
+  prompt: string;
+  gameState?: GameState;
+  snapshot?: GameStateSnapshot;
+};
+
+const sceneImagePromptAtom = defineAtom(
+  {
+    atomId: "atoms/media/sceneImage#getSceneImagePrompt",
+    source: "prompts/sceneImage.ts",
+    exportName: "sceneImagePromptAtom",
+  },
+  ({ prompt, gameState, snapshot }: SceneImagePromptInput, trace) => {
+    if (!gameState) {
+      return `<scene>
+  <description>${prompt}</description>
+  <quality>${trace.record(imageQualityPrefix)}</quality>
+</scene>`;
+    }
+
+    const context = extractContextFromGameState(gameState, snapshot);
+    const {
+      theme,
+      time,
+      currentLocation,
+      currentLocationName,
+      character,
+      knownNPCs,
+      worldSetting,
+      storyTitle,
+      weather,
+      mood,
+    } = context;
+
+    const mentionedNPCs = extractMentionedNPCs(prompt, knownNPCs);
+
+    const themeStyleRef = getThemeStyleReference(theme, storyTitle);
+    const styleBlock = themeStyleRef
+      ? `
+<style_reference>
+${themeStyleRef}
+</style_reference>
+`
+      : "";
+
+    let xmlPrompt = `${trace.record(imageQualityPrefix)}
+
+<visual_context>
+`;
+
+    if (storyTitle || worldSetting || theme) {
+      xmlPrompt += `  <story_background>
+`;
+      if (storyTitle) {
+        xmlPrompt += `    <title>${storyTitle}</title>
+`;
+      }
+      if (theme) {
+        xmlPrompt += `    <theme>${theme}</theme>
+`;
+      }
+      if (worldSetting) {
+        xmlPrompt += `    <world_setting>
+      ${worldSetting}
+    </world_setting>
+`;
+      }
+
+      xmlPrompt += `    ${trace.record(ipFidelityRequirements)}
+`;
+
+      xmlPrompt += `    <narrative_context>Visual style should reinforce the story's themes and world-building, maintaining consistency with established lore and atmosphere</narrative_context>
+`;
+      xmlPrompt += `  </story_background>
+`;
+    }
+
+    if (time) {
+      xmlPrompt += `  ${trace.record(lightingContext, { time })}
+`;
+    }
+
+    if (weather && weather !== "none") {
+      xmlPrompt += `  ${trace.record(weatherEffects, { weather })}
+`;
+    }
+
+    if (currentLocation || currentLocationName) {
+      xmlPrompt += `  <environment>
+`;
+
+      if (currentLocation) {
+        xmlPrompt += `    <location>
+`;
+        xmlPrompt += `      <name>${currentLocation.name || currentLocationName}</name>
+`;
+        if (currentLocation.visible?.environment) {
+          xmlPrompt += `      <type>${currentLocation.visible.environment}</type>
+`;
+        }
+        if (currentLocation.visible?.description) {
+          xmlPrompt += `      <description>${currentLocation.visible.description}</description>
+`;
+        }
+        if (currentLocation.visible?.atmosphere) {
+          xmlPrompt += `      <atmosphere>${currentLocation.visible.atmosphere}</atmosphere>
+`;
+        }
+        xmlPrompt += `    </location>
+`;
+
+        const sensory = currentLocation.visible?.sensory;
+        if (sensory) {
+          xmlPrompt += `    <sensory_details>
+`;
+          if (sensory.smell) {
+            xmlPrompt += `      <smell>${sensory.smell}</smell>
+`;
+          }
+          if (sensory.sound) {
+            xmlPrompt += `      <sound>${sensory.sound}</sound>
+`;
+          }
+          if (sensory.lighting) {
+            xmlPrompt += `      <lighting>${sensory.lighting}</lighting>
+`;
+          }
+          if (sensory.temperature) {
+            xmlPrompt += `      <temperature>${sensory.temperature}</temperature>
+`;
+          }
+          xmlPrompt += `    </sensory_details>
+`;
+        }
+
+        const knownFeatures = currentLocation.visible?.knownFeatures;
+        if (knownFeatures && knownFeatures.length > 0) {
+          xmlPrompt += `    <notable_features>
+`;
+          knownFeatures.forEach((feature: string) => {
+            xmlPrompt += `      <feature>${feature}</feature>
+`;
+          });
+          xmlPrompt += `    </notable_features>
+`;
+        }
+
+        const interactables = currentLocation.visible?.interactables;
+        if (interactables && interactables.length > 0) {
+          xmlPrompt += `    <interactables>
+`;
+          interactables.forEach((item: string) => {
+            xmlPrompt += `      <object>${item}</object>
+`;
+          });
+          xmlPrompt += `    </interactables>
+`;
+        }
+
+        const resources = currentLocation.visible?.resources;
+        if (resources && resources.length > 0) {
+          xmlPrompt += `    <visible_resources>
+`;
+          resources.forEach((resource: string) => {
+            xmlPrompt += `      <resource>${resource}</resource>
+`;
+          });
+          xmlPrompt += `    </visible_resources>
+`;
+        }
+
+        if (currentLocation.notes) {
+          xmlPrompt += `    <writer_notes>${currentLocation.notes}</writer_notes>
+`;
+        }
+      } else {
+        xmlPrompt += `    <location>${currentLocationName} (Unknown Environment)</location>
+`;
+      }
+
+      if (mood) {
+        const moodDetails: Record<string, string> = {
+          quiet:
+            "Serene and still environment, minimal movement, peaceful atmosphere, soft ambient sounds implied",
+          mystical:
+            "Magical energy visible in air, glowing particles, ethereal lighting, otherworldly atmosphere, fantastical elements",
+          horror:
+            "Oppressive and threatening atmosphere, ominous shadows, disturbing details, sense of dread, unsettling elements",
+          combat:
+            "Dynamic and chaotic environment, action debris, impact effects, tense atmosphere, dramatic motion blur",
+          tavern:
+            "Warm interior lighting, wooden textures, smoke or steam, crowded or cozy atmosphere, social setting details",
+          city: "Urban environment, architectural details, crowds or emptiness, ambient city lighting, modern or fantasy elements",
+        };
+        xmlPrompt += `    <atmosphere>${moodDetails[mood] || mood}</atmosphere>
+`;
+      }
+      xmlPrompt += `    <environmental_details>
+`;
+      xmlPrompt += `      Detailed background elements, textural variety (stone, wood, metal, fabric), environmental storytelling through props and setting, atmospheric perspective with depth, foreground/midground/background separation
+`;
+      xmlPrompt += `    </environmental_details>
+`;
+      xmlPrompt += `  </environment>
+`;
+    }
+
+    if (character) {
+      xmlPrompt += `  <protagonist>
+`;
+      xmlPrompt += `    <identity>
+`;
+      xmlPrompt += `      <name>${character.name || "Unknown"}</name>
+`;
+      xmlPrompt += `      <race>${character.race || "Human"}</race>
+`;
+      xmlPrompt += `      <profession>${character.profession || "Adventurer"}</profession>
+`;
+      xmlPrompt += `    </identity>
+`;
+      xmlPrompt += `    <physical_description>
+`;
+      xmlPrompt += `      ${character.appearance || "A figure defined by their presence and gear"}
+`;
+      xmlPrompt += `    </physical_description>
+`;
+      xmlPrompt += `    <current_state>
+`;
+      xmlPrompt += `      <status>${character.status || "Normal"}</status>
+`;
+      xmlPrompt += `      <emotional_state>Convey emotion through body language, facial expression, and posture</emotional_state>
+`;
+      xmlPrompt += `    </current_state>
+`;
+      xmlPrompt += `    <visual_priority>
+`;
+      xmlPrompt += `      Main focus of composition, positioned using rule of thirds, detailed facial features and expressions, realistic anatomy and proportions, high detail on clothing/armor/equipment, skin texture and imperfections visible, dynamic pose suggesting action or emotion
+`;
+      xmlPrompt += `    </visual_priority>
+`;
+      xmlPrompt += `  </protagonist>
+`;
+    }
+
+    if (mentionedNPCs.length > 0) {
+      xmlPrompt += `  <npcs_in_scene>
+`;
+      xmlPrompt += `    <note>These NPCs were mentioned in the scene description. Use their appearance data to render them accurately.</note>
+`;
+      mentionedNPCs.slice(0, 4).forEach((npc, index) => {
+        xmlPrompt += `    <npc priority="${index === 0 ? "high" : "medium"}">
+`;
+        xmlPrompt += `      <name>${npc.name}</name>
+`;
+        if (npc.description) {
+          xmlPrompt += `      <description>${npc.description}</description>
+`;
+        }
+        if (npc.appearance) {
+          xmlPrompt += `      <appearance>${npc.appearance}</appearance>
+`;
+        }
+        if (npc.status) {
+          xmlPrompt += `      <status>${npc.status}</status>
+`;
+        }
+        xmlPrompt += `      <rendering>Position relative to protagonist as described in scene, body language and expression matching narrative context, physical details consistent with appearance data</rendering>
+`;
+        xmlPrompt += `    </npc>
+`;
+      });
+      xmlPrompt += `  </npcs_in_scene>
+`;
+    }
+
+    xmlPrompt += `</visual_context>
+`;
+
+    xmlPrompt += `
+${trace.record(compositionDirectives)}
+`;
+
+    xmlPrompt += `
+${trace.record(renderingInstructions)}
+`;
+
+    xmlPrompt += `
+<scene_description>
+`;
+    xmlPrompt += `  ${prompt}
+`;
+    xmlPrompt += `</scene_description>
+`;
+
+    xmlPrompt += `
+${trace.record(imageTechnicalSpecs)}`;
+
+    const customImageRules = formatImageStyleRules(gameState.customRules);
+    if (customImageRules) {
+      xmlPrompt += `
+<custom_style_requirements>
+${customImageRules}
+</custom_style_requirements>`;
+    }
+
+    return styleBlock + xmlPrompt;
+  },
+);
+
+/**
+ * Generate scene image prompt
+ *
+ * Important Change: No longer automatically detects NPCs in the scene
+ * The AI has already decided which characters should appear in the frame when generating imagePrompt based on narrative context
+ * We only need to provide game state context to enhance the AI-generated prompt
+ *
+ * @param prompt Scene description generated by AI (already includes character information)
+ * @param gameState Game state (provides world, location, protagonist context, etc.)
+ * @param snapshot Optional state snapshot (for history replay)
+ */
 export const getSceneImagePrompt = (
   prompt: string,
   gameState?: GameState,
   snapshot?: GameStateSnapshot,
 ): string => {
-  // Enhanced XML-based prompt with maximum detail
-  // XML structure helps AI models parse complex, multi-faceted scene descriptions
-
-  if (!gameState) {
-    // Fallback: Wrap basic prompt in minimal structure
-    return `<scene>
-  <description>${prompt}</description>
-  <quality>${imageQualityPrefix()}</quality>
-</scene>`;
-  }
-
-  const context = extractContextFromGameState(gameState, snapshot);
-  const {
-    theme,
-    time,
-    currentLocation,
-    currentLocationName,
-    character,
-    knownNPCs,
-    worldSetting,
-    storyTitle,
-    weather,
-    mood,
-  } = context;
-
-  // Extract NPCs mentioned in the AI's prompt and enrich with game state data
-  const mentionedNPCs = extractMentionedNPCs(prompt, knownNPCs);
-
-  // === STYLE REFERENCE ===
-  const themeStyleRef = getThemeStyleReference(theme, storyTitle);
-  const styleBlock = themeStyleRef
-    ? `\n<style_reference>\n${themeStyleRef}\n</style_reference>\n`
-    : "";
-
-  // === BUILD COMPREHENSIVE XML CONTEXT ===
-  let xmlPrompt = `${imageQualityPrefix()}\n\n<visual_context>\n`;
-
-  // Story Background and Narrative Context
-  if (storyTitle || worldSetting || theme) {
-    xmlPrompt += `  <story_background>\n`;
-    if (storyTitle) {
-      xmlPrompt += `    <title>${storyTitle}</title>\n`;
-    }
-    if (theme) {
-      xmlPrompt += `    <theme>${theme}</theme>\n`;
-    }
-    if (worldSetting) {
-      xmlPrompt += `    <world_setting>\n      ${worldSetting}\n    </world_setting>\n`;
-    }
-
-    // IP Fidelity Rules Atom
-    xmlPrompt += `    ${ipFidelityRequirements()}\n`;
-
-    xmlPrompt += `    <narrative_context>Visual style should reinforce the story's themes and world-building, maintaining consistency with established lore and atmosphere</narrative_context>\n`;
-    xmlPrompt += `  </story_background>\n`;
-  }
-
-  // Time and Lighting Atom
-  if (time) {
-    xmlPrompt += `  ${lightingContext({ time })}\n`;
-  }
-
-  // Weather and Atmospheric Effects Atom
-  if (weather && weather !== "none") {
-    xmlPrompt += `  ${weatherEffects({ weather })}\n`;
-  }
-
-  // Location and Environment - now with rich details
-  if (currentLocation || currentLocationName) {
-    xmlPrompt += `  <environment>\n`;
-
-    if (currentLocation) {
-      // Full location details from Location object
-      xmlPrompt += `    <location>\n`;
-      xmlPrompt += `      <name>${currentLocation.name || currentLocationName}</name>\n`;
-      if (currentLocation.visible?.environment) {
-        xmlPrompt += `      <type>${currentLocation.visible.environment}</type>\n`;
-      }
-      if (currentLocation.visible?.description) {
-        xmlPrompt += `      <description>${currentLocation.visible.description}</description>\n`;
-      }
-      if (currentLocation.visible?.atmosphere) {
-        xmlPrompt += `      <atmosphere>${currentLocation.visible.atmosphere}</atmosphere>\n`;
-      }
-      xmlPrompt += `    </location>\n`;
-
-      // Sensory Details for immersion
-      const sensory = currentLocation.visible?.sensory;
-      if (sensory) {
-        xmlPrompt += `    <sensory_details>\n`;
-        if (sensory.smell) {
-          xmlPrompt += `      <smell>${sensory.smell}</smell>\n`;
-        }
-        if (sensory.sound) {
-          xmlPrompt += `      <sound>${sensory.sound}</sound>\n`;
-        }
-        if (sensory.lighting) {
-          xmlPrompt += `      <lighting>${sensory.lighting}</lighting>\n`;
-        }
-        if (sensory.temperature) {
-          xmlPrompt += `      <temperature>${sensory.temperature}</temperature>\n`;
-        }
-        xmlPrompt += `    </sensory_details>\n`;
-      }
-
-      // Known Features - visual landmarks and points of interest
-      const knownFeatures = currentLocation.visible?.knownFeatures;
-      if (knownFeatures && knownFeatures.length > 0) {
-        xmlPrompt += `    <notable_features>\n`;
-        knownFeatures.forEach((feature: string) => {
-          xmlPrompt += `      <feature>${feature}</feature>\n`;
-        });
-        xmlPrompt += `    </notable_features>\n`;
-      }
-
-      // Interactable Objects - props and elements in the scene
-      const interactables = currentLocation.visible?.interactables;
-      if (interactables && interactables.length > 0) {
-        xmlPrompt += `    <interactables>\n`;
-        interactables.forEach((item: string) => {
-          xmlPrompt += `      <object>${item}</object>\n`;
-        });
-        xmlPrompt += `    </interactables>\n`;
-      }
-
-      // Resources - environmental resources visible in the scene
-      const resources = currentLocation.visible?.resources;
-      if (resources && resources.length > 0) {
-        xmlPrompt += `    <visible_resources>\n`;
-        resources.forEach((resource: string) => {
-          xmlPrompt += `      <resource>${resource}</resource>\n`;
-        });
-        xmlPrompt += `    </visible_resources>\n`;
-      }
-
-      // Writer's notes for consistency
-      if (currentLocation.notes) {
-        xmlPrompt += `    <writer_notes>${currentLocation.notes}</writer_notes>\n`;
-      }
-    } else {
-      // Fallback to just the location name
-      xmlPrompt += `    <location>${currentLocationName} (Unknown Environment)</location>\n`;
-    }
-
-    if (mood) {
-      const moodDetails: Record<string, string> = {
-        quiet:
-          "Serene and still environment, minimal movement, peaceful atmosphere, soft ambient sounds implied",
-        mystical:
-          "Magical energy visible in air, glowing particles, ethereal lighting, otherworldly atmosphere, fantastical elements",
-        horror:
-          "Oppressive and threatening atmosphere, ominous shadows, disturbing details, sense of dread, unsettling elements",
-        combat:
-          "Dynamic and chaotic environment, action debris, impact effects, tense atmosphere, dramatic motion blur",
-        tavern:
-          "Warm interior lighting, wooden textures, smoke or steam, crowded or cozy atmosphere, social setting details",
-        city: "Urban environment, architectural details, crowds or emptiness, ambient city lighting, modern or fantasy elements",
-      };
-      xmlPrompt += `    <atmosphere>${moodDetails[mood] || mood}</atmosphere>\n`;
-    }
-    xmlPrompt += `    <environmental_details>\n`;
-    xmlPrompt += `      Detailed background elements, textural variety (stone, wood, metal, fabric), environmental storytelling through props and setting, atmospheric perspective with depth, foreground/midground/background separation\n`;
-    xmlPrompt += `    </environmental_details>\n`;
-    xmlPrompt += `  </environment>\n`;
-  }
-
-  // Protagonist Details (Enhanced)
-  if (character) {
-    xmlPrompt += `  <protagonist>\n`;
-    xmlPrompt += `    <identity>\n`;
-    xmlPrompt += `      <name>${character.name || "Unknown"}</name>\n`;
-    xmlPrompt += `      <race>${character.race || "Human"}</race>\n`;
-    xmlPrompt += `      <profession>${character.profession || "Adventurer"}</profession>\n`;
-    xmlPrompt += `    </identity>\n`;
-    xmlPrompt += `    <physical_description>\n`;
-    xmlPrompt += `      ${character.appearance || "A figure defined by their presence and gear"}\n`;
-    xmlPrompt += `    </physical_description>\n`;
-    xmlPrompt += `    <current_state>\n`;
-    xmlPrompt += `      <status>${character.status || "Normal"}</status>\n`;
-    xmlPrompt += `      <emotional_state>Convey emotion through body language, facial expression, and posture</emotional_state>\n`;
-    xmlPrompt += `    </current_state>\n`;
-    xmlPrompt += `    <visual_priority>\n`;
-    xmlPrompt += `      Main focus of composition, positioned using rule of thirds, detailed facial features and expressions, realistic anatomy and proportions, high detail on clothing/armor/equipment, skin texture and imperfections visible, dynamic pose suggesting action or emotion\n`;
-    xmlPrompt += `    </visual_priority>\n`;
-    xmlPrompt += `  </protagonist>\n`;
-  }
-
-  // NPCs mentioned in the AI's prompt - enriched with game state appearance data
-  // This replaces the old automatic NPC detection based on location
-  if (mentionedNPCs.length > 0) {
-    xmlPrompt += `  <npcs_in_scene>\n`;
-    xmlPrompt += `    <note>These NPCs were mentioned in the scene description. Use their appearance data to render them accurately.</note>\n`;
-    mentionedNPCs.slice(0, 4).forEach((npc, index) => {
-      xmlPrompt += `    <npc priority="${index === 0 ? "high" : "medium"}">\n`;
-      xmlPrompt += `      <name>${npc.name}</name>\n`;
-      if (npc.description) {
-        xmlPrompt += `      <description>${npc.description}</description>\n`;
-      }
-      if (npc.appearance) {
-        xmlPrompt += `      <appearance>${npc.appearance}</appearance>\n`;
-      }
-      if (npc.status) {
-        xmlPrompt += `      <status>${npc.status}</status>\n`;
-      }
-      xmlPrompt += `      <rendering>Position relative to protagonist as described in scene, body language and expression matching narrative context, physical details consistent with appearance data</rendering>\n`;
-      xmlPrompt += `    </npc>\n`;
-    });
-    xmlPrompt += `  </npcs_in_scene>\n`;
-  }
-
-  xmlPrompt += `</visual_context>\n`;
-
-  // === SCENE COMPOSITION DIRECTIVES ATOM ===
-  xmlPrompt += `\n${compositionDirectives()}\n`;
-
-  // === RENDERING INSTRUCTIONS ATOM ===
-  xmlPrompt += `\n${renderingInstructions()}\n`;
-
-  // === CORE SCENE DESCRIPTION (from AI) ===
-  xmlPrompt += `\n<scene_description>\n`;
-  xmlPrompt += `  ${prompt}\n`;
-  xmlPrompt += `</scene_description>\n`;
-
-  // === TECHNICAL SPECIFICATIONS ATOM ===
-  xmlPrompt += `\n${imageTechnicalSpecs()}`;
-
-  // === CUSTOM IMAGE STYLE RULES ===
-  const customImageRules = formatImageStyleRules(gameState.customRules);
-  if (customImageRules) {
-    xmlPrompt += `\n<custom_style_requirements>\n${customImageRules}\n</custom_style_requirements>`;
-  }
-
-  return styleBlock + xmlPrompt;
+  return runPromptWithTrace("media.sceneImage", () =>
+    sceneImagePromptAtom({ prompt, gameState, snapshot }),
+  );
 };

@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const institutions: Atom<void> = () => `
+
+export const institutions: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/institutions#institutions", source: "atoms/worldbuilding/institutions.ts", exportName: "institutions" }, () => `
 <worldbuilding_context>
 **INSTITUTIONS & BUREAUCRACY (Process is power)**
 
@@ -105,17 +107,17 @@ This creates insider-leverage and negotiation scenes.
 - Audit trigger:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const institutionsPrimer: Atom<void> = () =>
+export const institutionsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/institutions#institutionsPrimer", source: "atoms/worldbuilding/institutions.ts", exportName: "institutionsPrimer" }, () =>
   `
 <worldbuilding_context>
 **INSTITUTIONS PRIMER**: Model power as process + bottlenecks + incentives. Always define docs, timelines, and workarounds (insiders, forged papers, bribes).
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const institutionsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: institutions(),
+export const institutionsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/institutions#institutionsSkill", source: "atoms/worldbuilding/institutions.ts", exportName: "institutionsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(institutions),
   quickStart: `
 1) Pick one institutional action (permit/license/badge)
 2) Define required documents + one bottleneck official
@@ -144,4 +146,4 @@ An insider offers a sponsor letter. A forger offers a stamp. Either way, you pic
 If you fail your task, your badge becomes evidence of trespass."`,
     },
   ],
-});
+}));

@@ -10,12 +10,14 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface ConflictingEmotionsInput {
   // (no inputs yet)
 }
 
-export const conflictingEmotionsPrimer: Atom<void> = () => `
+export const conflictingEmotionsPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/conflictingEmotions#conflictingEmotionsPrimer", source: "atoms/narrative/conflictingEmotions.ts", exportName: "conflictingEmotionsPrimer" }, () => `
 <conflicting_emotions>
   **SIMULTANEITY, NOT ALTERNATION**:
   - Emotions happen at the SAME TIME, not in sequence
@@ -23,8 +25,8 @@ export const conflictingEmotionsPrimer: Atom<void> = () => `
   - Dialogue should carry contradictions ("I love you. I can't stand you.")
   - Physical tells reveal internal war
 </conflicting_emotions>
-`;
-export const conflictingEmotions: Atom<void> = () => `
+`);
+export const conflictingEmotions: Atom<void> = defineAtom({ atomId: "atoms/narrative/conflictingEmotions#conflictingEmotions", source: "atoms/narrative/conflictingEmotions.ts", exportName: "conflictingEmotions" }, () => `
 <rule name="CONFLICTING_EMOTIONS">
   **THE SIMULTANEITY OF FEELING**:
 
@@ -225,7 +227,7 @@ export const conflictingEmotions: Atom<void> = () => `
     Don't explain it. Show the war.
   </writing_guidelines>
 </rule>
-`;
+`);
 
 export default conflictingEmotions;
 
@@ -233,8 +235,8 @@ export default conflictingEmotions;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const conflictingEmotionsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: conflictingEmotions(),
+export const conflictingEmotionsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/conflictingEmotions#conflictingEmotionsSkill", source: "atoms/narrative/conflictingEmotions.ts", exportName: "conflictingEmotionsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(conflictingEmotions),
 
   quickStart: `
 1. Emotions happen SIMULTANEOUSLY, not in sequence
@@ -269,4 +271,4 @@ Then reached again, fingers stopping an inch from his face."
 (Body shows the internal war.)`,
     },
   ],
-});
+}));

@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const mediaPropaganda: Atom<void> = () => `
+
+export const mediaPropaganda: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropaganda", source: "atoms/worldbuilding/mediaPropaganda.ts", exportName: "mediaPropaganda" }, () => `
 <worldbuilding_context>
 **MEDIA & PROPAGANDA (Narratives with Infrastructure)**
 
@@ -78,17 +80,17 @@ Reputation changes access:
 - One reputation mark that persists:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const mediaPropagandaPrimer: Atom<void> = () =>
+export const mediaPropagandaPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaPrimer", source: "atoms/worldbuilding/mediaPropaganda.ts", exportName: "mediaPropagandaPrimer" }, () =>
   `
 <worldbuilding_context>
 **MEDIA PRIMER**: Narratives travel via channels with gatekeepers. Proof standards differ by audience. Public stories trigger procedural response ladders and persistent reputation marks.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const mediaPropagandaSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: mediaPropaganda(),
+export const mediaPropagandaSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaSkill", source: "atoms/worldbuilding/mediaPropaganda.ts", exportName: "mediaPropagandaSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(mediaPropaganda),
   quickStart: `
 1) Define 2 channels (press/rumor/platform/sermons) and their gatekeepers
 2) Define censorship rule + backchannel (control creates markets)
@@ -120,4 +122,4 @@ False positives occur: the censor hits unrelated messages. Corrupt officers sell
 The player can use backchannels but risks leaving a pattern."`,
     },
   ],
-});
+}));

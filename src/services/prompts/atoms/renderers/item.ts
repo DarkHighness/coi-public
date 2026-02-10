@@ -8,6 +8,8 @@
  */
 
 import type { Atom, InventoryItem } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderItemInput = {
   item: InventoryItem;
@@ -16,7 +18,7 @@ export type RenderItemInput = {
 /**
  * 渲染 Item 的 visible 层
  */
-export const renderItemVisible: Atom<RenderItemInput> = ({ item }) => {
+export const renderItemVisible: Atom<RenderItemInput> = defineAtom({ atomId: "atoms/renderers/item#renderItemVisible", source: "atoms/renderers/item.ts", exportName: "renderItemVisible" }, ({ item }) => {
   const v = item.visible;
   const lines: string[] = [`id: ${item.id}`, `name: ${item.name}`];
 
@@ -40,12 +42,12 @@ export const renderItemVisible: Atom<RenderItemInput> = ({ item }) => {
   return `<item id="${item.id}" layer="visible">
 ${lines.join("\n")}
 </item>`;
-};
+});
 
 /**
  * 渲染 Item 的 hidden 层
  */
-export const renderItemHidden: Atom<RenderItemInput> = ({ item }) => {
+export const renderItemHidden: Atom<RenderItemInput> = defineAtom({ atomId: "atoms/renderers/item#renderItemHidden", source: "atoms/renderers/item.ts", exportName: "renderItemHidden" }, ({ item }) => {
   const h = item.hidden;
   if (!h) return "";
 
@@ -57,12 +59,12 @@ export const renderItemHidden: Atom<RenderItemInput> = ({ item }) => {
   return `<item id="${item.id}" layer="hidden">
 ${lines.join("\n")}
 </item>`;
-};
+});
 
 /**
  * 渲染 Item 完整信息（visible + hidden）
  */
-export const renderItemFull: Atom<RenderItemInput> = ({ item }) => {
+export const renderItemFull: Atom<RenderItemInput> = defineAtom({ atomId: "atoms/renderers/item#renderItemFull", source: "atoms/renderers/item.ts", exportName: "renderItemFull" }, ({ item }) => {
   const v = item.visible;
   const h = item.hidden;
 
@@ -103,6 +105,6 @@ ${visibleLines.join("\n")}
 ${hiddenLines.join("\n")}
 </hidden>
 </item>`;
-};
+});
 
 export default renderItemFull;

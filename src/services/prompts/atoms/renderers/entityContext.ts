@@ -9,6 +9,8 @@
 
 import type { Atom } from "../types";
 import { toToon } from "../../toon";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 // ============================================================================
 // Entity Entry Types
@@ -46,7 +48,7 @@ export interface EntityContextInput {
 // TOON Rendering
 // ============================================================================
 
-export const renderEntityContext: Atom<EntityContextInput> = (input) => {
+export const renderEntityContext: Atom<EntityContextInput> = defineAtom({ atomId: "atoms/renderers/entityContext#renderEntityContext", source: "atoms/renderers/entityContext.ts", exportName: "renderEntityContext" }, (input) => {
   const entityData: Record<string, unknown> = {};
 
   if (input.npcs && input.npcs.length > 0) {
@@ -110,9 +112,9 @@ For NPCs: "name" is what player knows, "trueName" is the hidden true name (GM on
 
 ${toToon(entityData)}
 </current_entities>`;
-};
+});
 
-export const renderEntityContextPrimer: Atom<EntityContextInput> = (input) => {
+export const renderEntityContextPrimer: Atom<EntityContextInput> = defineAtom({ atomId: "atoms/renderers/entityContext#renderEntityContextPrimer", source: "atoms/renderers/entityContext.ts", exportName: "renderEntityContextPrimer" }, (input) => {
   const counts = [
     input.npcs?.length ? `NPCs: ${input.npcs.length}` : null,
     input.items?.length ? `Items: ${input.items.length}` : null,
@@ -125,4 +127,4 @@ export const renderEntityContextPrimer: Atom<EntityContextInput> = (input) => {
     .join(", ");
 
   return `<entity_summary>${counts || "No entities"}</entity_summary>`;
-};
+});

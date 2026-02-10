@@ -3,12 +3,14 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface RAGUsageInput {
   ragEnabled: boolean;
 }
 
-export const ragUsage: Atom<RAGUsageInput> = ({ ragEnabled }) => {
+export const ragUsage: Atom<RAGUsageInput> = defineAtom({ atomId: "atoms/core/ragUsage#ragUsage", source: "atoms/core/ragUsage.ts", exportName: "ragUsage" }, ({ ragEnabled }) => {
   if (!ragEnabled) return "";
 
   return `
@@ -33,4 +35,4 @@ export const ragUsage: Atom<RAGUsageInput> = ({ ragEnabled }) => {
   <instruction>Do not hallucinate facts if you can retrieve them. Always prefer retrieved data over generation.</instruction>
 </rag_usage>
 `;
-};
+});

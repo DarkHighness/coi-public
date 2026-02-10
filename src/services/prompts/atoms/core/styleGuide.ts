@@ -3,12 +3,14 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface StyleGuideInput {
   themeStyle?: string;
 }
 
-export const styleGuidePrimer: Atom<StyleGuideInput> = ({ themeStyle }) => {
+export const styleGuidePrimer: Atom<StyleGuideInput> = defineAtom({ atomId: "atoms/core/styleGuide#styleGuidePrimer", source: "atoms/core/styleGuide.ts", exportName: "styleGuidePrimer" }, ({ themeStyle }) => {
   const toneSection = themeStyle
     ? `<tone>${themeStyle}</tone>`
     : "<tone>Gritty, grounded, visceral.</tone>";
@@ -18,9 +20,9 @@ export const styleGuidePrimer: Atom<StyleGuideInput> = ({ themeStyle }) => {
 ${toneSection}
 </style>
 `;
-};
+});
 
-export const styleGuide: Atom<StyleGuideInput> = ({ themeStyle }) => {
+export const styleGuide: Atom<StyleGuideInput> = defineAtom({ atomId: "atoms/core/styleGuide#styleGuide", source: "atoms/core/styleGuide.ts", exportName: "styleGuide" }, ({ themeStyle }) => {
   const toneSection = themeStyle
     ? `<tone>${themeStyle}</tone>`
     : "<tone>Gritty, grounded, visceral.</tone>";
@@ -157,4 +159,4 @@ ${toneSection}
 </markdown_formatting>
 </style>
 `;
-};
+});

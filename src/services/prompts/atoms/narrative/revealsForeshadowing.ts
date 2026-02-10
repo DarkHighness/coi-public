@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const revealsForeshadowing: Atom<void> = () => `
+
+export const revealsForeshadowing: Atom<void> = defineAtom({ atomId: "atoms/narrative/revealsForeshadowing#revealsForeshadowing", source: "atoms/narrative/revealsForeshadowing.ts", exportName: "revealsForeshadowing" }, () => `
 <craft_context>
 **REVEALS & FORESHADOWING (Fairness + Consequence + Traceability)**
 
@@ -61,17 +63,17 @@ To do a fast twist (e.g., short drama / thriller), ensure:
 Setup (public or procedural gate) → Signal → Misread → Reveal → Immediate consequence → New decision
 </templates>
 </craft_context>
-`;
+`);
 
-export const revealsForeshadowingPrimer: Atom<void> = () =>
+export const revealsForeshadowingPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/revealsForeshadowing#revealsForeshadowingPrimer", source: "atoms/narrative/revealsForeshadowing.ts", exportName: "revealsForeshadowingPrimer" }, () =>
   `
 <craft_context>
 **REVEAL PRIMER**: Every reveal must be traceable (2 prior signals), actionable (changes choices), and costed (verification has tradeoffs).
 </craft_context>
-`.trim();
+`.trim());
 
-export const revealsForeshadowingSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: revealsForeshadowing(),
+export const revealsForeshadowingSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/revealsForeshadowing#revealsForeshadowingSkill", source: "atoms/narrative/revealsForeshadowing.ts", exportName: "revealsForeshadowingSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(revealsForeshadowing),
   quickStart: `
 1) Write the truth (1 sentence)
 2) Add 2 prior signals in different lanes (world + people + records)
@@ -95,4 +97,4 @@ Verification costs exposure (ask the clerk → leaves a trace). The reveal close
 and opens a new option: trade evidence to the debt-holder for protection."`,
     },
   ],
-});
+}));

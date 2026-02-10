@@ -15,22 +15,26 @@ import {
 } from "../../../prompts/atoms/core";
 import { narrativeCausality } from "../../../prompts/atoms/narrative";
 import { languageEnforcement } from "../../../prompts/atoms/cultural";
+import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
 import { VFS_TOOLSETS, formatVfsToolsForPrompt } from "../../../vfsToolsets";
 
 // ============================================================================
 // System Instruction
 // ============================================================================
 
-export function getSummarySystemInstruction(
-  language: string,
-  nsfw?: boolean,
-  detailedDescription?: boolean,
-): string {
-  return `You are a diligent chronicler tasked with summarizing story events in a world simulation.
-${nsfw ? "Maintain neutrality even when summarizing mature or violent content." : ""}
-${detailedDescription ? "Ensure key sensory details and character emotional shifts are captured in the summary." : ""}
+type SummarySystemInstructionInput = {
+  language: string;
+  nsfw?: boolean;
+  detailedDescription?: boolean;
+};
 
-<role>
+const summaryRoleAtom = defineAtom(
+  {
+    atomId: "atoms/summary/system#summaryRole",
+    source: "ai/agentic/summary/summaryContext.ts",
+    exportName: "summaryRoleAtom",
+  },
+  () => `<role>
 You maintain two layers of knowledge:
 1. **VISIBLE**: What the PROTAGONIST knows and experienced
 2. **HIDDEN**: GM-only truth the protagonist does NOT know
@@ -40,9 +44,16 @@ You are the GM - you know everything. Your job is to:
 - Preserve the visible/hidden separation
 - Track cause-and-effect relationships
 - Note changes in quests, npcs, inventory, character status
-</role>
+</role>`,
+);
 
-<tools>
+const summaryToolsAtom = defineAtom(
+  {
+    atomId: "atoms/summary/system#summaryTools",
+    source: "ai/agentic/summary/summaryContext.ts",
+    exportName: "summaryToolsAtom",
+  },
+  () => `<tools>
 You have these tools available:
 
 Tool allowlist for this loop:
@@ -78,29 +89,80 @@ Before any summary mutation, read command protocol:
   - nodeRange: { fromIndex: X, toIndex: Y }
   - lastSummarizedIndex: Y + 1
 </examples>
-</tools>
+</tools>`,
+);
 
-<critical_rules>
+const summaryCriticalRulesAtom = defineAtom(
+  {
+    atomId: "atoms/summary/system#summaryCriticalRules",
+    source: "ai/agentic/summary/summaryContext.ts",
+    exportName: "summaryCriticalRulesAtom",
+  },
+  ({ language }: { language: string }) => `<critical_rules>
 - VISIBLE layer: Only what the protagonist directly witnessed, learned, or experienced
 - HIDDEN layer: Behind-the-scenes events, NPC secret actions, unrevealed truths
 - displayText: Brief 2-3 sentences for UI, in ${language}, visible layer only
 - Track ALL significant events, don't miss important details
 - Note character development and relationship changes
 - Capture world state changes
-</critical_rules>
+</critical_rules>`,
+);
 
-${gmKnowledge()}
-
-${entityDefinitions()}
-
-<style_injection>
+const summaryStyleInjectionAtom = defineAtom(
+  {
+    atomId: "atoms/summary/system#summaryStyleInjection",
+    source: "ai/agentic/summary/summaryContext.ts",
+    exportName: "summaryStyleInjectionAtom",
+  },
+  (_: void, trace) => `<style_injection>
   You must capture the TONE of the story, not just the facts.
-  ${styleGuide({})}
-</style_injection>
+  ${trace.record(styleGuide, {})}
+</style_injection>`,
+);
 
-${narrativeCausality()}
+const summarySystemInstructionAtom = defineAtom(
+  {
+    atomId: "atoms/summary/system#getSummarySystemInstruction",
+    source: "ai/agentic/summary/summaryContext.ts",
+    exportName: "summarySystemInstructionAtom",
+  },
+  ({ language, nsfw, detailedDescription }: SummarySystemInstructionInput, trace) => {
+    const header = [
+      "You are a diligent chronicler tasked with summarizing story events in a world simulation.",
+      nsfw
+        ? "Maintain neutrality even when summarizing mature or violent content."
+        : "",
+      detailedDescription
+        ? "Ensure key sensory details and character emotional shifts are captured in the summary."
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
 
-${languageEnforcement({ language })}`;
+    return [
+      header,
+      trace.record(summaryRoleAtom),
+      trace.record(summaryToolsAtom),
+      trace.record(summaryCriticalRulesAtom, { language }),
+      trace.record(gmKnowledge),
+      trace.record(entityDefinitions),
+      trace.record(summaryStyleInjectionAtom),
+      trace.record(narrativeCausality),
+      trace.record(languageEnforcement, { language }),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  },
+);
+
+export function getSummarySystemInstruction(
+  language: string,
+  nsfw?: boolean,
+  detailedDescription?: boolean,
+): string {
+  return runPromptWithTrace("summary.system", () =>
+    summarySystemInstructionAtom({ language, nsfw, detailedDescription }),
+  );
 }
 
 // ============================================================================

@@ -7,6 +7,8 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type WeatherEffectsInput = {
   weather?: string;
@@ -27,7 +29,7 @@ const weatherDetails: Record<string, string> = {
 /**
  * 天气效果描述
  */
-export const weatherEffects: Atom<WeatherEffectsInput> = ({ weather }) => {
+export const weatherEffects: Atom<WeatherEffectsInput> = defineAtom({ atomId: "atoms/image/weather#weatherEffects", source: "atoms/image/weather.ts", exportName: "weatherEffects" }, ({ weather }) => {
   if (!weather || weather === "none") return "";
 
   const details = weatherDetails[weather] || weather;
@@ -35,6 +37,6 @@ export const weatherEffects: Atom<WeatherEffectsInput> = ({ weather }) => {
   return `<weather_effects>
   ${details}
 </weather_effects>`;
-};
+});
 
 export default weatherEffects;

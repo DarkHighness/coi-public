@@ -4,6 +4,8 @@
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface WritingCraftInput {}
 
@@ -911,7 +913,7 @@ const sceneEndings = `
   </scene_endings>
 `;
 
-export const writingCraftPrimer: Atom<void> = () => `
+export const writingCraftPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#writingCraftPrimer", source: "atoms/narrative/writingCraft.ts", exportName: "writingCraftPrimer" }, () => `
 <writing_craft>
   <rule>Show, don't tell. Use action over adverbs. Sensory details: sight/sound/smell/touch.</rule>
   <rule>ALWAYS use "You" (second person). NEVER use protagonist's name in narrative.</rule>
@@ -937,9 +939,9 @@ ${storyEnginePrimer}
     - No "As an AI" refusals. Narrate failures in-world.
   </style_check>
 </writing_craft>
-`;
+`);
 
-export const writingCraft: Atom<void> = () => `
+export const writingCraft: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#writingCraft", source: "atoms/narrative/writingCraft.ts", exportName: "writingCraft" }, () => `
 <writing_craft>
   **WRITE LIKE A NOVELIST, NOT AN AI**
 
@@ -970,38 +972,38 @@ ${bans}
 ${dramaticPacing}
 ${crisisManagement}
 </writing_craft>
-`;
+`);
 
 // Export individual components
-export const showDontTellAtom: Atom<void> = () => showDontTell;
-export const rhythmMasteryAtom: Atom<void> = () => rhythmMastery;
-export const sensoryImmersionAtom: Atom<void> = () => sensoryImmersion;
-export const dialogueIsCharacterAtom: Atom<void> = () => dialogueIsCharacter;
-export const narratingFailureAtom: Atom<void> = () => narratingFailure;
-export const npcPersonalityAtom: Atom<void> = () => npcPersonality;
-export const secondPersonImmersionAtom: Atom<void> = () =>
-  secondPersonImmersion;
-export const perspectiveAnchorAtom: Atom<void> = () => perspectiveAnchor;
-export const subjectiveObjectiveBalanceAtom: Atom<void> = () =>
-  subjectiveObjectiveBalance;
-export const physicalityAtom: Atom<void> = () => physicality;
-export const unapologeticRealityAtom: Atom<void> = () => unapologeticReality;
-export const sensoryGritAtom: Atom<void> = () => sensoryGrit;
-export const emotionalResonanceAtom: Atom<void> = () => emotionalResonance;
-export const momentCrystallizationAtom: Atom<void> = () =>
-  momentCrystallization;
-export const worldTextureAtom: Atom<void> = () => worldTexture;
-export const bannedPatternsAtom: Atom<void> = () => bans;
-export const dramaticPacingAtom: Atom<void> = () => dramaticPacing;
-export const crisisManagementAtom: Atom<void> = () => crisisManagement;
-export const sceneEndingsAtom: Atom<void> = () => sceneEndings;
+export const showDontTellAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#showDontTellAtom", source: "atoms/narrative/writingCraft.ts", exportName: "showDontTellAtom" }, () => showDontTell);
+export const rhythmMasteryAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#rhythmMasteryAtom", source: "atoms/narrative/writingCraft.ts", exportName: "rhythmMasteryAtom" }, () => rhythmMastery);
+export const sensoryImmersionAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#sensoryImmersionAtom", source: "atoms/narrative/writingCraft.ts", exportName: "sensoryImmersionAtom" }, () => sensoryImmersion);
+export const dialogueIsCharacterAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#dialogueIsCharacterAtom", source: "atoms/narrative/writingCraft.ts", exportName: "dialogueIsCharacterAtom" }, () => dialogueIsCharacter);
+export const narratingFailureAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#narratingFailureAtom", source: "atoms/narrative/writingCraft.ts", exportName: "narratingFailureAtom" }, () => narratingFailure);
+export const npcPersonalityAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#npcPersonalityAtom", source: "atoms/narrative/writingCraft.ts", exportName: "npcPersonalityAtom" }, () => npcPersonality);
+export const secondPersonImmersionAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#secondPersonImmersionAtom", source: "atoms/narrative/writingCraft.ts", exportName: "secondPersonImmersionAtom" }, () =>
+  secondPersonImmersion);
+export const perspectiveAnchorAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#perspectiveAnchorAtom", source: "atoms/narrative/writingCraft.ts", exportName: "perspectiveAnchorAtom" }, () => perspectiveAnchor);
+export const subjectiveObjectiveBalanceAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#subjectiveObjectiveBalanceAtom", source: "atoms/narrative/writingCraft.ts", exportName: "subjectiveObjectiveBalanceAtom" }, () =>
+  subjectiveObjectiveBalance);
+export const physicalityAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#physicalityAtom", source: "atoms/narrative/writingCraft.ts", exportName: "physicalityAtom" }, () => physicality);
+export const unapologeticRealityAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#unapologeticRealityAtom", source: "atoms/narrative/writingCraft.ts", exportName: "unapologeticRealityAtom" }, () => unapologeticReality);
+export const sensoryGritAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#sensoryGritAtom", source: "atoms/narrative/writingCraft.ts", exportName: "sensoryGritAtom" }, () => sensoryGrit);
+export const emotionalResonanceAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#emotionalResonanceAtom", source: "atoms/narrative/writingCraft.ts", exportName: "emotionalResonanceAtom" }, () => emotionalResonance);
+export const momentCrystallizationAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#momentCrystallizationAtom", source: "atoms/narrative/writingCraft.ts", exportName: "momentCrystallizationAtom" }, () =>
+  momentCrystallization);
+export const worldTextureAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#worldTextureAtom", source: "atoms/narrative/writingCraft.ts", exportName: "worldTextureAtom" }, () => worldTexture);
+export const bannedPatternsAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#bannedPatternsAtom", source: "atoms/narrative/writingCraft.ts", exportName: "bannedPatternsAtom" }, () => bans);
+export const dramaticPacingAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#dramaticPacingAtom", source: "atoms/narrative/writingCraft.ts", exportName: "dramaticPacingAtom" }, () => dramaticPacing);
+export const crisisManagementAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#crisisManagementAtom", source: "atoms/narrative/writingCraft.ts", exportName: "crisisManagementAtom" }, () => crisisManagement);
+export const sceneEndingsAtom: Atom<void> = defineAtom({ atomId: "atoms/narrative/writingCraft#sceneEndingsAtom", source: "atoms/narrative/writingCraft.ts", exportName: "sceneEndingsAtom" }, () => sceneEndings);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const writingCraftSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: writingCraft(),
+export const writingCraftSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/writingCraft#writingCraftSkill", source: "atoms/narrative/writingCraft.ts", exportName: "writingCraftSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(writingCraft),
 
   quickStart: `
 1. Show, don't tell - use action over adverbs
@@ -1046,4 +1048,4 @@ A candle flickers, casting long shadows."
 (Environment first, varied structure.)`,
     },
   ],
-});
+}));

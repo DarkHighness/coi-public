@@ -3,6 +3,8 @@
  * Content from acting/state_management.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 const atmosphereDiscovery = `
   <rule name="ATMOSPHERE DISCOVERY - CRITICAL">
@@ -42,10 +44,10 @@ const visuals = `
   </rule>
 `;
 
-export const visualPolicy: Atom<void> = () => {
+export const visualPolicy: Atom<void> = defineAtom({ atomId: "atoms/core/visualPolicy#visualPolicy", source: "atoms/core/visualPolicy.ts", exportName: "visualPolicy" }, () => {
   return `
 ${atmosphereDiscovery}
 `;
-};
+});
 
-export const atmosphereDiscoveryAtom: Atom<void> = () => atmosphereDiscovery;
+export const atmosphereDiscoveryAtom: Atom<void> = defineAtom({ atomId: "atoms/core/visualPolicy#atmosphereDiscoveryAtom", source: "atoms/core/visualPolicy.ts", exportName: "atmosphereDiscoveryAtom" }, () => atmosphereDiscovery);

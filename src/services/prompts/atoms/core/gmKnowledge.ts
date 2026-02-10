@@ -4,6 +4,8 @@
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 const visibilityStructure = `
   <visibility_layer_structure>
@@ -157,7 +159,7 @@ const temporalEpistemology = `
   </temporal_epistemology>
 `;
 
-export const gmKnowledgePrimer: Atom<void> = () => `
+export const gmKnowledgePrimer: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#gmKnowledgePrimer", source: "atoms/core/gmKnowledge.ts", exportName: "gmKnowledgePrimer" }, () => `
 <gm_knowledge>
   **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` = player knows.
 
@@ -182,8 +184,8 @@ export const gmKnowledgePrimer: Atom<void> = () => `
       * Actors/relations/items → set the entity's own \`unlocked=true\` via VFS
   </unlock_protocol>
 </gm_knowledge>
-`;
-export const gmKnowledge: Atom<void> = () => `
+`);
+export const gmKnowledge: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#gmKnowledge", source: "atoms/core/gmKnowledge.ts", exportName: "gmKnowledge" }, () => `
 <gm_knowledge_model>
   **YOU ARE THE GM (Game Master). YOU KNOW EVERYTHING.**
 
@@ -193,14 +195,14 @@ ${howToUse}
 ${unlockProtocol}
 ${temporalEpistemology}
 </gm_knowledge_model>
-`;
+`);
 
 // Export individual components
-export const visibilityStructureAtom: Atom<void> = () => visibilityStructure;
-export const visibilityRulesAtom: Atom<void> = () => visibilityRules;
-export const howToUseAtom: Atom<void> = () => howToUse;
-export const unlockProtocolAtom: Atom<void> = () => unlockProtocol;
-export const temporalEpistemologyAtom: Atom<void> = () => temporalEpistemology;
+export const visibilityStructureAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#visibilityStructureAtom", source: "atoms/core/gmKnowledge.ts", exportName: "visibilityStructureAtom" }, () => visibilityStructure);
+export const visibilityRulesAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#visibilityRulesAtom", source: "atoms/core/gmKnowledge.ts", exportName: "visibilityRulesAtom" }, () => visibilityRules);
+export const howToUseAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#howToUseAtom", source: "atoms/core/gmKnowledge.ts", exportName: "howToUseAtom" }, () => howToUse);
+export const unlockProtocolAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#unlockProtocolAtom", source: "atoms/core/gmKnowledge.ts", exportName: "unlockProtocolAtom" }, () => unlockProtocol);
+export const temporalEpistemologyAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#temporalEpistemologyAtom", source: "atoms/core/gmKnowledge.ts", exportName: "temporalEpistemologyAtom" }, () => temporalEpistemology);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
@@ -214,7 +216,7 @@ export const temporalEpistemologyAtom: Atom<void> = () => temporalEpistemology;
  * - checklist: Quick reference checklist for CHECKLIST.md
  * - examples: Before/After examples for EXAMPLES.md
  */
-export const gmKnowledgeSkill: SkillAtom<void> = (): SkillOutput => ({
+export const gmKnowledgeSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/gmKnowledge#gmKnowledgeSkill", source: "atoms/core/gmKnowledge.ts", exportName: "gmKnowledgeSkill" }, (): SkillOutput => ({
   main: `
 **YOU ARE THE GM (Game Master). YOU KNOW EVERYTHING.**
 
@@ -272,4 +274,4 @@ ${temporalEpistemology}
 (Early proof is still valid proof.)`,
     },
   ],
-});
+}));

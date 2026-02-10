@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const espionageCounterintel: Atom<void> = () => `
+
+export const espionageCounterintel: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/espionageCounterintel#espionageCounterintel", source: "atoms/worldbuilding/espionageCounterintel.ts", exportName: "espionageCounterintel" }, () => `
 <worldbuilding_context>
 **ESPIONAGE & COUNTERINTELLIGENCE (A hall of mirrors where every reflection costs something)**
 
@@ -87,17 +89,17 @@ Tradeoffs:
 - Counterintel trigger + response ladder:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const espionageCounterintelPrimer: Atom<void> = () =>
+export const espionageCounterintelPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/espionageCounterintel#espionageCounterintelPrimer", source: "atoms/worldbuilding/espionageCounterintel.ts", exportName: "espionageCounterintelPrimer" }, () =>
   `
 <worldbuilding_context>
 **ESPIONAGE PRIMER**: Every intel needs source + channel + verification cost + trace. Counterintel is procedural and capacity-limited.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const espionageCounterintelSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: espionageCounterintel(),
+export const espionageCounterintelSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/espionageCounterintel#espionageCounterintelSkill", source: "atoms/worldbuilding/espionageCounterintel.ts", exportName: "espionageCounterintelSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(espionageCounterintel),
   quickStart: `
 1) Pick 2 intel sources (each has incentive + constraint + price)
 2) Define one channel (latency + trace)
@@ -129,4 +131,4 @@ then escalate only when a trigger hits: repeated unusual document requests + cas
 If you keep the pattern clean, they stay suspicious but can’t act decisively."`,
     },
   ],
-});
+}));

@@ -18,6 +18,8 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export interface ProtagonistLensInput {
   protagonistFeature?: string;
@@ -27,7 +29,7 @@ export interface ProtagonistLensInput {
 // Full Atom
 // ---------------------------------------------------------------------------
 
-export const protagonistLens: Atom<ProtagonistLensInput> = ({
+export const protagonistLens: Atom<ProtagonistLensInput> = defineAtom({ atomId: "atoms/core/protagonistLens#protagonistLens", source: "atoms/core/protagonistLens.ts", exportName: "protagonistLens" }, ({
   protagonistFeature,
 }) => {
   if (!protagonistFeature) return "";
@@ -169,13 +171,13 @@ export const protagonistLens: Atom<ProtagonistLensInput> = ({
 
 </protagonist_lens>
 `;
-};
+});
 
 // ---------------------------------------------------------------------------
 // Primer (compact, for system-prompt budget)
 // ---------------------------------------------------------------------------
 
-export const protagonistLensPrimer: Atom<ProtagonistLensInput> = ({
+export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom({ atomId: "atoms/core/protagonistLens#protagonistLensPrimer", source: "atoms/core/protagonistLens.ts", exportName: "protagonistLensPrimer" }, ({
   protagonistFeature,
 }) => {
   if (!protagonistFeature) return "";
@@ -191,7 +193,7 @@ export const protagonistLensPrimer: Atom<ProtagonistLensInput> = ({
   **Constraints**: No mind-reading. No acting for player. Lens renders evidence, player decides meaning. Disguise overrides NPC reactions but not the camera.
 </protagonist_lens>
 `;
-};
+});
 
 export default protagonistLens;
 
@@ -199,8 +201,8 @@ export default protagonistLens;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const protagonistLensSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: protagonistLens({ protagonistFeature: "(active protagonist feature)" }),
+export const protagonistLensSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/protagonistLens#protagonistLensSkill", source: "atoms/core/protagonistLens.ts", exportName: "protagonistLensSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(protagonistLens, { protagonistFeature: "(active protagonist feature)" }),
 
   quickStart: `
 1. Identify the active protagonist identity from character profile
@@ -297,4 +299,4 @@ Every wall has a mechanism. Every pattern is a warning. The narrative renders ar
 ## 三体 (Scientist Lens)
 Anomalies in natural law are the loudest signal. The narrative renders physical phenomena with the precision of someone who knows what "normal" looks like — and therefore sees immediately when the universe is lying.`,
   },
-});
+}));

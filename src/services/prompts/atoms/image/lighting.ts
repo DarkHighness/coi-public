@@ -7,6 +7,8 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type LightingContextInput = {
   time?: string;
@@ -15,7 +17,7 @@ export type LightingContextInput = {
 /**
  * 根据时间生成光照描述
  */
-export const lightingContext: Atom<LightingContextInput> = ({ time }) => {
+export const lightingContext: Atom<LightingContextInput> = defineAtom({ atomId: "atoms/image/lighting#lightingContext", source: "atoms/image/lighting.ts", exportName: "lightingContext" }, ({ time }) => {
   if (!time) return "";
 
   const timeLower = time.toLowerCase();
@@ -37,6 +39,6 @@ export const lightingContext: Atom<LightingContextInput> = ({ time }) => {
     ${lightingDetails}
   </lighting>
 </temporal_context>`;
-};
+});
 
 export default lightingContext;

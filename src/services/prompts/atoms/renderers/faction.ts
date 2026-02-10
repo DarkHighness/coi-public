@@ -8,6 +8,8 @@
  */
 
 import type { Atom, Faction } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderFactionInput = {
   faction: Faction;
@@ -16,7 +18,7 @@ export type RenderFactionInput = {
 /**
  * 渲染 Faction 的 visible 层
  */
-export const renderFactionVisible: Atom<RenderFactionInput> = ({ faction }) => {
+export const renderFactionVisible: Atom<RenderFactionInput> = defineAtom({ atomId: "atoms/renderers/faction#renderFactionVisible", source: "atoms/renderers/faction.ts", exportName: "renderFactionVisible" }, ({ faction }) => {
   const v = faction.visible;
   const lines: string[] = [`id: ${faction.id}`, `name: ${faction.name}`];
 
@@ -29,12 +31,12 @@ export const renderFactionVisible: Atom<RenderFactionInput> = ({ faction }) => {
   return `<faction id="${faction.id}" layer="visible">
 ${lines.join("\n")}
 </faction>`;
-};
+});
 
 /**
  * 渲染 Faction 的 hidden 层
  */
-export const renderFactionHidden: Atom<RenderFactionInput> = ({ faction }) => {
+export const renderFactionHidden: Atom<RenderFactionInput> = defineAtom({ atomId: "atoms/renderers/faction#renderFactionHidden", source: "atoms/renderers/faction.ts", exportName: "renderFactionHidden" }, ({ faction }) => {
   const h = faction.hidden;
   if (!h) return "";
 
@@ -51,12 +53,12 @@ export const renderFactionHidden: Atom<RenderFactionInput> = ({ faction }) => {
   return `<faction id="${faction.id}" layer="hidden">
 ${lines.join("\n")}
 </faction>`;
-};
+});
 
 /**
  * 渲染 Faction 完整信息（visible + hidden）
  */
-export const renderFactionFull: Atom<RenderFactionInput> = ({ faction }) => {
+export const renderFactionFull: Atom<RenderFactionInput> = defineAtom({ atomId: "atoms/renderers/faction#renderFactionFull", source: "atoms/renderers/faction.ts", exportName: "renderFactionFull" }, ({ faction }) => {
   const v = faction.visible;
   const h = faction.hidden;
 
@@ -92,6 +94,6 @@ ${visibleLines.join("\n")}
 ${hiddenLines.join("\n")}
 </hidden>
 </faction>`;
-};
+});
 
 export default renderFactionFull;

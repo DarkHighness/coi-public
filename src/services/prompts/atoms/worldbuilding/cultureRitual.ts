@@ -9,8 +9,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const cultureRitual: Atom<void> = () => `
+
+export const cultureRitual: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/cultureRitual#cultureRitual", source: "atoms/worldbuilding/cultureRitual.ts", exportName: "cultureRitual" }, () => `
 <worldbuilding_context>
 **CULTURE & RITUAL (Living practice, not museum exhibit)**
 
@@ -110,17 +112,17 @@ Design one ritual that:
 - Institution operator:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const cultureRitualPrimer: Atom<void> = () =>
+export const cultureRitualPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/cultureRitual#cultureRitualPrimer", source: "atoms/worldbuilding/cultureRitual.ts", exportName: "cultureRitualPrimer" }, () =>
   `
 <worldbuilding_context>
 **CULTURE PRIMER**: Culture is not decor — it is the grammar of belonging. Model it as signals + obligations + taboos with enforcement. Make missteps costly and mastery rewarding.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const cultureRitualSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: cultureRitual(),
+export const cultureRitualSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/cultureRitual#cultureRitualSkill", source: "atoms/worldbuilding/cultureRitual.ts", exportName: "cultureRitualSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(cultureRitual),
   quickStart: `
 1) Choose 1 anchor (honor / purity / debt)
 2) Define 3 signals (greeting, dress, speech)
@@ -150,4 +152,4 @@ Smugglers sell counterfeit ash marks—but the inquisitors test with vinegar.
 Now it's a choice: pay, wait, cheat, or find an insider."`,
     },
   ],
-});
+}));

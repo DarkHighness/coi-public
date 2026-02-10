@@ -10,8 +10,10 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const darkPsychologyPrimer: Atom<void> = () => `
+
+export const darkPsychologyPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/darkPsychology#darkPsychologyPrimer", source: "atoms/entities/darkPsychology.ts", exportName: "darkPsychologyPrimer" }, () => `
 <dark_psychology>
   **HUMAN WEAKNESS CATALOG**:
   The private afflictions literature has always known better than psychology:
@@ -22,8 +24,8 @@ export const darkPsychologyPrimer: Atom<void> = () => `
   - Escapism: addiction, fantasy, workaholism, relationship-jumping -- the thousand doors that open away from the self
   Express through BEHAVIOR, not labels.
 </dark_psychology>
-`;
-export const darkPsychology: Atom<void> = () => `
+`);
+export const darkPsychology: Atom<void> = defineAtom({ atomId: "atoms/entities/darkPsychology#darkPsychology", source: "atoms/entities/darkPsychology.ts", exportName: "darkPsychology" }, () => `
 <rule name="DARK_PSYCHOLOGY">
   **THE SHADOW CATALOG**:
 
@@ -292,6 +294,6 @@ export const darkPsychology: Atom<void> = () => `
     - Always having something in their hands
   </escapism_expressions>
 </rule>
-`;
+`);
 
 export default darkPsychology;

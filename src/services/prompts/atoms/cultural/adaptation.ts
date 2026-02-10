@@ -8,6 +8,8 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type CulturalAdaptationInput = {
   language: string;
@@ -16,7 +18,7 @@ export type CulturalAdaptationInput = {
 /**
  * 文化适配指导 - 完整版
  */
-export const culturalAdaptation: Atom<CulturalAdaptationInput> = ({
+export const culturalAdaptation: Atom<CulturalAdaptationInput> = defineAtom({ atomId: "atoms/cultural/adaptation#culturalAdaptation", source: "atoms/cultural/adaptation.ts", exportName: "culturalAdaptation" }, ({
   language,
 }) => {
   const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
@@ -140,12 +142,12 @@ Adapt cultural references appropriately:
 - Social norms should be internally consistent with the world
 - Names should follow conventions appropriate to the setting
 </cultural_adaptation>`;
-};
+});
 
 /**
  * Cultural adaptation primer (system-prompt safe).
  */
-export const culturalAdaptationPrimer: Atom<CulturalAdaptationInput> = ({
+export const culturalAdaptationPrimer: Atom<CulturalAdaptationInput> = defineAtom({ atomId: "atoms/cultural/adaptation#culturalAdaptationPrimer", source: "atoms/cultural/adaptation.ts", exportName: "culturalAdaptationPrimer" }, ({
   language,
 }) => {
   const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
@@ -164,6 +166,6 @@ export const culturalAdaptationPrimer: Atom<CulturalAdaptationInput> = ({
   return `<cultural_adaptation>
 Write for ${language} audience. Match cultural references to the setting.
 </cultural_adaptation>`;
-};
+});
 
 export default culturalAdaptation;

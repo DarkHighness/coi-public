@@ -8,6 +8,8 @@
  */
 
 import type { Atom, NPC } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderNpcInput = {
   npc: NPC;
@@ -16,7 +18,7 @@ export type RenderNpcInput = {
 /**
  * 渲染 NPC 的 visible 层
  */
-export const renderNpcVisible: Atom<RenderNpcInput> = ({ npc }) => {
+export const renderNpcVisible: Atom<RenderNpcInput> = defineAtom({ atomId: "atoms/renderers/npc#renderNpcVisible", source: "atoms/renderers/npc.ts", exportName: "renderNpcVisible" }, ({ npc }) => {
   const v = npc.visible;
   const lines: string[] = [`id: ${npc.id}`, `name: ${v.name}`];
 
@@ -41,12 +43,12 @@ export const renderNpcVisible: Atom<RenderNpcInput> = ({ npc }) => {
   return `<npc id="${npc.id}" layer="visible">
 ${lines.join("\n")}
 </npc>`;
-};
+});
 
 /**
  * 渲染 NPC 的 hidden 层
  */
-export const renderNpcHidden: Atom<RenderNpcInput> = ({ npc }) => {
+export const renderNpcHidden: Atom<RenderNpcInput> = defineAtom({ atomId: "atoms/renderers/npc#renderNpcHidden", source: "atoms/renderers/npc.ts", exportName: "renderNpcHidden" }, ({ npc }) => {
   const h = npc.hidden;
   if (!h) return "";
 
@@ -63,14 +65,14 @@ export const renderNpcHidden: Atom<RenderNpcInput> = ({ npc }) => {
   return `<npc id="${npc.id}" layer="hidden">
 ${lines.join("\n")}
 </npc>`;
-};
+});
 
 /**
  * 渲染 NPC 完整信息（visible + hidden）
  */
-export const renderNpcFull: Atom<RenderNpcInput> = ({ npc }) => {
-  const visiblePart = renderNpcVisible({ npc });
-  const hiddenPart = renderNpcHidden({ npc });
+export const renderNpcFull: Atom<RenderNpcInput> = defineAtom({ atomId: "atoms/renderers/npc#renderNpcFull", source: "atoms/renderers/npc.ts", exportName: "renderNpcFull" }, ({ npc }, trace) => {
+  const visiblePart = trace.record(renderNpcVisible, { npc });
+  const hiddenPart = trace.record(renderNpcHidden, { npc });
 
   if (!hiddenPart) return visiblePart;
 
@@ -82,7 +84,7 @@ ${renderNpcVisibleContent({ npc })}
 ${renderNpcHiddenContent({ npc })}
 </hidden>
 </npc>`;
-};
+});
 
 // Internal helpers for full rendering
 const renderNpcVisibleContent: Atom<RenderNpcInput> = ({ npc }) => {

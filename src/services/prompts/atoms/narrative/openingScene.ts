@@ -8,11 +8,13 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * 开场场景上下文 - 完整版
  */
-export const openingScene: Atom<void> = () => `
+export const openingScene: Atom<void> = defineAtom({ atomId: "atoms/narrative/openingScene#openingScene", source: "atoms/narrative/openingScene.ts", exportName: "openingScene" }, () => `
 <game_system_context>
 **OPENING NARRATIVE FOR REALITY RENDERING ENGINE:**
 
@@ -76,6 +78,6 @@ The very first scene establishes HOW this protagonist sees the world. The reader
 
 The opening is the PROMISE of how the entire game will render. Get the lens right here, and every subsequent scene inherits it.
 </opening_through_protagonist_lens>
-`;
+`);
 
 export default openingScene;

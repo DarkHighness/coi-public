@@ -10,8 +10,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const moralComplexityPrimer: Atom<void> = () => `
+
+export const moralComplexityPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/moralComplexity#moralComplexityPrimer", source: "atoms/core/moralComplexity.ts", exportName: "moralComplexityPrimer" }, () => `
 <moral_complexity>
   **MORAL GREY ZONES**:
   - Good people do terrible things under pressure
@@ -19,8 +21,8 @@ export const moralComplexityPrimer: Atom<void> = () => `
   - Most choices have no "right" answer — only trade-offs
   - Complexity is not redemption; it is reality
 </moral_complexity>
-`;
-export const moralComplexity: Atom<void> = () => `
+`);
+export const moralComplexity: Atom<void> = defineAtom({ atomId: "atoms/core/moralComplexity#moralComplexity", source: "atoms/core/moralComplexity.ts", exportName: "moralComplexity" }, () => `
 <rule name="MORAL_COMPLEXITY">
   **THE WORLD WITHOUT CLEAN ANSWERS**:
 
@@ -299,7 +301,7 @@ export const moralComplexity: Atom<void> = () => `
     The weight should accumulate, not hit all at once.
   </moral_residue>
 </rule>
-`;
+`);
 
 export default moralComplexity;
 
@@ -307,8 +309,8 @@ export default moralComplexity;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const moralComplexitySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: moralComplexity(),
+export const moralComplexitySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/moralComplexity#moralComplexitySkill", source: "atoms/core/moralComplexity.ts", exportName: "moralComplexitySkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(moralComplexity),
 
   quickStart: `
 1. No pure heroes, no pure villains - everyone is capable of everything
@@ -346,4 +348,4 @@ The child lived. The parents didn't."
 (Actions, not labels. Complexity without resolution.)`,
     },
   ],
-});
+}));

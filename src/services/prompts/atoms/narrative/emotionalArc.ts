@@ -9,8 +9,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const emotionalArcPrimer: Atom<void> = () => `
+
+export const emotionalArcPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/emotionalArc#emotionalArcPrimer", source: "atoms/narrative/emotionalArc.ts", exportName: "emotionalArcPrimer" }, () => `
 <emotional_arc>
   **MACRO-PACING: EMOTIONAL TEMPERATURE ACROSS TURNS**:
   - Track emotional temperature. Sustained high = noise. Sustained low = boredom.
@@ -19,9 +21,9 @@ export const emotionalArcPrimer: Atom<void> = () => `
   - Breathing room is NOT "nothing happens." It is aftermath, processing, quiet character moments, seeds for next arc.
   - The plateau trap: if intensity hasn't changed in 3+ turns, something must shift.
 </emotional_arc>
-`;
+`);
 
-export const emotionalArc: Atom<void> = () => `
+export const emotionalArc: Atom<void> = defineAtom({ atomId: "atoms/narrative/emotionalArc#emotionalArc", source: "atoms/narrative/emotionalArc.ts", exportName: "emotionalArc" }, () => `
 <rule name="EMOTIONAL_ARC">
   **THE MACRO-RHYTHM OF FEELING**:
 
@@ -213,7 +215,7 @@ export const emotionalArc: Atom<void> = () => `
       the story is treading water. Something structural must change.
   </anti_patterns>
 </rule>
-`;
+`);
 
 export default emotionalArc;
 
@@ -221,8 +223,8 @@ export default emotionalArc;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const emotionalArcSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: emotionalArc(),
+export const emotionalArcSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/emotionalArc#emotionalArcSkill", source: "atoms/narrative/emotionalArc.ts", exportName: "emotionalArcSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(emotionalArc),
 
   quickStart: `
 1. Assess current emotional temperature (how intense have the last 3 turns been?)
@@ -261,4 +263,4 @@ Turn 7: Quiet aftermath — counting what's left (valley).
 (Sawtooth: build, peak, drop, breathe.)`,
     },
   ],
-});
+}));

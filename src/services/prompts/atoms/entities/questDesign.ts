@@ -8,11 +8,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Quest 设计上下文 - 完整版
  */
-export const questDesign: Atom<void> = () => `
+export const questDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/questDesign#questDesign", source: "atoms/entities/questDesign.ts", exportName: "questDesign" }, () => `
 <game_system_context>
 **QUEST DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -63,12 +65,12 @@ Avoid:
 - Single-point-of-failure design (one roll/NPC or nothing).
 </quest_playability>
 </game_system_context>
-`;
+`);
 
 /**
  * Quest 设计上下文 - 精简版
  */
-export const questDesignPrimer: Atom<void> = () => `
+export const questDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/questDesign#questDesignPrimer", source: "atoms/entities/questDesign.ts", exportName: "questDesignPrimer" }, () => `
 <game_system_context>
 **QUEST DESIGN**: Quests are the questions the story asks -- and the answers cost something.
 - Visible vs hidden contradiction (the surface conceals the wound)
@@ -77,7 +79,7 @@ export const questDesignPrimer: Atom<void> = () => `
 - Failure consequences
 - Stakes escalation
 </game_system_context>
-`;
+`);
 
 export default questDesign;
 
@@ -85,8 +87,8 @@ export default questDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const questDesignSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: questDesign(),
+export const questDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/questDesign#questDesignSkill", source: "atoms/entities/questDesign.ts", exportName: "questDesignSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(questDesign),
 
   quickStart: `
 1. Visible vs Hidden: Surface objective contradicts hidden truth
@@ -150,4 +152,4 @@ Approaches:
 (Multiple paths, concrete actions.)`,
     },
   ],
-});
+}));

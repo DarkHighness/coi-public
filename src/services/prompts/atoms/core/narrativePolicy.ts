@@ -3,6 +3,8 @@
  * Content from acting/state_management.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 const unlockVsHighlight = `
   <rule name="UNLOCKING vs HIGHLIGHTING - CRITICAL DISTINCTION">
@@ -95,19 +97,19 @@ const systemRules = `
   </rule>
 `;
 
-export const narrativePolicy: Atom<void> = () => `
+export const narrativePolicy: Atom<void> = defineAtom({ atomId: "atoms/core/narrativePolicy#narrativePolicy", source: "atoms/core/narrativePolicy.ts", exportName: "narrativePolicy" }, () => `
 ${unlockVsHighlight}
 ${hiddenNarration}
 ${npcObservation}
 ${noProtagonistMindReading}
 ${formatting}
 ${systemRules}
-`;
+`);
 
-export const unlockVsHighlightAtom: Atom<void> = () => unlockVsHighlight;
-export const hiddenNarrationAtom: Atom<void> = () => hiddenNarration;
-export const npcObservationAtom: Atom<void> = () => npcObservation;
-export const noProtagonistMindReadingAtom: Atom<void> = () =>
-  noProtagonistMindReading;
-export const formattingAtom: Atom<void> = () => formatting;
-export const systemRulesAtom: Atom<void> = () => systemRules;
+export const unlockVsHighlightAtom: Atom<void> = defineAtom({ atomId: "atoms/core/narrativePolicy#unlockVsHighlightAtom", source: "atoms/core/narrativePolicy.ts", exportName: "unlockVsHighlightAtom" }, () => unlockVsHighlight);
+export const hiddenNarrationAtom: Atom<void> = defineAtom({ atomId: "atoms/core/narrativePolicy#hiddenNarrationAtom", source: "atoms/core/narrativePolicy.ts", exportName: "hiddenNarrationAtom" }, () => hiddenNarration);
+export const npcObservationAtom: Atom<void> = defineAtom({ atomId: "atoms/core/narrativePolicy#npcObservationAtom", source: "atoms/core/narrativePolicy.ts", exportName: "npcObservationAtom" }, () => npcObservation);
+export const noProtagonistMindReadingAtom: Atom<void> = defineAtom({ atomId: "atoms/core/narrativePolicy#noProtagonistMindReadingAtom", source: "atoms/core/narrativePolicy.ts", exportName: "noProtagonistMindReadingAtom" }, () =>
+  noProtagonistMindReading);
+export const formattingAtom: Atom<void> = defineAtom({ atomId: "atoms/core/narrativePolicy#formattingAtom", source: "atoms/core/narrativePolicy.ts", exportName: "formattingAtom" }, () => formatting);
+export const systemRulesAtom: Atom<void> = defineAtom({ atomId: "atoms/core/narrativePolicy#systemRulesAtom", source: "atoms/core/narrativePolicy.ts", exportName: "systemRulesAtom" }, () => systemRules);

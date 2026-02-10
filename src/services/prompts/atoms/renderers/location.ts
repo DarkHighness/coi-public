@@ -8,6 +8,8 @@
  */
 
 import type { Atom, Location } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type RenderLocationInput = {
   location: Location;
@@ -16,7 +18,7 @@ export type RenderLocationInput = {
 /**
  * 渲染 Location 的 visible 层
  */
-export const renderLocationVisible: Atom<RenderLocationInput> = ({
+export const renderLocationVisible: Atom<RenderLocationInput> = defineAtom({ atomId: "atoms/renderers/location#renderLocationVisible", source: "atoms/renderers/location.ts", exportName: "renderLocationVisible" }, ({
   location,
 }) => {
   const v = location.visible;
@@ -48,12 +50,12 @@ export const renderLocationVisible: Atom<RenderLocationInput> = ({
   return `<location id="${location.id}" layer="visible">
 ${lines.join("\n")}
 </location>`;
-};
+});
 
 /**
  * 渲染 Location 的 hidden 层
  */
-export const renderLocationHidden: Atom<RenderLocationInput> = ({
+export const renderLocationHidden: Atom<RenderLocationInput> = defineAtom({ atomId: "atoms/renderers/location#renderLocationHidden", source: "atoms/renderers/location.ts", exportName: "renderLocationHidden" }, ({
   location,
 }) => {
   const h = location.hidden;
@@ -70,12 +72,12 @@ export const renderLocationHidden: Atom<RenderLocationInput> = ({
   return `<location id="${location.id}" layer="hidden">
 ${lines.join("\n")}
 </location>`;
-};
+});
 
 /**
  * 渲染 Location 完整信息（visible + hidden）
  */
-export const renderLocationFull: Atom<RenderLocationInput> = ({ location }) => {
+export const renderLocationFull: Atom<RenderLocationInput> = defineAtom({ atomId: "atoms/renderers/location#renderLocationFull", source: "atoms/renderers/location.ts", exportName: "renderLocationFull" }, ({ location }) => {
   const v = location.visible;
   const h = location.hidden;
 
@@ -125,6 +127,6 @@ ${visibleLines.join("\n")}
 ${hiddenLines.join("\n")}
 </hidden>
 </location>`;
-};
+});
 
 export default renderLocationFull;

@@ -7,13 +7,15 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * 镜头分解模板
  */
 export const shotBreakdownTemplate: Atom<
   void
-> = () => `**PROFESSIONAL SHOT BREAKDOWN**
+> = defineAtom({ atomId: "atoms/veo/shotBreakdown#shotBreakdownTemplate", source: "atoms/veo/shotBreakdown.ts", exportName: "shotBreakdownTemplate" }, () => `**PROFESSIONAL SHOT BREAKDOWN**
 
 Create AS MANY SHOTS AS NEEDED to tell the story (minimum 2, typically 3-5, more for complex scenes).
 For each shot, specify:
@@ -23,27 +25,27 @@ SHOT N: [Shot Purpose/Type]
 - LENS: (e.g., "14mm ultra-wide", "50mm standard", "Macro 105mm")
 - COMPOSITION: (e.g., "Rule of thirds", "Centered framing", "Negative space")
 - ACTION: [Precise description from <current_scene>]
-- CAMERA MOVE: (e.g., "Slow crane up", "Push-in dolly", "Handheld follow", "Static")`;
+- CAMERA MOVE: (e.g., "Slow crane up", "Push-in dolly", "Handheld follow", "Static")`);
 
 /**
  * 必须使用的关键词
  */
-export const mandatoryKeywords: Atom<void> = () => `**MANDATORY KEYWORDS:**
+export const mandatoryKeywords: Atom<void> = defineAtom({ atomId: "atoms/veo/shotBreakdown#mandatoryKeywords", source: "atoms/veo/shotBreakdown.ts", exportName: "mandatoryKeywords" }, () => `**MANDATORY KEYWORDS:**
 - Quality: "Cinematic," "Hyper-realistic," "8K resolution," "High production value"
 - Detail: "Intricate details," "Photorealistic textures," "Volumetric rendering"
 - Atmosphere: "Atmospheric lighting," "Mood-driven," "Immersive"
 - Technical: "Depth of field," "Motion blur," "Color graded," "Professional cinematography"
-- Perspective: "First-person view," "Over-the-shoulder," "Immersive POV"`;
+- Perspective: "First-person view," "Over-the-shoulder," "Immersive POV"`);
 
 /**
  * 输出避免事项
  */
-export const avoidList: Atom<void> = () => `**AVOID:**
+export const avoidList: Atom<void> = defineAtom({ atomId: "atoms/veo/shotBreakdown#avoidList", source: "atoms/veo/shotBreakdown.ts", exportName: "avoidList" }, () => `**AVOID:**
 ❌ Third-person descriptions ("The character sees...") -> USE "You see..."
 ❌ Generic descriptions ("beautiful," "amazing," "epic" without specifics)
 ❌ Mentioning items NOT in <game_state><inventory>
 ❌ Including NPCs NOT in <game_state><npcs_present>
 ❌ Contradictory visual elements
-❌ Missing technical details`;
+❌ Missing technical details`);
 
 export default shotBreakdownTemplate;

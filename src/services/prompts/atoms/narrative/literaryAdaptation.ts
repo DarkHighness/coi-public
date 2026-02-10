@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const literaryAdaptationPrimer: Atom<void> = () => `
+
+export const literaryAdaptationPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationPrimer", source: "atoms/narrative/literaryAdaptation.ts", exportName: "literaryAdaptationPrimer" }, () => `
 <literary_adaptation>
   **化用: CREATIVE ADAPTATION, NOT QUOTATION**:
   - Transform classical phrases for this moment, character, world
@@ -18,9 +20,9 @@ export const literaryAdaptationPrimer: Atom<void> = () => `
   - Cultural: Chinese patterns for Chinese, Western for English, occasional cross-pollination
   - Never explain. Place the detail. Trust the player.
 </literary_adaptation>
-`;
+`);
 
-export const literaryAdaptation: Atom<void> = () => `
+export const literaryAdaptation: Atom<void> = defineAtom({ atomId: "atoms/narrative/literaryAdaptation#literaryAdaptation", source: "atoms/narrative/literaryAdaptation.ts", exportName: "literaryAdaptation" }, () => `
 <rule name="LITERARY_ADAPTATION">
   **化用: THE ART OF CREATIVE ADAPTATION**
 
@@ -307,7 +309,7 @@ export const literaryAdaptation: Atom<void> = () => `
       * Found text enriches location memory
   </integration_with_existing_atoms>
 </rule>
-`;
+`);
 
 export default literaryAdaptation;
 
@@ -315,8 +317,8 @@ export default literaryAdaptation;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const literaryAdaptationSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: literaryAdaptation(),
+export const literaryAdaptationSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationSkill", source: "atoms/narrative/literaryAdaptation.ts", exportName: "literaryAdaptationSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(literaryAdaptation),
 
   quickStart: `
 1. 化用 is transformation, not quotation - adapt the essence for this moment
@@ -371,4 +373,4 @@ Never got to... swing it...' Then nothing."
 (Action scene. Direct. Clear. No poetry needed.)`,
     },
   ],
-});
+}));

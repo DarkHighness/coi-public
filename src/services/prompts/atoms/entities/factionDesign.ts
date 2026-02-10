@@ -11,11 +11,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Faction 设计上下文 - 完整版
  */
-export const factionDesign: Atom<void> = () => `
+export const factionDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/factionDesign#factionDesign", source: "atoms/entities/factionDesign.ts", exportName: "factionDesign" }, () => `
 <game_system_context>
 **FACTION DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -249,12 +251,12 @@ While the protagonist sleeps, factions breathe:
 The world doesn't pause when the player looks away. It accelerates.
 </offscreen_progression>
 </game_system_context>
-`;
+`);
 
 /**
  * Faction 设计上下文 - 精简版
  */
-export const factionDesignPrimer: Atom<void> = () => `
+export const factionDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/factionDesign#factionDesignPrimer", source: "atoms/entities/factionDesign.ts", exportName: "factionDesignPrimer" }, () => `
 <game_system_context>
 **FACTION DESIGN**: Factions are living organisms with immune systems, metabolisms, and life cycles.
 - Power structure (autocrat, council, figurehead, shadow, hydra)
@@ -266,7 +268,7 @@ export const factionDesignPrimer: Atom<void> = () => `
 - Inter-faction dynamics (alliances, rivalries)
 - Off-screen progression
 </game_system_context>
-`;
+`);
 
 export default factionDesign;
 
@@ -274,8 +276,8 @@ export default factionDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const factionDesignSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: factionDesign(),
+export const factionDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/factionDesign#factionDesignSkill", source: "atoms/entities/factionDesign.ts", exportName: "factionDesignSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(factionDesign),
 
   quickStart: `
 1. Power Structure: Who actually rules? (autocrat, council, figurehead, shadow, hydra)
@@ -335,4 +337,4 @@ Know where the bishop's bastard children live."
 (Specific leverage, playable hooks.)`,
     },
   ],
-});
+}));

@@ -8,11 +8,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Law Systems - 完整版
  */
-export const lawSystem: Atom<void> = () => `
+export const lawSystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/law#lawSystem", source: "atoms/worldbuilding/law.ts", exportName: "lawSystem" }, () => `
 <worldbuilding_context>
 **LAW & JUSTICE SYSTEM DESIGN:**
 
@@ -239,12 +241,12 @@ The question isn't "Is it legal?" but "Who holds the pen that writes the law, an
 - Must work within or around the system
 </player_interaction>
 </worldbuilding_context>
-`;
+`);
 
 /**
  * Law Systems - 精简版
  */
-export const lawSystemLite: Atom<void> = () => `
+export const lawSystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/law#lawSystemLite", source: "atoms/worldbuilding/law.ts", exportName: "lawSystemLite" }, () => `
 <worldbuilding_context>
 **LAW & JUSTICE**: Law is what the powerful write to protect what they have.
 - Legal systems (formal, customary, religious, martial)
@@ -254,7 +256,7 @@ export const lawSystemLite: Atom<void> = () => `
 - Punishment spectrum (warning → execution)
 - Legal leverage (using law as weapon, defending against law)
 </worldbuilding_context>
-`;
+`);
 
 export default lawSystem;
 
@@ -262,8 +264,8 @@ export default lawSystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const lawSystemSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: lawSystem(),
+export const lawSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/law#lawSystemSkill", source: "atoms/worldbuilding/law.ts", exportName: "lawSystemSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(lawSystem),
 
   quickStart: `
 1. Law is a tool, not justice (who decides what's legal?)
@@ -323,4 +325,4 @@ Same act. Different outcome. The law is blind—to who has power."
 (Hypocrisy creates resentment and story hooks.)`,
     },
   ],
-});
+}));

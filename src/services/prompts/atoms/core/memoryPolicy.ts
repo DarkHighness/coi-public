@@ -3,6 +3,8 @@
  * Content from acting/state_management.ts
  */
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 const globalNotes = `
   <rule name="NOTES (VFS MARKDOWN) - SCRATCH PAD">
@@ -165,10 +167,10 @@ const memoryQuery = `
   </rule>
 `;
 
-export const memoryPolicy: Atom<void> = () => `
+export const memoryPolicy: Atom<void> = defineAtom({ atomId: "atoms/core/memoryPolicy#memoryPolicy", source: "atoms/core/memoryPolicy.ts", exportName: "memoryPolicy" }, () => `
 ${globalNotes}
 ${memoryQuery}
-`;
+`);
 
-export const globalNotesAtom: Atom<void> = () => globalNotes;
-export const memoryQueryAtom: Atom<void> = () => memoryQuery;
+export const globalNotesAtom: Atom<void> = defineAtom({ atomId: "atoms/core/memoryPolicy#globalNotesAtom", source: "atoms/core/memoryPolicy.ts", exportName: "globalNotesAtom" }, () => globalNotes);
+export const memoryQueryAtom: Atom<void> = defineAtom({ atomId: "atoms/core/memoryPolicy#memoryQueryAtom", source: "atoms/core/memoryPolicy.ts", exportName: "memoryQueryAtom" }, () => memoryQuery);

@@ -3,8 +3,10 @@
  * Content from knowing/temporal.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const temporalPhilosophy: Atom<void> = () => `
+
+export const temporalPhilosophy: Atom<void> = defineAtom({ atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophy", source: "atoms/narrative/temporalPhilosophy.ts", exportName: "temporalPhilosophy" }, () => `
 <temporal_philosophy>
   TIME IS NOT A NUMBER. TIME IS THE FABRIC OF EXISTENCE.
 
@@ -96,15 +98,15 @@ export const temporalPhilosophy: Atom<void> = () => `
     - Layer 3: What ACTUALLY happened (hidden layer)
   </temporal_layering_in_timeline>
 </temporal_philosophy>
-`;
+`);
 
-export const temporalPhilosophyPrimer: Atom<void> = () => `
+export const temporalPhilosophyPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophyPrimer", source: "atoms/narrative/temporalPhilosophy.ts", exportName: "temporalPhilosophyPrimer" }, () => `
 <temporal_philosophy>
   THREE TIMES: COSMIC (world clock), NARRATIVE (story rhythm), LIVED (protagonist's perception).
   LAWS: Time irreversible. Cause precedes effect. Things decay. World doesn't pause for player.
   TECHNIQUES: Pause before impact. Skip routine. Echo past. Shadow future.
 </temporal_philosophy>
-`;
+`);
 
 export default temporalPhilosophy;
 
@@ -112,8 +114,8 @@ export default temporalPhilosophy;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const temporalPhilosophySkill: SkillAtom<void> = (): SkillOutput => ({
-  main: temporalPhilosophy(),
+export const temporalPhilosophySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophySkill", source: "atoms/narrative/temporalPhilosophy.ts", exportName: "temporalPhilosophySkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(temporalPhilosophy),
 
   quickStart: `
 1. Three times: Cosmic (world clock), Narrative (story rhythm), Lived (subjective)
@@ -147,4 +149,4 @@ the trajectory, the inevitable point of impact..."
 (Mundane compressed, one telling detail.)`,
     },
   ],
-});
+}));

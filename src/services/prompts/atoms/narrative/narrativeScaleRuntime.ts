@@ -8,6 +8,8 @@
  */
 
 import type { Atom } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 export type NarrativeScaleRuntimeInput = {
   scale: "epic" | "intimate" | "balanced";
@@ -17,7 +19,7 @@ export type NarrativeScaleRuntimeInput = {
 /**
  * 小格局叙事运行时指导
  */
-export const narrativeScaleIntimate: Atom<void> = () => `
+export const narrativeScaleIntimate: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeScaleRuntime#narrativeScaleIntimate", source: "atoms/narrative/narrativeScaleRuntime.ts", exportName: "narrativeScaleIntimate" }, () => `
 <narrative_scale_guidance scale="intimate">
   **THIS IS AN INTIMATE-SCALE STORY (小格局叙事)**
 
@@ -88,12 +90,12 @@ export const narrativeScaleIntimate: Atom<void> = () => `
     - 爱不需要惊天动地 (Love doesn't need to shake heaven and earth)
   </emotional_authenticity>
 </narrative_scale_guidance>
-`;
+`);
 
 /**
  * 宏大叙事运行时指导
  */
-export const narrativeScaleEpic: Atom<void> = () => `
+export const narrativeScaleEpic: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeScaleRuntime#narrativeScaleEpic", source: "atoms/narrative/narrativeScaleRuntime.ts", exportName: "narrativeScaleEpic" }, () => `
 <narrative_scale_guidance scale="epic">
   **THIS IS AN EPIC-SCALE STORY (宏大叙事)**
 
@@ -132,12 +134,12 @@ export const narrativeScaleEpic: Atom<void> = () => `
     - But ground it in personal experience: "She felt the tremor in her bones"
   </language_calibration>
 </narrative_scale_guidance>
-`;
+`);
 
 /**
  * 平衡叙事运行时指导
  */
-export const narrativeScaleBalanced: Atom<void> = () => `
+export const narrativeScaleBalanced: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeScaleRuntime#narrativeScaleBalanced", source: "atoms/narrative/narrativeScaleRuntime.ts", exportName: "narrativeScaleBalanced" }, () => `
 <narrative_scale_guidance scale="balanced">
   **THIS IS A BALANCED-SCALE STORY (平衡叙事)**
 
@@ -168,32 +170,32 @@ export const narrativeScaleBalanced: Atom<void> = () => `
     - The world has texture—both grand vistas and cozy corners
   </tone_flexibility>
 </narrative_scale_guidance>
-`;
+`);
 
 /**
  * 根据规模选择对应的运行时指导
  */
-export const narrativeScaleRuntime: Atom<NarrativeScaleRuntimeInput> = ({
+export const narrativeScaleRuntime: Atom<NarrativeScaleRuntimeInput> = defineAtom({ atomId: "atoms/narrative/narrativeScaleRuntime#narrativeScaleRuntime", source: "atoms/narrative/narrativeScaleRuntime.ts", exportName: "narrativeScaleRuntime" }, ({
   scale,
-}) => {
+}, trace) => {
   switch (scale) {
     case "intimate":
-      return narrativeScaleIntimate();
+      return trace.record(narrativeScaleIntimate);
     case "epic":
-      return narrativeScaleEpic();
+      return trace.record(narrativeScaleEpic);
     case "balanced":
-      return narrativeScaleBalanced();
+      return trace.record(narrativeScaleBalanced);
     default:
       return "";
   }
-};
+});
 
 /**
  * Narrative scale runtime primer (system-prompt safe).
  */
-export const narrativeScaleRuntimePrimer: Atom<NarrativeScaleRuntimeInput> = ({
+export const narrativeScaleRuntimePrimer: Atom<NarrativeScaleRuntimeInput> = defineAtom({ atomId: "atoms/narrative/narrativeScaleRuntime#narrativeScaleRuntimePrimer", source: "atoms/narrative/narrativeScaleRuntime.ts", exportName: "narrativeScaleRuntimePrimer" }, ({
   scale,
-}) => {
+}, trace) => {
   switch (scale) {
     case "intimate":
       return `[NARRATIVE SCALE: INTIMATE] Focus on personal stakes, everyday warmth, and quiet victories. No apocalyptic threats needed.`;
@@ -204,6 +206,6 @@ export const narrativeScaleRuntimePrimer: Atom<NarrativeScaleRuntimeInput> = ({
     default:
       return "";
   }
-};
+});
 
 export default narrativeScaleRuntime;

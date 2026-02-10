@@ -15,6 +15,8 @@
  */
 
 import type { Atom, CausalChain } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 const PLAYER_ID = "char:player";
 
@@ -25,7 +27,7 @@ export type RenderCausalChainInput = {
 /**
  * 渲染 CausalChain 的 visible 层（玩家所知的因果链）
  */
-export const renderCausalChainVisible: Atom<RenderCausalChainInput> = ({
+export const renderCausalChainVisible: Atom<RenderCausalChainInput> = defineAtom({ atomId: "atoms/renderers/causalChain#renderCausalChainVisible", source: "atoms/renderers/causalChain.ts", exportName: "renderCausalChainVisible" }, ({
   chain,
 }) => {
   const lines: string[] = [
@@ -51,12 +53,12 @@ export const renderCausalChainVisible: Atom<RenderCausalChainInput> = ({
   return `<causal_chain id="${chain.chainId}" layer="visible">
 ${lines.join("\n")}
 </causal_chain>`;
-};
+});
 
 /**
  * 渲染 CausalChain 的 hidden 层（所有后果，包括未知的）
  */
-export const renderCausalChainHidden: Atom<RenderCausalChainInput> = ({
+export const renderCausalChainHidden: Atom<RenderCausalChainInput> = defineAtom({ atomId: "atoms/renderers/causalChain#renderCausalChainHidden", source: "atoms/renderers/causalChain.ts", exportName: "renderCausalChainHidden" }, ({
   chain,
 }) => {
   const lines: string[] = [`chainId: ${chain.chainId}`];
@@ -80,12 +82,12 @@ export const renderCausalChainHidden: Atom<RenderCausalChainInput> = ({
   return `<causal_chain id="${chain.chainId}" layer="hidden">
 ${lines.join("\n")}
 </causal_chain>`;
-};
+});
 
 /**
  * 渲染 CausalChain 完整信息（visible + hidden）
  */
-export const renderCausalChainFull: Atom<RenderCausalChainInput> = ({
+export const renderCausalChainFull: Atom<RenderCausalChainInput> = defineAtom({ atomId: "atoms/renderers/causalChain#renderCausalChainFull", source: "atoms/renderers/causalChain.ts", exportName: "renderCausalChainFull" }, ({
   chain,
 }) => {
   const visibleLines: string[] = [`status: ${chain.status}`];
@@ -111,6 +113,6 @@ ${visibleLines.join("\n")}
 ${hiddenLines.join("\n")}
 </hidden>
 </causal_chain>`;
-};
+});
 
 export default renderCausalChainFull;

@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const narrativeEchoPrimer: Atom<void> = () => `
+
+export const narrativeEchoPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeEcho#narrativeEchoPrimer", source: "atoms/narrative/narrativeEcho.ts", exportName: "narrativeEchoPrimer" }, () => `
 <narrative_echo>
   **EVENTS DON'T END WHEN SCENES END**:
   - An echo is a present-tense detail carrying past weight. NOT a flashback.
@@ -18,9 +20,9 @@ export const narrativeEchoPrimer: Atom<void> = () => `
   - Emotion through objects: father's hunched back, diary with your name in different handwriting, letter never sent
   - Place the detail. Trust the player to feel it.
 </narrative_echo>
-`;
+`);
 
-export const narrativeEcho: Atom<void> = () => `
+export const narrativeEcho: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeEcho#narrativeEcho", source: "atoms/narrative/narrativeEcho.ts", exportName: "narrativeEcho" }, () => `
 <rule name="NARRATIVE_ECHO">
   **THE WORLD AS PALIMPSEST**:
 
@@ -265,7 +267,7 @@ export const narrativeEcho: Atom<void> = () => `
     (Space after the echo. The detail breathes. Then the scene continues.)
   </echo_frequency>
 </rule>
-`;
+`);
 
 export default narrativeEcho;
 
@@ -273,8 +275,8 @@ export default narrativeEcho;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const narrativeEchoSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: narrativeEcho(),
+export const narrativeEchoSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/narrativeEcho#narrativeEchoSkill", source: "atoms/narrative/narrativeEcho.ts", exportName: "narrativeEchoSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(narrativeEcho),
 
   quickStart: `
 1. Identify past events that should echo (major choices, deaths, betrayals, revelations)
@@ -331,4 +333,4 @@ The old man didn't turn around at the gate."
 (Physical detail. No emotion stated. Player feels it.)`,
     },
   ],
-});
+}));

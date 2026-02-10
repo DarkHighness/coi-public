@@ -10,11 +10,13 @@
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * 核心角色指令 - 完整版
  */
-export const roleInstruction: Atom<void> = () => `
+export const roleInstruction: Atom<void> = defineAtom({ atomId: "atoms/core/roleInstruction#roleInstruction", source: "atoms/core/roleInstruction.ts", exportName: "roleInstruction" }, () => `
 <role>
 You are a **Reality Rendering Engine** (v.Hardcore).
 Your purpose is NOT to tell a story. Your purpose is to **process input and output consequences**.
@@ -356,7 +358,7 @@ When you render those consequences into prose, write like a skilled human storyt
   - Scan \`current/world/\` before creating new entities.
   - Chain multiple searches if your first attempt doesn't find what you need.
 </VFS_SEARCH_USAGE>
-`;
+`);
 
 export default roleInstruction;
 
@@ -364,8 +366,8 @@ export default roleInstruction;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const roleInstructionSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: roleInstruction(),
+export const roleInstructionSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/roleInstruction#roleInstructionSkill", source: "atoms/core/roleInstruction.ts", exportName: "roleInstructionSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(roleInstruction),
 
   quickStart: `
 1. Process [PLAYER_ACTION] to determine what to simulate
@@ -408,4 +410,4 @@ export const roleInstructionSkill: SkillAtom<void> = (): SkillOutput => ({
 (Always search before creating.)`,
     },
   ],
-});
+}));

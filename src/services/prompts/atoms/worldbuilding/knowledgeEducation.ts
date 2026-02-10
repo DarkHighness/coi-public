@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const knowledgeEducation: Atom<void> = () => `
+
+export const knowledgeEducation: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducation", source: "atoms/worldbuilding/knowledgeEducation.ts", exportName: "knowledgeEducation" }, () => `
 <worldbuilding_context>
 **KNOWLEDGE & EDUCATION (Access + Verification + Control)**
 
@@ -77,17 +79,17 @@ Define:
 - Expert-for-hire:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const knowledgeEducationPrimer: Atom<void> = () =>
+export const knowledgeEducationPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducationPrimer", source: "atoms/worldbuilding/knowledgeEducation.ts", exportName: "knowledgeEducationPrimer" }, () =>
   `
 <worldbuilding_context>
 **KNOWLEDGE PRIMER**: Model info as access + verification + control. Always name sources, costs, and censorship workarounds.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const knowledgeEducationSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: knowledgeEducation(),
+export const knowledgeEducationSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducationSkill", source: "atoms/worldbuilding/knowledgeEducation.ts", exportName: "knowledgeEducationSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(knowledgeEducation),
   quickStart: `
 1) Set literacy baseline + one credential (exam/license)
 2) Define one restricted archive with surveillance risk
@@ -117,4 +119,4 @@ But dockworkers trade a different version for coin. Now 'truth' is a market:
 pay to learn, pay to silence, pay to publish."`,
     },
   ],
-});
+}));

@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const religion: Atom<void> = () => `
+
+export const religion: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/religion#religion", source: "atoms/worldbuilding/religion.ts", exportName: "religion" }, () => `
 <worldbuilding_context>
 **RELIGION & SACRED POWER (Mechanics, not set dressing)**
 
@@ -95,17 +97,17 @@ Religion often becomes:
 - Sacred site + threshold:
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const religionPrimer: Atom<void> = () =>
+export const religionPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/religion#religionPrimer", source: "atoms/worldbuilding/religion.ts", exportName: "religionPrimer" }, () =>
   `
 <worldbuilding_context>
 **RELIGION PRIMER**: Model religion as legitimacy + sorting + resource control. Define rituals with gatekeepers, prices, and enforceable heresy/exemptions.
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const religionSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: religion(),
+export const religionSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/religion#religionSkill", source: "atoms/worldbuilding/religion.ts", exportName: "religionSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(religion),
   quickStart: `
 1) Pick 2 functions (legitimacy/sorting/resources/meaning)
 2) Define one ritual with a price and a gatekeeper
@@ -135,4 +137,4 @@ Without it, the priest can still bless you—but the community will treat you as
 merchants won't extend credit, and guards search you at checkpoints."`,
     },
   ],
-});
+}));

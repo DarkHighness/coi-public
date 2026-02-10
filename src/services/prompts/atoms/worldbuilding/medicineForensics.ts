@@ -8,8 +8,10 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const medicineForensics: Atom<void> = () => `
+
+export const medicineForensics: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/medicineForensics#medicineForensics", source: "atoms/worldbuilding/medicineForensics.ts", exportName: "medicineForensics" }, () => `
 <worldbuilding_context>
 **MEDICINE & FORENSICS (Pressure, Proof, and Persistent Consequence)**
 
@@ -76,17 +78,17 @@ Chain-of-custody template:
 - Counterfeit market (what’s faked, who sells):
 </quick_design_template>
 </worldbuilding_context>
-`;
+`);
 
-export const medicineForensicsPrimer: Atom<void> = () =>
+export const medicineForensicsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/medicineForensics#medicineForensicsPrimer", source: "atoms/worldbuilding/medicineForensics.ts", exportName: "medicineForensicsPrimer" }, () =>
   `
 <worldbuilding_context>
 **MEDICINE PRIMER**: Treat injuries as clocks with capacity + access gates. Make proof a mechanic (chain-of-custody, standards, tampering).
 </worldbuilding_context>
-`.trim();
+`.trim());
 
-export const medicineForensicsSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: medicineForensics(),
+export const medicineForensicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/medicineForensics#medicineForensicsSkill", source: "atoms/worldbuilding/medicineForensics.ts", exportName: "medicineForensicsSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(medicineForensics),
   quickStart: `
 1) Make one injury a clock (bleeding/infection/shock)
 2) Add one access gate to treatment (fee/sponsor/triage/license)
@@ -118,4 +120,4 @@ or contaminate the sample route. The player can protect the chain-of-custody—o
 that gets results sooner but creates a tampering vulnerability."`,
     },
   ],
-});
+}));

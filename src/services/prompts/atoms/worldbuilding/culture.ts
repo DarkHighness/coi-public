@@ -8,11 +8,13 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
+import { defineAtom, defineSkillAtom } from "../../trace/runtime";
+
 
 /**
  * Culture Systems - 完整版
  */
-export const cultureSystem: Atom<void> = () => `
+export const cultureSystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/culture#cultureSystem", source: "atoms/worldbuilding/culture.ts", exportName: "cultureSystem" }, () => `
 <worldbuilding_context>
 **CULTURE & CUSTOMS DESIGN:**
 
@@ -241,12 +243,12 @@ Breaking them carries no legal penalty — only the slow suffocation of social d
 - Food taboo creates conflict
 </food_drink>
 </worldbuilding_context>
-`;
+`);
 
 /**
  * Culture Systems - 精简版
  */
-export const cultureSystemLite: Atom<void> = () => `
+export const cultureSystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/culture#cultureSystemLite", source: "atoms/worldbuilding/culture.ts", exportName: "cultureSystemLite" }, () => `
 <worldbuilding_context>
 **CULTURE & CUSTOMS**: Culture is the invisible architecture of belonging. Customs are law without courts.
 - Taboos & sacred (food, body, speech, place, person)
@@ -257,7 +259,7 @@ export const cultureSystemLite: Atom<void> = () => `
 - Gender & age roles (expectations, exceptions, transgression)
 - Food & drink (staples, forbidden, rituals)
 </worldbuilding_context>
-`;
+`);
 
 export default cultureSystem;
 
@@ -265,8 +267,8 @@ export default cultureSystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const cultureSystemSkill: SkillAtom<void> = (): SkillOutput => ({
-  main: cultureSystem(),
+export const cultureSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/culture#cultureSystemSkill", source: "atoms/worldbuilding/culture.ts", exportName: "cultureSystemSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(cultureSystem),
 
   quickStart: `
 1. Taboos are law without courts (breaking them = social death)
@@ -328,4 +330,4 @@ and he keeps asking because he doesn't speak the language of refusal."
 (Indirect communication creates misunderstanding.)`,
     },
   ],
-});
+}));
