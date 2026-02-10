@@ -1,4 +1,5 @@
 *.pyc
+scripts/theme_rewrite
 
 # Logs
 logs
