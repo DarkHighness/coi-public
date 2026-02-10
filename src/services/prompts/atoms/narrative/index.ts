@@ -51,3 +51,15 @@ export {
   crisisManagementAtom,
   sceneEndingsAtom,
 } from "./writingCraft";
+
+export {
+  literaryAdaptation,
+  literaryAdaptationPrimer,
+  literaryAdaptationSkill,
+} from "./literaryAdaptation";
+
+export {
+  indirectExpression,
+  indirectExpressionPrimer,
+  indirectExpressionSkill,
+} from "./indirectExpression";

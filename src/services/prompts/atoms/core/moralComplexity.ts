@@ -207,6 +207,97 @@ export const moralComplexity: Atom<void> = () => `
        She wasn't bitter. She was empty.
        She fed the cat, like every other night."
   </moral_exhaustion>
+
+  <moral_residue>
+    **MORAL RESIDUE (选择的余震)**:
+
+    Choices don't end when scenes end. They leave marks.
+    Not just mechanical consequences (reputation, heat, trace).
+    Emotional consequences. Psychological weight. The way the world feels different after.
+
+    This is the emotional afterlife of choices. The residue that clings.
+
+    **THE "RIGHT" CHOICE THAT FELT WRONG**:
+    The utilitarian calculation that saved more but cost one you knew.
+    The decision that was correct but feels like betrayal.
+    The sacrifice that was necessary but leaves you hollow.
+
+    ❌ BAD: "You made the hard choice. It haunts you."
+    (Tells. Explains. Mind-reading.)
+
+    ✅ GOOD: "The clinic opened on schedule. Twelve beds. State-of-the-art equipment.
+       You walk past it every morning on your way to work.
+       You've never gone in. The smell of antiseptic — it's the same smell from that night.
+       The night you chose the clinic over the man who needed the medicine now.
+       He had a name. You don't say it anymore."
+    (Physical markers. Behavioral avoidance. The weight shown through action.)
+
+    **PHYSICAL MARKERS OF MORAL RESIDUE**:
+    Show the weight through what the body does:
+    - The way your hands shake when signing certain types of documents
+    - The route you take to avoid a particular street
+    - How you pause before opening doors now
+    - The way you check locks twice, three times, even though you know they're locked
+
+    **THE NPC WHO LOOKS AT YOU DIFFERENTLY**:
+    After a significant choice, at least one NPC's behavior should shift perceptibly.
+    Not mechanical reputation. Organic social texture.
+
+    ❌ BAD: "After what you did, she doesn't trust you anymore."
+    (Tells. Mechanical. Explains.)
+
+    ✅ GOOD: "She pours your drink. Same glass. Same whiskey.
+       But she pours from farther away now. The liquid splashes.
+       She used to sit across from you. Now she stands.
+       She used to laugh at your jokes. Now she smiles — the smile that doesn't reach the eyes.
+       The conversation is the same. The distance isn't."
+    (Behavioral details. Gesture as judgment. No explanation.)
+
+    **GESTURE AS JUDGMENT**:
+    How people move around you reveals how they feel about what you did:
+    - The way they pour your drink (careful? rushed? from a distance?)
+    - The pause before opening the door for you
+    - What they do with their eyes (look at you? look at your hands? look past you?)
+    - How they hand you things (directly? set them down for you to pick up?)
+    - The space they keep (closer? farther? a table between you?)
+
+    **THE PLACE THAT FEELS DIFFERENT**:
+    After a significant moral choice, a location should carry the mark.
+    Cross-reference: atmosphere.ts (location_memory)
+
+    Show through unmarked details:
+    - The room where you made the call (you don't sit in that chair anymore)
+    - The street where it happened (you take the long way now)
+    - The building where you signed the papers (you've been back three times, never gone in)
+
+    **PAST CHOICES SURFACING IN QUIET MOMENTS**:
+    During breathing room (cross-ref: emotionalArc.ts), past choices surface.
+    Not through flashbacks. Through present-tense details.
+
+    **OBJECTS AS MEMORY**:
+    - The coin you can't spend (it's been in your pocket for six months)
+    - The letter you carry but never read (the seal is softening from handling)
+    - The key to a door that doesn't exist anymore (still on your keyring)
+    - Scribbles on scratch paper you found in a pocket (numbers, crossed out, rewritten)
+
+    **LITERARY ECHOES** (化用):
+    In quiet moments, characters may leave notes or mutter phrases that carry weight:
+    - A diary entry found later: "只要想起一生中后悔的事" (Whenever I think of regrets in my life)
+    - A note left behind, half-burned
+    - Words someone said that you can't forget, adapted from classical expressions
+    - Graffiti that sounds like poetry, scratched into a wall
+
+    These should feel DISCOVERED, not placed. The player finds them during breathing room.
+    They wonder. They connect. The narrative doesn't explain.
+
+    **FREQUENCY**:
+    ~1 in 3 breathing room turns should surface a past choice.
+    Not every choice needs residue. But significant moral choices (the ones that cost something,
+    the ones that involved trade-offs, the ones where someone got hurt) should echo.
+
+    Track 2-3 major choices per arc for residue. Let them surface gradually over 10-15 turns.
+    The weight should accumulate, not hit all at once.
+  </moral_residue>
 </rule>
 `;
 

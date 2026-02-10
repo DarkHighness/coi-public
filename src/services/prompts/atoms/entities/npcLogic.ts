@@ -304,6 +304,26 @@ const socialFriction = `
       - **Hierarchy displays**: The Sergeant yells at the Private just to look tough in front of you.
       - **Secret Signals**: A glance. A cleared throat. A hand under the table. They communicate things they don't want you to know.
     </micro_social_dynamics>
+
+    <protagonist_identity_reaction>
+      **FIRST CONTACT IS IDENTITY-DRIVEN**:
+      When the protagonist enters a scene, NPCs react to their VISIBLE identity markers BEFORE any dialogue or action occurs. This reaction is automatic, involuntary, and culturally conditioned — the social animal's survival instinct firing in milliseconds.
+
+      **The reaction chain** (happens before a single word is spoken):
+      1. **VISUAL SCAN**: What do they see? (clothing, bearing, weapons, cleanliness, scars, tools-of-trade)
+      2. **CATEGORIZATION**: What box do they put you in? (class, profession, threat level, usefulness)
+      3. **BEHAVIORAL ADJUSTMENT**: How does their behavior change? (posture, tone, distance, eye contact, hand position)
+
+      **EXAMPLES**:
+      - A figure in noble dress enters a market: Vendors straighten their displays. Beggars approach with rehearsed deference. Pickpockets circle at a respectful distance. Guards salute or stiffen depending on jurisdiction.
+      - A figure in rags enters a guild hall: The receptionist's smile freezes mid-formation. Conversations pause — not silence, but a hitch. Someone checks the silverware. The doorman takes a step closer.
+      - A figure with visible weapons enters a temple: Priests exchange glances. Worshippers edge away — not running, just the slow drift of prey. A child stares. An old soldier nods.
+      - A figure in merchant's clothes enters a tavern: The barkeep quotes the premium rate before being asked. The thief in the corner marks the purse. The off-duty guard calculates whether this one is worth protecting — or shaking down.
+      - A figure with a doctor's bag enters a plague district: Doors open that were closed to everyone else. A mother thrusts a child forward. A man blocks the path — "My wife first." Hope is more dangerous than despair.
+
+      **CRITICAL**: This is NOT about the protagonist's TRUE identity. It is about what NPCs SEE. A king in beggar's clothes IS a beggar to the world. A murderer in priest's robes IS a priest until the blood shows through.
+      (Cross-reference: \`identityEnforcement.perceived_vs_true_identity\`)
+    </protagonist_identity_reaction>
   </social_friction>
 `;
 
@@ -765,6 +785,27 @@ ${socialWeb}
 ${complexIntimacy}
 ${dailyExistence}
 ${groupBehavior}
+
+  <integration_with_literary_atoms>
+    **CROSS-REFERENCES FOR LITERARY REFINEMENT**:
+
+    - Works with **indirectExpression**: NPCs show emotion through body language, gestures, and physical tells
+      * The body betrays what words hide
+      * Micro-expressions reveal truth during dialogue
+      * Found objects (letters, notes, diaries) tell emotional stories
+
+    - Works with **literaryAdaptation**: NPC-written text can contain literary adaptations
+      * Diary entries with poetic cadence (educated NPCs in emotional moments)
+      * Notes left behind with classical patterns adapted to context
+      * Graffiti that echoes literary structures (fragmented, incomplete)
+      * Letters never sent with adapted classical phrases
+      * These should feel DISCOVERED, not placed
+
+    - **Restraint mechanisms**: Literary elements in NPC content follow 20-30% frequency rule
+      * Not every NPC speaks poetically
+      * Only in appropriate contexts (dying words, drunk confession, cultural ritual, educated character in grief)
+      * Pragmatic characters (soldiers, merchants, children) speak plainly
+  </integration_with_literary_atoms>
 </true_person_npc_logic>
 `;
 };

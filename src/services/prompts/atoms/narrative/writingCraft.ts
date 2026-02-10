@@ -579,6 +579,107 @@ const emotionalResonance = `
   </emotional_resonance>
 `;
 
+const literaryDepth = `
+  <literary_depth>
+    **ELEVATING EMOTIONAL MOMENTS THROUGH LITERARY CRAFT**
+
+    <when_to_elevate>
+      Not every moment needs literary elevation. Reserve these techniques for:
+      - **Threshold moments**: Point of no return, life-changing decisions, final goodbye
+      - **Peak emotional states**: Grief, joy, despair, triumph, rage, love at their apex
+      - **Discovery of past**: Finding evidence of someone's inner life (diary, letter, note)
+      - **Cultural/ritual contexts**: Funeral, wedding, coming-of-age, religious ceremony
+
+      **Frequency**: 20-30% of significant moments. The rest can be direct, clear, immediate.
+      If you used literary elevation in the last 2 turns, DO NOT use it again.
+      Restraint preserves power.
+    </when_to_elevate>
+
+    <literary_adaptation_in_found_text>
+      **化用 IN DISCOVERED WRITING**:
+
+      Characters may leave behind writing that echoes classical literary structures.
+      This is NOT the narrator being poetic. This is a CHARACTER being poetic,
+      and the player finding evidence of their inner life.
+
+      **CHINESE CONTEXT**:
+      - Pattern: "只要想起X，Y便Z" (Whenever I think of X, Y happens)
+        * Example: "只要想起那个夜晚，雨声便充满整个世界"
+          (Whenever I think of that night, rain fills the entire world)
+      - Pattern: "X很像Y，我Z却又Z" (X resembles Y, I [contradictory feelings])
+        * Example: "转角处站着一个背影，像极了你。我想走近，又怕走近。"
+          (A silhouette at the corner, so much like you. I want to approach, yet fear to approach.)
+      - Pattern: Parallel structure (对仗): "X年Y，Z年W" (X years [state], Z years [state])
+        * Example: "十年磨剑，十年藏锋，莫笑今日无名"
+          (Ten years sharpening the blade, ten years hiding the edge, don't mock today's obscurity)
+
+      **ENGLISH CONTEXT**:
+      - Iambic echoes: "To walk away is death, to stay is dying slow"
+      - Biblical cadence: "There was a time for speaking. That time has passed."
+      - Folk wisdom adapted: "They say the third time's charm. They don't say what the fourth time is."
+      - Fragmentation: "I almost touched the moon. Then the sky brightened."
+
+      **DELIVERY CHANNELS**:
+      - Diary entries: "The diary lies open. Last entry: '只要想起那个夜晚...' The rest is blank."
+      - Notes left behind: "A note on the table: 'If you're reading this—' It doesn't finish."
+      - Graffiti: "Scratched into the wall: '梅花便落满南山' The characters are worn by time."
+      - Letters never sent: "An envelope, never opened. Inside: 'Every spring is a reminder.'"
+
+      **CRITICAL**: These should feel DISCOVERED, not placed.
+      The player finds a diary. The diary contains this. The player wonders.
+      NEVER write: "You find a note that reminds you of a poem..."
+      JUST: "A note, yellowed: '只要想起那个夜晚，雨声便充满整个世界。'"
+    </literary_adaptation_in_found_text>
+
+    <environmental_as_emotional_carrier>
+      **THE WORLD REFLECTS INNER STATE**:
+
+      Through selective perception (cross-ref: protagonistLens), the environment
+      mirrors the protagonist's emotional state. This is NOT pathetic fallacy
+      (the world doesn't actually change). This is how human perception works.
+
+      **GRIEF**:
+      - "Heavy rain pours down. The world is gray. Even the flowers seem to droop."
+      - "The market is loud. Too loud. You want silence."
+      - "Father's back is more hunched than you remembered. He doesn't turn around at the gate."
+
+      **JOY**:
+      - "The rain feels cleansing. The air smells fresh."
+      - "The market is alive with color. Reds, golds, greens."
+      - "Even the weeds look vibrant today."
+
+      **ANXIETY**:
+      - "The air is thick. Hard to breathe."
+      - "Shadows pool in corners. The lamp flickers."
+      - "Too quiet. Even the birds have stopped singing."
+
+      **THE RULE**: The environment doesn't change. The protagonist's PERCEPTION changes.
+      Show the world through their emotional lens. When grieving, the rain feels like mourning.
+      When joyful, the same rain feels cleansing. Same rain. Different lens.
+    </environmental_as_emotional_carrier>
+
+    <restraint_as_power>
+      **THE ART OF WITHHOLDING**:
+
+      Literary depth comes from what you DON'T say as much as what you do.
+
+      - **3 precise details + silence > 12 details + no air to breathe**
+      - **The unmarked detail**: Place the object, never explain what it means
+        * "His father's back was more hunched. The old man didn't turn around."
+        * (Don't add: "This made him sad." The player feels it.)
+      - **The incomplete thought**: "只要想起..." (stops there—player fills the rest)
+      - **The gesture without commentary**: "She pours tea. Same pot. But from farther away now."
+
+      **TRUST THE PLAYER**: They will make the connection. That moment of recognition
+      is the emotional payload. If you explain it, you steal that moment.
+
+      **FREQUENCY**: ~1 in 4-5 significant moments should have deliberate literary elevation.
+      Not every scene needs to be fully rendered. Some moments are more powerful
+      when the narrative pulls back and lets silence do the work.
+    </restraint_as_power>
+  </literary_depth>
+`;
+
 const momentCrystallization = `
   <moment_crystallization>
     **CREATING SCENES THAT SEAR INTO MEMORY**
@@ -861,6 +962,7 @@ ${physicality}
 ${unapologeticReality}
 ${sensoryGrit}
 ${emotionalResonance}
+${literaryDepth}
 ${momentCrystallization}
 ${worldTexture}
 ${sceneEndings}

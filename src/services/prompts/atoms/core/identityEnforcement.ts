@@ -12,11 +12,13 @@ export interface IdentityEnforcementInput {
     location?: string;
   };
   backgroundTemplate?: string;
+  protagonistFeature?: string;
 }
 
 export const identityEnforcement: Atom<IdentityEnforcementInput> = ({
   protagonist,
   backgroundTemplate,
+  protagonistFeature,
 }) => {
   const name = protagonist?.name || "The Protagonist";
   const role = protagonist?.role || "Traveler";
@@ -65,6 +67,19 @@ export const identityEnforcement: Atom<IdentityEnforcementInput> = ({
       - If an emotional beat matters, externalize it (breath, hands, posture, voice) or ask the player.
       - The player's choices define their values. Do not assign values by narration.
     </no_protagonist_mind_reading>
+${
+  protagonistFeature
+    ? `
+    <identity_as_perceptual_filter>
+      **YOUR BACKGROUND SHAPES WHAT YOU SEE, NOT WHAT YOU THINK**:
+      - The protagonist's identity ("${protagonistFeature}") determines which environmental details are rendered with specificity.
+      - This is an EXTENSION of the no-mind-reading rule: instead of narrating thoughts, render the world through the protagonist's trained perception.
+      - A "${protagonistFeature}" notices different details than a generic observer — not because we narrate "you notice X" but because the narrative RENDERS X with more precision and screen time.
+      - See <protagonist_lens> for full rendering directives (detail selection, NPC first-contact, environmental gravitation, competence rendering).
+    </identity_as_perceptual_filter>
+`
+    : ""
+}
   </knowledge_horizon>
 
   ${

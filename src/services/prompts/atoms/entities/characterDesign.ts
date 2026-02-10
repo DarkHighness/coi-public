@@ -35,6 +35,24 @@ ${
 - **character.title** MUST match or be a variation of this role.
 - **character.profession** MUST reflect this role.
 - **character.attributes** and **character.skills** MUST be appropriate for a "${protagonistFeature}".
+
+<identity_as_lens>
+**"${protagonistFeature}" IS NOT JUST A TITLE — IT IS A WAY OF SEEING THE WORLD.**
+
+The protagonist's identity will function as a NARRATIVE RENDERING FILTER throughout the entire game. A detective and a peasant standing in the same room see two different rooms. Design the character to support this.
+
+When designing this character, consider:
+- What does a "${protagonistFeature}" notice FIRST when entering a room? (This informs **character.skills** — include at least one skill reflecting perceptual expertise in their domain.)
+- What details does a "${protagonistFeature}" render with unusual specificity? (This informs **character.visible.background** — mention training or life experience that explains the sharpened perception.)
+- What situations naturally FIND a "${protagonistFeature}"? (This informs the story's gravitational pull — the world will generate identity-plausible encounters.)
+- What can a "${protagonistFeature}" observe that a layperson would miss? (This informs competence rendering — the narrative will show extra observable details in their expertise domain, rendered as facts, never as conclusions.)
+- What visual markers on this character trigger instant NPC social judgments? (This informs **character.visible.appearance** — include clothing, bearing, scars, tools-of-trade, or other signals that NPCs read before a word is spoken.)
+
+**EXAMPLES**:
+- A merchant's skills should include something like "Appraisal Eye" or "Market Sense" — the ability to read quality, price, and provenance at a glance.
+- A soldier's appearance should include visible markers (posture, calluses, gear wear) that make civilians instinctively step aside.
+- An orphan's background should explain why they notice food, warmth, and escape routes before anything else.
+</identity_as_lens>
 </protagonist_constraint>
 `
     : ""

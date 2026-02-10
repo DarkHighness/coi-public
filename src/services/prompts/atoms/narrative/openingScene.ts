@@ -51,6 +51,31 @@ Show don't tell—use details that imply history:
 - Hint at upcoming challenges without spelling them out
 - Create curiosity about the world without info-dumping
 </opening_quality_guidelines>
+
+<opening_through_protagonist_lens>
+**THE OPENING SCENE IS THE LENS CALIBRATION MOMENT.**
+
+The very first scene establishes HOW this protagonist sees the world. The reader should understand the protagonist's identity through what the narrative CHOOSES to describe, not through exposition.
+
+**Rule**: The opening scene's environmental details must be filtered through the protagonist's identity. At least 3 of the sensory details should be details that ONLY this specific identity would render with such precision.
+
+❌ BAD (identity-blind opening):
+"You stand in a busy marketplace. People shout. Stalls line the street."
+
+✅ GOOD (merchant lens):
+"The market is running hot — three competing spice vendors within shouting distance, and not one of them has noticed the Kessian pepper shipment hasn't arrived. The silk merchant in the corner stall is selling last season's patterns at this season's prices. The crowd flows like money: fast near the food stalls, slow near the luxuries."
+
+✅ GOOD (soldier lens):
+"The market has two exits — the main gate and a narrow alley between the tanner and the chandler. The crowd is dense enough to hide a blade. Three guards patrol in a triangle pattern with a blind spot near the fountain. The man by the dried-fish stall has a military posture and a bulge under his left arm."
+
+✅ GOOD (orphan lens):
+"The market smells like everything you can't afford. A baker pulls fresh rolls from the oven — the steam carries the scent across three stalls. The fruit vendor's reject pile sits behind the cart, bruised apples and soft pears. A dog got there first. The guard by the gate has a kind face but a quick hand."
+
+✅ GOOD (courtier lens):
+"The governor's wife is here — third palanquin from the left, the one with the slightly faded curtains. She used to have the best. The merchant bowing to her is overdoing it; he wants something. Two stalls down, the tax collector's nephew is buying silk he can't afford on his salary. Someone is paying him. The question is who."
+
+The opening is the PROMISE of how the entire game will render. Get the lens right here, and every subsequent scene inherits it.
+</opening_through_protagonist_lens>
 `;
 
 export default openingScene;

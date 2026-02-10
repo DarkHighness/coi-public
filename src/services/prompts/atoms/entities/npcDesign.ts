@@ -232,6 +232,151 @@ Where is this NPC at dawn? Noon? Midnight? What do they do on rest days?
 - What would they die for, but never admit?
 - What resentment do they carry for sacrifices they chose to make?
 </unspoken_bonds>
+
+<first_impression_matrix>
+**DESIGN NPCs WITH THE PROTAGONIST'S IDENTITY IN MIND:**
+
+When creating an NPC, ask: "How would this NPC react to someone who LOOKS LIKE the protagonist?"
+
+This is not about plot. This is about social mechanics. The butcher, the guard, and the courtesan all live in the same city — but they see a completely different person when the protagonist walks through the door.
+
+**DESIGN QUESTIONS (answer for EVERY significant NPC):**
+1. What is this NPC's relationship to the protagonist's VISIBLE social class? (Above, below, same level, outside the hierarchy entirely)
+2. What does this NPC WANT from someone who looks like the protagonist? (Money, protection, information, nothing, for them to leave)
+3. What does this NPC FEAR from someone who looks like the protagonist? (Authority, violence, competition, contamination, nothing)
+4. What ASSUMPTIONS does this NPC make about the protagonist's identity? (Rich, dangerous, stupid, useful, irrelevant)
+
+**BEFORE/AFTER:**
+❌ BAD: "The innkeeper greets you warmly."
+   (Generic. Identity-blind. Could be anyone walking through that door.)
+
+✅ GOOD (protagonist is a SOLDIER):
+   "The innkeeper's smile tightens. She glances at your sword,
+    then at the shelf where she keeps the good plates — the ones
+    she puts away when soldiers come through. 'Just the one night?'
+    Her voice is carefully neutral."
+
+✅ GOOD (protagonist is a NOBLE):
+   "The innkeeper curtsies — loss, not grace. She's practiced this
+    for people who matter. 'The private room, my lord? I'll have
+    the girl bring fresh linens.' She's already calculating the markup."
+
+✅ GOOD (protagonist is an ORPHAN):
+   "The innkeeper looks you over. Lingers on the holes in your shoes.
+    'Kitchen's closed.' It isn't. You can smell the stew."
+
+✅ GOOD (protagonist is a MERCHANT):
+   "The innkeeper names a price before you've asked for a room.
+    She's sized up your coat — good wool, but last season's cut.
+    The price is fair. Not generous. She knows you'll haggle,
+    and she's already decided where she'll stop."
+
+**RECORD IN NPC HIDDEN LAYER:**
+Store the NPC's initial read of the protagonist in \`hidden.impression\`:
+- What they noticed first (visual scan result)
+- What box they put the protagonist in (categorization)
+- What they want/fear from this interaction (behavioral driver)
+This impression persists and colors ALL future interactions until overridden by new evidence.
+</first_impression_matrix>
+
+<npc_literary_expression>
+**WHEN NPCs USE LITERARY LANGUAGE:**
+
+Not every NPC speaks poetically. Literary language is a CHARACTER TRAIT, not a narrative device. It depends on:
+
+**1. EDUCATION & CULTURAL BACKGROUND:**
+- **Educated NPCs** (scholars, priests, nobles, poets): May use literary patterns in emotional moments
+- **Folk wisdom carriers** (elders, storytellers, traveling bards): Use adapted folk sayings, proverbs
+- **Pragmatic characters** (soldiers, merchants, laborers, children): Speak plainly, even in crisis
+- **Cultural context**: A Chinese scholar quotes 唐诗宋词; a Western priest echoes Biblical cadence
+
+**2. EMOTIONAL STATE:**
+Appropriate contexts for literary language:
+- **Dying words**: Final thoughts often reach for poetry
+- **Drunk confession**: Alcohol loosens the tongue, reveals hidden eloquence
+- **Cultural ritual**: Weddings, funerals, coming-of-age ceremonies
+- **Private grief**: Alone, writing in diary, muttering to self
+- **Educated character in emotional extreme**: Scholar at funeral, poet in despair
+
+Inappropriate contexts (ALWAYS speak plainly):
+- **Combat**: No time for poetry when survival is at stake
+- **Routine interaction**: Buying bread, asking directions, casual chat
+- **Exhausted/injured**: Pain strips away eloquence
+- **Pragmatic characters**: A soldier doesn't suddenly speak like a poet
+
+**3. NPC-WRITTEN TEXT (Found Literary Adaptations):**
+
+NPCs leave behind writing that may contain literary adaptations. This is DISCOVERED, not placed.
+
+**Delivery channels:**
+- **Diary entries**: Private thoughts with poetic cadence (educated NPC processing grief)
+- **Letters never sent**: Unsent confessions with classical patterns adapted to context
+- **Notes left behind**: Scratch paper with fragmented literary structures
+- **Graffiti**: Carved into tree/stone, etched on wall, incomplete phrases
+- **Personal effects**: Poetry copied into margins, underlined passages in books
+
+**Examples by NPC type:**
+
+**Chinese Scholar NPC (educated, in grief):**
+❌ BAD: Direct quotation from 红楼梦
+✅ GOOD: Diary entry found in study:
+   "只要想起那年的雪，便觉得此生再无春日。"
+   (Adaptation of classical structure, not direct quote. Feels personal, not copied.)
+
+**Western Priest NPC (ritual context):**
+❌ BAD: Direct Bible verse
+✅ GOOD: Funeral speech fragment overheard:
+   "We are dust, and to dust we return. But the dust remembers."
+   (Biblical cadence adapted, not quoted. Adds personal weight.)
+
+**Folk Elder NPC (storyteller background):**
+❌ BAD: Generic proverb
+✅ GOOD: Muttered while staring at fire:
+   "The wolf that eats alone dies alone. My father said that. I didn't listen."
+   (Folk wisdom adapted to personal regret. Incomplete thought trails off.)
+
+**CRITICAL RULES:**
+- Literary language is RARE (20-30% of significant emotional moments)
+- It must fit the NPC's education, culture, and emotional state
+- Found text (diary, letter, note) is the PRIMARY delivery channel (60%)
+- Muttered phrases are SECONDARY (25%)
+- Environmental inscription is TERTIARY (15%)
+- NEVER explain: "This reminds you of..." Just place the detail
+- Pragmatic NPCs (soldiers, merchants, children) NEVER speak poetically
+
+(Cross-reference: \`literaryAdaptation\` for adaptation techniques, \`indirectExpression\` for showing emotion through behavior)
+</npc_literary_expression>
+
+<integration_with_literary_atoms>
+**CROSS-REFERENCES FOR LITERARY REFINEMENT:**
+
+- Works with **indirectExpression**: NPCs show emotion through behavior, not labels
+  * Love through protection patterns (walking on street side, checking room first)
+  * Hate through dismissal (speaking about them while they're in the room)
+  * Jealousy through minimization ("You got lucky with the timing")
+  * Manipulation through gaslighting ("That never happened")
+  * All expression modes in this file USE indirect expression techniques
+
+- Works with **literaryAdaptation**: NPC-written text can contain literary adaptations
+  * Diary entries with poetic cadence (educated NPCs processing emotion)
+  * Letters never sent with classical patterns adapted to context
+  * Notes left behind with fragmented literary structures
+  * Graffiti that echoes folk wisdom or classical phrases
+  * These should feel DISCOVERED, not placed
+  * Frequency: 20-30% of significant emotional moments
+
+- Works with **protagonistLens**: NPC literary expression filtered through protagonist perception
+  * A scholar protagonist might notice classical allusions in NPC writing
+  * A soldier protagonist might miss the literary depth entirely
+  * The type of literary language found should match both NPC and protagonist identity
+
+- **Restraint mechanisms**: Literary elements in NPC content follow strict frequency rules
+  * Not every NPC speaks poetically
+  * Only educated NPCs or folk wisdom carriers use literary patterns
+  * Only in appropriate emotional contexts (dying words, drunk confession, ritual, private grief)
+  * Pragmatic characters (soldiers, merchants, laborers, children) speak plainly ALWAYS
+  * Found text is PRIMARY delivery channel (diary, letter, note)
+</integration_with_literary_atoms>
 `;
 
 /**
