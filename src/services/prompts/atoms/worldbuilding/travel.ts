@@ -3,17 +3,17 @@
  * Worldbuilding Skill: Travel & Distance
  * ============================================================================
  *
- * 旅行不是“跳过的空白”，它是：时间成本、信息延迟、资源消耗、危险暴露的集合。
- * 让旅行产生选择：走哪条路、带什么、什么时候出发、在谁的地盘过境、如何隐蔽。
+ * 旅行不是场景之间跳过的空白——它是变形的过程。
+ * 出发时的人和抵达时的人不是同一个人：时间消磨、资源消耗、危险暴露、路上的选择重塑一切。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const travel: Atom<void> = () => `
 <worldbuilding_context>
-**TRAVEL & DISTANCE (Make movement generate play)**
+**TRAVEL & DISTANCE (The road changes the traveler)**
 
-Design goal: movement should cost *time*, *resources*, or *exposure*.
+Design goal: movement should cost *time*, *resources*, or *exposure*. No one arrives unchanged.
 
 <rule name="The 4 Costs of Travel (pick 2 each trip)">
 1) **Time**: days, delays, deadlines, missed opportunities
@@ -42,7 +42,7 @@ For long trips, define an escalating clock:
 </travel_clock>
 
 <information_velocity>
-## Information Velocity (news travels differently)
+## Information Velocity (rumor outruns the rider)
 Define per region:
 - **Scandal**: hours
 - **Political news**: days
@@ -74,7 +74,8 @@ Question:
 </worldbuilding_context>
 `;
 
-export const travelPrimer: Atom<void> = () => `
+export const travelPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **TRAVEL PRIMER**: Travel should cost time/resources/exposure/risk. Always offer at least two routes with different tradeoffs.
 </worldbuilding_context>
@@ -99,18 +100,15 @@ export const travelSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Two routes with tradeoffs",
       wrong: `"You travel for three days and arrive."`,
-      right:
-        `"Two ways to the city:
+      right: `"Two ways to the city:
 1) The toll road (1 day). The gate captain knows your face and wants a 'processing fee.'
 2) The marsh path (3 days). No tolls, but leeches, fever, and smugglers who ask questions."`,
     },
     {
       scenario: "Exposure as a cost",
       wrong: `"The player moves unseen because it's convenient."`,
-      right:
-        `"Every inn requires a register stamp. Skip inns and you camp—safe from paper trails,
+      right: `"Every inn requires a register stamp. Skip inns and you camp—safe from paper trails,
 but you light fires. Fires draw eyes. Eyes sell rumors."`,
     },
   ],
 });
-

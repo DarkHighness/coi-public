@@ -55,7 +55,8 @@ Avoid:
 </craft_context>
 `;
 
-export const sceneBeatsObjectivesPrimer: Atom<void> = () => `
+export const sceneBeatsObjectivesPrimer: Atom<void> = () =>
+  `
 <craft_context>
 **SCENE PRIMER**: Every scene needs objective + gate + cost + result + decision hook. Use fail-forward; no dead ends.
 </craft_context>
@@ -81,8 +82,7 @@ export const sceneBeatsObjectivesSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Fail-forward",
       wrong: `"You fail the lockpick. You can't enter."`,
-      right:
-        `"You fail the lockpick, but you notice the maintenance schedule (new lead).
+      right: `"You fail the lockpick, but you notice the maintenance schedule (new lead).
 Your attempt leaves scratches; a guard will inspect in 24 hours (new clock).
 You can return tonight with a bribe, or go find the janitor who has the key."`,
     },

@@ -9,7 +9,11 @@
  * - minimalEntityAtom
  */
 
-import { idUsageAtom, idGenerationAtom, minimalEntityAtom } from "./idAndEntityPolicy";
+import {
+  idUsageAtom,
+  idGenerationAtom,
+  minimalEntityAtom,
+} from "./idAndEntityPolicy";
 
 /**
  * ID Generation composite - includes ID usage rules, generation rules, and minimal entity principle

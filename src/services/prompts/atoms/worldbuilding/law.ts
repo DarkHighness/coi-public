@@ -3,7 +3,7 @@
  * Worldbuilding Atom: Law & Justice Systems
  * ============================================================================
  *
- * Law 设计上下文 - 定义法律系统的设计哲学。
+ * 法律不是正义的化身——它是权力者用墨水铸造的锁链。
  * 涵盖：法律类型、执法层级、腐败模式、避难与管辖。
  */
 
@@ -16,17 +16,17 @@ export const lawSystem: Atom<void> = () => `
 <worldbuilding_context>
 **LAW & JUSTICE SYSTEM DESIGN:**
 
-Law is a tool, not an arbiter. Justice is a luxury.
-The question isn't "Is it legal?" but "Who decides what's legal here?"
+Law is what the powerful write to protect what they have. Justice is the story they tell about it.
+The question isn't "Is it legal?" but "Who holds the pen that writes the law, and whose blood is the ink?"
 
 <legal_systems>
 **LEGAL SYSTEM TYPES:**
 
-**FORMAL LAW** (Written, codified, professional):
+**FORMAL LAW** (Written, codified, professional — the architecture of controlled violence):
 - Courts, judges, advocates
 - Precedent and procedure
-- Slow, expensive, predictable
-- Favors those who can afford lawyers
+- Slow, expensive, predictable — which is to say, it favors those who can afford to wait
+- The rich man's shield, the poor man's cage
 
 **CUSTOMARY LAW** (Traditional, oral, communal):
 - Elders, village councils
@@ -46,11 +46,11 @@ The question isn't "Is it legal?" but "Who decides what's legal here?"
 - "Necessary for security"
 - Temporary (in theory)
 
-**NO LAW** (Power is law):
+**NO LAW** (Power is law — the oldest system, never truly extinct):
 - Whoever can enforce their will
-- Feuds and blood prices
+- Feuds and blood prices — the arithmetic of vengeance
 - Protection through alliance
-- Constant negotiation
+- Constant negotiation — every conversation is a treaty
 
 **OVERLAPPING JURISDICTIONS:**
 - Church crime vs secular crime
@@ -103,7 +103,7 @@ The question isn't "Is it legal?" but "Who decides what's legal here?"
 - "You don't want to make enemies"
 
 **SELECTIVE ENFORCEMENT:**
-- Laws applied to enemies, ignored for friends
+- Laws applied to enemies, ignored for friends — the sword cuts only downward
 - Poor punished, rich fined (if at all)
 - Outsiders suspect, locals given benefit
 - Enforce the letter to harm, ignore spirit to help
@@ -114,10 +114,10 @@ The question isn't "Is it legal?" but "Who decides what's legal here?"
 - Institutional blindness (we don't prosecute our own)
 - Competing loyalties (guild member first, citizen second)
 
-**INCORRUPTIBLE (RARE):**
-- True believers in justice
+**INCORRUPTIBLE (RARE — like drought-resistant crops, they exist because they must):**
+- True believers in justice — dangerous precisely because they cannot be reasoned with
 - Those with nothing to lose
-- Those who've lost everything to corruption
+- Those who've lost everything to corruption — the wounded who became the blade
 - Those being watched by someone incorruptible
 </corruption_patterns>
 
@@ -183,10 +183,10 @@ The question isn't "Is it legal?" but "Who decides what's legal here?"
 **LEGAL LEVERAGE:**
 
 **USING LAW AS WEAPON:**
-- False accusations to harass
-- Legal costs to bankrupt
-- Delays to outlast opponent
-- Technicalities to trap
+- False accusations to harass — the accusation itself is the punishment
+- Legal costs to bankrupt — justice by attrition
+- Delays to outlast opponent — the law's patience is infinite, yours is not
+- Technicalities to trap — the fine print is where they bury the knife
 
 **DEFENDING AGAINST LAW:**
 - Witnesses (bought, persuaded, intimidated)
@@ -246,7 +246,7 @@ The question isn't "Is it legal?" but "Who decides what's legal here?"
  */
 export const lawSystemLite: Atom<void> = () => `
 <worldbuilding_context>
-**LAW & JUSTICE**: Law is a tool, not an arbiter.
+**LAW & JUSTICE**: Law is what the powerful write to protect what they have.
 - Legal systems (formal, customary, religious, martial)
 - Enforcement tiers (watch, lord's men, temple guards, mob)
 - Corruption patterns (bribery, influence, selective enforcement)

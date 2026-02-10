@@ -3,15 +3,15 @@
  * Worldbuilding Skill: Espionage & Counterintelligence
  * ============================================================================
  *
- * 谍报不是“炫酷桥段”，而是信息的生产-验证-传递-反制系统。
- * 核心是来源、验证成本、组织约束、以及留下的行动痕迹。
+ * 谍报是镜子的游戏：每面镜子都可能照出真相，也可能只是另一面镜子的倒影。
+ * 核心是来源、验证成本、组织约束、以及每次动作留下的不可磨灭的痕迹。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const espionageCounterintel: Atom<void> = () => `
 <worldbuilding_context>
-**ESPIONAGE & COUNTERINTELLIGENCE (Information as a Battleground)**
+**ESPIONAGE & COUNTERINTELLIGENCE (A hall of mirrors where every reflection costs something)**
 
 Design goal: make intel operations create *procedural friction*, *tradeoffs*, and *long-tail consequences*.
 
@@ -24,7 +24,7 @@ Design goal: make intel operations create *procedural friction*, *tradeoffs*, an
 </rule>
 
 <source_ecology>
-## Source Ecology (people who know things)
+## Source Ecology (everyone knows something; nobody tells for free)
 Common sources:
 - Bureaucrats/clerks (records access)
 - Operators/doormen/drivers (movement patterns)
@@ -89,7 +89,8 @@ Tradeoffs:
 </worldbuilding_context>
 `;
 
-export const espionageCounterintelPrimer: Atom<void> = () => `
+export const espionageCounterintelPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **ESPIONAGE PRIMER**: Every intel needs source + channel + verification cost + trace. Counterintel is procedural and capacity-limited.
 </worldbuilding_context>
@@ -116,16 +117,14 @@ export const espionageCounterintelSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Verification without omniscience",
       wrong: `"We hack their database and instantly know everything."`,
-      right:
-        `"You access one compartment: payroll, not operations. To confirm the secret meeting,
+      right: `"You access one compartment: payroll, not operations. To confirm the secret meeting,
 you plant a unique rumor through one clerk and watch which security team changes patrol routes.
 Fast verification leaves an access-log trace that will be reviewed tomorrow."`,
     },
     {
       scenario: "Counterintel with capacity limits",
       wrong: `"They always know you’re spying because they’re smart."`,
-      right:
-        `"They can run two tails per day. They start with watchlists and log review,
+      right: `"They can run two tails per day. They start with watchlists and log review,
 then escalate only when a trigger hits: repeated unusual document requests + cash withdrawals.
 If you keep the pattern clean, they stay suspicious but can’t act decisively."`,
     },

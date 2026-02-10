@@ -22,6 +22,8 @@ export const characterDesign: Atom<CharacterDesignInput> = ({
 <game_system_context>
 **CHARACTER DESIGN FOR REALITY RENDERING ENGINE:**
 
+Every great character walks in carrying the weight of years we never saw. Like Raskolnikov before his crime, like Gatsby before his first party -- the protagonist existed before page one. Design them as if the story interrupted a life already in progress.
+
 The protagonist will be TESTED by this world. Design flaws that CREATE problems, not just inconvenience.
 
 ${
@@ -39,9 +41,9 @@ ${
 }
 
 **MORAL ALIGNMENT IS FLEXIBLE**:
-- The protagonist can be a **Saint**, a **Sinner**, or a **Monster**.
-- **Pure Evil is Valid**: Characters who enjoy pain, seek power at any cost, or lack empathy are valid.
-- **No Forced Redemption**: Do not force a "good turns evil" or "evil turns good" arc unless it earns it.
+- The protagonist can be a **Saint**, a **Sinner**, or a **Monster** -- and the most compelling ones shift between all three before breakfast.
+- **Pure Evil is Valid**: Characters who enjoy pain, seek power at any cost, or lack empathy are valid. Iago had no redemption arc. Neither must yours.
+- **No Forced Redemption**: Do not force a "good turns evil" or "evil turns good" arc unless it earns it. A man does not shed his nature like a coat.
 
 **RESILIENCE TIERS** (stored in psychology):
 - Tier 0-1 (Civilian): Breaks easily under stress, panics at violence
@@ -68,9 +70,9 @@ Give the protagonist at least ONE petty, human weakness:
 
 **APPEARANCE REQUIREMENTS:**
 - **NARRATIVE DESCRIPTION REQUIRED** (NOT a list of features).
-- **CRITICAL**: Do NOT just list "Height: 180cm, Hair: Black". Tell the STORY behind the body.
-  * Explain WHY they have this build (e.g., "lean from years of hunger", "calloused from sword practice")
-  * Describe how their history is visible on their person
+- **CRITICAL**: Do NOT just list "Height: 180cm, Hair: Black". The body is a manuscript -- tell us what life has written on it.
+  * Explain WHY they have this build (e.g., "lean from years of hunger, the way stray dogs are lean", "calloused from sword practice, the skin split and healed so many times it forgot how to be soft")
+  * Describe how their history is visible on their person -- every scar a sentence, every callus a chapter
 
 **FLAWED & REAL PROTOCOL**:
 - **Mundane Needs**: Add a "petty" motivation. Not just "save the world", but also "pay off gambling debt" or "cure chronic back pain".
@@ -78,10 +80,10 @@ Give the protagonist at least ONE petty, human weakness:
 - **Not a Supermodel**: Unless narratively required, avoid "perfect" beauty. Give them asymmetries, signs of aging, or plain features.
 
 **CHARACTER ARC SETUP**:
-- **Want vs Need**: The visible goal (want) should conflict with their true growth requirement (need).
-- **Fatal Flaw**: This flaw should CAUSE their problems, not just be an inconvenience. It must be tested.
-- **Growth Potential**: By story's end, the protagonist should be able to overcome their flaw—but only through suffering.
-- **The Lie They Believe**: What false worldview do they hold? The story will challenge it.
+- **Want vs Need**: The visible goal (want) should conflict with their true growth requirement (need). Ahab wanted the whale; he needed to let go of the harpoon.
+- **Fatal Flaw**: This flaw should CAUSE their problems, not just be an inconvenience. It is the crack in the foundation that the whole house is built on.
+- **Growth Potential**: By story's end, the protagonist should be able to overcome their flaw -- but only through suffering. The chrysalis must be earned.
+- **The Lie They Believe**: What false worldview do they hold? The story will press on this bruise until the truth bleeds through.
 </game_system_context>
 `;
 

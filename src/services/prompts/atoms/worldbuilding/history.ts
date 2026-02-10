@@ -3,8 +3,8 @@
  * Worldbuilding Atom: History & Legends
  * ============================================================================
  *
- * History 设计上下文 - 定义历史系统的设计哲学。
- * 涵盖：活历史、真相层次、古迹遗址、口述传统。
+ * 历史不是过去——它是渗出裂缝的残留物。死者有他们的意见，
+ * 而泥土记得每一滴洒在它上面的血。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -16,26 +16,26 @@ export const historySystem: Atom<void> = () => `
 <worldbuilding_context>
 **HISTORY & LEGENDS DESIGN:**
 
-History is not past—it's residue. The dead have opinions.
-What happened then shapes what happens now.
+History is not past—it is residue. The dead have opinions, and the ground does not forget.
+What happened then doesn't stay buried; it leaks through cracks in the present like groundwater through limestone.
 
 <living_history>
-**LIVING HISTORY** (The past affects the present):
+**LIVING HISTORY** (The past is not behind us — it is beneath us):
 
 **VISIBLE RESIDUE:**
 | Type | Examples | Effect on Present |
 |------|----------|-------------------|
-| **RUINS** | Collapsed castles, dead cities | Treasure, danger, mystery |
-| **MONUMENTS** | Statues, obelisks, graves | Political symbols, meeting points |
-| **BOUNDARIES** | Old walls, border markers | Territorial disputes, traditions |
-| **NAMES** | "Gallows Hill", "Dead Man's Crossing" | Warnings, memories, stories |
-| **INSTITUTIONS** | Ancient temples, old guilds | Power derived from age |
+| **RUINS** | Collapsed castles, dead cities | Treasure, danger, mystery — the skeleton of the old world showing through the skin of the new |
+| **MONUMENTS** | Statues, obelisks, graves | Political symbols, meeting points — stone arguments that outlast the men who carved them |
+| **BOUNDARIES** | Old walls, border markers | Territorial disputes, traditions — lines drawn in blood that dried centuries ago |
+| **NAMES** | "Gallows Hill", "Dead Man's Crossing" | Warnings, memories — the land itself whispers what happened here |
+| **INSTITUTIONS** | Ancient temples, old guilds | Power derived from age — they endure because no one remembers a time before them |
 
 **INHERITED GRUDGES:**
-- "Their grandfather killed my grandfather"
-- Family feuds lasting generations
-- National enemies from old wars
-- Debts that passed through deaths
+- "Their grandfather killed my grandfather" — hatred is the most reliable inheritance
+- Family feuds lasting generations, renewed each time a child is old enough to be told
+- National enemies from old wars — borders heal faster than memory
+- Debts that passed through deaths, compounding in resentment like interest on a loan that can never be repaid
 
 **TRADITIONS FROM TRAUMA:**
 - Why does everyone lock their doors at sundown? (The Night of Screams, 200 years ago)
@@ -52,7 +52,7 @@ What happened then shapes what happens now.
 <layers_of_truth>
 **LAYERS OF TRUTH:**
 
-**HISTORY IS WRITTEN BY WINNERS:**
+**HISTORY IS WRITTEN BY WINNERS — but the losers remember differently, and their memory has teeth:**
 | Source | What It Says | What It Hides |
 |--------|--------------|---------------|
 | **OFFICIAL RECORDS** | King was hero, rebels were traitors | King burned villages |
@@ -90,10 +90,10 @@ What happened then shapes what happens now.
 - What remains? (Weapons, grudges, forbidden zones)
 
 **LOST CIVILIZATIONS:**
-- What did they know? (Magic, technology, secrets)
-- Why did they fall? (Catastrophe, corruption, invasion)
+- What did they know? (Magic, technology, secrets — what Ozymandias built before the sand came)
+- Why did they fall? (Catastrophe, corruption, invasion — every empire believes it is the exception)
 - What did they leave? (Ruins, treasures, curses)
-- Could they return? (Sleeping, hidden, reborn)
+- Could they return? (Sleeping, hidden, reborn — nothing truly dies that was once great enough to be remembered)
 
 **FALLEN EMPIRES:**
 - What was their territory? (Now divided, contested)
@@ -137,6 +137,7 @@ What happened then shapes what happens now.
 **ORAL TRADITION:**
 
 **STORIES THAT ENCODE TRUTH:**
+(Faulkner wrote: "The past is never dead. It's not even past." In oral cultures, this is literal — truth survives by disguising itself as entertainment.)
 | Type | Surface Story | Hidden Meaning |
 |------|---------------|----------------|
 | **FAIRY TALES** | "Don't go into the woods" | Specific danger at specific place |
@@ -158,10 +159,10 @@ What happened then shapes what happens now.
 - What was the original warning about?
 
 **DYING KNOWLEDGE:**
-- Last speaker of old language
-- Last practitioner of old craft
-- Last witness to old event
-- What's lost when they're gone?
+- Last speaker of old language — when she dies, a world dies with her
+- Last practitioner of old craft — his hands hold a conversation with centuries
+- Last witness to old event — memory made flesh, about to become silence
+- What's lost when they're gone? (Not facts. The grammar of understanding.)
 </oral_tradition>
 
 <historical_trauma>
@@ -225,7 +226,7 @@ What happened then shapes what happens now.
  */
 export const historySystemLite: Atom<void> = () => `
 <worldbuilding_context>
-**HISTORY & LEGENDS**: History is not past—it's residue.
+**HISTORY & LEGENDS**: History is not past—it is residue. The dead have opinions, and the ground does not forget.
 - Living history (ruins, grudges, traditions from trauma)
 - Layers of truth (official records vs folk memory vs hidden truth)
 - Historical hooks (ancient wars, lost civilizations, fallen empires)

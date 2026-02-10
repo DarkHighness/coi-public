@@ -19,7 +19,11 @@ export { lawSystem, lawSystemLite, lawSystemSkill } from "./law";
 export { travel, travelPrimer, travelSkill } from "./travel";
 
 // Culture & Customs
-export { cultureSystem, cultureSystemLite, cultureSystemSkill } from "./culture";
+export {
+  cultureSystem,
+  cultureSystemLite,
+  cultureSystemSkill,
+} from "./culture";
 
 // Infrastructure
 export {
@@ -29,4 +33,8 @@ export {
 } from "./infrastructure";
 
 // History & Legends
-export { historySystem, historySystemLite, historySystemSkill } from "./history";
+export {
+  historySystem,
+  historySystemLite,
+  historySystemSkill,
+} from "./history";

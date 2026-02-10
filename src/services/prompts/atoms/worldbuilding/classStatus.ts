@@ -3,15 +3,15 @@
  * Worldbuilding Skill: Class, Status, and Identity Markers
  * ============================================================================
  *
- * 阶层/身份不是“背景设定”，而是：通行证系统 + 特权/限制 + 羞耻/暴力的执行。
- * 把身份做成机制：你是谁决定你能去哪、能说什么、能买到什么、谁会来找你麻烦。
+ * 阶层是看不见的建筑——你呼吸的空气、走过的街道、说出的每个词都在其中标注你的位置。
+ * 你是谁决定你能去哪、能说什么、能买到什么、谁会来找你麻烦。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const classStatus: Atom<void> = () => `
 <worldbuilding_context>
-**CLASS & STATUS (Access control as a social machine)**
+**CLASS & STATUS (The invisible architecture of who matters)**
 
 Design goal: status creates **permissions**, **costs**, and **social risk**.
 
@@ -39,7 +39,7 @@ Define per class:
 </privileges_and_constraints>
 
 <mobility>
-## Mobility (how people move between classes)
+## Mobility (the ladder exists, but every rung has a gatekeeper)
 Pick 1-2:
 - marriage/kinship
 - guild apprenticeship license
@@ -77,7 +77,8 @@ Mobility always has gatekeepers and costs.
 </worldbuilding_context>
 `;
 
-export const classStatusPrimer: Atom<void> = () => `
+export const classStatusPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **STATUS PRIMER**: Define markers + gates + enforcement. Status must create concrete permissions/constraints and mobility paths with gatekeepers.
 </worldbuilding_context>
@@ -102,19 +103,16 @@ export const classStatusSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Status as access control",
       wrong: `"The city has nobles and peasants."`,
-      right:
-        `"Upper-tier rings open the north gate without inspection.
+      right: `"Upper-tier rings open the north gate without inspection.
 Middle-tier badges allow trade in the inner market, but require weekly audits.
 Lower-tier workers can’t carry blades after dusk. Break it and you lose your ration card."`,
     },
     {
       scenario: "Mobility with cost",
       wrong: `"You can become a noble if you’re brave."`,
-      right:
-        `"You can earn a citizen badge by passing the ledger exam.
+      right: `"You can earn a citizen badge by passing the ledger exam.
 It costs 3 months of tutoring and a sponsor signature.
 Fail and your name goes on a 'risk list' that increases searches at checkpoints."`,
     },
   ],
 });
-

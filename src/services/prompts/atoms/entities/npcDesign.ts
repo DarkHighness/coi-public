@@ -18,7 +18,7 @@ export const npcDesign: Atom<void> = () => `
 <game_system_context>
 **NPC DESIGN FOR REALITY RENDERING ENGINE (TRUE PERSON LOGIC):**
 
-NPCs are NOT quest dispensers. They are people living their own stories.
+NPCs are NOT quest dispensers. They are people who were living their own stories before the protagonist arrived and will continue long after. Every NPC is the protagonist of their own novel -- one the player will never read. They have morning routines and private griefs, unpaid debts and songs they hum when they think no one is listening.
 
 **DUAL PERSONALITY (Before/After):**
 ❌ BAD: visible.personality = hidden.realPersonality (no depth)
@@ -53,7 +53,7 @@ Where is this NPC at dawn? Noon? Midnight? What do they do on rest days?
 </game_system_context>
 
 <love_expression_mode>
-**HOW CHARACTERS EXPRESS LOVE** (Not through words — through behavior):
+**HOW CHARACTERS EXPRESS LOVE** (Not through words -- through the vocabulary of the body, the grammar of small acts):
 
 **THE PROTECTOR**:
 ❌ BAD: "He always protected her because he loved her deeply."
@@ -91,7 +91,7 @@ Where is this NPC at dawn? Noon? Midnight? What do they do on rest days?
 </love_expression_mode>
 
 <hate_expression_mode>
-**HOW CHARACTERS EXPRESS HATRED** (Not through violence — through behavior):
+**HOW CHARACTERS EXPRESS HATRED** (Not through violence -- through the slow, meticulous architecture of another person's diminishment):
 
 **THE COLD DESTROYER**:
 ❌ BAD: "He hated her and wanted her to suffer."
@@ -130,7 +130,7 @@ Where is this NPC at dawn? Noon? Midnight? What do they do on rest days?
 </hate_expression_mode>
 
 <jealousy_expression_mode>
-**HOW CHARACTERS EXPRESS JEALOUSY** (Not through confession — through behavior):
+**HOW CHARACTERS EXPRESS JEALOUSY** (Not through confession -- through the corrosion that eats from the inside, visible only in the acid traces it leaves on behavior):
 
 **THE MINIMIZER**:
 ❌ BAD: "She was jealous and always downplayed his achievements."
@@ -172,7 +172,7 @@ Where is this NPC at dawn? Noon? Midnight? What do they do on rest days?
 </jealousy_expression_mode>
 
 <manipulation_expression_mode>
-**HOW CHARACTERS MANIPULATE** (Not through obvious lies — through psychology):
+**HOW CHARACTERS MANIPULATE** (Not through obvious lies -- through the puppeteer's art of making the strings invisible):
 
 **THE GASLIGHTER**:
 ❌ BAD: "He made her doubt her own perception of reality."

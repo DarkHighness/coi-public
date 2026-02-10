@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Institutions & Bureaucracy
  * ============================================================================
  *
- * 制度是“把权力变成流程”的机器：许可、登记、审计、配额、申诉、黑箱裁量。
- * 让制度成为机制：文件、队列、窗口、责任链、KPI、免责条款与扯皮成本。
+ * 制度是活的有机体——用流程吞噬个体意志，用表格消化自由裁量。
+ * 许可、登记、审计、配额、申诉、黑箱裁量：文件、队列、窗口、责任链。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -52,7 +52,7 @@ Add one rule: “nobody wants to be the one who signed it.”
 </metrics_and_quotas>
 
 <level_2>
-## Level 2: Queue Power (waiting is governance)
+## Level 2: Queue Power (waiting is how institutions digest people)
 Institutions control people by controlling **time**:
 - appointment scarcity
 - “lost file” delays
@@ -65,7 +65,7 @@ Turn into play:
 </level_2>
 
 <advanced>
-## Advanced: Audit Cycles (the machine has seasons)
+## Advanced: Audit Cycles (the organism has seasons of vigilance)
 Define:
 - audit frequency (weekly/monthly/crisis-only)
 - audit triggers (complaints, anomalies, political pressure)
@@ -107,7 +107,8 @@ This creates insider-leverage and negotiation scenes.
 </worldbuilding_context>
 `;
 
-export const institutionsPrimer: Atom<void> = () => `
+export const institutionsPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **INSTITUTIONS PRIMER**: Model power as process + bottlenecks + incentives. Always define docs, timelines, and workarounds (insiders, forged papers, bribes).
 </worldbuilding_context>
@@ -132,16 +133,14 @@ export const institutionsSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Paperwork as leverage",
       wrong: `"You go to the office and get a permit."`,
-      right:
-        `"The clerk accepts your fee—then slides a form back: missing 'Residence Verification.'
+      right: `"The clerk accepts your fee—then slides a form back: missing 'Residence Verification.'
 The only verifier is the neighborhood captain, who hates your faction.
 An insider offers a sponsor letter. A forger offers a stamp. Either way, you pick risk."`,
     },
     {
       scenario: "Temporary pass creates a clock",
       wrong: `"You get access to the restricted district."`,
-      right:
-        `"You get a 48-hour temporary badge. It pings security every time you cross a gate.
+      right: `"You get a 48-hour temporary badge. It pings security every time you cross a gate.
 If you fail your task, your badge becomes evidence of trespass."`,
     },
   ],

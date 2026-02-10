@@ -3,17 +3,17 @@
  * Worldbuilding Skill: Disasters, Crisis Response, and Recovery
  * ============================================================================
  *
- * 灾害不是“剧情插曲”，而是：制度承压测试 + 资源分配冲突 + 次生灾害链条。
- * 让灾害成为机制：谁先得到救援、谁被封锁、谁趁火打劫、谁背锅。
+ * 灾害是伟大的均衡器——它剥去文明的外衣，暴露出谁真正掌握资源、谁真正被抛弃。
+ * 谁先得到救援、谁被封锁、谁趁火打劫、谁背锅：灾害面前，一切等级重新洗牌。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const disastersRecovery: Atom<void> = () => `
 <worldbuilding_context>
-**DISASTERS & RECOVERY (Cascades + Triage + Politics)**
+**DISASTERS & RECOVERY (The great equalizer)**
 
-Design goal: crises create **priority conflicts**, **process breakdowns**, and **secondary disasters**.
+Design goal: crises create **priority conflicts**, **process breakdowns**, and **secondary disasters**. Disaster strips away pretense and reveals the architecture of power beneath.
 
 <rule name="The 5-Stage Disaster Model">
 1) **Shock**: immediate damage, confusion
@@ -53,7 +53,7 @@ Each measure needs:
 </control_measures>
 
 <recovery_debt>
-## Recovery Debt (aftermath drives story)
+## Recovery Debt (the disaster ends, but its debts never do)
 Recovery creates:
 - debt (to lenders, temples, corps)
 - reforms (new laws, new surveillance)
@@ -81,7 +81,8 @@ Recovery creates:
 </worldbuilding_context>
 `;
 
-export const disastersRecoveryPrimer: Atom<void> = () => `
+export const disastersRecoveryPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **DISASTER PRIMER**: Model crises as cascades + triage + control measures + exploitation + recovery debt. Always define secondary disasters.
 </worldbuilding_context>
@@ -106,16 +107,14 @@ export const disastersRecoverySkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Secondary disaster cascade",
       wrong: `"A flood happens and people are sad."`,
-      right:
-        `"Flood destroys the granary. Two days later bread prices triple.
+      right: `"Flood destroys the granary. Two days later bread prices triple.
 Quarantine blocks refugees at the bridge. Disease spreads in camps.
 Merchants sell 'clean water' that’s counterfeit. Now every choice has stakes."`,
     },
     {
       scenario: "Control measure with workaround",
       wrong: `"The city is under curfew."`,
-      right:
-        `"Curfew is enforced by patrols, but only on main streets.
+      right: `"Curfew is enforced by patrols, but only on main streets.
 Smugglers use maintenance tunnels. Access requires a union token—expensive—
 and the token is logged (audit risk)."`,
     },

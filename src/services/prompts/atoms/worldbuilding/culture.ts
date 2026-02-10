@@ -3,7 +3,7 @@
  * Worldbuilding Atom: Culture & Customs
  * ============================================================================
  *
- * Culture 设计上下文 - 定义文化系统的设计哲学。
+ * 文化不是博物馆里的展品——它是活着的、呼吸着的、会咬人的东西。
  * 涵盖：禁忌、社会等级、仪式、待客之道、沟通风格。
  */
 
@@ -16,8 +16,9 @@ export const cultureSystem: Atom<void> = () => `
 <worldbuilding_context>
 **CULTURE & CUSTOMS DESIGN:**
 
-Culture is constraint. Customs are law without enforcement.
-Breaking them has no legal penalty—only social death.
+Culture is not decoration — it is the invisible architecture of belonging.
+Customs are law without courts, enforced by the raised eyebrow, the turned back, the closed door.
+Breaking them carries no legal penalty — only the slow suffocation of social death.
 
 <taboos_sacred>
 **TABOOS & SACRED:**
@@ -33,11 +34,11 @@ Breaking them has no legal penalty—only social death.
 | **PERSON** | Never look at the emperor's face | Execution |
 
 **SACRED PROTECTIONS:**
-- What makes something/someone untouchable?
-- Guest rights (harming guests is ultimate sin)
+- What makes something/someone untouchable? (The sacred is that which, if violated, unmakes the violator)
+- Guest rights (harming guests is ultimate sin — older than any god, deeper than any law)
 - Clergy immunity (hands off the priests)
-- Blood ties (family is sacred)
-- Oaths (sworn word binds)
+- Blood ties (family is sacred — or at least, the idea of family is)
+- Oaths (sworn word binds — the tongue is the oldest contract)
 
 **TABOO QUESTIONS:**
 - What can NEVER be done here?
@@ -89,6 +90,7 @@ Breaking them has no legal penalty—only social death.
 **RITUALS & CEREMONIES:**
 
 **LIFE STAGES:**
+(Every culture marks the same thresholds — birth, becoming, union, death — but the rituals are the fingerprints that make each civilization unique.)
 | Event | Ritual | Significance |
 |-------|--------|--------------|
 | **BIRTH** | Naming ceremony | Welcomed into community |
@@ -215,10 +217,10 @@ Breaking them has no legal penalty—only social death.
 **FOOD & DRINK:**
 
 **FOOD AS CULTURE:**
-- What's staple food? (Rice, bread, corn, meat)
-- What's luxury food? (Rare, expensive, imported)
+- What's staple food? (Rice, bread, corn, meat — tell me what a people eats and I will tell you who they are)
+- What's luxury food? (Rare, expensive, imported — the table is a theater of status)
 - What's forbidden food? (Religious, practical, disgusting)
-- What's celebration food? (Holidays, weddings)
+- What's celebration food? (Holidays, weddings — joy has a flavor)
 
 **EATING RITUALS:**
 - Who eats first?
@@ -233,9 +235,9 @@ Breaking them has no legal penalty—only social death.
 - What's drunkenness mean? (Disgrace or honesty)
 
 **FOOD AS DRAMA:**
-- Poisoning fears
-- Feast as political arena
-- Famine changes everything
+- Poisoning fears — every feast is an act of trust
+- Feast as political arena — seating is strategy, toasts are declarations of war
+- Famine changes everything — hunger rewrites every social contract
 - Food taboo creates conflict
 </food_drink>
 </worldbuilding_context>
@@ -246,7 +248,7 @@ Breaking them has no legal penalty—only social death.
  */
 export const cultureSystemLite: Atom<void> = () => `
 <worldbuilding_context>
-**CULTURE & CUSTOMS**: Culture is constraint. Customs are law without enforcement.
+**CULTURE & CUSTOMS**: Culture is the invisible architecture of belonging. Customs are law without courts.
 - Taboos & sacred (food, body, speech, place, person)
 - Social hierarchy (class, caste, outsiders, mobility)
 - Rituals & ceremonies (life stages, seasonal, religious)

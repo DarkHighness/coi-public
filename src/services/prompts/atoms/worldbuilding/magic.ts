@@ -16,21 +16,22 @@ export const magicSystem: Atom<void> = () => `
 <worldbuilding_context>
 **MAGIC SYSTEM DESIGN:**
 
-Magic without limits isn't magic—it's wish fulfillment.
-The best magic systems create drama through constraints.
+Magic is debt written in flesh, paid in years, collected by forces that do not negotiate.
+Every spell is a promise made to something older than language — and the collector always comes.
+The best magic systems understand this: power without price is not power at all, it is fantasy. True magic, like fire, serves only those who respect what it consumes.
 
 <cost_framework>
-**COST FRAMEWORK** (Magic always costs something):
+**COST FRAMEWORK** (Nothing is given; everything is taken):
 
 **PERSONAL COSTS:**
 | Cost Type | Example | Narrative Effect |
 |-----------|---------|------------------|
 | **FATIGUE** | Each spell drains stamina | Forces rest, creates vulnerability windows |
-| **PAIN** | Magic burns the caster | Creates visible toll, discourages overuse |
-| **LIFESPAN** | Shorten your life per cast | Tragic trade-offs, aging mages |
-| **MEMORY** | Forget something to remember the spell | Identity erosion, lost loved ones |
-| **SANITY** | See things that shouldn't be seen | Unreliable narrator, creeping madness |
-| **MORTALITY** | Lose a piece of your soul | Slow descent, point of no return |
+| **PAIN** | Magic burns the caster like hot iron held too long | Creates visible toll, discourages overuse |
+| **LIFESPAN** | Years fall from your life like leaves | Tragic trade-offs, aging mages |
+| **MEMORY** | Forget something to remember the spell | Identity erosion — who are you when you cannot remember who you loved? |
+| **SANITY** | See things that were never meant for human sight | Unreliable narrator, creeping madness |
+| **MORTALITY** | Lose a piece of your soul, like tearing a page from a book | Slow descent, point of no return |
 
 **MATERIAL COSTS:**
 | Cost Type | Example | Narrative Effect |
@@ -44,10 +45,10 @@ The best magic systems create drama through constraints.
 **SOCIAL COSTS:**
 | Cost Type | Example | Narrative Effect |
 |-----------|---------|------------------|
-| **DEBT** | Owe the spirit/demon/god | Obligations come due |
-| **REPUTATION** | Mark of the witch | Social consequences |
-| **SECRECY** | Must hide practice | Double life tension |
-| **OBLIGATION** | Serve your master/order | Chain of command |
+| **DEBT** | Owe the spirit/demon/god | Obligations compound like interest — and the lender is immortal |
+| **REPUTATION** | Mark of the witch | The smell of sulfur clings; neighbors cross the street |
+| **SECRECY** | Must hide practice | A double life, every candle a confession |
+| **OBLIGATION** | Serve your master/order | Another link in a chain forged before you were born |
 
 **COST QUESTIONS:**
 - What does this spell cost the caster?
@@ -57,7 +58,7 @@ The best magic systems create drama through constraints.
 </cost_framework>
 
 <limitation_design>
-**LIMITATION DESIGN** (Why isn't magic solving everything?):
+**LIMITATION DESIGN** (Why the world is not a paradise of sorcerers):
 
 **RARITY LIMITATIONS:**
 - Few can do it (bloodline, training, gift)
@@ -84,7 +85,7 @@ The best magic systems create drama through constraints.
 - Corrupting to relationships
 
 **THE GANDALF PROBLEM:**
-Why doesn't the powerful wizard just solve everything?
+Why doesn't the powerful wizard simply end it? Because power of that magnitude is never free — it is watched, owed, or bound. Tolkien understood: Gandalf is not a weapon withheld, he is a servant constrained.
 Good answers:
 - He has bigger problems elsewhere
 - His power has specific limitations
@@ -94,7 +95,7 @@ Good answers:
 </limitation_design>
 
 <magic_ecology>
-**MAGIC ECOLOGY** (How magic affects the world):
+**MAGIC ECOLOGY** (Magic does not exist in isolation — it seeps into soil, warps bone, and rewrites the terms of survival):
 
 **ENCHANTED ITEMS:**
 - How common? (Every household vs legendary artifacts)
@@ -109,10 +110,10 @@ Good answers:
 - How do mundane creatures adapt to them?
 
 **CORRUPTED LANDS:**
-- What happens to land exposed to magic?
+- What happens to land exposed to magic? (The earth remembers every spell cast upon it, the way skin remembers a burn)
 - Are effects permanent? Reversible?
 - Do they spread? How?
-- What lives there now?
+- What lives there now? (What has learned to thrive on poison?)
 
 **MAGICAL RESOURCES:**
 - What natural resources are magical?
@@ -176,18 +177,18 @@ Good answers:
 </detection_countermeasures>
 
 <failure_modes>
-**FAILURE MODES** (What happens when magic goes wrong):
+**FAILURE MODES** (When the debt is paid in the wrong currency):
 
 **FAILURE TYPES:**
 | Type | Description | Narrative Use |
 |------|-------------|---------------|
 | **FIZZLE** | Nothing happens, resources wasted | Resource tension |
 | **BACKFIRE** | Effect hits caster instead | Danger of overreach |
-| **CORRUPTION** | Effect works but is tainted | Moral compromise |
-| **ESCALATION** | Effect is too strong | Collateral damage |
-| **ATTRACTION** | Something notices your magic | External threat |
-| **DEBT** | Effect works but incurs obligation | Future complication |
-| **TRANSFORMATION** | Caster is changed | Body horror, identity loss |
+| **CORRUPTION** | Effect works but is tainted — like fruit grown in poisoned soil | Moral compromise |
+| **ESCALATION** | Effect is too strong, a match that becomes a wildfire | Collateral damage |
+| **ATTRACTION** | Something vast and patient notices your magic, the way a shark notices blood | External threat |
+| **DEBT** | Effect works but incurs obligation — the interest starts immediately | Future complication |
+| **TRANSFORMATION** | Caster is changed, remade in the image of what they summoned | Body horror, identity loss |
 
 **FAILURE TRIGGERS:**
 - Interrupted casting
@@ -225,8 +226,8 @@ Good answers:
 - Is there a ceiling? What's beyond it?
 
 **THE PRICE OF MASTERY:**
-- What do masters sacrifice to get there?
-- Are they still human?
+- What do masters sacrifice to get there? (The climb is measured in what you leave behind)
+- Are they still human? (Or has mastery hollowed them into instruments?)
 - Would they do it again?
 - What do they regret?
 </learning_progression>
@@ -238,7 +239,7 @@ Good answers:
  */
 export const magicSystemPrimer: Atom<void> = () => `
 <worldbuilding_context>
-**MAGIC SYSTEMS**: Magic without limits isn't magic—it's wish fulfillment.
+**MAGIC SYSTEMS**: Magic is debt written in flesh, paid in years, collected by forces that do not negotiate.
 - Cost framework (personal, material, social)
 - Limitation design (rarity, capability, situational, social)
 - Magic ecology (items, creatures, corrupted lands)

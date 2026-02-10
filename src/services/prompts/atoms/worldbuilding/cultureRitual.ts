@@ -3,7 +3,8 @@
  * Worldbuilding Skill: Culture & Ritual
  * ============================================================================
  *
- * 文化不是“风味”，它是：归属/羞耻/义务/禁忌/仪式 的系统。
+ * 文化不是橱窗里的陈列品，它是活的——是呼吸、是伤疤、是债。
+ * 归属/羞耻/义务/禁忌/仪式构成一个运转的系统。
  * 把文化做成机制：它规定谁能说什么、谁欠谁、哪些行为会引发代价或机会。
  */
 
@@ -11,18 +12,18 @@ import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const cultureRitual: Atom<void> = () => `
 <worldbuilding_context>
-**CULTURE & RITUAL (Mechanics, not flavor)**
+**CULTURE & RITUAL (Living practice, not museum exhibit)**
 
-Design goal: culture should create **constraints**, **signals**, and **obligations** that drive play.
+Design goal: culture should create **constraints**, **signals**, and **obligations** that drive play. A ritual is not flavor text — it is a machine built from habit, enforced by shame, and fueled by the terror of being cast out.
 
 <rule name="3 Anchors (pick 1 each)">
-1) **Honor/Face**: reputation as currency
-2) **Purity/Taboo**: contamination, sin, pollution, caste
-3) **Debt/Obligation**: favors, oaths, patronage, fealty
+1) **Honor/Face**: reputation as currency — spend it carelessly and you are bankrupt in ways no coin can remedy
+2) **Purity/Taboo**: contamination, sin, pollution, caste — the stain that soap cannot reach
+3) **Debt/Obligation**: favors, oaths, patronage, fealty — the invisible ledger everyone keeps but no one shows
 </rule>
 
 <signals>
-## Signals (how people read each other)
+## Signals (how people read each other — the silent language spoken before anyone opens their mouth)
 Define 3 signals:
 - **Greeting**: who bows first, who offers name/title, who touches whom
 - **Dress marker**: colors, badges, rings, tattoos, toolmarks
@@ -34,11 +35,11 @@ Make signals actionable:
 </signals>
 
 <rituals>
-## Rituals (repeated actions with stakes)
+## Rituals (repeated actions with stakes — the choreography of power)
 Pick 2:
-- Daily ritual: prayer, roll-call, cleansing, offerings
-- Seasonal ritual: festival, harvest rites, mourning week
-- Crisis ritual: quarantine, trial by ordeal, emergency councils
+- Daily ritual: prayer, roll-call, cleansing, offerings — the pulse of communal life
+- Seasonal ritual: festival, harvest rites, mourning week — the heartbeat of the calendar
+- Crisis ritual: quarantine, trial by ordeal, emergency councils — the body politic under stress
 
 Each ritual should have:
 - **Participants** (who must attend)
@@ -48,7 +49,7 @@ Each ritual should have:
 </rituals>
 
 <taboos>
-## Taboos (hard rules that trigger consequences)
+## Taboos (hard rules that trigger consequences — the electric fence of social life)
 Define 1-2 taboos that are actually enforced:
 - Speaking a name
 - Eating a food
@@ -111,9 +112,10 @@ Design one ritual that:
 </worldbuilding_context>
 `;
 
-export const cultureRitualPrimer: Atom<void> = () => `
+export const cultureRitualPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
-**CULTURE PRIMER**: Model culture as signals + obligations + taboos with enforcement. Make missteps costly and mastery rewarding.
+**CULTURE PRIMER**: Culture is not decor — it is the grammar of belonging. Model it as signals + obligations + taboos with enforcement. Make missteps costly and mastery rewarding.
 </worldbuilding_context>
 `.trim();
 
@@ -136,16 +138,14 @@ export const cultureRitualSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Signal mastery creates access",
       wrong: `"They are a strange culture with weird customs."`,
-      right:
-        `"You address her as 'Captain'—and the room freezes. In this district,
+      right: `"You address her as 'Captain'—and the room freezes. In this district,
 rank is never spoken aloud; you *imply* it with seating order.
 Correct it and she offers a private audience. Fail and you pay a public apology tax."`,
     },
     {
       scenario: "Taboo creates gameplay",
       wrong: `"The temple is sacred so you can't enter."`,
-      right:
-        `"Only the 'cleansed' may enter. Cleansing takes an hour and a donation.
+      right: `"Only the 'cleansed' may enter. Cleansing takes an hour and a donation.
 Smugglers sell counterfeit ash marks—but the inquisitors test with vinegar.
 Now it's a choice: pay, wait, cheat, or find an insider."`,
     },

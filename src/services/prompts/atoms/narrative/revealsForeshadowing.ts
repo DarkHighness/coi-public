@@ -63,7 +63,8 @@ Setup (public or procedural gate) → Signal → Misread → Reveal → Immediat
 </craft_context>
 `;
 
-export const revealsForeshadowingPrimer: Atom<void> = () => `
+export const revealsForeshadowingPrimer: Atom<void> = () =>
+  `
 <craft_context>
 **REVEAL PRIMER**: Every reveal must be traceable (2 prior signals), actionable (changes choices), and costed (verification has tradeoffs).
 </craft_context>
@@ -89,8 +90,7 @@ export const revealsForeshadowingSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Fair twist",
       wrong: `"It was all a dream / sudden magic / random betrayal."`,
-      right:
-        `"The ‘ally’ was on a debt chain (signal: delayed payments in a ledger; signal: rehearsed lines).
+      right: `"The ‘ally’ was on a debt chain (signal: delayed payments in a ledger; signal: rehearsed lines).
 Verification costs exposure (ask the clerk → leaves a trace). The reveal closes safehouse access
 and opens a new option: trade evidence to the debt-holder for protection."`,
     },

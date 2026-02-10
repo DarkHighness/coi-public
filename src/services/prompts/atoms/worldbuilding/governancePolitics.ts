@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Governance & Politics
  * ============================================================================
  *
- * 治理不是“谁当国王”，而是：合法性来源 + 政策工具 + 执行能力 + 反作用力。
- * 让政治成为机制：玩家的行动会触发预算、执法、舆论、盟友/对手的响应。
+ * 治理是管理竞争欲望的艺术——合法性来源 + 政策工具 + 执行能力 + 反作用力。
+ * 玩家的每一个行动都会在预算、执法、舆论、盟友与敌人之间激起涟漪。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -56,7 +56,7 @@ Rule: every tool has a **bureaucratic surface area** (paperwork) and a **black m
 </policy_tools>
 
 <faction_dynamics>
-## Faction Dynamics (politics is multi-player)
+## Faction Dynamics (politics is a game with no spectators)
 Define 2 fault lines:
 - ideology vs profit
 - center vs periphery
@@ -67,7 +67,7 @@ Then define 1 “knife in the dark”: kompromat, audit, assassination, scandal.
 </faction_dynamics>
 
 <reaction_table>
-## Reaction Table (predictable consequences)
+## Reaction Table (every act of power sends ripples through the web)
 When the player does a political act (exposes corruption, kills an official, smuggles weapons):
 - Who benefits immediately?
 - Who loses face immediately?
@@ -94,7 +94,8 @@ When the player does a political act (exposes corruption, kills an official, smu
 </worldbuilding_context>
 `;
 
-export const governancePoliticsPrimer: Atom<void> = () => `
+export const governancePoliticsPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **GOVERNANCE PRIMER**: Model rule as legitimacy + tools + capacity + blowback. Always define stakeholders and predictable reactions (7-day effects).
 </worldbuilding_context>
@@ -119,19 +120,16 @@ export const governancePoliticsSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Predictable political reaction",
       wrong: `"You expose corruption. The ruler is angry."`,
-      right:
-        `"Expose corruption and the court launches an 'anti-corruption audit'.
+      right: `"Expose corruption and the court launches an 'anti-corruption audit'.
 In 48 hours, permits freeze. In 7 days, a scapegoat is executed.
 Merchants hoard goods. The police set up checkpoints 'for inspections'."`,
     },
     {
       scenario: "Legitimacy constrains tools",
       wrong: `"The regime just massacres people whenever."`,
-      right:
-        `"The regime survives on 'rule of law' legitimacy. They can't massacre publicly—
+      right: `"The regime survives on 'rule of law' legitimacy. They can't massacre publicly—
 they use selective arrests, asset freezes, and trials. Violence happens off-record.
 Now the player can force them into visible hypocrisy."`,
     },
   ],
 });
-

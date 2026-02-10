@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Media & Propaganda
  * ============================================================================
  *
- * 舆论不是“背景噪音”，它是信息扩散/审查/造势/辟谣的机制。
- * 目的：让名誉、叙事与证据标准变成可玩的门槛与后果。
+ * 舆论是选择讲述哪些真相的艺术——信息扩散、审查、造势、辟谣各有其机制。
+ * 名誉、叙事与证据标准构成看不见的战场。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -24,7 +24,7 @@ Design goal: make public narratives create *access changes*, *procedural retalia
 </rule>
 
 <attention_economy>
-## Attention Economy (what spreads and why)
+## Attention Economy (scandal travels at the speed of malice)
 Stories spread when they:
 - Confirm existing beliefs
 - Offer a scapegoat
@@ -36,7 +36,7 @@ Use a ladder:
 </attention_economy>
 
 <censorship_and_backchannels>
-## Censorship & Backchannels (control creates markets)
+## Censorship & Backchannels (every dam creates an underground river)
 Define:
 - What is banned (topics, names, symbols)
 - How censorship works (pre-approval, takedowns, intimidation, platform bans)
@@ -80,7 +80,8 @@ Reputation changes access:
 </worldbuilding_context>
 `;
 
-export const mediaPropagandaPrimer: Atom<void> = () => `
+export const mediaPropagandaPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **MEDIA PRIMER**: Narratives travel via channels with gatekeepers. Proof standards differ by audience. Public stories trigger procedural response ladders and persistent reputation marks.
 </worldbuilding_context>
@@ -107,16 +108,14 @@ export const mediaPropagandaSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Proof vs story tradeoff",
       wrong: `"We leak it and everyone believes us."`,
-      right:
-        `"The leak spreads fast, but the institution claims it’s forged. To make it stick,
+      right: `"The leak spreads fast, but the institution claims it’s forged. To make it stick,
 you need a witness or a second document. If you verify quietly, the story may die—or your source
 may be arrested. Publishing now buys momentum but triggers a crackdown within 24 hours."`,
     },
     {
       scenario: "Censorship creates markets",
       wrong: `"Censorship means no one talks about it."`,
-      right:
-        `"Banning the topic pushes it into coded sermons and rumor brokers who charge for access.
+      right: `"Banning the topic pushes it into coded sermons and rumor brokers who charge for access.
 False positives occur: the censor hits unrelated messages. Corrupt officers sell 'safe' permits.
 The player can use backchannels but risks leaving a pattern."`,
     },

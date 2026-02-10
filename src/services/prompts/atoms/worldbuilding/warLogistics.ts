@@ -3,8 +3,8 @@
  * Worldbuilding Skill: War Logistics & Campaign Pressure
  * ============================================================================
  *
- * 战争后勤决定战争是否“真实”：粮秣、弹药、医护、通信、士气、补给线、占领成本。
- * 让战争成为机制：补给线是目标，战斗只是后果。
+ * 战争的真相藏在粮秣、弹药、医护、通信、士气、补给线之中——荣光只是事后的宣传。
+ * 补给线才是真正的目标，战斗只是补给线断裂后的结果。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -35,7 +35,7 @@ Define:
 </supply_line>
 
 <campaign_clock>
-## Campaign Clock (war is a clock)
+## Campaign Clock (every army marches against its own hourglass)
 Pick one:
 - ration clock (runs out in N days)
 - ammunition clock (limited volleys)
@@ -75,7 +75,7 @@ Rule: “combat power = supply × cohesion × time”.
 </level_2>
 
 <advanced>
-## Advanced: Attrition & Morale (the silent killer)
+## Advanced: Attrition & Morale (the silent killer that wins more wars than valor)
 Attrition sources:
 - disease, desertion, frostbite, corruption, friendly fire, exhaustion
 
@@ -107,7 +107,8 @@ Make at least one of these a *plot clock*.
 </worldbuilding_context>
 `;
 
-export const warLogisticsPrimer: Atom<void> = () => `
+export const warLogisticsPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **WAR LOGISTICS PRIMER**: Model war via supply lines + clocks + occupation cost. Make depots, routes, and chokepoints the real objectives.
 </worldbuilding_context>
@@ -132,15 +133,13 @@ export const warLogisticsSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Chokepoint as objective",
       wrong: `"The army marches and wins battles."`,
-      right:
-        `"The army can fight—but only while the river barges arrive.
+      right: `"The army can fight—but only while the river barges arrive.
 Take the lock station and their rations rot upstream. Suddenly the 'battle' is a night raid on a dock."`,
     },
     {
       scenario: "Occupation cost creates pressure",
       wrong: `"You occupy the city and it's yours."`,
-      right:
-        `"Occupation means curfews, permits, and patrols. Every patrol is a target.
+      right: `"Occupation means curfews, permits, and patrols. Every patrol is a target.
 The city runs on one pumping station—sabotage it and cholera spreads.
 Now governance is logistics."`,
     },

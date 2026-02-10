@@ -3,15 +3,15 @@
  * Worldbuilding Skill: Diplomacy & Treaties
  * ============================================================================
  *
- * 外交不是“会谈对白”，而是承诺、担保、礼仪、利益交换与执行机制的组合。
- * 好的外交会生成：边界、通行、制裁、担保人、违约成本与可预测的反应时间线。
+ * 外交是穿着丝绸的暴力——承诺、担保、礼仪、利益交换与执行机制的精密组合。
+ * 好的外交生成的不是对白，而是：边界、通行、制裁、担保人、违约成本与可预测的报复时间线。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const diplomacyTreaties: Atom<void> = () => `
 <worldbuilding_context>
-**DIPLOMACY & TREATIES (Commitments with Enforcement)**
+**DIPLOMACY & TREATIES (Elegant violence in the language of compromise)**
 
 Design goal: make negotiation create durable constraints, access gates, and future clocks.
 
@@ -60,7 +60,7 @@ Always define:
 </breach_clocks>
 
 <hostages_and_collateral>
-## Hostages, Collateral, and Guarantees (not melodrama)
+## Hostages, Collateral, and Guarantees (trust written in flesh and grain)
 Guarantees that create play:
 - Hostages/wards (political + personal stakes)
 - Escrowed funds / grain / relics
@@ -85,7 +85,8 @@ Keep it legible:
 </worldbuilding_context>
 `;
 
-export const diplomacyTreatiesPrimer: Atom<void> = () => `
+export const diplomacyTreatiesPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **DIPLOMACY PRIMER**: Treaties need scope + verification + enforcement + guarantees. Diplomacy creates access gates and breach clocks.
 </worldbuilding_context>
@@ -112,16 +113,14 @@ export const diplomacyTreatiesSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Guarantees with teeth",
       wrong: `"They sign a treaty and everyone trusts it."`,
-      right:
-        `"They sign a ceasefire with inspection rights at two bridges. A third-party city holds
+      right: `"They sign a ceasefire with inspection rights at two bridges. A third-party city holds
 escrowed grain shipments; breach triggers automatic seizure. The prince’s ward stays at court:
 harm to them is breach, and retaliation starts within 24 hours."`,
     },
     {
       scenario: "Breach as a clock",
       wrong: `"They break the treaty and war instantly starts."`,
-      right:
-        `"Breach starts with a protest note and an inspection demand. If refused, visas are revoked
+      right: `"Breach starts with a protest note and an inspection demand. If refused, visas are revoked
 and assets frozen (7 days). Only after those fail do raids and proxy funding begin. Hawks push
 faster escalation; doves try to trade concessions for time."`,
     },

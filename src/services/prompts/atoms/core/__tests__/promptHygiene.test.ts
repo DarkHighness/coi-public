@@ -63,7 +63,9 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("vfs_tx");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");
-    expect(content).not.toContain("write both files via `vfs_write`/`vfs_edit`");
+    expect(content).not.toContain(
+      "write both files via `vfs_write`/`vfs_edit`",
+    );
     expect(content).not.toContain("or conversation writes");
 
     // Permission contract clarity
@@ -83,6 +85,8 @@ describe("core prompt hygiene", () => {
     // SUDO semantics must remain controlled (not hard bypass)
     expect(content).toContain("elevated update");
     expect(content).toContain("immutable/finish guards");
-    expect(content).not.toContain("Bypasses all game rules and simulation logic");
+    expect(content).not.toContain(
+      "Bypasses all game rules and simulation logic",
+    );
   });
 });

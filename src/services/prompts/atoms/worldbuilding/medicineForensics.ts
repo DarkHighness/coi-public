@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Medicine & Forensics
  * ============================================================================
  *
- * 医疗与法医不是“设定细节”，而是可玩机制：
- * 伤病时钟、证据链、鉴定标准、资源稀缺、监管/腐败与信息不对称。
+ * 医疗是阅读身体的艺术——伤口讲述暴力的故事，毒素留下化学的签名。
+ * 伤病时钟、证据链、鉴定标准、资源稀缺、监管/腐败与信息不对称：身体从不撒谎，但读它的人会。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -23,7 +23,7 @@ Design goal: make wounds, treatment, and evidence create *choices*, not just fla
 </rule>
 
 <injury_clocks>
-## Injury as Clocks (make harm persistent)
+## Injury as Clocks (the body keeps its own merciless schedule)
 - Use a **clock per injury**: *Bleeding / Infection / Shock / Exposure / Disability / Heat*.
 - Every action has a tradeoff: **time vs risk vs cost vs secrecy**.
 - Treatment should have **failure modes**: wrong dose, counterfeit meds, relapse, complications.
@@ -42,7 +42,7 @@ Simple pattern:
 </care_access>
 
 <evidence_chain>
-## Forensics as a System (proof is a mechanic)
+## Forensics as a System (the dead still testify)
 Define:
 - **What can be detected** (blood type/DNA/poison/metals/ballistics/ritual residue)
 - **Where it is processed** (lab, temple, coroner, private clinic)
@@ -78,7 +78,8 @@ Chain-of-custody template:
 </worldbuilding_context>
 `;
 
-export const medicineForensicsPrimer: Atom<void> = () => `
+export const medicineForensicsPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **MEDICINE PRIMER**: Treat injuries as clocks with capacity + access gates. Make proof a mechanic (chain-of-custody, standards, tampering).
 </worldbuilding_context>
@@ -105,16 +106,14 @@ export const medicineForensicsSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Injury creates choices",
       wrong: `"You patch the wound and keep going. Nothing changes."`,
-      right:
-        `"The wound stops bleeding but infection clock starts (4 segments). The clinic can treat it,
+      right: `"The wound stops bleeding but infection clock starts (4 segments). The clinic can treat it,
 but requires ID + a logged payment. A street medic can help without ID—if you steal antibiotics
 from a warehouse, which will show up on a missing-inventory audit in 24 hours."`,
     },
     {
       scenario: "Forensics as gameplay",
       wrong: `"The detective finds DNA and solves the case immediately."`,
-      right:
-        `"The sample must be sealed and processed at a lab with logs. The suspect can bribe the courier
+      right: `"The sample must be sealed and processed at a lab with logs. The suspect can bribe the courier
 or contaminate the sample route. The player can protect the chain-of-custody—or take a faster path
 that gets results sooner but creates a tampering vulnerability."`,
     },

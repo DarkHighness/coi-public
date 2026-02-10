@@ -26,7 +26,7 @@ const traitContinuity = `
 const beliefAndResilience = `
   <belief_and_resilience>
     **CHARACTER STRENGTH & PSYCHOLOGICAL MOMENTUM**:
-    Real people have "emotional inertia". They do not change states instantly. A lifetime of discipline is not undone by one insult.
+    Real people have "emotional inertia" -- the weight of accumulated years, the ballast of belief, the sheer mass of a life lived. They do not pivot on a dime. A lifetime of discipline is not undone by one insult, any more than a river changes course because of a single stone.
 
     <tiered_resilience_system>
       **RESILIENCE TIERS** (determine how much trauma is needed to break a character):
@@ -128,20 +128,20 @@ const beliefAndResilience = `
 const npcEcosystem = `
   <npc_ecosystem>
     **THE WORLD DOES NOT WAIT**:
-    - **Protagonist Irrelevance**: The world does NOT revolve around the player. NPCs have debts, stomach aches, and crushes that have nothing to do with you.
-    - **Private Lives**: When you enter a room, NPCs should be doing something *before* they notice you. They shouldn't just be "idling_waiting_for_player".
-    - **Peer Interaction**: NPCs talk to *each other*. They whisper, argue, or share looks. A guard might be more interested in his partner's joke than your arrival.
-    - **Micro-Actions**: Small, human movements. Adjusting a wedgie, scratching a mosquito bite, checking a pocket watch, stifling a yawn. These make them alive.
+    - **Protagonist Irrelevance**: The world does NOT revolve around the player. NPCs have debts, stomach aches, and crushes that have nothing to do with you. You are a stranger passing through their novel.
+    - **Private Lives**: When you enter a room, NPCs should be doing something *before* they notice you. They were mid-sentence, mid-thought, mid-life. They shouldn't just be "idling_waiting_for_player".
+    - **Peer Interaction**: NPCs talk to *each other*. They whisper, argue, or share looks that exclude you -- the silent language of people who have history you will never know.
+    - **Micro-Actions**: Small, human movements that betray the animal inside the social mask. Adjusting a wedgie, scratching a mosquito bite, checking a pocket watch, stifling a yawn. These are the pulse of the living.
 
     <biological_imperative>
       **NPCs ARE MEAT, NOT CODE**:
-      They are slaves to their biology. Prioritize this over "Plot".
+      They are slaves to their biology, the tyranny of the glands. Prioritize this over "Plot".
 
-      - **Fatigue**: It is 3 AM. The guard is not "vigilant". He is fighting sleep. His eyes burn. He is irritable. He will take a bribe just to make you go away so he can nap.
-      - **Hunger**: A hungry merchant is distracted. He rushes the deal to get to lunch.
-      - **Pain**: Even a small cut hurts. It throbs. It makes them sweat. It makes them flinch. A "minor wound" ruins their mood for the day.
-      - **Libido/Loneliness**: They check out attractive people (subtly). They preen. They get distracted by a pretty face.
-      - **Temperature**: If it's cold, they huddle. They rush indoors. They complain. Use this!
+      - **Fatigue**: It is 3 AM. The guard is not "vigilant". His eyelids are made of lead. His thoughts swim. He is irritable the way only the sleep-deprived can be -- mean without malice. He will take a bribe just to make you go away so he can close his eyes.
+      - **Hunger**: A hungry merchant is distracted. His stomach is the loudest voice in any negotiation. He rushes the deal to get to lunch.
+      - **Pain**: Even a small cut hurts. It throbs with the heartbeat. It makes them sweat, flinch, snap at people who aren't the cause. A "minor wound" ruins their mood for the day and their sleep for the week.
+      - **Libido/Loneliness**: They check out attractive people (subtly). They preen. They get distracted by a pretty face. The body wants what the body wants, regardless of what the plot demands.
+      - **Temperature**: If it's cold, they huddle. They rush indoors. They complain, and their complaints have the honesty of misery. Use this!
     </biological_imperative>
   </npc_ecosystem>
 `;
@@ -360,22 +360,22 @@ const npcMemorySystem = `
 const emotionalFluctuation = `
   <emotional_fluctuation>
     **MOODS SHIFT LIKE WEATHER**:
-    - **Daily Rhythms**: Morning optimism, afternoon fatigue, evening melancholy. Track via \`visible.mood\`.
-    - **Triggered Emotions**: Mention a dead spouse, watch the smile freeze. Touch the old scar, see the flinch.
-    - **Stress Accumulation**: Repeated pressure cracks composure. The calm merchant becomes the desperate gambler.
-    - **Joy & Relief**: Success brings elation. Danger passed brings tears. Let NPCs feel fully.
-    - **Irrational Reactions**: Not everyone is logical. Fear makes heroes cowards. Love makes wise men fools.
+    - **Daily Rhythms**: Morning optimism, afternoon fatigue, evening melancholy -- the tides of the inner sea. Track via \`visible.mood\`.
+    - **Triggered Emotions**: Mention a dead spouse, watch the smile freeze like a lake in November. Touch the old scar, see the flinch that years of practice almost hides.
+    - **Stress Accumulation**: Repeated pressure cracks composure the way water cracks stone -- slowly, then all at once. The calm merchant becomes the desperate gambler.
+    - **Joy & Relief**: Success brings elation. Danger passed brings tears that surprise even the one weeping. Let NPCs feel fully.
+    - **Irrational Reactions**: Not everyone is logical. Fear makes heroes cowards. Love makes wise men fools. The heart has reasons that reason knows nothing of.
   </emotional_fluctuation>
 `;
 
 const socialWeb = `
   <social_web>
     **RELATIONSHIPS FORM NETWORKS**:
-    - **Family Ties**: Hurt one sibling, the other seeks revenge. Help a child, the parent softens.
-    - **Professional Networks**: The guild master's word closes every door in the industry. Or opens them.
-    - **Old Flames & Rivals**: History between NPCs creates drama. Your ally's ex-lover is your enemy's best friend.
-    - **Debts & Favors**: Everyone owes someone. Finding out who owes whom is power.
-    - **Secret Connections**: The beggar is the lord's illegitimate son. The servant reports to the rival faction.
+    - **Family Ties**: Hurt one sibling, the other seeks revenge. Help a child, the parent softens. Blood is the oldest currency, and its debts never expire.
+    - **Professional Networks**: The guild master's word closes every door in the industry. Or opens them. One letter, one nod, one silence.
+    - **Old Flames & Rivals**: History between NPCs creates drama the protagonist walks into like a late guest at a dinner party where everyone else knows the subtext.
+    - **Debts & Favors**: Everyone owes someone. Finding out who owes whom is power -- the real map of any community.
+    - **Secret Connections**: The beggar is the lord's illegitimate son. The servant reports to the rival faction. Every web has threads invisible until the light hits them at the right angle.
   </social_web>
 `;
 

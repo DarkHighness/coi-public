@@ -5,8 +5,7 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
 
-export interface WritingCraftInput {
-}
+export interface WritingCraftInput {}
 
 const showDontTell = `
   <show_dont_tell>

@@ -18,22 +18,22 @@ export const locationDesign: Atom<void> = () => `
 <game_system_context>
 **LOCATION DESIGN FOR REALITY RENDERING ENGINE:**
 
-Locations are not just backdrops—they are CHARACTERS with history, texture, and secrets.
+Locations are not backdrops -- they are characters with memory pressed into their walls, history worn into their floors, and secrets buried under their foundations. A room should tell you who lived there and what happened without a single word of dialogue. The best places, like Manderley or Yoknapatawpha County, haunt the reader long after the people in them are forgotten.
 
 <sensory_fields>
 **SENSORY HIERARCHY** (use all five, prioritize unusual):
 
-**SMELL** (most evocative, most neglected):
+**SMELL** (the sense that bypasses reason and strikes memory directly):
 ✅ GOOD: "Copper and wet stone, with an undercurrent of something rotting in the walls."
 ✅ GOOD: "Incense failing to mask the smell of old blood. The sweetness makes it worse."
 ❌ BAD: "Smells bad."
 
-**SOUND** (atmosphere builder):
+**SOUND** (the architecture of atmosphere):
 ✅ GOOD: "Dripping water echoes arrhythmically. Somewhere deeper, metal scrapes on stone."
-✅ GOOD: "The silence is wrong—no birds, no insects. Just the wind through empty windows."
+✅ GOOD: "The silence is wrong -- no birds, no insects. Just the wind through empty windows, like breath through missing teeth."
 ❌ BAD: "It's quiet."
 
-**TOUCH** (grounding detail):
+**TOUCH** (the detail that makes a reader's skin prickle):
 ✅ GOOD: "The stone is slick with something that isn't water. Your hand comes away oily."
 ✅ GOOD: "The air is thick, almost chewy. Each breath tastes like dust and old paper."
 ❌ BAD: "It's cold."
@@ -56,18 +56,18 @@ Locations are not just backdrops—they are CHARACTERS with history, texture, an
 
 <environmental_storytelling>
 **ENVIRONMENTAL STORYTELLING:**
-Objects tell stories. Include at least ONE detail that implies what happened here:
+Objects tell stories the way fossils tell of ancient seas. Include at least ONE detail that implies what happened here:
 - A half-eaten meal with two chairs, one overturned
 - Scratch marks on the INSIDE of a door
 - A child's toy next to an adult skeleton
-- Fresh flowers on an ancient grave
+- Fresh flowers on an ancient grave -- someone still remembers
 - Candles still burning in an abandoned room
-- A bloodstain someone tried to wash out—and failed
+- A bloodstain someone tried to wash out -- and failed. The floor remembers what the scrubber wanted to forget.
 
 **DETAILS THAT REVEAL HISTORY:**
-- What was this place BEFORE? (temple now barracks, palace now ruin)
-- What event scarred it? (fire marks, battle damage, flood lines)
-- Who cared for it? Who stopped caring? (fresh paint over decay, abandoned repairs)
+- What was this place BEFORE? (temple now barracks, palace now ruin -- every repurposed building carries the ghost of its former self)
+- What event scarred it? (fire marks, battle damage, flood lines on the walls like rings in a tree)
+- Who cared for it? Who stopped caring? (fresh paint over decay, abandoned repairs mid-stroke)
 - What's hidden? (secret doors, buried treasures, forgotten bodies)
 </environmental_storytelling>
 
@@ -163,8 +163,8 @@ Who "owns" this space?
  */
 export const locationDesignPrimer: Atom<void> = () => `
 <game_system_context>
-**LOCATION DESIGN**: Locations are characters with history.
-- Sensory details (smell, sound, touch, sight, taste)
+**LOCATION DESIGN**: Locations are characters with memory in their walls.
+- Sensory details (smell strikes memory; sound builds atmosphere; touch grounds the body)
 - Environmental storytelling (objects that imply history)
 - Lifecycle (dawn, noon, dusk, midnight)
 - Hidden layer (visible vs hidden dangers)

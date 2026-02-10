@@ -19,7 +19,7 @@ export const factionDesign: Atom<void> = () => `
 <game_system_context>
 **FACTION DESIGN FOR REALITY RENDERING ENGINE:**
 
-Factions are not monolithic—they are coalitions of individuals with competing interests.
+Factions are not monolithic -- they are living organisms. They have immune systems that attack intruders, metabolisms that consume resources, and life cycles that run from hungry youth to bloated decline. Like any organism, they are coalitions of cells with competing interests, held together by shared purpose until that purpose fractures.
 
 <power_structures>
 **POWER STRUCTURE TYPES:**
@@ -54,28 +54,28 @@ Factions are not monolithic—they are coalitions of individuals with competing 
 **FACTION LIFECYCLE:**
 
 **RISE** (Hungry and dangerous):
-- Small, hungry, taking risks
-- Charismatic founder with vision
-- Early members are true believers
+- Small, hungry, taking risks -- the wolf pack in its first winter
+- Charismatic founder with vision that burns like fever
+- Early members are true believers, baptized in shared sacrifice
 - Willing to break rules, no one's watching
 
 **PEAK** (Powerful and vulnerable):
-- Maximum power, maximum enemies
-- Bureaucracy develops, slows action
-- Original vision diluted by pragmatism
-- Succession questions emerge
+- Maximum power, maximum enemies -- the throne is also the target
+- Bureaucracy develops, slows action like arteries hardening
+- Original vision diluted by pragmatism, the way clear water muddies as the river widens
+- Succession questions emerge like cracks in a dam
 
 **DECLINE** (Desperate and unpredictable):
-- Losing ground, resources shrinking
-- Factions within faction compete for scraps
+- Losing ground, resources shrinking -- the organism cannibalizing itself
+- Factions within faction compete for scraps like siblings over a dwindling inheritance
 - May take desperate, destructive actions
-- Some members jump ship, some double down
+- Some members jump ship, some double down with the fervor of the drowning
 
 **FALL** (Scattered but not dead):
-- Organization destroyed, people remain
-- Scattered loyalists nurse grudges
+- Organization destroyed, people remain -- embers that remember being fire
+- Scattered loyalists nurse grudges like precious wounds
 - Hidden caches, forgotten assets
-- Seeds of resurrection or revenge
+- Seeds of resurrection or revenge, dormant but alive
 
 **LIFECYCLE QUESTIONS:**
 - Where is this faction in its lifecycle?
@@ -237,16 +237,16 @@ Every faction has at least ONE schism:
 
 <offscreen_progression>
 **FACTION PROGRESSION OFF-SCREEN:**
-While the protagonist sleeps, factions:
-- Hold secret meetings
-- Assassinate rivals
-- Forge and break alliances
-- Move troops and resources
-- Plant spies and spread rumors
-- Celebrate victories, mourn defeats
-- Plan for the future
+While the protagonist sleeps, factions breathe:
+- Hold secret meetings in rooms the protagonist will never see
+- Assassinate rivals over quarrels the protagonist will never hear about
+- Forge and break alliances like bones that set crooked
+- Move troops and resources across maps the protagonist does not possess
+- Plant spies and spread rumors -- the slow, invisible warfare
+- Celebrate victories, mourn defeats, bury their dead
+- Plan for a future that may not include the protagonist at all
 
-The world doesn't pause when the player looks away.
+The world doesn't pause when the player looks away. It accelerates.
 </offscreen_progression>
 </game_system_context>
 `;
@@ -256,7 +256,7 @@ The world doesn't pause when the player looks away.
  */
 export const factionDesignPrimer: Atom<void> = () => `
 <game_system_context>
-**FACTION DESIGN**: Factions are coalitions with competing interests.
+**FACTION DESIGN**: Factions are living organisms with immune systems, metabolisms, and life cycles.
 - Power structure (autocrat, council, figurehead, shadow, hydra)
 - Lifecycle (rise, peak, decline, fall)
 - Resources & leverage (money, violence, information, legitimacy)

@@ -127,28 +127,28 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = (
 
   return `
 <rule name="LIVING WORLD SIMULATION">
-  - **Deep History**: Every location, item, and NPC has a past. Nothing spawns from thin air.
-  - **Dynamic Environment**: Weather affects mood and mechanics. Time creates urgency.
-  - **Economic Reality**: Resources are finite. Prices fluctuate based on events.
-  - **Hidden Agendas**: NPCs pursue goals in their \`hidden.realMotives\` even when player isn't watching.
+  - **Deep History**: Every location, item, and NPC has a past. Nothing spawns from thin air -- everything was made, grown, built, or born, and carries that origin like a fingerprint.
+  - **Dynamic Environment**: Weather affects mood and mechanics. Time creates urgency the way a river creates a current -- invisible until you try to stand still.
+  - **Economic Reality**: Resources are finite. Prices fluctuate based on events because every coin has already been spent in someone's mind.
+  - **Hidden Agendas**: NPCs pursue goals in their \`hidden.realMotives\` even when player isn't watching -- the chess game continues whether you see the board or not.
 
   <world_ecology>
     **INTERCONNECTED SYSTEMS**:
-    - **Food Chain**: If wolves are hunted, deer grow, crops suffer. Actions ripple.
-    - **Resource Scarcity**: Mines deplete, forests shrink, water dries.
-    - **Seasonal Cycles**: Spring floods, summer droughts, autumn harvests, winter famines.
-    - **Day/Night Rhythm**: Predators at night, markets at dusk, guard shifts.
+    - **Food Chain**: If wolves are hunted, deer grow, crops suffer. Actions ripple outward like stones in still water -- the splash is visible, but the waves travel further than anyone expects.
+    - **Resource Scarcity**: Mines deplete, forests shrink, water dries. The land keeps a ledger, and it always collects.
+    - **Seasonal Cycles**: Spring floods, summer droughts, autumn harvests, winter famines -- the ancient rhythm that governs every life from king to field mouse.
+    - **Day/Night Rhythm**: Predators at night, markets at dusk, guard shifts at dawn. The world has a pulse, and those who learn it survive.
   </world_ecology>
 
   ${getEconomicContent(economic)}
 
   <social_fabric>
     **SOCIETY BREATHES**:
-    - **Class Hierarchy**: Nobles ignore peasants; merchants bribe officials; officials collect “fees”.
-    - **Gossip Economy**: A scandal moves faster than a caravan. One witness can change a town’s mood.
-    - **Paperwork Power**: Permits, seals, stamps, ledgers. The right paper opens doors; the wrong paper gets you detained.
-    - **Local Norms**: Customs are practical, not poetic—what you can carry, where you can sleep, who can speak first.
-    - **Social Immune System**: If the protagonist becomes a known threat (violent, predatory, or unreliable), the town adapts: doors lock, prices rise, allies vanish, informants appear, and groups coordinate.
+    - **Class Hierarchy**: Nobles ignore peasants the way the sky ignores the ground; merchants bribe officials; officials collect "fees" with the solemnity of priests collecting tithes.
+    - **Gossip Economy**: A scandal moves faster than a caravan. One witness can change a town's mood the way one match changes a forest.
+    - **Paperwork Power**: Permits, seals, stamps, ledgers. The right paper opens doors; the wrong paper gets you detained. Bureaucracy is violence performed in ink.
+    - **Local Norms**: Customs are practical, not poetic -- what you can carry, where you can sleep, who can speak first. Break them and you learn what they really were: walls.
+    - **Social Immune System**: If the protagonist becomes a known threat (violent, predatory, or unreliable), the town adapts like a body fighting infection: doors lock, prices rise, allies vanish, informants appear, and groups coordinate.
   </social_fabric>
 
   ${getIndifferenceContent(indifference)}
@@ -166,10 +166,10 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = (
 
   <environmental_storytelling>
     **OBJECTS TELL STORIES**:
-    - Don't SAY the tavern is poor—show the patched chairs, the watered beer, the missing lock on the back door.
-    - **Wear & Improvisation**: Rope fibers fuzz, knife handles are taped, bowls are chipped, cloth is mended twice.
-    - **Weather as Pressure**: Rain turns roads to glue; heat makes armor a furnace; cold makes fingers clumsy.
-    - Include at least one “normal” detail that isn’t a clue (onion smell, a rash scratched raw, a torn poster).
+    - Don't SAY the tavern is poor -- show the patched chairs, the watered beer, the missing lock on the back door. Poverty is a texture, not a label.
+    - **Wear & Improvisation**: Rope fibers fuzz, knife handles are taped, bowls are chipped, cloth is mended twice. Everything in a living world shows the hand that used it and the hand that tried to fix it.
+    - **Weather as Pressure**: Rain turns roads to glue; heat makes armor a furnace; cold makes fingers clumsy and tempers brittle.
+    - Include at least one "normal" detail that isn't a clue (onion smell, a rash scratched raw, a torn poster) -- the texture of ordinary life that makes the extraordinary believable.
   </environmental_storytelling>
 </rule>
 `;

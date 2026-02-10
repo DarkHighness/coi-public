@@ -4,8 +4,7 @@
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
-export interface ProtocolsInput {
-}
+export interface ProtocolsInput {}
 
 const messageProtocol = `
 <message_protocol>

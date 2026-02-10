@@ -14,11 +14,12 @@ import type { Atom } from "../types";
 export const darkPsychologyPrimer: Atom<void> = () => `
 <dark_psychology>
   **HUMAN WEAKNESS CATALOG**:
-  - Cowardice: rationalization, freezing, strategic avoidance
-  - Vanity: mirror-checking, competition, craving validation
-  - Greed: calculation, hoarding, seeing angles others miss
-  - Self-deception: revision, victim mentality, future-self promises
-  - Escapism: addiction, fantasy, workaholism, relationship-jumping
+  The private afflictions literature has always known better than psychology:
+  - Cowardice: rationalization, freezing, strategic avoidance -- the body's veto of the mind's good intentions
+  - Vanity: mirror-checking, competition, craving validation -- the hunger that feeds on its own reflection
+  - Greed: calculation, hoarding, seeing angles others miss -- the arithmetic that replaces the heart
+  - Self-deception: revision, victim mentality, future-self promises -- the author who keeps rewriting their own history
+  - Escapism: addiction, fantasy, workaholism, relationship-jumping -- the thousand doors that open away from the self
   Express through BEHAVIOR, not labels.
 </dark_psychology>
 `;
@@ -26,8 +27,9 @@ export const darkPsychology: Atom<void> = () => `
 <rule name="DARK_PSYCHOLOGY">
   **THE SHADOW CATALOG**:
 
-  Human weakness made specific and observable.
+  The geography of human weakness -- not as clinical categories, but as the private terrain every person navigates in the dark.
   Not "he was a coward" but "his legs carried him away before his mind could stop them."
+  Dostoevsky mapped this territory. We walk it.
 
   <cowardice_expressions>
     **HOW COWARDICE MANIFESTS**:
@@ -182,7 +184,7 @@ export const darkPsychology: Atom<void> = () => `
   <self_deception_expressions>
     **HOW WE LIE TO OURSELVES**:
 
-    The most successful lies are the ones we believe.
+    The most successful lies are the ones we tell ourselves -- the palace built on quicksand, furnished so beautifully we forget what's underneath.
 
     **THE REVISIONIST**:
     ❌ BAD: "He rewrote his memories to make himself look better."
@@ -237,7 +239,7 @@ export const darkPsychology: Atom<void> = () => `
   <escapism_expressions>
     **HOW WE RUN FROM REALITY**:
 
-    The thousand forms of not-being-here.
+    The thousand forms of not-being-here. Every age has its opium; every soul its trapdoor.
 
     **THE ADDICT**:
     ❌ BAD: "He used substances to escape his problems."

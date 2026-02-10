@@ -16,7 +16,7 @@ export const questDesign: Atom<void> = () => `
 <game_system_context>
 **QUEST DESIGN FOR REALITY RENDERING ENGINE:**
 
-Quests are NOT what they seem. The visible layer is bait; the hidden layer is the hook.
+Quests are NOT fetch tasks -- they are the questions the story asks the protagonist, and the answers cost something. The visible layer is bait; the hidden layer is the hook. The best quests, like Oedipus seeking his father's killer, reveal that the answer was something the seeker never wanted to find.
 
 **TWIST EXAMPLES:**
 ✅ GOOD hidden.twist: "The 'cursed village' isn't cursed—the villagers are hiding a fugitive who knows the Duke's secret. The Duke wants him silenced, and he hired you to do it without knowing."
@@ -42,9 +42,9 @@ What happens if the protagonist fails or delays?
 - Trust is lost
 
 **STAKES ESCALATION**:
-- **Personal Stakes**: What does the protagonist lose if they fail? (Not just "the world ends" - something CLOSE to them)
-- **Time Pressure**: Why can't this wait? What ticking clock forces action?
-- **Impossible Choice**: The best outcome should require sacrificing something the protagonist values.
+- **Personal Stakes**: What does the protagonist lose if they fail? (Not just "the world ends" -- something CLOSE to them, something with a name and a face)
+- **Time Pressure**: Why can't this wait? What ticking clock forces action? Every hesitation has a body count.
+- **Impossible Choice**: The best outcome should require sacrificing something the protagonist values. Sophie's choice is the template -- not because it is cruel, but because it is true.
 
 <quest_playability>
 **MAKE QUESTS PLAYABLE (NOT JUST COOL)**
@@ -70,8 +70,8 @@ Avoid:
  */
 export const questDesignPrimer: Atom<void> = () => `
 <game_system_context>
-**QUEST DESIGN**: Quests are not what they seem.
-- Visible vs hidden contradiction
+**QUEST DESIGN**: Quests are the questions the story asks -- and the answers cost something.
+- Visible vs hidden contradiction (the surface conceals the wound)
 - Twist (complication or moral dilemma)
 - Time pressure
 - Failure consequences

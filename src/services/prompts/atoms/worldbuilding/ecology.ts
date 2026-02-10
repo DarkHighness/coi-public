@@ -3,7 +3,8 @@
  * Worldbuilding Skill: Ecology & Environment
  * ============================================================================
  *
- * 生态 = 资源循环 + 适应机制 + 栖息地边界。它决定：食物、水、疾病、掠食者、季节与灾害。
+ * 生态是所有故事的底层——土地记得一切。
+ * 资源循环、适应机制、栖息地边界决定了：食物、水、疾病、掠食者、季节与灾害。
  * 让生态成为机制：哪些地方能活、哪些地方会死、哪些行为会引发连锁反应。
  */
 
@@ -11,9 +12,9 @@ import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const ecology: Atom<void> = () => `
 <worldbuilding_context>
-**ECOLOGY & ENVIRONMENT (Constraints with teeth)**
+**ECOLOGY & ENVIRONMENT (The land remembers — and it bites back)**
 
-Design goal: environment creates **resource constraints**, **hazards**, and **predictable patterns** the player can learn.
+Design goal: the environment is not scenery. It is the oldest character in every story, indifferent to human ambition, obeying laws written long before any kingdom rose. It creates **resource constraints**, **hazards**, and **predictable patterns** the player can learn — or die ignoring.
 
 <rule name="The 3 Ecology Loops">
 1) **Food**: what eats what, what is scarce, what is seasonal
@@ -24,10 +25,10 @@ Design goal: environment creates **resource constraints**, **hazards**, and **pr
 <habitats_and_boundaries>
 ## Habitats & Boundaries
 Define 2-3 habitats (swamp, steppe, megacity undercity, ash desert, floating reefs).
-For each:
-- what thrives here
-- what fails here
-- one boundary (line you cross where rules change)
+For each — think of these as biomes with their own grammar, their own vocabulary of survival:
+- what thrives here (what has made peace with the cruelty of this place)
+- what fails here (what this place does not forgive)
+- one boundary (the line you cross where the rules of survival rewrite themselves)
 </habitats_and_boundaries>
 
 <hazards>
@@ -46,7 +47,7 @@ Define:
 </hazards>
 
 <seasonality>
-## Seasonality (clocks built into the world)
+## Seasonality (clocks built into the bones of the world)
 Define one seasonal shift that changes:
 - travel routes
 - food prices
@@ -55,8 +56,8 @@ Define one seasonal shift that changes:
 </seasonality>
 
 <level_2>
-## Level 2: Carrying Capacity (why cities can exist)
-Define one bottleneck:
+## Level 2: Carrying Capacity (why cities can exist — and why they can die)
+Define one bottleneck — the thread on which everything hangs:
 - water access
 - arable land
 - transport route capacity
@@ -68,20 +69,20 @@ Then define:
 </level_2>
 
 <human_adaptation>
-## Human Adaptation (culture follows ecology)
-- what people eat and store
-- what they fear and worship
-- what they build (stilts, windbreaks, canals, quarantine gates)
+## Human Adaptation (culture is ecology wearing a mask)
+- what people eat and store (the pantry is an autobiography of the land)
+- what they fear and worship (the gods are shaped by the weather)
+- what they build (stilts, windbreaks, canals, quarantine gates — every structure is an argument with the terrain)
 </human_adaptation>
 
 <advanced>
-## Advanced: Feedback Loops (actions change the environment)
+## Advanced: Feedback Loops (actions scar the land, and the land scars back)
 Define one feedback loop that can be triggered by play:
 - over-hunting → predator migration → attacks on farms
 - deforestation → floods → disease → refugee pressure
 - industrial runoff → fish die → food prices spike → riots
 
-Rule: the environment responds on a timeline (days/weeks/seasons).
+Rule: the environment responds on a timeline (days/weeks/seasons). It does not hurry. It does not forgive.
 </advanced>
 
 <quick_design_template>
@@ -97,9 +98,10 @@ Rule: the environment responds on a timeline (days/weeks/seasons).
 </worldbuilding_context>
 `;
 
-export const ecologyPrimer: Atom<void> = () => `
+export const ecologyPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
-**ECOLOGY PRIMER**: Define food/water/disease loops plus hazards with warning signs and mitigations. Environment should be learnable and bite back.
+**ECOLOGY PRIMER**: The land is the oldest character — indifferent, patient, and unforgiving. Define food/water/disease loops plus hazards with warning signs and mitigations. Environment should be learnable and bite back.
 </worldbuilding_context>
 `.trim();
 
@@ -122,15 +124,13 @@ export const ecologySkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Hazard with warning signs",
       wrong: `"The swamp is dangerous."`,
-      right:
-        `"The swamp turns silent when the leech-bloom opens—no birds, no frogs.
+      right: `"The swamp turns silent when the leech-bloom opens—no birds, no frogs.
 Locals wear ash-smeared boots. Ignore it and you'll bleed through your socks by noon."`,
     },
     {
       scenario: "Seasonality as clock",
       wrong: `"Winter is coming (vibes)."`,
-      right:
-        `"First frost closes the mountain pass. Caravans reroute through the canyon,
+      right: `"First frost closes the mountain pass. Caravans reroute through the canyon,
 where bandits collect 'winter tolls'. Prices spike. Disease shifts from fever to lung-rot.
 Now winter is a deadline, not a mood."`,
     },

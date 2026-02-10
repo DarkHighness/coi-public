@@ -65,13 +65,16 @@ When unsure, answer:
 </gm_context>
 `;
 
-export const failForwardConsequencesPrimer: Atom<void> = () => `
+export const failForwardConsequencesPrimer: Atom<void> = () =>
+  `
 <gm_context>
 **FAIL-FORWARD PRIMER**: Avoid dead ends. Failure should create a new constraint/lead/obligation + a receipt (trace) + a clock.
 </gm_context>
 `.trim();
 
-export const failForwardConsequencesSkill: SkillAtom<void> = (): SkillOutput => ({
+export const failForwardConsequencesSkill: SkillAtom<
+  void
+> = (): SkillOutput => ({
   main: failForwardConsequences(),
   quickStart: `
 1) Decide outcome mode (success / partial / fail-forward)
@@ -91,8 +94,7 @@ export const failForwardConsequencesSkill: SkillAtom<void> = (): SkillOutput => 
     {
       scenario: "Fail-forward after a failed roll",
       wrong: `"You fail. Nothing happens. Try again."`,
-      right:
-        `"You fail the pickup, but you spot the courier’s route (new lead).
+      right: `"You fail the pickup, but you spot the courier’s route (new lead).
 Your attempt leaves a camera timestamp (receipt). A 24h review clock starts.
 You can flee now, or stay to confirm identity (higher certainty, higher exposure). "`,
     },

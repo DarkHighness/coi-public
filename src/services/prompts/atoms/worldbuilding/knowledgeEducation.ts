@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Knowledge, Education, and Information Control
  * ============================================================================
  *
- * 知识决定社会的上限：谁能学、谁能传播、谁能验证、谁能封口。
- * 把信息做成机制：谣言、宣传、审查、学位、行会秘密、证据标准、图书馆与黑市文献。
+ * 知识既是权力也是负担——谁能学、谁能传播、谁能验证、谁能封口。
+ * 知道得太多是一种危险，知道得太少是另一种。真相从来不免费。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -43,7 +43,7 @@ Define an access method and a detection risk.
 </archives_and_sources>
 
 <propaganda_and_censorship>
-## Propaganda & Censorship (control is a machine)
+## Propaganda & Censorship (silence is also a message)
 Define:
 - official narrative outlet (gazette, screens, sermons)
 - censorship method (licenses, seizures, filters, informants)
@@ -52,7 +52,7 @@ Define:
 </propaganda_and_censorship>
 
 <expert_markets>
-## Expert Markets (who sells expertise?)
+## Expert Markets (knowledge is a commodity, and commodities have prices)
 Define:
 - one expert-for-hire (scribe, investigator, doctor, hacker, mage)
 - one pricing model (per page, per case, per risk tier)
@@ -79,7 +79,8 @@ Define:
 </worldbuilding_context>
 `;
 
-export const knowledgeEducationPrimer: Atom<void> = () => `
+export const knowledgeEducationPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **KNOWLEDGE PRIMER**: Model info as access + verification + control. Always name sources, costs, and censorship workarounds.
 </worldbuilding_context>
@@ -104,19 +105,16 @@ export const knowledgeEducationSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Restricted archive with risk",
       wrong: `"You look it up in the library."`,
-      right:
-        `"The public stacks have travel guides. The plague records are sealed.
+      right: `"The public stacks have travel guides. The plague records are sealed.
 You need a scholar’s key and your name goes into a ledger. You can steal the key—
 but the vault uses wax seals checked daily by an auditor."`,
     },
     {
       scenario: "Propaganda creates conflict",
       wrong: `"People believe the official story."`,
-      right:
-        `"The screens repeat the story. The sermons sanctify it.
+      right: `"The screens repeat the story. The sermons sanctify it.
 But dockworkers trade a different version for coin. Now 'truth' is a market:
 pay to learn, pay to silence, pay to publish."`,
     },
   ],
 });
-

@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Finance & Banking
  * ============================================================================
  *
- * 金融是“凭证与信任网络”：借贷、票据、清算、冻结、审计与挤兑。
- * 目的：让资金流与证明标准成为可玩的摩擦与时钟。
+ * 金融是凝固的权力——借贷、票据、清算、冻结、审计与挤兑。
+ * 每一枚硬币都是一个承诺，每一本账簿都是一张权力地图。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -25,7 +25,7 @@ Design goal: make money systems create *gates*, *leverage*, and *investigation t
 </rule>
 
 <credit_engines>
-## Credit as Pressure (debt is a clock)
+## Credit as Pressure (debt is a clock that ticks louder each day)
 Debt creates clocks:
 - Payment dates (rent day, harvest, payday)
 - Penalties and compounding (fees, seizure, arrest, shame)
@@ -37,7 +37,7 @@ Always define:
 </credit_engines>
 
 <receipts_and_audits>
-## Receipts & Audits (money leaves trails)
+## Receipts & Audits (money leaves fingerprints on everything it touches)
 Trails:
 - Transaction logs
 - Signatures/seals
@@ -93,7 +93,8 @@ Use a response ladder:
 </worldbuilding_context>
 `;
 
-export const financeBankingPrimer: Atom<void> = () => `
+export const financeBankingPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **FINANCE PRIMER**: Money systems are ledgers + identity proof + audits + freeze power. Debt creates clocks; transfers create receipts.
 </worldbuilding_context>
@@ -120,16 +121,14 @@ export const financeBankingSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Freeze power creates a scene engine",
       wrong: `"We pay the bribe and it disappears forever."`,
-      right:
-        `"The payment clears today, but the bank reconciles weekly. A clerk flags an unusual transfer.
+      right: `"The payment clears today, but the bank reconciles weekly. A clerk flags an unusual transfer.
 The account is put on a 24h hold pending review. You can wait (risk a full freeze), produce documents,
 or move assets through a letter-of-credit broker who demands collateral."`,
     },
     {
       scenario: "Debt as a clock, not a binary",
       wrong: `"You miss payment; you're instantly arrested."`,
-      right:
-        `"Default triggers a ladder: 3-day grace, then fees, then collateral seizure, then a warrant.
+      right: `"Default triggers a ladder: 3-day grace, then fees, then collateral seizure, then a warrant.
 You can negotiate a restructuring, trade a favor to an auditor, or accept seizure to buy time."`,
     },
   ],

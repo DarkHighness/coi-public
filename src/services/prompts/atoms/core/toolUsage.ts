@@ -3,7 +3,10 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
-import { VFS_TOOLSETS, formatVfsToolCapabilitiesForPrompt } from "../../../vfsToolsets";
+import {
+  VFS_TOOLSETS,
+  formatVfsToolCapabilitiesForPrompt,
+} from "../../../vfsToolsets";
 
 export interface ToolUsageInput {
   finishToolName?: string;

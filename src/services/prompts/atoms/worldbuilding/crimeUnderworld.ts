@@ -3,17 +3,17 @@
  * Worldbuilding Skill: Crime, Underworld, and Informal Power
  * ============================================================================
  *
- * 黑道不是“坏人聚集地”，而是：暴力垄断、保护费、情报市场、洗钱、执法勾连的系统。
- * 让地下世界成为机制：谁提供秩序，谁收钱，谁出卖谁，谁能让你消失。
+ * 黑道不是"坏人聚集地"——它是官方秩序投下的影子，有自己的荣誉法则。
+ * 暴力垄断、保护费、情报市场、洗钱、执法勾连：一套平行于国法的完整体系。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const crimeUnderworld: Atom<void> = () => `
 <worldbuilding_context>
-**CRIME & UNDERWORLD (Order for a price)**
+**CRIME & UNDERWORLD (Order for a price, loyalty until a better price)**
 
-Design goal: the underworld provides services that the official system cannot, at **risk** and **obligation** cost.
+Design goal: the underworld provides services the official system cannot or will not, at **risk** and **obligation** cost.
 
 <rule name="Underworld = Services + Violence + Information">
 1) **Services**: smuggling, forged papers, debt collection, safehouses
@@ -50,7 +50,7 @@ Define 1 audit risk and a mitigation (bribed inspector, fake invoices).
 </money_laundering>
 
 <informant_ecology>
-## Informant Ecology
+## Informant Ecology (every shadow has ears)
 Always define:
 - one informant stream (clerks, dockworkers, street kids)
 - one counter-intel method (dead drops, code phrases, vetting, tests)
@@ -77,7 +77,8 @@ Always define:
 </worldbuilding_context>
 `;
 
-export const crimeUnderworldPrimer: Atom<void> = () => `
+export const crimeUnderworldPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **UNDERWORLD PRIMER**: Model the underworld as services + violence + information. Define brokers, protection, informants, and laundering with audit risk.
 </worldbuilding_context>
@@ -102,18 +103,15 @@ export const crimeUnderworldSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Protection has a price",
       wrong: `"The gang protects you because they like you."`,
-      right:
-        `"Protection buys safe passage through Dock Ward.
+      right: `"Protection buys safe passage through Dock Ward.
 Pay weekly, obey curfew, never talk to inspectors.
 Break it and they don’t kill you—they burn your supplier and spread your name."`,
     },
     {
       scenario: "Informants create tension",
       wrong: `"No one knows anything."`,
-      right:
-        `"Street kids sell gossip by the hour. Clerks sell records by the page.
+      right: `"Street kids sell gossip by the hour. Clerks sell records by the page.
 The boss tests new hires with a fake leak. Fail and you vanish."`,
     },
   ],
 });
-

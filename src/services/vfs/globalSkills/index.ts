@@ -1162,9 +1162,7 @@ function buildThemeSkillMarkdown(def: ThemeSkillResolvedDef): string {
     def.templates.length === 0
       ? ""
       : `## Templates\n\n${def.templates
-          .map(
-            (t) => `### ${t.name}\n\n\`\`\`\n${t.body.trim()}\n\`\`\`\n`,
-          )
+          .map((t) => `### ${t.name}\n\n\`\`\`\n${t.body.trim()}\n\`\`\`\n`)
           .join("\n")}`;
 
   const examplesMd =
@@ -1225,7 +1223,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Fantasy",
       description:
         "Fantasy is about power with costs: magic, institutions, myth, and material reality colliding. Make the supernatural meaningful by constraining it and letting society react.",
-      whenToLoad: "When running a fantasy-genre adventure (magic, myth, ancient powers, feudal or guild institutions).",
+      whenToLoad:
+        "When running a fantasy-genre adventure (magic, myth, ancient powers, feudal or guild institutions).",
       coreConstraints: [
         "Magic has **costs** and **limits** (no wish fulfillment).",
         "Power has **institutions** (guilds, courts, churches, academies).",
@@ -1294,7 +1293,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Noir",
       description:
         "Noir is about leverage: secrets, debts, compromises, and institutional rot. Information has a price, and victory often costs something you care about.",
-      whenToLoad: "When running a noir-style mystery/crime story (corruption, leverage chains, moral compromises).",
+      whenToLoad:
+        "When running a noir-style mystery/crime story (corruption, leverage chains, moral compromises).",
       coreConstraints: [
         "Everyone has leverage (secrets, dependencies, debts).",
         "Information costs something (money, favors, exposure, blood).",
@@ -1355,7 +1355,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Horror",
       description:
         "Horror is managed fear: incomplete information, escalating exposure, and temporary safety. The threat is real and adapts; the world offers hard choices, not clean rescues.",
-      whenToLoad: "When running horror or supernatural thriller content (dread, isolation, escalation, survival decisions).",
+      whenToLoad:
+        "When running horror or supernatural thriller content (dread, isolation, escalation, survival decisions).",
       coreConstraints: [
         "The threat is real (it can harm/kill; consequences persist).",
         "Information is incomplete (uncertainty fuels dread).",
@@ -1416,7 +1417,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Cyberpunk",
       description:
         "Cyberpunk is high tech with low trust: corporations, surveillance, debt, and body modification. Make tech social: every capability has access control, maintenance, and counterplay.",
-      whenToLoad: "When running a cyberpunk or high-tech dystopia story (corps, surveillance, debt, cyberware).",
+      whenToLoad:
+        "When running a cyberpunk or high-tech dystopia story (corps, surveillance, debt, cyberware).",
       coreConstraints: [
         "Corporations often outrank governments in practical power.",
         "Surveillance is pervasive; anonymity has a cost.",
@@ -1477,7 +1479,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Mystery",
       description:
         "Mystery is about discoverable truth under pressure. Clues must be obtainable; interpretation must be uncertain; time should change evidence and incentives.",
-      whenToLoad: "When running investigation-focused scenarios (clues, suspects, evidence decay, revelations).",
+      whenToLoad:
+        "When running investigation-focused scenarios (clues, suspects, evidence decay, revelations).",
       coreConstraints: [
         "Clues are discoverable (no unsolvable mysteries).",
         "Evidence requires interpretation (multiple readings possible).",
@@ -1538,7 +1541,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Romance",
       description:
         "Romance is a pressure engine for vulnerability, timing, and personal stakes. Chemistry emerges from connection plus conflict—not from declarations.",
-      whenToLoad: "When romantic relationships are central or strongly influencing decisions and scenes.",
+      whenToLoad:
+        "When romantic relationships are central or strongly influencing decisions and scenes.",
       coreConstraints: [
         "Vulnerability is required (emotional risk).",
         "Chemistry comes from conflict + connection (not perfection).",
@@ -1599,7 +1603,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Wuxia",
       description:
         "Wuxia is honor, lineage, and debt in the jianghu—an alternate legal order. Reputation is currency; techniques have sources; obligations and face create pressure.",
-      whenToLoad: "When running martial arts / jianghu adventures with sect politics, blood debts, and honor codes.",
+      whenToLoad:
+        "When running martial arts / jianghu adventures with sect politics, blood debts, and honor codes.",
       coreConstraints: [
         "Honor and face function as currency (public reputation has cost).",
         "Lineage and school matter (techniques have sources and owners).",
@@ -1660,7 +1665,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Heist",
       description:
         "Heist is layered security under time pressure. Plans reveal through action; complications are inevitable; roles matter; exits are harder than entries.",
-      whenToLoad: "When running heist/caper/infiltration scenarios (security layers, timing windows, complications).",
+      whenToLoad:
+        "When running heist/caper/infiltration scenarios (security layers, timing windows, complications).",
       coreConstraints: [
         "Security has layers (bypass one, face another).",
         "Roles matter (each specialist has unique value).",
@@ -1721,7 +1727,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Post-Apocalypse",
       description:
         "Post-apocalypse is survival under scarcity where safety is temporary. Communities extract obligations; the old world leaves residue; violence is logistical.",
-      whenToLoad: "When running survival or post-collapse scenarios (scarcity, fragile communities, old-world residue).",
+      whenToLoad:
+        "When running survival or post-collapse scenarios (scarcity, fragile communities, old-world residue).",
       coreConstraints: [
         "Resources are scarce (food, water, medicine, fuel, ammo).",
         "Safety is temporary (no permanent haven).",
@@ -1782,7 +1789,8 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       title: "Slice-of-Life",
       description:
         "Slice-of-life is about small stakes with real weight: routines, relationships, and incremental change. The drama comes from timing, obligations, and the texture of everyday consequences.",
-      whenToLoad: "When running low-stakes, everyday-focused scenarios (community ties, routines, small conflicts).",
+      whenToLoad:
+        "When running low-stakes, everyday-focused scenarios (community ties, routines, small conflicts).",
       coreConstraints: [
         "Small stakes feel big to the people living them.",
         "Routines create rhythm; disruption is dramatic.",

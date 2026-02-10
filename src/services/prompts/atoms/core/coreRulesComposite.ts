@@ -21,8 +21,7 @@ import { humanityAndHope } from "./humanityAndHope";
 import { livingWorld } from "./livingWorld";
 import { informationRevelation } from "./informationRevelation";
 
-export interface CoreRulesInput {
-}
+export interface CoreRulesInput {}
 
 /**
  * Full version of core rules - combines all world operation atoms

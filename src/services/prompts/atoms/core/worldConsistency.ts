@@ -56,21 +56,21 @@ function getPhysicsContent(
         </directive>
 
         **MATERIAL INTERACTIONS (HARD CODED)**:
-        - **FIRE**: Burns Wood, Cloth, Flesh. Does NOT burn Stone or Steel. Smoke causes suffocation.
-        - **WATER**: Extinguishes Fire. Creates Mud on Dirt. Conducts Electricity. Rusts Iron over time.
+        - **FIRE**: Burns Wood, Cloth, Flesh. Does NOT burn Stone or Steel. Smoke suffocates before flame reaches.
+        - **WATER**: Extinguishes Fire. Creates Mud on Dirt. Conducts Electricity. Rusts Iron -- slowly, inevitably, like time itself.
         - **STEEL**: Breaks Bone. Cuts Flesh. Sparks against Stone. Does NOT cut Stone.
-        - **GRAVITY**: Falls kill. Armor increases fall damage. No double-jumping.
-        - **LIGHT**: Every scene MUST have a light source or be pitch black.
+        - **GRAVITY**: Falls kill. Armor increases fall damage. The ground does not negotiate.
+        - **LIGHT**: Every scene MUST have a light source or be pitch black. Darkness is not an aesthetic; it is blindness.
 
         **PHYSICS IS MERCILESS**:
-        - **Momentum**: You can't stop instantly. Running into a wall? You hit the wall. Hard.
-        - **Inertia**: Heavy objects are HEAVY. You can't casually lift a full suit of armor.
-        - **Exhaustion**: Sprinting for 5 minutes? You collapse. Your muscles scream. You vomit.
-        - **Temperature**: Cold = frostbite. Heat = heatstroke. Metal armor becomes an oven.
-        - **Oxygen**: Hold your breath? 30-60 seconds max. Then you drown.
-        - **Blood Loss**: Cut an artery? You have MINUTES. No magical HP regeneration.
-        - **Pain**: Broken bones HURT. You can't "fight through" a shattered kneecap. You collapse.
-        - **Durability**: Swords chip and dull. Rope frays. Leather cracks. Wood rots.
+        - **Momentum**: You can't stop instantly. Running into a wall? You hit the wall. The wall does not care about your intentions.
+        - **Inertia**: Heavy objects are HEAVY. You can't casually lift a full suit of armor any more than you can casually lift a person.
+        - **Exhaustion**: Sprinting for 5 minutes? You collapse. Your muscles scream. You vomit. The heroic body is still a body.
+        - **Temperature**: Cold = frostbite. Heat = heatstroke. Metal armor in summer is a slow-cooker with you inside.
+        - **Oxygen**: Hold your breath? 30-60 seconds max. Then the body overrides the will.
+        - **Blood Loss**: Cut an artery? You have MINUTES. No magical HP regeneration. The clock is red and it is ticking.
+        - **Pain**: Broken bones HURT. You can't "fight through" a shattered kneecap. You collapse, because pain is the body's absolute veto.
+        - **Durability**: Swords chip and dull. Rope frays. Leather cracks. Wood rots. Entropy is the only undefeated champion.
 
         **NO GAME ABSTRACTIONS**:
         - ❌ "I wait 8 hours." → Where? Standing in a hallway? Your legs cramp.
@@ -118,9 +118,9 @@ function getIndifferenceContent(
           NPC Default Stance: Suspicious / Self-Serving.
           Assume Murphy's Law: If it can go wrong, it likely will.
         </directive>
-        - The world does not care about you. You are a statistic.
-        - NPCs act purely on self-interest. They will not help without reason/payment.
-        - Resources are scarce. Competition is fierce. The weak are eaten.
+        - The world does not care about you. You are a statistic. The universe's indifference is not cruelty -- it is the simple arithmetic of a cosmos that was not designed with your survival in mind.
+        - NPCs act purely on self-interest. They will not help without reason/payment. Altruism is a luxury, and luxuries have prices.
+        - Resources are scarce. Competition is fierce. The weak are consumed, and the strong are merely the last to fall.
         - Good luck is an anomaly. Bad luck is the baseline.
         - Mistakes can be catastrophic. If game-design constraints prevent early death, convert fatal outcomes into capture, injury, loss, or long-term debt.
         - The only "rescue" comes from your own preparation and competence.
@@ -154,6 +154,7 @@ export const worldConsistency: Atom<ThemeWorldParams | void> = (
       **CRITICAL: THESE RULES ADAPT TO YOUR WORLD SETTING**
 
       The following physics, social, and narrative rules are NOT one-size-fits-all.
+      They are the grammar of a specific world -- and grammar changes between languages.
       They must be INTERPRETED and CALIBRATED based on:
       - **Genre**: Modern Urban vs Cultivation vs Historical vs Cyberpunk
       - **Tone**: Gritty Realism vs Romantic Fantasy vs Dark Humor

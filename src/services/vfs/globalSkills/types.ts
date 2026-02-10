@@ -5,4 +5,3 @@ export type GlobalSkillSeed = {
   content: string;
   contentType: VfsContentType;
 };
-

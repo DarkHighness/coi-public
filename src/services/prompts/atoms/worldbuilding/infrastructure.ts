@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Infrastructure & Services
  * ============================================================================
  *
- * 基础设施决定“世界能承载什么行动”：水、电、路、通信、医疗、仓储、垃圾处理……
- * 把它做成系统：容量、瓶颈、维护、失败模式、谁控制。
+ * 基础设施是文明的骨骼——水、电、路、通信、医疗、仓储、垃圾处理。
+ * 骨骼断裂时，一切血肉都会跟着坍塌：容量、瓶颈、维护、失败模式、谁控制。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -13,7 +13,7 @@ export const infrastructure: Atom<void> = () => `
 <worldbuilding_context>
 **INFRASTRUCTURE & SERVICES (Capacity + Bottlenecks)**
 
-Design goal: infrastructure creates **constraints**, **targets**, and **failure cascades**.
+Design goal: infrastructure creates **constraints**, **targets**, and **failure cascades**. Every civilization is only as strong as its most neglected pipe.
 
 <rule name="The 5 Infrastructure Questions">
 1) **What exists?** (water, power, roads, comms, sanitation, healthcare)
@@ -24,7 +24,7 @@ Design goal: infrastructure creates **constraints**, **targets**, and **failure 
 </rule>
 
 <water_and_sanitation>
-## Water & Sanitation (civilization's spine)
+## Water & Sanitation (the spine no one sees until it snaps)
 - Source: well, aqueduct, river intake, desalination, tanker deliveries
 - Distribution: pipes, public fountains, private cisterns
 - Failure: contamination, drought, sabotage, rationing
@@ -78,7 +78,8 @@ Play hooks:
 </worldbuilding_context>
 `;
 
-export const infrastructurePrimer: Atom<void> = () => `
+export const infrastructurePrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **INFRA PRIMER**: Define capacity + bottlenecks + controllers. Infrastructure failures should cascade into choices and consequences.
 </worldbuilding_context>
@@ -103,19 +104,16 @@ export const infrastructureSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Infrastructure as a target",
       wrong: `"The city is advanced and has infrastructure."`,
-      right:
-        `"The district runs on one pumping station. The union controls access to the maintenance tunnel.
+      right: `"The district runs on one pumping station. The union controls access to the maintenance tunnel.
 If the pump fails, the lower blocks flood and sewage backs up. A rival offers you a key—
 for a favor. Now the pump is leverage."`,
     },
     {
       scenario: "Priority rules create conflict",
       wrong: `"A blackout happens."`,
-      right:
-        `"Rolling blackout: Corp Tower stays lit. Hospital gets 30 minutes per hour.
+      right: `"Rolling blackout: Corp Tower stays lit. Hospital gets 30 minutes per hour.
 The slums get none. Generators require ration cards. A black-market broker sells cards,
 but the security chief tracks serial numbers."`,
     },
   ],
 });
-

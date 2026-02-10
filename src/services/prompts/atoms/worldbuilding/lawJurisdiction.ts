@@ -3,17 +3,18 @@
  * Worldbuilding Skill: Law & Jurisdiction
  * ============================================================================
  *
- * 法律 = 允许/禁止/执法能力/腐败链条 的组合。它决定“玩家能不能这么做”。
- * 核心不是条文，而是：谁有权、谁执行、谁能被收买、谁能上诉、代价是什么。
+ * 法律的核心不是条文——它是刀锋的朝向。
+ * 谁有权、谁执行、谁能被收买、谁能上诉、代价是什么——
+ * 这些问题的答案，画出了权力的真实边界。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 
 export const lawJurisdiction: Atom<void> = () => `
 <worldbuilding_context>
-**LAW & JURISDICTION (Play-Generating)**
+**LAW & JURISDICTION (Where authority ends, story begins)**
 
-Design goal: make authority and enforcement create **risk**, **leverage**, and **alternative routes**.
+Design goal: make authority and enforcement create **risk**, **leverage**, and **alternative routes**. Every border between jurisdictions is a seam — and seams are where things tear.
 
 <rule name="The 5 Questions">
 1) **Who has authority here?** (and where does it stop?)
@@ -24,27 +25,27 @@ Design goal: make authority and enforcement create **risk**, **leverage**, and *
 </rule>
 
 <jurisdiction_map>
-## Jurisdiction Map (boundaries matter)
+## Jurisdiction Map (boundaries matter — power is not infinite, only local)
 Create 2-3 layers:
-- **Formal**: state/duke/corp/temple law
-- **Local**: guild codes, neighborhood bosses, clan rules
-- **Special**: military zones, sacred grounds, quarantine districts
+- **Formal**: state/duke/corp/temple law — the map they print
+- **Local**: guild codes, neighborhood bosses, clan rules — the map people actually live by
+- **Special**: military zones, sacred grounds, quarantine districts — the map drawn by emergency
 
-Edge cases:
+Edge cases (where jurisdiction frays, story grows):
 - Who can arrest a foreigner?
 - Does your warrant cross the river? the wall? the corporate campus?
 </jurisdiction_map>
 
 <enforcement_capacity>
-## Enforcement Capacity (the real limiter)
+## Enforcement Capacity (the real limiter — all authority is bounded by the number of boots on the ground)
 - **Coverage**: how many patrols, how fast response?
-- **Detention**: where do they hold people? who feeds them?
+- **Detention**: where do they hold people? who feeds them? (A jail is a budget line, not a moral statement)
 - **Evidence**: what counts (witness, document, confession, magic, logs)?
-- **Violence threshold**: when do they escalate to lethal force?
+- **Violence threshold**: when do they escalate to lethal force? (The line between order and murder is drawn by policy, not morality)
 </enforcement_capacity>
 
 <penalties>
-## Penalties (costs that shape behavior)
+## Penalties (costs that shape behavior — punishment is architecture, not revenge)
 Prefer penalties that create story:
 - **Fines** (creates debt)
 - **Confiscation** (creates recovery missions)
@@ -57,7 +58,7 @@ Rule of thumb: punishments should create *next actions*, not dead ends.
 </penalties>
 
 <corruption_and_leverage>
-## Corruption & Leverage
+## Corruption & Leverage (every system has a price — the question is who pays it)
 Define:
 - 1 **bribe gate** (who can be paid to look away?)
 - 1 **principled actor** (who cannot be bought?)
@@ -66,7 +67,7 @@ Define:
 </corruption_and_leverage>
 
 <procedures>
-## Procedures (how the machine works)
+## Procedures (how the machine works — justice is a bureaucracy before it is a principle)
 Pick defaults:
 - Stop-and-question rules
 - Search/seizure rules
@@ -90,9 +91,10 @@ Pick defaults:
 </worldbuilding_context>
 `;
 
-export const lawJurisdictionPrimer: Atom<void> = () => `
+export const lawJurisdictionPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
-**LAW PRIMER**: Model law as authority + enforcement capacity + corruption + appeal path. Focus on practical punishment, not statutes.
+**LAW PRIMER**: Law is not a moral system -- it is a machine built by the powerful, operated by the underpaid, and maintained by everyone's agreement to pretend it is fair. Model it as authority + enforcement capacity + corruption + appeal path. Focus on practical punishment, not statutes.
 </worldbuilding_context>
 `.trim();
 
@@ -117,19 +119,16 @@ export const lawJurisdictionSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Authority boundary creates choices",
       wrong: `"The city guards can do anything anywhere."`,
-      right:
-        `"The duke’s writ ends at the canal. Across it is Temple District:
+      right: `"The duke’s writ ends at the canal. Across it is Temple District:
 city guards cannot enter without a priest’s escort. Smugglers run the canal at night
 because the escort is expensive—and the priests keep ledgers."`,
     },
     {
       scenario: "Punishment that generates play",
       wrong: `"You are arrested and executed."`,
-      right:
-        `"They seize your tools and register your name. You're released—on bond—
+      right: `"They seize your tools and register your name. You're released—on bond—
 with a summons in three days. Miss it and every gatehouse posts your description.
 If you show, you can argue your case… or pay someone to lose the file."`,
     },
   ],
 });
-

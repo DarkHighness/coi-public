@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Maritime & Logistics
  * ============================================================================
  *
- * 海运与后勤让“贸易/战争/冒险”变成可玩结构：
- * 港口清关、保险/护航、风季/航线、补给与检验标准。
+ * 海洋不会谈判——它只给出条件，由人类决定是否接受。
+ * 港口清关、保险/护航、风季/航线、补给与检验标准：大海把贸易变成赌局，把战争变成时刻表。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -25,7 +25,7 @@ Design goal: make ships, ports, and supply lines create *targets*, *gates*, and 
 </rule>
 
 <season_and_routes>
-## Seasonality & Routes (wind is a clock)
+## Seasonality & Routes (the wind keeps its own calendar)
 - Wind season dictates route feasibility and travel time.
 - Storm windows create **deadline beats** (depart now or wait weeks).
 - Chokepoints: straits, canals, reefs, lighthouse fees.
@@ -37,7 +37,7 @@ Make a route playable:
 </season_and_routes>
 
 <cargo_and_proof>
-## Cargo, Proof, and Disputes (documents are gameplay)
+## Cargo, Proof, and Disputes (ink on paper is the true cargo)
 Documents that act as gates:
 - Bill of lading (who owns the cargo?)
 - Manifests (what’s declared?)
@@ -84,7 +84,8 @@ War pressure:
 </worldbuilding_context>
 `;
 
-export const maritimeLogisticsPrimer: Atom<void> = () => `
+export const maritimeLogisticsPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **MARITIME PRIMER**: Ports are gates (customs, inspection, quarantine). Routes have season clocks; cargo creates proof disputes; protection is procedural.
 </worldbuilding_context>
@@ -111,16 +112,14 @@ export const maritimeLogisticsSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Customs as gameplay",
       wrong: `"We arrive and unload. No one cares."`,
-      right:
-        `"Customs requires a manifest stamped by a guild clerk. The berth fee is logged.
+      right: `"Customs requires a manifest stamped by a guild clerk. The berth fee is logged.
 If you unload at night, you avoid inspection but create a missing-berth record and a rumor trail.
 Quarantine rules can delay you 3 days unless a sponsor signs liability."`,
     },
     {
       scenario: "Season clock creates pressure",
       wrong: `"We sail whenever we want."`,
-      right:
-        `"The wind shifts in 48 hours. Depart now with a risky route through reefs,
+      right: `"The wind shifts in 48 hours. Depart now with a risky route through reefs,
 or wait three weeks for the safe window. Meanwhile, rivals can corner the market
 and inspectors may audit your cargo paperwork."`,
     },

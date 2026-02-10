@@ -3,8 +3,8 @@
  * Worldbuilding Skill: Religion & Sacred Power
  * ============================================================================
  *
- * 宗教是“意义的机器”：它生产禁忌、赦免、身份、权力与资源分配。
- * 让宗教成为机制：谁能赦免、谁能宣告异端、谁控制圣地与仪式。
+ * 宗教是"意义的机器"：它生产禁忌、赦免、身份、权力与资源分配。
+ * 信仰不是教义清单，而是活着的经验——人们用它来寻找赦免、标记异端、争夺圣地。
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -51,7 +51,7 @@ Each ritual must define:
 </heresy_and_exemptions>
 
 <sacred_sites>
-## Sacred Sites (access control as story engine)
+## Sacred Sites (the threshold between profane and numinous)
 Define a sacred place with:
 - threshold (who can enter)
 - surveillance (confession logs, watchers, vows)
@@ -70,7 +70,7 @@ Gameplay:
 </level_2>
 
 <advanced>
-## Advanced: Miracle Economy (power creates markets)
+## Advanced: Miracle Economy (where the sacred meets the ledger)
 If miracles exist (even socially, as belief), define:
 - who can certify a miracle (and for what price)
 - relic authentication (forgery + audits)
@@ -97,7 +97,8 @@ Religion often becomes:
 </worldbuilding_context>
 `;
 
-export const religionPrimer: Atom<void> = () => `
+export const religionPrimer: Atom<void> = () =>
+  `
 <worldbuilding_context>
 **RELIGION PRIMER**: Model religion as legitimacy + sorting + resource control. Define rituals with gatekeepers, prices, and enforceable heresy/exemptions.
 </worldbuilding_context>
@@ -122,16 +123,14 @@ export const religionSkill: SkillAtom<void> = (): SkillOutput => ({
     {
       scenario: "Exemption as gameplay",
       wrong: `"The church forbids magic, but you can do it anyway."`,
-      right:
-        `"Magic is heresy—unless you carry a relic-seal issued by the abbey.
+      right: `"Magic is heresy—unless you carry a relic-seal issued by the abbey.
 The seal expires in seven days. Renewal requires 'service' (a favor) or a tithe.
 Now magic use creates a clock: pay, negotiate, hide, or convert."`,
     },
     {
       scenario: "Ritual economy creates stakes",
       wrong: `"You get blessed for free."`,
-      right:
-        `"Blessing requires incense imported through the Temple Gate.
+      right: `"Blessing requires incense imported through the Temple Gate.
 Without it, the priest can still bless you—but the community will treat you as 'unwitnessed':
 merchants won't extend credit, and guards search you at checkpoints."`,
     },

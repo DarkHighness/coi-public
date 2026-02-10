@@ -19,20 +19,20 @@ export const itemDesign: Atom<void> = () => `
 <game_system_context>
 **ITEM DESIGN FOR REALITY RENDERING ENGINE:**
 
-Items are not just "loot"—they are pieces of the world's history.
+Items are not loot -- they are carriers of history, palimpsests of human contact. Every object was made by someone, for a reason, and has been touched by every hand that held it. A sword remembers the forge, the smith's intent, and every life it ended. A letter carries the warmth of the hand that wrote it long after that hand is cold.
 
 <item_categories>
 **ITEM CATEGORIES:**
 
 **WEAPONS**: Tools of violence with personality
-- Who made it? For whom? What battles has it seen?
-- How does it feel in the hand? Heavy? Eager? Reluctant?
+- Who made it? For whom? What battles has it seen? Every weapon is a biography written in steel.
+- How does it feel in the hand? Heavy? Eager? Reluctant -- like it remembers the last hand that held it?
 - What does owning this weapon say about you?
 
 **ARMOR**: Protection with cost
-- What has it protected against? What has it failed to stop?
-- How does it smell? (Leather, oil, old sweat, blood)
-- What movement does it restrict? What sounds does it make?
+- What has it protected against? What has it failed to stop? Every dent is a debt paid.
+- How does it smell? (Leather, oil, old sweat, blood -- the perfume of survival)
+- What movement does it restrict? What sounds does it make -- the creak, the rattle, the whisper of metal on cloth?
 
 **CONSUMABLES**: Temporary power, permanent choice
 - What does it taste/smell/feel like?
@@ -51,8 +51,8 @@ Items are not just "loot"—they are pieces of the world's history.
 
 **MUNDANE**: The texture of reality
 - Worn coins, old letters, dried flowers, children's toys
-- Items that matter for sentimental reasons, not power
-- These ground fantasy in human emotion
+- Items that matter for sentimental reasons, not power -- the objects that would be saved from a fire
+- These ground fantasy in human emotion. A kingdom may hinge on a magic sword, but a story hinges on a mother's locket.
 </item_categories>
 
 <provenance_chain>
@@ -151,7 +151,7 @@ Items may have secrets that reveal under conditions:
 <curse_mechanics>
 **CURSE MECHANICS:**
 
-Cursed items are transactions, not traps.
+Cursed items are transactions, not traps. They are Faustian bargains forged in metal and stone.
 
 **THE BARGAIN**:
 - What power does the item grant?
@@ -244,8 +244,8 @@ What happens when items are lost?
  */
 export const itemDesignPrimer: Atom<void> = () => `
 <game_system_context>
-**ITEM DESIGN**: Items are history pieces, not loot.
-- Categories (weapons, armor, consumables, keys, artifacts, mundane)
+**ITEM DESIGN**: Items are carriers of history, not loot.
+- Categories (weapons, armor, consumables, keys, artifacts, mundane -- each with its own voice)
 - Provenance chain (creator → owners → current holder)
 - Condition states (pristine → worn → damaged → ruined)
 - Hidden properties (blood, emotion, time, location, death triggers)
