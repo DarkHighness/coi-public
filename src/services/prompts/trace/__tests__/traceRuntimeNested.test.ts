@@ -4,6 +4,7 @@ import {
   defineAtom,
   defineSkillAtom,
   getLatestPromptTrace,
+  getRegisteredPromptAtoms,
   runPromptWithTrace,
   setPromptTraceEnabled,
 } from "../runtime";
@@ -57,6 +58,16 @@ describe("trace runtime nested recording", () => {
     expect(skillCall).toBeDefined();
     expect(techCall).toBeDefined();
     expect(techCall?.parentId).toBe(skillCall?.id);
+
+    const registered = getRegisteredPromptAtoms();
+    expect(
+      registered.some((item) => item.atomId === "atoms/test/technology#technology"),
+    ).toBe(true);
+    expect(
+      registered.some(
+        (item) => item.atomId === "atoms/test/technology#technologySkill",
+      ),
+    ).toBe(true);
   });
 
   it("supports trace.record(meta, rawRenderer) for inline fragments", () => {

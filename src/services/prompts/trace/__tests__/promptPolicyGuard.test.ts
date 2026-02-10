@@ -17,6 +17,7 @@ function makeTrace(promptId: string, atomIds: string[]): PromptTrace {
       atomId,
       source: "tests/policy",
       exportName: `atom_${index}`,
+      kind: "atom",
       argsHash: "00000000",
       outputChars: 128,
       included: true,

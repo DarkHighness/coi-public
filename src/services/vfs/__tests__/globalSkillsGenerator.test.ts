@@ -23,19 +23,35 @@ describe("VFS global skills generator", () => {
     );
   });
 
-  it("keeps skill index entries aligned with mappings", () => {
-    const mappings = getSkillMappings();
+  it("keeps skill index entries aligned with catalog-visible mappings", () => {
+    const mappings = getSkillMappings() as readonly {
+      name: string;
+      title: string;
+      tags: string[];
+      path: string;
+      visibility?: "catalog" | "nested";
+    }[];
     const entries = getSkillIndexEntries();
+    const catalogMappings = mappings.filter(
+      (mapping) => (mapping.visibility ?? "catalog") === "catalog",
+    );
 
-    expect(entries).toHaveLength(mappings.length);
+    expect(entries).toHaveLength(catalogMappings.length);
     expect(new Set(entries.map((entry) => entry.id)).size).toBe(entries.length);
 
     entries.forEach((entry, index) => {
-      const mapping = mappings[index];
+      const mapping = catalogMappings[index];
       expect(entry.id).toBe(mapping.name);
       expect(entry.title).toBe(mapping.title);
       expect(entry.tags).toEqual(mapping.tags);
       expect(entry.path).toBe(`current/skills/${mapping.path}/SKILL.md`);
+    });
+
+    const nestedMappings = mappings.filter(
+      (mapping) => mapping.visibility === "nested",
+    );
+    nestedMappings.forEach((mapping) => {
+      expect(entries.some((entry) => entry.id === mapping.name)).toBe(false);
     });
   });
 

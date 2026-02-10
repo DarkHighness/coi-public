@@ -1,5 +1,11 @@
 import type { SkillOutput } from "../atoms/types";
-import type { AtomCallTrace, PromptSectionTrace, PromptTrace } from "./types";
+import type {
+  AtomCallTrace,
+  PromptSectionTrace,
+  PromptTrace,
+  PromptAtomKind,
+  RegisteredPromptAtom,
+} from "./types";
 
 type PromptTraceSession = {
   trace: {
@@ -20,7 +26,7 @@ export type AtomTraceMeta = {
   exportName: string;
 };
 
-type AtomTraceKind = "atom" | "skill";
+type AtomTraceKind = Exclude<PromptAtomKind, "inline">;
 type AtomLikeFn<TInput = unknown> = (input: TInput) => string;
 
 const ATOM_TRACE_META = Symbol("promptTraceMeta");
@@ -44,6 +50,7 @@ export interface PromptTraceRuntime {
 const promptTraceSessions: PromptTraceSession[] = [];
 const promptTraceLatest = new Map<string, PromptTrace>();
 const promptTraceHistory: PromptTrace[] = [];
+const registeredPromptAtoms = new Map<string, RegisteredPromptAtom>();
 const MAX_TRACE_HISTORY = 200;
 
 let promptTraceEnabled = false;
@@ -138,8 +145,23 @@ function getTraceMeta(fn: unknown): AtomTraceMeta | undefined {
   return (fn as TraceTaggedFn)[ATOM_TRACE_META];
 }
 
+function getTraceKind(fn: unknown): AtomTraceKind | undefined {
+  if (!fn || typeof fn !== "function") return undefined;
+  return (fn as TraceTaggedFn)[ATOM_TRACE_KIND];
+}
+
+function registerPromptAtom(meta: AtomTraceMeta, kind: AtomTraceKind): void {
+  registeredPromptAtoms.set(meta.atomId, {
+    atomId: meta.atomId,
+    source: meta.source,
+    exportName: meta.exportName,
+    kind,
+  });
+}
+
 function runRecordedCall<TInput, TOutput>(
   meta: AtomTraceMeta,
+  kind: PromptAtomKind,
   input: TInput,
   invoke: (input: TInput) => TOutput,
   outputCharsEstimator: (output: TOutput | undefined) => number,
@@ -168,6 +190,7 @@ function runRecordedCall<TInput, TOutput>(
       atomId: meta.atomId,
       source: meta.source,
       exportName: meta.exportName,
+      kind,
       parentId,
       argsHash: hashArgs(input),
       outputChars,
@@ -195,9 +218,10 @@ function createTraceRuntime(): PromptTraceRuntime {
       second?: AtomLikeFn<TInput> | TInput,
       third?: TInput,
     ): string {
-      let meta: AtomTraceMeta | undefined;
+      let meta: AtomTraceMeta;
       let atomFn: AtomLikeFn<TInput>;
       let input: TInput | undefined;
+      let kind: PromptAtomKind;
 
       if (typeof first === "function") {
         atomFn = first;
@@ -209,17 +233,21 @@ function createTraceRuntime(): PromptTraceRuntime {
         }
 
         meta = inferRecordMeta(atomFn as AtomLikeFn<unknown>);
+        kind = "inline";
       } else {
         meta = first;
         atomFn = second as AtomLikeFn<TInput>;
         input = third;
+        kind = getTraceKind(atomFn as AtomLikeFn<unknown>) ?? "inline";
       }
 
       return runRecordedCall(
         meta,
+        kind,
         input as TInput,
         (value) => atomFn(value) ?? "",
-        (output) => (typeof output === "string" ? output.length : inferOutputChars(output)),
+        (output) =>
+          typeof output === "string" ? output.length : inferOutputChars(output),
       );
     },
 
@@ -251,6 +279,18 @@ export function getLatestPromptTrace(promptId: string): PromptTrace | undefined 
 
 export function getPromptTraceHistory(): PromptTrace[] {
   return [...promptTraceHistory];
+}
+
+export function getRegisteredPromptAtoms(): RegisteredPromptAtom[] {
+  return [...registeredPromptAtoms.values()].sort((left, right) =>
+    left.atomId.localeCompare(right.atomId),
+  );
+}
+
+export function getRegisteredPromptAtom(
+  atomId: string,
+): RegisteredPromptAtom | undefined {
+  return registeredPromptAtoms.get(atomId);
 }
 
 export function runPromptWithTrace<T>(promptId: string, renderFn: () => T): T {
@@ -299,12 +339,16 @@ export function defineAtom<TInput>(
   meta: AtomTraceMeta,
   fn: (input: TInput, trace: PromptTraceRuntime) => string,
 ): (input: TInput) => string {
+  registerPromptAtom(meta, "atom");
+
   const wrapped = (input: TInput) =>
     runRecordedCall(
       meta,
+      "atom",
       input,
       (value) => fn(value, createTraceRuntime()) ?? "",
-      (output) => (typeof output === "string" ? output.length : inferOutputChars(output)),
+      (output) =>
+        typeof output === "string" ? output.length : inferOutputChars(output),
     );
 
   return attachTraceMeta(wrapped, meta, "atom");
@@ -314,9 +358,12 @@ export function defineSkillAtom<TInput>(
   meta: AtomTraceMeta,
   fn: (input: TInput, trace: PromptTraceRuntime) => SkillOutput,
 ): (input: TInput) => SkillOutput {
+  registerPromptAtom(meta, "skill");
+
   const wrapped = (input: TInput) =>
     runRecordedCall(
       meta,
+      "skill",
       input,
       (value) => fn(value, createTraceRuntime()),
       (output) => (output ? estimateSkillOutputChars(output) : 0),

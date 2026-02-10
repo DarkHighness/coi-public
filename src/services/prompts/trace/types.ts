@@ -1,14 +1,24 @@
+export type PromptAtomKind = "atom" | "skill" | "inline";
+
 export interface AtomCallTrace {
   id: string;
   atomId: string;
   source: string;
   exportName: string;
+  kind: PromptAtomKind;
   parentId?: string;
   argsHash: string;
   outputChars: number;
   included: boolean;
   startedAt: number;
   endedAt: number;
+}
+
+export interface RegisteredPromptAtom {
+  atomId: string;
+  source: string;
+  exportName: string;
+  kind: Exclude<PromptAtomKind, "inline">;
 }
 
 export interface PromptSectionTrace {
@@ -55,4 +65,3 @@ export interface PromptAtomGraph {
   atomNodes: PromptAtomGraphNode[];
   promptEntries: PromptEntryGraphNode[];
 }
-
