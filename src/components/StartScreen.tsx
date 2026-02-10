@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
-import { THEMES, ENV_THEMES } from "../utils/constants";
+import { THEMES } from "../utils/constants";
 import { ThemeSelector } from "./ThemeSelector";
 import { CustomGameModal } from "./CustomGameModal";
 import { CustomContextModal } from "./CustomContextModal";
@@ -247,8 +247,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   };
 
   // Dynamic background style
-  const activeThemeVar =
-    ENV_THEMES["fantasy"]?.vars["--theme-primary"] || "#f59e0b";
+  const activeThemeVar = "#ffffff";
   const isNightMode =
     themeMode === "night" || (themeMode === "system" && prefersDark);
   const panelToneClass = isNightMode
@@ -298,8 +297,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     ? "bg-black/78 backdrop-blur-[1.5px]"
     : "bg-black/42 backdrop-blur-[0.5px]";
   const heroOverlayAccentClass = isNightMode
-    ? "bg-[radial-gradient(circle_at_26%_22%,rgba(255,255,255,0.10),transparent_36%),radial-gradient(circle_at_74%_24%,rgba(251,191,36,0.16),transparent_46%),radial-gradient(circle_at_50%_72%,rgba(15,23,42,0.34),transparent_72%)]"
-    : "bg-[radial-gradient(circle_at_24%_22%,rgba(255,255,255,0.20),transparent_35%),radial-gradient(circle_at_74%_22%,rgba(251,191,36,0.22),transparent_48%),radial-gradient(circle_at_50%_76%,rgba(15,23,42,0.24),transparent_74%)]";
+    ? "bg-[radial-gradient(circle_at_26%_22%,rgba(255,255,255,0.10),transparent_36%),radial-gradient(circle_at_74%_24%,rgba(255,255,255,0.16),transparent_46%),radial-gradient(circle_at_50%_72%,rgba(15,23,42,0.34),transparent_72%)]"
+    : "bg-[radial-gradient(circle_at_24%_22%,rgba(255,255,255,0.20),transparent_35%),radial-gradient(circle_at_74%_22%,rgba(255,255,255,0.22),transparent_48%),radial-gradient(circle_at_50%_76%,rgba(15,23,42,0.24),transparent_74%)]";
   const heroOverlayDustClass = isNightMode
     ? "opacity-32 mix-blend-screen"
     : "opacity-62 mix-blend-screen";
@@ -371,7 +370,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             <div
               className={`relative mx-auto w-full ${heroLogoSizeClass} animate-fade-in`}
             >
-              <div className="absolute -inset-2 rounded-[50%] bg-[radial-gradient(circle,rgba(251,191,36,0.12),rgba(251,191,36,0.03)_52%,transparent_74%)] blur-xl"></div>
+              <div className="absolute -inset-2 rounded-[50%] bg-[radial-gradient(circle,rgba(255,255,255,0.12),rgba(255,255,255,0.03)_52%,transparent_74%)] blur-xl"></div>
               <div className="relative z-10 isolate overflow-visible">
                 <div className="absolute inset-[9%] rounded-[48%] bg-[radial-gradient(ellipse_at_50%_64%,rgba(0,0,0,0.32),rgba(0,0,0,0.08)_42%,transparent_68%)] blur-lg"></div>
                 <img

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSettings } from "../../hooks/useSettings";
 import { useImageStorageContext } from "../../contexts/ImageStorageContext";
+import { getButterflyColor } from "./butterflyColors";
 
 interface Butterfly {
   id: number;
@@ -52,7 +53,7 @@ export const ButterflyBackground: React.FC = () => {
         rotation: Math.random() * 360,
         duration: 15 + Math.random() * 15, // Slower: 15-30s
         delay: Math.random() * -30,
-        color: Math.random() > 0.5 ? "#ffd700" : "#ffffff", // Gold or White
+        color: getButterflyColor(i), // White or Bright Blue
       });
     }
     setButterflies(newButterflies);

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { getButterflyColor } from "./butterflyColors";
 
 interface Butterfly {
   id: number;
@@ -100,7 +101,7 @@ export const InitializingButterflies: React.FC<
           rotation: Math.random() * 360,
           duration: 12 + Math.random() * 18,
           delay: Math.random() * -20,
-          color: Math.random() > 0.5 ? "#ffd700" : "#ffffff",
+          color: getButterflyColor(i),
         });
       }
       setButterflies([...butterflies, ...newButterflies]);
@@ -121,9 +122,6 @@ export const InitializingButterflies: React.FC<
     }
   }, [isComplete, finaleTriggered]);
 
-  // Colors based on theme
-  const butterflyColors = ["#ffd700", "#ffffff", "#f8b4d9", "#7dd3fc"];
-
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-1">
       {butterflies.map((b) => (
@@ -142,9 +140,7 @@ export const InitializingButterflies: React.FC<
                 height="24"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                style={{
-                  color: butterflyColors[b.id % butterflyColors.length],
-                }}
+                style={{ color: b.color }}
               >
                 {/* Body */}
                 <path
