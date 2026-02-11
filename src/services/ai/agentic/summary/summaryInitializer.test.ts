@@ -29,7 +29,7 @@ describe("summaryInitializer", () => {
     const allowed = new Set(VFS_TOOLSETS.summary.tools);
     expect(state.activeTools.length).toBeGreaterThan(0);
     expect(state.activeTools.every((tool) => allowed.has(tool.name))).toBe(true);
-    expect(state.activeTools.some((tool) => tool.name === "vfs_finish_summary")).toBe(
+    expect(state.activeTools.some((tool) => tool.name === "vfs_commit_summary")).toBe(
       true,
     );
 

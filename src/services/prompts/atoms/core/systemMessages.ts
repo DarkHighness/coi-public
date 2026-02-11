@@ -79,7 +79,7 @@ This is a **GM COMMAND**. You must:
    ${PERMISSION_MODEL_BLOCK}
 6. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
 7. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
-8. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
+8. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\`.
 9. ${CONVERSATION_GUARD_LINE}
 `;
 });
@@ -107,19 +107,20 @@ You are in AGENTIC MODE (VFS-only).
    ${PATH_MODEL_BLOCK}
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
-5. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_stat\`, \`vfs_glob\`, \`vfs_read\`/\`vfs_read_many\` (optionally with \`start\`+\`offset\` or \`maxChars\`), \`vfs_read_json\` (for specific fields), \`vfs_search\`, \`vfs_grep\` before changing files.
+5. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\` (chars/lines/json), and \`vfs_search\` before changing files.
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
-6. **STATE CHANGES = FILE CHANGES**: Update world JSON under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) with \`vfs_write\` or \`vfs_edit\` (JSON Patch).
-7. **FINISH RULE**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op.
-8. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
-9. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
-10. **NO DUPLICATES**: Check existing files before adding new entities.
-11. **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly.
+6. **STATE CHANGES = FILE CHANGES**: Update world JSON under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) with \`vfs_write\` using \`write_file\` / \`patch_json\` / \`merge_json\`.
+7. **FINISH RULE**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
+8. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required for same-response mutations. Read-only-then-finish batches are treated as waste.
+9. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
+10. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
+11. **NO DUPLICATES**: Check existing files before adding new entities.
+12. **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly.
 
 <examples>
 - Example (inspect → edit → finish):
   1) \`vfs_search\` within \`current/world/\` (or canonical fork world path) for a name/ID
-  2) \`vfs_edit\` to patch the exact JSON pointer(s)
+  2) \`vfs_write\` to patch the exact JSON pointer(s)
   3) \`${finishToolName || "vfs_commit_turn"}\` with { userAction, assistant: { narrative, choices } } as the LAST call
 </examples>
 `;
@@ -148,16 +149,17 @@ You are in CLEANUP MODE (VFS-only).
    ${PATH_MODEL_BLOCK}
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
-5. **READ-ONLY FIRST**: Use \`vfs_ls_entries\` / \`vfs_suggest_duplicates\` / \`vfs_search\` / \`vfs_grep\` / \`vfs_read_json\` to locate and verify.
-6. **APPLY FIXES**: Use \`vfs_edit\` (JSON Patch) / \`vfs_merge\` / \`vfs_move\` / \`vfs_delete\` as needed.
-7. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\` (or \`vfs_tx\` with \`commit_turn\` as the LAST op).
-8. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
+5. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read\` to locate and verify duplicate candidates.
+6. **APPLY FIXES**: Use \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` as needed.
+7. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
+8. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish without applying mutations in the same response.
+9. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 
 <examples>
 - Example (find duplicates → fix → finish):
-  1) \`vfs_ls_entries\` for ["npcs", "quests"] to see candidates
-  2) \`vfs_suggest_duplicates\` for category "npcs" to get groups
-  3) \`vfs_edit\` / \`vfs_merge\` / \`vfs_move\` / \`vfs_delete\` to resolve
+  1) \`vfs_ls\`/ \`vfs_search\` to gather candidate files
+  2) \`vfs_read\` each candidate to verify duplicates
+  3) \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` to resolve
   4) \`${finishToolName || "vfs_commit_turn"}\` as the LAST call
 </examples>
 `;
@@ -188,10 +190,10 @@ export const retconAckRequiredMessage: Atom<RetconAckSystemMessageInput> = defin
   pendingHash,
   pendingReason,
 }) =>
-  `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- hash: "${pendingHash}"\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.\nUse \`vfs_commit_turn\` or \`vfs_tx\`(last op \`commit_turn\`) with matching \`retconAck.hash\`.`);
+  `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- hash: "${pendingHash}"\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.\nUse \`vfs_commit_turn\` with matching \`retconAck.hash\`.`);
 
 /**
  * No Tool Call Error Message
  */
 export const noToolCallError: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#noToolCallError", source: "atoms/core/systemMessages.ts", exportName: "noToolCallError" }, () =>
-  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op. Bare text is not allowed.`);
+  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`vfs_commit_turn\` as the LAST tool call. Bare text is not allowed.`);

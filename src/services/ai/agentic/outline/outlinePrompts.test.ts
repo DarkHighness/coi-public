@@ -44,10 +44,10 @@ describe("outlinePrompts", () => {
   });
 
   it("routes each phase to corresponding prompt builder", () => {
-    expect(getPhasePrompt(0, "th", "en", "vfs_submit_outline_phase_0")).toBe("p0");
+    expect(getPhasePrompt(0, "th", "en", "vfs_commit_outline_phase_0")).toBe("p0");
     expect(promptsMock.getOutlinePhase0Prompt).toHaveBeenCalledWith(
       "en",
-      "vfs_submit_outline_phase_0",
+      "vfs_commit_outline_phase_0",
     );
 
     expect(
@@ -55,7 +55,7 @@ describe("outlinePrompts", () => {
         1,
         "th",
         "zh",
-        "vfs_submit_outline_phase_1",
+        "vfs_commit_outline_phase_1",
         "ctx",
         true,
         "feat",
@@ -67,7 +67,7 @@ describe("outlinePrompts", () => {
       "ctx",
       true,
       "feat",
-      "vfs_submit_outline_phase_1",
+      "vfs_commit_outline_phase_1",
     );
 
     expect(
@@ -75,7 +75,7 @@ describe("outlinePrompts", () => {
         2,
         "th",
         "en",
-        "vfs_submit_outline_phase_2",
+        "vfs_commit_outline_phase_2",
         "ctx2",
         false,
         "hero",
@@ -87,7 +87,7 @@ describe("outlinePrompts", () => {
       "ctx2",
       false,
       "hero",
-      "vfs_submit_outline_phase_2",
+      "vfs_commit_outline_phase_2",
     );
 
     expect(
@@ -95,7 +95,7 @@ describe("outlinePrompts", () => {
         3,
         "th",
         "en",
-        "vfs_submit_outline_phase_3",
+        "vfs_commit_outline_phase_3",
         undefined,
         false,
         "hero",
@@ -103,26 +103,26 @@ describe("outlinePrompts", () => {
     ).toBe("p3");
     expect(promptsMock.getOutlinePhase2Prompt).toHaveBeenCalledWith(
       "hero",
-      "vfs_submit_outline_phase_3",
+      "vfs_commit_outline_phase_3",
     );
 
-    expect(getPhasePrompt(4, "th", "en", "vfs_submit_outline_phase_4")).toBe(
+    expect(getPhasePrompt(4, "th", "en", "vfs_commit_outline_phase_4")).toBe(
       "p4",
     );
     expect(promptsMock.getOutlinePhase3Prompt).toHaveBeenCalledWith(
-      "vfs_submit_outline_phase_4",
+      "vfs_commit_outline_phase_4",
     );
 
-    expect(getPhasePrompt(5, "th", "en", "vfs_submit_outline_phase_5")).toBe(
+    expect(getPhasePrompt(5, "th", "en", "vfs_commit_outline_phase_5")).toBe(
       "p5",
     );
-    expect(getPhasePrompt(6, "th", "en", "vfs_submit_outline_phase_6")).toBe(
+    expect(getPhasePrompt(6, "th", "en", "vfs_commit_outline_phase_6")).toBe(
       "p6",
     );
-    expect(getPhasePrompt(7, "th", "en", "vfs_submit_outline_phase_7")).toBe(
+    expect(getPhasePrompt(7, "th", "en", "vfs_commit_outline_phase_7")).toBe(
       "p7",
     );
-    expect(getPhasePrompt(8, "th", "en", "vfs_submit_outline_phase_8")).toBe(
+    expect(getPhasePrompt(8, "th", "en", "vfs_commit_outline_phase_8")).toBe(
       "p8",
     );
 
@@ -131,18 +131,18 @@ describe("outlinePrompts", () => {
         9,
         "th",
         "en",
-        "vfs_submit_outline_phase_9",
+        "vfs_commit_outline_phase_9",
         undefined,
         true,
       ),
     ).toBe("p9");
     expect(promptsMock.getOutlinePhase9Prompt).toHaveBeenCalledWith(
       true,
-      "vfs_submit_outline_phase_9",
+      "vfs_commit_outline_phase_9",
     );
   });
 
   it("returns null for unknown phases", () => {
-    expect(getPhasePrompt(99, "th", "en", "vfs_submit_outline_phase_99")).toBeNull();
+    expect(getPhasePrompt(99, "th", "en", "vfs_commit_outline_phase_99")).toBeNull();
   });
 });

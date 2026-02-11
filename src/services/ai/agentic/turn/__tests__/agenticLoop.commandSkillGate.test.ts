@@ -165,7 +165,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_edit",
+          name: "vfs_write",
           args: { edits: [] },
         },
       ],
@@ -206,7 +206,7 @@ describe("agenticLoop command skill gate", () => {
         functionCalls: [
           {
             id: "call-2-edit",
-            name: "vfs_edit",
+            name: "vfs_write",
             args: { edits: [] },
           },
         ],
@@ -248,7 +248,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_edit",
+          name: "vfs_write",
           args: { edits: [] },
         },
         {
@@ -302,7 +302,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-cross-fork-read",
-          name: "vfs_read_json",
+          name: "vfs_read",
           args: { path: "conversation/turns/fork-3/turn-1.json" },
         },
       ],
@@ -339,7 +339,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_edit",
+          name: "vfs_write",
           args: { edits: [] },
         },
       ],

@@ -242,7 +242,7 @@ describe("messageTypes", () => {
         tool_calls: [
           {
             id: "call_5",
-            function: { name: "vfs_stat", arguments: '{"path":"x"}' },
+            function: { name: "vfs_ls", arguments: '{"path":"x"}' },
             extra_content: { google: { thought_signature: "sig-5" } },
           },
         ],
@@ -250,7 +250,7 @@ describe("messageTypes", () => {
       {
         role: "tool",
         tool_call_id: "call_5",
-        name: "vfs_stat",
+        name: "vfs_ls",
         content: "ok",
       },
       {
@@ -267,7 +267,7 @@ describe("messageTypes", () => {
           type: "tool_use",
           toolUse: {
             id: "call_5",
-            name: "vfs_stat",
+            name: "vfs_ls",
             args: { path: "x" },
             thoughtSignature: "sig-5",
           },
@@ -282,7 +282,7 @@ describe("messageTypes", () => {
           type: "tool_result",
           toolResult: {
             id: "call_5",
-            name: "vfs_stat",
+            name: "vfs_ls",
             content: "ok",
           },
         },

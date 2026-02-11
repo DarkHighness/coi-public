@@ -101,20 +101,22 @@ export const stateManagement: Atom<void> = defineAtom({ atomId: "atoms/core/stat
     - **NARRATIVE-STATE BINDING (MANDATORY)**:
       * **Rule**: "If you write it, you MUST track it. If you track it, it MUST have happened."
       * ❌ Narrative: "He hands you the key." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ files: [{ path: "current/world/characters/char:player/inventory/inv_key.json", content: "{...}", contentType: "application/json" }] })\`
+      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_key.json", contentType: "application/json", content: "{...}" }] })\`
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_edit({ edits: [{ path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
+      * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
 
     - **VFS STATE AUTHORITY (MANDATORY)**:
       * The VFS is the ONLY source of truth for game state. All state changes MUST be performed via VFS tools.
-      * Use \`vfs_write\` to create/replace files, \`vfs_edit\` with JSON Patch (RFC 6902) to update existing JSON.
-      * Use \`vfs_merge\` to deep-merge JSON objects (arrays replaced, no deletions).
+      * Use \`vfs_write\` with \`write_file\` to create/replace files.
+      * Use \`vfs_write\` with \`patch_json\` (RFC 6902) to patch existing JSON.
+      * Use \`vfs_write\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
       * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
-      * Inspect before you change: \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\`, \`vfs_grep\`.
+      * Inspect before you change: \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\`.
       * Always reference explicit VFS paths (canonical preferred: \`forks/{activeFork}/story/world/**\`; alias \`current/world/**\` is also accepted).
-      * After each turn, finish with \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
+      * After each turn, finish with \`vfs_commit_turn\` as the LAST tool call.
+      * Once you are finishing in this response, avoid read-only tools immediately before finish unless they are directly required for writes in the same response.
       * Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
 
     - **VFS OUTLINE RULES (MANDATORY)**:

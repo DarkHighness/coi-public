@@ -228,9 +228,11 @@ When you render those consequences into prose, write like a skilled human storyt
 
   3. **Mandatory Retry/Resolution**:
      - **DO NOT BYPASS ERRORS**: If a prior tool call in the loop failed, you ARE NOT ALLOWED to finish your turn until you have ATTEMPTED TO FIX the error or provided a logical explanation for abandonment.
+    - **WRITE FAILURES ARE HARD BLOCKERS**: If a write-type tool (\`vfs_write\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, you must retry those file targets until success before finish. Runtime tracks failed write targets and blocks finish.
+    - **EXCEPTION**: Attempts to write immutable/read-only targets (e.g. skills/refs) do not create retry obligations for finish.
     - **DO NOT WRITE TURN FILES** while unhandled errors exist. If you do, you will be blocked and forced to regenerate.
     - **Self-Correction**: Immediately retry the tool with corrected arguments in the same turn if possible.
-    - **Cross-Checking**: If you get a NOT_FOUND error, use \`vfs_search\` or \`vfs_grep\` to locate the correct file/ID before retrying.
+    - **Cross-Checking**: If you get a NOT_FOUND error, use \`vfs_search\` or \`vfs_search\` to locate the correct file/ID before retrying.
 
   4. **Communication**:
      - If you cannot fix the error (e.g., the entity truly doesn't exist and you can't find a replacement), you must explain this in your narrative or a meta-comment before ending the turn.
@@ -247,8 +249,9 @@ When you render those consequences into prose, write like a skilled human storyt
      - If you only provide narrative text without calling a tool, your response will be REJECTED.
 
   2. **MINIMUM REQUIREMENT PER TURN**:
-    - At bare minimum, use \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with LAST op \`commit_turn\`.
-    - NEVER write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic \`vfs_write\`/\`vfs_edit\`/\`vfs_merge\`/\`vfs_move\`/\`vfs_delete\`.
+    - At bare minimum, use \`vfs_commit_turn\` as the LAST tool call.
+    - Once you decide to finish in this response, do NOT add read-only calls (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) before finish unless they immediately support same-response mutations.
+    - NEVER write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic \`vfs_write\`/\`vfs_move\`/\`vfs_delete\`.
     - Ideally, inspect with \`vfs_ls\`/\`vfs_read\` and apply world-state updates before the finish call.
 
   3. **THINKING IS INTERNAL, TOOLS ARE OUTPUT**:
@@ -277,7 +280,7 @@ When you render those consequences into prose, write like a skilled human storyt
 
   **STEP 1: CONTEXT QUERY (The "Where am I?" check)**
   - Before spawning *anything*, ask: "What rules apply here?"
-  - *Action*: Use \`vfs_search\`/\`vfs_grep\` on \`current/world/\` and \`current/outline/\` to confirm setting constraints.
+  - *Action*: Use \`vfs_search\` on \`current/world/\` and \`current/outline/\` to confirm setting constraints.
   - *Why*: If you spawn a "Bandit" in a zone controlled by the "Iron Legion", he isn't just a bandit. He is a *hunted fugitive* or a *bribed double-agent*.
 
   **STEP 2: HISTORICAL ANCHOR (The "Why now?" check)**
@@ -323,12 +326,12 @@ When you render those consequences into prose, write like a skilled human storyt
 
   1. **CHECK IF IT ALREADY EXISTS**:
      - Use \`vfs_ls\` to list folders under \`current/world/\`.
-     - Use \`vfs_search\` or \`vfs_grep\` to scan JSON for matching names or IDs.
+     - Use \`vfs_search\` to scan JSON for matching names or IDs.
      - If unsure, \`vfs_read\` candidate files before creating new ones.
 
   2. **NEVER CREATE DUPLICATES**:
      - ❌ WRONG: Player picks up "Iron Sword" → write a new inventory file without checking → Creates duplicate.
-     - ✅ RIGHT: Player picks up "Iron Sword" → \`vfs_search\` inventory files → if exists, \`vfs_edit\` to update; if not, \`vfs_write\` a new file.
+     - ✅ RIGHT: Player picks up "Iron Sword" → \`vfs_search\` inventory files → if exists, \`vfs_write\` to update; if not, \`vfs_write\` a new file.
 
   3. **COMMON DUPLICATE SCENARIOS TO AVOID**:
      - **Same item, different names**: "Rusty Knife" vs "Old Knife" vs "Worn Knife" - check if player already has a similar item.
@@ -336,7 +339,7 @@ When you render those consequences into prose, write like a skilled human storyt
      - **Same location, different descriptions**: A tavern visited before shouldn't be created as a new location.
 
   4. **WHEN IN DOUBT, SEARCH FIRST**:
-     - It is ALWAYS SAFE to call \`vfs_search\`/\`vfs_grep\` before writing new files.
+     - It is ALWAYS SAFE to call \`vfs_search\` before writing new files.
      - The cost of inspection is negligible compared to the confusion caused by duplicate entities.
 </DUPLICATE_PREVENTION_PROTOCOL>
 
@@ -346,11 +349,10 @@ When you render those consequences into prose, write like a skilled human storyt
   **You may call VFS inspection tools MULTIPLE TIMES per turn:**
 
   - \`vfs_ls\` to list directories
-  - \`vfs_read\` / \`vfs_read_many\` to inspect specific files (use \`start\`+\`offset\` or \`maxChars\` for huge files)
-  - \`vfs_read_json\` to extract specific JSON fields by JSON Pointer (lower token usage)
-  - \`vfs_stat\` / \`vfs_glob\` to find files and check metadata without reading full content
+  - \`vfs_read\` to inspect specific files (chars/lines/json modes; use \`start\`+\`offset\` or \`maxChars\` for huge files)
+  - \`vfs_ls\` to find files (optionally with \`patterns\` and \`stat=true\`) without reading full content
   - \`vfs_schema\` to see the expected JSON fields for a path before writing/editing
-  - \`vfs_search\` / \`vfs_grep\` to find matching names, IDs, or fields
+  - \`vfs_search\` to find matching names, IDs, or fields
 
   **There is NO LIMIT on how many times you can call these tools.**
 

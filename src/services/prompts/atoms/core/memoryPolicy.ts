@@ -37,29 +37,21 @@ const globalNotes = `
 
       ❌ DO NOT LEAVE CANONICAL FACTS ONLY IN NOTES:
       - If a fact is stable and can be expressed structurally, write it back into the appropriate entity JSON using
-        \`vfs_edit\` / \`vfs_merge\` / \`vfs_write\`.
+        \`vfs_write\` (\`write_file\` / \`patch_json\` / \`merge_json\`).
       - Notes are not the canonical world state; they are a scratch pad.
     </when_to_use>
 
     <read_write_protocol>
       **IMPORTANT (tool-seen constraints):**
       - Existing files must be read before mutation in the current session epoch.
-      - Prefer \`vfs_append\` for additive updates (fast + safe, no full rewrite):
-        - \`vfs_append({ appends: [{ path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
+      - Prefer \`vfs_write\` + \`append_text\` for additive updates (fast + safe, no full rewrite):
+        - \`vfs_write({ ops: [{ op: "append_text", path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
         - If the file already exists, you MUST \`vfs_read\` it first (read-before-mutate).
         - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
       - For non-additive changes, use read → modify → write:
         1) \`vfs_read\` the notes file
-        2) Then \`vfs_write\` the updated full markdown content (read → modify → write)
-      - If it does not exist, you may \`vfs_write\` to create it.
-      - For marker/regex edits without manual full rewrites, use \`vfs_text_edit\`:
-        - Use marker-based ops (insert/replace-between), line-based ops, and fall back to regex ops when needed.
-        - If the file already exists, you MUST \`vfs_read\` it first (read-before-mutate).
-        - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
-      - For full-body replacements, use \`vfs_text_patch\`:
-        - Existing files: MUST \`vfs_read\` first, then patch with exact \`base\` -> \`next\`.
-        - New files: use empty \`base\` with \`createIfMissing: true\`.
-      - Do NOT use \`vfs_edit\` for notes (it is JSON Patch only).
+        2) Then \`vfs_write\` with \`edit_lines\` or \`write_file\` for the updated markdown content
+      - If it does not exist, you may \`vfs_write\` (\`write_file\`) to create it.
     </read_write_protocol>
 
     <compact_bootstrap>
@@ -67,7 +59,7 @@ const globalNotes = `
       1. \`vfs_read path="forks/{activeFork}/story/summary/state.json"\` (or alias \`current/summary/state.json\`)
       2. \`vfs_read path="forks/{activeFork}/story/world/global.json"\` (or alias \`current/world/global.json\`)
       3. \`vfs_read path="current/world/notes.md"\` (if present)
-      4. If more notes are needed, \`vfs_glob patterns=["current/**/notes.md"]\`, then read only relevant files.
+      4. If more notes are needed, \`vfs_ls patterns=["current/**/notes.md"]\`, then read only relevant files.
 
       **CANONICAL VS NOTES**:
       - Stable facts belong in structured JSON.
@@ -78,7 +70,7 @@ const globalNotes = `
       **AVOID FULL SCANS**:
       - Start with \`vfs_read path="current/world/notes.md"\` (if present).
       - When you need related entity notes, use:
-        - \`vfs_glob patterns=["current/**/notes.md"]\`
+        - \`vfs_ls patterns=["current/**/notes.md"]\`
       - Then \`vfs_read\` only the relevant notes files.
     </search_strategy>
 
@@ -112,7 +104,7 @@ const memoryQuery = `
 
     **AVAILABLE VFS TOOLS** (use in the SEARCH stage):
     - \`vfs_search\`: Search across \`forks/{activeFork}/story/conversation/turns/\` (alias: \`current/conversation/turns/\`) for keywords.
-    - \`vfs_grep\`: Regex search for precise phrases or names.
+    - \`vfs_search\`: Regex search for precise phrases or names.
     - \`vfs_read\`: Read specific turn files or \`shared/narrative/conversation/index.json\` (alias: \`current/conversation/index.json\`) to confirm ordering.
 
     <continuity_awareness>
@@ -162,7 +154,7 @@ const memoryQuery = `
       - **Internal Check**: Quietly verify against entity files when details are crucial.
       - **Conflict**: If files differ from summary, **TRUST FILES** and narrate the correction subtly.
       - **Ambiguity**: If unsure, search the story directly rather than guessing.
-      - **Sync**: If narrative changes a key fact (e.g. injury), update the relevant file via \`vfs_edit\`.
+      - **Sync**: If narrative changes a key fact (e.g. injury), update the relevant file via \`vfs_write\`.
     </consistency_hierarchy>
   </rule>
 `;

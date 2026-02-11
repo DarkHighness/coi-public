@@ -56,7 +56,7 @@ const errorRecovery = `
   4. Do NOT finish the turn while errors remain unhandled
 
   **Self-Correction**:
-  - If NOT_FOUND, use \`vfs_search\`/\`vfs_grep\` to find the correct entity file
+  - If NOT_FOUND, use \`vfs_search\`/\`vfs_search\` to find the correct entity file
   - If VALIDATION_ERROR, check the required fields and types
   - If you cannot fix, explain in narrative why
 </error_recovery_protocol>
@@ -70,7 +70,7 @@ const toolMandate = `
   Reasoning alone produces nothing. Tools produce results.
 
   **Minimum Requirement**:
-  At least call \`vfs_commit_turn\` (or \`vfs_tx\` with LAST op \`commit_turn\`). Ideally: inspect → update → finish.
+  At least call \`vfs_commit_turn\`. Ideally: inspect → update → finish.
 
   **Banned Patterns**:
   - ❌ Response with only text (no tool calls)
@@ -78,7 +78,7 @@ const toolMandate = `
   - ❌ Empty response
 
   **Inspection Tools Are Free**:
-  Call \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_grep\` as many times as needed.
+  Call \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_search\` as many times as needed.
   Before writing new entity files, always search first to prevent duplicates.
 </tool_protocol>
 `;

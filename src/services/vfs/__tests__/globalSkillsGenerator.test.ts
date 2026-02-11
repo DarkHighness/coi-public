@@ -103,7 +103,7 @@ describe("VFS global skills generator", () => {
     expect(commandSudoRef).toContain("Coverage Audit for /sudo");
     expect(commandSummary).toContain("name: commands-summary");
     expect(commandSummary).toContain("query_summary");
-    expect(commandSummary).toContain("vfs_finish_summary");
+    expect(commandSummary).toContain("vfs_commit_summary");
     expect(commandCompact).toContain("name: commands-compact");
     expect(commandCompact).toContain("session_compact");
     expect(commandCompact).toContain("current session history in context");

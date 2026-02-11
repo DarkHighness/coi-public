@@ -31,14 +31,10 @@ import { THEMES } from "../../../../utils/constants";
 
 import {
   VFS_LS_TOOL,
-  VFS_STAT_TOOL,
-  VFS_GLOB_TOOL,
+  VFS_SCHEMA_TOOL,
   VFS_READ_TOOL,
-  VFS_READ_MANY_TOOL,
-  VFS_READ_JSON_TOOL,
   VFS_SEARCH_TOOL,
-  VFS_GREP_TOOL,
-  VFS_SUBMIT_OUTLINE_PHASE_TOOLS,
+  VFS_COMMIT_OUTLINE_PHASE_TOOLS,
 } from "../../../tools";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { normalizeVfsPath } from "../../../vfs/utils";
@@ -160,13 +156,9 @@ export interface PhasedOutlineOptions {
 
 const READ_ONLY_VFS_TOOL_DEFS: ZodToolDefinition[] = [
   VFS_LS_TOOL,
-  VFS_STAT_TOOL,
-  VFS_GLOB_TOOL,
+  VFS_SCHEMA_TOOL,
   VFS_READ_TOOL,
-  VFS_READ_MANY_TOOL,
-  VFS_READ_JSON_TOOL,
   VFS_SEARCH_TOOL,
-  VFS_GREP_TOOL,
 ];
 
 const READ_ONLY_VFS_TOOL_NAMES = new Set(
@@ -178,7 +170,7 @@ const OUTLINE_PHASE_READ_ROOTS = [
   "shared/narrative/outline/phases",
 ];
 
-const OUTLINE_SUBMIT_TOOL_DEFS = [...VFS_SUBMIT_OUTLINE_PHASE_TOOLS];
+const OUTLINE_SUBMIT_TOOL_DEFS = [...VFS_COMMIT_OUTLINE_PHASE_TOOLS];
 const OUTLINE_SUBMIT_TOOL_NAMES = new Set(
   OUTLINE_SUBMIT_TOOL_DEFS.map((t) => t.name),
 );
@@ -186,7 +178,7 @@ const OUTLINE_SUBMIT_TOOL_NAMES = new Set(
 const getOutlineSubmitToolByPhase = (phase: number): ZodToolDefinition => {
   const tool = OUTLINE_SUBMIT_TOOL_DEFS[phase];
   if (!tool) {
-    throw new Error(`Outline phase submit tool is missing for phase ${phase}`);
+    throw new Error(`Outline phase commit tool is missing for phase ${phase}`);
   }
   return tool;
 };
@@ -267,7 +259,7 @@ const buildOutlineResumeAnchor = (
   partial: PartialStoryOutline,
 ): string => {
   const safeCurrentPhase = Math.max(0, Math.min(9, Math.floor(currentPhase)));
-  const currentSubmitTool = `vfs_submit_outline_phase_${safeCurrentPhase}`;
+  const currentSubmitTool = `vfs_commit_outline_phase_${safeCurrentPhase}`;
 
   const completedPhaseNumbers = Array.from({ length: 10 }, (_, idx) => idx).filter(
     (phaseNum) =>
@@ -353,9 +345,56 @@ const validateOutlineReadOnlyVfsArgs = (
 
   if (toolName === "vfs_ls") {
     const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
-    if (!path) return reject("vfs_ls requires a path (root listing is disabled)");
-    if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
+    const patterns = Array.isArray((args as any)?.patterns)
+      ? (args as any).patterns
+      : null;
+    if (!path && (!patterns || patterns.length === 0)) {
+      return reject("vfs_ls requires path or patterns (root listing is disabled)");
+    }
+
+    if (path && !isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
       return reject(`vfs_ls path="${path}"`);
+    }
+
+    if (patterns) {
+      for (const pattern of patterns) {
+        if (typeof pattern !== "string") {
+          return reject("vfs_ls patterns[] must be strings");
+        }
+        const root = extractGlobRoot(pattern);
+        if (!root) return reject(`vfs_ls pattern="${pattern}" has no static root`);
+        if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
+          return reject(`vfs_ls pattern="${pattern}" (root="${root}")`);
+        }
+      }
+    }
+
+    const excludePatterns = Array.isArray((args as any)?.excludePatterns)
+      ? (args as any).excludePatterns
+      : null;
+    if (excludePatterns) {
+      for (const pattern of excludePatterns) {
+        if (typeof pattern !== "string") {
+          return reject("vfs_ls excludePatterns[] must be strings");
+        }
+        const root = extractGlobRoot(pattern);
+        if (!root) return reject(`vfs_ls excludePattern="${pattern}" has no static root`);
+        if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
+          return reject(`vfs_ls excludePattern="${pattern}" (root="${root}")`);
+        }
+      }
+    }
+    return null;
+  }
+
+  if (toolName === "vfs_schema") {
+    const paths = Array.isArray((args as any)?.paths) ? (args as any).paths : [];
+    if (paths.length === 0) return reject("vfs_schema requires paths[]");
+    const bad = paths.find(
+      (p: unknown) => typeof p !== "string" || !isAllowedOutlineReadOnlyPath(p, allowPrefixes),
+    );
+    if (bad) {
+      return reject(`vfs_schema includes disallowed path="${String(bad)}"`);
     }
     return null;
   }
@@ -369,75 +408,11 @@ const validateOutlineReadOnlyVfsArgs = (
     return null;
   }
 
-  if (toolName === "vfs_read_many") {
-    const paths = Array.isArray((args as any)?.paths) ? (args as any).paths : [];
-    if (paths.length === 0) return reject("vfs_read_many requires paths[]");
-    const bad = paths.find(
-      (p: unknown) => typeof p !== "string" || !isAllowedOutlineReadOnlyPath(p, allowPrefixes),
-    );
-    if (bad) {
-      return reject(`vfs_read_many includes disallowed path="${String(bad)}"`);
-    }
-    return null;
-  }
-
-  if (toolName === "vfs_read_json") {
+  if (toolName === "vfs_search") {
     const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
-    if (!path) return reject("vfs_read_json requires a path");
-    if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
-      return reject(`vfs_read_json path="${path}"`);
-    }
-    return null;
-  }
-
-  if (toolName === "vfs_stat") {
-    const paths = Array.isArray((args as any)?.paths) ? (args as any).paths : [];
-    if (paths.length === 0) return reject("vfs_stat requires paths[]");
-    const bad = paths.find(
-      (p: unknown) => typeof p !== "string" || !isAllowedOutlineReadOnlyPath(p, allowPrefixes),
-    );
-    if (bad) {
-      return reject(`vfs_stat includes disallowed path="${String(bad)}"`);
-    }
-    return null;
-  }
-
-  if (toolName === "vfs_search" || toolName === "vfs_grep") {
-    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
-    if (!path) return reject(`${toolName} requires a path (root search is disabled)`);
+    if (!path) return reject(`${toolName} requires a path (root search disabled)`);
     if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
       return reject(`${toolName} path="${path}"`);
-    }
-    return null;
-  }
-
-  if (toolName === "vfs_glob") {
-    const patterns = Array.isArray((args as any)?.patterns) ? (args as any).patterns : [];
-    if (patterns.length === 0) return reject("vfs_glob requires patterns[]");
-    for (const pattern of patterns) {
-      if (typeof pattern !== "string") {
-        return reject("vfs_glob patterns[] must be strings");
-      }
-      const root = extractGlobRoot(pattern);
-      if (!root) return reject(`vfs_glob pattern="${pattern}" has no static root`);
-      if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
-        return reject(`vfs_glob pattern="${pattern}" (root="${root}")`);
-      }
-    }
-    const excludePatterns = Array.isArray((args as any)?.excludePatterns)
-      ? (args as any).excludePatterns
-      : null;
-    if (excludePatterns) {
-      for (const pattern of excludePatterns) {
-        if (typeof pattern !== "string") {
-          return reject("vfs_glob excludePatterns[] must be strings");
-        }
-        const root = extractGlobRoot(pattern);
-        if (!root) return reject(`vfs_glob excludePattern="${pattern}" has no static root`);
-        if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
-          return reject(`vfs_glob excludePattern="${pattern}" (root="${root}")`);
-        }
-      }
     }
     return null;
   }

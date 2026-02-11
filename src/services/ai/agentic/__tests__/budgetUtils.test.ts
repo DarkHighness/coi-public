@@ -58,7 +58,7 @@ describe("budgetUtils", () => {
     expect(prompt).toContain('level="LAST_CHANCE"');
     expect(prompt).toContain("Your ONLY allowed tool call is");
     expect(prompt).toContain("`vfs_commit_turn`");
-    expect(prompt).toContain("`vfs_tx` with `commit_turn` as the LAST op");
+    expect(prompt).toContain("`vfs_write` with `commit_turn` as the LAST op");
   });
 
   it("detects budget exhaustion reason by priority", () => {

@@ -38,7 +38,7 @@ describe("loopInitializer", () => {
       true,
     );
     expect(turnTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(true);
-    expect(turnTools.some((tool) => tool.name === "vfs_finish_summary")).toBe(
+    expect(turnTools.some((tool) => tool.name === "vfs_commit_summary")).toBe(
       false,
     );
 

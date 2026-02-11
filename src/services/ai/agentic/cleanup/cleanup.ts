@@ -59,21 +59,21 @@ const cleanupPromptAtom = defineAtom(
      - \`current/skills/commands/runtime/SKILL.md\`
      - \`current/skills/commands/runtime/cleanup/SKILL.md\`
 
-  1) Use \`vfs_ls_entries\` to get a COMPLETE catalog by category (IDs + names + status).
-     This is more reliable than guessing IDs, and avoids missing "extra" objects.
+  1) Use \`vfs_ls\` + \`vfs_search\` to build a COMPLETE candidate catalog by category path.
+     This is more reliable than guessing IDs.
 
-  2) Use \`vfs_suggest_duplicates\` per category to get candidate duplicate groups.
-     Then VERIFY candidates with \`vfs_read_many\` before merging.
+  2) Use \`vfs_search\` to identify likely duplicate names/aliases.
+     Then VERIFY candidates with \`vfs_read\` before merging.
 
   3) Merge conservatively:
      - Prefer keeping the most complete file.
-     - Update the kept file FIRST (\`vfs_merge\` / \`vfs_edit\`) before deleting duplicates (\`vfs_delete\`).
+     - Update the kept file FIRST (\`vfs_write\` with \`patch_json\` / \`merge_json\`) before deleting duplicates (\`vfs_delete\`).
      - If one copy is unlocked and the other is locked (hidden truth), prefer keeping the locked one,
        but preserve player knowledge by merging visible info and ensuring unlocked=true when appropriate.
 
-  4) Re-run \`vfs_ls_entries\` to sanity-check counts after cleanup.
+  4) Re-run \`vfs_ls\` / \`vfs_search\` to sanity-check counts after cleanup.
 
-  5) Finish with \`vfs_commit_turn\` (or \`vfs_tx\` with commit_turn as the LAST op). The finish tool must be LAST.
+  5) Finish with \`vfs_commit_turn\` as the LAST tool call.
 </workflow>
 
 <recommended_categories>
@@ -87,92 +87,101 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
 
 <deduplication_examples>
   <example type="inventory">
-    <duplicates>Two inventory item files that represent the same item</duplicates>
+    <duplicates>Two inventory item files represent the same item</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["inventory"] })
-      2. vfs_suggest_duplicates({ category: "inventory" })
-      3. vfs_read({ path: "current/world/characters/char:player/inventory/<id>.json" }) to compare details
-      4. vfs_write(...) or vfs_edit(...) to merge details into the kept file
-      5. vfs_delete({ paths: ["current/world/characters/char:player/inventory/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls({ path: "current/world/characters/char:player/inventory", stat: true })
+      2. vfs_search({ query: "iron key|rusty key", path: "current/world/characters/char:player/inventory", regex: true })
+      3. vfs_read({ path: "current/world/characters/char:player/inventory/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/characters/char:player/inventory/<kept>.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/characters/char:player/inventory/<duplicate>.json"] })
     </action>
   </example>
 
   <example type="npc">
-    <duplicates>Two NPC files that represent the same person</duplicates>
+    <duplicates>Two NPC files represent the same person under different aliases</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["npcs"] })
-      2. vfs_suggest_duplicates({ category: "npcs" })
-      3. vfs_read_many([...]) to verify
-      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
+      1. vfs_ls({ path: "current/world/characters", patterns: ["current/world/characters/**/profile.json"], stat: true })
+      2. vfs_search({ query: "Harlen|Captain Harlen", path: "current/world/characters", regex: true })
+      3. vfs_read({ path: "current/world/characters/<candidate>/profile.json", mode: "json", pointers: ["/visible", "/hidden", "/relations", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/characters/<kept>/profile.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/characters/<duplicate>/profile.json"] })
     </action>
   </example>
 
   <example type="location">
-    <duplicates>Two location files that refer to the same place</duplicates>
+    <duplicates>Two location files refer to the same place</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["locations"] })
-      2. vfs_suggest_duplicates({ category: "locations" })
-      3. vfs_read_many([...]) to verify
-      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
+      1. vfs_ls({ path: "current/world/locations", stat: true })
+      2. vfs_search({ query: "abandoned chapel|old chapel", path: "current/world/locations", regex: true })
+      3. vfs_read({ path: "current/world/locations/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/links", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/locations/<kept>.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/locations/<duplicate>.json"] })
     </action>
   </example>
 
   <example type="quest">
-    <duplicates>Two quest files that represent the same quest</duplicates>
+    <duplicates>Two quest files represent the same quest thread</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["quests"] })
-      2. vfs_suggest_duplicates({ category: "quests" })
-      3. vfs_read_many([...]) to verify
-      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
+      1. vfs_ls({ path: "current/world/quests", stat: true })
+      2. vfs_search({ query: "missing caravan|lost caravan", path: "current/world/quests", regex: true })
+      3. vfs_read({ path: "current/world/quests/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/status", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/quests/<kept>.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/quests/<duplicate>.json"] })
     </action>
   </example>
 
   <example type="knowledge">
-    <duplicates>Two knowledge files that represent the same knowledge</duplicates>
+    <duplicates>Two knowledge entries represent the same fact</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["knowledge"] })
-      2. vfs_suggest_duplicates({ category: "knowledge" })
-      3. vfs_read_many([...]) to verify
-      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
+      1. vfs_ls({ path: "current/world/knowledge", stat: true })
+      2. vfs_search({ query: "sigil|glyph", path: "current/world/knowledge", regex: true })
+      3. vfs_read({ path: "current/world/knowledge/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/tags", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/knowledge/<kept>.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/knowledge/<duplicate>.json"] })
     </action>
   </example>
 
   <example type="character_skills">
-    <duplicates>Two character skill files that represent the same skill</duplicates>
+    <duplicates>Two skill files represent the same player skill</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["character_skills"] })
-      2. vfs_suggest_duplicates({ category: "character_skills" })
-      3. vfs_read_many(["current/world/characters/char:player/skills/<id>.json", ...]) to verify
-      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
+      1. vfs_ls({ path: "current/world/characters/char:player/skills", stat: true })
+      2. vfs_search({ query: "shadow step|shadow-step", path: "current/world/characters/char:player/skills", regex: true })
+      3. vfs_read({ path: "current/world/characters/char:player/skills/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/level", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/characters/char:player/skills/<kept>.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/characters/char:player/skills/<duplicate>.json"] })
     </action>
   </example>
 
   <example type="faction">
-    <duplicates>Two faction files that represent the same faction</duplicates>
+    <duplicates>Two faction files represent the same faction</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["factions"] })
-      2. vfs_suggest_duplicates({ category: "factions" })
-      3. vfs_read_many([...]) to verify
-      4. vfs_merge / vfs_edit to consolidate, then vfs_delete to remove duplicates
+      1. vfs_ls({ path: "current/world/factions", stat: true })
+      2. vfs_search({ query: "Order of Ash|Ash Order", path: "current/world/factions", regex: true })
+      3. vfs_read({ path: "current/world/factions/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/relations", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/factions/<kept>.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/factions/<duplicate>.json"] })
     </action>
   </example>
 
   <example type="timeline">
-    <duplicates>Two timeline event files that represent the same event</duplicates>
+    <duplicates>Two timeline events represent the same incident</duplicates>
     <action>
-      1. vfs_ls_entries({ categories: ["timeline"] })
-      2. vfs_suggest_duplicates({ category: "timeline" })
-      3. vfs_read_many([...]) to verify
-      4. vfs_delete({ paths: ["current/world/timeline/<duplicate>.json"] }) to delete the redundant file
+      1. vfs_ls({ path: "current/world/timeline", stat: true })
+      2. vfs_search({ query: "eclipse|black sun", path: "current/world/timeline", regex: true })
+      3. vfs_read({ path: "current/world/timeline/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/time", "/unlocked"] })
+      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/timeline/<kept>.json", content: { ... } }] })
+      5. vfs_delete({ paths: ["current/world/timeline/<duplicate>.json"] })
     </action>
   </example>
 
   <example type="dual_layer_merge">
-    <duplicates>1. "old_man" (Unlocked: true, Visible: "Just an old man") AND 2. "gandalf" (Unlocked: false, Hidden: "Powerful Wizard")</duplicates>
+    <duplicates>Unlocked surface entity + locked truth entity are actually the same target</duplicates>
     <action>
-      1. PREFER keeping "gandalf" (The Truth).
-      2. vfs_read both NPC files, then vfs_merge(...) or vfs_edit(...) to merge visible info into the kept file and set unlocked=true if needed.
-      3. vfs_delete({ paths: ["current/world/characters/char:old_man/profile.json"] }) to remove the fragment.
+      1. Prefer keeping the locked/truth-rich file.
+      2. vfs_read both files with pointers ["/visible", "/hidden", "/unlocked"].
+      3. vfs_write merge_json on kept file to preserve both visible and hidden layers.
+      4. Ensure player-known state is preserved (\`unlocked=true\` on kept side or corresponding player view).
+      5. vfs_delete redundant fragment file.
     </action>
   </example>
 </deduplication_examples>
@@ -223,7 +232,7 @@ function buildCleanupPrompt(state: GameState): string {
  * Design: Entity Cleanup is a normal turn with:
  * 1. User action prefixed with [CLEANUP] to signal cleanup mode
  * 2. VFS-only + tool-driven discovery (no entity XML enumeration)
- * 3. Deduplication recipes that start from vfs_ls_entries/vfs_suggest_duplicates
+ * 3. Deduplication recipes that start from vfs_ls/vfs_search
  *
  * This ensures the same KV cache, same agentic loop, same tools system.
  */

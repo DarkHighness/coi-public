@@ -3,7 +3,7 @@
  *
  * VFS-only summary agentic loop.
  * - Read details via vfs_* tools (read-only subset)
- * - Finish by calling vfs_finish_summary (MUST be last)
+ * - Finish by calling vfs_commit_summary (MUST be last)
  */
 
 import type {
@@ -140,7 +140,7 @@ Hard constraints:
 - Keep compaction scoped to target fork ${runtime.targetForkId}; NEVER cross forks.
 - Do NOT summarize outside the specified summary range.
 - Preserve continuity with previous summaries and in-session events.
-- \`vfs_finish_summary.lastSummarizedIndex\` MUST equal ${targetLastSummarizedIndex}.
+- Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
 - Output summary content only. Never mention tools/retries/errors/budgets.`;
 };
 
@@ -207,9 +207,8 @@ const findSummaryCrossForkViolations = (
   return violations;
 };
 
-const validateFinishSummaryRange = (
+const validateCommitSummaryArgs = (
   args: unknown,
-  expectedRange: { fromIndex: number; toIndex: number },
 ):
   | { ok: true }
   | {
@@ -218,51 +217,36 @@ const validateFinishSummaryRange = (
       error: string;
     } => {
   const raw = (args ?? {}) as Record<string, unknown>;
-  const nodeRange = raw.nodeRange as
-    | { fromIndex?: unknown; toIndex?: unknown }
-    | undefined;
-  const lastSummarizedIndex = raw.lastSummarizedIndex;
-
-  const fromIndex =
-    typeof nodeRange?.fromIndex === "number" && Number.isFinite(nodeRange.fromIndex)
-      ? Math.floor(nodeRange.fromIndex)
-      : null;
-  const toIndex =
-    typeof nodeRange?.toIndex === "number" && Number.isFinite(nodeRange.toIndex)
-      ? Math.floor(nodeRange.toIndex)
-      : null;
-  const lastIndex =
-    typeof lastSummarizedIndex === "number" && Number.isFinite(lastSummarizedIndex)
-      ? Math.floor(lastSummarizedIndex)
-      : null;
-
-  if (fromIndex === null || toIndex === null || lastIndex === null) {
-    return {
-      ok: false,
-      code: "INVALID_DATA",
-      error:
-        "[ERROR: COMPACT_SUMMARY_FINISH_ARGS_INVALID] vfs_finish_summary must include numeric nodeRange.fromIndex, nodeRange.toIndex, and lastSummarizedIndex.",
-    };
-  }
-
-  const expectedLastSummarizedIndex = expectedRange.toIndex + 1;
   if (
-    fromIndex !== expectedRange.fromIndex ||
-    toIndex !== expectedRange.toIndex ||
-    lastIndex !== expectedLastSummarizedIndex
+    "nodeRange" in raw ||
+    "lastSummarizedIndex" in raw ||
+    "id" in raw ||
+    "createdAt" in raw
   ) {
     return {
       ok: false,
       code: "INVALID_DATA",
       error:
-        `[ERROR: COMPACT_SUMMARY_RANGE_MISMATCH] Summary loop is anchored to nodeRange ` +
-        `${expectedRange.fromIndex}-${expectedRange.toIndex} with lastSummarizedIndex=${expectedLastSummarizedIndex}. ` +
-        `Received nodeRange ${fromIndex}-${toIndex}, lastSummarizedIndex=${lastIndex}. ` +
-        "Read target-fork history again and retry with the anchored range.",
+        "[ERROR: COMPACT_SUMMARY_RUNTIME_FIELDS_FORBIDDEN] vfs_commit_summary runtime fields (nodeRange/lastSummarizedIndex/id/createdAt) are system-managed. Provide only summary content fields.",
     };
   }
 
   return { ok: true };
+};
+
+const injectSummaryRuntimeArgs = (
+  args: unknown,
+  expectedRange: { fromIndex: number; toIndex: number },
+): Record<string, unknown> => {
+  const raw = (args ?? {}) as Record<string, unknown>;
+  return {
+    ...raw,
+    nodeRange: {
+      fromIndex: expectedRange.fromIndex,
+      toIndex: expectedRange.toIndex,
+    },
+    lastSummarizedIndex: expectedRange.toIndex + 1,
+  };
 };
 
 async function runSummaryLoopCore(options: {
@@ -596,12 +580,10 @@ async function runSummaryLoopCore(options: {
           continue;
         }
 
+        let dispatchArgs: Record<string, unknown> = call.args;
         if (call.name === finishToolName) {
-          const finishRangeValidation = validateFinishSummaryRange(
-            call.args,
-            input.nodeRange,
-          );
-          if (!finishRangeValidation.ok) {
+          const finishRangeValidation = validateCommitSummaryArgs(call.args);
+          if (finishRangeValidation.ok === false) {
             toolResponses.push({
               toolCallId: call.id,
               name: call.name,
@@ -613,9 +595,10 @@ async function runSummaryLoopCore(options: {
             });
             continue;
           }
+          dispatchArgs = injectSummaryRuntimeArgs(call.args, input.nodeRange);
         }
 
-        const output = await dispatchToolCallAsync(call.name, call.args, toolCtx);
+        const output = await dispatchToolCallAsync(call.name, dispatchArgs, toolCtx);
 
         if (call.name === finishToolName && output && (output as any).success) {
           const produced = (output as any).data?.summary ?? null;
@@ -658,7 +641,7 @@ async function runSummaryLoopCore(options: {
                   model: modelId,
                   endpoint: "summary_tool",
                   toolName: call.name,
-                  toolInput: call.args,
+                  toolInput: dispatchArgs,
                   toolOutput: output,
                 }),
               );
@@ -681,12 +664,12 @@ async function runSummaryLoopCore(options: {
           createLogEntry({
             provider: providerProtocol,
             model: modelId,
-            endpoint: "summary_tool",
-            toolName: call.name,
-            toolInput: call.args,
-            toolOutput: output,
-          }),
-        );
+          endpoint: "summary_tool",
+          toolName: call.name,
+          toolInput: dispatchArgs,
+          toolOutput: output,
+        }),
+      );
       }
 
       conversationHistory.push(createToolResponseMessage(toolResponses));
@@ -743,13 +726,13 @@ export async function runCompactSummaryLoop(
     `${COMPACT_TRIGGER}\n` +
       `You are entering **session compaction** mode.\n\n` +
       `Requirements:\n` +
-      `- Produce exactly ONE summary by calling "vfs_finish_summary" as your LAST tool call.\n` +
+      `- Produce exactly ONE summary by calling "vfs_commit_summary" as your LAST tool call.\n` +
       `- The summary MUST be in ${language}.\n` +
       `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
-      `- Set lastSummarizedIndex = ${targetLastSummarizedIndex}.\n` +
+      `- Runtime will set lastSummarizedIndex = ${targetLastSummarizedIndex}.\n` +
       `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
       `Before finish, read protocol: "current/skills/commands/compact/SKILL.md".\n` +
-      `If you need to verify details, use read-only VFS tools (vfs_read_json/search/grep/etc.) and stay on target fork only.`,
+      `If you need to verify details, use read-only VFS tools (vfs_read/vfs_search/etc.) and stay on target fork only.`,
   );
 
   return runSummaryLoopCore({

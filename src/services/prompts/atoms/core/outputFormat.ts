@@ -33,7 +33,8 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom({ atomId: "atoms
 
   <vfs_turn_files>
     **TURN COMPLETION RULE**:
-    - Every turn MUST end with \`vfs_commit_turn\` (preferred), or \`vfs_tx\` with \`commit_turn\` as the LAST op.
+    - Every turn MUST end with \`vfs_commit_turn\`, and it must be the LAST tool call.
+    - If you already decided to finish in this response, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) before finish unless they are directly needed for same-response writes.
     - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
     - This finish call MUST be your LAST tool call of the turn.
   </vfs_turn_files>
@@ -49,9 +50,9 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom({ atomId: "atoms
   <rules>
     <rule>Do NOT output markdown text outside of tool arguments.</rule>
     <rule>Inspect with \`vfs_ls\`/\`vfs_read\` before edits.</rule>
-    <rule>Use \`vfs_write\`/\`vfs_merge\`/\`vfs_edit\` for state updates under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`).</rule>
-    <rule>Deletions use JSON Patch \`remove\` via \`vfs_edit\` (never \`vfs_merge\`).</rule>
-    <rule>\`vfs_commit_turn\` (or \`vfs_tx\` with LAST op \`commit_turn\`) MUST be your LAST tool call.</rule>
+    <rule>Use \`vfs_write\` for world state updates under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`): \`write_file\` / \`patch_json\` / \`merge_json\`.</rule>
+    <rule>Field deletions use JSON Patch \`remove\` via \`vfs_write\` + \`patch_json\`.</rule>
+    <rule>\`vfs_commit_turn\` MUST be your LAST tool call.</rule>
     <rule>Double-check JSON syntax before calling any tool.</rule>
   </rules>
 </output_format>

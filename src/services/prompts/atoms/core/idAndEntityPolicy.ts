@@ -16,8 +16,8 @@ const idUsage = `
     - IDs are **backend identifiers**, NOT player-facing information.
 
     **WHERE IDs BELONG (ONLY THESE PLACES)**:
-    ✅ VFS file paths: \`vfs_write({ files: [{ path: "current/world/characters/char:player/inventory/inv_sword_of_kings.json", ... }] })\`
-    ✅ VFS file edits: \`vfs_edit({ edits: [{ path: "current/world/characters/char:marcus/profile.json", patch: [...] }] })\`
+    ✅ VFS file paths: \`vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_sword_of_kings.json", ... }] })\`
+    ✅ VFS file edits: \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/characters/char:marcus/profile.json", patch: [...] }] })\`
     ✅ Entity \`currentLocation\` field (references location ID): \`{ currentLocation: "loc_tavern" }\`
     ✅ Timeline \`involvedEntities\` arrays (entity references): \`["char:player", "char:marcus", "loc_tavern"]\`
 
@@ -93,11 +93,11 @@ const minimalEntity = `
     **MANDATORY "INVESTIGATIVE SEARCH" WORKFLOW**:
     1. **STRICT CHECK-FIRST**: Never assume a clean state. Always assume entities might already exist.
     2. **BROWSE (Directory Scan)**: Use \`vfs_ls\` on \`current/world/<type>/\` to see the full landscape.
-    3. **SEARCH (Text Scan)**: Use \`vfs_search\` or \`vfs_grep\` on \`current/world/<type>/\`, \`current/outline/outline.json\`, and \`current/outline/story_outline/plan.md\`.
+    3. **SEARCH (Text Scan)**: Use \`vfs_search\` or \`vfs_search\` on \`current/world/<type>/\`, \`current/outline/outline.json\`, and \`current/outline/story_outline/plan.md\`.
     4. **READ (Deep Details)**: Use \`vfs_read\` on candidate files to confirm identity and details.
     5. **EVALUATE**:
-       - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and update the file via \`vfs_edit\` or \`vfs_write\`.
-       - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and update the file via \`vfs_edit\` or \`vfs_write\`.
+       - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and update the file via \`vfs_write\`.
+       - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and update the file via \`vfs_write\`.
     6. **CREATE (Last Resort)**: Only if NO semantic match exists.
 
     **ANTI-CLUTTER & SIGNIFICANCE THRESHOLD**:
@@ -107,12 +107,12 @@ const minimalEntity = `
     - **NPCs**:
       * **MUST HAVE**: A proper Name (not just "Guard") AND (Speaking Role OR Combat Role).
       * **NARRATIVE ONLY**: Crowds, background villagers, unnamed guards, servants causing no consequence.
-      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> \`vfs_write({ files: [{ path: "current/world/characters/char:captain_vance/profile.json", ... }] })\`
+      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> \`vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:captain_vance/profile.json", ... }] })\`
 
     - **Items**:
       * **MUST BE**: Added to Player/NPC Inventory OR Key Quest Object.
       * **NARRATIVE ONLY**: Flavor objects, furniture, food eaten immediately, debris.
-      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> \`vfs_write({ files: [{ path: "current/world/characters/char:player/inventory/inv_iron_key.json", ... }] })\`
+      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> \`vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_iron_key.json", ... }] })\`
 
     - **Locations**:
       * **MUST BE**: Named, distinct, and revisit-able (e.g., "The Blue Dragon Inn").
@@ -121,7 +121,7 @@ const minimalEntity = `
     - **Quests**:
       * **MUST BE**: A structured mission with clear success/fail state tracked in journal.
       * **NARRATIVE ONLY**: Momentary goals ("Open the door", "Ask him a question"), impulsive actions.
-      * *Example*: "I want to kill that goblin" -> NARRATIVE. "Guildmaster orders you to purge the camp" -> \`vfs_write({ files: [{ path: "current/world/quests/quest_purge_camp.json", ... }] })\`
+      * *Example*: "I want to kill that goblin" -> NARRATIVE. "Guildmaster orders you to purge the camp" -> \`vfs_write({ ops: [{ op: "write_file", path: "current/world/quests/quest_purge_camp.json", ... }] })\`
 
     - **Knowledge**:
       * **MUST BE**: Reusable information (passwords, history, recipes, secret locations).
@@ -153,15 +153,15 @@ const minimalEntity = `
 
       - **Mud/Blood on Clothes**:
         * ❌ Create a new condition entry for \`cond_muddy\` -> Bloat.
-        * ✅ Narrative only OR \`vfs_edit({ edits: [{ path: "current/world/characters/char:player/inventory/inv_clothes.json", patch: [{ op: "replace", path: "/visible/description", value: "Stained with mud." }] }] })\`
+        * ✅ Narrative only OR \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/characters/char:player/inventory/inv_clothes.json", patch: [{ op: "replace", path: "/visible/description", value: "Stained with mud." }] }] })\`
 
       - **NPC Fatigue/Hunger**:
         * ❌ Create a new condition entry for \`cond_tired_guard\` -> Bloat.
-        * ✅ \`vfs_edit({ edits: [{ path: "current/world/characters/char:guard/profile.json", patch: [{ op: "replace", path: "/visible/mood", value: "Exhausted and irritable" }] }] })\`
+        * ✅ \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/characters/char:guard/profile.json", patch: [{ op: "replace", path: "/visible/mood", value: "Exhausted and irritable" }] }] })\`
 
       - **Transient Atmosphere**:
         * ❌ Create a new item file for \`item_fog\` -> Absurd.
-        * ✅ \`vfs_edit({ edits: [{ path: "current/world/locations/loc_here.json", patch: [{ op: "replace", path: "/visible/atmosphere", value: "Thick fog..." }] }] })\`
+        * ✅ \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/locations/loc_here.json", patch: [{ op: "replace", path: "/visible/atmosphere", value: "Thick fog..." }] }] })\`
 
       **RULE**: Only create a new ID if it needs to be tracked *independently* and *mechanically* for >10 turns.
       For everything else, **UPDATE EXISTING FIELDS** (\`description\`, \`mood\`, \`status\`).

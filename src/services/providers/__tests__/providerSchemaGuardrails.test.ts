@@ -6,6 +6,7 @@ import {
   zodToGeminiCompatibleSchema,
   zodToClaudeCompatibleSchema,
 } from "../../zodCompiler";
+import { getToolSchemaHint } from "../utils";
 
 const serialize = (value: unknown): string => JSON.stringify(value);
 
@@ -69,6 +70,26 @@ describe("provider schema guardrails", () => {
       expect(unknownTypeWarnings).toEqual([]);
     } finally {
       warnSpy.mockRestore();
+    }
+  });
+
+  it("keeps vfs_commit_summary schema and schemaHint free of runtime-only fields", () => {
+    const tool = ALL_DEFINED_TOOLS.find((item) => item.name === "vfs_commit_summary");
+    expect(tool).toBeDefined();
+    if (!tool) return;
+
+    const openaiSchema = serialize(zodToOpenAISchema(tool.parameters, true));
+    const geminiSchema = serialize(zodToGeminiCompatibleSchema(tool.parameters));
+    const claudeSchema = serialize(zodToClaudeCompatibleSchema(tool.parameters));
+    const hint = getToolSchemaHint(tool.parameters, "", { toolName: tool.name });
+    for (const text of [openaiSchema, geminiSchema, claudeSchema, hint]) {
+      expect(text).not.toContain("nodeRange");
+      expect(text).not.toContain("lastSummarizedIndex");
+    }
+
+    for (const text of [openaiSchema, geminiSchema, claudeSchema, hint]) {
+      expect(text).not.toContain("createdAt");
+      expect(text).not.toContain("\"id\"");
     }
   });
 });

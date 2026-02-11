@@ -34,7 +34,7 @@ const observationProtocol = `
 
 const updateTiming = `
   <update_timing>
-    **WHEN TO UPDATE** (write to \`current/world/player_profile.json\` using \`vfs_write\` or \`vfs_edit\`):
+    **WHEN TO UPDATE** (write to \`current/world/player_profile.json\` using \`vfs_write\`):
 
     - **Frequent early**: First 10-20 turns, update after most significant choices
     - **Refine later**: Confirm patterns, note deviations, deepen understanding

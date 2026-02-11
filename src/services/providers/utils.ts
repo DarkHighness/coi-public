@@ -203,6 +203,45 @@ const INTERNAL_FIELDS = new Set([
 
 const VFS_INTERNAL_FIELDS = new Set(["createdAt", "updatedAt", "modifiedAt", "lastAccess"]);
 
+export const RUNTIME_INJECTED_FIELD_MARKER = "@runtimeInjected";
+
+const RUNTIME_INJECTED_FIELDS_BY_TOOL: Record<string, readonly string[]> = {
+  vfs_commit_summary: ["nodeRange", "lastSummarizedIndex", "id", "createdAt"],
+};
+
+type ToolHintOptions = {
+  toolName?: string;
+  hideRuntimeInjected?: boolean;
+};
+
+const shouldHideToolField = (
+  key: string,
+  fieldSchema: ZodTypeAny,
+  options?: ToolHintOptions,
+): boolean => {
+  if (INTERNAL_FIELDS.has(key)) {
+    return true;
+  }
+
+  const description = fieldSchema.description;
+  if (description && description.includes("INVISIBLE")) {
+    return true;
+  }
+
+  if (options?.hideRuntimeInjected !== false) {
+    if (description && description.includes(RUNTIME_INJECTED_FIELD_MARKER)) {
+      return true;
+    }
+    const runtimeFields =
+      options?.toolName ? RUNTIME_INJECTED_FIELDS_BY_TOOL[options.toolName] : null;
+    if (runtimeFields?.includes(key)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 function unwrapHintSchema(schema: ZodTypeAny): {
   schema: ZodTypeAny;
   isOptional: boolean;
@@ -355,21 +394,12 @@ export function getVfsSchemaHint(
 export function getToolSchemaHint(
   schema: ZodTypeAny,
   indent: string = "",
+  options?: ToolHintOptions,
 ): string {
   if (schema instanceof ZodObject) {
     const shape = schema.shape;
     const lines = Object.entries(shape)
-      .filter(([key, value]) => {
-        // Filter out internal system fields
-        if (INTERNAL_FIELDS.has(key)) return false;
-
-        // Filter out fields marked as INVISIBLE
-        const fieldSchema = value as ZodTypeAny;
-        const description = fieldSchema.description;
-        if (description && description.includes("INVISIBLE")) return false;
-
-        return true;
-      })
+      .filter(([key, value]) => !shouldHideToolField(key, value as ZodTypeAny, options))
       .map(([key, value]) => {
         let fieldSchema = value as ZodTypeAny;
         const unwrapped = unwrapHintSchema(fieldSchema);
@@ -384,7 +414,7 @@ export function getToolSchemaHint(
 
         let typeStr = "";
         if (innerSchema instanceof ZodObject) {
-          typeStr = getToolSchemaHint(innerSchema, indent + "  ");
+          typeStr = getToolSchemaHint(innerSchema, indent + "  ", options);
         } else if (
           innerSchema instanceof ZodArray &&
           innerSchema._def.type instanceof ZodObject
@@ -392,11 +422,12 @@ export function getToolSchemaHint(
           typeStr = `Array<${getToolSchemaHint(
             innerSchema._def.type,
             indent + "  ",
+            options,
           )}>`;
         } else if (innerSchema instanceof ZodArray) {
-          typeStr = getGenericTypeHint(innerSchema, indent);
+          typeStr = getGenericTypeHint(innerSchema, indent, options);
         } else {
-          typeStr = getGenericTypeHint(innerSchema, indent);
+          typeStr = getGenericTypeHint(innerSchema, indent, options);
         }
 
         const descComment = description ? ` // ${description}` : "";
@@ -406,13 +437,17 @@ export function getToolSchemaHint(
     return `{\n${lines.join("\n")}\n${indent}}`;
   }
 
-  return getGenericTypeHint(schema, indent);
+  return getGenericTypeHint(schema, indent, options);
 }
 
 /**
  * Internal helper for type hints
  */
-function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
+function getGenericTypeHint(
+  schema: ZodTypeAny,
+  indent: string = "",
+  options?: ToolHintOptions,
+): string {
   schema = unwrapHintSchema(schema).schema;
 
   if (schema instanceof ZodString) return "string";
@@ -427,10 +462,10 @@ function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
     return typeof value === "string" ? `"${value}"` : String(value);
   }
   if (schema instanceof ZodDiscriminatedUnion) {
-    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
+    const unionOptions = (schema as ZodDiscriminatedUnion<any, any>)._def
       .options as ZodObject<any>[];
-    return options
-      .map((opt) => getToolSchemaHint(opt, indent + "  "))
+    return unionOptions
+      .map((opt) => getToolSchemaHint(opt, indent + "  ", options))
       .join(" | ");
   }
   if (schema instanceof ZodEnum) {
@@ -441,28 +476,29 @@ function getGenericTypeHint(schema: ZodTypeAny, indent: string = ""): string {
   if (schema instanceof ZodArray) {
     const inner = schema._def.type;
     if (inner instanceof ZodObject) {
-      return `Array<${getToolSchemaHint(inner, indent + "  ")}>`;
+      return `Array<${getToolSchemaHint(inner, indent + "  ", options)}>`;
     }
-    return `Array<${getGenericTypeHint(inner, indent)}>`;
+    return `Array<${getGenericTypeHint(inner, indent, options)}>`;
   }
   if (schema instanceof ZodObject) {
-    return getToolSchemaHint(schema, indent);
+    return getToolSchemaHint(schema, indent, options);
   }
   if (schema instanceof ZodUnion) {
     return (schema as ZodUnion<any>)._def.options
-      .map((opt: ZodTypeAny) => getGenericTypeHint(opt, indent))
+      .map((opt: ZodTypeAny) => getGenericTypeHint(opt, indent, options))
       .join(" | ");
   }
   if (schema instanceof ZodIntersection) {
-    return `${getGenericTypeHint(schema._def.left, indent)} & ${getGenericTypeHint(
+    return `${getGenericTypeHint(schema._def.left, indent, options)} & ${getGenericTypeHint(
       schema._def.right,
       indent,
+      options,
     )}`;
   }
   if (schema instanceof ZodRecord) {
     const valueSchema = (schema as any)?._def?.valueType;
     const valueHint = valueSchema
-      ? getGenericTypeHint(valueSchema as ZodTypeAny, indent)
+      ? getGenericTypeHint(valueSchema as ZodTypeAny, indent, options)
       : "JsonValue";
     return `Record<string, ${valueHint}>`;
   }
@@ -478,7 +514,7 @@ export function getToolInfo(tool: ZodToolDefinition): string {
   <name>${tool.name}</name>
   <description>${tool.description}</description>
   <parameters>
-${getToolSchemaHint(tool.parameters)}
+${getToolSchemaHint(tool.parameters, "", { toolName: tool.name })}
   </parameters>
 </tool_info>`;
 }

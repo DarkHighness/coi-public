@@ -120,7 +120,7 @@ describe("VFS handlers", () => {
     expect(overwriteOk.success).toBe(true);
   });
 
-  it("blocks vfs_edit until the file is read in this session", () => {
+  it("blocks vfs_write until the file is read in this session", () => {
     const session = new VfsSession();
     session.writeFile(
       "outline/progress.json",
@@ -130,7 +130,7 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     const editBlocked = dispatchToolCall(
-      "vfs_edit",
+      "vfs_write",
       {
         edits: [
           { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
@@ -146,7 +146,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
 
     const editOk = dispatchToolCall(
-      "vfs_edit",
+      "vfs_write",
       {
         edits: [
           { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
@@ -158,7 +158,7 @@ describe("VFS handlers", () => {
     expect(editOk.success).toBe(true);
   });
 
-  it("blocks vfs_merge until the file is read", () => {
+  it("blocks vfs_write until the file is read", () => {
     const session = new VfsSession();
     session.writeFile(
       "outline/progress.json",
@@ -168,7 +168,7 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     const mergeBlocked = dispatchToolCall(
-      "vfs_merge",
+      "vfs_write",
       {
         files: [{ path: "current/outline/progress.json", content: { a: 2 } }],
       },
@@ -182,7 +182,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
 
     const mergeOk = dispatchToolCall(
-      "vfs_merge",
+      "vfs_write",
       {
         files: [{ path: "current/outline/progress.json", content: { a: 2 } }],
       },
@@ -222,7 +222,7 @@ describe("VFS handlers", () => {
     expect(deleteOk.success).toBe(true);
   });
 
-  it("enforces read-before-overwrite inside vfs_tx", () => {
+  it("enforces read-before-overwrite inside vfs_write", () => {
     const session = new VfsSession();
     session.writeFile(
       "outline/progress.json",
@@ -232,7 +232,7 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     const txBlocked = dispatchToolCall(
-      "vfs_tx",
+      "vfs_write",
       {
         ops: [
           {
@@ -261,7 +261,7 @@ describe("VFS handlers", () => {
     const ctx = { vfsSession: session };
 
     const grepResult = dispatchToolCall(
-      "vfs_grep",
+      "vfs_search",
       { pattern: "needle", flags: "", path: "current/outline/progress.json", limit: 5 },
       ctx,
     ) as { success: boolean; data?: { results?: Array<{ path: string }> } };
@@ -270,7 +270,7 @@ describe("VFS handlers", () => {
     expect(grepResult.data?.results?.[0]?.path).toBe("current/outline/progress.json");
 
     const editBlocked = dispatchToolCall(
-      "vfs_edit",
+      "vfs_write",
       {
         edits: [
           { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
@@ -286,7 +286,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
 
     const editOkAfterRead = dispatchToolCall(
-      "vfs_edit",
+      "vfs_write",
       {
         edits: [
           { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
@@ -317,7 +317,7 @@ describe("VFS handlers", () => {
     expect(searchResult.data?.results?.[0]?.path).toBe("current/outline/progress.json");
 
     const editBlocked = dispatchToolCall(
-      "vfs_edit",
+      "vfs_write",
       {
         edits: [
           { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
@@ -333,7 +333,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/outline/progress.json" }, ctx);
 
     const editOkAfterRead = dispatchToolCall(
-      "vfs_edit",
+      "vfs_write",
       {
         edits: [
           { path: "current/outline/progress.json", patch: [{ op: "replace", path: "/a", value: 2 }] },
@@ -476,7 +476,7 @@ describe("VFS handlers", () => {
     expect(result.code).toBe("INVALID_DATA");
   });
 
-  it("reads JSON subfields via vfs_read_json", () => {
+  it("reads JSON subfields via vfs_read", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -495,7 +495,7 @@ describe("VFS handlers", () => {
     );
 
     const result = dispatchToolCall(
-      "vfs_read_json",
+      "vfs_read",
       { path: "current/world/characters/char:npc_1/profile.json", pointers: ["/visible/name"] },
       ctx,
     ) as {
@@ -508,7 +508,7 @@ describe("VFS handlers", () => {
     expect(result.data?.extracts?.[0]?.json).toBe("\"Bob\"");
   });
 
-  it("reports missing pointers for invalid vfs_read_json pointers", () => {
+  it("reports missing pointers for invalid vfs_read pointers", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -527,7 +527,7 @@ describe("VFS handlers", () => {
     );
 
     const result = dispatchToolCall(
-      "vfs_read_json",
+      "vfs_read",
       {
         path: "current/world/characters/char:npc_1/profile.json",
         pointers: ["visible/name", "/visible/missingField"],
@@ -613,7 +613,7 @@ describe("VFS handlers", () => {
     `);
   });
 
-  it("stats files and directories via vfs_stat", () => {
+  it("stats files and directories via vfs_ls", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -637,7 +637,7 @@ describe("VFS handlers", () => {
     );
 
     const statResult = dispatchToolCall(
-      "vfs_stat",
+      "vfs_ls",
       { paths: ["current/world/global.json", "current/world"] },
       ctx,
     ) as {
@@ -677,7 +677,7 @@ describe("VFS handlers", () => {
     expect(dir?.entries?.includes("global.json")).toBe(true);
   });
 
-  it("finds matches via vfs_glob", () => {
+  it("finds matches via vfs_ls", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -715,7 +715,7 @@ describe("VFS handlers", () => {
     );
 
     const globResult = dispatchToolCall(
-      "vfs_glob",
+      "vfs_ls",
       { patterns: ["world/**/*.json", "custom_rules/**/*.md"] },
       ctx,
     ) as {
@@ -732,7 +732,7 @@ describe("VFS handlers", () => {
     ]);
   });
 
-  it("supports excludes in vfs_glob", () => {
+  it("supports excludes in vfs_ls", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -765,7 +765,7 @@ describe("VFS handlers", () => {
     );
 
     const globResult = dispatchToolCall(
-      "vfs_glob",
+      "vfs_ls",
       {
         patterns: ["world/**/*.json", "custom_rules/**/*.md"],
         excludePatterns: ["custom_rules/**"],
@@ -781,7 +781,7 @@ describe("VFS handlers", () => {
     expect(globResult.data?.matches).toEqual(["current/world/theme_config.json"]);
   });
 
-  it("returns metadata via vfs_glob returnMeta", () => {
+  it("returns metadata via vfs_ls returnMeta", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -800,7 +800,7 @@ describe("VFS handlers", () => {
     );
 
     const globResult = dispatchToolCall(
-      "vfs_glob",
+      "vfs_ls",
       { patterns: ["world/**/*.json"], returnMeta: true },
       ctx,
     ) as {
@@ -830,7 +830,7 @@ describe("VFS handlers", () => {
     expect(typeof globResult.data?.entries?.[0]?.updatedAt).toBe("number");
   });
 
-  it("returns only selected metadata fields via vfs_glob metaFields", () => {
+  it("returns only selected metadata fields via vfs_ls metaFields", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -849,7 +849,7 @@ describe("VFS handlers", () => {
     );
 
     const globResult = dispatchToolCall(
-      "vfs_glob",
+      "vfs_ls",
       { patterns: ["world/**/*.json"], metaFields: ["size"] },
       ctx,
     ) as {
@@ -910,7 +910,7 @@ describe("VFS handlers", () => {
     expect(writeResult.success).toBe(true);
 
     const readMany = dispatchToolCall(
-      "vfs_read_many",
+      "vfs_read",
       {
         paths: [
           "current/world/global.json",
@@ -935,7 +935,7 @@ describe("VFS handlers", () => {
     expect(readMany.data?.missing).toEqual(["current/world/missing.json"]);
   });
 
-  it("lists catalog entries via vfs_ls_entries", () => {
+  it("lists catalog entries via vfs_ls", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -986,7 +986,7 @@ describe("VFS handlers", () => {
     );
 
     const result = dispatchToolCall(
-      "vfs_ls_entries",
+      "vfs_ls",
       {
         categories: ["inventory", "npcs", "character_profile", "character_skills"],
         limitPerCategory: null,
@@ -1012,7 +1012,7 @@ describe("VFS handlers", () => {
     );
   });
 
-  it("suggests duplicate groups via vfs_suggest_duplicates", () => {
+  it("suggests duplicate groups via vfs_search", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -1028,7 +1028,7 @@ describe("VFS handlers", () => {
     );
 
     const result = dispatchToolCall(
-      "vfs_suggest_duplicates",
+      "vfs_search",
       { category: "inventory", threshold: 0.35, limitGroups: 5, maxCandidatesPerGroup: 5 },
       ctx,
     ) as {
@@ -1043,7 +1043,7 @@ describe("VFS handlers", () => {
     expect(groupNames).toEqual(expect.arrayContaining(["Rusty Key", "Rusted Key"]));
   });
 
-  it("finishes summary via vfs_finish_summary and writes summary/state.json", () => {
+  it("finishes summary via vfs_commit_summary and writes summary/state.json", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -1052,7 +1052,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_finish_summary",
+      "vfs_commit_summary",
       {
         displayText: "Short summary.",
         visible: {
@@ -1085,7 +1085,7 @@ describe("VFS handlers", () => {
     expect(state.summaries[0].displayText).toBe("Short summary.");
   });
 
-  it("rejects vfs_finish_summary when lastSummarizedIndex does not match nodeRange", () => {
+  it("rejects vfs_commit_summary when lastSummarizedIndex does not match nodeRange", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -1094,7 +1094,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_finish_summary",
+      "vfs_commit_summary",
       {
         displayText: "Bad summary.",
         visible: {
@@ -1166,7 +1166,7 @@ describe("VFS handlers", () => {
     expect(searchResult.code).toBe("INVALID_DATA");
   });
 
-  it("returns INVALID_DATA for invalid vfs_grep regex", () => {
+  it("returns INVALID_DATA for invalid vfs_search regex", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -1175,7 +1175,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_grep",
+      "vfs_search",
       { pattern: "(", flags: "", limit: 5 },
       ctx,
     ) as { success: boolean; code?: string };
@@ -1294,7 +1294,7 @@ describe("VFS handlers", () => {
     );
 
     const mergeResult = dispatchToolCall(
-      "vfs_merge",
+      "vfs_write",
       {
         files: [
           {
@@ -1334,7 +1334,7 @@ describe("VFS handlers", () => {
     );
 
     const mergeResult = dispatchToolCall(
-      "vfs_merge",
+      "vfs_write",
       {
         files: [
           {
@@ -1393,7 +1393,7 @@ describe("VFS handlers", () => {
     expect(turnFile).not.toBeNull();
   });
 
-  it("applies mixed ops atomically via vfs_tx (write + commit_turn)", () => {
+  it("applies mixed ops atomically via vfs_write (write + commit_turn)", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -1402,7 +1402,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_tx",
+      "vfs_write",
       {
         ops: [
           {
@@ -1445,7 +1445,7 @@ describe("VFS handlers", () => {
     expect(JSON.parse(global!.content).time).toBe("Day 1");
   });
 
-  it("rejects vfs_tx when commit_turn is not the last op", () => {
+  it("rejects vfs_write when commit_turn is not the last op", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -1454,7 +1454,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_tx",
+      "vfs_write",
       {
         ops: [
           {
@@ -1485,12 +1485,12 @@ describe("VFS handlers", () => {
     expect(result.code).toBe("INVALID_DATA");
   });
 
-  it("appends to text files via vfs_append (create and existing)", () => {
+  it("appends to text files via vfs_write (create and existing)", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const createResult = dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [
           {
@@ -1506,7 +1506,7 @@ describe("VFS handlers", () => {
     expect(createResult.success).toBe(true);
 
     const appendResult = dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [
           {
@@ -1524,7 +1524,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const appendOk = dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [
           {
@@ -1550,13 +1550,13 @@ describe("VFS handlers", () => {
     expect(read.data?.content ?? "").toContain("- b");
   });
 
-  it("blocks vfs_text_edit until the file is read in this session", () => {
+  it("blocks vfs_write until the file is read in this session", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "A\nB\n", "text/markdown");
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
-      "vfs_text_edit",
+      "vfs_write",
       {
         files: [
           {
@@ -1577,7 +1577,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const ok = dispatchToolCall(
-      "vfs_text_edit",
+      "vfs_write",
       {
         files: [
           {
@@ -1594,13 +1594,13 @@ describe("VFS handlers", () => {
     expect(ok.success).toBe(true);
   });
 
-  it("keeps vfs_text_edit blocked on finish-guarded conversation text paths", () => {
+  it("keeps vfs_write blocked on finish-guarded conversation text paths", () => {
     const session = new VfsSession();
     session.writeFile("conversation/scratch.txt", "A\nB", "text/plain");
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
-      "vfs_text_edit",
+      "vfs_write",
       {
         files: [
           {
@@ -1623,7 +1623,7 @@ describe("VFS handlers", () => {
     expect(read.success).toBe(true);
 
     const edited = dispatchToolCall(
-      "vfs_text_edit",
+      "vfs_write",
       {
         files: [
           {
@@ -1648,7 +1648,7 @@ describe("VFS handlers", () => {
     expect(verify.data?.content).toBe("A\nB");
   });
 
-  it("can append a marker block via vfs_text_edit replace_between when markers are missing", () => {
+  it("can append a marker block via vfs_write replace_between when markers are missing", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -1657,7 +1657,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_text_edit",
+      "vfs_write",
       {
         files: [
           {
@@ -1692,12 +1692,12 @@ describe("VFS handlers", () => {
     expect(read.data?.content ?? "").toContain("## End Threads");
   });
 
-  it("supports expectedHash guards for vfs_append on existing files", () => {
+  it("supports expectedHash guards for vfs_write on existing files", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [{ path: "current/world/notes.md", content: "A", ensureNewline: true }],
       },
@@ -1714,7 +1714,7 @@ describe("VFS handlers", () => {
     expect(hash1.length).toBeGreaterThan(0);
 
     const bad = dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [
           {
@@ -1731,7 +1731,7 @@ describe("VFS handlers", () => {
     expect(bad.code).toBe("INVALID_ACTION");
 
     const ok = dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [
           {
@@ -1747,7 +1747,7 @@ describe("VFS handlers", () => {
     expect(ok.success).toBe(true);
   });
 
-  it("supports line-based edits via vfs_text_edit", () => {
+  it("supports line-based edits via vfs_write", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -1768,7 +1768,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_text_edit",
+      "vfs_write",
       {
         files: [
           {
@@ -1795,13 +1795,13 @@ describe("VFS handlers", () => {
   });
 
 
-  it("keeps vfs_append blocked on finish-guarded conversation text paths", () => {
+  it("keeps vfs_write blocked on finish-guarded conversation text paths", () => {
     const session = new VfsSession();
     session.writeFile("conversation/scratch.md", "# Scratch", "text/markdown");
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [
           {
@@ -1820,7 +1820,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/conversation/scratch.md" }, ctx);
 
     const ok = dispatchToolCall(
-      "vfs_append",
+      "vfs_write",
       {
         appends: [
           {
@@ -1846,13 +1846,13 @@ describe("VFS handlers", () => {
     expect(read.data?.content).toBe("# Scratch");
   });
 
-  it("supports vfs_text_patch with read fence and base guard", () => {
+  it("supports vfs_write with read fence and base guard", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "Alpha", "text/markdown");
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
-      "vfs_text_patch",
+      "vfs_write",
       {
         files: [
           {
@@ -1871,7 +1871,7 @@ describe("VFS handlers", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const mismatchedBase = dispatchToolCall(
-      "vfs_text_patch",
+      "vfs_write",
       {
         files: [
           {
@@ -1888,7 +1888,7 @@ describe("VFS handlers", () => {
     expect(mismatchedBase.code).toBe("INVALID_ACTION");
 
     const ok = dispatchToolCall(
-      "vfs_text_patch",
+      "vfs_write",
       {
         files: [
           {
@@ -1913,12 +1913,12 @@ describe("VFS handlers", () => {
     expect(read.data?.content).toBe("Beta");
   });
 
-  it("requires empty base when vfs_text_patch creates files", () => {
+  it("requires empty base when vfs_write creates files", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const invalidCreate = dispatchToolCall(
-      "vfs_text_patch",
+      "vfs_write",
       {
         files: [
           {
@@ -1936,7 +1936,7 @@ describe("VFS handlers", () => {
     expect(invalidCreate.code).toBe("INVALID_DATA");
 
     const validCreate = dispatchToolCall(
-      "vfs_text_patch",
+      "vfs_write",
       {
         files: [
           {
@@ -2036,12 +2036,12 @@ describe("VFS handlers", () => {
     expect(valid.success).toBe(true);
   });
 
-  it("rejects invalid JSON payloads in vfs_tx write operations", () => {
+  it("rejects invalid JSON payloads in vfs_write write operations", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const wrongType = dispatchToolCall(
-      "vfs_tx",
+      "vfs_write",
       {
         ops: [
           {
@@ -2059,7 +2059,7 @@ describe("VFS handlers", () => {
     expect(wrongType.code).toBe("INVALID_DATA");
 
     const invalidJson = dispatchToolCall(
-      "vfs_tx",
+      "vfs_write",
       {
         ops: [
           {
@@ -2087,7 +2087,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_submit_outline_phase_0",
+      "vfs_commit_outline_phase_0",
       {
         data: {
           worldSetting: "A haunted valley wrapped in perpetual mist.",
@@ -2121,7 +2121,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_submit_outline_phase_1",
+      "vfs_commit_outline_phase_1",
       {
         data: {
           storyPlanMarkdown: "# Story Plan\n\n## Arc Roadmap\n- Beat A",
@@ -2167,7 +2167,7 @@ describe("VFS handlers", () => {
     };
 
     const phase6Invalid = dispatchToolCall(
-      "vfs_submit_outline_phase_6",
+      "vfs_commit_outline_phase_6",
       {
         data: {
           quests: [],
@@ -2181,7 +2181,7 @@ describe("VFS handlers", () => {
     expect(phase6Invalid.error ?? "").toContain("data.npcs");
 
     const phase7Invalid = dispatchToolCall(
-      "vfs_submit_outline_phase_7",
+      "vfs_commit_outline_phase_7",
       {
         data: {
           knowledge: [],
@@ -2204,7 +2204,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_submit_outline_phase_0",
+      "vfs_commit_outline_phase_0",
       {
         data: {
           suggestedTitle: "Only title",
@@ -2307,7 +2307,7 @@ describe("VFS handlers", () => {
   });
 
 
-  it("requires retconAck in vfs_tx commit_turn when pending", () => {
+  it("requires retconAck in vfs_write commit_turn when pending", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/runtime/custom_rules_ack_state.json",
@@ -2327,7 +2327,7 @@ describe("VFS handlers", () => {
     };
 
     const result = dispatchToolCall(
-      "vfs_tx",
+      "vfs_write",
       {
         ops: [
           {

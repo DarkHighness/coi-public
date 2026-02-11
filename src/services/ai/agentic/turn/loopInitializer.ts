@@ -61,6 +61,8 @@ export interface LoopState {
   vfsElevationIntent?: VfsElevationIntent;
   /** Declared elevation scope for current request token */
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
+  /** Pending write targets that failed and must be retried successfully before finish */
+  pendingWriteFailurePaths: Set<string>;
 }
 
 // ============================================================================
@@ -142,6 +144,7 @@ export function createLoopState(
     vfsElevationToken: vfsElevationToken ?? null,
     vfsElevationIntent,
     vfsElevationScopeTemplateIds,
+    pendingWriteFailurePaths: new Set<string>(),
   };
 }
 

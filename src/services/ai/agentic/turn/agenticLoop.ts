@@ -48,6 +48,15 @@ import {
 import { buildResponseFromVfs, getChangedEntitiesArray } from "./resultAccumulator";
 import { normalizeVfsPath } from "../../../vfs/utils";
 import { rollbackVfsSessionToCheckpoint } from "../../../vfs/runtimeCheckpoints";
+import {
+  collectWriteTargetsFromToolCall,
+  formatPendingWriteFailurePaths,
+  getToolErrorCode,
+  isLikelyNoOpReadBeforeFinishBatch,
+  isWriteMutationToolName,
+  shouldTrackWriteFailure,
+  UNKNOWN_WRITE_TARGET,
+} from "../common/toolCallPolicies";
 
 // Import tool handling
 import {
@@ -226,11 +235,8 @@ export async function runAgenticLoopRefactored(
       const mustFinishNow = toolCallsRemaining <= 2 || iterationsRemaining <= 2;
 
       if (mustFinishNow) {
-        // Forced-finish mode should still allow batching via vfs_tx + commit_turn
-        // so the model can apply essential state updates and finish in one call.
         loopState.activeTools = loopState.activeTools.filter(
-          (tool) =>
-            tool.name === loopState.finishToolName || tool.name === "vfs_tx",
+          (tool) => tool.name === loopState.finishToolName,
         );
       }
 
@@ -243,7 +249,6 @@ export async function runAgenticLoopRefactored(
         loopState,
         settings,
         sessionId,
-        // In forced-finish mode we allow either vfs_commit_turn or vfs_tx (with commit_turn as last op).
         requiredToolName: undefined,
       });
 
@@ -332,7 +337,7 @@ export async function runAgenticLoopRefactored(
       );
     }
     throw new Error(
-      `TURN_NOT_COMMITTED: Agentic loop exhausted its budget without writing conversation files (expected ${loopState.finishToolName} or equivalent conversation writes as the last tool call).`,
+      `TURN_NOT_COMMITTED: Agentic loop exhausted its budget without calling finish tool "${loopState.finishToolName}" as the last step.`,
     );
   }
 
@@ -456,7 +461,7 @@ function checkCommandSkillReadGate(
     return { ok: true };
   }
 
-  const readTools = new Set(["vfs_read", "vfs_read_many", "vfs_read_json"]);
+  const readTools = new Set(["vfs_read"]);
   const hasNonReadCall = functionCalls.some((call) => !readTools.has(call.name));
   if (!hasNonReadCall) {
     return { ok: true };
@@ -476,7 +481,7 @@ function checkCommandSkillReadGate(
       success: false,
       error: `[ERROR: COMMAND_SKILL_NOT_READ] You must read required command skill file(s) in current epoch before non-read tools: ${missing
         .map((p) => `current/${p}`)
-        .join(", ")}. Use vfs_read/vfs_read_many first.`,
+        .join(", ")}. Use vfs_read first.`,
       code: "SKILL_NOT_READ",
     },
   };
@@ -491,7 +496,7 @@ function checkPresetSkillReadGate(
     return { ok: true };
   }
 
-  const readTools = new Set(["vfs_read", "vfs_read_many", "vfs_read_json"]);
+  const readTools = new Set(["vfs_read"]);
   const hasNonReadCall = functionCalls.some((call) => !readTools.has(call.name));
   if (!hasNonReadCall) {
     return { ok: true };
@@ -511,7 +516,7 @@ function checkPresetSkillReadGate(
       success: false,
       error: `[ERROR: PRESET_SKILL_NOT_READ] Active preset skill file(s) must be read in current epoch before non-read tools: ${missing
         .map((p) => `current/${p}`)
-        .join(", ")}. Use vfs_read/vfs_read_many first.`,
+        .join(", ")}. Use vfs_read first.`,
       code: "PRESET_SKILL_NOT_READ",
     },
   };
@@ -562,19 +567,8 @@ async function processToolCalls(
     };
   }
 
-  const isTxCommitTurnCall = (call: ToolCallResult): boolean => {
-    if (call.name !== "vfs_tx") return false;
-    const ops = (call.args as any)?.ops;
-    if (!Array.isArray(ops) || ops.length === 0) return false;
-    return ops[ops.length - 1]?.op === "commit_turn";
-  };
-
   const isFinishToolCall = (call: ToolCallResult): boolean => {
-    if (call.name === finishToolName) {
-      return true;
-    }
-    if (isTxCommitTurnCall(call)) return true;
-    return false;
+    return call.name === finishToolName;
   };
 
   const isConversationPath = (path: string): boolean => {
@@ -592,35 +586,13 @@ async function processToolCalls(
     const touched: string[] = [];
 
     if (call.name === "vfs_write") {
-      const files = (call.args as any)?.files;
-      if (Array.isArray(files)) {
-        for (const file of files) {
-          if (typeof file?.path === "string" && isConversationPath(file.path)) {
-            touched.push(file.path);
-          }
-        }
-      }
-      return touched;
-    }
-
-    if (call.name === "vfs_edit") {
-      const edits = (call.args as any)?.edits;
-      if (Array.isArray(edits)) {
-        for (const edit of edits) {
-          if (typeof edit?.path === "string" && isConversationPath(edit.path)) {
-            touched.push(edit.path);
-          }
-        }
-      }
-      return touched;
-    }
-
-    if (call.name === "vfs_merge") {
-      const files = (call.args as any)?.files;
-      if (Array.isArray(files)) {
-        for (const file of files) {
-          if (typeof file?.path === "string" && isConversationPath(file.path)) {
-            touched.push(file.path);
+      const ops = (call.args as any)?.ops;
+      if (Array.isArray(ops)) {
+        for (const op of ops) {
+          if (!op || typeof op !== "object") continue;
+          const path = (op as any).path;
+          if (typeof path === "string" && isConversationPath(path)) {
+            touched.push(path);
           }
         }
       }
@@ -654,50 +626,18 @@ async function processToolCalls(
       return touched;
     }
 
-    if (call.name === "vfs_tx") {
-      const ops = (call.args as any)?.ops;
-      if (Array.isArray(ops)) {
-        for (const op of ops) {
-          if (!op || typeof op !== "object") {
-            continue;
-          }
-          const kind = (op as any).op;
-          if (kind === "write" || kind === "edit" || kind === "merge" || kind === "delete") {
-            const path = (op as any).path;
-            if (typeof path === "string" && isConversationPath(path)) {
-              touched.push(path);
-            }
-            continue;
-          }
-          if (kind === "move") {
-            const from = (op as any).from;
-            const to = (op as any).to;
-            if (typeof from === "string" && isConversationPath(from)) {
-              touched.push(from);
-            }
-            if (typeof to === "string" && isConversationPath(to)) {
-              touched.push(to);
-            }
-          }
-        }
-      }
-      return touched;
-    }
-
     return touched;
   };
 
   const mustOnlyFinish =
     loopState.activeTools.length > 0 &&
-    loopState.activeTools.every(
-      (tool) => tool.name === finishToolName || tool.name === "vfs_tx",
-    );
+    loopState.activeTools.every((tool) => tool.name === finishToolName);
 
   if (mustOnlyFinish) {
     if (functionCalls.length !== 1 || !isFinishToolCall(functionCalls[0]!)) {
       const error = {
         success: false,
-        error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}" (or one "vfs_tx" whose LAST op is commit_turn), and it must be the ONLY tool call in this response.`,
+        error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
         code: "INVALID_ACTION",
       };
       return {
@@ -719,7 +659,7 @@ async function processToolCalls(
   if (finishCallIndices.length > 1) {
     const error = {
       success: false,
-      error: `[ERROR: MULTIPLE_FINISH_CALLS] You invoked the finish operation more than once. Provide exactly one "${finishToolName}" (or one "vfs_tx" whose LAST op is commit_turn), and it must be the LAST tool call.`,
+      error: `[ERROR: MULTIPLE_FINISH_CALLS] You invoked the finish operation more than once. Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
       code: "INVALID_ACTION",
     };
     return {
@@ -738,7 +678,7 @@ async function processToolCalls(
   ) {
     const error = {
       success: false,
-      error: `[ERROR: FINISH_NOT_LAST] The finish tool must be your LAST tool call. Reorder so all state edits happen before "${finishToolName}" (or "vfs_tx" whose LAST op is commit_turn).`,
+      error: `[ERROR: FINISH_NOT_LAST] The finish tool must be your LAST tool call. Reorder so all state edits happen before "${finishToolName}".`,
       code: "INVALID_ACTION",
     };
     return {
@@ -746,6 +686,26 @@ async function processToolCalls(
         toolCallId: call.id,
         name: call.name,
         content: error,
+      })),
+      turnFinished: false,
+    };
+  }
+
+  if (isLikelyNoOpReadBeforeFinishBatch(functionCalls, finishToolName)) {
+    const warning = {
+      success: false,
+      error:
+        `[WARNING: PRE_FINISH_READ_ONLY_SEQUENCE] You are calling "${finishToolName}" in this batch, ` +
+        "but all prior calls are read-only and produce no state changes. " +
+        "Avoid token-waste reads right before finish. Either finish directly, or perform required mutations before finish.",
+      code: "WARNING",
+      warning: true,
+    };
+    return {
+      responses: functionCalls.map((call) => ({
+        toolCallId: call.id,
+        name: call.name,
+        content: warning,
       })),
       turnFinished: false,
     };
@@ -792,7 +752,7 @@ async function processToolCalls(
     const unique = Array.from(new Set(conversationTouched));
     const error = {
       success: false,
-      error: `[ERROR: CONVERSATION_WRITE_FORBIDDEN] Do not write to current/conversation/* using generic VFS write/edit/merge/move/delete tools. End the turn ONLY via "${finishToolName}" (preferred) or "vfs_tx" with commit_turn as the LAST op. Forbidden paths: ${unique.join(", ")}`,
+      error: `[ERROR: CONVERSATION_WRITE_FORBIDDEN] Do not write to current/conversation/* using generic VFS write/move/delete tools. End the turn ONLY via "${finishToolName}" as the LAST tool call. Forbidden paths: ${unique.join(", ")}`,
       code: "INVALID_ACTION",
     };
     return {
@@ -816,7 +776,7 @@ async function processToolCalls(
     content: unknown;
   }> = [];
   let turnFinished = false;
-  let hasPriorToolFailure = false;
+  let hasPriorNonWriteFailure = false;
 
   const liveToolCalls: ToolCallRecord[] = functionCalls.map((call) => ({
     name: call.name,
@@ -835,13 +795,30 @@ async function processToolCalls(
   for (const call of functionCalls) {
     let output: unknown;
     let isError = false;
+    const isWriteTool = isWriteMutationToolName(call.name);
+    const writeTargets = isWriteTool ? collectWriteTargetsFromToolCall(call) : [];
 
-    if (isFinishToolCall(call) && hasPriorToolFailure) {
+    if (isFinishToolCall(call) && hasPriorNonWriteFailure) {
       output = {
         success: false,
         error:
           `[ERROR: FINISH_BLOCKED_BY_PREVIOUS_FAILURE] One or more tool calls before finish failed in this batch. ` +
           `Fix those failures first, then call "${finishToolName}" again as the LAST tool call.`,
+        code: "INVALID_ACTION",
+      };
+      isError = true;
+    } else if (
+      isFinishToolCall(call) &&
+      loopState.pendingWriteFailurePaths.size > 0
+    ) {
+      const pendingList = formatPendingWriteFailurePaths(
+        loopState.pendingWriteFailurePaths,
+      );
+      output = {
+        success: false,
+        error:
+          `[ERROR: FINISH_BLOCKED_BY_WRITE_FAILURE] Pending write targets failed earlier and must succeed before finish. ` +
+          `Retry writes for: ${pendingList}.`,
         code: "INVALID_ACTION",
       };
       isError = true;
@@ -870,8 +847,30 @@ async function processToolCalls(
       }
     }
 
-    if (isError) {
-      hasPriorToolFailure = true;
+    if (isWriteTool) {
+      if (isError) {
+        const code = getToolErrorCode(output);
+        const shouldTrackFailure = shouldTrackWriteFailure(code);
+
+        if (shouldTrackFailure) {
+          const targetsToTrack =
+            writeTargets.length > 0 ? writeTargets : [UNKNOWN_WRITE_TARGET];
+          for (const target of targetsToTrack) {
+            loopState.pendingWriteFailurePaths.add(target);
+          }
+        }
+      } else {
+        if (writeTargets.length > 0) {
+          for (const target of writeTargets) {
+            loopState.pendingWriteFailurePaths.delete(target);
+          }
+        }
+        // If a previous malformed write had unknown target, any successful write
+        // indicates the model recovered its write workflow and can proceed.
+        loopState.pendingWriteFailurePaths.delete(UNKNOWN_WRITE_TARGET);
+      }
+    } else if (isError) {
+      hasPriorNonWriteFailure = true;
     }
 
     responses.push({

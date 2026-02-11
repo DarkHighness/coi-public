@@ -8,30 +8,16 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
   const [isExpanded, setIsExpanded] = useState(isError); // Auto-expand errors
   const { t } = useTranslation();
 
-  const isTxCommitTurn =
-    call.name === "vfs_tx" &&
-    Array.isArray((call.input as any)?.ops) &&
-    (call.input as any).ops.length > 0 &&
-    (call.input as any).ops[(call.input as any).ops.length - 1]?.op ===
-      "commit_turn";
+  const isQuery = new Set(["vfs_ls", "vfs_schema", "vfs_read", "vfs_search"]).has(
+    call.name,
+  );
 
-  const isQuery = new Set([
-    "vfs_ls",
-    "vfs_read",
-    "vfs_schema",
-    "vfs_stat",
-    "vfs_glob",
-    "vfs_read_many",
-    "vfs_read_json",
-    "vfs_search",
-    "vfs_grep",
-    "vfs_ls_entries",
-    "vfs_suggest_duplicates",
-  ]).has(call.name);
+  const isOutlineCommit = /^vfs_commit_outline_phase_[0-9]+$/.test(call.name);
+
   const isFinish =
     call.name === "vfs_commit_turn" ||
-    call.name === "vfs_finish_summary" ||
-    isTxCommitTurn;
+    call.name === "vfs_commit_summary" ||
+    isOutlineCommit;
   const isSuccess = !isError;
 
   const statusColor = isSuccess ? "text-theme-success" : "text-theme-error";

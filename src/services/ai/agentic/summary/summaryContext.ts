@@ -60,16 +60,15 @@ Tool allowlist for this loop:
 ${formatVfsToolsForPrompt(VFS_TOOLSETS.summary.tools)}
 
 Read-only tools:
-1. \`vfs_ls\` / \`vfs_stat\` / \`vfs_glob\` - Locate files & check metadata without reading full content
+1. \`vfs_ls\` - Locate files, pattern-match with \`patterns\`, and optionally inspect metadata via \`stat=true\`
 2. \`vfs_schema\` - Inspect expected JSON fields for a path (read-only)
-3. \`vfs_ls_entries\` - Get a compact catalog of entities by category (read-only)
-4. \`vfs_read\` / \`vfs_read_many\` / \`vfs_read_json\` - Read VFS files (or specific JSON pointers) for exact details
-5. \`vfs_search\` / \`vfs_grep\` - Find details in the VFS (read-only)
+3. \`vfs_read\` - Read VFS files by chars, lines, or JSON pointers for exact details
+4. \`vfs_search\` - Find details in the VFS (read-only)
 
 Finish tool:
-6. \`vfs_finish_summary\` - Finish by appending a summary to \`current/summary/state.json\`
+5. \`vfs_commit_summary\` - Finish by appending a summary to \`current/summary/state.json\`
 
-When you have enough information, call \`vfs_finish_summary\`.
+When you have enough information, call \`vfs_commit_summary\`.
 It MUST be your LAST tool call.
 
 Before any summary mutation, read command protocol (hub first):
@@ -78,17 +77,17 @@ Before any summary mutation, read command protocol (hub first):
 
 <examples>
 - Example (read just fields, cheaper than full file):
-  Call \`vfs_read_json\` with:
+  Call \`vfs_read\` with:
   - path: \`current/summary/state.json\`
+  - mode: \`"json"\`
   - pointers: \`["/lastSummarizedIndex", "/summaries/-1/displayText"]\`
 
 - Example (finish):
-  Call \`vfs_finish_summary\` with:
+  Call \`vfs_commit_summary\` with:
   - displayText: "..."
   - visible: { narrative, majorEvents, characterDevelopment, worldState }
   - hidden: { truthNarrative, hiddenPlots, npcActions, worldTruth, unrevealed }
-  - nodeRange: { fromIndex: X, toIndex: Y }
-  - lastSummarizedIndex: Y + 1
+  - (Do NOT provide nodeRange/lastSummarizedIndex; runtime injects these)
 </examples>
 </tools>`,
 );
@@ -297,7 +296,7 @@ ${pendingPlayerAction.text}
   }
 
   parts.push(`<finish_rule>
-When ready, call vfs_finish_summary(...).
+When ready, call vfs_commit_summary(...).
 It MUST be your LAST tool call.
 </finish_rule>`);
 

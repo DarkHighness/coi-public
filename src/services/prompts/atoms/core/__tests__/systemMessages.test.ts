@@ -42,8 +42,8 @@ describe("systemMessages atoms", () => {
 
   it("cleanup turn instruction mentions cleanup helpers", () => {
     const content = cleanupTurnInstruction({});
-    expect(content).toContain("vfs_ls_entries");
-    expect(content).toContain("vfs_suggest_duplicates");
+    expect(content).toContain("vfs_ls");
+    expect(content).toContain("vfs_search");
   });
 
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {

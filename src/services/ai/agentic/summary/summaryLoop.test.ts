@@ -81,6 +81,25 @@ function makeInput(overrides?: Partial<SummaryLoopInput>): SummaryLoopInput {
   };
 }
 
+function makeCommitSummaryArgs(displayText = "OK") {
+  return {
+    displayText,
+    visible: {
+      narrative: "ok",
+      majorEvents: [],
+      characterDevelopment: "",
+      worldState: "",
+    },
+    hidden: {
+      truthNarrative: "",
+      hiddenPlots: [],
+      npcActions: [],
+      worldTruth: "",
+      unrevealed: [],
+    },
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 
@@ -98,10 +117,7 @@ beforeEach(() => {
         {
           id: "call_1",
           name: VFS_TOOLSETS.summary.finishToolName,
-          args: {
-            nodeRange: { fromIndex: 0, toIndex: 1 },
-            lastSummarizedIndex: 2,
-          },
+          args: makeCommitSummaryArgs(),
         },
       ],
     },
@@ -262,7 +278,7 @@ describe("runSummaryLoop", () => {
     );
 
     expect(compactTrigger).toContain(
-      'Before finish, read protocol (hub first): "current/skills/commands/runtime/SKILL.md", then "current/skills/commands/runtime/compact/SKILL.md".',
+      'Before finish, read protocol: "current/skills/commands/compact/SKILL.md".',
     );
     expect(compactAnchor).toContain("MODE CONTRACT: SESSION_COMPACT");
     expect(compactAnchor).toContain("Current session history already loaded in context");
@@ -278,7 +294,7 @@ describe("runSummaryLoop", () => {
           functionCalls: [
             {
               id: "call-cross-fork",
-              name: "vfs_read_json",
+              name: "vfs_read",
               args: { path: "forks/1/story/summary/state.json" },
             },
           ],
@@ -292,10 +308,7 @@ describe("runSummaryLoop", () => {
             {
               id: "call-finish-ok",
               name: VFS_TOOLSETS.summary.finishToolName,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -312,7 +325,7 @@ describe("runSummaryLoop", () => {
     );
   });
 
-  it("blocks finish calls whose range does not match anchored nodeRange", async () => {
+  it("blocks finish calls when AI provides runtime-only fields", async () => {
     const finishTool = VFS_TOOLSETS.summary.finishToolName;
     const input = makeInput({
       forkId: 2,
@@ -327,6 +340,7 @@ describe("runSummaryLoop", () => {
               id: "call-finish-bad-range",
               name: finishTool,
               args: {
+                ...makeCommitSummaryArgs(),
                 nodeRange: { fromIndex: 0, toIndex: 3 },
                 lastSummarizedIndex: 4,
               },
@@ -342,10 +356,7 @@ describe("runSummaryLoop", () => {
             {
               id: "call-finish-ok",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 4, toIndex: 9 },
-                lastSummarizedIndex: 10,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -361,6 +372,7 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
       {
+        ...makeCommitSummaryArgs(),
         nodeRange: { fromIndex: 4, toIndex: 9 },
         lastSummarizedIndex: 10,
       },
@@ -383,7 +395,7 @@ describe("runSummaryLoop", () => {
           data: {
             summary: {
               id: "s_forbidden",
-              displayText: "includes vfs_read_json (forbidden)",
+              displayText: "includes vfs_read (forbidden)",
               visible: {
                 narrative: "ok",
                 majorEvents: [],
@@ -446,12 +458,9 @@ describe("runSummaryLoop", () => {
             {
               id: "call_finish",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
-            { id: "call_read", name: "vfs_read_json", args: {} },
+            { id: "call_read", name: "vfs_read", args: {} },
           ],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
@@ -463,10 +472,7 @@ describe("runSummaryLoop", () => {
             {
               id: "call_finish_ok",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -483,6 +489,7 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
       {
+        ...makeCommitSummaryArgs(),
         nodeRange: { fromIndex: 0, toIndex: 1 },
         lastSummarizedIndex: 2,
       },
@@ -500,18 +507,12 @@ describe("runSummaryLoop", () => {
             {
               id: "call_finish_1",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
             {
               id: "call_finish_2",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -524,10 +525,7 @@ describe("runSummaryLoop", () => {
             {
               id: "call_finish_ok",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -550,14 +548,11 @@ describe("runSummaryLoop", () => {
       .mockResolvedValueOnce({
         result: {
           functionCalls: [
-            { id: "call_read", name: "vfs_read_json", args: {} },
+            { id: "call_read", name: "vfs_read", args: {} },
             {
               id: "call_finish_blocked",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -570,10 +565,7 @@ describe("runSummaryLoop", () => {
             {
               id: "call_finish_ok",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -582,7 +574,7 @@ describe("runSummaryLoop", () => {
       });
 
     mockDispatchToolCallAsync.mockImplementation(async (name: string) => {
-      if (name === "vfs_read_json") {
+      if (name === "vfs_read") {
         return {
           success: false,
           error: "read failed",
@@ -624,9 +616,9 @@ describe("runSummaryLoop", () => {
     const result = await runSummaryLoop(input, "query_summary");
 
     expect(result.summary?.id).toBe("s1");
-    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(1);
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(2);
-    expect(mockDispatchToolCallAsync.mock.calls[0]?.[0]).toBe("vfs_read_json");
+    expect(mockDispatchToolCallAsync.mock.calls[0]?.[0]).toBe("vfs_read");
     expect(mockDispatchToolCallAsync.mock.calls[1]?.[0]).toBe(finishTool);
   });
 
@@ -636,7 +628,7 @@ describe("runSummaryLoop", () => {
     mockCallWithAgenticRetry
       .mockResolvedValueOnce({
         result: {
-          functionCalls: [{ id: "call_read", name: "vfs_read_json", args: {} }],
+          functionCalls: [{ id: "call_read", name: "vfs_read", args: {} }],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
         raw: {},
@@ -647,10 +639,7 @@ describe("runSummaryLoop", () => {
             {
               id: "call_finish",
               name: finishTool,
-              args: {
-                nodeRange: { fromIndex: 0, toIndex: 1 },
-                lastSummarizedIndex: 2,
-              },
+              args: makeCommitSummaryArgs(),
             },
           ],
         },
@@ -672,7 +661,7 @@ describe("runSummaryLoop", () => {
     const result = await runSummaryLoop(input, "query_summary");
 
     expect(result.summary?.id).toBe("s1");
-    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(1);
     expect(mockCallWithAgenticRetry.mock.calls[0]?.[3]?.requiredToolName).toBe(
       finishTool,
     );
@@ -680,6 +669,7 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
       {
+        ...makeCommitSummaryArgs(),
         nodeRange: { fromIndex: 0, toIndex: 1 },
         lastSummarizedIndex: 2,
       },

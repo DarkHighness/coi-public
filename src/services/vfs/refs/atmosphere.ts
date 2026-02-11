@@ -19,7 +19,7 @@ const writeText = (session: VfsSession, path: string, value: string) => {
  *
  * Why:
  * - Keeps large descriptions out of the always-loaded prompt context
- * - Lets the agent fetch only what it needs via vfs_ls / vfs_read / vfs_read_json / vfs_search
+ * - Lets the agent fetch only what it needs via vfs_ls / vfs_read / vfs_read / vfs_search
  */
 export const seedAtmosphereRefs = (session: VfsSession): void => {
   const writeItem = (

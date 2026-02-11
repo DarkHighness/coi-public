@@ -162,6 +162,20 @@ describe("agenticLoop tool logging", () => {
             args: { path: "current/world/global.json" },
           },
           {
+            id: "call-write-pass",
+            name: "vfs_write",
+            args: {
+              ops: [
+                {
+                  op: "write_file",
+                  path: "current/world/notes.md",
+                  content: "ok",
+                  contentType: "text/markdown",
+                },
+              ],
+            },
+          },
+          {
             id: "call-finish-blocked",
             name: "vfs_commit_turn",
             args: {
@@ -201,6 +215,10 @@ describe("agenticLoop tool logging", () => {
         return { success: false, error: "read failed", code: "READ_FAILED" };
       }
 
+      if (name === "vfs_write") {
+        return { success: true };
+      }
+
       if (name === "vfs_commit_turn") {
         vfsSession.markConversationTouched();
         return { success: true };
@@ -222,9 +240,10 @@ describe("agenticLoop tool logging", () => {
     });
 
     expect(result.response.narrative).toBe("new narrative");
-    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(2);
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(3);
     expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
       "vfs_read",
+      "vfs_write",
       "vfs_commit_turn",
     ]);
 
@@ -239,6 +258,313 @@ describe("agenticLoop tool logging", () => {
     expect(blockedFinishLog).toBeDefined();
   });
 
+  it("blocks finish until failed write targets are retried successfully", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-write-fail",
+            name: "vfs_write",
+            args: {
+              ops: [
+                {
+                  op: "write_file",
+                  path: "current/world/global.json",
+                  content: "{}",
+                  contentType: "application/json",
+                },
+              ],
+            },
+          },
+          {
+            id: "call-finish-blocked-1",
+            name: "vfs_commit_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 4,
+          completionTokens: 2,
+          totalTokens: 6,
+        },
+        functionCalls: [
+          {
+            id: "call-finish-blocked-2",
+            name: "vfs_commit_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 4,
+          completionTokens: 2,
+          totalTokens: 6,
+        },
+        functionCalls: [
+          {
+            id: "call-write-ok",
+            name: "vfs_write",
+            args: {
+              ops: [
+                {
+                  op: "write_file",
+                  path: "current/world/global.json",
+                  content: "{}",
+                  contentType: "application/json",
+                },
+              ],
+            },
+          },
+          {
+            id: "call-finish-ok",
+            name: "vfs_commit_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    let writeAttempt = 0;
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_write") {
+        writeAttempt += 1;
+        if (writeAttempt === 1) {
+          return {
+            success: false,
+            error: "must read file before overwrite",
+            code: "INVALID_ACTION",
+          };
+        }
+        return { success: true };
+      }
+
+      if (name === "vfs_commit_turn") {
+        vfsSession.markConversationTouched();
+        return { success: true };
+      }
+
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(3);
+    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
+      "vfs_write",
+      "vfs_write",
+      "vfs_commit_turn",
+    ]);
+
+    const writeBlockedLog = result.logs.find(
+      (log) =>
+        log.endpoint === "tool_execution" &&
+        log.toolName === "vfs_commit_turn" &&
+        String((log as any).toolOutput?.error || "").includes(
+          "FINISH_BLOCKED_BY_WRITE_FAILURE",
+        ),
+    );
+    expect(writeBlockedLog).toBeDefined();
+    expect(String((writeBlockedLog as any)?.toolOutput?.error || "")).toContain(
+      "current/world/global.json",
+    );
+  });
+
+  it("does not require retry for immutable write failures on read-only files", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-write-immutable",
+          name: "vfs_write",
+          args: {
+            ops: [
+              {
+                op: "write_file",
+                path: "current/skills/commands/runtime/SKILL.md",
+                content: "x",
+                contentType: "text/markdown",
+              },
+            ],
+          },
+        },
+        {
+          id: "call-finish-ok",
+          name: "vfs_commit_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_write") {
+        return {
+          success: false,
+          error: "read-only path",
+          code: "IMMUTABLE_READONLY",
+        };
+      }
+      if (name === "vfs_commit_turn") {
+        vfsSession.markConversationTouched();
+        return { success: true };
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
+    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
+      "vfs_write",
+      "vfs_commit_turn",
+    ]);
+  });
+
+  it("soft-blocks read-only batches before finish to avoid token waste", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-read",
+            name: "vfs_read",
+            args: { path: "current/world/global.json" },
+          },
+          {
+            id: "call-finish-blocked",
+            name: "vfs_commit_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 4,
+          completionTokens: 2,
+          totalTokens: 6,
+        },
+        functionCalls: [
+          {
+            id: "call-finish-ok",
+            name: "vfs_commit_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_commit_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(2);
+    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
+      "vfs_commit_turn",
+    ]);
+
+    const historyText = JSON.stringify(result._conversationHistory);
+    expect(historyText).toContain("PRE_FINISH_READ_ONLY_SEQUENCE");
+  });
+
   it("records all tool calls including final commit tool", async () => {
     const vfsSession = createVfsSession();
 
@@ -251,9 +577,18 @@ describe("agenticLoop tool logging", () => {
       },
       functionCalls: [
         {
-          id: "call-1",
-          name: "vfs_read",
-          args: { path: "current/world/global.json" },
+          id: "call-1-write",
+          name: "vfs_write",
+          args: {
+            ops: [
+              {
+                op: "write_file",
+                path: "current/world/notes.md",
+                content: "ok",
+                contentType: "text/markdown",
+              },
+            ],
+          },
         },
         {
           id: "call-2",
@@ -270,6 +605,9 @@ describe("agenticLoop tool logging", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_write") {
+        return { success: true };
+      }
       if (name === "vfs_commit_turn") {
         vfsSession.markConversationTouched();
       }
@@ -291,7 +629,7 @@ describe("agenticLoop tool logging", () => {
     const toolLogs = result.logs.filter((log) => log.endpoint === "tool_execution");
     expect(toolLogs).toHaveLength(2);
     expect(toolLogs.map((log) => log.toolName)).toEqual([
-      "vfs_read",
+      "vfs_write",
       "vfs_commit_turn",
     ]);
   });

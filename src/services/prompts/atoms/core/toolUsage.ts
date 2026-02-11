@@ -47,12 +47,12 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom({ atomId: "atoms/core/
   - Permission classes: \`immutable_readonly\` (never writable), \`default_editable\` (AI default writable), \`elevated_editable\` (requires one-time user-confirmed token in \`/god\` or \`/sudo\`), \`finish_guarded\` (write only via finish tools).
   - Immutable zones are always blocked: \`shared/system/skills/**\`, \`shared/system/refs/**\` (plus alias views \`skills/**\`, \`refs/**\`).
   - Resource templates enforce operation-level contracts (e.g. conversation expects \`finish_commit\`, summary expects \`finish_summary\`, rewrite flows use \`history_rewrite\`).
-  - Use \`vfs_ls\`, \`vfs_read\`/\`vfs_read_many\`, \`vfs_search\` (${searchModes}), \`vfs_grep\` to inspect.
+  - Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\` (${searchModes}) to inspect.
   - Use \`vfs_write\` to create/replace files.
-  - Use \`vfs_edit\` with JSON Patch (RFC 6902) to update JSON.
-  - Use \`vfs_merge\` to deep-merge JSON objects (arrays replaced, no deletions).
+  - Use \`vfs_write\` with JSON Patch (RFC 6902) to update JSON.
+  - Use \`vfs_write\` to deep-merge JSON objects (arrays replaced, no deletions).
   - Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files.
-  - Use \`vfs_tx\` to batch multiple ops atomically (recommended for “state updates + turn commit”).
+  - Use \`vfs_write\` with multiple \`ops\` to batch related state updates atomically.
   - Prefer omitting optional fields; use \`null\` only if you must, and treat it as “use defaults”.
 
   **STATE = FILES**:
@@ -62,11 +62,13 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom({ atomId: "atoms/core/
 
   **CUSTOM RULE PACKS (SHARED LAYER)**:
   - User-defined rule packs live under \`shared/config/custom_rules/NN-*/RULES.md\` (alias: \`current/custom_rules/NN-*/RULES.md\`; lower \`NN\` = higher priority).
-  - Strong reminder: when turn intent matches a rule category, read relevant low-\`NN\` packs first via \`vfs_read\`/\`vfs_read_many\`.
+  - Strong reminder: when turn intent matches a rule category, read relevant low-\`NN\` packs first via \`vfs_read\`.
   - This is not a hard gate; if no pack is relevant, proceed with normal inspection flow.
 
   **TURN COMPLETION**:
-  - Your LAST tool call must be \`vfs_commit_turn\` (preferred) or \`vfs_tx\` with \`commit_turn\` as the LAST op.
+  - Your LAST tool call must be \`vfs_commit_turn\`.
+  - If a write-type call (\`vfs_write\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, retry those targets until success before finish.
+  - Immutable/read-only write failures (skills/refs etc.) are exempt from the retry-before-finish requirement.
   - Do NOT write finish-guarded conversation/summary paths via generic mutation tools.
 </tool_usage>
 `;

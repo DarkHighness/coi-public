@@ -6,8 +6,8 @@ describe("stateManagement atom", () => {
     const content = stateManagement();
     const legacyFinishTool = ["finish", "turn"].join("_");
     expect(content).toContain("vfs_write");
-    expect(content).toContain("vfs_edit");
-    expect(content).toContain("vfs_merge");
+    expect(content).toContain("vfs_write");
+    expect(content).toContain("vfs_write");
     expect(content).toContain("JSON Patch");
     expect(content).toContain("vfs_delete");
     expect(content).toContain("current/world/");

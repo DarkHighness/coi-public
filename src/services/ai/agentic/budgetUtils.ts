@@ -79,7 +79,7 @@ export function generateBudgetPrompt(
 ): string {
   const finishAction = finishToolName
     ? finishToolName === "vfs_commit_turn"
-      ? "`vfs_commit_turn` (or `vfs_tx` with `commit_turn` as the LAST op)"
+      ? "`vfs_commit_turn` (as the LAST tool call)"
       : `\`${finishToolName}\``
     : "the finish tool for this loop";
 
