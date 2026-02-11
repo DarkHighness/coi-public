@@ -5,11 +5,17 @@
  * Key principle: Goodness is not simple. Light has shadows.
  */
 
-import type { SkillAtom, SkillOutput } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 
-export const humanityAndHope = (): string => `
+export const humanityAndHope: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/humanityAndHope#humanityAndHope",
+    source: "atoms/core/humanityAndHope.ts",
+    exportName: "humanityAndHope",
+  },
+  () => `
 <rule name="HUMANITY_AND_HOPE">
   **LIGHT IN THE DARKNESS — AND DARKNESS IN THE LIGHT**:
 
@@ -100,13 +106,20 @@ export const humanityAndHope = (): string => `
     - The help that comes without being asked, from the last person expected
   </narrative_function>
 </rule>
-`;
+`,
+);
 
 /**
  * NEW: Darkness In Light
  * The shadows within goodness. Kindness that costs. Love that wounds.
  */
-export const darknessInLight = (): string => `
+export const darknessInLight: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/humanityAndHope#darknessInLight",
+    source: "atoms/core/humanityAndHope.ts",
+    exportName: "darknessInLight",
+  },
+  () => `
 <rule name="DARKNESS_IN_LIGHT">
   **SHADOW WITHIN GOODNESS**:
 
@@ -231,13 +244,20 @@ export const darknessInLight = (): string => `
        Then went inside and fed the cat, like every other night."
   </the_price_of_goodness>
 </rule>
-`;
+`,
+);
 
 /**
  * Get both light and shadow aspects of humanity
  */
-export const humanityComplete = (): string =>
-  humanityAndHope() + "\n" + darknessInLight();
+export const humanityComplete: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/humanityAndHope#humanityComplete",
+    source: "atoms/core/humanityAndHope.ts",
+    exportName: "humanityComplete",
+  },
+  (_input, trace) => `${trace.record(humanityAndHope)}\n${trace.record(darknessInLight)}`,
+);
 
 export default humanityAndHope;
 
@@ -245,8 +265,8 @@ export default humanityAndHope;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const humanityAndHopeSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/humanityAndHope#humanityAndHopeSkill", source: "atoms/core/humanityAndHope.ts", exportName: "humanityAndHopeSkill" }, (): SkillOutput => ({
-  main: humanityComplete(),
+export const humanityAndHopeSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/humanityAndHope#humanityAndHopeSkill", source: "atoms/core/humanityAndHope.ts", exportName: "humanityAndHopeSkill" }, (_input, trace): SkillOutput => ({
+  main: trace.record(humanityComplete),
 
   quickStart: `
 1. Goodness is not simple - even kind acts have complex roots

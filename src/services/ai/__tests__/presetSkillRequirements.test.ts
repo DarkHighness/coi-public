@@ -36,25 +36,25 @@ describe("resolveActivePresetSkillRequirements", () => {
 
     expect(requirements).toEqual([
       {
-        path: "skills/presets/narrative-style/SKILL.md",
+        path: "skills/presets/runtime/narrative-style/SKILL.md",
         tag: "narrative_style",
         profile: "cinematic",
         source: "save_profile",
       },
       {
-        path: "skills/presets/world-disposition/SKILL.md",
+        path: "skills/presets/runtime/world-disposition/SKILL.md",
         tag: "world_disposition",
         profile: "mixed",
         source: "save_profile",
       },
       {
-        path: "skills/presets/player-malice-profile/SKILL.md",
+        path: "skills/presets/runtime/player-malice-profile/SKILL.md",
         tag: "player_malice_profile",
         profile: "manipulation",
         source: "save_profile",
       },
       {
-        path: "skills/presets/player-malice-intensity/SKILL.md",
+        path: "skills/presets/runtime/player-malice-intensity/SKILL.md",
         tag: "player_malice_intensity",
         profile: "heavy",
         source: "save_profile",
@@ -78,25 +78,25 @@ describe("resolveActivePresetSkillRequirements", () => {
 
     expect(requirements).toEqual([
       {
-        path: "skills/presets/narrative-style/SKILL.md",
+        path: "skills/presets/runtime/narrative-style/SKILL.md",
         tag: "narrative_style",
         profile: "cinematic",
         source: "save_profile",
       },
       {
-        path: "skills/presets/world-disposition/SKILL.md",
+        path: "skills/presets/runtime/world-disposition/SKILL.md",
         tag: "world_disposition",
         profile: "benevolent",
         source: "custom_context",
       },
       {
-        path: "skills/presets/player-malice-profile/SKILL.md",
+        path: "skills/presets/runtime/player-malice-profile/SKILL.md",
         tag: "player_malice_profile",
         profile: "sabotage",
         source: "save_profile",
       },
       {
-        path: "skills/presets/player-malice-intensity/SKILL.md",
+        path: "skills/presets/runtime/player-malice-intensity/SKILL.md",
         tag: "player_malice_intensity",
         profile: "light",
         source: "custom_context",
@@ -114,7 +114,7 @@ describe("resolveActivePresetSkillRequirements", () => {
     });
 
     expect(requirements.map((entry) => entry.path)).toContain(
-      "skills/presets/player-malice-intensity/SKILL.md",
+      "skills/presets/runtime/player-malice-intensity/SKILL.md",
     );
   });
 });

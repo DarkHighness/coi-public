@@ -293,6 +293,13 @@ export function getRegisteredPromptAtom(
   return registeredPromptAtoms.get(atomId);
 }
 
+export function getPromptTraceRuntime(): PromptTraceRuntime | null {
+  if (!currentSession()) {
+    return null;
+  }
+  return createTraceRuntime();
+}
+
 export function runPromptWithTrace<T>(promptId: string, renderFn: () => T): T {
   if (!promptTraceEnabled) {
     return renderFn();

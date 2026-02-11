@@ -114,7 +114,7 @@ describe("loopInitializer", () => {
       [],
     );
     expect(sudoState.requiredCommandSkillPaths).toEqual([
-      "skills/commands/sudo/SKILL.md",
+      "skills/commands/runtime/sudo/SKILL.md",
     ]);
 
     const cleanupState = createLoopState(
@@ -126,7 +126,7 @@ describe("loopInitializer", () => {
       [],
     );
     expect(cleanupState.requiredCommandSkillPaths).toEqual([
-      "skills/commands/cleanup/SKILL.md",
+      "skills/commands/runtime/cleanup/SKILL.md",
     ]);
   });
 
@@ -140,21 +140,21 @@ describe("loopInitializer", () => {
       false,
       vfsSession,
       [
-        "skills/presets/narrative-style/SKILL.md",
-        "skills/presets/narrative-style/SKILL.md",
-        "skills/presets/world-disposition/SKILL.md",
+        "skills/presets/runtime/narrative-style/SKILL.md",
+        "skills/presets/runtime/narrative-style/SKILL.md",
+        "skills/presets/runtime/world-disposition/SKILL.md",
       ],
       undefined,
       null,
       [
         {
-          path: "skills/presets/narrative-style/SKILL.md",
+          path: "skills/presets/runtime/narrative-style/SKILL.md",
           tag: "narrative_style",
           profile: "cinematic",
           source: "save_profile",
         },
         {
-          path: "skills/presets/narrative-style/SKILL.md",
+          path: "skills/presets/runtime/narrative-style/SKILL.md",
           tag: "narrative_style",
           profile: "cinematic",
           source: "save_profile",
@@ -163,12 +163,12 @@ describe("loopInitializer", () => {
     );
 
     expect(state.requiredPresetSkillPaths).toEqual([
-      "skills/presets/narrative-style/SKILL.md",
-      "skills/presets/world-disposition/SKILL.md",
+      "skills/presets/runtime/narrative-style/SKILL.md",
+      "skills/presets/runtime/world-disposition/SKILL.md",
     ]);
     expect(state.requiredPresetSkillRequirements).toEqual([
       {
-        path: "skills/presets/narrative-style/SKILL.md",
+        path: "skills/presets/runtime/narrative-style/SKILL.md",
         tag: "narrative_style",
         profile: "cinematic",
         source: "save_profile",

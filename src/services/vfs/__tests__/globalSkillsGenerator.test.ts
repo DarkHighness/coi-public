@@ -76,23 +76,23 @@ describe("VFS global skills generator", () => {
     expect(stateManagementSkill).not.toContain('<rule name="STATE MANAGEMENT">');
 
     const commandSudo = seeds.find(
-      (seed) => seed.path === "skills/commands/sudo/SKILL.md",
+      (seed) => seed.path === "skills/commands/runtime/sudo/SKILL.md",
     )?.content;
     const commandSudoChecklist = seeds.find(
-      (seed) => seed.path === "skills/commands/sudo/CHECKLIST.md",
+      (seed) => seed.path === "skills/commands/runtime/sudo/CHECKLIST.md",
     )?.content;
     const commandSudoExamples = seeds.find(
-      (seed) => seed.path === "skills/commands/sudo/EXAMPLES.md",
+      (seed) => seed.path === "skills/commands/runtime/sudo/EXAMPLES.md",
     )?.content;
     const commandSudoRef = seeds.find(
       (seed) =>
-        seed.path === "skills/commands/sudo/references/coverage-audit.md",
+        seed.path === "skills/commands/runtime/sudo/references/coverage-audit.md",
     )?.content;
     const commandSummary = seeds.find(
-      (seed) => seed.path === "skills/commands/summary/SKILL.md",
+      (seed) => seed.path === "skills/commands/runtime/summary/SKILL.md",
     )?.content;
     const commandCompact = seeds.find(
-      (seed) => seed.path === "skills/commands/compact/SKILL.md",
+      (seed) => seed.path === "skills/commands/runtime/compact/SKILL.md",
     )?.content;
 
     expect(commandSudo).toContain("name: commands-sudo");
@@ -175,49 +175,37 @@ describe("VFS global skills generator", () => {
 
     expect(
       seeds.some(
-        (seed) => seed.path === "skills/presets/narrative-style/SKILL.md",
+        (seed) => seed.path === "skills/presets/runtime/narrative-style/SKILL.md",
       ),
     ).toBe(true);
     expect(
       seeds.some(
-        (seed) => seed.path === "skills/presets/world-disposition/SKILL.md",
-      ),
-    ).toBe(true);
-    expect(
-      seeds.some(
-        (seed) =>
-          seed.path === "skills/presets/player-malice-profile/SKILL.md",
+        (seed) => seed.path === "skills/presets/runtime/world-disposition/SKILL.md",
       ),
     ).toBe(true);
     expect(
       seeds.some(
         (seed) =>
-          seed.path === "skills/presets/player-malice-intensity/SKILL.md",
+          seed.path === "skills/presets/runtime/player-malice-profile/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path === "skills/presets/runtime/player-malice-intensity/SKILL.md",
       ),
     ).toBe(true);
 
     expect(
       entries.some(
-        (entry) => entry.path === "current/skills/presets/narrative-style/SKILL.md",
-      ),
-    ).toBe(true);
-    expect(
-      entries.some(
-        (entry) => entry.path === "current/skills/presets/world-disposition/SKILL.md",
+        (entry) => entry.path === "current/skills/presets/runtime/SKILL.md",
       ),
     ).toBe(true);
     expect(
       entries.some(
         (entry) =>
-          entry.path === "current/skills/presets/player-malice-profile/SKILL.md",
+          entry.path === "current/skills/presets/runtime/narrative-style/SKILL.md",
       ),
-    ).toBe(true);
-    expect(
-      entries.some(
-        (entry) =>
-          entry.path ===
-          "current/skills/presets/player-malice-intensity/SKILL.md",
-      ),
-    ).toBe(true);
+    ).toBe(false);
   });
 });

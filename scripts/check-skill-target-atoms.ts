@@ -22,12 +22,22 @@ type SkillMappingLite = {
   title: string;
   domain: string;
   visibility?: "catalog" | "nested";
+  composition?: "atom" | "hub" | "router";
+  subskills?: string[];
+};
+
+type SkillComposition = "atom" | "hub" | "router";
+
+type ResolvedSkillMapping = SkillMappingLite & {
+  compositionResolved: SkillComposition;
+  subskillsResolved: string[];
 };
 
 type SkillTraceUsage = {
   skillId: string;
   skillPath: string;
   promptId: string;
+  composition: SkillComposition;
   usedSkillAtomIds: string[];
   usedAtomIds: string[];
   atomCallCount: number;
@@ -38,6 +48,8 @@ type SkillAtomCoverageReport = {
   totals: {
     mappings: number;
     traces: number;
+    mappingsRequiringSkillAtoms: number;
+    mappingsMissingRequiredSkillAtoms: number;
     registeredSkillAtoms: number;
     usedSkillAtoms: number;
     uncoveredSkillAtoms: number;
@@ -47,6 +59,13 @@ type SkillAtomCoverageReport = {
     skillId: string;
     skillPath: string;
     promptId: string;
+    composition: SkillComposition;
+  }>;
+  mappingsMissingRequiredSkillAtoms: Array<{
+    skillId: string;
+    skillPath: string;
+    promptId: string;
+    composition: SkillComposition;
   }>;
   usages: SkillTraceUsage[];
 };
@@ -114,7 +133,7 @@ function getLatestTraceByPrompt(traces: PromptTrace[]): Map<string, PromptTrace>
 }
 
 function buildUsageForMapping(
-  mapping: SkillMappingLite,
+  mapping: ResolvedSkillMapping,
   traceByPrompt: Map<string, PromptTrace>,
 ): SkillTraceUsage {
   const promptId = `skills.${mapping.path}`;
@@ -140,6 +159,7 @@ function buildUsageForMapping(
     skillId: mapping.name,
     skillPath: mapping.path,
     promptId,
+    composition: mapping.compositionResolved,
     usedSkillAtomIds,
     usedAtomIds,
     atomCallCount: trace?.atoms.length ?? 0,
@@ -182,18 +202,13 @@ function collectSubtreePaths(
   return [...visited].sort((left, right) => left.localeCompare(right));
 }
 
-function buildCompositionMarkdown(input: {
-  generatedAt: string;
-  mappings: SkillMappingLite[];
-  usages: SkillTraceUsage[];
-}): string {
-  const mappingsByPath = new Map(input.mappings.map((item) => [item.path, item]));
-  const usageByPath = new Map(input.usages.map((item) => [item.skillPath, item]));
-  const knownPaths = new Set(input.mappings.map((item) => item.path));
-
+function buildChildrenByParent(
+  mappings: SkillMappingLite[],
+): Map<string, string[]> {
+  const knownPaths = new Set(mappings.map((item) => item.path));
   const childrenByParent = new Map<string, string[]>();
 
-  for (const mapping of input.mappings) {
+  for (const mapping of mappings) {
     const parent = resolveParentPath(mapping.path, knownPaths);
     if (!parent) {
       continue;
@@ -205,8 +220,41 @@ function buildCompositionMarkdown(input: {
     childrenByParent.set(parent, siblings);
   }
 
+  return childrenByParent;
+}
+
+function resolveMappings(
+  mappings: SkillMappingLite[],
+  childrenByParent: Map<string, string[]>,
+): ResolvedSkillMapping[] {
+  return mappings.map((mapping) => {
+    const directChildren = childrenByParent.get(mapping.path) ?? [];
+    const compositionResolved: SkillComposition =
+      mapping.composition ?? (directChildren.length > 0 ? "hub" : "atom");
+    const subskillsResolved =
+      mapping.subskills && mapping.subskills.length > 0
+        ? [...mapping.subskills].sort((left, right) => left.localeCompare(right))
+        : directChildren;
+
+    return {
+      ...mapping,
+      compositionResolved,
+      subskillsResolved,
+    };
+  });
+}
+
+function buildCompositionMarkdown(input: {
+  generatedAt: string;
+  mappings: ResolvedSkillMapping[];
+  usages: SkillTraceUsage[];
+  childrenByParent: Map<string, string[]>;
+}): string {
+  const usageByPath = new Map(input.usages.map((item) => [item.skillPath, item]));
+  const childrenByParent = input.childrenByParent;
+
   const hubs = input.mappings
-    .filter((mapping) => (childrenByParent.get(mapping.path) ?? []).length > 0)
+    .filter((mapping) => mapping.compositionResolved === "hub")
     .sort((left, right) => left.path.localeCompare(right.path));
 
   const domains = Array.from(
@@ -220,8 +268,9 @@ function buildCompositionMarkdown(input: {
   lines.push("");
   lines.push("## Composition Rules");
   lines.push("");
-  lines.push("- Hub skill: has one or more child skills.");
-  lines.push("- Leaf skill: has no child skills and should land on concrete atoms.");
+  lines.push("- `atom`: must land on at least one skill atom in runtime trace.");
+  lines.push("- `hub`: structural index skill that routes to child skills.");
+  lines.push("- `router`: operational protocol skill that may rely on prompt atoms without a dedicated skill atom.");
   lines.push("- Atom lists below come from runtime trace during `generateVfsSkillSeeds()`.");
   lines.push("");
 
@@ -235,7 +284,7 @@ function buildCompositionMarkdown(input: {
   lines.push("## Hub Skills");
   lines.push("");
   for (const hub of hubs) {
-    const children = childrenByParent.get(hub.path) ?? [];
+    const children = hub.subskillsResolved;
     lines.push(`- \`${hub.path}\` -> ${children.length} child skill(s)`);
     for (const child of children) {
       lines.push(`  - \`${child}\``);
@@ -253,8 +302,7 @@ function buildCompositionMarkdown(input: {
 
     for (const mapping of domainMappings) {
       const usage = usageByPath.get(mapping.path);
-      const directChildren = childrenByParent.get(mapping.path) ?? [];
-      const isHub = directChildren.length > 0;
+      const directChildren = mapping.subskillsResolved;
 
       const descendantPaths = collectSubtreePaths(mapping.path, childrenByParent);
       const leafDescendants = descendantPaths.filter(
@@ -277,11 +325,12 @@ function buildCompositionMarkdown(input: {
         ),
       ).sort((left, right) => left.localeCompare(right));
 
-      lines.push(`### \`${mapping.path}\` (${isHub ? "hub" : "leaf"})`);
+      lines.push(`### \`${mapping.path}\` (${mapping.compositionResolved})`);
       lines.push("");
       lines.push(`- id: \`${mapping.name}\``);
       lines.push(`- title: ${mapping.title}`);
       lines.push(`- visibility: \`${mapping.visibility ?? "catalog"}\``);
+      lines.push(`- composition: \`${mapping.compositionResolved}\``);
 
       if (directChildren.length > 0) {
         lines.push(`- direct subskills (${directChildren.length}):`);
@@ -290,6 +339,16 @@ function buildCompositionMarkdown(input: {
         }
       } else {
         lines.push("- direct subskills: (none)");
+      }
+
+      if (mapping.compositionResolved === "atom") {
+        lines.push(
+          usage && usage.usedSkillAtomIds.length > 0
+            ? "- policy (`atom` requires skill atom): ✅ pass"
+            : "- policy (`atom` requires skill atom): ❌ fail",
+        );
+      } else {
+        lines.push("- policy (`hub/router` may omit skill atom): ✅ pass");
       }
 
       if (usage) {
@@ -349,6 +408,8 @@ async function main(): Promise<void> {
   await importAllAtomModules();
 
   const mappings = getSkillMappings() as unknown as SkillMappingLite[];
+  const childrenByParent = buildChildrenByParent(mappings);
+  const resolvedMappings = resolveMappings(mappings, childrenByParent);
 
   clearPromptTraceRegistry();
   setPromptTraceEnabled(true);
@@ -363,9 +424,13 @@ async function main(): Promise<void> {
   );
   const traceByPrompt = getLatestTraceByPrompt(traces);
 
-  const usages = mappings
+  const usages = resolvedMappings
     .map((mapping) => buildUsageForMapping(mapping, traceByPrompt))
     .sort((left, right) => left.skillPath.localeCompare(right.skillPath));
+
+  const mappingsByPath = new Map(
+    resolvedMappings.map((mapping) => [mapping.path, mapping]),
+  );
 
   const registeredSkillAtoms = getRegisteredPromptAtoms().filter(
     (atom) => atom.kind === "skill" && atom.source.startsWith("atoms/"),
@@ -385,26 +450,40 @@ async function main(): Promise<void> {
       skillId: usage.skillId,
       skillPath: usage.skillPath,
       promptId: usage.promptId,
+      composition:
+        mappingsByPath.get(usage.skillPath)?.compositionResolved ?? "atom",
     }));
+
+  const mappingsMissingRequiredSkillAtoms = mappingsWithoutSkillAtoms.filter(
+    (mapping) => mapping.composition === "atom",
+  );
+
+  const mappingsRequiringSkillAtoms = resolvedMappings.filter(
+    (mapping) => mapping.compositionResolved === "atom",
+  );
 
   const report: SkillAtomCoverageReport = {
     generatedAt: new Date().toISOString(),
     totals: {
-      mappings: mappings.length,
+      mappings: resolvedMappings.length,
       traces: traces.length,
+      mappingsRequiringSkillAtoms: mappingsRequiringSkillAtoms.length,
+      mappingsMissingRequiredSkillAtoms: mappingsMissingRequiredSkillAtoms.length,
       registeredSkillAtoms: registeredSkillAtoms.length,
       usedSkillAtoms: usedSkillAtomIds.size,
       uncoveredSkillAtoms: uncoveredSkillAtoms.length,
     },
     uncoveredSkillAtoms,
     mappingsWithoutSkillAtoms,
+    mappingsMissingRequiredSkillAtoms,
     usages,
   };
 
   const compositionMarkdown = buildCompositionMarkdown({
     generatedAt: report.generatedAt,
-    mappings,
+    mappings: resolvedMappings,
     usages,
+    childrenByParent,
   });
 
   fs.mkdirSync(path.dirname(JSON_OUTPUT_PATH), { recursive: true });
@@ -415,10 +494,21 @@ async function main(): Promise<void> {
   );
   fs.writeFileSync(MARKDOWN_OUTPUT_PATH, compositionMarkdown, "utf8");
 
-  if (uncoveredSkillAtoms.length > 0) {
+  if (
+    uncoveredSkillAtoms.length > 0 ||
+    mappingsMissingRequiredSkillAtoms.length > 0
+  ) {
     console.error("[skill-target-atoms] Uncovered skill-target atoms found:\n");
     for (const atom of uncoveredSkillAtoms) {
       console.error(`- ${atom.atomId} (${atom.exportName}) from ${atom.source}`);
+    }
+    if (mappingsMissingRequiredSkillAtoms.length > 0) {
+      console.error(
+        "\n[skill-target-atoms] Atom-composition skills without skill atoms:\n",
+      );
+      for (const mapping of mappingsMissingRequiredSkillAtoms) {
+        console.error(`- ${mapping.skillPath} (${mapping.promptId})`);
+      }
     }
     console.error(
       `\n[skill-target-atoms] Coverage report: ${toRel(JSON_OUTPUT_PATH)}`,

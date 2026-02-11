@@ -2,7 +2,16 @@
  * Core Atom: Information Revelation
  * Content from core_rules.ts
  */
-export const informationRevelation = (): string => `
+import type { Atom } from "../types";
+import { defineAtom } from "../../trace/runtime";
+
+export const informationRevelation: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/informationRevelation#informationRevelation",
+    source: "atoms/core/informationRevelation.ts",
+    exportName: "informationRevelation",
+  },
+  () => `
 <rule name="INFORMATION REVELATION">
   <revelation_pacing>
     **EARN EVERY ANSWER**:
@@ -27,4 +36,5 @@ export const informationRevelation = (): string => `
     - **Implication Over Statement**: "The guards stepped aside for him without being asked" implies power better than "He was very powerful."
   </exposition_avoidance>
 </rule>
-`;
+`,
+);

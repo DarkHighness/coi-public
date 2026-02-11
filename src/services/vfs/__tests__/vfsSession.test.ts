@@ -84,20 +84,13 @@ describe("VfsSession", () => {
       "core-identity",
       "gm-knowledge",
       "gm-fail-forward",
-      "commands-sudo",
-      "commands-cleanup",
-      "commands-unlock",
-      "commands-god",
+      "commands-runtime-hub",
+      "presets-runtime-hub",
       "craft-writing",
       "craft-scene-beats",
       "craft-reveals-foreshadowing",
       "npc-logic",
-      "worldbuilding-economy",
-      "worldbuilding-medicine-forensics",
-      "worldbuilding-espionage-counterintel",
-      "worldbuilding-finance-banking",
-      "worldbuilding-maritime-logistics",
-      "worldbuilding-media-propaganda",
+      "worldbuilding-hub",
       "theme-fantasy",
       "theme-element-media",
     ]) {
@@ -125,7 +118,7 @@ expect(session.list("skills")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
 
-    expect(session.list("skills/commands/sudo")).toEqual(
+    expect(session.list("skills/commands/runtime/sudo")).toEqual(
       expect.arrayContaining([
         "SKILL.md",
         "CHECKLIST.md",
@@ -134,7 +127,7 @@ expect(session.list("skills")).toEqual(
       ]),
     );
 
-    expect(session.list("skills/commands/unlock")).toEqual(
+    expect(session.list("skills/commands/runtime/unlock")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
 
@@ -145,7 +138,7 @@ expect(session.list("skills")).toEqual(
     expect(session.list("skills/craft/scene-beats")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/worldbuilding/medicine-forensics")).toEqual(
+    expect(session.list("skills/worldbuilding/systems/medicine-forensics")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
     expect(session.list("skills/theme/element-media")).toEqual(

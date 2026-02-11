@@ -39,13 +39,13 @@ describe("VFS global skills docs", () => {
   it("ships preset runtime skills as VFS-registered documents", () => {
     const files = buildGlobalVfsSkills(0);
     const narrativeStyle =
-      files["skills/presets/narrative-style/SKILL.md"]?.content ?? "";
+      files["skills/presets/runtime/narrative-style/SKILL.md"]?.content ?? "";
     const worldDisposition =
-      files["skills/presets/world-disposition/SKILL.md"]?.content ?? "";
+      files["skills/presets/runtime/world-disposition/SKILL.md"]?.content ?? "";
     const maliceProfile =
-      files["skills/presets/player-malice-profile/SKILL.md"]?.content ?? "";
+      files["skills/presets/runtime/player-malice-profile/SKILL.md"]?.content ?? "";
     const maliceIntensity =
-      files["skills/presets/player-malice-intensity/SKILL.md"]?.content ?? "";
+      files["skills/presets/runtime/player-malice-intensity/SKILL.md"]?.content ?? "";
 
     expect(narrativeStyle).toContain("# Preset Narrative Style Runtime");
     expect(worldDisposition).toContain("# Preset World Disposition Runtime");

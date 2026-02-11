@@ -25,10 +25,10 @@ describe("contextInjector", () => {
         godMode: true,
         unlockMode: true,
       },
-      ["skills/presets/narrative-style/SKILL.md"],
+      ["skills/presets/runtime/narrative-style/SKILL.md"],
       [
         {
-          path: "skills/presets/narrative-style/SKILL.md",
+          path: "skills/presets/runtime/narrative-style/SKILL.md",
           tag: "narrative_style",
           profile: "cinematic",
           source: "save_profile",
@@ -64,10 +64,10 @@ describe("contextInjector", () => {
     expect(getText(history[2])).toContain("[SYSTEM: TOOL USAGE INSTRUCTION]");
     expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
     expect(getText(history[3])).toContain("You are currently in God mode.");
-    expect(getText(history[3])).toContain("commands/god/SKILL.md");
-    expect(getText(history[3])).toContain("commands/unlock/SKILL.md");
+    expect(getText(history[3])).toContain("commands/runtime/god/SKILL.md");
+    expect(getText(history[3])).toContain("commands/runtime/unlock/SKILL.md");
     expect(getText(history[4])).toContain("PRESET SKILLS ACTIVE");
-    expect(getText(history[4])).toContain("skills/presets/narrative-style/SKILL.md");
+    expect(getText(history[4])).toContain("skills/presets/runtime/narrative-style/SKILL.md");
     expect(getText(history[5])).toContain("PRESET PROFILES ACTIVE");
     expect(getText(history[5])).toContain("<narrative_style> profile=cinematic source=save_profile");
     expect(getText(history[6])).toContain("[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]");

@@ -806,10 +806,10 @@ export function extractXmlTagValue(
 }
 
 export const PRESET_SKILL_PATHS = {
-  narrativeStyle: "skills/presets/narrative-style/SKILL.md",
-  worldDisposition: "skills/presets/world-disposition/SKILL.md",
-  playerMaliceProfile: "skills/presets/player-malice-profile/SKILL.md",
-  playerMaliceIntensity: "skills/presets/player-malice-intensity/SKILL.md",
+  narrativeStyle: "skills/presets/runtime/narrative-style/SKILL.md",
+  worldDisposition: "skills/presets/runtime/world-disposition/SKILL.md",
+  playerMaliceProfile: "skills/presets/runtime/player-malice-profile/SKILL.md",
+  playerMaliceIntensity: "skills/presets/runtime/player-malice-intensity/SKILL.md",
 } as const;
 
 export type PresetSkillTag =

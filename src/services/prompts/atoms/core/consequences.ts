@@ -2,7 +2,16 @@
  * Core Atom: Consequences
  * Content from core_rules.ts
  */
-export const consequences = (): string => `
+import type { Atom } from "../types";
+import { defineAtom } from "../../trace/runtime";
+
+export const consequences: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/consequences#consequences",
+    source: "atoms/core/consequences.ts",
+    exportName: "consequences",
+  },
+  () => `
 <rule name="REALISM & CONSEQUENCES">
   Every action leaves a mark. Sometimes on skin. Often on paper.
 
@@ -52,4 +61,5 @@ export const consequences = (): string => `
   </no_deus_ex_moral_punishment>
 
 </rule>
-`;
+`,
+);

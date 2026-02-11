@@ -32,7 +32,7 @@ export function injectSudoModeInstruction(
     createUserMessage(
       [
         "[SYSTEM: COMMAND SKILL REQUIRED]",
-        "Before any non-read tool call, read: `current/skills/commands/sudo/SKILL.md`",
+        "Before any non-read tool call, read: `current/skills/commands/runtime/sudo/SKILL.md`",
       ].join("\n"),
     ),
   );
@@ -67,7 +67,7 @@ export function injectNormalTurnInstruction(
       createUserMessage(
         [
           "[SYSTEM: COMMAND SKILL REQUIRED]",
-          "Before any cleanup mutation, read: `current/skills/commands/cleanup/SKILL.md`",
+          "Before any cleanup mutation, read: `current/skills/commands/runtime/cleanup/SKILL.md`",
         ].join("\n"),
       ),
     );
@@ -100,13 +100,13 @@ export function injectNormalTurnInstruction(
   if (modeFlags?.godMode) {
     modeSkillLines.push(
       "You are currently in God mode.",
-      "Read: `current/skills/commands/god/SKILL.md`",
+      "Read: `current/skills/commands/runtime/god/SKILL.md`",
     );
   }
   if (modeFlags?.unlockMode) {
     modeSkillLines.push(
       "Unlock mode is currently ON.",
-      "Read: `current/skills/commands/unlock/SKILL.md`",
+      "Read: `current/skills/commands/runtime/unlock/SKILL.md`",
     );
   }
 

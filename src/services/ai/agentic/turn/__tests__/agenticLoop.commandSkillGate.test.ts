@@ -137,8 +137,8 @@ const createVfsSession = (hasSeenSkill: boolean) => {
     hasToolSeenInCurrentEpoch: vi.fn((path: string) => {
       if (!hasSeenSkill) return false;
       return (
-        path === "skills/commands/sudo/SKILL.md" ||
-        path === "skills/presets/narrative-style/SKILL.md"
+        path === "skills/commands/runtime/sudo/SKILL.md" ||
+        path === "skills/presets/runtime/narrative-style/SKILL.md"
       );
     }),
     markConversationTouched: vi.fn(() => {
@@ -175,7 +175,7 @@ describe("agenticLoop command skill gate", () => {
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
       if (name === "vfs_read") {
-        return { success: true, path: "current/skills/commands/sudo/SKILL.md" };
+        return { success: true, path: "current/skills/commands/runtime/sudo/SKILL.md" };
       }
       return { success: true };
     });
@@ -192,7 +192,7 @@ describe("agenticLoop command skill gate", () => {
           {
             id: "call-1-read",
             name: "vfs_read",
-            args: { path: "current/skills/commands/sudo/SKILL.md" },
+            args: { path: "current/skills/commands/runtime/sudo/SKILL.md" },
           },
         ],
       })
@@ -356,7 +356,7 @@ describe("agenticLoop command skill gate", () => {
         settings: createSettings(),
         sessionId: "session-preset-gate",
         vfsSession,
-        requiredPresetSkillPaths: ["skills/presets/narrative-style/SKILL.md"],
+        requiredPresetSkillPaths: ["skills/presets/runtime/narrative-style/SKILL.md"],
       }),
     ).rejects.toThrow(/TURN_NOT_COMMITTED/);
 
