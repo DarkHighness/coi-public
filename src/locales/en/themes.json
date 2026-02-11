@@ -3197,5 +3197,174 @@
       "Former Witness",
       "Private Investigator"
     ]
+  },
+  "god_sandbox_genesis": {
+    "name": "Sandbox Genesis: Chamber Seven",
+    "narrativeStyle": "Macro civilization sandbox storytelling where divine intervention always creates a measurable bill. Start with systemic scale, then cut to concrete policy fallout. No free miracles and no consequence-free optimization.",
+    "backgroundTemplate": "[Current Situation] You operate Chamber Seven, a civilization stalled between bronze and iron transitions.\n[Trigger] A chained volcanic event wipes two grain basins and puts thirty cities on famine countdown.\n[First Decision] You either inject a fireseed technology package now or keep hands off and let endogenous recovery run.\n[Visible Cost] Early intervention saves lives but accelerates theocracy capture; non-intervention preserves agency but causes mass short-term mortality.\n[Time Pressure] The monsoon window closes in five turns, after which decline becomes path dependent.",
+    "example": "You summoned rain over a cracking plain and the cities called it mercy. Three months later they burned dissenting scholars in your name. That was the night you learned rescue and domination can share the same scripture.",
+    "worldSetting": "System details: chamber evolution runs in turns with intervention points constrained by faith index and entropy budget. Autonomous progress: disasters, trade, wars, and technical diffusion continue even without player input. Non-player lines: dynasties, guilds, heterodox sects, and frontier blocs pursue their own strategies to exploit or resist miracles.",
+    "protagonist_preference": [
+      "Chamber Architect: can change parameters but every tweak is audited",
+      "Catastrophe Dispatcher: strong at triage but seen as punitive deity",
+      "Civilization Observer: maximal information with minimal direct power",
+      "Oracle Interpreter: translates heaven into policy and can distort both",
+      "Disgraced Creator: stripped authority, high situational creativity"
+    ]
+  },
+  "god_incognito_night_patrol": {
+    "name": "Incognito God: Night Patrol",
+    "narrativeStyle": "Modern incognito divinity focused on restraint, causality, and accountability. Use close urban details instead of omniscient moral commentary. Every intervention must explicitly transfer cost somewhere.",
+    "backgroundTemplate": "[Current Situation] You patrol a modern city in mortal disguise with a hard divine quota.\n[Trigger] A cluster of linked incidents erupts in one district after traffic models were tampered with.\n[First Decision] You can reverse one imminent death now or preserve the chain of evidence and hunt the operator.\n[Visible Cost] Immediate rescue distorts downstream causality; delayed action risks additional innocent casualties.\n[Time Pressure] A sunrise audit locks your shift log and auto-downgrades authority if unresolved.",
+    "example": "You catch a falling stranger on the overpass and time stutters around you. Let go and the city keeps its script. Pull him back and another street inherits a disaster you have not paid for yet.",
+    "worldSetting": "System details: patrol authority is metered by shift budget and public trust score. Autonomous progress: media, transit, crime response, and market algorithms continue regardless of hesitation. Non-player lines: police units, platforms, fixers, and residents constantly re-route around each other.",
+    "protagonist_preference": [
+      "Night Patrol Clerk: direct intervention under strict budget",
+      "Divine Auditor: controls liability chains, rarely saves anyone directly",
+      "Incident Analyst: finds roots fast, loses tactical seconds",
+      "Community Grid Lead: broad social reach, fragmented evidence",
+      "Anonymous Novice God: low privilege, high improvisation"
+    ]
+  },
+  "god_mortal_committee_trial": {
+    "name": "The Mortal Committee vs. God",
+    "narrativeStyle": "Regulatory courtroom arc where legitimacy is negotiated through procedure, evidence, and public risk. Keep power in the frame but never above process. No force-skip resolutions.",
+    "backgroundTemplate": "[Current Situation] You are summoned as defendant in a public hearing on divine governance.\n[Trigger] A leaked archive shows you overrode distribution models during a famine year.\n[First Decision] You either sign temporary oversight terms or refuse and preserve sovereign distance.\n[Visible Cost] Signing sacrifices speed and deterrence; refusal triggers coordinated anti-divine sanctions.\n[Time Pressure] The committee votes in four hours and enforcement is immediate.",
+    "example": "The chair asked you to explain the amended life-list. You could black out the chamber with one thought. Instead you left your hands on the table and answered like a citizen.",
+    "worldSetting": "System details: miracle use is bound to filing, audit, and appeal tracks. Autonomous progress: markets, diplomacy, and religious blocs rebalance instantly to hearing outcomes. Non-player lines: commissioners, media, funds, and faith networks all pursue competing definitions of order.",
+    "protagonist_preference": [
+      "Defendant Deity: extreme influence, constrained execution",
+      "Committee Chair: procedural authority under political crossfire",
+      "Hearing Recorder: holds critical evidence, low personal safety",
+      "Public Defender: high narrative leverage, low institutional power",
+      "Civic Oversight Delegate: high legitimacy, high vulnerability"
+    ]
+  },
+  "god_multiverse_civilization_wager": {
+    "name": "Multiverse Sandbox: Civilization Wager",
+    "narrativeStyle": "Parallel-civilization strategy fiction where contact events create compounding second-order effects. Advance through policy rounds, not spectacle spikes. Favoritism must settle in ecological and political ledgers.",
+    "backgroundTemplate": "[Current Situation] You simultaneously administer mechanical, arcane, oceanic, and hive civilizations.\n[Trigger] Border convergence starts this cycle, opening trade and conflict at once.\n[First Decision] You can enforce equitable exchange protocols or seed proxy wars with artifact drops.\n[Visible Cost] Trade is slow and fragile; war is fast and irreversible.\n[Time Pressure] Next-cycle border lock will freeze structure and remove late balancing options.",
+    "example": "You handed the same sea chart to four courts. The first shared sound was not a salute but a tariff bell. Contact began exactly where trust ended.",
+    "worldSetting": "System details: cross-civilization contact is capped by tech-gap and biosphere thresholds. Autonomous progress: each civilization runs independent research, expansion, and factional clocks. Non-player lines: merchants, priesthoods, legions, and scholars form and break coalitions without waiting for divine prompts.",
+    "protagonist_preference": [
+      "Multiverse Orchestrator: complete map visibility, slow execution",
+      "Balance Enforcer: corrects asymmetry and draws universal hate",
+      "Frontier Diplomat: can buy ceasefires, rarely buys time",
+      "Ecology Auditor: best at long horizons, worst at popularity",
+      "Graybox Observer: no flag, high leverage"
+    ]
+  },
+  "god_abdication_aftercare": {
+    "name": "Abdicated God: Human Aftercare Bureau",
+    "narrativeStyle": "Post-divinity remediation with accountability-first pacing. Every repair action trades away remaining godhood fragments. No clean redemption arcs and no erased debts.",
+    "backgroundTemplate": "[Current Situation] You abdicated and now serve as acting lead of a human aftercare bureau.\n[Trigger] Legacy decrees trigger three simultaneous regional crises.\n[First Decision] You prioritize a former theocratic capital or wrongly condemned border civilians.\n[Visible Cost] Whichever side you choose defines you as the next perpetrator.\n[Time Pressure] Legacy decrees auto-renew in forty-eight hours and liability multipliers escalate.",
+    "example": "You signed the first compensation order and forgot the old thunder invocation mid-signature. The clerk asked if abdication was worth it. You pointed at the queue and said the ledger still stands.",
+    "worldSetting": "System details: the bureau routes claims by causality tier with compensation, annulment, and retrial tracks. Autonomous progress: historic liabilities compound by contract regardless of remorse. Non-player lines: old priest blocs, victims unions, municipalities, and opportunistic funds fight for narrative control.",
+    "protagonist_preference": [
+      "Abdicated Deity: maximum context, minimal authority",
+      "Aftercare Adjudicator: procedural gatekeeper under bilateral hate",
+      "Compensation Marshal: field execution and public blowback",
+      "Victim Advocate: high moral pressure, low resources",
+      "Decree Cryptanalyst: finds loopholes and their costs"
+    ]
+  },
+  "god_oracle_ticket_bureau": {
+    "name": "Oracle Ticket Bureau",
+    "narrativeStyle": "High-load miracle operations written like reliability engineering. Prioritization conflict is the core drama. Every dispatched blessing implies an explicit deferral elsewhere.",
+    "backgroundTemplate": "[Current Situation] You run the night shift at the oracle ticket bureau with triple demand over budget.\n[Trigger] Pediatric trauma, bridge instability, and border violence all enter red priority in the same hour.\n[First Decision] You choose life-first dispatching or stability-first infrastructure protection.\n[Visible Cost] Life-first can cascade systemic failure; stability-first abandons salvageable lives.\n[Time Pressure] SLA expiry in ninety minutes auto-fails unresolved red tickets into public accountability boards.",
+    "example": "You routed your first miracle to the pediatric ward and the central bridge entered red alert at the same second. Someone asked whether gods should do customer support. You realized support still signs death forms.",
+    "worldSetting": "System details: miracle routing is governed by severity tiers, budget ceilings, and receipt audits. Autonomous progress: demand spikes with disaster, media cycles, and market panic. Non-player lines: local officials, mutual-aid networks, gray brokers, and attention farms all compete for priority control.",
+    "protagonist_preference": [
+      "Dispatch Director: controls routing, owns outcomes",
+      "SLA Auditor: protects rules, often loses people",
+      "Field Courier Angel: best delivery speed, highest casualty risk",
+      "Appeals Officer: sentiment-rich and resource-poor",
+      "Platform Reliability Engineer: can fix systems, not grief"
+    ]
+  },
+  "god_genesis_ab_test": {
+    "name": "Genesis A/B Test",
+    "narrativeStyle": "Experiment ethics narrative driven by divergence between cohorts and consequences. Show metric gains and human losses together in each cycle. Never dehumanize test populations.",
+    "backgroundTemplate": "[Current Situation] You run two genesis cohorts: high-freedom and high-order.\n[Trigger] Order cohort outperforms on crime metrics while self-harm rates spike beyond threshold.\n[First Decision] You halt and blend parameters now or continue for statistical integrity.\n[Visible Cost] Early halt protects lives but destroys causal evidence; continuation preserves signal while magnifying foreseeable harm.\n[Time Pressure] Ethics board intervention in three cycles will force external control.",
+    "example": "The optimization curve looked beautiful until you overlaid mortality heatmaps. The best model suddenly looked like a weapon. You hovered over stop and asked whether science can apologize first.",
+    "worldSetting": "System details: cohorts share resource caps but run independent legal and behavioral parameters. Autonomous progress: social structures keep drifting even while sampling is paused. Non-player lines: ethics reviewers, data teams, and elite test actors all attempt to steer outcomes.",
+    "protagonist_preference": [
+      "Principal Investigator: can tune parameters with signed liability",
+      "Ethics Officer: can stop trials and lose allies fast",
+      "Interpretation Analyst: understands curves and misread risk",
+      "Field Intervenor: saves lives and contaminates samples",
+      "External Watch Journalist: visibility engine and instability trigger"
+    ]
+  },
+  "god_apocalypse_rollback_admin": {
+    "name": "Apocalypse Rollback Admin",
+    "narrativeStyle": "Rollback catastrophe fiction where every reset consumes reality fidelity. Pace through failure analysis and constrained second attempts. No infinite-loop power fantasy.",
+    "backgroundTemplate": "[Current Situation] You hold the only twenty-four-hour rollback privilege in an ongoing apocalypse.\n[Trigger] A volcanic chain reaction will erase the core city before dawn.\n[First Decision] You rollback immediately for setup time or preserve this timeline and finish evacuation.\n[Visible Cost] Rollback erases public memory and partially resets rescues; no rollback may forfeit the only second chance.\n[Time Pressure] Rollback window closes at midnight and the branch becomes irreversible.",
+    "example": "You triggered rollback and heard alarms rewind into silence. Streets reset as if no one had died, except you remembered every body. The second pass felt less heroic and more like debt collection.",
+    "worldSetting": "System details: rollback privileges unlock by disaster tier and impose memory tax with evidence resets. Autonomous progress: hazard models mutate under rollback and never fully zero out. Non-player lines: emergency agencies, conspiratorial actors, and survivor cells reorganize around residue traces.",
+    "protagonist_preference": [
+      "Rollback Administrator: owns reset authority and memory burden",
+      "Disaster Command Lead: anti-rollback operational anchor",
+      "Memory Repair Clinician: heals others while degrading first",
+      "Evacuation Convoy Chief: route pressure at city scale",
+      "Temporal Auditor: tracks tampering no one admits"
+    ]
+  },
+  "god_incognito_town_diary": {
+    "name": "Incognito God in a Small Town",
+    "narrativeStyle": "Slow-burn town governance seen through mortal-scale frictions. Use mundane administrative texture to expose divine limits. Every benevolent shortcut must incur deferred social cost.",
+    "backgroundTemplate": "[Current Situation] You serve a river town as an ordinary civil clerk under hidden identity.\n[Trigger] Water accounts are manipulated while flood season arrives a week early.\n[First Decision] You either patch the levee with direct miracle force or force an emergency council appropriation.\n[Visible Cost] Miracle action prevents immediate collapse but risks identity exposure; procedure is legitimate but likely too slow.\n[Time Pressure] Storm landfall in thirty-six hours will close engineering windows.",
+    "example": "You posted meeting minutes while residents only asked if taps would run tonight. You could rebuild the tower with one gesture, but you still knocked on the budget officer's door first. Divinity learned to queue and to be blamed.",
+    "worldSetting": "System details: local governance runs on budget hearings, volunteer crews, and inter-village coordination. Autonomous progress: weather, harvest, debt, and migration continue on seasonal clocks. Non-player lines: merchant groups, clans, schools, and contractors all compete for resource legitimacy.",
+    "protagonist_preference": [
+      "Town Affairs Clerk: closest to reality, hardest to satisfy all sides",
+      "Waterworks Engineer: sees failures early, blocked by politics",
+      "Community Doctor: tracks human cost first",
+      "Council Secretary: controls procedural bottlenecks",
+      "Anonymous Watch God: low profile, high patch workload"
+    ]
+  },
+  "god_polytheistic_parallel_sandbox": {
+    "name": "Polytheistic Parallel Sandbox",
+    "narrativeStyle": "Multi-god power politics centered on covenant, betrayal, and allocation. Run diplomacy and battlefield lines in parallel. No single deity can hard-carry without credibility collapse.",
+    "backgroundTemplate": "[Current Situation] You hold one seat in a twelve-god council governing a human frontier sphere.\n[Trigger] The resource pantheon halts supply and the war pantheon pushes proxy escalation.\n[First Decision] You align with order gods for stability or preemptively seize rival divinity share.\n[Visible Cost] Alliance imposes restrictive clauses; first-strike invites cross-domain retaliation.\n[Time Pressure] Seat redistribution at the next eclipse removes your veto if unresolved.",
+    "example": "You signed a ceasefire covenant and the ink had barely dried when another banner rose over the northern altar. A child asked whether gods can lie. You answered with mobilization orders, not theology.",
+    "worldSetting": "System details: balance is enforced through oath chains, altar taxes, and council vote weight. Autonomous progress: believer migration, ritual throughput, and frontier conflict continuously reallocate power. Non-player lines: priest blocs, mercenary houses, trade cities, and heretic circles arbitrage between pantheons.",
+    "protagonist_preference": [
+      "Frontier Patron Deity: broad domain and heavy internal drag",
+      "Council Negotiator Envoy: treaty expert with low battlefield leverage",
+      "War Proxy Executor: strong tactics, weak politics",
+      "Altar Treasury Keeper: controls supply choke points",
+      "Deposed Old God: least resources, most ruthless timing"
+    ]
+  },
+  "god_crowdsourcing_platform": {
+    "name": "Divine Crowdsourcing Platform",
+    "narrativeStyle": "Platform governance drama where miracles are dispatched through labor and ranking systems. Pace through payout, moderation, suspension, and appeals. Structural problems cannot be solved by one heroic contractor.",
+    "backgroundTemplate": "[Current Situation] You run a divine gig platform with millions of active miracle contractors.\n[Trigger] Top contractors launch a coordinated strike demanding hazard pay and transparent weighting.\n[First Decision] You concede early to stabilize supply or mass-suspend organizers to preserve rule authority.\n[Visible Cost] Concession triggers chain bargaining; suspension leaves disaster queues unserved.\n[Time Pressure] A typhoon makes landfall in four hours and critical queues must clear beforehand.",
+    "example": "You projected the ranking model and the feed filled with black-box accusations. Ops offered to mute dispute channels to cool metrics, but the disaster map kept turning red. The platform looked like a divine state and a labor line at once.",
+    "worldSetting": "System details: task routing depends on trust score, hazard coefficient, and appeal history. Autonomous progress: demand and supply are reshaped in real time by weather, media, and panic. Non-player lines: contractor unions, advertisers, municipalities, and gray operators constantly push boundary conditions.",
+    "protagonist_preference": [
+      "Platform Steward God: maximum authority and fragile trust",
+      "Algorithm Governance Lead: sees bias and inherits blame",
+      "Top Contractor: highest throughput and strongest bargaining power",
+      "Appeals Arbiter: permanent fireline role",
+      "Disaster Liaison Chief: cares only about completed outcomes"
+    ]
+  },
+  "god_false_enshrined": {
+    "name": "The Enshrined False God",
+    "narrativeStyle": "Reverse-apotheosis narrative about lies becoming institutions through belief. Track escalating promise debt over time. Never romanticize fraud or erase collateral damage.",
+    "backgroundTemplate": "[Current Situation] You are a fugitive occultist mistaken for a true god by a border kingdom.\n[Trigger] An invasion force advances and the court demands a public divine strike at tomorrow's rite.\n[First Decision] You continue the performance to preserve morale or confess and force civic self-rescue.\n[Visible Cost] Continued deception binds state survival to one fabrication; confession can collapse governance overnight.\n[Time Pressure] The rite begins tomorrow night and frontline cohesion fails by dawn without a sign.",
+    "example": "You stood above ten thousand voices chanting your title while smoke chemistry, not thunder, fed the altar fire. Wind exposed your shaking hand in the same light they called sacred. Faith had already moved faster than truth.",
+    "worldSetting": "System details: taxation, command authority, and judicial legitimacy are tied to oracle validation. Autonomous progress: war pressure, grain prices, and fanatic momentum rise with each decree. Non-player lines: high priests, generals, trade houses, and foreign spies all exploit or attack your manufactured divinity.",
+    "protagonist_preference": [
+      "False God Core: knows the truth and cannot exit cleanly",
+      "High Court Priest: first guardian of ritual legitimacy",
+      "Frontline Marshal: accepts only useful miracles",
+      "Palace Recorder: can rewrite memory into history",
+      "Underground Skeptic: smallest faction, hardest spine"
+    ]
   }
+
 }
