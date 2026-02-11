@@ -22,10 +22,18 @@ export interface ChunkMeta {
 
 export type LocalEmbeddingBackend = "webgpu" | "webgl" | "cpu";
 
+export type LocalEmbeddingEngine = "transformers_js" | "tfjs";
+
+export type LocalTransformersDevice = "webgpu" | "wasm" | "cpu";
+
 export interface LocalEmbeddingRuntimeConfig {
-  model: "use-lite-512";
+  backend?: LocalEmbeddingEngine;
+  model?: "use-lite-512";
+  transformersModel?: string;
   backendOrder?: LocalEmbeddingBackend[];
+  deviceOrder?: LocalTransformersDevice[];
   batchSize?: number;
+  quantized?: boolean;
 }
 
 export interface RAGDocument {
@@ -126,7 +134,13 @@ export interface RAGConfig {
 
   // Embedding settings
   dimensions: number;
-  provider: "gemini" | "openai" | "openrouter" | "claude" | "local_tfjs";
+  provider:
+    | "gemini"
+    | "openai"
+    | "openrouter"
+    | "claude"
+    | "local_tfjs"
+    | "local_transformers";
   modelId: string;
   contextLength?: number;
   local?: LocalEmbeddingRuntimeConfig;
@@ -140,12 +154,16 @@ export const DEFAULT_RAG_CONFIG: RAGConfig = {
   currentForkBonus: 0.5,
   ancestorForkBonus: 0.25,
   turnDecayFactor: 0.01,
-  dimensions: 768,
-  provider: "gemini",
-  modelId: "text-embedding-004",
+  dimensions: 384,
+  provider: "local_transformers",
+  modelId: "Xenova/all-MiniLM-L6-v2",
   local: {
+    backend: "transformers_js",
     model: "use-lite-512",
+    transformersModel: "Xenova/all-MiniLM-L6-v2",
     backendOrder: ["webgpu", "webgl", "cpu"],
+    deviceOrder: ["webgpu", "wasm", "cpu"],
+    quantized: true,
   },
 };
 

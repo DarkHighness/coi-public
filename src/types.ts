@@ -1317,13 +1317,21 @@ export type EmbeddingTaskType =
   | "classification"
   | "clustering";
 
-export type EmbeddingRuntime = "remote" | "local_tfjs";
+export type EmbeddingRuntime =
+  | "remote"
+  | "local_transformers"
+  | "local_tfjs";
 export type LocalEmbeddingBackend = "webgpu" | "webgl" | "cpu";
+export type LocalTransformersDevice = "webgpu" | "wasm" | "cpu";
 
 export interface LocalEmbeddingOptions {
-  model: "use-lite-512";
+  backend?: "transformers_js" | "tfjs";
+  model?: "use-lite-512";
+  transformersModel?: string;
   backendOrder?: LocalEmbeddingBackend[];
+  deviceOrder?: LocalTransformersDevice[];
   batchSize?: number;
+  quantized?: boolean;
 }
 
 export interface EmbeddingConfig {

@@ -134,8 +134,10 @@ export function useRagRuntime(): RagRuntimeValue {
 
       try {
         const embeddingConfig = settings.embedding;
-        const runtimeMode = embeddingConfig.runtime ?? "remote";
+        const runtimeMode = embeddingConfig.runtime ?? "local_transformers";
         const isLocalTfjs = runtimeMode === "local_tfjs";
+        const isLocalTransformers = runtimeMode === "local_transformers";
+        const isLocalRuntime = isLocalTfjs || isLocalTransformers;
 
         const credentials: {
           gemini?: { apiKey: string; baseUrl?: string };
@@ -144,15 +146,30 @@ export function useRagRuntime(): RagRuntimeValue {
           claude?: { apiKey: string; baseUrl?: string };
         } = {};
 
-        let provider: "gemini" | "openai" | "openrouter" | "claude" | "local_tfjs";
+        let provider:
+          | "gemini"
+          | "openai"
+          | "openrouter"
+          | "claude"
+          | "local_tfjs"
+          | "local_transformers";
         let modelId: string;
         let dimensions: number | undefined;
         let contextLength: number | undefined;
 
-        if (isLocalTfjs) {
-          provider = "local_tfjs";
-          modelId = "use-lite-512";
-          dimensions = 512;
+        if (isLocalRuntime) {
+          if (isLocalTfjs) {
+            provider = "local_tfjs";
+            modelId = "use-lite-512";
+            dimensions = 512;
+          } else {
+            provider = "local_transformers";
+            modelId =
+              embeddingConfig.local?.transformersModel ||
+              embeddingConfig.modelId ||
+              "Xenova/all-MiniLM-L6-v2";
+            dimensions = embeddingConfig.dimensions || 384;
+          }
         } else {
           const providerId = embeddingConfig.providerId;
           const providerInstance = settings.providers.instances.find(

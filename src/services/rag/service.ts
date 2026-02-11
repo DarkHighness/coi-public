@@ -33,7 +33,7 @@ import {
   type UpdateDocumentPayload,
   type UpsertFileChunksPayload,
 } from "./types";
-import { embedTextsWithTfjs, resetTfjsEmbeddingEngine } from "./localEmbedding";
+import { embedTextsLocally, resetLocalEmbeddingEngines } from "./localEmbedding";
 
 export type RAGEventCallback = (event: RAGEvent) => void;
 
@@ -140,25 +140,48 @@ export class RAGService {
     return this.isInitialized;
   }
 
-  private isLocalTfjsRuntime(): boolean {
-    return this.config.provider === "local_tfjs";
+  private isLocalRuntime(): boolean {
+    return (
+      this.config.provider === "local_tfjs" ||
+      this.config.provider === "local_transformers"
+    );
   }
 
   private getLocalEmbeddingConfig(): NonNullable<RAGConfig["local"]> {
-    return {
+    const merged = {
       ...(DEFAULT_RAG_CONFIG.local || {
+        backend: "transformers_js",
         model: "use-lite-512",
+        transformersModel: "Xenova/all-MiniLM-L6-v2",
         backendOrder: ["webgpu", "webgl", "cpu"],
+        deviceOrder: ["webgpu", "wasm", "cpu"],
+        quantized: true,
       }),
       ...(this.config.local || {}),
-      model: "use-lite-512",
+    };
+
+    if (this.config.provider === "local_tfjs") {
+      return {
+        ...merged,
+        backend: "tfjs",
+        model: "use-lite-512",
+        backendOrder: merged.backendOrder || ["webgpu", "webgl", "cpu"],
+      };
+    }
+
+    return {
+      ...merged,
+      backend: "transformers_js",
+      transformersModel:
+        merged.transformersModel || "Xenova/all-MiniLM-L6-v2",
+      deviceOrder: merged.deviceOrder || ["webgpu", "wasm", "cpu"],
     };
   }
 
   private async ensureLocalEmbeddings(
     documents: UpsertFileChunksPayload["documents"],
   ): Promise<UpsertFileChunksPayload["documents"]> {
-    if (!this.isLocalTfjsRuntime() || documents.length === 0) {
+    if (!this.isLocalRuntime() || documents.length === 0) {
       return documents;
     }
 
@@ -172,7 +195,7 @@ export class RAGService {
       return documents;
     }
 
-    const vectors = await embedTextsWithTfjs(
+    const vectors = await embedTextsLocally(
       missing.map(({ doc }) => doc.content),
       this.getLocalEmbeddingConfig(),
     );
@@ -258,8 +281,8 @@ export class RAGService {
   ): Promise<SearchResult[]> {
     this.ensureInitialized();
 
-    if (this.isLocalTfjsRuntime()) {
-      const [queryEmbedding] = await embedTextsWithTfjs(
+    if (this.isLocalRuntime()) {
+      const [queryEmbedding] = await embedTextsLocally(
         [query],
         this.getLocalEmbeddingConfig(),
       );
@@ -350,7 +373,11 @@ export class RAGService {
       ...this.config,
       ...config,
       local: {
-        ...(this.config.local || DEFAULT_RAG_CONFIG.local || { model: "use-lite-512" }),
+        ...(this.config.local || DEFAULT_RAG_CONFIG.local || {
+          backend: "transformers_js",
+          model: "use-lite-512",
+          transformersModel: "Xenova/all-MiniLM-L6-v2",
+        }),
         ...(config.local ?? {}),
       },
     };
@@ -363,7 +390,7 @@ export class RAGService {
     this.config = nextConfig;
 
     if (localRuntimeChanged) {
-      await resetTfjsEmbeddingEngine().catch(() => undefined);
+      await resetLocalEmbeddingEngines().catch(() => undefined);
     }
 
     if (this.isInitialized) {
@@ -505,7 +532,7 @@ export class RAGService {
     this.isInitialized = false;
     this.initPromise = null;
 
-    void resetTfjsEmbeddingEngine();
+    void resetLocalEmbeddingEngines();
   }
 
   private ensureInitialized(): void {

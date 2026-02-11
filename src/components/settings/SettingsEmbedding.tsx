@@ -20,8 +20,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     useSettings();
   const config = currentSettings.embedding;
   const isEnabled = config?.enabled ?? false;
-  const runtime = config?.runtime ?? "remote";
-  const isLocalRuntime = runtime === "local_tfjs";
+  const runtime = config?.runtime ?? "local_transformers";
+  const isLocalRuntime =
+    runtime === "local_transformers" || runtime === "local_tfjs";
+  const isLocalTransformers = runtime === "local_transformers";
 
   // Track previous model ID for model change detection
   const previousModelIdRef = useRef<string | null>(config?.modelId || null);
@@ -61,7 +63,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   // 支持强制刷新 force 参数
   const fetchModelsForProvider = useCallback(
     async (providerId: string, force = false) => {
-      if ((currentSettings.embedding.runtime ?? "remote") === "local_tfjs") {
+      const runtimeMode = currentSettings.embedding.runtime ?? "local_transformers";
+      if (runtimeMode === "local_transformers" || runtimeMode === "local_tfjs") {
         return;
       }
 
@@ -154,17 +157,36 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     }
 
     if (field === "runtime") {
-      if (value === "local_tfjs") {
+      if (value === "local_transformers") {
+        const localConfig = newSettings.embedding.local || {};
+        const transformersModel =
+          localConfig.transformersModel || "Xenova/all-MiniLM-L6-v2";
         newSettings.embedding.local = {
+          ...localConfig,
+          backend: "transformers_js",
+          transformersModel,
+          deviceOrder: localConfig.deviceOrder || ["webgpu", "wasm", "cpu"],
+          batchSize: localConfig.batchSize || 8,
+          quantized: localConfig.quantized !== false,
+        };
+        newSettings.embedding.modelId = transformersModel;
+        newSettings.embedding.dimensions = 384;
+      } else if (value === "local_tfjs") {
+        const localConfig = newSettings.embedding.local || {};
+        newSettings.embedding.local = {
+          ...localConfig,
+          backend: "tfjs",
           model: "use-lite-512",
-          backendOrder:
-            newSettings.embedding.local?.backendOrder || ["webgpu", "webgl", "cpu"],
-          batchSize: newSettings.embedding.local?.batchSize || 8,
+          backendOrder: localConfig.backendOrder || ["webgpu", "webgl", "cpu"],
+          batchSize: localConfig.batchSize || 8,
         };
         newSettings.embedding.modelId = "use-lite-512";
         newSettings.embedding.dimensions = 512;
       } else if (value === "remote") {
-        if (newSettings.embedding.modelId === "use-lite-512") {
+        if (
+          newSettings.embedding.modelId === "use-lite-512" ||
+          newSettings.embedding.modelId === "Xenova/all-MiniLM-L6-v2"
+        ) {
           newSettings.embedding.modelId = "";
           newSettings.embedding.dimensions = undefined;
         }
@@ -337,11 +359,17 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             onChange={(e) => updateEmbedding("runtime", e.target.value)}
             className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
           >
-            <option value="remote">
-              {t("embedding.runtimeRemote") || "Remote API"}
+            <option value="local_transformers">
+              {
+                t("embedding.runtimeLocalTransformers") ||
+                "Local (Transformers.js, default)"
+              }
             </option>
             <option value="local_tfjs">
-              {t("embedding.runtimeLocal") || "Local (TFJS)"}
+              {t("embedding.runtimeLocalTfjs") || "Local (TFJS fallback)"}
+            </option>
+            <option value="remote">
+              {t("embedding.runtimeRemote") || "Remote API"}
             </option>
           </select>
         </div>
@@ -352,8 +380,11 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
               {t("embedding.localWarningTitle") || "Local Embedding (Privacy First)"}
             </div>
             <div>
-              {t("embedding.localWarningDesc") ||
-                "Runs embeddings on-device with TFJS (WebGPU → WebGL → CPU). Better privacy, but initialization is slower, memory usage is higher, and search performance may be noticeably worse."}
+              {isLocalTransformers
+                ? t("embedding.localWarningDescTransformers") ||
+                  "Runs embeddings on-device with Transformers.js (prefers WebGPU when available). Better privacy and no external embedding API, but model download/init can be slow and memory usage can be high."
+                : t("embedding.localWarningDescTfjs") ||
+                  "Runs embeddings on-device with TFJS (WebGPU → WebGL → CPU). Better privacy, but initialization is slower, memory usage is higher, and search performance may be noticeably worse."}
             </div>
           </div>
         )}
@@ -684,8 +715,11 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             </svg>
             <span>
               {isLocalRuntime
-                ? t("embedding.localStatusInfo") ||
-                  "Local TFJS runtime is active. Embeddings are generated on-device for better privacy."
+                ? isLocalTransformers
+                  ? t("embedding.localStatusInfoTransformers") ||
+                    "Local Transformers.js runtime is active (WebGPU preferred when available). Embeddings are generated on-device for stronger privacy."
+                  : t("embedding.localStatusInfoTfjs") ||
+                    "Local TFJS runtime is active. Embeddings are generated on-device for better privacy."
                 : t("embedding.statusInfo") ||
                   "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation."}
             </span>

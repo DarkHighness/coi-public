@@ -112,8 +112,10 @@ export async function validateProvidersForMode(
     },
   ];
 
+  const embeddingRuntime = aiSettings.embedding.runtime ?? "local_transformers";
   const embeddingUsesRemoteProvider =
-    (aiSettings.embedding.runtime ?? "remote") !== "local_tfjs";
+    embeddingRuntime !== "local_tfjs" &&
+    embeddingRuntime !== "local_transformers";
 
   const optionalFeatures: FeatureConfig[] = [
     {

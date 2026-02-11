@@ -432,9 +432,12 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   isSearching = true;
 
   try {
-    if (!payload.queryEmbedding && config.provider === "local_tfjs") {
+    if (
+      !payload.queryEmbedding &&
+      (config.provider === "local_tfjs" || config.provider === "local_transformers")
+    ) {
       throw new Error(
-        "Local TFJS runtime requires precomputed queryEmbedding from main thread",
+        "Local embedding runtime requires precomputed queryEmbedding from main thread",
       );
     }
 
@@ -694,7 +697,11 @@ async function handleGetAllSaveStats(): Promise<GlobalStorageStats> {
 }
 
 async function generateEmbedding(text: string): Promise<Float32Array> {
-  if (config.provider !== "local_tfjs" && !credentials) {
+  if (
+    config.provider !== "local_tfjs" &&
+    config.provider !== "local_transformers" &&
+    !credentials
+  ) {
     throw new Error("No credentials configured for embedding generation");
   }
 
@@ -719,8 +726,9 @@ async function generateEmbedding(text: string): Promise<Float32Array> {
         "Claude does not support embedding generation. Please use Gemini, OpenAI, or OpenRouter for embeddings.",
       );
     case "local_tfjs":
+    case "local_transformers":
       throw new Error(
-        "Local TFJS runtime requires precomputed embeddings from main thread",
+        "Local embedding runtime requires precomputed embeddings from main thread",
       );
     default:
       throw new Error(`Unknown embedding provider: ${config.provider}`);

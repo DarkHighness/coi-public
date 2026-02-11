@@ -125,15 +125,19 @@ export const DEFAULTS: AISettings = {
   // Different providers support different embedding models (e.g., Gemini: text-embedding-004, OpenAI: text-embedding-3-small)
   embedding: {
     enabled: false,
-    runtime: "remote",
+    runtime: "local_transformers",
     providerId: "provider-1",
     modelId: "", // No default - must be selected based on provider's available models
     local: {
+      backend: "transformers_js",
       model: "use-lite-512",
+      transformersModel: "Xenova/all-MiniLM-L6-v2",
       backendOrder: ["webgpu", "webgl", "cpu"],
+      deviceOrder: ["webgpu", "wasm", "cpu"],
       batchSize: 8,
+      quantized: true,
     },
-    dimensions: undefined, // Will be set when model is selected
+    dimensions: 384, // Local transformers default embedding dimension
     topK: 10,
     similarityThreshold: 0.65,
     // Storage Settings

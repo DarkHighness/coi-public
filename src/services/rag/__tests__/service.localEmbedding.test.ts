@@ -1,51 +1,72 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RAGService } from "../service";
-import { embedTextsWithTfjs } from "../localEmbedding";
+import { embedTextsLocally } from "../localEmbedding";
 import { DEFAULT_RAG_CONFIG } from "../types";
 
 vi.mock("../localEmbedding", () => ({
+  embedTextsLocally: vi.fn(),
   embedTextsWithTfjs: vi.fn(),
   getTfjsEmbeddingEngine: vi.fn(),
   resetTfjsEmbeddingEngine: vi.fn(),
+  embedTextsWithTransformers: vi.fn(),
+  getTransformersEmbeddingEngine: vi.fn(),
+  resetTransformersEmbeddingEngine: vi.fn(),
+  resetLocalEmbeddingEngines: vi.fn(),
 }));
 
-const embedTextsWithTfjsMock = vi.mocked(embedTextsWithTfjs);
+const embedTextsLocallyMock = vi.mocked(embedTextsLocally);
 
-const createService = (provider: "local_tfjs" | "gemini" = "local_tfjs") => {
+const createService = (
+  provider: "local_transformers" | "local_tfjs" | "gemini" =
+    "local_transformers",
+) => {
   const service = new RAGService() as any;
   service.isInitialized = true;
   service.port = { postMessage: vi.fn(), start: vi.fn() };
   service.config = {
     ...DEFAULT_RAG_CONFIG,
     provider,
-    local: {
-      model: "use-lite-512",
-      backendOrder: ["cpu"],
-      batchSize: 4,
-    },
+    local:
+      provider === "local_tfjs"
+        ? {
+            backend: "tfjs",
+            model: "use-lite-512",
+            backendOrder: ["cpu"],
+            batchSize: 4,
+          }
+        : {
+            backend: "transformers_js",
+            transformersModel: "Xenova/all-MiniLM-L6-v2",
+            deviceOrder: ["cpu"],
+            batchSize: 4,
+            quantized: true,
+          },
   };
   service.sendRequest = vi.fn();
   return service;
 };
 
-describe("RAGService local TFJS runtime", () => {
+describe("RAGService local embedding runtime", () => {
   beforeEach(() => {
-    embedTextsWithTfjsMock.mockReset();
+    embedTextsLocallyMock.mockReset();
   });
 
-  it("uses precomputed queryEmbedding for search in local_tfjs runtime", async () => {
-    const service = createService("local_tfjs");
+  it("uses precomputed queryEmbedding for search in local_transformers runtime", async () => {
+    const service = createService("local_transformers");
     const expectedResults = [{ score: 0.9 }];
 
-    embedTextsWithTfjsMock.mockResolvedValue([[0.1, 0.2, 0.3]]);
+    embedTextsLocallyMock.mockResolvedValue([[0.1, 0.2, 0.3]]);
     service.sendRequest.mockResolvedValue(expectedResults);
 
     const result = await service.search("find hidden truth", { topK: 5 });
 
     expect(result).toBe(expectedResults);
-    expect(embedTextsWithTfjsMock).toHaveBeenCalledWith(
+    expect(embedTextsLocallyMock).toHaveBeenCalledWith(
       ["find hidden truth"],
-      expect.objectContaining({ model: "use-lite-512" }),
+      expect.objectContaining({
+        backend: "transformers_js",
+        transformersModel: "Xenova/all-MiniLM-L6-v2",
+      }),
     );
 
     expect(service.sendRequest).toHaveBeenCalledTimes(1);
@@ -60,11 +81,11 @@ describe("RAGService local TFJS runtime", () => {
     expect(queryVector[2]).toBeCloseTo(0.3);
   });
 
-  it("precomputes only missing chunk embeddings before upsert", async () => {
+  it("precomputes only missing chunk embeddings before upsert in local_tfjs runtime", async () => {
     const service = createService("local_tfjs");
     service.sendRequest.mockResolvedValue({ count: 2 });
 
-    embedTextsWithTfjsMock.mockResolvedValue([[0.33, 0.44]]);
+    embedTextsLocallyMock.mockResolvedValue([[0.33, 0.44]]);
 
     const docs = [
       {
@@ -98,10 +119,10 @@ describe("RAGService local TFJS runtime", () => {
 
     await service.upsertFileChunks(docs);
 
-    expect(embedTextsWithTfjsMock).toHaveBeenCalledTimes(1);
-    expect(embedTextsWithTfjsMock).toHaveBeenCalledWith(
+    expect(embedTextsLocallyMock).toHaveBeenCalledTimes(1);
+    expect(embedTextsLocallyMock).toHaveBeenCalledWith(
       ["alpha"],
-      expect.objectContaining({ model: "use-lite-512" }),
+      expect.objectContaining({ backend: "tfjs", model: "use-lite-512" }),
     );
 
     const [requestType, payload] = service.sendRequest.mock.calls[0];
@@ -117,7 +138,7 @@ describe("RAGService local TFJS runtime", () => {
 
     await service.search("query", { threshold: 0.5 });
 
-    expect(embedTextsWithTfjsMock).not.toHaveBeenCalled();
+    expect(embedTextsLocallyMock).not.toHaveBeenCalled();
     expect(service.sendRequest).toHaveBeenCalledWith("search", {
       query: "query",
       options: { threshold: 0.5 },
