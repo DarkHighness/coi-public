@@ -72,7 +72,8 @@ Finish tool:
 When you have enough information, call \`vfs_finish_summary\`.
 It MUST be your LAST tool call.
 
-Before any summary mutation, read command protocol:
+Before any summary mutation, read command protocol (hub first):
+- \`current/skills/commands/runtime/SKILL.md\`
 - \`current/skills/commands/runtime/summary/SKILL.md\`
 
 <examples>

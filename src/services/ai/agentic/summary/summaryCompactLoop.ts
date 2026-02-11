@@ -786,7 +786,7 @@ export async function runCompactSummaryLoop(
       `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
       `- Set lastSummarizedIndex = ${targetLastSummarizedIndex}.\n` +
       `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
-      `Before finish, read protocol: "current/skills/commands/runtime/compact/SKILL.md".\n` +
+      `Before finish, read protocol (hub first): "current/skills/commands/runtime/SKILL.md", then "current/skills/commands/runtime/compact/SKILL.md".\n` +
       `If you need to verify details, use read-only VFS tools (vfs_read_json/search/grep/etc.) and stay on target fork only.`,
   );
 

@@ -262,7 +262,7 @@ describe("runSummaryLoop", () => {
     );
 
     expect(compactTrigger).toContain(
-      'Before finish, read protocol: "current/skills/commands/runtime/compact/SKILL.md".',
+      'Before finish, read protocol (hub first): "current/skills/commands/runtime/SKILL.md", then "current/skills/commands/runtime/compact/SKILL.md".',
     );
     expect(compactAnchor).toContain("MODE CONTRACT: SESSION_COMPACT");
     expect(compactAnchor).toContain("Current session history already loaded in context");

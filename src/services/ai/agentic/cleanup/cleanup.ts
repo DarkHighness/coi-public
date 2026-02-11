@@ -55,7 +55,8 @@ const cleanupPromptAtom = defineAtom(
 </cleanup_anchor>
 
 <workflow>
-  0) Before any cleanup mutation, read command protocol:
+  0) Before any cleanup mutation, read command protocol (hub first):
+     - \`current/skills/commands/runtime/SKILL.md\`
      - \`current/skills/commands/runtime/cleanup/SKILL.md\`
 
   1) Use \`vfs_ls_entries\` to get a COMPLETE catalog by category (IDs + names + status).

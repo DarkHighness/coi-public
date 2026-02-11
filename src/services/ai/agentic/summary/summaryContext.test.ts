@@ -61,6 +61,9 @@ describe("summaryContext", () => {
       "Ensure key sensory details and character emotional shifts are captured",
     );
     expect(instruction).toContain("displayText: Brief 2-3 sentences");
+    expect(instruction).toContain("read command protocol (hub first)");
+    expect(instruction).toContain("current/skills/commands/runtime/SKILL.md");
+    expect(instruction).toContain("current/skills/commands/runtime/summary/SKILL.md");
   });
 
   it("builds minimal context when no prior summary or conversation exists", () => {
