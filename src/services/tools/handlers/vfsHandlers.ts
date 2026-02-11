@@ -60,6 +60,7 @@ import {
 import type { Operation } from "fast-json-patch";
 import { applyCustomRulesRetconAck } from "../../customRulesAckState";
 import { vfsPathRegistry } from "../../vfs/core/pathRegistry";
+import { vfsResourceRegistry } from "../../vfs/core/resourceRegistry";
 import { vfsToolRouter } from "../../vfs/core/toolRouter";
 import type { VfsWriteContext } from "../../vfs/core/types";
 import { getSchemaForPath } from "../../vfs/schemas";
@@ -330,6 +331,60 @@ const mapCategory = (canonicalPath: string): string => {
   if (classification.templateId === "template.system.refs") return "reference";
 
   return "unknown";
+};
+
+const FALLBACK_TEMPLATE_IDS = new Set([
+  "template.fallback.shared",
+  "template.fallback.fork",
+]);
+
+const PLAIN_OR_MARKDOWN_CONTENT_TYPES = new Set(["text/plain", "text/markdown"]);
+
+const inferContentTypeFromPath = (path: string): string | null => {
+  const normalized = normalizeVfsPath(path).toLowerCase();
+  if (normalized.endsWith(".json")) return "application/json";
+  if (normalized.endsWith(".md")) return "text/markdown";
+  if (
+    normalized.endsWith(".txt") ||
+    normalized.endsWith(".log") ||
+    normalized.endsWith(".text")
+  ) {
+    return "text/plain";
+  }
+  return null;
+};
+
+const isPlainOrMarkdownContentType = (contentType: string): boolean =>
+  PLAIN_OR_MARKDOWN_CONTENT_TYPES.has(contentType);
+
+const hasSpecificTemplateDefinition = (templateId: string): boolean =>
+  !FALLBACK_TEMPLATE_IDS.has(templateId);
+
+const formatTemplateDefinitionHint = (input: {
+  templateId: string;
+  description: string;
+  shape: string;
+  scope: string;
+  domain: string;
+  permissionClass: string;
+  contentTypes: string[];
+  resolvedContentType?: string | null;
+}): string => {
+  const contentTypesText =
+    input.contentTypes.length > 0 ? input.contentTypes.join(" | ") : "unspecified";
+  const resolvedTypeText = input.resolvedContentType ?? "unknown";
+
+  return [
+    "No strict Zod field schema is registered for this path.",
+    `Template: ${input.templateId}`,
+    `Description: ${input.description}`,
+    `Shape: ${input.shape}`,
+    `Scope: ${input.scope}`,
+    `Domain: ${input.domain}`,
+    `Permission: ${input.permissionClass}`,
+    `Expected content types: ${contentTypesText}`,
+    `Resolved content type: ${resolvedTypeText}`,
+  ].join("\n");
 };
 
 const getMimeType = (contentType: VfsContentType): string => contentType;
@@ -1004,14 +1059,20 @@ vfsToolRouter.register(VFS_SCHEMA_TOOL, (args, ctx) => {
       return resolved.error;
     }
 
+    const activeForkId =
+      typeof ctx.gameState?.forkId === "number"
+        ? ctx.gameState.forkId
+        : session.getActiveForkId();
+    const classification = vfsPathRegistry.classify(resolved.path, {
+      activeForkId,
+    });
+    const resourceMatch = vfsResourceRegistry.match(resolved.path, {
+      activeForkId,
+    });
+    const existingFile = session.readFile(resolved.path);
+
     try {
       const schema = getSchemaForPath(resolved.path);
-      const classification = vfsPathRegistry.classify(resolved.path, {
-        activeForkId:
-          typeof ctx.gameState?.forkId === "number"
-            ? ctx.gameState.forkId
-            : session.getActiveForkId(),
-      });
       schemas.push({
         path: toCurrentPath(resolved.path),
         hint: getVfsSchemaHint(schema),
@@ -1027,9 +1088,57 @@ vfsToolRouter.register(VFS_SCHEMA_TOOL, (args, ctx) => {
           allowedWriteOps: [...classification.allowedWriteOps],
         },
       });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      missing.push({ path: inputPath, error: message });
+    } catch (schemaError) {
+      if (!hasSpecificTemplateDefinition(classification.templateId)) {
+        const message =
+          schemaError instanceof Error ? schemaError.message : String(schemaError);
+        missing.push({ path: inputPath, error: message });
+        continue;
+      }
+
+      const templateContentTypes = resourceMatch.descriptor.contentTypes ?? [];
+      const inferredContentType =
+        existingFile?.contentType ??
+        inferContentTypeFromPath(resolved.path) ??
+        (templateContentTypes.length === 1 ? templateContentTypes[0] : null);
+      const looksLikePlainOrMarkdown =
+        inferredContentType !== null
+          ? isPlainOrMarkdownContentType(inferredContentType)
+          : templateContentTypes.length > 0 &&
+            templateContentTypes.every(isPlainOrMarkdownContentType);
+
+      if (!existingFile && looksLikePlainOrMarkdown) {
+        missing.push({
+          path: inputPath,
+          error: `File not found for plain/markdown path: ${toCurrentPath(resolved.path)}`,
+        });
+        continue;
+      }
+
+      schemas.push({
+        path: toCurrentPath(resolved.path),
+        hint: formatTemplateDefinitionHint({
+          templateId: classification.templateId,
+          description: classification.description,
+          shape: classification.resourceShape,
+          scope: classification.scope,
+          domain: classification.domain,
+          permissionClass: classification.permissionClass,
+          contentTypes: templateContentTypes,
+          resolvedContentType: inferredContentType,
+        }),
+        classification: {
+          canonicalPath: classification.canonicalPath,
+          templateId: classification.templateId,
+          permissionClass: classification.permissionClass,
+          scope: classification.scope,
+          domain: classification.domain,
+          resourceShape: classification.resourceShape,
+          criticality: classification.criticality,
+          retention: classification.retention,
+          allowedWriteOps: [...classification.allowedWriteOps],
+        },
+      });
     }
   }
 

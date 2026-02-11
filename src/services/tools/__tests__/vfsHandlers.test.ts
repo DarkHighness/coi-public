@@ -569,6 +569,90 @@ describe("VFS handlers", () => {
 	    expect(result.data?.schemas?.[1]?.hint).toContain("id");
 	  });
 
+  it("returns template definition for missing JSON path when no strict schema exists", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_schema",
+      { paths: ["current/outline/phases/phase42.json"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: {
+        schemas?: Array<{ path: string; hint: string; classification?: { templateId?: string } }>;
+        missing?: Array<{ path: string; error: string }>;
+      };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.missing).toEqual([]);
+    expect(result.data?.schemas?.[0]?.path).toBe("current/outline/phases/phase42.json");
+    expect(result.data?.schemas?.[0]?.classification?.templateId).toBe(
+      "template.narrative.outline.phases",
+    );
+    expect(result.data?.schemas?.[0]?.hint).toContain(
+      "No strict Zod field schema is registered for this path.",
+    );
+    expect(result.data?.schemas?.[0]?.hint).toContain(
+      "Expected content types: application/json",
+    );
+  });
+
+  it("reports file-not-found for missing plain/markdown path even when template exists", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_schema",
+      { paths: ["current/outline/story_outline/missing_plan.md"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: {
+        schemas?: Array<{ path: string; hint: string }>;
+        missing?: Array<{ path: string; error: string }>;
+      };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.schemas ?? []).toHaveLength(0);
+    expect(result.data?.missing?.[0]?.path).toBe(
+      "current/outline/story_outline/missing_plan.md",
+    );
+    expect(result.data?.missing?.[0]?.error).toContain(
+      "File not found for plain/markdown path",
+    );
+  });
+
+  it("returns template definition for existing markdown path", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+    session.writeFile("outline/story_outline/plan.md", "# Plan", "text/markdown");
+
+    const result = dispatchToolCall(
+      "vfs_schema",
+      { paths: ["current/outline/story_outline/plan.md"] },
+      ctx,
+    ) as {
+      success: boolean;
+      data?: {
+        schemas?: Array<{ path: string; hint: string }>;
+        missing?: Array<{ path: string; error: string }>;
+      };
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.data?.missing).toEqual([]);
+    expect(result.data?.schemas?.[0]?.path).toBe("current/outline/story_outline/plan.md");
+    expect(result.data?.schemas?.[0]?.hint).toContain(
+      "No strict Zod field schema is registered for this path.",
+    );
+    expect(result.data?.schemas?.[0]?.hint).toContain(
+      "Resolved content type: text/markdown",
+    );
+  });
+
   it("keeps a stable vfs_schema hint signature for world/global.json", () => {
     const session = new VfsSession();
     const ctx = {
