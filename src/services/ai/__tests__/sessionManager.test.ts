@@ -10,9 +10,14 @@ const storage = vi.hoisted(() => ({
   clearAll: vi.fn(async () => undefined),
   getStats: vi.fn(async () => ({ sessionCount: 0, totalHistoryItems: 0 })),
 }));
+const createProviderMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../sessionStorage", () => ({
   sessionStorage: storage,
+}));
+
+vi.mock("../provider/createProvider", () => ({
+  createProvider: createProviderMock,
 }));
 
 import { sessionManager } from "../sessionManager";
@@ -108,5 +113,148 @@ describe("sessionManager", () => {
     expect(
       sessionManager.getEffectiveToolChoice("session-1", "required", false),
     ).toBe("required");
+  });
+
+  it("loads stored session and sanitizes dangling or duplicate history", async () => {
+    storage.getSession.mockResolvedValueOnce({
+      id: "slot-a:0:provider-1:model-1",
+      slotId: "slot-a",
+      config: configA,
+      nativeHistory: [
+        { role: "assistant", content: "stable" },
+        { role: "assistant", content: "stable" },
+        { role: "model", parts: [] },
+        { role: "user", content: "dangling-user" },
+      ],
+      systemInstruction: "sys",
+      lastSummaryId: null,
+      createdAt: 1,
+      lastAccessedAt: 2,
+      cacheHint: null,
+      checkpoints: [],
+    });
+
+    const session = await sessionManager.getOrCreateSession(configA as any);
+
+    expect(session.nativeHistory).toEqual([{ role: "assistant", content: "stable" }]);
+
+    await vi.runOnlyPendingTimersAsync();
+    expect(storage.saveSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: session.id,
+        nativeHistory: [{ role: "assistant", content: "stable" }],
+      }),
+    );
+  });
+
+  it("validates provider identity/protocol and caches provider instance", async () => {
+    const session = await sessionManager.getOrCreateSession(configA as any);
+    createProviderMock.mockReturnValue({ tag: "provider" });
+
+    expect(() => sessionManager.getProvider(session.id)).toThrow(
+      "Provider instance required",
+    );
+    expect(() =>
+      sessionManager.getProvider(session.id, {
+        id: "provider-x",
+        protocol: "openai",
+      } as any),
+    ).toThrow("Provider mismatch");
+    expect(() =>
+      sessionManager.getProvider(session.id, {
+        id: "provider-1",
+        protocol: "gemini",
+      } as any),
+    ).toThrow("Protocol mismatch");
+
+    const first = sessionManager.getProvider(session.id, {
+      id: "provider-1",
+      protocol: "openai",
+    } as any);
+    const second = sessionManager.getProvider(session.id);
+
+    expect(first).toEqual({ tag: "provider" });
+    expect(second).toBe(first);
+    expect(createProviderMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("supports history helpers and rollback safeguards", async () => {
+    const session = await sessionManager.getOrCreateSession(configA as any);
+
+    expect(sessionManager.getHistory("missing")).toEqual([]);
+    expect(sessionManager.getHistoryLength("missing")).toBe(0);
+    expect(sessionManager.isEmpty("missing")).toBe(true);
+
+    sessionManager.setHistory(session.id, [{ id: 1 }, { id: 2 }, { id: 3 }]);
+    expect(sessionManager.getHistoryLength(session.id)).toBe(3);
+    expect(sessionManager.isEmpty(session.id)).toBe(false);
+
+    sessionManager.checkpoint(session.id);
+    sessionManager.checkpoint(session.id);
+    expect(sessionManager.getCurrentSession()?.checkpoints).toEqual([3]);
+
+    sessionManager.rollbackHistory(session.id, 0);
+    expect(sessionManager.getHistoryLength(session.id)).toBe(3);
+
+    sessionManager.rollbackHistory(session.id, 10);
+    expect(sessionManager.getHistoryLength(session.id)).toBe(0);
+  });
+
+  it("handles context overflow and manual invalidation even when storage delete fails", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const session = await sessionManager.getOrCreateSession(configA as any);
+
+    sessionManager.appendHistory(session.id, [{ id: "msg-1" }]);
+    storage.deleteSession.mockRejectedValueOnce(new Error("delete failed"));
+
+    const overflow = await sessionManager.onContextOverflow(session.id);
+    expect(overflow).toEqual({ needsSummary: true });
+    expect(sessionManager.getHistory(session.id)).toEqual([]);
+    expect(warnSpy).toHaveBeenCalled();
+
+    await sessionManager.invalidate("not-current", "manual_clear");
+    expect(storage.deleteSession).toHaveBeenCalledTimes(1);
+
+    await sessionManager.invalidate(session.id, "manual_clear");
+    expect(storage.deleteSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears in-memory session on slot deletion and returns 0 on deletion errors", async () => {
+    await sessionManager.getOrCreateSession(configA as any);
+    storage.deleteSlotSessions.mockResolvedValueOnce(2);
+
+    await expect(sessionManager.deleteSlotSessions("slot-a")).resolves.toBe(2);
+    expect(sessionManager.getCurrentSession()).toBeNull();
+
+    storage.deleteSlotSessions.mockRejectedValueOnce(new Error("boom"));
+    await expect(sessionManager.deleteSlotSessions("slot-b")).resolves.toBe(0);
+  });
+
+  it("exposes cache hint/system instruction and falls back when stats storage fails", async () => {
+    const session = await sessionManager.getOrCreateSession(configA as any);
+
+    expect(sessionManager.getCacheHint("missing")).toBeNull();
+    expect(sessionManager.getSystemInstruction("missing")).toBeNull();
+
+    sessionManager.setCacheHint(session.id, {
+      protocol: "openai",
+      cacheKey: "cache-1",
+    });
+    sessionManager.setSystemInstruction(session.id, "system v1");
+
+    expect(sessionManager.getCacheHint(session.id)).toEqual({
+      protocol: "openai",
+      cacheKey: "cache-1",
+    });
+    expect(sessionManager.getSystemInstruction(session.id)).toBe("system v1");
+
+    storage.getStats.mockRejectedValueOnce(new Error("stats failed"));
+    const stats = await sessionManager.getStats();
+    expect(stats).toEqual({
+      currentSessionId: session.id,
+      currentHistoryLength: 0,
+      persistedSessionCount: 0,
+      totalHistoryItems: 0,
+    });
   });
 });

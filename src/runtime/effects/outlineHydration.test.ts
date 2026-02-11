@@ -123,4 +123,57 @@ describe("outlineHydration", () => {
     );
     expect(saveToSlot).toHaveBeenCalledWith("slot-1", nextState);
   });
+
+  it("uses fallback checkpoint defaults when outline omits optional fields", async () => {
+    const vfsSession = {
+      writeFile: vi.fn(),
+    } as any;
+    const saveToSlot = vi.fn(async () => true);
+
+    const outline = {
+      initialAtmosphere: { envTheme: "fantasy", ambience: "quiet" },
+      locations: [],
+      narrativeScale: undefined,
+    } as any;
+
+    const nextState = { id: "next" } as any;
+
+    await persistOutlineCheckpoint({
+      outline,
+      themeConfig: { name: "Theme" } as any,
+      theme: "fantasy",
+      language: "zh",
+      customContext: undefined,
+      saveId: "slot-fallback",
+      nextState,
+      vfsSession,
+      saveToSlot,
+      seedImageId: undefined,
+    });
+
+    expect(seedVfsSessionFromOutlineMock).toHaveBeenCalledWith(
+      vfsSession,
+      outline,
+      expect.objectContaining({
+        time: "Day 1",
+        currentLocation: "Unknown",
+        language: "zh",
+      }),
+    );
+
+    expect(writeTurnFileMock).toHaveBeenCalledWith(
+      vfsSession,
+      0,
+      0,
+      expect.objectContaining({
+        assistant: {
+          narrative: "",
+          choices: [],
+          atmosphere: undefined,
+        },
+      }),
+    );
+
+    expect(saveToSlot).toHaveBeenCalledWith("slot-fallback", nextState);
+  });
 });
