@@ -361,4 +361,67 @@ describe("useRuntimeEngine", () => {
     expect(lifecycle.startNewGame).toHaveBeenCalledWith("fantasy", "ctx");
     expect(lifecycle.resumeOutlineGeneration).toHaveBeenCalled();
   });
+
+  it("uses locked story env theme in start view and skips atmosphere-derived theme lookup", () => {
+    routerState.pathname = "/";
+    runtimeState.gameState = {
+      theme: "unknown-theme",
+      atmosphere: { envTheme: "rainy", ambience: "windy" },
+      nodes: {},
+      activeNodeId: null,
+      liveToolCalls: [],
+    } as any;
+
+    useSettingsMock.mockReturnValueOnce({
+      settings: {
+        lockEnvTheme: true,
+        fixedEnvTheme: null,
+      },
+      updateSettings: vi.fn(),
+      resetSettings: vi.fn(),
+      language: "en",
+      setLanguage: vi.fn(),
+      themeMode: "day",
+      setThemeMode: vi.fn(),
+      toggleThemeMode: vi.fn(),
+    });
+
+    mount();
+
+    expect(getThemeKeyForAtmosphereMock).not.toHaveBeenCalled();
+    expect(document.documentElement.style.getPropertyValue("--bg")).toBe("#445566");
+    expect(document.title).toBe("Chronicles");
+  });
+
+  it("uses fixed env theme in locked mode and picks night variables", () => {
+    runtimeState.gameState = {
+      theme: "fantasy",
+      atmosphere: { envTheme: "fantasy", ambience: "quiet" },
+      nodes: {},
+      activeNodeId: null,
+      liveToolCalls: [],
+    } as any;
+
+    useSettingsMock.mockReturnValueOnce({
+      settings: {
+        lockEnvTheme: true,
+        fixedEnvTheme: "rainy",
+      },
+      updateSettings: vi.fn(),
+      resetSettings: vi.fn(),
+      language: "en",
+      setLanguage: vi.fn(),
+      themeMode: "night",
+      setThemeMode: vi.fn(),
+      toggleThemeMode: vi.fn(),
+    });
+
+    mount();
+
+    expect(getThemeKeyForAtmosphereMock).not.toHaveBeenCalled();
+    expect(document.documentElement.style.getPropertyValue("--bg")).toBe("#aabbcc");
+    expect(document.documentElement.style.getPropertyValue("--bg-rgb")).toBe(
+      "170 187 204",
+    );
+  });
 });

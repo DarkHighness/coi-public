@@ -207,13 +207,15 @@ expect(session.list("skills")).toEqual(
     expect(session.readFile("world/global.json")).toBeTruthy();
   });
 
-  it("tracks out-of-band read invalidations for seen files", () => {
+  it("tracks out-of-band read invalidations for accessed files", () => {
     const session = new VfsSession();
 
     session.noteToolSeen("world/notes.md");
+    session.noteToolAccessFile("world/notes.md");
     session.noteOutOfBandMutation("world/notes.md", "modified");
 
     expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(false);
+    expect(session.hasToolAccessedInCurrentEpoch("world/notes.md")).toBe(false);
     expect(session.drainOutOfBandReadInvalidations()).toEqual([
       { path: "world/notes.md", changeType: "modified" },
     ]);
@@ -223,12 +225,38 @@ expect(session.list("skills")).toEqual(
     expect(session.drainOutOfBandReadInvalidations()).toEqual([]);
   });
 
-  it("ignores out-of-band invalidations for unseen files", () => {
+  it("ignores out-of-band invalidations for never-accessed files", () => {
     const session = new VfsSession();
 
     session.noteOutOfBandMutation("world/notes.md", "modified");
 
     expect(session.drainOutOfBandReadInvalidations()).toEqual([]);
+  });
+
+  it("supports scope-based access for out-of-band invalidation", () => {
+    const session = new VfsSession();
+
+    session.noteToolAccessScope("world");
+    session.noteOutOfBandMutation("world/notes.md", "modified");
+
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([
+      { path: "world/notes.md", changeType: "modified" },
+    ]);
+  });
+
+  it("tracks moved out-of-band invalidations", () => {
+    const session = new VfsSession();
+
+    session.noteToolAccessFile("world/notes.md");
+    session.noteOutOfBandMove("world/notes.md", "world/archive/notes.md");
+
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([
+      {
+        from: "world/notes.md",
+        to: "world/archive/notes.md",
+        changeType: "moved",
+      },
+    ]);
   });
 
   it("invalidates seen paths when read epoch advances", () => {

@@ -257,4 +257,73 @@ describe("sessionManager", () => {
       totalHistoryItems: 0,
     });
   });
+
+  it("returns fallback session when storage loading throws", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    storage.getSession.mockRejectedValueOnce(new Error("db offline"));
+
+    const session = await sessionManager.getOrCreateSession(configA as any);
+
+    expect(session.id).toBe("slot-a:0:provider-1:model-1");
+    expect(session.nativeHistory).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[SessionManager] Failed to load session from storage:",
+      expect.any(Error),
+    );
+  });
+
+  it("no-ops non-current operations while overflow still requests summary", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    sessionManager.setHistory("missing", [{ id: 1 }]);
+    sessionManager.appendHistory("missing", [{ id: 1 }]);
+    sessionManager.rollbackHistory("missing", 2);
+    sessionManager.rollbackToLastCheckpoint("missing");
+    sessionManager.checkpoint("missing");
+    sessionManager.setCacheHint("missing", { protocol: "openai", cacheKey: "x" });
+    sessionManager.setSystemInstruction("missing", "sys");
+    await sessionManager.onSummaryCreated("missing", "sum-1");
+    await sessionManager.invalidate("missing", "manual_clear");
+    const overflow = await sessionManager.onContextOverflow("missing");
+
+    expect(overflow).toEqual({ needsSummary: true });
+    expect(storage.deleteSession).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("flush skips empty session persistence and recovers from save failures", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const session = await sessionManager.getOrCreateSession(configA as any);
+
+    await sessionManager.flush();
+    expect(storage.saveSession).not.toHaveBeenCalled();
+
+    sessionManager.appendHistory(session.id, [{ role: "user", content: "hello" }]);
+
+    storage.saveSession.mockRejectedValueOnce(new Error("save failed"));
+    await sessionManager.flush();
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[SessionManager] Failed to persist session:",
+      expect.any(Error),
+    );
+
+    storage.saveSession.mockResolvedValueOnce(undefined);
+    await sessionManager.flush();
+    expect(storage.saveSession).toHaveBeenCalled();
+    expect(storage.enforceLruLimit).toHaveBeenCalled();
+  });
+
+  it("initializes once and tolerates storage initialize failures", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    storage.initialize.mockRejectedValueOnce(new Error("no indexeddb"));
+
+    await sessionManager.initialize();
+    await sessionManager.initialize();
+
+    expect(storage.initialize).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[SessionManager] IndexedDB not available, using memory only:",
+      expect.any(Error),
+    );
+  });
 });

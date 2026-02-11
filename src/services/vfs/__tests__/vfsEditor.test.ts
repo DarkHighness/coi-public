@@ -72,4 +72,76 @@ describe("vfs editor helper", () => {
     expect(session.readFile("custom_rules/00-system-core/RULES.md")).toBeNull();
   });
 
+  it("maps legacy character payload to player actor bundle", () => {
+    const session = new VfsSession();
+
+    applySectionEdit(session, "character", {
+      name: "Ari",
+      title: "Warden",
+      status: "Ready",
+      attributes: ["Calm"],
+      currentLocation: "Town",
+      skills: [{ id: "skill-1", name: "Observe" }],
+      conditions: [{ id: "cond-1", name: "Focused" }],
+      hiddenTraits: [{ id: "trait-1", name: "Secretive" }],
+    });
+
+    const profile = JSON.parse(
+      session.readFile("world/characters/char:player/profile.json")!.content,
+    );
+    expect(profile.kind).toBe("player");
+    expect(profile.currentLocation).toBe("Town");
+    expect(profile.visible.name).toBe("Ari");
+
+    expect(
+      session.readFile("world/characters/char:player/skills/skill-1.json"),
+    ).toBeTruthy();
+    expect(
+      session.readFile("world/characters/char:player/conditions/cond-1.json"),
+    ).toBeTruthy();
+    expect(
+      session.readFile("world/characters/char:player/traits/trait-1.json"),
+    ).toBeTruthy();
+  });
+
+  it("replaces npc bundles while preserving player actor and validates npc ids", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/characters/char:player/profile.json",
+      json({ id: "char:player", kind: "player" }),
+      "application/json",
+    );
+    session.writeFile(
+      "world/characters/npc:old/profile.json",
+      json({ id: "npc:old", kind: "npc" }),
+      "application/json",
+    );
+
+    applySectionEdit(session, "npcs", [
+      { id: "npc:new", name: "New NPC", knownBy: ["char:player"] },
+    ]);
+
+    expect(session.readFile("world/characters/npc:old/profile.json")).toBeNull();
+    expect(session.readFile("world/characters/npc:new/profile.json")).toBeTruthy();
+    expect(session.readFile("world/characters/char:player/profile.json")).toBeTruthy();
+
+    expect(() =>
+      applySectionEdit(session, "npcs", [{ name: "Missing ID" }] as any),
+    ).toThrow("Missing id for npc entry.");
+  });
+
+  it("validates section payload shape and required ids", () => {
+    const session = new VfsSession();
+
+    expect(() => applySectionEdit(session, "locations", {} as any)).toThrow(
+      'Section "locations" expects an array.',
+    );
+    expect(() =>
+      applySectionEdit(session, "causalChains", [{ id: "wrong" }] as any),
+    ).toThrow("Missing chainId for causalChains entry.");
+    expect(() =>
+      applySectionEdit(session, "customRules", [{ title: "Missing ID" }] as any),
+    ).toThrow("Missing id for custom rule entry.");
+  });
+
 });
