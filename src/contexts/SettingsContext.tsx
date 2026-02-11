@@ -92,6 +92,8 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
   ) {
     migratedExtra.customInstructionEnabled = migratedExtra.promptInjectionEnabled;
   }
+  // Remove retired setting; kept here only for backward compatibility.
+  delete migratedExtra.clearerSearchTool;
   delete migratedExtra.customPromptInjection;
   delete migratedExtra.promptInjectionEnabled;
 

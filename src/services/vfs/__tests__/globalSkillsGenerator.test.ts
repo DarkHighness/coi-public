@@ -88,11 +88,20 @@ describe("VFS global skills generator", () => {
       (seed) =>
         seed.path === "skills/commands/runtime/sudo/references/coverage-audit.md",
     )?.content;
+    const commandRuntimeHub = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/SKILL.md",
+    )?.content;
+    const commandTurn = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/turn/SKILL.md",
+    )?.content;
     const commandSummary = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/summary/SKILL.md",
     )?.content;
     const commandCompact = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/compact/SKILL.md",
+    )?.content;
+    const commandOutline = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/outline/SKILL.md",
     )?.content;
 
     expect(commandSudo).toContain("name: commands-sudo");
@@ -101,12 +110,20 @@ describe("VFS global skills generator", () => {
     expect(commandSudoChecklist).toContain("residual verification");
     expect(commandSudoExamples).toContain("Protagonist rename across world files");
     expect(commandSudoRef).toContain("Coverage Audit for /sudo");
+    expect(commandRuntimeHub).toContain("current/skills/commands/runtime/turn/SKILL.md");
+    expect(commandRuntimeHub).toContain("current/skills/commands/runtime/outline/SKILL.md");
+    expect(commandTurn).toContain("name: commands-turn");
+    expect(commandTurn).toContain("vfs_commit_turn");
     expect(commandSummary).toContain("name: commands-summary");
     expect(commandSummary).toContain("query_summary");
+    expect(commandSummary).toContain("Structured Error Recovery Flow");
     expect(commandSummary).toContain("vfs_commit_summary");
     expect(commandCompact).toContain("name: commands-compact");
     expect(commandCompact).toContain("session_compact");
     expect(commandCompact).toContain("current session history in context");
+    expect(commandCompact).toContain("Structured Error Recovery Flow");
+    expect(commandOutline).toContain("name: commands-outline");
+    expect(commandOutline).toContain("vfs_commit_outline_phase_4");
   });
 
   it("includes generated skill entries inside global skills index", () => {

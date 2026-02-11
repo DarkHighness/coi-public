@@ -7,9 +7,11 @@ import {
   protocols,
   protocolsPrimer,
   roleInstruction,
+  styleGuide,
   stateManagement,
   toolUsage,
 } from "../index";
+import { writingCraft } from "../../narrative/writingCraft";
 
 describe("core prompt hygiene", () => {
   it("removes deprecated tool references and keeps VFS contract aligned", () => {
@@ -88,5 +90,19 @@ describe("core prompt hygiene", () => {
     expect(content).not.toContain(
       "Bypasses all game rules and simulation logic",
     );
+  });
+
+  it("keeps humanizer tone concise while preserving canonical state consistency", () => {
+    const content = [styleGuide({}), writingCraft()].join("\n");
+
+    expect(content).toContain("<humanizer_tone>");
+    expect(content).toContain(
+      "Style polish must NOT alter canonical state",
+    );
+    expect(content).toContain(
+      "Never rewrite canonical state for style",
+    );
+    expect(content).toContain("inventory");
+    expect(content).toContain("timeline");
   });
 });

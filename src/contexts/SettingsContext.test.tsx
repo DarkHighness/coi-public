@@ -52,6 +52,7 @@ describe("SettingsContext", () => {
           customInstructionEnabled: null,
           customPromptInjection: "legacy instruction",
           promptInjectionEnabled: true,
+          clearerSearchTool: true,
         },
       }),
     );
@@ -68,6 +69,9 @@ describe("SettingsContext", () => {
 
     expect(captured.settings.extra.customInstruction).toBe("legacy instruction");
     expect(captured.settings.extra.customInstructionEnabled).toBe(true);
+    expect(
+      (captured.settings.extra as Record<string, unknown>).clearerSearchTool,
+    ).toBeUndefined();
     expect(changeLanguage).toHaveBeenCalledWith("zh");
   });
 

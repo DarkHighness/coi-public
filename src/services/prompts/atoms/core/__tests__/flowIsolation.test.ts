@@ -5,7 +5,7 @@ import {
   normalTurnInstruction,
   sudoModeInstruction,
 } from "../systemMessages";
-import { getTurnRuntimeFloor } from "../../../runtimeFloor";
+import { getOutlineRuntimeFloor, getTurnRuntimeFloor } from "../../../runtimeFloor";
 import { stateManagement } from "../stateManagement";
 
 describe("prompt flow isolation", () => {
@@ -28,5 +28,15 @@ describe("prompt flow isolation", () => {
     expect(sudoModeInstruction({})).not.toContain(forbiddenPhrase);
     expect(getTurnRuntimeFloor()).not.toContain(forbiddenPhrase);
     expect(stateManagement()).not.toContain(forbiddenPhrase);
+  });
+
+  it("keeps runtime floor skill guidance as soft-gate (non-blocking)", () => {
+    expect(getTurnRuntimeFloor()).toContain("Soft gate (advisory, not blocking)");
+    expect(getTurnRuntimeFloor()).toContain("commands/runtime/turn/SKILL.md");
+    expect(getTurnRuntimeFloor()).toContain("Structured error recovery flow");
+
+    expect(getOutlineRuntimeFloor()).toContain("Soft gate (advisory, not blocking)");
+    expect(getOutlineRuntimeFloor()).toContain("commands/runtime/outline/SKILL.md");
+    expect(getOutlineRuntimeFloor()).toContain("Structured error recovery flow");
   });
 });

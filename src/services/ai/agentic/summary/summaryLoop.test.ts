@@ -278,11 +278,12 @@ describe("runSummaryLoop", () => {
     );
 
     expect(compactTrigger).toContain(
-      'Before finish, read protocol: "current/skills/commands/compact/SKILL.md".',
+      'Before finish, read protocol: "current/skills/commands/runtime/compact/SKILL.md".',
     );
     expect(compactAnchor).toContain("MODE CONTRACT: SESSION_COMPACT");
     expect(compactAnchor).toContain("Current session history already loaded in context");
     expect(compactAnchor).toContain("Verification-only reads (optional)");
+    expect(compactAnchor).toContain("Structured error recovery");
   });
 
   it("blocks cross-fork path arguments in summary tool calls", async () => {

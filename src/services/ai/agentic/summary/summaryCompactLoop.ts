@@ -141,7 +141,15 @@ Hard constraints:
 - Do NOT summarize outside the specified summary range.
 - Preserve continuity with previous summaries and in-session events.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
-- Output summary content only. Never mention tools/retries/errors/budgets.`;
+- Output summary content only. Never mention tools/retries/errors/budgets.
+
+Structured error recovery (when tool response is \`{ success:false, code, error }\`):
+- Do NOT finish until the active error is resolved.
+- \`INVALID_ACTION\` / \`FORCED_FINISH\` / \`MULTIPLE_FINISH_CALLS\` / \`FINISH_NOT_LAST\`: reorder to one valid tool-call set with finish last.
+- \`COMPACT_SUMMARY_CROSS_FORK_BLOCKED\`: remove cross-fork paths and retry target-fork reads only.
+- \`COMPACT_SUMMARY_RUNTIME_FIELDS_FORBIDDEN\`: remove runtime-managed fields from \`vfs_commit_summary\` args.
+- \`SUMMARY_FORBIDDEN_TOKENS\`: rewrite summary fields to story facts only, then retry finish.
+- If the same \`code\` appears twice, shrink scope and re-read anchors before retry.`;
 };
 
 const collectSummaryPathCandidates = (
@@ -731,7 +739,7 @@ export async function runCompactSummaryLoop(
       `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
       `- Runtime will set lastSummarizedIndex = ${targetLastSummarizedIndex}.\n` +
       `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
-      `Before finish, read protocol: "current/skills/commands/compact/SKILL.md".\n` +
+      `Before finish, read protocol: "current/skills/commands/runtime/compact/SKILL.md".\n` +
       `If you need to verify details, use read-only VFS tools (vfs_read/vfs_search/etc.) and stay on target fork only.`,
   );
 

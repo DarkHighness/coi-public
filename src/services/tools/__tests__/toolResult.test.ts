@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createError, createSuccess } from "../toolResult";
+import {
+  createError,
+  createSuccess,
+  mergeToolErrorDetails,
+  inferErrorCategoryFromCode,
+} from "../toolResult";
 
 describe("toolResult helpers", () => {
   it("creates success envelopes with payload and message", () => {
@@ -22,5 +27,46 @@ describe("toolResult helpers", () => {
       error: "bad",
       code: "INVALID_DATA",
     });
+  });
+
+  it("supports structured error details without breaking base fields", () => {
+    const result = createError("invalid args", "INVALID_PARAMS", {
+      tool: "vfs_read",
+      issues: [{ path: "path", code: "missing", message: "Required" }],
+      recovery: ["Provide a valid path."],
+      refs: ["current/refs/tools/vfs_read.md"],
+      batch: { index: 1, total: 2, operation: "read" },
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "invalid args",
+      code: "INVALID_PARAMS",
+      details: {
+        category: "validation",
+        tool: "vfs_read",
+        issues: [{ path: "path", code: "missing", message: "Required" }],
+        recovery: ["Provide a valid path."],
+        refs: ["current/refs/tools/vfs_read.md"],
+        batch: { index: 1, total: 2, operation: "read" },
+      },
+    });
+  });
+
+  it("merges details while preserving deduped refs and inferred category", () => {
+    const base = createError("blocked", "INVALID_ACTION", {
+      refs: ["current/refs/tools/vfs_write.md"],
+    });
+    const merged = mergeToolErrorDetails(base, {
+      refs: ["current/refs/tools/vfs_write.md", "current/refs/tools/README.md"],
+      recovery: ["Read file before write."],
+    });
+
+    expect(merged.details?.category).toBe(inferErrorCategoryFromCode("INVALID_ACTION"));
+    expect(merged.details?.refs).toEqual([
+      "current/refs/tools/vfs_write.md",
+      "current/refs/tools/README.md",
+    ]);
+    expect(merged.details?.recovery).toEqual(["Read file before write."]);
   });
 });

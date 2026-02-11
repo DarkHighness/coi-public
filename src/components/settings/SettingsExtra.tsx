@@ -233,33 +233,6 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
-        {/* Clearer Search Tool Toggle */}
-        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
-          <div>
-            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.clearerSearchTool") || "Clearer Search Tool"}
-            </div>
-            <div className="text-[10px] text-theme-muted mt-1">
-              {t("settings.extra.clearerSearchToolHelp") ||
-                "Return detailed tool metadata (description, schema) in search results to help AI discovery."}
-            </div>
-          </div>
-          <button
-            onClick={() =>
-              updateExtra("clearerSearchTool", !extra.clearerSearchTool)
-            }
-            className={`w-10 h-5 rounded-full relative transition-colors ${
-              extra.clearerSearchTool ? "bg-green-500" : "bg-theme-border"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                extra.clearerSearchTool ? "translate-x-5" : ""
-              }`}
-            />
-          </button>
-        </div>
-
         {/* Custom Instruction Toggle */}
         <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>

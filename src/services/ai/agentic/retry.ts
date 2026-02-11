@@ -13,7 +13,7 @@ import {
 } from "../../messageTypes";
 import { ToolCallResult } from "../../providers/types";
 import { extractJson } from "../utils";
-import { formatZodError, getToolInfo } from "../../providers/utils";
+import { formatZodError } from "../../providers/utils";
 import {
   AgenticErrorKind,
   buildMalformedToolCallFeedback,
@@ -236,6 +236,7 @@ export async function callWithAgenticRetry(
     totalTokens: 0,
   };
   let sawExplicitUnknownUsage = false;
+  const schemaGuidanceShownByTool = new Set<string>();
 
   while (attempt <= maxRetries) {
     let response: ChatGenerateResponse;
@@ -454,10 +455,28 @@ export async function callWithAgenticRetry(
               args: toolCall.args,
               issues: validationResult.error.issues,
             });
-            const toolHint = toolDef
-              ? `\n\nSchema Hint:\n${getToolInfo(toolDef as any)}`
-              : "";
-            errorMessage = `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolCall.name}" were invalid.\n\nErrors:\n${formatZodError(validationResult.error)}${toolHint}\n\nPlease review the schema requirements and call "${toolCall.name}" again with corrected parameters.`;
+            const toolDocRef = `current/refs/tools/${toolCall.name}.md`;
+            const docsGuidance = [
+              `Tool docs: ${toolDocRef}`,
+              "Tool docs index: current/refs/tools/README.md",
+            ];
+
+            if (toolDef && !schemaGuidanceShownByTool.has(toolCall.name)) {
+              schemaGuidanceShownByTool.add(toolCall.name);
+              docsGuidance.push(
+                `Use vfs_read on ${toolDocRef} for INTRO/SCHEMA/EXAMPLES guidance before retrying.`,
+              );
+            } else if (toolDef) {
+              docsGuidance.push(
+                "Schema guidance for this tool was already provided earlier in this retry chain; avoid repeating the same invalid payload.",
+              );
+            }
+
+            errorMessage =
+              `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolCall.name}" were invalid.\n\n` +
+              `Errors:\n${formatZodError(validationResult.error)}\n\n` +
+              `${docsGuidance.join("\n")}\n\n` +
+              `Please review the schema requirements and call "${toolCall.name}" again with corrected parameters.`;
             break;
           }
         }

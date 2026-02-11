@@ -16,6 +16,8 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).toContain("Return no extra text outside the tool call");
     expect(prompt).toContain("outline generation flow");
     expect(prompt).toContain("does NOT apply to normal turn/cleanup/summary flows");
+    expect(prompt).toContain("Soft-gate protocol accelerators (advisory, not blocking)");
+    expect(prompt).toContain("commands/runtime/outline/SKILL.md");
   });
 
   it("phase 1 prompt enforces master plan markdown and governance metadata", () => {

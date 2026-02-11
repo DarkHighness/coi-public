@@ -62,6 +62,13 @@ describe("VFS handlers mutations", () => {
 
     expect(blocked.success).toBe(false);
     expect(blocked.code).toBe("INVALID_ACTION");
+    expect(blocked.details?.tool).toBe("vfs_write");
+    expect(blocked.details?.batch).toMatchObject({
+      index: 1,
+      total: 1,
+      operation: "write_file",
+    });
+    expect(blocked.details?.refs).toContain("current/refs/tools/vfs_write.md");
 
     dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
 
@@ -81,6 +88,41 @@ describe("VFS handlers mutations", () => {
     ) as any;
 
     expect(ok.success).toBe(true);
+  });
+
+  it("adds per-item batch metadata for move/delete failures", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const moveFail = dispatchToolCall(
+      "vfs_move",
+      {
+        moves: [{ from: "current/world/missing.json", to: "current/world/new.json" }],
+      },
+      ctx,
+    ) as any;
+
+    expect(moveFail.success).toBe(false);
+    expect(moveFail.details?.tool).toBe("vfs_move");
+    expect(moveFail.details?.batch).toMatchObject({
+      index: 1,
+      total: 1,
+      operation: "move",
+    });
+
+    const deleteFail = dispatchToolCall(
+      "vfs_delete",
+      { paths: ["current/world/missing.md"] },
+      ctx,
+    ) as any;
+
+    expect(deleteFail.success).toBe(false);
+    expect(deleteFail.details?.tool).toBe("vfs_delete");
+    expect(deleteFail.details?.batch).toMatchObject({
+      index: 1,
+      total: 1,
+      operation: "delete",
+    });
   });
 
   it("supports patch_json after file is read", () => {

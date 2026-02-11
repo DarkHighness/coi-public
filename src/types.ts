@@ -1229,7 +1229,6 @@ export interface AISettings {
     systemDefaultInjectionEnabled?: boolean;
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"
-    clearerSearchTool?: boolean; // Return detailed tool info (description, schema) in search results
     toolCallCarousel?: boolean; // Show tool-call style carousel while AI is generating (default: true)
     maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)

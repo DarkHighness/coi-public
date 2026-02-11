@@ -65,6 +65,9 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.code).toBe("INVALID_DATA");
     expect(result.error).toContain("Hard cap is 16384 chars");
     expect(result.error).toContain("chars(start+offset)");
+    expect(result.details?.tool).toBe("vfs_read");
+    expect(result.details?.issues?.[0]?.code).toBe("READ_LIMIT_EXCEEDED");
+    expect(result.details?.refs).toContain("current/refs/tools/vfs_read.md");
   });
 
   it("rejects oversized line-window reads and guides chunked strategies", () => {

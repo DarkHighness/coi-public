@@ -127,7 +127,15 @@ expect(session.list("skills")).toEqual(
       ]),
     );
 
+    expect(session.list("skills/commands/runtime/turn")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+
     expect(session.list("skills/commands/runtime/unlock")).toEqual(
+      expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
+    );
+
+    expect(session.list("skills/commands/runtime/outline")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
 
@@ -166,6 +174,9 @@ expect(session.list("skills")).toEqual(
     const session = new VfsSession();
 
     expect(session.readFile("refs/atmosphere/options.md")?.contentType).toBe(
+      "text/markdown",
+    );
+    expect(session.readFile("refs/tools/README.md")?.contentType).toBe(
       "text/markdown",
     );
     expect(() =>

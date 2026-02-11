@@ -64,6 +64,8 @@ describe("contextInjector", () => {
     expect(getText(history[1])).toContain("commands/runtime/SKILL.md");
     expect(getText(history[2])).toContain("[SYSTEM: TOOL USAGE INSTRUCTION]");
     expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[3])).toContain("Soft gate (advisory, not blocking)");
+    expect(getText(history[3])).toContain("commands/runtime/turn/SKILL.md");
     expect(getText(history[3])).toContain("You are currently in God mode.");
     expect(getText(history[3])).toContain("commands/runtime/god/SKILL.md");
     expect(getText(history[3])).toContain("commands/runtime/unlock/SKILL.md");
@@ -78,6 +80,7 @@ describe("contextInjector", () => {
     expect(getText(history[8])).toContain("CLEANUP CONSISTENCY ANCHOR");
     expect(getText(history[8])).toContain("Target forkId: 3");
     expect(getText(history[8])).toContain("Target turnNumber: 27");
+    expect(getText(history[8])).toContain("Structured error recovery");
   });
 
 

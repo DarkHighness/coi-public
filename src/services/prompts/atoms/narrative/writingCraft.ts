@@ -79,6 +79,16 @@ const storyEngine = `
   </story_engine>
 `;
 
+const humanizerTone = `
+  <humanizer_tone>
+    **HUMANIZER TONE (CONCISE, STATE-SAFE)**
+    - Prefer concrete facts/actions over abstract hype and generic uplift.
+    - Avoid AI scaffolding: "firstly/secondly/finally", "in conclusion", "not only...but also".
+    - Avoid vague authority filler ("experts say", "it is important to note").
+    - Style polish must NOT alter canonical state: keep IDs, counts, inventory, injuries, locations, causality, and timeline unchanged.
+  </humanizer_tone>
+`;
+
 const rhythmMastery = `
   <rhythm_mastery>
     **Tension**: Short. Sharp. Facts pile up. "The door creaked. Darkness. Then—nothing."
@@ -926,6 +936,7 @@ export const writingCraftPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrat
   <rule>No meta voice: no policy lecture, no self-reference, no apology preamble.</rule>
   <rule>If detail is unknown, stay precise and partial. Do not pad with generic summary language.</rule>
 ${storyEnginePrimer}
+${humanizerTone}
 
   <prohibited_vocabulary>
     ❌ BANNED: "Tapestry", "Symphony", "Delve", "Beacon", "Testament", "Intertwined".
@@ -948,6 +959,7 @@ export const writingCraft: Atom<void> = defineAtom({ atomId: "atoms/narrative/wr
   The difference between AI writing and human writing is RHYTHM.
   AI writes in even, predictable beats. Human writers vary their tempo.
 
+${humanizerTone}
 ${showDontTell}
 ${noProtagonistMindReading}
 ${storyEngine}

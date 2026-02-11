@@ -10,6 +10,16 @@ export interface StyleGuideInput {
   themeStyle?: string;
 }
 
+const humanizerTone = `
+<humanizer_tone>
+  **HUMANIZER TONE (CONCISE, CANON-SAFE)**
+  - Prefer concrete actions/facts over abstract hype.
+  - Skip formulaic AI scaffolding ("firstly/secondly/finally", "in conclusion", "not only...but also").
+  - Avoid vague authority/filler ("experts say", "it is important to note").
+  - Never rewrite canonical state for style: preserve IDs, counts, inventory, injuries, locations, causality, and timeline exactly.
+</humanizer_tone>
+`;
+
 export const styleGuidePrimer: Atom<StyleGuideInput> = defineAtom({ atomId: "atoms/core/styleGuide#styleGuidePrimer", source: "atoms/core/styleGuide.ts", exportName: "styleGuidePrimer" }, ({ themeStyle }) => {
   const toneSection = themeStyle
     ? `<tone>${themeStyle}</tone>`
@@ -18,6 +28,7 @@ export const styleGuidePrimer: Atom<StyleGuideInput> = defineAtom({ atomId: "ato
   return `
 <style>
 ${toneSection}
+${humanizerTone}
 </style>
 `;
 });
@@ -30,6 +41,7 @@ export const styleGuide: Atom<StyleGuideInput> = defineAtom({ atomId: "atoms/cor
   return `
 <style>
 ${toneSection}
+${humanizerTone}
 
 <signal_to_noise_ratio>
   **THE 80/20 REALITY RATIO**:

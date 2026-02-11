@@ -49,12 +49,20 @@ describe("toolCallProcessor", () => {
     const missing = validateToolArgs("vfs_schema", {});
     expect(missing.valid).toBe(false);
     if (missing.valid === false) {
-      const err = missing.error as { error: string; code: string };
+      const err = missing.error as {
+        error: string;
+        code: string;
+        details?: { tool?: string; category?: string; refs?: string[] };
+      };
       expect(err.code).toBe("INVALID_PARAMS");
       expect(err.error).toContain("[VALIDATION_ERROR]");
       expect(err.error).toContain("Missing required fields:");
       expect(err.error).toContain("- paths");
       expect(err.error).toContain("mock-schema");
+      expect(err.error).toContain("current/refs/tools/vfs_schema.md");
+      expect(err.details?.tool).toBe("vfs_schema");
+      expect(err.details?.category).toBe("validation");
+      expect(err.details?.refs).toContain("current/refs/tools/README.md");
     }
 
     const extra = validateToolArgs("vfs_ls", {

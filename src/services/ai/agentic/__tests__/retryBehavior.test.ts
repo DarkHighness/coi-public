@@ -273,4 +273,38 @@ describe("callWithAgenticRetry behavior", () => {
     expect(provider.generateChat).toHaveBeenCalledTimes(2);
     expect(history).toEqual([seed]);
   });
+
+  it("references tool docs and avoids repeating huge schema hints across retries", async () => {
+    const provider = createProvider([
+      {
+        result: {
+          functionCalls: [{ id: "call_a", name: toolName, args: {} }],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+      {
+        result: {
+          functionCalls: [{ id: "call_b", name: toolName, args: {} }],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    let thrown: Error | null = null;
+    try {
+      await callWithAgenticRetry(provider, makeRequest() as any, [], {
+        requiredToolName: toolName,
+        maxRetries: 1,
+      });
+    } catch (error) {
+      thrown = error as Error;
+    }
+
+    expect(thrown).toBeTruthy();
+    expect(thrown?.message).toContain("current/refs/tools/test_tool.md");
+    expect(thrown?.message).not.toContain("<tool_info>");
+    expect(thrown?.message).toContain("already provided earlier");
+  });
 });

@@ -5,7 +5,12 @@ import { normalizeVfsPath } from "../../vfs/utils";
 import { vfsPathRegistry } from "../../vfs/core/pathRegistry";
 import type { VfsContentType, VfsFile } from "../../vfs/types";
 import type { VfsSession } from "../../vfs/vfsSession";
-import { createError, type ToolCallError } from "../toolResult";
+import {
+  createError,
+  type ToolCallError,
+  type ToolErrorDetails,
+  inferErrorCategoryFromCode,
+} from "../toolResult";
 
 export type MutationOperation =
   | "overwrite"
@@ -15,6 +20,40 @@ export type MutationOperation =
   | "edit"
   | "merge"
   | "delete";
+
+const VFS_WRITE_DOC_REFS = [
+  "current/refs/tools/vfs_write.md",
+  "current/refs/tools/README.md",
+];
+
+const uniqueStrings = (items: Array<string | undefined>): string[] => {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const item of items) {
+    if (typeof item !== "string") continue;
+    const trimmed = item.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    next.push(trimmed);
+  }
+  return next;
+};
+
+const createVfsWriteGuardError = (
+  error: string,
+  code: ToolCallError["code"],
+  details?: ToolErrorDetails,
+): ToolCallError => {
+  const refs = uniqueStrings([...(details?.refs ?? []), ...VFS_WRITE_DOC_REFS]);
+  return createError(error, code, {
+    category: details?.category ?? inferErrorCategoryFromCode(code),
+    tool: details?.tool ?? "vfs_write",
+    issues: details?.issues,
+    recovery: details?.recovery,
+    refs,
+    batch: details?.batch,
+  });
+};
 
 const isReadOnlyToolPath = (path: string): boolean => {
   const normalized = normalizeVfsPath(path);
@@ -81,9 +120,22 @@ export const requireReadBeforeMutateForExistingFile = (
     return null;
   }
 
-  return createError(
+  return createVfsWriteGuardError(
     `Blocked: must read file before ${operation} in this session: ${toCurrentPath(normalized)} (use vfs_read first).`,
     "INVALID_ACTION",
+    {
+      category: "policy",
+      issues: [
+        {
+          path: toCurrentPath(normalized),
+          code: "READ_REQUIRED",
+          message: `File must be read before ${operation}.`,
+        },
+      ],
+      recovery: [
+        `Call vfs_read on ${toCurrentPath(normalized)} before retrying ${operation}.`,
+      ],
+    },
   );
 };
 
@@ -100,9 +152,22 @@ export const validateExpectedHash = (
     return null;
   }
 
-  return createError(
+  return createVfsWriteGuardError(
     `Hash mismatch for ${path} (expected ${expectedHash}, got ${existing.hash}). Re-read the file and retry.`,
     "INVALID_ACTION",
+    {
+      category: "conflict",
+      issues: [
+        {
+          path,
+          code: "HASH_MISMATCH",
+          message: "Optimistic concurrency guard failed.",
+          expected: expectedHash,
+          received: existing.hash,
+        },
+      ],
+      recovery: [`Re-read ${path} and retry with the latest hash.`],
+    },
   );
 };
 
@@ -116,7 +181,19 @@ export const ensureTextFile = (
   if (isTextType(existing.contentType)) {
     return null;
   }
-  return createError(`File is not a text file: ${path}`, "INVALID_DATA");
+  return createVfsWriteGuardError(`File is not a text file: ${path}`, "INVALID_DATA", {
+    category: "validation",
+    issues: [
+      {
+        path,
+        code: "INVALID_CONTENT_TYPE",
+        message: `Expected text/plain or text/markdown, got ${existing.contentType}.`,
+      },
+    ],
+    recovery: [
+      "Use JSON operations for JSON files or target a text/markdown file for text edits.",
+    ],
+  });
 };
 
 export const resolveTextContentType = (
@@ -141,9 +218,21 @@ export const validateWritePayload = (
   if (isJsonPath && contentType !== "application/json") {
     return {
       ok: false,
-      error: createError(
+      error: createVfsWriteGuardError(
         `JSON path requires application/json contentType: ${toCurrentPath(normalizedPath)}`,
         "INVALID_DATA",
+        {
+          issues: [
+            {
+              path: toCurrentPath(normalizedPath),
+              code: "CONTENT_TYPE_MISMATCH",
+              message: "JSON file writes must use application/json contentType.",
+              expected: "application/json",
+              received: contentType,
+            },
+          ],
+          recovery: ["Set contentType to application/json for *.json targets."],
+        },
       ),
     };
   }
@@ -151,9 +240,20 @@ export const validateWritePayload = (
   if (!isJsonPath && contentType === "application/json") {
     return {
       ok: false,
-      error: createError(
+      error: createVfsWriteGuardError(
         `application/json contentType is only allowed for *.json paths: ${toCurrentPath(normalizedPath)}`,
         "INVALID_DATA",
+        {
+          issues: [
+            {
+              path: toCurrentPath(normalizedPath),
+              code: "CONTENT_TYPE_MISMATCH",
+              message: "Non-JSON paths cannot be written as application/json.",
+              received: contentType,
+            },
+          ],
+          recovery: ["Use text/plain or text/markdown for non-JSON paths."],
+        },
       ),
     };
   }
@@ -169,9 +269,21 @@ export const validateWritePayload = (
     const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      error: createError(
+      error: createVfsWriteGuardError(
         `Invalid JSON content for ${toCurrentPath(normalizedPath)}: ${message}`,
         "INVALID_DATA",
+        {
+          issues: [
+            {
+              path: toCurrentPath(normalizedPath),
+              code: "INVALID_JSON",
+              message,
+            },
+          ],
+          recovery: [
+            "Fix JSON syntax and retry. Use vfs_schema or refs/tools docs for expected structure.",
+          ],
+        },
       ),
     };
   }
@@ -183,7 +295,18 @@ export const validateWritePayload = (
     const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      error: createError(message, "INVALID_DATA"),
+      error: createVfsWriteGuardError(message, "INVALID_DATA", {
+        issues: [
+          {
+            path: toCurrentPath(normalizedPath),
+            code: "SCHEMA_LOOKUP_FAILED",
+            message,
+          },
+        ],
+        recovery: [
+          `Inspect path template and schema via vfs_schema({ paths: ["${toCurrentPath(normalizedPath)}"] }).`,
+        ],
+      }),
     };
   }
 
@@ -195,9 +318,22 @@ export const validateWritePayload = (
     const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      error: createError(
+      error: createVfsWriteGuardError(
         `Schema validation failed for ${toCurrentPath(normalizedPath)}: ${message}`,
         "INVALID_DATA",
+        {
+          issues: [
+            {
+              path: toCurrentPath(normalizedPath),
+              code: "SCHEMA_VALIDATION_FAILED",
+              message,
+            },
+          ],
+          recovery: [
+            "Align payload fields/types with schema constraints and retry.",
+            `Reference current/refs/tools/vfs_write.md for write patterns.`,
+          ],
+        },
       ),
     };
   }
@@ -205,9 +341,19 @@ export const validateWritePayload = (
   if (hasUnknownKeys(parsed, validated)) {
     return {
       ok: false,
-      error: createError(
+      error: createVfsWriteGuardError(
         `Unknown keys found after validation: ${toCurrentPath(normalizedPath)}`,
         "INVALID_DATA",
+        {
+          issues: [
+            {
+              path: toCurrentPath(normalizedPath),
+              code: "UNKNOWN_KEYS",
+              message: "Payload includes keys outside strict schema.",
+            },
+          ],
+          recovery: ["Remove unknown keys and retry with schema-approved fields only."],
+        },
       ),
     };
   }

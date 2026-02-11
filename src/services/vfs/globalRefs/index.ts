@@ -6,6 +6,7 @@ import {
 } from "@/services/zodSchemas";
 import type { VfsFile, VfsFileMap, VfsContentType } from "../types";
 import { hashContent } from "../utils";
+import { buildGlobalVfsToolDocs } from "./toolDocs";
 
 const createFile = (
   path: string,
@@ -100,6 +101,10 @@ export const buildGlobalVfsRefs = (): VfsFileMap => {
     ].join("\n"),
   );
 
+  const toolDocs = buildGlobalVfsToolDocs();
+  for (const [path, file] of Object.entries(toolDocs)) {
+    files[path] = file;
+  }
+
   return files;
 };
-

@@ -11,6 +11,7 @@ import {
   hasHandler,
   ToolContext,
 } from "../../../tools/handlers";
+import { createError } from "../../../tools/toolResult";
 import type { LoopState } from "./loopInitializer";
 
 // ============================================================================
@@ -71,14 +72,37 @@ export function validateToolArgs(
     errorMsg += `Other validation errors:\n${otherErrors.map((e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`).join("\n")}\n\n`;
   }
   errorMsg += `Please refer to the schema:\n${getToolInfo(toolDef as any)}`;
+  errorMsg += `\n\nTool docs:\n- current/refs/tools/${name}.md\n- current/refs/tools/README.md`;
 
   return {
     valid: false,
-    error: {
-      success: false,
-      error: errorMsg,
-      code: "INVALID_PARAMS",
-    },
+    error: createError(errorMsg, "INVALID_PARAMS", {
+      category: "validation",
+      tool: name,
+      issues: errors.map((issue) => {
+        const issueRecord = issue as Record<string, unknown>;
+        return {
+          path: issue.path.join(".") || "(root)",
+          code: issue.code,
+          message: issue.message,
+          ...(Object.prototype.hasOwnProperty.call(issueRecord, "expected")
+            ? { expected: issueRecord.expected }
+            : {}),
+          ...(Object.prototype.hasOwnProperty.call(issueRecord, "received")
+            ? { received: issueRecord.received }
+            : {}),
+        };
+      }),
+      recovery: [
+        `Call "${name}" again with only schema-defined fields.`,
+        "If mutating files, re-read targets first when required by the tool contract.",
+        `Open current/refs/tools/${name}.md for examples and parameter guidance.`,
+      ],
+      refs: [
+        `current/refs/tools/${name}.md`,
+        "current/refs/tools/README.md",
+      ],
+    }),
   };
 }
 

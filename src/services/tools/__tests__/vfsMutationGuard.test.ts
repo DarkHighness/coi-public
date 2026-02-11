@@ -18,6 +18,9 @@ const expectInvalidPayload = (
   }
   expect(result.error.code).toBe("INVALID_DATA");
   expect(result.error.error).toContain(textIncludes);
+  expect(result.error.details?.tool).toBe("vfs_write");
+  expect(result.error.details?.category).toBe("validation");
+  expect(result.error.details?.refs).toContain("current/refs/tools/vfs_write.md");
 };
 
 describe("vfsMutationGuard", () => {
@@ -47,6 +50,9 @@ describe("vfsMutationGuard", () => {
       expect(result?.success).toBe(false);
       expect(result?.code).toBe("INVALID_ACTION");
       expect(result?.error).toContain("must read file before overwrite");
+      expect(result?.details?.category).toBe("policy");
+      expect(result?.details?.tool).toBe("vfs_write");
+      expect(result?.details?.issues?.[0]?.code).toBe("READ_REQUIRED");
     });
 
     it("allows mutation after file was marked as seen in current epoch", () => {
@@ -105,6 +111,8 @@ describe("vfsMutationGuard", () => {
       expect(result?.success).toBe(false);
       expect(result?.code).toBe("INVALID_ACTION");
       expect(result?.error).toContain("Hash mismatch");
+      expect(result?.details?.category).toBe("conflict");
+      expect(result?.details?.issues?.[0]?.code).toBe("HASH_MISMATCH");
     });
   });
 

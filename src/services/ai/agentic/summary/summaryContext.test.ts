@@ -64,6 +64,8 @@ describe("summaryContext", () => {
     expect(instruction).toContain("read command protocol (hub first)");
     expect(instruction).toContain("current/skills/commands/runtime/SKILL.md");
     expect(instruction).toContain("current/skills/commands/runtime/summary/SKILL.md");
+    expect(instruction).toContain("Structured error recovery flow");
+    expect(instruction).toContain("RUNTIME_FIELDS_FORBIDDEN");
   });
 
   it("builds minimal context when no prior summary or conversation exists", () => {

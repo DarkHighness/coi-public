@@ -20,7 +20,12 @@ import {
   createSuccess,
   type ToolCallResult,
   type ToolCallError,
+  type ToolErrorBatch,
+  type ToolErrorDetails,
+  inferErrorCategoryFromCode,
+  mergeToolErrorDetails,
 } from "../toolResult";
+import type { ZodToolDefinition } from "../../providers/types";
 import type { VfsFileMap, VfsContentType } from "../../vfs/types";
 import { stripCurrentPath, toCurrentPath } from "../../vfs/currentAlias";
 import { writeOutlineStoryPlan } from "../../vfs/outline";
@@ -80,6 +85,124 @@ type JsonPointerResolveResult =
   | { ok: true; value: unknown }
   | { ok: false; error: string };
 
+const TOOL_DOCS_README_REF = "current/refs/tools/README.md";
+
+const normalizeToolDocName = (toolName: string): string =>
+  toolName.includes("(") ? toolName.slice(0, toolName.indexOf("(")) : toolName;
+
+const getToolDocRef = (toolName: string): string =>
+  `current/refs/tools/${normalizeToolDocName(toolName)}.md`;
+
+const uniqueStrings = (items: Array<string | undefined>): string[] => {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const item of items) {
+    if (typeof item !== "string") continue;
+    const trimmed = item.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    next.push(trimmed);
+  }
+  return next;
+};
+
+const defaultRecoveryByCode = (
+  code: ToolCallError["code"],
+  toolName: string,
+): string[] => {
+  if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
+    return [`Review ${getToolDocRef(toolName)} and retry with schema-valid arguments.`];
+  }
+  if (code === "INVALID_ACTION") {
+    return [
+      `Follow tool preconditions (read-before-write / finish ordering) in ${getToolDocRef(toolName)} and retry.`,
+    ];
+  }
+  if (
+    code === "IMMUTABLE_READONLY" ||
+    code === "ELEVATION_REQUIRED" ||
+    code === "FINISH_GUARD_REQUIRED" ||
+    code === "EDITOR_CONFIRM_REQUIRED"
+  ) {
+    return [
+      "Respect path permission boundaries and use the designated commit/elevation flow.",
+    ];
+  }
+  if (code === "NOT_FOUND") {
+    return ["Confirm path existence with vfs_ls/vfs_read before retrying."];
+  }
+  if (code === "RAG_DISABLED") {
+    return ["Disable semantic search or enable embedding runtime before retrying."];
+  }
+  return [`Inspect ${getToolDocRef(toolName)} and retry.`];
+};
+
+const isToolCallErrorResult = (value: unknown): value is ToolCallError => {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return (
+    record.success === false &&
+    typeof record.error === "string" &&
+    typeof record.code === "string"
+  );
+};
+
+const withToolErrorDetails = (
+  error: ToolCallError,
+  toolName: string,
+  details?: ToolErrorDetails,
+): ToolCallError => {
+  const normalizedTool = normalizeToolDocName(toolName);
+  const refs = uniqueStrings([
+    ...(details?.refs ?? []),
+    getToolDocRef(normalizedTool),
+    TOOL_DOCS_README_REF,
+  ]);
+
+  return mergeToolErrorDetails(error, {
+    category: details?.category ?? inferErrorCategoryFromCode(error.code),
+    tool: details?.tool ?? normalizedTool,
+    issues: details?.issues,
+    recovery: details?.recovery ?? defaultRecoveryByCode(error.code, normalizedTool),
+    refs,
+    batch: details?.batch,
+  });
+};
+
+const registerToolHandlerWithStructuredErrors = (
+  tool: ZodToolDefinition,
+  handler: (
+    args: Record<string, unknown>,
+    ctx: ToolContext,
+  ) => unknown | Promise<unknown>,
+  options?: {
+    batchFromArgs?: (args: Record<string, unknown>) => ToolErrorBatch | undefined;
+  },
+): void => {
+  const wrapped = (args: Record<string, unknown>, ctx: ToolContext) => {
+    const finalize = (result: unknown): unknown => {
+      if (!isToolCallErrorResult(result)) {
+        return result;
+      }
+      const fallbackBatch =
+        options?.batchFromArgs && !result.details?.batch
+          ? options.batchFromArgs(args)
+          : undefined;
+      return withToolErrorDetails(result, tool.name, {
+        ...(fallbackBatch ? { batch: fallbackBatch } : {}),
+      });
+    };
+
+    const output = handler(args, ctx);
+    if (output instanceof Promise) {
+      return output.then((value) => finalize(value));
+    }
+    return finalize(output);
+  };
+
+  vfsToolRouter.register(tool, wrapped);
+};
+
 const cloneSession = (session: VfsSession): VfsSession => {
   const clone = new VfsSession();
   clone.restore(session.snapshot());
@@ -129,9 +252,27 @@ const ensureNotFinishGuardedMutation = (
     return null;
   }
 
-  return createError(
-    `${toolName}: ${toCurrentPath(normalized)} is finish-guarded. Use commit tools to mutate conversation/summary state.`,
-    "FINISH_GUARD_REQUIRED",
+  return withToolErrorDetails(
+    createError(
+      `${toolName}: ${toCurrentPath(normalized)} is finish-guarded. Use commit tools to mutate conversation/summary state.`,
+      "FINISH_GUARD_REQUIRED",
+      {
+        category: "permission",
+        issues: [
+          {
+            path: toCurrentPath(normalized),
+            code: "FINISH_GUARDED",
+            message: "Target path can only be mutated through finish/commit tools.",
+          },
+        ],
+      },
+    ),
+    normalizeToolDocName(toolName),
+    {
+      recovery: [
+        "Use vfs_commit_turn or vfs_commit_summary for finish-guarded conversation/summary files.",
+      ],
+    },
   );
 };
 
@@ -144,6 +285,23 @@ const createReadLimitError = (
   createError(
     `vfs_read(${mode}): ${details}. Hard cap is ${VFS_READ_HARD_CHAR_CAP} chars. Use lines/chars(start+offset) or narrower JSON pointers.`,
     "INVALID_DATA",
+    {
+      category: "validation",
+      tool: "vfs_read",
+      issues: [
+        {
+          path: mode,
+          code: "READ_LIMIT_EXCEEDED",
+          message: details,
+          expected: `<= ${VFS_READ_HARD_CHAR_CAP}`,
+        },
+      ],
+      recovery: [
+        "Reduce requested window size (chars/lines/json pointers).",
+        "Use paged reads with start+offset for large files.",
+      ],
+      refs: [getToolDocRef("vfs_read"), TOOL_DOCS_README_REF],
+    },
   );
 
 const decodeJsonPointerToken = (token: string): string =>
@@ -749,7 +907,7 @@ const ensureConversationIndex = (
   return index;
 };
 
-vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_LS_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_ls", args);
   const baseResolved = resolveCurrentPathLoose(typedArgs.path);
@@ -996,7 +1154,7 @@ vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
   );
 });
 
-vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_READ_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_read", args);
   const resolved = resolveCurrentPath(typedArgs.path);
@@ -1235,7 +1393,7 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
   );
 });
 
-vfsToolRouter.register(VFS_SCHEMA_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_SCHEMA_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_schema", args);
 
@@ -1348,7 +1506,7 @@ vfsToolRouter.register(VFS_SCHEMA_TOOL, (args, ctx) => {
   return createSuccess({ schemas, missing }, "VFS schema described");
 });
 
-vfsToolRouter.register(VFS_SEARCH_TOOL, async (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_SEARCH_TOOL, async (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_search", args);
   const limit = typedArgs.limit ?? 20;
@@ -1444,7 +1602,7 @@ const ensureSeparatorNewline = (left: string, right: string): string => {
   return "\n";
 };
 
-vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_write", args);
 
   return withAtomicSession(ctx, (draft) => {
@@ -1453,24 +1611,38 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
     const edited: string[] = [];
     const patched: string[] = [];
     const merged: string[] = [];
+    const withBatchError = (
+      error: ToolCallError,
+      opIndex: number,
+      operation: string,
+      path?: string,
+    ): ToolCallError =>
+      withToolErrorDetails(error, "vfs_write", {
+        batch: {
+          index: opIndex + 1,
+          total: typedArgs.ops.length,
+          operation,
+          path,
+        },
+      });
 
-    for (const op of typedArgs.ops) {
+    for (const [opIndex, op] of typedArgs.ops.entries()) {
       if (op.op === "write_file") {
         const resolved = resolveCurrentPath(op.path);
         if (isPathResolveError(resolved)) {
-          return resolved.error;
+          return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
         const finishGuardError = ensureNotFinishGuardedMutation(
           resolved.path,
           "vfs_write(write_file)",
         );
         if (finishGuardError) {
-          return finishGuardError;
+          return withBatchError(finishGuardError, opIndex, op.op, op.path);
         }
 
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "overwrite");
         if (seenError) {
-          return seenError;
+          return withBatchError(seenError, opIndex, op.op, op.path);
         }
 
         const validated = validateWritePayload(
@@ -1479,7 +1651,7 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
           op.contentType,
         );
         if ("error" in validated) {
-          return validated.error;
+          return withBatchError(validated.error, opIndex, op.op, op.path);
         }
 
         draft.writeFile(
@@ -1495,30 +1667,30 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
       if (op.op === "append_text") {
         const resolved = resolveCurrentPath(op.path);
         if (isPathResolveError(resolved)) {
-          return resolved.error;
+          return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
         const finishGuardError = ensureNotFinishGuardedMutation(
           resolved.path,
           "vfs_write(append_text)",
         );
         if (finishGuardError) {
-          return finishGuardError;
+          return withBatchError(finishGuardError, opIndex, op.op, op.path);
         }
 
         const existing = draft.readFile(resolved.path);
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "append");
         if (seenError) {
-          return seenError;
+          return withBatchError(seenError, opIndex, op.op, op.path);
         }
 
         const hashError = validateExpectedHash(existing, op.expectedHash, op.path);
         if (hashError) {
-          return hashError;
+          return withBatchError(hashError, opIndex, op.op, op.path);
         }
 
         const textTypeError = ensureTextFile(existing, op.path);
         if (textTypeError) {
-          return textTypeError;
+          return withBatchError(textTypeError, opIndex, op.op, op.path);
         }
 
         const base = existing ? existing.content : "";
@@ -1528,9 +1700,14 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
         const next = `${base}${sep}${op.content}`;
 
         if (op.maxTotalChars && next.length > op.maxTotalChars) {
-          return createError(
-            `Append would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
-            "INVALID_DATA",
+          return withBatchError(
+            createError(
+              `Append would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
+              "INVALID_DATA",
+            ),
+            opIndex,
+            op.op,
+            op.path,
           );
         }
 
@@ -1548,34 +1725,39 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
       if (op.op === "edit_lines") {
         const resolved = resolveCurrentPath(op.path);
         if (isPathResolveError(resolved)) {
-          return resolved.error;
+          return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
         const finishGuardError = ensureNotFinishGuardedMutation(
           resolved.path,
           "vfs_write(edit_lines)",
         );
         if (finishGuardError) {
-          return finishGuardError;
+          return withBatchError(finishGuardError, opIndex, op.op, op.path);
         }
 
         const existing = draft.readFile(resolved.path);
         const createIfMissing = op.createIfMissing ?? true;
         if (!existing && !createIfMissing) {
-          return createError(`File not found: ${op.path}`, "NOT_FOUND");
+          return withBatchError(
+            createError(`File not found: ${op.path}`, "NOT_FOUND"),
+            opIndex,
+            op.op,
+            op.path,
+          );
         }
 
         if (existing) {
           const seenError = requireToolSeenForExistingFile(draft, resolved.path, "text_edit");
           if (seenError) {
-            return seenError;
+            return withBatchError(seenError, opIndex, op.op, op.path);
           }
           const hashError = validateExpectedHash(existing, op.expectedHash, op.path);
           if (hashError) {
-            return hashError;
+            return withBatchError(hashError, opIndex, op.op, op.path);
           }
           const textTypeError = ensureTextFile(existing, op.path);
           if (textTypeError) {
-            return textTypeError;
+            return withBatchError(textTypeError, opIndex, op.op, op.path);
           }
         }
 
@@ -1586,9 +1768,14 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
           if (edit.kind === "insert_before") {
             const insertIdx = edit.line - 1;
             if (insertIdx < 0 || insertIdx > lines.length) {
-              return createError(
-                `Line out of range for insert_before: ${op.path}`,
-                "INVALID_DATA",
+              return withBatchError(
+                createError(
+                  `Line out of range for insert_before: ${op.path}`,
+                  "INVALID_DATA",
+                ),
+                opIndex,
+                op.op,
+                op.path,
               );
             }
             const insertLines = edit.content.split("\n");
@@ -1603,9 +1790,14 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
           if (edit.kind === "insert_after") {
             const afterIdx = edit.line;
             if (afterIdx < 0 || afterIdx > lines.length) {
-              return createError(
-                `Line out of range for insert_after: ${op.path}`,
-                "INVALID_DATA",
+              return withBatchError(
+                createError(
+                  `Line out of range for insert_after: ${op.path}`,
+                  "INVALID_DATA",
+                ),
+                opIndex,
+                op.op,
+                op.path,
               );
             }
             const insertLines = edit.content.split("\n");
@@ -1619,15 +1811,25 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
 
           if (edit.kind === "replace_range") {
             if (edit.startLine > edit.endLine) {
-              return createError(
-                `Invalid line range (startLine > endLine): ${op.path}`,
-                "INVALID_DATA",
+              return withBatchError(
+                createError(
+                  `Invalid line range (startLine > endLine): ${op.path}`,
+                  "INVALID_DATA",
+                ),
+                opIndex,
+                op.op,
+                op.path,
               );
             }
             if (edit.endLine > lines.length) {
-              return createError(
-                `Line out of range for replace_range: ${op.path}`,
-                "INVALID_DATA",
+              return withBatchError(
+                createError(
+                  `Line out of range for replace_range: ${op.path}`,
+                  "INVALID_DATA",
+                ),
+                opIndex,
+                op.op,
+                op.path,
               );
             }
             const startIdx = edit.startLine - 1;
@@ -1642,9 +1844,14 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
         }
 
         if (op.maxTotalChars && content.length > op.maxTotalChars) {
-          return createError(
-            `Edits would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
-            "INVALID_DATA",
+          return withBatchError(
+            createError(
+              `Edits would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
+              "INVALID_DATA",
+            ),
+            opIndex,
+            op.op,
+            op.path,
           );
         }
 
@@ -1661,23 +1868,28 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
       if (op.op === "patch_json") {
         const resolved = resolveCurrentPath(op.path);
         if (isPathResolveError(resolved)) {
-          return resolved.error;
+          return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
         const finishGuardError = ensureNotFinishGuardedMutation(
           resolved.path,
           "vfs_write(patch_json)",
         );
         if (finishGuardError) {
-          return finishGuardError;
+          return withBatchError(finishGuardError, opIndex, op.op, op.path);
         }
 
         const existing = draft.readFile(resolved.path);
         if (!existing) {
-          return createError(`File not found: ${op.path}`, "NOT_FOUND");
+          return withBatchError(
+            createError(`File not found: ${op.path}`, "NOT_FOUND"),
+            opIndex,
+            op.op,
+            op.path,
+          );
         }
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "edit");
         if (seenError) {
-          return seenError;
+          return withBatchError(seenError, opIndex, op.op, op.path);
         }
 
         draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
@@ -1689,18 +1901,18 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
       if (op.op === "merge_json") {
         const resolved = resolveCurrentPath(op.path);
         if (isPathResolveError(resolved)) {
-          return resolved.error;
+          return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
         const finishGuardError = ensureNotFinishGuardedMutation(
           resolved.path,
           "vfs_write(merge_json)",
         );
         if (finishGuardError) {
-          return finishGuardError;
+          return withBatchError(finishGuardError, opIndex, op.op, op.path);
         }
         const seenError = requireToolSeenForExistingFile(draft, resolved.path, "merge");
         if (seenError) {
-          return seenError;
+          return withBatchError(seenError, opIndex, op.op, op.path);
         }
 
         draft.mergeJson(resolved.path, op.content);
@@ -1714,22 +1926,40 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
       "VFS write operations applied",
     );
   });
+}, {
+  batchFromArgs: (rawArgs) => {
+    const typed = getTypedArgs("vfs_write", rawArgs);
+    return { total: typed.ops.length };
+  },
 });
 
-vfsToolRouter.register(VFS_MOVE_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_MOVE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_move", args);
 
   return withAtomicSession(ctx, (draft) => {
     const moved: Array<{ from: string; to: string }> = [];
+    const withMoveBatchError = (
+      error: ToolCallError,
+      moveIndex: number,
+      move: { from: string; to: string },
+    ): ToolCallError =>
+      withToolErrorDetails(error, "vfs_move", {
+        batch: {
+          index: moveIndex + 1,
+          total: typedArgs.moves.length,
+          operation: "move",
+          path: `${move.from} -> ${move.to}`,
+        },
+      });
 
-    for (const move of typedArgs.moves) {
+    for (const [moveIndex, move] of typedArgs.moves.entries()) {
       const resolvedFrom = resolveCurrentPath(move.from);
       if (isPathResolveError(resolvedFrom)) {
-        return resolvedFrom.error;
+        return withMoveBatchError(resolvedFrom.error, moveIndex, move);
       }
       const resolvedTo = resolveCurrentPath(move.to);
       if (isPathResolveError(resolvedTo)) {
-        return resolvedTo.error;
+        return withMoveBatchError(resolvedTo.error, moveIndex, move);
       }
 
       const finishGuardFrom = ensureNotFinishGuardedMutation(
@@ -1737,14 +1967,14 @@ vfsToolRouter.register(VFS_MOVE_TOOL, (args, ctx) => {
         "vfs_move",
       );
       if (finishGuardFrom) {
-        return finishGuardFrom;
+        return withMoveBatchError(finishGuardFrom, moveIndex, move);
       }
       const finishGuardTo = ensureNotFinishGuardedMutation(
         resolvedTo.path,
         "vfs_move",
       );
       if (finishGuardTo) {
-        return finishGuardTo;
+        return withMoveBatchError(finishGuardTo, moveIndex, move);
       }
 
       const from = normalizeVfsPath(resolvedFrom.path);
@@ -1753,10 +1983,18 @@ vfsToolRouter.register(VFS_MOVE_TOOL, (args, ctx) => {
         draft.renameFile(from, to);
       } catch (error) {
         if (error instanceof VfsWriteAccessError) {
-          return createError(error.message, error.code);
+          return withMoveBatchError(
+            createError(error.message, error.code),
+            moveIndex,
+            move,
+          );
         }
         const message = error instanceof Error ? error.message : String(error);
-        return createError(message, "NOT_FOUND");
+        return withMoveBatchError(
+          createError(message, "NOT_FOUND"),
+          moveIndex,
+          move,
+        );
       }
 
       draft.renameToolSeenPath(from, to);
@@ -1767,39 +2005,65 @@ vfsToolRouter.register(VFS_MOVE_TOOL, (args, ctx) => {
 
     return createSuccess({ moved }, "VFS files moved");
   });
+}, {
+  batchFromArgs: (rawArgs) => {
+    const typed = getTypedArgs("vfs_move", rawArgs);
+    return { total: typed.moves.length };
+  },
 });
 
-vfsToolRouter.register(VFS_DELETE_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_DELETE_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_delete", args);
 
   return withAtomicSession(ctx, (draft) => {
     const deleted: string[] = [];
+    const withDeleteBatchError = (
+      error: ToolCallError,
+      pathIndex: number,
+      path: string,
+    ): ToolCallError =>
+      withToolErrorDetails(error, "vfs_delete", {
+        batch: {
+          index: pathIndex + 1,
+          total: typedArgs.paths.length,
+          operation: "delete",
+          path,
+        },
+      });
 
-    for (const path of typedArgs.paths) {
+    for (const [pathIndex, path] of typedArgs.paths.entries()) {
       const resolved = resolveCurrentPath(path);
       if (isPathResolveError(resolved)) {
-        return resolved.error;
+        return withDeleteBatchError(resolved.error, pathIndex, path);
       }
 
       const finishGuard = ensureNotFinishGuardedMutation(resolved.path, "vfs_delete");
       if (finishGuard) {
-        return finishGuard;
+        return withDeleteBatchError(finishGuard, pathIndex, path);
       }
 
       const normalized = normalizeVfsPath(resolved.path);
       const seenError = requireToolSeenForExistingFile(draft, normalized, "delete");
       if (seenError) {
-        return seenError;
+        return withDeleteBatchError(seenError, pathIndex, path);
       }
 
       try {
         draft.deleteFile(normalized);
       } catch (error) {
         if (error instanceof VfsWriteAccessError) {
-          return createError(error.message, error.code);
+          return withDeleteBatchError(
+            createError(error.message, error.code),
+            pathIndex,
+            path,
+          );
         }
         const message = error instanceof Error ? error.message : String(error);
-        return createError(message, "NOT_FOUND");
+        return withDeleteBatchError(
+          createError(message, "NOT_FOUND"),
+          pathIndex,
+          path,
+        );
       }
       draft.noteToolAccessFile(normalized);
       draft.forgetToolSeenPath(normalized);
@@ -1808,9 +2072,14 @@ vfsToolRouter.register(VFS_DELETE_TOOL, (args, ctx) => {
 
     return createSuccess({ deleted }, "VFS files deleted");
   });
+}, {
+  batchFromArgs: (rawArgs) => {
+    const typed = getTypedArgs("vfs_delete", rawArgs);
+    return { total: typed.paths.length };
+  },
 });
 
-vfsToolRouter.register(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_commit_turn", args);
 
   return withAtomicSession(
@@ -1919,7 +2188,7 @@ vfsToolRouter.register(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
   );
 });
 
-vfsToolRouter.register(VFS_COMMIT_SUMMARY_TOOL, (args, ctx) => {
+registerToolHandlerWithStructuredErrors(VFS_COMMIT_SUMMARY_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_commit_summary", args);
   const runtime = args as Record<string, unknown>;
 
@@ -2057,7 +2326,7 @@ const OUTLINE_COMMIT_DEFS = VFS_COMMIT_OUTLINE_PHASE_TOOLS.map((tool, phase) => 
 }));
 
 for (const { tool, phase, schema } of OUTLINE_COMMIT_DEFS) {
-  vfsToolRouter.register(tool, (args, ctx) => {
+  registerToolHandlerWithStructuredErrors(tool, (args, ctx) => {
     const parsedArgs = tool.parameters.safeParse(args);
     if (!parsedArgs.success) {
       return createError(

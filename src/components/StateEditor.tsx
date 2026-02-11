@@ -1379,9 +1379,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const categoryPrompt =
       t("stateEditor.createRuleTemplateCategoryPrompt") ||
       "Choose rule category prefix:";
+    const categoryPromptBody = [categoryPrompt, choices].join("\n");
 
     const selectedCode =
-      window.prompt(`${categoryPrompt}\n${choices}`, defaultChoice)?.trim() ?? "";
+      window.prompt(categoryPromptBody, defaultChoice)?.trim() ?? "";
 
     if (!selectedCode) {
       return;

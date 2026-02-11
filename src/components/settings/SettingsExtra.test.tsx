@@ -85,6 +85,13 @@ describe("SettingsExtra", () => {
     );
   });
 
+  it("hides deprecated clearer search tool controls", () => {
+    render(React.createElement(SettingsExtra));
+
+    expect(screen.queryByText("settings.extra.clearerSearchTool")).toBeNull();
+    expect(screen.queryByText("settings.extra.clearerSearchToolHelp")).toBeNull();
+  });
+
   it("clamps numeric extra settings to valid ranges", () => {
     render(React.createElement(SettingsExtra));
 

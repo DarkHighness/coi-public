@@ -32,6 +32,7 @@ describe("ToastContext", () => {
 
   it("supports show, remove, and clear operations", () => {
     let api: ReturnType<typeof useToast> | null = null;
+    const t = (key: string) => key;
 
     const Probe = () => {
       api = useToast();
@@ -47,12 +48,12 @@ describe("ToastContext", () => {
     render(React.createElement(ToastProvider, null, React.createElement(Probe)));
 
     act(() => {
-      api!.showToast("hello");
-      api!.showToast("boom", "error", 1000);
+      api!.showToast(t("toast.test.hello"));
+      api!.showToast(t("toast.test.boom"), "error", 1000);
     });
 
-    expect(screen.getByText("info:hello")).toBeTruthy();
-    expect(screen.getByText("error:boom")).toBeTruthy();
+    expect(screen.getByText("info:toast.test.hello")).toBeTruthy();
+    expect(screen.getByText("error:toast.test.boom")).toBeTruthy();
     expect(api!.toasts).toHaveLength(2);
 
     const firstId = api!.toasts[0].id;
@@ -61,7 +62,7 @@ describe("ToastContext", () => {
     });
 
     expect(api!.toasts).toHaveLength(1);
-    expect(screen.queryByText("info:hello")).toBeNull();
+    expect(screen.queryByText("info:toast.test.hello")).toBeNull();
 
     act(() => {
       api!.clearToasts();

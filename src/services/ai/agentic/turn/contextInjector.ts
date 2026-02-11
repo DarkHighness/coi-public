@@ -98,12 +98,25 @@ export function injectNormalTurnInstruction(
           "- Do NOT fabricate new lore/conflicts unrelated to deduplication/consolidation.",
           "- Verify entities via read-only VFS tools before mutation (vfs_ls / vfs_search / vfs_read).",
           "- Keep player-visible log narrative generic; do not leak hidden truths.",
+          "- Structured error recovery (when tool returns { success:false, code, error }):",
+          "  1) Do NOT finish while the error is unresolved.",
+          "  2) Classify by code (scope/path/order/schema/content), then fix exactly that cause.",
+          "  3) Re-read minimum anchors (conversation/index + affected files), then retry one corrected call.",
+          "  4) If the same code repeats twice, narrow scope and report blocker instead of forcing progress.",
         ].join("\n"),
       ),
     );
   }
 
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
+  if (!isCleanupMode) {
+    modeSkillLines.push(
+      "Soft gate (advisory, not blocking) for normal turns:",
+      "Hub first (recommended): `current/skills/commands/runtime/SKILL.md`",
+      "Preferred command protocol: `current/skills/commands/runtime/turn/SKILL.md`",
+      "If these skill files are unavailable, continue and keep tool usage protocol-compliant.",
+    );
+  }
   if (modeFlags?.godMode) {
     modeSkillLines.push(
       "You are currently in God mode.",
