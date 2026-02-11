@@ -112,6 +112,9 @@ export async function validateProvidersForMode(
     },
   ];
 
+  const embeddingUsesRemoteProvider =
+    (aiSettings.embedding.runtime ?? "remote") !== "local_tfjs";
+
   const optionalFeatures: FeatureConfig[] = [
     {
       feature: "image",
@@ -134,7 +137,7 @@ export async function validateProvidersForMode(
     {
       feature: "embedding",
       providerId: aiSettings.embedding.providerId,
-      enabled: aiSettings.embedding.enabled === true,
+      enabled: aiSettings.embedding.enabled === true && embeddingUsesRemoteProvider,
       required: false,
     },
     {

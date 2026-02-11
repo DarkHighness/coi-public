@@ -33,6 +33,7 @@ import {
   type UpdateDocumentPayload,
   type UpsertFileChunksPayload,
 } from "./types";
+import { embedTextsWithTfjs, resetTfjsEmbeddingEngine } from "./localEmbedding";
 
 export type RAGEventCallback = (event: RAGEvent) => void;
 
@@ -118,7 +119,14 @@ export class RAGService {
 
     this.port.start();
 
-    this.config = { ...DEFAULT_RAG_CONFIG, ...config };
+    this.config = {
+      ...DEFAULT_RAG_CONFIG,
+      ...config,
+      local: {
+        ...DEFAULT_RAG_CONFIG.local,
+        ...(config.local ?? {}),
+      },
+    };
 
     await this.sendRequest("init", {
       config: this.config,
@@ -132,6 +140,60 @@ export class RAGService {
     return this.isInitialized;
   }
 
+  private isLocalTfjsRuntime(): boolean {
+    return this.config.provider === "local_tfjs";
+  }
+
+  private getLocalEmbeddingConfig(): NonNullable<RAGConfig["local"]> {
+    return {
+      ...(DEFAULT_RAG_CONFIG.local || {
+        model: "use-lite-512",
+        backendOrder: ["webgpu", "webgl", "cpu"],
+      }),
+      ...(this.config.local || {}),
+      model: "use-lite-512",
+    };
+  }
+
+  private async ensureLocalEmbeddings(
+    documents: UpsertFileChunksPayload["documents"],
+  ): Promise<UpsertFileChunksPayload["documents"]> {
+    if (!this.isLocalTfjsRuntime() || documents.length === 0) {
+      return documents;
+    }
+
+    const missing = documents
+      .map((doc, index) => ({ index, doc }))
+      .filter(
+        ({ doc }) => !Array.isArray(doc.embedding) || doc.embedding.length === 0,
+      );
+
+    if (missing.length === 0) {
+      return documents;
+    }
+
+    const vectors = await embedTextsWithTfjs(
+      missing.map(({ doc }) => doc.content),
+      this.getLocalEmbeddingConfig(),
+    );
+
+    if (vectors.length !== missing.length) {
+      throw new Error(
+        `Local embedding size mismatch: expected ${missing.length}, got ${vectors.length}`,
+      );
+    }
+
+    const prepared = documents.map((doc) => ({ ...doc }));
+    missing.forEach(({ index }, vectorIndex) => {
+      prepared[index] = {
+        ...prepared[index],
+        embedding: vectors[vectorIndex],
+      };
+    });
+
+    return prepared;
+  }
+
   // ======================================================================
   // File-centric indexing API
   // ======================================================================
@@ -140,7 +202,8 @@ export class RAGService {
     documents: UpsertFileChunksPayload["documents"],
   ): Promise<{ count: number }> {
     this.ensureInitialized();
-    return this.sendRequest("upsertFileChunks", { documents });
+    const preparedDocuments = await this.ensureLocalEmbeddings(documents);
+    return this.sendRequest("upsertFileChunks", { documents: preparedDocuments });
   }
 
   async deleteByPaths(
@@ -154,7 +217,11 @@ export class RAGService {
     params: ReindexAllPayload,
   ): Promise<{ deleted: number; count: number }> {
     this.ensureInitialized();
-    return this.sendRequest("reindexAll", params);
+    const preparedDocuments = await this.ensureLocalEmbeddings(params.documents);
+    return this.sendRequest("reindexAll", {
+      ...params,
+      documents: preparedDocuments,
+    });
   }
 
   // ======================================================================
@@ -190,6 +257,20 @@ export class RAGService {
     options: SearchOptions = {},
   ): Promise<SearchResult[]> {
     this.ensureInitialized();
+
+    if (this.isLocalTfjsRuntime()) {
+      const [queryEmbedding] = await embedTextsWithTfjs(
+        [query],
+        this.getLocalEmbeddingConfig(),
+      );
+
+      return this.sendRequest("search", {
+        query: "",
+        queryEmbedding: new Float32Array(queryEmbedding),
+        options,
+      } as SearchPayload);
+    }
+
     return this.sendRequest("search", {
       query,
       options,
@@ -265,7 +346,26 @@ export class RAGService {
   }
 
   async updateConfig(config: Partial<RAGConfig>): Promise<{ success: boolean }> {
-    this.config = { ...this.config, ...config };
+    const nextConfig: RAGConfig = {
+      ...this.config,
+      ...config,
+      local: {
+        ...(this.config.local || DEFAULT_RAG_CONFIG.local || { model: "use-lite-512" }),
+        ...(config.local ?? {}),
+      },
+    };
+
+    const localRuntimeChanged =
+      nextConfig.provider !== this.config.provider ||
+      JSON.stringify(nextConfig.local || null) !==
+        JSON.stringify(this.config.local || null);
+
+    this.config = nextConfig;
+
+    if (localRuntimeChanged) {
+      await resetTfjsEmbeddingEngine().catch(() => undefined);
+    }
+
     if (this.isInitialized) {
       return this.sendRequest("updateConfig", config);
     }
@@ -404,6 +504,8 @@ export class RAGService {
     this.worker = null;
     this.isInitialized = false;
     this.initPromise = null;
+
+    void resetTfjsEmbeddingEngine();
   }
 
   private ensureInitialized(): void {

@@ -101,6 +101,7 @@ export function executeGenericTool(
       changedEntities: loopState.changedEntities,
       gameState,
       settings,
+      embeddingEnabled: Boolean(settings?.embedding?.enabled),
       vfsSession: loopState.vfsSession,
       requiredCommandSkillPaths: loopState.requiredCommandSkillPaths,
       requiredPresetSkillPaths: loopState.requiredPresetSkillPaths,

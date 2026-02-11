@@ -205,7 +205,10 @@ const normalizeFileChunk = async (
   doc: UpsertFileChunksPayload["documents"][number],
 ): Promise<RAGDocument> => {
   const now = Date.now();
-  const embedding = await generateEmbedding(doc.content);
+  const embedding =
+    Array.isArray(doc.embedding) && doc.embedding.length > 0
+      ? new Float32Array(doc.embedding)
+      : await generateEmbedding(doc.content);
 
   return {
     id: buildDocumentId(doc),
@@ -429,6 +432,12 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   isSearching = true;
 
   try {
+    if (!payload.queryEmbedding && config.provider === "local_tfjs") {
+      throw new Error(
+        "Local TFJS runtime requires precomputed queryEmbedding from main thread",
+      );
+    }
+
     const queryEmbedding = payload.queryEmbedding
       ? payload.queryEmbedding
       : await generateEmbedding(payload.query);
@@ -685,7 +694,7 @@ async function handleGetAllSaveStats(): Promise<GlobalStorageStats> {
 }
 
 async function generateEmbedding(text: string): Promise<Float32Array> {
-  if (!credentials) {
+  if (config.provider !== "local_tfjs" && !credentials) {
     throw new Error("No credentials configured for embedding generation");
   }
 
@@ -708,6 +717,10 @@ async function generateEmbedding(text: string): Promise<Float32Array> {
     case "claude":
       throw new Error(
         "Claude does not support embedding generation. Please use Gemini, OpenAI, or OpenRouter for embeddings.",
+      );
+    case "local_tfjs":
+      throw new Error(
+        "Local TFJS runtime requires precomputed embeddings from main thread",
       );
     default:
       throw new Error(`Unknown embedding provider: ${config.provider}`);

@@ -15,7 +15,7 @@ import type { VfsElevationIntent, VfsMode } from "../../../vfs/core/types";
 import type { VfsElevationScopeTemplateIds } from "../../../vfs/core/elevation";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
-import { ALL_DEFINED_TOOLS } from "../../../tools";
+import { ALL_DEFINED_TOOLS, getVfsSearchToolDefinition } from "../../../tools";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
 import { getConversationMarker, type ConversationMarker } from "./resultAccumulator";
 import type { ActivePresetSkillRequirement } from "../../utils";
@@ -175,12 +175,18 @@ export function createInitialTools(
 ): ZodToolDefinition[] {
   const { isSudoMode, isRAGEnabled, isCleanupMode } = options;
   void isSudoMode;
-  void isRAGEnabled;
 
   const toolset = isCleanupMode ? VFS_TOOLSETS.cleanup : VFS_TOOLSETS.turn;
   const allowed = new Set<string>(toolset.tools);
 
-  return ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name));
+  return ALL_DEFINED_TOOLS
+    .filter((tool) => allowed.has(tool.name))
+    .map((tool) => {
+      if (tool.name === "vfs_search") {
+        return getVfsSearchToolDefinition(isRAGEnabled);
+      }
+      return tool;
+    });
 }
 
 /**

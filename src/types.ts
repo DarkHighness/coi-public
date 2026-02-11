@@ -1317,10 +1317,21 @@ export type EmbeddingTaskType =
   | "classification"
   | "clustering";
 
+export type EmbeddingRuntime = "remote" | "local_tfjs";
+export type LocalEmbeddingBackend = "webgpu" | "webgl" | "cpu";
+
+export interface LocalEmbeddingOptions {
+  model: "use-lite-512";
+  backendOrder?: LocalEmbeddingBackend[];
+  batchSize?: number;
+}
+
 export interface EmbeddingConfig {
   providerId: string; // 引用 ProviderInstance.id
   modelId: string;
   enabled: boolean;
+  runtime?: EmbeddingRuntime;
+  local?: LocalEmbeddingOptions;
   dimensions?: number; // Optional: output dimensions (e.g., 256, 768, 1536)
   topK?: number; // Number of results to retrieve
   similarityThreshold?: number; // Minimum similarity score (0-1)

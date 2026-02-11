@@ -20,6 +20,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     useSettings();
   const config = currentSettings.embedding;
   const isEnabled = config?.enabled ?? false;
+  const runtime = config?.runtime ?? "remote";
+  const isLocalRuntime = runtime === "local_tfjs";
 
   // Track previous model ID for model change detection
   const previousModelIdRef = useRef<string | null>(config?.modelId || null);
@@ -59,6 +61,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   // 支持强制刷新 force 参数
   const fetchModelsForProvider = useCallback(
     async (providerId: string, force = false) => {
+      if ((currentSettings.embedding.runtime ?? "remote") === "local_tfjs") {
+        return;
+      }
+
       // 如果不是强制刷新，且已有缓存，则直接返回
       if (
         !force &&
@@ -107,10 +113,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
   // Fetch models when provider changes or component mounts
   useEffect(() => {
-    if (isEnabled && config.providerId) {
+    if (isEnabled && !isLocalRuntime && config.providerId) {
       fetchModelsForProvider(config.providerId);
     }
-  }, [config.providerId, isEnabled]);
+  }, [config.providerId, isEnabled, isLocalRuntime]);
 
   const updateEmbedding = (field: string, value: any) => {
     const newSettings = {
@@ -145,6 +151,24 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
       // Update reference
       previousModelIdRef.current = value;
+    }
+
+    if (field === "runtime") {
+      if (value === "local_tfjs") {
+        newSettings.embedding.local = {
+          model: "use-lite-512",
+          backendOrder:
+            newSettings.embedding.local?.backendOrder || ["webgpu", "webgl", "cpu"],
+          batchSize: newSettings.embedding.local?.batchSize || 8,
+        };
+        newSettings.embedding.modelId = "use-lite-512";
+        newSettings.embedding.dimensions = 512;
+      } else if (value === "remote") {
+        if (newSettings.embedding.modelId === "use-lite-512") {
+          newSettings.embedding.modelId = "";
+          newSettings.embedding.dimensions = undefined;
+        }
+      }
     }
 
     // Reset model when provider changes
@@ -242,7 +266,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   const availableProviders = currentSettings.providers.instances.filter(
     (p) => p.enabled && p.apiKey && p.apiKey.trim() !== "",
   );
-  const hasNoAvailableProviders = availableProviders.length === 0;
+  const hasNoAvailableProviders =
+    !isLocalRuntime && availableProviders.length === 0;
 
   return (
     <div className="space-y-6 animate-slide-in">
@@ -302,126 +327,162 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       <div
         className={`space-y-4 ${!isEnabled ? "opacity-40 pointer-events-none" : ""}`}
       >
-        {/* 刷新按钮 */}
-        <div className="flex justify-end">
-          <button
-            onClick={() => fetchModelsForProvider(config.providerId, true)}
-            disabled={
-              loadingModels[config.providerId] ||
-              !config.providerId ||
-              hasNoAvailableProviders
-            }
-            className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loadingModels[config.providerId] ? (
-              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            ) : (
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                ></path>
-              </svg>
-            )}
-            {t("refresh") || "Refresh"}
-          </button>
-        </div>
-        {/* Provider Selection */}
+        {/* Runtime Selection */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
-            {t("embedding.provider") || "Provider"}
+            {t("embedding.runtime") || "Runtime"}
           </label>
           <select
-            value={config.providerId}
-            onChange={(e) => updateEmbedding("providerId", e.target.value)}
+            value={runtime}
+            onChange={(e) => updateEmbedding("runtime", e.target.value)}
             className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
           >
-            {currentSettings.providers.instances
-              .filter((p) => p.enabled)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.protocol})
-                </option>
-              ))}
+            <option value="remote">
+              {t("embedding.runtimeRemote") || "Remote API"}
+            </option>
+            <option value="local_tfjs">
+              {t("embedding.runtimeLocal") || "Local (TFJS)"}
+            </option>
           </select>
-          {!isProviderEnabled && (
-            <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
-              {t("embedding.providerDisabled") ||
-                "Selected provider is disabled"}
-            </div>
-          )}
-          {!hasApiKey && isProviderEnabled && (
-            <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
-              {t("embedding.noApiKey") || "Provider has no API key configured"}
-            </div>
-          )}
         </div>
 
-        {/* Model Selection */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
-              {t("embedding.model") || "Embedding Model"}
-            </label>
-            {loadingModels[config.providerId] && (
-              <span className="text-[10px] text-theme-muted animate-pulse">
-                {t("loading") || "Loading..."}
-              </span>
-            )}
-          </div>
-          <select
-            value={config.modelId}
-            onChange={(e) => updateEmbedding("modelId", e.target.value)}
-            disabled={loadingModels[config.providerId]}
-            className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono [&>option]:bg-theme-bg [&>option]:text-theme-text disabled:opacity-50"
-          >
-            <option value="">
-              {getModelsForProvider().length === 0
-                ? t("embedding.noModels") || "No models available"
-                : t("embedding.selectModel") || "Select a model..."}
-            </option>
-            {getModelsForProvider().map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name} ({model.dimensions}
-                {t("embedding.dimensions", "d")})
-              </option>
-            ))}
-          </select>
-          {!config.modelId && getModelsForProvider().length > 0 && (
-            <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
-              {t("embedding.noModelSelected") ||
-                "Please select an embedding model"}
+        {isLocalRuntime && (
+          <div className="border-l-2 border-yellow-500/60 pl-3 py-2 text-xs text-yellow-300 space-y-1">
+            <div className="font-bold uppercase tracking-wider">
+              {t("embedding.localWarningTitle") || "Local Embedding (Privacy First)"}
             </div>
-          )}
-          {getModelsForProvider().length === 0 &&
-            !loadingModels[config.providerId] && (
-              <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
-                {t("embedding.noModelsAvailable") ||
-                  "This provider does not support embedding models"}
+            <div>
+              {t("embedding.localWarningDesc") ||
+                "Runs embeddings on-device with TFJS (WebGPU → WebGL → CPU). Better privacy, but initialization is slower, memory usage is higher, and search performance may be noticeably worse."}
+            </div>
+          </div>
+        )}
+
+        {!isLocalRuntime && (
+          <>
+            {/* 刷新按钮 */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => fetchModelsForProvider(config.providerId, true)}
+                disabled={
+                  loadingModels[config.providerId] ||
+                  !config.providerId ||
+                  hasNoAvailableProviders
+                }
+                className="px-3 py-1 bg-theme-surface-highlight border border-theme-border rounded text-xs text-theme-text hover:bg-theme-primary hover:text-theme-bg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingModels[config.providerId] ? (
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    ></path>
+                  </svg>
+                )}
+                {t("refresh") || "Refresh"}
+              </button>
+            </div>
+
+            {/* Provider Selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
+                {t("embedding.provider") || "Provider"}
+              </label>
+              <select
+                value={config.providerId}
+                onChange={(e) => updateEmbedding("providerId", e.target.value)}
+                className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
+              >
+                {currentSettings.providers.instances
+                  .filter((p) => p.enabled)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.protocol})
+                    </option>
+                  ))}
+              </select>
+              {!isProviderEnabled && (
+                <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
+                  {t("embedding.providerDisabled") ||
+                    "Selected provider is disabled"}
+                </div>
+              )}
+              {!hasApiKey && isProviderEnabled && (
+                <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
+                  {t("embedding.noApiKey") || "Provider has no API key configured"}
+                </div>
+              )}
+            </div>
+
+            {/* Model Selection */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
+                  {t("embedding.model") || "Embedding Model"}
+                </label>
+                {loadingModels[config.providerId] && (
+                  <span className="text-[10px] text-theme-muted animate-pulse">
+                    {t("loading") || "Loading..."}
+                  </span>
+                )}
               </div>
-            )}
-        </div>
+              <select
+                value={config.modelId}
+                onChange={(e) => updateEmbedding("modelId", e.target.value)}
+                disabled={loadingModels[config.providerId]}
+                className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono [&>option]:bg-theme-bg [&>option]:text-theme-text disabled:opacity-50"
+              >
+                <option value="">
+                  {getModelsForProvider().length === 0
+                    ? t("embedding.noModels") || "No models available"
+                    : t("embedding.selectModel") || "Select a model..."}
+                </option>
+                {getModelsForProvider().map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({model.dimensions}
+                    {t("embedding.dimensions", "d")})
+                  </option>
+                ))}
+              </select>
+              {!config.modelId && getModelsForProvider().length > 0 && (
+                <div className="text-[10px] text-yellow-500 mt-1 font-bold uppercase tracking-wider">
+                  {t("embedding.noModelSelected") ||
+                    "Please select an embedding model"}
+                </div>
+              )}
+              {getModelsForProvider().length === 0 &&
+                !loadingModels[config.providerId] && (
+                  <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
+                    {t("embedding.noModelsAvailable") ||
+                      "This provider does not support embedding models"}
+                  </div>
+                )}
+            </div>
+          </>
+        )}
 
         {/* Dimensions Display */}
         <div className="flex items-center justify-between text-xs">
@@ -622,8 +683,11 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
               />
             </svg>
             <span>
-              {t("embedding.statusInfo") ||
-                "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation."}
+              {isLocalRuntime
+                ? t("embedding.localStatusInfo") ||
+                  "Local TFJS runtime is active. Embeddings are generated on-device for better privacy."
+                : t("embedding.statusInfo") ||
+                  "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation."}
             </span>
           </div>
         </div>

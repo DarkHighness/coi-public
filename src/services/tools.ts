@@ -392,6 +392,17 @@ export const VFS_SEARCH_TOOL = defineTool({
   }),
 });
 
+
+export const VFS_SEARCH_TOOL_NO_SEMANTIC = defineTool({
+  name: "vfs_search",
+  description: "Search VFS files by text/regex/fuzzy.",
+  parameters: VFS_SEARCH_TOOL.parameters.omit({ semantic: true }),
+});
+
+export function getVfsSearchToolDefinition(ragEnabled: boolean): ZodToolDefinition {
+  return ragEnabled ? VFS_SEARCH_TOOL : VFS_SEARCH_TOOL_NO_SEMANTIC;
+}
+
 export const VFS_GREP_TOOL = defineTool({
   name: "vfs_grep",
   description: "Grep VFS files using a regex pattern.",

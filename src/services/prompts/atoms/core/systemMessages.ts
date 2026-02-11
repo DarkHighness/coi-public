@@ -12,14 +12,14 @@ import {
   formatVfsToolsForPrompt,
 } from "../../../vfsToolsets";
 import type { VfsToolsetId } from "../../../vfsToolsets";
-import { defineAtom, defineSkillAtom } from "../../trace/runtime";
-
+import { defineAtom } from "../../trace/runtime";
 
 export interface SystemMessageInput {
   finishToolName?: string;
   readyConsequences?: string[];
   budgetPrompt?: string;
   toolsetId?: VfsToolsetId;
+  ragEnabled?: boolean;
 }
 
 export interface RetconAckSystemMessageInput {
@@ -43,11 +43,28 @@ const PERMISSION_MODEL_BLOCK = [
 const CONVERSATION_GUARD_LINE =
   "**DO NOT** write finish-guarded conversation/summary paths (`shared/narrative/conversation/*.json`, `forks/{activeFork}/story/conversation/**`, `forks/{activeFork}/story/summary/state.json`; alias `current/conversation/**`, `current/summary/state.json`) via generic write/edit/merge/move/delete tools.";
 
+const gateSemanticCapabilityText = (
+  capabilityText: string,
+  ragEnabled: boolean,
+): string => {
+  if (ragEnabled) return capabilityText;
+
+  return capabilityText
+    .replaceAll("text/fuzzy/regex/semantic", "text/fuzzy/regex")
+    .replaceAll("(optionally semantic)", "")
+    .replaceAll("/semantic", "")
+    .replaceAll("semantic, when available", "");
+};
+
 /**
  * SUDO Mode Instruction
  */
 export const sudoModeInstruction: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#sudoModeInstruction", source: "atoms/core/systemMessages.ts", exportName: "sudoModeInstruction" }, (input) => {
-  const { toolsetId = "turn" } = input || {};
+  const { toolsetId = "turn", ragEnabled = true } = input || {};
+  const capabilityText = gateSemanticCapabilityText(
+    formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools),
+    ragEnabled,
+  );
 
   return `[SYSTEM: FORCE UPDATE MODE (/sudo)]
 This is a **GM COMMAND**. You must:
@@ -55,7 +72,7 @@ This is a **GM COMMAND**. You must:
 2. Use **VFS-only tools** (this loop's allowlist):
    ${formatVfsToolsForPrompt(VFS_TOOLSETS[toolsetId].tools)}
 3. Respect this **TOOL CAPABILITY CONTRACT** (runtime source of truth):
-   ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools)}
+   ${capabilityText}
 4. **PATH MODEL**:
    ${PATH_MODEL_BLOCK}
 5. **PERMISSION MODEL**:
@@ -72,13 +89,20 @@ This is a **GM COMMAND**. You must:
  */
 export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#normalTurnInstruction", source: "atoms/core/systemMessages.ts", exportName: "normalTurnInstruction" }, ({
   finishToolName,
-}) => `[SYSTEM: TOOL USAGE INSTRUCTION]
+  ragEnabled = true,
+}) => {
+  const capabilityText = gateSemanticCapabilityText(
+    formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools),
+    ragEnabled,
+  );
+
+  return `[SYSTEM: TOOL USAGE INSTRUCTION]
 You are in AGENTIC MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
    AVAILABLE TOOLS in this loop:
    ${formatVfsToolsForPrompt(VFS_TOOLSETS.turn.tools)}
 2. Respect this **TOOL CAPABILITY CONTRACT**:
-   ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools)}
+   ${capabilityText}
 3. **PATH MODEL**:
    ${PATH_MODEL_BLOCK}
 4. **PERMISSION MODEL**:
@@ -98,20 +122,28 @@ You are in AGENTIC MODE (VFS-only).
   2) \`vfs_edit\` to patch the exact JSON pointer(s)
   3) \`${finishToolName || "vfs_commit_turn"}\` with { userAction, assistant: { narrative, choices } } as the LAST call
 </examples>
-`);
+`;
+});
 
 /**
  * Cleanup Turn Instruction
  */
 export const cleanupTurnInstruction: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#cleanupTurnInstruction", source: "atoms/core/systemMessages.ts", exportName: "cleanupTurnInstruction" }, ({
   finishToolName,
-}) => `[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]
+  ragEnabled = true,
+}) => {
+  const capabilityText = gateSemanticCapabilityText(
+    formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.cleanup.tools),
+    ragEnabled,
+  );
+
+  return `[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]
 You are in CLEANUP MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
    AVAILABLE TOOLS in this loop:
    ${formatVfsToolsForPrompt(VFS_TOOLSETS.cleanup.tools)}
 2. Respect this **TOOL CAPABILITY CONTRACT**:
-   ${formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.cleanup.tools)}
+   ${capabilityText}
 3. **PATH MODEL**:
    ${PATH_MODEL_BLOCK}
 4. **PERMISSION MODEL**:
@@ -128,7 +160,8 @@ You are in CLEANUP MODE (VFS-only).
   3) \`vfs_edit\` / \`vfs_merge\` / \`vfs_move\` / \`vfs_delete\` to resolve
   4) \`${finishToolName || "vfs_commit_turn"}\` as the LAST call
 </examples>
-`);
+`;
+});
 
 /**
  * Pending Consequences Message

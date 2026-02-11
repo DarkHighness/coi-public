@@ -169,7 +169,7 @@ export async function runAgenticLoopRefactored(
 
     // Inject mode-specific instruction
     if (isSudoMode) {
-      injectSudoModeInstruction(conversationHistory);
+      injectSudoModeInstruction(conversationHistory, loopState.isRAGEnabled);
     } else {
       injectNormalTurnInstruction(
         conversationHistory,
@@ -190,6 +190,7 @@ export async function runAgenticLoopRefactored(
               : undefined,
           mode: isCleanupMode ? "cleanup" : "normal",
         },
+        loopState.isRAGEnabled,
       );
     }
 

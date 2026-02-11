@@ -125,8 +125,14 @@ export const DEFAULTS: AISettings = {
   // Different providers support different embedding models (e.g., Gemini: text-embedding-004, OpenAI: text-embedding-3-small)
   embedding: {
     enabled: false,
+    runtime: "remote",
     providerId: "provider-1",
     modelId: "", // No default - must be selected based on provider's available models
+    local: {
+      model: "use-lite-512",
+      backendOrder: ["webgpu", "webgl", "cpu"],
+      batchSize: 8,
+    },
     dimensions: undefined, // Will be set when model is selected
     topK: 10,
     similarityThreshold: 0.65,

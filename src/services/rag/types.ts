@@ -10,6 +10,24 @@
 
 export type DocumentType = "json" | "markdown" | "text";
 
+export type ChunkStrategy =
+  | "json_path_object"
+  | "markdown_heading"
+  | "text_window";
+
+export interface ChunkMeta {
+  strategy: ChunkStrategy;
+  overlapChars: number;
+}
+
+export type LocalEmbeddingBackend = "webgpu" | "webgl" | "cpu";
+
+export interface LocalEmbeddingRuntimeConfig {
+  model: "use-lite-512";
+  backendOrder?: LocalEmbeddingBackend[];
+  batchSize?: number;
+}
+
 export interface RAGDocument {
   id: string;
 
@@ -60,6 +78,8 @@ export interface FileChunkInput {
   turnNumber: number;
   importance?: number;
   tags?: string[];
+  embedding?: number[];
+  chunkMeta?: ChunkMeta;
 }
 
 // ============================================================================
@@ -106,9 +126,10 @@ export interface RAGConfig {
 
   // Embedding settings
   dimensions: number;
-  provider: "gemini" | "openai" | "openrouter" | "claude";
+  provider: "gemini" | "openai" | "openrouter" | "claude" | "local_tfjs";
   modelId: string;
   contextLength?: number;
+  local?: LocalEmbeddingRuntimeConfig;
 }
 
 export const DEFAULT_RAG_CONFIG: RAGConfig = {
@@ -122,6 +143,10 @@ export const DEFAULT_RAG_CONFIG: RAGConfig = {
   dimensions: 768,
   provider: "gemini",
   modelId: "text-embedding-004",
+  local: {
+    model: "use-lite-512",
+    backendOrder: ["webgpu", "webgl", "cpu"],
+  },
 };
 
 // ============================================================================

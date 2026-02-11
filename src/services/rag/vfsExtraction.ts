@@ -4,10 +4,20 @@ import {
   toCanonicalVfsPath,
 } from "../vfs/core/pathResolver";
 import { normalizeVfsPath } from "../vfs/utils";
-import type { DocumentType, FileChunkInput } from "./types";
+import type { ChunkMeta, ChunkStrategy, DocumentType, FileChunkInput } from "./types";
 
 const MAX_CHUNK_CHARS = 1800;
 const MIN_CHUNK_CHARS = 320;
+
+const OVERLAP_RATIO_DEFAULT = 0.15;
+const OVERLAP_MIN_CHARS = 80;
+const OVERLAP_MAX_CHARS = 320;
+
+const STRATEGY_OVERLAP_RATIO: Record<ChunkStrategy, number> = {
+  json_path_object: 0.1,
+  markdown_heading: 0.17,
+  text_window: OVERLAP_RATIO_DEFAULT,
+};
 
 const EXCLUDED_CANONICAL_PREFIXES = [
   "shared/system/refs",
@@ -67,143 +77,345 @@ const buildTags = (sourcePath: string, canonicalPath: string): string[] => {
   return Array.from(tags.values());
 };
 
-const hardSplit = (text: string, maxChars: number): string[] => {
-  if (text.length <= maxChars) {
-    return [text];
+const safeStringify = (value: unknown, space = 0): string => {
+  try {
+    return JSON.stringify(value, null, space) || "";
+  } catch {
+    return "";
+  }
+};
+
+const splitByMaxChars = (text: string, maxChars: number): string[] => {
+  const normalized = text.trim();
+  if (!normalized) return [];
+  if (normalized.length <= maxChars) {
+    return [normalized];
   }
 
   const chunks: string[] = [];
   let cursor = 0;
-  while (cursor < text.length) {
-    const next = Math.min(text.length, cursor + maxChars);
-    chunks.push(text.slice(cursor, next));
+
+  while (cursor < normalized.length) {
+    let next = Math.min(normalized.length, cursor + maxChars);
+
+    if (next < normalized.length) {
+      const window = normalized.slice(cursor, next);
+      const paragraphBreak = window.lastIndexOf("\n\n");
+      const lineBreak = window.lastIndexOf("\n");
+      const sentenceBreak = Math.max(
+        window.lastIndexOf(". "),
+        window.lastIndexOf("! "),
+        window.lastIndexOf("? "),
+        window.lastIndexOf("。"),
+        window.lastIndexOf("！"),
+        window.lastIndexOf("？"),
+      );
+      const wordBreak = window.lastIndexOf(" ");
+
+      const preferredBreak = [paragraphBreak, lineBreak, sentenceBreak, wordBreak].find(
+        (idx) => idx > Math.max(MIN_CHUNK_CHARS / 2, 40),
+      );
+
+      if (typeof preferredBreak === "number") {
+        next = cursor + preferredBreak + 1;
+      }
+    }
+
+    const chunk = normalized.slice(cursor, next).trim();
+    if (chunk.length > 0) {
+      chunks.push(chunk);
+    }
     cursor = next;
   }
+
   return chunks;
 };
 
-const splitTextIntoChunks = (text: string): string[] => {
+const computeAdaptiveOverlapChars = (
+  chunkLength: number,
+  overlapRatio: number,
+): number => {
+  if (chunkLength <= 1) return 0;
+
+  const estimated = Math.round(chunkLength * overlapRatio);
+  const clamped = Math.max(
+    OVERLAP_MIN_CHARS,
+    Math.min(OVERLAP_MAX_CHARS, estimated),
+  );
+
+  // Ensure forward progress (always leave some non-overlapped content)
+  return Math.min(clamped, Math.max(0, chunkLength - 40));
+};
+
+interface ChunkSeed {
+  content: string;
+  strategy: ChunkStrategy;
+}
+
+interface ChunkOutput {
+  content: string;
+  chunkMeta: ChunkMeta;
+}
+
+const withOverlap = (seeds: ChunkSeed[]): ChunkOutput[] => {
+  const outputs: ChunkOutput[] = [];
+
+  let previousBaseContent = "";
+  let previousStrategy: ChunkStrategy | null = null;
+
+  for (const seed of seeds) {
+    const base = seed.content.trim();
+    if (!base) continue;
+
+    const strategy = seed.strategy;
+    const ratio = STRATEGY_OVERLAP_RATIO[strategy] ?? OVERLAP_RATIO_DEFAULT;
+    const overlapCharsTarget =
+      previousStrategy === strategy
+        ? computeAdaptiveOverlapChars(base.length, ratio)
+        : 0;
+
+    const overlapText =
+      outputs.length === 0 || overlapCharsTarget <= 0
+        ? ""
+        : previousBaseContent.slice(
+            Math.max(0, previousBaseContent.length - overlapCharsTarget),
+          );
+
+    const overlapChars = overlapText.length;
+    const content = overlapChars > 0 ? `${overlapText}\n${base}` : base;
+
+    outputs.push({
+      content,
+      chunkMeta: {
+        strategy,
+        overlapChars,
+      },
+    });
+
+    previousBaseContent = base;
+    previousStrategy = strategy;
+  }
+
+  return outputs;
+};
+
+const splitTextIntoChunkSeeds = (text: string): ChunkSeed[] => {
   const trimmed = text.trim();
   if (!trimmed) return [];
-  if (trimmed.length <= MAX_CHUNK_CHARS) return [trimmed];
 
   const paragraphs = trimmed
     .split(/\n\s*\n/g)
     .map((part) => part.trim())
     .filter((part) => part.length > 0);
 
+  const baseChunks: string[] = [];
+
   if (paragraphs.length <= 1) {
-    return hardSplit(trimmed, MAX_CHUNK_CHARS);
-  }
+    baseChunks.push(...splitByMaxChars(trimmed, MAX_CHUNK_CHARS));
+  } else {
+    let current = "";
 
-  const chunks: string[] = [];
-  let current = "";
+    for (const paragraph of paragraphs) {
+      if (!current) {
+        current = paragraph;
+        continue;
+      }
 
-  for (const paragraph of paragraphs) {
-    if (!current) {
-      current = paragraph;
-      continue;
+      const candidate = `${current}\n\n${paragraph}`;
+      if (candidate.length <= MAX_CHUNK_CHARS) {
+        current = candidate;
+        continue;
+      }
+
+      if (current.length >= MIN_CHUNK_CHARS) {
+        baseChunks.push(current);
+        current = paragraph;
+        continue;
+      }
+
+      baseChunks.push(...splitByMaxChars(candidate, MAX_CHUNK_CHARS));
+      current = "";
     }
 
-    const candidate = `${current}\n\n${paragraph}`;
-    if (candidate.length <= MAX_CHUNK_CHARS) {
-      current = candidate;
-      continue;
+    if (current.trim()) {
+      baseChunks.push(current.trim());
     }
-
-    if (current.length >= MIN_CHUNK_CHARS) {
-      chunks.push(current);
-      current = paragraph;
-      continue;
-    }
-
-    const merged = hardSplit(candidate, MAX_CHUNK_CHARS);
-    chunks.push(...merged.slice(0, -1));
-    current = merged[merged.length - 1] || "";
   }
 
-  if (current) {
-    chunks.push(current);
-  }
-
-  return chunks;
+  return baseChunks
+    .flatMap((chunk) => splitByMaxChars(chunk, MAX_CHUNK_CHARS))
+    .map((content) => ({ content, strategy: "text_window" }));
 };
 
-const splitMarkdownIntoChunks = (markdown: string): string[] => {
+interface MarkdownSection {
+  headingPath: string;
+  content: string;
+}
+
+const splitMarkdownSections = (markdown: string): MarkdownSection[] => {
   const trimmed = markdown.trim();
   if (!trimmed) return [];
 
-  const sections: string[] = [];
   const lines = trimmed.split(/\r?\n/);
-  let current: string[] = [];
+  const sections: MarkdownSection[] = [];
+
+  let currentLines: string[] = [];
+  let headingStack: string[] = [];
+  let currentHeadingPath = "(root)";
+
+  const flush = () => {
+    const content = currentLines.join("\n").trim();
+    if (content) {
+      sections.push({
+        headingPath: currentHeadingPath,
+        content,
+      });
+    }
+    currentLines = [];
+  };
 
   for (const line of lines) {
-    if (/^#{1,6}\s+/.test(line) && current.length > 0) {
-      sections.push(current.join("\n").trim());
-      current = [line];
+    const headingMatch = /^(#{1,6})\s+(.+)$/.exec(line);
+    if (headingMatch) {
+      flush();
+      const level = headingMatch[1].length;
+      const headingText = headingMatch[2].trim();
+      headingStack = headingStack.slice(0, level - 1);
+      headingStack[level - 1] = headingText;
+      currentHeadingPath = headingStack.filter(Boolean).join(" > ") || "(root)";
+      currentLines.push(line);
       continue;
     }
 
-    current.push(line);
+    currentLines.push(line);
   }
 
-  if (current.length > 0) {
-    sections.push(current.join("\n").trim());
+  flush();
+
+  if (sections.length === 0 && trimmed.length > 0) {
+    return [{ headingPath: "(root)", content: trimmed }];
   }
 
-  const normalizedSections = sections.filter((section) => section.length > 0);
-  if (normalizedSections.length === 0) return [];
-
-  return normalizedSections.flatMap((section) =>
-    section.length > MAX_CHUNK_CHARS ? hardSplit(section, MAX_CHUNK_CHARS) : [section],
-  );
+  return sections;
 };
 
-const splitJsonIntoChunks = (jsonContent: string): string[] => {
+const splitMarkdownIntoChunkSeeds = (markdown: string): ChunkSeed[] => {
+  const sections = splitMarkdownSections(markdown);
+  if (sections.length === 0) return [];
+
+  const seeds: ChunkSeed[] = [];
+
+  for (const section of sections) {
+    const headingPrefix = `heading_path: ${section.headingPath}`;
+    const maxBodyChars = Math.max(
+      MIN_CHUNK_CHARS,
+      MAX_CHUNK_CHARS - headingPrefix.length - 4,
+    );
+    const bodyParts = splitByMaxChars(section.content, maxBodyChars);
+
+    for (const part of bodyParts) {
+      seeds.push({
+        strategy: "markdown_heading",
+        content: `${headingPrefix}\n\n${part}`,
+      });
+    }
+  }
+
+  return seeds;
+};
+
+interface JsonUnit {
+  path: string;
+  value: unknown;
+}
+
+const collectJsonUnits = (value: unknown, path: string, units: JsonUnit[]): void => {
+  const normalizedPath = path || "$";
+  const rendered = safeStringify(value, 2);
+
+  if (!value || typeof value !== "object") {
+    units.push({ path: normalizedPath, value });
+    return;
+  }
+
+  if (rendered.length <= MAX_CHUNK_CHARS * 0.9) {
+    units.push({ path: normalizedPath, value });
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      units.push({ path: normalizedPath, value });
+      return;
+    }
+
+    value.forEach((item, index) => {
+      collectJsonUnits(item, `${normalizedPath}[${index}]`, units);
+    });
+    return;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length === 0) {
+    units.push({ path: normalizedPath, value });
+    return;
+  }
+
+  for (const [key, child] of entries) {
+    const childPath = path ? `${path}.${key}` : key;
+    collectJsonUnits(child, childPath, units);
+  }
+};
+
+const splitJsonIntoChunkSeeds = (jsonContent: string): ChunkSeed[] => {
   let parsed: unknown;
+
   try {
     parsed = JSON.parse(jsonContent);
   } catch {
-    return splitTextIntoChunks(jsonContent);
+    return splitTextIntoChunkSeeds(jsonContent);
   }
 
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    !Array.isArray(parsed) &&
-    Object.keys(parsed as Record<string, unknown>).length > 1
-  ) {
-    const entries = Object.entries(parsed as Record<string, unknown>);
-    const chunks = entries.map(([key, value]) => {
-      const block = {
-        [key]: value,
-      };
-      return JSON.stringify(block, null, 2);
+  const units: JsonUnit[] = [];
+  collectJsonUnits(parsed, "", units);
+
+  if (units.length === 0) {
+    return [];
+  }
+
+  const seeds: ChunkSeed[] = [];
+
+  for (const unit of units) {
+    const pathLabel = unit.path || "$";
+    const rendered = safeStringify(unit.value, 2) || "null";
+
+    const prefix = `path: ${pathLabel}`;
+    const maxBodyChars = Math.max(MIN_CHUNK_CHARS, MAX_CHUNK_CHARS - prefix.length - 20);
+    const bodyParts = splitByMaxChars(rendered, maxBodyChars);
+
+    bodyParts.forEach((part, index) => {
+      const partInfo =
+        bodyParts.length > 1 ? `\npart: ${index + 1}/${bodyParts.length}` : "";
+      seeds.push({
+        strategy: "json_path_object",
+        content: `${prefix}${partInfo}\ncontent:\n${part}`,
+      });
     });
-
-    return chunks.flatMap((chunk) =>
-      chunk.length > MAX_CHUNK_CHARS ? hardSplit(chunk, MAX_CHUNK_CHARS) : [chunk],
-    );
   }
 
-  const pretty = JSON.stringify(parsed, null, 2);
-  return pretty
-    ? pretty.length > MAX_CHUNK_CHARS
-      ? hardSplit(pretty, MAX_CHUNK_CHARS)
-      : [pretty]
-    : [];
+  return seeds;
 };
 
-const splitFileContent = (type: DocumentType, content: string): string[] => {
+const splitFileContent = (type: DocumentType, content: string): ChunkOutput[] => {
   if (!content.trim()) return [];
 
   switch (type) {
     case "json":
-      return splitJsonIntoChunks(content);
+      return withOverlap(splitJsonIntoChunkSeeds(content));
     case "markdown":
-      return splitMarkdownIntoChunks(content);
+      return withOverlap(splitMarkdownIntoChunkSeeds(content));
     default:
-      return splitTextIntoChunks(content);
+      return withOverlap(splitTextIntoChunkSeeds(content));
   }
 };
 
@@ -244,7 +456,7 @@ export const extractFileChunksFromSnapshot = (
 
     const tags = buildTags(sourcePath, canonicalPath);
 
-    chunks.forEach((content, index) => {
+    chunks.forEach(({ content, chunkMeta }, index) => {
       documents.push({
         sourcePath,
         canonicalPath,
@@ -259,6 +471,7 @@ export const extractFileChunksFromSnapshot = (
         turnNumber,
         importance: type === "markdown" ? 0.75 : type === "json" ? 0.7 : 0.6,
         tags,
+        chunkMeta,
       });
     });
   }

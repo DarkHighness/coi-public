@@ -2118,6 +2118,13 @@ vfsToolRouter.register(VFS_SEARCH_TOOL, async (args, ctx) => {
   }
 
   if (semantic) {
+    if (!ctx.embeddingEnabled) {
+      return createError(
+        "Semantic search is disabled because RAG/embedding is currently off.",
+        "RAG_DISABLED",
+      );
+    }
+
     const forkId =
       typeof ctx.gameState?.forkId === "number" ? ctx.gameState?.forkId : undefined;
     const beforeTurn =
@@ -2125,15 +2132,12 @@ vfsToolRouter.register(VFS_SEARCH_TOOL, async (args, ctx) => {
         ? ctx.gameState?.turnNumber
         : undefined;
 
-    const ragMatches =
-      ctx.settings?.embedding?.enabled ?? false
-        ? await searchSemanticWithRag(session, typedArgs.query, {
-            rootPath,
-            limit,
-            forkId,
-            beforeTurn,
-          })
-        : [];
+    const ragMatches = await searchSemanticWithRag(session, typedArgs.query, {
+      rootPath,
+      limit,
+      forkId,
+      beforeTurn,
+    });
 
     if (ragMatches.length > 0) {
       const results = ragMatches.map((match) => ({
@@ -2153,6 +2157,10 @@ vfsToolRouter.register(VFS_SEARCH_TOOL, async (args, ctx) => {
         .map((match) => ({ ...match, path: toCurrentPath(match.path) }));
       return createSuccess({ results }, "VFS search complete");
     }
+
+    console.warn(
+      "[VFS] Semantic search unavailable, falling back to plain text search.",
+    );
   }
 
   const rawResults = fuzzy

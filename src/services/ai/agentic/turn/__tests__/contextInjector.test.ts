@@ -77,6 +77,24 @@ describe("contextInjector", () => {
     expect(getText(history[8])).toContain("Target turnNumber: 27");
   });
 
+
+  it("injects normal turn instruction without semantic hints when RAG is off", () => {
+    const history: any[] = [];
+
+    injectNormalTurnInstruction(
+      history,
+      "vfs_commit_turn",
+      false,
+      undefined,
+      [],
+      [],
+      undefined,
+      false,
+    );
+
+    expect(getText(history[0]).toLowerCase()).not.toContain("semantic");
+  });
+
   it("injects budget and no-tool-call messages", () => {
     const history: any[] = [];
 

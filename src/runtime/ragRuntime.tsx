@@ -133,87 +133,100 @@ export function useRagRuntime(): RagRuntimeValue {
       settingsRef.current = settings;
 
       try {
-        // Get the embedding provider instance
         const embeddingConfig = settings.embedding;
-        const providerId = embeddingConfig.providerId;
-        const providerInstance = settings.providers.instances.find(
-          (p) => p.id === providerId,
-        );
+        const runtimeMode = embeddingConfig.runtime ?? "remote";
+        const isLocalTfjs = runtimeMode === "local_tfjs";
 
-        if (!providerInstance) {
-          throw new Error(`Embedding provider not found: ${providerId}`);
-        }
+        const credentials: {
+          gemini?: { apiKey: string; baseUrl?: string };
+          openai?: { apiKey: string; baseUrl?: string };
+          openrouter?: { apiKey: string };
+          claude?: { apiKey: string; baseUrl?: string };
+        } = {};
 
-        // Build credentials from the provider instance
-        const credentials = {
-          gemini:
-            providerInstance.protocol === "gemini"
-              ? {
-                  apiKey: providerInstance.apiKey,
-                  baseUrl: providerInstance.baseUrl,
-                }
-              : undefined,
-          openai:
-            providerInstance.protocol === "openai"
-              ? {
-                  apiKey: providerInstance.apiKey,
-                  baseUrl: providerInstance.baseUrl,
-                }
-              : undefined,
-          openrouter:
-            providerInstance.protocol === "openrouter"
-              ? { apiKey: providerInstance.apiKey }
-              : undefined,
-          claude:
-            providerInstance.protocol === "claude"
-              ? {
-                  apiKey: providerInstance.apiKey,
-                  baseUrl: providerInstance.baseUrl,
-                }
-              : undefined,
-        };
-
-        // Determine embedding provider protocol and model from settings
-        const provider = providerInstance.protocol;
-        const modelId = embeddingConfig.modelId || "text-embedding-004";
-
-        // Get context length for the selected model
+        let provider: "gemini" | "openai" | "openrouter" | "claude" | "local_tfjs";
+        let modelId: string;
+        let dimensions: number | undefined;
         let contextLength: number | undefined;
-        try {
-          let models: any[] = [];
-          switch (provider) {
-            case "gemini":
-              models = await getGeminiEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-              });
-              break;
-            case "openai":
-              models = await getOpenAIEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-                baseUrl: providerInstance.baseUrl,
-              });
-              break;
-            case "openrouter":
-              models = await getOpenRouterEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-              });
-              break;
-            case "claude":
-              models = await getClaudeEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-              });
-              break;
+
+        if (isLocalTfjs) {
+          provider = "local_tfjs";
+          modelId = "use-lite-512";
+          dimensions = 512;
+        } else {
+          const providerId = embeddingConfig.providerId;
+          const providerInstance = settings.providers.instances.find(
+            (p) => p.id === providerId,
+          );
+
+          if (!providerInstance) {
+            throw new Error(`Embedding provider not found: ${providerId}`);
           }
 
-          const modelInfo = models.find((m) => m.id === modelId);
-          if (modelInfo?.contextLength) {
-            contextLength = modelInfo.contextLength;
+          if (providerInstance.protocol === "gemini") {
+            credentials.gemini = {
+              apiKey: providerInstance.apiKey,
+              baseUrl: providerInstance.baseUrl,
+            };
           }
-        } catch (error) {
-          console.warn(
-            "[RAGRuntime] Failed to fetch model info for context length:",
-            error,
-          );
+          if (providerInstance.protocol === "openai") {
+            credentials.openai = {
+              apiKey: providerInstance.apiKey,
+              baseUrl: providerInstance.baseUrl,
+            };
+          }
+          if (providerInstance.protocol === "openrouter") {
+            credentials.openrouter = {
+              apiKey: providerInstance.apiKey,
+            };
+          }
+          if (providerInstance.protocol === "claude") {
+            credentials.claude = {
+              apiKey: providerInstance.apiKey,
+              baseUrl: providerInstance.baseUrl,
+            };
+          }
+
+          provider = providerInstance.protocol;
+          modelId = embeddingConfig.modelId || "text-embedding-004";
+          dimensions = embeddingConfig.dimensions;
+
+          try {
+            let models: any[] = [];
+            switch (provider) {
+              case "gemini":
+                models = await getGeminiEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                });
+                break;
+              case "openai":
+                models = await getOpenAIEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                  baseUrl: providerInstance.baseUrl,
+                });
+                break;
+              case "openrouter":
+                models = await getOpenRouterEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                });
+                break;
+              case "claude":
+                models = await getClaudeEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                });
+                break;
+            }
+
+            const modelInfo = models.find((m) => m.id === modelId);
+            if (modelInfo?.contextLength) {
+              contextLength = modelInfo.contextLength;
+            }
+          } catch (error) {
+            console.warn(
+              "[RAGRuntime] Failed to fetch model info for context length:",
+              error,
+            );
+          }
         }
 
         // Initialize the RAG service
@@ -221,8 +234,9 @@ export function useRagRuntime(): RagRuntimeValue {
           {
             provider,
             modelId,
-            dimensions: embeddingConfig.dimensions,
+            dimensions,
             contextLength,
+            local: embeddingConfig.local,
           },
           credentials,
         );

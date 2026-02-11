@@ -22,6 +22,15 @@ describe("systemMessages atoms", () => {
     expect(content).not.toContain(legacySearchTool);
   });
 
+
+  it("removes semantic guidance when RAG is disabled", () => {
+    const normal = normalTurnInstruction({ ragEnabled: false });
+    const cleanup = cleanupTurnInstruction({ ragEnabled: false });
+
+    expect(normal.toLowerCase()).not.toContain("semantic");
+    expect(cleanup.toLowerCase()).not.toContain("semantic");
+  });
+
   it("no-tool-call error references VFS tools", () => {
     const content = noToolCallError({});
     const legacyFinishTool = ["finish", "turn"].join("_");

@@ -1120,9 +1120,25 @@ describe("VFS handlers", () => {
     expect(result.code).toBe("INVALID_DATA");
   });
 
-  it("falls back to text search for semantic queries", async () => {
+  it("returns RAG_DISABLED when semantic search is requested while embedding is off", async () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = { vfsSession: session, embeddingEnabled: false };
+
+    session.writeFile("world/global.json", "hello world", "text/plain");
+
+    const searchResult = (await dispatchToolCallAsync(
+      "vfs_search",
+      { query: "hello", semantic: true },
+      ctx,
+    )) as { success: boolean; code?: string };
+
+    expect(searchResult.success).toBe(false);
+    expect(searchResult.code).toBe("RAG_DISABLED");
+  });
+
+  it("falls back to text search for semantic queries when embedding is enabled", async () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session, embeddingEnabled: true };
 
     session.writeFile("world/global.json", "hello world", "text/plain");
 
@@ -1186,7 +1202,7 @@ describe("VFS handlers", () => {
 
   it("prefers semantic indexer results when provided", async () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = { vfsSession: session, embeddingEnabled: true };
 
     session.writeFile("world/semantic.json", "semantic-hit", "text/plain");
     session.writeFile("world/global.json", "hello world", "text/plain");
