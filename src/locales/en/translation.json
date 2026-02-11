@@ -517,6 +517,13 @@
       "cleanup": "Cleaning Up"
     },
     "maxStorage": "Max Storage Documents",
+    "storageLimitMB": "RAG Storage Budget (MB)",
+    "storageLimitMBHelp": "Controls reclaimable RAG storage. Protected current-fork latest chunks are never evicted.",
+    "storageTierProtected": "Protected",
+    "storageTierCurrentForkHistory": "Current Fork History",
+    "storageTierActiveOtherFork": "Active Save Other Forks",
+    "storageTierInactiveGame": "Inactive Saves",
+    "protectedOverflowWarning": "Protected current-fork latest vectors already exceed the configured budget. Increase budget or disable RAG.",
     "selectModel": "Please select an embedding model",
     "noModelsAvailable": "No embedding models available, please check provider settings.",
     "noModels": "No embedding model selected.",

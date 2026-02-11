@@ -13,6 +13,7 @@ import {
   type GlobalStorageStats,
   type ImportSaveDataPayload,
   type InitPayload,
+  type LookupReusableEmbeddingsResult,
   type ModelMismatchEvent,
   type ModelMismatchInfo,
   type RAGConfig,
@@ -23,6 +24,7 @@ import {
   type RAGWorkerRequest,
   type RAGWorkerResponse,
   type ReindexAllPayload,
+  type RetireLatestByPathsPayload,
   type SaveStats,
   type SearchOptions,
   type SearchPayload,
@@ -195,19 +197,61 @@ export class RAGService {
       return documents;
     }
 
+    const prepared = documents.map((doc) => ({ ...doc }));
+
+    type MissingItem = (typeof missing)[number];
+    let misses: MissingItem[] = missing;
+
+    try {
+      const reusable = await this.sendRequest<LookupReusableEmbeddingsResult>(
+        "lookupReusableEmbeddings",
+        {
+          items: missing.map(({ doc }) => ({
+            saveId: doc.saveId,
+            sourcePath: doc.sourcePath,
+            fileHash: doc.fileHash,
+            chunkIndex: doc.chunkIndex,
+          })),
+        },
+      );
+
+      if (reusable?.embeddings?.length === missing.length) {
+        const nextMisses: MissingItem[] = [];
+
+        missing.forEach((entry, offset) => {
+          const reusableEmbedding = reusable.embeddings[offset];
+          if (Array.isArray(reusableEmbedding) && reusableEmbedding.length > 0) {
+            prepared[entry.index] = {
+              ...prepared[entry.index],
+              embedding: reusableEmbedding,
+            };
+          } else {
+            nextMisses.push(entry);
+          }
+        });
+
+        misses = nextMisses;
+      }
+    } catch (error) {
+      console.warn("[RAGService] Reusable embedding lookup failed:", error);
+    }
+
+    if (misses.length === 0) {
+      return prepared;
+    }
+
     const vectors = await embedTextsLocally(
-      missing.map(({ doc }) => doc.content),
+      misses.map(({ doc }) => doc.content),
       this.getLocalEmbeddingConfig(),
     );
 
-    if (vectors.length !== missing.length) {
+    if (vectors.length !== misses.length) {
       throw new Error(
-        `Local embedding size mismatch: expected ${missing.length}, got ${vectors.length}`,
+        `Local embedding size mismatch: expected ${misses.length}, got ${vectors.length}`,
       );
     }
 
-    const prepared = documents.map((doc) => ({ ...doc }));
-    missing.forEach(({ index }, vectorIndex) => {
+    misses.forEach(({ index }, vectorIndex) => {
       prepared[index] = {
         ...prepared[index],
         embedding: vectors[vectorIndex],
@@ -216,6 +260,7 @@ export class RAGService {
 
     return prepared;
   }
+
 
   // ======================================================================
   // File-centric indexing API
@@ -234,6 +279,13 @@ export class RAGService {
   ): Promise<{ deleted: number }> {
     this.ensureInitialized();
     return this.sendRequest("deleteByPaths", params);
+  }
+
+  async retireLatestByPaths(
+    params: RetireLatestByPathsPayload,
+  ): Promise<{ deleted: number }> {
+    this.ensureInitialized();
+    return this.sendRequest("retireLatestByPaths", params);
   }
 
   async reindexAll(

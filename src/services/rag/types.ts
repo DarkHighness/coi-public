@@ -48,6 +48,10 @@ export interface RAGDocument {
   chunkIndex: number;
   chunkCount: number;
 
+  // Version status (within save + fork + source path)
+  isLatest: boolean;
+  supersededAtTurn: number | null;
+
   // Content
   content: string;
   embedding?: Float32Array;
@@ -65,6 +69,7 @@ export interface RAGDocument {
   importance: number;
   createdAt: number;
   lastAccess: number;
+  estimatedBytes: number;
 
   // Optional tags for filtering/debugging
   tags?: string[];
@@ -106,6 +111,7 @@ export interface SearchOptions {
   saveId?: string;
   forkId?: number;
   beforeTurn?: number;
+  /** Legacy option, preserved for compatibility. Runtime now enforces current fork only. */
   currentForkOnly?: boolean;
 }
 
@@ -126,6 +132,8 @@ export interface RAGConfig {
   // Storage limits
   maxDocumentsPerSave: number;
   maxTotalStorageDocuments: number;
+  /** Byte-budget for reclaimable tiers (historical/other-fork/inactive-game). */
+  maxStorageBytes: number;
 
   // Priority settings
   currentForkBonus: number;
@@ -148,9 +156,10 @@ export interface RAGConfig {
 
 export const DEFAULT_RAG_CONFIG: RAGConfig = {
   dbName: "coi_rag",
-  schemaVersion: 2,
+  schemaVersion: 5,
   maxDocumentsPerSave: 12000,
   maxTotalStorageDocuments: 120000,
+  maxStorageBytes: 512 * 1024 * 1024,
   currentForkBonus: 0.5,
   ancestorForkBonus: 0.25,
   turnDecayFactor: 0.01,
@@ -194,6 +203,12 @@ export interface StorageOverflowInfo {
     lastAccessed: number;
   }>;
   suggestedDeletions: string[];
+  protectedBytes?: number;
+  currentForkHistoryBytes?: number;
+  activeOtherForkBytes?: number;
+  inactiveGameBytes?: number;
+  storageLimitBytes?: number;
+  protectedOverflow?: boolean;
 }
 
 // ============================================================================
@@ -204,6 +219,8 @@ export type RAGWorkerMessageType =
   | "init"
   | "upsertFileChunks"
   | "deleteByPaths"
+  | "retireLatestByPaths"
+  | "lookupReusableEmbeddings"
   | "reindexAll"
   // Legacy aliases (kept for transitional callers)
   | "addDocuments"
@@ -259,6 +276,28 @@ export interface InitPayload {
 
 export interface UpsertFileChunksPayload {
   documents: FileChunkInput[];
+}
+
+export interface RetireLatestByPathsPayload {
+  saveId: string;
+  forkId: number;
+  turnNumber: number;
+  paths: string[];
+}
+
+export interface ReusableEmbeddingLookupItem {
+  saveId: string;
+  sourcePath: string;
+  fileHash: string;
+  chunkIndex: number;
+}
+
+export interface LookupReusableEmbeddingsPayload {
+  items: ReusableEmbeddingLookupItem[];
+}
+
+export interface LookupReusableEmbeddingsResult {
+  embeddings: Array<number[] | null>;
 }
 
 // ============================================================================
@@ -363,6 +402,12 @@ export interface RAGStatus {
   pending: number;
   lastError: string | null;
   modelMismatch?: ModelMismatchInfo;
+  protectedBytes?: number;
+  currentForkHistoryBytes?: number;
+  activeOtherForkBytes?: number;
+  inactiveGameBytes?: number;
+  storageLimitBytes?: number;
+  protectedOverflow?: boolean;
 }
 
 // ============================================================================
@@ -417,6 +462,8 @@ export interface ExportableRAGDocument {
   fileHash: string;
   chunkIndex: number;
   chunkCount: number;
+  isLatest: boolean;
+  supersededAtTurn: number | null;
   content: string;
   embedding: number[];
   saveId: string;
@@ -427,6 +474,7 @@ export interface ExportableRAGDocument {
   importance: number;
   createdAt: number;
   lastAccess: number;
+  estimatedBytes: number;
   tags?: string[];
 }
 

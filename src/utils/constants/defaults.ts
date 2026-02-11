@@ -149,6 +149,7 @@ export const DEFAULTS: AISettings = {
       currentForkBonus: 0.5, // Priority bonus for current fork
       ancestorForkBonus: 0.25, // Priority bonus for ancestor forks
       turnDecayFactor: 0.01, // Priority loss per turn difference
+      maxRagStorageMB: 512, // Reclaimable RAG storage budget (MB)
     },
   },
   extra: {

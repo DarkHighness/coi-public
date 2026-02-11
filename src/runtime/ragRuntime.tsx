@@ -246,6 +246,14 @@ export function useRagRuntime(): RagRuntimeValue {
           }
         }
 
+        const maxRagStorageMB = Math.max(
+          64,
+          embeddingConfig.storage?.maxRagStorageMB ??
+            embeddingConfig.lru?.maxRagStorageMB ??
+            512,
+        );
+        const maxStorageBytes = Math.round(maxRagStorageMB * 1024 * 1024);
+
         // Initialize the RAG service
         const service = await initializeRAGService(
           {
@@ -253,6 +261,7 @@ export function useRagRuntime(): RagRuntimeValue {
             modelId,
             dimensions,
             contextLength,
+            maxStorageBytes,
             local: embeddingConfig.local,
           },
           credentials,

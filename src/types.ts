@@ -1359,6 +1359,9 @@ export interface EmbeddingConfig {
 
     // Type-specific limits
     storyMaxEntries?: number; // Max story documents (default: 50)
+
+    // RAG storage budget (MB). Applies to reclaimable tiers only.
+    maxRagStorageMB?: number;
   };
 
   /** @deprecated Use storage instead */

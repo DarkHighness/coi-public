@@ -83,7 +83,15 @@ describe("RAGService local embedding runtime", () => {
 
   it("precomputes only missing chunk embeddings before upsert in local_tfjs runtime", async () => {
     const service = createService("local_tfjs");
-    service.sendRequest.mockResolvedValue({ count: 2 });
+    service.sendRequest.mockImplementation(async (type: string, payload: any) => {
+      if (type === "lookupReusableEmbeddings") {
+        return { embeddings: [null] };
+      }
+      if (type === "upsertFileChunks") {
+        return { count: payload.documents.length };
+      }
+      throw new Error(`Unexpected request: ${type}`);
+    });
 
     embedTextsLocallyMock.mockResolvedValue([[0.33, 0.44]]);
 
@@ -125,8 +133,11 @@ describe("RAGService local embedding runtime", () => {
       expect.objectContaining({ backend: "tfjs", model: "use-lite-512" }),
     );
 
-    const [requestType, payload] = service.sendRequest.mock.calls[0];
-    expect(requestType).toBe("upsertFileChunks");
+    const upsertCall = service.sendRequest.mock.calls.find(
+      ([requestType]: [string]) => requestType === "upsertFileChunks",
+    );
+    expect(upsertCall).toBeTruthy();
+    const payload = upsertCall?.[1];
     expect(payload.documents).toHaveLength(2);
     expect(payload.documents[0].embedding).toEqual([0.33, 0.44]);
     expect(payload.documents[1].embedding).toEqual([9, 9]);

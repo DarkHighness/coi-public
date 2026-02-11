@@ -106,9 +106,10 @@ export async function updateRAGDocumentsBackground(
       return;
     }
 
-    await ragService.deleteByPaths({
+    await ragService.retireLatestByPaths({
       saveId: options.saveId,
       forkId: options.forkId,
+      turnNumber: options.turnNumber,
       paths: pathsToDelete,
     });
 

@@ -11,6 +11,18 @@ interface SettingsEmbeddingProps {
   showToast: (message: string, type: "success" | "error" | "info") => void;
 }
 
+const formatStorageBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+};
+
 export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   showToast,
 }) => {
@@ -24,6 +36,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   const isLocalRuntime =
     runtime === "local_transformers" || runtime === "local_tfjs";
   const isLocalTransformers = runtime === "local_transformers";
+  const ragStatus = runtimeContext?.state.rag.status ?? null;
 
   // Track previous model ID for model change detection
   const previousModelIdRef = useRef<string | null>(config?.modelId || null);
@@ -637,6 +650,36 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                 />
               </div>
 
+              {/* Max RAG Storage MB */}
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <label className="text-[10px] uppercase tracking-wider text-theme-muted">
+                    {t("embedding.storageLimitMB") || "RAG Storage Budget (MB)"}
+                  </label>
+                  <span className="text-[10px] font-mono text-theme-text">
+                    {(config.storage ?? config.lru)?.maxRagStorageMB || 512} MB
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="128"
+                  max="4096"
+                  step="64"
+                  value={(config.storage ?? config.lru)?.maxRagStorageMB || 512}
+                  onChange={(e) =>
+                    updateEmbedding("storage", {
+                      ...(config.storage ?? config.lru),
+                      maxRagStorageMB: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full h-1 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+                />
+                <p className="text-[9px] text-theme-muted/70 italic">
+                  {t("embedding.storageLimitMBHelp") ||
+                    "Controls reclaimable RAG storage. Protected current-fork latest chunks are never evicted."}
+                </p>
+              </div>
+
               {/* Max Docs Per Type */}
               <div className="space-y-1">
                 <div className="flex justify-between">
@@ -724,6 +767,58 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation."}
             </span>
           </div>
+
+          {ragStatus && (
+            <div className="mt-3 space-y-2">
+              <div className="flex justify-between text-[10px] uppercase tracking-wider text-theme-muted">
+                <span>{t("embedding.storageLimitMB") || "RAG Storage Budget (MB)"}</span>
+                <span className="font-mono text-theme-text">
+                  {formatStorageBytes(ragStatus.storageLimitBytes || 0)}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                <div className="rounded border border-theme-border/60 px-2 py-1">
+                  <div className="text-theme-muted">{t("embedding.storageTierProtected") || "Protected"}</div>
+                  <div className="font-mono text-theme-text">
+                    {formatStorageBytes(ragStatus.protectedBytes || 0)}
+                  </div>
+                </div>
+                <div className="rounded border border-theme-border/60 px-2 py-1">
+                  <div className="text-theme-muted">
+                    {t("embedding.storageTierCurrentForkHistory") ||
+                      "Current Fork History"}
+                  </div>
+                  <div className="font-mono text-theme-text">
+                    {formatStorageBytes(ragStatus.currentForkHistoryBytes || 0)}
+                  </div>
+                </div>
+                <div className="rounded border border-theme-border/60 px-2 py-1">
+                  <div className="text-theme-muted">
+                    {t("embedding.storageTierActiveOtherFork") ||
+                      "Active Save Other Forks"}
+                  </div>
+                  <div className="font-mono text-theme-text">
+                    {formatStorageBytes(ragStatus.activeOtherForkBytes || 0)}
+                  </div>
+                </div>
+                <div className="rounded border border-theme-border/60 px-2 py-1">
+                  <div className="text-theme-muted">
+                    {t("embedding.storageTierInactiveGame") || "Inactive Saves"}
+                  </div>
+                  <div className="font-mono text-theme-text">
+                    {formatStorageBytes(ragStatus.inactiveGameBytes || 0)}
+                  </div>
+                </div>
+              </div>
+
+              {ragStatus.protectedOverflow && (
+                <div className="text-[10px] text-yellow-300 border border-yellow-500/40 bg-yellow-500/10 rounded px-2 py-1">
+                  {t("embedding.protectedOverflowWarning") ||
+                    "Protected current-fork latest vectors already exceed the configured budget. Increase budget or disable RAG."}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

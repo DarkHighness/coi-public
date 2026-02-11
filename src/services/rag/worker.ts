@@ -5,6 +5,7 @@
 /// <reference lib="webworker" />
 
 import { RAGDatabase } from "./database";
+import { buildRagDocumentId } from "./documentId";
 import {
   DEFAULT_RAG_CONFIG,
   type AddDocumentsPayload,
@@ -17,6 +18,8 @@ import {
   type GlobalStorageStats,
   type ImportSaveDataPayload,
   type InitPayload,
+  type LookupReusableEmbeddingsPayload,
+  type LookupReusableEmbeddingsResult,
   type ModelMismatchInfo,
   type RAGConfig,
   type RAGDocument,
@@ -27,6 +30,7 @@ import {
   type RAGWorkerRequest,
   type RAGWorkerResponse,
   type ReindexAllPayload,
+  type RetireLatestByPathsPayload,
   type SaveStats,
   type SearchPayload,
   type SearchResult,
@@ -47,7 +51,6 @@ let config: RAGConfig = { ...DEFAULT_RAG_CONFIG };
 let credentials: InitPayload["credentials"] | null = null;
 let currentSaveId: string | null = null;
 let currentForkId = 0;
-let forkTree: SwitchSavePayload["forkTree"] | null = null;
 let isInitialized = false;
 let isSearching = false;
 let lastError: string | null = null;
@@ -105,6 +108,16 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
 
     case "deleteByPaths":
       return handleDeleteByPaths(request.payload as DeleteByPathsPayload);
+
+    case "retireLatestByPaths":
+      return handleRetireLatestByPaths(
+        request.payload as RetireLatestByPathsPayload,
+      );
+
+    case "lookupReusableEmbeddings":
+      return handleLookupReusableEmbeddings(
+        request.payload as LookupReusableEmbeddingsPayload,
+      );
 
     case "reindexAll":
       return handleReindexAll(request.payload as ReindexAllPayload);
@@ -194,13 +207,6 @@ async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
   return { success: true };
 }
 
-const buildDocumentId = (
-  doc: UpsertFileChunksPayload["documents"][number],
-): string => {
-  const canonicalPath = doc.canonicalPath || doc.sourcePath;
-  return [doc.saveId, canonicalPath, doc.fileHash, String(doc.chunkIndex)].join("::");
-};
-
 const normalizeFileChunk = async (
   doc: UpsertFileChunksPayload["documents"][number],
 ): Promise<RAGDocument> => {
@@ -210,8 +216,20 @@ const normalizeFileChunk = async (
       ? new Float32Array(doc.embedding)
       : await generateEmbedding(doc.content);
 
+  const estimatedBytes =
+    doc.content.length * 2 + embedding.length * 4 + 256;
+
   return {
-    id: buildDocumentId(doc),
+    id: buildRagDocumentId({
+      saveId: doc.saveId,
+      forkId: doc.forkId,
+      sourcePath: doc.sourcePath,
+      canonicalPath: doc.canonicalPath,
+      fileHash: doc.fileHash,
+      chunkIndex: doc.chunkIndex,
+      provider: config.provider,
+      modelId: config.modelId,
+    }),
     sourcePath: doc.sourcePath,
     canonicalPath: doc.canonicalPath || doc.sourcePath,
     type: doc.type,
@@ -219,6 +237,8 @@ const normalizeFileChunk = async (
     fileHash: doc.fileHash,
     chunkIndex: doc.chunkIndex,
     chunkCount: doc.chunkCount,
+    isLatest: true,
+    supersededAtTurn: null,
     content: doc.content,
     embedding,
     saveId: doc.saveId,
@@ -229,6 +249,7 @@ const normalizeFileChunk = async (
     importance: doc.importance ?? 0.5,
     createdAt: now,
     lastAccess: now,
+    estimatedBytes,
     tags: doc.tags,
   };
 };
@@ -255,10 +276,7 @@ async function handleUpsertFileChunks(
 
     await database!.addDocuments(ragDocuments);
 
-    const touchedSaveIds = new Set(ragDocuments.map((doc) => doc.saveId));
-    for (const saveId of touchedSaveIds) {
-      await database!.enforceSaveLimit(saveId);
-    }
+    await database!.enforceStorageLimits();
 
     const overflow = await database!.checkStorageOverflow();
     if (overflow) {
@@ -312,6 +330,59 @@ async function handleDeleteByPaths(
   return { deleted };
 }
 
+async function handleRetireLatestByPaths(
+  payload: RetireLatestByPathsPayload,
+): Promise<{ deleted: number }> {
+  ensureInitialized();
+
+  if (!payload.saveId) {
+    throw new Error("retireLatestByPaths requires saveId");
+  }
+
+  const paths = payload.paths || [];
+  if (paths.length === 0) {
+    return { deleted: 0 };
+  }
+
+  const deleted = await database!.retireLatestByPaths(
+    payload.saveId,
+    payload.forkId,
+    payload.turnNumber,
+    paths,
+  );
+
+  if (deleted > 0) {
+    broadcastEvent({
+      type: "indexUpdated",
+      data: {
+        count: -deleted,
+        saveId: payload.saveId,
+      },
+    });
+  }
+
+  return { deleted };
+}
+
+async function handleLookupReusableEmbeddings(
+  payload: LookupReusableEmbeddingsPayload,
+): Promise<LookupReusableEmbeddingsResult> {
+  ensureInitialized();
+
+  const items = payload.items || [];
+  if (items.length === 0) {
+    return { embeddings: [] };
+  }
+
+  const embeddings = await database!.lookupReusableEmbeddings(
+    items,
+    config.modelId,
+    config.provider,
+  );
+
+  return { embeddings };
+}
+
 async function handleReindexAll(
   payload: ReindexAllPayload,
 ): Promise<{ deleted: number; count: number }> {
@@ -323,14 +394,19 @@ async function handleReindexAll(
   const forkPaths = Array.from(
     new Set(
       existing
-        .filter((doc) => doc.forkId === forkId)
+        .filter((doc) => doc.forkId === forkId && doc.isLatest)
         .map((doc) => doc.canonicalPath),
     ),
   );
 
   let deleted = 0;
   if (forkPaths.length > 0) {
-    deleted = await database!.deleteDocumentsByPaths(saveId, forkPaths, forkId);
+    deleted = await database!.retireLatestByPaths(
+      saveId,
+      forkId,
+      payload.turnNumber,
+      forkPaths,
+    );
   }
 
   const upserted = await handleUpsertFileChunks({ documents });
@@ -445,50 +521,26 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
       ? payload.queryEmbedding
       : await generateEmbedding(payload.query);
 
-    const targetForkId = payload.options.forkId ?? currentForkId;
-    const allowedForkIds = payload.options.currentForkOnly
-      ? forkTree
-        ? getAncestorForkIds(targetForkId, forkTree)
-        : [targetForkId]
-      : payload.options.forkId !== undefined
-        ? [payload.options.forkId]
-        : undefined;
+    if (
+      payload.options.forkId !== undefined &&
+      payload.options.forkId !== currentForkId
+    ) {
+      console.warn(
+        `[RAGWorker] Ignoring cross-fork search request (requested=${payload.options.forkId}, current=${currentForkId})`,
+      );
+    }
 
-    const results = await database!.searchSimilar(queryEmbedding, currentSaveId, {
+    return await database!.searchSimilar(queryEmbedding, currentSaveId, {
       topK: payload.options.topK,
       threshold: payload.options.threshold,
       types: payload.options.types,
       contentTypes: payload.options.contentTypes,
       pathPrefixes: payload.options.pathPrefixes,
-      forkIds: allowedForkIds,
+      forkId: currentForkId,
       beforeTurn: payload.options.beforeTurn,
+      modelId: config.modelId,
+      provider: config.provider,
     });
-
-    const adjustedResults = results.map((result) => {
-      const doc = result.document;
-      let adjustedScore = result.score;
-
-      if (doc.forkId === currentForkId) {
-        adjustedScore += config.currentForkBonus * 0.1;
-      } else if (allowedForkIds?.includes(doc.forkId)) {
-        adjustedScore += config.ancestorForkBonus * 0.1;
-      } else {
-        adjustedScore -= 0.02;
-      }
-
-      if (payload.options.beforeTurn !== undefined) {
-        const turnDiff = payload.options.beforeTurn - doc.turnNumber;
-        adjustedScore -= Math.max(0, turnDiff * config.turnDecayFactor * 0.1);
-      }
-
-      return {
-        ...result,
-        adjustedScore: Math.min(1.0, Math.max(0, adjustedScore)),
-      };
-    });
-
-    adjustedResults.sort((a, b) => b.adjustedScore - a.adjustedScore);
-    return adjustedResults.slice(0, payload.options.topK || 10);
   } finally {
     isSearching = false;
   }
@@ -531,7 +583,8 @@ async function handleSwitchSave(
 
   currentSaveId = payload.saveId;
   currentForkId = payload.forkId;
-  forkTree = payload.forkTree;
+
+  await database!.markSaveActive(payload.saveId, payload.forkId);
 
   return { success: true };
 }
@@ -586,22 +639,40 @@ async function handleCleanup(): Promise<{
 async function handleUpdateConfig(
   newConfig: Partial<RAGConfig>,
 ): Promise<{ success: boolean }> {
-  config = { ...config, ...newConfig };
+  config = {
+    ...config,
+    ...newConfig,
+    local: {
+      ...(config.local || DEFAULT_RAG_CONFIG.local || {}),
+      ...(newConfig.local || {}),
+    },
+  };
   return { success: true };
 }
 
 async function handleGetStatus(): Promise<RAGStatus> {
+  const saveStats = currentSaveId
+    ? await database?.getSaveStats(currentSaveId)
+    : null;
+  const breakdown = database
+    ? await database.getStorageStatusBreakdown()
+    : null;
+
   return {
     initialized: isInitialized,
     currentSaveId,
     currentModel: config.modelId,
     currentProvider: config.provider,
-    storageDocuments: currentSaveId
-      ? (await database?.getSaveStats(currentSaveId))?.totalDocuments || 0
-      : 0,
+    storageDocuments: saveStats?.totalDocuments || 0,
     isSearching,
     pending: pendingDocuments,
     lastError,
+    protectedBytes: breakdown?.protectedBytes,
+    currentForkHistoryBytes: breakdown?.currentForkHistoryBytes,
+    activeOtherForkBytes: breakdown?.activeOtherForkBytes,
+    inactiveGameBytes: breakdown?.inactiveGameBytes,
+    storageLimitBytes: breakdown?.storageLimitBytes,
+    protectedOverflow: breakdown?.protectedOverflow,
   };
 }
 
@@ -630,6 +701,7 @@ async function handleCheckModelMismatch(
 
   const mismatch = await database!.checkModelMismatch(
     targetSaveId,
+    currentForkId,
     config.modelId,
     config.provider,
   );
@@ -649,7 +721,7 @@ async function handleRebuildForModel(
   const targetSaveId = saveId || currentSaveId;
   if (!targetSaveId) return { deleted: 0 };
 
-  const deleted = await database!.clearSaveForRebuild(targetSaveId);
+  const deleted = await database!.clearSaveForRebuild(targetSaveId, currentForkId);
 
   broadcastEvent({
     type: "progress",
@@ -827,25 +899,6 @@ function ensureInitialized(): void {
   }
 }
 
-function getAncestorForkIds(
-  forkId: number,
-  tree: { nodes: Record<number, { id: number; parentId: number | null }> },
-): number[] {
-  const ancestors: number[] = [forkId];
-  let currentId: number | null = forkId;
-
-  while (currentId !== null) {
-    const node = tree.nodes[currentId];
-    if (!node) break;
-    if (node.parentId !== null) {
-      ancestors.push(node.parentId);
-    }
-    currentId = node.parentId;
-  }
-
-  return ancestors;
-}
-
 function broadcastEvent(event: RAGEvent): void {
   for (const port of ports) {
     port.postMessage(event);
@@ -873,6 +926,8 @@ async function handleExportSaveData(
     fileHash: doc.fileHash,
     chunkIndex: doc.chunkIndex,
     chunkCount: doc.chunkCount,
+    isLatest: doc.isLatest,
+    supersededAtTurn: doc.supersededAtTurn,
     content: doc.content,
     embedding: doc.embedding ? Array.from(doc.embedding) : [],
     saveId: doc.saveId,
@@ -883,6 +938,7 @@ async function handleExportSaveData(
     importance: doc.importance,
     createdAt: doc.createdAt,
     lastAccess: doc.lastAccess,
+    estimatedBytes: doc.estimatedBytes,
     tags: doc.tags,
   }));
 
