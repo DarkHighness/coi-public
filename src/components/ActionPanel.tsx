@@ -18,7 +18,6 @@ interface ActionPanelProps {
   onAction: (action: string) => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
-  onOpenRAG?: () => void;
   onOpenViewer?: () => void;
   onTriggerSave?: () => void;
   onRetry?: () => void;
@@ -84,7 +83,6 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onAction,
   onShowToast,
   onOpenStateEditor,
-  onOpenRAG,
   onOpenViewer,
   onTriggerSave,
   onRetry,
@@ -316,9 +314,6 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
         case "open_editor":
           onOpenStateEditor?.();
           return;
-        case "open_rag":
-          onOpenRAG?.();
-          return;
         case "open_viewer":
           onOpenViewer?.();
           return;
@@ -355,8 +350,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     [
       gameState,
       onForceUpdate,
-      onOpenRAG,
-      onOpenStateEditor,
+          onOpenStateEditor,
       onOpenViewer,
       onShowToast,
       onTriggerSave,

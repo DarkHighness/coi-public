@@ -1458,7 +1458,10 @@
     "batchMoveNoSelection": "请先选择至少一个文件",
     "batchDestinationMode": "目标选择模式",
     "addToBatch": "加入批量",
-    "removeFromBatch": "移出批量"
+    "removeFromBatch": "移出批量",
+    "ragSearch": "RAG 搜索",
+    "ragStats": "RAG 统计",
+    "ragDocuments": "RAG 文档"
   },
   "secretAgenda": "隐藏议程",
   "knowledge": {

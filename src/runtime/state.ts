@@ -43,6 +43,7 @@ export interface RuntimeRagActions {
   ) => Promise<boolean>;
   updateDocuments: (
     state: GameState,
+    vfsSession: VfsSession,
     changedEntityIds: string[],
   ) => Promise<void>;
   search: (query: string, options?: SearchOptions) => Promise<SearchResult[]>;
@@ -59,7 +60,11 @@ export interface RuntimeRagActions {
   cleanup: () => Promise<void>;
   terminate: () => void;
   refreshStatus?: () => Promise<void>;
-  indexInitialEntities?: (state: GameState, saveId: string) => Promise<void>;
+  indexInitialEntities?: (
+    state: GameState,
+    saveId: string,
+    vfsSession: VfsSession,
+  ) => Promise<void>;
   getService?: () => RAGService | null;
 }
 

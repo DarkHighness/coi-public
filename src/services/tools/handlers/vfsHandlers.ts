@@ -1521,96 +1521,6 @@ const collectFuzzyMatches = (
   }));
 };
 
-const mapEntityIdToVfsPath = (session: VfsSession, entityId: string): string | null => {
-  const normalized = normalizeVfsPath(entityId);
-  if (!normalized) {
-    return null;
-  }
-
-  if (normalized.startsWith("story:")) {
-    const nodeId = normalized.slice("story:".length);
-    if (!nodeId) {
-      return null;
-    }
-    return `conversation/turns/${nodeId}.json`;
-  }
-
-  if (normalized.startsWith("char:")) {
-    const candidate = `world/characters/${normalized}/profile.json`;
-    return session.readFile(candidate) ? candidate : null;
-  }
-
-  if (normalized.startsWith("npc:")) {
-    const candidate = `world/characters/${normalized}/profile.json`;
-    return session.readFile(candidate) ? candidate : null;
-  }
-
-  if (normalized.startsWith("loc:") || normalized.startsWith("location:")) {
-    return `world/locations/${normalized}.json`;
-  }
-
-  if (normalized.startsWith("inv:") || normalized.startsWith("item:")) {
-    const playerPath = `world/characters/${PLAYER_ID}/inventory/${normalized}.json`;
-    if (session.readFile(playerPath)) {
-      return playerPath;
-    }
-    // Location dropped items: world/locations/<locId>/items/<itemId>.json
-    const snapshot = session.snapshot();
-    const match = Object.keys(snapshot).find(
-      (p) =>
-        p.startsWith("world/locations/") &&
-        p.includes("/items/") &&
-        p.endsWith(`/${normalized}.json`),
-    );
-    return match ?? null;
-  }
-
-  if (normalized.startsWith("quest:")) {
-    return `world/quests/${normalized}.json`;
-  }
-
-  if (normalized.startsWith("knowledge:") || normalized.startsWith("know:")) {
-    return `world/knowledge/${normalized}.json`;
-  }
-
-  if (normalized.startsWith("faction:") || normalized.startsWith("fac:")) {
-    return `world/factions/${normalized}.json`;
-  }
-
-  if (normalized.startsWith("timeline:") || normalized.startsWith("event:")) {
-    return `world/timeline/${normalized}.json`;
-  }
-
-  if (
-    normalized.startsWith("skill:") ||
-    normalized.startsWith("condition:") ||
-    normalized.startsWith("trait:") ||
-    normalized.startsWith("attr:") ||
-    normalized.startsWith("attribute:")
-  ) {
-    if (normalized.startsWith("skill:")) {
-      return `world/characters/${PLAYER_ID}/skills/${normalized}.json`;
-    }
-    if (normalized.startsWith("condition:")) {
-      return `world/characters/${PLAYER_ID}/conditions/${normalized}.json`;
-    }
-    if (normalized.startsWith("trait:")) {
-      return `world/characters/${PLAYER_ID}/traits/${normalized}.json`;
-    }
-    return `world/characters/${PLAYER_ID}/profile.json`;
-  }
-
-  if (normalized.startsWith("outline:")) {
-    return "outline/outline.json";
-  }
-
-  if (normalized.startsWith("chain:") || normalized.startsWith("causal_chain:")) {
-    return `world/causal_chains/${normalized}.json`;
-  }
-
-  return null;
-};
-
 const formatRagPreview = (content: unknown): string => {
   if (typeof content !== "string") {
     return "";
@@ -1648,26 +1558,33 @@ const searchSemanticWithRag = async (
       forkId,
       beforeTurn,
       currentForkOnly: true,
+      pathPrefixes: rootPath ? [rootPath] : undefined,
     });
 
     const mapped: VfsMatch[] = [];
 
     for (const result of results) {
-      const path = mapEntityIdToVfsPath(session, result.document.entityId);
-      if (!path) {
+      const sourcePath = normalizeVfsPath(result.document.sourcePath);
+      if (!sourcePath) {
         continue;
       }
-      if (rootPath && !isInScope(path, rootPath)) {
+      if (rootPath && !isInScope(sourcePath, rootPath)) {
         continue;
       }
-      if (!session.readFile(path)) {
+
+      const sourceFile = session.readFile(sourcePath);
+      const canonicalFile = session.readFile(result.document.canonicalPath);
+      const existingFile = sourceFile || canonicalFile;
+      if (!existingFile) {
         continue;
       }
+
       mapped.push({
-        path,
+        path: existingFile.path,
         line: 1,
         text: formatRagPreview(result.document.content),
       });
+
       if (mapped.length >= limit) {
         break;
       }

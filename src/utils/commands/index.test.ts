@@ -63,8 +63,12 @@ describe("commands", () => {
       action: { type: "open_editor" },
     });
 
-    const openRag = parseCommand("/rag", context);
-    expect(openRag.action).toEqual({ type: "open_rag" });
+    const removedRag = parseCommand("/rag", context);
+    expect(removedRag).toEqual({
+      handled: true,
+      preventAction: true,
+      message: "Unknown command: /rag. Type /help for available commands.",
+    });
 
     const confirmGod = parseCommand("/god", context);
     expect(confirmGod.action).toMatchObject({ type: "god_mode" });

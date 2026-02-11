@@ -1,14 +1,5 @@
 /**
- * RAG SharedWorker
- *
- * A SharedWorker that manages the RAG (Retrieval Augmented Generation) system
- * independently from the game thread. This prevents UI blocking during
- * embedding generation and similarity search operations.
- *
- * Key Features:
- * - PGlite + pgvector for vector storage and similarity search
- * - Save-isolated data with version control
- * - Automatic cleanup and storage limit enforcement
+ * RAG SharedWorker (VFS-first)
  */
 
 /// <reference lib="webworker" />
@@ -16,65 +7,53 @@
 import { RAGDatabase } from "./database";
 import {
   DEFAULT_RAG_CONFIG,
+  type AddDocumentsPayload,
+  type DeleteByPathsPayload,
+  type DeleteDocumentsPayload,
+  type ExportSaveDataPayload,
+  type ExportableRAGDocument,
+  type GetDocumentsPaginatedPayload,
+  type GetRecentDocumentsPayload,
+  type GlobalStorageStats,
+  type ImportSaveDataPayload,
+  type InitPayload,
+  type ModelMismatchInfo,
   type RAGConfig,
   type RAGDocument,
-  type DocumentType,
+  type RAGDocumentMeta,
+  type RAGEvent,
+  type RAGExportData,
+  type RAGStatus,
   type RAGWorkerRequest,
   type RAGWorkerResponse,
-  type RAGEvent,
-  type InitPayload,
-  type AddDocumentsPayload,
-  type UpdateDocumentPayload,
-  type DeleteDocumentsPayload,
-  type SearchPayload,
-  type GetRecentDocumentsPayload,
-  type GetDocumentsPaginatedPayload,
-  type SwitchSavePayload,
-  type SearchResult,
+  type ReindexAllPayload,
   type SaveStats,
-  type RAGStatus,
-  type ModelMismatchInfo,
+  type SearchPayload,
+  type SearchResult,
   type StorageOverflowInfo,
-  type GlobalStorageStats,
-  type RAGDocumentMeta,
-  type ExportSaveDataPayload,
-  type ImportSaveDataPayload,
-  type RAGExportData,
-  type ExportableRAGDocument,
+  type SwitchSavePayload,
+  type UpdateDocumentPayload,
+  type UpsertFileChunksPayload,
 } from "./types";
-
-// ============================================================================
-// SharedWorker Type Definition
-// ============================================================================
 
 interface SharedWorkerGlobalScope {
   onconnect: ((this: SharedWorkerGlobalScope, ev: MessageEvent) => any) | null;
 }
 
-// ============================================================================
-// Worker State
-// ============================================================================
+declare const self: SharedWorkerGlobalScope & typeof globalThis;
 
 let database: RAGDatabase | null = null;
 let config: RAGConfig = { ...DEFAULT_RAG_CONFIG };
 let credentials: InitPayload["credentials"] | null = null;
 let currentSaveId: string | null = null;
-let currentForkId: number = 0;
+let currentForkId = 0;
 let forkTree: SwitchSavePayload["forkTree"] | null = null;
 let isInitialized = false;
 let isSearching = false;
 let lastError: string | null = null;
-let pendingDocuments = 0; // Number of documents waiting to be indexed
+let pendingDocuments = 0;
 
-// Connected ports (SharedWorker can have multiple connections)
 const ports: Set<MessagePort> = new Set();
-
-// ============================================================================
-// SharedWorker Entry Point
-// ============================================================================
-
-// SharedWorker global scope
-declare const self: SharedWorkerGlobalScope & typeof globalThis;
 
 self.onconnect = (event: MessageEvent) => {
   const port = event.ports[0];
@@ -109,26 +88,28 @@ self.onconnect = (event: MessageEvent) => {
     console.error("[RAGWorker] Message error:", e);
   };
 
-  // Send ready event if already initialized
   if (isInitialized) {
-    port.postMessage({
-      type: "ready",
-      data: { initialized: true },
-    } as RAGEvent);
+    port.postMessage({ type: "ready", data: { initialized: true } } as RAGEvent);
   }
 
   port.start();
 };
-
-// ============================================================================
-// Request Handler
-// ============================================================================
 
 async function handleRequest(request: RAGWorkerRequest): Promise<any> {
   switch (request.type) {
     case "init":
       return handleInit(request.payload as InitPayload);
 
+    case "upsertFileChunks":
+      return handleUpsertFileChunks(request.payload as UpsertFileChunksPayload);
+
+    case "deleteByPaths":
+      return handleDeleteByPaths(request.payload as DeleteByPathsPayload);
+
+    case "reindexAll":
+      return handleReindexAll(request.payload as ReindexAllPayload);
+
+    // Legacy aliases
     case "addDocuments":
       return handleAddDocuments(request.payload as AddDocumentsPayload);
 
@@ -195,18 +176,8 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
   }
 }
 
-// ============================================================================
-// Handler Implementations
-// ============================================================================
-
 async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
-  console.log(
-    `[RAGWorker] handleInit: provider=${payload.config.provider}, modelId=${payload.config.modelId}`,
-  );
-
   if (isInitialized) {
-    // Re-initialize with new config/credentials
-    console.log("[RAGWorker] Re-initializing with new config");
     config = { ...config, ...payload.config };
     credentials = payload.credentials;
     return { success: true };
@@ -215,133 +186,168 @@ async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
   config = { ...DEFAULT_RAG_CONFIG, ...payload.config };
   credentials = payload.credentials;
 
-  // Initialize database
-  console.log("[RAGWorker] Initializing database...");
   database = new RAGDatabase(config);
   await database.initialize();
-  console.log("[RAGWorker] Database initialized");
-
   isInitialized = true;
 
-  // Broadcast ready event to all ports
   broadcastEvent({ type: "ready", data: { initialized: true } });
-
-  console.log("[RAGWorker] Initialized successfully");
   return { success: true };
 }
 
-async function handleAddDocuments(
-  payload: AddDocumentsPayload,
+const buildDocumentId = (
+  doc: UpsertFileChunksPayload["documents"][number],
+): string => {
+  const canonicalPath = doc.canonicalPath || doc.sourcePath;
+  return [doc.saveId, canonicalPath, doc.fileHash, String(doc.chunkIndex)].join("::");
+};
+
+const normalizeFileChunk = async (
+  doc: UpsertFileChunksPayload["documents"][number],
+): Promise<RAGDocument> => {
+  const now = Date.now();
+  const embedding = await generateEmbedding(doc.content);
+
+  return {
+    id: buildDocumentId(doc),
+    sourcePath: doc.sourcePath,
+    canonicalPath: doc.canonicalPath || doc.sourcePath,
+    type: doc.type,
+    contentType: doc.contentType,
+    fileHash: doc.fileHash,
+    chunkIndex: doc.chunkIndex,
+    chunkCount: doc.chunkCount,
+    content: doc.content,
+    embedding,
+    saveId: doc.saveId,
+    forkId: doc.forkId,
+    turnNumber: doc.turnNumber,
+    embeddingModel: config.modelId,
+    embeddingProvider: config.provider,
+    importance: doc.importance ?? 0.5,
+    createdAt: now,
+    lastAccess: now,
+    tags: doc.tags,
+  };
+};
+
+async function handleUpsertFileChunks(
+  payload: UpsertFileChunksPayload,
 ): Promise<{ count: number }> {
   ensureInitialized();
 
-  console.log(
-    `[RAGWorker] handleAddDocuments: count=${payload.documents.length}, saveId=${payload.documents[0]?.saveId || "N/A"}`,
-  );
+  const inputDocuments = payload.documents || [];
+  if (inputDocuments.length === 0) {
+    return { count: 0 };
+  }
 
-  // Track pending documents
-  pendingDocuments += payload.documents.length;
-
-  const documents: RAGDocument[] = [];
-  const now = Date.now();
+  pendingDocuments += inputDocuments.length;
+  const ragDocuments: RAGDocument[] = [];
 
   try {
-    for (const doc of payload.documents) {
-      // Generate embedding for document
-      console.log(
-        `[RAGWorker] Generating embedding for: entityId=${doc.entityId}, type=${doc.type}`,
-      );
-      const embedding = await generateEmbedding(doc.content);
-
-      const ragDoc: RAGDocument = {
-        id: `${doc.saveId}-${doc.entityId}-${now}-${Math.random().toString(36).substr(2, 9)}`,
-        entityId: doc.entityId,
-        type: doc.type,
-        content: doc.content,
-        embedding,
-        saveId: doc.saveId,
-        forkId: doc.forkId,
-        turnNumber: doc.turnNumber,
-        version: 1, // Will be assigned by database
-        embeddingModel: config.modelId,
-        embeddingProvider: config.provider,
-        importance: doc.importance ?? 0.5,
-        unlocked: doc.unlocked ?? false,
-        createdAt: now,
-        lastAccess: now,
-      };
-
-      documents.push(ragDoc);
-
-      // Decrement as each document finishes embedding
-      pendingDocuments--;
+    for (const doc of inputDocuments) {
+      const normalized = await normalizeFileChunk(doc);
+      ragDocuments.push(normalized);
+      pendingDocuments -= 1;
     }
 
-    // Check and enforce per-save limits
-    if (documents.length > 0) {
-      const saveId = documents[0].saveId;
+    await database!.addDocuments(ragDocuments);
+
+    const touchedSaveIds = new Set(ragDocuments.map((doc) => doc.saveId));
+    for (const saveId of touchedSaveIds) {
       await database!.enforceSaveLimit(saveId);
     }
 
-    // Add to database
-    await database!.addDocuments(documents);
-
-    console.log(`[RAGWorker] Added ${documents.length} documents to database`);
-
-    // Check global storage overflow
     const overflow = await database!.checkStorageOverflow();
     if (overflow) {
-      broadcastEvent({
-        type: "storageOverflow",
-        data: overflow,
-      });
+      broadcastEvent({ type: "storageOverflow", data: overflow });
     }
 
-    // Broadcast update event
+    const first = ragDocuments[0];
     broadcastEvent({
       type: "indexUpdated",
-      data: { count: documents.length, saveId: documents[0]?.saveId },
+      data: {
+        count: ragDocuments.length,
+        saveId: first?.saveId,
+      },
     });
 
-    return { count: documents.length };
+    return { count: ragDocuments.length };
   } catch (error) {
-    // If error occurs, reset pending count for failed documents
-    pendingDocuments = Math.max(
-      0,
-      pendingDocuments - (payload.documents.length - documents.length),
-    );
+    pendingDocuments = Math.max(0, pendingDocuments - (inputDocuments.length - ragDocuments.length));
     throw error;
   }
+}
+
+async function handleDeleteByPaths(
+  payload: DeleteByPathsPayload,
+): Promise<{ deleted: number }> {
+  ensureInitialized();
+
+  if (!payload.saveId) {
+    throw new Error("deleteByPaths requires saveId");
+  }
+
+  const paths = payload.paths || [];
+  if (paths.length === 0) {
+    return { deleted: 0 };
+  }
+
+  const deleted = await database!.deleteDocumentsByPaths(
+    payload.saveId,
+    paths,
+    payload.forkId,
+  );
+
+  broadcastEvent({
+    type: "indexUpdated",
+    data: {
+      count: -deleted,
+      saveId: payload.saveId,
+    },
+  });
+
+  return { deleted };
+}
+
+async function handleReindexAll(
+  payload: ReindexAllPayload,
+): Promise<{ deleted: number; count: number }> {
+  ensureInitialized();
+
+  const { saveId, forkId, documents } = payload;
+
+  const existing = await database!.getDocumentsForSave(saveId);
+  const forkPaths = Array.from(
+    new Set(
+      existing
+        .filter((doc) => doc.forkId === forkId)
+        .map((doc) => doc.canonicalPath),
+    ),
+  );
+
+  let deleted = 0;
+  if (forkPaths.length > 0) {
+    deleted = await database!.deleteDocumentsByPaths(saveId, forkPaths, forkId);
+  }
+
+  const upserted = await handleUpsertFileChunks({ documents });
+  return {
+    deleted,
+    count: upserted.count,
+  };
+}
+
+// Legacy compatibility routes
+async function handleAddDocuments(
+  payload: AddDocumentsPayload,
+): Promise<{ count: number }> {
+  return handleUpsertFileChunks({ documents: payload.documents });
 }
 
 async function handleUpdateDocument(
   payload: UpdateDocumentPayload,
 ): Promise<{ success: boolean }> {
-  ensureInitialized();
-
-  const now = Date.now();
-  const embedding = await generateEmbedding(payload.content);
-
-  const ragDoc: RAGDocument = {
-    id: `${payload.saveId}-${payload.entityId}-${now}-${Math.random().toString(36).substr(2, 9)}`,
-    entityId: payload.entityId,
-    type: payload.type,
-    content: payload.content,
-    embedding,
-    saveId: payload.saveId,
-    forkId: payload.forkId,
-    turnNumber: payload.turnNumber,
-    version: 1, // Will be incremented by database
-    embeddingModel: config.modelId,
-    embeddingProvider: config.provider,
-    importance: payload.importance ?? 0.5,
-    unlocked: payload.unlocked ?? false,
-    createdAt: now,
-    lastAccess: now,
-  };
-
-  await database!.addDocument(ragDoc);
-
+  await handleUpsertFileChunks({ documents: [payload] });
   return { success: true };
 }
 
@@ -350,26 +356,64 @@ async function handleDeleteDocuments(
 ): Promise<{ deleted: number }> {
   ensureInitialized();
 
-  let deleted = 0;
+  const targetSaveId = payload.saveId || currentSaveId;
+  if (!targetSaveId) return { deleted: 0 };
 
-  if (payload.saveId) {
-    deleted = await database!.deleteDocumentsBySave(payload.saveId);
+  if (payload.paths && payload.paths.length > 0) {
+    return handleDeleteByPaths({
+      saveId: targetSaveId,
+      forkId: payload.forkId,
+      paths: payload.paths,
+    });
+  }
 
-    // Reset currentSaveId if deleting current save
-    if (payload.saveId === currentSaveId) {
-      currentSaveId = null;
-    }
-  } else if (payload.entityIds) {
-    for (const entityId of payload.entityIds) {
-      const docs = await database!.getDocumentsByEntity(
-        entityId,
-        currentSaveId || "",
-      );
+  if (payload.entityIds && payload.entityIds.length > 0) {
+    let deleted = 0;
+
+    for (const sourcePath of payload.entityIds) {
+      const docs = await database!.getDocumentsBySourcePath(sourcePath, targetSaveId);
       for (const doc of docs) {
         await database!.deleteDocument(doc.id);
-        deleted++;
+        deleted += 1;
       }
     }
+
+    if (deleted > 0) {
+      broadcastEvent({
+        type: "indexUpdated",
+        data: { count: -deleted, saveId: targetSaveId },
+      });
+    }
+
+    return { deleted };
+  }
+
+  if (typeof payload.olderThanTurn === "number") {
+    const docs = await database!.getDocumentsForSave(targetSaveId);
+    const targetDocs = docs.filter((doc) => {
+      if (payload.forkId !== undefined && doc.forkId !== payload.forkId) {
+        return false;
+      }
+      return doc.turnNumber < payload.olderThanTurn!;
+    });
+
+    for (const doc of targetDocs) {
+      await database!.deleteDocument(doc.id);
+    }
+
+    if (targetDocs.length > 0) {
+      broadcastEvent({
+        type: "indexUpdated",
+        data: { count: -targetDocs.length, saveId: targetSaveId },
+      });
+    }
+
+    return { deleted: targetDocs.length };
+  }
+
+  const deleted = await database!.deleteDocumentsBySave(targetSaveId);
+  if (targetSaveId === currentSaveId) {
+    currentSaveId = null;
   }
 
   return { deleted };
@@ -383,41 +427,35 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   }
 
   isSearching = true;
-  console.log(
-    `[RAGWorker] handleSearch: query="${payload.query.substring(0, 50)}...", saveId=${currentSaveId}`,
-  );
 
   try {
-    // Get query embedding
     const queryEmbedding = payload.queryEmbedding
       ? payload.queryEmbedding
       : await generateEmbedding(payload.query);
 
-    // Build ancestor fork IDs for filtering
-    const allowedForkIds =
-      payload.options.currentForkOnly && forkTree
-        ? getAncestorForkIds(currentForkId, forkTree)
+    const targetForkId = payload.options.forkId ?? currentForkId;
+    const allowedForkIds = payload.options.currentForkOnly
+      ? forkTree
+        ? getAncestorForkIds(targetForkId, forkTree)
+        : [targetForkId]
+      : payload.options.forkId !== undefined
+        ? [payload.options.forkId]
         : undefined;
 
-    // Search database
-    const results = await database!.searchSimilar(
-      queryEmbedding,
-      currentSaveId,
-      {
-        topK: payload.options.topK,
-        threshold: payload.options.threshold,
-        types: payload.options.types,
-        forkIds: allowedForkIds,
-        beforeTurn: payload.options.beforeTurn,
-      },
-    );
+    const results = await database!.searchSimilar(queryEmbedding, currentSaveId, {
+      topK: payload.options.topK,
+      threshold: payload.options.threshold,
+      types: payload.options.types,
+      contentTypes: payload.options.contentTypes,
+      pathPrefixes: payload.options.pathPrefixes,
+      forkIds: allowedForkIds,
+      beforeTurn: payload.options.beforeTurn,
+    });
 
-    // Apply priority adjustments
     const adjustedResults = results.map((result) => {
       const doc = result.document;
       let adjustedScore = result.score;
 
-      // Fork priority adjustment
       if (doc.forkId === currentForkId) {
         adjustedScore += config.currentForkBonus * 0.1;
       } else if (allowedForkIds?.includes(doc.forkId)) {
@@ -426,7 +464,6 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
         adjustedScore -= 0.02;
       }
 
-      // Turn recency adjustment
       if (payload.options.beforeTurn !== undefined) {
         const turnDiff = payload.options.beforeTurn - doc.turnNumber;
         adjustedScore -= Math.max(0, turnDiff * config.turnDecayFactor * 0.1);
@@ -438,13 +475,8 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
       };
     });
 
-    // Sort by adjusted score
     adjustedResults.sort((a, b) => b.adjustedScore - a.adjustedScore);
-
-    // Limit to topK
-    const finalResults = adjustedResults.slice(0, payload.options.topK || 10);
-
-    return finalResults;
+    return adjustedResults.slice(0, payload.options.topK || 10);
   } finally {
     isSearching = false;
   }
@@ -456,24 +488,11 @@ async function handleGetRecentDocuments(
   ensureInitialized();
 
   if (!currentSaveId) {
-    console.log("[RAGWorker] getRecentDocuments: No save context set");
     return [];
   }
 
   const limit = payload.limit || 20;
-  const types = payload.types;
-
-  console.log(
-    `[RAGWorker] getRecentDocuments: saveId=${currentSaveId}, limit=${limit}, types=${types?.join(",") || "all"}`,
-  );
-
-  const docs = await database!.getRecentDocuments(currentSaveId, limit, types);
-
-  console.log(
-    `[RAGWorker] getRecentDocuments: returning ${docs.length} documents`,
-  );
-
-  return docs;
+  return database!.getRecentDocuments(currentSaveId, limit, payload.types);
 }
 
 async function handleGetDocumentsPaginated(
@@ -482,28 +501,15 @@ async function handleGetDocumentsPaginated(
   ensureInitialized();
 
   if (!currentSaveId) {
-    console.log("[RAGWorker] getDocumentsPaginated: No save context set");
     return { documents: [], total: 0 };
   }
 
-  const { offset, limit, types } = payload;
-
-  console.log(
-    `[RAGWorker] getDocumentsPaginated: saveId=${currentSaveId}, offset=${offset}, limit=${limit}, types=${types?.join(",") || "all"}`,
-  );
-
-  const result = await database!.getDocumentsPaginated(
+  return database!.getDocumentsPaginated(
     currentSaveId,
-    offset,
-    limit,
-    types,
+    payload.offset,
+    payload.limit,
+    payload.types,
   );
-
-  console.log(
-    `[RAGWorker] getDocumentsPaginated: returning ${result.documents.length} of ${result.total} documents`,
-  );
-
-  return result;
 }
 
 async function handleSwitchSave(
@@ -515,10 +521,6 @@ async function handleSwitchSave(
   currentForkId = payload.forkId;
   forkTree = payload.forkTree;
 
-  console.log(
-    `[RAGWorker] Switched to save ${payload.saveId}, fork ${payload.forkId}`,
-  );
-
   return { success: true };
 }
 
@@ -528,8 +530,7 @@ async function handleGetSaveStats(saveId?: string): Promise<SaveStats | null> {
   const targetSaveId = saveId || currentSaveId;
   if (!targetSaveId) return null;
 
-  const stats = await database!.getSaveStats(targetSaveId);
-  return stats;
+  return database!.getSaveStats(targetSaveId);
 }
 
 async function handleCleanup(): Promise<{
@@ -544,7 +545,7 @@ async function handleCleanup(): Promise<{
       phase: "cleanup",
       current: 0,
       total: 2,
-      message: "Cleaning up old versions...",
+      message: "Cleaning up indexed chunks...",
     },
   });
 
@@ -622,10 +623,7 @@ async function handleCheckModelMismatch(
   );
 
   if (mismatch) {
-    broadcastEvent({
-      type: "modelMismatch",
-      data: mismatch,
-    });
+    broadcastEvent({ type: "modelMismatch", data: mismatch });
   }
 
   return mismatch;
@@ -639,7 +637,6 @@ async function handleRebuildForModel(
   const targetSaveId = saveId || currentSaveId;
   if (!targetSaveId) return { deleted: 0 };
 
-  // Clear all documents for the save
   const deleted = await database!.clearSaveForRebuild(targetSaveId);
 
   broadcastEvent({
@@ -659,12 +656,8 @@ async function handleCheckStorageOverflow(): Promise<StorageOverflowInfo | null>
   ensureInitialized();
 
   const overflow = await database!.checkStorageOverflow();
-
   if (overflow) {
-    broadcastEvent({
-      type: "storageOverflow",
-      data: overflow,
-    });
+    broadcastEvent({ type: "storageOverflow", data: overflow });
   }
 
   return overflow;
@@ -679,7 +672,6 @@ async function handleDeleteOldestSaves(
 
   const deleted = await database!.deleteOldestFromSaves(saveIds);
 
-  // Reset currentSaveId if it was deleted
   if (currentSaveId && saveIds.includes(currentSaveId)) {
     currentSaveId = null;
   }
@@ -689,34 +681,23 @@ async function handleDeleteOldestSaves(
 
 async function handleGetAllSaveStats(): Promise<GlobalStorageStats> {
   ensureInitialized();
-
   return database!.getGlobalStats();
 }
-
-// ============================================================================
-// Embedding Generation
-// ============================================================================
 
 async function generateEmbedding(text: string): Promise<Float32Array> {
   if (!credentials) {
     throw new Error("No credentials configured for embedding generation");
   }
 
-  // Check context length limit if configured
   if (config.contextLength) {
-    // Estimate tokens (1 token ≈ 4 characters)
     const estimatedTokens = Math.ceil(text.length / 4);
     if (estimatedTokens > config.contextLength) {
-      console.warn(
-        `[RAGWorker] Input text too long for embedding model. Estimated tokens: ${estimatedTokens}, Limit: ${config.contextLength}`,
-      );
       throw new Error(
         `Input text exceeds context length limit (${estimatedTokens} > ${config.contextLength} tokens)`,
       );
     }
   }
 
-  // Use the appropriate provider based on config
   switch (config.provider) {
     case "gemini":
       return generateGeminiEmbedding(text);
@@ -725,7 +706,6 @@ async function generateEmbedding(text: string): Promise<Float32Array> {
     case "openrouter":
       return generateOpenRouterEmbedding(text);
     case "claude":
-      // Claude doesn't support embeddings, throw a helpful error
       throw new Error(
         "Claude does not support embedding generation. Please use Gemini, OpenAI, or OpenRouter for embeddings.",
       );
@@ -766,9 +746,9 @@ async function generateOpenAIEmbedding(text: string): Promise<Float32Array> {
   if (!apiKey) throw new Error("OpenAI API key not configured");
 
   const baseUrl = credentials?.openai?.baseUrl || "https://api.openai.com/v1";
-
   const response = await fetch(`${baseUrl}/embeddings`, {
     method: "POST",
+    mode: "cors",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
@@ -820,10 +800,6 @@ async function generateOpenRouterEmbedding(
   return new Float32Array(data.data[0].embedding);
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
 function ensureInitialized(): void {
   if (!isInitialized || !database) {
     throw new Error("RAG Worker not initialized. Call init first.");
@@ -855,49 +831,43 @@ function broadcastEvent(event: RAGEvent): void {
   }
 }
 
-// ============================================================================
-// Export/Import Handlers
-// ============================================================================
-
 async function handleExportSaveData(
   payload: ExportSaveDataPayload,
 ): Promise<RAGExportData | null> {
   ensureInitialized();
 
   const { saveId } = payload;
-  console.log(`[RAGWorker] Exporting data for save: ${saveId}`);
-
-  // Get all documents with embeddings
   const documents = await database!.getDocumentsWithEmbeddingsForSave(saveId);
 
   if (documents.length === 0) {
-    console.log(`[RAGWorker] No documents found for save: ${saveId}`);
     return null;
   }
 
-  // Convert to exportable format (Float32Array -> number[])
   const exportableDocuments: ExportableRAGDocument[] = documents.map((doc) => ({
     id: doc.id,
-    entityId: doc.entityId,
+    sourcePath: doc.sourcePath,
+    canonicalPath: doc.canonicalPath,
     type: doc.type,
+    contentType: doc.contentType,
+    fileHash: doc.fileHash,
+    chunkIndex: doc.chunkIndex,
+    chunkCount: doc.chunkCount,
     content: doc.content,
     embedding: doc.embedding ? Array.from(doc.embedding) : [],
     saveId: doc.saveId,
     forkId: doc.forkId,
     turnNumber: doc.turnNumber,
-    version: doc.version,
     embeddingModel: doc.embeddingModel,
     embeddingProvider: doc.embeddingProvider,
     importance: doc.importance,
-    unlocked: doc.unlocked,
     createdAt: doc.createdAt,
     lastAccess: doc.lastAccess,
+    tags: doc.tags,
   }));
 
-  // Determine model info from first document
   const firstDoc = documents[0];
 
-  const exportData: RAGExportData = {
+  return {
     saveId,
     documents: exportableDocuments,
     metadata: {
@@ -906,13 +876,9 @@ async function handleExportSaveData(
       embeddingProvider: firstDoc.embeddingProvider,
       dimensions: firstDoc.embedding?.length || config.dimensions,
       exportedAt: Date.now(),
+      schemaVersion: config.schemaVersion,
     },
   };
-
-  console.log(
-    `[RAGWorker] Exported ${documents.length} documents for save: ${saveId}`,
-  );
-  return exportData;
 }
 
 async function handleImportSaveData(
@@ -921,26 +887,16 @@ async function handleImportSaveData(
   ensureInitialized();
 
   const { data, newSaveId } = payload;
-  console.log(
-    `[RAGWorker] Importing ${data.documents.length} documents to save: ${newSaveId}`,
-  );
 
-  // Convert from exportable format and update saveId
   const documents = data.documents.map((doc) => ({
     ...doc,
-    id: crypto.randomUUID(), // Generate new unique ID
-    saveId: newSaveId, // Use new save ID
+    id: crypto.randomUUID(),
+    saveId: newSaveId,
     embedding: new Float32Array(doc.embedding),
   }));
 
-  // Import documents
   const imported = await database!.importDocuments(documents);
-
-  console.log(
-    `[RAGWorker] Imported ${imported} documents to save: ${newSaveId}`,
-  );
   return { success: true, imported };
 }
 
-// Export for testing
 export { handleRequest, generateEmbedding };

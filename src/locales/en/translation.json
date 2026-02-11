@@ -1420,7 +1420,10 @@
     "batchMoveNoSelection": "Select at least one file",
     "batchDestinationMode": "Destination Mode",
     "addToBatch": "Add to Batch",
-    "removeFromBatch": "Remove from Batch"
+    "removeFromBatch": "Remove from Batch",
+    "ragSearch": "RAG Search",
+    "ragStats": "RAG Stats",
+    "ragDocuments": "RAG Documents"
   },
   "knowledge": {
     "category": {

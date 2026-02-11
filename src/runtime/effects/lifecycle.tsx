@@ -86,16 +86,10 @@ export function useRuntimeLifecycleEffects({
             await actions.rag.indexInitialEntities(
               state.gameState,
               state.currentSlotId!,
+              state.vfsSession,
             );
           }
 
-          const storyNodeIds = Object.keys(state.gameState.nodes)
-            .slice(-50)
-            .map((id) => `story:${id}`);
-
-          if (storyNodeIds.length > 0) {
-            await actions.rag.updateDocuments(state.gameState, storyNodeIds);
-          }
 
           showToast(
             t("runtime.indexedExistingDocuments", "Indexed existing documents"),

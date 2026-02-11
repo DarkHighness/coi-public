@@ -40,7 +40,6 @@ interface MobileGameLayoutProps {
   onVeoScript: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
-  onOpenRAG?: () => void;
   onOpenViewer?: () => void;
   onOpenGallery?: () => void;
   onForceUpdate?: (prompt: string) => void;
@@ -73,7 +72,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onVeoScript,
   onShowToast,
   onOpenStateEditor,
-  onOpenRAG,
   onOpenViewer,
   onOpenGallery,
   onForceUpdate,
@@ -177,7 +175,6 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
             onAction={onAction}
             onShowToast={onShowToast}
             onOpenStateEditor={onOpenStateEditor}
-            onOpenRAG={onOpenRAG}
             onOpenViewer={onOpenViewer}
             onTriggerSave={triggerSave}
             onRetry={onRetry}

@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { AISettings, GameState, ForkTree } from "../types";
+import type { VfsSession } from "../services/vfs/vfsSession";
 import {
   initializeRAGService,
   getRAGService,
@@ -29,8 +30,10 @@ import { getEmbeddingModels as getGeminiEmbeddingModels } from "../services/prov
 import { getEmbeddingModels as getOpenAIEmbeddingModels } from "../services/providers/openaiProvider";
 import { getEmbeddingModels as getOpenRouterEmbeddingModels } from "../services/providers/openRouterProvider";
 import { getEmbeddingModels as getClaudeEmbeddingModels } from "../services/providers/claudeProvider";
-import { extractDocumentsFromState } from "../services/rag/documentExtraction";
-import { indexInitialEntities as indexInitialRagDocuments } from "./effects/ragDocuments";
+import {
+  indexInitialEntities as indexInitialRagDocuments,
+  updateRAGDocumentsBackground,
+} from "./effects/ragDocuments";
 
 // ============================================================================
 // Types
@@ -58,6 +61,7 @@ export interface RagRuntimeActions {
   /** Update documents in the index */
   updateDocuments: (
     state: GameState,
+    vfsSession: VfsSession,
     changedEntityIds: string[],
   ) => Promise<void>;
   /** Search for similar documents */
@@ -84,7 +88,11 @@ export interface RagRuntimeActions {
   /** Refresh status from the service */
   refreshStatus: () => Promise<void>;
   /** Index initial entities for a new game */
-  indexInitialEntities: (state: GameState, saveId: string) => Promise<void>;
+  indexInitialEntities: (
+    state: GameState,
+    saveId: string,
+    vfsSession: VfsSession,
+  ) => Promise<void>;
   /** Get the underlying RAG service (for advanced use) */
   getService: () => RAGService | null;
 }
@@ -325,7 +333,11 @@ export function useRagRuntime(): RagRuntimeValue {
   // ============================================================================
 
   const updateDocuments = useCallback(
-    async (gameState: GameState, changedEntityIds: string[]): Promise<void> => {
+    async (
+      gameState: GameState,
+      vfsSession: VfsSession,
+      changedEntityIds: string[],
+    ): Promise<void> => {
       const service = serviceRef.current;
       if (!service || !state.currentSaveId) {
         console.warn(
@@ -335,23 +347,16 @@ export function useRagRuntime(): RagRuntimeValue {
       }
 
       try {
-        const documents = extractDocumentsFromState(
-          gameState,
-          changedEntityIds,
+        const changedEntities = changedEntityIds.map((id) => ({ id, type: "unknown" }));
+
+        await updateRAGDocumentsBackground(
+          changedEntities,
+          {
+            ...gameState,
+            saveId: state.currentSaveId,
+          },
+          vfsSession,
         );
-
-        if (documents.length === 0) return;
-
-        await service.addDocuments(
-          documents.map((doc) => ({
-            ...doc,
-            saveId: state.currentSaveId!,
-            forkId: gameState.forkId || 0,
-            turnNumber: gameState.turnNumber || 0,
-          })),
-        );
-
-        console.log(`[RAGRuntime] Updated ${documents.length} documents`);
       } catch (error) {
         console.error("[RAGRuntime] Update documents failed:", error);
       }
@@ -364,7 +369,11 @@ export function useRagRuntime(): RagRuntimeValue {
   // ============================================================================
 
   const indexInitialEntities = useCallback(
-    async (gameState: GameState, saveId: string): Promise<void> => {
+    async (
+      gameState: GameState,
+      saveId: string,
+      vfsSession: VfsSession,
+    ): Promise<void> => {
       const service = serviceRef.current;
       if (!service) {
         console.warn(
@@ -374,7 +383,7 @@ export function useRagRuntime(): RagRuntimeValue {
       }
 
       try {
-        await indexInitialRagDocuments(gameState, saveId);
+        await indexInitialRagDocuments(gameState, saveId, vfsSession);
 
         const status = await service.getStatus();
         setState((prev) => ({ ...prev, status }));
@@ -443,39 +452,11 @@ export function useRagRuntime(): RagRuntimeValue {
 
         if (results.length === 0) return "";
 
-        // Group by type
-        const byType: Record<string, string[]> = {};
-        for (const result of results) {
-          const type = result.document.type;
-          if (!byType[type]) byType[type] = [];
-          byType[type].push(result.document.content);
-        }
-
-        // Build context string
-        const sections: string[] = [];
-
-        if (byType.story?.length) {
-          sections.push(
-            `## Recent Story Context\n${byType.story.join("\n\n")}`,
-          );
-        }
-        if (byType.npc?.length) {
-          sections.push(`## Relevant NPCs\n${byType.npc.join("\n\n")}`);
-        }
-        if (byType.location?.length) {
-          sections.push(
-            `## Relevant Locations\n${byType.location.join("\n\n")}`,
-          );
-        }
-        if (byType.knowledge?.length) {
-          sections.push(`## World Knowledge\n${byType.knowledge.join("\n\n")}`);
-        }
-        if (byType.quest?.length) {
-          sections.push(`## Active Quests\n${byType.quest.join("\n\n")}`);
-        }
-        if (byType.item?.length) {
-          sections.push(`## Relevant Items\n${byType.item.join("\n\n")}`);
-        }
+        const sections = results.map((result) => {
+          const doc = result.document;
+          const header = `[${doc.type}] ${doc.sourcePath} (#${doc.chunkIndex + 1}/${doc.chunkCount})`;
+          return `${header}\n${doc.content}`;
+        });
 
         return sections.join("\n\n");
       } catch (error) {
