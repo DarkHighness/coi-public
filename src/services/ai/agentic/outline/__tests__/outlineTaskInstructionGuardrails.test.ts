@@ -30,7 +30,9 @@ describe("outline task instruction guardrails", () => {
     const outlineDriverPath = path.resolve(__dirname, "../outline.ts");
     const source = fs.readFileSync(outlineDriverPath, "utf8");
 
-    expect(source).toContain('if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(tc.name))');
+    expect(source).toContain(
+      "if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(normalizedName))",
+    );
     expect(source).toContain('vfsMode: "normal"');
   });
 });

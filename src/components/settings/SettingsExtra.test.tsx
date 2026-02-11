@@ -89,11 +89,11 @@ describe("SettingsExtra", () => {
     render(React.createElement(SettingsExtra));
 
     const numberInputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-    expect(numberInputs).toHaveLength(3);
+    expect(numberInputs).toHaveLength(6);
 
     fireEvent.change(numberInputs[0], { target: { value: "999" } });
     fireEvent.change(numberInputs[1], { target: { value: "-5" } });
-    fireEvent.change(numberInputs[2], { target: { value: "1" } });
+    fireEvent.change(numberInputs[5], { target: { value: "1" } });
 
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -102,7 +102,7 @@ describe("SettingsExtra", () => {
     );
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        extra: expect.objectContaining({ maxErrorRetries: 0 }),
+        extra: expect.objectContaining({ turnRetryLimit: 0 }),
       }),
     );
     expect(updateSettings).toHaveBeenCalledWith(

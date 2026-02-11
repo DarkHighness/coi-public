@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  buildFunctionCallMessage,
   buildFunctionResponseMessage,
   createGeminiClient,
-  extractFunctionCalls,
   extractTextContent,
   fromUnifiedMessage,
   fromUnifiedMessages,
@@ -28,18 +26,22 @@ describe("geminiProvider helpers", () => {
     });
   });
 
-  it("builds function call message and preserves thought signature", () => {
-    const content = buildFunctionCallMessage(
-      [
+  it("converts assistant tool_use to functionCall and preserves thought signature", () => {
+    const content = fromUnifiedMessage({
+      role: "assistant",
+      content: [
+        { type: "text", text: "I will read state" },
         {
-          id: "call-1",
-          name: "vfs_read",
-          args: { path: "current/world/README.md" },
-          thoughtSignature: "sig-1",
+          type: "tool_use",
+          toolUse: {
+            id: "call-1",
+            name: "vfs_read",
+            args: { path: "current/world/README.md" },
+            thoughtSignature: "sig-1",
+          },
         },
       ],
-      "I will read state",
-    );
+    } as any);
 
     expect(content.role).toBe("model");
     expect(content.parts[0]).toMatchObject({ text: "I will read state" });
@@ -67,20 +69,13 @@ describe("geminiProvider helpers", () => {
     });
   });
 
-  it("extracts function calls and text from candidate parts", () => {
+  it("extracts text from candidate parts", () => {
     const response = {
       candidates: [
         {
           content: {
             parts: [
               { text: "alpha" },
-              {
-                functionCall: {
-                  name: "vfs_ls",
-                  args: { path: "current/world" },
-                },
-                thoughtSignature: "sig-a",
-              },
               { text: "beta" },
             ],
           },
@@ -89,14 +84,6 @@ describe("geminiProvider helpers", () => {
     };
 
     expect(extractTextContent(response)).toBe("alphabeta");
-    expect(extractFunctionCalls(response)).toEqual([
-      {
-        id: "gemini_call_vfs_ls_0",
-        name: "vfs_ls",
-        args: { path: "current/world" },
-        thoughtSignature: "sig-a",
-      },
-    ]);
   });
 
   it("maps unified tool_result to gemini functionResponse", () => {

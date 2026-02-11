@@ -103,14 +103,14 @@ export async function handleAICall(
           );
           if (!meta?.silent) {
             incrementRetries(loopState.budgetState);
+            const retryPrompt = generateBudgetPrompt(
+              loopState.budgetState,
+              loopState.finishToolName,
+            );
+            conversationHistory.push(
+              createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryPrompt}`),
+            );
           }
-          const retryPrompt = generateBudgetPrompt(
-            loopState.budgetState,
-            loopState.finishToolName,
-          );
-          conversationHistory.push(
-            createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryPrompt}`),
-          );
         },
       },
     );

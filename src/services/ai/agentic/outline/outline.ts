@@ -1011,12 +1011,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
       reportProgress(phaseNum, "generating");
 
       let phaseSubmitted = false;
+      if (budgetState.retriesUsed !== 0) {
+        budgetState.retriesUsed = 0;
+      }
 
       while (!phaseSubmitted) {
-        if (budgetState.retriesUsed !== 0) {
-          budgetState.retriesUsed = 0;
-        }
-
         const budgetCheck = checkBudgetExhaustion(budgetState);
         if (budgetCheck.exhausted) {
           console.warn(`[OutlineAgentic] ${budgetCheck.message}`);

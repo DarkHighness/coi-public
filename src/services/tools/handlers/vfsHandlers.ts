@@ -64,6 +64,7 @@ import { vfsResourceRegistry } from "../../vfs/core/resourceRegistry";
 import { vfsToolRouter } from "../../vfs/core/toolRouter";
 import type { VfsWriteContext } from "../../vfs/core/types";
 import { getSchemaForPath } from "../../vfs/schemas";
+import { buildVfsLayoutReport } from "../../vfs/layoutReport";
 
 interface VfsMatch {
   path: string;
@@ -749,25 +750,153 @@ vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
   const stat = Boolean(typedArgs.stat);
   const limit = typedArgs.limit ?? 200;
   const ignoreCase = Boolean(typedArgs.ignoreCase);
+  const includeExpected = Boolean(typedArgs.includeExpected);
+  const includeAccess = Boolean(typedArgs.includeAccess);
+  const activeForkId =
+    typeof ctx.gameState?.forkId === "number"
+      ? ctx.gameState.forkId
+      : session.getActiveForkId();
+
+  const buildLayoutPayload = (
+    rootPath: string | undefined,
+  ): {
+    layout: ReturnType<typeof buildVfsLayoutReport>;
+    layoutTotal: number;
+    layoutTruncated: boolean;
+  } => {
+    const fullLayout = buildVfsLayoutReport(session, {
+      rootPath: rootPath || undefined,
+      includeExpected,
+      activeForkId,
+      includeDirectories: true,
+    });
+    const layoutTruncated = fullLayout.length > limit;
+    const layout = layoutTruncated ? fullLayout.slice(0, limit) : fullLayout;
+    return {
+      layout,
+      layoutTotal: fullLayout.length,
+      layoutTruncated,
+    };
+  };
+
+  const toReadabilityLabel = (
+    permissionClass:
+      | "immutable_readonly"
+      | "default_editable"
+      | "elevated_editable"
+      | "finish_guarded",
+  ): "read_only" | "read_write" | "finish_guarded" => {
+    if (permissionClass === "immutable_readonly") {
+      return "read_only";
+    }
+    if (permissionClass === "finish_guarded") {
+      return "finish_guarded";
+    }
+    return "read_write";
+  };
+
+  const toUpdateTriggers = (
+    allowedWriteOps: Array<
+      | "write"
+      | "json_patch"
+      | "json_merge"
+      | "move"
+      | "delete"
+      | "finish_commit"
+      | "finish_summary"
+      | "history_rewrite"
+    >,
+    permissionClass:
+      | "immutable_readonly"
+      | "default_editable"
+      | "elevated_editable"
+      | "finish_guarded",
+  ): string[] => {
+    const triggers: string[] = [];
+    if (allowedWriteOps.includes("finish_commit")) triggers.push("turn_commit");
+    if (allowedWriteOps.includes("finish_summary")) triggers.push("summary_commit");
+    if (allowedWriteOps.includes("history_rewrite")) triggers.push("history_rewrite");
+    if (
+      allowedWriteOps.some((op) =>
+        ["write", "json_patch", "json_merge", "move", "delete"].includes(op),
+      )
+    ) {
+      triggers.push("direct_write");
+    }
+    if (permissionClass === "elevated_editable") {
+      triggers.push("elevated_write");
+    }
+    return triggers;
+  };
+
+  const toAccessMeta = (path: string) => {
+    const classification = vfsPathRegistry.classify(normalizeVfsPath(path), {
+      activeForkId,
+    });
+    return {
+      path: toCurrentPath(path),
+      canonicalPath: classification.canonicalPath,
+      templateId: classification.templateId,
+      permissionClass: classification.permissionClass,
+      scope: classification.scope,
+      domain: classification.domain,
+      allowedWriteOps: [...classification.allowedWriteOps],
+      readability: toReadabilityLabel(classification.permissionClass),
+      updateTriggers: toUpdateTriggers(
+        classification.allowedWriteOps,
+        classification.permissionClass,
+      ),
+    };
+  };
 
   if (!patterns || patterns.length === 0) {
     const entries = session.list(baseResolved.path);
-    if (!stat) {
+    if (!stat && !includeExpected && !includeAccess) {
       return createSuccess({ entries }, "VFS entries listed");
     }
 
-    const snapshot = session.snapshotAll();
-    const snapshotPaths = Object.keys(snapshot);
-    const meta = entries.map((entryPath) => {
-      const normalized = normalizeVfsPath(entryPath);
-      const file = session.readFile(normalized);
-      if (file) {
-        return toLsStatEntryForFile(file);
-      }
-      return toLsStatEntryForDir(normalized, snapshotPaths);
-    });
+    const payload: Record<string, unknown> = { entries };
+    if (stat) {
+      const snapshot = session.snapshotAll();
+      const snapshotPaths = Object.keys(snapshot);
+      const meta = entries.map((entryPath) => {
+        const normalized = normalizeVfsPath(entryPath);
+        const file = session.readFile(normalized);
+        if (file) {
+          return toLsStatEntryForFile(file);
+        }
+        return toLsStatEntryForDir(normalized, snapshotPaths);
+      });
+      payload.stats = meta;
+    }
 
-    return createSuccess({ entries, stats: meta }, "VFS entries listed with metadata");
+    if (includeExpected || includeAccess) {
+      const layoutPayload = buildLayoutPayload(baseResolved.path);
+      payload.layout = includeAccess
+        ? layoutPayload.layout
+        : layoutPayload.layout.map((entry) => ({
+            path: entry.path,
+            canonicalPath: entry.canonicalPath,
+            kind: entry.kind,
+            exists: entry.exists,
+            expected: entry.expected,
+            sources: entry.sources,
+          }));
+      payload.layoutTotal = layoutPayload.layoutTotal;
+      payload.layoutTruncated = layoutPayload.layoutTruncated;
+    }
+
+    return createSuccess(
+      payload,
+      stat ? "VFS entries listed with metadata" : "VFS entries listed",
+    );
+  }
+
+  if (includeExpected) {
+    return createError(
+      "vfs_ls: includeExpected is only supported when patterns are omitted.",
+      "INVALID_DATA",
+    );
   }
 
   const regexes: RegExp[] = [];
@@ -819,10 +948,15 @@ vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
   const matches = selectedMatches.map((p) => toCurrentPath(p));
 
   if (!stat) {
-    return createSuccess(
-      { entries: matches, truncated, totalMatches: allMatches.length },
-      "VFS glob listing complete",
-    );
+    const payload: Record<string, unknown> = {
+      entries: matches,
+      truncated,
+      totalMatches: allMatches.length,
+    };
+    if (includeAccess) {
+      payload.access = selectedMatches.map(toAccessMeta);
+    }
+    return createSuccess(payload, "VFS glob listing complete");
   }
 
   const stats = selectedMatches.flatMap((path) => {
@@ -831,8 +965,18 @@ vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
     return [toLsStatEntryForFile(file)];
   });
 
+  const payload: Record<string, unknown> = {
+    entries: matches,
+    stats,
+    truncated,
+    totalMatches: allMatches.length,
+  };
+  if (includeAccess) {
+    payload.access = selectedMatches.map(toAccessMeta);
+  }
+
   return createSuccess(
-    { entries: matches, stats, truncated, totalMatches: allMatches.length },
+    payload,
     "VFS glob listing complete",
   );
 });

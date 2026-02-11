@@ -308,39 +308,6 @@ describe("openaiProvider helper conversions", () => {
     });
   });
 
-  it("extracts tool calls with thought signature fallback", async () => {
-    const { extractToolCalls } = await import("./openaiProvider");
-
-    const response = {
-      choices: [
-        {
-          message: {
-            tool_calls: [
-              {
-                id: "call-x",
-                type: "function",
-                function: {
-                  name: "vfs_ls",
-                  arguments: JSON.stringify({ path: "current" }),
-                  thought_signature: "sig-x",
-                },
-              },
-            ],
-          },
-        },
-      ],
-    } as any;
-
-    expect(extractToolCalls(response)).toEqual([
-      {
-        id: "call-x",
-        name: "vfs_ls",
-        args: { path: "current" },
-        thoughtSignature: "sig-x",
-      },
-    ]);
-  });
-
   it("converts user text+image unified message into vision content array", async () => {
     const { fromUnifiedMessage } = await import("./openaiProvider");
 

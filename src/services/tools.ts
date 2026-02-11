@@ -215,6 +215,18 @@ export const VFS_LS_TOOL = defineTool({
         .describe(
           "When true, include compact ls -l style metadata (kind/size/lines/mimeType/category/updatedAt).",
         ),
+      includeExpected: z
+        .boolean()
+        .nullish()
+        .describe(
+          "When true, include expected VFS layout entries (template/scaffold derived) even if files are not created yet.",
+        ),
+      includeAccess: z
+        .boolean()
+        .nullish()
+        .describe(
+          "When true, include path access metadata (permissionClass/allowedWriteOps/readability/updateTriggers) for layout entries.",
+        ),
     })
     .strict(),
 });

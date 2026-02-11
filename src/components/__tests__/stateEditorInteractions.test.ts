@@ -278,7 +278,7 @@ describe("StateEditor interactions", () => {
       },
     ]);
 
-    fireEvent.click(screen.getByRole("button", { name: "Files" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Files" })[0] as HTMLElement);
     await ensureFileVisible(/a\.md/i, ["world", "knowledge", "source"]);
 
     const fileButton = await screen.findByRole("button", { name: /a\.md/i });

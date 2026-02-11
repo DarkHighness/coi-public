@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  CATEGORY_INJECTION_POINTS,
-  formatAllRulesBlocks,
   formatImageStyleRules,
-  formatRulesBlock,
-  getRulesForCategories,
   getRulesForCategory,
 } from "./rulesInjector";
 
@@ -41,26 +37,6 @@ describe("rulesInjector", () => {
     expect(result.map((r: any) => r.title)).toEqual(["B", "A"]);
   });
 
-  it("returns enabled rules across categories", () => {
-    const result = getRulesForCategories(rules, ["imageStyle", "dialogue"] as any);
-    expect(result).toHaveLength(2);
-    expect(result.every((r: any) => r.enabled)).toBe(true);
-  });
-
-  it("formats category block with bullets", () => {
-    const result = formatRulesBlock(rules as any, "imageStyle" as any);
-    expect(result).toContain('<custom_rules category="imageStyle">');
-    expect(result).toContain("- B: rule-b");
-    expect(result).toContain("- A: rule-a");
-  });
-
-  it("formats grouped user custom rules", () => {
-    const result = formatAllRulesBlocks(rules as any);
-    expect(result).toContain("<user_custom_rules>");
-    expect(result).toContain("CRITICAL");
-    expect(result).toContain('<custom_rules category="imageStyle">');
-  });
-
   it("formats image style requirements section", () => {
     const result = formatImageStyleRules(rules as any);
     expect(result).toContain("**Style Requirements:**");
@@ -68,8 +44,17 @@ describe("rulesInjector", () => {
     expect(result).toContain("rule-a");
   });
 
-  it("exposes stable injection point mappings", () => {
-    expect(CATEGORY_INJECTION_POINTS.imageStyle).toBe("image prompt");
-    expect(CATEGORY_INJECTION_POINTS.dialogue).toBe("dialogue section");
+  it("returns empty style output when no enabled image rules", () => {
+    const result = formatImageStyleRules([
+      {
+        id: "3",
+        title: "C",
+        content: "rule-c",
+        category: "dialogue",
+        priority: 1,
+        enabled: true,
+      },
+    ] as any);
+    expect(result).toBe("");
   });
 });

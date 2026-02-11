@@ -13,8 +13,8 @@ const getOpenAIEmbeddingModelsMock = vi.hoisted(() => vi.fn());
 const getOpenRouterEmbeddingModelsMock = vi.hoisted(() => vi.fn());
 const getClaudeEmbeddingModelsMock = vi.hoisted(() => vi.fn());
 
-const extractDocumentsFromStateMock = vi.hoisted(() => vi.fn());
 const indexInitialRagDocumentsMock = vi.hoisted(() => vi.fn());
+const updateRAGDocumentsBackgroundMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../services/rag", () => ({
   initializeRAGService: initializeRAGServiceMock,
@@ -38,12 +38,9 @@ vi.mock("../services/providers/claudeProvider", () => ({
   getEmbeddingModels: getClaudeEmbeddingModelsMock,
 }));
 
-vi.mock("../services/rag/documentExtraction", () => ({
-  extractDocumentsFromState: extractDocumentsFromStateMock,
-}));
-
 vi.mock("./effects/ragDocuments", () => ({
   indexInitialEntities: indexInitialRagDocumentsMock,
+  updateRAGDocumentsBackground: updateRAGDocumentsBackgroundMock,
 }));
 
 import { useRagRuntime } from "./ragRuntime";
@@ -76,6 +73,7 @@ const createSettings = (overrides?: Partial<any>) =>
   ({
     embedding: {
       enabled: true,
+      runtime: "remote",
       providerId: "provider-1",
       modelId: "embed-1",
       dimensions: 1536,
@@ -122,8 +120,8 @@ describe("useRagRuntime", () => {
     getOpenAIEmbeddingModelsMock.mockResolvedValue([]);
     getOpenRouterEmbeddingModelsMock.mockResolvedValue([]);
     getClaudeEmbeddingModelsMock.mockResolvedValue([]);
-    extractDocumentsFromStateMock.mockReturnValue([]);
     indexInitialRagDocumentsMock.mockResolvedValue(undefined);
+    updateRAGDocumentsBackgroundMock.mockResolvedValue(undefined);
   });
 
   it("returns false immediately when embedding is disabled", async () => {
@@ -159,12 +157,13 @@ describe("useRagRuntime", () => {
     expect(result).toBe(true);
     expect(getGeminiEmbeddingModelsMock).toHaveBeenCalledWith({ apiKey: "k-1" });
     expect(initializeRAGServiceMock).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         provider: "gemini",
         modelId: "embed-1",
         dimensions: 1536,
         contextLength: 8192,
-      },
+        maxStorageBytes: 512 * 1024 * 1024,
+      }),
       {
         gemini: {
           apiKey: "k-1",
@@ -259,9 +258,6 @@ describe("useRagRuntime", () => {
       .mockResolvedValueOnce({ currentSaveId: "save-doc" });
 
     initializeRAGServiceMock.mockResolvedValue(service);
-    extractDocumentsFromStateMock.mockReturnValue([
-      { entityId: "npc:1", type: "npc", content: "content" },
-    ]);
 
     const runtime = mountRuntime();
 
@@ -282,33 +278,44 @@ describe("useRagRuntime", () => {
           forkId: 3,
           turnNumber: 11,
         } as any,
+        {} as any,
         ["npc:1"],
       );
     });
 
-    expect(extractDocumentsFromStateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ forkId: 3, turnNumber: 11 }),
-      ["npc:1"],
-    );
-    expect(service.addDocuments).toHaveBeenCalledWith([
-      {
-        entityId: "npc:1",
-        type: "npc",
-        content: "content",
-        saveId: "save-doc",
+    expect(updateRAGDocumentsBackgroundMock).toHaveBeenCalledWith(
+      [{ id: "npc:1", type: "unknown" }],
+      expect.objectContaining({
         forkId: 3,
         turnNumber: 11,
-      },
-    ]);
+        saveId: "save-doc",
+      }),
+      {},
+    );
   });
 
-  it("builds grouped context from search results", async () => {
+  it("builds context from search results", async () => {
     const service = createServiceMock();
     service.getStatus.mockResolvedValue({ currentSaveId: "save-c" });
     service.search.mockResolvedValue([
-      { document: { type: "story", content: "The gate opens" } },
-      { document: { type: "npc", content: "Alice watches" } },
-      { document: { type: "location", content: "Clocktower roof" } },
+      {
+        document: {
+          type: "story",
+          sourcePath: "world/story.md",
+          chunkIndex: 0,
+          chunkCount: 1,
+          content: "The gate opens",
+        },
+      },
+      {
+        document: {
+          type: "npc",
+          sourcePath: "world/npcs/alice.json",
+          chunkIndex: 1,
+          chunkCount: 2,
+          content: "Alice watches",
+        },
+      },
     ]);
 
     initializeRAGServiceMock.mockResolvedValue(service);
@@ -326,10 +333,10 @@ describe("useRagRuntime", () => {
       );
     });
 
-    expect(context).toContain("## Recent Story Context");
+    expect(context).toContain("[story] world/story.md (#1/1)");
     expect(context).toContain("The gate opens");
-    expect(context).toContain("## Relevant NPCs");
-    expect(context).toContain("## Relevant Locations");
+    expect(context).toContain("[npc] world/npcs/alice.json (#2/2)");
+    expect(context).toContain("Alice watches");
   });
 
   it("handles disable mismatch action by terminating RAG", async () => {
@@ -393,10 +400,10 @@ describe("useRagRuntime", () => {
 
     await act(async () => {
       await runtime.value.actions.initialize(createSettings());
-      await runtime.value.actions.indexInitialEntities({} as any, "save-m");
+      await runtime.value.actions.indexInitialEntities({} as any, "save-m", {} as any);
     });
 
-    expect(indexInitialRagDocumentsMock).toHaveBeenCalledWith({}, "save-m");
+    expect(indexInitialRagDocumentsMock).toHaveBeenCalledWith({}, "save-m", {});
     expect(service.getStatus).toHaveBeenCalledTimes(2);
   });
 });

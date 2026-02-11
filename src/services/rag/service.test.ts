@@ -180,7 +180,7 @@ describe("RAGService", () => {
     expect(sentTypes).toEqual(
       expect.arrayContaining([
         "init",
-        "addDocuments",
+        "upsertFileChunks",
         "updateDocument",
         "deleteDocuments",
         "search",
@@ -208,7 +208,9 @@ describe("RAGService", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const service = new RAGService();
-    await service.initialize({}, {});
+    await service.initialize({ provider: "openai", modelId: "model-x" } as any, {
+      openai: { apiKey: "k" },
+    });
 
     const onReady = vi.fn();
     const onError = vi.fn();
@@ -245,7 +247,9 @@ describe("RAGService", () => {
     };
 
     const service = new RAGService();
-    await service.initialize({}, {});
+    await service.initialize({ provider: "openai", modelId: "model-x" } as any, {
+      openai: { apiKey: "k" },
+    });
 
     const promise = service.addDocuments([{ entityId: "npc:1", saveId: "s", forkId: 0, turnNumber: 0 }] as any);
     const rejection = expect(promise).rejects.toThrow("timed out");
@@ -266,7 +270,9 @@ describe("RAGService", () => {
     };
 
     const service = new RAGService();
-    await service.initialize({}, {});
+    await service.initialize({ provider: "openai", modelId: "model-x" } as any, {
+      openai: { apiKey: "k" },
+    });
 
     const pending = service.search("pending-query");
     const rejection = expect(pending).rejects.toThrow("Service terminated");

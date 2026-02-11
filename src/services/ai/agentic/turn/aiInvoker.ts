@@ -97,11 +97,11 @@ export async function invokeAI(
           );
           if (!meta?.silent) {
             incrementRetries(budgetState);
+            const retryPrompt = generateBudgetPrompt(budgetState, finishToolName);
+            history.push(
+              createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryPrompt}`),
+            );
           }
-          const retryPrompt = generateBudgetPrompt(budgetState, finishToolName);
-          history.push(
-            createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryPrompt}`),
-          );
         },
       },
     );

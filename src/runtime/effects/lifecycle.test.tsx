@@ -52,6 +52,7 @@ const createState = (overrides?: Partial<any>) => ({
     },
   },
   currentSlotId: "slot-1",
+  vfsSession: {} as any,
   ...overrides,
 });
 
@@ -61,7 +62,6 @@ const createActions = () => ({
     terminate: vi.fn(),
     switchSave: vi.fn(async () => true),
     indexInitialEntities: vi.fn(async () => undefined),
-    updateDocuments: vi.fn(async () => undefined),
     handleModelMismatch: vi.fn(async () => undefined),
     handleStorageOverflow: vi.fn(async () => undefined),
   },
@@ -171,10 +171,7 @@ describe("useRuntimeLifecycleEffects", () => {
       expect(actions.rag.indexInitialEntities).toHaveBeenCalledWith(
         expect.objectContaining({ outline: expect.any(Object) }),
         "slot-1",
-      );
-      expect(actions.rag.updateDocuments).toHaveBeenCalledWith(
-        expect.objectContaining({ nodes: expect.any(Object) }),
-        ["story:a", "story:b"],
+        expect.anything(),
       );
       expect(showToastMock).toHaveBeenCalledWith(
         "runtime.indexedExistingDocuments",

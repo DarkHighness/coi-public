@@ -47,8 +47,9 @@ describe("toolCallProcessor VFS integration", () => {
     const output = executeGenericTool(
       "vfs_write",
       {
-        files: [
+        ops: [
           {
+            op: "write_file",
             path: "current/world/global.json",
             content: JSON.stringify(createValidGlobal()),
             contentType: "application/json",
@@ -63,9 +64,12 @@ describe("toolCallProcessor VFS integration", () => {
     ) as { success?: boolean };
 
     expect(output.success).toBe(true);
-    expect(JSON.parse(session.readFile("world/global.json")?.content ?? "{}").time).toBe(
-      "Day 1",
+    const snapshot = session.snapshot();
+    const globalEntry = Object.values(snapshot).find((entry) =>
+      entry?.content?.includes('"time":"Day 1"'),
     );
+    expect(globalEntry).toBeTruthy();
+    expect(JSON.parse(globalEntry?.content ?? "{}").time).toBe("Day 1");
   });
 
   it("builds response from conversation turn files", () => {
@@ -85,7 +89,6 @@ describe("toolCallProcessor VFS integration", () => {
       {
         userAction: "start",
         assistant: createAssistantPayload("hello"),
-        createdAt: 1,
       },
       {
         loopState,
@@ -117,7 +120,6 @@ describe("toolCallProcessor VFS integration", () => {
       {
         userAction: "start",
         assistant: createAssistantPayload("hello"),
-        createdAt: 1,
       },
       {
         loopState,
@@ -150,7 +152,6 @@ describe("toolCallProcessor VFS integration", () => {
       {
         userAction: "start",
         assistant: createAssistantPayload("hello"),
-        createdAt: 1,
       },
       {
         loopState,
@@ -168,7 +169,6 @@ describe("toolCallProcessor VFS integration", () => {
       {
         userAction: "next",
         assistant: createAssistantPayload("second"),
-        createdAt: 2,
       },
       {
         loopState,

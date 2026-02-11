@@ -103,4 +103,67 @@ describe("vfs_ls v5", () => {
     expect(unknownResult.success).toBe(true);
     expect(unknownResult.data.stats[0]?.category).toBe("unknown");
   });
+
+  it("can return expected layout and access metadata for plain listing", () => {
+    const session = new VfsSession();
+
+    const result = dispatchToolCall(
+      "vfs_ls",
+      {
+        path: "current/world",
+        includeExpected: true,
+        includeAccess: true,
+      },
+      { vfsSession: session },
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(Array.isArray(result.data.layout)).toBe(true);
+
+    const scaffold = (result.data.layout as any[]).find(
+      (entry) => entry.path === "current/world/characters/README.md",
+    );
+    expect(scaffold).toBeDefined();
+    expect(scaffold.exists).toBe(false);
+    expect(scaffold.expected).toBe(true);
+    expect(scaffold.sources).toContain("directory_scaffold");
+    expect(scaffold.permissionClass).toBe("default_editable");
+  });
+
+  it("rejects includeExpected in glob mode", () => {
+    const session = new VfsSession();
+
+    const result = dispatchToolCall(
+      "vfs_ls",
+      {
+        path: "current/world",
+        patterns: ["**/*.json"],
+        includeExpected: true,
+      },
+      { vfsSession: session },
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+  });
+
+  it("can include access metadata in glob mode", () => {
+    const session = new VfsSession();
+    session.writeFile("world/global.json", "{}", "application/json");
+
+    const result = dispatchToolCall(
+      "vfs_ls",
+      {
+        path: "current/world",
+        patterns: ["**/*.json"],
+        includeAccess: true,
+      },
+      { vfsSession: session },
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(Array.isArray(result.data.access)).toBe(true);
+    expect(result.data.access[0].templateId).toBe("template.story.world");
+    expect(result.data.access[0].readability).toBe("read_write");
+  });
 });
