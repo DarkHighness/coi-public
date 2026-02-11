@@ -77,6 +77,36 @@ describe("toolHandlerRegistry", () => {
     expect(result).toEqual({ ok: true, args: { id: 1 } });
   });
 
+  it("dispatches prefixed tool names by stripping known prefixes", () => {
+    const toolName = makeUniqueName("prefixed_tool");
+    registerHandlerByName(toolName, (args) => ({ success: true, args }));
+
+    expect(hasHandler(`default_api:${toolName}`)).toBe(true);
+    expect(hasHandler(`functions.${toolName}`)).toBe(true);
+    expect(hasHandler(`tool:${toolName}`)).toBe(true);
+    expect(hasHandler(`default_api:functions.${toolName}`)).toBe(true);
+
+    const resultA = dispatchToolCall(
+      `default_api:${toolName}`,
+      { ok: "a" },
+      { vfsSession: {} as any },
+    );
+    const resultB = dispatchToolCall(
+      `functions.${toolName}`,
+      { ok: "b" },
+      { vfsSession: {} as any },
+    );
+    const resultC = dispatchToolCall(
+      `default_api:functions.${toolName}`,
+      { ok: "c" },
+      { vfsSession: {} as any },
+    );
+
+    expect(resultA).toEqual({ success: true, args: { ok: "a" } });
+    expect(resultB).toEqual({ success: true, args: { ok: "b" } });
+    expect(resultC).toEqual({ success: true, args: { ok: "c" } });
+  });
+
   it("tracks changed entities only on successful id-bearing result", () => {
     const changed = new Map<string, string>();
 
