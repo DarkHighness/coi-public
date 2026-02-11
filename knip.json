@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/index.tsx",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "src/i18next.config.ts",
+    "scripts/**/*.{js,cjs,mjs,ts}"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.{js,cjs,mjs,ts}"
+  ],
+  "ignoreDependencies": [
+    "@testing-library/jest-dom",
+    "@testing-library/user-event",
+    "prettier"
+  ]
+}
