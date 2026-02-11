@@ -231,3 +231,196 @@ describe("openaiProvider streaming usage", () => {
     ]);
   });
 });
+
+describe("openaiProvider helper conversions", () => {
+  it("parses nested cache usage and derives completion from totals", async () => {
+    const { parseOpenAIUsage } = await import("./openaiProvider");
+
+    expect(
+      parseOpenAIUsage({
+        prompt_tokens: 20,
+        total_tokens: 31,
+        prompt_tokens_details: { cached_tokens: 4 },
+      }),
+    ).toEqual({
+      promptTokens: 20,
+      completionTokens: 11,
+      totalTokens: 31,
+      cacheRead: 4,
+      reported: true,
+    });
+  });
+
+  it("returns unreported usage when payload has no known keys", async () => {
+    const { parseOpenAIUsage } = await import("./openaiProvider");
+
+    expect(parseOpenAIUsage({ foo: "bar" })).toEqual({
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+      reported: false,
+    });
+  });
+
+  it("builds tool call message with thought signature metadata", async () => {
+    const { buildToolCallMessage } = await import("./openaiProvider");
+
+    const message = buildToolCallMessage(
+      [
+        {
+          id: "call-1",
+          name: "vfs_read",
+          args: { path: "current/world/story.json" },
+          thoughtSignature: "sig-1",
+        },
+      ],
+      "analysis",
+    );
+
+    expect(message).toEqual({
+      role: "assistant",
+      content: "analysis",
+      tool_calls: [
+        {
+          id: "call-1",
+          type: "function",
+          function: {
+            name: "vfs_read",
+            arguments: JSON.stringify({ path: "current/world/story.json" }),
+          },
+          extra_content: {
+            google: {
+              thought_signature: "sig-1",
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("builds tool response and serializes object payloads", async () => {
+    const { buildToolResponseMessage } = await import("./openaiProvider");
+
+    expect(buildToolResponseMessage("call-2", { ok: true })).toEqual({
+      role: "tool",
+      tool_call_id: "call-2",
+      content: JSON.stringify({ ok: true }),
+    });
+  });
+
+  it("extracts tool calls with thought signature fallback", async () => {
+    const { extractToolCalls } = await import("./openaiProvider");
+
+    const response = {
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                id: "call-x",
+                type: "function",
+                function: {
+                  name: "vfs_ls",
+                  arguments: JSON.stringify({ path: "current" }),
+                  thought_signature: "sig-x",
+                },
+              },
+            ],
+          },
+        },
+      ],
+    } as any;
+
+    expect(extractToolCalls(response)).toEqual([
+      {
+        id: "call-x",
+        name: "vfs_ls",
+        args: { path: "current" },
+        thoughtSignature: "sig-x",
+      },
+    ]);
+  });
+
+  it("converts user text+image unified message into vision content array", async () => {
+    const { fromUnifiedMessage } = await import("./openaiProvider");
+
+    const converted = fromUnifiedMessage({
+      role: "user",
+      content: [
+        { type: "text", text: "Look at this" },
+        {
+          type: "image",
+          mimeType: "image/png",
+          data: "QUJD",
+        },
+      ],
+    } as any);
+
+    expect(converted).toEqual({
+      role: "user",
+      content: [
+        { type: "text", text: "Look at this" },
+        {
+          type: "image_url",
+          image_url: { url: "data:image/png;base64,QUJD" },
+        },
+      ],
+    });
+  });
+
+  it("converts assistant tool_use message into tool_calls payload", async () => {
+    const { fromUnifiedMessage } = await import("./openaiProvider");
+
+    const converted = fromUnifiedMessage({
+      role: "assistant",
+      content: [
+        { type: "text", text: "running tool" },
+        {
+          type: "tool_use",
+          toolUse: {
+            id: "call-3",
+            name: "vfs_edit",
+            args: { path: "current/world/story.json" },
+            thoughtSignature: "sig-3",
+          },
+        },
+      ],
+    } as any);
+
+    expect(converted).toEqual({
+      role: "assistant",
+      content: "running tool",
+      tool_calls: [
+        {
+          id: "call-3",
+          type: "function",
+          function: {
+            name: "vfs_edit",
+            arguments: JSON.stringify({ path: "current/world/story.json" }),
+          },
+          extra_content: {
+            google: {
+              thought_signature: "sig-3",
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("builds message list with developer role for reasoning models", async () => {
+    const { fromUnifiedMessages } = await import("./openaiProvider");
+
+    const converted = fromUnifiedMessages(
+      "reasoning-system",
+      [
+        { role: "system", content: [{ type: "text", text: "skip me" }] },
+        { role: "user", content: [{ type: "text", text: "hello" }] },
+      ] as any,
+      true,
+    );
+
+    expect(converted[0]).toEqual({ role: "developer", content: "reasoning-system" });
+    expect(converted[1]).toEqual({ role: "user", content: "hello" });
+  });
+});

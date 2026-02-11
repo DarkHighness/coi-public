@@ -409,11 +409,9 @@ async function runSummaryLoopCore(options: {
         finishToolName,
         onRetry: (msg, count, meta) => {
           console.warn(`[SummaryLoop] Retry ${count}: ${msg}`);
-          if (meta?.silent) {
-            return;
+          if (!meta?.silent) {
+            incrementRetries(loopState.budgetState);
           }
-
-          incrementRetries(loopState.budgetState);
           conversationHistory.push(
             createUserMessage(
               `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(loopState.budgetState, finishToolName)}`,
@@ -577,25 +575,7 @@ async function runSummaryLoopCore(options: {
         vfsMode: "normal" as const,
       };
 
-      let hasPriorToolFailure = false;
-
       for (const call of functionCalls) {
-        if (call.name === finishToolName && hasPriorToolFailure) {
-          toolResponses.push({
-            toolCallId: call.id,
-            name: call.name,
-            content: {
-              success: false,
-              error:
-                `[ERROR: FINISH_BLOCKED_BY_PREVIOUS_FAILURE] One or more tool calls before finish failed in this batch. ` +
-                `Fix those failures first, then call "${finishToolName}" again as the LAST tool call.`,
-              code: "INVALID_ACTION",
-            },
-          });
-          hasPriorToolFailure = true;
-          continue;
-        }
-
         const crossForkViolations = findSummaryCrossForkViolations(call.args, forkId);
         if (crossForkViolations.length > 0) {
           const details = crossForkViolations
@@ -613,7 +593,6 @@ async function runSummaryLoopCore(options: {
               code: "INVALID_ACTION",
             },
           });
-          hasPriorToolFailure = true;
           continue;
         }
 
@@ -623,36 +602,20 @@ async function runSummaryLoopCore(options: {
             input.nodeRange,
           );
           if (!finishRangeValidation.ok) {
-            const failure = finishRangeValidation as {
-              ok: false;
-              error: string;
-              code: "INVALID_DATA";
-            };
-
             toolResponses.push({
               toolCallId: call.id,
               name: call.name,
               content: {
                 success: false,
-                error: failure.error,
-                code: failure.code,
+                error: finishRangeValidation.error,
+                code: finishRangeValidation.code,
               },
             });
-            hasPriorToolFailure = true;
             continue;
           }
         }
 
         const output = await dispatchToolCallAsync(call.name, call.args, toolCtx);
-
-        const isToolFailure =
-          !!output &&
-          typeof output === "object" &&
-          "success" in (output as any) &&
-          (output as any).success === false;
-        if (isToolFailure) {
-          hasPriorToolFailure = true;
-        }
 
         if (call.name === finishToolName && output && (output as any).success) {
           const produced = (output as any).data?.summary ?? null;
@@ -689,7 +652,6 @@ async function runSummaryLoopCore(options: {
                   code: "INVALID_SUMMARY",
                 },
               });
-              hasPriorToolFailure = true;
               allLogs.push(
                 createLogEntry({
                   provider: providerProtocol,
@@ -786,7 +748,7 @@ export async function runCompactSummaryLoop(
       `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
       `- Set lastSummarizedIndex = ${targetLastSummarizedIndex}.\n` +
       `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
-      `Before finish, read protocol (hub first): "current/skills/commands/runtime/SKILL.md", then "current/skills/commands/runtime/compact/SKILL.md".\n` +
+      `Before finish, read protocol: "current/skills/commands/compact/SKILL.md".\n` +
       `If you need to verify details, use read-only VFS tools (vfs_read_json/search/grep/etc.) and stay on target fork only.`,
   );
 

@@ -95,11 +95,9 @@ export async function invokeAI(
           console.warn(
             `[AIInvoker] Retry ${count}/${remainingRetries}: ${err}`,
           );
-          if (meta?.silent) {
-            return;
+          if (!meta?.silent) {
+            incrementRetries(budgetState);
           }
-
-          incrementRetries(budgetState);
           const retryPrompt = generateBudgetPrompt(budgetState, finishToolName);
           history.push(
             createUserMessage(`[SYSTEM: BUDGET UPDATE]\n${retryPrompt}`),

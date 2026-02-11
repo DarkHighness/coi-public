@@ -45,21 +45,21 @@ export function classifyAgenticError(
     providerCode === "MALFORMED_TOOL_CALL" ||
     MALFORMED_TOOL_CALL_PATTERN.test(rawMessage);
 
-  if (providerCode === "MALFORMED_TOOL_CALL" || isMalformedToolCall) {
-    return {
-      kind: "model_fixable",
-      rawMessage,
-      providerCode,
-      isMalformedToolCall: true,
-    };
-  }
-
   if (isContextLengthError(error) || isInvalidArgumentError(error)) {
     return {
       kind: "rebuild_required",
       rawMessage,
       providerCode,
       isMalformedToolCall,
+    };
+  }
+
+  if (providerCode === "MALFORMED_TOOL_CALL" || isMalformedToolCall) {
+    return {
+      kind: "model_fixable",
+      rawMessage,
+      providerCode,
+      isMalformedToolCall: true,
     };
   }
 

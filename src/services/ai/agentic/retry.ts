@@ -531,12 +531,12 @@ export async function callWithAgenticRetry(
 
     // Execute onRetry callback AFTER error messages are in history
     // This allows the callback to inject new prompts (e.g. Budget Status) that appear AFTER the error
-    if (onRetry) {
-      onRetry(errorMessage, attempt, {
-        silent: false,
-        classification: "model_fixable",
-      });
-    }
+      if (onRetry) {
+        onRetry(errorMessage, attempt, {
+          silent: false,
+          classification: "model_fixable",
+        });
+      }
   }
 
   throw new Error("Maximum retries exceeded");
