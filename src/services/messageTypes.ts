@@ -83,9 +83,6 @@ export const createUserMessage = (text: string): UnifiedMessage =>
 export const createAssistantMessage = (text: string): UnifiedMessage =>
   createTextMessage("assistant", text);
 
-export const createSystemMessage = (text: string): UnifiedMessage =>
-  createTextMessage("system", text);
-
 export const createToolCallMessage = (
   toolCalls: Array<{
     id: string;

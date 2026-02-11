@@ -40,103 +40,6 @@ export interface AccessTimestamp {
   timestamp: number;
 }
 
-/**
- * 比较两个版本化时间戳
- * @returns 负数表示 a 在 b 之前，正数表示 a 在 b 之后，0 表示相同
- */
-export function compareVersionedTimestamp(
-  a: VersionedTimestamp | undefined,
-  b: VersionedTimestamp | undefined,
-): number {
-  // undefined 视为最早
-  if (!a && !b) return 0;
-  if (!a) return -1;
-  if (!b) return 1;
-
-  // 先比较 forkId
-  if (a.forkId !== b.forkId) {
-    return a.forkId - b.forkId;
-  }
-  // 相同 forkId 时比较 turnNumber
-  if (a.turnNumber !== b.turnNumber) {
-    return a.turnNumber - b.turnNumber;
-  }
-  // 都相同时比较 timestamp
-  return a.timestamp - b.timestamp;
-}
-
-/**
- * 比较两个访问时间戳
- * @returns 负数表示 a 在 b 之前，正数表示 a 在 b 之后，0 表示相同
- */
-export function compareAccessTimestamp(
-  a: AccessTimestamp | undefined,
-  b: AccessTimestamp | undefined,
-): number {
-  // undefined 视为最早（最不活跃）
-  if (!a && !b) return 0;
-  if (!a) return -1;
-  if (!b) return 1;
-
-  // 先比较 forkId
-  if (a.forkId !== b.forkId) {
-    return a.forkId - b.forkId;
-  }
-  // 相同 forkId 时比较 turnNumber
-  if (a.turnNumber !== b.turnNumber) {
-    return a.turnNumber - b.turnNumber;
-  }
-  // 都相同时比较 timestamp
-  return a.timestamp - b.timestamp;
-}
-
-/**
- * 创建当前版本化时间戳
- */
-export function createVersionedTimestamp(state: {
-  forkId: number;
-  turnNumber: number;
-}): VersionedTimestamp {
-  return {
-    forkId: state.forkId,
-    turnNumber: state.turnNumber,
-    timestamp: Date.now(),
-  };
-}
-
-/**
- * 从旧格式的 lastModified/lastAccess（Date.now()）迁移到版本化时间戳
- * 用于向后兼容
- */
-export function migrateFromLegacyTimestamp(
-  legacyTimestamp: number | VersionedTimestamp | undefined,
-  defaultForkId: number = 0,
-  defaultTurnNumber: number = 0,
-): VersionedTimestamp {
-  if (!legacyTimestamp) {
-    return {
-      forkId: defaultForkId,
-      turnNumber: defaultTurnNumber,
-      timestamp: Date.now(),
-    };
-  }
-  if (typeof legacyTimestamp === "object" && "forkId" in legacyTimestamp) {
-    // 已经是新格式，确保有 timestamp
-    return {
-      forkId: legacyTimestamp.forkId,
-      turnNumber: legacyTimestamp.turnNumber,
-      timestamp: legacyTimestamp.timestamp ?? Date.now(),
-    };
-  }
-  // 旧格式是 Date.now()，保留作为 timestamp
-  return {
-    forkId: defaultForkId,
-    turnNumber: defaultTurnNumber,
-    timestamp:
-      typeof legacyTimestamp === "number" ? legacyTimestamp : Date.now(),
-  };
-}
-
 // ============================================================================
 // 从 zodSchemas.ts 导入统一的类型
 // ============================================================================
@@ -1414,10 +1317,29 @@ export type EmbeddingTaskType =
   | "classification"
   | "clustering";
 
+export type EmbeddingRuntime =
+  | "remote"
+  | "local_transformers"
+  | "local_tfjs";
+export type LocalEmbeddingBackend = "webgpu" | "webgl" | "cpu";
+export type LocalTransformersDevice = "webgpu" | "wasm" | "cpu";
+
+export interface LocalEmbeddingOptions {
+  backend?: "transformers_js" | "tfjs";
+  model?: "use-lite-512";
+  transformersModel?: string;
+  backendOrder?: LocalEmbeddingBackend[];
+  deviceOrder?: LocalTransformersDevice[];
+  batchSize?: number;
+  quantized?: boolean;
+}
+
 export interface EmbeddingConfig {
   providerId: string; // 引用 ProviderInstance.id
   modelId: string;
   enabled: boolean;
+  runtime?: EmbeddingRuntime;
+  local?: LocalEmbeddingOptions;
   dimensions?: number; // Optional: output dimensions (e.g., 256, 768, 1536)
   topK?: number; // Number of results to retrieve
   similarityThreshold?: number; // Minimum similarity score (0-1)
@@ -1437,6 +1359,9 @@ export interface EmbeddingConfig {
 
     // Type-specific limits
     storyMaxEntries?: number; // Max story documents (default: 50)
+
+    // RAG storage budget (MB). Applies to reclaimable tiers only.
+    maxRagStorageMB?: number;
   };
 
   /** @deprecated Use storage instead */

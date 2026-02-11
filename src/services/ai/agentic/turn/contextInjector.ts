@@ -26,8 +26,11 @@ import {
  */
 export function injectSudoModeInstruction(
   history: UnifiedMessage[],
+  ragEnabled: boolean = true,
 ): void {
-  history.push(createUserMessage(sudoModeInstruction({ toolsetId: "turn" })));
+  history.push(
+    createUserMessage(sudoModeInstruction({ toolsetId: "turn", ragEnabled })),
+  );
   history.push(
     createUserMessage(
       [
@@ -54,11 +57,13 @@ export function injectNormalTurnInstruction(
     turnNumber?: number;
     mode?: "normal" | "cleanup";
   },
+  ragEnabled: boolean = true,
 ): void {
   history.push(
     createUserMessage(
       (isCleanupMode ? cleanupTurnInstruction : normalTurnInstruction)({
         finishToolName,
+        ragEnabled,
       }),
     ),
   );

@@ -63,11 +63,6 @@ const DesktopGameLayout = React.lazy(() =>
     default: module.DesktopGameLayout,
   })),
 );
-const RAGDebugger = React.lazy(() =>
-  import("../ragDebugger").then((module) => ({
-    default: module.RAGDebugger,
-  })),
-);
 const GameStateViewer = React.lazy(() =>
   import("../GameStateViewer").then((module) => ({
     default: module.GameStateViewer,
@@ -146,7 +141,6 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
   const [isStateEditorOpen, setIsStateEditorOpen] = useState(false);
   const [stateEditorSessionToken, setStateEditorSessionToken] = useState<string | null>(null);
-  const [isRAGDebuggerOpen, setIsRAGDebuggerOpen] = useState(false);
   const [isGameStateViewerOpen, setIsGameStateViewerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
@@ -204,7 +198,6 @@ export const GamePage: React.FC<GamePageProps> = ({
     isMagicMirrorOpen ||
     isVeoScriptOpen ||
     isStateEditorOpen ||
-    isRAGDebuggerOpen ||
     isGameStateViewerOpen ||
     isGalleryOpen;
 
@@ -524,7 +517,6 @@ export const GamePage: React.FC<GamePageProps> = ({
             onViewedSegmentChange={onViewedSegmentChange}
             onShowToast={(msg, type) => showToast(msg, type)}
             onOpenStateEditor={handleOpenStateEditor}
-            onOpenRAG={() => setIsRAGDebuggerOpen(true)}
             onOpenViewer={() => setIsGameStateViewerOpen(true)}
             onOpenGallery={() => setIsGalleryOpen(true)}
             onForceUpdate={handleForceUpdate}
@@ -557,7 +549,6 @@ export const GamePage: React.FC<GamePageProps> = ({
             onViewedSegmentChange={onViewedSegmentChange}
             onShowToast={(msg, type) => showToast(msg, type)}
             onOpenStateEditor={handleOpenStateEditor}
-            onOpenRAG={() => setIsRAGDebuggerOpen(true)}
             onOpenViewer={() => setIsGameStateViewerOpen(true)}
             onOpenGallery={() => setIsGalleryOpen(true)}
             onForceUpdate={handleForceUpdate}
@@ -621,16 +612,6 @@ export const GamePage: React.FC<GamePageProps> = ({
             editorSessionToken={stateEditorSessionToken}
             applyVfsMutation={engineActions.applyVfsMutation}
             onShowToast={(msg, type) => showToast(msg, type)}
-          />
-        )}
-
-        {isRAGDebuggerOpen && (
-          <RAGDebugger
-            isOpen={isRAGDebuggerOpen}
-            onClose={() => setIsRAGDebuggerOpen(false)}
-            themeFont={themeFont}
-            gameState={gameState}
-            aiSettings={aiSettings}
           />
         )}
 

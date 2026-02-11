@@ -1,382 +1,488 @@
 /**
- * PGlite Database Layer
- *
- * Manages PGlite database with pgvector extension for vector similarity search
- * Stores data in IndexedDB for persistence
+ * RAG Database (VFS-first)
  */
 
 import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite/vector";
 import type {
-  RAGDocument,
-  RAGDocumentMeta,
   DocumentType,
-  RAGConfig,
-  SearchResult,
-  SaveStats,
   GlobalStorageStats,
   ModelMismatchInfo,
+  RAGConfig,
+  RAGDocument,
+  RAGDocumentMeta,
+  ReusableEmbeddingLookupItem,
+  SaveStats,
+  SearchResult,
   StorageOverflowInfo,
 } from "./types";
 
-// ============================================================================
-// Database Schema
-// ============================================================================
+const DOCUMENT_TYPES: DocumentType[] = ["json", "markdown", "text"];
 
 const SCHEMA = `
--- Enable vector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Main documents table
+CREATE TABLE IF NOT EXISTS rag_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY,
-  entity_id TEXT NOT NULL,
-  type TEXT NOT NULL,
-  content TEXT NOT NULL,
   save_id TEXT NOT NULL,
   fork_id INTEGER NOT NULL,
   turn_number INTEGER NOT NULL,
-  version INTEGER NOT NULL DEFAULT 1,
-  embedding_model TEXT NOT NULL DEFAULT 'text-embedding-004',
-  embedding_provider TEXT NOT NULL DEFAULT 'gemini',
-  importance REAL DEFAULT 0.5,
-  unlocked BOOLEAN DEFAULT FALSE,
+
+  source_path TEXT NOT NULL,
+  canonical_path TEXT NOT NULL,
+  doc_type TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  file_hash TEXT NOT NULL,
+  chunk_index INTEGER NOT NULL,
+  chunk_count INTEGER NOT NULL,
+
+  content TEXT NOT NULL,
+
+  embedding_model TEXT NOT NULL,
+  embedding_provider TEXT NOT NULL,
+  importance REAL NOT NULL DEFAULT 0.5,
+  tags TEXT,
   created_at BIGINT NOT NULL,
-  last_access BIGINT NOT NULL
+  last_access BIGINT NOT NULL,
+
+  is_latest BOOLEAN NOT NULL DEFAULT TRUE,
+  superseded_at_turn INTEGER,
+  estimated_bytes BIGINT NOT NULL DEFAULT 0,
+
+  UNIQUE(save_id, fork_id, canonical_path, file_hash, chunk_index, embedding_model, embedding_provider, is_latest)
 );
 
--- Embeddings table (separate for efficiency)
 CREATE TABLE IF NOT EXISTS embeddings (
   doc_id TEXT PRIMARY KEY REFERENCES documents(id) ON DELETE CASCADE,
   embedding vector
 );
 
--- Indexes for efficient queries
-CREATE INDEX IF NOT EXISTS idx_documents_save_id ON documents(save_id);
-CREATE INDEX IF NOT EXISTS idx_documents_entity_id ON documents(entity_id);
-CREATE INDEX IF NOT EXISTS idx_documents_type ON documents(type);
-CREATE INDEX IF NOT EXISTS idx_documents_fork_id ON documents(fork_id);
-CREATE INDEX IF NOT EXISTS idx_documents_turn ON documents(turn_number);
-CREATE INDEX IF NOT EXISTS idx_documents_save_fork ON documents(save_id, fork_id);
-CREATE INDEX IF NOT EXISTS idx_documents_entity_version ON documents(entity_id, version DESC);
-CREATE INDEX IF NOT EXISTS idx_documents_model ON documents(embedding_model, embedding_provider);
-
--- Save metadata table
 CREATE TABLE IF NOT EXISTS save_metadata (
   save_id TEXT PRIMARY KEY,
   current_fork_id INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
   last_updated BIGINT NOT NULL,
   document_count INTEGER NOT NULL DEFAULT 0,
   embedding_model TEXT,
-  embedding_provider TEXT
+  embedding_provider TEXT,
+  last_accessed BIGINT NOT NULL DEFAULT 0
 );
 
--- Version tracking for entity history
-CREATE TABLE IF NOT EXISTS entity_versions (
-  entity_id TEXT NOT NULL,
-  save_id TEXT NOT NULL,
-  fork_id INTEGER NOT NULL,
-  version INTEGER NOT NULL,
-  doc_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  PRIMARY KEY (entity_id, save_id, fork_id, version)
-);
+CREATE INDEX IF NOT EXISTS idx_documents_save_id ON documents(save_id);
+CREATE INDEX IF NOT EXISTS idx_documents_save_fork ON documents(save_id, fork_id);
+CREATE INDEX IF NOT EXISTS idx_documents_source_path ON documents(source_path);
+CREATE INDEX IF NOT EXISTS idx_documents_canonical_path ON documents(canonical_path);
+CREATE INDEX IF NOT EXISTS idx_documents_type ON documents(doc_type);
+CREATE INDEX IF NOT EXISTS idx_documents_content_type ON documents(content_type);
+CREATE INDEX IF NOT EXISTS idx_documents_turn_number ON documents(turn_number);
+CREATE INDEX IF NOT EXISTS idx_documents_last_access ON documents(last_access);
+CREATE INDEX IF NOT EXISTS idx_documents_file_hash ON documents(file_hash);
+CREATE INDEX IF NOT EXISTS idx_documents_latest ON documents(save_id, fork_id, is_latest);
+CREATE INDEX IF NOT EXISTS idx_documents_model ON documents(embedding_model, embedding_provider);
+CREATE INDEX IF NOT EXISTS idx_documents_estimated_bytes ON documents(estimated_bytes);
+CREATE INDEX IF NOT EXISTS idx_save_metadata_active ON save_metadata(is_active, last_accessed);
 `;
 
-// Migration for existing databases
-const MIGRATIONS = [
-  // Add model tracking columns if not exist
-  `ALTER TABLE documents ADD COLUMN IF NOT EXISTS embedding_model TEXT DEFAULT 'text-embedding-004'`,
-  `ALTER TABLE documents ADD COLUMN IF NOT EXISTS embedding_provider TEXT DEFAULT 'gemini'`,
-  `ALTER TABLE save_metadata ADD COLUMN IF NOT EXISTS embedding_model TEXT`,
-  `ALTER TABLE save_metadata ADD COLUMN IF NOT EXISTS embedding_provider TEXT`,
-];
+interface StorageTierBytes {
+  protectedBytes: number;
+  currentForkHistoryBytes: number;
+  activeOtherForkBytes: number;
+  inactiveGameBytes: number;
+  totalBytes: number;
+  reclaimableBytes: number;
+}
 
-// ============================================================================
-// PGlite Database Class
-// ============================================================================
+const PROTECTED_CONDITION =
+  "COALESCE(sm.is_active, FALSE) = TRUE AND d.fork_id = COALESCE(sm.current_fork_id, 0) AND d.is_latest = TRUE";
+const TIER_A_CONDITION =
+  "COALESCE(sm.is_active, FALSE) = TRUE AND d.fork_id = COALESCE(sm.current_fork_id, 0) AND d.is_latest = FALSE";
+const TIER_B_CONDITION =
+  "COALESCE(sm.is_active, FALSE) = TRUE AND d.fork_id <> COALESCE(sm.current_fork_id, 0)";
+const TIER_C_CONDITION = "COALESCE(sm.is_active, FALSE) = FALSE";
 
 export class RAGDatabase {
   private db: PGlite | null = null;
-  private config: RAGConfig;
-  private initialized: boolean = false;
+  private readonly config: RAGConfig;
+  private initialized = false;
 
   constructor(config: RAGConfig) {
     this.config = config;
   }
 
-  // ==========================================================================
-  // Initialization
-  // ==========================================================================
-
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    try {
-      // Initialize PGlite with IndexedDB persistence and vector extension
-      this.db = new PGlite(`idb://${this.config.dbName}`, {
-        extensions: { vector },
-      });
+    this.db = new PGlite(`idb://${this.config.dbName}`, {
+      extensions: { vector },
+    });
 
-      // Wait for database to be ready
-      await this.db.waitReady;
+    await this.db.waitReady;
+    await this.db.exec(SCHEMA);
+    await this.ensureSchemaVersion();
 
-      // Create schema
-      await this.db.exec(SCHEMA);
+    this.initialized = true;
+    console.log("[RAGDatabase] Initialized");
+  }
 
-      // Run migrations
-      for (const migration of MIGRATIONS) {
-        try {
-          await this.db.exec(migration);
-        } catch (e) {
-          // Ignore errors (column might already exist)
-        }
-      }
+  private async ensureSchemaVersion(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
 
-      // Set vector dimensions dynamically if needed
-      await this.ensureVectorDimensions();
+    const result = await this.db.query<any>(
+      `SELECT value FROM rag_meta WHERE key = 'schema_version' LIMIT 1`,
+    );
 
-      this.initialized = true;
-      console.log("[RAGDatabase] Initialized successfully");
-    } catch (error) {
-      console.error("[RAGDatabase] Initialization failed:", error);
-      throw error;
+    const stored = result.rows[0]?.value;
+    const expected = String(this.config.schemaVersion);
+
+    if (stored === expected) {
+      return;
     }
+
+    if (stored) {
+      console.warn(
+        `[RAGDatabase] Schema mismatch detected (${stored} -> ${expected}), rebuilding`,
+      );
+      await this.resetSchema();
+      await this.db.exec(SCHEMA);
+    }
+
+    await this.db.query(
+      `INSERT INTO rag_meta (key, value)
+       VALUES ('schema_version', $1)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [expected],
+    );
   }
 
-  private async ensureVectorDimensions(): Promise<void> {
-    // Check if embeddings table has correct dimensions
-    // PGlite vector doesn't require dimension specification upfront
-    // The dimension is determined by the first inserted vector
+  private async resetSchema(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    await this.db.exec(`
+      DROP TABLE IF EXISTS embeddings;
+      DROP TABLE IF EXISTS documents;
+      DROP TABLE IF EXISTS save_metadata;
+      DROP TABLE IF EXISTS rag_meta;
+    `);
   }
 
-  // ==========================================================================
-  // Document Operations
-  // ==========================================================================
+  private estimateDocumentBytes(doc: Pick<RAGDocument, "content" | "embedding">): number {
+    const contentBytes = Math.max(0, doc.content.length * 2);
+    const embeddingBytes = doc.embedding ? doc.embedding.length * 4 : 0;
+    return contentBytes + embeddingBytes + 256;
+  }
 
   async addDocument(doc: RAGDocument): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const now = Date.now();
+    const tagsJson = doc.tags ? JSON.stringify(doc.tags) : null;
+    const estimatedBytes =
+      doc.estimatedBytes > 0
+        ? Math.round(doc.estimatedBytes)
+        : this.estimateDocumentBytes(doc);
 
-    // Get next version for this entity
-    const version = await this.getNextVersion(
-      doc.entityId,
-      doc.saveId,
-      doc.forkId,
-    );
-
-    console.log(
-      `[RAGDatabase] addDocument: entityId=${doc.entityId}, type=${doc.type}, saveId=${doc.saveId}, version=${version}`,
-    );
-
-    // Insert document with model info
     await this.db.query(
-      `INSERT INTO documents (id, entity_id, type, content, save_id, fork_id, turn_number, version,
-         embedding_model, embedding_provider, importance, unlocked, created_at, last_access)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-       ON CONFLICT (id) DO UPDATE SET
-         content = EXCLUDED.content,
-         importance = EXCLUDED.importance,
-         unlocked = EXCLUDED.unlocked,
-         last_access = EXCLUDED.last_access`,
+      `UPDATE documents
+       SET is_latest = FALSE,
+           superseded_at_turn = CASE
+             WHEN superseded_at_turn IS NULL THEN $7
+             ELSE superseded_at_turn
+           END
+       WHERE save_id = $1
+         AND fork_id = $2
+         AND canonical_path = $3
+         AND chunk_index = $4
+         AND embedding_model = $5
+         AND embedding_provider = $6
+         AND is_latest = TRUE
+         AND id != $8`,
       [
-        doc.id,
-        doc.entityId,
-        doc.type,
-        doc.content,
         doc.saveId,
         doc.forkId,
-        doc.turnNumber,
-        version,
+        doc.canonicalPath,
+        doc.chunkIndex,
         doc.embeddingModel,
         doc.embeddingProvider,
-        doc.importance,
-        doc.unlocked,
-        now,
-        now,
+        doc.turnNumber,
+        doc.id,
       ],
     );
 
-    // Insert embedding if provided
-    if (doc.embedding) {
-      await this.setEmbedding(doc.id, doc.embedding);
-    }
-
-    // Track version
     await this.db.query(
-      `INSERT INTO entity_versions (entity_id, save_id, fork_id, version, doc_id)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (entity_id, save_id, fork_id, version) DO UPDATE SET doc_id = EXCLUDED.doc_id`,
-      [doc.entityId, doc.saveId, doc.forkId, version, doc.id],
+      `INSERT INTO documents (
+        id, save_id, fork_id, turn_number,
+        source_path, canonical_path, doc_type, content_type, file_hash, chunk_index, chunk_count,
+        content,
+        embedding_model, embedding_provider, importance, tags,
+        created_at, last_access,
+        is_latest, superseded_at_turn, estimated_bytes
+      ) VALUES (
+        $1, $2, $3, $4,
+        $5, $6, $7, $8, $9, $10, $11,
+        $12,
+        $13, $14, $15, $16,
+        $17, $18,
+        TRUE, NULL, $19
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        turn_number = EXCLUDED.turn_number,
+        source_path = EXCLUDED.source_path,
+        canonical_path = EXCLUDED.canonical_path,
+        doc_type = EXCLUDED.doc_type,
+        content_type = EXCLUDED.content_type,
+        file_hash = EXCLUDED.file_hash,
+        chunk_index = EXCLUDED.chunk_index,
+        chunk_count = EXCLUDED.chunk_count,
+        content = EXCLUDED.content,
+        embedding_model = EXCLUDED.embedding_model,
+        embedding_provider = EXCLUDED.embedding_provider,
+        importance = EXCLUDED.importance,
+        tags = EXCLUDED.tags,
+        last_access = EXCLUDED.last_access,
+        created_at = EXCLUDED.created_at,
+        is_latest = TRUE,
+        superseded_at_turn = NULL,
+        estimated_bytes = EXCLUDED.estimated_bytes`,
+      [
+        doc.id,
+        doc.saveId,
+        doc.forkId,
+        doc.turnNumber,
+        doc.sourcePath,
+        doc.canonicalPath,
+        doc.type,
+        doc.contentType,
+        doc.fileHash,
+        doc.chunkIndex,
+        doc.chunkCount,
+        doc.content,
+        doc.embeddingModel,
+        doc.embeddingProvider,
+        doc.importance,
+        tagsJson,
+        doc.createdAt,
+        doc.lastAccess,
+        estimatedBytes,
+      ],
     );
 
-    // Update save metadata with model info
-    await this.updateSaveMetadata(
+    if (doc.embedding && doc.embedding.length > 0) {
+      const embeddingVector = `[${Array.from(doc.embedding).join(",")}]`;
+      await this.db.query(
+        `INSERT INTO embeddings (doc_id, embedding)
+         VALUES ($1, $2::vector)
+         ON CONFLICT (doc_id) DO UPDATE SET embedding = EXCLUDED.embedding`,
+        [doc.id, embeddingVector],
+      );
+    }
+
+    await this.touchSaveMetadata(
       doc.saveId,
       doc.forkId,
       doc.embeddingModel,
       doc.embeddingProvider,
     );
-
-    // Enforce version limits
-    await this.enforceVersionLimits(doc.entityId, doc.saveId, doc.forkId);
   }
 
   async addDocuments(docs: RAGDocument[]): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (docs.length === 0) return;
 
-    console.log(
-      `[RAGDatabase] addDocuments: count=${docs.length}, saveId=${docs[0]?.saveId || "N/A"}`,
-    );
+    for (const doc of docs) {
+      await this.addDocument(doc);
+    }
 
-    // Use transaction for batch insert
-    await this.db.transaction(async (tx) => {
-      for (const doc of docs) {
-        const now = Date.now();
-        const version = await this.getNextVersionTx(
-          tx,
-          doc.entityId,
-          doc.saveId,
-          doc.forkId,
-        );
-
-        await tx.query(
-          `INSERT INTO documents (id, entity_id, type, content, save_id, fork_id, turn_number, version,
-             embedding_model, embedding_provider, importance, unlocked, created_at, last_access)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-           ON CONFLICT (id) DO UPDATE SET
-             content = EXCLUDED.content,
-             importance = EXCLUDED.importance,
-             unlocked = EXCLUDED.unlocked,
-             last_access = EXCLUDED.last_access`,
-          [
-            doc.id,
-            doc.entityId,
-            doc.type,
-            doc.content,
-            doc.saveId,
-            doc.forkId,
-            doc.turnNumber,
-            version,
-            doc.embeddingModel,
-            doc.embeddingProvider,
-            doc.importance,
-            doc.unlocked,
-            now,
-            now,
-          ],
-        );
-
-        if (doc.embedding) {
-          const vectorStr = `[${Array.from(doc.embedding).join(",")}]`;
-          await tx.query(
-            `INSERT INTO embeddings (doc_id, embedding) VALUES ($1, $2::vector)
-             ON CONFLICT (doc_id) DO UPDATE SET embedding = EXCLUDED.embedding`,
-            [doc.id, vectorStr],
-          );
-        }
-
-        await tx.query(
-          `INSERT INTO entity_versions (entity_id, save_id, fork_id, version, doc_id)
-           VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (entity_id, save_id, fork_id, version) DO UPDATE SET doc_id = EXCLUDED.doc_id`,
-          [doc.entityId, doc.saveId, doc.forkId, version, doc.id],
-        );
+    const touched = new Map<string, number>();
+    for (const doc of docs) {
+      if (!touched.has(doc.saveId)) {
+        touched.set(doc.saveId, doc.forkId);
       }
-    });
+    }
 
-    // Update save metadata for unique saves
-    const saveIds = [...new Set(docs.map((d) => d.saveId))];
-    for (const saveId of saveIds) {
-      const saveDocs = docs.filter((d) => d.saveId === saveId);
-      const firstDoc = saveDocs[0];
-      const forkIds = [...new Set(saveDocs.map((d) => d.forkId))];
-      for (const forkId of forkIds) {
-        await this.updateSaveMetadata(
-          saveId,
-          forkId,
-          firstDoc.embeddingModel,
-          firstDoc.embeddingProvider,
-        );
-        // Enforce version limits for each entity
-        const entityIds = [
-          ...new Set(
-            saveDocs.filter((d) => d.forkId === forkId).map((d) => d.entityId),
-          ),
-        ];
-        for (const entityId of entityIds) {
-          await this.enforceVersionLimits(entityId, saveId, forkId);
-        }
-      }
+    for (const [saveId, forkId] of touched.entries()) {
+      await this.refreshSaveMetadata(saveId, forkId);
     }
   }
 
-  async setEmbedding(docId: string, embedding: Float32Array): Promise<void> {
+  async deleteDocument(docId: string): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const vectorStr = `[${Array.from(embedding).join(",")}]`;
-    await this.db.query(
-      `INSERT INTO embeddings (doc_id, embedding) VALUES ($1, $2::vector)
-       ON CONFLICT (doc_id) DO UPDATE SET embedding = EXCLUDED.embedding`,
-      [docId, vectorStr],
+    const row = await this.db.query<any>(
+      `SELECT save_id, fork_id FROM documents WHERE id = $1 LIMIT 1`,
+      [docId],
     );
+
+    await this.db.query(`DELETE FROM documents WHERE id = $1`, [docId]);
+
+    const saveId = row.rows[0]?.save_id;
+    if (saveId) {
+      await this.refreshSaveMetadata(saveId, Number(row.rows[0]?.fork_id ?? 0));
+    }
   }
 
-  async getDocument(docId: string): Promise<RAGDocument | null> {
+  async deleteDocumentsBySave(saveId: string): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = await this.db.query<any>(
+      `DELETE FROM documents WHERE save_id = $1`,
+      [saveId],
+    );
+
+    await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [saveId]);
+
+    return Number(result.affectedRows ?? 0);
+  }
+
+  async deleteDocumentsByPaths(
+    saveId: string,
+    paths: string[],
+    forkId?: number,
+  ): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+    if (paths.length === 0) return 0;
+
+    const normalized = Array.from(new Set(paths));
+
+    const result = await this.db.query<any>(
+      forkId === undefined
+        ? `DELETE FROM documents WHERE save_id = $1 AND canonical_path = ANY($2)`
+        : `DELETE FROM documents WHERE save_id = $1 AND fork_id = $2 AND canonical_path = ANY($3)`,
+      forkId === undefined ? [saveId, normalized] : [saveId, forkId, normalized],
+    );
+
+    await this.refreshSaveMetadata(saveId, forkId ?? 0);
+
+    return Number(result.affectedRows ?? 0);
+  }
+
+  async retireLatestByPaths(
+    saveId: string,
+    forkId: number,
+    turnNumber: number,
+    paths: string[],
+  ): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+    if (paths.length === 0) return 0;
+
+    const normalized = Array.from(new Set(paths));
+
+    const result = await this.db.query<any>(
+      `UPDATE documents
+       SET is_latest = FALSE,
+           superseded_at_turn = CASE
+             WHEN superseded_at_turn IS NULL THEN $3
+             ELSE superseded_at_turn
+           END
+       WHERE save_id = $1
+         AND fork_id = $2
+         AND canonical_path = ANY($4)
+         AND is_latest = TRUE`,
+      [saveId, forkId, turnNumber, normalized],
+    );
+
+    await this.refreshSaveMetadata(saveId, forkId);
+
+    return Number(result.affectedRows ?? 0);
+  }
+
+  async lookupReusableEmbeddings(
+    items: ReusableEmbeddingLookupItem[],
+    modelId: string,
+    provider: string,
+  ): Promise<Array<number[] | null>> {
+    if (!this.db) throw new Error("Database not initialized");
+    if (items.length === 0) return [];
+
+    const tupleSql = items
+      .map((_, index) => {
+        const base = index * 5;
+        return `($${base + 1}::int, $${base + 2}::text, $${base + 3}::text, $${base + 4}::text, $${base + 5}::int)`;
+      })
+      .join(", ");
+
+    const params: Array<number | string> = [];
+    items.forEach((item, index) => {
+      params.push(
+        index,
+        item.saveId,
+        item.sourcePath,
+        item.fileHash,
+        item.chunkIndex,
+      );
+    });
+
+    const modelParamIndex = params.length + 1;
+    const providerParamIndex = params.length + 2;
+    params.push(modelId, provider);
+
+    const result = await this.db.query<any>(
+      `WITH req(idx, save_id, source_path, file_hash, chunk_index) AS (
+         VALUES ${tupleSql}
+       )
+       SELECT req.idx, hit.embedding
+       FROM req
+       LEFT JOIN LATERAL (
+         SELECT e.embedding
+         FROM documents d
+         JOIN embeddings e ON d.id = e.doc_id
+         WHERE d.save_id = req.save_id
+           AND d.source_path = req.source_path
+           AND d.file_hash = req.file_hash
+           AND d.chunk_index = req.chunk_index
+           AND d.embedding_model = $${modelParamIndex}
+           AND d.embedding_provider = $${providerParamIndex}
+         ORDER BY d.is_latest DESC, d.last_access DESC, d.created_at DESC
+         LIMIT 1
+       ) AS hit ON TRUE
+       ORDER BY req.idx ASC`,
+      params,
+    );
+
+    const output: Array<number[] | null> = Array.from(
+      { length: items.length },
+      () => null,
+    );
+
+    for (const row of result.rows) {
+      const idx = Number(row.idx ?? -1);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= items.length) {
+        continue;
+      }
+
+      const embeddingValue = row.embedding;
+      output[idx] = embeddingValue
+        ? Array.from(this.parseVector(embeddingValue))
+        : null;
+    }
+
+    return output;
+  }
+
+  // Legacy alias used by old worker code path
+  async getDocumentsByEntity(entityId: string, saveId: string): Promise<RAGDocument[]> {
+    return this.getDocumentsBySourcePath(entityId, saveId);
+  }
+
+  async getDocumentsBySourcePath(
+    sourcePath: string,
+    saveId: string,
+  ): Promise<RAGDocument[]> {
     if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
       `SELECT d.*, e.embedding
        FROM documents d
        LEFT JOIN embeddings e ON d.id = e.doc_id
-       WHERE d.id = $1`,
-      [docId],
+       WHERE d.save_id = $1 AND d.source_path = $2
+       ORDER BY d.turn_number DESC, d.chunk_index ASC`,
+      [saveId, sourcePath],
     );
 
-    if (result.rows.length === 0) return null;
-
-    const row = result.rows[0];
-    return this.rowToDocument(row);
+    return result.rows.map((row: any) => this.rowToDocument(row));
   }
-
-  async getDocumentsByEntity(
-    entityId: string,
-    saveId: string,
-  ): Promise<RAGDocumentMeta[]> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const result = await this.db.query<any>(
-      `SELECT * FROM documents WHERE entity_id = $1 AND save_id = $2 ORDER BY version DESC`,
-      [entityId, saveId],
-    );
-
-    return result.rows.map((row) => this.rowToDocumentMeta(row));
-  }
-
-  async deleteDocument(docId: string): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    await this.db.query(`DELETE FROM documents WHERE id = $1`, [docId]);
-  }
-
-  async deleteDocumentsBySave(saveId: string): Promise<number> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const result = await this.db.query(
-      `DELETE FROM documents WHERE save_id = $1`,
-      [saveId],
-    );
-
-    await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [
-      saveId,
-    ]);
-
-    return result.affectedRows || 0;
-  }
-
-  // ==========================================================================
-  // Vector Search
-  // ==========================================================================
 
   async searchSimilar(
     queryEmbedding: Float32Array,
@@ -385,114 +491,165 @@ export class RAGDatabase {
       topK?: number;
       threshold?: number;
       types?: DocumentType[];
+      contentTypes?: string[];
+      pathPrefixes?: string[];
+      forkId?: number;
       forkIds?: number[];
       beforeTurn?: number;
+      modelId?: string;
+      provider?: string;
     } = {},
   ): Promise<SearchResult[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const { topK = 10, threshold = 0.5, types, forkIds, beforeTurn } = options;
+    const {
+      topK = 10,
+      threshold = 0.5,
+      types,
+      contentTypes,
+      pathPrefixes,
+      forkId,
+      forkIds,
+      beforeTurn,
+      modelId,
+      provider,
+    } = options;
 
-    console.log(
-      `[RAGDatabase] searchSimilar: saveId=${saveId}, topK=${topK}, threshold=${threshold}, types=${types?.join(",") || "all"}`,
-    );
-
-    // Build query with filters
-    let whereConditions = ["d.save_id = $2"];
-    const params: any[] = [`[${Array.from(queryEmbedding).join(",")}]`, saveId];
-    let paramIndex = 3;
-
-    if (types && types.length > 0) {
-      whereConditions.push(`d.type = ANY($${paramIndex})`);
-      params.push(types);
-      paramIndex++;
+    if (forkId === undefined) {
+      throw new Error("searchSimilar requires forkId for strict fork isolation");
     }
 
+    const where: string[] = ["d.save_id = $2", "d.is_latest = TRUE"];
+    const params: any[] = [`[${Array.from(queryEmbedding).join(",")}]`, saveId];
+    let index = 3;
+
     if (forkIds && forkIds.length > 0) {
-      whereConditions.push(`d.fork_id = ANY($${paramIndex})`);
-      params.push(forkIds);
-      paramIndex++;
+      console.warn(
+        "[RAGDatabase] searchSimilar received legacy forkIds; strict mode uses forkId only",
+      );
+    }
+
+    where.push(`d.fork_id = $${index}`);
+    params.push(forkId);
+    index += 1;
+
+    if (modelId) {
+      where.push(`d.embedding_model = $${index}`);
+      params.push(modelId);
+      index += 1;
+    }
+
+    if (provider) {
+      where.push(`d.embedding_provider = $${index}`);
+      params.push(provider);
+      index += 1;
+    }
+
+    if (types && types.length > 0) {
+      where.push(`d.doc_type = ANY($${index})`);
+      params.push(types);
+      index += 1;
+    }
+
+    if (contentTypes && contentTypes.length > 0) {
+      where.push(`d.content_type = ANY($${index})`);
+      params.push(contentTypes);
+      index += 1;
     }
 
     if (beforeTurn !== undefined) {
-      whereConditions.push(`d.turn_number < $${paramIndex}`);
+      where.push(`d.turn_number <= $${index}`);
       params.push(beforeTurn);
-      paramIndex++;
+      index += 1;
     }
 
-    const whereClause = whereConditions.join(" AND ");
+    if (pathPrefixes && pathPrefixes.length > 0) {
+      const prefixLikes = pathPrefixes.map((prefix) =>
+        prefix.endsWith("/") ? `${prefix}%` : `${prefix}%`,
+      );
+      where.push(`d.source_path LIKE ANY($${index})`);
+      params.push(prefixLikes);
+      index += 1;
+    }
 
-    // Vector similarity search using cosine distance
-    // PGlite vector uses <=> for cosine distance (1 - similarity)
+    const whereClause = where.join(" AND ");
+
     const result = await this.db.query<any>(
-      `SELECT d.*,
-              1 - (e.embedding <=> $1::vector) as similarity
+      `SELECT d.*, 1 - (e.embedding <=> $1::vector) AS similarity
        FROM documents d
        JOIN embeddings e ON d.id = e.doc_id
        WHERE ${whereClause}
-         AND 1 - (e.embedding <=> $1::vector) >= $${paramIndex}
+         AND 1 - (e.embedding <=> $1::vector) >= $${index}
        ORDER BY e.embedding <=> $1::vector
-       LIMIT $${paramIndex + 1}`,
-      [...params, threshold, topK * 2], // Get more than needed for re-ranking
+       LIMIT $${index + 1}`,
+      [...params, threshold, topK],
     );
 
-    // Update last access time
-    const docIds = result.rows.map((r: any) => r.id);
-    if (docIds.length > 0) {
+    const ids = result.rows.map((row: any) => row.id as string);
+    if (ids.length > 0) {
       await this.db.query(
         `UPDATE documents SET last_access = $1 WHERE id = ANY($2)`,
-        [Date.now(), docIds],
+        [Date.now(), ids],
       );
     }
 
     return result.rows.map((row: any) => ({
       document: this.rowToDocumentMeta(row),
-      score: row.similarity,
-      adjustedScore: row.similarity, // Will be adjusted by caller
+      score: Number(row.similarity ?? 0),
+      adjustedScore: Number(row.similarity ?? 0),
     }));
   }
-
-  // ==========================================================================
-  // Save Management
-  // ==========================================================================
 
   async getSaveStats(saveId: string): Promise<SaveStats | null> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const metaResult = await this.db.query<any>(
-      `SELECT * FROM save_metadata WHERE save_id = $1`,
+    const countResult = await this.db.query<any>(
+      `SELECT COUNT(*)::int AS count, COALESCE(SUM(estimated_bytes), 0)::bigint AS bytes
+       FROM documents
+       WHERE save_id = $1`,
       [saveId],
     );
 
-    if (metaResult.rows.length === 0) return null;
+    const totalDocuments = Number(countResult.rows[0]?.count ?? 0);
+    if (totalDocuments === 0) {
+      return null;
+    }
 
-    const typeResult = await this.db.query<any>(
-      `SELECT type, COUNT(*) as count FROM documents WHERE save_id = $1 GROUP BY type`,
+    const byTypeResult = await this.db.query<any>(
+      `SELECT doc_type, COUNT(*)::int AS count
+       FROM documents
+       WHERE save_id = $1
+       GROUP BY doc_type`,
       [saveId],
     );
 
     const documentsByType: Record<DocumentType, number> = {
-      story: 0,
-      npc: 0,
-      location: 0,
-      item: 0,
-      knowledge: 0,
-      quest: 0,
-      event: 0,
-      outline: 0,
+      json: 0,
+      markdown: 0,
+      text: 0,
     };
 
-    for (const row of typeResult.rows) {
-      documentsByType[row.type as DocumentType] = parseInt(row.count);
+    for (const row of byTypeResult.rows) {
+      if (DOCUMENT_TYPES.includes(row.doc_type as DocumentType)) {
+        documentsByType[row.doc_type as DocumentType] = Number(row.count);
+      }
     }
 
-    const meta = metaResult.rows[0];
+    const metaResult = await this.db.query<any>(
+      `SELECT * FROM save_metadata WHERE save_id = $1 LIMIT 1`,
+      [saveId],
+    );
+
+    const meta = metaResult.rows[0] || {};
+
     return {
       saveId,
-      totalDocuments: meta.document_count,
+      totalDocuments,
       documentsByType,
-      memoryUsage: 0, // Estimated later
-      lastUpdated: meta.last_updated,
+      memoryUsage: Number(countResult.rows[0]?.bytes ?? 0),
+      lastUpdated: Number(meta.last_updated ?? Date.now()),
+      embeddingModel: meta.embedding_model || undefined,
+      embeddingProvider: meta.embedding_provider || undefined,
     };
   }
 
@@ -500,10 +657,10 @@ export class RAGDatabase {
     if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
-      `SELECT DISTINCT save_id FROM save_metadata ORDER BY last_updated DESC`,
+      `SELECT save_id FROM save_metadata ORDER BY is_active DESC, last_accessed DESC`,
     );
 
-    return result.rows.map((r: any) => r.save_id);
+    return result.rows.map((row: any) => row.save_id as string);
   }
 
   async getDocumentsForSave(
@@ -512,22 +669,17 @@ export class RAGDatabase {
   ): Promise<RAGDocumentMeta[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const query = limit
-      ? `SELECT * FROM documents WHERE save_id = $1 ORDER BY last_access DESC LIMIT $2`
-      : `SELECT * FROM documents WHERE save_id = $1 ORDER BY last_access DESC`;
+    const result = await this.db.query<any>(
+      limit
+        ? `SELECT * FROM documents WHERE save_id = $1 ORDER BY last_access DESC LIMIT $2`
+        : `SELECT * FROM documents WHERE save_id = $1 ORDER BY last_access DESC`,
+      limit ? [saveId, limit] : [saveId],
+    );
 
-    const params = limit ? [saveId, limit] : [saveId];
-    const result = await this.db.query<any>(query, params);
-
-    return result.rows.map((row) => this.rowToDocumentMeta(row));
+    return result.rows.map((row: any) => this.rowToDocumentMeta(row));
   }
 
-  /**
-   * Get all documents with embeddings for export
-   */
-  async getDocumentsWithEmbeddingsForSave(
-    saveId: string,
-  ): Promise<RAGDocument[]> {
+  async getDocumentsWithEmbeddingsForSave(saveId: string): Promise<RAGDocument[]> {
     if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
@@ -539,30 +691,38 @@ export class RAGDatabase {
       [saveId],
     );
 
-    return result.rows.map((row) => this.rowToDocument(row));
+    return result.rows.map((row: any) => this.rowToDocument(row));
   }
 
-  /**
-   * Import documents with embeddings for a new save
-   */
   async importDocuments(
-    documents: Array<{
-      id: string;
-      entityId: string;
-      type: DocumentType;
-      content: string;
-      embedding: Float32Array;
-      saveId: string;
-      forkId: number;
-      turnNumber: number;
-      version: number;
-      embeddingModel: string;
-      embeddingProvider: string;
-      importance: number;
-      unlocked: boolean;
-      createdAt: number;
-      lastAccess: number;
-    }>,
+    documents: Array<
+      Pick<
+        RAGDocument,
+        | "id"
+        | "sourcePath"
+        | "canonicalPath"
+        | "type"
+        | "contentType"
+        | "fileHash"
+        | "chunkIndex"
+        | "chunkCount"
+        | "content"
+        | "embedding"
+        | "saveId"
+        | "forkId"
+        | "turnNumber"
+        | "embeddingModel"
+        | "embeddingProvider"
+        | "importance"
+        | "createdAt"
+        | "lastAccess"
+      > & {
+        tags?: string[];
+        isLatest?: boolean;
+        supersededAtTurn?: number | null;
+        estimatedBytes?: number;
+      }
+    >,
   ): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
     if (documents.length === 0) return 0;
@@ -570,74 +730,38 @@ export class RAGDatabase {
     let imported = 0;
 
     for (const doc of documents) {
-      try {
-        // Insert document
-        await this.db.query(
-          `INSERT INTO documents (id, entity_id, type, content, save_id, fork_id, turn_number, version, embedding_model, embedding_provider, importance, unlocked, created_at, last_access)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-           ON CONFLICT (id) DO NOTHING`,
-          [
-            doc.id,
-            doc.entityId,
-            doc.type,
-            doc.content,
-            doc.saveId,
-            doc.forkId,
-            doc.turnNumber,
-            doc.version,
-            doc.embeddingModel,
-            doc.embeddingProvider,
-            doc.importance,
-            doc.unlocked,
-            doc.createdAt,
-            doc.lastAccess,
-          ],
-        );
+      const ragDoc: RAGDocument = {
+        id: doc.id,
+        sourcePath: doc.sourcePath,
+        canonicalPath: doc.canonicalPath,
+        type: doc.type,
+        contentType: doc.contentType,
+        fileHash: doc.fileHash,
+        chunkIndex: doc.chunkIndex,
+        chunkCount: doc.chunkCount,
+        isLatest: doc.isLatest ?? true,
+        supersededAtTurn: doc.supersededAtTurn ?? null,
+        content: doc.content,
+        embedding: doc.embedding,
+        saveId: doc.saveId,
+        forkId: doc.forkId,
+        turnNumber: doc.turnNumber,
+        embeddingModel: doc.embeddingModel,
+        embeddingProvider: doc.embeddingProvider,
+        importance: doc.importance,
+        createdAt: doc.createdAt,
+        lastAccess: doc.lastAccess,
+        estimatedBytes: doc.estimatedBytes ?? this.estimateDocumentBytes(doc),
+        tags: doc.tags,
+      };
 
-        // Insert embedding if present
-        if (doc.embedding && doc.embedding.length > 0) {
-          const vectorStr = `[${Array.from(doc.embedding).join(",")}]`;
-          await this.db.query(
-            `INSERT INTO embeddings (doc_id, embedding) VALUES ($1, $2::vector)
-             ON CONFLICT (doc_id) DO NOTHING`,
-            [doc.id, vectorStr],
-          );
-        }
-
-        imported++;
-      } catch (error) {
-        console.warn(
-          `[RAGDatabase] Failed to import document ${doc.id}:`,
-          error,
-        );
-      }
+      await this.addDocument(ragDoc);
+      imported += 1;
     }
 
-    // Update save metadata
-    if (documents.length > 0) {
-      const saveId = documents[0].saveId;
-      const model = documents[0].embeddingModel;
-      const provider = documents[0].embeddingProvider;
-
-      await this.db.query(
-        `INSERT INTO save_metadata (save_id, current_fork_id, last_updated, document_count, embedding_model, embedding_provider)
-         VALUES ($1, 0, $2, $3, $4, $5)
-         ON CONFLICT (save_id) DO UPDATE SET
-           document_count = save_metadata.document_count + $3,
-           last_updated = $2`,
-        [saveId, Date.now(), imported, model, provider],
-      );
-    }
-
-    console.log(
-      `[RAGDatabase] Imported ${imported}/${documents.length} documents`,
-    );
     return imported;
   }
 
-  /**
-   * Get recently added documents for the current save
-   */
   async getRecentDocuments(
     saveId: string,
     limit: number = 20,
@@ -645,35 +769,22 @@ export class RAGDatabase {
   ): Promise<RAGDocumentMeta[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    let query: string;
-    let params: any[];
-
-    if (types && types.length > 0) {
-      query = `SELECT * FROM documents
-               WHERE save_id = $1 AND type = ANY($2)
-               ORDER BY created_at DESC
-               LIMIT $3`;
-      params = [saveId, types, limit];
-    } else {
-      query = `SELECT * FROM documents
-               WHERE save_id = $1
-               ORDER BY created_at DESC
-               LIMIT $2`;
-      params = [saveId, limit];
-    }
-
-    const result = await this.db.query<any>(query, params);
-
-    console.log(
-      `[RAGDatabase] getRecentDocuments: saveId=${saveId}, limit=${limit}, types=${types?.join(",") || "all"}, found=${result.rows.length}`,
+    const result = await this.db.query<any>(
+      types && types.length > 0
+        ? `SELECT * FROM documents
+           WHERE save_id = $1 AND doc_type = ANY($2)
+           ORDER BY created_at DESC
+           LIMIT $3`
+        : `SELECT * FROM documents
+           WHERE save_id = $1
+           ORDER BY created_at DESC
+           LIMIT $2`,
+      types && types.length > 0 ? [saveId, types, limit] : [saveId, limit],
     );
 
-    return result.rows.map((row) => this.rowToDocumentMeta(row));
+    return result.rows.map((row: any) => this.rowToDocumentMeta(row));
   }
 
-  /**
-   * Get paginated documents with total count for efficient pagination
-   */
   async getDocumentsPaginated(
     saveId: string,
     offset: number,
@@ -682,177 +793,384 @@ export class RAGDatabase {
   ): Promise<{ documents: RAGDocumentMeta[]; total: number }> {
     if (!this.db) throw new Error("Database not initialized");
 
-    let countQuery: string;
-    let dataQuery: string;
-    let countParams: any[];
-    let dataParams: any[];
-
-    if (types && types.length > 0) {
-      countQuery = `SELECT COUNT(*) as count FROM documents
-                    WHERE save_id = $1 AND type = ANY($2)`;
-      dataQuery = `SELECT * FROM documents
-                   WHERE save_id = $1 AND type = ANY($2)
-                   ORDER BY created_at DESC
-                   LIMIT $3 OFFSET $4`;
-      countParams = [saveId, types];
-      dataParams = [saveId, types, limit, offset];
-    } else {
-      countQuery = `SELECT COUNT(*) as count FROM documents
-                    WHERE save_id = $1`;
-      dataQuery = `SELECT * FROM documents
-                   WHERE save_id = $1
-                   ORDER BY created_at DESC
-                   LIMIT $2 OFFSET $3`;
-      countParams = [saveId];
-      dataParams = [saveId, limit, offset];
-    }
-
-    // Get total count
-    const countResult = await this.db.query<any>(countQuery, countParams);
-    const total = parseInt(countResult.rows[0].count);
-
-    // Get paginated data
-    const dataResult = await this.db.query<any>(dataQuery, dataParams);
-    const documents = dataResult.rows.map((row) => this.rowToDocumentMeta(row));
-
-    console.log(
-      `[RAGDatabase] getDocumentsPaginated: saveId=${saveId}, offset=${offset}, limit=${limit}, types=${types?.join(",") || "all"}, total=${total}, returned=${documents.length}`,
+    const countResult = await this.db.query<any>(
+      types && types.length > 0
+        ? `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1 AND doc_type = ANY($2)`
+        : `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1`,
+      types && types.length > 0 ? [saveId, types] : [saveId],
     );
 
-    return { documents, total };
+    const total = Number(countResult.rows[0]?.count ?? 0);
+
+    const dataResult = await this.db.query<any>(
+      types && types.length > 0
+        ? `SELECT * FROM documents
+           WHERE save_id = $1 AND doc_type = ANY($2)
+           ORDER BY created_at DESC
+           LIMIT $3 OFFSET $4`
+        : `SELECT * FROM documents
+           WHERE save_id = $1
+           ORDER BY created_at DESC
+           LIMIT $2 OFFSET $3`,
+      types && types.length > 0
+        ? [saveId, types, limit, offset]
+        : [saveId, limit, offset],
+    );
+
+    return {
+      documents: dataResult.rows.map((row: any) => this.rowToDocumentMeta(row)),
+      total,
+    };
   }
 
-  // ==========================================================================
-  // LRU and Cleanup
-  // ==========================================================================
+  async enforceSaveLimit(saveId: string): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = await this.db.query<any>(
+      `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1`,
+      [saveId],
+    );
+
+    const total = Number(result.rows[0]?.count ?? 0);
+    const overflow = total - this.config.maxDocumentsPerSave;
+    if (overflow <= 0) {
+      return 0;
+    }
+
+    const candidates = await this.db.query<any>(
+      `SELECT d.id
+       FROM documents d
+       LEFT JOIN save_metadata sm ON sm.save_id = d.save_id
+       WHERE d.save_id = $1
+         AND NOT (${PROTECTED_CONDITION})
+       ORDER BY d.last_access ASC, d.created_at ASC
+       LIMIT $2`,
+      [saveId, overflow],
+    );
+
+    const ids = candidates.rows.map((row: any) => row.id as string);
+    if (ids.length === 0) {
+      return 0;
+    }
+
+    const deleted = await this.db.query<any>(
+      `DELETE FROM documents WHERE id = ANY($1)`,
+      [ids],
+    );
+
+    await this.refreshSaveMetadata(saveId, 0);
+    return Number(deleted.affectedRows ?? 0);
+  }
+
+  async cleanupOldVersions(): Promise<number> {
+    return 0;
+  }
+
+  private async getStorageTierBytes(): Promise<StorageTierBytes> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const rowResult = await this.db.query<any>(
+      `SELECT
+         COALESCE(SUM(CASE WHEN ${PROTECTED_CONDITION} THEN d.estimated_bytes ELSE 0 END), 0)::bigint AS protected_bytes,
+         COALESCE(SUM(CASE WHEN ${TIER_A_CONDITION} THEN d.estimated_bytes ELSE 0 END), 0)::bigint AS tier_a_bytes,
+         COALESCE(SUM(CASE WHEN ${TIER_B_CONDITION} THEN d.estimated_bytes ELSE 0 END), 0)::bigint AS tier_b_bytes,
+         COALESCE(SUM(CASE WHEN ${TIER_C_CONDITION} THEN d.estimated_bytes ELSE 0 END), 0)::bigint AS tier_c_bytes,
+         COALESCE(SUM(d.estimated_bytes), 0)::bigint AS total_bytes
+       FROM documents d
+       LEFT JOIN save_metadata sm ON sm.save_id = d.save_id`,
+    );
+
+    const row = rowResult.rows[0] || {};
+    const protectedBytes = Number(row.protected_bytes ?? 0);
+    const currentForkHistoryBytes = Number(row.tier_a_bytes ?? 0);
+    const activeOtherForkBytes = Number(row.tier_b_bytes ?? 0);
+    const inactiveGameBytes = Number(row.tier_c_bytes ?? 0);
+    const totalBytes = Number(row.total_bytes ?? 0);
+
+    return {
+      protectedBytes,
+      currentForkHistoryBytes,
+      activeOtherForkBytes,
+      inactiveGameBytes,
+      totalBytes,
+      reclaimableBytes:
+        currentForkHistoryBytes + activeOtherForkBytes + inactiveGameBytes,
+    };
+  }
+
+  private async collectEvictionCandidates(
+    whereClause: string,
+    bytesToFree: number,
+  ): Promise<{ ids: string[]; bytesFreed: number }> {
+    if (!this.db || bytesToFree <= 0) {
+      return { ids: [], bytesFreed: 0 };
+    }
+
+    const result = await this.db.query<any>(
+      `SELECT d.id, COALESCE(d.estimated_bytes, 0)::bigint AS estimated_bytes
+       FROM documents d
+       LEFT JOIN save_metadata sm ON sm.save_id = d.save_id
+       WHERE ${whereClause}
+       ORDER BY d.last_access ASC, d.created_at ASC`,
+    );
+
+    const ids: string[] = [];
+    let bytesFreed = 0;
+
+    for (const row of result.rows) {
+      if (bytesFreed >= bytesToFree) break;
+      ids.push(String(row.id));
+      bytesFreed += Number(row.estimated_bytes ?? 0);
+    }
+
+    return { ids, bytesFreed };
+  }
 
   async enforceStorageLimits(): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
 
-    let totalDeleted = 0;
+    const storage = await this.getStorageTierBytes();
+    let bytesOver = storage.totalBytes - this.config.maxStorageBytes;
 
-    // 1. Enforce per-type limits
-    const types: DocumentType[] = [
-      "story",
-      "npc",
-      "location",
-      "item",
-      "knowledge",
-      "quest",
-      "event",
-      "outline",
-    ];
-    for (const type of types) {
-      if (type === "outline") continue; // Never delete outlines
+    if (bytesOver <= 0) {
+      return 0;
+    }
 
-      // Use specific limit for story, generic limit for others
-      const limit =
-        type === "story"
-          ? this.config.storyMaxEntries
-          : this.config.maxDocumentsPerType;
+    let deletedTotal = 0;
 
-      const result = await this.db.query<any>(
-        `SELECT COUNT(*) as count FROM documents WHERE type = $1`,
-        [type],
+    const tiers = [TIER_C_CONDITION, TIER_B_CONDITION, TIER_A_CONDITION];
+    for (const tierWhere of tiers) {
+      if (bytesOver <= 0) break;
+
+      const { ids, bytesFreed } = await this.collectEvictionCandidates(
+        tierWhere,
+        bytesOver,
+      );
+      if (ids.length === 0) continue;
+
+      const deletion = await this.db.query<any>(
+        `DELETE FROM documents WHERE id = ANY($1)`,
+        [ids],
       );
 
-      const count = parseInt(result.rows[0].count);
-      if (count > limit) {
-        const toDelete = count - limit;
-        await this.db.query(
-          `DELETE FROM documents WHERE id IN (
-            SELECT id FROM documents WHERE type = $1 ORDER BY last_access ASC LIMIT $2
-          )`,
-          [type, toDelete],
-        );
-        totalDeleted += toDelete;
+      deletedTotal += Number(deletion.affectedRows ?? 0);
+      bytesOver = Math.max(0, bytesOver - bytesFreed);
+    }
+
+    if (deletedTotal > 0) {
+      await this.refreshAllSaveMetadata();
+    }
+
+    return deletedTotal;
+  }
+
+  async getStorageStatusBreakdown(): Promise<{
+    protectedBytes: number;
+    currentForkHistoryBytes: number;
+    activeOtherForkBytes: number;
+    inactiveGameBytes: number;
+    storageLimitBytes: number;
+    protectedOverflow: boolean;
+    totalBytes: number;
+  }> {
+    const storage = await this.getStorageTierBytes();
+
+    return {
+      protectedBytes: storage.protectedBytes,
+      currentForkHistoryBytes: storage.currentForkHistoryBytes,
+      activeOtherForkBytes: storage.activeOtherForkBytes,
+      inactiveGameBytes: storage.inactiveGameBytes,
+      storageLimitBytes: this.config.maxStorageBytes,
+      protectedOverflow: storage.protectedBytes > this.config.maxStorageBytes,
+      totalBytes: storage.totalBytes,
+    };
+  }
+
+  async checkStorageOverflow(): Promise<StorageOverflowInfo | null> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const storage = await this.getStorageTierBytes();
+    const protectedOverflow = storage.protectedBytes > this.config.maxStorageBytes;
+    const exceedsLimit = storage.totalBytes > this.config.maxStorageBytes;
+
+    if (!protectedOverflow && !exceedsLimit) {
+      return null;
+    }
+
+    const saveRows = await this.db.query<any>(
+      `SELECT
+         sm.save_id,
+         COALESCE(sm.document_count, 0)::int AS document_count,
+         COALESCE(sm.last_accessed, sm.last_updated, 0)::bigint AS last_accessed,
+         COALESCE(sm.is_active, FALSE) AS is_active
+       FROM save_metadata sm
+       ORDER BY sm.is_active DESC, sm.last_accessed ASC`,
+    );
+
+    const saveStats = saveRows.rows.map((row: any) => ({
+      saveId: row.save_id as string,
+      documentCount: Number(row.document_count ?? 0),
+      lastAccessed: Number(row.last_accessed ?? 0),
+    }));
+
+    const suggestedDeletions = saveRows.rows
+      .filter((row: any) => !row.is_active && Number(row.document_count ?? 0) > 0)
+      .map((row: any) => String(row.save_id));
+
+    return {
+      currentTotal: storage.totalBytes,
+      maxTotal: this.config.maxStorageBytes,
+      saveStats,
+      suggestedDeletions,
+      protectedBytes: storage.protectedBytes,
+      currentForkHistoryBytes: storage.currentForkHistoryBytes,
+      activeOtherForkBytes: storage.activeOtherForkBytes,
+      inactiveGameBytes: storage.inactiveGameBytes,
+      storageLimitBytes: this.config.maxStorageBytes,
+      protectedOverflow,
+    };
+  }
+
+  async deleteOldestFromSaves(saveIds: string[]): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+    if (saveIds.length === 0) return 0;
+
+    const uniqueIds = Array.from(new Set(saveIds));
+
+    const result = await this.db.query<any>(
+      `DELETE FROM documents WHERE save_id = ANY($1)`,
+      [uniqueIds],
+    );
+
+    await this.db.query(`DELETE FROM save_metadata WHERE save_id = ANY($1)`, [uniqueIds]);
+
+    return Number(result.affectedRows ?? 0);
+  }
+
+  async getGlobalStats(): Promise<GlobalStorageStats> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const totalResult = await this.db.query<any>(
+      `SELECT
+         COUNT(*)::int AS count,
+         COALESCE(SUM(estimated_bytes), 0)::bigint AS estimated_storage
+       FROM documents`,
+    );
+
+    const saveIds = await this.getAllSaveIds();
+    const saves: SaveStats[] = [];
+
+    for (const saveId of saveIds) {
+      const stats = await this.getSaveStats(saveId);
+      if (stats) {
+        saves.push(stats);
       }
     }
 
-    // 2. Enforce global limit
-    const totalResult = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM documents`,
-    );
-    const totalCount = parseInt(totalResult.rows[0].count);
-
-    if (totalCount > this.config.maxTotalStorageDocuments) {
-      const toDelete = totalCount - this.config.maxTotalStorageDocuments;
-      // Protect outlines from deletion
-      await this.db.query(
-        `DELETE FROM documents WHERE id IN (
-          SELECT id FROM documents WHERE type != 'outline' ORDER BY last_access ASC LIMIT $1
-        )`,
-        [toDelete],
-      );
-      totalDeleted += toDelete;
-    }
-
-    return totalDeleted;
+    return {
+      totalDocuments: Number(totalResult.rows[0]?.count ?? 0),
+      totalSaves: saves.length,
+      saves,
+      estimatedStorageBytes: Number(totalResult.rows[0]?.estimated_storage ?? 0),
+    };
   }
 
-  async cleanupOldVersions(): Promise<number> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    // Get entities with too many versions
-    const result = await this.db.query<any>(
-      `SELECT entity_id, save_id, fork_id, COUNT(*) as version_count
-       FROM entity_versions
-       GROUP BY entity_id, save_id, fork_id
-       HAVING COUNT(*) > $1`,
-      [this.config.maxVersionsPerEntity],
-    );
-
-    let totalDeleted = 0;
-
-    for (const row of result.rows) {
-      const deleted = await this.deleteOldVersions(
-        row.entity_id,
-        row.save_id,
-        row.fork_id,
-        this.config.maxVersionsPerEntity,
-      );
-      totalDeleted += deleted;
-    }
-
-    return totalDeleted;
-  }
-
-  // ==========================================================================
-  // Private Helpers
-  // ==========================================================================
-
-  private async getNextVersion(
-    entityId: string,
+  async checkModelMismatch(
     saveId: string,
     forkId: number,
-  ): Promise<number> {
+    expectedModel: string,
+    expectedProvider: string,
+  ): Promise<ModelMismatchInfo | null> {
     if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
-      `SELECT MAX(version) as max_version FROM entity_versions
-       WHERE entity_id = $1 AND save_id = $2 AND fork_id = $3`,
-      [entityId, saveId, forkId],
+      `SELECT embedding_model, embedding_provider, COUNT(*)::int AS count
+       FROM documents
+       WHERE save_id = $1
+         AND fork_id = $2
+         AND is_latest = TRUE
+         AND (embedding_model != $3 OR embedding_provider != $4)
+       GROUP BY embedding_model, embedding_provider
+       ORDER BY count DESC
+       LIMIT 1`,
+      [saveId, forkId, expectedModel, expectedProvider],
     );
 
-    return (result.rows[0]?.max_version || 0) + 1;
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const row = result.rows[0];
+    return {
+      currentModel: expectedModel,
+      currentProvider: expectedProvider,
+      storedModel: String(row.embedding_model),
+      storedProvider: String(row.embedding_provider),
+      documentCount: Number(row.count ?? 0),
+    };
   }
 
-  private async getNextVersionTx(
-    tx: any,
-    entityId: string,
+  async getSaveModelInfo(
     saveId: string,
-    forkId: number,
-  ): Promise<number> {
-    const result = (await tx.query(
-      `SELECT MAX(version) as max_version FROM entity_versions
-       WHERE entity_id = $1 AND save_id = $2 AND fork_id = $3`,
-      [entityId, saveId, forkId],
-    )) as { rows: any[] };
+  ): Promise<{ model: string; provider: string } | null> {
+    if (!this.db) throw new Error("Database not initialized");
 
-    return (result.rows[0]?.max_version || 0) + 1;
+    const result = await this.db.query<any>(
+      `SELECT embedding_model, embedding_provider
+       FROM save_metadata
+       WHERE save_id = $1
+       LIMIT 1`,
+      [saveId],
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return {
+      model: result.rows[0].embedding_model || this.config.modelId,
+      provider: result.rows[0].embedding_provider || this.config.provider,
+    };
   }
 
-  private async updateSaveMetadata(
+  async clearSaveForRebuild(saveId: string, forkId?: number): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const deletion = await this.db.query<any>(
+      forkId === undefined
+        ? `DELETE FROM documents
+           WHERE save_id = $1
+             AND is_latest = TRUE`
+        : `DELETE FROM documents
+           WHERE save_id = $1
+             AND fork_id = $2
+             AND is_latest = TRUE`,
+      forkId === undefined ? [saveId] : [saveId, forkId],
+    );
+
+    await this.refreshSaveMetadata(saveId, forkId ?? 0);
+
+    return Number(deletion.affectedRows ?? 0);
+  }
+
+  async markSaveActive(saveId: string, forkId: number): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const now = Date.now();
+    await this.touchSaveMetadata(saveId, forkId);
+
+    await this.db.query(
+      `UPDATE save_metadata
+       SET is_active = CASE WHEN save_id = $1 THEN TRUE ELSE FALSE END,
+           current_fork_id = CASE WHEN save_id = $1 THEN $2 ELSE current_fork_id END,
+           last_accessed = CASE WHEN save_id = $1 THEN $3 ELSE last_accessed END`,
+      [saveId, forkId, now],
+    );
+
+    await this.refreshSaveMetadata(saveId, forkId);
+  }
+
+  private async touchSaveMetadata(
     saveId: string,
     forkId: number,
     embeddingModel?: string,
@@ -860,414 +1178,207 @@ export class RAGDatabase {
   ): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
+    const now = Date.now();
+    await this.db.query(
+      `INSERT INTO save_metadata (
+         save_id,
+         current_fork_id,
+         is_active,
+         last_updated,
+         document_count,
+         embedding_model,
+         embedding_provider,
+         last_accessed
+       )
+       VALUES ($1, $2, FALSE, $3, 0, $4, $5, $3)
+       ON CONFLICT (save_id) DO UPDATE SET
+         current_fork_id = EXCLUDED.current_fork_id,
+         last_updated = EXCLUDED.last_updated,
+         embedding_model = COALESCE(EXCLUDED.embedding_model, save_metadata.embedding_model),
+         embedding_provider = COALESCE(EXCLUDED.embedding_provider, save_metadata.embedding_provider),
+         last_accessed = EXCLUDED.last_accessed`,
+      [saveId, forkId, now, embeddingModel, embeddingProvider],
+    );
+  }
+
+  private async refreshSaveMetadata(saveId: string, forkId: number): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
     const countResult = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM documents WHERE save_id = $1`,
+      `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1`,
       [saveId],
     );
 
-    if (embeddingModel && embeddingProvider) {
-      await this.db.query(
-        `INSERT INTO save_metadata (save_id, current_fork_id, last_updated, document_count, embedding_model, embedding_provider)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (save_id) DO UPDATE SET
-           current_fork_id = EXCLUDED.current_fork_id,
-           last_updated = EXCLUDED.last_updated,
-           document_count = EXCLUDED.document_count,
-           embedding_model = EXCLUDED.embedding_model,
-           embedding_provider = EXCLUDED.embedding_provider`,
-        [
-          saveId,
-          forkId,
-          Date.now(),
-          parseInt(countResult.rows[0].count),
-          embeddingModel,
-          embeddingProvider,
-        ],
+    const modelResult = await this.db.query<any>(
+      `SELECT embedding_model, embedding_provider
+       FROM documents
+       WHERE save_id = $1
+       ORDER BY is_latest DESC, last_access DESC, created_at DESC
+       LIMIT 1`,
+      [saveId],
+    );
+
+    const existingMeta = await this.db.query<any>(
+      `SELECT is_active, current_fork_id FROM save_metadata WHERE save_id = $1 LIMIT 1`,
+      [saveId],
+    );
+
+    const isActive = Boolean(existingMeta.rows[0]?.is_active ?? false);
+    const currentForkId = Number(existingMeta.rows[0]?.current_fork_id ?? forkId);
+
+    const model = modelResult.rows[0]?.embedding_model || this.config.modelId;
+    const provider = modelResult.rows[0]?.embedding_provider || this.config.provider;
+
+    const now = Date.now();
+
+    await this.db.query(
+      `INSERT INTO save_metadata (
+         save_id,
+         current_fork_id,
+         is_active,
+         last_updated,
+         document_count,
+         embedding_model,
+         embedding_provider,
+         last_accessed
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $4)
+       ON CONFLICT (save_id) DO UPDATE SET
+         current_fork_id = EXCLUDED.current_fork_id,
+         is_active = EXCLUDED.is_active,
+         last_updated = EXCLUDED.last_updated,
+         document_count = EXCLUDED.document_count,
+         embedding_model = EXCLUDED.embedding_model,
+         embedding_provider = EXCLUDED.embedding_provider,
+         last_accessed = CASE
+           WHEN EXCLUDED.is_active THEN EXCLUDED.last_accessed
+           ELSE save_metadata.last_accessed
+         END`,
+      [
+        saveId,
+        currentForkId,
+        isActive,
+        now,
+        Number(countResult.rows[0]?.count ?? 0),
+        model,
+        provider,
+      ],
+    );
+  }
+
+  private async refreshAllSaveMetadata(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const saveIdRows = await this.db.query<any>(
+      `SELECT save_id FROM save_metadata
+       UNION
+       SELECT DISTINCT save_id FROM documents`,
+    );
+
+    for (const row of saveIdRows.rows) {
+      const saveId = String(row.save_id);
+      const meta = await this.db.query<any>(
+        `SELECT current_fork_id FROM save_metadata WHERE save_id = $1 LIMIT 1`,
+        [saveId],
       );
-    } else {
-      await this.db.query(
-        `INSERT INTO save_metadata (save_id, current_fork_id, last_updated, document_count)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (save_id) DO UPDATE SET
-           current_fork_id = EXCLUDED.current_fork_id,
-           last_updated = EXCLUDED.last_updated,
-           document_count = EXCLUDED.document_count`,
-        [saveId, forkId, Date.now(), parseInt(countResult.rows[0].count)],
-      );
+      const forkId = Number(meta.rows[0]?.current_fork_id ?? 0);
+      await this.refreshSaveMetadata(saveId, forkId);
     }
   }
 
-  private async enforceVersionLimits(
-    entityId: string,
-    saveId: string,
-    forkId: number,
-  ): Promise<void> {
-    // Delete old versions beyond limit within same fork
-    await this.deleteOldVersions(
-      entityId,
-      saveId,
-      forkId,
-      this.config.maxVersionsPerEntity,
-    );
-
-    // Also enforce cross-fork version limits
-    await this.enforceCrossForkVersionLimits(entityId, saveId);
-  }
-
-  private async deleteOldVersions(
-    entityId: string,
-    saveId: string,
-    forkId: number,
-    keepCount: number,
-  ): Promise<number> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const result = await this.db.query(
-      `DELETE FROM documents WHERE id IN (
-        SELECT doc_id FROM entity_versions
-        WHERE entity_id = $1 AND save_id = $2 AND fork_id = $3
-        ORDER BY version DESC
-        OFFSET $4
-      )`,
-      [entityId, saveId, forkId, keepCount],
-    );
-
-    return result.affectedRows || 0;
-  }
-
-  private async enforceCrossForkVersionLimits(
-    entityId: string,
-    saveId: string,
-  ): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    // Get total versions across all forks
-    const result = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM entity_versions
-       WHERE entity_id = $1 AND save_id = $2`,
-      [entityId, saveId],
-    );
-
-    const totalVersions = parseInt(result.rows[0].count);
-    if (totalVersions <= this.config.maxVersionsAcrossForks) return;
-
-    // Delete oldest versions across forks
-    const toDelete = totalVersions - this.config.maxVersionsAcrossForks;
-    await this.db.query(
-      `DELETE FROM documents WHERE id IN (
-        SELECT d.id FROM documents d
-        JOIN entity_versions ev ON d.id = ev.doc_id
-        WHERE ev.entity_id = $1 AND ev.save_id = $2
-        ORDER BY d.created_at ASC
-        LIMIT $3
-      )`,
-      [entityId, saveId, toDelete],
-    );
+  private parseTags(value: string | null | undefined): string[] | undefined {
+    if (!value) return undefined;
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.filter((item) => typeof item === "string")
+        : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   private rowToDocument(row: any): RAGDocument {
     return {
-      id: row.id,
-      entityId: row.entity_id,
-      type: row.type as DocumentType,
-      content: row.content,
+      id: String(row.id),
+      sourcePath: String(row.source_path),
+      canonicalPath: String(row.canonical_path),
+      type: row.doc_type as DocumentType,
+      contentType: String(row.content_type),
+      fileHash: String(row.file_hash),
+      chunkIndex: Number(row.chunk_index ?? 0),
+      chunkCount: Number(row.chunk_count ?? 1),
+      isLatest: Boolean(row.is_latest),
+      supersededAtTurn:
+        row.superseded_at_turn === null || row.superseded_at_turn === undefined
+          ? null
+          : Number(row.superseded_at_turn),
+      content: String(row.content ?? ""),
       embedding: row.embedding ? this.parseVector(row.embedding) : undefined,
-      saveId: row.save_id,
-      forkId: row.fork_id,
-      turnNumber: row.turn_number,
-      version: row.version,
-      embeddingModel: row.embedding_model || "text-embedding-004",
-      embeddingProvider: row.embedding_provider || "gemini",
-      importance: row.importance,
-      unlocked: row.unlocked,
-      createdAt: row.created_at,
-      lastAccess: row.last_access,
+      saveId: String(row.save_id),
+      forkId: Number(row.fork_id ?? 0),
+      turnNumber: Number(row.turn_number ?? 0),
+      embeddingModel: String(row.embedding_model),
+      embeddingProvider: String(row.embedding_provider),
+      importance: Number(row.importance ?? 0.5),
+      createdAt: Number(row.created_at ?? Date.now()),
+      lastAccess: Number(row.last_access ?? Date.now()),
+      estimatedBytes: Number(row.estimated_bytes ?? 0),
+      tags: this.parseTags(row.tags),
     };
   }
 
   private rowToDocumentMeta(row: any): RAGDocumentMeta {
     return {
-      id: row.id,
-      entityId: row.entity_id,
-      type: row.type as DocumentType,
-      content: row.content,
-      saveId: row.save_id,
-      forkId: row.fork_id,
-      turnNumber: row.turn_number,
-      version: row.version,
-      embeddingModel: row.embedding_model || "text-embedding-004",
-      embeddingProvider: row.embedding_provider || "gemini",
-      importance: row.importance,
-      unlocked: row.unlocked,
-      createdAt: row.created_at,
-      lastAccess: row.last_access,
+      id: String(row.id),
+      sourcePath: String(row.source_path),
+      canonicalPath: String(row.canonical_path),
+      type: row.doc_type as DocumentType,
+      contentType: String(row.content_type),
+      fileHash: String(row.file_hash),
+      chunkIndex: Number(row.chunk_index ?? 0),
+      chunkCount: Number(row.chunk_count ?? 1),
+      isLatest: Boolean(row.is_latest),
+      supersededAtTurn:
+        row.superseded_at_turn === null || row.superseded_at_turn === undefined
+          ? null
+          : Number(row.superseded_at_turn),
+      content: String(row.content ?? ""),
+      saveId: String(row.save_id),
+      forkId: Number(row.fork_id ?? 0),
+      turnNumber: Number(row.turn_number ?? 0),
+      embeddingModel: String(row.embedding_model),
+      embeddingProvider: String(row.embedding_provider),
+      importance: Number(row.importance ?? 0.5),
+      createdAt: Number(row.created_at ?? Date.now()),
+      lastAccess: Number(row.last_access ?? Date.now()),
+      estimatedBytes: Number(row.estimated_bytes ?? 0),
+      tags: this.parseTags(row.tags),
     };
   }
 
-  private parseVector(vectorStr: string): Float32Array {
-    // PGlite returns vector as string like "[0.1, 0.2, ...]"
-    const nums = vectorStr
+  private parseVector(vectorValue: unknown): Float32Array {
+    if (vectorValue instanceof Float32Array) {
+      return vectorValue;
+    }
+
+    if (Array.isArray(vectorValue)) {
+      return new Float32Array(
+        vectorValue
+          .map((item) => Number(item))
+          .filter((item) => Number.isFinite(item)),
+      );
+    }
+
+    if (typeof vectorValue !== "string") {
+      return new Float32Array();
+    }
+
+    const nums = vectorValue
       .replace(/[\[\]]/g, "")
       .split(",")
-      .map((s) => parseFloat(s.trim()));
+      .map((item) => Number(item.trim()))
+      .filter((item) => Number.isFinite(item));
     return new Float32Array(nums);
-  }
-
-  // ==========================================================================
-  // Model Mismatch Detection
-  // ==========================================================================
-
-  /**
-   * Check if the save has documents with a different model than the current config
-   */
-  async checkModelMismatch(
-    saveId: string,
-    expectedModel: string,
-    expectedProvider: string,
-  ): Promise<ModelMismatchInfo | null> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    // Get documents with different model/provider
-    const result = await this.db.query<any>(
-      `SELECT embedding_model, embedding_provider, COUNT(*) as count
-       FROM documents
-       WHERE save_id = $1
-         AND (embedding_model != $2 OR embedding_provider != $3)
-       GROUP BY embedding_model, embedding_provider
-       LIMIT 1`,
-      [saveId, expectedModel, expectedProvider],
-    );
-
-    if (result.rows.length === 0) return null;
-
-    const row = result.rows[0];
-    return {
-      currentModel: expectedModel,
-      currentProvider: expectedProvider,
-      storedModel: row.embedding_model,
-      storedProvider: row.embedding_provider,
-      documentCount: parseInt(row.count),
-    };
-  }
-
-  /**
-   * Get the model info for a save from its metadata
-   */
-  async getSaveModelInfo(
-    saveId: string,
-  ): Promise<{ model: string; provider: string } | null> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const result = await this.db.query<any>(
-      `SELECT embedding_model, embedding_provider FROM save_metadata WHERE save_id = $1`,
-      [saveId],
-    );
-
-    if (result.rows.length === 0) return null;
-
-    const row = result.rows[0];
-    return {
-      model: row.embedding_model || "text-embedding-004",
-      provider: row.embedding_provider || "gemini",
-    };
-  }
-
-  /**
-   * Delete all documents for a save (for rebuild)
-   */
-  async clearSaveForRebuild(saveId: string): Promise<number> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const result = await this.db.query(
-      `DELETE FROM documents WHERE save_id = $1`,
-      [saveId],
-    );
-
-    // Reset save metadata
-    await this.db.query(
-      `UPDATE save_metadata SET document_count = 0 WHERE save_id = $1`,
-      [saveId],
-    );
-
-    return result.affectedRows || 0;
-  }
-
-  // ==========================================================================
-  // Storage Overflow Handling
-  // ==========================================================================
-
-  /**
-   * Check if global storage limit is exceeded
-   */
-  async checkStorageOverflow(): Promise<StorageOverflowInfo | null> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const totalResult = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM documents`,
-    );
-    const totalCount = parseInt(totalResult.rows[0].count);
-
-    if (totalCount <= this.config.maxTotalStorageDocuments) {
-      return null;
-    }
-
-    // Get stats for each save, ordered by last access
-    const saveStatsResult = await this.db.query<any>(
-      `SELECT save_id, COUNT(*) as count, MAX(last_access) as last_accessed
-       FROM documents
-       GROUP BY save_id
-       ORDER BY last_accessed ASC`,
-    );
-
-    const saveStats = saveStatsResult.rows.map((row: any) => ({
-      saveId: row.save_id,
-      documentCount: parseInt(row.count),
-      lastAccessed: parseInt(row.last_accessed),
-    }));
-
-    // Calculate how many documents need to be deleted
-    const overflow = totalCount - this.config.maxTotalStorageDocuments;
-
-    // Suggest oldest saves to delete first
-    let accumulatedCount = 0;
-    const suggestedDeletions: string[] = [];
-
-    for (const stat of saveStats) {
-      if (accumulatedCount >= overflow) break;
-      suggestedDeletions.push(stat.saveId);
-      accumulatedCount += stat.documentCount;
-    }
-
-    return {
-      currentTotal: totalCount,
-      maxTotal: this.config.maxTotalStorageDocuments,
-      saveStats,
-      suggestedDeletions,
-    };
-  }
-
-  /**
-   * Check if a save exceeds its document limit
-   */
-  async checkSaveOverflow(
-    saveId: string,
-  ): Promise<{ overflow: number; current: number } | null> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const result = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM documents WHERE save_id = $1`,
-      [saveId],
-    );
-
-    const count = parseInt(result.rows[0].count);
-    if (count <= this.config.maxDocumentsPerSave) {
-      return null;
-    }
-
-    return {
-      overflow: count - this.config.maxDocumentsPerSave,
-      current: count,
-    };
-  }
-
-  /**
-   * Delete oldest documents from specific saves
-   */
-  async deleteOldestFromSaves(saveIds: string[]): Promise<number> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    let totalDeleted = 0;
-
-    for (const saveId of saveIds) {
-      const result = await this.db.query(
-        `DELETE FROM documents WHERE save_id = $1 AND type != 'outline'`,
-        [saveId],
-      );
-      totalDeleted += result.affectedRows || 0;
-
-      // Also delete from save_metadata
-      await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [
-        saveId,
-      ]);
-    }
-
-    return totalDeleted;
-  }
-
-  /**
-   * Enforce per-save document limit by evicting oldest non-outline documents
-   */
-  async enforceSaveLimit(saveId: string): Promise<number> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const overflow = await this.checkSaveOverflow(saveId);
-    if (!overflow) return 0;
-
-    // Delete oldest documents (except outlines)
-    const result = await this.db.query(
-      `DELETE FROM documents WHERE id IN (
-        SELECT id FROM documents
-        WHERE save_id = $1 AND type != 'outline'
-        ORDER BY last_access ASC
-        LIMIT $2
-      )`,
-      [saveId, overflow.overflow],
-    );
-
-    // Update save metadata
-    await this.updateSaveMetadata(saveId, 0);
-
-    return result.affectedRows || 0;
-  }
-
-  /**
-   * Get global storage statistics
-   */
-  async getGlobalStats(): Promise<GlobalStorageStats> {
-    if (!this.db) throw new Error("Database not initialized");
-
-    const totalResult = await this.db.query<any>(
-      `SELECT COUNT(*) as count FROM documents`,
-    );
-    const totalDocuments = parseInt(totalResult.rows[0].count);
-
-    const savesResult = await this.db.query<any>(
-      `SELECT s.save_id, s.last_updated, s.document_count, s.embedding_model, s.embedding_provider,
-              COALESCE(d.actual_count, 0) as actual_count
-       FROM save_metadata s
-       LEFT JOIN (
-         SELECT save_id, COUNT(*) as actual_count FROM documents GROUP BY save_id
-       ) d ON s.save_id = d.save_id
-       ORDER BY s.last_updated DESC`,
-    );
-
-    const saves: SaveStats[] = savesResult.rows.map((row: any) => ({
-      saveId: row.save_id,
-      totalDocuments: parseInt(row.actual_count),
-      documentsByType: {} as Record<DocumentType, number>,
-      memoryUsage: 0,
-      lastUpdated: parseInt(row.last_updated),
-      embeddingModel: row.embedding_model,
-      embeddingProvider: row.embedding_provider,
-    }));
-
-    return {
-      totalDocuments,
-      totalSaves: saves.length,
-      saves,
-      estimatedStorageBytes: totalDocuments * 4000, // Rough estimate
-    };
-  }
-
-  // ==========================================================================
-  // Cleanup
-  // ==========================================================================
-
-  async close(): Promise<void> {
-    if (this.db) {
-      await this.db.close();
-      this.db = null;
-      this.initialized = false;
-    }
   }
 }

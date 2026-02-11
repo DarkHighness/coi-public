@@ -2,12 +2,8 @@ import {
   CharacterStatus,
   AISettings,
   LanguageCode,
-  EmbeddingConfig,
   ProviderManagement,
 } from "../../types";
-
-export const INITIAL_PROMPT =
-  "Begin the adventure. Create a setting and character introduction.";
 
 export const DEFAULT_CHARACTER: CharacterStatus = {
   name: "Initializing...",
@@ -24,8 +20,6 @@ export const LANG_MAP: Record<LanguageCode, string> = {
   en: "English",
   zh: "Chinese (Simplified)",
 };
-
-export const DEFAULT_OPENAI_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Default Provider Instances
 export const DEFAULT_PROVIDERS: ProviderManagement = {
@@ -131,9 +125,19 @@ export const DEFAULTS: AISettings = {
   // Different providers support different embedding models (e.g., Gemini: text-embedding-004, OpenAI: text-embedding-3-small)
   embedding: {
     enabled: false,
+    runtime: "local_transformers",
     providerId: "provider-1",
     modelId: "", // No default - must be selected based on provider's available models
-    dimensions: undefined, // Will be set when model is selected
+    local: {
+      backend: "transformers_js",
+      model: "use-lite-512",
+      transformersModel: "Xenova/all-MiniLM-L6-v2",
+      backendOrder: ["webgpu", "webgl", "cpu"],
+      deviceOrder: ["webgpu", "wasm", "cpu"],
+      batchSize: 8,
+      quantized: true,
+    },
+    dimensions: 384, // Local transformers default embedding dimension
     topK: 10,
     similarityThreshold: 0.65,
     // Storage Settings
@@ -145,6 +149,7 @@ export const DEFAULTS: AISettings = {
       currentForkBonus: 0.5, // Priority bonus for current fork
       ancestorForkBonus: 0.25, // Priority bonus for ancestor forks
       turnDecayFactor: 0.01, // Priority loss per turn difference
+      maxRagStorageMB: 512, // Reclaimable RAG storage budget (MB)
     },
   },
   extra: {

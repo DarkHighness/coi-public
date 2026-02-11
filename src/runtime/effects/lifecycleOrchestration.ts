@@ -309,7 +309,7 @@ export function createLifecycleActions({
     }
 
     if (aiSettings.embedding?.enabled) {
-      indexInitialEntities(nextState, saveId).catch((error) => {
+      indexInitialEntities(nextState, saveId, vfsSession).catch((error) => {
         console.error(`[${logPrefix}] Failed to index initial entities:`, error);
       });
     }

@@ -106,18 +106,6 @@ export function defineTool<TParams extends ZodObject<ZodRawShape>>(
   };
 }
 
-export function toRuntimeTool(
-  tool: TypedToolDefinition<ZodObject<ZodRawShape>>,
-): ZodToolDefinition {
-  return tool as ZodToolDefinition;
-}
-
-export function toRuntimeTools(
-  tools: TypedToolDefinition<ZodObject<ZodRawShape>>[],
-): ZodToolDefinition[] {
-  return tools as ZodToolDefinition[];
-}
-
 export function validateToolArgs<TParams extends ZodObject<ZodRawShape>>(
   tool: TypedToolDefinition<TParams>,
   args: Record<string, unknown>,
@@ -131,31 +119,6 @@ export function validateToolArgs<TParams extends ZodObject<ZodRawShape>>(
   }
   return result.data;
 }
-
-// ============================================================================
-// Entity IDs (shared helper; used by utilities and prompts)
-// ============================================================================
-
-export const ID_PREFIXES = {
-  inventory: "inv",
-  npc: "npc",
-  location: "loc",
-  quest: "quest",
-  knowledge: "knowledge",
-  faction: "faction",
-  timeline: "timeline",
-  skill: "skill",
-  condition: "condition",
-  hiddenTrait: "trait",
-  attribute: "attr",
-  causal_chain: "chain",
-} as const;
-
-export type EntityType = keyof typeof ID_PREFIXES;
-
-export const generateEntityId = (type: EntityType, num: number): string => {
-  return `${ID_PREFIXES[type]}:${num}`;
-};
 
 // ============================================================================
 // VFS TOOLS (Virtual File System)
@@ -428,6 +391,17 @@ export const VFS_SEARCH_TOOL = defineTool({
       .describe("Max results. Default: 20. Prefer omitting; null is default."),
   }),
 });
+
+
+export const VFS_SEARCH_TOOL_NO_SEMANTIC = defineTool({
+  name: "vfs_search",
+  description: "Search VFS files by text/regex/fuzzy.",
+  parameters: VFS_SEARCH_TOOL.parameters.omit({ semantic: true }),
+});
+
+export function getVfsSearchToolDefinition(ragEnabled: boolean): ZodToolDefinition {
+  return ragEnabled ? VFS_SEARCH_TOOL : VFS_SEARCH_TOOL_NO_SEMANTIC;
+}
 
 export const VFS_GREP_TOOL = defineTool({
   name: "vfs_grep",

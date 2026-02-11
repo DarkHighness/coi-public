@@ -42,6 +42,19 @@ describe("loopInitializer", () => {
       false,
     );
 
+    const turnSearchTool = turnTools.find((tool) => tool.name === "vfs_search");
+    expect(turnSearchTool).toBeDefined();
+    expect((turnSearchTool?.parameters as any).shape.semantic).toBeUndefined();
+
+    const ragEnabledTools = createInitialTools({
+      isSudoMode: false,
+      isRAGEnabled: true,
+      isCleanupMode: false,
+    });
+    const ragSearchTool = ragEnabledTools.find((tool) => tool.name === "vfs_search");
+    expect(ragSearchTool).toBeDefined();
+    expect((ragSearchTool?.parameters as any).shape.semantic).toBeDefined();
+
     const cleanupTools = createInitialTools({
       isSudoMode: true,
       isRAGEnabled: true,

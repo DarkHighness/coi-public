@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { AISettings, GameState, ForkTree } from "../types";
+import type { VfsSession } from "../services/vfs/vfsSession";
 import {
   initializeRAGService,
   getRAGService,
@@ -29,8 +30,10 @@ import { getEmbeddingModels as getGeminiEmbeddingModels } from "../services/prov
 import { getEmbeddingModels as getOpenAIEmbeddingModels } from "../services/providers/openaiProvider";
 import { getEmbeddingModels as getOpenRouterEmbeddingModels } from "../services/providers/openRouterProvider";
 import { getEmbeddingModels as getClaudeEmbeddingModels } from "../services/providers/claudeProvider";
-import { extractDocumentsFromState } from "../services/rag/documentExtraction";
-import { indexInitialEntities as indexInitialRagDocuments } from "./effects/ragDocuments";
+import {
+  indexInitialEntities as indexInitialRagDocuments,
+  updateRAGDocumentsBackground,
+} from "./effects/ragDocuments";
 
 // ============================================================================
 // Types
@@ -58,6 +61,7 @@ export interface RagRuntimeActions {
   /** Update documents in the index */
   updateDocuments: (
     state: GameState,
+    vfsSession: VfsSession,
     changedEntityIds: string[],
   ) => Promise<void>;
   /** Search for similar documents */
@@ -84,7 +88,11 @@ export interface RagRuntimeActions {
   /** Refresh status from the service */
   refreshStatus: () => Promise<void>;
   /** Index initial entities for a new game */
-  indexInitialEntities: (state: GameState, saveId: string) => Promise<void>;
+  indexInitialEntities: (
+    state: GameState,
+    saveId: string,
+    vfsSession: VfsSession,
+  ) => Promise<void>;
   /** Get the underlying RAG service (for advanced use) */
   getService: () => RAGService | null;
 }
@@ -125,96 +133,136 @@ export function useRagRuntime(): RagRuntimeValue {
       settingsRef.current = settings;
 
       try {
-        // Get the embedding provider instance
         const embeddingConfig = settings.embedding;
-        const providerId = embeddingConfig.providerId;
-        const providerInstance = settings.providers.instances.find(
-          (p) => p.id === providerId,
-        );
+        const runtimeMode = embeddingConfig.runtime ?? "local_transformers";
+        const isLocalTfjs = runtimeMode === "local_tfjs";
+        const isLocalTransformers = runtimeMode === "local_transformers";
+        const isLocalRuntime = isLocalTfjs || isLocalTransformers;
 
-        if (!providerInstance) {
-          throw new Error(`Embedding provider not found: ${providerId}`);
-        }
+        const credentials: {
+          gemini?: { apiKey: string; baseUrl?: string };
+          openai?: { apiKey: string; baseUrl?: string };
+          openrouter?: { apiKey: string };
+          claude?: { apiKey: string; baseUrl?: string };
+        } = {};
 
-        // Build credentials from the provider instance
-        const credentials = {
-          gemini:
-            providerInstance.protocol === "gemini"
-              ? {
-                  apiKey: providerInstance.apiKey,
-                  baseUrl: providerInstance.baseUrl,
-                }
-              : undefined,
-          openai:
-            providerInstance.protocol === "openai"
-              ? {
-                  apiKey: providerInstance.apiKey,
-                  baseUrl: providerInstance.baseUrl,
-                }
-              : undefined,
-          openrouter:
-            providerInstance.protocol === "openrouter"
-              ? { apiKey: providerInstance.apiKey }
-              : undefined,
-          claude:
-            providerInstance.protocol === "claude"
-              ? {
-                  apiKey: providerInstance.apiKey,
-                  baseUrl: providerInstance.baseUrl,
-                }
-              : undefined,
-        };
-
-        // Determine embedding provider protocol and model from settings
-        const provider = providerInstance.protocol;
-        const modelId = embeddingConfig.modelId || "text-embedding-004";
-
-        // Get context length for the selected model
+        let provider:
+          | "gemini"
+          | "openai"
+          | "openrouter"
+          | "claude"
+          | "local_tfjs"
+          | "local_transformers";
+        let modelId: string;
+        let dimensions: number | undefined;
         let contextLength: number | undefined;
-        try {
-          let models: any[] = [];
-          switch (provider) {
-            case "gemini":
-              models = await getGeminiEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-              });
-              break;
-            case "openai":
-              models = await getOpenAIEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-                baseUrl: providerInstance.baseUrl,
-              });
-              break;
-            case "openrouter":
-              models = await getOpenRouterEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-              });
-              break;
-            case "claude":
-              models = await getClaudeEmbeddingModels({
-                apiKey: providerInstance.apiKey,
-              });
-              break;
+
+        if (isLocalRuntime) {
+          if (isLocalTfjs) {
+            provider = "local_tfjs";
+            modelId = "use-lite-512";
+            dimensions = 512;
+          } else {
+            provider = "local_transformers";
+            modelId =
+              embeddingConfig.local?.transformersModel ||
+              embeddingConfig.modelId ||
+              "Xenova/all-MiniLM-L6-v2";
+            dimensions = embeddingConfig.dimensions || 384;
+          }
+        } else {
+          const providerId = embeddingConfig.providerId;
+          const providerInstance = settings.providers.instances.find(
+            (p) => p.id === providerId,
+          );
+
+          if (!providerInstance) {
+            throw new Error(`Embedding provider not found: ${providerId}`);
           }
 
-          const modelInfo = models.find((m) => m.id === modelId);
-          if (modelInfo?.contextLength) {
-            contextLength = modelInfo.contextLength;
+          if (providerInstance.protocol === "gemini") {
+            credentials.gemini = {
+              apiKey: providerInstance.apiKey,
+              baseUrl: providerInstance.baseUrl,
+            };
           }
-        } catch (error) {
-          console.warn(
-            "[RAGRuntime] Failed to fetch model info for context length:",
-            error,
-          );
+          if (providerInstance.protocol === "openai") {
+            credentials.openai = {
+              apiKey: providerInstance.apiKey,
+              baseUrl: providerInstance.baseUrl,
+            };
+          }
+          if (providerInstance.protocol === "openrouter") {
+            credentials.openrouter = {
+              apiKey: providerInstance.apiKey,
+            };
+          }
+          if (providerInstance.protocol === "claude") {
+            credentials.claude = {
+              apiKey: providerInstance.apiKey,
+              baseUrl: providerInstance.baseUrl,
+            };
+          }
+
+          provider = providerInstance.protocol;
+          modelId = embeddingConfig.modelId || "text-embedding-004";
+          dimensions = embeddingConfig.dimensions;
+
+          try {
+            let models: any[] = [];
+            switch (provider) {
+              case "gemini":
+                models = await getGeminiEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                });
+                break;
+              case "openai":
+                models = await getOpenAIEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                  baseUrl: providerInstance.baseUrl,
+                });
+                break;
+              case "openrouter":
+                models = await getOpenRouterEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                });
+                break;
+              case "claude":
+                models = await getClaudeEmbeddingModels({
+                  apiKey: providerInstance.apiKey,
+                });
+                break;
+            }
+
+            const modelInfo = models.find((m) => m.id === modelId);
+            if (modelInfo?.contextLength) {
+              contextLength = modelInfo.contextLength;
+            }
+          } catch (error) {
+            console.warn(
+              "[RAGRuntime] Failed to fetch model info for context length:",
+              error,
+            );
+          }
         }
+
+        const maxRagStorageMB = Math.max(
+          64,
+          embeddingConfig.storage?.maxRagStorageMB ??
+            embeddingConfig.lru?.maxRagStorageMB ??
+            512,
+        );
+        const maxStorageBytes = Math.round(maxRagStorageMB * 1024 * 1024);
 
         // Initialize the RAG service
         const service = await initializeRAGService(
           {
             provider,
             modelId,
-            dimensions: embeddingConfig.dimensions,
+            dimensions,
             contextLength,
+            maxStorageBytes,
+            local: embeddingConfig.local,
           },
           credentials,
         );
@@ -325,7 +373,11 @@ export function useRagRuntime(): RagRuntimeValue {
   // ============================================================================
 
   const updateDocuments = useCallback(
-    async (gameState: GameState, changedEntityIds: string[]): Promise<void> => {
+    async (
+      gameState: GameState,
+      vfsSession: VfsSession,
+      changedEntityIds: string[],
+    ): Promise<void> => {
       const service = serviceRef.current;
       if (!service || !state.currentSaveId) {
         console.warn(
@@ -335,23 +387,16 @@ export function useRagRuntime(): RagRuntimeValue {
       }
 
       try {
-        const documents = extractDocumentsFromState(
-          gameState,
-          changedEntityIds,
+        const changedEntities = changedEntityIds.map((id) => ({ id, type: "unknown" }));
+
+        await updateRAGDocumentsBackground(
+          changedEntities,
+          {
+            ...gameState,
+            saveId: state.currentSaveId,
+          },
+          vfsSession,
         );
-
-        if (documents.length === 0) return;
-
-        await service.addDocuments(
-          documents.map((doc) => ({
-            ...doc,
-            saveId: state.currentSaveId!,
-            forkId: gameState.forkId || 0,
-            turnNumber: gameState.turnNumber || 0,
-          })),
-        );
-
-        console.log(`[RAGRuntime] Updated ${documents.length} documents`);
       } catch (error) {
         console.error("[RAGRuntime] Update documents failed:", error);
       }
@@ -364,7 +409,11 @@ export function useRagRuntime(): RagRuntimeValue {
   // ============================================================================
 
   const indexInitialEntities = useCallback(
-    async (gameState: GameState, saveId: string): Promise<void> => {
+    async (
+      gameState: GameState,
+      saveId: string,
+      vfsSession: VfsSession,
+    ): Promise<void> => {
       const service = serviceRef.current;
       if (!service) {
         console.warn(
@@ -374,7 +423,7 @@ export function useRagRuntime(): RagRuntimeValue {
       }
 
       try {
-        await indexInitialRagDocuments(gameState, saveId);
+        await indexInitialRagDocuments(gameState, saveId, vfsSession);
 
         const status = await service.getStatus();
         setState((prev) => ({ ...prev, status }));
@@ -443,39 +492,11 @@ export function useRagRuntime(): RagRuntimeValue {
 
         if (results.length === 0) return "";
 
-        // Group by type
-        const byType: Record<string, string[]> = {};
-        for (const result of results) {
-          const type = result.document.type;
-          if (!byType[type]) byType[type] = [];
-          byType[type].push(result.document.content);
-        }
-
-        // Build context string
-        const sections: string[] = [];
-
-        if (byType.story?.length) {
-          sections.push(
-            `## Recent Story Context\n${byType.story.join("\n\n")}`,
-          );
-        }
-        if (byType.npc?.length) {
-          sections.push(`## Relevant NPCs\n${byType.npc.join("\n\n")}`);
-        }
-        if (byType.location?.length) {
-          sections.push(
-            `## Relevant Locations\n${byType.location.join("\n\n")}`,
-          );
-        }
-        if (byType.knowledge?.length) {
-          sections.push(`## World Knowledge\n${byType.knowledge.join("\n\n")}`);
-        }
-        if (byType.quest?.length) {
-          sections.push(`## Active Quests\n${byType.quest.join("\n\n")}`);
-        }
-        if (byType.item?.length) {
-          sections.push(`## Relevant Items\n${byType.item.join("\n\n")}`);
-        }
+        const sections = results.map((result) => {
+          const doc = result.document;
+          const header = `[${doc.type}] ${doc.sourcePath} (#${doc.chunkIndex + 1}/${doc.chunkCount})`;
+          return `${header}\n${doc.content}`;
+        });
 
         return sections.join("\n\n");
       } catch (error) {

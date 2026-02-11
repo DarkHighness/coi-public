@@ -1,43 +1,27 @@
 import type { GameState, ResolvedThemeConfig } from "../../types";
+import type { VfsFileMap } from "../../services/vfs/types";
+import type { VfsSession } from "../../services/vfs/vfsSession";
 import { getRAGService } from "../../services/rag";
-import { extractDocumentsFromState } from "../../services/rag/documentExtraction";
+import {
+  diffSnapshotFiles,
+  extractFileChunksFromSnapshot,
+} from "../../services/rag/vfsExtraction";
 
 interface SaveAwareGameState extends GameState {
   saveId?: string;
 }
 
-export async function updateRAGDocumentsBackground(
-  changedEntities: Array<{ id: string; type: string }>,
-  state: SaveAwareGameState,
-): Promise<void> {
-  if (changedEntities.length === 0) return;
+const snapshotCache = new Map<string, VfsFileMap>();
 
-  try {
-    const ragService = getRAGService();
-    if (!ragService) return;
+const buildCacheKey = (saveId: string, forkId: number): string => `${saveId}::${forkId}`;
 
-    const entityIds = changedEntities.map((entity) => entity.id);
-    console.log(
-      `[RAG Update] Updating ${entityIds.length} entities:`,
-      entityIds,
-    );
-
-    const documents = extractDocumentsFromState(state, entityIds);
-    if (documents.length === 0) return;
-
-    await ragService.addDocuments(
-      documents.map((doc) => ({
-        ...doc,
-        saveId: state.saveId || "unknown",
-        forkId: state.forkId || 0,
-        turnNumber: state.turnNumber || 0,
-      })),
-    );
-    console.log(`[RAG Update] Updated ${documents.length} documents`);
-  } catch (error) {
-    console.error("[RAG Update] Failed:", error);
+const cloneSnapshot = (snapshot: VfsFileMap): VfsFileMap => {
+  const next: VfsFileMap = {};
+  for (const [path, file] of Object.entries(snapshot)) {
+    next[path] = { ...file };
   }
-}
+  return next;
+};
 
 function extractXmlTagValue(
   input: string | undefined,
@@ -62,52 +46,125 @@ export function applyCustomContextThemeOverrides(
   return { ...themeConfig, narrativeStyle: narrativeStyleOverride };
 }
 
+const buildIndexOptions = (state: SaveAwareGameState) => ({
+  saveId: state.saveId || "unknown",
+  forkId: state.forkId || 0,
+  turnNumber: state.turnNumber || 0,
+});
+
+const getChangedSnapshot = (
+  snapshot: VfsFileMap,
+  changedPaths: string[],
+): VfsFileMap => {
+  const changed: VfsFileMap = {};
+  for (const path of changedPaths) {
+    const file = snapshot[path];
+    if (file) {
+      changed[path] = file;
+    }
+  }
+  return changed;
+};
+
+export async function updateRAGDocumentsBackground(
+  changedEntities: Array<{ id: string; type: string }>,
+  state: SaveAwareGameState,
+  vfsSession?: VfsSession,
+): Promise<void> {
+  if (!vfsSession) return;
+
+  try {
+    const ragService = getRAGService();
+    if (!ragService || !ragService.initialized) return;
+
+    const options = buildIndexOptions(state);
+    const cacheKey = buildCacheKey(options.saveId, options.forkId);
+    const snapshot = vfsSession.snapshotAllCanonical();
+    const previous = snapshotCache.get(cacheKey);
+
+    if (!previous) {
+      const documents = extractFileChunksFromSnapshot(snapshot, options);
+      await ragService.reindexAll({
+        saveId: options.saveId,
+        forkId: options.forkId,
+        turnNumber: options.turnNumber,
+        documents,
+      });
+      snapshotCache.set(cacheKey, cloneSnapshot(snapshot));
+      console.log(
+        `[RAG Update] Initialized index with ${documents.length} chunks (changes=${changedEntities.length})`,
+      );
+      return;
+    }
+
+    const diff = diffSnapshotFiles(previous, snapshot);
+    const pathsToDelete = Array.from(
+      new Set([...diff.changedPaths, ...diff.removedPaths]),
+    );
+
+    if (pathsToDelete.length === 0) {
+      return;
+    }
+
+    await ragService.retireLatestByPaths({
+      saveId: options.saveId,
+      forkId: options.forkId,
+      turnNumber: options.turnNumber,
+      paths: pathsToDelete,
+    });
+
+    const changedSnapshot = getChangedSnapshot(snapshot, diff.changedPaths);
+    const changedDocuments = extractFileChunksFromSnapshot(changedSnapshot, options);
+
+    if (changedDocuments.length > 0) {
+      await ragService.upsertFileChunks(changedDocuments);
+    }
+
+    snapshotCache.set(cacheKey, cloneSnapshot(snapshot));
+
+    console.log(
+      `[RAG Update] Incremental index updated (changed=${diff.changedPaths.length}, removed=${diff.removedPaths.length}, upserted=${changedDocuments.length}, entities=${changedEntities.length})`,
+    );
+  } catch (error) {
+    console.error("[RAG Update] Failed:", error);
+  }
+}
+
 export async function indexInitialEntities(
   state: GameState,
   saveId: string,
+  vfsSession?: VfsSession,
 ): Promise<void> {
+  if (!vfsSession) return;
+
   try {
     const ragService = getRAGService();
-    if (!ragService) return;
+    if (!ragService || !ragService.initialized) return;
 
-    console.log(`[RAG Init] Indexing initial entities for save: ${saveId}`);
+    const forkId = state.forkId || 0;
 
-    await ragService.switchSave(saveId, state.forkId || 0, state.forkTree);
-    console.log(`[RAG Init] Switched to save context: ${saveId}`);
+    await ragService.switchSave(saveId, forkId, state.forkTree);
 
-    const initialEntityIds: string[] = [];
+    const options = {
+      saveId,
+      forkId,
+      turnNumber: state.turnNumber || 0,
+    };
 
-    if (state.outline) {
-      initialEntityIds.push("outline:full");
-      initialEntityIds.push("outline:world");
-      initialEntityIds.push("outline:goal");
-      initialEntityIds.push("outline:premise");
-      initialEntityIds.push("outline:character");
-    }
+    const snapshot = vfsSession.snapshotAllCanonical();
+    const documents = extractFileChunksFromSnapshot(snapshot, options);
 
-    state.inventory?.forEach((item) => initialEntityIds.push(item.id));
-    state.npcs?.forEach((npc) => initialEntityIds.push(npc.id));
-    state.locations?.forEach((location) => initialEntityIds.push(location.id));
-    state.quests?.forEach((quest) => initialEntityIds.push(quest.id));
-    state.knowledge?.forEach((knowledge) => initialEntityIds.push(knowledge.id));
-    state.factions?.forEach((faction) => initialEntityIds.push(faction.id));
-    state.timeline?.forEach((event) => initialEntityIds.push(event.id));
+    await ragService.reindexAll({
+      saveId,
+      forkId,
+      turnNumber: options.turnNumber,
+      documents,
+    });
 
-    if (initialEntityIds.length === 0) return;
+    snapshotCache.set(buildCacheKey(saveId, forkId), cloneSnapshot(snapshot));
 
-    const documents = extractDocumentsFromState(state, initialEntityIds);
-    if (documents.length === 0) return;
-
-    await ragService.addDocuments(
-      documents.map((doc) => ({
-        ...doc,
-        saveId,
-        forkId: state.forkId || 0,
-        turnNumber: state.turnNumber || 0,
-      })),
-    );
     console.log(
-      `[RAG Init] Indexed ${documents.length} initial documents for save: ${saveId}`,
+      `[RAG Init] Indexed ${documents.length} VFS chunks for save=${saveId}, fork=${forkId}`,
     );
   } catch (error) {
     console.error("[RAG Init] Failed:", error);

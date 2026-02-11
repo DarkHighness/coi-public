@@ -1,41 +1,41 @@
 /**
  * RAG Service Client
- *
- * Main thread interface for communicating with the RAG SharedWorker
- * Provides a clean API for the game engine to use
+ * Main-thread API for the RAG SharedWorker.
  */
 
 import {
   DEFAULT_RAG_CONFIG,
-  type RAGConfig,
-  type RAGDocument,
+  type AddDocumentsPayload,
+  type DeleteByPathsPayload,
+  type DeleteDocumentsPayload,
   type DocumentType,
+  type ExportSaveDataPayload,
+  type GlobalStorageStats,
+  type ImportSaveDataPayload,
+  type InitPayload,
+  type LookupReusableEmbeddingsResult,
+  type ModelMismatchEvent,
+  type ModelMismatchInfo,
+  type RAGConfig,
   type RAGDocumentMeta,
+  type RAGEvent,
+  type RAGExportData,
+  type RAGStatus,
   type RAGWorkerRequest,
   type RAGWorkerResponse,
-  type RAGEvent,
-  type InitPayload,
-  type AddDocumentsPayload,
-  type UpdateDocumentPayload,
-  type DeleteDocumentsPayload,
-  type SearchPayload,
-  type SearchOptions,
-  type SwitchSavePayload,
-  type SearchResult,
+  type ReindexAllPayload,
+  type RetireLatestByPathsPayload,
   type SaveStats,
-  type RAGStatus,
-  type ProgressEvent,
-  type ModelMismatchInfo,
-  type StorageOverflowInfo,
-  type GlobalStorageStats,
-  type ModelMismatchEvent,
+  type SearchOptions,
+  type SearchPayload,
+  type SearchResult,
   type StorageOverflowEvent,
-  type RAGExportData,
+  type StorageOverflowInfo,
+  type SwitchSavePayload,
+  type UpdateDocumentPayload,
+  type UpsertFileChunksPayload,
 } from "./types";
-
-// ============================================================================
-// Event Types
-// ============================================================================
+import { embedTextsLocally, resetLocalEmbeddingEngines } from "./localEmbedding";
 
 export type RAGEventCallback = (event: RAGEvent) => void;
 
@@ -48,14 +48,15 @@ export interface RAGServiceEvents {
     deletedVersions: number;
     deletedStorage: number;
   }) => void;
-  progress: (data: ProgressEvent["data"]) => void;
+  progress: (data: {
+    phase: "embedding" | "indexing" | "searching" | "cleanup";
+    current: number;
+    total: number;
+    message?: string;
+  }) => void;
   modelMismatch: (data: ModelMismatchInfo) => void;
   storageOverflow: (data: StorageOverflowInfo) => void;
 }
-
-// ============================================================================
-// RAG Service Client
-// ============================================================================
 
 export class RAGService {
   private worker: SharedWorker | null = null;
@@ -74,16 +75,8 @@ export class RAGService {
   private initPromise: Promise<void> | null = null;
   private config: RAGConfig = { ...DEFAULT_RAG_CONFIG };
 
-  // Request timeout in milliseconds
-  private readonly REQUEST_TIMEOUT = 60000; // 60 seconds for embedding operations
+  private readonly REQUEST_TIMEOUT = 60000;
 
-  // ==========================================================================
-  // Initialization
-  // ==========================================================================
-
-  /**
-   * Initialize the RAG service
-   */
   async initialize(
     config: Partial<RAGConfig>,
     credentials: InitPayload["credentials"],
@@ -100,34 +93,23 @@ export class RAGService {
     config: Partial<RAGConfig>,
     credentials: InitPayload["credentials"],
   ): Promise<void> {
-    // Check SharedWorker support
     if (typeof SharedWorker === "undefined") {
-      console.warn(
-        "[RAGService] SharedWorker not supported, falling back to inline mode",
-      );
-      // TODO: Implement inline fallback if needed
       throw new Error("SharedWorker not supported in this browser");
     }
 
-    // Create SharedWorker
     this.worker = new SharedWorker(new URL("./worker.ts", import.meta.url), {
       type: "module",
       name: "rag-worker",
     });
 
     this.port = this.worker.port;
-
-    // Set up message handler
     this.port.onmessage = (
       event: MessageEvent<RAGWorkerResponse | RAGEvent>,
     ) => {
       const data = event.data;
-
-      // Check if it's a response to a request
       if ("id" in data && "success" in data) {
         this.handleResponse(data as RAGWorkerResponse);
       } else {
-        // It's an event
         this.handleEvent(data as RAGEvent);
       }
     };
@@ -139,46 +121,194 @@ export class RAGService {
 
     this.port.start();
 
-    // Merge config
-    this.config = { ...DEFAULT_RAG_CONFIG, ...config };
+    this.config = {
+      ...DEFAULT_RAG_CONFIG,
+      ...config,
+      local: {
+        ...DEFAULT_RAG_CONFIG.local,
+        ...(config.local ?? {}),
+      },
+    };
 
-    // Initialize worker
     await this.sendRequest("init", {
       config: this.config,
       credentials,
     } as InitPayload);
 
     this.isInitialized = true;
-    console.log("[RAGService] Initialized successfully");
   }
 
-  /**
-   * Check if service is initialized
-   */
   get initialized(): boolean {
     return this.isInitialized;
   }
 
-  // ==========================================================================
-  // Document Operations
-  // ==========================================================================
+  private isLocalRuntime(): boolean {
+    return (
+      this.config.provider === "local_tfjs" ||
+      this.config.provider === "local_transformers"
+    );
+  }
 
-  /**
-   * Add documents to the RAG index
-   */
+  private getLocalEmbeddingConfig(): NonNullable<RAGConfig["local"]> {
+    const merged = {
+      ...(DEFAULT_RAG_CONFIG.local || {
+        backend: "transformers_js",
+        model: "use-lite-512",
+        transformersModel: "Xenova/all-MiniLM-L6-v2",
+        backendOrder: ["webgpu", "webgl", "cpu"],
+        deviceOrder: ["webgpu", "wasm", "cpu"],
+        quantized: true,
+      }),
+      ...(this.config.local || {}),
+    };
+
+    if (this.config.provider === "local_tfjs") {
+      return {
+        ...merged,
+        backend: "tfjs",
+        model: "use-lite-512",
+        backendOrder: merged.backendOrder || ["webgpu", "webgl", "cpu"],
+      };
+    }
+
+    return {
+      ...merged,
+      backend: "transformers_js",
+      transformersModel:
+        merged.transformersModel || "Xenova/all-MiniLM-L6-v2",
+      deviceOrder: merged.deviceOrder || ["webgpu", "wasm", "cpu"],
+    };
+  }
+
+  private async ensureLocalEmbeddings(
+    documents: UpsertFileChunksPayload["documents"],
+  ): Promise<UpsertFileChunksPayload["documents"]> {
+    if (!this.isLocalRuntime() || documents.length === 0) {
+      return documents;
+    }
+
+    const missing = documents
+      .map((doc, index) => ({ index, doc }))
+      .filter(
+        ({ doc }) => !Array.isArray(doc.embedding) || doc.embedding.length === 0,
+      );
+
+    if (missing.length === 0) {
+      return documents;
+    }
+
+    const prepared = documents.map((doc) => ({ ...doc }));
+
+    type MissingItem = (typeof missing)[number];
+    let misses: MissingItem[] = missing;
+
+    try {
+      const reusable = await this.sendRequest<LookupReusableEmbeddingsResult>(
+        "lookupReusableEmbeddings",
+        {
+          items: missing.map(({ doc }) => ({
+            saveId: doc.saveId,
+            sourcePath: doc.sourcePath,
+            fileHash: doc.fileHash,
+            chunkIndex: doc.chunkIndex,
+          })),
+        },
+      );
+
+      if (reusable?.embeddings?.length === missing.length) {
+        const nextMisses: MissingItem[] = [];
+
+        missing.forEach((entry, offset) => {
+          const reusableEmbedding = reusable.embeddings[offset];
+          if (Array.isArray(reusableEmbedding) && reusableEmbedding.length > 0) {
+            prepared[entry.index] = {
+              ...prepared[entry.index],
+              embedding: reusableEmbedding,
+            };
+          } else {
+            nextMisses.push(entry);
+          }
+        });
+
+        misses = nextMisses;
+      }
+    } catch (error) {
+      console.warn("[RAGService] Reusable embedding lookup failed:", error);
+    }
+
+    if (misses.length === 0) {
+      return prepared;
+    }
+
+    const vectors = await embedTextsLocally(
+      misses.map(({ doc }) => doc.content),
+      this.getLocalEmbeddingConfig(),
+    );
+
+    if (vectors.length !== misses.length) {
+      throw new Error(
+        `Local embedding size mismatch: expected ${misses.length}, got ${vectors.length}`,
+      );
+    }
+
+    misses.forEach(({ index }, vectorIndex) => {
+      prepared[index] = {
+        ...prepared[index],
+        embedding: vectors[vectorIndex],
+      };
+    });
+
+    return prepared;
+  }
+
+
+  // ======================================================================
+  // File-centric indexing API
+  // ======================================================================
+
+  async upsertFileChunks(
+    documents: UpsertFileChunksPayload["documents"],
+  ): Promise<{ count: number }> {
+    this.ensureInitialized();
+    const preparedDocuments = await this.ensureLocalEmbeddings(documents);
+    return this.sendRequest("upsertFileChunks", { documents: preparedDocuments });
+  }
+
+  async deleteByPaths(
+    params: DeleteByPathsPayload,
+  ): Promise<{ deleted: number }> {
+    this.ensureInitialized();
+    return this.sendRequest("deleteByPaths", params);
+  }
+
+  async retireLatestByPaths(
+    params: RetireLatestByPathsPayload,
+  ): Promise<{ deleted: number }> {
+    this.ensureInitialized();
+    return this.sendRequest("retireLatestByPaths", params);
+  }
+
+  async reindexAll(
+    params: ReindexAllPayload,
+  ): Promise<{ deleted: number; count: number }> {
+    this.ensureInitialized();
+    const preparedDocuments = await this.ensureLocalEmbeddings(params.documents);
+    return this.sendRequest("reindexAll", {
+      ...params,
+      documents: preparedDocuments,
+    });
+  }
+
+  // ======================================================================
+  // Legacy wrappers
+  // ======================================================================
+
   async addDocuments(
     documents: AddDocumentsPayload["documents"],
   ): Promise<{ count: number }> {
-    this.ensureInitialized();
-    console.log(
-      `[RAGService] addDocuments: count=${documents.length}, saveId=${documents[0]?.saveId || "N/A"}`,
-    );
-    return this.sendRequest("addDocuments", { documents });
+    return this.upsertFileChunks(documents);
   }
 
-  /**
-   * Update a single document (creates new version)
-   */
   async updateDocument(
     params: UpdateDocumentPayload,
   ): Promise<{ success: boolean }> {
@@ -186,9 +316,6 @@ export class RAGService {
     return this.sendRequest("updateDocument", params);
   }
 
-  /**
-   * Delete documents
-   */
   async deleteDocuments(
     params: DeleteDocumentsPayload,
   ): Promise<{ deleted: number }> {
@@ -196,30 +323,35 @@ export class RAGService {
     return this.sendRequest("deleteDocuments", params);
   }
 
-  // ==========================================================================
+  // ======================================================================
   // Search
-  // ==========================================================================
+  // ======================================================================
 
-  /**
-   * Search for similar documents
-   */
   async search(
     query: string,
     options: SearchOptions = {},
   ): Promise<SearchResult[]> {
     this.ensureInitialized();
-    console.log(
-      `[RAGService] search: query="${query.substring(0, 50)}...", options=${JSON.stringify(options)}`,
-    );
+
+    if (this.isLocalRuntime()) {
+      const [queryEmbedding] = await embedTextsLocally(
+        [query],
+        this.getLocalEmbeddingConfig(),
+      );
+
+      return this.sendRequest("search", {
+        query: "",
+        queryEmbedding: new Float32Array(queryEmbedding),
+        options,
+      } as SearchPayload);
+    }
+
     return this.sendRequest("search", {
       query,
       options,
     } as SearchPayload);
   }
 
-  /**
-   * Search with pre-computed embedding
-   */
   async searchWithEmbedding(
     queryEmbedding: Float32Array,
     options: SearchOptions = {},
@@ -232,43 +364,27 @@ export class RAGService {
     } as SearchPayload);
   }
 
-  /**
-   * Get recently added documents (for debugging/display)
-   */
   async getRecentDocuments(
     limit: number = 20,
     types?: DocumentType[],
   ): Promise<RAGDocumentMeta[]> {
     this.ensureInitialized();
-    console.log(
-      `[RAGService] getRecentDocuments: limit=${limit}, types=${types?.join(",") || "all"}`,
-    );
     return this.sendRequest("getRecentDocuments", { limit, types });
   }
 
-  /**
-   * Get paginated documents with total count (for efficient pagination)
-   */
   async getDocumentsPaginated(
     offset: number,
     limit: number,
     types?: DocumentType[],
   ): Promise<{ documents: RAGDocumentMeta[]; total: number }> {
     this.ensureInitialized();
-    console.log(
-      `[RAGService] getDocumentsPaginated: offset=${offset}, limit=${limit}, types=${types?.join(",") || "all"}`,
-    );
     return this.sendRequest("getDocumentsPaginated", { offset, limit, types });
   }
 
-  // ==========================================================================
-  // Save Management
-  // ==========================================================================
+  // ======================================================================
+  // Save management
+  // ======================================================================
 
-  /**
-   * Switch to a different save context
-   * This clears the memory cache and loads the new save's data
-   */
   async switchSave(
     saveId: string,
     forkId: number,
@@ -282,29 +398,20 @@ export class RAGService {
     } as SwitchSavePayload);
   }
 
-  /**
-   * Get statistics for a save
-   */
   async getSaveStats(saveId?: string): Promise<SaveStats | null> {
     this.ensureInitialized();
     return this.sendRequest("getSaveStats", { saveId });
   }
 
-  /**
-   * Clear all data for a save
-   */
   async clearSave(saveId?: string): Promise<{ deleted: number }> {
     this.ensureInitialized();
     return this.sendRequest("clearSave", { saveId });
   }
 
-  // ==========================================================================
+  // ======================================================================
   // Maintenance
-  // ==========================================================================
+  // ======================================================================
 
-  /**
-   * Run cleanup to enforce limits
-   */
   async cleanup(): Promise<{
     deletedVersions: number;
     deletedStorage: number;
@@ -313,22 +420,37 @@ export class RAGService {
     return this.sendRequest("cleanup", {});
   }
 
-  /**
-   * Update configuration
-   */
-  async updateConfig(
-    config: Partial<RAGConfig>,
-  ): Promise<{ success: boolean }> {
-    this.config = { ...this.config, ...config };
+  async updateConfig(config: Partial<RAGConfig>): Promise<{ success: boolean }> {
+    const nextConfig: RAGConfig = {
+      ...this.config,
+      ...config,
+      local: {
+        ...(this.config.local || DEFAULT_RAG_CONFIG.local || {
+          backend: "transformers_js",
+          model: "use-lite-512",
+          transformersModel: "Xenova/all-MiniLM-L6-v2",
+        }),
+        ...(config.local ?? {}),
+      },
+    };
+
+    const localRuntimeChanged =
+      nextConfig.provider !== this.config.provider ||
+      JSON.stringify(nextConfig.local || null) !==
+        JSON.stringify(this.config.local || null);
+
+    this.config = nextConfig;
+
+    if (localRuntimeChanged) {
+      await resetLocalEmbeddingEngines().catch(() => undefined);
+    }
+
     if (this.isInitialized) {
       return this.sendRequest("updateConfig", config);
     }
     return { success: true };
   }
 
-  /**
-   * Get current status
-   */
   async getStatus(): Promise<RAGStatus> {
     if (!this.isInitialized || !this.port) {
       return {
@@ -345,108 +467,94 @@ export class RAGService {
     return this.sendRequest("getStatus", {});
   }
 
-  // ==========================================================================
-  // Model & Storage Management
-  // ==========================================================================
-
-  /**
-   * Check if there's a model mismatch for the save
-   * Returns mismatch info if documents were created with a different model
-   */
   async checkModelMismatch(saveId?: string): Promise<ModelMismatchInfo | null> {
     this.ensureInitialized();
     return this.sendRequest("checkModelMismatch", { saveId });
   }
 
-  /**
-   * Rebuild embeddings for a save by clearing all documents
-   * After calling this, documents need to be re-added with new embeddings
-   */
   async rebuildForModel(saveId?: string): Promise<{ deleted: number }> {
     this.ensureInitialized();
     return this.sendRequest("rebuildForModel", { saveId });
   }
 
-  /**
-   * Check if global storage is overflowing
-   */
   async checkStorageOverflow(): Promise<StorageOverflowInfo | null> {
     this.ensureInitialized();
     return this.sendRequest("checkStorageOverflow", {});
   }
 
-  /**
-   * Delete the oldest saves to free up storage
-   */
   async deleteOldestSaves(saveIds: string[]): Promise<{ deleted: number }> {
     this.ensureInitialized();
     return this.sendRequest("deleteOldestSaves", { saveIds });
   }
 
-  /**
-   * Get statistics for all saves
-   */
   async getAllSaveStats(): Promise<GlobalStorageStats> {
     this.ensureInitialized();
     return this.sendRequest("getAllSaveStats", {});
   }
 
-  // ==========================================================================
-  // Export/Import
-  // ==========================================================================
+  // ======================================================================
+  // Export / Import
+  // ======================================================================
 
-  /**
-   * Export all RAG data for a save (including embeddings)
-   */
   async exportSaveData(saveId: string): Promise<RAGExportData | null> {
     this.ensureInitialized();
-    return this.sendRequest("exportSaveData", { saveId });
+    return this.sendRequest("exportSaveData", {
+      saveId,
+    } as ExportSaveDataPayload);
   }
 
-  /**
-   * Import RAG data for a new save
-   */
   async importSaveData(
     data: RAGExportData,
     newSaveId: string,
   ): Promise<{ success: boolean; imported: number }> {
     this.ensureInitialized();
-    return this.sendRequest("importSaveData", { data, newSaveId });
+    return this.sendRequest("importSaveData", {
+      data,
+      newSaveId,
+    } as ImportSaveDataPayload);
   }
 
-  // ==========================================================================
-  // Event Handling
-  // ==========================================================================
+  // ======================================================================
+  // Events
+  // ======================================================================
 
-  /**
-   * Add event listener
-   */
   on<K extends keyof RAGServiceEvents>(
     event: K,
     callback: RAGServiceEvents[K],
-  ): void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set());
+  ): () => void {
+    const eventName = event as string;
+    if (!this.eventListeners.has(eventName)) {
+      this.eventListeners.set(eventName, new Set());
     }
-    this.eventListeners.get(event)!.add(callback);
+    this.eventListeners.get(eventName)!.add(callback as Function);
+
+    return () => {
+      this.off(event, callback);
+    };
   }
 
-  /**
-   * Remove event listener
-   */
   off<K extends keyof RAGServiceEvents>(
     event: K,
     callback: RAGServiceEvents[K],
   ): void {
-    const listeners = this.eventListeners.get(event);
+    const listeners = this.eventListeners.get(event as string);
     if (listeners) {
-      listeners.delete(callback);
+      listeners.delete(callback as Function);
     }
   }
 
-  /**
-   * Emit event to listeners
-   */
+  once<K extends keyof RAGServiceEvents>(
+    event: K,
+    callback: RAGServiceEvents[K],
+  ): void {
+    const onceCallback = ((data: any) => {
+      callback(data);
+      this.off(event, onceCallback as any);
+    }) as RAGServiceEvents[K];
+
+    this.on(event, onceCallback);
+  }
+
   private emit(event: string, data?: any): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
@@ -460,38 +568,24 @@ export class RAGService {
     }
   }
 
-  // ==========================================================================
-  // Cleanup
-  // ==========================================================================
-
-  /**
-   * Terminate the service
-   */
   terminate(): void {
-    // Cancel all pending requests
-    for (const [id, request] of this.pendingRequests) {
+    for (const [, request] of this.pendingRequests) {
       clearTimeout(request.timeout);
       request.reject(new Error("Service terminated"));
     }
     this.pendingRequests.clear();
 
-    // Close port
     if (this.port) {
       this.port.close();
       this.port = null;
     }
 
-    // Note: We don't terminate the SharedWorker as other tabs may be using it
     this.worker = null;
     this.isInitialized = false;
     this.initPromise = null;
 
-    console.log("[RAGService] Terminated");
+    void resetLocalEmbeddingEngines();
   }
-
-  // ==========================================================================
-  // Private Methods
-  // ==========================================================================
 
   private ensureInitialized(): void {
     if (!this.isInitialized || !this.port) {
@@ -558,10 +652,10 @@ export class RAGService {
         this.emit("progress", event.data);
         break;
       case "modelMismatch":
-        this.emit("modelMismatch", event.data);
+        this.emit("modelMismatch", (event as ModelMismatchEvent).data);
         break;
       case "storageOverflow":
-        this.emit("storageOverflow", event.data);
+        this.emit("storageOverflow", (event as StorageOverflowEvent).data);
         break;
       default:
         console.warn("[RAGService] Unknown event type:", event.type);
@@ -569,20 +663,12 @@ export class RAGService {
   }
 }
 
-// ============================================================================
-// Singleton Instance
-// ============================================================================
-
-// Put it on the window to persist across hot reloads in development
 if (typeof window !== "undefined") {
   if (!(window as any).ragServiceInstance) {
     (window as any).ragServiceInstance = null;
   }
 }
 
-/**
- * Get the RAG service singleton instance
- */
 export function getRAGService(): RAGService | null {
   if (typeof window !== "undefined") {
     return (window as any).ragServiceInstance;
@@ -590,16 +676,12 @@ export function getRAGService(): RAGService | null {
   return null;
 }
 
-/**
- * Initialize and get the RAG service singleton
- */
 export async function initializeRAGService(
   config: Partial<RAGConfig>,
   credentials: InitPayload["credentials"],
 ): Promise<RAGService> {
   let ragServiceInstance = getRAGService();
   if (ragServiceInstance) {
-    // Update config if already initialized
     await ragServiceInstance.updateConfig(config);
     return ragServiceInstance;
   }
@@ -610,9 +692,6 @@ export async function initializeRAGService(
   return (window as any).ragServiceInstance;
 }
 
-/**
- * Terminate the RAG service singleton
- */
 export function terminateRAGService(): void {
   const ragServiceInstance = getRAGService();
   if (ragServiceInstance) {

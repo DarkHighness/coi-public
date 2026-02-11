@@ -189,40 +189,6 @@ function ErrorFallbackUI({
 }
 
 /**
- * Inline/compact error fallback for smaller components
- */
-interface InlineErrorFallbackProps {
-  error?: Error | null;
-  message?: string;
-  onRetry?: () => void;
-}
-
-export function InlineErrorFallback({
-  error,
-  message,
-  onRetry,
-}: InlineErrorFallbackProps): React.ReactElement {
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex items-center gap-2 p-3 bg-red-900/10 border border-red-500/30 rounded text-sm">
-      <span className="text-red-400">⚠️</span>
-      <span className="text-theme-muted flex-1">
-        {message || error?.message || "Error loading content"}
-      </span>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="text-xs text-theme-primary hover:underline"
-        >
-          {t("common.retry")}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/**
  * Section-level error boundary for major UI sections
  */
 export function SectionErrorBoundary({
@@ -236,45 +202,6 @@ export function SectionErrorBoundary({
 }): React.ReactElement {
   return (
     <ErrorBoundaryClass name={name} onError={onError} showRetry={true}>
-      {children}
-    </ErrorBoundaryClass>
-  );
-}
-
-/**
- * Card/item level error boundary for smaller components
- */
-export function ItemErrorBoundary({
-  children,
-  name,
-}: {
-  children: ReactNode;
-  name?: string;
-}): React.ReactElement {
-  return (
-    <ErrorBoundaryClass
-      name={name}
-      showRetry={true}
-      fallback={<InlineErrorFallback message="Failed to render item" />}
-    >
-      {children}
-    </ErrorBoundaryClass>
-  );
-}
-
-/**
- * Silent error boundary that logs but shows nothing on error
- * Useful for non-critical decorative components
- */
-export function SilentErrorBoundary({
-  children,
-  name,
-}: {
-  children: ReactNode;
-  name?: string;
-}): React.ReactElement {
-  return (
-    <ErrorBoundaryClass name={name} fallback={null} showRetry={false}>
       {children}
     </ErrorBoundaryClass>
   );

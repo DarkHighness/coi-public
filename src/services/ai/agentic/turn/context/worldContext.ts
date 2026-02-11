@@ -1,37 +1,45 @@
 /**
  * ============================================================================
- * World Context Builder
+ * World Context Builder (VFS-first)
  * ============================================================================
- *
- * Builds static world foundation context from game state.
- * This content is cacheable and placed at the beginning of context.
  */
 
-import type { GameState } from "@/types";
-import {
-  renderWorldFoundation,
-  renderGodMode,
-  renderCharacterFull,
-} from "../../../../prompts/atoms/renderers";
+import type { VfsSession } from "@/services/vfs/vfsSession";
 
-/**
- * Build world foundation XML block
- */
-export function buildWorldFoundation(gameState: GameState): string {
-  return renderWorldFoundation({ outline: gameState.outline });
+const OUTLINE_PATH = "outline/outline.json";
+const PROTAGONIST_PATH = "world/characters/char:player/profile.json";
+const GLOBAL_PATH = "world/global.json";
+
+const toBlock = (tag: string, path: string, content: string): string => {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return `<${tag} path="${path}">\n${trimmed}\n</${tag}>`;
+};
+
+export function buildWorldFoundation(vfsSession: VfsSession): string {
+  const outline = vfsSession.readFile(OUTLINE_PATH);
+  if (!outline) {
+    return "";
+  }
+  return toBlock("world_foundation", OUTLINE_PATH, outline.content);
 }
 
-/**
- * Build protagonist XML block with full character details
- */
-export function buildProtagonist(gameState: GameState): string {
-  if (!gameState.character) return "";
-  return renderCharacterFull({ character: gameState.character });
+export function buildProtagonist(vfsSession: VfsSession): string {
+  const protagonist = vfsSession.readFile(PROTAGONIST_PATH);
+  if (!protagonist) {
+    return "";
+  }
+  return toBlock("protagonist_profile", PROTAGONIST_PATH, protagonist.content);
 }
 
-/**
- * Build god mode context if enabled
- */
-export function buildGodModeContext(gameState: GameState): string {
-  return renderGodMode({ godMode: gameState.godMode });
+export function buildGodModeContext(vfsSession: VfsSession): string {
+  const globalFile = vfsSession.readFile(GLOBAL_PATH);
+  if (!globalFile) {
+    return "<god_mode>GOD MODE ACTIVE</god_mode>";
+  }
+
+  const globalBlock = toBlock("global_state", GLOBAL_PATH, globalFile.content);
+  return `<god_mode>\nGOD MODE ACTIVE\n${globalBlock}\n</god_mode>`;
 }

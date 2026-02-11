@@ -80,6 +80,7 @@ function createSettings(overrides: Record<string, unknown> = {}) {
     embedding: {
       providerId: "embedding-provider",
       enabled: true,
+      runtime: "remote",
       modelId: "text-embedding-3-small",
     },
     script: { providerId: "script-provider", enabled: true },
@@ -102,6 +103,7 @@ describe("validateProvidersForMode", () => {
     validateConnectionMock.mockReset();
     getEnvApiKeyMock.mockReset();
     getEnvApiKeyMock.mockReturnValue("");
+    validateConnectionMock.mockResolvedValue({ isValid: true, error: null, localError: false });
   });
 
   it("checks only required providers in continue mode", async () => {
@@ -113,6 +115,42 @@ describe("validateProvidersForMode", () => {
     expect(result.ok).toBe(true);
     expect(result.issues).toHaveLength(0);
     expect(validateConnectionMock).not.toHaveBeenCalled();
+  });
+
+  it("skips embedding provider checks when local TFJS runtime is enabled", async () => {
+    const settings = createSettings({
+      embedding: {
+        providerId: "embedding-provider",
+        enabled: true,
+        runtime: "local_tfjs",
+        modelId: "use-lite-512",
+      },
+    });
+    replaceProviderApiKey(settings, "embedding-provider", "");
+
+    const result = await validateProvidersForMode(settings, "start");
+
+    expect(
+      result.issues.some((issue) => issue.feature === "embedding"),
+    ).toBe(false);
+  });
+
+  it("skips embedding provider checks when local transformers runtime is enabled", async () => {
+    const settings = createSettings({
+      embedding: {
+        providerId: "embedding-provider",
+        enabled: true,
+        runtime: "local_transformers",
+        modelId: "Xenova/all-MiniLM-L6-v2",
+      },
+    });
+    replaceProviderApiKey(settings, "embedding-provider", "");
+
+    const result = await validateProvidersForMode(settings, "start");
+
+    expect(
+      result.issues.some((issue) => issue.feature === "embedding"),
+    ).toBe(false);
   });
 
   it("returns missing_optional_api_key for enabled optional providers in start mode", async () => {

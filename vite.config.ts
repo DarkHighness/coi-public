@@ -25,7 +25,6 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       ViteToml(),
-      // Gzip compression
       viteCompression({
         verbose: true,
         disable: false,
@@ -33,7 +32,6 @@ export default defineConfig(({ mode }) => {
         algorithm: "gzip",
         ext: ".gz",
       }),
-      // Brotli compression
       viteCompression({
         verbose: true,
         disable: false,
@@ -52,99 +50,133 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      exclude: ["@electric-sql/pglite", "@electric-sql/pglite/worker"],
+      exclude: [
+        "@electric-sql/pglite",
+        "@electric-sql/pglite/worker",
+        "@huggingface/transformers",
+        "onnxruntime-web",
+        "@tensorflow/tfjs-core",
+        "@tensorflow/tfjs-backend-webgpu",
+        "@tensorflow/tfjs-backend-webgl",
+        "@tensorflow/tfjs-backend-cpu",
+        "@tensorflow-models/universal-sentence-encoder",
+      ],
     },
     build: {
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            // 1. AI Bundle - High priority, includes both vendor and app code
-            // Combine ALL AI-related code into one chunk to avoid circular deps
+            // ===== App chunks =====
+            if (id.includes("services/rag/localEmbedding/")) {
+              return "rag-local-embedding";
+            }
+
+            if (id.includes("services/rag/")) {
+              return "rag-service";
+            }
+
+            if (id.includes("services/prompts/")) {
+              return "ai-prompts";
+            }
+
+            if (
+              id.includes("services/ai/") ||
+              id.includes("services/providers/") ||
+              id.includes("services/zodCompiler") ||
+              id.includes("services/zodSchemas") ||
+              id.includes("services/messageTypes")
+            ) {
+              return "ai-runtime";
+            }
+
+            if (id.includes("hooks/") && !id.includes("node_modules")) {
+              return "app-hooks";
+            }
+
+            if (id.includes("components/") && !id.includes("node_modules")) {
+              if (id.includes("SettingsModal") || id.includes("components/settings/")) {
+                return "settings-ui";
+              }
+
+              if (id.includes("Sidebar") || id.includes("sidebar/")) {
+                return "sidebar-ui";
+              }
+            }
+
+            // ===== Vendor chunks =====
+            if (!id.includes("node_modules")) {
+              return undefined;
+            }
+
+            if (
+              id.includes("@huggingface/transformers") ||
+              id.includes("onnxruntime-web")
+            ) {
+              return "vendor-embed-transformers";
+            }
+
+            if (
+              id.includes("@tensorflow/") ||
+              id.includes("@tensorflow-models/universal-sentence-encoder")
+            ) {
+              return "vendor-embed-tfjs";
+            }
+
+            if (id.includes("react") || id.includes("react-dom")) {
+              return "vendor-react";
+            }
+
+            if (id.includes("react-router")) {
+              return "vendor-router";
+            }
+
+            if (id.includes("i18next") || id.includes("react-i18next")) {
+              return "vendor-i18n";
+            }
+
+            if (id.includes("@electric-sql/pglite")) {
+              return "vendor-pglite";
+            }
+
+            if (
+              id.includes("monaco-editor") ||
+              id.includes("@monaco-editor") ||
+              id.includes("@codemirror/") ||
+              id.includes("@uiw/react-codemirror")
+            ) {
+              return "vendor-editor";
+            }
+
+            if (
+              id.includes("react-markdown") ||
+              id.includes("remark-gfm") ||
+              id.includes("remark-math")
+            ) {
+              return "vendor-markdown";
+            }
+
             if (
               id.includes("@google/genai") ||
               id.includes("@google/generative-ai") ||
               (id.includes("openai") && !id.includes("@openrouter")) ||
               id.includes("@anthropic-ai/sdk") ||
-              id.includes("@openrouter") ||
-              id.includes("services/ai/") ||
-              id.includes("services/providers/") ||
-              id.includes("services/zodCompiler") ||
-              id.includes("services/zodSchemas") ||
-              id.includes("services/prompts") ||
-              id.includes("services/messageTypes")
+              id.includes("@openrouter")
             ) {
-              return "ai-bundle";
+              return "vendor-ai-sdks";
             }
 
-            // 2. Vendor chunks
-            if (id.includes("node_modules")) {
-              // React ecosystem - keep together for better caching
-              if (id.includes("react") || id.includes("react-dom")) {
-                return "vendor-react";
-              }
-
-              // Router - separate chunk
-              if (id.includes("react-router")) {
-                return "vendor-router";
-              }
-
-              // i18n - separate for locale loading
-              if (id.includes("i18next") || id.includes("react-i18next")) {
-                return "vendor-i18n";
-              }
-
-              // PGlite - separate because it's large database library
-              if (id.includes("@electric-sql/pglite")) {
-                return "vendor-pglite";
-              }
-
-              // Framer Motion - animation library, separate for performance
-              if (id.includes("framer-motion")) {
-                return "vendor-framer";
-              }
-
-              // Zod - schema validation, used across app
-              if (id.includes("zod")) {
-                return "vendor-zod";
-              }
-
-              // Other dependencies - catch-all
-              return "vendor-misc";
+            if (id.includes("framer-motion")) {
+              return "vendor-framer";
             }
 
-            // 3. App chunks (Non-AI)
-
-            // RAG service - separate chunk (only loaded when used)
-            if (id.includes("services/rag/")) {
-              return "rag-service";
+            if (id.includes("zod")) {
+              return "vendor-zod";
             }
 
-            // Hooks - separate chunk
-            if (id.includes("hooks/") && !id.includes("node_modules")) {
-              return "app-hooks";
-            }
-
-            // Components - large UI components get their own chunks
-            if (id.includes("components/") && !id.includes("node_modules")) {
-              // Settings modal - large, lazy loadable
-              if (id.includes("SettingsModal")) {
-                return "settings-ui";
-              }
-
-              // Sidebar - loaded on every page
-              if (id.includes("Sidebar") || id.includes("sidebar/")) {
-                return "sidebar-ui";
-              }
-
-              // RAG Debugger - developer tool, lazy load
-              if (id.includes("ragDebugger") || id.includes("RAGDebugger")) {
-                return "rag-debugger";
-              }
-            }
+            return "vendor-misc";
           },
         },
       },
-      // Increase chunk size warning limit for AI SDKs
       chunkSizeWarningLimit: 600,
     },
   };

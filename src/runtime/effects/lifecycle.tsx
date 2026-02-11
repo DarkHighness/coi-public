@@ -19,7 +19,19 @@ export function useRuntimeLifecycleEffects({
 
   useEffect(() => {
     const initRAG = async () => {
-      const currentConfigKey = `${state.aiSettings.embedding?.providerId}:${state.aiSettings.embedding?.modelId}:${state.aiSettings.embedding?.dimensions}`;
+      const embedding = state.aiSettings.embedding;
+      const currentConfigKey = JSON.stringify({
+        enabled: embedding?.enabled ?? false,
+        runtime: embedding?.runtime ?? "local_transformers",
+        providerId: embedding?.providerId ?? "",
+        modelId: embedding?.modelId ?? "",
+        dimensions: embedding?.dimensions ?? null,
+        local: embedding?.local ?? null,
+        maxRagStorageMB:
+          embedding?.storage?.maxRagStorageMB ??
+          embedding?.lru?.maxRagStorageMB ??
+          512,
+      });
 
       const shouldInit =
         state.aiSettings.embedding?.enabled &&
@@ -86,16 +98,10 @@ export function useRuntimeLifecycleEffects({
             await actions.rag.indexInitialEntities(
               state.gameState,
               state.currentSlotId!,
+              state.vfsSession,
             );
           }
 
-          const storyNodeIds = Object.keys(state.gameState.nodes)
-            .slice(-50)
-            .map((id) => `story:${id}`);
-
-          if (storyNodeIds.length > 0) {
-            await actions.rag.updateDocuments(state.gameState, storyNodeIds);
-          }
 
           showToast(
             t("runtime.indexedExistingDocuments", "Indexed existing documents"),

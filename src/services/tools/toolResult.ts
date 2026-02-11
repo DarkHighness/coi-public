@@ -24,6 +24,7 @@ export interface ToolCallError {
     | "IMMUTABLE_READONLY"
     | "FINISH_GUARD_REQUIRED"
     | "EDITOR_CONFIRM_REQUIRED"
+    | "RAG_DISABLED"
     | "UNKNOWN";
 }
 

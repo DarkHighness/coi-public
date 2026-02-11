@@ -34,7 +34,6 @@ interface DesktopGameLayoutProps {
   onVeoScript: () => void;
   onShowToast?: (message: string, type: "success" | "error" | "info") => void;
   onOpenStateEditor?: () => void;
-  onOpenRAG?: () => void;
   onOpenViewer?: () => void;
   onOpenGallery?: () => void;
   onForceUpdate?: (prompt: string) => void;
@@ -65,7 +64,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onVeoScript,
   onShowToast,
   onOpenStateEditor,
-  onOpenRAG,
   onOpenViewer,
   onOpenGallery,
   onForceUpdate,
@@ -285,7 +283,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
               onAction={onAction}
               onShowToast={onShowToast}
               onOpenStateEditor={onOpenStateEditor}
-              onOpenRAG={onOpenRAG}
               onOpenViewer={onOpenViewer}
               onTriggerSave={triggerSave}
               onRetry={onRetry}

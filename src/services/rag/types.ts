@@ -1,77 +1,124 @@
 /**
- * RAG Service Types
+ * RAG Service Types (VFS-first)
  *
- * Defines types for the RAG (Retrieval Augmented Generation) system
- * with PGlite + pgvector backend running in a SharedWorker
+ * File-granular semantic indexing model.
  */
 
 // ============================================================================
 // Document Types
 // ============================================================================
 
-export type DocumentType =
-  | "story"
-  | "npc"
-  | "location"
-  | "item"
-  | "knowledge"
-  | "quest"
-  | "event"
-  | "outline";
+export type DocumentType = "json" | "markdown" | "text";
 
-/**
- * An embedding document stored in the vector database
- */
-export interface RAGDocument {
-  // Primary identifiers
-  id: string; // Unique document ID (uuid)
-  entityId: string; // Entity reference (e.g., npc:1, loc:2)
-  type: DocumentType; // Document type
+export type ChunkStrategy =
+  | "json_path_object"
+  | "markdown_heading"
+  | "text_window";
 
-  // Content
-  content: string; // Original text content
-  embedding?: Float32Array; // Embedding vector (stored separately in pgvector)
-
-  // Source tracking
-  saveId: string; // Which save this belongs to
-  forkId: number; // Fork/branch ID
-  turnNumber: number; // Game turn when created
-  version: number; // Version within same entity (for history)
-
-  // Model tracking (critical for consistency)
-  embeddingModel: string; // Model used to generate embedding (e.g., "text-embedding-004")
-  embeddingProvider: string; // Provider used
-
-  // Metadata
-  importance: number; // 0-1 importance score
-  unlocked: boolean; // Whether hidden info is unlocked
-  createdAt: number; // Timestamp
-  lastAccess: number; // Last access timestamp (for LRU)
+export interface ChunkMeta {
+  strategy: ChunkStrategy;
+  overlapChars: number;
 }
 
-/**
- * Metadata without the embedding (for listing/queries)
- */
+export type LocalEmbeddingBackend = "webgpu" | "webgl" | "cpu";
+
+export type LocalEmbeddingEngine = "transformers_js" | "tfjs";
+
+export type LocalTransformersDevice = "webgpu" | "wasm" | "cpu";
+
+export interface LocalEmbeddingRuntimeConfig {
+  backend?: LocalEmbeddingEngine;
+  model?: "use-lite-512";
+  transformersModel?: string;
+  backendOrder?: LocalEmbeddingBackend[];
+  deviceOrder?: LocalTransformersDevice[];
+  batchSize?: number;
+  quantized?: boolean;
+}
+
+export interface RAGDocument {
+  id: string;
+
+  // File identity
+  sourcePath: string;
+  canonicalPath: string;
+  type: DocumentType;
+  contentType: string;
+  fileHash: string;
+  chunkIndex: number;
+  chunkCount: number;
+
+  // Version status (within save + fork + source path)
+  isLatest: boolean;
+  supersededAtTurn: number | null;
+
+  // Content
+  content: string;
+  embedding?: Float32Array;
+
+  // Source tracking
+  saveId: string;
+  forkId: number;
+  turnNumber: number;
+
+  // Model tracking
+  embeddingModel: string;
+  embeddingProvider: string;
+
+  // Metadata
+  importance: number;
+  createdAt: number;
+  lastAccess: number;
+  estimatedBytes: number;
+
+  // Optional tags for filtering/debugging
+  tags?: string[];
+}
+
 export type RAGDocumentMeta = Omit<RAGDocument, "embedding">;
+
+export interface FileChunkInput {
+  sourcePath: string;
+  canonicalPath?: string;
+  type: DocumentType;
+  contentType: string;
+  fileHash: string;
+  chunkIndex: number;
+  chunkCount: number;
+  content: string;
+  saveId: string;
+  forkId: number;
+  turnNumber: number;
+  importance?: number;
+  tags?: string[];
+  embedding?: number[];
+  chunkMeta?: ChunkMeta;
+}
 
 // ============================================================================
 // Search Types
 // ============================================================================
 
 export interface SearchOptions {
-  topK?: number; // Number of results
-  threshold?: number; // Minimum similarity (0-1)
-  types?: DocumentType[]; // Filter by types
-  saveId?: string; // Filter by save
-  forkId?: number; // Current fork ID
-  beforeTurn?: number; // Only content before this turn
-  currentForkOnly?: boolean; // Only current fork lineage
+  topK?: number;
+  threshold?: number;
+
+  // File-granularity filters
+  pathPrefixes?: string[];
+  contentTypes?: string[];
+  types?: DocumentType[];
+
+  saveId?: string;
+  forkId?: number;
+  beforeTurn?: number;
+  /** Legacy option, preserved for compatibility. Runtime now enforces current fork only. */
+  currentForkOnly?: boolean;
 }
 
 export interface SearchResult {
   document: RAGDocumentMeta;
-  score: number; // Similarity score (0-1)
-  adjustedScore: number; // Score with priority adjustments
+  score: number;
+  adjustedScore: number;
 }
 
 // ============================================================================
@@ -79,43 +126,54 @@ export interface SearchResult {
 // ============================================================================
 
 export interface RAGConfig {
-  // Database settings
-  dbName: string; // IndexedDB database name
+  dbName: string;
+  schemaVersion: number;
 
-  // Storage limits (persistent) - Split into per-save and global
-  maxDocumentsPerSave: number; // Max documents per save (default: 5000)
-  maxTotalStorageDocuments: number; // Max total documents across all saves (default: 50000)
-  maxDocumentsPerType: number; // Max per type within a save (default: 1000)
-  storyMaxEntries: number; // Max story documents (default: 50)
-  maxVersionsPerEntity: number; // Max versions per entity (default: 5)
-  maxVersionsAcrossForks: number; // Max versions across different forks (default: 10)
+  // Storage limits
+  maxDocumentsPerSave: number;
+  maxTotalStorageDocuments: number;
+  /** Byte-budget for reclaimable tiers (historical/other-fork/inactive-game). */
+  maxStorageBytes: number;
 
   // Priority settings
-  currentForkBonus: number; // Priority bonus for current fork
-  ancestorForkBonus: number; // Priority bonus for ancestor forks
-  turnDecayFactor: number; // Priority decay per turn difference
+  currentForkBonus: number;
+  ancestorForkBonus: number;
+  turnDecayFactor: number;
 
   // Embedding settings
-  dimensions: number; // Embedding vector dimensions
-  provider: "gemini" | "openai" | "openrouter" | "claude";
+  dimensions: number;
+  provider:
+    | "gemini"
+    | "openai"
+    | "openrouter"
+    | "claude"
+    | "local_tfjs"
+    | "local_transformers";
   modelId: string;
   contextLength?: number;
+  local?: LocalEmbeddingRuntimeConfig;
 }
 
 export const DEFAULT_RAG_CONFIG: RAGConfig = {
   dbName: "coi_rag",
-  maxDocumentsPerSave: 5000,
-  maxTotalStorageDocuments: 50000,
-  maxDocumentsPerType: 1000,
-  storyMaxEntries: 50,
-  maxVersionsPerEntity: 5,
-  maxVersionsAcrossForks: 10,
+  schemaVersion: 5,
+  maxDocumentsPerSave: 12000,
+  maxTotalStorageDocuments: 120000,
+  maxStorageBytes: 512 * 1024 * 1024,
   currentForkBonus: 0.5,
   ancestorForkBonus: 0.25,
   turnDecayFactor: 0.01,
-  dimensions: 768,
-  provider: "gemini",
-  modelId: "text-embedding-004",
+  dimensions: 384,
+  provider: "local_transformers",
+  modelId: "Xenova/all-MiniLM-L6-v2",
+  local: {
+    backend: "transformers_js",
+    model: "use-lite-512",
+    transformersModel: "Xenova/all-MiniLM-L6-v2",
+    backendOrder: ["webgpu", "webgl", "cpu"],
+    deviceOrder: ["webgpu", "wasm", "cpu"],
+    quantized: true,
+  },
 };
 
 // ============================================================================
@@ -130,10 +188,7 @@ export interface ModelMismatchInfo {
   documentCount: number;
 }
 
-export type ModelMismatchAction =
-  | "rebuild" // Delete all and rebuild with new model
-  | "disable" // Temporarily disable RAG
-  | "continue"; // Continue with mismatched (not recommended)
+export type ModelMismatchAction = "rebuild" | "disable" | "continue";
 
 // ============================================================================
 // Storage Overflow Handling
@@ -147,7 +202,13 @@ export interface StorageOverflowInfo {
     documentCount: number;
     lastAccessed: number;
   }>;
-  suggestedDeletions: string[]; // Save IDs to delete (oldest first)
+  suggestedDeletions: string[];
+  protectedBytes?: number;
+  currentForkHistoryBytes?: number;
+  activeOtherForkBytes?: number;
+  inactiveGameBytes?: number;
+  storageLimitBytes?: number;
+  protectedOverflow?: boolean;
 }
 
 // ============================================================================
@@ -156,6 +217,12 @@ export interface StorageOverflowInfo {
 
 export type RAGWorkerMessageType =
   | "init"
+  | "upsertFileChunks"
+  | "deleteByPaths"
+  | "retireLatestByPaths"
+  | "lookupReusableEmbeddings"
+  | "reindexAll"
+  // Legacy aliases (kept for transitional callers)
   | "addDocuments"
   | "updateDocument"
   | "deleteDocuments"
@@ -177,13 +244,13 @@ export type RAGWorkerMessageType =
   | "importSaveData";
 
 export interface RAGWorkerRequest {
-  id: string; // Request ID for response matching
+  id: string;
   type: RAGWorkerMessageType;
   payload: any;
 }
 
 export interface RAGWorkerResponse {
-  id: string; // Matching request ID
+  id: string;
   success: boolean;
   data?: any;
   error?: string;
@@ -196,53 +263,75 @@ export interface RAGWorkerResponse {
 export interface InitPayload {
   config: Partial<RAGConfig>;
   credentials: {
-    gemini?: { apiKey: string };
+    gemini?: { apiKey: string; baseUrl?: string };
     openai?: { apiKey: string; baseUrl?: string };
     openrouter?: { apiKey: string };
+    claude?: { apiKey: string; baseUrl?: string };
   };
 }
 
 // ============================================================================
-// Add Documents Message
+// Upsert File Chunks Message
 // ============================================================================
 
-export interface AddDocumentsPayload {
-  documents: Array<{
-    entityId: string;
-    type: DocumentType;
-    content: string;
-    saveId: string;
-    forkId: number;
-    turnNumber: number;
-    importance?: number;
-    unlocked?: boolean;
-  }>;
+export interface UpsertFileChunksPayload {
+  documents: FileChunkInput[];
 }
 
-// ============================================================================
-// Update Document Message
-// ============================================================================
-
-export interface UpdateDocumentPayload {
-  entityId: string;
-  type: DocumentType;
-  content: string;
+export interface RetireLatestByPathsPayload {
   saveId: string;
   forkId: number;
   turnNumber: number;
-  importance?: number;
-  unlocked?: boolean;
+  paths: string[];
+}
+
+export interface ReusableEmbeddingLookupItem {
+  saveId: string;
+  sourcePath: string;
+  fileHash: string;
+  chunkIndex: number;
+}
+
+export interface LookupReusableEmbeddingsPayload {
+  items: ReusableEmbeddingLookupItem[];
+}
+
+export interface LookupReusableEmbeddingsResult {
+  embeddings: Array<number[] | null>;
 }
 
 // ============================================================================
-// Delete Documents Message
+// Legacy Add/Update/Delete Messages (compat)
 // ============================================================================
 
+export interface AddDocumentsPayload {
+  documents: FileChunkInput[];
+}
+
+export interface UpdateDocumentPayload extends FileChunkInput {}
+
 export interface DeleteDocumentsPayload {
-  entityIds?: string[]; // Delete specific entities
-  saveId?: string; // Delete all from save
-  forkId?: number; // Delete specific fork
-  olderThanTurn?: number; // Delete versions older than turn
+  // Legacy field names (entityIds) accepted as source paths
+  entityIds?: string[];
+  saveId?: string;
+  forkId?: number;
+  olderThanTurn?: number;
+
+  // New field names
+  paths?: string[];
+}
+
+export interface DeleteByPathsPayload {
+  saveId: string;
+  forkId?: number;
+  paths: string[];
+}
+
+export interface ReindexAllPayload {
+  saveId: string;
+  forkId: number;
+  turnNumber: number;
+  documents: FileChunkInput[];
 }
 
 // ============================================================================
@@ -251,32 +340,20 @@ export interface DeleteDocumentsPayload {
 
 export interface SearchPayload {
   query: string;
-  queryEmbedding?: Float32Array; // Pre-computed embedding (optional)
+  queryEmbedding?: Float32Array;
   options: SearchOptions;
 }
 
-// ============================================================================
-// Get Recent Documents Payload
-// ============================================================================
-
 export interface GetRecentDocumentsPayload {
-  limit?: number; // Max documents to return (default: 20)
-  types?: DocumentType[]; // Filter by types
+  limit?: number;
+  types?: DocumentType[];
 }
-
-// ============================================================================
-// Get Documents Paginated Payload
-// ============================================================================
 
 export interface GetDocumentsPaginatedPayload {
-  offset: number; // Number of documents to skip
-  limit: number; // Max documents to return
-  types?: DocumentType[]; // Filter by types
+  offset: number;
+  limit: number;
+  types?: DocumentType[];
 }
-
-// ============================================================================
-// Switch Save Message
-// ============================================================================
 
 export interface SwitchSavePayload {
   saveId: string;
@@ -290,27 +367,23 @@ export interface SwitchSavePayload {
       }
     >;
   };
-  expectedModel?: string; // Expected embedding model for this save
-  expectedProvider?: string; // Expected embedding provider
+  expectedModel?: string;
+  expectedProvider?: string;
 }
 
 // ============================================================================
-// Get Save Stats Response
+// Save Stats / Status
 // ============================================================================
 
 export interface SaveStats {
   saveId: string;
   totalDocuments: number;
   documentsByType: Record<DocumentType, number>;
-  memoryUsage: number; // Estimated bytes
+  memoryUsage: number;
   lastUpdated: number;
-  embeddingModel?: string; // Model used for this save's embeddings
+  embeddingModel?: string;
   embeddingProvider?: string;
 }
-
-// ============================================================================
-// Global Storage Stats
-// ============================================================================
 
 export interface GlobalStorageStats {
   totalDocuments: number;
@@ -318,10 +391,6 @@ export interface GlobalStorageStats {
   saves: SaveStats[];
   estimatedStorageBytes: number;
 }
-
-// ============================================================================
-// Status Response
-// ============================================================================
 
 export interface RAGStatus {
   initialized: boolean;
@@ -333,10 +402,16 @@ export interface RAGStatus {
   pending: number;
   lastError: string | null;
   modelMismatch?: ModelMismatchInfo;
+  protectedBytes?: number;
+  currentForkHistoryBytes?: number;
+  activeOtherForkBytes?: number;
+  inactiveGameBytes?: number;
+  storageLimitBytes?: number;
+  protectedOverflow?: boolean;
 }
 
 // ============================================================================
-// Event Types (from Worker to Main)
+// Event Types (Worker -> Main)
 // ============================================================================
 
 export type RAGEventType =
@@ -375,33 +450,34 @@ export interface StorageOverflowEvent extends RAGEvent {
 }
 
 // ============================================================================
-// Export/Import Types
+// Export / Import Types
 // ============================================================================
 
-/**
- * Exportable document (with embedding as array for JSON serialization)
- */
 export interface ExportableRAGDocument {
   id: string;
-  entityId: string;
+  sourcePath: string;
+  canonicalPath: string;
   type: DocumentType;
+  contentType: string;
+  fileHash: string;
+  chunkIndex: number;
+  chunkCount: number;
+  isLatest: boolean;
+  supersededAtTurn: number | null;
   content: string;
-  embedding: number[]; // Converted from Float32Array for JSON
+  embedding: number[];
   saveId: string;
   forkId: number;
   turnNumber: number;
-  version: number;
   embeddingModel: string;
   embeddingProvider: string;
   importance: number;
-  unlocked: boolean;
   createdAt: number;
   lastAccess: number;
+  estimatedBytes: number;
+  tags?: string[];
 }
 
-/**
- * Export data payload for a save
- */
 export interface RAGExportData {
   saveId: string;
   documents: ExportableRAGDocument[];
@@ -411,6 +487,7 @@ export interface RAGExportData {
     embeddingProvider: string;
     dimensions: number;
     exportedAt: number;
+    schemaVersion: number;
   };
 }
 
@@ -420,5 +497,5 @@ export interface ExportSaveDataPayload {
 
 export interface ImportSaveDataPayload {
   data: RAGExportData;
-  newSaveId: string; // New save ID for imported data
+  newSaveId: string;
 }

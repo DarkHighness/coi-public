@@ -240,23 +240,6 @@ export const CUSTOM_RULES_README_CONTENT = [
   "",
 ].join("\n");
 
-export const getCustomRulePackTemplatePath = (
-  existingPaths: string[],
-  suggestedTitle: string,
-): string => {
-  const existingPrefixes = existingPaths
-    .map((path) => extractPackFolderFromPath(path))
-    .filter((folder): folder is string => Boolean(folder))
-    .map((folder) => parsePriorityFromFolder(folder));
-
-  const maxPrefix =
-    existingPrefixes.length > 0
-      ? Math.max(...existingPrefixes.filter((value) => Number.isFinite(value)))
-      : -1;
-
-  return toCustomRulePackPath(maxPrefix + 1, suggestedTitle);
-};
-
 export const toCustomRulePackPathForCategory = (category: RuleCategory): string => {
   const directoryPath = getCustomRuleCategoryDirectoryPath(category);
   return `${directoryPath}/RULES.md`;

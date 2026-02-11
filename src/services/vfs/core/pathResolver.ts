@@ -276,11 +276,3 @@ export const canonicalToLogicalVfsPath = (
   canonicalPath: string,
   options?: VfsLogicalPathOptions,
 ): string => mapCanonicalToLogical(canonicalPath, options);
-
-export const canonicalToCurrentDisplayPath = (
-  canonicalPath: string,
-  options?: VfsLogicalPathOptions,
-): string => {
-  const logicalPath = mapCanonicalToLogical(canonicalPath, options);
-  return logicalPath ? `current/${logicalPath}` : CURRENT_ROOT;
-};

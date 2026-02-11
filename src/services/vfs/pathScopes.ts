@@ -81,18 +81,3 @@ export const partitionVfsFileMapByScope = (
 
   return { forked, sharedMutable, sharedReadonly };
 };
-
-export const filterVfsFileMap = (
-  files: VfsFileMap,
-  predicate: (path: string) => boolean,
-): VfsFileMap => {
-  const filtered: VfsFileMap = {};
-  for (const file of Object.values(files)) {
-    const normalized = normalizeVfsPath(file.path);
-    if (!predicate(normalized)) {
-      continue;
-    }
-    filtered[normalized] = cloneFile(cloneWithPath(file, normalized));
-  }
-  return filtered;
-};

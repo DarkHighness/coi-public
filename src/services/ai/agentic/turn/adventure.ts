@@ -253,6 +253,7 @@ export const generateAdventureTurn = async (
   const { contextMessages, userMessage, godModeContext } = buildTurnMessages(
     gameState,
     context.userAction,
+    context.vfsSession,
   );
 
   // Log active custom rules and NSFW mode

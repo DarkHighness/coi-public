@@ -1,66 +1,56 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { VfsSession } from "@/services/vfs/vfsSession";
 import {
-  buildGodModeContext,
-  buildProtagonist,
   buildWorldFoundation,
+  buildProtagonist,
+  buildGodModeContext,
 } from "../worldContext";
 
-const renderersMock = vi.hoisted(() => ({
-  renderWorldFoundation: vi.fn(),
-  renderGodMode: vi.fn(),
-  renderCharacterFull: vi.fn(),
-}));
-
-vi.mock("../../../../../prompts/atoms/renderers", () => ({
-  renderWorldFoundation: renderersMock.renderWorldFoundation,
-  renderGodMode: renderersMock.renderGodMode,
-  renderCharacterFull: renderersMock.renderCharacterFull,
-}));
-
 describe("worldContext", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    renderersMock.renderWorldFoundation.mockReturnValue("<world-foundation />");
-    renderersMock.renderCharacterFull.mockReturnValue("<protagonist />");
-    renderersMock.renderGodMode.mockReturnValue("<god-mode />");
+  it("builds world foundation from outline file", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/outline.json",
+      JSON.stringify({ title: "Demo", premise: "test" }),
+      "application/json",
+    );
+
+    const value = buildWorldFoundation(session);
+
+    expect(value).toContain("<world_foundation");
+    expect(value).toContain("outline/outline.json");
+    expect(value).toContain('"title":"Demo"');
   });
 
-  it("builds world foundation with outline passthrough", () => {
-    const gameState = {
-      outline: { title: "Demo", premise: "test" },
-    } as any;
+  it("builds protagonist block only when profile exists", () => {
+    const withProfile = new VfsSession();
+    withProfile.writeFile(
+      "world/characters/char:player/profile.json",
+      JSON.stringify({ name: "Hero" }),
+      "application/json",
+    );
 
-    const value = buildWorldFoundation(gameState);
+    const withValue = buildProtagonist(withProfile);
+    expect(withValue).toContain("<protagonist_profile");
+    expect(withValue).toContain('"name":"Hero"');
 
-    expect(renderersMock.renderWorldFoundation).toHaveBeenCalledWith({
-      outline: gameState.outline,
-    });
-    expect(value).toBe("<world-foundation />");
-  });
-
-  it("builds protagonist block only when character exists", () => {
-    const withCharacter = {
-      character: { name: "Hero", title: "Scout" },
-    } as any;
-
-    const withValue = buildProtagonist(withCharacter);
-    expect(renderersMock.renderCharacterFull).toHaveBeenCalledWith({
-      character: withCharacter.character,
-    });
-    expect(withValue).toBe("<protagonist />");
-
-    const withoutCharacter = { character: null } as any;
-    const emptyValue = buildProtagonist(withoutCharacter);
+    const withoutProfile = new VfsSession();
+    const emptyValue = buildProtagonist(withoutProfile);
     expect(emptyValue).toBe("");
-    expect(renderersMock.renderCharacterFull).toHaveBeenCalledTimes(1);
   });
 
-  it("builds god mode context using game state flag", () => {
-    const gameState = { godMode: true } as any;
+  it("builds god mode context from global file", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/global.json",
+      JSON.stringify({ turnNumber: 3, forkId: 1 }),
+      "application/json",
+    );
 
-    const value = buildGodModeContext(gameState);
+    const value = buildGodModeContext(session);
 
-    expect(renderersMock.renderGodMode).toHaveBeenCalledWith({ godMode: true });
-    expect(value).toBe("<god-mode />");
+    expect(value).toContain("GOD MODE ACTIVE");
+    expect(value).toContain("<global_state");
+    expect(value).toContain('"turnNumber":3');
   });
 });

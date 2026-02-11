@@ -81,5 +81,3 @@ export class VfsPathRegistry {
 }
 
 export const vfsPathRegistry = new VfsPathRegistry();
-export const stripCurrentPrefixFromVfsPath = (path: string): string =>
-  resolveVfsPath(path).logicalPath;

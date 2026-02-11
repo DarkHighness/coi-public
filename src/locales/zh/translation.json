@@ -519,6 +519,13 @@
       "cleanup": "清理"
     },
     "maxStorage": "最大存储文档数",
+    "storageLimitMB": "RAG 存储预算 (MB)",
+    "storageLimitMBHelp": "用于限制可回收的 RAG 存储。当前 Fork 最新向量属于保护层，不会被回收。",
+    "storageTierProtected": "保护层",
+    "storageTierCurrentForkHistory": "当前 Fork 历史",
+    "storageTierActiveOtherFork": "活跃存档其他 Fork",
+    "storageTierInactiveGame": "非活跃存档",
+    "protectedOverflowWarning": "保护层（当前 Fork 最新向量）已超过预算。请提高预算或关闭 RAG。",
     "selectModel": "请选择嵌入模型",
     "noModelsAvailable": "没有可用的嵌入模型，请检查提供商设置。",
     "noModels": "未选择嵌入模型。",
@@ -1458,7 +1465,10 @@
     "batchMoveNoSelection": "请先选择至少一个文件",
     "batchDestinationMode": "目标选择模式",
     "addToBatch": "加入批量",
-    "removeFromBatch": "移出批量"
+    "removeFromBatch": "移出批量",
+    "ragSearch": "RAG 搜索",
+    "ragStats": "RAG 统计",
+    "ragDocuments": "RAG 文档"
   },
   "secretAgenda": "隐藏议程",
   "knowledge": {

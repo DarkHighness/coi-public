@@ -138,10 +138,6 @@ export function useOptionalRuntimeContext(): RuntimeContextValue | null {
   return useContext(RuntimeContext);
 }
 
-export function useRuntimeState() {
-  return useRuntimeContext().state;
-}
-
 export function useRuntimeActions() {
   return useRuntimeContext().actions;
 }

@@ -38,6 +38,8 @@ export interface ToolContext {
   gameState?: GameState;
   /** AI settings (optional) */
   settings?: AISettings;
+  /** Whether embedding runtime is enabled for semantic search */
+  embeddingEnabled?: boolean;
   /** VFS session for file-based tools */
   vfsSession: VfsSession;
   /** Required command skill paths that must be read in current epoch */

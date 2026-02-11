@@ -36,6 +36,7 @@ import {
 } from "./vfsExplorer/capabilities";
 import { MarkdownText } from "./render/MarkdownText";
 import { buildNodeActions, type NodeActionItem } from "./vfsExplorer/nodeActions";
+import { StateEditorRagPanel } from "./StateEditorRagPanel";
 
 const MonacoEditor = React.lazy(() => import("@monaco-editor/react"));
 
@@ -78,6 +79,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [markdownMode, setMarkdownMode] = useState<"edit" | "preview">("edit");
+  const [activePanel, setActivePanel] = useState<
+    "files" | "rag_search" | "rag_stats" | "rag_documents"
+  >("files");
   const [mobileView, setMobileView] = useState<"files" | "editor">("editor");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([""]);
   const [snapshotVersion, setSnapshotVersion] = useState(0);
@@ -121,6 +125,21 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const snapshot = useMemo<VfsFileMap>(() => {
     return vfsSession.snapshotAll();
   }, [vfsSession, snapshotVersion]);
+
+  const isFilesPanel = activePanel === "files";
+  const ragPanelMode: "search" | "stats" | "documents" =
+    activePanel === "rag_search"
+      ? "search"
+      : activePanel === "rag_stats"
+        ? "stats"
+        : "documents";
+
+  useEffect(() => {
+    if (!isFilesPanel) {
+      setContextMenuState(null);
+      setMobileActionSheetState(null);
+    }
+  }, [isFilesPanel]);
 
   const editorWriteContext: VfsWriteContext = useMemo(
     () => ({
@@ -1969,29 +1988,31 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleToggleEditMode}
-              disabled={!selectedPath}
-              className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
-                !selectedPath
-                  ? "border-theme-divider/60 text-theme-muted cursor-not-allowed"
-                  : isEditMode
-                    ? "bg-theme-primary/20 text-theme-primary border-theme-primary/40 hover:bg-theme-primary/25"
-                    : "bg-theme-bg/30 text-theme-text-secondary border-theme-divider/60 hover:bg-theme-bg/45"
-              }`}
-              title={
-                !selectedPath
-                  ? t("stateEditor.readOnly") || "Read Only"
-                  : isEditMode
-                    ? t("stateEditor.editMode") || "Edit"
-                    : t("stateEditor.readOnly") || "Read Only"
-              }
-            >
-              {isEditMode
-                ? t("stateEditor.editMode") || "Edit"
-                : t("stateEditor.readOnly") || "Read Only"}
-            </button>
+            {isFilesPanel && (
+              <button
+                type="button"
+                onClick={handleToggleEditMode}
+                disabled={!selectedPath}
+                className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                  !selectedPath
+                    ? "border-theme-divider/60 text-theme-muted cursor-not-allowed"
+                    : isEditMode
+                      ? "bg-theme-primary/20 text-theme-primary border-theme-primary/40 hover:bg-theme-primary/25"
+                      : "bg-theme-bg/30 text-theme-text-secondary border-theme-divider/60 hover:bg-theme-bg/45"
+                }`}
+                title={
+                  !selectedPath
+                    ? t("stateEditor.readOnly") || "Read Only"
+                    : isEditMode
+                      ? t("stateEditor.editMode") || "Edit"
+                      : t("stateEditor.readOnly") || "Read Only"
+                }
+              >
+                {isEditMode
+                  ? t("stateEditor.editMode") || "Edit"
+                  : t("stateEditor.readOnly") || "Read Only"}
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-3 -m-1 text-theme-text-secondary hover:text-theme-primary hover:bg-theme-bg/15 rounded-md transition-colors"
@@ -2013,7 +2034,57 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           </div>
         </div>
 
-        <div className="md:hidden flex-none px-3 py-2 border-b border-theme-divider/60 bg-theme-surface/75">
+        <div className="flex-none px-3 sm:px-4 py-2 border-b border-theme-divider/60 bg-theme-surface/70">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setActivePanel("files")}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                activePanel === "files"
+                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+              }`}
+            >
+              {t("stateEditor.mobileFiles") || "Files"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("rag_search")}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                activePanel === "rag_search"
+                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+              }`}
+            >
+              {t("stateEditor.ragSearch") || "RAG Search"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("rag_stats")}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                activePanel === "rag_stats"
+                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+              }`}
+            >
+              {t("stateEditor.ragStats") || "RAG Stats"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("rag_documents")}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                activePanel === "rag_documents"
+                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+              }`}
+            >
+              {t("stateEditor.ragDocuments") || "RAG Documents"}
+            </button>
+          </div>
+        </div>
+
+        {isFilesPanel && (
+          <div className="md:hidden flex-none px-3 py-2 border-b border-theme-divider/60 bg-theme-surface/75">
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -2039,9 +2110,12 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </button>
           </div>
         </div>
+        )}
 
         {/* Body */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        <div
+          className={`${isFilesPanel ? "flex" : "hidden"} flex-1 flex-col md:flex-row overflow-hidden min-h-0`}
+        >
           {/* File Tree */}
           <div
             className={`${mobileView === "files" ? "flex" : "hidden"} md:flex w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-theme-divider/60 bg-theme-surface/80 flex-col min-h-0`}
@@ -2444,6 +2518,14 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             </div>
           </div>
         </div>
+
+        {!isFilesPanel && (
+          <StateEditorRagPanel
+            mode={ragPanelMode}
+            gameState={gameState}
+            vfsSession={vfsSession}
+          />
+        )}
       </div>
 
       {contextMenuState && isDesktop && (

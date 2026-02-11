@@ -17,7 +17,6 @@ export type CommandAction =
   | { type: "god_mode"; enable: boolean }
   | { type: "unlock_mode"; mode: "on" | "off" | "toggle"; enable: boolean }
   | { type: "open_editor" }
-  | { type: "open_rag" }
   | { type: "open_viewer" }
   | { type: "force_update"; prompt: string }
   | { type: "none" };
@@ -46,7 +45,6 @@ const COMMAND_DEFINITION_ENTRIES: InternalCommandDefinition[] = [
   { cmd: "/god", desc: "Toggle God Mode", handler: handleGodMode },
   { cmd: "/unlock", desc: "Toggle Unlock Mode", handler: handleUnlockMode },
   { cmd: "/edit", desc: "Edit State", handler: handleOpenEditor },
-  { cmd: "/rag", desc: "RAG Debugger", handler: handleOpenRAG },
   { cmd: "/view", desc: "View State", handler: handleOpenViewer },
   { cmd: "/sudo", desc: "Force Update", handler: handleForceUpdate },
   { cmd: "/help", desc: "Show Help", handler: handleHelp },
@@ -171,19 +169,6 @@ function handleOpenEditor(
 }
 
 /**
- * /rag - Open RAG Debugger
- */
-function handleOpenRAG(args: string[], context: CommandContext): CommandResult {
-  void args;
-  void context;
-  return {
-    handled: true,
-    preventAction: true,
-    action: { type: "open_rag" },
-  };
-}
-
-/**
  * /view - Open Game State Viewer
  */
 function handleOpenViewer(
@@ -281,7 +266,6 @@ export function executeCommandAction(
       break;
 
     case "open_editor":
-    case "open_rag":
     case "open_viewer":
     case "force_update":
       break;

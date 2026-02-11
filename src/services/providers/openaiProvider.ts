@@ -1717,36 +1717,6 @@ export function buildToolResponseMessage(
 }
 
 /**
- * 从 AI 响应提取工具调用
- */
-export function extractToolCalls(response: ChatCompletion): Array<{
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
-  thoughtSignature?: string;
-}> {
-  const message = response.choices[0]?.message;
-  if (!message?.tool_calls) return [];
-
-  return message.tool_calls
-    .filter(
-      (
-        tc,
-      ): tc is typeof tc & { function: { name: string; arguments: string } } =>
-        "function" in tc && tc.function !== undefined,
-    )
-    .map((tc) => ({
-      id: tc.id,
-      name: tc.function.name,
-      args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-      // Gemini 3 uses extra_content.google.thought_signature format
-      thoughtSignature:
-        (tc as any).extra_content?.google?.thought_signature ||
-        (tc.function as any).thought_signature,
-    }));
-}
-
-/**
  * 从 AI 响应提取文本内容
  */
 export function extractTextContent(response: ChatCompletion): string {

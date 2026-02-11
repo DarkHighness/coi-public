@@ -598,7 +598,7 @@ export function createCommandActions({
           forkId: gameStateRef.current.forkId,
           turnNumber: gameStateRef.current.turnNumber,
         };
-        updateRAGDocumentsBackground(changedEntities, stateWithSaveInfo).catch(
+        updateRAGDocumentsBackground(changedEntities, stateWithSaveInfo, vfsSession).catch(
           (error) => console.error("[Cleanup] RAG update failed:", error),
         );
       }

@@ -10,6 +10,7 @@
 import type { GameState, AISettings, StorySegment } from "@/types";
 import type { UnifiedMessage } from "@/services/messageTypes";
 import type { ToolCallRecord } from "@/types";
+import type { VfsSession } from "@/services/vfs/vfsSession";
 
 // ============================================================================
 // Core Context Types
@@ -66,6 +67,7 @@ export interface TurnMessagesResult {
  */
 export interface InitialContextOptions {
   gameState: GameState;
+  vfsSession: VfsSession;
   ragContext?: string;
 }
 
@@ -75,6 +77,7 @@ export interface InitialContextOptions {
 export interface TurnMessagesOptions {
   gameState: GameState;
   userAction: string;
+  vfsSession: VfsSession;
   ragContext?: string;
 }
 
