@@ -704,7 +704,7 @@ ${hasImage ? `\n**An image has been provided by the user.** This image should in
 **PROCESS:**
 - You will receive one phase instruction at a time
 - For each phase, you MUST call the provided tool to submit your data
-${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Do NOT return the schema as a JSON text block.
+${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Use the exact tool name shown by the system with no namespace prefix (for example, never use \`default_api:\`, \`functions.\`, or \`tool:\` prefixes). Do NOT return the schema as a JSON text block.
 - After submitting, wait for the next phase instruction
 `;
 
