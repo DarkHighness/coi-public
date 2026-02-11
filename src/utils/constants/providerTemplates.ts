@@ -92,33 +92,3 @@ export function createProviderFromTemplate(
 export function getTemplateKeys(): ProviderTemplateKey[] {
   return Object.keys(PROVIDER_TEMPLATES) as ProviderTemplateKey[];
 }
-
-/**
- * 获取模板信息（不包含敏感信息）
- * @param templateKey - 模板键名
- * @returns 模板信息对象
- */
-export function getTemplateInfo(
-  templateKey: ProviderTemplateKey,
-): ProviderTemplate {
-  return PROVIDER_TEMPLATES[templateKey];
-}
-
-/**
- * 检查 baseUrl 是否匹配某个已知模板
- * @param baseUrl - 要检查的 baseUrl
- * @returns 匹配的模板键，如果没有匹配则返回 null
- */
-export function detectTemplateFromUrl(
-  baseUrl: string,
-): ProviderTemplateKey | null {
-  const normalizedUrl = baseUrl.toLowerCase().trim();
-
-  for (const [key, template] of Object.entries(PROVIDER_TEMPLATES)) {
-    if (normalizedUrl.includes(template.baseUrl.toLowerCase())) {
-      return key as ProviderTemplateKey;
-    }
-  }
-
-  return null;
-}

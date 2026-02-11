@@ -781,16 +781,6 @@ function processZodToOpenAI(
 // Zod to OpenRouter Compiler (使用 OpenAI 格式)
 // ============================================================================
 
-/**
- * 将 Zod Schema 编译为 OpenRouter 格式 (与 OpenAI 相同)
- */
-export const zodToOpenRouter = zodToOpenAIResponseFormat;
-
-/**
- * 将 Zod Schema 编译为 OpenRouter Schema 对象
- */
-export const zodToOpenRouterSchema = zodToOpenAISchema;
-
 // ============================================================================
 // Zod to Gemini Compatible Compiler (for OpenAI Channel)
 // ============================================================================
@@ -1691,17 +1681,6 @@ type ToolDefinitionInput = {
 };
 
 /**
- * 批量编译工具定义到 Gemini 格式
- */
-export function compileToolsForGemini(
-  tools: ToolDefinitionInput[],
-): GeminiToolDefinition[] {
-  return tools.map((t) =>
-    createGeminiTool(t.name, t.description, t.parameters),
-  );
-}
-
-/**
  * 批量编译工具定义到 OpenAI 格式
  */
 export function compileToolsForOpenAI(
@@ -1709,16 +1688,5 @@ export function compileToolsForOpenAI(
 ): OpenAIToolDefinition[] {
   return tools.map((t) =>
     createOpenAITool(t.name, t.description, t.parameters),
-  );
-}
-
-/**
- * 批量编译工具定义到 OpenRouter 格式
- */
-export function compileToolsForOpenRouter(
-  tools: ToolDefinitionInput[],
-): OpenRouterToolDefinition[] {
-  return tools.map((t) =>
-    createOpenRouterTool(t.name, t.description, t.parameters),
   );
 }

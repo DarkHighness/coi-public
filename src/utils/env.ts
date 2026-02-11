@@ -13,10 +13,3 @@ export const getEnvApiKey = (): string | undefined => {
 export const isDevelopment = (): boolean => {
   return import.meta.env.DEV === true;
 };
-
-/**
- * Check if the app is running in production mode.
- */
-export const isProduction = (): boolean => {
-  return import.meta.env.PROD === true;
-};

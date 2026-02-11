@@ -215,15 +215,6 @@ export function getAtmosphereConfig(
 }
 
 /**
- * Get visual theme for an atmosphere
- */
-export function getThemeForAtmosphere(
-  atmosphere: AtmosphereObject | undefined,
-): ThemeConfig {
-  return getAtmosphereConfig(atmosphere).theme;
-}
-
-/**
  * Get the theme key for an atmosphere (for looking up in ENV_THEMES)
  */
 export function getThemeKeyForAtmosphere(
@@ -264,22 +255,4 @@ export function isValidEnvTheme(
 ): value is EnvThemeKey {
   if (!value || typeof value !== "string") return false;
   return ENV_THEME_KEYS.includes(value.toLowerCase().trim() as EnvThemeKey);
-}
-
-/**
- * Resolve atmosphere ensuring it's a valid AtmosphereObject
- */
-export function resolveAtmosphere(
-  atmosphere?: AtmosphereObject,
-): AtmosphereObject {
-  return normalizeAtmosphere(atmosphere);
-}
-
-/**
- * Get default atmosphere for a story theme
- */
-export function getDefaultAtmosphereForTheme(
-  defaultAtmosphere: AtmosphereObject,
-): AtmosphereObject {
-  return normalizeAtmosphere(defaultAtmosphere);
 }

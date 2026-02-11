@@ -2,12 +2,8 @@ import {
   CharacterStatus,
   AISettings,
   LanguageCode,
-  EmbeddingConfig,
   ProviderManagement,
 } from "../../types";
-
-export const INITIAL_PROMPT =
-  "Begin the adventure. Create a setting and character introduction.";
 
 export const DEFAULT_CHARACTER: CharacterStatus = {
   name: "Initializing...",
@@ -24,8 +20,6 @@ export const LANG_MAP: Record<LanguageCode, string> = {
   en: "English",
   zh: "Chinese (Simplified)",
 };
-
-export const DEFAULT_OPENAI_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Default Provider Instances
 export const DEFAULT_PROVIDERS: ProviderManagement = {

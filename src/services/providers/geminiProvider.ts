@@ -80,9 +80,6 @@ export function createGeminiClient(config: GeminiConfig): GoogleGenAI {
   });
 }
 
-/** 兼容旧 API 的别名 */
-export const getGeminiClient = createGeminiClient;
-
 const readUsageNumber = (
   usage: Record<string, unknown> | null | undefined,
   keys: string[],
@@ -1226,56 +1223,6 @@ export function buildUserMessage(text: string): Content {
   return { role: "user", parts: [{ text }] };
 }
 
-/**
- * 构建模型文本消息
- */
-export function buildModelMessage(text: string): Content {
-  return { role: "model", parts: [{ text }] };
-}
-
-/**
- * 构建多部分消息
- */
-export function buildMultiPartMessage(
-  role: "user" | "model",
-  parts: Part[],
-): Content {
-  return { role, parts };
-}
-
-/**
- * 构建函数调用消息 (模型响应)
- *
- * 对于 Gemini 3 模型，thoughtSignature 是必须的，需要在第一个 functionCall part 上包含
- */
-export function buildFunctionCallMessage(
-  functionCalls: Array<{
-    id?: string;
-    name: string;
-    args: Record<string, unknown>;
-    thoughtSignature?: string;
-  }>,
-  contentText?: string,
-): Content {
-  const parts: Part[] = functionCalls.map((fc, index) => {
-    const part: any = {
-      functionCall: { name: fc.name, args: fc.args },
-    };
-    // Include thoughtSignature if present (required for Gemini 3 models)
-    // For parallel calls, only the first functionCall needs the signature
-    if (fc.thoughtSignature) {
-      part.thoughtSignature = fc.thoughtSignature;
-    }
-    return part;
-  });
-
-  // 如果有 content 文本，添加到前面
-  if (contentText) {
-    parts.unshift({ text: contentText });
-  }
-
-  return { role: "model", parts };
-}
 
 /**
  * 构建函数响应消息 (用户提供的工具结果)
@@ -1292,43 +1239,6 @@ export function buildFunctionResponseMessage(
       },
     })),
   };
-}
-
-/**
- * 从 AI 响应提取函数调用
- *
- * @param response Gemini generateContent 响应
- * @returns 提取的函数调用数组
- */
-export function extractFunctionCalls(response: unknown): Array<{
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
-  thoughtSignature?: string;
-}> {
-  const resp = response as {
-    candidates?: Array<{
-      content?: {
-        parts?: Part[];
-      };
-    }>;
-  };
-
-  const parts = resp.candidates?.[0]?.content?.parts;
-  if (!parts) return [];
-
-  return parts
-    .filter(
-      (p): p is Part & { functionCall: FunctionCall } =>
-        p.functionCall !== undefined,
-    )
-    .map((p, index) => ({
-      id: `gemini_call_${p.functionCall.name}_${index}`,
-      name: p.functionCall.name || "",
-      args: (p.functionCall.args as Record<string, unknown>) || {},
-      thoughtSignature:
-        (p as any).thoughtSignature || (p as any).thought_signature,
-    }));
 }
 
 /**

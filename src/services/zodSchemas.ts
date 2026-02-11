@@ -50,18 +50,6 @@ export const accessTimestampSchema = z.object({
   timestamp: z.number().describe("Epoch timestamp for fine-grained ordering."),
 });
 
-/** 可见信息层 - 玩家可以看到的信息 */
-export const visibleInfoSchema = z.object({
-  description: z.string().describe("Visual or public description."),
-  notes: z.string().nullish().describe("Player or public notes."),
-});
-
-/** 隐藏信息层 - 只有 GM/AI 知道的真相 */
-export const hiddenInfoSchema = z.object({
-  truth: z.string().describe("The hidden truth or real nature."),
-  secrets: z.array(z.string()).nullish().describe("Hidden secrets."),
-});
-
 /**
  * knownBy - 统一“存在性”可见性控制
  *
@@ -1162,8 +1150,6 @@ export const entityRefSchema = z.object({
   kind: z.enum(["character", "placeholder"]).describe("Reference target kind."),
   id: z.string().describe("Target ID."),
 });
-
-export const relationKindSchema = z.enum(["perception", "attitude"]);
 
 const relationBaseSchema = z.object({
   id: z

@@ -236,10 +236,6 @@ export function setPromptTraceEnabled(enabled: boolean): void {
   promptTraceEnabled = enabled;
 }
 
-export function isPromptTraceEnabled(): boolean {
-  return promptTraceEnabled;
-}
-
 export function clearPromptTraceRegistry(): void {
   promptTraceLatest.clear();
   promptTraceHistory.splice(0, promptTraceHistory.length);
@@ -247,10 +243,6 @@ export function clearPromptTraceRegistry(): void {
 
 export function getLatestPromptTrace(promptId: string): PromptTrace | undefined {
   return promptTraceLatest.get(promptId);
-}
-
-export function getPromptTraceHistory(): PromptTrace[] {
-  return [...promptTraceHistory];
 }
 
 export function runPromptWithTrace<T>(promptId: string, renderFn: () => T): T {

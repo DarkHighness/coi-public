@@ -14,21 +14,3 @@ export const formatBytes = (bytes: number, decimals: number = 2): string => {
 
   return `${size} ${sizes[i]}`;
 };
-
-/**
- * Format storage estimate with smart unit selection
- */
-export const formatStorageEstimate = (
-  usage: number,
-  quota: number,
-): {
-  usageFormatted: string;
-  quotaFormatted: string;
-  percentage: number;
-} => {
-  return {
-    usageFormatted: formatBytes(usage),
-    quotaFormatted: formatBytes(quota),
-    percentage: (usage / quota) * 100,
-  };
-};
