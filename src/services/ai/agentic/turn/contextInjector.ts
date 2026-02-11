@@ -170,18 +170,32 @@ export function injectRetconAckRequired(
  */
 export function injectOutOfBandReadInvalidations(
   history: UnifiedMessage[],
-  invalidations: Array<{
-    path: string;
-    changeType: "added" | "deleted" | "modified";
-  }>,
+  invalidations: Array<
+    | {
+        path: string;
+        changeType: "added" | "deleted" | "modified";
+      }
+    | {
+        from: string;
+        to: string;
+        changeType: "moved";
+      }
+  >,
 ): void {
   if (!invalidations.length) {
     return;
   }
 
-  const lines = invalidations.map(({ path, changeType }) => {
-    const currentPath = path.startsWith("current/") ? path : `current/${path}`;
-    return `- ${currentPath} (${changeType})`;
+  const lines = invalidations.map((entry) => {
+    if (entry.changeType === "moved") {
+      const from = entry.from.startsWith("current/") ? entry.from : `current/${entry.from}`;
+      const to = entry.to.startsWith("current/") ? entry.to : `current/${entry.to}`;
+      return `- ${from} -> ${to} (moved)`;
+    }
+    const currentPath = entry.path.startsWith("current/")
+      ? entry.path
+      : `current/${entry.path}`;
+    return `- ${currentPath} (${entry.changeType})`;
   });
 
   history.push(

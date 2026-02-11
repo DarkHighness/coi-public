@@ -114,6 +114,12 @@ const DEFAULT_SYSTEM_WRITE_CONTEXT: VfsWriteContext = {
   allowFinishGuardedWrite: true,
 };
 
+type OutOfBandPathChangeType = "added" | "deleted" | "modified";
+
+export type OutOfBandReadInvalidation =
+  | { path: string; changeType: OutOfBandPathChangeType }
+  | { from: string; to: string; changeType: "moved" };
+
 export class VfsWriteAccessError extends Error {
   public readonly code:
     | "IMMUTABLE_READONLY"
@@ -222,11 +228,11 @@ export class VfsSession {
   private semanticIndexer?: VfsSemanticIndexer;
   private currentReadEpoch = 0;
   private seenByEpoch = new Map<string, number>();
+  private accessedFilesByEpoch = new Map<string, number>();
+  private accessedScopesByEpoch = new Map<string, number>();
   private boundConversationSessionId: string | null = null;
-  private outOfBandReadInvalidations = new Map<
-    string,
-    "added" | "deleted" | "modified"
-  >();
+  private outOfBandReadInvalidations = new Map<string, OutOfBandPathChangeType>();
+  private outOfBandMoveInvalidations = new Map<string, { from: string; to: string }>();
   private activeWriteContext: VfsWriteContext | null = null;
 
   constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
@@ -262,6 +268,25 @@ export class VfsSession {
     this.outOfBandReadInvalidations.delete(canonicalPath);
   }
 
+  public noteToolAccessFile(path: string): void {
+    const canonicalPath = this.resolveCanonicalPath(path);
+    this.accessedFilesByEpoch.set(canonicalPath, this.currentReadEpoch);
+    this.outOfBandReadInvalidations.delete(canonicalPath);
+    for (const [key, move] of this.outOfBandMoveInvalidations.entries()) {
+      if (move.from === canonicalPath || move.to === canonicalPath) {
+        this.outOfBandMoveInvalidations.delete(key);
+      }
+    }
+  }
+
+  public noteToolAccessScope(path: string): void {
+    const normalizedScope = normalizeVfsPath(path);
+    const canonicalScope = normalizedScope
+      ? this.resolveCanonicalPath(normalizedScope)
+      : "";
+    this.accessedScopesByEpoch.set(canonicalScope, this.currentReadEpoch);
+  }
+
   public noteToolSeenMany(paths: string[]): void {
     for (const path of paths) {
       this.noteToolSeen(path);
@@ -275,6 +300,28 @@ export class VfsSession {
   public hasToolSeenInCurrentEpoch(path: string): boolean {
     const canonicalPath = this.resolveCanonicalPath(path);
     return this.seenByEpoch.get(canonicalPath) === this.currentReadEpoch;
+  }
+
+  public hasToolAccessedInCurrentEpoch(path: string): boolean {
+    const canonicalPath = this.resolveCanonicalPath(path);
+    if (this.accessedFilesByEpoch.get(canonicalPath) === this.currentReadEpoch) {
+      return true;
+    }
+
+    for (const [scopePath, epoch] of this.accessedScopesByEpoch.entries()) {
+      if (epoch !== this.currentReadEpoch) {
+        continue;
+      }
+      if (
+        scopePath === "" ||
+        canonicalPath === scopePath ||
+        canonicalPath.startsWith(`${scopePath}/`)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public snapshotToolSeenPaths(): string[] {
@@ -297,12 +344,22 @@ export class VfsSession {
 
   public snapshotReadFenceState(): VfsReadFenceState {
     const seenByEpoch: Record<string, number> = {};
+    const accessedFilesByEpoch: Record<string, number> = {};
+    const accessedScopesByEpoch: Record<string, number> = {};
     for (const [path, epoch] of this.seenByEpoch.entries()) {
       seenByEpoch[path] = epoch;
+    }
+    for (const [path, epoch] of this.accessedFilesByEpoch.entries()) {
+      accessedFilesByEpoch[path] = epoch;
+    }
+    for (const [path, epoch] of this.accessedScopesByEpoch.entries()) {
+      accessedScopesByEpoch[path] = epoch;
     }
     return {
       currentReadEpoch: this.currentReadEpoch,
       seenByEpoch,
+      accessedFilesByEpoch,
+      accessedScopesByEpoch,
       boundConversationSessionId: this.boundConversationSessionId,
     };
   }
@@ -321,6 +378,8 @@ export class VfsSession {
         : null;
 
     this.seenByEpoch.clear();
+    this.accessedFilesByEpoch.clear();
+    this.accessedScopesByEpoch.clear();
     for (const [path, epoch] of Object.entries(state.seenByEpoch ?? {})) {
       if (typeof epoch !== "number" || !Number.isFinite(epoch)) {
         continue;
@@ -328,8 +387,26 @@ export class VfsSession {
       const canonicalPath = this.resolveCanonicalPath(path);
       this.seenByEpoch.set(canonicalPath, Math.floor(epoch));
     }
+    for (const [path, epoch] of Object.entries(state.accessedFilesByEpoch ?? {})) {
+      if (typeof epoch !== "number" || !Number.isFinite(epoch)) {
+        continue;
+      }
+      const canonicalPath = this.resolveCanonicalPath(path);
+      this.accessedFilesByEpoch.set(canonicalPath, Math.floor(epoch));
+    }
+    for (const [path, epoch] of Object.entries(state.accessedScopesByEpoch ?? {})) {
+      if (typeof epoch !== "number" || !Number.isFinite(epoch)) {
+        continue;
+      }
+      const normalizedScope = normalizeVfsPath(path);
+      const canonicalPath = normalizedScope
+        ? this.resolveCanonicalPath(normalizedScope)
+        : "";
+      this.accessedScopesByEpoch.set(canonicalPath, Math.floor(epoch));
+    }
 
     this.outOfBandReadInvalidations.clear();
+    this.outOfBandMoveInvalidations.clear();
   }
 
   public beginReadEpoch(_reason: VfsReadEpochReason): void {
@@ -366,32 +443,69 @@ export class VfsSession {
 
   public noteOutOfBandMutation(
     path: string,
-    changeType: "added" | "deleted" | "modified",
+    changeType: OutOfBandPathChangeType,
   ): void {
     const canonicalPath = this.resolveCanonicalPath(path);
     if (!canonicalPath) {
       return;
     }
 
-    if (!this.hasToolSeenInCurrentEpoch(canonicalPath)) {
+    if (!this.hasToolAccessedInCurrentEpoch(canonicalPath)) {
       return;
     }
 
     this.seenByEpoch.delete(canonicalPath);
+    this.accessedFilesByEpoch.delete(canonicalPath);
     this.outOfBandReadInvalidations.set(canonicalPath, changeType);
   }
 
-  public drainOutOfBandReadInvalidations(): Array<{
-    path: string;
-    changeType: "added" | "deleted" | "modified";
-  }> {
-    const drained = Array.from(this.outOfBandReadInvalidations.entries())
-      .map(([path, changeType]) => ({
-        path: this.toDisplayPath(path),
-        changeType,
-      }))
-      .sort((a, b) => a.path.localeCompare(b.path));
+  public noteOutOfBandMove(from: string, to: string): void {
+    const canonicalFrom = this.resolveCanonicalPath(from);
+    const canonicalTo = this.resolveCanonicalPath(to);
+    if (!canonicalFrom || !canonicalTo || canonicalFrom === canonicalTo) {
+      return;
+    }
+
+    if (
+      !this.hasToolAccessedInCurrentEpoch(canonicalFrom) &&
+      !this.hasToolAccessedInCurrentEpoch(canonicalTo)
+    ) {
+      return;
+    }
+
+    this.seenByEpoch.delete(canonicalFrom);
+    this.seenByEpoch.delete(canonicalTo);
+    this.accessedFilesByEpoch.delete(canonicalFrom);
+    this.accessedFilesByEpoch.delete(canonicalTo);
+    this.outOfBandReadInvalidations.delete(canonicalFrom);
+    this.outOfBandReadInvalidations.delete(canonicalTo);
+    this.outOfBandMoveInvalidations.set(`${canonicalFrom}->${canonicalTo}`, {
+      from: canonicalFrom,
+      to: canonicalTo,
+    });
+  }
+
+  public drainOutOfBandReadInvalidations(): OutOfBandReadInvalidation[] {
+    const pathInvalidations: OutOfBandReadInvalidation[] = Array.from(
+      this.outOfBandReadInvalidations.entries(),
+    ).map(([path, changeType]) => ({
+      path: this.toDisplayPath(path),
+      changeType,
+    }));
+    const movedInvalidations: OutOfBandReadInvalidation[] = Array.from(
+      this.outOfBandMoveInvalidations.values(),
+    ).map((move) => ({
+      from: this.toDisplayPath(move.from),
+      to: this.toDisplayPath(move.to),
+      changeType: "moved" as const,
+    }));
+    const drained = [...pathInvalidations, ...movedInvalidations].sort((a, b) => {
+      const left = "path" in a ? a.path : `${a.from}->${a.to}`;
+      const right = "path" in b ? b.path : `${b.from}->${b.to}`;
+      return left.localeCompare(right);
+    });
     this.outOfBandReadInvalidations.clear();
+    this.outOfBandMoveInvalidations.clear();
     return drained;
   }
 

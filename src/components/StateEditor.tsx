@@ -126,6 +126,99 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     return vfsSession.snapshotAll();
   }, [vfsSession, snapshotVersion]);
 
+  const snapshotMutableFiles = (): VfsFileMap => vfsSession.snapshot();
+
+  const toNormalizedFileMap = (files: VfsFileMap): VfsFileMap => {
+    const normalized: VfsFileMap = {};
+    for (const file of Object.values(files)) {
+      const path = normalizeVfsPath(file.path);
+      normalized[path] = { ...file, path };
+    }
+    return normalized;
+  };
+
+  const noteOutOfBandPathMutation = (
+    path: string,
+    changeType: "added" | "deleted" | "modified",
+  ) => {
+    const normalizedPath = normalizeVfsPath(path);
+    if (!normalizedPath) {
+      return;
+    }
+    vfsSession.noteOutOfBandMutation(normalizedPath, changeType);
+  };
+
+  const noteOutOfBandMoveMutation = (from: string, to: string) => {
+    const normalizedFrom = normalizeVfsPath(from);
+    const normalizedTo = normalizeVfsPath(to);
+    if (!normalizedFrom || !normalizedTo || normalizedFrom === normalizedTo) {
+      return;
+    }
+    vfsSession.noteOutOfBandMove(normalizedFrom, normalizedTo);
+  };
+
+  const noteOutOfBandDiff = (
+    beforeRaw: VfsFileMap,
+    afterRaw: VfsFileMap,
+    options?: {
+      ignoreAdded?: Set<string>;
+      ignoreDeleted?: Set<string>;
+    },
+  ) => {
+    const before = toNormalizedFileMap(beforeRaw);
+    const after = toNormalizedFileMap(afterRaw);
+    const ignoreAdded = options?.ignoreAdded ?? new Set<string>();
+    const ignoreDeleted = options?.ignoreDeleted ?? new Set<string>();
+
+    for (const [path, nextFile] of Object.entries(after)) {
+      const previousFile = before[path];
+      if (!previousFile) {
+        if (!ignoreAdded.has(path)) {
+          noteOutOfBandPathMutation(path, "added");
+        }
+        continue;
+      }
+      if (previousFile.hash !== nextFile.hash) {
+        noteOutOfBandPathMutation(path, "modified");
+      }
+    }
+
+    for (const path of Object.keys(before)) {
+      if (after[path]) {
+        continue;
+      }
+      if (!ignoreDeleted.has(path)) {
+        noteOutOfBandPathMutation(path, "deleted");
+      }
+    }
+  };
+
+  const buildMovePairsForPath = (
+    beforeRaw: VfsFileMap,
+    fromPath: string,
+    toPath: string,
+    isFolder: boolean,
+  ): Array<{ from: string; to: string }> => {
+    const normalizedFrom = normalizeVfsPath(fromPath);
+    const normalizedTo = normalizeVfsPath(toPath);
+    if (!normalizedFrom || !normalizedTo || normalizedFrom === normalizedTo) {
+      return [];
+    }
+    if (!isFolder) {
+      return [{ from: normalizedFrom, to: normalizedTo }];
+    }
+
+    const before = toNormalizedFileMap(beforeRaw);
+    const prefix = `${normalizedFrom}/`;
+    return Object.keys(before)
+      .filter((path) => path.startsWith(prefix))
+      .sort((a, b) => a.localeCompare(b))
+      .map((from) => ({
+        from,
+        to: normalizeVfsPath(`${normalizedTo}/${from.slice(prefix.length)}`),
+      }));
+  };
+
   const isFilesPanel = activePanel === "files";
   const ragPanelMode: "search" | "stats" | "documents" =
     activePanel === "rag_search"
@@ -591,7 +684,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         changeType = "modified";
       }
       if (changeType) {
-        vfsSession.noteOutOfBandMutation(selectedPath, changeType);
+        noteOutOfBandPathMutation(selectedPath, changeType);
       }
 
       applyVfsMutation(nextState);
@@ -715,6 +808,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       const initialContent = contentType === "application/json" ? "{}" : "";
 
       try {
+        const beforeSnapshot = snapshotMutableFiles();
         const nextState = applyVfsCreateFile({
           session: vfsSession,
           path: targetPath,
@@ -723,6 +817,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           baseState: gameState,
           writeContext: editorWriteContext,
         });
+        noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles());
         applyVfsMutation(nextState);
         updateSnapshotAndSelect(targetPath);
         setIsEditMode(true);
@@ -779,12 +874,14 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       }
 
       try {
+        const beforeSnapshot = snapshotMutableFiles();
         const nextState = applyVfsCreateFolder({
           session: vfsSession,
           path: targetPath,
           baseState: gameState,
           writeContext: editorWriteContext,
         });
+        noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles());
         applyVfsMutation(nextState);
         updateSnapshotAndSelect(`${targetPath}/README.md`);
         setIsEditMode(true);
@@ -843,6 +940,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       const targetPath = normalizeVfsPath(baseDir ? `${baseDir}/${trimmed}` : trimmed);
 
       try {
+        const beforeSnapshot = snapshotMutableFiles();
+        const movePairs = buildMovePairsForPath(
+          beforeSnapshot,
+          normalizedPath,
+          targetPath,
+          isFolder,
+        );
         const nextState = applyVfsRenamePath({
           session: vfsSession,
           fromPath: normalizedPath,
@@ -850,6 +954,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           isFolder,
           baseState: gameState,
           writeContext: editorWriteContext,
+        });
+        for (const pair of movePairs) {
+          noteOutOfBandMoveMutation(pair.from, pair.to);
+        }
+        noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles(), {
+          ignoreAdded: new Set(movePairs.map((pair) => pair.to)),
+          ignoreDeleted: new Set(movePairs.map((pair) => pair.from)),
         });
         applyVfsMutation(nextState);
 
@@ -921,6 +1032,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       }
 
       try {
+        const beforeSnapshot = snapshotMutableFiles();
+        const movePairs = buildMovePairsForPath(
+          beforeSnapshot,
+          normalizedPath,
+          targetPath,
+          isFolder,
+        );
         const nextState = applyVfsRenamePath({
           session: vfsSession,
           fromPath: normalizedPath,
@@ -928,6 +1046,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           isFolder,
           baseState: gameState,
           writeContext: editorWriteContext,
+        });
+        for (const pair of movePairs) {
+          noteOutOfBandMoveMutation(pair.from, pair.to);
+        }
+        noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles(), {
+          ignoreAdded: new Set(movePairs.map((pair) => pair.to)),
+          ignoreDeleted: new Set(movePairs.map((pair) => pair.from)),
         });
         applyVfsMutation(nextState);
 
@@ -979,6 +1104,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       }
 
       try {
+        const beforeSnapshot = snapshotMutableFiles();
         const nextState = applyVfsDeletePath({
           session: vfsSession,
           path: normalizedPath,
@@ -986,6 +1112,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           baseState: gameState,
           writeContext: editorWriteContext,
         });
+        noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles());
         applyVfsMutation(nextState);
 
         const remaining = Object.keys(vfsSession.snapshotAll()).sort();
@@ -1113,6 +1240,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       }
 
       try {
+        const beforeSnapshot = snapshotMutableFiles();
+        const movePairs = buildMovePairsForPath(
+          beforeSnapshot,
+          fromPath,
+          targetPath,
+          selectedIsDirectory,
+        );
         const nextState = applyVfsRenamePath({
           session: vfsSession,
           fromPath,
@@ -1120,6 +1254,13 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           isFolder: selectedIsDirectory,
           baseState: gameState,
           writeContext: editorWriteContext,
+        });
+        for (const pair of movePairs) {
+          noteOutOfBandMoveMutation(pair.from, pair.to);
+        }
+        noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles(), {
+          ignoreAdded: new Set(movePairs.map((pair) => pair.to)),
+          ignoreDeleted: new Set(movePairs.map((pair) => pair.from)),
         });
         applyVfsMutation(nextState);
 
@@ -1176,6 +1317,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const markdown = buildCustomRulePackMarkdownForCategory(category);
 
     try {
+      const beforeSnapshot = snapshotMutableFiles();
       const nextState = applyVfsFileEdit({
         session: vfsSession,
         path: templatePath,
@@ -1184,6 +1326,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         baseState: gameState,
         writeContext: editorWriteContext,
       });
+      noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles());
 
       applyVfsMutation(nextState);
       updateSnapshotAndSelect(templatePath);
@@ -1422,12 +1565,32 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
 
     try {
+      const beforeSnapshot = snapshotMutableFiles();
+      const movePairs = normalizedSources
+        .map((sourcePath) => {
+          const fileName = sourcePath.split("/").pop();
+          if (!fileName) {
+            return null;
+          }
+          return {
+            from: sourcePath,
+            to: normalizeVfsPath(`${normalizedTargetDirectory}/${fileName}`),
+          };
+        })
+        .filter((pair): pair is { from: string; to: string } => Boolean(pair));
       const nextState = applyVfsBatchMoveFiles({
         session: vfsSession,
         sourcePaths: normalizedSources,
         targetDirectory: normalizedTargetDirectory,
         baseState: gameState,
         writeContext: editorWriteContext,
+      });
+      for (const pair of movePairs) {
+        noteOutOfBandMoveMutation(pair.from, pair.to);
+      }
+      noteOutOfBandDiff(beforeSnapshot, snapshotMutableFiles(), {
+        ignoreAdded: new Set(movePairs.map((pair) => pair.to)),
+        ignoreDeleted: new Set(movePairs.map((pair) => pair.from)),
       });
       applyVfsMutation(nextState);
 

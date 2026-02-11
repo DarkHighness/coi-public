@@ -257,8 +257,11 @@ export const VFS_READ_TOOL = defineTool({
         .number()
         .int()
         .positive()
+        .max(16_384)
         .nullish()
-        .describe("Chars/JSON mode: optional max characters."),
+        .describe(
+          "Chars/JSON mode: optional max characters (must be <= 16384 hard read cap).",
+        ),
       startLine: z
         .number()
         .int()

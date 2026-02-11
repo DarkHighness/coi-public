@@ -135,6 +135,17 @@ const ensureNotFinishGuardedMutation = (
   );
 };
 
+const VFS_READ_HARD_CHAR_CAP = 16_384;
+
+const createReadLimitError = (
+  mode: "chars" | "lines" | "json",
+  details: string,
+): ToolCallResult<never> =>
+  createError(
+    `vfs_read(${mode}): ${details}. Hard cap is ${VFS_READ_HARD_CHAR_CAP} chars. Use lines/chars(start+offset) or narrower JSON pointers.`,
+    "INVALID_DATA",
+  );
+
 const decodeJsonPointerToken = (token: string): string =>
   token.replace(/~1/g, "/").replace(/~0/g, "~");
 
@@ -745,6 +756,7 @@ vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
   if (isPathResolveError(baseResolved)) {
     return baseResolved.error;
   }
+  session.noteToolAccessScope(baseResolved.path ?? "");
 
   const patterns = typedArgs.patterns ?? null;
   const stat = Boolean(typedArgs.stat);
@@ -945,6 +957,9 @@ vfsToolRouter.register(VFS_LS_TOOL, (args, ctx) => {
   const allMatches = Array.from(matched).sort();
   const truncated = allMatches.length > limit;
   const selectedMatches = truncated ? allMatches.slice(0, limit) : allMatches;
+  for (const path of selectedMatches) {
+    session.noteToolAccessFile(path);
+  }
   const matches = selectedMatches.map((p) => toCurrentPath(p));
 
   if (!stat) {
@@ -994,6 +1009,7 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
     return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND");
   }
   session.noteToolSeen(resolved.path);
+  session.noteToolAccessFile(resolved.path);
 
   const mode =
     typedArgs.mode ??
@@ -1024,7 +1040,16 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
       );
     }
 
-    const maxChars = typedArgs.maxChars ?? 4000;
+    if (
+      typeof typedArgs.maxChars === "number" &&
+      typedArgs.maxChars > VFS_READ_HARD_CHAR_CAP
+    ) {
+      return createReadLimitError(
+        "json",
+        `maxChars=${typedArgs.maxChars} exceeds allowed per-pointer read size`,
+      );
+    }
+    const maxChars = typedArgs.maxChars ?? VFS_READ_HARD_CHAR_CAP;
     const extracts: Array<{
       pointer: string;
       type: string;
@@ -1033,6 +1058,7 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
       jsonChars: number;
     }> = [];
     const missing: Array<{ pointer: string; error: string }> = [];
+    let totalJsonChars = 0;
 
     for (const pointer of pointers) {
       const resolvedPointer = resolveJsonPointer(document, pointer);
@@ -1044,18 +1070,26 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
       const valueType = describeJsonValueType(resolvedPointer.value);
       const jsonString = JSON.stringify(resolvedPointer.value);
       const fullJson = typeof jsonString === "string" ? jsonString : "null";
-      let json = fullJson;
-      let truncated = false;
-      if (json.length > maxChars) {
-        json = json.slice(0, maxChars);
-        truncated = true;
+      if (fullJson.length > maxChars) {
+        return createReadLimitError(
+          "json",
+          `pointer "${pointer}" yields ${fullJson.length} chars, exceeding limit ${maxChars}`,
+        );
       }
+      totalJsonChars += fullJson.length;
+      if (totalJsonChars > VFS_READ_HARD_CHAR_CAP) {
+        return createReadLimitError(
+          "json",
+          `combined pointer payload exceeds ${VFS_READ_HARD_CHAR_CAP} chars`,
+        );
+      }
+      const json = fullJson;
 
       extracts.push({
         pointer,
         type: valueType,
         json,
-        truncated,
+        truncated: false,
         jsonChars: fullJson.length,
       });
     }
@@ -1113,6 +1147,12 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
     const startIndex = startLine - 1;
     const endIndexExclusive = endLine;
     const content = lines.slice(startIndex, endIndexExclusive).join("\n");
+    if (content.length > VFS_READ_HARD_CHAR_CAP) {
+      return createReadLimitError(
+        "lines",
+        `requested line range returns ${content.length} chars`,
+      );
+    }
 
     return createSuccess(
       {
@@ -1147,6 +1187,19 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
     );
   }
 
+  if (hasOffset && offsetRaw > VFS_READ_HARD_CHAR_CAP) {
+    return createReadLimitError(
+      "chars",
+      `offset=${offsetRaw} exceeds allowed chunk size`,
+    );
+  }
+  if (hasMaxChars && maxChars > VFS_READ_HARD_CHAR_CAP) {
+    return createReadLimitError(
+      "chars",
+      `maxChars=${maxChars} exceeds allowed chunk size`,
+    );
+  }
+
   const length = hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
   const totalChars = file.content.length;
   const sliceStart = Math.min(Math.max(start, 0), totalChars);
@@ -1156,6 +1209,12 @@ vfsToolRouter.register(VFS_READ_TOOL, (args, ctx) => {
       : totalChars;
 
   const content = file.content.slice(sliceStart, sliceEndExclusive);
+  if (content.length > VFS_READ_HARD_CHAR_CAP) {
+    return createReadLimitError(
+      "chars",
+      `requested char range returns ${content.length} chars`,
+    );
+  }
   const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;
 
   return createSuccess(
@@ -1428,6 +1487,7 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
           validated.normalizedContent,
           validated.contentType,
         );
+        draft.noteToolAccessFile(resolved.path);
         written.push(toCurrentPath(resolved.path));
         continue;
       }
@@ -1479,6 +1539,7 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
           next,
           resolveTextContentType(resolved.path, existing),
         );
+        draft.noteToolAccessFile(resolved.path);
 
         appended.push(toCurrentPath(resolved.path));
         continue;
@@ -1592,6 +1653,7 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
           content,
           resolveTextContentType(resolved.path, existing),
         );
+        draft.noteToolAccessFile(resolved.path);
         edited.push(toCurrentPath(resolved.path));
         continue;
       }
@@ -1619,6 +1681,7 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
         }
 
         draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
+        draft.noteToolAccessFile(resolved.path);
         patched.push(toCurrentPath(resolved.path));
         continue;
       }
@@ -1641,6 +1704,7 @@ vfsToolRouter.register(VFS_WRITE_TOOL, (args, ctx) => {
         }
 
         draft.mergeJson(resolved.path, op.content);
+        draft.noteToolAccessFile(resolved.path);
         merged.push(toCurrentPath(resolved.path));
       }
     }
@@ -1696,6 +1760,8 @@ vfsToolRouter.register(VFS_MOVE_TOOL, (args, ctx) => {
       }
 
       draft.renameToolSeenPath(from, to);
+      draft.noteToolAccessFile(from);
+      draft.noteToolAccessFile(to);
       moved.push({ from: toCurrentPath(from), to: toCurrentPath(to) });
     }
 
@@ -1735,6 +1801,7 @@ vfsToolRouter.register(VFS_DELETE_TOOL, (args, ctx) => {
         const message = error instanceof Error ? error.message : String(error);
         return createError(message, "NOT_FOUND");
       }
+      draft.noteToolAccessFile(normalized);
       draft.forgetToolSeenPath(normalized);
       deleted.push(toCurrentPath(normalized));
     }

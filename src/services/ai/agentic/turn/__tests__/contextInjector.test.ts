@@ -137,12 +137,16 @@ describe("contextInjector", () => {
 
     injectOutOfBandReadInvalidations(history, [
       { path: "world/notes.md", changeType: "modified" },
+      { from: "world/notes.md", to: "world/logs.md", changeType: "moved" },
     ]);
 
     expect(history).toHaveLength(1);
     expect(getText(history[0])).toContain("EXTERNAL_FILE_CHANGES");
     expect(getText(history[0])).toContain("current/world/notes.md");
     expect(getText(history[0])).toContain("re-read it first");
+    expect(getText(history[0])).toContain(
+      "current/world/notes.md -> current/world/logs.md (moved)",
+    );
   });
 
   it("keeps ready consequences injection as no-op", () => {

@@ -244,6 +244,17 @@ expect(session.list("skills")).toEqual(
     ]);
   });
 
+  it("treats empty access scope as global for out-of-band invalidation", () => {
+    const session = new VfsSession();
+
+    session.noteToolAccessScope("");
+    session.noteOutOfBandMutation("custom_rules/01-guide.md", "modified");
+
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([
+      { path: "custom_rules/01-guide.md", changeType: "modified" },
+    ]);
+  });
+
   it("tracks moved out-of-band invalidations", () => {
     const session = new VfsSession();
 
@@ -300,6 +311,21 @@ expect(session.list("skills")).toEqual(
 
     session.restoreReadFenceState(snapshot);
     expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(true);
+  });
+
+  it("restores global access scope from read fence snapshot", () => {
+    const session = new VfsSession();
+
+    session.noteToolAccessScope("");
+    const snapshot = session.snapshotReadFenceState();
+
+    session.beginReadEpoch("manual_invalidate");
+    session.restoreReadFenceState(snapshot);
+    session.noteOutOfBandMutation("custom_rules/01-guide.md", "modified");
+
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([
+      { path: "custom_rules/01-guide.md", changeType: "modified" },
+    ]);
   });
 
 });

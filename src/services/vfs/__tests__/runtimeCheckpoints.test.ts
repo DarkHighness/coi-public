@@ -13,19 +13,27 @@ describe("VFS runtime checkpoints", () => {
 
     session.writeFile("world/notes.md", "A", "text/markdown");
     session.noteToolSeen("world/notes.md");
+    session.noteToolAccessFile("world/notes.md");
     checkpointVfsSession(sessionId, session);
 
     session.beginReadEpoch("summary_created");
     session.writeFile("world/notes.md", "B", "text/markdown");
+    session.noteToolAccessScope("world");
+    session.noteOutOfBandMutation("world/notes.md", "modified");
 
     expect(session.readFile("world/notes.md")?.content).toBe("B");
     expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(false);
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([
+      { path: "world/notes.md", changeType: "modified" },
+    ]);
 
     const rolledBack = rollbackVfsSessionToCheckpoint(sessionId, session);
 
     expect(rolledBack).toBe(true);
     expect(session.readFile("world/notes.md")?.content).toBe("A");
     expect(session.hasToolSeenInCurrentEpoch("world/notes.md")).toBe(true);
+    expect(session.hasToolAccessedInCurrentEpoch("world/notes.md")).toBe(true);
+    expect(session.drainOutOfBandReadInvalidations()).toEqual([]);
 
     clearVfsCheckpoint(sessionId);
   });

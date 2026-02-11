@@ -43,5 +43,7 @@ export interface VfsIndex {
 export interface VfsReadFenceState {
   currentReadEpoch: number;
   seenByEpoch: Record<string, number>;
+  accessedFilesByEpoch?: Record<string, number>;
+  accessedScopesByEpoch?: Record<string, number>;
   boundConversationSessionId: string | null;
 }

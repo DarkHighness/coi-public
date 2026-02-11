@@ -50,6 +50,63 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.data.missing[0].pointer).toBe("/missing");
   });
 
+  it("rejects oversized char reads and guides chunked strategies", () => {
+    const session = new VfsSession();
+    session.writeFile("world/huge.txt", "x".repeat(17_000), "text/plain");
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/huge.txt" },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error).toContain("Hard cap is 16384 chars");
+    expect(result.error).toContain("chars(start+offset)");
+  });
+
+  it("rejects oversized line-window reads and guides chunked strategies", () => {
+    const session = new VfsSession();
+    const longLine = "1234567890".repeat(200);
+    const content = Array.from({ length: 12 }, () => longLine).join("\n");
+    session.writeFile("world/huge-lines.txt", content, "text/plain");
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/huge-lines.txt", mode: "lines", startLine: 1, endLine: 12 },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error).toContain("Hard cap is 16384 chars");
+    expect(result.error).toContain("lines/chars(start+offset)");
+  });
+
+  it("rejects oversized json pointer reads without truncation", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/big.json",
+      JSON.stringify({ big: "x".repeat(17_000) }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/big.json", mode: "json", pointers: ["/big"] },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error).toContain("Hard cap is 16384 chars");
+    expect(result.error).toContain("JSON pointers");
+  });
+
   it("returns schema metadata for known paths", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
