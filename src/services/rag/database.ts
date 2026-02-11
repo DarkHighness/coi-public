@@ -104,6 +104,18 @@ const TIER_A_CONDITION =
 const TIER_B_CONDITION =
   "COALESCE(sm.is_active, FALSE) = TRUE AND d.fork_id <> COALESCE(sm.current_fork_id, 0)";
 const TIER_C_CONDITION = "COALESCE(sm.is_active, FALSE) = FALSE";
+const REQUIRED_DOCUMENT_COLUMNS = [
+  "source_path",
+  "canonical_path",
+  "doc_type",
+  "content_type",
+  "file_hash",
+  "chunk_index",
+  "chunk_count",
+  "is_latest",
+  "superseded_at_turn",
+  "estimated_bytes",
+];
 
 export class RAGDatabase {
   private db: PGlite | null = null;
@@ -124,9 +136,53 @@ export class RAGDatabase {
     await this.db.waitReady;
     await this.db.exec(SCHEMA);
     await this.ensureSchemaVersion();
+    await this.ensureDocumentColumns();
 
     this.initialized = true;
     console.log("[RAGDatabase] Initialized");
+  }
+
+  private async setSchemaVersion(version: string): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    await this.db.query(
+      `INSERT INTO rag_meta (key, value)
+       VALUES ('schema_version', $1)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [version],
+    );
+  }
+
+  private async rebuildSchema(reason: string): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const expected = String(this.config.schemaVersion);
+    console.warn(`[RAGDatabase] ${reason}; rebuilding schema`);
+    await this.resetSchema();
+    await this.db.exec(SCHEMA);
+    await this.setSchemaVersion(expected);
+  }
+
+  private isMissingColumnError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    return /column\s+"?[a-zA-Z0-9_]+"?\s+does not exist/i.test(message);
+  }
+
+  private async ensureDocumentColumns(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    try {
+      await this.db.query(
+        `SELECT ${REQUIRED_DOCUMENT_COLUMNS.join(", ")} FROM documents LIMIT 0`,
+      );
+    } catch (error) {
+      if (!this.isMissingColumnError(error)) {
+        throw error;
+      }
+      await this.rebuildSchema(
+        "Detected legacy documents table without required columns",
+      );
+    }
   }
 
   private async ensureSchemaVersion(): Promise<void> {
@@ -144,19 +200,13 @@ export class RAGDatabase {
     }
 
     if (stored) {
-      console.warn(
-        `[RAGDatabase] Schema mismatch detected (${stored} -> ${expected}), rebuilding`,
+      await this.rebuildSchema(
+        `Schema mismatch detected (${stored} -> ${expected})`,
       );
-      await this.resetSchema();
-      await this.db.exec(SCHEMA);
+      return;
     }
 
-    await this.db.query(
-      `INSERT INTO rag_meta (key, value)
-       VALUES ('schema_version', $1)
-       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-      [expected],
-    );
+    await this.setSchemaVersion(expected);
   }
 
   private async resetSchema(): Promise<void> {

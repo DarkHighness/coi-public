@@ -4,11 +4,47 @@ import {
   getEmbeddingModels,
   EmbeddingModelInfo,
 } from "../../services/aiService";
+import type { LocalTransformersDevice } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
 import { useOptionalRuntimeContext } from "../../runtime/context";
+import {
+  clearTransformersCache,
+  DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID,
+  getLocalTransformersModelMeta,
+  getTransformersCacheSummary,
+  getTransformersEmbeddingEngine,
+  LOCAL_TRANSFORMERS_MODEL_OPTIONS,
+  removeModelFromTransformersCache,
+  resetTransformersEmbeddingEngine,
+} from "../../services/rag/localEmbedding";
+import type {
+  TransformersCacheSummary,
+} from "../../services/rag/localEmbedding/cacheManager";
+import type { TransformersModelProgressEvent } from "../../services/rag/localEmbedding/transformersEngine";
 
 interface SettingsEmbeddingProps {
   showToast: (message: string, type: "success" | "error" | "info") => void;
+}
+
+type LocalModelAction =
+  | "prepare"
+  | "test"
+  | "clearModel"
+  | "clearAll"
+  | null;
+
+interface LocalModelProgressState {
+  status: "running" | "ready" | "error";
+  percent: number | null;
+  message: string;
+}
+
+interface LocalModelTestResult {
+  ok: boolean;
+  dimensions: number;
+  elapsedMs: number;
+  device?: LocalTransformersDevice;
+  message: string;
 }
 
 const formatStorageBytes = (bytes: number): string => {
@@ -71,6 +107,38 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>(
     {},
   );
+  const localTransformersModel =
+    config.local?.transformersModel ||
+    config.modelId ||
+    DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID;
+  const localTransformersModelMeta =
+    getLocalTransformersModelMeta(localTransformersModel);
+  const localTransformersSelectValue = LOCAL_TRANSFORMERS_MODEL_OPTIONS.some(
+    (item) => item.id === localTransformersModel,
+  )
+    ? localTransformersModel
+    : "__custom__";
+  const [customLocalModelId, setCustomLocalModelId] = useState(
+    localTransformersModel,
+  );
+  const [localModelProgress, setLocalModelProgress] =
+    useState<LocalModelProgressState | null>(null);
+  const [localModelTestText, setLocalModelTestText] = useState(
+    "在雾中城堡搜索隐藏线索",
+  );
+  const [localModelTestResult, setLocalModelTestResult] =
+    useState<LocalModelTestResult | null>(null);
+  const [localModelCacheSummary, setLocalModelCacheSummary] =
+    useState<TransformersCacheSummary | null>(null);
+  const [isLoadingLocalModelCache, setIsLoadingLocalModelCache] =
+    useState(false);
+  const [localModelAction, setLocalModelAction] = useState<LocalModelAction>(
+    null,
+  );
+
+  useEffect(() => {
+    setCustomLocalModelId(localTransformersModel);
+  }, [localTransformersModel]);
 
   // Fetch models from API for a provider
   // 支持强制刷新 force 参数
@@ -145,11 +213,30 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
     // Auto-update dimensions when model changes
     if (field === "modelId") {
-      const providerId = config.providerId;
-      const providerModels = models[providerId] || [];
-      const model = providerModels.find((m) => m.id === value);
-      if (model?.dimensions) {
-        newSettings.embedding.dimensions = model.dimensions;
+      const runtimeMode = newSettings.embedding.runtime ?? runtime;
+
+      if (runtimeMode === "local_transformers") {
+        const localConfig = newSettings.embedding.local || {};
+        const selectedModel =
+          value || localConfig.transformersModel || DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID;
+        const modelMeta = getLocalTransformersModelMeta(selectedModel);
+        newSettings.embedding.local = {
+          ...localConfig,
+          backend: "transformers_js",
+          transformersModel: selectedModel,
+          deviceOrder: localConfig.deviceOrder || ["webgpu", "wasm", "cpu"],
+          batchSize: localConfig.batchSize || 8,
+          quantized: localConfig.quantized !== false,
+        };
+        newSettings.embedding.modelId = selectedModel;
+        newSettings.embedding.dimensions = modelMeta?.dimensions ?? 384;
+      } else {
+        const providerId = config.providerId;
+        const providerModels = models[providerId] || [];
+        const model = providerModels.find((m) => m.id === value);
+        if (model?.dimensions) {
+          newSettings.embedding.dimensions = model.dimensions;
+        }
       }
 
       // Check if model has changed and RAG has existing index
@@ -159,21 +246,26 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
         runtimeContext?.state.rag.status?.storageDocuments &&
         runtimeContext.state.rag.status.storageDocuments > 0;
 
-      if (prevModel && prevModel !== value && hasExistingIndex) {
+      const nextModelId = newSettings.embedding.modelId || value;
+
+      if (prevModel && prevModel !== nextModelId && hasExistingIndex) {
         // Show confirmation dialog
         setModelChangeConfirm({ show: true, pendingSettings: newSettings });
         return; // Don't apply settings yet
       }
 
       // Update reference
-      previousModelIdRef.current = value;
+      previousModelIdRef.current = nextModelId;
     }
 
     if (field === "runtime") {
       if (value === "local_transformers") {
         const localConfig = newSettings.embedding.local || {};
         const transformersModel =
-          localConfig.transformersModel || "Xenova/all-MiniLM-L6-v2";
+          localConfig.transformersModel ||
+          newSettings.embedding.modelId ||
+          DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID;
+        const modelMeta = getLocalTransformersModelMeta(transformersModel);
         newSettings.embedding.local = {
           ...localConfig,
           backend: "transformers_js",
@@ -183,7 +275,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           quantized: localConfig.quantized !== false,
         };
         newSettings.embedding.modelId = transformersModel;
-        newSettings.embedding.dimensions = 384;
+        newSettings.embedding.dimensions = modelMeta?.dimensions ?? 384;
       } else if (value === "local_tfjs") {
         const localConfig = newSettings.embedding.local || {};
         newSettings.embedding.local = {
@@ -196,9 +288,11 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
         newSettings.embedding.modelId = "use-lite-512";
         newSettings.embedding.dimensions = 512;
       } else if (value === "remote") {
+        const previousRuntime =
+          currentSettings.embedding.runtime ?? "local_transformers";
         if (
-          newSettings.embedding.modelId === "use-lite-512" ||
-          newSettings.embedding.modelId === "Xenova/all-MiniLM-L6-v2"
+          previousRuntime === "local_tfjs" ||
+          previousRuntime === "local_transformers"
         ) {
           newSettings.embedding.modelId = "";
           newSettings.embedding.dimensions = undefined;
@@ -226,6 +320,262 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     }
 
     onUpdateSettings(newSettings);
+  };
+
+  const buildLocalTransformersConfig = useCallback(() => {
+    const localConfig = config.local || {};
+    const deviceOrder =
+      localConfig.deviceOrder && localConfig.deviceOrder.length > 0
+        ? localConfig.deviceOrder
+        : (["webgpu", "wasm", "cpu"] as LocalTransformersDevice[]);
+
+    return {
+      ...localConfig,
+      backend: "transformers_js" as const,
+      transformersModel: localTransformersModel,
+      deviceOrder,
+      batchSize: localConfig.batchSize || 8,
+      quantized: localConfig.quantized !== false,
+    };
+  }, [config.local, localTransformersModel]);
+
+  const updateLocalModelProgress = useCallback(
+    (event: TransformersModelProgressEvent) => {
+      const status = event.status || "progress";
+      const percent =
+        typeof event.progress === "number"
+          ? Math.max(0, Math.min(100, event.progress))
+          : status === "done" || status === "ready"
+            ? 100
+            : null;
+
+      const shortFile = event.file ? event.file.split("/").pop() : null;
+      const progressMessage = shortFile
+        ? `${t("embedding.localModelDownloadProgress") || "Downloading model files"}: ${shortFile}`
+        : t("embedding.localModelPreparing") || "Preparing local model...";
+
+      let message = progressMessage;
+      if (status === "ready") {
+        message = t("embedding.localModelReady") || "Model runtime is ready.";
+      } else if (status === "done") {
+        message = t("embedding.localModelDownloaded") || "Model files downloaded.";
+      } else if (status === "download") {
+        message = t("embedding.localModelDownloading") || "Downloading model files...";
+      } else if (status === "initiate") {
+        message =
+          t("embedding.localModelInitializing") || "Initializing local model runtime...";
+      }
+
+      setLocalModelProgress({
+        status: status === "ready" ? "ready" : "running",
+        percent,
+        message,
+      });
+    },
+    [t],
+  );
+
+  const refreshLocalModelCache = useCallback(async () => {
+    setIsLoadingLocalModelCache(true);
+    try {
+      const summary = await getTransformersCacheSummary();
+      setLocalModelCacheSummary(summary);
+    } catch (error) {
+      console.error("[SettingsEmbedding] Failed to load local model cache:", error);
+      setLocalModelCacheSummary(null);
+    } finally {
+      setIsLoadingLocalModelCache(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isLocalTransformers) {
+      return;
+    }
+    void refreshLocalModelCache();
+  }, [isLocalTransformers, refreshLocalModelCache]);
+
+  const handlePrepareLocalModel = async () => {
+    setLocalModelAction("prepare");
+    setLocalModelProgress({
+      status: "running",
+      percent: null,
+      message: t("embedding.localModelPreparing") || "Preparing local model...",
+    });
+
+    try {
+      const startedAt = performance.now();
+      const engine = await getTransformersEmbeddingEngine(
+        buildLocalTransformersConfig(),
+        updateLocalModelProgress,
+      );
+      const elapsedMs = Math.round(performance.now() - startedAt);
+      setLocalModelProgress({
+        status: "ready",
+        percent: 100,
+        message:
+          t("embedding.localModelReadyWithDevice", {
+            device: engine.device,
+            elapsedMs,
+          }) || `Model ready on ${engine.device} (${elapsedMs} ms)`,
+      });
+      showToast(
+        t("embedding.localModelPrepared") || "Local embedding model is ready",
+        "success",
+      );
+      await refreshLocalModelCache();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error || "Unknown error");
+      setLocalModelProgress({
+        status: "error",
+        percent: null,
+        message,
+      });
+      showToast(
+        t("embedding.localModelActionFailed") || "Failed to prepare local model",
+        "error",
+      );
+    } finally {
+      setLocalModelAction(null);
+    }
+  };
+
+  const handleTestLocalModel = async () => {
+    const text = localModelTestText.trim();
+    if (!text) {
+      showToast(
+        t("embedding.localModelTestEmpty") || "Please provide test text first",
+        "error",
+      );
+      return;
+    }
+
+    setLocalModelAction("test");
+    setLocalModelTestResult(null);
+    setLocalModelProgress({
+      status: "running",
+      percent: null,
+      message: t("embedding.localModelTesting") || "Testing local model...",
+    });
+
+    try {
+      const startedAt = performance.now();
+      const engine = await getTransformersEmbeddingEngine(
+        buildLocalTransformersConfig(),
+        updateLocalModelProgress,
+      );
+      const vectors = await engine.embed([text]);
+      const elapsedMs = Math.round(performance.now() - startedAt);
+      const vector = vectors[0];
+
+      if (!Array.isArray(vector) || vector.length === 0) {
+        throw new Error("Test embedding returned no vector");
+      }
+
+      setLocalModelTestResult({
+        ok: true,
+        dimensions: vector.length,
+        elapsedMs,
+        device: engine.device,
+        message:
+          t("embedding.localModelTestPassed", {
+            dimensions: vector.length,
+            elapsedMs,
+            device: engine.device,
+          }) ||
+          `Embedding test passed (${vector.length} dims, ${elapsedMs} ms, ${engine.device})`,
+      });
+      setLocalModelProgress({
+        status: "ready",
+        percent: 100,
+        message: t("embedding.localModelReady") || "Model runtime is ready.",
+      });
+      showToast(
+        t("embedding.localModelTestSuccess") || "Local model test succeeded",
+        "success",
+      );
+      await refreshLocalModelCache();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error || "Unknown error");
+      setLocalModelTestResult({
+        ok: false,
+        dimensions: 0,
+        elapsedMs: 0,
+        message,
+      });
+      setLocalModelProgress({
+        status: "error",
+        percent: null,
+        message,
+      });
+      showToast(
+        t("embedding.localModelTestFailed") || "Local model test failed",
+        "error",
+      );
+    } finally {
+      setLocalModelAction(null);
+    }
+  };
+
+  const handleClearCurrentModelCache = async () => {
+    const confirmMessage =
+      t("embedding.localModelClearConfirm", { model: localTransformersModel }) ||
+      `Clear cached files for model ${localTransformersModel}?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setLocalModelAction("clearModel");
+    try {
+      const result = await removeModelFromTransformersCache(localTransformersModel);
+      await resetTransformersEmbeddingEngine();
+      await refreshLocalModelCache();
+      showToast(
+        t("embedding.localModelClearedCurrent", { count: result.deleted }) ||
+          `Removed ${result.deleted} cached files`,
+        "info",
+      );
+    } catch (error) {
+      console.error("[SettingsEmbedding] Failed clearing current model cache:", error);
+      showToast(
+        t("embedding.localModelActionFailed") || "Failed to update local model cache",
+        "error",
+      );
+    } finally {
+      setLocalModelAction(null);
+    }
+  };
+
+  const handleClearAllModelCache = async () => {
+    const confirmMessage =
+      t("embedding.localModelClearAllConfirm") ||
+      "Clear all local model cache files?";
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setLocalModelAction("clearAll");
+    try {
+      const cleared = await clearTransformersCache();
+      await resetTransformersEmbeddingEngine();
+      await refreshLocalModelCache();
+      showToast(
+        cleared
+          ? t("embedding.localModelClearedAll") || "Cleared local model cache"
+          : t("embedding.localModelClearedNone") || "No local model cache to clear",
+        "info",
+      );
+    } catch (error) {
+      console.error("[SettingsEmbedding] Failed clearing all model cache:", error);
+      showToast(
+        t("embedding.localModelActionFailed") || "Failed to update local model cache",
+        "error",
+      );
+    } finally {
+      setLocalModelAction(null);
+    }
   };
 
   // Handle model change confirmation
@@ -290,6 +640,30 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
   const getProviderById = (providerId: string) => {
     return currentSettings.providers.instances.find((p) => p.id === providerId);
+  };
+
+  const handleLocalModelPresetChange = (nextValue: string) => {
+    if (nextValue === "__custom__") {
+      return;
+    }
+    updateEmbedding("modelId", nextValue);
+    setCustomLocalModelId(nextValue);
+    setLocalModelProgress(null);
+    setLocalModelTestResult(null);
+  };
+
+  const handleApplyCustomLocalModel = () => {
+    const modelId = customLocalModelId.trim();
+    if (!modelId) {
+      showToast(
+        t("embedding.localModelCustomRequired") || "Please enter a valid model id",
+        "error",
+      );
+      return;
+    }
+    updateEmbedding("modelId", modelId);
+    setLocalModelProgress(null);
+    setLocalModelTestResult(null);
   };
 
   const currentProvider = getProviderById(config.providerId);
@@ -398,6 +772,243 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   "Runs embeddings on-device with Transformers.js (prefers WebGPU when available). Better privacy and no external embedding API, but model download/init can be slow and memory usage can be high."
                 : t("embedding.localWarningDescTfjs") ||
                   "Runs embeddings on-device with TFJS (WebGPU → WebGL → CPU). Better privacy, but initialization is slower, memory usage is higher, and search performance may be noticeably worse."}
+            </div>
+          </div>
+        )}
+
+        {isLocalTransformers && (
+          <div className="space-y-3 border border-theme-border/60 rounded p-3 bg-theme-surface-highlight/40">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-theme-muted uppercase tracking-widest">
+                {t("embedding.localModel") || "Local Transformers Model"}
+              </label>
+              <select
+                value={localTransformersSelectValue}
+                onChange={(e) => handleLocalModelPresetChange(e.target.value)}
+                className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
+              >
+                {LOCAL_TRANSFORMERS_MODEL_OPTIONS.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.label} ({model.dimensions}
+                    {t("embedding.dimensions", "d")})
+                  </option>
+                ))}
+                <option value="__custom__">
+                  {t("embedding.localModelCustom") || "Custom Model ID"}
+                </option>
+              </select>
+              {localTransformersSelectValue === "__custom__" && (
+                <div className="flex gap-2">
+                  <input
+                    value={customLocalModelId}
+                    onChange={(e) => setCustomLocalModelId(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleApplyCustomLocalModel();
+                      }
+                    }}
+                    placeholder={
+                      t("embedding.localModelCustomPlaceholder") ||
+                      "e.g. Xenova/paraphrase-multilingual-MiniLM-L12-v2"
+                    }
+                    className="flex-1 bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs font-mono focus:border-theme-primary outline-none"
+                  />
+                  <button
+                    onClick={handleApplyCustomLocalModel}
+                    className="px-3 py-2 bg-theme-primary hover:bg-theme-primary/80 text-theme-bg rounded text-xs font-bold transition-colors"
+                  >
+                    {t("embedding.applyLocalModel") || "Apply"}
+                  </button>
+                </div>
+              )}
+              <p className="text-[10px] text-theme-muted">
+                {localTransformersModelMeta
+                  ? t("embedding.localModelHelp", {
+                      languages: localTransformersModelMeta.languages.join(", "),
+                      approxSizeMB: localTransformersModelMeta.approxSizeMB,
+                    }) ||
+                    `${localTransformersModelMeta.description} Languages: ${localTransformersModelMeta.languages.join(", ")}. Approx ${localTransformersModelMeta.approxSizeMB} MB download.`
+                  : t("embedding.localModelCustomHint") ||
+                    "Using custom model ID. Ensure the model is compatible with transformers.js feature-extraction pipeline."}
+              </p>
+            </div>
+
+            <div className="border-t border-theme-border/50 pt-3 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-bold text-theme-muted uppercase tracking-widest">
+                    {t("embedding.localModelManager") || "Local Model Manager"}
+                  </div>
+                  <p className="text-[10px] text-theme-muted mt-1">
+                    {t("embedding.localModelManagerDesc") ||
+                      "Preload, test, and clear browser cache for local embedding models."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => void refreshLocalModelCache()}
+                  disabled={isLoadingLocalModelCache || localModelAction !== null}
+                  className="px-2 py-1 border border-theme-border rounded text-[10px] text-theme-text hover:bg-theme-surface transition-colors disabled:opacity-50"
+                >
+                  {isLoadingLocalModelCache
+                    ? t("loading") || "Loading..."
+                    : t("refresh") || "Refresh"}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <button
+                  onClick={handlePrepareLocalModel}
+                  disabled={localModelAction !== null}
+                  className="px-3 py-2 border border-theme-border rounded text-xs text-theme-text hover:bg-theme-surface transition-colors disabled:opacity-50"
+                >
+                  {localModelAction === "prepare"
+                    ? t("embedding.localModelPreparing") || "Preparing..."
+                    : t("embedding.localModelPrepareButton") ||
+                      "Download / Initialize"}
+                </button>
+                <button
+                  onClick={handleTestLocalModel}
+                  disabled={localModelAction !== null}
+                  className="px-3 py-2 border border-theme-border rounded text-xs text-theme-text hover:bg-theme-surface transition-colors disabled:opacity-50"
+                >
+                  {localModelAction === "test"
+                    ? t("embedding.localModelTesting") || "Testing..."
+                    : t("embedding.localModelTestButton") || "Run Test"}
+                </button>
+              </div>
+
+              <textarea
+                value={localModelTestText}
+                onChange={(e) => setLocalModelTestText(e.target.value)}
+                rows={2}
+                className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none"
+                placeholder={
+                  t("embedding.localModelTestPlaceholder") ||
+                  "Enter sample text for embedding test..."
+                }
+              />
+
+              {localModelProgress && (
+                <div
+                  className={`rounded border px-2 py-2 text-[10px] ${
+                    localModelProgress.status === "error"
+                      ? "border-red-500/50 text-red-300"
+                      : "border-theme-border text-theme-muted"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span>{localModelProgress.message}</span>
+                    {localModelProgress.percent !== null && (
+                      <span className="font-mono">
+                        {Math.round(localModelProgress.percent)}%
+                      </span>
+                    )}
+                  </div>
+                  {localModelProgress.percent !== null && (
+                    <div className="mt-2 h-1 bg-theme-border/60 rounded overflow-hidden">
+                      <div
+                        className="h-full bg-theme-primary transition-all duration-200"
+                        style={{
+                          width: `${Math.max(0, Math.min(100, localModelProgress.percent))}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {localModelTestResult && (
+                <div
+                  className={`rounded border px-2 py-2 text-[10px] ${
+                    localModelTestResult.ok
+                      ? "border-green-500/40 text-green-300"
+                      : "border-red-500/50 text-red-300"
+                  }`}
+                >
+                  {localModelTestResult.message}
+                </div>
+              )}
+
+              <div className="border-t border-theme-border/50 pt-3 space-y-2">
+                <div className="text-xs font-bold text-theme-muted uppercase tracking-widest">
+                  {t("embedding.localModelCache") || "Model Cache"}
+                </div>
+                {!localModelCacheSummary?.available ? (
+                  <p className="text-[10px] text-theme-muted">
+                    {t("embedding.localModelCacheUnavailable") ||
+                      "Browser cache API is not available in this runtime."}
+                  </p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="rounded border border-theme-border/60 px-2 py-1">
+                        <div className="text-theme-muted">
+                          {t("embedding.localModelCacheFiles") || "Files"}
+                        </div>
+                        <div className="font-mono text-theme-text">
+                          {localModelCacheSummary.totalEntries}
+                        </div>
+                      </div>
+                      <div className="rounded border border-theme-border/60 px-2 py-1">
+                        <div className="text-theme-muted">
+                          {t("embedding.localModelCacheSize") || "Size"}
+                        </div>
+                        <div className="font-mono text-theme-text">
+                          {formatStorageBytes(localModelCacheSummary.totalBytes)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {localModelCacheSummary.models.length === 0 && (
+                      <p className="text-[10px] text-theme-muted">
+                        {t("embedding.localModelCacheEmpty") || "No cached model files."}
+                      </p>
+                    )}
+
+                    {localModelCacheSummary.models.length > 0 && (
+                      <div className="max-h-32 overflow-auto rounded border border-theme-border/40 text-[10px]">
+                        {localModelCacheSummary.models.map((item) => (
+                          <div
+                            key={item.modelId}
+                            className="flex items-center justify-between px-2 py-1 border-b last:border-b-0 border-theme-border/30"
+                          >
+                            <span className="font-mono text-theme-text truncate pr-2">
+                              {item.modelId}
+                            </span>
+                            <span className="text-theme-muted whitespace-nowrap">
+                              {item.fileCount} / {formatStorageBytes(item.totalBytes)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={handleClearCurrentModelCache}
+                        disabled={localModelAction !== null}
+                        className="px-3 py-1 border border-theme-border rounded text-[10px] text-theme-text hover:bg-theme-surface transition-colors disabled:opacity-50"
+                      >
+                        {localModelAction === "clearModel"
+                          ? t("loading") || "Loading..."
+                          : t("embedding.localModelClearCurrent") ||
+                            "Clear Current Model Cache"}
+                      </button>
+                      <button
+                        onClick={handleClearAllModelCache}
+                        disabled={localModelAction !== null}
+                        className="px-3 py-1 border border-red-500/50 rounded text-[10px] text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                      >
+                        {localModelAction === "clearAll"
+                          ? t("loading") || "Loading..."
+                          : t("embedding.localModelClearAll") ||
+                            "Clear All Model Cache"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

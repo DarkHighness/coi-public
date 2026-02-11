@@ -2,8 +2,9 @@ import type {
   LocalEmbeddingRuntimeConfig,
   LocalTransformersDevice,
 } from "../types";
+import { DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID } from "./modelCatalog";
 
-const DEFAULT_MODEL = "Xenova/all-MiniLM-L6-v2";
+const DEFAULT_MODEL = DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID;
 const DEFAULT_DEVICE_ORDER: LocalTransformersDevice[] = [
   "webgpu",
   "wasm",
@@ -11,7 +12,22 @@ const DEFAULT_DEVICE_ORDER: LocalTransformersDevice[] = [
 ];
 const DEFAULT_BATCH_SIZE = 8;
 
-interface TransformersEmbeddingEngine {
+export interface TransformersModelProgressEvent {
+  status?: string;
+  name?: string;
+  file?: string;
+  progress?: number;
+  loaded?: number;
+  total?: number;
+  task?: string;
+  model?: string;
+}
+
+export type TransformersProgressCallback = (
+  event: TransformersModelProgressEvent,
+) => void;
+
+export interface TransformersEmbeddingEngine {
   backend: "transformers_js";
   device: LocalTransformersDevice;
   model: string;
@@ -78,21 +94,121 @@ const isWebGpuAvailable = (): boolean => {
   }
 };
 
-const mapDeviceForPipeline = (device: LocalTransformersDevice): string => {
+const isCrossOriginUrl = (url: string): boolean => {
+  if (url.startsWith("blob:") || url.startsWith("/")) {
+    return false;
+  }
+
+  if (typeof location === "undefined") {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(url, location.origin);
+    return parsed.origin !== location.origin;
+  } catch {
+    return true;
+  }
+};
+
+const toBlobUrl = async (
+  inputUrl: string,
+  mimeType: string,
+): Promise<string> => {
+  if (typeof fetch === "undefined") {
+    return inputUrl;
+  }
+
+  const response = await fetch(inputUrl);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch ONNX runtime asset: ${inputUrl} (${response.status})`,
+    );
+  }
+
+  const payload =
+    mimeType === "text/javascript"
+      ? await response.text()
+      : await response.arrayBuffer();
+
+  if (
+    typeof URL === "undefined" ||
+    typeof URL.createObjectURL !== "function"
+  ) {
+    return inputUrl;
+  }
+
+  const blob = new Blob([payload], { type: mimeType });
+  return URL.createObjectURL(blob);
+};
+
+export const ensureOnnxWasmPaths = async (
+  onnxEnv: unknown,
+): Promise<void> => {
+  const wasmEnv =
+    onnxEnv &&
+    typeof onnxEnv === "object" &&
+    "wasm" in onnxEnv &&
+    (onnxEnv as any).wasm
+      ? ((onnxEnv as any).wasm as {
+          wasmPaths?: { mjs?: string; wasm?: string };
+          proxy?: boolean;
+        })
+      : null;
+
+  if (!wasmEnv || !wasmEnv.wasmPaths) {
+    return;
+  }
+
+  const mjsPath = wasmEnv.wasmPaths.mjs;
+  const wasmPath = wasmEnv.wasmPaths.wasm;
+  if (!mjsPath || !wasmPath) {
+    return;
+  }
+
+  const needsMjsBlob = isCrossOriginUrl(mjsPath);
+  const needsWasmBlob = isCrossOriginUrl(wasmPath);
+
+  if (needsMjsBlob || needsWasmBlob) {
+    try {
+      const [nextMjsPath, nextWasmPath] = await Promise.all([
+        needsMjsBlob ? toBlobUrl(mjsPath, "text/javascript") : mjsPath,
+        needsWasmBlob ? toBlobUrl(wasmPath, "application/wasm") : wasmPath,
+      ]);
+      wasmEnv.wasmPaths = {
+        mjs: nextMjsPath,
+        wasm: nextWasmPath,
+      };
+    } catch (error) {
+      console.warn(
+        "[LocalEmbedding] Failed to convert ONNX wasm paths to blob URLs:",
+        error,
+      );
+    }
+  }
+
+  wasmEnv.proxy = false;
+};
+
+export const resolveTransformersPipelineDevice = (
+  device: LocalTransformersDevice,
+): string => {
   switch (device) {
     case "webgpu":
       return "webgpu";
     case "wasm":
       return "wasm";
     case "cpu":
-      return "cpu";
+      // Browser ONNX backends expose "wasm" instead of direct "cpu".
+      return "wasm";
     default:
-      return "cpu";
+      return "wasm";
   }
 };
 
 const createEngine = async (
   runtimeConfig: ReturnType<typeof normalizeConfig>,
+  onProgress?: TransformersProgressCallback,
 ): Promise<TransformersEmbeddingEngine> => {
   const transformers = await import("@huggingface/transformers");
   const env = (transformers as any).env as
@@ -105,6 +221,7 @@ const createEngine = async (
   if (env) {
     env.allowLocalModels = false;
     env.useBrowserCache = true;
+    await ensureOnnxWasmPaths((env as any).backends?.onnx);
   }
 
   const errors: string[] = [];
@@ -116,12 +233,19 @@ const createEngine = async (
     }
 
     try {
+      const pipelineDevice = resolveTransformersPipelineDevice(device);
       const extractor = await transformers.pipeline(
         "feature-extraction",
         runtimeConfig.transformersModel,
         {
-          device: mapDeviceForPipeline(device),
+          device: pipelineDevice,
           dtype: runtimeConfig.quantized ? "q8" : "fp32",
+          progress_callback: (event: unknown) => {
+            if (!onProgress || !event || typeof event !== "object") {
+              return;
+            }
+            onProgress(event as TransformersModelProgressEvent);
+          },
         } as any,
       );
 
@@ -193,7 +317,7 @@ const createEngine = async (
 
       return {
         backend: "transformers_js",
-        device,
+        device: pipelineDevice as LocalTransformersDevice,
         model: runtimeConfig.transformersModel,
         embed,
         dispose,
@@ -211,11 +335,16 @@ const createEngine = async (
 
 export const getTransformersEmbeddingEngine = async (
   config?: Partial<LocalEmbeddingRuntimeConfig>,
+  onProgress?: TransformersProgressCallback,
 ): Promise<TransformersEmbeddingEngine> => {
   const normalized = normalizeConfig(config);
   const nextKey = createConfigKey(normalized);
 
   if (enginePromise && engineKey === nextKey) {
+    onProgress?.({
+      status: "ready",
+      model: normalized.transformersModel,
+    });
     return enginePromise;
   }
 
@@ -224,7 +353,7 @@ export const getTransformersEmbeddingEngine = async (
   }
 
   engineKey = nextKey;
-  enginePromise = createEngine(normalized);
+  enginePromise = createEngine(normalized, onProgress);
   return enginePromise;
 };
 
@@ -250,4 +379,3 @@ export const resetTransformersEmbeddingEngine = async (): Promise<void> => {
   enginePromise = null;
   engineKey = null;
 };
-

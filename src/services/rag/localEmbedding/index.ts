@@ -9,6 +9,16 @@ import {
   getTransformersEmbeddingEngine,
   resetTransformersEmbeddingEngine,
 } from "./transformersEngine";
+import {
+  DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID,
+  LOCAL_TRANSFORMERS_MODEL_OPTIONS,
+  getLocalTransformersModelMeta,
+} from "./modelCatalog";
+import {
+  clearTransformersCache,
+  getTransformersCacheSummary,
+  removeModelFromTransformersCache,
+} from "./cacheManager";
 
 const resolveBackend = (
   config?: Partial<LocalEmbeddingRuntimeConfig>,
@@ -41,4 +51,10 @@ export {
   embedTextsWithTransformers,
   getTransformersEmbeddingEngine,
   resetTransformersEmbeddingEngine,
+  DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID,
+  LOCAL_TRANSFORMERS_MODEL_OPTIONS,
+  getLocalTransformersModelMeta,
+  getTransformersCacheSummary,
+  removeModelFromTransformersCache,
+  clearTransformersCache,
 };
