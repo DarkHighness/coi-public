@@ -93,7 +93,8 @@ import {
   composeSystemInstruction,
   getOutlineRuntimeFloor,
 } from "../../../prompts/runtimeFloor";
-import { validateGenderPreferencePhase2 } from "./genderValidation";
+import { validateGenderPreferencePhase3 } from "./genderValidation";
+import { resolveOutlineToolNameAlias } from "./toolNameAlias";
 
 const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase0Schema,
@@ -1105,11 +1106,17 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
           content: unknown;
         }> = [];
 
-        const submitCalls = toolCalls.filter((tc) => tc.name === submitTool.name);
         const allowedToolNames = activeTools.map((tool) => tool.name);
+        const normalizedToolCalls = toolCalls.map((tc) => ({
+          call: tc,
+          normalizedName: resolveOutlineToolNameAlias(tc.name, allowedToolNames),
+        }));
+        const submitCalls = normalizedToolCalls.filter(
+          ({ normalizedName }) => normalizedName === submitTool.name,
+        );
 
         if (submitCalls.length > 1) {
-          for (const tc of submitCalls) {
+          for (const { call: tc } of submitCalls) {
             toolResponses.push({
               toolCallId: tc.id!,
               name: tc.name,
@@ -1122,8 +1129,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
           }
         }
 
-        for (const tc of toolCalls) {
-          if (OUTLINE_SUBMIT_TOOL_NAMES.has(tc.name) && tc.name !== submitTool.name) {
+        for (const { call: tc, normalizedName } of normalizedToolCalls) {
+          if (
+            OUTLINE_SUBMIT_TOOL_NAMES.has(normalizedName) &&
+            normalizedName !== submitTool.name
+          ) {
             toolResponses.push({
               toolCallId: tc.id!,
               name: tc.name,
@@ -1138,7 +1148,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
             continue;
           }
 
-          if (tc.name === submitTool.name) {
+          if (normalizedName === submitTool.name) {
             if (toolCalls.length !== 1) {
               toolResponses.push({
                 toolCallId: tc.id!,
@@ -1187,11 +1197,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
             const validatedData = validatedDataParsed.data;
 
-            // Phase 2: Additional gender validation
-            if (phaseNum === 2 && settings.extra?.genderPreference) {
+            // Phase 3: Additional protagonist gender validation
+            if (phaseNum === 3 && settings.extra?.genderPreference) {
               const genderPref = settings.extra.genderPreference;
               if (genderPref === "male" || genderPref === "female") {
-                const genderError = validateGenderPreferencePhase2(
+                const genderError = validateGenderPreferencePhase3(
                   validatedData,
                   genderPref,
                 );
@@ -1206,7 +1216,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               }
             }
 
-            const output = await dispatchToolCallAsync(tc.name, tc.args, {
+            const output = await dispatchToolCallAsync(normalizedName, tc.args, {
               vfsSession,
               settings,
               gameState: { forkId: -1, turnNumber: 0 } as any,
@@ -1235,9 +1245,9 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
             continue;
           }
 
-          if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(tc.name)) {
+          if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(normalizedName)) {
             const violation = validateOutlineReadOnlyVfsArgs(
-              tc.name,
+              normalizedName,
               tc.args as any,
               readOnlyVfsAllowPrefixes,
             );
@@ -1253,7 +1263,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               });
               continue;
             }
-            const output = await dispatchToolCallAsync(tc.name, tc.args, {
+            const output = await dispatchToolCallAsync(normalizedName, tc.args, {
               vfsSession,
               settings,
               gameState: { forkId: -1, turnNumber: 0 } as any,
@@ -1274,7 +1284,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
             content: {
               success: false,
               error:
-                `Unknown or disallowed tool in outline generation: ${tc.name}. ` +
+                `Unknown or disallowed tool in outline generation: ${tc.name}` +
+                (normalizedName !== tc.name
+                  ? ` (normalized to "${normalizedName}")`
+                  : "") +
+                `. ` +
                 `Allowed tools this round: ${allowedToolNames.join(", ")}`,
               code: "UNKNOWN_TOOL",
             },

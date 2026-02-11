@@ -123,11 +123,11 @@ const detectGenderSignal = (text: string): { hasMale: boolean; hasFemale: boolea
 const expectedGenderLabel = (expectedGender: Gender): string =>
   expectedGender === "male" ? "male (男性)" : "female (女性)";
 
-export const validateGenderPreferencePhase2 = (
-  phase2Data: unknown,
+export const validateGenderPreferencePhase3 = (
+  phase3Data: unknown,
   expectedGender: Gender,
 ): string | null => {
-  const playerVisible = (phase2Data as any)?.player?.profile?.visible ?? {};
+  const playerVisible = (phase3Data as any)?.player?.profile?.visible ?? {};
 
   const genderedFields: Array<{ path: string; value: unknown }> = [
     { path: "visible.race", value: playerVisible?.race },
