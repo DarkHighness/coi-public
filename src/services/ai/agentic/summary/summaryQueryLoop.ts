@@ -44,6 +44,7 @@ import { buildQuerySummaryConsistencyAnchor } from "./summaryPromptTemplates";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { readConversationIndex } from "../../../vfs/conversation";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
+import { canonicalizeLanguage } from "../../../prompts/languageCanonical";
 
 // ============================================================================
 // Main Loop
@@ -632,6 +633,7 @@ async function runSummaryLoopCore(options: {
 
 export async function runQuerySummaryLoop(input: SummaryLoopInput): Promise<SummaryAgenticLoopResult> {
   const { settings, language } = input;
+  const { code: languageCode } = canonicalizeLanguage(language);
 
   const providerInfo = getProviderConfig(settings, "story");
   if (!providerInfo) {
@@ -652,7 +654,7 @@ export async function runQuerySummaryLoop(input: SummaryLoopInput): Promise<Summ
   // Summary system instruction (small, task-focused)
   const { getSummarySystemInstruction } = await import("./summaryContext");
   const systemInstruction = getSummarySystemInstruction(
-    language,
+    languageCode,
     settings.extra?.nsfw,
     settings.extra?.detailedDescription,
   );

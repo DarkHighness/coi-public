@@ -61,9 +61,12 @@ describe("summaryContext", () => {
       "Ensure key sensory details and character emotional shifts are captured",
     );
     expect(instruction).toContain("displayText: Brief 2-3 sentences");
+    expect(instruction).toContain("in en, visible layer only");
     expect(instruction).toContain("read command protocol (hub first)");
     expect(instruction).toContain("current/skills/commands/runtime/SKILL.md");
     expect(instruction).toContain("current/skills/commands/runtime/summary/SKILL.md");
+    expect(instruction).toContain("current/skills/core/protocols/SKILL.md");
+    expect(instruction).toContain("current/skills/craft/writing/SKILL.md");
     expect(instruction).toContain("Loop quick-start (recommended)");
     expect(instruction).toContain("Read fork anchors");
     expect(instruction).toContain("current/conversation/session.jsonl");

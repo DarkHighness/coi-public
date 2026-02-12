@@ -7,39 +7,48 @@ import {
 describe("loopPromptSnapshot", () => {
   it("builds prompt snapshots for all major loops with skill guidance", () => {
     const snapshot = buildLoopPromptSnapshot({ languageCode: "en" });
+    const staticView = snapshot.static!;
+    const effectiveView = snapshot.effective!;
 
-    expect(snapshot.turn.systemInstruction).toContain(
+    expect(staticView.turn.systemInstruction).toContain(
       "current/skills/commands/runtime/SKILL.md",
     );
-    expect(snapshot.turn.systemInstruction).toContain(
+    expect(staticView.turn.systemInstruction).toContain(
       "current/skills/commands/runtime/turn/SKILL.md",
     );
 
-    expect(snapshot.cleanup.systemInstruction).toContain("<loop_quickstart>");
-    expect(snapshot.cleanup.systemInstruction).toContain(
+    expect(staticView.cleanup.systemInstruction).toContain("<loop_quickstart>");
+    expect(staticView.cleanup.systemInstruction).toContain(
       "current/skills/commands/runtime/cleanup/SKILL.md",
     );
 
-    expect(snapshot.summaryQuery.systemInstruction).toContain(
+    expect(staticView.summaryQuery.systemInstruction).toContain(
       "Loop quick-start (recommended)",
     );
-    expect(snapshot.summaryQuery.systemInstruction).toContain(
+    expect(staticView.summaryQuery.systemInstruction).toContain(
       "current/skills/commands/runtime/summary/SKILL.md",
     );
-    expect(snapshot.summaryQuery.anchorTemplate).toContain(
+    expect(staticView.summaryQuery.anchorTemplate).toContain(
       "current/conversation/session.jsonl",
     );
 
-    expect(snapshot.summaryCompact.triggerInstruction).toContain(
+    expect(staticView.summaryCompact.triggerInstruction).toContain(
       "current/skills/commands/runtime/compact/SKILL.md",
     );
-    expect(snapshot.summaryCompact.anchorTemplate).toContain(
+    expect(staticView.summaryCompact.anchorTemplate).toContain(
       "MODE CONTRACT: SESSION_COMPACT",
     );
 
-    expect(snapshot.outline.systemInstruction).toContain(
+    expect(staticView.outline.systemInstruction).toContain(
       "current/skills/commands/runtime/outline/SKILL.md",
     );
+
+    expect(effectiveView.cleanup.systemInstruction).toContain("<runtime_floor>");
+    expect(effectiveView.cleanup.systemInstruction).toContain("<loop_quickstart>");
+    expect(effectiveView.cleanup.contextInjections).toContain(
+      "CLEANUP CONSISTENCY ANCHOR",
+    );
+    expect(effectiveView.turn.contextInjections).toContain("MODE SKILL GUIDANCE");
   });
 
   it("formats snapshots to markdown with stable section headers", () => {
@@ -48,10 +57,11 @@ describe("loopPromptSnapshot", () => {
     );
 
     expect(markdown).toContain("# Loop System Prompt Snapshot");
-    expect(markdown).toContain("## turn");
-    expect(markdown).toContain("## cleanup");
-    expect(markdown).toContain("## summary.query_summary");
-    expect(markdown).toContain("## summary.session_compact.trigger");
-    expect(markdown).toContain("## outline");
+    expect(markdown).toContain("## turn (static)");
+    expect(markdown).toContain("## turn (effective)");
+    expect(markdown).toContain("## cleanup.context_injections (effective)");
+    expect(markdown).toContain("## summary.query_summary (static)");
+    expect(markdown).toContain("## summary.session_compact.trigger (effective)");
+    expect(markdown).toContain("## outline.phase_submit_example (effective)");
   });
 });

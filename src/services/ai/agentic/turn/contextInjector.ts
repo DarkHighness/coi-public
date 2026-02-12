@@ -16,6 +16,7 @@ import {
   noToolCallError,
   retconAckRequiredMessage,
 } from "../../../prompts/atoms/core";
+import { formatLoopSkillBaseline } from "../../../prompts/skills/loopSkillBaseline";
 
 // ============================================================================
 // System Message Injection
@@ -28,6 +29,7 @@ export function injectSudoModeInstruction(
   history: UnifiedMessage[],
   ragEnabled: boolean = true,
 ): void {
+  const baseline = formatLoopSkillBaseline("turn");
   history.push(
     createUserMessage(sudoModeInstruction({ toolsetId: "turn", ragEnabled })),
   );
@@ -35,7 +37,8 @@ export function injectSudoModeInstruction(
     createUserMessage(
       [
         "[SYSTEM: COMMAND SKILL REQUIRED]",
-        "Hub first: `current/skills/commands/runtime/SKILL.md`",
+        "Soft gate baseline (advisory, not blocking):",
+        ...baseline.map((line) => line.replace("- ", "- `") + "`"),
         "Before any non-read tool call, read: `current/skills/commands/runtime/sudo/SKILL.md`",
       ].join("\n"),
     ),
@@ -69,12 +72,13 @@ export function injectNormalTurnInstruction(
   );
 
   if (isCleanupMode) {
+    const cleanupBaseline = formatLoopSkillBaseline("cleanup");
     history.push(
       createUserMessage(
         [
           "[SYSTEM: COMMAND SKILL REQUIRED]",
-          "Hub first: `current/skills/commands/runtime/SKILL.md`",
-          "Before any cleanup mutation, read: `current/skills/commands/runtime/cleanup/SKILL.md`",
+          "Soft gate baseline before cleanup mutation (advisory, not blocking):",
+          ...cleanupBaseline.map((line) => line.replace("- ", "- `") + "`"),
         ].join("\n"),
       ),
     );
@@ -110,10 +114,10 @@ export function injectNormalTurnInstruction(
 
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
   if (!isCleanupMode) {
+    const turnBaseline = formatLoopSkillBaseline("turn");
     modeSkillLines.push(
       "Soft gate (advisory, not blocking) for normal turns:",
-      "Hub first (recommended): `current/skills/commands/runtime/SKILL.md`",
-      "Preferred command protocol: `current/skills/commands/runtime/turn/SKILL.md`",
+      ...turnBaseline.map((line) => line.replace("- ", "- `") + "`"),
       "If these skill files are unavailable, continue and keep tool usage protocol-compliant.",
     );
   }

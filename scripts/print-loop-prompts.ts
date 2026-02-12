@@ -3,17 +3,20 @@ import { resolve } from "node:path";
 import {
   buildLoopPromptSnapshot,
   formatLoopPromptSnapshotMarkdown,
+  type LoopPromptSnapshotViewMode,
 } from "../src/services/ai/agentic/debug/loopPromptSnapshot";
 
 type Args = {
   languageCode: string;
   summaryLanguage?: string;
   outputPath?: string;
+  viewMode: LoopPromptSnapshotViewMode;
 };
 
 const parseArgs = (argv: string[]): Args => {
   const args: Args = {
     languageCode: "en",
+    viewMode: "both",
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -33,6 +36,15 @@ const parseArgs = (argv: string[]): Args => {
       i += 1;
       continue;
     }
+    if (token === "--view" && argv[i + 1]) {
+      const value = argv[i + 1]!;
+      if (value === "static" || value === "effective" || value === "both") {
+        args.viewMode = value;
+        i += 1;
+        continue;
+      }
+      throw new Error(`Invalid --view value: ${value}`);
+    }
     if (token === "--help" || token === "-h") {
       console.log(
         [
@@ -41,6 +53,7 @@ const parseArgs = (argv: string[]): Args => {
           "Options:",
           "  --lang <code>          Base language code for turn/outline prompts (default: en)",
           "  --summary-lang <name>  Summary language label override (default derived from --lang)",
+          "  --view <mode>          static | effective | both (default: both)",
           "  --out <path>           Write markdown snapshot to file",
           "  --help                 Show this help message",
         ].join("\n"),
@@ -58,6 +71,7 @@ const main = (): void => {
   const snapshot = buildLoopPromptSnapshot({
     languageCode: args.languageCode,
     summaryLanguage: args.summaryLanguage,
+    viewMode: args.viewMode,
   });
   const markdown = formatLoopPromptSnapshotMarkdown(snapshot);
 

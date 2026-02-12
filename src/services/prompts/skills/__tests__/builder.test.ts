@@ -29,9 +29,11 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain("theme-ip-faithful-adaptation");
   });
 
-  it("renders skills catalog from skill metadata definitions to avoid drift", () => {
+  it("renders high-priority + theme catalog index from metadata definitions", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
-    const entries = getAllSkillCatalogEntries();
+    const entries = getAllSkillCatalogEntries().filter(
+      (entry) => entry.priority === "high" || entry.domain === "theme",
+    );
 
     for (const entry of entries) {
       const relativePath = entry.path
@@ -40,6 +42,8 @@ describe("skills prompt builder hygiene", () => {
       expect(prompt).toContain(`id="${entry.id}"`);
       expect(prompt).toContain(`path="${relativePath}"`);
     }
+    expect(prompt).toContain("<high_priority_index>");
+    expect(prompt).toContain("See `current/skills/index.json` for complete skill coverage.");
   });
 
   it("keeps index entries aligned with catalog metadata source", () => {
@@ -57,6 +61,7 @@ describe("skills prompt builder hygiene", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
 
     expect(prompt).toContain("Priority protocol: within each domain");
+    expect(prompt).toContain("High-priority index below is a preload accelerator");
     expect(prompt).toContain(`priority="high"`);
     expect(prompt).toContain(`priority="medium"`);
     expect(prompt).toContain("Trigger signal:");

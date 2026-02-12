@@ -1,5 +1,7 @@
 import type { SummaryLoopInput } from "./summary";
 import { buildTurnPath } from "../../../vfs/conversation";
+import { canonicalizeLanguage } from "../../../prompts/languageCanonical";
+import { formatLoopSkillBaseline } from "../../../prompts/skills/loopSkillBaseline";
 
 export const QUERY_SUMMARY_CONSISTENCY_ANCHOR_MARKER =
   "[SUMMARY CONSISTENCY ANCHOR]";
@@ -138,17 +140,23 @@ export const buildCompactModeTriggerMessage = (input: {
   nodeRange: { fromIndex: number; toIndex: number };
   targetLastSummarizedIndex: number;
 }): string => {
+  const { code: languageCode } = canonicalizeLanguage(input.language);
+  const compactBaseline = formatLoopSkillBaseline("summary_compact", {
+    ordered: true,
+  })
+    .map((line) => line.replace(/\)\s+/, ") \"") + "\"")
+    .join("\n");
+
   return (
     `${COMPACT_TRIGGER}\n` +
     `You are entering **session compaction** mode.\n\n` +
     `Loop quick-start (recommended):\n` +
-    `1) Read "current/skills/commands/runtime/SKILL.md" (hub).\n` +
-    `2) Read "current/skills/commands/runtime/compact/SKILL.md" (compact protocol).\n` +
-    `3) If details are uncertain, do bounded read-only verification on current fork.\n` +
-    `4) Finish once via "vfs_commit_summary" as LAST tool call.\n\n` +
+    `${compactBaseline}\n` +
+    `5) If details are uncertain, do bounded read-only verification on current fork.\n` +
+    `6) Finish once via "vfs_commit_summary" as LAST tool call.\n\n` +
     `Requirements:\n` +
     `- Produce exactly ONE summary by calling "vfs_commit_summary" as your LAST tool call.\n` +
-    `- The summary MUST be in ${input.language}.\n` +
+    `- The summary MUST be in ${languageCode}.\n` +
     `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
     `- Runtime will set lastSummarizedIndex = ${input.targetLastSummarizedIndex}.\n` +
     `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +

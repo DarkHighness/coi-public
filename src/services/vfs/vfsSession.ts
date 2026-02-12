@@ -1,4 +1,4 @@
-import { applyPatch } from "fast-json-patch";
+import * as fastJsonPatch from "fast-json-patch";
 import type { Operation } from "fast-json-patch";
 import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
@@ -113,6 +113,18 @@ const DEFAULT_SYSTEM_WRITE_CONTEXT: VfsWriteContext = {
   mode: "normal",
   allowFinishGuardedWrite: true,
 };
+
+const applyPatchFn: typeof fastJsonPatch.applyPatch = (() => {
+  if (typeof fastJsonPatch.applyPatch === "function") {
+    return fastJsonPatch.applyPatch;
+  }
+  const fromDefault = (fastJsonPatch as { default?: { applyPatch?: typeof fastJsonPatch.applyPatch } }).default
+    ?.applyPatch;
+  if (typeof fromDefault === "function") {
+    return fromDefault;
+  }
+  throw new Error("fast-json-patch applyPatch export is unavailable");
+})();
 
 type OutOfBandPathChangeType = "added" | "deleted" | "modified";
 
@@ -710,7 +722,7 @@ export class VfsSession {
       throw new Error(`Invalid JSON content: ${canonicalPath}`, { cause: error });
     }
 
-    const patched = applyPatch(document, patchOps, true, false).newDocument;
+    const patched = applyPatchFn(document, patchOps, true, false).newDocument;
     const schema = getSchemaForPath(canonicalPath);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;

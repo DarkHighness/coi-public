@@ -48,6 +48,7 @@ import {
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { readConversationIndex } from "../../../vfs/conversation";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
+import { canonicalizeLanguage } from "../../../prompts/languageCanonical";
 
 // ============================================================================
 // Main Loop
@@ -638,6 +639,7 @@ export async function runCompactSummaryLoop(
   input: SummaryLoopInput,
 ): Promise<SummaryAgenticLoopResult> {
   const { settings, language } = input;
+  const { code: languageCode } = canonicalizeLanguage(language);
 
   const providerInfo = getProviderConfig(settings, "story");
   if (!providerInfo) {
@@ -671,7 +673,7 @@ export async function runCompactSummaryLoop(
 
   const trigger = createUserMessage(
     buildCompactModeTriggerMessage({
-      language,
+      language: languageCode,
       nodeRange: input.nodeRange,
       targetLastSummarizedIndex,
     }),

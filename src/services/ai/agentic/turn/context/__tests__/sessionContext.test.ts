@@ -151,7 +151,9 @@ describe("sessionContext", () => {
           part.text.includes("[SYSTEM: COLD_START_SOFT_GUIDANCE]"),
       ) as { type: "text"; text: string } | undefined;
     expect(coldStartText?.text).toContain("current/skills/commands/runtime/SKILL.md");
+    expect(coldStartText?.text).toContain("current/skills/commands/runtime/turn/SKILL.md");
     expect(coldStartText?.text).toContain("current/skills/core/protocols/SKILL.md");
+    expect(coldStartText?.text).toContain("current/skills/craft/writing/SKILL.md");
     expect(coldStartText?.text).toContain("current/conversation/session.jsonl");
     expect(coldStartText?.text).toContain("lines/search windows");
     expect(initializedHistory).toEqual(

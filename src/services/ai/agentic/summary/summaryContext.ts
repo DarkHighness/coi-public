@@ -17,6 +17,8 @@ import { narrativeCausality } from "../../../prompts/atoms/narrative";
 import { languageEnforcement } from "../../../prompts/atoms/cultural";
 import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
 import { VFS_TOOLSETS, formatVfsToolsForPrompt } from "../../../vfsToolsets";
+import { canonicalizeLanguage } from "../../../prompts/languageCanonical";
+import { formatLoopSkillBaseline } from "../../../prompts/skills/loopSkillBaseline";
 
 // ============================================================================
 // System Instruction
@@ -27,6 +29,14 @@ type SummarySystemInstructionInput = {
   nsfw?: boolean;
   detailedDescription?: boolean;
 };
+
+const summaryBaselineLines = formatLoopSkillBaseline("summary_query", {
+  ordered: true,
+}).map((line) => line.replace(/\)\s+/, ") `") + "`");
+
+const summaryBaselineBullets = formatLoopSkillBaseline("summary_query").map(
+  (line) => line.replace("- ", "- `") + "`",
+);
 
 const summaryRoleAtom = defineAtom(
   {
@@ -69,17 +79,15 @@ Finish tool:
 5. \`vfs_commit_summary\` - Finish by appending a summary to \`current/summary/state.json\`
 
 Loop quick-start (recommended):
-1. Read \`current/skills/commands/runtime/SKILL.md\` (hub).
-2. Read \`current/skills/commands/runtime/summary/SKILL.md\` (summary protocol).
-3. Read fork anchors (\`current/conversation/index.json\`, turn files, summary state).
-4. Draft summary fields, then finish once with \`vfs_commit_summary\` as the LAST tool call.
+${summaryBaselineLines.join("\n")}
+5) Read fork anchors (\`current/conversation/index.json\`, turn files, summary state).
+6) Draft summary fields, then finish once with \`vfs_commit_summary\` as the LAST tool call.
 
 When you have enough information, call \`vfs_commit_summary\`.
 It MUST be your LAST tool call.
 
 Before any summary mutation, read command protocol (hub first):
-- \`current/skills/commands/runtime/SKILL.md\`
-- \`current/skills/commands/runtime/summary/SKILL.md\`
+${summaryBaselineBullets.join("\n")}
 
 When historical continuity is unclear, query \`current/conversation/session.jsonl\` in windows:
 - Use \`vfs_read\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.
@@ -124,10 +132,10 @@ const summaryCriticalRulesAtom = defineAtom(
     source: "ai/agentic/summary/summaryContext.ts",
     exportName: "summaryCriticalRulesAtom",
   },
-  ({ language }: { language: string }) => `<critical_rules>
+  ({ languageCode }: { languageCode: string }) => `<critical_rules>
 - VISIBLE layer: Only what the protagonist directly witnessed, learned, or experienced
 - HIDDEN layer: Behind-the-scenes events, NPC secret actions, unrevealed truths
-- displayText: Brief 2-3 sentences for UI, in ${language}, visible layer only
+- displayText: Brief 2-3 sentences for UI, in ${languageCode}, visible layer only
 - Track ALL significant events, don't miss important details
 - Note character development and relationship changes
 - Capture world state changes
@@ -153,6 +161,7 @@ const summarySystemInstructionAtom = defineAtom(
     exportName: "summarySystemInstructionAtom",
   },
   ({ language, nsfw, detailedDescription }: SummarySystemInstructionInput, trace) => {
+    const { code: canonicalLanguage } = canonicalizeLanguage(language);
     const header = [
       "You are a diligent chronicler tasked with summarizing story events in a world simulation.",
       nsfw
@@ -169,12 +178,12 @@ const summarySystemInstructionAtom = defineAtom(
       header,
       trace.record(summaryRoleAtom),
       trace.record(summaryToolsAtom),
-      trace.record(summaryCriticalRulesAtom, { language }),
+      trace.record(summaryCriticalRulesAtom, { languageCode: canonicalLanguage }),
       trace.record(gmKnowledge),
       trace.record(entityDefinitions),
       trace.record(summaryStyleInjectionAtom),
       trace.record(narrativeCausality),
-      trace.record(languageEnforcement, { language }),
+      trace.record(languageEnforcement, { language: canonicalLanguage }),
     ]
       .filter(Boolean)
       .join("\n\n");
