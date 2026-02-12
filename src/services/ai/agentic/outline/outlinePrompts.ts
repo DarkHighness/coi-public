@@ -5,6 +5,7 @@
  */
 
 import {
+  getOutlinePhasePreludePrompt,
   getOutlinePhase0Prompt,
   getOutlinePhase1Prompt,
   getOutlinePhase2WorldFoundationPrompt,
@@ -16,55 +17,83 @@ import {
   getOutlinePhase8Prompt,
   getOutlinePhase9Prompt,
 } from "../../../prompts/index";
+import type { OutlinePhaseSharedContext } from "../../../prompts/index";
 
 /**
  * Get the prompt for a specific outline phase
  */
 export function getPhasePrompt(
   phase: number,
-  theme: string,
-  language: string,
   submitToolName: string,
-  customContext?: string,
-  hasImageContext?: boolean,
-  protagonistFeature?: string,
+  sharedContext?: OutlinePhaseSharedContext,
 ): string | null {
+  if (!sharedContext) return null;
+
+  const {
+    theme,
+    language,
+    customContext,
+    hasImageContext,
+    protagonistFeature,
+  } = sharedContext;
+
+  let phaseBody: string | null = null;
   switch (phase) {
     case 0:
-      return getOutlinePhase0Prompt(language, submitToolName);
+      phaseBody = getOutlinePhase0Prompt(language, submitToolName);
+      break;
     case 1:
-      return getOutlinePhase1Prompt(
+      phaseBody = getOutlinePhase1Prompt(
         theme,
         language,
         customContext,
-        hasImageContext,
+        Boolean(hasImageContext),
         protagonistFeature,
         submitToolName,
       );
+      break;
     case 2:
-      return getOutlinePhase2WorldFoundationPrompt(
+      phaseBody = getOutlinePhase2WorldFoundationPrompt(
         theme,
         language,
         customContext,
-        hasImageContext,
+        Boolean(hasImageContext),
         protagonistFeature,
         submitToolName,
       );
+      break;
     case 3:
-      return getOutlinePhase2Prompt(protagonistFeature, submitToolName);
+      phaseBody = getOutlinePhase2Prompt(protagonistFeature, submitToolName);
+      break;
     case 4:
-      return getOutlinePhase3Prompt(submitToolName);
+      phaseBody = getOutlinePhase3Prompt(submitToolName);
+      break;
     case 5:
-      return getOutlinePhase4Prompt(submitToolName);
+      phaseBody = getOutlinePhase4Prompt(submitToolName);
+      break;
     case 6:
-      return getOutlinePhase5Prompt(submitToolName);
+      phaseBody = getOutlinePhase5Prompt(submitToolName);
+      break;
     case 7:
-      return getOutlinePhase7Prompt(submitToolName);
+      phaseBody = getOutlinePhase7Prompt(submitToolName);
+      break;
     case 8:
-      return getOutlinePhase8Prompt(submitToolName);
+      phaseBody = getOutlinePhase8Prompt(submitToolName);
+      break;
     case 9:
-      return getOutlinePhase9Prompt(hasImageContext, submitToolName);
+      phaseBody = getOutlinePhase9Prompt(
+        Boolean(hasImageContext),
+        submitToolName,
+      );
+      break;
     default:
       return null;
   }
+
+  const phasePrelude = getOutlinePhasePreludePrompt(
+    phase,
+    submitToolName,
+    sharedContext,
+  );
+  return `${phasePrelude}\n\n${phaseBody}`;
 }

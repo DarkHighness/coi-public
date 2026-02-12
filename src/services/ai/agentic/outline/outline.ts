@@ -25,7 +25,10 @@ import {
 
 import { OutlinePhase0 } from "../../../schemas";
 
-import { getOutlineSystemInstruction } from "../../../prompts/index";
+import {
+  getOutlineSystemInstruction,
+  type OutlinePhaseSharedContext,
+} from "../../../prompts/index";
 
 import { THEMES } from "../../../../utils/constants";
 
@@ -607,6 +610,32 @@ export const generateStoryOutlinePhased = async (
       : undefined,
   });
 
+  const outlinePhaseSharedContext: OutlinePhaseSharedContext = {
+    language,
+    theme,
+    customContext,
+    hasImageContext: Boolean(options.seedImageBase64),
+    isRestricted,
+    narrativeStyle: resolvedNarrativeStyle,
+    backgroundTemplate: themeDataBackgroundTemplate,
+    example: themeDataExample,
+    worldSetting: themeDataWorldSetting,
+    worldDisposition,
+    isNSFW: settings.extra?.nsfw,
+    isDetailedDescription: settings.extra?.detailedDescription,
+    genderPreference: settings.extra?.genderPreference,
+    protagonistFeature: options.protagonistFeature,
+    themeCategory: themeConfig?.categories?.[0],
+    themeKey: theme,
+    worldDispositionPreset: effectiveWorldDispositionPreset,
+    playerMaliceProfile,
+    playerMalicePreset: effectivePlayerMalicePreset,
+    playerMaliceIntensity: effectivePlayerMaliceIntensity,
+    vfsReadOnly: readOnlyVfsEnabled
+      ? { enabled: true, allowedRoots: readOnlyVfsAllowPrefixes }
+      : undefined,
+  };
+
   const runtimeFloor = getOutlineRuntimeFloor();
 
   const systemDefaultInjectionEnabled =
@@ -986,12 +1015,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
     // Add phase-specific prompt
     let phasePrompt = getPhasePrompt(
       phaseNum,
-      theme,
-      language,
       submitTool.name,
-      customContext,
-      !!options.seedImageBase64,
-      options.protagonistFeature,
+      outlinePhaseSharedContext,
     );
     if (phasePrompt) {
       // Resume/recovery runs can carry stale prompts from older phases.

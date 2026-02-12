@@ -1,24 +1,32 @@
 import { describe, expect, it } from "vitest";
 import {
   getOutlinePhase1Prompt,
+  getOutlinePhasePreludePrompt,
   getOutlineSystemInstruction,
 } from "../storyOutline";
 
 describe("outline tool instruction consistency", () => {
-  it("does not ask for raw JSON text output in tool-calling mode", () => {
-    const prompt = getOutlineSystemInstruction({ language: "en" });
+  it("keeps system shell minimal and puts tool protocol in per-phase prelude", () => {
+    const systemPrompt = getOutlineSystemInstruction({ language: "en" });
+    const phasePrelude = getOutlinePhasePreludePrompt(
+      1,
+      "vfs_commit_outline_phase_1",
+      {
+        theme: "fantasy",
+        language: "en",
+        customContext: "ctx",
+      },
+    );
 
-    expect(prompt).not.toContain("ONLY THE RAW JSON");
-    expect(prompt).not.toContain("Failure to output raw JSON");
-    expect(prompt).toContain("You MUST call the currently provided submit tool");
-    expect(prompt).toContain("Tool names are exact and unprefixed");
-    expect(prompt).toContain("Do NOT prepend any namespace/prefix");
-    expect(prompt).toContain("Return no extra text outside the tool call");
-    expect(prompt).toContain("outline generation flow");
-    expect(prompt).toContain("does NOT apply to normal turn/cleanup/summary flows");
-    expect(prompt).toContain("Soft-gate protocol accelerators (advisory, not blocking)");
-    expect(prompt).toContain("Loop quick-start (recommended)");
-    expect(prompt).toContain("commands/runtime/outline/SKILL.md");
+    expect(systemPrompt).not.toContain("ONLY THE RAW JSON");
+    expect(systemPrompt).toContain("You are in OUTLINE MODE");
+    expect(systemPrompt).toContain("authoritative contract for this round");
+    expect(systemPrompt).toContain("<language_target>en</language_target>");
+
+    expect(phasePrelude).toContain("[PHASE 1 PRELUDE: ROUND CONTRACT]");
+    expect(phasePrelude).toContain("Use native function/tool calling");
+    expect(phasePrelude).toContain("Tool names are exact and unprefixed");
+    expect(phasePrelude).toContain("vfs_commit_outline_phase_1");
   });
 
   it("phase 1 prompt enforces master plan markdown and governance metadata", () => {

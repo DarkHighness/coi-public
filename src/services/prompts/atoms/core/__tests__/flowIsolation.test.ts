@@ -9,15 +9,14 @@ import { getOutlineRuntimeFloor, getTurnRuntimeFloor } from "../../../runtimeFlo
 import { stateManagement } from "../stateManagement";
 
 describe("prompt flow isolation", () => {
-  it("keeps outline exception only in outline prompt", () => {
+  it("keeps outline role+contract only in outline prompt shell", () => {
     const outlinePrompt = getOutlineSystemInstruction({ language: "en" });
 
+    expect(outlinePrompt).toContain("You are in OUTLINE MODE");
     expect(outlinePrompt).toContain(
-      "Outline-phase submit is a controlled elevated-write exception",
+      "Treat the current phase user message as the authoritative contract",
     );
-    expect(outlinePrompt).toContain(
-      "does NOT apply to normal turn/cleanup/summary flows",
-    );
+    expect(outlinePrompt).not.toContain("Loop quick-start (recommended)");
   });
 
   it("does not leak outline exception phrase into turn/cleanup/system prompts", () => {

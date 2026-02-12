@@ -16,13 +16,32 @@ const REQUIRED_ATOMS: Record<string, string[]> = {
     "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedPrimer",
   ],
   "outline.system": [
-    "atoms/core/worldConsistency#worldConsistency",
-    "atoms/core/dualLayerReality#dualLayerReality",
-    "atoms/core/hiddenLayerQuality#hiddenLayerQuality",
+    "atoms/outline/system#getOutlineSystemInstruction",
+  ],
+  "outline.phase0": ["atoms/cultural/languageEnforcement#languageEnforcement"],
+  "outline.phase1": [
     "atoms/core/gameSystemDesign#gameSystemDesign",
-    "atoms/core/depthEnforcement#depthEnforcement",
-    "atoms/core/creativeModeVsRestricted#creativeModeVsRestricted",
-    "atoms/core/livingWorld#livingWorld",
+    "atoms/cultural/adaptation#culturalAdaptation",
+    "atoms/cultural/languageEnforcement#languageEnforcementPrimer",
+    "atoms/narrative/narrativeScaleSelection#narrativeScaleSelection",
+  ],
+  "outline.phase2.worldFoundation": [
+    "atoms/outline/phase2#getOutlinePhase2WorldFoundationPrompt",
+  ],
+  "outline.phase3.playerActor": ["atoms/entities/characterDesign#characterDesign"],
+  "outline.phase4.locations": ["atoms/entities/locationDesign#locationDesign"],
+  "outline.phase5.factions": ["atoms/entities/factionDesign#factionDesign"],
+  "outline.phase6.npcs": ["atoms/entities/npcDesign#npcDesign"],
+  "outline.phase7.questsKnowledge": [
+    "atoms/entities/questDesign#questDesign",
+    "atoms/entities/knowledgeDesign#knowledgeDesign",
+  ],
+  "outline.phase8.timelineAtmosphere": [
+    "atoms/narrative/temporalPhilosophy#temporalPhilosophy",
+    "atoms/entities/timelineDesign#timelineDesign",
+  ],
+  "outline.phase9.openingNarrative": [
+    "atoms/narrative/openingScene#openingScene",
   ],
   "summary.system": [
     "atoms/core/gmKnowledge#gmKnowledge",
