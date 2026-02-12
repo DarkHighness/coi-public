@@ -15,11 +15,11 @@ import {
   buildSkillsIndexSeed,
   type SkillIndexEntry,
 } from "./manifest";
-import { generateVfsSkillSeeds, getSkillCatalogEntries } from "./generator";
 import {
-  buildSkillCatalogEntryFromMarkdown,
+  generateVfsSkillSeeds,
+  getSkillCatalogEntries,
   type SkillCatalogEntry,
-} from "./skillMetadata";
+} from "./generator";
 
 // ============================================================================
 // Theme Skills (Deepened - 10 Core Themes)
@@ -1220,7 +1220,7 @@ ${mdList(def.antiPatterns)}
 ${patternsMd}${clocksMd}${checklistMd}${templatesMd ? `${templatesMd}\n` : ""}${examplesMd ? `${examplesMd}\n` : ""}`;
 }
 
-function buildThemeSkillSeeds(): GlobalSkillSeed[] {
+function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
   const defs: ThemeSkillDef[] = [
     {
       slug: "fantasy",
@@ -3492,7 +3492,7 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
     },
   ];
 
-  const resolvedDefs: ThemeSkillResolvedDef[] = defs.map((def) => {
+  return defs.map((def) => {
     const depth = THEME_DEPTH[def.slug];
     if (!depth) {
       throw new Error(`Missing THEME_DEPTH entry for theme slug: ${def.slug}`);
@@ -3502,8 +3502,10 @@ function buildThemeSkillSeeds(): GlobalSkillSeed[] {
       ...depth,
     };
   });
+}
 
-  return resolvedDefs.map((def) => ({
+function buildThemeSkillSeeds(): GlobalSkillSeed[] {
+  return buildResolvedThemeSkillDefs().map((def) => ({
     path: `skills/theme/${def.slug}/SKILL.md`,
     contentType: "text/markdown",
     content: buildThemeSkillMarkdown(def),
@@ -3517,10 +3519,18 @@ const THEME_SKILLS: GlobalSkillSeed[] = buildThemeSkillSeeds();
 // ============================================================================
 
 const buildThemeCatalogEntries = (): SkillCatalogEntry[] => {
-  return THEME_SKILLS.map((skill) =>
-    buildSkillCatalogEntryFromMarkdown(skill.path, skill.content),
-  )
-    .filter((entry): entry is SkillCatalogEntry => entry !== null)
+  return buildResolvedThemeSkillDefs()
+    .map((def) => ({
+      id: `theme-${def.slug}`,
+      title: `${def.title} Theme`,
+      tags: ["theme", def.slug, ...(def.aliases ?? [])],
+      path: `current/skills/theme/${def.slug}/SKILL.md`,
+      domain: "theme",
+      priority: "medium",
+      description: def.description,
+      whenToLoad: def.whenToLoad,
+      seeAlso: [],
+    }))
     .sort((a, b) => a.id.localeCompare(b.id));
 };
 
