@@ -33,6 +33,18 @@ import { loadRuntimeStats, persistRuntimeStats } from "./runtimeStatsStore";
 import { buildRestoredGameState } from "./vfsRestoreState";
 
 const GENERATED_SAVE_NAME_PATTERN = /^save(?:\s+\d+)?$/i;
+const PLACEHOLDER_SLOT_NAMES = new Set([
+  "unknown",
+  "未知",
+  "untitled",
+  "无标题",
+  "loading...",
+  "加载中",
+  "initializing...",
+  "初始化中",
+  "pending",
+  "待定",
+]);
 
 export const normalizeSlotName = (value: unknown): string | null => {
   if (typeof value !== "string") return null;
@@ -40,10 +52,17 @@ export const normalizeSlotName = (value: unknown): string | null => {
   return trimmed ? trimmed : null;
 };
 
+export const isPlaceholderSlotName = (value: unknown): boolean => {
+  const normalized = normalizeSlotName(value);
+  if (!normalized) return true;
+  return PLACEHOLDER_SLOT_NAMES.has(normalized.toLowerCase());
+};
+
 export const shouldReplaceGeneratedSlotName = (value: unknown): boolean => {
   const normalized = normalizeSlotName(value);
   if (!normalized) return true;
-  return GENERATED_SAVE_NAME_PATTERN.test(normalized);
+  if (GENERATED_SAVE_NAME_PATTERN.test(normalized)) return true;
+  return isPlaceholderSlotName(normalized);
 };
 
 export const deriveSlotNameFromState = (
@@ -53,8 +72,14 @@ export const deriveSlotNameFromState = (
     | undefined,
 ): string | null => {
   const outlineTitle = normalizeSlotName(state?.outline?.title);
-  if (outlineTitle) return outlineTitle;
-  return normalizeSlotName(state?.currentLocation);
+  if (outlineTitle && !isPlaceholderSlotName(outlineTitle)) return outlineTitle;
+
+  const currentLocation = normalizeSlotName(state?.currentLocation);
+  if (currentLocation && !isPlaceholderSlotName(currentLocation)) {
+    return currentLocation;
+  }
+
+  return null;
 };
 
 export const useVfsPersistence = (

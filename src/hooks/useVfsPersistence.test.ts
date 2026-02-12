@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   deriveSlotNameFromState,
+  isPlaceholderSlotName,
   normalizeSlotName,
   shouldReplaceGeneratedSlotName,
 } from "./useVfsPersistence";
@@ -17,6 +18,9 @@ describe("useVfsPersistence slot naming", () => {
     expect(shouldReplaceGeneratedSlotName("Save 1")).toBe(true);
     expect(shouldReplaceGeneratedSlotName("save 22")).toBe(true);
     expect(shouldReplaceGeneratedSlotName("Save")).toBe(true);
+    expect(shouldReplaceGeneratedSlotName("unknown")).toBe(true);
+    expect(shouldReplaceGeneratedSlotName("Unknown")).toBe(true);
+    expect(shouldReplaceGeneratedSlotName("未知")).toBe(true);
     expect(shouldReplaceGeneratedSlotName("")).toBe(true);
     expect(shouldReplaceGeneratedSlotName(undefined)).toBe(true);
   });
@@ -43,6 +47,14 @@ describe("useVfsPersistence slot naming", () => {
     expect(name).toBe("Crimson Alley");
   });
 
+  it("skips placeholder outline title and uses location", () => {
+    const name = deriveSlotNameFromState({
+      outline: { title: "unknown" } as any,
+      currentLocation: "Moon Harbor",
+    });
+    expect(name).toBe("Moon Harbor");
+  });
+
   it("returns null when neither outline title nor location is available", () => {
     expect(
       deriveSlotNameFromState({
@@ -50,8 +62,21 @@ describe("useVfsPersistence slot naming", () => {
         currentLocation: "",
       }),
     ).toBeNull();
+    expect(
+      deriveSlotNameFromState({
+        outline: { title: "Unknown" } as any,
+        currentLocation: "未知",
+      }),
+    ).toBeNull();
 
     expect(deriveSlotNameFromState(null)).toBeNull();
     expect(deriveSlotNameFromState(undefined)).toBeNull();
+  });
+
+  it("detects placeholder slot names", () => {
+    expect(isPlaceholderSlotName("unknown")).toBe(true);
+    expect(isPlaceholderSlotName("未知")).toBe(true);
+    expect(isPlaceholderSlotName("untitled")).toBe(true);
+    expect(isPlaceholderSlotName("Moon Harbor")).toBe(false);
   });
 });
