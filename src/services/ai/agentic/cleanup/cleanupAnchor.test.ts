@@ -35,6 +35,7 @@ describe("generateEntityCleanup anchor and context forwarding", () => {
     const [, calledContext] = mockedGenerateAdventureTurn.mock.calls[0] as any[];
 
     expect(calledContext.userAction).toContain("<cleanup_anchor>");
+    expect(calledContext.userAction).toContain("<loop_quickstart>");
     expect(calledContext.userAction).toContain("<target_fork_id>5</target_fork_id>");
     expect(calledContext.userAction).toContain(
       "<target_turn_number>42</target_turn_number>",

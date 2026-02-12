@@ -68,6 +68,12 @@ Read-only tools:
 Finish tool:
 5. \`vfs_commit_summary\` - Finish by appending a summary to \`current/summary/state.json\`
 
+Loop quick-start (recommended):
+1. Read \`current/skills/commands/runtime/SKILL.md\` (hub).
+2. Read \`current/skills/commands/runtime/summary/SKILL.md\` (summary protocol).
+3. Read fork anchors (\`current/conversation/index.json\`, turn files, summary state).
+4. Draft summary fields, then finish once with \`vfs_commit_summary\` as the LAST tool call.
+
 When you have enough information, call \`vfs_commit_summary\`.
 It MUST be your LAST tool call.
 

@@ -18,6 +18,7 @@
     "test:guardrails": "vitest run src/services/providers/__tests__/toolSchemaHint.test.ts src/services/providers/__tests__/allToolSchemaHints.test.ts src/services/providers/__tests__/providerSchemaGuardrails.test.ts src/services/prompts/__tests__/outlineToolInstructionConsistency.test.ts src/services/prompts/__tests__/toolCallingPromptGuardrails.test.ts src/services/ai/agentic/outline/__tests__/outlineTaskInstructionGuardrails.test.ts src/services/ai/__tests__/modelPromptMatching.test.ts src/services/vfs/__tests__/vfsSchemaGuardrails.test.ts",
     "prompts:deps:build": "tsx scripts/build-prompt-atom-graph.ts",
     "prompts:deps:check": "tsx scripts/build-prompt-atom-graph.ts --check",
+    "prompts:loops:print": "node --import tsx scripts/print-loop-prompts.ts",
     "prompts:trace:check": "tsx scripts/check-atom-trace-style.ts",
     "skills:atoms:check": "tsx scripts/check-skill-target-atoms.ts"  },
   "dependencies": {

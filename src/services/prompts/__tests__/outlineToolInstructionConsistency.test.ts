@@ -17,6 +17,7 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).toContain("outline generation flow");
     expect(prompt).toContain("does NOT apply to normal turn/cleanup/summary flows");
     expect(prompt).toContain("Soft-gate protocol accelerators (advisory, not blocking)");
+    expect(prompt).toContain("Loop quick-start (recommended)");
     expect(prompt).toContain("commands/runtime/outline/SKILL.md");
   });
 

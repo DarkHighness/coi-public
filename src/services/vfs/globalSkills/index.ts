@@ -6,7 +6,6 @@
  */
 
 import type { VfsFile, VfsFileMap } from "../types";
-import { toCurrentPath } from "../currentAlias";
 import { hashContent, normalizeVfsPath } from "../utils";
 import type { GlobalSkillSeed } from "./types";
 import {
@@ -14,8 +13,13 @@ import {
   SKILLS_STYLE_SEED,
   SKILLS_TAXONOMY_SEED,
   buildSkillsIndexSeed,
+  type SkillIndexEntry,
 } from "./manifest";
-import { generateVfsSkillSeeds, getSkillIndexEntries } from "./generator";
+import { generateVfsSkillSeeds, getSkillCatalogEntries } from "./generator";
+import {
+  buildSkillCatalogEntryFromMarkdown,
+  type SkillCatalogEntry,
+} from "./skillMetadata";
 
 // ============================================================================
 // Theme Skills (Deepened - 10 Core Themes)
@@ -3512,35 +3516,36 @@ const THEME_SKILLS: GlobalSkillSeed[] = buildThemeSkillSeeds();
 // Build Complete Skills Set
 // ============================================================================
 
-function titleizeThemeSlug(slug: string): string {
-  return slug
-    .split("-")
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+const buildThemeCatalogEntries = (): SkillCatalogEntry[] => {
+  return THEME_SKILLS.map((skill) =>
+    buildSkillCatalogEntryFromMarkdown(skill.path, skill.content),
+  )
+    .filter((entry): entry is SkillCatalogEntry => entry !== null)
+    .sort((a, b) => a.id.localeCompare(b.id));
+};
+
+export function getAllSkillCatalogEntries(): SkillCatalogEntry[] {
+  const merged = new Map<string, SkillCatalogEntry>();
+  for (const entry of [...getSkillCatalogEntries(), ...buildThemeCatalogEntries()]) {
+    merged.set(entry.id, entry);
+  }
+  return [...merged.values()];
+}
+
+export function getAllSkillIndexEntries(): SkillIndexEntry[] {
+  return getAllSkillCatalogEntries().map((entry) => ({
+    id: entry.id,
+    title: entry.title,
+    tags: entry.tags,
+    path: entry.path,
+  }));
 }
 
 function buildAllSkillSeeds(): GlobalSkillSeed[] {
   // Generate skills from atoms
   const atomSkills = generateVfsSkillSeeds();
 
-  // Get skill index entries for the catalog
-  const atomIndexEntries = getSkillIndexEntries();
-
-  // Add theme index entries
-  const themeIndexEntries = THEME_SKILLS.map((skill) => {
-    const pathParts = skill.path.split("/");
-    const themeName = pathParts[pathParts.length - 2]; // e.g., "fantasy"
-    return {
-      id: `theme-${themeName}`,
-      title: `${titleizeThemeSlug(themeName)} Theme`,
-      tags: ["theme", themeName],
-      path: toCurrentPath(skill.path),
-    };
-  });
-
-  // Combine all index entries
-  const allIndexEntries = [...atomIndexEntries, ...themeIndexEntries];
+  const allIndexEntries = getAllSkillIndexEntries();
 
   // Build the complete skills set
   return [

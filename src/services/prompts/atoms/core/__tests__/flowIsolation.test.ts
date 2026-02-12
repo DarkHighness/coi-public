@@ -31,10 +31,12 @@ describe("prompt flow isolation", () => {
   });
 
   it("keeps runtime floor skill guidance as soft-gate (non-blocking)", () => {
+    expect(getTurnRuntimeFloor()).toContain("Loop quick-start (recommended)");
     expect(getTurnRuntimeFloor()).toContain("Soft gate (advisory, not blocking)");
     expect(getTurnRuntimeFloor()).toContain("commands/runtime/turn/SKILL.md");
     expect(getTurnRuntimeFloor()).toContain("Structured error recovery flow");
 
+    expect(getOutlineRuntimeFloor()).toContain("Loop quick-start (recommended)");
     expect(getOutlineRuntimeFloor()).toContain("Soft gate (advisory, not blocking)");
     expect(getOutlineRuntimeFloor()).toContain("commands/runtime/outline/SKILL.md");
     expect(getOutlineRuntimeFloor()).toContain("Structured error recovery flow");

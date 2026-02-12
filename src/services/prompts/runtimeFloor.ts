@@ -10,6 +10,11 @@ You MUST follow these runtime protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
 - End turns ONLY via \`vfs_commit_turn\`, and it must be the LAST tool call.
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
+- Loop quick-start (recommended):
+  1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
+  2) Read \`current/skills/commands/runtime/turn/SKILL.md\` (turn protocol).
+  3) Build a short tool plan: read anchors -> mutate -> verify -> finish.
+  4) Keep one finish call, and make it last.
 - Soft gate (advisory, not blocking): before first non-read mutation, prefer reading \`current/skills/commands/runtime/SKILL.md\` and \`current/skills/commands/runtime/turn/SKILL.md\`.
 - Structured error recovery flow (when a tool returns \`{ success:false, code, error }\`):
   1) Do NOT finish yet.
@@ -24,6 +29,10 @@ You MUST follow these outline protocol constraints:
 - In each phase, submit ONLY with the phase-specific submit tool provided this round.
 - Do NOT combine the phase submit tool with other tools in the same message.
 - Read-only tools are optional and for reference lookup only.
+- Loop quick-start (recommended):
+  1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
+  2) Read \`current/skills/commands/runtime/outline/SKILL.md\` (phase protocol).
+  3) Use read-only lookup if needed, then submit exactly one phase tool.
 - Soft gate (advisory, not blocking): before first phase submit, prefer reading \`current/skills/commands/runtime/SKILL.md\` and \`current/skills/commands/runtime/outline/SKILL.md\` when available.
 - Structured error recovery flow (when the submit tool returns \`{ success:false, code, error }\`): keep phase/tool unchanged, correct payload by error code, and retry the same phase submit tool.
 </runtime_floor>`;

@@ -39,15 +39,16 @@ import {
 import {
   buildSummaryInitialContext,
 } from "./summaryContext";
+export { buildQuerySummaryConsistencyAnchor } from "./summaryPromptTemplates";
+import { buildQuerySummaryConsistencyAnchor } from "./summaryPromptTemplates";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
-import { buildTurnPath, readConversationIndex } from "../../../vfs/conversation";
+import { readConversationIndex } from "../../../vfs/conversation";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
 
 // ============================================================================
 // Main Loop
 // ============================================================================
 
-const SUMMARY_CONSISTENCY_ANCHOR_MARKER = "[SUMMARY CONSISTENCY ANCHOR]";
 const SUMMARY_PATH_ARG_KEYS = new Set([
   "path",
   "paths",
@@ -84,68 +85,6 @@ const containsForbiddenSummaryTokens = (summary: StorySummary): boolean => {
   };
 
   return hasForbidden(summary);
-};
-
-const buildSummaryConsistencyAnchor = (
-  input: SummaryLoopInput,
-  modeLabel: "session_compact" | "query_summary",
-  runtime: {
-    targetForkId: number;
-    activeForkId: number | null;
-    activeTurnId: string | null;
-    targetForkLatestTurn: number | null;
-  },
-): string => {
-  const targetLastSummarizedIndex = input.nodeRange.toIndex + 1;
-  const pendingPlayerActionText = input.pendingPlayerAction?.text
-    ? input.pendingPlayerAction.text.slice(0, 280)
-    : "";
-  const previousSummary =
-    input.baseSummaries.length > 0
-      ? input.baseSummaries[input.baseSummaries.length - 1]
-      : null;
-  const previousSummaryLabel = previousSummary
-    ? `id=${String((previousSummary as any).id ?? "unknown")}, createdAt=${String((previousSummary as any).createdAt ?? "unknown")}, nodeRange=${previousSummary.nodeRange ? `${previousSummary.nodeRange.fromIndex}-${previousSummary.nodeRange.toIndex}` : "unknown"}`
-    : "none";
-
-  const latestTurnPath =
-    typeof runtime.targetForkLatestTurn === "number"
-      ? `current/${buildTurnPath(runtime.targetForkId, runtime.targetForkLatestTurn)}`
-      : `current/conversation/turns/fork-${runtime.targetForkId}/turn-<n>.json`;
-
-  return `${SUMMARY_CONSISTENCY_ANCHOR_MARKER}
-Mode: ${modeLabel}
-MODE CONTRACT: QUERY_SUMMARY
-Target fork ID: ${runtime.targetForkId}
-Active fork ID from index: ${runtime.activeForkId ?? "unknown"}
-Active turn ID from index: ${runtime.activeTurnId ?? "unknown"}
-Latest turn number in target fork: ${runtime.targetForkLatestTurn ?? "unknown"}
-Latest turn path in target fork: ${latestTurnPath}
-Summary range: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}
-Base lastSummarizedIndex: ${input.baseIndex}
-Required final lastSummarizedIndex: ${targetLastSummarizedIndex}
-Base summaries count: ${input.baseSummaries.length}
-Last summary checkpoint: ${previousSummaryLabel}
-${pendingPlayerActionText ? `Pending player action (for context only): ${pendingPlayerActionText}` : ""}
-
-Primary source for facts:
-- Query target-fork VFS artifacts first; do not rely on stale memory.
-
-Required read sequence:
-1) current/conversation/index.json
-2) current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json
-3) forks/${runtime.targetForkId}/story/summary/state.json
-4) current/summary/state.json (ONLY safe when active fork == target fork)
-5) Optional context recall: current/conversation/session.jsonl via query-style reads only (vfs_read lines window or vfs_search)
-
-Hard constraints:
-- ONLY summarize target fork ${runtime.targetForkId}; NEVER cross forks.
-- Do NOT summarize outside the specified summary range.
-- Keep continuity with existing summaries and established story facts.
-- If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
-- If uncertain, use read-only VFS tools first (vfs_read/vfs_search).
-- Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
-- Output summary content only. Never mention tools/retries/errors/budgets.`;
 };
 
 const collectSummaryPathCandidates = (
@@ -315,7 +254,7 @@ async function runSummaryLoopCore(options: {
 
   conversationHistory.push(
     createUserMessage(
-      buildSummaryConsistencyAnchor(input, options.modeLabel, {
+      buildQuerySummaryConsistencyAnchor(input, options.modeLabel, {
         targetForkId,
         activeForkId: activeForkIdForAnchor,
         activeTurnId: activeTurnIdForAnchor,

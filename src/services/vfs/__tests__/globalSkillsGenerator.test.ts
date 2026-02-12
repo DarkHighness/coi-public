@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildGlobalVfsSkills } from "../globalSkills";
 import {
   generateVfsSkillSeeds,
+  getSkillCatalogEntries,
   getSkillIndexEntries,
   getSkillMappings,
 } from "../globalSkills/generator";
@@ -126,12 +127,45 @@ describe("VFS global skills generator", () => {
     expect(commandOutline).toContain("vfs_commit_outline_phase_4");
   });
 
+  it("derives catalog metadata from SKILL.md frontmatter and sections", () => {
+    const entries = getSkillCatalogEntries();
+    const seeds = generateVfsSkillSeeds();
+
+    const identity = entries.find((entry) => entry.id === "core-identity");
+    const commandSummary = entries.find((entry) => entry.id === "commands-summary");
+    const commandSummarySeed = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/summary/SKILL.md",
+    )?.content;
+    const commandSummaryFrontmatterPriority = commandSummarySeed?.match(
+      /^priority:\s*(high|medium|low)\s*$/m,
+    )?.[1];
+
+    expect(identity).toBeDefined();
+    expect(identity?.path).toBe("current/skills/core/identity/SKILL.md");
+    expect(identity?.domain).toBe("core");
+    expect(identity?.priority).toBe("high");
+    expect(identity?.description.length).toBeGreaterThan(20);
+    expect(identity?.whenToLoad.length).toBeGreaterThan(10);
+    expect(identity?.tags.length).toBeGreaterThan(0);
+
+    expect(commandSummary).toBeDefined();
+    expect(commandSummaryFrontmatterPriority).toBeDefined();
+    expect(commandSummary?.priority).toBe(commandSummaryFrontmatterPriority);
+    expect(commandSummary?.whenToLoad).toContain("summary");
+    expect(commandSummary?.seeAlso.length).toBeGreaterThan(0);
+  });
+
   it("includes generated skill entries inside global skills index", () => {
     const files = buildGlobalVfsSkills(0);
     const rawIndex = files["skills/index.json"]?.content ?? "{}";
     const parsed = JSON.parse(rawIndex) as {
       version: number;
-      skills: Array<{ id: string; path: string }>;
+      skills: Array<{
+        id: string;
+        path: string;
+        title: string;
+        tags: string[];
+      }>;
     };
 
     const expectedEntries = getSkillIndexEntries();
@@ -148,42 +182,20 @@ describe("VFS global skills generator", () => {
       });
     }
 
-    expect(parsed.skills).toContainEqual({
-      id: "theme-face-slapping-reversal",
-      path: "current/skills/theme/face-slapping-reversal/SKILL.md",
-      title: "Face Slapping Reversal Theme",
-      tags: ["theme", "face-slapping-reversal"],
-    });
-    expect(parsed.skills).toContainEqual({
-      id: "theme-tragic-angst",
-      path: "current/skills/theme/tragic-angst/SKILL.md",
-      title: "Tragic Angst Theme",
-      tags: ["theme", "tragic-angst"],
-    });
-    expect(parsed.skills).toContainEqual({
-      id: "theme-healing-redemption",
-      path: "current/skills/theme/healing-redemption/SKILL.md",
-      title: "Healing Redemption Theme",
-      tags: ["theme", "healing-redemption"],
-    });
-    expect(parsed.skills).toContainEqual({
-      id: "theme-mystery-horror",
-      path: "current/skills/theme/mystery-horror/SKILL.md",
-      title: "Mystery Horror Theme",
-      tags: ["theme", "mystery-horror"],
-    });
-    expect(parsed.skills).toContainEqual({
-      id: "theme-epic-worldbuilding",
-      path: "current/skills/theme/epic-worldbuilding/SKILL.md",
-      title: "Epic Worldbuilding Theme",
-      tags: ["theme", "epic-worldbuilding"],
-    });
-    expect(parsed.skills).toContainEqual({
-      id: "theme-ip-faithful-adaptation",
-      path: "current/skills/theme/ip-faithful-adaptation/SKILL.md",
-      title: "Ip Faithful Adaptation Theme",
-      tags: ["theme", "ip-faithful-adaptation"],
-    });
+    const assertThemeEntry = (id: string, slug: string): void => {
+      const entry = parsed.skills.find((skill) => skill.id === id);
+      expect(entry).toBeDefined();
+      expect(entry?.path).toBe(`current/skills/theme/${slug}/SKILL.md`);
+      expect(entry?.tags).toEqual(expect.arrayContaining(["theme", slug]));
+      expect(entry?.title.length ?? 0).toBeGreaterThan(0);
+    };
+
+    assertThemeEntry("theme-face-slapping-reversal", "face-slapping-reversal");
+    assertThemeEntry("theme-tragic-angst", "tragic-angst");
+    assertThemeEntry("theme-healing-redemption", "healing-redemption");
+    assertThemeEntry("theme-mystery-horror", "mystery-horror");
+    assertThemeEntry("theme-epic-worldbuilding", "epic-worldbuilding");
+    assertThemeEntry("theme-ip-faithful-adaptation", "ip-faithful-adaptation");
   });
 
   it("registers preset runtime skills in generator and index", () => {

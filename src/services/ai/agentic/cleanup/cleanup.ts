@@ -7,7 +7,7 @@ import {
   TurnRecoveryTrace,
 } from "../../../../types";
 
-import { generateAdventureTurn, AgenticLoopResult } from "../turn/adventure";
+import type { AgenticLoopResult } from "../turn/adventure";
 import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
 
 // ============================================================================
@@ -53,6 +53,13 @@ const cleanupPromptAtom = defineAtom(
   <required_first_read>current/conversation/index.json</required_first_read>
   <scope_rule>Operate only on current fork data. Never read/mutate other forks during cleanup.</scope_rule>
 </cleanup_anchor>
+
+<loop_quickstart>
+  1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
+  2) Read \`current/skills/commands/runtime/cleanup/SKILL.md\` (cleanup protocol).
+  3) Build candidate list with \`vfs_ls\` + \`vfs_search\`.
+  4) Verify with \`vfs_read\`, then mutate/verify/finish.
+</loop_quickstart>
 
 <workflow>
   0) Before any cleanup mutation, read command protocol (hub first):
@@ -226,6 +233,10 @@ function buildCleanupPrompt(state: GameState): string {
   );
 }
 
+export function getCleanupLoopSystemPrompt(state: Pick<GameState, "forkId" | "turnNumber">): string {
+  return buildCleanupPrompt(state as GameState);
+}
+
 /**
  * 生成实体清理 (Entity Cleanup)
  *
@@ -240,6 +251,8 @@ export const generateEntityCleanup = async (
   inputState: GameState,
   context: TurnContext,
 ): Promise<CleanupResult> => {
+  const { generateAdventureTurn } = await import("../turn/adventure");
+
   // Build cleanup prompt with entity context embedded
   const cleanupPrompt = buildCleanupPrompt(inputState);
 

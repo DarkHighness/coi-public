@@ -37,16 +37,22 @@ import {
   createSummaryLoopState,
   accumulateSummaryUsage,
 } from "./summaryInitializer";
+export {
+  buildCompactModeTriggerMessage,
+  buildCompactSummaryConsistencyAnchor,
+} from "./summaryPromptTemplates";
+import {
+  buildCompactModeTriggerMessage,
+  buildCompactSummaryConsistencyAnchor,
+} from "./summaryPromptTemplates";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
-import { buildTurnPath, readConversationIndex } from "../../../vfs/conversation";
+import { readConversationIndex } from "../../../vfs/conversation";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
 
 // ============================================================================
 // Main Loop
 // ============================================================================
 
-const COMPACT_TRIGGER = "[SYSTEM: COMPACT_NOW]";
-const COMPACT_SUMMARY_CONSISTENCY_ANCHOR_MARKER = "[COMPACT SUMMARY CONSISTENCY ANCHOR]";
 const SUMMARY_PATH_ARG_KEYS = new Set([
   "path",
   "paths",
@@ -83,73 +89,6 @@ const containsForbiddenSummaryTokens = (summary: StorySummary): boolean => {
   };
 
   return hasForbidden(summary);
-};
-
-const buildSummaryConsistencyAnchor = (
-  input: SummaryLoopInput,
-  modeLabel: "session_compact" | "query_summary",
-  runtime: {
-    targetForkId: number;
-    activeForkId: number | null;
-    activeTurnId: string | null;
-    targetForkLatestTurn: number | null;
-  },
-): string => {
-  const targetLastSummarizedIndex = input.nodeRange.toIndex + 1;
-  const pendingPlayerActionText = input.pendingPlayerAction?.text
-    ? input.pendingPlayerAction.text.slice(0, 280)
-    : "";
-  const previousSummary =
-    input.baseSummaries.length > 0
-      ? input.baseSummaries[input.baseSummaries.length - 1]
-      : null;
-  const previousSummaryLabel = previousSummary
-    ? `id=${String((previousSummary as any).id ?? "unknown")}, createdAt=${String((previousSummary as any).createdAt ?? "unknown")}, nodeRange=${previousSummary.nodeRange ? `${previousSummary.nodeRange.fromIndex}-${previousSummary.nodeRange.toIndex}` : "unknown"}`
-    : "none";
-
-  const latestTurnPath =
-    typeof runtime.targetForkLatestTurn === "number"
-      ? `current/${buildTurnPath(runtime.targetForkId, runtime.targetForkLatestTurn)}`
-      : `current/conversation/turns/fork-${runtime.targetForkId}/turn-<n>.json`;
-
-  return `${COMPACT_SUMMARY_CONSISTENCY_ANCHOR_MARKER}
-Mode: ${modeLabel}
-MODE CONTRACT: SESSION_COMPACT
-Target fork ID: ${runtime.targetForkId}
-Active fork ID from index: ${runtime.activeForkId ?? "unknown"}
-Active turn ID from index: ${runtime.activeTurnId ?? "unknown"}
-Latest turn number in target fork: ${runtime.targetForkLatestTurn ?? "unknown"}
-Latest turn path in target fork: ${latestTurnPath}
-Summary range: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}
-Base lastSummarizedIndex: ${input.baseIndex}
-Required final lastSummarizedIndex: ${targetLastSummarizedIndex}
-Base summaries count: ${input.baseSummaries.length}
-Last summary checkpoint: ${previousSummaryLabel}
-${pendingPlayerActionText ? `Pending player action (for context only): ${pendingPlayerActionText}` : ""}
-
-Primary source for facts:
-- Current session history already loaded in context.
-- Do NOT rebuild full history from scratch unless evidence is missing.
-
-Verification-only reads (optional):
-- current/conversation/index.json
-- current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json
-- forks/${runtime.targetForkId}/story/summary/state.json
-
-Hard constraints:
-- Keep compaction scoped to target fork ${runtime.targetForkId}; NEVER cross forks.
-- Do NOT summarize outside the specified summary range.
-- Preserve continuity with previous summaries and in-session events.
-- Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
-- Output summary content only. Never mention tools/retries/errors/budgets.
-
-Structured error recovery (when tool response is \`{ success:false, code, error }\`):
-- Do NOT finish until the active error is resolved.
-- \`INVALID_ACTION\` / \`FORCED_FINISH\` / \`MULTIPLE_FINISH_CALLS\` / \`FINISH_NOT_LAST\`: reorder to one valid tool-call set with finish last.
-- \`COMPACT_SUMMARY_CROSS_FORK_BLOCKED\`: remove cross-fork paths and retry target-fork reads only.
-- \`COMPACT_SUMMARY_RUNTIME_FIELDS_FORBIDDEN\`: remove runtime-managed fields from \`vfs_commit_summary\` args.
-- \`SUMMARY_FORBIDDEN_TOKENS\`: rewrite summary fields to story facts only, then retry finish.
-- If the same \`code\` appears twice, shrink scope and re-read anchors before retry.`;
 };
 
 const collectSummaryPathCandidates = (
@@ -319,7 +258,7 @@ async function runSummaryLoopCore(options: {
 
   conversationHistory.push(
     createUserMessage(
-      buildSummaryConsistencyAnchor(input, options.modeLabel, {
+      buildCompactSummaryConsistencyAnchor(input, options.modeLabel, {
         targetForkId,
         activeForkId: activeForkIdForAnchor,
         activeTurnId: activeTurnIdForAnchor,
@@ -731,16 +670,11 @@ export async function runCompactSummaryLoop(
   const targetLastSummarizedIndex = input.nodeRange.toIndex + 1;
 
   const trigger = createUserMessage(
-    `${COMPACT_TRIGGER}\n` +
-      `You are entering **session compaction** mode.\n\n` +
-      `Requirements:\n` +
-      `- Produce exactly ONE summary by calling "vfs_commit_summary" as your LAST tool call.\n` +
-      `- The summary MUST be in ${language}.\n` +
-      `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
-      `- Runtime will set lastSummarizedIndex = ${targetLastSummarizedIndex}.\n` +
-      `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
-      `Before finish, read protocol: "current/skills/commands/runtime/compact/SKILL.md".\n` +
-      `If you need to verify details, use read-only VFS tools (vfs_read/vfs_search/etc.) and stay on target fork only.`,
+    buildCompactModeTriggerMessage({
+      language,
+      nodeRange: input.nodeRange,
+      targetLastSummarizedIndex,
+    }),
   );
 
   return runSummaryLoopCore({
