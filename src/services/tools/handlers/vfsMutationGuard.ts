@@ -214,6 +214,7 @@ export const validateWritePayload = (
   | { ok: true; normalizedContent: string; contentType: VfsContentType }
   | { ok: false; error: ToolCallError } => {
   const isJsonPath = normalizedPath.endsWith(".json");
+  const isJsonlPath = normalizedPath.endsWith(".jsonl");
 
   if (isJsonPath && contentType !== "application/json") {
     return {
@@ -237,25 +238,91 @@ export const validateWritePayload = (
     };
   }
 
-  if (!isJsonPath && contentType === "application/json") {
+  if (isJsonlPath && contentType !== "application/jsonl") {
     return {
       ok: false,
       error: createVfsWriteGuardError(
-        `application/json contentType is only allowed for *.json paths: ${toCurrentPath(normalizedPath)}`,
+        `JSONL path requires application/jsonl contentType: ${toCurrentPath(normalizedPath)}`,
         "INVALID_DATA",
         {
           issues: [
             {
               path: toCurrentPath(normalizedPath),
               code: "CONTENT_TYPE_MISMATCH",
-              message: "Non-JSON paths cannot be written as application/json.",
+              message: "JSONL file writes must use application/jsonl contentType.",
+              expected: "application/jsonl",
               received: contentType,
             },
           ],
-          recovery: ["Use text/plain or text/markdown for non-JSON paths."],
+          recovery: ["Set contentType to application/jsonl for *.jsonl targets."],
         },
       ),
     };
+  }
+
+  if (
+    !isJsonPath &&
+    !isJsonlPath &&
+    (contentType === "application/json" || contentType === "application/jsonl")
+  ) {
+    return {
+      ok: false,
+      error: createVfsWriteGuardError(
+        `${contentType} contentType is only allowed for matching *.json or *.jsonl paths: ${toCurrentPath(normalizedPath)}`,
+        "INVALID_DATA",
+        {
+          issues: [
+            {
+              path: toCurrentPath(normalizedPath),
+              code: "CONTENT_TYPE_MISMATCH",
+              message:
+                "Only *.json can use application/json and only *.jsonl can use application/jsonl.",
+              received: contentType,
+            },
+          ],
+          recovery: [
+            "Use text/plain or text/markdown for non-JSON/non-JSONL paths.",
+          ],
+        },
+      ),
+    };
+  }
+
+  if (isJsonlPath) {
+    const lines = content.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i += 1) {
+      const raw = lines[i] ?? "";
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        continue;
+      }
+      try {
+        JSON.parse(trimmed);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          ok: false,
+          error: createVfsWriteGuardError(
+            `Invalid JSONL content for ${toCurrentPath(normalizedPath)} at line ${i + 1}: ${message}`,
+            "INVALID_DATA",
+            {
+              issues: [
+                {
+                  path: `${toCurrentPath(normalizedPath)}:${i + 1}`,
+                  code: "INVALID_JSONL_LINE",
+                  message,
+                },
+              ],
+              recovery: [
+                "Ensure each non-empty line is a valid standalone JSON value.",
+              ],
+            },
+          ),
+        };
+      }
+    }
+
+    return { ok: true, normalizedContent: content, contentType };
   }
 
   if (!isJsonPath) {

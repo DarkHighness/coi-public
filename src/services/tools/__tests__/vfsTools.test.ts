@@ -72,6 +72,21 @@ describe("VFS tools", () => {
     expect(writeResult.success).toBe(true);
   });
 
+  it("accepts application/jsonl content type for jsonl write targets", () => {
+    const result = VFS_WRITE_TOOL.parameters.safeParse({
+      ops: [
+        {
+          op: "write_file",
+          path: "current/conversation/session.jsonl",
+          content: '{"role":"user"}\n{"role":"assistant"}',
+          contentType: "application/jsonl",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("rejects runtime-only fields in vfs_commit_summary AI args", () => {
     const result = VFS_COMMIT_SUMMARY_TOOL.parameters.safeParse({
       displayText: "summary",
@@ -93,6 +108,29 @@ describe("VFS tools", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts nextSessionReferencesMarkdown in vfs_commit_summary args", () => {
+    const result = VFS_COMMIT_SUMMARY_TOOL.parameters.safeParse({
+      displayText: "summary",
+      visible: {
+        narrative: "n",
+        majorEvents: ["e"],
+        characterDevelopment: "c",
+        worldState: "w",
+      },
+      hidden: {
+        truthNarrative: "t",
+        hiddenPlots: ["p"],
+        npcActions: ["a"],
+        worldTruth: "wt",
+        unrevealed: ["u"],
+      },
+      nextSessionReferencesMarkdown:
+        "- current/skills/commands/runtime/SKILL.md\n- current/conversation/session.jsonl",
+    });
+
+    expect(result.success).toBe(true);
   });
 
   it("embeds permission contract into vfs tool descriptions", () => {

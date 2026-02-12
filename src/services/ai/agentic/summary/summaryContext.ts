@@ -75,6 +75,10 @@ Before any summary mutation, read command protocol (hub first):
 - \`current/skills/commands/runtime/SKILL.md\`
 - \`current/skills/commands/runtime/summary/SKILL.md\`
 
+When historical continuity is unclear, query \`current/conversation/session.jsonl\` in windows:
+- Use \`vfs_read\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.
+- Do NOT full-read large session.jsonl files in one call.
+
 Structured error recovery flow (if a tool returns \`{ success:false, code, error }\`):
 1. Do NOT finish while error is unresolved.
 2. Use \`code\` to choose fix path:
@@ -90,6 +94,13 @@ Structured error recovery flow (if a tool returns \`{ success:false, code, error
   - path: \`current/summary/state.json\`
   - mode: \`"json"\`
   - pointers: \`["/lastSummarizedIndex", "/summaries/-1/displayText"]\`
+
+- Example (query session history safely):
+  Call \`vfs_read\` with:
+  - path: \`current/conversation/session.jsonl\`
+  - mode: \`"lines"\`
+  - startLine: \`1\`
+  - lineCount: \`40\`
 
 - Example (finish):
   Call \`vfs_commit_summary\` with:

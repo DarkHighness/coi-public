@@ -43,6 +43,27 @@ describe("vfs layout report", () => {
     expect(summaryState?.updateTriggers).toContain("summary_commit");
   });
 
+  it("includes expected session mirror path with finish commit trigger", () => {
+    const session = new VfsSession();
+
+    const layout = buildVfsLayoutReport(session, {
+      rootPath: "current/conversation",
+      includeExpected: true,
+      activeForkId: 0,
+    });
+
+    const sessionMirror = layout.find(
+      (entry) => entry.path === "current/conversation/session.jsonl",
+    );
+
+    expect(sessionMirror).toBeDefined();
+    expect(sessionMirror?.exists).toBe(false);
+    expect(sessionMirror?.expected).toBe(true);
+    expect(sessionMirror?.permissionClass).toBe("finish_guarded");
+    expect(sessionMirror?.readability).toBe("finish_guarded");
+    expect(sessionMirror?.updateTriggers).toContain("turn_commit");
+  });
+
   it("preserves existing file metadata for live files", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "hello", "text/markdown");

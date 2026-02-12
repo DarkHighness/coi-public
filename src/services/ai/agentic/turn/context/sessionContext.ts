@@ -9,10 +9,15 @@
 
 import type { StorySegment, ProviderProtocol } from "@/types";
 import type { UnifiedMessage } from "@/services/messageTypes";
-import { fromGeminiFormat, toGeminiFormat } from "@/services/messageTypes";
+import {
+  createUserMessage,
+  fromGeminiFormat,
+  toGeminiFormat,
+} from "@/services/messageTypes";
 import { sessionManager, SessionConfig } from "@/services/ai/sessionManager";
 import { buildCacheHint } from "@/services/ai/provider/cacheHint";
 import type { VfsSession } from "@/services/vfs/vfsSession";
+import { writeSessionHistoryJsonl } from "@/services/vfs/conversation";
 import {
   checkpointVfsSession,
   rollbackVfsSessionToCheckpoint,
@@ -25,6 +30,7 @@ import {
 export interface SessionSetupOptions {
   slotId: string;
   forkId: number;
+  vfsSession: VfsSession;
   providerId: string;
   modelId: string;
   protocol: ProviderProtocol;
@@ -40,6 +46,33 @@ export interface SessionSetupResult {
   activeHistory: UnifiedMessage[];
 }
 
+const buildColdStartSkillHintMessage = (): UnifiedMessage =>
+  createUserMessage(
+    [
+      "[SYSTEM: COLD_START_SOFT_GUIDANCE]",
+      "Soft guidance (non-blocking): before first non-read mutation, prefer reading:",
+      "- current/skills/commands/runtime/SKILL.md",
+      "- current/skills/core/protocols/SKILL.md",
+      "- current/skills/index.json (discover relevant skills first)",
+      "If prior context is needed, query current/conversation/session.jsonl with lines/search windows.",
+      "Avoid full-file reads of session.jsonl in one shot.",
+    ].join("\n"),
+  );
+
+const syncSessionHistoryMirror = (
+  sessionId: string,
+  vfsSession: VfsSession,
+  forkId?: number,
+): void => {
+  if (typeof forkId === "number" && Number.isFinite(forkId) && forkId >= 0) {
+    vfsSession.setActiveForkId(Math.floor(forkId));
+  }
+  const nativeHistory = sessionManager.getHistory(sessionId);
+  writeSessionHistoryJsonl(vfsSession, nativeHistory, {
+    operation: "finish_commit",
+  });
+};
+
 // ============================================================================
 // Session Setup
 // ============================================================================
@@ -53,6 +86,7 @@ export async function setupSession(
   const {
     slotId,
     forkId,
+    vfsSession,
     providerId,
     modelId,
     protocol,
@@ -92,17 +126,20 @@ export async function setupSession(
   sessionManager.setSystemInstruction(session.id, systemInstruction);
 
   // Initialize if empty
-  if (sessionManager.isEmpty(session.id)) {
+  const needsInit = sessionManager.isEmpty(session.id);
+  if (needsInit) {
     const initialHistory = buildInitialHistory(
       contextMessages,
       recentHistory,
       protocol,
+      { includeColdStartGuidance: true },
     );
     sessionManager.setHistory(session.id, initialHistory);
   }
 
   // Get active history
   const activeHistory = getActiveHistory(session.id, protocol);
+  syncSessionHistoryMirror(session.id, vfsSession, forkId);
 
   return {
     sessionId: session.id,
@@ -121,8 +158,13 @@ function buildInitialHistory(
   contextMessages: UnifiedMessage[],
   recentHistory: StorySegment[] | undefined,
   protocol: ProviderProtocol,
+  options?: { includeColdStartGuidance?: boolean },
 ): unknown[] {
   let initialHistory: UnifiedMessage[] = [...contextMessages];
+
+  if (options?.includeColdStartGuidance) {
+    initialHistory = [...initialHistory, buildColdStartSkillHintMessage()];
+  }
 
   if (recentHistory && recentHistory.length > 0) {
     console.log(`[SessionContext] Hydrating ${recentHistory.length} segments.`);
@@ -202,6 +244,7 @@ export function rollbackToTurnAnchor(
   vfsSession: VfsSession,
 ): UnifiedMessage[] | null {
   sessionManager.rollbackToLastCheckpoint(sessionId);
+  syncSessionHistoryMirror(sessionId, vfsSession);
   const rolledBack = rollbackVfsSessionToCheckpoint(sessionId, vfsSession);
   if (!rolledBack) {
     return null;
@@ -275,6 +318,8 @@ export function appendToHistory(
   sessionId: string,
   newMessages: UnifiedMessage[],
   protocol: ProviderProtocol,
+  vfsSession: VfsSession,
+  forkId?: number,
 ): void {
   const messagesNative =
     protocol === "gemini"
@@ -282,4 +327,5 @@ export function appendToHistory(
       : (newMessages as unknown[]);
 
   sessionManager.appendHistory(sessionId, messagesNative);
+  syncSessionHistoryMirror(sessionId, vfsSession, forkId);
 }

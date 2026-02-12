@@ -35,6 +35,7 @@ export interface TurnFile {
 const INDEX_PATH = "conversation/index.json";
 const FORK_TREE_PATH = "conversation/fork_tree.json";
 const TURN_ROOT = "conversation/turns";
+export const SESSION_JSONL_PATH = "conversation/session.jsonl";
 
 export const buildTurnId = (forkId: number, turn: number): string =>
   `fork-${forkId}/turn-${turn}`;
@@ -137,6 +138,65 @@ export const readTurnFile = (
   turn: number,
 ): TurnFile | null =>
   parseJson<TurnFile>(files, buildTurnPath(forkId, turn));
+
+const toJsonlLine = (entry: unknown, index: number): string => {
+  try {
+    const line = JSON.stringify(entry);
+    if (typeof line !== "string") {
+      throw new Error("JSON.stringify returned undefined");
+    }
+    return line;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Failed to serialize provider-native history entry at index ${index}: ${message}`,
+    );
+  }
+};
+
+export const writeSessionHistoryJsonl = (
+  session: VfsSession,
+  entries: unknown[],
+  options?: VfsWriteOptions,
+): void => {
+  const content =
+    entries.length > 0
+      ? entries.map((entry, index) => toJsonlLine(entry, index)).join("\n")
+      : "";
+
+  session.writeFile(
+    resolveRelativePath(SESSION_JSONL_PATH),
+    content,
+    "application/jsonl",
+    options,
+  );
+};
+
+export const readSessionHistoryJsonl = (files: VfsFileMap): unknown[] => {
+  const file = findFile(files, SESSION_JSONL_PATH);
+  if (!file || file.contentType !== "application/jsonl") {
+    return [];
+  }
+
+  const lines = file.content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  const entries: unknown[] = [];
+  for (const [index, line] of lines.entries()) {
+    try {
+      entries.push(JSON.parse(line) as unknown);
+    } catch (error) {
+      console.warn(
+        `[VFS] Failed to parse session.jsonl line ${index + 1}:`,
+        error,
+      );
+    }
+  }
+
+  return entries;
+};
 
 export const forkConversation = (
   session: VfsSession,

@@ -43,6 +43,7 @@ const isExcludedCanonicalPath = (canonicalPath: string): boolean => {
 const isIndexableContentType = (contentType: string): boolean => {
   if (!contentType) return false;
   if (contentType === "application/json") return true;
+  if (contentType === "application/jsonl") return true;
   if (contentType === "text/markdown") return true;
   if (contentType === "text/plain") return true;
   return contentType.startsWith("text/");

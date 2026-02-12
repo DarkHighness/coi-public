@@ -2078,6 +2078,12 @@ export const storySummarySchema = z.object({
       toIndex: z.number().int(),
     })
     .nullish(),
+  nextSessionReferencesMarkdown: z
+    .string()
+    .nullish()
+    .describe(
+      "Optional markdown references for next-session warm start (skills/files to read first).",
+    ),
 });
 
 // ============================================================================

@@ -95,6 +95,37 @@ describe("messageBuilder", () => {
     expect(texts.join("\n")).not.toContain("[CONTEXT: Current Entities]");
   });
 
+  it("injects hot-start references context from latest summary markdown", () => {
+    const messages = buildInitialContext(
+      createGameState({
+        summaries: [
+          {
+            id: 1,
+            displayText: "old",
+            nextSessionReferencesMarkdown: "- current/skills/commands/runtime/SKILL.md",
+          },
+          {
+            id: 2,
+            displayText: "new",
+            nextSessionReferencesMarkdown:
+              "- current/conversation/session.jsonl\n- current/skills/index.json",
+          },
+        ],
+      }),
+      createSession(),
+    );
+
+    const texts = messages.map(getText);
+    const hotStartBlock = texts.find((text) =>
+      text.includes("[CONTEXT: Hot Start References]"),
+    );
+    expect(hotStartBlock).toContain("current/conversation/session.jsonl");
+    expect(hotStartBlock).toContain("current/skills/index.json");
+    expect(
+      texts.some((text) => text.includes("[Hot-start references acknowledged.]")),
+    ).toBe(true);
+  });
+
   it("builds turn messages with player-action prefix and sudo passthrough", () => {
     const normal = buildTurnMessages(
       createGameState({ godMode: false }),

@@ -1,4 +1,8 @@
-export type VfsContentType = "application/json" | "text/plain" | "text/markdown";
+export type VfsContentType =
+  | "application/json"
+  | "application/jsonl"
+  | "text/plain"
+  | "text/markdown";
 
 export type VfsReadEpochReason =
   | "summary_created"

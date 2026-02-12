@@ -117,6 +117,7 @@ const vfsFilePathSchema = vfsPathSchema.min(1, "Path is required.");
 
 const vfsContentTypeSchema = z.enum([
   "application/json",
+  "application/jsonl",
   "text/plain",
   "text/markdown",
 ]);
@@ -576,6 +577,12 @@ export const VFS_COMMIT_SUMMARY_TOOL = defineTool({
           to: z.string().describe("End time in story"),
         })
         .nullish(),
+      nextSessionReferencesMarkdown: z
+        .string()
+        .nullish()
+        .describe(
+          "Optional markdown note listing key files/skills to revisit in the next session hot-start context.",
+        ),
     })
     .strict(),
 });

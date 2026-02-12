@@ -23,6 +23,13 @@ describe("vfsResourceTemplateRegistry", () => {
     expect(summary.permissionClass).toBe("finish_guarded");
     expect(summary.id).toBe("template.story.summary");
     expect(summary.allowedWriteOps).toEqual(["finish_summary"]);
+
+    const sessionMirror = vfsResourceTemplateRegistry.match(
+      "forks/0/story/conversation/session.jsonl",
+    );
+    expect(sessionMirror.permissionClass).toBe("finish_guarded");
+    expect(sessionMirror.id).toBe("template.story.conversation.session_jsonl");
+    expect(sessionMirror.allowedWriteOps).toEqual(["finish_commit"]);
   });
 
   it("matches elevated templates for outline phases and history rewrites", () => {

@@ -232,6 +232,8 @@ describe("runSummaryLoop", () => {
     expect(anchorText).toContain("Latest turn path in target fork: current/conversation/turns/fork-2/turn-14.json");
     expect(anchorText).toContain("Last summary checkpoint: id=s-prev");
     expect(anchorText).toContain("NEVER cross forks");
+    expect(anchorText).toContain("current/conversation/session.jsonl");
+    expect(anchorText).toContain("query-style reads only");
   });
 
 
@@ -377,6 +379,45 @@ describe("runSummaryLoop", () => {
         nodeRange: { fromIndex: 4, toIndex: 9 },
         lastSummarizedIndex: 10,
       },
+      expect.any(Object),
+    );
+  });
+
+  it("preserves nextSessionReferencesMarkdown on finish tool arguments", async () => {
+    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const input = makeInput({
+      forkId: 2,
+      nodeRange: { fromIndex: 1, toIndex: 4 },
+    });
+
+    mockCallWithAgenticRetry.mockResolvedValueOnce({
+      result: {
+        functionCalls: [
+          {
+            id: "call-finish-with-refs",
+            name: finishTool,
+            args: {
+              ...makeCommitSummaryArgs(),
+              nextSessionReferencesMarkdown:
+                "- current/skills/commands/runtime/SKILL.md\n- current/conversation/session.jsonl",
+            },
+          },
+        ],
+      },
+      usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+      raw: {},
+    });
+
+    await runSummaryLoop(input, "query_summary");
+
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
+      finishTool,
+      expect.objectContaining({
+        nextSessionReferencesMarkdown:
+          "- current/skills/commands/runtime/SKILL.md\n- current/conversation/session.jsonl",
+        nodeRange: { fromIndex: 1, toIndex: 4 },
+        lastSummarizedIndex: 5,
+      }),
       expect.any(Object),
     );
   });

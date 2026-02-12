@@ -16,6 +16,7 @@ import {
   normalizeAtmosphere,
 } from "../utils/constants/atmosphere";
 import { sessionManager } from "../services/ai/sessionManager";
+import { writeSessionHistoryJsonl } from "../services/vfs/conversation";
 import {
   getModelsForInstance,
   getProviderInstance,
@@ -114,6 +115,10 @@ export const notifySessionSummaryCreated = async (
 
   // Now we can safely call onSummaryCreated
   await sessionManager.onSummaryCreated(storySession.id, String(summaryId));
+  vfsSession.setActiveForkId(forkId);
+  writeSessionHistoryJsonl(vfsSession, sessionManager.getHistory(storySession.id), {
+    operation: "finish_commit",
+  });
   await rebuildSessionIfPresent(aiSettings, slotId, forkId, "summary");
   await rebuildSessionIfPresent(aiSettings, slotId, forkId, "cleanup");
   vfsSession.beginReadEpoch("summary_created");

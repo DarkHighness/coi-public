@@ -158,7 +158,27 @@ describe("vfsMutationGuard", () => {
         "application/json",
       );
 
-      expectInvalidPayload(result, "only allowed for *.json");
+      expectInvalidPayload(result, "only allowed for matching *.json or *.jsonl");
+    });
+
+    it("rejects jsonl path with non-jsonl contentType", () => {
+      const result = validateWritePayload(
+        "conversation/session.jsonl",
+        '{"role":"user"}',
+        "text/plain",
+      );
+
+      expectInvalidPayload(result, "JSONL path requires");
+    });
+
+    it("rejects non-jsonl path with jsonl contentType", () => {
+      const result = validateWritePayload(
+        "notes/readme.md",
+        '{"role":"user"}',
+        "application/jsonl",
+      );
+
+      expectInvalidPayload(result, "*.jsonl");
     });
 
     it("passes through non-json content untouched", () => {
@@ -183,6 +203,30 @@ describe("vfsMutationGuard", () => {
       );
 
       expectInvalidPayload(result, "Invalid JSON content");
+    });
+
+    it("rejects invalid JSONL line payload", () => {
+      const result = validateWritePayload(
+        "conversation/session.jsonl",
+        '{"role":"user"}\n{invalid}',
+        "application/jsonl",
+      );
+
+      expectInvalidPayload(result, "Invalid JSONL content");
+    });
+
+    it("accepts valid JSONL payload", () => {
+      const result = validateWritePayload(
+        "conversation/session.jsonl",
+        '{"role":"user"}\n{"role":"assistant"}',
+        "application/jsonl",
+      );
+
+      expect(result).toEqual({
+        ok: true,
+        normalizedContent: '{"role":"user"}\n{"role":"assistant"}',
+        contentType: "application/jsonl",
+      });
     });
 
     it("rejects unknown nested keys after schema validation", () => {

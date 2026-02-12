@@ -282,6 +282,7 @@ export const generateAdventureTurn = async (
   const sessionSetupOptions = {
     slotId: context.slotId,
     forkId: gameState.forkId ?? 0,
+    vfsSession: context.vfsSession,
     providerId: instance.id,
     modelId,
     protocol: instance.protocol,
@@ -351,8 +352,13 @@ export const generateAdventureTurn = async (
     console.log(
       `[Adventure] Appending ${newMessages.length} new messages to history.`,
     );
-    appendToHistory(sessionId, newMessages, instance.protocol);
-
+    appendToHistory(
+      sessionId,
+      newMessages,
+      instance.protocol,
+      context.vfsSession,
+      gameState.forkId ?? 0,
+    );
     activeHistory = result._conversationHistory;
     return result;
   };

@@ -53,6 +53,9 @@ describe("pathResolver", () => {
     expect(toCanonicalVfsPath("conversation/history_rewrites/a.json", { activeForkId: 4 })).toBe(
       "forks/4/ops/history_rewrites/a.json",
     );
+    expect(toCanonicalVfsPath("current/conversation/session.jsonl", { activeForkId: 4 })).toBe(
+      "forks/4/story/conversation/session.jsonl",
+    );
   });
 
   it("keeps non-active fork world files canonical unless loose mode", () => {

@@ -136,11 +136,13 @@ Required read sequence:
 2) current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json
 3) forks/${runtime.targetForkId}/story/summary/state.json
 4) current/summary/state.json (ONLY safe when active fork == target fork)
+5) Optional context recall: current/conversation/session.jsonl via query-style reads only (vfs_read lines window or vfs_search)
 
 Hard constraints:
 - ONLY summarize target fork ${runtime.targetForkId}; NEVER cross forks.
 - Do NOT summarize outside the specified summary range.
 - Keep continuity with existing summaries and established story facts.
+- If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
 - If uncertain, use read-only VFS tools first (vfs_read/vfs_search).
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
 - Output summary content only. Never mention tools/retries/errors/budgets.`;

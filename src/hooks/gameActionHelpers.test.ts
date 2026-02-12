@@ -4,9 +4,13 @@ import type { GameState, StorySegment, TokenUsage } from "../types";
 const summarizeContextMock = vi.hoisted(() => vi.fn());
 const getProviderConfigMock = vi.hoisted(() => vi.fn());
 const getProviderInstanceMock = vi.hoisted(() => vi.fn());
+const conversationMock = vi.hoisted(() => ({
+  writeSessionHistoryJsonl: vi.fn(),
+}));
 const sessionManagerMock = vi.hoisted(() => ({
   getOrCreateSession: vi.fn(),
   onSummaryCreated: vi.fn(),
+  getHistory: vi.fn(),
   invalidate: vi.fn(),
 }));
 
@@ -33,6 +37,10 @@ vi.mock("../services/ai/provider/registry", async (importOriginal) => {
 
 vi.mock("../services/ai/sessionManager", () => ({
   sessionManager: sessionManagerMock,
+}));
+
+vi.mock("../services/vfs/conversation", () => ({
+  writeSessionHistoryJsonl: conversationMock.writeSessionHistoryJsonl,
 }));
 
 import {
@@ -165,6 +173,7 @@ beforeEach(() => {
     id: "slot-1:0:provider-1:model-1",
   });
   sessionManagerMock.onSummaryCreated.mockResolvedValue(undefined);
+  sessionManagerMock.getHistory.mockReturnValue([]);
   sessionManagerMock.invalidate.mockResolvedValue(undefined);
 });
 
@@ -377,7 +386,10 @@ describe("handleSummarization", () => {
 
 describe("notifySessionSummaryCreated", () => {
   it("invalidates summary and cleanup sessions after summary creation", async () => {
-    const vfsSession = { beginReadEpoch: vi.fn() } as any;
+    const vfsSession = {
+      setActiveForkId: vi.fn(),
+      beginReadEpoch: vi.fn(),
+    } as any;
 
     await notifySessionSummaryCreated(
       {
@@ -413,6 +425,11 @@ describe("notifySessionSummaryCreated", () => {
       expect.objectContaining({ slotId: "slot-1:cleanup" }),
     );
     expect(sessionManagerMock.invalidate).toHaveBeenCalledTimes(2);
+    expect(conversationMock.writeSessionHistoryJsonl).toHaveBeenCalledWith(
+      vfsSession,
+      [],
+      { operation: "finish_commit" },
+    );
     expect(vfsSession.beginReadEpoch).toHaveBeenCalledWith("summary_created");
   });
 });

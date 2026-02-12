@@ -35,6 +35,7 @@ function buildLatestSummaryContext(gameState: GameState): string {
           unrevealed?: string[];
         };
         nodeRange?: { fromIndex: number; toIndex: number };
+        nextSessionReferencesMarkdown?: string | null;
       }>
     | undefined;
 
@@ -82,6 +83,21 @@ function buildLatestSummaryContext(gameState: GameState): string {
 </latest_summary>`;
 }
 
+function buildHotStartReferencesContext(gameState: GameState): string {
+  const summaries = (gameState as any).summaries as
+    | Array<{ nextSessionReferencesMarkdown?: string | null }>
+    | undefined;
+  if (!Array.isArray(summaries) || summaries.length === 0) {
+    return "";
+  }
+  const latest = summaries[summaries.length - 1];
+  const markdown = latest?.nextSessionReferencesMarkdown;
+  if (typeof markdown !== "string" || markdown.trim().length === 0) {
+    return "";
+  }
+  return markdown.trim();
+}
+
 export function buildInitialContext(
   gameState: GameState,
   vfsSession: VfsSession,
@@ -109,6 +125,19 @@ export function buildInitialContext(
     messages.push({
       role: "assistant",
       content: [{ type: "text", text: "[Story summary acknowledged.]" }],
+    });
+  }
+
+  const hotStartReferences = buildHotStartReferencesContext(gameState);
+  if (hotStartReferences) {
+    messages.push(
+      createUserMessage(
+        `[CONTEXT: Hot Start References]\n${hotStartReferences}`,
+      ),
+    );
+    messages.push({
+      role: "assistant",
+      content: [{ type: "text", text: "[Hot-start references acknowledged.]" }],
     });
   }
 

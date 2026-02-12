@@ -128,6 +128,26 @@ describe("VFS handlers read/schema/ls", () => {
     );
   });
 
+  it("returns template-hint schema metadata for session jsonl path", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_schema",
+      { paths: ["current/conversation/session.jsonl"] },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(result.data.missing).toEqual([]);
+    expect(result.data.schemas[0].classification.templateId).toBe(
+      "template.story.conversation.session_jsonl",
+    );
+    expect(result.data.schemas[0].hint).toContain(
+      "Template: template.story.conversation.session_jsonl",
+    );
+  });
+
   it("supports vfs_ls includeExpected/includeAccess in plain mode", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
@@ -171,5 +191,29 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.success).toBe(true);
     expect(result.data.entries).toContain("current/world/global.json");
     expect(result.data.access[0].templateId).toBe("template.story.world");
+  });
+
+  it("includes expected session jsonl path in conversation layout", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_ls",
+      {
+        path: "current/conversation",
+        includeExpected: true,
+        includeAccess: true,
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    const sessionJsonl = result.data.layout.find(
+      (entry: any) => entry.path === "current/conversation/session.jsonl",
+    );
+    expect(sessionJsonl).toBeDefined();
+    expect(sessionJsonl.exists).toBe(false);
+    expect(sessionJsonl.expected).toBe(true);
+    expect(sessionJsonl.permissionClass).toBe("finish_guarded");
   });
 });

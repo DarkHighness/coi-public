@@ -512,6 +512,7 @@ const PLAIN_OR_MARKDOWN_CONTENT_TYPES = new Set(["text/plain", "text/markdown"])
 
 const inferContentTypeFromPath = (path: string): string | null => {
   const normalized = normalizeVfsPath(path).toLowerCase();
+  if (normalized.endsWith(".jsonl")) return "application/jsonl";
   if (normalized.endsWith(".json")) return "application/json";
   if (normalized.endsWith(".md")) return "text/markdown";
   if (
@@ -2260,6 +2261,8 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_SUMMARY_TOOL, (args, ctx) => 
           fromIndex,
           toIndex,
         },
+        nextSessionReferencesMarkdown:
+          typedArgs.nextSessionReferencesMarkdown ?? null,
       };
 
       const nextSummaries = [...existingSummaries, summary];

@@ -64,6 +64,9 @@ describe("summaryContext", () => {
     expect(instruction).toContain("read command protocol (hub first)");
     expect(instruction).toContain("current/skills/commands/runtime/SKILL.md");
     expect(instruction).toContain("current/skills/commands/runtime/summary/SKILL.md");
+    expect(instruction).toContain("current/conversation/session.jsonl");
+    expect(instruction).toContain("mode: \"lines\"");
+    expect(instruction).toContain("Do NOT full-read large session.jsonl files");
     expect(instruction).toContain("Structured error recovery flow");
     expect(instruction).toContain("RUNTIME_FIELDS_FORBIDDEN");
   });
