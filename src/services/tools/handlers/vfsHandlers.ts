@@ -410,10 +410,15 @@ const globToRegExp = (
 };
 
 const resolveCurrentPath = (
+  ctx: ToolContext,
   path?: string,
 ): { ok: true; path: string } | { ok: false; error: ToolCallError } => {
   try {
-    return { ok: true, path: stripCurrentPath(path ?? "current") };
+    const { activeForkId } = resolveAiWriteContext(ctx);
+    return {
+      ok: true,
+      path: stripCurrentPath(path ?? "current", { activeForkId }),
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, error: createError(message, "INVALID_DATA") };
@@ -421,17 +426,18 @@ const resolveCurrentPath = (
 };
 
 const resolveCurrentPathLoose = (
+  ctx: ToolContext,
   path?: string,
 ): { ok: true; path: string } | { ok: false; error: ToolCallError } => {
   if (!path) {
-    return resolveCurrentPath(path);
+    return resolveCurrentPath(ctx, path);
   }
   const normalized = normalizeVfsPath(path);
   const qualified =
     normalized === "current" || normalized.startsWith("current/")
       ? normalized
       : `current/${normalized}`;
-  return resolveCurrentPath(qualified);
+  return resolveCurrentPath(ctx, qualified);
 };
 
 const withAtomicSession = <T>(
@@ -911,7 +917,7 @@ const ensureConversationIndex = (
 registerToolHandlerWithStructuredErrors(VFS_LS_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_ls", args);
-  const baseResolved = resolveCurrentPathLoose(typedArgs.path);
+  const baseResolved = resolveCurrentPathLoose(ctx, typedArgs.path);
   if (isPathResolveError(baseResolved)) {
     return baseResolved.error;
   }
@@ -1158,7 +1164,7 @@ registerToolHandlerWithStructuredErrors(VFS_LS_TOOL, (args, ctx) => {
 registerToolHandlerWithStructuredErrors(VFS_READ_TOOL, (args, ctx) => {
   const session = getSession(ctx);
   const typedArgs = getTypedArgs("vfs_read", args);
-  const resolved = resolveCurrentPath(typedArgs.path);
+  const resolved = resolveCurrentPath(ctx, typedArgs.path);
   if (isPathResolveError(resolved)) {
     return resolved.error;
   }
@@ -1416,7 +1422,7 @@ registerToolHandlerWithStructuredErrors(VFS_SCHEMA_TOOL, (args, ctx) => {
   const missing: Array<{ path: string; error: string }> = [];
 
   for (const inputPath of typedArgs.paths) {
-    const resolved = resolveCurrentPathLoose(inputPath);
+    const resolved = resolveCurrentPathLoose(ctx, inputPath);
     if (isPathResolveError(resolved)) {
       return resolved.error;
     }
@@ -1515,7 +1521,7 @@ registerToolHandlerWithStructuredErrors(VFS_SEARCH_TOOL, async (args, ctx) => {
     return createSuccess({ results: [] }, "VFS search complete");
   }
 
-  const resolvedPath = typedArgs.path ? resolveCurrentPath(typedArgs.path) : null;
+  const resolvedPath = typedArgs.path ? resolveCurrentPath(ctx, typedArgs.path) : null;
   if (resolvedPath && isPathResolveError(resolvedPath)) {
     return resolvedPath.error;
   }
@@ -1629,7 +1635,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
 
     for (const [opIndex, op] of typedArgs.ops.entries()) {
       if (op.op === "write_file") {
-        const resolved = resolveCurrentPath(op.path);
+        const resolved = resolveCurrentPath(ctx, op.path);
         if (isPathResolveError(resolved)) {
           return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
@@ -1666,7 +1672,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
       }
 
       if (op.op === "append_text") {
-        const resolved = resolveCurrentPath(op.path);
+        const resolved = resolveCurrentPath(ctx, op.path);
         if (isPathResolveError(resolved)) {
           return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
@@ -1724,7 +1730,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
       }
 
       if (op.op === "edit_lines") {
-        const resolved = resolveCurrentPath(op.path);
+        const resolved = resolveCurrentPath(ctx, op.path);
         if (isPathResolveError(resolved)) {
           return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
@@ -1867,7 +1873,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
       }
 
       if (op.op === "patch_json") {
-        const resolved = resolveCurrentPath(op.path);
+        const resolved = resolveCurrentPath(ctx, op.path);
         if (isPathResolveError(resolved)) {
           return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
@@ -1900,7 +1906,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
       }
 
       if (op.op === "merge_json") {
-        const resolved = resolveCurrentPath(op.path);
+        const resolved = resolveCurrentPath(ctx, op.path);
         if (isPathResolveError(resolved)) {
           return withBatchError(resolved.error, opIndex, op.op, op.path);
         }
@@ -1954,11 +1960,11 @@ registerToolHandlerWithStructuredErrors(VFS_MOVE_TOOL, (args, ctx) => {
       });
 
     for (const [moveIndex, move] of typedArgs.moves.entries()) {
-      const resolvedFrom = resolveCurrentPath(move.from);
+      const resolvedFrom = resolveCurrentPath(ctx, move.from);
       if (isPathResolveError(resolvedFrom)) {
         return withMoveBatchError(resolvedFrom.error, moveIndex, move);
       }
-      const resolvedTo = resolveCurrentPath(move.to);
+      const resolvedTo = resolveCurrentPath(ctx, move.to);
       if (isPathResolveError(resolvedTo)) {
         return withMoveBatchError(resolvedTo.error, moveIndex, move);
       }
@@ -1980,6 +1986,12 @@ registerToolHandlerWithStructuredErrors(VFS_MOVE_TOOL, (args, ctx) => {
 
       const from = normalizeVfsPath(resolvedFrom.path);
       const to = normalizeVfsPath(resolvedTo.path);
+
+      const seenError = requireToolSeenForExistingFile(draft, to, "overwrite");
+      if (seenError) {
+        return withMoveBatchError(seenError, moveIndex, move);
+      }
+
       try {
         draft.renameFile(from, to);
       } catch (error) {
@@ -2033,7 +2045,7 @@ registerToolHandlerWithStructuredErrors(VFS_DELETE_TOOL, (args, ctx) => {
       });
 
     for (const [pathIndex, path] of typedArgs.paths.entries()) {
-      const resolved = resolveCurrentPath(path);
+      const resolved = resolveCurrentPath(ctx, path);
       if (isPathResolveError(resolved)) {
         return withDeleteBatchError(resolved.error, pathIndex, path);
       }

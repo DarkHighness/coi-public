@@ -78,7 +78,9 @@ const cleanupPromptAtom = defineAtom(
      - If one copy is unlocked and the other is locked (hidden truth), prefer keeping the locked one,
        but preserve player knowledge by merging visible info and ensuring unlocked=true when appropriate.
 
-  4) Re-run \`vfs_ls\` / \`vfs_search\` to sanity-check counts after cleanup.
+  4) After merges/deletes, do a targeted verification read *only if needed*:
+     - Re-run \`vfs_ls\` / \`vfs_search\` to confirm duplicates were removed and references still resolve.
+     - Avoid read-only "sanity checks" right before finish just to look thorough.
 
   5) Finish with \`vfs_commit_turn\` as the LAST tool call.
 </workflow>

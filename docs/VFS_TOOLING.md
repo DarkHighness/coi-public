@@ -158,7 +158,32 @@ handlers 的关键特点：
 
 **回合结束 / 摘要结束**
 - `vfs_commit_turn`：唯一允许写 `conversation/**` 的“结束回合”工具（生成 turn 文件 + 更新 index）
-- `vfs_finish_summary`：summary loop 的结束工具
+- `vfs_commit_summary`：summary loop 的结束工具
+
+### 4.4 Runtime Command Skills（commands/runtime/**）
+部分 agentic loops（turn/cleanup/summary/outline 等）会在 prompt 中引用运行时“命令协议”技能文件，用于把长的操作规范移出 system prompt，并在需要时按需读取。
+
+- Hub（入口）：`current/skills/commands/runtime/SKILL.md`
+- 子技能（按 loop/mode 拆分）：
+  - `current/skills/commands/runtime/turn/SKILL.md`
+  - `current/skills/commands/runtime/cleanup/SKILL.md`
+  - `current/skills/commands/runtime/summary/SKILL.md`
+  - `current/skills/commands/runtime/compact/SKILL.md`
+  - `current/skills/commands/runtime/outline/SKILL.md`
+  - `current/skills/commands/runtime/sudo/SKILL.md`
+  - `current/skills/commands/runtime/god/SKILL.md`
+  - `current/skills/commands/runtime/unlock/SKILL.md`
+
+软引导 vs 强门禁：
+- **软引导（Prompt-level guidance）**：多数 loop 只是在提示词中建议先读 hub/子技能，以提升协议一致性与产出稳定性。
+- **强门禁（Runtime gate）**：turn loop 在特定模式下会强制要求先读对应 skill（否则返回 `[ERROR: COMMAND_SKILL_NOT_READ]`）：
+  - `/sudo`：必须先 `vfs_read current/skills/commands/runtime/sudo/SKILL.md`
+  - `cleanup`：必须先 `vfs_read current/skills/commands/runtime/cleanup/SKILL.md`
+
+实现位置：
+- seed/generator：`src/services/vfs/globalSkills/generator.ts`
+- requiredCommandSkillPaths：`src/services/ai/agentic/turn/loopInitializer.ts`
+- gate 校验：`src/services/ai/agentic/turn/agenticLoop.ts`（`checkCommandSkillReadGate`）
 
 ---
 

@@ -490,6 +490,47 @@ describe("runSummaryLoop", () => {
     expect((input.vfsSession as any).mergeJson).toHaveBeenCalledTimes(2); // baseline + rollback
   });
 
+  it("does not persist forbidden tokens even after multiple retries", async () => {
+    const input = makeInput();
+    (input.settings as any).extra = { maxAgenticRounds: 3 };
+
+    mockDispatchToolCallAsync.mockImplementation(async (name: string) => {
+      if (name !== VFS_TOOLSETS.summary.finishToolName) {
+        return { success: false, error: "unexpected tool" };
+      }
+      return {
+        success: true,
+        data: {
+          summary: {
+            id: "s_forbidden",
+            displayText: "includes vfs_write (forbidden)",
+            visible: {
+              narrative: "ok",
+              majorEvents: [],
+              characterDevelopment: "",
+              worldState: "",
+            },
+            hidden: {
+              truthNarrative: "",
+              hiddenPlots: [],
+              npcActions: [],
+              worldTruth: "",
+              unrevealed: [],
+            },
+            nodeRange: { fromIndex: 0, toIndex: 1 },
+            lastSummarizedIndex: 2,
+          },
+        },
+      };
+    });
+
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary).toBeNull();
+    expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(3);
+    expect((input.vfsSession as any).mergeJson).toHaveBeenCalledTimes(4); // baseline + rollback per round
+  });
+
   it("rejects finish calls when finish is not the last tool", async () => {
     const finishTool = VFS_TOOLSETS.summary.finishToolName;
 

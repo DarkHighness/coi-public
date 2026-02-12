@@ -23,7 +23,7 @@ import {
   HistoryCorruptedError,
 } from "../../contextCompressor";
 
-import { OutlinePhase0 } from "../../../schemas";
+import type { OutlinePhase0, OutlinePhase3, OutlinePhase4, OutlinePhase6 } from "../../../schemas";
 
 import {
   getOutlineSystemInstruction,
@@ -98,6 +98,10 @@ import {
 } from "../../../prompts/runtimeFloor";
 import { validateGenderPreferencePhase3 } from "./genderValidation";
 import { resolveOutlineToolNameAlias } from "./toolNameAlias";
+import {
+  validatePhase4LocationsIncludesPlayerCurrentLocation,
+  validatePhase6NpcLocationsExist,
+} from "./outlineCrossPhaseValidation";
 
 const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase0Schema,
@@ -1240,6 +1244,75 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               }
             }
 
+            // Phase 4/6: Cross-phase location reference validation
+            if (phaseNum === 4) {
+              const priorPhase3 = partial.phase3 as OutlinePhase3 | undefined;
+              if (!priorPhase3?.player) {
+                toolResponses.push({
+                  toolCallId: tc.id!,
+                  name: tc.name,
+                  content: {
+                    success: false,
+                    error:
+                      "Phase 4 requires Phase 3 player bundle, but prior phase data is missing. Retry submission after Phase 3 is completed.",
+                    code: "INVALID_DATA",
+                  },
+                });
+                continue;
+              }
+
+              const cross = validatePhase4LocationsIncludesPlayerCurrentLocation(
+                priorPhase3.player,
+                (validatedData as OutlinePhase4).locations,
+              );
+              if (!cross.ok) {
+                toolResponses.push({
+                  toolCallId: tc.id!,
+                  name: tc.name,
+                  content: {
+                    success: false,
+                    error: `Phase 4: ${cross.error}`,
+                    code: "INVALID_DATA",
+                  },
+                });
+                continue;
+              }
+            }
+
+            if (phaseNum === 6) {
+              const priorPhase4 = partial.phase4 as OutlinePhase4 | undefined;
+              if (!priorPhase4?.locations) {
+                toolResponses.push({
+                  toolCallId: tc.id!,
+                  name: tc.name,
+                  content: {
+                    success: false,
+                    error:
+                      "Phase 6 requires Phase 4 locations, but prior phase data is missing. Retry submission after Phase 4 is completed.",
+                    code: "INVALID_DATA",
+                  },
+                });
+                continue;
+              }
+
+              const cross = validatePhase6NpcLocationsExist(
+                priorPhase4.locations,
+                (validatedData as OutlinePhase6).npcs,
+              );
+              if (!cross.ok) {
+                toolResponses.push({
+                  toolCallId: tc.id!,
+                  name: tc.name,
+                  content: {
+                    success: false,
+                    error: `Phase 6: ${cross.error}`,
+                    code: "INVALID_DATA",
+                  },
+                });
+                continue;
+              }
+            }
+
             const output = await dispatchToolCallAsync(normalizedName, tc.args, {
               vfsSession,
               settings,
@@ -1364,6 +1437,31 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
   // Merge all phases into complete outline
   console.log("[OutlineAgentic] All phases completed, merging outline");
+  const phase3 = partial.phase3 as OutlinePhase3 | undefined;
+  const phase4 = partial.phase4 as OutlinePhase4 | undefined;
+  const phase6 = partial.phase6 as OutlinePhase6 | undefined;
+
+  if (phase3?.player && phase4?.locations) {
+    const cross = validatePhase4LocationsIncludesPlayerCurrentLocation(
+      phase3.player,
+      phase4.locations,
+    );
+    if (!cross.ok) {
+      throw new Error(
+        `[OutlineAgentic] Cross-phase invariant failed before merge: ${cross.error}`,
+      );
+    }
+  }
+
+  if (phase4?.locations && phase6?.npcs) {
+    const cross = validatePhase6NpcLocationsExist(phase4.locations, phase6.npcs);
+    if (!cross.ok) {
+      throw new Error(
+        `[OutlineAgentic] Cross-phase invariant failed before merge: ${cross.error}`,
+      );
+    }
+  }
+
   const outline = mergeOutlinePhases(partial);
 
   // Build themeConfig for storage in GameState

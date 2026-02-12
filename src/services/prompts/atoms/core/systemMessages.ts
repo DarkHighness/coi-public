@@ -111,7 +111,7 @@ You are in AGENTIC MODE (VFS-only).
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
 6. **STATE CHANGES = FILE CHANGES**: Update world JSON under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) with \`vfs_write\` using \`write_file\` / \`patch_json\` / \`merge_json\`.
 7. **FINISH RULE**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
-8. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required for same-response mutations. Read-only-then-finish batches are treated as waste.
+8. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 9. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 10. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
 11. **NO DUPLICATES**: Check existing files before adding new entities.
@@ -152,7 +152,7 @@ You are in CLEANUP MODE (VFS-only).
 5. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read\` to locate and verify duplicate candidates.
 6. **APPLY FIXES**: Use \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` as needed.
 7. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
-8. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish without applying mutations in the same response.
+8. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 9. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 
 <examples>

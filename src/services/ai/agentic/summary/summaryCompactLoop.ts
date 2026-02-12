@@ -270,7 +270,7 @@ async function runSummaryLoopCore(options: {
 
   const allLogs: LogEntry[] = [];
   let finalSummary: StorySummary | null = null;
-  let forbiddenRetryUsed = false;
+  let forbiddenRejectCount = 0;
 
   // Main loop - stage-less design
   while (
@@ -557,45 +557,43 @@ async function runSummaryLoopCore(options: {
 
           if (hasForbidden) {
             // Roll back summary state to baseline and ask the model to try again.
-            // This keeps the "finish" tool semantics while preventing bad summaries from persisting.
-            if (!forbiddenRetryUsed) {
-              forbiddenRetryUsed = true;
-              try {
-                input.vfsSession.mergeJson("summary/state.json", {
-                  summaries: input.baseSummaries,
-                  lastSummarizedIndex: input.baseIndex,
-                });
-              } catch (error) {
-                const msg = error instanceof Error ? error.message : String(error);
-                throw new Error(
-                  `[SummaryLoop] Failed to rollback summary/state.json after forbidden token check: ${msg}`,
-                );
-              }
-
-              toolResponses.push({
-                toolCallId: call.id,
-                name: call.name,
-                content: {
-                  success: false,
-                  error:
-                    `[ERROR: SUMMARY_FORBIDDEN_TOKENS] The summary contains forbidden process-related tokens (e.g. tool/retry/error). ` +
-                    `Rewrite the summary to include ONLY story facts and world changes. Do NOT mention tools, failures, retries, budgets, or internal errors.`,
-                  code: "INVALID_SUMMARY",
-                },
+            // Forbidden process tokens must NEVER be persisted (even after multiple retries).
+            forbiddenRejectCount += 1;
+            try {
+              input.vfsSession.mergeJson("summary/state.json", {
+                summaries: input.baseSummaries,
+                lastSummarizedIndex: input.baseIndex,
               });
-              allLogs.push(
-                createLogEntry({
-                  provider: providerProtocol,
-                  model: modelId,
-                  endpoint: "summary_tool",
-                  toolName: call.name,
-                  toolInput: dispatchArgs,
-                  toolOutput: output,
-                }),
+            } catch (error) {
+              const msg = error instanceof Error ? error.message : String(error);
+              throw new Error(
+                `[SummaryLoop] Failed to rollback summary/state.json after forbidden token check: ${msg}`,
               );
-              // Skip default logging below (already logged) and continue processing remaining calls if any.
-              continue;
             }
+
+            toolResponses.push({
+              toolCallId: call.id,
+              name: call.name,
+              content: {
+                success: false,
+                error:
+                  `[ERROR: SUMMARY_FORBIDDEN_TOKENS] The summary contains forbidden process-related tokens (e.g. tool/retry/error). ` +
+                  `Rewrite the summary to include ONLY story facts and world changes. Do NOT mention tools, failures, retries, budgets, or internal errors.`,
+                code: "SUMMARY_FORBIDDEN_TOKENS",
+              },
+            });
+            allLogs.push(
+              createLogEntry({
+                provider: providerProtocol,
+                model: modelId,
+                endpoint: "summary_tool",
+                toolName: call.name,
+                toolInput: dispatchArgs,
+                toolOutput: output,
+              }),
+            );
+            // Skip default logging below (already logged) and continue processing remaining calls if any.
+            continue;
           }
 
           finalSummary = produced;

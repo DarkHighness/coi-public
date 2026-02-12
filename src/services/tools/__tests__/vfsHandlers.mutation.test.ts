@@ -342,4 +342,78 @@ describe("VFS handlers mutations", () => {
     expect(ok.success).toBe(true);
     expect(ok.data.deleted).toContain("current/world/notes.md");
   });
+
+  it("does not rebase explicit canonical fork paths across activeForkId", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session, gameState: { forkId: 1, turnNumber: 0 } as any };
+
+    const writeResult = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "write_file",
+            path: "forks/0/story/world/global.json",
+            content: JSON.stringify(createValidGlobal()),
+            contentType: "application/json",
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(writeResult.success).toBe(true);
+
+    const snapshot = session.snapshotCanonical();
+    expect(Object.keys(snapshot)).toContain("forks/0/story/world/global.json");
+    expect(Object.keys(snapshot)).not.toContain("forks/1/story/world/global.json");
+  });
+
+  it("requires reading destination before vfs_move overwrites it", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const seed = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "write_file",
+            path: "current/world/a.txt",
+            content: "A",
+            contentType: "text/plain",
+          },
+          {
+            op: "write_file",
+            path: "current/world/b.txt",
+            content: "B",
+            contentType: "text/plain",
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(seed.success).toBe(true);
+
+    const blocked = dispatchToolCall(
+      "vfs_move",
+      { moves: [{ from: "current/world/a.txt", to: "current/world/b.txt" }] },
+      ctx,
+    ) as any;
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.code).toBe("INVALID_ACTION");
+    expect(blocked.details?.tool).toBe("vfs_move");
+
+    dispatchToolCall("vfs_read", { path: "current/world/b.txt" }, ctx);
+
+    const ok = dispatchToolCall(
+      "vfs_move",
+      { moves: [{ from: "current/world/a.txt", to: "current/world/b.txt" }] },
+      ctx,
+    ) as any;
+
+    expect(ok.success).toBe(true);
+  });
 });
