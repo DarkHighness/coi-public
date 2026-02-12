@@ -57,8 +57,8 @@ export const composeSystemInstruction = (
   options: ComposeSystemInstructionOptions,
 ): string => {
   const blocks = [
-    cleanBlock(options.runtimeFloor),
     cleanBlock(options.systemDefaultInjection),
+    cleanBlock(options.runtimeFloor),
     cleanBlock(options.customInstruction),
     cleanBlock(options.baseSystemInstruction),
   ].filter((entry) => entry.length > 0);
