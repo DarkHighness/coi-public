@@ -228,3 +228,19 @@ export const iconsAtom: Atom<void> = defineAtom(
   },
   () => icons,
 );
+
+export const idAndEntityPolicyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/idAndEntityPolicy#idAndEntityPolicyPrimer",
+    source: "atoms/core/idAndEntityPolicy.ts",
+    exportName: "idAndEntityPolicyPrimer",
+  },
+  () => `
+<id_and_entity_policy>
+  <rule>IDs are for storage + references only. NEVER put IDs in narrative, choices, or any player-facing text.</rule>
+  <rule>Persisted entities should have stable, unique IDs. Reuse existing IDs; do not rename IDs.</rule>
+  <rule>Prefer depth over bloat: only create a new entity file when it must persist mechanically; otherwise keep it narrative-only or update an existing entity.</rule>
+  <rule>For the full ID + entity workflow (search-before-create, minimal-entity principle), read \`current/skills/core/id-and-entities/SKILL.md\`.</rule>
+</id_and_entity_policy>
+`,
+);

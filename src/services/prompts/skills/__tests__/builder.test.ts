@@ -29,24 +29,18 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain(
       "Theme skills are optional accelerators, not hard gates",
     );
-    expect(prompt).toContain("theme-face-slapping-reversal");
-    expect(prompt).toContain("theme-ip-faithful-adaptation");
+    expect(prompt).toContain("Theme skills live under `current/skills/theme/**`");
   });
 
-  it("renders high-priority + theme catalog index from metadata definitions", () => {
+  it("renders a compact hierarchical skills navigation map", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
-    const entries = getAllSkillCatalogEntries().filter(
-      (entry) => entry.priority === "high" || entry.domain === "theme",
-    );
-
-    for (const entry of entries) {
-      const relativePath = entry.path
-        .replace(/^current\/skills\//, "")
-        .replace(/\/SKILL\.md$/, "");
-      expect(prompt).toContain(`id="${entry.id}"`);
-      expect(prompt).toContain(`path="${relativePath}"`);
-    }
-    expect(prompt).toContain("<high_priority_index>");
+    expect(prompt).toContain("<skills_catalog>");
+    expect(prompt).toContain("<hierarchy>");
+    expect(prompt).toContain("`commands/runtime`");
+    expect(prompt).toContain("`commands/runtime/turn`");
+    expect(prompt).toContain("`presets/runtime`");
+    expect(prompt).toContain("`worldbuilding`");
+    expect(prompt).toContain("`core/id-and-entities`");
     expect(prompt).toContain(
       "See `current/skills/index.json` for complete skill coverage.",
     );
@@ -68,13 +62,10 @@ describe("skills prompt builder hygiene", () => {
   it("includes priority metadata and explicit load protocol in catalog", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
 
-    expect(prompt).toContain("Priority protocol: within each domain");
     expect(prompt).toContain(
-      "High-priority index below is a preload accelerator",
+      "Hierarchy below is a navigation map (hubs + entry points), not a complete catalog.",
     );
-    expect(prompt).toContain(`priority="high"`);
-    expect(prompt).toContain(`priority="medium"`);
-    expect(prompt).toContain("Trigger signal:");
+    expect(prompt).toContain("Priority protocol: load hub/high first");
     expect(prompt).toContain("Execution requirement:");
   });
 });
