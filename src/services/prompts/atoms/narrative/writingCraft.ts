@@ -78,14 +78,68 @@ const storyEngine = `
   </story_engine>
 `;
 
-const humanizerTone = `
+const humanizerTonePrimer = `
   <humanizer_tone>
-    **HUMANIZER TONE (CONCISE, STATE-SAFE)**
-    - Prefer concrete facts/actions over abstract hype and generic uplift.
-    - Avoid AI scaffolding: "firstly/secondly/finally", "in conclusion", "not only...but also".
-    - Avoid vague authority filler ("experts say", "it is important to note").
-    - Style polish must NOT alter canonical state: keep IDs, counts, inventory, injuries, locations, causality, and timeline unchanged.
+    **HUMANIZER / 去 AI 化（简版，默认启用）**
+    - Concrete nouns/verbs first. Let facts carry emotion; don't announce "significance".
+    - Cut scaffolding + filler (firstly/secondly/finally; 中文少用“此外/同时/因此/总之/值得注意的是”).
+    - Avoid rhetorical templates ("not only...but also"; 中文: “不仅…还…/不是…而是…”).
+    - Avoid poster-line slogans. If a line is quotable, earn it in-character or as found text.
+    - Canon-safety: do NOT alter IDs, counts, inventory, injuries, locations, causality, or timeline for style.
   </humanizer_tone>
+`;
+
+const humanizerToneFull = `
+  <humanizer_tone>
+    **HUMANIZER / 去 AI 化（写作卫生）**
+    - Say the thing, then stop. No preambles. No self-reference. No policy lecture voice.
+    - Prefer checkable facts/actions over abstract hype. Replace "tense/dangerous/meaningful" with one observable tell.
+    - Cut filler connectors + symmetry templates:
+      - ❌ firstly/secondly/finally; in conclusion
+      - ❌ 中文: 此外/同时/因此/总之/值得注意的是（能删就删）
+      - ❌ 中文: 不仅…还… / 不是…而是… / 既…又…（少用）
+    - Avoid inflated significance/legacy claims ("pivotal", "testament"; 中文: 标志着/彰显/见证/关键时刻/不可磨灭). Let consequences imply weight.
+    - Avoid vague authorities ("experts say", "it is important to note"; 中文: 有人说/据传/众所周知) unless it's an in-world source (rumor, report, dossier).
+    - Avoid forced triads. Two concrete details beat three vague ones.
+    - Avoid quotable slogan endings. If you want poetry, place it in found text or NPC speech, and use sparingly.
+    - Imperfections are allowed: clipped sentences, unfinished thoughts, small contradictions — if they fit the voice and do not break canon.
+    - Canon-safety: never rewrite IDs, counts, inventory, injuries, locations, causality, or timeline for style.
+  </humanizer_tone>
+`;
+
+const temperatureDialPrimer = `
+  <temperature_dial>
+    **TEMPERATURE DIAL（温度拨盘，不是模板）**
+    - Pick a base temperature per theme/scene: Cold / Hot / Warm / Poetic（冷/狠/暖/诗）
+    - Let it change rhythm + vocabulary + detail-choice, not the facts.
+  </temperature_dial>
+`;
+
+const temperatureDialFull = `
+  <temperature_dial>
+    **TEMPERATURE DIAL（温度拨盘：决定“狠/克制/诗性/生活化”）**
+    Tone has no single correct answer. It depends on the theme's temperature — and the moment.
+    Pick ONE dominant temperature, allow small shifts, but avoid a flat one-voice-for-everything.
+
+    **COLD / 冷（克制）**
+    - Short sentences. Fewer adjectives. More silence.
+    - Details must be precise and checkable: procedure, evidence, rules, time stamps.
+    - Horror/pressure comes from what isn't said, and what can't be undone.
+
+    **HOT / 热（狠）**
+    - Verbs first. Impact close. Stakes immediate.
+    - Write the bill: bruises, paperwork, money, reputation, witnesses, retaliation.
+    - No speeches. Let the opponent pay in-world.
+
+    **WARM / 暖（生活化）**
+    - Ordinary objects + routines carry weight: food, light, cheap medicine, phone battery, chores.
+    - Conflict can be small but real. Avoid melodrama; show care in small acts.
+
+    **POETIC / 诗（诗性）**
+    - Imagery and rhythm serve a threshold moment; leave space.
+    - Keep it grounded in objects and scenes. Avoid slogan lines.
+    - Use literary adaptation sparingly: best as found text or an NPC's broken line, not narrator flex.
+  </temperature_dial>
 `;
 
 const rhythmMastery = `
@@ -941,7 +995,8 @@ export const writingCraftPrimer: Atom<void> = defineAtom(
   <rule>No meta voice: no policy lecture, no self-reference, no apology preamble.</rule>
   <rule>If detail is unknown, stay precise and partial. Do not pad with generic summary language.</rule>
 ${storyEnginePrimer}
-${humanizerTone}
+${humanizerTonePrimer}
+${temperatureDialPrimer}
 
   <prohibited_vocabulary>
     ❌ BANNED: "Tapestry", "Symphony", "Delve", "Beacon", "Testament", "Intertwined".
@@ -971,7 +1026,8 @@ export const writingCraft: Atom<void> = defineAtom(
   The difference between AI writing and human writing is RHYTHM.
   AI writes in even, predictable beats. Human writers vary their tempo.
 
-${humanizerTone}
+${humanizerToneFull}
+${temperatureDialFull}
 ${showDontTell}
 ${noProtagonistMindReading}
 ${storyEngine}
@@ -1172,6 +1228,9 @@ export const writingCraftSkill: SkillAtom<void> = defineSkillAtom(
 3. NO protagonist mind-reading - describe senses, not thoughts
 4. Vary sentence openings - max 40% starting with "You"
 5. Scene beats: Anchor → Objective → Pressure → Exchange → Cost → Hook
+6. Cut AI scaffolding + filler; avoid slogan endings
+7. Canon-safety: never rewrite facts for style
+8. Set a base temperature (Cold/Hot/Warm/Poetic) per theme/scene
 `.trim(),
 
     checklist: [
@@ -1179,6 +1238,10 @@ export const writingCraftSkill: SkillAtom<void> = defineSkillAtom(
       "Not naming protagonist in narrative?",
       "Showing emotions through body, not labels?",
       "Varying sentence openings (not all starting with 'You')?",
+      "Setting a dominant temperature (Cold/Hot/Warm/Poetic) that matches theme + moment?",
+      "Cutting filler/scaffolding (no firstly/secondly; 中文少用“此外/总之/因此”)?",
+      "Avoiding rhetorical templates (not only...but also; 不仅…还… / 不是…而是…)?",
+      "Avoiding poster-line slogans unless in-character/found text?",
       "Each turn has concrete change + reason to continue?",
       "Avoiding banned vocabulary (tapestry, symphony, etc.)?",
       "Avoiding filter words ('You see', 'You hear')?",

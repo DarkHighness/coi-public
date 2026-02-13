@@ -12,9 +12,10 @@ export interface StyleGuideInput {
 const humanizerTone = `
 <humanizer_tone>
   **HUMANIZER TONE (CONCISE, CANON-SAFE)**
-  - Prefer concrete actions/facts over abstract hype.
-  - Skip formulaic AI scaffolding ("firstly/secondly/finally", "in conclusion", "not only...but also").
-  - Avoid vague authority/filler ("experts say", "it is important to note").
+  - Concrete nouns/verbs first. Avoid abstract hype and inflated "significance" claims.
+  - Cut scaffolding + filler ("firstly/secondly/finally", "in conclusion"; 中文少用“此外/同时/因此/总之/值得注意的是”).
+  - Avoid rhetorical templates ("not only...but also"; 中文: 不仅…还… / 不是…而是…).
+  - Avoid poster-line slogans and chatty meta ("as an AI/GM", "hope this helps").
   - Never rewrite canonical state for style: preserve IDs, counts, inventory, injuries, locations, causality, and timeline exactly.
 </humanizer_tone>
 `;
