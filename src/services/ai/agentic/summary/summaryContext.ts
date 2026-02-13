@@ -32,11 +32,9 @@ type SummarySystemInstructionInput = {
 
 const summaryBaselineLines = formatLoopSkillBaseline("summary_query", {
   ordered: true,
-}).map((line) => line.replace(/\)\s+/, ") `") + "`");
+});
 
-const summaryBaselineBullets = formatLoopSkillBaseline("summary_query").map(
-  (line) => line.replace("- ", "- `") + "`",
-);
+const summaryBaselineBullets = formatLoopSkillBaseline("summary_query");
 
 const summaryRoleAtom = defineAtom(
   {

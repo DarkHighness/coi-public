@@ -38,7 +38,7 @@ export function injectSudoModeInstruction(
       [
         "[SYSTEM: COMMAND SKILL REQUIRED]",
         "Soft gate baseline (advisory, not blocking):",
-        ...baseline.map((line) => line.replace("- ", "- `") + "`"),
+        ...baseline,
         "Before any non-read tool call, read: `current/skills/commands/runtime/sudo/SKILL.md`",
       ].join("\n"),
     ),
@@ -78,7 +78,7 @@ export function injectNormalTurnInstruction(
         [
           "[SYSTEM: COMMAND SKILL REQUIRED]",
           "Soft gate baseline before cleanup mutation (advisory, not blocking):",
-          ...cleanupBaseline.map((line) => line.replace("- ", "- `") + "`"),
+          ...cleanupBaseline,
         ].join("\n"),
       ),
     );
@@ -96,7 +96,7 @@ export function injectNormalTurnInstruction(
               ? contextMeta.turnNumber
               : "unknown"
           }`,
-          "- Read current/conversation/index.json first, then only read/write current fork conversation files.",
+          "- Read `current/conversation/index.json` first, then only read/write current fork conversation files.",
           "- NEVER read from or mutate other forks while cleaning this fork.",
           "- Preserve narrative continuity with existing world state and conversation files.",
           "- Do NOT fabricate new lore/conflicts unrelated to deduplication/consolidation.",
@@ -117,7 +117,7 @@ export function injectNormalTurnInstruction(
     const turnBaseline = formatLoopSkillBaseline("turn");
     modeSkillLines.push(
       "Soft gate (advisory, not blocking) for normal turns:",
-      ...turnBaseline.map((line) => line.replace("- ", "- `") + "`"),
+      ...turnBaseline,
       "If these skill files are unavailable, continue and keep tool usage protocol-compliant.",
     );
   }
@@ -145,7 +145,7 @@ export function injectNormalTurnInstruction(
       "[SYSTEM: PRESET SKILLS ACTIVE]",
       "Hub first: `current/skills/presets/runtime/SKILL.md`",
       "Before non-read tool calls, load active preset skills:",
-      ...requiredPresetSkillPaths.map((path) => `- current/${path}`),
+      ...requiredPresetSkillPaths.map((path) => `- \`current/${path}\``),
     ];
     history.push(createUserMessage(lines.join("\n")));
   }
@@ -156,7 +156,7 @@ export function injectNormalTurnInstruction(
       "Apply active profile mapping by tag (custom_context > save_profile > theme_default):",
       ...requiredPresetSkillRequirements.map(
         (entry) =>
-          `- <${entry.tag}> profile=${entry.profile} source=${entry.source} skill=current/${entry.path}`,
+          `- <${entry.tag}> profile=${entry.profile} source=${entry.source} skill=\`current/${entry.path}\``,
       ),
     ];
     history.push(createUserMessage(lines.join("\n")));

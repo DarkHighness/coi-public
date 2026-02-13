@@ -257,7 +257,7 @@ const formatOutlinePhaseArtifactChecklist = (phaseNumbers: number[]): string => 
   return phaseNumbers
     .map((phaseNum) => {
       const { currentPath, sharedPath } = getOutlinePhaseArtifactPaths(phaseNum);
-      return `- Phase ${phaseNum}: ${currentPath} (fallback: ${sharedPath})`;
+      return `- Phase ${phaseNum}: \`${currentPath}\` (fallback: \`${sharedPath}\`)`;
     })
     .join("\n");
 };
@@ -268,6 +268,7 @@ const buildOutlineResumeAnchor = (
 ): string => {
   const safeCurrentPhase = Math.max(0, Math.min(9, Math.floor(currentPhase)));
   const currentSubmitTool = `vfs_commit_outline_phase_${safeCurrentPhase}`;
+  const currentArtifactPaths = getOutlinePhaseArtifactPaths(safeCurrentPhase);
 
   const completedPhaseNumbers = Array.from({ length: 10 }, (_, idx) => idx).filter(
     (phaseNum) =>
@@ -308,19 +309,19 @@ Missing completed artifacts (should re-read/repair before submit): ${
 Remaining phases (including current): ${remainingPhases.join(", ")}
 
 Authoritative progress checkpoint:
-- current/outline/progress.json
+- \`current/outline/progress.json\`
 
 Phase artifact lookup (completed):
 ${formatOutlinePhaseArtifactChecklist(completedPhaseNumbers)}
 
 Current-phase artifact targets:
-- ${getOutlinePhaseArtifactPaths(safeCurrentPhase).currentPath}
-- ${getOutlinePhaseArtifactPaths(safeCurrentPhase).sharedPath}
+- \`${currentArtifactPaths.currentPath}\`
+- \`${currentArtifactPaths.sharedPath}\`
 
 Read order (recommended):
-1) Read current/outline/progress.json to confirm resume checkpoint.
+1) Read \`current/outline/progress.json\` to confirm resume checkpoint.
 2) Read completed phase files listed above to rebuild continuity.
-3) If a file is missing under current/, read the shared/ fallback path.
+3) If a file is missing under \`current/\`, read the \`shared/\` fallback path.
 4) Then call ONLY ${currentSubmitTool} for this phase.
 
 Rules:
@@ -349,7 +350,9 @@ const validateOutlineReadOnlyVfsArgs = (
   allowPrefixes: string[],
 ): string | null => {
   const reject = (detail: string) =>
-    `Blocked read-only VFS access in outline generation: ${detail}. Allowed roots: ${allowPrefixes.map((p) => `"${normalizeVfsPath(p)}"`).join(", ")}`;
+    `Blocked read-only VFS access in outline generation: ${detail}. Allowed roots: ${allowPrefixes
+      .map((p) => `\`current/${normalizeVfsPath(p)}\``)
+      .join(", ")}`;
 
   if (toolName === "vfs_ls") {
     const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
@@ -718,7 +721,7 @@ export const generateStoryOutlinePhased = async (
     const phaseRange = hasImage ? "0-9" : "1-9";
 
     const allowedRootsForPrompt = readOnlyVfsAllowPrefixes
-      .map((p) => `  - current/${normalizeVfsPath(p)}`)
+      .map((p) => `  - \`current/${normalizeVfsPath(p)}\``)
       .join("\n");
 
     const vfsReadOnlyHint = readOnlyVfsEnabled

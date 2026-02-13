@@ -216,15 +216,26 @@ When you render those consequences into prose, write like a skilled human storyt
 
   When a tool call fails, you MUST follow these recovery steps:
 
-  1. **Identify the Error Type**:
-     - **[VALIDATION_ERROR]**: You provided arguments that don't match the schema (wrong types, missing required fields, or value out of range).
-     - **[NOT_FOUND]**: The path/ID you referenced doesn't exist in the VFS under \`current/**\` (alias) or canonical \`shared/**\` / \`forks/{id}/**\`.
-     - **[ALREADY_EXISTS]**: You tried to create something that already exists.
-     - **[INVALID_ACTION]**: You asked for an action that specific tool doesn't support.
+  1. **Identify the Error Type (by \`code\`)**:
+     - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Your payload doesn't match the tool schema or the target file's expected structure.
+       - Fix: \`vfs_read({ path: "current/refs/tools/<tool>.md" })\` and retry with schema-valid args.
+       - For JSON targets: \`vfs_schema({ paths: ["<targetPath>"] })\` to confirm fields/types before retrying.
+     - \`NOT_FOUND\`: The path/ID you referenced doesn't exist in the VFS under \`current/**\` (alias) or canonical \`shared/**\` / \`forks/{id}/**\`.
+       - Fix: \`vfs_ls({ path: "<parentDir>" })\`, then \`vfs_search({ path: "<parentDir>", query: "<name>", fuzzy: true })\`.
+     - \`ALREADY_EXISTS\`: You tried to create something that already exists.
+       - Fix: \`vfs_read({ path: "<targetPath>" })\`, then update via \`vfs_write\` (\`patch_json\` / \`merge_json\`) instead of creating duplicates.
+     - \`INVALID_ACTION\`: You asked for an action that the tool doesn't support, or violated a protocol rule (read-before-mutate / finish-last / finish-guarded).
+       - Fix: \`vfs_read({ path: "current/refs/tools/<tool>.md" })\` to confirm preconditions, then retry with a valid operation/order.
+     - \`FINISH_GUARD_REQUIRED\`: You attempted to mutate finish-guarded conversation/summary state.
+       - Fix: use the loop's commit tool (usually \`vfs_commit_turn\`) (never \`vfs_write\`/\`vfs_move\`/\`vfs_delete\` on guarded paths).
+     - \`IMMUTABLE_READONLY\`: Target is immutable read-only (common: \`shared/system/skills/**\`, \`shared/system/refs/**\`; alias \`current/skills/**\`, \`current/refs/**\`).
+     - \`ELEVATION_REQUIRED\` / \`EDITOR_CONFIRM_REQUIRED\`: Stop and report blocker; do NOT brute-force retries.
+     - \`RAG_DISABLED\`: Retry \`vfs_search\` without \`semantic\` (use text/fuzzy/regex instead).
 
   2. **Analyze the Feedback**:
-     - **Read the \`error\` message carefully**. It often contains specific hints (e.g., Zod error paths, fuzzy search suggestions, or the correct ID of an existing entity).
-     - **Look for \`Did you mean: ...?\` suggestions** in NOT_FOUND errors.
+     - **Read \`error\` + \`code\` carefully**. They often contain specific hints (e.g., Zod error paths, fuzzy search suggestions, or the correct ID of an existing entity).
+     - If present, follow \`details.recovery\` (actionable next tool calls) and open \`details.refs\` (tool docs).
+     - Look for \`Did you mean: ...?\` suggestions in \`NOT_FOUND\` errors.
 
   3. **Mandatory Retry/Resolution**:
      - **DO NOT BYPASS ERRORS**: If a prior tool call in the loop failed, you ARE NOT ALLOWED to finish your turn until you have ATTEMPTED TO FIX the error or provided a logical explanation for abandonment.
@@ -232,7 +243,7 @@ When you render those consequences into prose, write like a skilled human storyt
     - **EXCEPTION**: Attempts to write immutable/read-only targets (e.g. skills/refs) do not create retry obligations for finish.
     - **DO NOT WRITE TURN FILES** while unhandled errors exist. If you do, you will be blocked and forced to regenerate.
     - **Self-Correction**: Immediately retry the tool with corrected arguments in the same turn if possible.
-    - **Cross-Checking**: If you get a NOT_FOUND error, use \`vfs_search\` or \`vfs_search\` to locate the correct file/ID before retrying.
+    - **Cross-Checking**: If you get a \`NOT_FOUND\` error, use \`vfs_ls\` on the parent dir, or \`vfs_search\` with \`fuzzy: true\` to locate the correct file/ID before retrying.
 
   4. **Communication**:
      - If you cannot fix the error (e.g., the entity truly doesn't exist and you can't find a replacement), you must explain this in your narrative or a meta-comment before ending the turn.

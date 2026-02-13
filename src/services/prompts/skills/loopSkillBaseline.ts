@@ -39,7 +39,6 @@ export const formatLoopSkillBaseline = (
 ): string[] => {
   const entries = LOOP_SKILL_BASELINE[key];
   return entries.map((path, index) =>
-    opts?.ordered ? `${index + 1}) ${path}` : `- ${path}`,
+    opts?.ordered ? `${index + 1}) \`${path}\`` : `- \`${path}\``,
   );
 };
-

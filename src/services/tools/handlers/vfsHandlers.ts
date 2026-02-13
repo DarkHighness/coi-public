@@ -110,31 +110,106 @@ const defaultRecoveryByCode = (
   code: ToolCallError["code"],
   toolName: string,
 ): string[] => {
+  const toolDocRef = getToolDocRef(toolName);
+
   if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
-    return [`Review ${getToolDocRef(toolName)} and retry with schema-valid arguments.`];
+    return [
+      `Use vfs_read on ${toolDocRef} (INTRO/SCHEMA/EXAMPLES), then retry with schema-valid arguments.`,
+      "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
+      "If you're modifying an existing file, vfs_read it first (read-before-mutate), then retry.",
+    ];
   }
   if (code === "INVALID_ACTION") {
     return [
-      `Follow tool preconditions (read-before-write / finish ordering) in ${getToolDocRef(toolName)} and retry.`,
+      `Use vfs_read on ${toolDocRef} to confirm tool preconditions, then retry.`,
+      "If the error mentions read-before-mutate, vfs_read the target file in this epoch and retry the same operation.",
+      "If the error mentions finish ordering, ensure the commit tool is the last call and there is only one finish.",
     ];
   }
-  if (
-    code === "IMMUTABLE_READONLY" ||
-    code === "ELEVATION_REQUIRED" ||
-    code === "FINISH_GUARD_REQUIRED" ||
-    code === "EDITOR_CONFIRM_REQUIRED"
-  ) {
+  if (code === "IMMUTABLE_READONLY") {
     return [
-      "Respect path permission boundaries and use the designated commit/elevation flow.",
+      "Target path is immutable read-only (common: skills/refs or unregistered paths). Choose a writable path and retry.",
+      `Use vfs_read on ${toolDocRef} for constraints/examples.`,
+    ];
+  }
+  if (code === "ELEVATION_REQUIRED") {
+    return [
+      "Write requires elevation. Do not brute-force retries; use the designated elevation flow or report the blocker.",
+      `Use vfs_read on ${toolDocRef} for constraints/examples.`,
+    ];
+  }
+  if (code === "FINISH_GUARD_REQUIRED") {
+    return [
+      "Conversation/summary paths are finish-guarded: use vfs_commit_turn or vfs_commit_summary (not vfs_write/vfs_move/vfs_delete).",
+      `Use vfs_read on ${toolDocRef} for the correct commit schema/examples.`,
+    ];
+  }
+  if (code === "EDITOR_CONFIRM_REQUIRED") {
+    return [
+      "Write requires editor confirmation. Stop and report blocker instead of retrying.",
     ];
   }
   if (code === "NOT_FOUND") {
-    return ["Confirm path existence with vfs_ls/vfs_read before retrying."];
+    return [
+      "Confirm the parent directory with vfs_ls (or use vfs_search with fuzzy=true if unsure), then retry with the corrected path.",
+      "If the missing path is a JSON resource, vfs_schema can still describe expected fields/template even before the file exists.",
+    ];
   }
   if (code === "RAG_DISABLED") {
-    return ["Disable semantic search or enable embedding runtime before retrying."];
+    return [
+      "Retry with semantic=false (or omit semantic), or enable the embedding runtime before retrying.",
+    ];
   }
-  return [`Inspect ${getToolDocRef(toolName)} and retry.`];
+  return [`Use vfs_read on ${toolDocRef}, then retry.`];
+};
+
+const qualifyPathForRecovery = (
+  inputPath: string,
+): { qualifiedPath: string; parentDir: string; fileName: string } => {
+  const normalizedInput = normalizeVfsPath(inputPath);
+  const qualifiedPath =
+    normalizedInput === "" ||
+    normalizedInput === "current" ||
+    normalizedInput.startsWith("current/") ||
+    normalizedInput.startsWith("shared/") ||
+    normalizedInput.startsWith("forks/")
+      ? normalizedInput || "current"
+      : `current/${normalizedInput}`;
+  const qualifiedWithoutTrailingSlash = qualifiedPath.replace(/\/$/, "");
+  const lastSlash = qualifiedWithoutTrailingSlash.lastIndexOf("/");
+  const parentDir =
+    lastSlash > 0 ? qualifiedWithoutTrailingSlash.slice(0, lastSlash) : "current";
+  const fileName =
+    lastSlash >= 0
+      ? qualifiedWithoutTrailingSlash.slice(lastSlash + 1)
+      : qualifiedWithoutTrailingSlash;
+
+  return { qualifiedPath, parentDir, fileName };
+};
+
+const buildNotFoundRecovery = (inputPath: string): string[] => {
+  const { qualifiedPath, parentDir, fileName } = qualifyPathForRecovery(inputPath);
+  return [
+    `Try: vfs_ls({ path: "${parentDir}" })`,
+    `Then: vfs_search({ path: "${parentDir}", query: "${fileName}", fuzzy: true })`,
+    `If you need expected JSON fields: vfs_schema({ paths: ["${qualifiedPath}"] })`,
+  ];
+};
+
+const buildReadLinesRecovery = (inputPath: string): string[] => {
+  const { qualifiedPath } = qualifyPathForRecovery(inputPath);
+  return [
+    `Try: vfs_read({ path: "${qualifiedPath}", mode: "lines", startLine: 1, lineCount: 200 })`,
+    "Then adjust line numbers/ranges and retry.",
+  ];
+};
+
+const buildSchemaAndReadRecovery = (inputPath: string): string[] => {
+  const { qualifiedPath } = qualifyPathForRecovery(inputPath);
+  return [
+    `Try: vfs_schema({ paths: ["${qualifiedPath}"] })`,
+    `Then: vfs_read({ path: "${qualifiedPath}" }) to inspect current content before retrying.`,
+  ];
 };
 
 const isToolCallErrorResult = (value: unknown): value is ToolCallError => {
@@ -159,11 +234,17 @@ const withToolErrorDetails = (
     TOOL_DOCS_README_REF,
   ]);
 
+  const hasExistingRecovery =
+    Array.isArray(error.details?.recovery) && error.details.recovery.length > 0;
+  const effectiveRecovery =
+    details?.recovery ??
+    (hasExistingRecovery ? undefined : defaultRecoveryByCode(error.code, normalizedTool));
+
   return mergeToolErrorDetails(error, {
     category: details?.category ?? inferErrorCategoryFromCode(error.code),
     tool: details?.tool ?? normalizedTool,
     issues: details?.issues,
-    recovery: details?.recovery ?? defaultRecoveryByCode(error.code, normalizedTool),
+    recovery: effectiveRecovery,
     refs,
     batch: details?.batch,
   });
@@ -1171,7 +1252,40 @@ registerToolHandlerWithStructuredErrors(VFS_READ_TOOL, (args, ctx) => {
 
   const file = session.readFile(resolved.path);
   if (!file) {
-    return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND");
+    const normalizedInput = normalizeVfsPath(typedArgs.path);
+    const qualifiedPath =
+      normalizedInput === "" ||
+      normalizedInput === "current" ||
+      normalizedInput.startsWith("current/") ||
+      normalizedInput.startsWith("shared/") ||
+      normalizedInput.startsWith("forks/")
+        ? normalizedInput || "current"
+        : `current/${normalizedInput}`;
+    const qualifiedWithoutTrailingSlash = qualifiedPath.replace(/\/$/, "");
+    const lastSlash = qualifiedWithoutTrailingSlash.lastIndexOf("/");
+    const parentDir =
+      lastSlash > 0 ? qualifiedWithoutTrailingSlash.slice(0, lastSlash) : "current";
+    const fileName =
+      lastSlash >= 0
+        ? qualifiedWithoutTrailingSlash.slice(lastSlash + 1)
+        : qualifiedWithoutTrailingSlash;
+
+    return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND", {
+      tool: "vfs_read",
+      issues: [
+        {
+          path: qualifiedPath,
+          code: "NOT_FOUND",
+          message: "File does not exist in the VFS snapshot.",
+        },
+      ],
+      recovery: [
+        `Try: vfs_ls({ path: "${parentDir}" })`,
+        `Then: vfs_search({ path: "${parentDir}", query: "${fileName}", fuzzy: true })`,
+        `If you need expected JSON fields: vfs_schema({ paths: ["${qualifiedPath}"] })`,
+      ],
+      refs: [getToolDocRef("vfs_read")],
+    });
   }
   session.noteToolSeen(resolved.path);
   session.noteToolAccessFile(resolved.path);
@@ -1537,7 +1651,12 @@ registerToolHandlerWithStructuredErrors(VFS_SEARCH_TOOL, async (args, ctx) => {
       regexObj = new RegExp(typedArgs.query);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return createError(`Invalid regex: ${message}`, "INVALID_DATA");
+      return createError(`Invalid regex: ${message}`, "INVALID_DATA", {
+        recovery: [
+          "Fix the regex pattern (escape special characters) and retry.",
+          "Or retry with regex=false to use plain text / fuzzy search.",
+        ],
+      });
     }
 
     const rawResults = collectMatches(files, rootPath, makeRegexMatcher(regexObj), limit);
@@ -1744,14 +1863,16 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
 
         const existing = draft.readFile(resolved.path);
         const createIfMissing = op.createIfMissing ?? true;
-        if (!existing && !createIfMissing) {
-          return withBatchError(
-            createError(`File not found: ${op.path}`, "NOT_FOUND"),
-            opIndex,
-            op.op,
-            op.path,
-          );
-        }
+      if (!existing && !createIfMissing) {
+        return withBatchError(
+          createError(`File not found: ${op.path}`, "NOT_FOUND", {
+            recovery: buildNotFoundRecovery(op.path),
+          }),
+          opIndex,
+          op.op,
+          op.path,
+        );
+      }
 
         if (existing) {
           const seenError = requireToolSeenForExistingFile(draft, resolved.path, "text_edit");
@@ -1779,6 +1900,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
                 createError(
                   `Line out of range for insert_before: ${op.path}`,
                   "INVALID_DATA",
+                  { recovery: buildReadLinesRecovery(op.path) },
                 ),
                 opIndex,
                 op.op,
@@ -1801,6 +1923,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
                 createError(
                   `Line out of range for insert_after: ${op.path}`,
                   "INVALID_DATA",
+                  { recovery: buildReadLinesRecovery(op.path) },
                 ),
                 opIndex,
                 op.op,
@@ -1822,6 +1945,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
                 createError(
                   `Invalid line range (startLine > endLine): ${op.path}`,
                   "INVALID_DATA",
+                  { recovery: buildReadLinesRecovery(op.path) },
                 ),
                 opIndex,
                 op.op,
@@ -1833,6 +1957,7 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
                 createError(
                   `Line out of range for replace_range: ${op.path}`,
                   "INVALID_DATA",
+                  { recovery: buildReadLinesRecovery(op.path) },
                 ),
                 opIndex,
                 op.op,
@@ -1888,7 +2013,9 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
         const existing = draft.readFile(resolved.path);
         if (!existing) {
           return withBatchError(
-            createError(`File not found: ${op.path}`, "NOT_FOUND"),
+            createError(`File not found: ${op.path}`, "NOT_FOUND", {
+              recovery: buildNotFoundRecovery(op.path),
+            }),
             opIndex,
             op.op,
             op.path,
@@ -1899,7 +2026,30 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
           return withBatchError(seenError, opIndex, op.op, op.path);
         }
 
-        draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
+        try {
+          draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
+        } catch (error) {
+          if (error instanceof VfsWriteAccessError) {
+            return withBatchError(
+              createError(error.message, error.code),
+              opIndex,
+              op.op,
+              op.path,
+            );
+          }
+          const message = error instanceof Error ? error.message : String(error);
+          const isNotFound = message.startsWith("File not found:");
+          return withBatchError(
+            createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
+              recovery: isNotFound
+                ? buildNotFoundRecovery(op.path)
+                : buildSchemaAndReadRecovery(op.path),
+            }),
+            opIndex,
+            op.op,
+            op.path,
+          );
+        }
         draft.noteToolAccessFile(resolved.path);
         patched.push(toCurrentPath(resolved.path));
         continue;
@@ -1922,7 +2072,30 @@ registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
           return withBatchError(seenError, opIndex, op.op, op.path);
         }
 
-        draft.mergeJson(resolved.path, op.content);
+        try {
+          draft.mergeJson(resolved.path, op.content);
+        } catch (error) {
+          if (error instanceof VfsWriteAccessError) {
+            return withBatchError(
+              createError(error.message, error.code),
+              opIndex,
+              op.op,
+              op.path,
+            );
+          }
+          const message = error instanceof Error ? error.message : String(error);
+          const isNotFound = message.startsWith("File not found:");
+          return withBatchError(
+            createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
+              recovery: isNotFound
+                ? buildNotFoundRecovery(op.path)
+                : buildSchemaAndReadRecovery(op.path),
+            }),
+            opIndex,
+            op.op,
+            op.path,
+          );
+        }
         draft.noteToolAccessFile(resolved.path);
         merged.push(toCurrentPath(resolved.path));
       }
@@ -2004,7 +2177,9 @@ registerToolHandlerWithStructuredErrors(VFS_MOVE_TOOL, (args, ctx) => {
         }
         const message = error instanceof Error ? error.message : String(error);
         return withMoveBatchError(
-          createError(message, "NOT_FOUND"),
+          createError(message, "NOT_FOUND", {
+            recovery: buildNotFoundRecovery(move.from),
+          }),
           moveIndex,
           move,
         );
@@ -2073,7 +2248,9 @@ registerToolHandlerWithStructuredErrors(VFS_DELETE_TOOL, (args, ctx) => {
         }
         const message = error instanceof Error ? error.message : String(error);
         return withDeleteBatchError(
-          createError(message, "NOT_FOUND"),
+          createError(message, "NOT_FOUND", {
+            recovery: buildNotFoundRecovery(path),
+          }),
           pathIndex,
           path,
         );

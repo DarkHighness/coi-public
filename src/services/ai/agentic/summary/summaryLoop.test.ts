@@ -229,7 +229,9 @@ describe("runSummaryLoop", () => {
 
     expect(anchorText).toContain("Target fork ID: 2");
     expect(anchorText).toContain("Active turn ID from index: fork-2/turn-14");
-    expect(anchorText).toContain("Latest turn path in target fork: current/conversation/turns/fork-2/turn-14.json");
+    expect(anchorText).toContain(
+      "Latest turn path in target fork: `current/conversation/turns/fork-2/turn-14.json`",
+    );
     expect(anchorText).toContain("Last summary checkpoint: id=s-prev");
     expect(anchorText).toContain("NEVER cross forks");
     expect(anchorText).toContain("current/conversation/session.jsonl");
@@ -280,7 +282,7 @@ describe("runSummaryLoop", () => {
     );
 
     expect(compactTrigger).toContain(
-      '"current/skills/commands/runtime/compact/SKILL.md"',
+      "`current/skills/commands/runtime/compact/SKILL.md`",
     );
     expect(compactAnchor).toContain("MODE CONTRACT: SESSION_COMPACT");
     expect(compactAnchor).toContain("Current session history already loaded in context");

@@ -38,8 +38,8 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).toContain("Runtime Adaptation Protocol");
     expect(prompt).toContain("forbidDeusExMachina");
     expect(prompt).toContain("current/skills/theme/<genre>/SKILL.md");
-    expect(prompt).toContain("read `current/skills/index.json` first");
-    expect(prompt).toContain("optionally read 0-2 relevant `current/skills/theme/**/SKILL.md` entries");
+    expect(prompt).toContain('vfs_read({ path: "current/skills/index.json" })');
+    expect(prompt).toContain('vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })');
     expect(prompt).toContain("optional guidance in outline mode");
   });
 });

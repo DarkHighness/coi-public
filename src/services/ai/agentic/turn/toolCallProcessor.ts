@@ -72,7 +72,7 @@ export function validateToolArgs(
     errorMsg += `Other validation errors:\n${otherErrors.map((e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`).join("\n")}\n\n`;
   }
   errorMsg += `Please refer to the schema:\n${getToolInfo(toolDef as any)}`;
-  errorMsg += `\n\nTool docs:\n- current/refs/tools/${name}.md\n- current/refs/tools/README.md`;
+  errorMsg += `\n\nTool docs:\n- \`current/refs/tools/${name}.md\`\n- \`current/refs/tools/README.md\``;
 
   return {
     valid: false,
@@ -96,7 +96,7 @@ export function validateToolArgs(
       recovery: [
         `Call "${name}" again with only schema-defined fields.`,
         "If mutating files, re-read targets first when required by the tool contract.",
-        `Open current/refs/tools/${name}.md for examples and parameter guidance.`,
+        `Open \`current/refs/tools/${name}.md\` for examples and parameter guidance.`,
       ],
       refs: [
         `current/refs/tools/${name}.md`,

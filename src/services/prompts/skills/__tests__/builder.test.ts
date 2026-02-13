@@ -22,8 +22,8 @@ describe("skills prompt builder hygiene", () => {
 
     expect(prompt).toContain("<theme_key>long_aotian</theme_key>");
     expect(prompt).toContain("<theme_skill_selection_protocol>");
-    expect(prompt).toContain("Read current/skills/index.json");
-    expect(prompt).toContain("selectively read 0-2 files under current/skills/theme/**/SKILL.md");
+    expect(prompt).toContain('vfs_read({ path: "current/skills/index.json" })');
+    expect(prompt).toContain('vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })');
     expect(prompt).toContain("Theme skills are optional accelerators, not hard gates");
     expect(prompt).toContain("theme-face-slapping-reversal");
     expect(prompt).toContain("theme-ip-faithful-adaptation");

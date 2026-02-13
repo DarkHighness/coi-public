@@ -43,21 +43,25 @@ const errorRecovery = `
 <error_recovery_protocol>
   WHEN TOOLS FAIL — RECOVERY PROCEDURE
 
-  **Error Types**:
-  - [VALIDATION_ERROR]: Wrong arguments. Check schema.
-  - [NOT_FOUND]: Entity doesn't exist. Look for suggestions.
-  - [ALREADY_EXISTS]: Duplicate creation. Update instead.
-  - [INVALID_ACTION]: Unsupported operation.
+  **Error Types (by \`code\`)**:
+  - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Wrong arguments or invalid payload/structure.
+  - \`NOT_FOUND\`: Path/ID missing in VFS (under \`current/**\` alias or canonical \`shared/**\` / \`forks/{id}/**\`).
+  - \`ALREADY_EXISTS\`: Duplicate creation attempt.
+  - \`INVALID_ACTION\`: Unsupported operation or protocol violation (read-before-mutate / finish-last / finish-guarded).
+  - \`FINISH_GUARD_REQUIRED\`: Tried to mutate finish-guarded conversation/summary state.
 
   **Mandatory Steps**:
   1. Read the error message carefully
-  2. Look for "Did you mean: ...?" suggestions
-  3. Retry with corrected arguments OR search files to find correct IDs
-  4. Do NOT finish the turn while errors remain unhandled
+  2. If present, follow \`details.recovery\` and open \`details.refs\`
+  3. Look for "Did you mean: ...?" suggestions
+  4. Retry with corrected arguments OR search files to find correct IDs
+  5. Do NOT finish the turn while errors remain unhandled
 
   **Self-Correction**:
-  - If NOT_FOUND, use \`vfs_search\`/\`vfs_search\` to find the correct entity file
-  - If VALIDATION_ERROR, check the required fields and types
+  - If \`NOT_FOUND\`, use \`vfs_ls\` on the parent dir, then \`vfs_search\` with \`fuzzy: true\` to locate the correct path/ID
+  - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, \`vfs_read({ path: "current/refs/tools/<tool>.md" })\` and (for JSON targets) \`vfs_schema({ paths: ["<targetPath>"] })\`
+  - If \`ALREADY_EXISTS\`, \`vfs_read({ path: "<targetPath>" })\` then update via \`vfs_write\` (\`patch_json\` / \`merge_json\`)
+  - If \`FINISH_GUARD_REQUIRED\`, use the loop's commit tool (usually \`vfs_commit_turn\`) (never generic mutation tools on guarded paths)
   - If you cannot fix, explain in narrative why
 </error_recovery_protocol>
 `;
@@ -78,7 +82,7 @@ const toolMandate = `
   - ❌ Empty response
 
   **Inspection Tools Are Free**:
-  Call \`vfs_ls\`, \`vfs_read\`, \`vfs_search\`, \`vfs_search\` as many times as needed.
+  Call \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\` as many times as needed.
   Before writing new entity files, always search first to prevent duplicates.
 </tool_protocol>
 `;

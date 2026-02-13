@@ -55,7 +55,7 @@ Target fork ID: ${runtime.targetForkId}
 Active fork ID from index: ${runtime.activeForkId ?? "unknown"}
 Active turn ID from index: ${runtime.activeTurnId ?? "unknown"}
 Latest turn number in target fork: ${runtime.targetForkLatestTurn ?? "unknown"}
-Latest turn path in target fork: ${latestTurnPath}
+Latest turn path in target fork: \`${latestTurnPath}\`
 Summary range: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}
 Base lastSummarizedIndex: ${input.baseIndex}
 Required final lastSummarizedIndex: ${targetLastSummarizedIndex}
@@ -67,11 +67,11 @@ Primary source for facts:
 - Query target-fork VFS artifacts first; do not rely on stale memory.
 
 Required read sequence:
-1) current/conversation/index.json
-2) current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json
-3) forks/${runtime.targetForkId}/story/summary/state.json
-4) current/summary/state.json (ONLY safe when active fork == target fork)
-5) Optional context recall: current/conversation/session.jsonl via query-style reads only (vfs_read lines window or vfs_search)
+1) \`current/conversation/index.json\`
+2) \`current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json\`
+3) \`forks/${runtime.targetForkId}/story/summary/state.json\`
+4) \`current/summary/state.json\` (ONLY safe when active fork == target fork)
+5) Optional context recall: \`current/conversation/session.jsonl\` via query-style reads only (vfs_read lines window or vfs_search)
 
 Hard constraints:
 - ONLY summarize target fork ${runtime.targetForkId}; NEVER cross forks.
@@ -102,7 +102,7 @@ Target fork ID: ${runtime.targetForkId}
 Active fork ID from index: ${runtime.activeForkId ?? "unknown"}
 Active turn ID from index: ${runtime.activeTurnId ?? "unknown"}
 Latest turn number in target fork: ${runtime.targetForkLatestTurn ?? "unknown"}
-Latest turn path in target fork: ${latestTurnPath}
+Latest turn path in target fork: \`${latestTurnPath}\`
 Summary range: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}
 Base lastSummarizedIndex: ${input.baseIndex}
 Required final lastSummarizedIndex: ${targetLastSummarizedIndex}
@@ -115,9 +115,9 @@ Primary source for facts:
 - Do NOT rebuild full history from scratch unless evidence is missing.
 
 Verification-only reads (optional):
-- current/conversation/index.json
-- current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json
-- forks/${runtime.targetForkId}/story/summary/state.json
+- \`current/conversation/index.json\`
+- \`current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json\`
+- \`forks/${runtime.targetForkId}/story/summary/state.json\`
 
 Hard constraints:
 - Keep compaction scoped to target fork ${runtime.targetForkId}; NEVER cross forks.
@@ -143,9 +143,7 @@ export const buildCompactModeTriggerMessage = (input: {
   const { code: languageCode } = canonicalizeLanguage(input.language);
   const compactBaseline = formatLoopSkillBaseline("summary_compact", {
     ordered: true,
-  })
-    .map((line) => line.replace(/\)\s+/, ") \"") + "\"")
-    .join("\n");
+  }).join("\n");
 
   return (
     `${COMPACT_TRIGGER}\n` +

@@ -457,14 +457,14 @@ export async function callWithAgenticRetry(
             });
             const toolDocRef = `current/refs/tools/${toolCall.name}.md`;
             const docsGuidance = [
-              `Tool docs: ${toolDocRef}`,
-              "Tool docs index: current/refs/tools/README.md",
+              `Tool docs: \`${toolDocRef}\``,
+              "Tool docs index: `current/refs/tools/README.md`",
             ];
 
             if (toolDef && !schemaGuidanceShownByTool.has(toolCall.name)) {
               schemaGuidanceShownByTool.add(toolCall.name);
               docsGuidance.push(
-                `Use vfs_read on ${toolDocRef} for INTRO/SCHEMA/EXAMPLES guidance before retrying.`,
+                `Use vfs_read on \`${toolDocRef}\` for INTRO/SCHEMA/EXAMPLES guidance before retrying.`,
               );
             } else if (toolDef) {
               docsGuidance.push(

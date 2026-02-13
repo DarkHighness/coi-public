@@ -53,9 +53,9 @@ const buildColdStartSkillHintMessage = (): UnifiedMessage =>
       "[SYSTEM: COLD_START_SOFT_GUIDANCE]",
       "Soft guidance (non-blocking): before first non-read mutation, prefer reading baseline skills:",
       ...formatLoopSkillBaseline("turn"),
-      "- current/skills/index.json (discover relevant skills first)",
-      "If prior context is needed, query current/conversation/session.jsonl with lines/search windows.",
-      "Avoid full-file reads of session.jsonl in one shot.",
+      "- `current/skills/index.json` (discover relevant skills first)",
+      "If prior context is needed, query `current/conversation/session.jsonl` with lines/search windows.",
+      "Avoid full-file reads of `session.jsonl` in one shot.",
     ].join("\n"),
   );
 
