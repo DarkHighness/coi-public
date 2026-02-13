@@ -73,4 +73,3 @@ describe("tool-calling prompt guardrails", () => {
     expect(findings).toEqual([]);
   });
 });
-

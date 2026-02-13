@@ -55,7 +55,11 @@ export function getTurnRecoveryPlan(kind: TurnRecoveryKind): TurnRecoveryPlan {
     };
   }
 
-  if (kind === "history" || kind === "context" || kind === "turn_not_committed") {
+  if (
+    kind === "history" ||
+    kind === "context" ||
+    kind === "turn_not_committed"
+  ) {
     return {
       kind,
       maxRollbackRetries: 1,

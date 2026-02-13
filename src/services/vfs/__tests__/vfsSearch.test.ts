@@ -4,7 +4,11 @@ import { VfsSession } from "../vfsSession";
 describe("Vfs search", () => {
   it("finds text matches", () => {
     const session = new VfsSession();
-    session.writeFile("world/global.json", "{\"time\":\"Day 1\"}", "application/json");
+    session.writeFile(
+      "world/global.json",
+      '{"time":"Day 1"}',
+      "application/json",
+    );
     const results = session.searchText("Day 1");
     expect(results.length).toBe(1);
   });
@@ -18,14 +22,22 @@ describe("Vfs search", () => {
 
   it("returns no results when limit is zero", () => {
     const session = new VfsSession();
-    session.writeFile("world/global.json", "{\"time\":\"Day 1\"}", "application/json");
+    session.writeFile(
+      "world/global.json",
+      '{"time":"Day 1"}',
+      "application/json",
+    );
     const results = session.searchText("Day 1", { limit: 0 });
     expect(results).toHaveLength(0);
   });
 
   it("prefers semantic results when available", () => {
     const session = new VfsSession();
-    session.writeFile("world/global.json", "{\"time\":\"Day 1\"}", "application/json");
+    session.writeFile(
+      "world/global.json",
+      '{"time":"Day 1"}',
+      "application/json",
+    );
     session.setSemanticIndexer(() => [
       { path: "semantic.json", line: 1, text: "semantic-hit" },
     ]);
@@ -36,7 +48,11 @@ describe("Vfs search", () => {
 
   it("falls back to text when semantic returns nothing", () => {
     const session = new VfsSession();
-    session.writeFile("world/global.json", "{\"time\":\"Day 1\"}", "application/json");
+    session.writeFile(
+      "world/global.json",
+      '{"time":"Day 1"}',
+      "application/json",
+    );
     session.setSemanticIndexer(() => []);
 
     const results = session.searchText("Day 1", { semantic: true });

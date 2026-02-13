@@ -9,13 +9,16 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * IP 忠实度要求
  */
-export const ipFidelityRequirements: Atom<
-  void
-> = defineAtom({ atomId: "atoms/image/ipFidelity#ipFidelityRequirements", source: "atoms/image/ipFidelity.ts", exportName: "ipFidelityRequirements" }, () => `<ip_fidelity_requirements>
+export const ipFidelityRequirements: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/image/ipFidelity#ipFidelityRequirements",
+    source: "atoms/image/ipFidelity.ts",
+    exportName: "ipFidelityRequirements",
+  },
+  () => `<ip_fidelity_requirements>
   If this story is based on an established intellectual property (IP), game, novel, film, or other known work:
   You MUST adhere to the original IP's visual identity:
   - **Art Style**: Match the visual style of original illustrations, concept art, or film/game adaptations
@@ -28,6 +31,7 @@ export const ipFidelityRequirements: Atom<
   - **References**: Draw from official artwork, film stills, game screenshots, or published illustrations
   DO NOT deviate from the established visual language if this is a known IP. Fans expect authenticity.
   If this is NOT based on a known IP, you may use creative freedom while maintaining thematic consistency.
-</ip_fidelity_requirements>`);
+</ip_fidelity_requirements>`,
+);
 
 export default ipFidelityRequirements;

@@ -15,10 +15,11 @@ describe("modelContextWindows", () => {
   const withContextWindows = (
     modelContextWindows: Record<string, number>,
     learnedModelContextWindows?: Record<string, number>,
-  ): AISettings => ({
-    modelContextWindows,
-    learnedModelContextWindows,
-  } as unknown as AISettings);
+  ): AISettings =>
+    ({
+      modelContextWindows,
+      learnedModelContextWindows,
+    }) as unknown as AISettings;
 
   it("builds normalized provider-model key", () => {
     expect(buildModelContextWindowKey("provider-1", "GPT-4.1")).toBe(

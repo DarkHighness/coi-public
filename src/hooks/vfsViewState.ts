@@ -47,7 +47,10 @@ const mergeCharacterWithFallback = (
   for (const field of fallbackFields) {
     const derivedValue = (derivedCharacter as any)?.[field];
     const baseValue = (baseCharacter as any)?.[field];
-    if (isPlaceholderCharacterValue(derivedValue) && !isPlaceholderCharacterValue(baseValue)) {
+    if (
+      isPlaceholderCharacterValue(derivedValue) &&
+      !isPlaceholderCharacterValue(baseValue)
+    ) {
       (nextCharacter as any)[field] = baseValue;
     }
   }

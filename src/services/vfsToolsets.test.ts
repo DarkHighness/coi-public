@@ -8,9 +8,15 @@ import {
 describe("vfsToolsets", () => {
   it("ensures each toolset contains its own finish tool", () => {
     expect(VFS_TOOLSETS.turn.tools).toContain(VFS_TOOLSETS.turn.finishToolName);
-    expect(VFS_TOOLSETS.cleanup.tools).toContain(VFS_TOOLSETS.cleanup.finishToolName);
-    expect(VFS_TOOLSETS.summary.tools).toContain(VFS_TOOLSETS.summary.finishToolName);
-    expect(VFS_TOOLSETS.outline.tools).toContain(VFS_TOOLSETS.outline.finishToolName);
+    expect(VFS_TOOLSETS.cleanup.tools).toContain(
+      VFS_TOOLSETS.cleanup.finishToolName,
+    );
+    expect(VFS_TOOLSETS.summary.tools).toContain(
+      VFS_TOOLSETS.summary.finishToolName,
+    );
+    expect(VFS_TOOLSETS.outline.tools).toContain(
+      VFS_TOOLSETS.outline.finishToolName,
+    );
 
     expect(VFS_TOOLSETS.turn.tools).not.toContain("vfs_commit_summary");
     expect(VFS_TOOLSETS.cleanup.tools).not.toContain("vfs_commit_summary");
@@ -21,7 +27,11 @@ describe("vfsToolsets", () => {
   });
 
   it("formats tool list for prompts with markdown bullets", () => {
-    const output = formatVfsToolsForPrompt(["vfs_ls", "vfs_read", "vfs_commit_turn"]);
+    const output = formatVfsToolsForPrompt([
+      "vfs_ls",
+      "vfs_read",
+      "vfs_commit_turn",
+    ]);
     expect(output).toBe("- `vfs_ls`\n- `vfs_read`\n- `vfs_commit_turn`");
   });
 
@@ -39,7 +49,9 @@ describe("vfsToolsets", () => {
   it("includes elevation and immutable notes in capability contract", () => {
     const output = formatVfsToolCapabilitiesForPrompt(["vfs_write"]);
 
-    expect(output).toContain("elevated_editable requires one-time user-confirmed token");
+    expect(output).toContain(
+      "elevated_editable requires one-time user-confirmed token",
+    );
     expect(output).toContain("resource-template operation contracts enforced");
     expect(output).toContain("immutable: shared/system/skills/**");
     expect(output).toContain("skills/**");

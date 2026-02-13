@@ -23,8 +23,12 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain("<theme_key>long_aotian</theme_key>");
     expect(prompt).toContain("<theme_skill_selection_protocol>");
     expect(prompt).toContain('vfs_read({ path: "current/skills/index.json" })');
-    expect(prompt).toContain('vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })');
-    expect(prompt).toContain("Theme skills are optional accelerators, not hard gates");
+    expect(prompt).toContain(
+      'vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })',
+    );
+    expect(prompt).toContain(
+      "Theme skills are optional accelerators, not hard gates",
+    );
     expect(prompt).toContain("theme-face-slapping-reversal");
     expect(prompt).toContain("theme-ip-faithful-adaptation");
   });
@@ -43,12 +47,16 @@ describe("skills prompt builder hygiene", () => {
       expect(prompt).toContain(`path="${relativePath}"`);
     }
     expect(prompt).toContain("<high_priority_index>");
-    expect(prompt).toContain("See `current/skills/index.json` for complete skill coverage.");
+    expect(prompt).toContain(
+      "See `current/skills/index.json` for complete skill coverage.",
+    );
   });
 
   it("keeps index entries aligned with catalog metadata source", () => {
     const indexEntries = getAllSkillIndexEntries();
-    const catalogIds = new Set(getAllSkillCatalogEntries().map((entry) => entry.id));
+    const catalogIds = new Set(
+      getAllSkillCatalogEntries().map((entry) => entry.id),
+    );
 
     expect(indexEntries.length).toBeGreaterThan(0);
     for (const entry of indexEntries) {
@@ -61,7 +69,9 @@ describe("skills prompt builder hygiene", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
 
     expect(prompt).toContain("Priority protocol: within each domain");
-    expect(prompt).toContain("High-priority index below is a preload accelerator");
+    expect(prompt).toContain(
+      "High-priority index below is a preload accelerator",
+    );
     expect(prompt).toContain(`priority="high"`);
     expect(prompt).toContain(`priority="medium"`);
     expect(prompt).toContain("Trigger signal:");

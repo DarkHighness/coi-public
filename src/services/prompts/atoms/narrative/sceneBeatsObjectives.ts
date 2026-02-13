@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const sceneBeatsObjectives: Atom<void> = defineAtom({ atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectives", source: "atoms/narrative/sceneBeatsObjectives.ts", exportName: "sceneBeatsObjectives" }, () => `
+export const sceneBeatsObjectives: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectives",
+    source: "atoms/narrative/sceneBeatsObjectives.ts",
+    exportName: "sceneBeatsObjectives",
+  },
+  () => `
 <craft_context>
 **SCENE BEATS & OBJECTIVES (Engines, Not Vibes)**
 
@@ -55,38 +60,53 @@ Avoid:
 - Truth vs relationship (expose vs protect)
 </endings>
 </craft_context>
-`);
+`,
+);
 
-export const sceneBeatsObjectivesPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesPrimer", source: "atoms/narrative/sceneBeatsObjectives.ts", exportName: "sceneBeatsObjectivesPrimer" }, () =>
-  `
+export const sceneBeatsObjectivesPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesPrimer",
+    source: "atoms/narrative/sceneBeatsObjectives.ts",
+    exportName: "sceneBeatsObjectivesPrimer",
+  },
+  () =>
+    `
 <craft_context>
 **SCENE PRIMER**: Every scene needs objective + gate + cost + result + decision hook. Use fail-forward; no dead ends.
 </craft_context>
-`.trim());
+`.trim(),
+);
 
-export const sceneBeatsObjectivesSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesSkill", source: "atoms/narrative/sceneBeatsObjectives.ts", exportName: "sceneBeatsObjectivesSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(sceneBeatsObjectives),
-  quickStart: `
+export const sceneBeatsObjectivesSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesSkill",
+    source: "atoms/narrative/sceneBeatsObjectives.ts",
+    exportName: "sceneBeatsObjectivesSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(sceneBeatsObjectives),
+    quickStart: `
 1) Write the objective in 7 words
 2) Add one explicit gate (law/status/process/tech)
 3) Offer 2 approaches with different costs
 4) Decide how verification/audit can bite later
 5) End with a decision hook (tradeoff)
 `.trim(),
-  checklist: [
-    "Objective is concrete (not a mood).",
-    "A gate exists (and can be worked around).",
-    "Costs are explicit (time/exposure/money/injury/relationships).",
-    "Failure still advances (new lead/constraint/obligation).",
-    "Scene ends with an explicit decision hook.",
-  ],
-  examples: [
-    {
-      scenario: "Fail-forward",
-      wrong: `"You fail the lockpick. You can't enter."`,
-      right: `"You fail the lockpick, but you notice the maintenance schedule (new lead).
+    checklist: [
+      "Objective is concrete (not a mood).",
+      "A gate exists (and can be worked around).",
+      "Costs are explicit (time/exposure/money/injury/relationships).",
+      "Failure still advances (new lead/constraint/obligation).",
+      "Scene ends with an explicit decision hook.",
+    ],
+    examples: [
+      {
+        scenario: "Fail-forward",
+        wrong: `"You fail the lockpick. You can't enter."`,
+        right: `"You fail the lockpick, but you notice the maintenance schedule (new lead).
 Your attempt leaves scratches; a guard will inspect in 24 hours (new clock).
 You can return tonight with a bribe, or go find the janitor who has the key."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

@@ -120,6 +120,8 @@ describe("outlineMerge", () => {
 
     expect(merged.placeholders[0]?.id).toBe("ph:1");
     expect(merged.placeholders[0]?.unlocked).toBe(false);
-    expect((merged.openingNarrative as any)?.narrative).toBe("The story begins.");
+    expect((merged.openingNarrative as any)?.narrative).toBe(
+      "The story begins.",
+    );
   });
 });

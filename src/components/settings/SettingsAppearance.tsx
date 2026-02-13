@@ -33,9 +33,7 @@ export const SettingsAppearance: React.FC = () => {
                 {mode === "day" ? "☀️" : mode === "night" ? "🌙" : "💻"}
               </span>
               <div className="flex-1">
-                <div
-                  className="font-bold uppercase tracking-wider text-sm"
-                >
+                <div className="font-bold uppercase tracking-wider text-sm">
                   {t(`modes.${mode}`)}
                 </div>
                 <div className="text-xs text-theme-muted mt-1 story-text">

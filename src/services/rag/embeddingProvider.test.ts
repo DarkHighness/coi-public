@@ -26,7 +26,8 @@ const createProvider = (
       turnDecayFactor: 0.01,
       dimensions: 3,
       provider,
-      modelId: provider === "openrouter" ? "openai/text-embedding-3-small" : "model-a",
+      modelId:
+        provider === "openrouter" ? "openai/text-embedding-3-small" : "model-a",
     },
     credentials,
   );
@@ -38,8 +39,12 @@ describe("EmbeddingProvider", () => {
 
   it("exposes embedding model catalogs", () => {
     expect(EMBEDDING_MODELS.gemini.length).toBeGreaterThan(0);
-    expect(EMBEDDING_MODELS.openai.some((m) => m.id === "text-embedding-3-small")).toBe(true);
-    expect(EMBEDDING_MODELS.openrouter.some((m) => m.id.includes("embed"))).toBe(true);
+    expect(
+      EMBEDDING_MODELS.openai.some((m) => m.id === "text-embedding-3-small"),
+    ).toBe(true);
+    expect(
+      EMBEDDING_MODELS.openrouter.some((m) => m.id.includes("embed")),
+    ).toBe(true);
   });
 
   it("generates gemini embeddings and maps retrieval query task type", async () => {
@@ -67,9 +72,9 @@ describe("EmbeddingProvider", () => {
   it("throws when gemini api key is missing", async () => {
     const provider = createProvider("gemini", {});
 
-    await expect(provider.embedBatch(["x"]))
-      .rejects
-      .toThrow("Gemini API key not configured");
+    await expect(provider.embedBatch(["x"])).rejects.toThrow(
+      "Gemini API key not configured",
+    );
   });
 
   it("generates openai embeddings, sorts by index, and maps usage", async () => {
@@ -174,9 +179,9 @@ describe("EmbeddingProvider", () => {
       openai: { apiKey: "bad-key" },
     });
 
-    await expect(provider.embedBatch(["bad"]))
-      .rejects
-      .toThrow("OpenAI embedding failed: invalid input");
+    await expect(provider.embedBatch(["bad"])).rejects.toThrow(
+      "OpenAI embedding failed: invalid input",
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -186,9 +191,9 @@ describe("EmbeddingProvider", () => {
       openai: { apiKey: "x" },
     });
 
-    await expect(provider.embedBatch(["x"]))
-      .rejects
-      .toThrow("Unknown embedding provider: claude");
+    await expect(provider.embedBatch(["x"])).rejects.toThrow(
+      "Unknown embedding provider: claude",
+    );
   });
 
   it("supports updateConfig and embed helper", async () => {

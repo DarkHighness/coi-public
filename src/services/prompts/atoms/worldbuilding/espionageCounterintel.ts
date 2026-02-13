@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const espionageCounterintel: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/espionageCounterintel#espionageCounterintel", source: "atoms/worldbuilding/espionageCounterintel.ts", exportName: "espionageCounterintel" }, () => `
+export const espionageCounterintel: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/espionageCounterintel#espionageCounterintel",
+    source: "atoms/worldbuilding/espionageCounterintel.ts",
+    exportName: "espionageCounterintel",
+  },
+  () => `
 <worldbuilding_context>
 **ESPIONAGE & COUNTERINTELLIGENCE (A hall of mirrors where every reflection costs something)**
 
@@ -89,46 +94,63 @@ Tradeoffs:
 - Counterintel trigger + response ladder:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const espionageCounterintelPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/espionageCounterintel#espionageCounterintelPrimer", source: "atoms/worldbuilding/espionageCounterintel.ts", exportName: "espionageCounterintelPrimer" }, () =>
-  `
+export const espionageCounterintelPrimer: Atom<void> = defineAtom(
+  {
+    atomId:
+      "atoms/worldbuilding/espionageCounterintel#espionageCounterintelPrimer",
+    source: "atoms/worldbuilding/espionageCounterintel.ts",
+    exportName: "espionageCounterintelPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **ESPIONAGE PRIMER**: Every intel needs source + channel + verification cost + trace. Counterintel is procedural and capacity-limited.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const espionageCounterintelSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/espionageCounterintel#espionageCounterintelSkill", source: "atoms/worldbuilding/espionageCounterintel.ts", exportName: "espionageCounterintelSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(espionageCounterintel),
-  quickStart: `
+export const espionageCounterintelSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId:
+      "atoms/worldbuilding/espionageCounterintel#espionageCounterintelSkill",
+    source: "atoms/worldbuilding/espionageCounterintel.ts",
+    exportName: "espionageCounterintelSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(espionageCounterintel),
+    quickStart: `
 1) Pick 2 intel sources (each has incentive + constraint + price)
 2) Define one channel (latency + trace)
 3) Define verification method (cost + risk)
 4) Define counterintel trigger and response ladder (watch → detain → raid)
 5) Put the table on a choice: speed vs secrecy vs certainty
 `.trim(),
-  checklist: [
-    "Intel has a source with motive (not a magical narrator).",
-    "A channel exists with latency (information can be stale).",
-    "Verification is possible but costs time, money, or exposure.",
-    "Operations leave traces (money trail, patterns, logs, witnesses).",
-    "Counterintel capacity and escalation triggers are defined.",
-    "Deception and stings are possible for both sides.",
-  ],
-  examples: [
-    {
-      scenario: "Verification without omniscience",
-      wrong: `"We hack their database and instantly know everything."`,
-      right: `"You access one compartment: payroll, not operations. To confirm the secret meeting,
+    checklist: [
+      "Intel has a source with motive (not a magical narrator).",
+      "A channel exists with latency (information can be stale).",
+      "Verification is possible but costs time, money, or exposure.",
+      "Operations leave traces (money trail, patterns, logs, witnesses).",
+      "Counterintel capacity and escalation triggers are defined.",
+      "Deception and stings are possible for both sides.",
+    ],
+    examples: [
+      {
+        scenario: "Verification without omniscience",
+        wrong: `"We hack their database and instantly know everything."`,
+        right: `"You access one compartment: payroll, not operations. To confirm the secret meeting,
 you plant a unique rumor through one clerk and watch which security team changes patrol routes.
 Fast verification leaves an access-log trace that will be reviewed tomorrow."`,
-    },
-    {
-      scenario: "Counterintel with capacity limits",
-      wrong: `"They always know you’re spying because they’re smart."`,
-      right: `"They can run two tails per day. They start with watchlists and log review,
+      },
+      {
+        scenario: "Counterintel with capacity limits",
+        wrong: `"They always know you’re spying because they’re smart."`,
+        right: `"They can run two tails per day. They start with watchlists and log review,
 then escalate only when a trigger hits: repeated unusual document requests + cash withdrawals.
 If you keep the pattern clean, they stay suspicious but can’t act decisively."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

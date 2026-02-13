@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const crimeUnderworld: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworld", source: "atoms/worldbuilding/crimeUnderworld.ts", exportName: "crimeUnderworld" }, () => `
+export const crimeUnderworld: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworld",
+    source: "atoms/worldbuilding/crimeUnderworld.ts",
+    exportName: "crimeUnderworld",
+  },
+  () => `
 <worldbuilding_context>
 **CRIME & UNDERWORLD (Order for a price, loyalty until a better price)**
 
@@ -77,43 +82,58 @@ Always define:
 - Audit risk:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const crimeUnderworldPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldPrimer", source: "atoms/worldbuilding/crimeUnderworld.ts", exportName: "crimeUnderworldPrimer" }, () =>
-  `
+export const crimeUnderworldPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldPrimer",
+    source: "atoms/worldbuilding/crimeUnderworld.ts",
+    exportName: "crimeUnderworldPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **UNDERWORLD PRIMER**: Model the underworld as services + violence + information. Define brokers, protection, informants, and laundering with audit risk.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const crimeUnderworldSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldSkill", source: "atoms/worldbuilding/crimeUnderworld.ts", exportName: "crimeUnderworldSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(crimeUnderworld),
-  quickStart: `
+export const crimeUnderworldSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldSkill",
+    source: "atoms/worldbuilding/crimeUnderworld.ts",
+    exportName: "crimeUnderworldSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(crimeUnderworld),
+    quickStart: `
 1) Pick one prohibited good and one broker
 2) Define one protection model (what it buys, what it punishes)
 3) Define one informant stream and one counter-intel method
 4) Define one laundering front and one audit risk
 `.trim(),
-  checklist: [
-    "Underworld provides concrete services with obligations.",
-    "Violence is credible and has clear triggers.",
-    "Information flows exist (informants) and can be countered.",
-    "Laundering fronts exist with audit/verification risks.",
-    "Official enforcement reacts (crackdowns, deals, jurisdiction games).",
-  ],
-  examples: [
-    {
-      scenario: "Protection has a price",
-      wrong: `"The gang protects you because they like you."`,
-      right: `"Protection buys safe passage through Dock Ward.
+    checklist: [
+      "Underworld provides concrete services with obligations.",
+      "Violence is credible and has clear triggers.",
+      "Information flows exist (informants) and can be countered.",
+      "Laundering fronts exist with audit/verification risks.",
+      "Official enforcement reacts (crackdowns, deals, jurisdiction games).",
+    ],
+    examples: [
+      {
+        scenario: "Protection has a price",
+        wrong: `"The gang protects you because they like you."`,
+        right: `"Protection buys safe passage through Dock Ward.
 Pay weekly, obey curfew, never talk to inspectors.
 Break it and they don’t kill you—they burn your supplier and spread your name."`,
-    },
-    {
-      scenario: "Informants create tension",
-      wrong: `"No one knows anything."`,
-      right: `"Street kids sell gossip by the hour. Clerks sell records by the page.
+      },
+      {
+        scenario: "Informants create tension",
+        wrong: `"No one knows anything."`,
+        right: `"Street kids sell gossip by the hour. Clerks sell records by the page.
 The boss tests new hires with a fake leak. Fail and you vanish."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

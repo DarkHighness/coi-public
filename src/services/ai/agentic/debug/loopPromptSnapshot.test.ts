@@ -43,12 +43,18 @@ describe("loopPromptSnapshot", () => {
       "current/skills/commands/runtime/outline/SKILL.md",
     );
 
-    expect(effectiveView.cleanup.systemInstruction).toContain("<runtime_floor>");
-    expect(effectiveView.cleanup.systemInstruction).toContain("<loop_quickstart>");
+    expect(effectiveView.cleanup.systemInstruction).toContain(
+      "<runtime_floor>",
+    );
+    expect(effectiveView.cleanup.systemInstruction).toContain(
+      "<loop_quickstart>",
+    );
     expect(effectiveView.cleanup.contextInjections).toContain(
       "CLEANUP CONSISTENCY ANCHOR",
     );
-    expect(effectiveView.turn.contextInjections).toContain("MODE SKILL GUIDANCE");
+    expect(effectiveView.turn.contextInjections).toContain(
+      "MODE SKILL GUIDANCE",
+    );
   });
 
   it("formats snapshots to markdown with stable section headers", () => {
@@ -61,7 +67,9 @@ describe("loopPromptSnapshot", () => {
     expect(markdown).toContain("## turn (effective)");
     expect(markdown).toContain("## cleanup.context_injections (effective)");
     expect(markdown).toContain("## summary.query_summary (static)");
-    expect(markdown).toContain("## summary.session_compact.trigger (effective)");
+    expect(markdown).toContain(
+      "## summary.session_compact.trigger (effective)",
+    );
     expect(markdown).toContain("## outline.phase_submit_example (effective)");
   });
 });

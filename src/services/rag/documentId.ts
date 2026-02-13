@@ -9,9 +9,7 @@ export interface BuildRagDocumentIdInput {
   modelId: string;
 }
 
-export const buildRagDocumentId = (
-  input: BuildRagDocumentIdInput,
-): string => {
+export const buildRagDocumentId = (input: BuildRagDocumentIdInput): string => {
   const canonicalPath = input.canonicalPath || input.sourcePath;
   return [
     input.saveId,

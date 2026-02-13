@@ -387,7 +387,10 @@ describe("openaiProvider helper conversions", () => {
       true,
     );
 
-    expect(converted[0]).toEqual({ role: "developer", content: "reasoning-system" });
+    expect(converted[0]).toEqual({
+      role: "developer",
+      content: "reasoning-system",
+    });
     expect(converted[1]).toEqual({ role: "user", content: "hello" });
   });
 });

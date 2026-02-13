@@ -120,10 +120,7 @@ const GEMINI_COMPLETION_KEYS = [
   "outputTokenCount",
   "output_token_count",
 ] as const;
-const GEMINI_TOTAL_KEYS = [
-  "totalTokenCount",
-  "total_token_count",
-] as const;
+const GEMINI_TOTAL_KEYS = ["totalTokenCount", "total_token_count"] as const;
 const GEMINI_CACHE_READ_KEYS = [
   "cachedContentTokenCount",
   "cached_content_token_count",
@@ -243,7 +240,8 @@ export async function getModels(config: GeminiConfig): Promise<ModelInfo[]> {
         id: model.name.replace("models/", ""),
         name: model.displayName || model.name,
         // Best-effort: Gemini model metadata sometimes includes input token limit.
-        contextLength: (model as any).inputTokenLimit || (model as any).input_token_limit,
+        contextLength:
+          (model as any).inputTokenLimit || (model as any).input_token_limit,
         capabilities,
       });
     }
@@ -1222,7 +1220,6 @@ export async function generateEmbedding(
 export function buildUserMessage(text: string): Content {
   return { role: "user", parts: [{ text }] };
 }
-
 
 /**
  * 构建函数响应消息 (用户提供的工具结果)

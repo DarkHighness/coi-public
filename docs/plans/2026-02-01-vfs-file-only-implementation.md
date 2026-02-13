@@ -15,6 +15,7 @@
 ### Task 1: Add VFS conversation helpers + schema
 
 **Files:**
+
 - Create: `src/services/vfs/conversation.ts`
 - Test: `src/services/vfs/__tests__/vfsConversation.test.ts`
 
@@ -83,8 +84,17 @@ export const buildTurnId = (forkId: number, turn: number) =>
 export const buildTurnPath = (forkId: number, turn: number) =>
   `current/conversation/turns/${buildTurnId(forkId, turn)}.json`;
 
-export const writeTurnFile = (session: VfsSession, forkId: number, turn: number, data: TurnFile) => {
-  session.writeFile(buildTurnPath(forkId, turn).replace("current/", ""), JSON.stringify(data), "application/json");
+export const writeTurnFile = (
+  session: VfsSession,
+  forkId: number,
+  turn: number,
+  data: TurnFile,
+) => {
+  session.writeFile(
+    buildTurnPath(forkId, turn).replace("current/", ""),
+    JSON.stringify(data),
+    "application/json",
+  );
 };
 // readTurnFile, writeConversationIndex, readConversationIndex similarly
 ```
@@ -106,6 +116,7 @@ git commit -m "[Feat]: add VFS conversation helpers"
 ### Task 2: Derive view state from VFS (world + conversation)
 
 **Files:**
+
 - Modify: `src/services/vfs/derivations.ts`
 - Test: `src/services/vfs/__tests__/vfsDerivation.test.ts`
 
@@ -114,20 +125,39 @@ git commit -m "[Feat]: add VFS conversation helpers"
 ```ts
 it("derives conversation nodes from turn files", () => {
   const files = {
-    "current/conversation/index.json": makeJsonFile("current/conversation/index.json", {
-      activeForkId: 0,
-      activeTurnId: "fork-0/turn-1",
-      rootTurnIdByFork: { "0": "fork-0/turn-0" },
-      latestTurnNumberByFork: { "0": 1 },
-      turnOrderByFork: { "0": ["fork-0/turn-0", "fork-0/turn-1"] },
-    }),
+    "current/conversation/index.json": makeJsonFile(
+      "current/conversation/index.json",
+      {
+        activeForkId: 0,
+        activeTurnId: "fork-0/turn-1",
+        rootTurnIdByFork: { "0": "fork-0/turn-0" },
+        latestTurnNumberByFork: { "0": 1 },
+        turnOrderByFork: { "0": ["fork-0/turn-0", "fork-0/turn-1"] },
+      },
+    ),
     "current/conversation/turns/fork-0/turn-0.json": makeJsonFile(
       "current/conversation/turns/fork-0/turn-0.json",
-      { turnId: "fork-0/turn-0", forkId: 0, turnNumber: 0, parentTurnId: null, createdAt: 1, userAction: "start", assistant: { narrative: "hello", choices: [] } },
+      {
+        turnId: "fork-0/turn-0",
+        forkId: 0,
+        turnNumber: 0,
+        parentTurnId: null,
+        createdAt: 1,
+        userAction: "start",
+        assistant: { narrative: "hello", choices: [] },
+      },
     ),
     "current/conversation/turns/fork-0/turn-1.json": makeJsonFile(
       "current/conversation/turns/fork-0/turn-1.json",
-      { turnId: "fork-0/turn-1", forkId: 0, turnNumber: 1, parentTurnId: "fork-0/turn-0", createdAt: 2, userAction: "go", assistant: { narrative: "ok", choices: [] } },
+      {
+        turnId: "fork-0/turn-1",
+        forkId: 0,
+        turnNumber: 1,
+        parentTurnId: "fork-0/turn-0",
+        createdAt: 2,
+        userAction: "go",
+        assistant: { narrative: "ok", choices: [] },
+      },
     ),
   };
 
@@ -170,6 +200,7 @@ git commit -m "[Feat]: derive view state from VFS conversation"
 ### Task 3: Seed VFS without canonical GameState
 
 **Files:**
+
 - Modify: `src/services/vfs/seed.ts`
 - Modify: `src/services/vfs/__tests__/vfsSeed.test.ts`
 
@@ -180,9 +211,7 @@ it("seeds world + conversation index/turn 0", () => {
   const session = new VfsSession();
   seedVfsSessionFromDefaults(session);
   expect(session.readFile("world/global.json")).toBeTruthy();
-  expect(
-    session.readFile("conversation/index.json"),
-  ).toBeTruthy();
+  expect(session.readFile("conversation/index.json")).toBeTruthy();
   expect(
     session.readFile("conversation/turns/fork-0/turn-0.json"),
   ).toBeTruthy();
@@ -217,6 +246,7 @@ git commit -m "[Feat]: seed VFS from defaults"
 ### Task 4: Remove GameDatabase from agentic loop + auto-finish on turn file
 
 **Files:**
+
 - Modify: `src/services/ai/agentic/turn/loopInitializer.ts`
 - Modify: `src/services/ai/agentic/turn/agenticLoop.ts`
 - Modify: `src/services/ai/agentic/turn/contextInjector.ts`
@@ -264,6 +294,7 @@ git commit -m "[Refactor]: finish turns from VFS files only"
 ### Task 5: Hard-remove non-VFS tools and handlers
 
 **Files:**
+
 - Modify: `src/services/tools.ts`
 - Modify: `src/services/tools/handlers/index.ts`
 - Modify: `src/services/tools/__tests__/vfsTools.test.ts`
@@ -304,6 +335,7 @@ git commit -m "[Refactor]: remove non-vfs tools"
 ### Task 6: Update prompts to file-only workflow
 
 **Files:**
+
 - Modify: `src/services/prompts/atoms/core/stateManagement.ts`
 - Modify: `src/services/prompts/atoms/core/__tests__/stateManagement.test.ts`
 
@@ -343,6 +375,7 @@ git commit -m "[Feat]: prompt file-only state management"
 ### Task 7: UI derives state from VFS only
 
 **Files:**
+
 - Modify: `src/hooks/useVfsPersistence.ts`
 - Modify: `src/hooks/useGameAction.ts`
 - Modify: `src/hooks/useGameEngine.ts`

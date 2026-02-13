@@ -43,13 +43,17 @@ describe("RAGDatabase fork-latest visibility", () => {
 
     db.db = { query: queryMock };
 
-    const results = await db.searchSimilar(new Float32Array([0.1, 0.2]), "save-1", {
-      forkId: 7,
-      modelId: "model-a",
-      provider: "local_transformers",
-      topK: 5,
-      threshold: 0.1,
-    });
+    const results = await db.searchSimilar(
+      new Float32Array([0.1, 0.2]),
+      "save-1",
+      {
+        forkId: 7,
+        modelId: "model-a",
+        provider: "local_transformers",
+        topK: 5,
+        threshold: 0.1,
+      },
+    );
 
     expect(results).toHaveLength(1);
     expect(results[0]?.document.isLatest).toBe(true);

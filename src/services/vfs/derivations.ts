@@ -193,7 +193,9 @@ const isPlaceholderCharacterText = (value: unknown): boolean => {
   return PLACEHOLDER_CHARACTER_VALUES.has(normalized.toLowerCase());
 };
 
-const pickMeaningfulCharacterText = (...values: unknown[]): string | undefined => {
+const pickMeaningfulCharacterText = (
+  ...values: unknown[]
+): string | undefined => {
   for (const value of values) {
     const normalized = normalizeCharacterText(value);
     if (!normalized) {
@@ -338,9 +340,7 @@ const deriveConversationNodes = (
     : null;
   const rootTurnId = index.rootTurnIdByFork?.[String(activeForkId)] || null;
   const rootNodeId = rootTurnId ? `model-${rootTurnId}` : null;
-  const currentFork = activeNodeId
-    ? deriveHistory(nodes, activeNodeId)
-    : [];
+  const currentFork = activeNodeId ? deriveHistory(nodes, activeNodeId) : [];
   const latestTurnNumber =
     index.latestTurnNumberByFork?.[String(activeForkId)] ?? null;
 
@@ -407,10 +407,16 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         narrativeScale?: GameState["narrativeScale"];
         initialPrompt?: string;
       };
-      if (typeof globalData.time === "string" && globalData.time.trim() !== "") {
+      if (
+        typeof globalData.time === "string" &&
+        globalData.time.trim() !== ""
+      ) {
         state.time = globalData.time.trim();
       }
-      if (typeof globalData.theme === "string" && globalData.theme.trim() !== "") {
+      if (
+        typeof globalData.theme === "string" &&
+        globalData.theme.trim() !== ""
+      ) {
         state.theme = globalData.theme.trim();
         hasGlobalTheme = true;
       }
@@ -438,7 +444,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       if (typeof globalData.customContext === "string") {
         state.customContext = globalData.customContext;
       }
-      state.presetProfile = normalizeSavePresetProfile(globalData.presetProfile);
+      state.presetProfile = normalizeSavePresetProfile(
+        globalData.presetProfile,
+      );
       if (typeof globalData.seedImageId === "string") {
         state.seedImageId = globalData.seedImageId;
       }
@@ -809,7 +817,8 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   state.placeholders = placeholders;
 
   const playerBundle =
-    bundles.find((b) => (b?.profile as any)?.id === state.playerActorId) ?? null;
+    bundles.find((b) => (b?.profile as any)?.id === state.playerActorId) ??
+    null;
   if (playerBundle) {
     state.inventory = Array.isArray(playerBundle.inventory)
       ? (playerBundle.inventory as InventoryItem[])
@@ -832,7 +841,8 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       ) ?? "";
 
     const age =
-      pickMeaningfulCharacterText(visible.age, outlineVisible.age, base.age) ?? "";
+      pickMeaningfulCharacterText(visible.age, outlineVisible.age, base.age) ??
+      "";
 
     const profession =
       pickMeaningfulCharacterText(
@@ -844,7 +854,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       ) ?? "";
 
     const race =
-      pickMeaningfulCharacterText(visible.race, outlineVisible.race, base.race) ?? "";
+      pickMeaningfulCharacterText(
+        visible.race,
+        outlineVisible.race,
+        base.race,
+      ) ?? "";
 
     const background =
       pickMeaningfulCharacterText(
@@ -854,8 +868,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       ) ?? "";
 
     const status =
-      pickMeaningfulCharacterText(visible.status, outlineVisible.status, base.status) ??
-      "";
+      pickMeaningfulCharacterText(
+        visible.status,
+        outlineVisible.status,
+        base.status,
+      ) ?? "";
 
     const appearance =
       pickMeaningfulCharacterText(
@@ -864,7 +881,8 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         outlineVisible.appearance,
         outlineVisible.description,
         base.appearance,
-      ) ?? (base.appearance || "");
+      ) ??
+      (base.appearance || "");
 
     const currentLocation =
       pickMeaningfulCharacterText(
@@ -876,8 +894,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
     state.character = {
       ...base,
-      name: pickMeaningfulCharacterText(visible.name, outlineVisible.name, base.name) ??
-        base.name,
+      name:
+        pickMeaningfulCharacterText(
+          visible.name,
+          outlineVisible.name,
+          base.name,
+        ) ?? base.name,
       title,
       status,
       appearance,
@@ -886,7 +908,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       conditions: Array.isArray(playerBundle.conditions)
         ? playerBundle.conditions
         : [],
-      hiddenTraits: Array.isArray(playerBundle.traits) ? playerBundle.traits : [],
+      hiddenTraits: Array.isArray(playerBundle.traits)
+        ? playerBundle.traits
+        : [],
       currentLocation,
       age,
       profession,
@@ -1009,7 +1033,8 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
           outlineVisible.roleTag,
         ) ?? "",
       age:
-        pickMeaningfulCharacterText(currentCharacter.age, outlineVisible.age) ?? "",
+        pickMeaningfulCharacterText(currentCharacter.age, outlineVisible.age) ??
+        "",
       profession:
         pickMeaningfulCharacterText(
           currentCharacter.profession,
@@ -1017,7 +1042,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
           outlineVisible.roleTag,
         ) ?? "",
       race:
-        pickMeaningfulCharacterText(currentCharacter.race, outlineVisible.race) ?? "",
+        pickMeaningfulCharacterText(
+          currentCharacter.race,
+          outlineVisible.race,
+        ) ?? "",
       background:
         pickMeaningfulCharacterText(
           currentCharacter.background,

@@ -104,14 +104,14 @@ export const SettingsExtra: React.FC = () => {
               updateExtra("toolCallCarousel", !(extra.toolCallCarousel ?? true))
             }
             className={`w-10 h-5 rounded-full relative transition-colors ${
-              extra.toolCallCarousel ?? true
+              (extra.toolCallCarousel ?? true)
                 ? "bg-green-500"
                 : "bg-theme-border"
             }`}
           >
             <span
               className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                extra.toolCallCarousel ?? true ? "translate-x-5" : ""
+                (extra.toolCallCarousel ?? true) ? "translate-x-5" : ""
               }`}
             />
           </button>
@@ -186,14 +186,11 @@ export const SettingsExtra: React.FC = () => {
           <div className="w-44">
             <select
               value={extra.genderPreference || "none"}
-              onChange={(e) =>
-                updateExtra("genderPreference", e.target.value)
-              }
+              onChange={(e) => updateExtra("genderPreference", e.target.value)}
               className="w-full p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
             >
               <option value="none">
-                {t("settings.extra.genderPreferences.none") ||
-                  "No Preference"}
+                {t("settings.extra.genderPreferences.none") || "No Preference"}
               </option>
               <option value="male">
                 {t("settings.extra.genderPreferences.male") || "Male"}
@@ -246,10 +243,7 @@ export const SettingsExtra: React.FC = () => {
           </div>
           <button
             onClick={() =>
-              updateExtra(
-                "customInstructionEnabled",
-                !customInstructionEnabled,
-              )
+              updateExtra("customInstructionEnabled", !customInstructionEnabled)
             }
             className={`w-10 h-5 rounded-full relative transition-colors ${
               customInstructionEnabled ? "bg-green-500" : "bg-theme-border"
@@ -302,8 +296,7 @@ export const SettingsExtra: React.FC = () => {
         <div className="py-4 border-b border-theme-border/25 space-y-2">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.customPromptInjection") ||
-                "Instruction Text"}
+              {t("settings.extra.customPromptInjection") || "Instruction Text"}
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.customPromptInjectionHelp") ||
@@ -311,10 +304,12 @@ export const SettingsExtra: React.FC = () => {
             </div>
           </div>
           <textarea
-            value={typeof customInstructionRaw === "string" ? customInstructionRaw : ""}
-            onChange={(e) =>
-              updateExtra("customInstruction", e.target.value)
+            value={
+              typeof customInstructionRaw === "string"
+                ? customInstructionRaw
+                : ""
             }
+            onChange={(e) => updateExtra("customInstruction", e.target.value)}
             placeholder={
               t("settings.extra.customPromptInjectionPlaceholder") ||
               "Enter custom instruction..."
@@ -424,8 +419,7 @@ export const SettingsExtra: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs text-theme-text">
-                {t("settings.extra.cleanupRetryLimit") ||
-                  "Cleanup Retry Limit"}
+                {t("settings.extra.cleanupRetryLimit") || "Cleanup Retry Limit"}
               </div>
               <div className="text-[10px] text-theme-muted">
                 {t("settings.extra.cleanupRetryLimitHelp") ||
@@ -451,8 +445,7 @@ export const SettingsExtra: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs text-theme-text">
-                {t("settings.extra.summaryRetryLimit") ||
-                  "Summary Retry Limit"}
+                {t("settings.extra.summaryRetryLimit") || "Summary Retry Limit"}
               </div>
               <div className="text-[10px] text-theme-muted">
                 {t("settings.extra.summaryRetryLimitHelp") ||

@@ -5,8 +5,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const stateManagement: Atom<void> = defineAtom({ atomId: "atoms/core/stateManagement#stateManagement", source: "atoms/core/stateManagement.ts", exportName: "stateManagement" }, () => `
+export const stateManagement: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/stateManagement#stateManagement",
+    source: "atoms/core/stateManagement.ts",
+    exportName: "stateManagement",
+  },
+  () => `
   <rule name="STATE MANAGEMENT">
     - **PATH MODEL**: Canonical paths are \`shared/**\` + \`forks/{forkId}/**\`; \`current/**\` is an alias view that resolves to canonical locations.
     - Output ONLY changes (DELTAS).
@@ -139,16 +144,23 @@ export const stateManagement: Atom<void> = defineAtom({ atomId: "atoms/core/stat
 
     - **ATOMICITY**: Treat each turn's updates as a transaction. Either ALL updates succeed, or explain why some failed and proceed with valid ones.
   </rule>
-`);
+`,
+);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const stateManagementSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/stateManagement#stateManagementSkill", source: "atoms/core/stateManagement.ts", exportName: "stateManagementSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(stateManagement),
+export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/stateManagement#stateManagementSkill",
+    source: "atoms/core/stateManagement.ts",
+    exportName: "stateManagementSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(stateManagement),
 
-  quickStart: `
+    quickStart: `
 1. Output ONLY deltas (changes), not full state
 2. Update state IMMEDIATELY when events occur (same turn)
 3. Consider CASCADE effects (death → update all related entities)
@@ -156,31 +168,32 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom({ atomId: "
 5. Finish every response with commit_turn protocol
 `.trim(),
 
-  checklist: [
-    "Outputting only deltas (not full state)?",
-    "Updating state in the SAME turn as events?",
-    "Considering cascade effects (death → related updates)?",
-    "Using VFS tools for ALL state changes?",
-    "Finishing each turn with commit_turn protocol?",
-    "Checking entity existence before updates?",
-    "Respecting trait continuity (mute NPC can't shout)?",
-  ],
+    checklist: [
+      "Outputting only deltas (not full state)?",
+      "Updating state in the SAME turn as events?",
+      "Considering cascade effects (death → related updates)?",
+      "Using VFS tools for ALL state changes?",
+      "Finishing each turn with commit_turn protocol?",
+      "Checking entity existence before updates?",
+      "Respecting trait continuity (mute NPC can't shout)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Immediate Update",
-      wrong: `Narrative: "She gives you the key."
+    examples: [
+      {
+        scenario: "Immediate Update",
+        wrong: `Narrative: "She gives you the key."
 (No tool call - state not updated.)`,
-      right: `Narrative: "She gives you the key."
+        right: `Narrative: "She gives you the key."
 + Tool: vfs_write({ path: "current/world/characters/char:player/inventory/key.json", ... })
 (State updated in same turn.)`,
-    },
-    {
-      scenario: "Cascade Effects",
-      wrong: `NPC dies → Only mark NPC as dead.
+      },
+      {
+        scenario: "Cascade Effects",
+        wrong: `NPC dies → Only mark NPC as dead.
 (Misses related updates.)`,
-      right: `NPC dies → Mark dead + update faction standing + update quest objectives + update relationships
+        right: `NPC dies → Mark dead + update faction standing + update quest objectives + update relationships
 (All cascade effects handled.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

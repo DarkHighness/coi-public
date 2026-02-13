@@ -9,11 +9,16 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * 构图指令
  */
-export const compositionDirectives: Atom<void> = defineAtom({ atomId: "atoms/image/composition#compositionDirectives", source: "atoms/image/composition.ts", exportName: "compositionDirectives" }, () => `<composition_directives>
+export const compositionDirectives: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/image/composition#compositionDirectives",
+    source: "atoms/image/composition.ts",
+    exportName: "compositionDirectives",
+  },
+  () => `<composition_directives>
   <camera>
     <angle>Third-person cinematic angle, dynamic perspective, appropriate depth of field with bokeh on background</angle>
     <framing>Rule of thirds composition, balanced negative space, leading lines drawing eye to subject, frame within frame if applicable</framing>
@@ -29,12 +34,19 @@ export const compositionDirectives: Atom<void> = defineAtom({ atomId: "atoms/ima
     <color_grading>Cinematic color grading appropriate to mood and theme, color contrast for visual interest, color harmony, saturated where appropriate, desaturated for mood where needed</color_grading>
     <details>Environmental particles (dust, mist, magic, snow, rain), atmospheric effects, motion blur on moving elements, depth haze, realistic shadows with soft penumbra</details>
   </visual_elements>
-</composition_directives>`);
+</composition_directives>`,
+);
 
 /**
  * 渲染指令
  */
-export const renderingInstructions: Atom<void> = defineAtom({ atomId: "atoms/image/composition#renderingInstructions", source: "atoms/image/composition.ts", exportName: "renderingInstructions" }, () => `<rendering_instructions>
+export const renderingInstructions: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/image/composition#renderingInstructions",
+    source: "atoms/image/composition.ts",
+    exportName: "renderingInstructions",
+  },
+  () => `<rendering_instructions>
   <character_rendering>
     Realistic human anatomy and proportions, detailed facial features with micro-expressions, skin with visible texture (pores, imperfections, subsurface scattering), realistic hair with individual strands visible, believable clothing physics and draping, armor/equipment with wear and weathering, sweat or moisture where contextually appropriate
   </character_rendering>
@@ -44,6 +56,7 @@ export const renderingInstructions: Atom<void> = defineAtom({ atomId: "atoms/ima
   <artistic_direction>
     Capture emotional intensity through visual storytelling, emphasize tension or intimacy through composition and framing, use lighting to guide viewer attention, create atmosphere that supports narrative, don't shy away from depicting scene's true nature (beauty, violence, intimacy, horror as contextually appropriate), aesthetic appeal and visual impact prioritized
   </artistic_direction>
-</rendering_instructions>`);
+</rendering_instructions>`,
+);
 
 export default compositionDirectives;

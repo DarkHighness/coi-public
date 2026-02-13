@@ -80,7 +80,9 @@ describe("useImageGenerationQueue", () => {
   });
 
   it("skips queueing when node is missing image prompt", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
 
     const harness = createHarness({ id: "n1", imagePrompt: "" });
 
@@ -166,7 +168,9 @@ describe("useImageGenerationQueue", () => {
     });
 
     await waitFor(() => {
-      expect(harness.getState().nodes.n1.imageUrl).toBe("https://cdn/image.png");
+      expect(harness.getState().nodes.n1.imageUrl).toBe(
+        "https://cdn/image.png",
+      );
       expect(harness.triggerSave).toHaveBeenCalledTimes(1);
     });
 

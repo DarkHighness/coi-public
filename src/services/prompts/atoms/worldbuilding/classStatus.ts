@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const classStatus: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/classStatus#classStatus", source: "atoms/worldbuilding/classStatus.ts", exportName: "classStatus" }, () => `
+export const classStatus: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/classStatus#classStatus",
+    source: "atoms/worldbuilding/classStatus.ts",
+    exportName: "classStatus",
+  },
+  () => `
 <worldbuilding_context>
 **CLASS & STATUS (The invisible architecture of who matters)**
 
@@ -77,44 +82,59 @@ Mobility always has gatekeepers and costs.
 - Audit/verification:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const classStatusPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/classStatus#classStatusPrimer", source: "atoms/worldbuilding/classStatus.ts", exportName: "classStatusPrimer" }, () =>
-  `
+export const classStatusPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/classStatus#classStatusPrimer",
+    source: "atoms/worldbuilding/classStatus.ts",
+    exportName: "classStatusPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **STATUS PRIMER**: Define markers + gates + enforcement. Status must create concrete permissions/constraints and mobility paths with gatekeepers.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const classStatusSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/classStatus#classStatusSkill", source: "atoms/worldbuilding/classStatus.ts", exportName: "classStatusSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(classStatus),
-  quickStart: `
+export const classStatusSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/classStatus#classStatusSkill",
+    source: "atoms/worldbuilding/classStatus.ts",
+    exportName: "classStatusSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(classStatus),
+    quickStart: `
 1) Define 3 tiers (upper/middle/lower) with one privilege + one constraint each
 2) Define 3 identity markers (visible/behavioral/document)
 3) Define one gate location where status matters (district/job/court)
 4) Define one mobility path (exam/marriage/guild/military) and its cost
 `.trim(),
-  checklist: [
-    "Markers exist and can be forged but also audited.",
-    "Status matters at specific gates (districts, courts, markets).",
-    "Each tier has a privilege and a constraint (not just wealth).",
-    "Mobility exists with gatekeepers and costs.",
-    "Conflict pressure exists (resentment, scapegoating, patronage).",
-  ],
-  examples: [
-    {
-      scenario: "Status as access control",
-      wrong: `"The city has nobles and peasants."`,
-      right: `"Upper-tier rings open the north gate without inspection.
+    checklist: [
+      "Markers exist and can be forged but also audited.",
+      "Status matters at specific gates (districts, courts, markets).",
+      "Each tier has a privilege and a constraint (not just wealth).",
+      "Mobility exists with gatekeepers and costs.",
+      "Conflict pressure exists (resentment, scapegoating, patronage).",
+    ],
+    examples: [
+      {
+        scenario: "Status as access control",
+        wrong: `"The city has nobles and peasants."`,
+        right: `"Upper-tier rings open the north gate without inspection.
 Middle-tier badges allow trade in the inner market, but require weekly audits.
 Lower-tier workers can’t carry blades after dusk. Break it and you lose your ration card."`,
-    },
-    {
-      scenario: "Mobility with cost",
-      wrong: `"You can become a noble if you’re brave."`,
-      right: `"You can earn a citizen badge by passing the ledger exam.
+      },
+      {
+        scenario: "Mobility with cost",
+        wrong: `"You can become a noble if you’re brave."`,
+        right: `"You can earn a citizen badge by passing the ledger exam.
 It costs 3 months of tutoring and a sponsor signature.
 Fail and your name goes on a 'risk list' that increases searches at checkpoints."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

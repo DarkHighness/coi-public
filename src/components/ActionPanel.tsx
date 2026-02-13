@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { GameState, StorySegment } from "../types";
 import {
@@ -54,23 +60,27 @@ const CONFIRM_TONE_STYLES: Record<
   }
 > = {
   neutral: {
-    iconWrapper: "bg-theme-primary/12 text-theme-primary border border-theme-primary/25",
-    badge: "bg-theme-primary/12 text-theme-primary border border-theme-primary/25",
+    iconWrapper:
+      "bg-theme-primary/12 text-theme-primary border border-theme-primary/25",
+    badge:
+      "bg-theme-primary/12 text-theme-primary border border-theme-primary/25",
     confirmButton:
       "bg-theme-primary hover:bg-theme-primary-hover text-theme-bg focus-visible:ring-theme-primary/35",
-    iconPath:
-      "M9 12.75l2.25 2.25L15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+    iconPath: "M9 12.75l2.25 2.25L15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   },
   warning: {
-    iconWrapper: "bg-theme-warning/12 text-theme-warning border border-theme-warning/30",
-    badge: "bg-theme-warning/12 text-theme-warning border border-theme-warning/30",
+    iconWrapper:
+      "bg-theme-warning/12 text-theme-warning border border-theme-warning/30",
+    badge:
+      "bg-theme-warning/12 text-theme-warning border border-theme-warning/30",
     confirmButton:
       "bg-theme-warning text-theme-bg hover:opacity-90 focus-visible:ring-theme-warning/35",
     iconPath:
       "M12 9v3.75m0 3.75h.008v.008H12v-.008zm8.714-4.5L13.714 4a2 2 0 00-3.428 0L3.286 12a2 2 0 001.714 3h13.999a2 2 0 001.715-3z",
   },
   danger: {
-    iconWrapper: "bg-theme-error/12 text-theme-error border border-theme-error/30",
+    iconWrapper:
+      "bg-theme-error/12 text-theme-error border border-theme-error/30",
     badge: "bg-theme-error/12 text-theme-error border border-theme-error/30",
     confirmButton:
       "bg-theme-error text-theme-bg hover:opacity-90 focus-visible:ring-theme-error/35",
@@ -126,7 +136,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       (p) => p.id === aiSettings.story.providerId,
     );
     const models = providerModels?.[aiSettings.story.providerId];
-    const ctx = models?.find((m) => m.id === aiSettings.story.modelId)?.contextLength;
+    const ctx = models?.find(
+      (m) => m.id === aiSettings.story.modelId,
+    )?.contextLength;
     return resolveModelContextWindowTokens({
       settings: aiSettings,
       providerId: aiSettings.story.providerId,
@@ -148,7 +160,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const lastPromptTokens = (() => {
     for (let i = currentHistory.length - 1; i >= 0; i--) {
       const seg = currentHistory[i];
-      if (seg?.role !== "model" || typeof seg.usage?.promptTokens !== "number") {
+      if (
+        seg?.role !== "model" ||
+        typeof seg.usage?.promptTokens !== "number"
+      ) {
         continue;
       }
 
@@ -350,7 +365,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     [
       gameState,
       onForceUpdate,
-          onOpenStateEditor,
+      onOpenStateEditor,
       onOpenViewer,
       onShowToast,
       onTriggerSave,
@@ -631,7 +646,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   };
 
   const showCustomAsOption =
-    hasChoices && !isCustomChoiceOpen && !customInput.trim() && !showCommandHints;
+    hasChoices &&
+    !isCustomChoiceOpen &&
+    !customInput.trim() &&
+    !showCommandHints;
 
   const customChoiceRow = (
     <form
@@ -660,7 +678,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               onChange={(e) => {
                 setCustomInput(e.target.value);
                 e.target.style.height = "auto";
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                e.target.style.height =
+                  Math.min(e.target.scrollHeight, 120) + "px";
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -792,7 +811,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="1.75"
-                    d={CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone].iconPath}
+                    d={
+                      CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone]
+                        .iconPath
+                    }
                   ></path>
                 </svg>
               </div>
@@ -1171,13 +1193,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                                     remarkPlugins={[remarkGfm]}
                                     components={{
                                       p: ({ children }) => (
-                                        <span className="inline">{children}</span>
+                                        <span className="inline">
+                                          {children}
+                                        </span>
                                       ),
                                       strong: ({ children }) => (
-                                        <span className="font-bold">{children}</span>
+                                        <span className="font-bold">
+                                          {children}
+                                        </span>
                                       ),
                                       em: ({ children }) => (
-                                        <span className="italic">{children}</span>
+                                        <span className="italic">
+                                          {children}
+                                        </span>
                                       ),
                                     }}
                                   >

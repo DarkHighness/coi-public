@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { executeTurnWithRecovery, getRecoveryTrace } from "../turnRecoveryRunner";
+import {
+  executeTurnWithRecovery,
+  getRecoveryTrace,
+} from "../turnRecoveryRunner";
 
 const createError = (message: string): Error => new Error(message);
 
@@ -41,9 +44,7 @@ describe("executeTurnWithRecovery", () => {
 
     const rollbackToAnchor = vi.fn().mockReturnValue(true);
     const resetSession = vi.fn().mockResolvedValue(undefined);
-    const confirmRecoveryAction = vi
-      .fn()
-      .mockResolvedValue(true);
+    const confirmRecoveryAction = vi.fn().mockResolvedValue(true);
 
     const result = await executeTurnWithRecovery({
       execute,
@@ -121,7 +122,9 @@ describe("executeTurnWithRecovery", () => {
   it("runs TURN_NOT_COMMITTED boost retry when user confirms", async () => {
     const execute = vi
       .fn<() => Promise<string>>()
-      .mockRejectedValueOnce(createError("TURN_NOT_COMMITTED: budget exhausted"));
+      .mockRejectedValueOnce(
+        createError("TURN_NOT_COMMITTED: budget exhausted"),
+      );
     const executeWithRetryBoost = vi
       .fn<() => Promise<string>>()
       .mockResolvedValueOnce("ok-after-boost");
@@ -144,7 +147,9 @@ describe("executeTurnWithRecovery", () => {
   it("falls back to rollback when TURN_NOT_COMMITTED boost is denied", async () => {
     const execute = vi
       .fn<() => Promise<string>>()
-      .mockRejectedValueOnce(createError("TURN_NOT_COMMITTED: budget exhausted"))
+      .mockRejectedValueOnce(
+        createError("TURN_NOT_COMMITTED: budget exhausted"),
+      )
       .mockResolvedValueOnce("ok-after-rollback");
 
     const rollbackToAnchor = vi.fn().mockReturnValue(true);

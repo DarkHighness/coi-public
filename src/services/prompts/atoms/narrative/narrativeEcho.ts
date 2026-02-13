@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const narrativeEchoPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeEcho#narrativeEchoPrimer", source: "atoms/narrative/narrativeEcho.ts", exportName: "narrativeEchoPrimer" }, () => `
+export const narrativeEchoPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/narrativeEcho#narrativeEchoPrimer",
+    source: "atoms/narrative/narrativeEcho.ts",
+    exportName: "narrativeEchoPrimer",
+  },
+  () => `
 <narrative_echo>
   **EVENTS DON'T END WHEN SCENES END**:
   - An echo is a present-tense detail carrying past weight. NOT a flashback.
@@ -20,9 +25,16 @@ export const narrativeEchoPrimer: Atom<void> = defineAtom({ atomId: "atoms/narra
   - Emotion through objects: father's hunched back, diary with your name in different handwriting, letter never sent
   - Place the detail. Trust the player to feel it.
 </narrative_echo>
-`);
+`,
+);
 
-export const narrativeEcho: Atom<void> = defineAtom({ atomId: "atoms/narrative/narrativeEcho#narrativeEcho", source: "atoms/narrative/narrativeEcho.ts", exportName: "narrativeEcho" }, () => `
+export const narrativeEcho: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/narrativeEcho#narrativeEcho",
+    source: "atoms/narrative/narrativeEcho.ts",
+    exportName: "narrativeEcho",
+  },
+  () => `
 <rule name="NARRATIVE_ECHO">
   **THE WORLD AS PALIMPSEST**:
 
@@ -267,7 +279,8 @@ export const narrativeEcho: Atom<void> = defineAtom({ atomId: "atoms/narrative/n
     (Space after the echo. The detail breathes. Then the scene continues.)
   </echo_frequency>
 </rule>
-`);
+`,
+);
 
 export default narrativeEcho;
 
@@ -275,10 +288,16 @@ export default narrativeEcho;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const narrativeEchoSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/narrativeEcho#narrativeEchoSkill", source: "atoms/narrative/narrativeEcho.ts", exportName: "narrativeEchoSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(narrativeEcho),
+export const narrativeEchoSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/narrativeEcho#narrativeEchoSkill",
+    source: "atoms/narrative/narrativeEcho.ts",
+    exportName: "narrativeEchoSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(narrativeEcho),
 
-  quickStart: `
+    quickStart: `
 1. Identify past events that should echo (major choices, deaths, betrayals, revelations)
 2. Choose echo channel: Location (changed+unchanged detail), Object (item gains weight), NPC Drift (behavioral shift), Motif (recurring image)
 3. Place the echo as present-tense detail — no flashback, no "you remember"
@@ -286,51 +305,52 @@ export const narrativeEchoSkill: SkillAtom<void> = defineSkillAtom({ atomId: "at
 5. Frequency: 1 echo per 3-5 turns. Give echoes space to breathe.
 `.trim(),
 
-  checklist: [
-    "Echoes are present-tense details, not flashbacks?",
-    "Connection is shown, not explained (no 'this reminds you')?",
-    "Location echoes include changed + unchanged detail?",
-    "Object echoes shown through behavior, not stated emotion?",
-    "NPC drift is gradual over multiple turns, not sudden?",
-    "Motif echoes gain weight through repetition (3+ appearances)?",
-    "Emotion shown through objects/gestures (unmarked details)?",
-    "Literary allusions feel discovered, not placed?",
-    "Echoes have space to breathe (not rushed past)?",
-    "Frequency: ~1 echo per 3-5 turns (not every turn)?",
-  ],
+    checklist: [
+      "Echoes are present-tense details, not flashbacks?",
+      "Connection is shown, not explained (no 'this reminds you')?",
+      "Location echoes include changed + unchanged detail?",
+      "Object echoes shown through behavior, not stated emotion?",
+      "NPC drift is gradual over multiple turns, not sudden?",
+      "Motif echoes gain weight through repetition (3+ appearances)?",
+      "Emotion shown through objects/gestures (unmarked details)?",
+      "Literary allusions feel discovered, not placed?",
+      "Echoes have space to breathe (not rushed past)?",
+      "Frequency: ~1 echo per 3-5 turns (not every turn)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Location Echo",
-      wrong: `"You return to the tavern where your friend died. It makes you sad."
+    examples: [
+      {
+        scenario: "Location Echo",
+        wrong: `"You return to the tavern where your friend died. It makes you sad."
 (Flashback. Mind-reading. Explains connection.)`,
-      right: `"Same barkeep. Same sour ale. The corner table is occupied by strangers now.
+        right: `"Same barkeep. Same sour ale. The corner table is occupied by strangers now.
 They're laughing. The stain on the floor has been scrubbed, but the wood is lighter there."
 (Changed + unchanged detail. Connection unstated. Player feels it.)`,
-    },
-    {
-      scenario: "Object Echo",
-      wrong: `"You look at the coin and feel sad about the man who gave it to you."
+      },
+      {
+        scenario: "Object Echo",
+        wrong: `"You look at the coin and feel sad about the man who gave it to you."
 (States emotion. Explains connection.)`,
-      right: `"The coin is still in your pocket. You've had three chances to spend it.
+        right: `"The coin is still in your pocket. You've had three chances to spend it.
 You keep reaching for a different coin. Your fingers know which one it is."
 (Behavior shows weight. No emotion stated.)`,
-    },
-    {
-      scenario: "NPC Drift Echo",
-      wrong: `"After what happened, she doesn't trust you anymore."
+      },
+      {
+        scenario: "NPC Drift Echo",
+        wrong: `"After what happened, she doesn't trust you anymore."
 (Tells. Explains. Mechanical.)`,
-      right: `"She pours the tea. Same pot. Same cups.
+        right: `"She pours the tea. Same pot. Same cups.
 But she pours from farther away now. The tea splashes. She used to sit. Now she stands."
 (Behavioral details show drift. No explanation.)`,
-    },
-    {
-      scenario: "Emotion Through Objects",
-      wrong: `"He was sad about his father leaving."
+      },
+      {
+        scenario: "Emotion Through Objects",
+        wrong: `"He was sad about his father leaving."
 (States emotion. No detail.)`,
-      right: `"His father's back was more hunched than he remembered.
+        right: `"His father's back was more hunched than he remembered.
 The old man didn't turn around at the gate."
 (Physical detail. No emotion stated. Player feels it.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

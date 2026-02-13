@@ -71,4 +71,3 @@ export function canonicalizeLanguage(input: string): CanonicalLanguageResult {
 
   return { code: "en", family: "en" };
 }
-

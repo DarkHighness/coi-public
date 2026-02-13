@@ -63,7 +63,10 @@ const resolveExpectedIntent = (
   context: VfsWriteContext,
 ): Exclude<VfsElevationIntent, "editor_session"> => {
   if (context.elevationIntent) {
-    return context.elevationIntent as Exclude<VfsElevationIntent, "editor_session">;
+    return context.elevationIntent as Exclude<
+      VfsElevationIntent,
+      "editor_session"
+    >;
   }
 
   if (context.mode === "sudo") {
@@ -78,11 +81,17 @@ const resolveExpectedIntent = (
 };
 
 export class VfsPolicyEngine {
-  public canRead(path: string, context?: VfsWriteContext): VfsReadPolicyDecision {
+  public canRead(
+    path: string,
+    context?: VfsWriteContext,
+  ): VfsReadPolicyDecision {
     return buildReadDecision(path, context);
   }
 
-  public canWrite(path: string, context: VfsWriteContext): VfsWritePolicyDecision {
+  public canWrite(
+    path: string,
+    context: VfsWriteContext,
+  ): VfsWritePolicyDecision {
     const classification = vfsPathRegistry.classify(path, {
       activeForkId: context.activeForkId,
     });
@@ -190,8 +199,9 @@ export class VfsPolicyEngine {
       }
 
       const expectedIntent = resolveExpectedIntent(context);
-      const expectedScope =
-        context.elevationScopeTemplateIds ?? [classification.templateId];
+      const expectedScope = context.elevationScopeTemplateIds ?? [
+        classification.templateId,
+      ];
 
       if (
         context.elevationGranted === true &&
@@ -220,11 +230,14 @@ export class VfsPolicyEngine {
       }
 
       if (
-        !vfsElevationTokenManager.consumeAiElevationToken(context.elevationToken, {
-          templateId: classification.templateId,
-          requiredIntent: expectedIntent,
-          requiredScopeTemplateIds: expectedScope,
-        })
+        !vfsElevationTokenManager.consumeAiElevationToken(
+          context.elevationToken,
+          {
+            templateId: classification.templateId,
+            requiredIntent: expectedIntent,
+            requiredScopeTemplateIds: expectedScope,
+          },
+        )
       ) {
         return {
           allowed: false,

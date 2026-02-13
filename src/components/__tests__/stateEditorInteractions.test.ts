@@ -164,7 +164,9 @@ describe("StateEditor interactions", () => {
 
     await ensureFileVisible(/rename-me\.md/i, ["world", "knowledge", "source"]);
 
-    const fileButton = await screen.findByRole("button", { name: /rename-me\.md/i });
+    const fileButton = await screen.findByRole("button", {
+      name: /rename-me\.md/i,
+    });
     fireEvent.contextMenu(fileButton);
 
     const menu = getContextMenu();
@@ -226,7 +228,9 @@ describe("StateEditor interactions", () => {
     fireEvent.contextMenu(fileButton);
 
     const menu = getContextMenu();
-    fireEvent.click(within(menu).getByRole("menuitem", { name: /Add to Batch/i }));
+    fireEvent.click(
+      within(menu).getByRole("menuitem", { name: /Add to Batch/i }),
+    );
 
     const moveSelectedButton = await screen.findByRole("button", {
       name: "Move Selected",
@@ -255,7 +259,9 @@ describe("StateEditor interactions", () => {
     fireEvent.contextMenu(readmeButtons[0] as HTMLElement);
 
     const menu = getContextMenu();
-    const deleteButton = within(menu).getByRole("menuitem", { name: /Delete/i });
+    const deleteButton = within(menu).getByRole("menuitem", {
+      name: /Delete/i,
+    });
     expect((deleteButton as HTMLButtonElement).disabled).toBe(true);
     expect(
       screen.getByText("README files are locked and cannot be deleted."),
@@ -278,7 +284,9 @@ describe("StateEditor interactions", () => {
       },
     ]);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Files" })[0] as HTMLElement);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Files" })[0] as HTMLElement,
+    );
     await ensureFileVisible(/a\.md/i, ["world", "knowledge", "source"]);
 
     const fileButton = await screen.findByRole("button", { name: /a\.md/i });
@@ -289,13 +297,18 @@ describe("StateEditor interactions", () => {
     const heading = screen.getByText("More actions");
     expect(heading).toBeTruthy();
 
-    const actionList = heading.parentElement?.nextElementSibling as HTMLElement | null;
+    const actionList = heading.parentElement
+      ?.nextElementSibling as HTMLElement | null;
     expect(actionList).toBeTruthy();
     expect(within(actionList as HTMLElement).getByText("Rename")).toBeTruthy();
     expect(within(actionList as HTMLElement).getByText("Move")).toBeTruthy();
     expect(within(actionList as HTMLElement).getByText("Delete")).toBeTruthy();
-    expect(within(actionList as HTMLElement).getByText("Copy Path")).toBeTruthy();
-    expect(within(actionList as HTMLElement).getByText("Add to Batch")).toBeTruthy();
+    expect(
+      within(actionList as HTMLElement).getByText("Copy Path"),
+    ).toBeTruthy();
+    expect(
+      within(actionList as HTMLElement).getByText("Add to Batch"),
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByLabelText("More actions"));
 
@@ -331,9 +344,13 @@ describe("StateEditor interactions", () => {
     const aFileRow = aFileButton.parentElement as HTMLElement;
     expect(within(aFileRow).getByRole("checkbox")).toBeTruthy();
 
-    const moveSelectedButton = screen.getByRole("button", { name: "Move Selected" });
+    const moveSelectedButton = screen.getByRole("button", {
+      name: "Move Selected",
+    });
     expect((moveSelectedButton as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText(/Select files, then choose Move Selected/i)).toBeTruthy();
+    expect(
+      screen.getByText(/Select files, then choose Move Selected/i),
+    ).toBeTruthy();
   });
 
   it("moves selected files in batch destination mode", async () => {
@@ -370,7 +387,8 @@ describe("StateEditor interactions", () => {
     expect(targetFolderButton).toBeTruthy();
     const targetRow = targetFolderButton?.parentElement as HTMLElement;
 
-    const destinationButton = within(targetRow).getByTitle("Select destination");
+    const destinationButton =
+      within(targetRow).getByTitle("Select destination");
     fireEvent.click(destinationButton);
 
     await waitFor(() => {
@@ -424,7 +442,8 @@ describe("StateEditor interactions", () => {
     expect(targetFolderButton).toBeTruthy();
     const targetRow = targetFolderButton?.parentElement as HTMLElement;
 
-    const destinationButton = within(targetRow).getByTitle("Select destination");
+    const destinationButton =
+      within(targetRow).getByTitle("Select destination");
     fireEvent.click(destinationButton);
 
     await waitFor(() => {

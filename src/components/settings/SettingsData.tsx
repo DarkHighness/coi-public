@@ -302,9 +302,8 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
           onClick={async () => {
             if (window.confirm(t("data.confirmClearImages"))) {
               try {
-                const { clearAllImages } = await import(
-                  "../../utils/imageStorage"
-                );
+                const { clearAllImages } =
+                  await import("../../utils/imageStorage");
                 await clearAllImages();
                 showToast(t("data.clearImagesSuccess"), "info");
                 fetchImageStats();
@@ -444,7 +443,10 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                 fetchRagStats();
               } catch (error) {
                 console.error("Failed to clear RAG:", error);
-                showToast(t("data.clearRagError", "Failed to clear RAG"), "error");
+                showToast(
+                  t("data.clearRagError", "Failed to clear RAG"),
+                  "error",
+                );
               }
             }
           }}

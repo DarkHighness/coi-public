@@ -39,7 +39,9 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).toContain("forbidDeusExMachina");
     expect(prompt).toContain("current/skills/theme/<genre>/SKILL.md");
     expect(prompt).toContain('vfs_read({ path: "current/skills/index.json" })');
-    expect(prompt).toContain('vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })');
+    expect(prompt).toContain(
+      'vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })',
+    );
     expect(prompt).toContain("optional guidance in outline mode");
   });
 });

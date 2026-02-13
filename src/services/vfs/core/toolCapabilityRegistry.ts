@@ -132,13 +132,17 @@ export class VfsToolCapabilityRegistry {
   public listForToolset(
     toolset: "turn" | "cleanup" | "summary" | "outline",
   ): VfsToolCapability[] {
-    return this.list().filter((capability) => capability.toolsets.includes(toolset));
+    return this.list().filter((capability) =>
+      capability.toolsets.includes(toolset),
+    );
   }
 
   public listToolNamesForToolset(
     toolset: "turn" | "cleanup" | "summary" | "outline",
   ): string[] {
-    return this.listForToolset(toolset).map((capability) => capability.toolName);
+    return this.listForToolset(toolset).map(
+      (capability) => capability.toolName,
+    );
   }
 
   public describeForPrompt(toolName: string): string {

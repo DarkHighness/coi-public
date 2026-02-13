@@ -6,7 +6,6 @@ import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { GAME_CONSTANTS } from "../../gameConstants";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 const visibilityStructure = `
   <visibility_layer_structure>
     **CRITICAL: DUAL-LAYER INFORMATION ARCHITECTURE**
@@ -159,7 +158,13 @@ const temporalEpistemology = `
   </temporal_epistemology>
 `;
 
-export const gmKnowledgePrimer: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#gmKnowledgePrimer", source: "atoms/core/gmKnowledge.ts", exportName: "gmKnowledgePrimer" }, () => `
+export const gmKnowledgePrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#gmKnowledgePrimer",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "gmKnowledgePrimer",
+  },
+  () => `
 <gm_knowledge>
   **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` = player knows.
 
@@ -184,8 +189,15 @@ export const gmKnowledgePrimer: Atom<void> = defineAtom({ atomId: "atoms/core/gm
       * Actors/relations/items → set the entity's own \`unlocked=true\` via VFS
   </unlock_protocol>
 </gm_knowledge>
-`);
-export const gmKnowledge: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#gmKnowledge", source: "atoms/core/gmKnowledge.ts", exportName: "gmKnowledge" }, () => `
+`,
+);
+export const gmKnowledge: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#gmKnowledge",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "gmKnowledge",
+  },
+  () => `
 <gm_knowledge_model>
   **YOU ARE THE GM (Game Master). YOU KNOW EVERYTHING.**
 
@@ -195,14 +207,50 @@ ${howToUse}
 ${unlockProtocol}
 ${temporalEpistemology}
 </gm_knowledge_model>
-`);
+`,
+);
 
 // Export individual components
-export const visibilityStructureAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#visibilityStructureAtom", source: "atoms/core/gmKnowledge.ts", exportName: "visibilityStructureAtom" }, () => visibilityStructure);
-export const visibilityRulesAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#visibilityRulesAtom", source: "atoms/core/gmKnowledge.ts", exportName: "visibilityRulesAtom" }, () => visibilityRules);
-export const howToUseAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#howToUseAtom", source: "atoms/core/gmKnowledge.ts", exportName: "howToUseAtom" }, () => howToUse);
-export const unlockProtocolAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#unlockProtocolAtom", source: "atoms/core/gmKnowledge.ts", exportName: "unlockProtocolAtom" }, () => unlockProtocol);
-export const temporalEpistemologyAtom: Atom<void> = defineAtom({ atomId: "atoms/core/gmKnowledge#temporalEpistemologyAtom", source: "atoms/core/gmKnowledge.ts", exportName: "temporalEpistemologyAtom" }, () => temporalEpistemology);
+export const visibilityStructureAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#visibilityStructureAtom",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "visibilityStructureAtom",
+  },
+  () => visibilityStructure,
+);
+export const visibilityRulesAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#visibilityRulesAtom",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "visibilityRulesAtom",
+  },
+  () => visibilityRules,
+);
+export const howToUseAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#howToUseAtom",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "howToUseAtom",
+  },
+  () => howToUse,
+);
+export const unlockProtocolAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#unlockProtocolAtom",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "unlockProtocolAtom",
+  },
+  () => unlockProtocol,
+);
+export const temporalEpistemologyAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#temporalEpistemologyAtom",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "temporalEpistemologyAtom",
+  },
+  () => temporalEpistemology,
+);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
@@ -216,8 +264,14 @@ export const temporalEpistemologyAtom: Atom<void> = defineAtom({ atomId: "atoms/
  * - checklist: Quick reference checklist for CHECKLIST.md
  * - examples: Before/After examples for EXAMPLES.md
  */
-export const gmKnowledgeSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/gmKnowledge#gmKnowledgeSkill", source: "atoms/core/gmKnowledge.ts", exportName: "gmKnowledgeSkill" }, (): SkillOutput => ({
-  main: `
+export const gmKnowledgeSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/gmKnowledge#gmKnowledgeSkill",
+    source: "atoms/core/gmKnowledge.ts",
+    exportName: "gmKnowledgeSkill",
+  },
+  (): SkillOutput => ({
+    main: `
 **YOU ARE THE GM (Game Master). YOU KNOW EVERYTHING.**
 
 ${visibilityStructure}
@@ -227,51 +281,52 @@ ${unlockProtocol}
 ${temporalEpistemology}
 `.trim(),
 
-  quickStart: `
+    quickStart: `
 1. Check entity's \`unlocked\` flag before revealing hidden info
 2. Use \`hidden\` for NPC behavior logic, \`visible\` for narrative
 3. Only unlock when player has DEFINITIVE PROOF
 4. Write unlocks to view files, not canonical entity files
 `.trim(),
 
-  checklist: [
-    "Player has definitive proof (not just suspicion)?",
-    "Revelation is complete (not partial hints)?",
-    "Character would logically know this based on events?",
-    "Discovery happened through concrete action?",
-    "Using hidden layer for NPC behavior consistency?",
-    "Using visible layer for narrative description?",
-    "Writing unlock to correct location (view vs entity)?",
-  ],
+    checklist: [
+      "Player has definitive proof (not just suspicion)?",
+      "Revelation is complete (not partial hints)?",
+      "Character would logically know this based on events?",
+      "Discovery happened through concrete action?",
+      "Using hidden layer for NPC behavior consistency?",
+      "Using visible layer for narrative description?",
+      "Writing unlock to correct location (view vs entity)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Suspicion vs Proof",
-      wrong: `Player suspects NPC is evil → unlock hidden layer
+    examples: [
+      {
+        scenario: "Suspicion vs Proof",
+        wrong: `Player suspects NPC is evil → unlock hidden layer
 (Suspicion is NOT proof. Keep locked.)`,
-      right: `Player found and read NPC's confession letter → set unlocked: true
+        right: `Player found and read NPC's confession letter → set unlocked: true
 (Definitive proof obtained through action.)`,
-    },
-    {
-      scenario: "Dramatic Timing",
-      wrong: `"It would be dramatic to reveal now" → unlock
+      },
+      {
+        scenario: "Dramatic Timing",
+        wrong: `"It would be dramatic to reveal now" → unlock
 (Drama is NOT a valid reason to unlock.)`,
-      right: `Player completed investigation quest and NPC confessed → unlock
+        right: `Player completed investigation quest and NPC confessed → unlock
 (Player earned the revelation through gameplay.)`,
-    },
-    {
-      scenario: "Location Dangers",
-      wrong: `Player enters cursed location → unlock all dangers
+      },
+      {
+        scenario: "Location Dangers",
+        wrong: `Player enters cursed location → unlock all dangers
 (Entry alone doesn't reveal hidden mechanics.)`,
-      right: `Player triggered trap and saw mechanism → unlock that specific danger
+        right: `Player triggered trap and saw mechanism → unlock that specific danger
 (Direct observation of the mechanism.)`,
-    },
-    {
-      scenario: "Early Game Discovery",
-      wrong: `"It's too early in the game to reveal this" → refuse to unlock
+      },
+      {
+        scenario: "Early Game Discovery",
+        wrong: `"It's too early in the game to reveal this" → refuse to unlock
 (If proof exists, timing doesn't block unlock.)`,
-      right: `Turn 5, player found hidden diary with confession → unlock
+        right: `Turn 5, player found hidden diary with confession → unlock
 (Early proof is still valid proof.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

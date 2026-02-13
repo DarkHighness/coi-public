@@ -5,7 +5,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 const atmosphereDiscovery = `
   <rule name="ATMOSPHERE DISCOVERY - CRITICAL">
     - **Valid Atmosphere Options**: Available values for \`envTheme\`, \`ambience\`, and \`weather\` are strictly validated.
@@ -44,10 +43,24 @@ const visuals = `
   </rule>
 `;
 
-export const visualPolicy: Atom<void> = defineAtom({ atomId: "atoms/core/visualPolicy#visualPolicy", source: "atoms/core/visualPolicy.ts", exportName: "visualPolicy" }, () => {
-  return `
+export const visualPolicy: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/visualPolicy#visualPolicy",
+    source: "atoms/core/visualPolicy.ts",
+    exportName: "visualPolicy",
+  },
+  () => {
+    return `
 ${atmosphereDiscovery}
 `;
-});
+  },
+);
 
-export const atmosphereDiscoveryAtom: Atom<void> = defineAtom({ atomId: "atoms/core/visualPolicy#atmosphereDiscoveryAtom", source: "atoms/core/visualPolicy.ts", exportName: "atmosphereDiscoveryAtom" }, () => atmosphereDiscovery);
+export const atmosphereDiscoveryAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/visualPolicy#atmosphereDiscoveryAtom",
+    source: "atoms/core/visualPolicy.ts",
+    exportName: "atmosphereDiscoveryAtom",
+  },
+  () => atmosphereDiscovery,
+);

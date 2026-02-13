@@ -75,10 +75,16 @@ describe("contextInjector", () => {
     expect(getText(history[3])).toContain("commands/runtime/unlock/SKILL.md");
     expect(getText(history[4])).toContain("PRESET SKILLS ACTIVE");
     expect(getText(history[4])).toContain("presets/runtime/SKILL.md");
-    expect(getText(history[4])).toContain("skills/presets/runtime/narrative-style/SKILL.md");
+    expect(getText(history[4])).toContain(
+      "skills/presets/runtime/narrative-style/SKILL.md",
+    );
     expect(getText(history[5])).toContain("PRESET PROFILES ACTIVE");
-    expect(getText(history[5])).toContain("<narrative_style> profile=cinematic source=save_profile");
-    expect(getText(history[6])).toContain("[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]");
+    expect(getText(history[5])).toContain(
+      "<narrative_style> profile=cinematic source=save_profile",
+    );
+    expect(getText(history[6])).toContain(
+      "[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]",
+    );
     expect(getText(history[7])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[7])).toContain("commands/runtime/SKILL.md");
     expect(getText(history[7])).toContain("commands/runtime/cleanup/SKILL.md");
@@ -89,7 +95,6 @@ describe("contextInjector", () => {
     expect(getText(history[8])).toContain("Target turnNumber: 27");
     expect(getText(history[8])).toContain("Structured error recovery");
   });
-
 
   it("injects normal turn instruction without semantic hints when RAG is off", () => {
     const history: any[] = [];
@@ -129,7 +134,6 @@ describe("contextInjector", () => {
     expect(getText(history[0])).toContain("budget_status");
     expect(getText(history[1])).toContain("NO_TOOL_CALL");
   });
-
 
   it("injects retcon ack required system message", () => {
     const history: any[] = [];

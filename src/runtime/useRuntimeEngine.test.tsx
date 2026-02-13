@@ -267,7 +267,9 @@ describe("useRuntimeEngine", () => {
 
     deriveHistoryMock.mockReturnValue([{ id: "history-1" }]);
     getThemeKeyForAtmosphereMock.mockReturnValue("rainy");
-    deriveThemeVarsMock.mockImplementation((vars: Record<string, string>) => vars);
+    deriveThemeVarsMock.mockImplementation(
+      (vars: Record<string, string>) => vars,
+    );
   });
 
   it("applies theme/title effects and delegates runtime actions", async () => {
@@ -280,7 +282,9 @@ describe("useRuntimeEngine", () => {
     expect(getThemeKeyForAtmosphereMock).toHaveBeenCalledWith(
       runtimeState.gameState.atmosphere,
     );
-    expect(document.documentElement.style.getPropertyValue("--bg")).toBe("#ddeeff");
+    expect(document.documentElement.style.getPropertyValue("--bg")).toBe(
+      "#ddeeff",
+    );
     expect(document.documentElement.style.getPropertyValue("--bg-rgb")).toBe(
       "221 238 255",
     );
@@ -296,7 +300,9 @@ describe("useRuntimeEngine", () => {
 
     const commandActions = createCommandActionsMock.mock.results[0]?.value;
     expect(commandActions.navigateToNode).toHaveBeenCalledWith("node-2", true);
-    expect(commandActions.handleForceUpdate).toHaveBeenCalledWith("rewrite prompt");
+    expect(commandActions.handleForceUpdate).toHaveBeenCalledWith(
+      "rewrite prompt",
+    );
     expect(commandActions.handleCleanupEntities).toHaveBeenCalled();
 
     actions.updateNodeAudio("node-1", "audio-1");
@@ -317,9 +323,15 @@ describe("useRuntimeEngine", () => {
     actions.applyVfsMutation({ tag: "mutation" });
     actions.applyVfsDerivedState({ tag: "derived" });
 
-    const domainMutations = createDomainMutationActionsMock.mock.results[0]?.value;
-    expect(domainMutations.updateUiState).toHaveBeenCalledWith("feedLayout", "cards");
-    expect(domainMutations.setViewedSegmentId).toHaveBeenCalledWith("segment-1");
+    const domainMutations =
+      createDomainMutationActionsMock.mock.results[0]?.value;
+    expect(domainMutations.updateUiState).toHaveBeenCalledWith(
+      "feedLayout",
+      "cards",
+    );
+    expect(domainMutations.setViewedSegmentId).toHaveBeenCalledWith(
+      "segment-1",
+    );
     expect(domainMutations.updateNodeMeta).toHaveBeenCalledWith("node-1", {
       title: "new",
     });
@@ -353,7 +365,9 @@ describe("useRuntimeEngine", () => {
     });
 
     gameActionParams.onLiveToolCallsUpdate([{ name: "tool-call" }]);
-    expect(runtimeState.gameState.liveToolCalls).toEqual([{ name: "tool-call" }]);
+    expect(runtimeState.gameState.liveToolCalls).toEqual([
+      { name: "tool-call" },
+    ]);
 
     actions.startNewGame("fantasy", "ctx");
     actions.resumeOutlineGeneration();
@@ -389,7 +403,9 @@ describe("useRuntimeEngine", () => {
     mount();
 
     expect(getThemeKeyForAtmosphereMock).not.toHaveBeenCalled();
-    expect(document.documentElement.style.getPropertyValue("--bg")).toBe("#445566");
+    expect(document.documentElement.style.getPropertyValue("--bg")).toBe(
+      "#445566",
+    );
     expect(document.title).toBe("Chronicles");
   });
 
@@ -419,7 +435,9 @@ describe("useRuntimeEngine", () => {
     mount();
 
     expect(getThemeKeyForAtmosphereMock).not.toHaveBeenCalled();
-    expect(document.documentElement.style.getPropertyValue("--bg")).toBe("#aabbcc");
+    expect(document.documentElement.style.getPropertyValue("--bg")).toBe(
+      "#aabbcc",
+    );
     expect(document.documentElement.style.getPropertyValue("--bg-rgb")).toBe(
       "170 187 204",
     );

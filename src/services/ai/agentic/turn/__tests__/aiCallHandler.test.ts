@@ -92,11 +92,7 @@ describe("handleAICall", () => {
       requiredToolName: "vfs_ls",
     });
 
-    expect(toolChoiceSpy).toHaveBeenCalledWith(
-      "session-1",
-      "required",
-      false,
-    );
+    expect(toolChoiceSpy).toHaveBeenCalledWith("session-1", "required", false);
 
     expect(mockedCallWithAgenticRetry).toHaveBeenCalledWith(
       expect.anything(),
@@ -217,8 +213,8 @@ describe("handleAICall", () => {
     expect(conversationHistory[0]?.role).toBe("user");
 
     const budgetText =
-      conversationHistory[0]?.content.find((part) => part.type === "text")?.text ??
-      "";
+      conversationHistory[0]?.content.find((part) => part.type === "text")
+        ?.text ?? "";
     expect(budgetText).toContain("[SYSTEM: BUDGET UPDATE]");
   });
 });

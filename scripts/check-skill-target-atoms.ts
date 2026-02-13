@@ -124,7 +124,9 @@ async function importAllAtomModules(): Promise<void> {
   }
 }
 
-function getLatestTraceByPrompt(traces: PromptTrace[]): Map<string, PromptTrace> {
+function getLatestTraceByPrompt(
+  traces: PromptTrace[],
+): Map<string, PromptTrace> {
   const byPrompt = new Map<string, PromptTrace>();
   for (const trace of traces) {
     byPrompt.set(trace.promptId, trace);
@@ -150,8 +152,8 @@ function buildUsageForMapping(
     : [];
 
   const usedAtomIds = trace
-    ? Array.from(new Set(trace.atoms.map((atom) => atom.atomId))).sort((left, right) =>
-        left.localeCompare(right),
+    ? Array.from(new Set(trace.atoms.map((atom) => atom.atomId))).sort(
+        (left, right) => left.localeCompare(right),
       )
     : [];
 
@@ -233,7 +235,9 @@ function resolveMappings(
       mapping.composition ?? (directChildren.length > 0 ? "hub" : "atom");
     const subskillsResolved =
       mapping.subskills && mapping.subskills.length > 0
-        ? [...mapping.subskills].sort((left, right) => left.localeCompare(right))
+        ? [...mapping.subskills].sort((left, right) =>
+            left.localeCompare(right),
+          )
         : directChildren;
 
     return {
@@ -250,7 +254,9 @@ function buildCompositionMarkdown(input: {
   usages: SkillTraceUsage[];
   childrenByParent: Map<string, string[]>;
 }): string {
-  const usageByPath = new Map(input.usages.map((item) => [item.skillPath, item]));
+  const usageByPath = new Map(
+    input.usages.map((item) => [item.skillPath, item]),
+  );
   const childrenByParent = input.childrenByParent;
 
   const hubs = input.mappings
@@ -268,17 +274,27 @@ function buildCompositionMarkdown(input: {
   lines.push("");
   lines.push("## Composition Rules");
   lines.push("");
-  lines.push("- `atom`: must land on at least one skill atom in runtime trace.");
+  lines.push(
+    "- `atom`: must land on at least one skill atom in runtime trace.",
+  );
   lines.push("- `hub`: structural index skill that routes to child skills.");
-  lines.push("- `router`: operational protocol skill that may rely on prompt atoms without a dedicated skill atom.");
-  lines.push("- Atom lists below come from runtime trace during `generateVfsSkillSeeds()`.");
+  lines.push(
+    "- `router`: operational protocol skill that may rely on prompt atoms without a dedicated skill atom.",
+  );
+  lines.push(
+    "- Atom lists below come from runtime trace during `generateVfsSkillSeeds()`.",
+  );
   lines.push("");
 
   lines.push("## Recommended Skill Combination Strategy");
   lines.push("");
   lines.push("1. Start from a catalog-visible skill in the target domain.");
-  lines.push("2. If it is a hub, choose one child leaf skill first, then add a second only if needed.");
-  lines.push("3. Validate output with leaf `descendant atoms` to ensure guidance lands on real atoms.");
+  lines.push(
+    "2. If it is a hub, choose one child leaf skill first, then add a second only if needed.",
+  );
+  lines.push(
+    "3. Validate output with leaf `descendant atoms` to ensure guidance lands on real atoms.",
+  );
   lines.push("");
 
   lines.push("## Hub Skills");
@@ -304,7 +320,10 @@ function buildCompositionMarkdown(input: {
       const usage = usageByPath.get(mapping.path);
       const directChildren = mapping.subskillsResolved;
 
-      const descendantPaths = collectSubtreePaths(mapping.path, childrenByParent);
+      const descendantPaths = collectSubtreePaths(
+        mapping.path,
+        childrenByParent,
+      );
       const leafDescendants = descendantPaths.filter(
         (pathItem) => (childrenByParent.get(pathItem) ?? []).length === 0,
       );
@@ -468,7 +487,8 @@ async function main(): Promise<void> {
       mappings: resolvedMappings.length,
       traces: traces.length,
       mappingsRequiringSkillAtoms: mappingsRequiringSkillAtoms.length,
-      mappingsMissingRequiredSkillAtoms: mappingsMissingRequiredSkillAtoms.length,
+      mappingsMissingRequiredSkillAtoms:
+        mappingsMissingRequiredSkillAtoms.length,
       registeredSkillAtoms: registeredSkillAtoms.length,
       usedSkillAtoms: usedSkillAtomIds.size,
       uncoveredSkillAtoms: uncoveredSkillAtoms.length,
@@ -500,7 +520,9 @@ async function main(): Promise<void> {
   ) {
     console.error("[skill-target-atoms] Uncovered skill-target atoms found:\n");
     for (const atom of uncoveredSkillAtoms) {
-      console.error(`- ${atom.atomId} (${atom.exportName}) from ${atom.source}`);
+      console.error(
+        `- ${atom.atomId} (${atom.exportName}) from ${atom.source}`,
+      );
     }
     if (mappingsMissingRequiredSkillAtoms.length > 0) {
       console.error(
@@ -522,8 +544,12 @@ async function main(): Promise<void> {
   console.log(
     `[skill-target-atoms] OK: ${registeredSkillAtoms.length} skill-target atoms are classified and used in VFS skills.`,
   );
-  console.log(`[skill-target-atoms] Coverage report: ${toRel(JSON_OUTPUT_PATH)}`);
-  console.log(`[skill-target-atoms] Composition doc: ${toRel(MARKDOWN_OUTPUT_PATH)}`);
+  console.log(
+    `[skill-target-atoms] Coverage report: ${toRel(JSON_OUTPUT_PATH)}`,
+  );
+  console.log(
+    `[skill-target-atoms] Composition doc: ${toRel(MARKDOWN_OUTPUT_PATH)}`,
+  );
 }
 
 void main();

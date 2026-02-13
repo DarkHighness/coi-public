@@ -58,7 +58,9 @@ export const TimelineExport = forwardRef<
       if (!locationRef) {
         return "";
       }
-      return resolveLocationDisplayName(locationRef, { locations: knownLocations });
+      return resolveLocationDisplayName(locationRef, {
+        locations: knownLocations,
+      });
     };
 
     const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
@@ -520,7 +522,11 @@ export const TimelineExport = forwardRef<
                         className="w-1 h-1 rounded-full"
                         style={{ backgroundColor: "#475569" }} // slate-600
                       ></span>
-                      <span>{resolveExportLocation(seg.stateSnapshot?.currentLocation)}</span>
+                      <span>
+                        {resolveExportLocation(
+                          seg.stateSnapshot?.currentLocation,
+                        )}
+                      </span>
                     </div>
                   </div>
 

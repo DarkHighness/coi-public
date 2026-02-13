@@ -36,9 +36,7 @@ import {
   createSummaryLoopState,
   accumulateSummaryUsage,
 } from "./summaryInitializer";
-import {
-  buildSummaryInitialContext,
-} from "./summaryContext";
+import { buildSummaryInitialContext } from "./summaryContext";
 export { buildQuerySummaryConsistencyAnchor } from "./summaryPromptTemplates";
 import { buildQuerySummaryConsistencyAnchor } from "./summaryPromptTemplates";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
@@ -99,7 +97,9 @@ const collectSummaryPathCandidates = (
   if (Array.isArray(value)) {
     if (key && SUMMARY_PATH_ARG_KEYS.has(key)) {
       return value.flatMap((entry) =>
-        typeof entry === "string" ? [entry] : collectSummaryPathCandidates(entry),
+        typeof entry === "string"
+          ? [entry]
+          : collectSummaryPathCandidates(entry),
       );
     }
     return value.flatMap((entry) => collectSummaryPathCandidates(entry));
@@ -227,14 +227,18 @@ async function runSummaryLoopCore(options: {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`[SummaryLoop] Failed to reset summary/state.json: ${message}`);
+    throw new Error(
+      `[SummaryLoop] Failed to reset summary/state.json: ${message}`,
+    );
   }
 
   let conversationHistory: UnifiedMessage[] = [...initialHistory];
 
   const snapshotForAnchor = input.vfsSession.snapshot();
   const indexForAnchor = readConversationIndex(snapshotForAnchor);
-  const targetForkId = Number.isFinite(input.forkId) ? Math.floor(input.forkId) : 0;
+  const targetForkId = Number.isFinite(input.forkId)
+    ? Math.floor(input.forkId)
+    : 0;
   const targetForkLatestTurn =
     typeof indexForAnchor?.latestTurnNumberByFork?.[String(targetForkId)] ===
     "number"
@@ -282,7 +286,8 @@ async function runSummaryLoopCore(options: {
     const toolCallsRemaining =
       loopState.budgetState.toolCallsMax - loopState.budgetState.toolCallsUsed;
     const iterationsRemaining =
-      loopState.budgetState.loopIterationsMax - loopState.budgetState.loopIterationsUsed;
+      loopState.budgetState.loopIterationsMax -
+      loopState.budgetState.loopIterationsUsed;
     const mustFinishNow = toolCallsRemaining <= 2 || iterationsRemaining <= 2;
 
     if (mustFinishNow) {
@@ -396,8 +401,7 @@ async function runSummaryLoopCore(options: {
         ) {
           const error = {
             success: false,
-            error:
-              `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
+            error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
             code: "INVALID_ACTION",
           };
           conversationHistory.push(
@@ -422,8 +426,7 @@ async function runSummaryLoopCore(options: {
       if (finishIndices.length > 1) {
         const error = {
           success: false,
-          error:
-            `[ERROR: MULTIPLE_FINISH_CALLS] Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
+          error: `[ERROR: MULTIPLE_FINISH_CALLS] Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
           code: "INVALID_ACTION",
         };
         conversationHistory.push(
@@ -445,8 +448,7 @@ async function runSummaryLoopCore(options: {
       ) {
         const error = {
           success: false,
-          error:
-            `[ERROR: FINISH_NOT_LAST] "${finishToolName}" must be your LAST tool call. Reorder your tool calls and try again.`,
+          error: `[ERROR: FINISH_NOT_LAST] "${finishToolName}" must be your LAST tool call. Reorder your tool calls and try again.`,
           code: "INVALID_ACTION",
         };
         conversationHistory.push(
@@ -485,7 +487,8 @@ async function runSummaryLoopCore(options: {
           : null;
       const fallbackTurnNumber =
         typeof index?.activeForkId === "number"
-          ? (index?.latestTurnNumberByFork?.[String(index.activeForkId)] ?? null)
+          ? (index?.latestTurnNumberByFork?.[String(index.activeForkId)] ??
+            null)
           : null;
       const turnNumber =
         typeof turnNumberByTargetFork === "number"
@@ -504,7 +507,10 @@ async function runSummaryLoopCore(options: {
       };
 
       for (const call of functionCalls) {
-        const crossForkViolations = findSummaryCrossForkViolations(call.args, forkId);
+        const crossForkViolations = findSummaryCrossForkViolations(
+          call.args,
+          forkId,
+        );
         if (crossForkViolations.length > 0) {
           const details = crossForkViolations
             .slice(0, 3)
@@ -542,7 +548,11 @@ async function runSummaryLoopCore(options: {
           dispatchArgs = injectSummaryRuntimeArgs(call.args, input.nodeRange);
         }
 
-        const output = await dispatchToolCallAsync(call.name, dispatchArgs, toolCtx);
+        const output = await dispatchToolCallAsync(
+          call.name,
+          dispatchArgs,
+          toolCtx,
+        );
 
         if (call.name === finishToolName && output && (output as any).success) {
           const produced = (output as any).data?.summary ?? null;
@@ -561,7 +571,8 @@ async function runSummaryLoopCore(options: {
                 lastSummarizedIndex: input.baseIndex,
               });
             } catch (error) {
-              const msg = error instanceof Error ? error.message : String(error);
+              const msg =
+                error instanceof Error ? error.message : String(error);
               throw new Error(
                 `[SummaryLoop] Failed to rollback summary/state.json after forbidden token check: ${msg}`,
               );
@@ -606,12 +617,12 @@ async function runSummaryLoopCore(options: {
           createLogEntry({
             provider: providerProtocol,
             model: modelId,
-          endpoint: "summary_tool",
-          toolName: call.name,
-          toolInput: dispatchArgs,
-          toolOutput: output,
-        }),
-      );
+            endpoint: "summary_tool",
+            toolName: call.name,
+            toolInput: dispatchArgs,
+            toolOutput: output,
+          }),
+        );
       }
 
       conversationHistory.push(createToolResponseMessage(toolResponses));
@@ -629,7 +640,9 @@ async function runSummaryLoopCore(options: {
   };
 }
 
-export async function runQuerySummaryLoop(input: SummaryLoopInput): Promise<SummaryAgenticLoopResult> {
+export async function runQuerySummaryLoop(
+  input: SummaryLoopInput,
+): Promise<SummaryAgenticLoopResult> {
   const { settings, language } = input;
   const { code: languageCode } = canonicalizeLanguage(language);
 

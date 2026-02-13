@@ -29,25 +29,35 @@ function makeTrace(promptId: string, atomIds: string[]): PromptTrace {
 const loadGraph = () =>
   JSON.parse(
     fs.readFileSync(
-      path.resolve(process.cwd(), "src/services/prompts/trace/generated/prompt-atom-graph.json"),
+      path.resolve(
+        process.cwd(),
+        "src/services/prompts/trace/generated/prompt-atom-graph.json",
+      ),
       "utf8",
     ),
   );
-
 
 describe("prompt trace policy guard", () => {
   it("passes when all required atoms are present in runtime and static graph", () => {
     const required = getRequiredAtomsForPrompt("turn.system");
     const trace = makeTrace("turn.system", required);
 
-    const result = validatePromptTrace("turn.system", trace, loadGraph() as any);
+    const result = validatePromptTrace(
+      "turn.system",
+      trace,
+      loadGraph() as any,
+    );
     expect(result.ok).toBe(true);
     expect(result.missingRequiredAtoms).toHaveLength(0);
   });
 
   it("fails when required runtime atoms are missing", () => {
     const trace = makeTrace("turn.system", []);
-    const result = validatePromptTrace("turn.system", trace, loadGraph() as any);
+    const result = validatePromptTrace(
+      "turn.system",
+      trace,
+      loadGraph() as any,
+    );
 
     expect(result.ok).toBe(false);
     expect((result.missingRuntimeAtoms || []).length).toBeGreaterThan(0);
@@ -70,7 +80,11 @@ describe("prompt trace policy guard", () => {
       ],
     };
 
-    const result = validatePromptTrace("turn.system", trace, brokenGraph as any);
+    const result = validatePromptTrace(
+      "turn.system",
+      trace,
+      brokenGraph as any,
+    );
     expect(result.ok).toBe(false);
     expect((result.missingStaticAtoms || []).length).toBeGreaterThan(0);
   });

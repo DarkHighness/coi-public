@@ -14,11 +14,7 @@
 import type { GameState, GameResponse, AISettings } from "../../types";
 import type { ZodToolDefinition } from "../providers/types";
 import type { VfsSession } from "../vfs/vfsSession";
-import type {
-  VfsActor,
-  VfsElevationIntent,
-  VfsMode,
-} from "../vfs/core/types";
+import type { VfsActor, VfsElevationIntent, VfsMode } from "../vfs/core/types";
 import type { VfsElevationScopeTemplateIds } from "../vfs/core/elevation";
 
 // ============================================================================

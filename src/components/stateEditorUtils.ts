@@ -87,7 +87,10 @@ const applyDerived = (session: VfsSession, baseState: GameState): GameState => {
 
 const normalizePath = (path: string): string => normalizeVfsPath(path);
 
-const getFolderChildPaths = (session: VfsSession, folderPath: string): string[] => {
+const getFolderChildPaths = (
+  session: VfsSession,
+  folderPath: string,
+): string[] => {
   const normalizedFolderPath = normalizePath(folderPath);
   const prefix = normalizedFolderPath ? `${normalizedFolderPath}/` : "";
   return Object.keys(session.snapshot())
@@ -185,7 +188,9 @@ export const applyVfsCreateFolder = ({
       { writeContext },
     );
   } else if (readmeContent) {
-    session.writeFile(targetReadme, readmeContent, "text/markdown", { writeContext });
+    session.writeFile(targetReadme, readmeContent, "text/markdown", {
+      writeContext,
+    });
   }
 
   if (createdReadmes.length === 0 && !session.readFile(targetReadme)) {
@@ -223,7 +228,11 @@ export const applyVfsRenamePath = ({
   }
 
   const toPrefix = `${normalizedTo}/`;
-  if (isFolder && (normalizedTo === normalizedFrom || normalizedTo.startsWith(`${normalizedFrom}/`))) {
+  if (
+    isFolder &&
+    (normalizedTo === normalizedFrom ||
+      normalizedTo.startsWith(`${normalizedFrom}/`))
+  ) {
     throw new Error("Cannot move a folder into itself.");
   }
 
@@ -300,7 +309,6 @@ export const applyVfsDeletePath = ({
   return applyDerived(session, baseState);
 };
 
-
 export const applyVfsBatchMoveFiles = ({
   session,
   sourcePaths,
@@ -359,7 +367,9 @@ export const applyVfsBatchMoveFiles = ({
     }
     targetNameSet.add(fileName);
 
-    const targetPath = normalizePath(`${normalizedTargetDirectory}/${fileName}`);
+    const targetPath = normalizePath(
+      `${normalizedTargetDirectory}/${fileName}`,
+    );
     if (!targetPath) {
       throw new Error(`Invalid target path for file: ${sourcePath}`);
     }

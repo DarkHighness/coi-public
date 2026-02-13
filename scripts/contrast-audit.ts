@@ -35,7 +35,11 @@ const contrastRatio = (a: RGB, b: RGB) => {
 
 const fmt = (value: number) => value.toFixed(2).padStart(5, " ");
 
-const getPair = (vars: Record<string, string>, fgKey: string, bgKey: string) => {
+const getPair = (
+  vars: Record<string, string>,
+  fgKey: string,
+  bgKey: string,
+) => {
   const fg = parseHex(vars[fgKey] ?? "");
   const bg = parseHex(vars[bgKey] ?? "");
   if (!fg || !bg) return null;
@@ -74,7 +78,8 @@ const auditVars = (
     if (!pair) continue;
     hasAny = true;
     const ratio = contrastRatio(pair.fg, pair.bg);
-    if (ratio + 1e-6 < p.min) failures.push({ label: p.label, ratio, min: p.min });
+    if (ratio + 1e-6 < p.min)
+      failures.push({ label: p.label, ratio, min: p.min });
   }
 
   if (!hasAny) return { failures, derived };
@@ -101,9 +106,7 @@ const main = () => {
   }> = [];
 
   console.log("Theme contrast audit (ratios):");
-  console.log(
-    "theme            mode  | text  | sec   | muted | div",
-  );
+  console.log("theme            mode  | text  | sec   | muted | div");
 
   for (const [themeKey, theme] of Object.entries(ENV_THEMES)) {
     const night = auditVars(themeKey, "night", theme.vars);
@@ -134,4 +137,3 @@ const main = () => {
 };
 
 main();
-

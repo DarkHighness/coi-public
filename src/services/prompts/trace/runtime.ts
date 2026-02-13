@@ -273,7 +273,9 @@ export function clearPromptTraceRegistry(): void {
   promptTraceHistory.splice(0, promptTraceHistory.length);
 }
 
-export function getLatestPromptTrace(promptId: string): PromptTrace | undefined {
+export function getLatestPromptTrace(
+  promptId: string,
+): PromptTrace | undefined {
   return promptTraceLatest.get(promptId);
 }
 

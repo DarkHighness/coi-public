@@ -5,8 +5,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const narrativeCausality: Atom<void> = defineAtom({ atomId: "atoms/narrative/causality#narrativeCausality", source: "atoms/narrative/causality.ts", exportName: "narrativeCausality" }, () => `
+export const narrativeCausality: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/causality#narrativeCausality",
+    source: "atoms/narrative/causality.ts",
+    exportName: "narrativeCausality",
+  },
+  () => `
 <narrative_causality>
   **COLD CAUSALITY**:
   - **No Moralizing**: The world does not care about "good" or "evil". If the player does something cruel, do not describe it with judgment, describe it with physics.
@@ -78,16 +83,23 @@ export const narrativeCausality: Atom<void> = defineAtom({ atomId: "atoms/narrat
     **GOLD STANDARD**: Every turn should feel like a NEW PAGE in a well-edited novel, not a rehash of previous content. The world evolves, characters develop, and the narrative progresses with organic variety.
   </quality_benchmark>
 </anti_repetition_protocol>
-`);
+`,
+);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const narrativeCausalitySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/causality#narrativeCausalitySkill", source: "atoms/narrative/causality.ts", exportName: "narrativeCausalitySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(narrativeCausality),
+export const narrativeCausalitySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/causality#narrativeCausalitySkill",
+    source: "atoms/narrative/causality.ts",
+    exportName: "narrativeCausalitySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(narrativeCausality),
 
-  quickStart: `
+    quickStart: `
 1. No moralizing - describe with physics, not judgment
 2. Incomplete information - show reaction, not motive
 3. Delayed consequences - seeds rot before sprouting
@@ -95,29 +107,30 @@ export const narrativeCausalitySkill: SkillAtom<void> = defineSkillAtom({ atomId
 5. Avoid repetition - fresh content every turn
 `.trim(),
 
-  checklist: [
-    "Describing events without moral judgment?",
-    "Showing reactions without explaining motives?",
-    "Allowing delayed consequences to unfold naturally?",
-    "Every turn advances position or understanding?",
-    "Avoiding repetitive plot devices/dialogue/scenes?",
-    "Hardened characters showing appropriate resilience?",
-  ],
+    checklist: [
+      "Describing events without moral judgment?",
+      "Showing reactions without explaining motives?",
+      "Allowing delayed consequences to unfold naturally?",
+      "Every turn advances position or understanding?",
+      "Avoiding repetitive plot devices/dialogue/scenes?",
+      "Hardened characters showing appropriate resilience?",
+    ],
 
-  examples: [
-    {
-      scenario: "No Moralizing",
-      wrong: `"He cruelly struck the innocent child."
+    examples: [
+      {
+        scenario: "No Moralizing",
+        wrong: `"He cruelly struck the innocent child."
 (Moral judgment embedded in description.)`,
-      right: `"His fist connected. The child fell. Blood pooled."
+        right: `"His fist connected. The child fell. Blood pooled."
 (Physics, no judgment - let reader judge.)`,
-    },
-    {
-      scenario: "Anti-Repetition",
-      wrong: `Turn 5: "Bandits attack." Turn 12: "More bandits attack."
+      },
+      {
+        scenario: "Anti-Repetition",
+        wrong: `Turn 5: "Bandits attack." Turn 12: "More bandits attack."
 (Same challenge recycled.)`,
-      right: `Turn 5: "Bandits." Turn 12: "The merchant's guards - recognizing you."
+        right: `Turn 5: "Bandits." Turn 12: "The merchant's guards - recognizing you."
 (Escalation with new complications.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

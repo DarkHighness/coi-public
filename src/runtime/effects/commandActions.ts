@@ -1,6 +1,9 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import type { TFunction } from "i18next";
-import { generateEntityCleanup, generateForceUpdate } from "../../services/aiService";
+import {
+  generateEntityCleanup,
+  generateForceUpdate,
+} from "../../services/aiService";
 import { deriveGameStateFromVfs } from "../../services/vfs/derivations";
 import { deriveHistory } from "../../utils/storyUtils";
 import { LANG_MAP } from "../../utils/constants";
@@ -11,7 +14,10 @@ import {
   normalizeAtmosphere,
   type AtmosphereObject,
 } from "../../utils/constants/atmosphere";
-import { forkConversation, writeForkTree } from "../../services/vfs/conversation";
+import {
+  forkConversation,
+  writeForkTree,
+} from "../../services/vfs/conversation";
 import { getRAGService } from "../../services/rag";
 import { updateRAGDocumentsBackground } from "./ragDocuments";
 import type {
@@ -73,7 +79,9 @@ export function createCommandActions({
   };
 
   const getParentSummaryState = (parentId: string | null | undefined) => {
-    const parentNode = parentId ? gameStateRef.current.nodes[parentId] : undefined;
+    const parentNode = parentId
+      ? gameStateRef.current.nodes[parentId]
+      : undefined;
     const baseSummaries = parentNode?.summaries || [];
     const baseIndex = parentNode?.summarizedIndex || 0;
     const nextSegmentIdx = (parentNode?.segmentIdx ?? -1) + 1;
@@ -106,7 +114,13 @@ export function createCommandActions({
 
   const emitRecoveryNotice = (
     mode: "sudo" | "cleanup",
-    recovery?: { recovered?: boolean; kind?: string; finalLevel?: number; attempts?: unknown[]; durationMs?: number },
+    recovery?: {
+      recovered?: boolean;
+      kind?: string;
+      finalLevel?: number;
+      attempts?: unknown[];
+      durationMs?: number;
+    },
   ) => {
     if (!recovery?.recovered) return;
 
@@ -114,7 +128,9 @@ export function createCommandActions({
       mode,
       kind: recovery.kind,
       finalLevel: recovery.finalLevel,
-      attemptCount: Array.isArray(recovery.attempts) ? recovery.attempts.length : 0,
+      attemptCount: Array.isArray(recovery.attempts)
+        ? recovery.attempts.length
+        : 0,
       durationMs: recovery.durationMs,
       recovered: recovery.recovered,
     });
@@ -135,8 +151,7 @@ export function createCommandActions({
   }: {
     type: "turn_retry_boost" | "session_rebuild";
     message: string;
-  }) =>
-    typeof window !== "undefined" ? window.confirm(message) : false;
+  }) => (typeof window !== "undefined" ? window.confirm(message) : false);
 
   const buildSystemNode = ({
     id,
@@ -327,10 +342,12 @@ export function createCommandActions({
         true,
       );
 
-      const sudoElevationToken = vfsElevationTokenManager.issueAiElevationToken({
-        intent: "sudo_command",
-        scopeTemplateIds: "all_elevated",
-      });
+      const sudoElevationToken = vfsElevationTokenManager.issueAiElevationToken(
+        {
+          intent: "sudo_command",
+          scopeTemplateIds: "all_elevated",
+        },
+      );
 
       const context: TurnContext = {
         recentHistory: fullHistory,
@@ -375,7 +392,10 @@ export function createCommandActions({
 
       const vfsSnapshot = requireNonEmptyVfsSnapshot("force update");
       const derivedState = deriveGameStateFromVfs(vfsSnapshot);
-      const viewState = mergeDerivedViewState(gameStateRef.current, derivedState);
+      const viewState = mergeDerivedViewState(
+        gameStateRef.current,
+        derivedState,
+      );
 
       const responseAtmosphere: AtmosphereObject = normalizeAtmosphere(
         response.atmosphere || gameStateRef.current.atmosphere,
@@ -476,7 +496,10 @@ export function createCommandActions({
         const snapshot = vfsSession.snapshot();
         const baseline: Record<
           string,
-          { content: string; contentType: (typeof snapshot)[string]["contentType"] }
+          {
+            content: string;
+            contentType: (typeof snapshot)[string]["contentType"];
+          }
         > = {};
 
         for (const [path, file] of Object.entries(snapshot)) {
@@ -484,7 +507,10 @@ export function createCommandActions({
             path.startsWith("conversation/") ||
             path.startsWith("current/conversation/")
           ) {
-            baseline[path] = { content: file.content, contentType: file.contentType };
+            baseline[path] = {
+              content: file.content,
+              contentType: file.contentType,
+            };
           }
         }
 
@@ -516,10 +542,8 @@ export function createCommandActions({
         confirmRecoveryAction,
       };
 
-      const { response, logs, changedEntities, recovery } = await generateEntityCleanup(
-        gameStateRef.current,
-        context,
-      );
+      const { response, logs, changedEntities, recovery } =
+        await generateEntityCleanup(gameStateRef.current, context);
 
       await rebuildSessionsAfterHeavyMutation(
         aiSettings,
@@ -537,7 +561,11 @@ export function createCommandActions({
           try {
             vfsSession.deleteFile(path);
           } catch (error) {
-            console.warn("[Cleanup] Failed to delete conversation file:", path, error);
+            console.warn(
+              "[Cleanup] Failed to delete conversation file:",
+              path,
+              error,
+            );
           }
         }
       }
@@ -554,7 +582,10 @@ export function createCommandActions({
 
       const vfsSnapshot = requireNonEmptyVfsSnapshot("cleanup");
       const derivedState = deriveGameStateFromVfs(vfsSnapshot);
-      const viewState = mergeDerivedViewState(gameStateRef.current, derivedState);
+      const viewState = mergeDerivedViewState(
+        gameStateRef.current,
+        derivedState,
+      );
 
       const newSegmentId = Date.now().toString();
       const cleanupNodeId = `cleanup-${newSegmentId}`;
@@ -598,8 +629,12 @@ export function createCommandActions({
           forkId: gameStateRef.current.forkId,
           turnNumber: gameStateRef.current.turnNumber,
         };
-        updateRAGDocumentsBackground(changedEntities, stateWithSaveInfo, vfsSession).catch(
-          (error) => console.error("[Cleanup] RAG update failed:", error),
+        updateRAGDocumentsBackground(
+          changedEntities,
+          stateWithSaveInfo,
+          vfsSession,
+        ).catch((error) =>
+          console.error("[Cleanup] RAG update failed:", error),
         );
       }
 

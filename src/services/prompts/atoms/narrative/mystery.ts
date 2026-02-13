@@ -5,8 +5,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const mysteryMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative/mystery#mysteryMechanics", source: "atoms/narrative/mystery.ts", exportName: "mysteryMechanics" }, () => `
+export const mysteryMechanics: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/mystery#mysteryMechanics",
+    source: "atoms/narrative/mystery.ts",
+    exportName: "mysteryMechanics",
+  },
+  () => `
 <rule name="MYSTERY & FORESHADOWING">
   <plant_seeds>
   **Plant Seeds Early**: Every major revelation should have at least 3 prior hints scattered throughout the narrative.
@@ -68,16 +73,23 @@ export const mysteryMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrativ
     - update NPC visible status/impression (based on what was observed, not mind-reading)
   </clue_bookkeeping>
 </rule>
-`);
+`,
+);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const mysteryMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/mystery#mysteryMechanicsSkill", source: "atoms/narrative/mystery.ts", exportName: "mysteryMechanicsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(mysteryMechanics),
+export const mysteryMechanicsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/mystery#mysteryMechanicsSkill",
+    source: "atoms/narrative/mystery.ts",
+    exportName: "mysteryMechanicsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(mysteryMechanics),
 
-  quickStart: `
+    quickStart: `
 1. Plant 3+ hints before any major revelation
 2. Layered clues: obvious, hidden (retrospect), deep (piecing)
 3. Fair mystery: multiple routes to each fact
@@ -85,32 +97,33 @@ export const mysteryMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: 
 5. Convert clues to state changes (Knowledge, Quest, NPC)
 `.trim(),
 
-  checklist: [
-    "Major revelations have 3+ prior hints?",
-    "Multiple routes to discover each fact?",
-    "Clues are physical/social/documentary (not vibes)?",
-    "Red herrings present to create tension?",
-    "Clue discovery updates game state (Knowledge, etc.)?",
-    "NPC lies tracked for player detection?",
-  ],
+    checklist: [
+      "Major revelations have 3+ prior hints?",
+      "Multiple routes to discover each fact?",
+      "Clues are physical/social/documentary (not vibes)?",
+      "Red herrings present to create tension?",
+      "Clue discovery updates game state (Knowledge, etc.)?",
+      "NPC lies tracked for player detection?",
+    ],
 
-  examples: [
-    {
-      scenario: "Fair Mystery",
-      wrong: `The only way to learn the secret is one NPC.
+    examples: [
+      {
+        scenario: "Fair Mystery",
+        wrong: `The only way to learn the secret is one NPC.
 If you miss them, you never know.
 (Single point of failure - unfair.)`,
-      right: `Routes: witness → rumor network → physical trace
+        right: `Routes: witness → rumor network → physical trace
 OR paperwork → location → person
 (Multiple paths to same truth.)`,
-    },
-    {
-      scenario: "Clue Design",
-      wrong: `"Something felt off about the room."
+      },
+      {
+        scenario: "Clue Design",
+        wrong: `"Something felt off about the room."
 (Vibe, not clue.)`,
-      right: `"Dust covered everything—except a rectangle on the desk.
+        right: `"Dust covered everything—except a rectangle on the desk.
 Something had been removed recently."
 (Physical, checkable, leads somewhere.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

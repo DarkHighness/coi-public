@@ -9,11 +9,7 @@ import {
 } from "./customRulesAckState";
 
 const writeRule = (session: VfsSession, content: string) => {
-  session.writeFile(
-    "custom_rules/12-custom/rule.md",
-    content,
-    "text/markdown",
-  );
+  session.writeFile("custom_rules/12-custom/rule.md", content, "text/markdown");
 };
 
 describe("customRulesAckState", () => {

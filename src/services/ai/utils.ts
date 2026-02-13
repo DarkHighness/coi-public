@@ -714,7 +714,9 @@ export function normalizeSavePresetProfile(
   };
 }
 
-function resolveFallbackPresetProfile(settings?: AISettings): SavePresetProfile {
+function resolveFallbackPresetProfile(
+  settings?: AISettings,
+): SavePresetProfile {
   return normalizeSavePresetProfile({
     narrativeStylePreset: settings?.extra?.narrativeStylePreset,
     worldDispositionPreset: settings?.extra?.worldDispositionPreset,
@@ -754,7 +756,9 @@ export function resolveEffectivePresetProfile(input: {
   settings?: AISettings;
 }): EffectivePresetProfile {
   const fallbackProfile = resolveFallbackPresetProfile(input.settings);
-  const saveProfile = normalizeSavePresetProfile(input.presetProfile ?? fallbackProfile);
+  const saveProfile = normalizeSavePresetProfile(
+    input.presetProfile ?? fallbackProfile,
+  );
 
   const narrativeFromCustom = normalizePresetFromTagValue(
     extractXmlTagValue(input.customContext, "narrative_style"),
@@ -809,7 +813,8 @@ export const PRESET_SKILL_PATHS = {
   narrativeStyle: "skills/presets/runtime/narrative-style/SKILL.md",
   worldDisposition: "skills/presets/runtime/world-disposition/SKILL.md",
   playerMaliceProfile: "skills/presets/runtime/player-malice-profile/SKILL.md",
-  playerMaliceIntensity: "skills/presets/runtime/player-malice-intensity/SKILL.md",
+  playerMaliceIntensity:
+    "skills/presets/runtime/player-malice-intensity/SKILL.md",
 } as const;
 
 export type PresetSkillTag =
@@ -954,7 +959,8 @@ export function resolveActivePresetSkillRequirements(
     pushPresetSkillRequirement(requirements, playerMaliceProfile);
   }
 
-  const playerMaliceIntensity = resolvePlayerMaliceIntensitySkillRequirement(input);
+  const playerMaliceIntensity =
+    resolvePlayerMaliceIntensitySkillRequirement(input);
   if (playerMaliceIntensity) {
     pushPresetSkillRequirement(requirements, playerMaliceIntensity);
   }
@@ -1248,14 +1254,12 @@ export function pickModelMatchedPrompt(
   return undefined;
 }
 
-export function resolveNarrativeStyle(
-  input: {
-    themeStyle?: string;
-    preset?: NarrativeStylePreset;
-    language: string;
-    customContext?: string;
-  },
-): string | undefined {
+export function resolveNarrativeStyle(input: {
+  themeStyle?: string;
+  preset?: NarrativeStylePreset;
+  language: string;
+  customContext?: string;
+}): string | undefined {
   const fromCustomContext = extractXmlTagValue(
     input.customContext,
     "narrative_style",
@@ -1271,7 +1275,9 @@ export function resolveNarrativeStyle(
     const base = input.themeStyle?.trim();
     if (!base) return presetText;
     const isZh = input.language?.toLowerCase().startsWith("zh");
-    return isZh ? `${base}\n\n补充风格：${presetText}` : `${base}\n\nStyle add-on: ${presetText}`;
+    return isZh
+      ? `${base}\n\n补充风格：${presetText}`
+      : `${base}\n\nStyle add-on: ${presetText}`;
   }
 
   return input.themeStyle;

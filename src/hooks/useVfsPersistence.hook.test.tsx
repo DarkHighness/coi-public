@@ -94,11 +94,14 @@ vi.mock("../services/vfs/derivations", () => ({
 }));
 
 vi.mock("../services/vfs/persistence", () => ({
-  applySharedMutableStateToSession: vfsPersistenceMocks.applySharedMutableStateToSession,
-  buildSharedMutableStateFromSession: vfsPersistenceMocks.buildSharedMutableStateFromSession,
+  applySharedMutableStateToSession:
+    vfsPersistenceMocks.applySharedMutableStateToSession,
+  buildSharedMutableStateFromSession:
+    vfsPersistenceMocks.buildSharedMutableStateFromSession,
   extractSharedMutableStateFromSnapshot:
     vfsPersistenceMocks.extractSharedMutableStateFromSnapshot,
-  restoreVfsSessionFromSnapshot: vfsPersistenceMocks.restoreVfsSessionFromSnapshot,
+  restoreVfsSessionFromSnapshot:
+    vfsPersistenceMocks.restoreVfsSessionFromSnapshot,
   saveVfsSessionSnapshot: vfsPersistenceMocks.saveVfsSessionSnapshot,
 }));
 
@@ -156,10 +159,14 @@ describe("useVfsPersistence hook flows", () => {
 
     vi.clearAllMocks();
 
-    indexedDbMocks.saveMetadata.mockImplementation(async (key: string, value: any) => {
-      metadata.set(key, value);
-    });
-    indexedDbMocks.loadMetadata.mockImplementation(async (key: string) => metadata.get(key));
+    indexedDbMocks.saveMetadata.mockImplementation(
+      async (key: string, value: any) => {
+        metadata.set(key, value);
+      },
+    );
+    indexedDbMocks.loadMetadata.mockImplementation(async (key: string) =>
+      metadata.get(key),
+    );
     indexedDbMocks.deleteMetadata.mockImplementation(async (key: string) => {
       metadata.delete(key);
     });
@@ -177,14 +184,18 @@ describe("useVfsPersistence hook flows", () => {
     storeMocks.loadSnapshot.mockResolvedValue(null);
     storeMocks.listSnapshots.mockResolvedValue([]);
 
-    vfsPersistenceMocks.applySharedMutableStateToSession.mockImplementation(() => {});
+    vfsPersistenceMocks.applySharedMutableStateToSession.mockImplementation(
+      () => {},
+    );
     vfsPersistenceMocks.buildSharedMutableStateFromSession.mockReturnValue({
       "world/flags.json": { active: true },
     });
     vfsPersistenceMocks.extractSharedMutableStateFromSnapshot.mockReturnValue({
       "world/flags.json": { active: true },
     });
-    vfsPersistenceMocks.restoreVfsSessionFromSnapshot.mockImplementation(() => {});
+    vfsPersistenceMocks.restoreVfsSessionFromSnapshot.mockImplementation(
+      () => {},
+    );
     vfsPersistenceMocks.saveVfsSessionSnapshot.mockResolvedValue(undefined);
 
     derivationMocks.deriveGameStateFromVfs.mockReturnValue({
@@ -221,7 +232,9 @@ describe("useVfsPersistence hook flows", () => {
 
     imageStorageMocks.deleteImagesBySaveId.mockResolvedValue(undefined);
     ragMocks.deleteDocuments.mockResolvedValue(undefined);
-    ragMocks.getRAGService.mockReturnValue({ deleteDocuments: ragMocks.deleteDocuments });
+    ragMocks.getRAGService.mockReturnValue({
+      deleteDocuments: ragMocks.deleteDocuments,
+    });
 
     seedMocks.seedVfsSessionFromDefaults.mockImplementation(() => {});
   });
@@ -244,7 +257,9 @@ describe("useVfsPersistence hook flows", () => {
       },
     ]);
     metadata.set("vfs_latest:slot-1", { forkId: 0, turn: 1 });
-    metadata.set("vfs_shared:slot-1", { files: { "world/flags.json": { active: true } } });
+    metadata.set("vfs_shared:slot-1", {
+      files: { "world/flags.json": { active: true } },
+    });
     metadata.set("ui_state:slot-1", {
       inventory: { pinnedIds: ["item-a"], customOrder: ["item-a"] },
     });
@@ -252,7 +267,13 @@ describe("useVfsPersistence hook flows", () => {
     indexedDbMocks.getAllVfsSaveIds.mockResolvedValue(["slot-1"]);
     storeMocks.loadSnapshot.mockImplementation(async (saveId: string) => {
       if (saveId === "slot-1") {
-        return { saveId: "slot-1", forkId: 0, turn: 1, createdAt: 99, files: {} };
+        return {
+          saveId: "slot-1",
+          forkId: 0,
+          turn: 1,
+          createdAt: 99,
+          files: {},
+        };
       }
       return null;
     });
@@ -276,7 +297,9 @@ describe("useVfsPersistence hook flows", () => {
     expect(api?.saveSlots[0].id).toBe("slot-1");
     expect(api?.saveSlots[0].name).toBe("Moon Harbor");
 
-    const savedKeys = indexedDbMocks.saveMetadata.mock.calls.map((call) => call[0]);
+    const savedKeys = indexedDbMocks.saveMetadata.mock.calls.map(
+      (call) => call[0],
+    );
     expect(savedKeys).toContain("slots");
     expect(setGameState).toHaveBeenCalled();
   });
@@ -340,7 +363,9 @@ describe("useVfsPersistence hook flows", () => {
     ]);
     metadata.set("currentSlot", "slot-1");
     metadata.set("vfs_latest:slot-1", { forkId: 0, turn: 1 });
-    metadata.set("vfs_shared:slot-1", { files: { "world/flags.json": { active: true } } });
+    metadata.set("vfs_shared:slot-1", {
+      files: { "world/flags.json": { active: true } },
+    });
     metadata.set("ui_state:slot-1", createUiState());
 
     indexedDbMocks.getAllVfsSaveIds.mockResolvedValue(["slot-1"]);
@@ -376,11 +401,17 @@ describe("useVfsPersistence hook flows", () => {
     });
 
     expect(indexedDbMocks.deleteVfsSave).toHaveBeenCalledWith("slot-1");
-    expect(imageStorageMocks.deleteImagesBySaveId).toHaveBeenCalledWith("slot-1");
-    expect(sessionManagerMocks.deleteSlotSessions).toHaveBeenCalledWith("slot-1");
+    expect(imageStorageMocks.deleteImagesBySaveId).toHaveBeenCalledWith(
+      "slot-1",
+    );
+    expect(sessionManagerMocks.deleteSlotSessions).toHaveBeenCalledWith(
+      "slot-1",
+    );
     expect(ragMocks.deleteDocuments).toHaveBeenCalledWith({ saveId: "slot-1" });
 
-    const deletedMetaKeys = indexedDbMocks.deleteMetadata.mock.calls.map((call) => call[0]);
+    const deletedMetaKeys = indexedDbMocks.deleteMetadata.mock.calls.map(
+      (call) => call[0],
+    );
     expect(deletedMetaKeys).toEqual(
       expect.arrayContaining([
         "currentSlot",

@@ -97,7 +97,9 @@ describe("VFS handlers mutations", () => {
     const moveFail = dispatchToolCall(
       "vfs_move",
       {
-        moves: [{ from: "current/world/missing.json", to: "current/world/new.json" }],
+        moves: [
+          { from: "current/world/missing.json", to: "current/world/new.json" },
+        ],
       },
       ctx,
     ) as any;
@@ -345,7 +347,10 @@ describe("VFS handlers mutations", () => {
 
   it("does not rebase explicit canonical fork paths across activeForkId", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session, gameState: { forkId: 1, turnNumber: 0 } as any };
+    const ctx = {
+      vfsSession: session,
+      gameState: { forkId: 1, turnNumber: 0 } as any,
+    };
 
     const writeResult = dispatchToolCall(
       "vfs_write",
@@ -366,7 +371,9 @@ describe("VFS handlers mutations", () => {
 
     const snapshot = session.snapshotCanonical();
     expect(Object.keys(snapshot)).toContain("forks/0/story/world/global.json");
-    expect(Object.keys(snapshot)).not.toContain("forks/1/story/world/global.json");
+    expect(Object.keys(snapshot)).not.toContain(
+      "forks/1/story/world/global.json",
+    );
   });
 
   it("requires reading destination before vfs_move overwrites it", () => {

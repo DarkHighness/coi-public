@@ -25,7 +25,9 @@ describe("MarkdownText", () => {
       }),
     );
 
-    const wrapper = container.querySelector(".markdown-content-inline.inline-class");
+    const wrapper = container.querySelector(
+      ".markdown-content-inline.inline-class",
+    );
     expect(wrapper).toBeTruthy();
   });
 
@@ -55,14 +57,22 @@ describe("MarkdownText", () => {
 
   it("merges default, external and custom component class names", () => {
     const CustomParagraph = ({ className, children }: any) =>
-      React.createElement("p", { "data-testid": "custom-p", className }, children);
+      React.createElement(
+        "p",
+        { "data-testid": "custom-p", className },
+        children,
+      );
 
     render(
       React.createElement(MarkdownText, {
         content: "Merged classes",
         className: "outer-class",
         components: {
-          p: (props: any) => React.createElement(CustomParagraph, { ...props, className: `${props.className} custom-class` }),
+          p: (props: any) =>
+            React.createElement(CustomParagraph, {
+              ...props,
+              className: `${props.className} custom-class`,
+            }),
         },
       }),
     );

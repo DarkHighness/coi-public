@@ -13,11 +13,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Faction 设计上下文 - 完整版
  */
-export const factionDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/factionDesign#factionDesign", source: "atoms/entities/factionDesign.ts", exportName: "factionDesign" }, () => `
+export const factionDesign: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/factionDesign#factionDesign",
+    source: "atoms/entities/factionDesign.ts",
+    exportName: "factionDesign",
+  },
+  () => `
 <game_system_context>
 **FACTION DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -251,12 +256,19 @@ While the protagonist sleeps, factions breathe:
 The world doesn't pause when the player looks away. It accelerates.
 </offscreen_progression>
 </game_system_context>
-`);
+`,
+);
 
 /**
  * Faction 设计上下文 - 精简版
  */
-export const factionDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/factionDesign#factionDesignPrimer", source: "atoms/entities/factionDesign.ts", exportName: "factionDesignPrimer" }, () => `
+export const factionDesignPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/factionDesign#factionDesignPrimer",
+    source: "atoms/entities/factionDesign.ts",
+    exportName: "factionDesignPrimer",
+  },
+  () => `
 <game_system_context>
 **FACTION DESIGN**: Factions are living organisms with immune systems, metabolisms, and life cycles.
 - Power structure (autocrat, council, figurehead, shadow, hydra)
@@ -268,7 +280,8 @@ export const factionDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entit
 - Inter-faction dynamics (alliances, rivalries)
 - Off-screen progression
 </game_system_context>
-`);
+`,
+);
 
 export default factionDesign;
 
@@ -276,10 +289,16 @@ export default factionDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const factionDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/factionDesign#factionDesignSkill", source: "atoms/entities/factionDesign.ts", exportName: "factionDesignSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(factionDesign),
+export const factionDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/factionDesign#factionDesignSkill",
+    source: "atoms/entities/factionDesign.ts",
+    exportName: "factionDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(factionDesign),
 
-  quickStart: `
+    quickStart: `
 1. Power Structure: Who actually rules? (autocrat, council, figurehead, shadow, hydra)
 2. Lifecycle Stage: Where are they? (rise, peak, decline, fall)
 3. Resources: What do they control? (money, violence, information, legitimacy)
@@ -288,53 +307,54 @@ export const factionDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "at
 6. Off-Screen Action: Factions move while the player isn't watching
 `.trim(),
 
-  checklist: [
-    "Power structure type defined?",
-    "Lifecycle stage identified (rise/peak/decline/fall)?",
-    "Resources and leverage specified (not just 'powerful')?",
-    "At least one internal schism present?",
-    "Hidden agenda is specific (not 'secret evil plans')?",
-    "Recruitment pattern defined?",
-    "Relations with other factions are complex (not just allies/enemies)?",
-    "Off-screen progression considered?",
-  ],
+    checklist: [
+      "Power structure type defined?",
+      "Lifecycle stage identified (rise/peak/decline/fall)?",
+      "Resources and leverage specified (not just 'powerful')?",
+      "At least one internal schism present?",
+      "Hidden agenda is specific (not 'secret evil plans')?",
+      "Recruitment pattern defined?",
+      "Relations with other factions are complex (not just allies/enemies)?",
+      "Off-screen progression considered?",
+    ],
 
-  examples: [
-    {
-      scenario: "Hidden Agenda",
-      wrong: `hidden.agenda: "They have secret evil plans."
+    examples: [
+      {
+        scenario: "Hidden Agenda",
+        wrong: `hidden.agenda: "They have secret evil plans."
 (Vague, unplayable.)`,
-      right: `hidden.agenda: "The Order publicly 'protects' villages from monsters.
+        right: `hidden.agenda: "The Order publicly 'protects' villages from monsters.
 In truth, they breed the monsters to justify their protection fees.
 Elder Varen knows but stays silent—the Order funds his daughter's medicine."
 (Specific, creates moral complexity, has leverage points.)`,
-    },
-    {
-      scenario: "Internal Conflict",
-      wrong: `"The faction is united under strong leadership."
+      },
+      {
+        scenario: "Internal Conflict",
+        wrong: `"The faction is united under strong leadership."
 (No drama, no hooks.)`,
-      right: `"Hawks want to strike the merchant guild now while they're weak.
+        right: `"Hawks want to strike the merchant guild now while they're weak.
 Doves argue war will bankrupt them. The leader is dying and hasn't
 named an heir—both sides are positioning for succession."
 (Multiple angles for player involvement.)`,
-    },
-    {
-      scenario: "Faction Relations",
-      wrong: `relations: { merchant_guild: "enemies" }
+      },
+      {
+        scenario: "Faction Relations",
+        wrong: `relations: { merchant_guild: "enemies" }
 (Binary, no nuance.)`,
-      right: `relations: { merchant_guild: "Publicly allies, but we're embezzling
+        right: `relations: { merchant_guild: "Publicly allies, but we're embezzling
 their trade taxes through our port officials. They suspect but can't prove it.
 If they could, we'd have a war." }
 (Complex, has secrets, creates opportunities.)`,
-    },
-    {
-      scenario: "Resources & Leverage",
-      wrong: `"They're powerful and influential."
+      },
+      {
+        scenario: "Resources & Leverage",
+        wrong: `"They're powerful and influential."
 (Meaningless, no specifics.)`,
-      right: `"Control the docks—nothing moves without their cut.
+        right: `"Control the docks—nothing moves without their cut.
 200 armed men vs city watch's 50. Own the debts of three council members.
 Know where the bishop's bastard children live."
 (Specific leverage, playable hooks.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

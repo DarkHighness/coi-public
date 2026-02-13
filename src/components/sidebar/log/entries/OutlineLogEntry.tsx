@@ -51,7 +51,9 @@ export const OutlineLogEntry: React.FC<LogEntryBodyProps> = ({ log }) => {
           <span className="text-xs text-theme-muted uppercase">
             {t("logPanel.toolLabel")}
           </span>
-          <span className="text-sm font-mono text-theme-text">{log.toolName}</span>
+          <span className="text-sm font-mono text-theme-text">
+            {log.toolName}
+          </span>
         </div>
       )}
 

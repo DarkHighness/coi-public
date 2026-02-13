@@ -43,7 +43,9 @@ describe("RAGDatabase strict fork search", () => {
       return { rows: [], affectedRows: 0 };
     });
 
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
 
     db.db = { query: queryMock };
 

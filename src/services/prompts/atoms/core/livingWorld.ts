@@ -7,7 +7,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * 主题世界参数
  */
@@ -18,14 +17,21 @@ export interface ThemeLivingWorldParams {
   economicComplexity?: "primitive" | "standard" | "advanced";
 }
 
-export const livingWorldPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/livingWorld#livingWorldPrimer", source: "atoms/core/livingWorld.ts", exportName: "livingWorldPrimer" }, () => `
+export const livingWorldPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/livingWorld#livingWorldPrimer",
+    source: "atoms/core/livingWorld.ts",
+    exportName: "livingWorldPrimer",
+  },
+  () => `
 <living_world_primer>
   - The world moves off-screen: NPC agendas, institutions, and markets advance over time.
   - Keep resource and social systems finite; access is mediated by gates, costs, and relationships.
   - Use environmental and procedural pressure (weather, schedules, paperwork, scarcity) to drive choices.
   - Show persistence: actions leave residue in reputation, logistics, and future opportunities.
 </living_world_primer>
-`);
+`,
+);
 
 /**
  * 根据世界冷漠程度生成内容
@@ -130,13 +136,17 @@ function getEconomicContent(
   }
 }
 
-export const livingWorld: Atom<ThemeLivingWorldParams | void> = defineAtom({ atomId: "atoms/core/livingWorld#livingWorld", source: "atoms/core/livingWorld.ts", exportName: "livingWorld" }, (
-  params?: ThemeLivingWorldParams,
-) => {
-  const indifference = params?.worldIndifference ?? "neutral";
-  const economic = params?.economicComplexity ?? "standard";
+export const livingWorld: Atom<ThemeLivingWorldParams | void> = defineAtom(
+  {
+    atomId: "atoms/core/livingWorld#livingWorld",
+    source: "atoms/core/livingWorld.ts",
+    exportName: "livingWorld",
+  },
+  (params?: ThemeLivingWorldParams) => {
+    const indifference = params?.worldIndifference ?? "neutral";
+    const economic = params?.economicComplexity ?? "standard";
 
-  return `
+    return `
 <rule name="LIVING WORLD SIMULATION">
   - **Deep History**: Every location, item, and NPC has a past. Nothing spawns from thin air -- everything was made, grown, built, or born, and carries that origin like a fingerprint.
   - **Dynamic Environment**: Weather affects mood and mechanics. Time creates urgency the way a river creates a current -- invisible until you try to stand still.
@@ -184,4 +194,5 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = defineAtom({ ato
   </environmental_storytelling>
 </rule>
 `;
-});
+  },
+);

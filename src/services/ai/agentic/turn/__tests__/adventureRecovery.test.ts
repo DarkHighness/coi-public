@@ -116,26 +116,27 @@ const baseGameState = {
   forkId: 0,
 } as any;
 
-const makeContext = () => ({
-  settings: {
-    story: {
-      providerId: "provider-1",
-      modelId: "model-1",
+const makeContext = () =>
+  ({
+    settings: {
+      story: {
+        providerId: "provider-1",
+        modelId: "model-1",
+      },
+      extra: {},
     },
-    extra: {},
-  },
-  themeKey: "default",
-  language: "en",
-  tFunc: vi.fn((key: string) => key),
-  userAction: "attack",
-  slotId: "slot-1",
-  isInit: false,
-  vfsSession: {
-    bindConversationSession: vi.fn(),
-    beginReadEpoch: vi.fn(),
-  },
-  onToolCallsUpdate: vi.fn(),
-}) as any;
+    themeKey: "default",
+    language: "en",
+    tFunc: vi.fn((key: string) => key),
+    userAction: "attack",
+    slotId: "slot-1",
+    isInit: false,
+    vfsSession: {
+      bindConversationSession: vi.fn(),
+      beginReadEpoch: vi.fn(),
+    },
+    onToolCallsUpdate: vi.fn(),
+  }) as any;
 
 describe("generateAdventureTurn recovery wiring", () => {
   beforeEach(() => {
@@ -145,7 +146,9 @@ describe("generateAdventureTurn recovery wiring", () => {
       sessionId: "slot-1:0:provider-1:model-1",
       activeHistory: [],
     });
-    handleRetryDetectionMock.mockImplementation((_: unknown, history: unknown) => history);
+    handleRetryDetectionMock.mockImplementation(
+      (_: unknown, history: unknown) => history,
+    );
 
     runAgenticLoopRefactoredMock.mockResolvedValue({
       response: { narrative: "ok", choices: [] },
@@ -183,7 +186,9 @@ describe("generateAdventureTurn recovery wiring", () => {
     );
 
     sessionManagerMock.invalidate.mockResolvedValue(undefined);
-    sessionManagerMock.onContextOverflow.mockResolvedValue({ needsSummary: true });
+    sessionManagerMock.onContextOverflow.mockResolvedValue({
+      needsSummary: true,
+    });
     getRecoveryKindMock.mockReturnValue(undefined);
     getRecoveryTraceMock.mockReturnValue(undefined);
   });
@@ -216,7 +221,9 @@ describe("generateAdventureTurn recovery wiring", () => {
         return {
           result,
           recovery: {
-            attempts: [{ level: 1, kind: "history", attempt: 2, timestamp: Date.now() }],
+            attempts: [
+              { level: 1, kind: "history", attempt: 2, timestamp: Date.now() },
+            ],
             finalLevel: 1,
             kind: "history",
             recovered: true,
@@ -243,7 +250,9 @@ describe("generateAdventureTurn recovery wiring", () => {
     const originalError = new Error("context overflow after retries");
     getRecoveryKindMock.mockReturnValue("context");
     getRecoveryTraceMock.mockReturnValue({
-      attempts: [{ level: 2, kind: "context", attempt: 3, timestamp: Date.now() }],
+      attempts: [
+        { level: 2, kind: "context", attempt: 3, timestamp: Date.now() },
+      ],
       finalLevel: 3,
       kind: "context",
       recovered: false,
@@ -251,33 +260,41 @@ describe("generateAdventureTurn recovery wiring", () => {
     });
     executeTurnWithRecoveryMock.mockRejectedValueOnce(originalError);
 
-    await expect(generateAdventureTurn(baseGameState, makeContext())).rejects.toSatisfy(
-      (error: unknown) => {
-        if (!(error instanceof Error)) return false;
-        const typed = error as Error & {
-          recovery?: { kind?: string };
-          recoveryKind?: string;
-        };
-        return (
-          typed.message.includes("CONTEXT_LENGTH_EXCEEDED") &&
-          typed.recovery?.kind === "context" &&
-          typed.recoveryKind === "context"
-        );
-      },
-    );
+    await expect(
+      generateAdventureTurn(baseGameState, makeContext()),
+    ).rejects.toSatisfy((error: unknown) => {
+      if (!(error instanceof Error)) return false;
+      const typed = error as Error & {
+        recovery?: { kind?: string };
+        recoveryKind?: string;
+      };
+      return (
+        typed.message.includes("CONTEXT_LENGTH_EXCEEDED") &&
+        typed.recovery?.kind === "context" &&
+        typed.recoveryKind === "context"
+      );
+    });
 
     expect(sessionManagerMock.onContextOverflow).toHaveBeenCalledTimes(1);
   });
 
   it("reset callback invalidates session for non-context errors", async () => {
     executeTurnWithRecoveryMock.mockImplementationOnce(
-      async ({ execute, resetSession }: { execute: () => Promise<unknown>; resetSession: (kind: string) => Promise<void> }) => {
+      async ({
+        execute,
+        resetSession,
+      }: {
+        execute: () => Promise<unknown>;
+        resetSession: (kind: string) => Promise<void>;
+      }) => {
         await resetSession("history");
         const result = await execute();
         return {
           result,
           recovery: {
-            attempts: [{ level: 2, kind: "history", attempt: 3, timestamp: Date.now() }],
+            attempts: [
+              { level: 2, kind: "history", attempt: 3, timestamp: Date.now() },
+            ],
             finalLevel: 2,
             kind: "history",
             recovered: true,
@@ -292,6 +309,8 @@ describe("generateAdventureTurn recovery wiring", () => {
 
     expect(sessionManagerMock.invalidate).toHaveBeenCalledTimes(1);
     expect(sessionManagerMock.onContextOverflow).not.toHaveBeenCalled();
-    expect(context.vfsSession.beginReadEpoch).toHaveBeenCalledWith("manual_invalidate");
+    expect(context.vfsSession.beginReadEpoch).toHaveBeenCalledWith(
+      "manual_invalidate",
+    );
   });
 });

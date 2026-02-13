@@ -54,11 +54,13 @@ describe("vfsExtraction", () => {
     });
 
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks.every((chunk) => chunk.chunkMeta?.strategy === "json_path_object")).toBe(
+    expect(
+      chunks.every((chunk) => chunk.chunkMeta?.strategy === "json_path_object"),
+    ).toBe(true);
+    expect(chunks.some((chunk) => chunk.content.includes("path:"))).toBe(true);
+    expect(chunks.some((chunk) => chunk.content.includes("world.npcs"))).toBe(
       true,
     );
-    expect(chunks.some((chunk) => chunk.content.includes("path:"))).toBe(true);
-    expect(chunks.some((chunk) => chunk.content.includes("world.npcs"))).toBe(true);
   });
 
   it("extracts Markdown chunks with heading path", () => {
@@ -90,13 +92,18 @@ describe("vfsExtraction", () => {
     });
 
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks.every((chunk) => chunk.chunkMeta?.strategy === "markdown_heading")).toBe(
-      true,
-    );
-    expect(chunks.some((chunk) => chunk.content.includes("heading_path:"))).toBe(true);
-    expect(chunks.some((chunk) => chunk.chunkMeta?.overlapChars && chunk.chunkMeta.overlapChars > 0)).toBe(
-      true,
-    );
+    expect(
+      chunks.every((chunk) => chunk.chunkMeta?.strategy === "markdown_heading"),
+    ).toBe(true);
+    expect(
+      chunks.some((chunk) => chunk.content.includes("heading_path:")),
+    ).toBe(true);
+    expect(
+      chunks.some(
+        (chunk) =>
+          chunk.chunkMeta?.overlapChars && chunk.chunkMeta.overlapChars > 0,
+      ),
+    ).toBe(true);
   });
 
   it("applies adaptive overlap for text chunks", () => {
@@ -120,15 +127,17 @@ describe("vfsExtraction", () => {
     });
 
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks.every((chunk) => chunk.chunkMeta?.strategy === "text_window")).toBe(
-      true,
-    );
+    expect(
+      chunks.every((chunk) => chunk.chunkMeta?.strategy === "text_window"),
+    ).toBe(true);
 
     const overlapValues = chunks
       .map((chunk) => chunk.chunkMeta?.overlapChars ?? 0)
       .slice(1);
 
-    expect(overlapValues.every((value) => value >= 0 && value <= 320)).toBe(true);
+    expect(overlapValues.every((value) => value >= 0 && value <= 320)).toBe(
+      true,
+    );
     expect(overlapValues.some((value) => value >= 80)).toBe(true);
   });
 
@@ -136,13 +145,13 @@ describe("vfsExtraction", () => {
     const previous: VfsFileMap = {
       "current/world/a.json": createFile(
         "current/world/a.json",
-        "{\"a\":1}",
+        '{"a":1}',
         "application/json",
         "hash-a-1",
       ),
       "current/world/b.json": createFile(
         "current/world/b.json",
-        "{\"b\":1}",
+        '{"b":1}',
         "application/json",
         "hash-b-1",
       ),
@@ -151,13 +160,13 @@ describe("vfsExtraction", () => {
     const next: VfsFileMap = {
       "current/world/a.json": createFile(
         "current/world/a.json",
-        "{\"a\":2}",
+        '{"a":2}',
         "application/json",
         "hash-a-2",
       ),
       "current/world/c.json": createFile(
         "current/world/c.json",
-        "{\"c\":1}",
+        '{"c":1}',
         "application/json",
         "hash-c-1",
       ),

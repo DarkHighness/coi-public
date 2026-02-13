@@ -188,7 +188,9 @@ export function parseOpenRouterUsage(usageMetadata: unknown): TokenUsage {
   const prompt = readUsageNumber(usage, [...OPENROUTER_PROMPT_KEYS]);
   const completion = readUsageNumber(usage, [...OPENROUTER_COMPLETION_KEYS]);
   const total = readUsageNumber(usage, [...OPENROUTER_TOTAL_KEYS]);
-  const cacheReadDirect = readUsageNumber(usage, [...OPENROUTER_CACHE_READ_KEYS]);
+  const cacheReadDirect = readUsageNumber(usage, [
+    ...OPENROUTER_CACHE_READ_KEYS,
+  ]);
   const cacheReadNested = readNestedUsageNumber(usage, [
     ...OPENROUTER_CACHE_READ_NESTED_PATHS,
   ]);
@@ -218,7 +220,9 @@ export function parseOpenRouterUsage(usageMetadata: unknown): TokenUsage {
   const cacheRead =
     typeof cacheReadDirect === "number" ? cacheReadDirect : cacheReadNested;
 
-  const hasKnownUsageKeys = hasAnyUsageField(usage, [...OPENROUTER_ALL_USAGE_KEYS]);
+  const hasKnownUsageKeys = hasAnyUsageField(usage, [
+    ...OPENROUTER_ALL_USAGE_KEYS,
+  ]);
   const hasPositiveSignal =
     promptTokens > 0 || completionTokens > 0 || totalTokens > 0;
 

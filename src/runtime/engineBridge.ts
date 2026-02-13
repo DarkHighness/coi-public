@@ -16,8 +16,8 @@ type MutationBridgeActions = Pick<
   | "applyVfsDerivedState"
 >;
 
-export type RuntimeEngineBridgeActions =
-  RuntimeEngineActions & MutationBridgeActions;
+export type RuntimeEngineBridgeActions = RuntimeEngineActions &
+  MutationBridgeActions;
 
 export function buildRuntimeEngineBaseStateFromSource(
   engine: RuntimeEngineSource,

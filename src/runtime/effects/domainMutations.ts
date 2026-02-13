@@ -76,10 +76,7 @@ export function createDomainMutationActions({
     maybePersistMutation(options?.persist, false);
   };
 
-  const toggleGodMode = (
-    enable: boolean,
-    options?: DomainMutationOptions,
-  ) => {
+  const toggleGodMode = (enable: boolean, options?: DomainMutationOptions) => {
     setGameState((prev) => ({
       ...prev,
       godMode: enable,
@@ -87,10 +84,7 @@ export function createDomainMutationActions({
     maybePersistMutation(options?.persist, true);
   };
 
-  const setUnlockMode = (
-    enable: boolean,
-    options?: DomainMutationOptions,
-  ) => {
+  const setUnlockMode = (enable: boolean, options?: DomainMutationOptions) => {
     setGameState((prev) => ({
       ...prev,
       unlockMode: enable,

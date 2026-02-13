@@ -105,11 +105,13 @@ const createMediaState = () =>
 const loadGraph = () =>
   JSON.parse(
     fs.readFileSync(
-      path.resolve(process.cwd(), "src/services/prompts/trace/generated/prompt-atom-graph.json"),
+      path.resolve(
+        process.cwd(),
+        "src/services/prompts/trace/generated/prompt-atom-graph.json",
+      ),
       "utf8",
     ),
   );
-
 
 describe("prompt trace coverage - media", () => {
   afterEach(() => {

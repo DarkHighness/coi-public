@@ -35,7 +35,10 @@ import {
   getFilePathCapabilities,
 } from "./vfsExplorer/capabilities";
 import { MarkdownText } from "./render/MarkdownText";
-import { buildNodeActions, type NodeActionItem } from "./vfsExplorer/nodeActions";
+import {
+  buildNodeActions,
+  type NodeActionItem,
+} from "./vfsExplorer/nodeActions";
 import { StateEditorRagPanel } from "./StateEditorRagPanel";
 
 const MonacoEditor = React.lazy(() => import("@monaco-editor/react"));
@@ -89,7 +92,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const [batchMode, setBatchMode] = useState(false);
   const [batchSelectedPaths, setBatchSelectedPaths] = useState<string[]>([]);
   const [batchDestinationMode, setBatchDestinationMode] = useState(false);
-  const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
+  const [contextMenuState, setContextMenuState] =
+    useState<ContextMenuState | null>(null);
   const [mobileActionSheetState, setMobileActionSheetState] =
     useState<NodeActionContext | null>(null);
   const contextMenuTriggerRef = useRef<HTMLElement | null>(null);
@@ -291,7 +295,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       return false;
     }
     const prefix = `${selectedPathNormalized}/`;
-    return Object.keys(snapshot).some((path) => normalizeVfsPath(path).startsWith(prefix));
+    return Object.keys(snapshot).some((path) =>
+      normalizeVfsPath(path).startsWith(prefix),
+    );
   }, [selectedPathNormalized, snapshot]);
 
   const isDirectoryPath = (path: string): boolean => {
@@ -332,7 +338,12 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       );
     }
     return getFilePathCapabilities(selectedPathNormalized, capabilityContext);
-  }, [selectedPathNormalized, selectedIsDirectory, snapshot, capabilityContext]);
+  }, [
+    selectedPathNormalized,
+    selectedIsDirectory,
+    snapshot,
+    capabilityContext,
+  ]);
 
   const createTargetDirectory = useMemo(() => {
     if (!selectedPathNormalized) {
@@ -357,7 +368,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   );
 
   const customRulesDirectoryCapabilities = useMemo(
-    () => getDirectoryPathCapabilities("custom_rules", snapshot, capabilityContext),
+    () =>
+      getDirectoryPathCapabilities("custom_rules", snapshot, capabilityContext),
     [snapshot, capabilityContext],
   );
 
@@ -374,7 +386,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const canBatchMoveSelected = hasWritableSession && selectedBatchCount > 0;
 
   const pathReadOnly =
-    !selectedPath || selectedIsDirectory || !(selectedPathCapabilities?.canEdit ?? false);
+    !selectedPath ||
+    selectedIsDirectory ||
+    !(selectedPathCapabilities?.canEdit ?? false);
   const isReadOnly = pathReadOnly || !isEditMode;
 
   useEffect(() => {
@@ -509,8 +523,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         const normalizedPath = normalizeVfsPath(path);
         return (
           normalizedPath.length > 0 &&
-          array.findIndex((item) => normalizeVfsPath(item) === normalizedPath) ===
-            index &&
+          array.findIndex(
+            (item) => normalizeVfsPath(item) === normalizedPath,
+          ) === index &&
           pathExistsInSnapshot(normalizedPath)
         );
       }),
@@ -573,14 +588,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     setError(null);
     setHasChanges(false);
     setEditingPath(selectedPath);
-  }, [
-    editingPath,
-    hasChanges,
-    isOpen,
-    selectedPath,
-    snapshot,
-    vfsSession,
-  ]);
+  }, [editingPath, hasChanges, isOpen, selectedPath, snapshot, vfsSession]);
 
   if (!isOpen) return null;
 
@@ -821,7 +829,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         applyVfsMutation(nextState);
         updateSnapshotAndSelect(targetPath);
         setIsEditMode(true);
-        onShowToast?.(t("stateEditor.newFileCreated") || "File created", "success");
+        onShowToast?.(
+          t("stateEditor.newFileCreated") || "File created",
+          "success",
+        );
       } catch (err) {
         onShowToast?.(
           err instanceof Error
@@ -907,7 +918,11 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
 
     const caps = isFolder
-      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      ? getDirectoryPathCapabilities(
+          normalizedPath,
+          snapshot,
+          capabilityContext,
+        )
       : getFilePathCapabilities(normalizedPath, capabilityContext);
 
     if (!ensureWritableSession()) {
@@ -937,7 +952,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       }
 
       const baseDir = normalizedPath.split("/").slice(0, -1).join("/");
-      const targetPath = normalizeVfsPath(baseDir ? `${baseDir}/${trimmed}` : trimmed);
+      const targetPath = normalizeVfsPath(
+        baseDir ? `${baseDir}/${trimmed}` : trimmed,
+      );
 
       try {
         const beforeSnapshot = snapshotMutableFiles();
@@ -985,7 +1002,11 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
 
     const caps = isFolder
-      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      ? getDirectoryPathCapabilities(
+          normalizedPath,
+          snapshot,
+          capabilityContext,
+        )
       : getFilePathCapabilities(normalizedPath, capabilityContext);
 
     if (!ensureWritableSession()) {
@@ -1077,7 +1098,11 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
 
     const caps = isFolder
-      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      ? getDirectoryPathCapabilities(
+          normalizedPath,
+          snapshot,
+          capabilityContext,
+        )
       : getFilePathCapabilities(normalizedPath, capabilityContext);
 
     if (!ensureWritableSession()) {
@@ -1133,7 +1158,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
   const handleCopySpecificPath = async (path: string) => {
     const normalizedPath = normalizeVfsPath(path);
     if (!normalizedPath) {
-      onShowToast?.(t("stateEditor.copyPathFailed") || "Failed to copy path", "error");
+      onShowToast?.(
+        t("stateEditor.copyPathFailed") || "Failed to copy path",
+        "error",
+      );
       return;
     }
 
@@ -1141,9 +1169,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(normalizedPath);
       }
-      onShowToast?.(t("stateEditor.copyPathSuccess") || "Path copied", "success");
+      onShowToast?.(
+        t("stateEditor.copyPathSuccess") || "Path copied",
+        "success",
+      );
     } catch {
-      onShowToast?.(t("stateEditor.copyPathFailed") || "Failed to copy path", "error");
+      onShowToast?.(
+        t("stateEditor.copyPathFailed") || "Failed to copy path",
+        "error",
+      );
     }
   };
 
@@ -1303,7 +1337,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
   const handleRefresh = () => {
     setSnapshotVersion((version) => version + 1);
-    onShowToast?.(t("stateEditor.refreshSuccess") || "File tree refreshed", "info");
+    onShowToast?.(
+      t("stateEditor.refreshSuccess") || "File tree refreshed",
+      "info",
+    );
   };
 
   const canCreateRuleTemplate = customRulesDirectoryCapabilities.canCreateChild;
@@ -1370,7 +1407,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       : null;
 
     const choices = CUSTOM_RULE_CATEGORY_PRESETS.map(
-      (preset) => `${preset.priority.toString().padStart(2, "0")}: ${preset.title}`,
+      (preset) =>
+        `${preset.priority.toString().padStart(2, "0")}: ${preset.title}`,
     ).join("\n");
 
     const defaultChoice = currentPreset
@@ -1395,7 +1433,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
     if (!selectedPreset) {
       onShowToast?.(
-        t("stateEditor.createRuleTemplateInvalidCategory") || "Invalid category",
+        t("stateEditor.createRuleTemplateInvalidCategory") ||
+          "Invalid category",
         "error",
       );
       return;
@@ -1409,7 +1448,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const preset = getCustomRuleCategoryPresetFromPath(normalizedDirectory);
     if (!preset) {
       onShowToast?.(
-        t("stateEditor.createRuleTemplateInvalidCategory") || "Invalid category",
+        t("stateEditor.createRuleTemplateInvalidCategory") ||
+          "Invalid category",
         "info",
       );
       return;
@@ -1444,7 +1484,10 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     }
 
     if (!snapshot[normalizedPath]) {
-      onShowToast?.(t("stateEditor.batchMoveOnlyFiles") || "Batch move only supports files", "info");
+      onShowToast?.(
+        t("stateEditor.batchMoveOnlyFiles") || "Batch move only supports files",
+        "info",
+      );
       return;
     }
 
@@ -1535,7 +1578,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       const sourceFile = snapshot[sourcePath];
       if (!sourceFile) {
         onShowToast?.(
-          t("stateEditor.batchMoveOnlyFiles") || "Batch move only supports files",
+          t("stateEditor.batchMoveOnlyFiles") ||
+            "Batch move only supports files",
           "info",
         );
         return;
@@ -1605,8 +1649,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       setBatchSelectedPaths([]);
       setBatchDestinationMode(false);
       onShowToast?.(
-        t("stateEditor.batchMoveSuccess", { count: normalizedSources.length }) ||
-          `Moved ${normalizedSources.length} files`,
+        t("stateEditor.batchMoveSuccess", {
+          count: normalizedSources.length,
+        }) || `Moved ${normalizedSources.length} files`,
         "success",
       );
     } catch (err) {
@@ -1668,7 +1713,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     setMobileActionSheetState(null);
   };
 
-  const buildActionsForNode = (context: NodeActionContext): NodeActionItem[] => {
+  const buildActionsForNode = (
+    context: NodeActionContext,
+  ): NodeActionItem[] => {
     const normalizedPath = normalizeVfsPath(context.path);
     const isFolder = context.nodeType === "folder";
     const isRoot = isFolder && normalizedPath === "";
@@ -1677,14 +1724,20 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     );
 
     const directoryCaps = isFolder
-      ? getDirectoryPathCapabilities(normalizedPath, snapshot, capabilityContext)
+      ? getDirectoryPathCapabilities(
+          normalizedPath,
+          snapshot,
+          capabilityContext,
+        )
       : null;
     const fileCaps = !isFolder
       ? getFilePathCapabilities(normalizedPath, capabilityContext)
       : null;
 
     const moveHereBlockedReason =
-      isFolder && normalizedPath ? getMoveHereBlockedReason(normalizedPath) : null;
+      isFolder && normalizedPath
+        ? getMoveHereBlockedReason(normalizedPath)
+        : null;
 
     const canWriteToDirectory = directoryCaps?.canCreateChild ?? false;
     const directoryBlockedReason =
@@ -1786,9 +1839,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         copy_path: {
           show: !isRoot,
           enabled: Boolean(normalizedPath),
-          disabledReason:
-            t("stateEditor.noSelection") ||
-            "No file selected",
+          disabledReason: t("stateEditor.noSelection") || "No file selected",
           onSelect: () => {
             void handleCopySpecificPath(normalizedPath);
           },
@@ -1834,9 +1885,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         },
         copy_path: {
           enabled: Boolean(normalizedPath),
-          disabledReason:
-            t("stateEditor.noSelection") ||
-            "No file selected",
+          disabledReason: t("stateEditor.noSelection") || "No file selected",
           onSelect: () => {
             void handleCopySpecificPath(normalizedPath);
           },
@@ -1965,7 +2014,11 @@ export const StateEditor: React.FC<StateEditorProps> = ({
     const padding = { paddingLeft: `${depth * 12}px` };
 
     if (isFolder) {
-      const caps = getDirectoryPathCapabilities(node.path, snapshot, capabilityContext);
+      const caps = getDirectoryPathCapabilities(
+        node.path,
+        snapshot,
+        capabilityContext,
+      );
       const readonly = !caps.canCreateChild;
       const batchDestinationBlockedReason = !hasWritableSession
         ? sessionConfirmReason
@@ -1974,17 +2027,17 @@ export const StateEditor: React.FC<StateEditorProps> = ({
             t("stateEditor.batchMoveBlocked") ||
             "Batch move is blocked for this destination"
           : selectedBatchCount === 0
-            ? t("stateEditor.batchMoveNoSelection") || "Select at least one file"
+            ? t("stateEditor.batchMoveNoSelection") ||
+              "Select at least one file"
             : null;
-      const canChooseBatchDestination = !isRoot && !batchDestinationBlockedReason;
+      const canChooseBatchDestination =
+        !isRoot && !batchDestinationBlockedReason;
 
       return (
         <div key={node.path || "root"}>
           <div
             className={`w-full flex items-center gap-2 px-2 py-1.5 ${
-              batchDestinationMode && !isRoot
-                ? "bg-theme-primary/5"
-                : ""
+              batchDestinationMode && !isRoot ? "bg-theme-primary/5" : ""
             }`}
             style={padding}
             onContextMenu={(event) => {
@@ -2075,10 +2128,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
         key={node.path}
         className="w-full flex items-center gap-2"
         style={padding}
-        onContextMenu={(event) => openDesktopContextMenu(event, normalizedPath, "file")}
+        onContextMenu={(event) =>
+          openDesktopContextMenu(event, normalizedPath, "file")
+        }
       >
         {batchMode && (
-          <label className="shrink-0 flex items-center" title={t("stateEditor.batchMode") || "Batch mode"}>
+          <label
+            className="shrink-0 flex items-center"
+            title={t("stateEditor.batchMode") || "Batch mode"}
+          >
             <input
               type="checkbox"
               checked={inBatch}
@@ -2249,31 +2307,31 @@ export const StateEditor: React.FC<StateEditorProps> = ({
 
         {isFilesPanel && (
           <div className="md:hidden flex-none px-3 py-2 border-b border-theme-divider/60 bg-theme-surface/75">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileView("files")}
-              className={`rounded-md py-2.5 text-sm font-semibold transition-colors ${
-                mobileView === "files"
-                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
-                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
-              }`}
-            >
-              {t("stateEditor.mobileFiles") || "Files"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileView("editor")}
-              className={`rounded-md py-2.5 text-sm font-semibold transition-colors ${
-                mobileView === "editor"
-                  ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
-                  : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
-              }`}
-            >
-              {t("stateEditor.mobileEditor") || "Editor"}
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileView("files")}
+                className={`rounded-md py-2.5 text-sm font-semibold transition-colors ${
+                  mobileView === "files"
+                    ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                    : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+                }`}
+              >
+                {t("stateEditor.mobileFiles") || "Files"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileView("editor")}
+                className={`rounded-md py-2.5 text-sm font-semibold transition-colors ${
+                  mobileView === "editor"
+                    ? "bg-theme-primary/20 text-theme-primary border border-theme-primary/40"
+                    : "text-theme-text-secondary bg-theme-bg/20 border border-theme-divider/60"
+                }`}
+              >
+                {t("stateEditor.mobileEditor") || "Editor"}
+              </button>
+            </div>
           </div>
-        </div>
         )}
 
         {/* Body */}
@@ -2347,7 +2405,8 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                         ? createRuleTemplateBlockedReason ||
                           t("stateEditor.createRuleTemplateBlocked") ||
                           "Cannot create rule templates in the current session"
-                        : t("stateEditor.createRuleTemplate") || "Quick Rule Template"
+                        : t("stateEditor.createRuleTemplate") ||
+                          "Quick Rule Template"
                   }
                 >
                   {t("stateEditor.createRuleTemplate") || "Quick Rule Template"}
@@ -2390,14 +2449,17 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                     }`}
                     title={
                       batchDestinationMode
-                        ? t("stateEditor.batchDestinationMode") || "Destination mode"
+                        ? t("stateEditor.batchDestinationMode") ||
+                          "Destination mode"
                         : !canBatchMoveSelected
-                          ? t("stateEditor.batchMoveNoSelection") || "Select at least one file"
+                          ? t("stateEditor.batchMoveNoSelection") ||
+                            "Select at least one file"
                           : t("stateEditor.batchMove") || "Move selected"
                     }
                   >
                     {batchDestinationMode
-                      ? t("stateEditor.batchDestinationMode") || "Destination Mode"
+                      ? t("stateEditor.batchDestinationMode") ||
+                        "Destination Mode"
                       : t("stateEditor.batchMove") || "Move Selected"}
                   </button>
                 )}
@@ -2415,9 +2477,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 <button
                   type="button"
                   onClick={handleRenameSelected}
-                  disabled={!hasWritableSession || !selectedPathNormalized || !canRenameSelected}
+                  disabled={
+                    !hasWritableSession ||
+                    !selectedPathNormalized ||
+                    !canRenameSelected
+                  }
                   className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
-                    !hasWritableSession || !selectedPathNormalized || !canRenameSelected
+                    !hasWritableSession ||
+                    !selectedPathNormalized ||
+                    !canRenameSelected
                       ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
                       : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
                   }`}
@@ -2436,9 +2504,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 <button
                   type="button"
                   onClick={handleMoveSelected}
-                  disabled={!hasWritableSession || !selectedPathNormalized || !canMoveSelected}
+                  disabled={
+                    !hasWritableSession ||
+                    !selectedPathNormalized ||
+                    !canMoveSelected
+                  }
                   className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
-                    !hasWritableSession || !selectedPathNormalized || !canMoveSelected
+                    !hasWritableSession ||
+                    !selectedPathNormalized ||
+                    !canMoveSelected
                       ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
                       : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
                   }`}
@@ -2457,9 +2531,15 @@ export const StateEditor: React.FC<StateEditorProps> = ({
                 <button
                   type="button"
                   onClick={handleDeleteSelected}
-                  disabled={!hasWritableSession || !selectedPathNormalized || !canDeleteSelected}
+                  disabled={
+                    !hasWritableSession ||
+                    !selectedPathNormalized ||
+                    !canDeleteSelected
+                  }
                   className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
-                    !hasWritableSession || !selectedPathNormalized || !canDeleteSelected
+                    !hasWritableSession ||
+                    !selectedPathNormalized ||
+                    !canDeleteSelected
                       ? "border-theme-divider/50 text-theme-muted cursor-not-allowed"
                       : "border-theme-divider/60 text-theme-text-secondary hover:text-theme-text hover:bg-theme-bg/20"
                   }`}

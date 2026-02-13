@@ -61,7 +61,15 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
         usageByTheme,
         t,
       }),
-    [themes, selectedCategory, searchQuery, sortMode, favoriteSet, usageByTheme, t],
+    [
+      themes,
+      selectedCategory,
+      searchQuery,
+      sortMode,
+      favoriteSet,
+      usageByTheme,
+      t,
+    ],
   );
 
   const showRandomOption = selectedCategory === "all" && !searchQuery.trim();
@@ -275,7 +283,9 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                 <svg
                   className="w-4 h-4"
                   viewBox="0 0 20 20"
-                  fill={favoriteSet.has(previewThemeKey) ? "currentColor" : "none"}
+                  fill={
+                    favoriteSet.has(previewThemeKey) ? "currentColor" : "none"
+                  }
                   stroke="currentColor"
                   strokeWidth="1.5"
                 >

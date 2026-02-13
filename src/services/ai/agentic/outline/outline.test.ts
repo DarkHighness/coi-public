@@ -26,16 +26,10 @@ describe("generateStoryOutlinePhased", () => {
     vi.mocked(getProviderConfig).mockReturnValue(undefined as any);
 
     await expect(
-      generateStoryOutlinePhased(
-        "fantasy",
-        "English",
-        undefined,
-        undefined,
-        {
-          settings: {} as any,
-          vfsSession: {} as any,
-        },
-      ),
+      generateStoryOutlinePhased("fantasy", "English", undefined, undefined, {
+        settings: {} as any,
+        vfsSession: {} as any,
+      }),
     ).rejects.toThrow("Lore provider not configured");
   });
 });

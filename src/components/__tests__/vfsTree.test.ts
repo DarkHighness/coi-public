@@ -19,7 +19,9 @@ describe("vfs tree builder", () => {
     );
 
     const outline = (tree.children || []).find((n) => n.name === "outline");
-    expect(outline?.children?.some((n) => n.name === "story_outline")).toBe(true);
+    expect(outline?.children?.some((n) => n.name === "story_outline")).toBe(
+      true,
+    );
   });
 
   it("builds a current/ rooted tree from snapshot paths", () => {
@@ -46,7 +48,9 @@ describe("vfs tree builder", () => {
     const questFolder = quests?.children?.find(
       (n) => n.kind === "folder" && n.name === "quest:1",
     );
-    expect(questFolder?.children?.some((n) => n.name === "notes.md")).toBe(true);
+    expect(questFolder?.children?.some((n) => n.name === "notes.md")).toBe(
+      true,
+    );
   });
 
   it("enforces system readonly boundaries", () => {
@@ -57,6 +61,8 @@ describe("vfs tree builder", () => {
     expect(isReadonlyPath("summary/state.json")).toBe(true);
     expect(isReadonlyPath("outline/outline.json")).toBe(false);
     expect(isReadonlyPath("outline/story_outline/plan.md")).toBe(false);
-    expect(isReadonlyPath("world/characters/char:player/profile.json")).toBe(false);
+    expect(isReadonlyPath("world/characters/char:player/profile.json")).toBe(
+      false,
+    );
   });
 });

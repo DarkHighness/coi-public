@@ -63,7 +63,10 @@ vi.mock("@/services/vfs/conversation", () => ({
   writeSessionHistoryJsonl: conversationMock.writeSessionHistoryJsonl,
 }));
 
-const createTextMessage = (role: "user" | "assistant" | "system", text: string) =>
+const createTextMessage = (
+  role: "user" | "assistant" | "system",
+  text: string,
+) =>
   ({
     role,
     content: [{ type: "text" as const, text }],
@@ -72,14 +75,19 @@ const createTextMessage = (role: "user" | "assistant" | "system", text: string) 
 describe("sessionContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionManagerMock.getOrCreateSession.mockResolvedValue({ id: "session-1" });
+    sessionManagerMock.getOrCreateSession.mockResolvedValue({
+      id: "session-1",
+    });
     cacheHintMock.buildCacheHint.mockReturnValue({
       protocol: "openai",
       cacheKey: "cache-1",
     });
     sessionManagerMock.getHistory.mockReturnValue([]);
     messageTypesMock.toGeminiFormat.mockImplementation((messages: unknown[]) =>
-      messages.map((_, idx) => ({ role: "model", parts: [{ text: `gemini-${idx}` }] })),
+      messages.map((_, idx) => ({
+        role: "model",
+        parts: [{ text: `gemini-${idx}` }],
+      })),
     );
     messageTypesMock.fromGeminiFormat.mockReturnValue([]);
     messageTypesMock.createUserMessage.mockImplementation((text: string) =>
@@ -130,10 +138,11 @@ describe("sessionContext", () => {
       [],
     );
 
-    const initializedHistory = sessionManagerMock.setHistory.mock.calls[1]?.[1] as
-      | UnifiedMessage[]
-      | undefined;
-    expect(initializedHistory?.[0]).toEqual(createTextMessage("system", "seed"));
+    const initializedHistory = sessionManagerMock.setHistory.mock
+      .calls[1]?.[1] as UnifiedMessage[] | undefined;
+    expect(initializedHistory?.[0]).toEqual(
+      createTextMessage("system", "seed"),
+    );
     expect(
       initializedHistory?.some((msg) =>
         msg.content.some(
@@ -150,10 +159,18 @@ describe("sessionContext", () => {
           part.type === "text" &&
           part.text.includes("[SYSTEM: COLD_START_SOFT_GUIDANCE]"),
       ) as { type: "text"; text: string } | undefined;
-    expect(coldStartText?.text).toContain("current/skills/commands/runtime/SKILL.md");
-    expect(coldStartText?.text).toContain("current/skills/commands/runtime/turn/SKILL.md");
-    expect(coldStartText?.text).toContain("current/skills/core/protocols/SKILL.md");
-    expect(coldStartText?.text).toContain("current/skills/craft/writing/SKILL.md");
+    expect(coldStartText?.text).toContain(
+      "current/skills/commands/runtime/SKILL.md",
+    );
+    expect(coldStartText?.text).toContain(
+      "current/skills/commands/runtime/turn/SKILL.md",
+    );
+    expect(coldStartText?.text).toContain(
+      "current/skills/core/protocols/SKILL.md",
+    );
+    expect(coldStartText?.text).toContain(
+      "current/skills/craft/writing/SKILL.md",
+    );
     expect(coldStartText?.text).toContain("current/conversation/session.jsonl");
     expect(coldStartText?.text).toContain("lines/search windows");
     expect(initializedHistory).toEqual(
@@ -187,7 +204,9 @@ describe("sessionContext", () => {
     sessionManagerMock.isEmpty.mockReturnValue(true);
     const geminiHistory = [{ role: "model", parts: [{ text: "native" }] }];
     sessionManagerMock.getHistory.mockReturnValue(geminiHistory);
-    messageTypesMock.toGeminiFormat.mockReturnValue([{ role: "model", parts: [] }]);
+    messageTypesMock.toGeminiFormat.mockReturnValue([
+      { role: "model", parts: [] },
+    ]);
     messageTypesMock.fromGeminiFormat.mockReturnValue([
       { role: "command", content: [{ type: "text", text: "cmd" }] },
     ]);
@@ -205,9 +224,8 @@ describe("sessionContext", () => {
     });
 
     expect(messageTypesMock.toGeminiFormat).toHaveBeenCalledTimes(1);
-    const geminiInitMessages = messageTypesMock.toGeminiFormat.mock.calls[0]?.[0] as
-      | UnifiedMessage[]
-      | undefined;
+    const geminiInitMessages = messageTypesMock.toGeminiFormat.mock
+      .calls[0]?.[0] as UnifiedMessage[] | undefined;
     expect(geminiInitMessages).toEqual(
       expect.arrayContaining([createTextMessage("user", "hi")]),
     );
@@ -223,7 +241,9 @@ describe("sessionContext", () => {
     expect(sessionManagerMock.setHistory).toHaveBeenCalledWith("session-1", [
       { role: "model", parts: [] },
     ]);
-    expect(messageTypesMock.fromGeminiFormat).toHaveBeenCalledWith(geminiHistory);
+    expect(messageTypesMock.fromGeminiFormat).toHaveBeenCalledWith(
+      geminiHistory,
+    );
     expect(result.activeHistory[0]?.role).toBe("user");
   });
 
@@ -283,9 +303,13 @@ describe("sessionContext", () => {
       {} as any,
     );
 
-    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(1);
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(
+      1,
+    );
 
-    const unmatchedHistory = [createTextMessage("user", "[PLAYER_ACTION] inspect")];
+    const unmatchedHistory = [
+      createTextMessage("user", "[PLAYER_ACTION] inspect"),
+    ];
     const untouched = handleRetryDetection(
       "session-1",
       unmatchedHistory,
@@ -294,7 +318,9 @@ describe("sessionContext", () => {
       {} as any,
     );
 
-    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(1);
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(
+      1,
+    );
     expect(untouched).toBe(unmatchedHistory);
   });
 
@@ -316,7 +342,9 @@ describe("sessionContext", () => {
       messages,
     );
 
-    messageTypesMock.toGeminiFormat.mockReturnValue([{ role: "model", parts: [] }]);
+    messageTypesMock.toGeminiFormat.mockReturnValue([
+      { role: "model", parts: [] },
+    ]);
     appendToHistory("session-1", messages, "gemini", vfsSession, 0);
     expect(messageTypesMock.toGeminiFormat).toHaveBeenCalledWith(messages);
     expect(sessionManagerMock.appendHistory).toHaveBeenNthCalledWith(
@@ -330,11 +358,7 @@ describe("sessionContext", () => {
   it("returns null when vfs checkpoint rollback is unavailable", () => {
     runtimeCheckpointMock.rollbackVfsSessionToCheckpoint.mockReturnValue(false);
 
-    const result = rollbackToTurnAnchor(
-      "session-1",
-      "openai",
-      {} as any,
-    );
+    const result = rollbackToTurnAnchor("session-1", "openai", {} as any);
 
     expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledWith(
       "session-1",

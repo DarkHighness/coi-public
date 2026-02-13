@@ -92,7 +92,10 @@ self.onconnect = (event: MessageEvent) => {
   };
 
   if (isInitialized) {
-    port.postMessage({ type: "ready", data: { initialized: true } } as RAGEvent);
+    port.postMessage({
+      type: "ready",
+      data: { initialized: true },
+    } as RAGEvent);
   }
 
   port.start();
@@ -216,8 +219,7 @@ const normalizeFileChunk = async (
       ? new Float32Array(doc.embedding)
       : await generateEmbedding(doc.content);
 
-  const estimatedBytes =
-    doc.content.length * 2 + embedding.length * 4 + 256;
+  const estimatedBytes = doc.content.length * 2 + embedding.length * 4 + 256;
 
   return {
     id: buildRagDocumentId({
@@ -294,7 +296,10 @@ async function handleUpsertFileChunks(
 
     return { count: ragDocuments.length };
   } catch (error) {
-    pendingDocuments = Math.max(0, pendingDocuments - (inputDocuments.length - ragDocuments.length));
+    pendingDocuments = Math.max(
+      0,
+      pendingDocuments - (inputDocuments.length - ragDocuments.length),
+    );
     throw error;
   }
 }
@@ -450,7 +455,10 @@ async function handleDeleteDocuments(
     let deleted = 0;
 
     for (const sourcePath of payload.entityIds) {
-      const docs = await database!.getDocumentsBySourcePath(sourcePath, targetSaveId);
+      const docs = await database!.getDocumentsBySourcePath(
+        sourcePath,
+        targetSaveId,
+      );
       for (const doc of docs) {
         await database!.deleteDocument(doc.id);
         deleted += 1;
@@ -510,7 +518,8 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   try {
     if (
       !payload.queryEmbedding &&
-      (config.provider === "local_tfjs" || config.provider === "local_transformers")
+      (config.provider === "local_tfjs" ||
+        config.provider === "local_transformers")
     ) {
       throw new Error(
         "Local embedding runtime requires precomputed queryEmbedding from main thread",
@@ -721,7 +730,10 @@ async function handleRebuildForModel(
   const targetSaveId = saveId || currentSaveId;
   if (!targetSaveId) return { deleted: 0 };
 
-  const deleted = await database!.clearSaveForRebuild(targetSaveId, currentForkId);
+  const deleted = await database!.clearSaveForRebuild(
+    targetSaveId,
+    currentForkId,
+  );
 
   broadcastEvent({
     type: "progress",

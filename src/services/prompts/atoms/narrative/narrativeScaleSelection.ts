@@ -10,7 +10,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export type NarrativeScaleSelectionInput = {
   language?: string;
 };
@@ -18,9 +17,14 @@ export type NarrativeScaleSelectionInput = {
 /**
  * 叙事规模选择指南 - 完整版
  */
-export const narrativeScaleSelection: Atom<NarrativeScaleSelectionInput> = defineAtom({ atomId: "atoms/narrative/narrativeScaleSelection#narrativeScaleSelection", source: "atoms/narrative/narrativeScaleSelection.ts", exportName: "narrativeScaleSelection" }, ({
-  language = "en",
-}) => `
+export const narrativeScaleSelection: Atom<NarrativeScaleSelectionInput> =
+  defineAtom(
+    {
+      atomId: "atoms/narrative/narrativeScaleSelection#narrativeScaleSelection",
+      source: "atoms/narrative/narrativeScaleSelection.ts",
+      exportName: "narrativeScaleSelection",
+    },
+    ({ language = "en" }) => `
 <narrative_scale_philosophy>
 **CRITICAL: NOT EVERY STORY NEEDS TO BE EPIC**
 
@@ -166,14 +170,21 @@ Read the theme's worldSetting and narrativeStyle carefully:
 - Words like "mystery", "detective", "adventure", "survival" → BALANCED
 ================================================================================
 </narrative_scale_philosophy>
-`);
+`,
+  );
 
 /**
  * Narrative scale selection primer (system-prompt safe).
  */
-export const narrativeScaleSelectionPrimer: Atom<
-  NarrativeScaleSelectionInput
-> = defineAtom({ atomId: "atoms/narrative/narrativeScaleSelection#narrativeScaleSelectionPrimer", source: "atoms/narrative/narrativeScaleSelection.ts", exportName: "narrativeScaleSelectionPrimer" }, () => `
+export const narrativeScaleSelectionPrimer: Atom<NarrativeScaleSelectionInput> =
+  defineAtom(
+    {
+      atomId:
+        "atoms/narrative/narrativeScaleSelection#narrativeScaleSelectionPrimer",
+      source: "atoms/narrative/narrativeScaleSelection.ts",
+      exportName: "narrativeScaleSelectionPrimer",
+    },
+    () => `
 <narrative_scale_philosophy>
 Choose narrative scale based on theme:
 - **EPIC**: World-ending stakes, cosmic threats, chosen ones, faction wars
@@ -182,6 +193,7 @@ Choose narrative scale based on theme:
 
 Keywords: 温馨/romance/family → INTIMATE | fate/prophecy/empire → EPIC | mystery/detective/survival → BALANCED
 </narrative_scale_philosophy>
-`);
+`,
+  );
 
 export default narrativeScaleSelection;

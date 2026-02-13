@@ -124,8 +124,7 @@ function handleUnlockMode(
       handled: true,
       preventAction: true,
       message:
-        t("commands.unlock.invalidMode") ||
-        "Usage: /unlock [on|off|toggle]",
+        t("commands.unlock.invalidMode") || "Usage: /unlock [on|off|toggle]",
     };
   }
 

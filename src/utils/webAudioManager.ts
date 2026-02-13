@@ -40,8 +40,9 @@ class WebAudioManager {
    */
   private getContext(): AudioContext {
     if (!this.context) {
-      this.context = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+      this.context = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
       this.masterGain = this.context.createGain();
       this.masterGain.connect(this.context.destination);
     }

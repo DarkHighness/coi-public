@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const technology: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/technology#technology", source: "atoms/worldbuilding/technology.ts", exportName: "technology" }, () => `
+export const technology: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/technology#technology",
+    source: "atoms/worldbuilding/technology.ts",
+    exportName: "technology",
+  },
+  () => `
 <worldbuilding_context>
 **TECHNOLOGY & CAPABILITIES (What is possible, by whom, at what cost?)**
 
@@ -93,42 +98,57 @@ Rule: counterplay exists, but it has costs and failure modes on both sides.
 - Maintenance bottleneck:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const technologyPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/technology#technologyPrimer", source: "atoms/worldbuilding/technology.ts", exportName: "technologyPrimer" }, () =>
-  `
+export const technologyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/technology#technologyPrimer",
+    source: "atoms/worldbuilding/technology.ts",
+    exportName: "technologyPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **TECH PRIMER**: Define capability access + cost + counterplay. Always specify maintenance/failure so tech creates tradeoffs, not convenience.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const technologySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/technology#technologySkill", source: "atoms/worldbuilding/technology.ts", exportName: "technologySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(technology),
-  quickStart: `
+export const technologySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/technology#technologySkill",
+    source: "atoms/worldbuilding/technology.ts",
+    exportName: "technologySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(technology),
+    quickStart: `
 1) Define 3 common capabilities and who has access
 2) Define 1 forbidden capability and what punishment/enforcement exists
 3) For surveillance/ID: set detection threshold and response ladder
 4) Define one counterplay method and its cost/risk
 `.trim(),
-  checklist: [
-    "Each key capability defines access, cost, and counterplay.",
-    "Maintenance/failure exists (repairs, parts, service contracts).",
-    "Surveillance/ID has thresholds and escalation responses.",
-    "Counterplay is not free (keys/insiders/time/risk).",
-  ],
-  examples: [
-    {
-      scenario: "Counterplay with cost",
-      wrong: `"You just disable the cameras."`,
-      right: `"Cameras are on a closed loop. You can jam them for 90 seconds,
+    checklist: [
+      "Each key capability defines access, cost, and counterplay.",
+      "Maintenance/failure exists (repairs, parts, service contracts).",
+      "Surveillance/ID has thresholds and escalation responses.",
+      "Counterplay is not free (keys/insiders/time/risk).",
+    ],
+    examples: [
+      {
+        scenario: "Counterplay with cost",
+        wrong: `"You just disable the cameras."`,
+        right: `"Cameras are on a closed loop. You can jam them for 90 seconds,
 but jamming triggers an incident alert. To avoid it, you need a service key—
 or an insider to schedule a 'maintenance window'."`,
-    },
-    {
-      scenario: "Maintenance makes tech real",
-      wrong: `"The drone follows you forever."`,
-      right: `"The drone’s battery lasts 40 minutes. Recharging requires a docking tower.
+      },
+      {
+        scenario: "Maintenance makes tech real",
+        wrong: `"The drone follows you forever."`,
+        right: `"The drone’s battery lasts 40 minutes. Recharging requires a docking tower.
 Sabotage the tower and surveillance becomes blind—until the corp dispatches a mobile unit."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

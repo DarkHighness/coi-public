@@ -43,7 +43,9 @@ const createGameState = (overrides: Record<string, unknown> = {}) =>
 describe("visualContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    culturalMock.languageEnforcement.mockReturnValue("<language_enforcement />");
+    culturalMock.languageEnforcement.mockReturnValue(
+      "<language_enforcement />",
+    );
   });
 
   it("builds system instruction per target and language", () => {
@@ -56,7 +58,9 @@ describe("visualContext", () => {
     expect(veo).toContain("cinematic video script (VEO script)");
 
     const both = getVisualSystemInstruction("ja", "both");
-    expect(both).toContain("both a detailed image prompt and a cinematic video script");
+    expect(both).toContain(
+      "both a detailed image prompt and a cinematic video script",
+    );
   });
 
   it("builds initial context with protagonist and mentioned NPCs", () => {
@@ -92,10 +96,9 @@ describe("visualContext", () => {
   });
 
   it("creates one user context message with task prefix", () => {
-    const messages = buildVisualContextMessages(
-      createGameState(),
-      { text: "Aria enters." } as any,
-    );
+    const messages = buildVisualContextMessages(createGameState(), {
+      text: "Aria enters.",
+    } as any);
 
     expect(messages).toHaveLength(1);
     expect(messages[0]?.role).toBe("user");

@@ -4,7 +4,10 @@
  * Handles injection of system messages into conversation history.
  */
 
-import type { CustomRulesAckPendingReason, UnifiedMessage } from "../../../../types";
+import type {
+  CustomRulesAckPendingReason,
+  UnifiedMessage,
+} from "../../../../types";
 import type { ActivePresetSkillRequirement } from "../../utils";
 import { createUserMessage } from "../../../messageTypes";
 import { generateBudgetPrompt, BudgetState } from "../budgetUtils";
@@ -89,7 +92,9 @@ export function injectNormalTurnInstruction(
           "[SYSTEM: CLEANUP CONSISTENCY ANCHOR]",
           "Cleanup is a maintenance turn, not a story rewrite.",
           `- Target forkId: ${
-            typeof contextMeta?.forkId === "number" ? contextMeta.forkId : "unknown"
+            typeof contextMeta?.forkId === "number"
+              ? contextMeta.forkId
+              : "unknown"
           }`,
           `- Target turnNumber: ${
             typeof contextMeta?.turnNumber === "number"
@@ -205,8 +210,12 @@ export function injectOutOfBandReadInvalidations(
 
   const lines = invalidations.map((entry) => {
     if (entry.changeType === "moved") {
-      const from = entry.from.startsWith("current/") ? entry.from : `current/${entry.from}`;
-      const to = entry.to.startsWith("current/") ? entry.to : `current/${entry.to}`;
+      const from = entry.from.startsWith("current/")
+        ? entry.from
+        : `current/${entry.from}`;
+      const to = entry.to.startsWith("current/")
+        ? entry.to
+        : `current/${entry.to}`;
       return `- ${from} -> ${to} (moved)`;
     }
     const currentPath = entry.path.startsWith("current/")
@@ -231,9 +240,7 @@ export function injectOutOfBandReadInvalidations(
 /**
  * Inject ready consequences from causal chains
  */
-export function injectReadyConsequences(
-  history: UnifiedMessage[],
-): void {
+export function injectReadyConsequences(history: UnifiedMessage[]): void {
   void history;
 }
 

@@ -8,7 +8,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export const humanityAndHope: Atom<void> = defineAtom(
   {
     atomId: "atoms/core/humanityAndHope#humanityAndHope",
@@ -256,7 +255,8 @@ export const humanityComplete: Atom<void> = defineAtom(
     source: "atoms/core/humanityAndHope.ts",
     exportName: "humanityComplete",
   },
-  (_input, trace) => `${trace.record(humanityAndHope)}\n${trace.record(darknessInLight)}`,
+  (_input, trace) =>
+    `${trace.record(humanityAndHope)}\n${trace.record(darknessInLight)}`,
 );
 
 export default humanityAndHope;
@@ -265,42 +265,49 @@ export default humanityAndHope;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const humanityAndHopeSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/humanityAndHope#humanityAndHopeSkill", source: "atoms/core/humanityAndHope.ts", exportName: "humanityAndHopeSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(humanityComplete),
+export const humanityAndHopeSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/humanityAndHope#humanityAndHopeSkill",
+    source: "atoms/core/humanityAndHope.ts",
+    exportName: "humanityAndHopeSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(humanityComplete),
 
-  quickStart: `
+    quickStart: `
 1. Goodness is not simple - even kind acts have complex roots
 2. Small gestures > grand declarations
 3. Show the cost of caring, not just the caring
 4. Light exists because of darkness, not despite it
 `.trim(),
 
-  checklist: [
-    "Kindness shown through action, not declaration?",
-    "Small gestures used over grand statements?",
-    "Showing the cost of caring?",
-    "Good characters have complex motivations?",
-    "Helpers have their own lives and limits?",
-    "Warmth balanced with realism?",
-  ],
+    checklist: [
+      "Kindness shown through action, not declaration?",
+      "Small gestures used over grand statements?",
+      "Showing the cost of caring?",
+      "Good characters have complex motivations?",
+      "Helpers have their own lives and limits?",
+      "Warmth balanced with realism?",
+    ],
 
-  examples: [
-    {
-      scenario: "The Samaritan",
-      wrong: `"He was a kind soul who helped everyone in need."
+    examples: [
+      {
+        scenario: "The Samaritan",
+        wrong: `"He was a kind soul who helped everyone in need."
 (Abstract label, tells not shows.)`,
-      right: `"He wrapped the wound without looking at your face. 'Hold still.'
+        right: `"He wrapped the wound without looking at your face. 'Hold still.'
 When you reached for your coin purse, he was already walking away.
 You never learned his name."
 (Action, brevity, mystery.)`,
-    },
-    {
-      scenario: "Small Gestures",
-      wrong: `"I would die for you," he declared heroically.
+      },
+      {
+        scenario: "Small Gestures",
+        wrong: `"I would die for you," he declared heroically.
 (Grand declaration, suspicious.)`,
-      right: `He didn't say anything. Just put his coat over her shoulders.
+        right: `He didn't say anything. Just put his coat over her shoulders.
 It was his only coat. The wind was bitter.
 (Small act, real cost, no words needed.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

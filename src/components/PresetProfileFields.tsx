@@ -63,7 +63,9 @@ export const PresetProfileFields: React.FC<PresetProfileFieldsProps> = ({
   showHelp = true,
 }) => {
   const { t } = useTranslation();
-  const profile = normalizeSavePresetProfile(value ?? DEFAULT_SAVE_PRESET_PROFILE);
+  const profile = normalizeSavePresetProfile(
+    value ?? DEFAULT_SAVE_PRESET_PROFILE,
+  );
 
   const update = <K extends keyof SavePresetProfile>(
     key: K,

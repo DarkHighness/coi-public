@@ -26,30 +26,33 @@ export class VfsPathRegistry {
    * This registry projects `VfsResourceTemplateRegistry` into path-centric views.
    */
   public listRules(): VfsListRuleEntry[] {
-    return vfsResourceTemplateRegistry
-      .list()
-      .flatMap((template) =>
-        template.patterns.map((pattern) => ({
-          id: template.id,
-          description: template.description,
-          pattern,
-          permissionClass: template.permissionClass,
-          scope: template.scope,
-          domain: template.domain,
-          shape: template.shape,
-          criticality: template.criticality,
-          retention: template.retention,
-          allowedWriteOps: [...template.allowedWriteOps],
-        })),
-      );
+    return vfsResourceTemplateRegistry.list().flatMap((template) =>
+      template.patterns.map((pattern) => ({
+        id: template.id,
+        description: template.description,
+        pattern,
+        permissionClass: template.permissionClass,
+        scope: template.scope,
+        domain: template.domain,
+        shape: template.shape,
+        criticality: template.criticality,
+        retention: template.retention,
+        allowedWriteOps: [...template.allowedWriteOps],
+      })),
+    );
   }
 
   /**
    * Single source of truth for path permission/scope metadata:
    * resolve path -> match resource template -> project classification.
    */
-  public classify(path: string, options?: VfsClassifyOptions): VfsPathClassification {
-    const resolved = resolveVfsPath(path, { activeForkId: options?.activeForkId });
+  public classify(
+    path: string,
+    options?: VfsClassifyOptions,
+  ): VfsPathClassification {
+    const resolved = resolveVfsPath(path, {
+      activeForkId: options?.activeForkId,
+    });
     const template = vfsResourceTemplateRegistry.match(resolved.canonicalPath);
 
     return {
@@ -71,8 +74,13 @@ export class VfsPathRegistry {
     };
   }
 
-  public isImmutableReadonly(path: string, options?: VfsClassifyOptions): boolean {
-    return this.classify(path, options).permissionClass === "immutable_readonly";
+  public isImmutableReadonly(
+    path: string,
+    options?: VfsClassifyOptions,
+  ): boolean {
+    return (
+      this.classify(path, options).permissionClass === "immutable_readonly"
+    );
   }
 
   public isShared(path: string, options?: VfsClassifyOptions): boolean {

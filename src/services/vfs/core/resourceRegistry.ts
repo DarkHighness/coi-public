@@ -38,8 +38,13 @@ export class VfsResourceRegistry {
    * Resource matching always resolves to canonical path first,
    * then binds to a single resource template.
    */
-  public match(path: string, options?: { activeForkId?: number }): VfsResourceMatch {
-    const resolved = resolveVfsPath(path, { activeForkId: options?.activeForkId });
+  public match(
+    path: string,
+    options?: { activeForkId?: number },
+  ): VfsResourceMatch {
+    const resolved = resolveVfsPath(path, {
+      activeForkId: options?.activeForkId,
+    });
     const template = vfsResourceTemplateRegistry.match(resolved.canonicalPath);
 
     return {

@@ -13,28 +13,28 @@ import {
 
 describe("turnRecoveryPolicy", () => {
   it("classifies history and context errors", () => {
-    expect(classifyTurnError(new HistoryCorruptedError(new Error("bad history")))).toBe(
-      "history",
-    );
-    expect(classifyTurnError(new Error("INVALID_ARGUMENT: malformed payload"))).toBe(
-      "history",
-    );
-    expect(classifyTurnError(new Error("MALFORMED_TOOL_CALL: invalid json"))).toBe(
-      "unknown",
-    );
+    expect(
+      classifyTurnError(new HistoryCorruptedError(new Error("bad history"))),
+    ).toBe("history");
+    expect(
+      classifyTurnError(new Error("INVALID_ARGUMENT: malformed payload")),
+    ).toBe("history");
+    expect(
+      classifyTurnError(new Error("MALFORMED_TOOL_CALL: invalid json")),
+    ).toBe("unknown");
 
-    expect(classifyTurnError(new ContextOverflowError(new Error("too many tokens")))).toBe(
-      "context",
-    );
+    expect(
+      classifyTurnError(new ContextOverflowError(new Error("too many tokens"))),
+    ).toBe("context");
     expect(classifyTurnError(new Error("context_length_exceeded"))).toBe(
       "context",
     );
   });
 
   it("classifies turn_not_committed and transient errors", () => {
-    expect(classifyTurnError(new Error("TURN_NOT_COMMITTED: agent exhausted"))).toBe(
-      "turn_not_committed",
-    );
+    expect(
+      classifyTurnError(new Error("TURN_NOT_COMMITTED: agent exhausted")),
+    ).toBe("turn_not_committed");
     expect(classifyTurnError(new Error("429 rate limit exceeded"))).toBe(
       "transient",
     );

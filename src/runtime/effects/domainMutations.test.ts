@@ -55,7 +55,11 @@ describe("domainMutations", () => {
   it("updates node meta and ignores unknown node ids", () => {
     const harness = createHarness();
 
-    harness.actions.updateNodeMeta("node-1", { text: "new" }, { persist: true });
+    harness.actions.updateNodeMeta(
+      "node-1",
+      { text: "new" },
+      { persist: true },
+    );
     expect(harness.getState().nodes["node-1"].text).toBe("new");
     expect(harness.triggerSave).toHaveBeenCalledTimes(1);
 

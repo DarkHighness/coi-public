@@ -91,7 +91,8 @@ export const buildResponseFromVfs = (
   response.narrative = turn.assistant.narrative || "";
   response.choices = turn.assistant.choices as GameResponse["choices"];
   if (turn.assistant.atmosphere) {
-    response.atmosphere = turn.assistant.atmosphere as GameResponse["atmosphere"];
+    response.atmosphere = turn.assistant
+      .atmosphere as GameResponse["atmosphere"];
   }
   if (turn.assistant.narrativeTone) {
     response.narrativeTone = turn.assistant.narrativeTone;

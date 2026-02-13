@@ -155,7 +155,9 @@ describe("useRagRuntime", () => {
     });
 
     expect(result).toBe(true);
-    expect(getGeminiEmbeddingModelsMock).toHaveBeenCalledWith({ apiKey: "k-1" });
+    expect(getGeminiEmbeddingModelsMock).toHaveBeenCalledWith({
+      apiKey: "k-1",
+    });
     expect(initializeRAGServiceMock).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: "gemini",
@@ -327,10 +329,9 @@ describe("useRagRuntime", () => {
 
     let context = "";
     await act(async () => {
-      context = await runtime.value.actions.getContext(
-        "gate",
-        { forkId: 2 } as any,
-      );
+      context = await runtime.value.actions.getContext("gate", {
+        forkId: 2,
+      } as any);
     });
 
     expect(context).toContain("[story] world/story.md (#1/1)");
@@ -400,7 +401,11 @@ describe("useRagRuntime", () => {
 
     await act(async () => {
       await runtime.value.actions.initialize(createSettings());
-      await runtime.value.actions.indexInitialEntities({} as any, "save-m", {} as any);
+      await runtime.value.actions.indexInitialEntities(
+        {} as any,
+        "save-m",
+        {} as any,
+      );
     });
 
     expect(indexInitialRagDocumentsMock).toHaveBeenCalledWith({}, "save-m", {});

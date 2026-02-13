@@ -43,7 +43,9 @@ export const normalizeWriteTargetPath = (rawPath: string): string => {
   return `current/${normalized}`;
 };
 
-export const collectWriteTargetsFromToolCall = (call: ToolCallResult): string[] => {
+export const collectWriteTargetsFromToolCall = (
+  call: ToolCallResult,
+): string[] => {
   const args = (call.args || {}) as Record<string, unknown>;
   const targets = new Set<string>();
 
@@ -127,7 +129,9 @@ export const isLikelyNoOpReadBeforeFinishBatch = (
   functionCalls: ToolCallResult[],
   finishToolName: string,
 ): boolean => {
-  const finishIndex = functionCalls.findIndex((call) => call.name === finishToolName);
+  const finishIndex = functionCalls.findIndex(
+    (call) => call.name === finishToolName,
+  );
   if (finishIndex <= 0) return false;
 
   const beforeFinish = functionCalls.slice(0, finishIndex);

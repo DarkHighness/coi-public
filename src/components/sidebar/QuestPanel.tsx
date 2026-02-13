@@ -108,7 +108,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
       <div
         key={q.id}
         className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 ${
-          q.type === "main" ? "border-l-theme-primary/70" : "border-l-theme-muted/60"
+          q.type === "main"
+            ? "border-l-theme-primary/70"
+            : "border-l-theme-muted/60"
         } ${options?.isDragging ? "opacity-60" : ""} ${
           effectiveEditMode ? "cursor-grab active:cursor-grabbing" : ""
         }`}
@@ -322,8 +324,8 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     );
   };
 
-    return (
-      <div>
+  return (
+    <div>
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between cursor-pointer group ${

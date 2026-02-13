@@ -3536,7 +3536,10 @@ const buildThemeCatalogEntries = (): SkillCatalogEntry[] => {
 
 export function getAllSkillCatalogEntries(): SkillCatalogEntry[] {
   const merged = new Map<string, SkillCatalogEntry>();
-  for (const entry of [...getSkillCatalogEntries(), ...buildThemeCatalogEntries()]) {
+  for (const entry of [
+    ...getSkillCatalogEntries(),
+    ...buildThemeCatalogEntries(),
+  ]) {
     merged.set(entry.id, entry);
   }
   return [...merged.values()];

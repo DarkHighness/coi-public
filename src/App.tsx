@@ -421,7 +421,10 @@ function AppContent() {
     }
 
     if (result === "invalid-state") {
-      showToast(t("saves.invalidState") || "Save appears to be corrupted", "error");
+      showToast(
+        t("saves.invalidState") || "Save appears to be corrupted",
+        "error",
+      );
       navigate("/");
     }
   };
@@ -457,7 +460,10 @@ function AppContent() {
     }
 
     if (result === "invalid-state") {
-      showToast(t("saves.invalidState") || "Save appears to be corrupted", "error");
+      showToast(
+        t("saves.invalidState") || "Save appears to be corrupted",
+        "error",
+      );
     }
   };
 

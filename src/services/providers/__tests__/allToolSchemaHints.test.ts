@@ -25,7 +25,9 @@ describe("all tool schema hints", () => {
 
     for (const tool of ALL_DEFINED_TOOLS) {
       const toolInfo = getToolInfo(tool);
-      const lines = toolInfo.split("\n").filter((line) => badTypeLineRe.test(line));
+      const lines = toolInfo
+        .split("\n")
+        .filter((line) => badTypeLineRe.test(line));
       if (lines.length > 0) {
         offenders.push({ name: tool.name, lines });
       }

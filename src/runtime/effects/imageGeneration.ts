@@ -1,4 +1,10 @@
-import { useEffect, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import {
+  useEffect,
+  useState,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from "react";
 import { generateSceneImage } from "../../services/aiService";
 import { saveImage } from "../../utils/imageStorage";
 import type { AISettings, GameState, StorySegment } from "../../types";
@@ -182,7 +188,12 @@ export function useImageGenerationQueue({
         }
       } catch (e) {
         clearTimeout(imageTimeout);
-        console.error("Failed to generate image for node:", nodeId, "Error:", e);
+        console.error(
+          "Failed to generate image for node:",
+          nodeId,
+          "Error:",
+          e,
+        );
         setGameState((prev) => ({
           ...prev,
           isImageGenerating: false,
@@ -196,7 +207,15 @@ export function useImageGenerationQueue({
     };
 
     processQueue();
-  }, [imageQueue, isQueueProcessing, aiSettings, currentSlotId, triggerSave, setGameState, gameStateRef]);
+  }, [
+    imageQueue,
+    isQueueProcessing,
+    aiSettings,
+    currentSlotId,
+    triggerSave,
+    setGameState,
+    gameStateRef,
+  ]);
 
   const generateImageForNode = async (
     nodeId: string,

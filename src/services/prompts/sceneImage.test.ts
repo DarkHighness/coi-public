@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { getSceneImagePrompt } from "./sceneImage";
 
 vi.mock("../themeRegistry", () => ({
-  getThemeStyle: (key: string) => (key === "fantasy" ? "STYLE_REFERENCE" : null),
+  getThemeStyle: (key: string) =>
+    key === "fantasy" ? "STYLE_REFERENCE" : null,
   getLoadedThemes: () => ["lord_of_rings", "fantasy"],
 }));
 
 vi.mock("./rulesInjector", () => ({
-  formatImageStyleRules: () => "**Style Requirements:**\nUse watercolor brushwork",
+  formatImageStyleRules: () =>
+    "**Style Requirements:**\nUse watercolor brushwork",
 }));
 
 vi.mock("./atoms/image", () => ({
@@ -16,8 +18,10 @@ vi.mock("./atoms/image", () => ({
   compositionDirectives: () => "<composition_directives />",
   renderingInstructions: () => "<rendering_instructions />",
   ipFidelityRequirements: () => "<ip_fidelity_rules />",
-  lightingContext: ({ time }: { time: string }) => `<lighting_context time=\"${time}\" />`,
-  weatherEffects: ({ weather }: { weather: string }) => `<weather_effect weather=\"${weather}\" />`,
+  lightingContext: ({ time }: { time: string }) =>
+    `<lighting_context time=\"${time}\" />`,
+  weatherEffects: ({ weather }: { weather: string }) =>
+    `<weather_effect weather=\"${weather}\" />`,
 }));
 
 const createGameState = () =>
@@ -110,7 +114,10 @@ describe("getSceneImagePrompt", () => {
   it("injects theme style reference and world context", () => {
     const gameState = createGameState();
 
-    const result = getSceneImagePrompt("Alice watches the hero from afar", gameState);
+    const result = getSceneImagePrompt(
+      "Alice watches the hero from afar",
+      gameState,
+    );
 
     expect(result).toContain("<style_reference>");
     expect(result).toContain("STYLE_REFERENCE");
@@ -122,15 +129,18 @@ describe("getSceneImagePrompt", () => {
   it("enriches prompt with location sensory details and protagonist block", () => {
     const gameState = createGameState();
 
-    const result = getSceneImagePrompt("Rin enters the Moonlit Forest", gameState);
+    const result = getSceneImagePrompt(
+      "Rin enters the Moonlit Forest",
+      gameState,
+    );
 
     expect(result).toContain("<environment>");
     expect(result).toContain("<sensory_details>");
     expect(result).toContain("Wet pine");
     expect(result).toContain("<protagonist>");
     expect(result).toContain("<name>Rin</name>");
-    expect(result).toContain("<lighting_context time=\"dusk\" />");
-    expect(result).toContain("<weather_effect weather=\"rain\" />");
+    expect(result).toContain('<lighting_context time="dusk" />');
+    expect(result).toContain('<weather_effect weather="rain" />');
   });
 
   it("includes only NPCs mentioned in scene prompt", () => {

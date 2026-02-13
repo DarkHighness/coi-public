@@ -82,7 +82,6 @@ const l2Normalize = (vector: number[]): number[] => {
   return vector.map((value) => value / norm);
 };
 
-
 const isWebGpuAvailable = (): boolean => {
   try {
     return (
@@ -131,10 +130,7 @@ const toBlobUrl = async (
       ? await response.text()
       : await response.arrayBuffer();
 
-  if (
-    typeof URL === "undefined" ||
-    typeof URL.createObjectURL !== "function"
-  ) {
+  if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
     return inputUrl;
   }
 
@@ -142,9 +138,7 @@ const toBlobUrl = async (
   return URL.createObjectURL(blob);
 };
 
-export const ensureOnnxWasmPaths = async (
-  onnxEnv: unknown,
-): Promise<void> => {
+export const ensureOnnxWasmPaths = async (onnxEnv: unknown): Promise<void> => {
   const wasmEnv =
     onnxEnv &&
     typeof onnxEnv === "object" &&

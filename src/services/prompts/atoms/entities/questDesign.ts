@@ -10,11 +10,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Quest 设计上下文 - 完整版
  */
-export const questDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/questDesign#questDesign", source: "atoms/entities/questDesign.ts", exportName: "questDesign" }, () => `
+export const questDesign: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/questDesign#questDesign",
+    source: "atoms/entities/questDesign.ts",
+    exportName: "questDesign",
+  },
+  () => `
 <game_system_context>
 **QUEST DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -65,12 +70,19 @@ Avoid:
 - Single-point-of-failure design (one roll/NPC or nothing).
 </quest_playability>
 </game_system_context>
-`);
+`,
+);
 
 /**
  * Quest 设计上下文 - 精简版
  */
-export const questDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/questDesign#questDesignPrimer", source: "atoms/entities/questDesign.ts", exportName: "questDesignPrimer" }, () => `
+export const questDesignPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/questDesign#questDesignPrimer",
+    source: "atoms/entities/questDesign.ts",
+    exportName: "questDesignPrimer",
+  },
+  () => `
 <game_system_context>
 **QUEST DESIGN**: Quests are the questions the story asks -- and the answers cost something.
 - Visible vs hidden contradiction (the surface conceals the wound)
@@ -79,7 +91,8 @@ export const questDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entitie
 - Failure consequences
 - Stakes escalation
 </game_system_context>
-`);
+`,
+);
 
 export default questDesign;
 
@@ -87,10 +100,16 @@ export default questDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const questDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/questDesign#questDesignSkill", source: "atoms/entities/questDesign.ts", exportName: "questDesignSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(questDesign),
+export const questDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/questDesign#questDesignSkill",
+    source: "atoms/entities/questDesign.ts",
+    exportName: "questDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(questDesign),
 
-  quickStart: `
+    quickStart: `
 1. Visible vs Hidden: Surface objective contradicts hidden truth
 2. Twist: Complication or moral dilemma (not just "there's a twist")
 3. Time Pressure: Deadline with specific consequences
@@ -98,58 +117,59 @@ export const questDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atom
 5. Playability: Lead chain (3-5 steps), multiple approaches, entry point
 `.trim(),
 
-  checklist: [
-    "Visible layer contradicts hidden layer?",
-    "Twist is specific (not just 'plot twist')?",
-    "Time pressure has specific deadline?",
-    "Failure consequences are concrete (someone dies, opportunity closes)?",
-    "Clear entry point (who asks, where, what proof)?",
-    "Lead chain exists (3-5 actionable steps)?",
-    "At least two approaches to progress?",
-    "'Do nothing' outcome defined?",
-  ],
+    checklist: [
+      "Visible layer contradicts hidden layer?",
+      "Twist is specific (not just 'plot twist')?",
+      "Time pressure has specific deadline?",
+      "Failure consequences are concrete (someone dies, opportunity closes)?",
+      "Clear entry point (who asks, where, what proof)?",
+      "Lead chain exists (3-5 actionable steps)?",
+      "At least two approaches to progress?",
+      "'Do nothing' outcome defined?",
+    ],
 
-  examples: [
-    {
-      scenario: "Visible vs Hidden",
-      wrong: `visible: "Rescue the princess"
+    examples: [
+      {
+        scenario: "Visible vs Hidden",
+        wrong: `visible: "Rescue the princess"
 hidden: "There's a twist"
 (No actual contradiction defined.)`,
-      right: `visible: "Rescue the kidnapped princess"
+        right: `visible: "Rescue the kidnapped princess"
 hidden: "The princess staged her own kidnapping to escape
 an arranged marriage. 'Rescuing' her means returning her to prison."
 (Surface objective contradicts moral reality.)`,
-    },
-    {
-      scenario: "Time Pressure",
-      wrong: `"You should hurry."
+      },
+      {
+        scenario: "Time Pressure",
+        wrong: `"You should hurry."
 (Vague, no stakes.)`,
-      right: `"The ritual completes in 3 days. After that, the portal opens permanently.
+        right: `"The ritual completes in 3 days. After that, the portal opens permanently.
 The merchant caravan leaves at dawn. Miss it, and you're stranded for a month."
 (Specific deadline with specific consequence.)`,
-    },
-    {
-      scenario: "Lead Chain",
-      wrong: `"Find the truth about the murder."
+      },
+      {
+        scenario: "Lead Chain",
+        wrong: `"Find the truth about the murder."
 (No actionable steps defined.)`,
-      right: `Lead 1: Talk to the bartender (witnessed the argument)
+        right: `Lead 1: Talk to the bartender (witnessed the argument)
 Lead 2: Search the victim's room (find the letter)
 Lead 3: Tail the suspect (observe meeting at warehouse)
 Lead 4: Bribe the dockworker (get shipping manifest)
 Lead 5: Confront the merchant (with evidence)
 (Each step produces artifact, leads to next.)`,
-    },
-    {
-      scenario: "Playability",
-      wrong: `"You sense something is wrong. Find out what."
+      },
+      {
+        scenario: "Playability",
+        wrong: `"You sense something is wrong. Find out what."
 (Mind-reading, no concrete clues.)`,
-      right: `Entry: The widow hires you. She has her husband's last letter (physical artifact).
+        right: `Entry: The widow hires you. She has her husband's last letter (physical artifact).
 Approaches:
 - Social: Interview the business partner
 - Physical: Break into the warehouse at night
 - Procedural: Check shipping records at the guild
 - Violent: Raid the smuggler's den
 (Multiple paths, concrete actions.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

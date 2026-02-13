@@ -124,7 +124,11 @@ const estimateCompletionTokens = (
   }
 
   if (Array.isArray((payload as { functionCalls?: unknown[] }).functionCalls)) {
-    snippets.push(stringifyForEstimation((payload as { functionCalls?: unknown[] }).functionCalls));
+    snippets.push(
+      stringifyForEstimation(
+        (payload as { functionCalls?: unknown[] }).functionCalls,
+      ),
+    );
   }
 
   if (snippets.length === 0) {
@@ -151,7 +155,9 @@ const normalizeUsageForAccounting = (
     ...(typeof usage.cacheWrite === "number"
       ? { cacheWrite: toNonNegativeInt(usage.cacheWrite) }
       : {}),
-    ...(typeof usage.reported === "boolean" ? { reported: usage.reported } : {}),
+    ...(typeof usage.reported === "boolean"
+      ? { reported: usage.reported }
+      : {}),
   };
 
   const hasPositiveSignal =
@@ -185,8 +191,7 @@ const normalizeUsageForAccounting = (
     }
   }
 
-  const estimatedTotal =
-    normalized.promptTokens + normalized.completionTokens;
+  const estimatedTotal = normalized.promptTokens + normalized.completionTokens;
   if (normalized.totalTokens < estimatedTotal) {
     normalized.totalTokens = estimatedTotal;
     estimated = true;
@@ -195,11 +200,14 @@ const normalizeUsageForAccounting = (
   normalized.reported = false;
 
   if (estimated) {
-    console.warn("[AgenticRetry] Provider usage incomplete, applied token estimation", {
-      promptTokens: normalized.promptTokens,
-      completionTokens: normalized.completionTokens,
-      totalTokens: normalized.totalTokens,
-    });
+    console.warn(
+      "[AgenticRetry] Provider usage incomplete, applied token estimation",
+      {
+        promptTokens: normalized.promptTokens,
+        completionTokens: normalized.completionTokens,
+        totalTokens: normalized.totalTokens,
+      },
+    );
   }
 
   return normalized;
@@ -550,12 +558,12 @@ export async function callWithAgenticRetry(
 
     // Execute onRetry callback AFTER error messages are in history
     // This allows the callback to inject new prompts (e.g. Budget Status) that appear AFTER the error
-      if (onRetry) {
-        onRetry(errorMessage, attempt, {
-          silent: false,
-          classification: "model_fixable",
-        });
-      }
+    if (onRetry) {
+      onRetry(errorMessage, attempt, {
+        silent: false,
+        classification: "model_fixable",
+      });
+    }
   }
 
   throw new Error("Maximum retries exceeded");

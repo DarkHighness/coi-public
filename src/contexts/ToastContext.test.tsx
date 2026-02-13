@@ -40,12 +40,18 @@ describe("ToastContext", () => {
         "div",
         null,
         api!.toasts.map((toast) =>
-          React.createElement("div", { key: toast.id }, `${toast.type}:${toast.message}`),
+          React.createElement(
+            "div",
+            { key: toast.id },
+            `${toast.type}:${toast.message}`,
+          ),
         ),
       );
     };
 
-    render(React.createElement(ToastProvider, null, React.createElement(Probe)));
+    render(
+      React.createElement(ToastProvider, null, React.createElement(Probe)),
+    );
 
     act(() => {
       api!.showToast(t("toast.test.hello"));
@@ -81,12 +87,18 @@ describe("ToastContext", () => {
         "div",
         null,
         api!.toasts.map((toast) =>
-          React.createElement("div", { key: toast.id }, `${toast.message}|${toast.items?.length || 0}`),
+          React.createElement(
+            "div",
+            { key: toast.id },
+            `${toast.message}|${toast.items?.length || 0}`,
+          ),
         ),
       );
     };
 
-    render(React.createElement(ToastProvider, null, React.createElement(Probe)));
+    render(
+      React.createElement(ToastProvider, null, React.createElement(Probe)),
+    );
 
     const t = (key: string) => key;
 
@@ -123,7 +135,9 @@ describe("ToastContext", () => {
       );
     };
 
-    render(React.createElement(ToastProvider, null, React.createElement(Probe)));
+    render(
+      React.createElement(ToastProvider, null, React.createElement(Probe)),
+    );
 
     const t = (key: string, options?: Record<string, unknown>) => {
       if (key === "toast.itemAdded") return "Item added";
@@ -165,7 +179,9 @@ describe("ToastContext", () => {
       return React.createElement("div");
     };
 
-    render(React.createElement(ToastProvider, null, React.createElement(Probe)));
+    render(
+      React.createElement(ToastProvider, null, React.createElement(Probe)),
+    );
 
     act(() => {
       api!.pushStateChangeToasts({} as any, (key) => key);

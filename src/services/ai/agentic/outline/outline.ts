@@ -23,7 +23,12 @@ import {
   HistoryCorruptedError,
 } from "../../contextCompressor";
 
-import type { OutlinePhase0, OutlinePhase3, OutlinePhase4, OutlinePhase6 } from "../../../schemas";
+import type {
+  OutlinePhase0,
+  OutlinePhase3,
+  OutlinePhase4,
+  OutlinePhase6,
+} from "../../../schemas";
 
 import {
   getOutlineSystemInstruction,
@@ -198,7 +203,8 @@ const stripOutlineCurrentPrefix = (path?: string): string => {
   const normalized = normalizeVfsPath(path ?? "");
   if (!normalized) return "";
   if (normalized === "current") return "";
-  if (normalized.startsWith("current/")) return normalized.slice("current/".length);
+  if (normalized.startsWith("current/"))
+    return normalized.slice("current/".length);
   return normalized;
 };
 
@@ -211,7 +217,10 @@ const isAllowedOutlineReadOnlyPath = (
   return allowPrefixes.some((prefix) => {
     const normalizedPrefix = normalizeVfsPath(prefix);
     if (!normalizedPrefix) return false;
-    return normalized === normalizedPrefix || normalized.startsWith(`${normalizedPrefix}/`);
+    return (
+      normalized === normalizedPrefix ||
+      normalized.startsWith(`${normalizedPrefix}/`)
+    );
   });
 };
 
@@ -252,11 +261,14 @@ const getOutlinePhaseArtifactPaths = (phaseNum: number) => ({
   sharedPath: `shared/narrative/outline/phases/phase${phaseNum}.json`,
 });
 
-const formatOutlinePhaseArtifactChecklist = (phaseNumbers: number[]): string => {
+const formatOutlinePhaseArtifactChecklist = (
+  phaseNumbers: number[],
+): string => {
   if (phaseNumbers.length === 0) return "- none";
   return phaseNumbers
     .map((phaseNum) => {
-      const { currentPath, sharedPath } = getOutlinePhaseArtifactPaths(phaseNum);
+      const { currentPath, sharedPath } =
+        getOutlinePhaseArtifactPaths(phaseNum);
       return `- Phase ${phaseNum}: \`${currentPath}\` (fallback: \`${sharedPath}\`)`;
     })
     .join("\n");
@@ -270,7 +282,10 @@ const buildOutlineResumeAnchor = (
   const currentSubmitTool = `vfs_commit_outline_phase_${safeCurrentPhase}`;
   const currentArtifactPaths = getOutlinePhaseArtifactPaths(safeCurrentPhase);
 
-  const completedPhaseNumbers = Array.from({ length: 10 }, (_, idx) => idx).filter(
+  const completedPhaseNumbers = Array.from(
+    { length: 10 },
+    (_, idx) => idx,
+  ).filter(
     (phaseNum) =>
       phaseNum < safeCurrentPhase &&
       (partial as any)?.[`phase${phaseNum}`] !== undefined,
@@ -279,9 +294,7 @@ const buildOutlineResumeAnchor = (
   const missingCompletedPhases = Array.from(
     { length: safeCurrentPhase },
     (_, idx) => idx,
-  ).filter(
-    (phaseNum) => (partial as any)?.[`phase${phaseNum}`] === undefined,
-  );
+  ).filter((phaseNum) => (partial as any)?.[`phase${phaseNum}`] === undefined);
 
   const remainingPhases = Array.from(
     { length: Math.max(0, 10 - safeCurrentPhase) },
@@ -340,7 +353,8 @@ const extractGlobRoot = (pattern: string): string => {
   if (!normalized) return "";
   // Take the static prefix before any wildcard.
   const wildcardIndex = normalized.search(/[*?]/);
-  const root = wildcardIndex === -1 ? normalized : normalized.slice(0, wildcardIndex);
+  const root =
+    wildcardIndex === -1 ? normalized : normalized.slice(0, wildcardIndex);
   return normalizeVfsPath(root);
 };
 
@@ -355,12 +369,15 @@ const validateOutlineReadOnlyVfsArgs = (
       .join(", ")}`;
 
   if (toolName === "vfs_ls") {
-    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
+    const path =
+      typeof (args as any)?.path === "string" ? (args as any).path : "";
     const patterns = Array.isArray((args as any)?.patterns)
       ? (args as any).patterns
       : null;
     if (!path && (!patterns || patterns.length === 0)) {
-      return reject("vfs_ls requires path or patterns (root listing is disabled)");
+      return reject(
+        "vfs_ls requires path or patterns (root listing is disabled)",
+      );
     }
 
     if (path && !isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
@@ -373,7 +390,8 @@ const validateOutlineReadOnlyVfsArgs = (
           return reject("vfs_ls patterns[] must be strings");
         }
         const root = extractGlobRoot(pattern);
-        if (!root) return reject(`vfs_ls pattern="${pattern}" has no static root`);
+        if (!root)
+          return reject(`vfs_ls pattern="${pattern}" has no static root`);
         if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
           return reject(`vfs_ls pattern="${pattern}" (root="${root}")`);
         }
@@ -389,7 +407,10 @@ const validateOutlineReadOnlyVfsArgs = (
           return reject("vfs_ls excludePatterns[] must be strings");
         }
         const root = extractGlobRoot(pattern);
-        if (!root) return reject(`vfs_ls excludePattern="${pattern}" has no static root`);
+        if (!root)
+          return reject(
+            `vfs_ls excludePattern="${pattern}" has no static root`,
+          );
         if (!isAllowedOutlineReadOnlyPath(root, allowPrefixes)) {
           return reject(`vfs_ls excludePattern="${pattern}" (root="${root}")`);
         }
@@ -399,10 +420,14 @@ const validateOutlineReadOnlyVfsArgs = (
   }
 
   if (toolName === "vfs_schema") {
-    const paths = Array.isArray((args as any)?.paths) ? (args as any).paths : [];
+    const paths = Array.isArray((args as any)?.paths)
+      ? (args as any).paths
+      : [];
     if (paths.length === 0) return reject("vfs_schema requires paths[]");
     const bad = paths.find(
-      (p: unknown) => typeof p !== "string" || !isAllowedOutlineReadOnlyPath(p, allowPrefixes),
+      (p: unknown) =>
+        typeof p !== "string" ||
+        !isAllowedOutlineReadOnlyPath(p, allowPrefixes),
     );
     if (bad) {
       return reject(`vfs_schema includes disallowed path="${String(bad)}"`);
@@ -411,7 +436,8 @@ const validateOutlineReadOnlyVfsArgs = (
   }
 
   if (toolName === "vfs_read") {
-    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
+    const path =
+      typeof (args as any)?.path === "string" ? (args as any).path : "";
     if (!path) return reject("vfs_read requires a path");
     if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
       return reject(`vfs_read path="${path}"`);
@@ -420,8 +446,10 @@ const validateOutlineReadOnlyVfsArgs = (
   }
 
   if (toolName === "vfs_search") {
-    const path = typeof (args as any)?.path === "string" ? (args as any).path : "";
-    if (!path) return reject(`${toolName} requires a path (root search disabled)`);
+    const path =
+      typeof (args as any)?.path === "string" ? (args as any).path : "";
+    if (!path)
+      return reject(`${toolName} requires a path (root search disabled)`);
     if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
       return reject(`${toolName} path="${path}"`);
     }
@@ -515,7 +543,9 @@ export const generateStoryOutlinePhased = async (
     if (!resume) return false;
     if (theme === IMAGE_BASED_THEME) return true;
     if (theme) return false;
-    return resume.currentPhase === 0 || Boolean((resume.partial as any)?.phase0);
+    return (
+      resume.currentPhase === 0 || Boolean((resume.partial as any)?.phase0)
+    );
   })();
 
   const readOnlyVfsAllowPrefixes =
@@ -523,7 +553,9 @@ export const generateStoryOutlinePhased = async (
     getOutlineDefaultReadOnlyAllowPrefixes(theme, isImageBasedFlow);
 
   // Get theme data (skip if image-based flow - Phase 0 will generate context)
-  const themeConfig = isImageBasedFlow ? null : THEMES[theme] || THEMES["fantasy"];
+  const themeConfig = isImageBasedFlow
+    ? null
+    : THEMES[theme] || THEMES["fantasy"];
   const isRestricted = themeConfig?.restricted || false;
 
   let themeDataWorldSetting: string | undefined;
@@ -801,14 +833,20 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
     try {
       writeOutlineProgress(vfsSession, checkpoint);
     } catch (e) {
-      console.warn("[OutlineAgentic] Failed to write outline progress to VFS", e);
+      console.warn(
+        "[OutlineAgentic] Failed to write outline progress to VFS",
+        e,
+      );
     }
 
     if (options.onSaveCheckpoint) {
       try {
         await options.onSaveCheckpoint({ ...checkpoint });
       } catch (e) {
-        console.warn("[OutlineAgentic] Failed to persist outline checkpoint", e);
+        console.warn(
+          "[OutlineAgentic] Failed to persist outline checkpoint",
+          e,
+        );
       }
     }
   };
@@ -979,7 +1017,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
       model: modelId,
       endpoint: `outline-phase${phaseNum}${endpointSuffix}`,
       phase: phaseNum,
-      toolName: opts?.requiredToolName ?? tools[tools.length - 1]?.name ?? "unknown",
+      toolName:
+        opts?.requiredToolName ?? tools[tools.length - 1]?.name ?? "unknown",
       response: resp.raw,
       usage: resp.usage,
       request: { retries: resp.retries },
@@ -1033,7 +1072,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         phaseNum,
         12,
       );
-      const shouldInjectPrompt = Boolean(options.resumeFrom) || !hasRecentMarker;
+      const shouldInjectPrompt =
+        Boolean(options.resumeFrom) || !hasRecentMarker;
       if (shouldInjectPrompt) {
         conversationHistory.push(createUserMessage(phasePrompt));
       }
@@ -1140,7 +1180,10 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         const allowedToolNames = activeTools.map((tool) => tool.name);
         const normalizedToolCalls = toolCalls.map((tc) => ({
           call: tc,
-          normalizedName: resolveOutlineToolNameAlias(tc.name, allowedToolNames),
+          normalizedName: resolveOutlineToolNameAlias(
+            tc.name,
+            allowedToolNames,
+          ),
         }));
         const submitCalls = normalizedToolCalls.filter(
           ({ normalizedName }) => normalizedName === submitTool.name,
@@ -1202,8 +1245,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
                 name: tc.name,
                 content: {
                   success: false,
-                  error:
-                    `${submitTool.name}: invalid arguments: ${formatOutlineSubmitValidationError(submitArgsParsed.error)}`,
+                  error: `${submitTool.name}: invalid arguments: ${formatOutlineSubmitValidationError(submitArgsParsed.error)}`,
                   code: "INVALID_DATA",
                 },
               });
@@ -1240,7 +1282,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
                   toolResponses.push({
                     toolCallId: tc.id!,
                     name: tc.name,
-                    content: { success: false, error: genderError, code: "INVALID_DATA" },
+                    content: {
+                      success: false,
+                      error: genderError,
+                      code: "INVALID_DATA",
+                    },
                   });
                   continue;
                 }
@@ -1264,10 +1310,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
                 continue;
               }
 
-              const cross = validatePhase4LocationsIncludesPlayerCurrentLocation(
-                priorPhase3.player,
-                (validatedData as OutlinePhase4).locations,
-              );
+              const cross =
+                validatePhase4LocationsIncludesPlayerCurrentLocation(
+                  priorPhase3.player,
+                  (validatedData as OutlinePhase4).locations,
+                );
               if (!cross.ok) {
                 toolResponses.push({
                   toolCallId: tc.id!,
@@ -1316,21 +1363,26 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               }
             }
 
-            const output = await dispatchToolCallAsync(normalizedName, tc.args, {
-              vfsSession,
-              settings,
-              gameState: { forkId: -1, turnNumber: 0 } as any,
-              vfsActor: "ai",
-              vfsMode: "sudo",
-              vfsElevationIntent: "outline_submit",
-              vfsElevationScopeTemplateIds: [
-                "template.narrative.outline.phases",
-              ],
-              vfsElevationToken: vfsElevationTokenManager.issueAiElevationToken({
-                intent: "outline_submit",
-                scopeTemplateIds: ["template.narrative.outline.phases"],
-              }),
-            });
+            const output = await dispatchToolCallAsync(
+              normalizedName,
+              tc.args,
+              {
+                vfsSession,
+                settings,
+                gameState: { forkId: -1, turnNumber: 0 } as any,
+                vfsActor: "ai",
+                vfsMode: "sudo",
+                vfsElevationIntent: "outline_submit",
+                vfsElevationScopeTemplateIds: [
+                  "template.narrative.outline.phases",
+                ],
+                vfsElevationToken:
+                  vfsElevationTokenManager.issueAiElevationToken({
+                    intent: "outline_submit",
+                    scopeTemplateIds: ["template.narrative.outline.phases"],
+                  }),
+              },
+            );
 
             if ((output as any)?.success === true) {
               const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
@@ -1345,7 +1397,10 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
             continue;
           }
 
-          if (readOnlyVfsEnabled && READ_ONLY_VFS_TOOL_NAMES.has(normalizedName)) {
+          if (
+            readOnlyVfsEnabled &&
+            READ_ONLY_VFS_TOOL_NAMES.has(normalizedName)
+          ) {
             const violation = validateOutlineReadOnlyVfsArgs(
               normalizedName,
               tc.args as any,
@@ -1363,13 +1418,17 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               });
               continue;
             }
-            const output = await dispatchToolCallAsync(normalizedName, tc.args, {
-              vfsSession,
-              settings,
-              gameState: { forkId: -1, turnNumber: 0 } as any,
-              vfsActor: "ai",
-              vfsMode: "normal",
-            });
+            const output = await dispatchToolCallAsync(
+              normalizedName,
+              tc.args,
+              {
+                vfsSession,
+                settings,
+                gameState: { forkId: -1, turnNumber: 0 } as any,
+                vfsActor: "ai",
+                vfsMode: "normal",
+              },
+            );
             toolResponses.push({
               toolCallId: tc.id!,
               name: tc.name,
@@ -1457,7 +1516,10 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   }
 
   if (phase4?.locations && phase6?.npcs) {
-    const cross = validatePhase6NpcLocationsExist(phase4.locations, phase6.npcs);
+    const cross = validatePhase6NpcLocationsExist(
+      phase4.locations,
+      phase6.npcs,
+    );
     if (!cross.ok) {
       throw new Error(
         `[OutlineAgentic] Cross-phase invariant failed before merge: ${cross.error}`,
@@ -1500,6 +1562,5 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
   return { outline, logs, themeConfig: resolvedThemeConfig, usage: totalUsage };
 };
-
 
 export { summarizeContext } from "../summary/summaryAdapter";

@@ -15,7 +15,11 @@ import { buildGlobalVfsSkills } from "./globalSkills";
 import { buildGlobalVfsRefs } from "./globalRefs";
 import { vfsPathRegistry } from "./core/pathRegistry";
 import { vfsPolicyEngine } from "./core/policyEngine";
-import { canonicalToLogicalVfsPath, resolveVfsPath, toCanonicalVfsPath } from "./core/pathResolver";
+import {
+  canonicalToLogicalVfsPath,
+  resolveVfsPath,
+  toCanonicalVfsPath,
+} from "./core/pathResolver";
 import type { VfsWriteContext, VfsWriteOperation } from "./core/types";
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
@@ -36,7 +40,6 @@ const mergeFiles = (a: VfsFileMap, b: VfsFileMap): VfsFileMap => {
   }
   return merged;
 };
-
 
 const canonicalizeFileMap = (
   files: VfsFileMap,
@@ -118,8 +121,11 @@ const applyPatchFn: typeof fastJsonPatch.applyPatch = (() => {
   if (typeof fastJsonPatch.applyPatch === "function") {
     return fastJsonPatch.applyPatch;
   }
-  const fromDefault = (fastJsonPatch as { default?: { applyPatch?: typeof fastJsonPatch.applyPatch } }).default
-    ?.applyPatch;
+  const fromDefault = (
+    fastJsonPatch as {
+      default?: { applyPatch?: typeof fastJsonPatch.applyPatch };
+    }
+  ).default?.applyPatch;
   if (typeof fromDefault === "function") {
     return fromDefault;
   }
@@ -157,7 +163,6 @@ export interface VfsWriteOptions {
   writeContext?: VfsWriteContext;
   operation?: VfsWriteOperation;
 }
-
 
 export interface VfsSearchMatch {
   path: string;
@@ -243,8 +248,14 @@ export class VfsSession {
   private accessedFilesByEpoch = new Map<string, number>();
   private accessedScopesByEpoch = new Map<string, number>();
   private boundConversationSessionId: string | null = null;
-  private outOfBandReadInvalidations = new Map<string, OutOfBandPathChangeType>();
-  private outOfBandMoveInvalidations = new Map<string, { from: string; to: string }>();
+  private outOfBandReadInvalidations = new Map<
+    string,
+    OutOfBandPathChangeType
+  >();
+  private outOfBandMoveInvalidations = new Map<
+    string,
+    { from: string; to: string }
+  >();
   private activeWriteContext: VfsWriteContext | null = null;
 
   constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
@@ -252,17 +263,24 @@ export class VfsSession {
   }
 
   public setActiveForkId(forkId: number): void {
-    this.activeForkId = Number.isFinite(forkId) && forkId >= 0 ? Math.floor(forkId) : 0;
+    this.activeForkId =
+      Number.isFinite(forkId) && forkId >= 0 ? Math.floor(forkId) : 0;
   }
 
   public getActiveForkId(): number {
     return this.activeForkId;
   }
 
-  private resolveCanonicalPath(path: string, override?: VfsWriteContext): string {
-    const context = override ?? this.activeWriteContext ?? DEFAULT_SYSTEM_WRITE_CONTEXT;
+  private resolveCanonicalPath(
+    path: string,
+    override?: VfsWriteContext,
+  ): string {
+    const context =
+      override ?? this.activeWriteContext ?? DEFAULT_SYSTEM_WRITE_CONTEXT;
     const activeForkId =
-      typeof context.activeForkId === "number" ? context.activeForkId : this.activeForkId;
+      typeof context.activeForkId === "number"
+        ? context.activeForkId
+        : this.activeForkId;
     return toCanonicalVfsPath(path, { activeForkId });
   }
 
@@ -316,7 +334,9 @@ export class VfsSession {
 
   public hasToolAccessedInCurrentEpoch(path: string): boolean {
     const canonicalPath = this.resolveCanonicalPath(path);
-    if (this.accessedFilesByEpoch.get(canonicalPath) === this.currentReadEpoch) {
+    if (
+      this.accessedFilesByEpoch.get(canonicalPath) === this.currentReadEpoch
+    ) {
       return true;
     }
 
@@ -399,14 +419,18 @@ export class VfsSession {
       const canonicalPath = this.resolveCanonicalPath(path);
       this.seenByEpoch.set(canonicalPath, Math.floor(epoch));
     }
-    for (const [path, epoch] of Object.entries(state.accessedFilesByEpoch ?? {})) {
+    for (const [path, epoch] of Object.entries(
+      state.accessedFilesByEpoch ?? {},
+    )) {
       if (typeof epoch !== "number" || !Number.isFinite(epoch)) {
         continue;
       }
       const canonicalPath = this.resolveCanonicalPath(path);
       this.accessedFilesByEpoch.set(canonicalPath, Math.floor(epoch));
     }
-    for (const [path, epoch] of Object.entries(state.accessedScopesByEpoch ?? {})) {
+    for (const [path, epoch] of Object.entries(
+      state.accessedScopesByEpoch ?? {},
+    )) {
       if (typeof epoch !== "number" || !Number.isFinite(epoch)) {
         continue;
       }
@@ -511,11 +535,13 @@ export class VfsSession {
       to: this.toDisplayPath(move.to),
       changeType: "moved" as const,
     }));
-    const drained = [...pathInvalidations, ...movedInvalidations].sort((a, b) => {
-      const left = "path" in a ? a.path : `${a.from}->${a.to}`;
-      const right = "path" in b ? b.path : `${b.from}->${b.to}`;
-      return left.localeCompare(right);
-    });
+    const drained = [...pathInvalidations, ...movedInvalidations].sort(
+      (a, b) => {
+        const left = "path" in a ? a.path : `${a.from}->${a.to}`;
+        const right = "path" in b ? b.path : `${b.from}->${b.to}`;
+        return left.localeCompare(right);
+      },
+    );
     this.outOfBandReadInvalidations.clear();
     this.outOfBandMoveInvalidations.clear();
     return drained;
@@ -625,7 +651,8 @@ export class VfsSession {
 
     const normalizedInput = normalizeVfsPath(path);
     const pathForRead =
-      normalizedInput.startsWith("shared/") || normalizedInput.startsWith("forks/")
+      normalizedInput.startsWith("shared/") ||
+      normalizedInput.startsWith("forks/")
         ? canonicalPath
         : this.toDisplayPath(canonicalPath);
 
@@ -719,7 +746,9 @@ export class VfsSession {
     try {
       document = JSON.parse(file.content);
     } catch (error) {
-      throw new Error(`Invalid JSON content: ${canonicalPath}`, { cause: error });
+      throw new Error(`Invalid JSON content: ${canonicalPath}`, {
+        cause: error,
+      });
     }
 
     const patched = applyPatchFn(document, patchOps, true, false).newDocument;
@@ -744,7 +773,11 @@ export class VfsSession {
     options?: VfsWriteOptions,
   ): void {
     const canonicalPath = this.assertWritablePath(path, options, "json_merge");
-    if (Array.isArray(content) || content === null || typeof content !== "object") {
+    if (
+      Array.isArray(content) ||
+      content === null ||
+      typeof content !== "object"
+    ) {
       throw new Error("Merge content must be a JSON object");
     }
 
@@ -760,7 +793,9 @@ export class VfsSession {
       try {
         document = JSON.parse(file.content);
       } catch (error) {
-        throw new Error(`Invalid JSON content: ${canonicalPath}`, { cause: error });
+        throw new Error(`Invalid JSON content: ${canonicalPath}`, {
+          cause: error,
+        });
       }
       contentType = file.contentType;
     }
@@ -787,10 +822,9 @@ export class VfsSession {
     const resolvedPrefix =
       normalized === ""
         ? ""
-        : canonicalToLogicalVfsPath(
-            this.resolveCanonicalPath(normalized),
-            { activeForkId: this.activeForkId },
-          ) || normalized;
+        : canonicalToLogicalVfsPath(this.resolveCanonicalPath(normalized), {
+            activeForkId: this.activeForkId,
+          }) || normalized;
 
     if (!resolvedPrefix) {
       const entries = Object.keys(displaySnapshot).map((p) => p.split("/")[0]);
@@ -820,7 +854,10 @@ export class VfsSession {
     return this.semanticIndexer(query, options);
   }
 
-  public searchText(query: string, options: VfsSearchOptions = {}): VfsSearchMatch[] {
+  public searchText(
+    query: string,
+    options: VfsSearchOptions = {},
+  ): VfsSearchMatch[] {
     const { path, limit = 20, semantic } = options;
     if (limit <= 0) {
       return [];
@@ -861,6 +898,11 @@ export class VfsSession {
             activeForkId: this.activeForkId,
           })
         : undefined;
-    return collectMatches(displaySnapshot, scopePath, makeRegexMatcher(regex), limit);
+    return collectMatches(
+      displaySnapshot,
+      scopePath,
+      makeRegexMatcher(regex),
+      limit,
+    );
   }
 }

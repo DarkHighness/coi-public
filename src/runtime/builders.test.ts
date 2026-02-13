@@ -66,7 +66,9 @@ describe("runtime state builders", () => {
     );
 
     expect(engineState.themeFont).toBe("font-test");
-    expect(engineState.currentThemeConfig).toEqual(expect.objectContaining({ fontClass: "font-test" }));
+    expect(engineState.currentThemeConfig).toEqual(
+      expect.objectContaining({ fontClass: "font-test" }),
+    );
   });
 
   it("builds runtime slices from engine, rag, and meta state", () => {

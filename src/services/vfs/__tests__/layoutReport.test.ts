@@ -74,7 +74,9 @@ describe("vfs layout report", () => {
       activeForkId: 0,
     });
 
-    const notes = layout.find((entry) => entry.path === "current/world/notes.md");
+    const notes = layout.find(
+      (entry) => entry.path === "current/world/notes.md",
+    );
 
     expect(notes).toBeDefined();
     expect(notes?.exists).toBe(true);

@@ -5,15 +5,21 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const glossaryPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/glossary#glossaryPrimer", source: "atoms/core/glossary.ts", exportName: "glossaryPrimer" }, () => `
+export const glossaryPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/glossary#glossaryPrimer",
+    source: "atoms/core/glossary.ts",
+    exportName: "glossaryPrimer",
+  },
+  () => `
 <glossary>
   PHILOSOPHY: Existentialist Realism — World is indifferent but real. Choice makes meaning, consequences are permanent.
   TRINITY: Being (what I am), Knowing (what I know), Acting (how I act).
   HIERARCHY: Metaphysics > Physics > Biology > Psychology > Society > Narrative.
   TIME: Cosmic (objective) + Narrative (elastic) + Lived (subjective).
 </glossary>
-`);
+`,
+);
 
 // ============================================================================
 // Constants
@@ -217,7 +223,13 @@ const timeText = `
   </time>
 `;
 
-export const glossary: Atom<void> = defineAtom({ atomId: "atoms/core/glossary#glossary", source: "atoms/core/glossary.ts", exportName: "glossary" }, () => `
+export const glossary: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/glossary#glossary",
+    source: "atoms/core/glossary.ts",
+    exportName: "glossary",
+  },
+  () => `
 <glossary>
   CORE CONCEPTS — THE PHILOSOPHICAL MAP
 
@@ -226,12 +238,41 @@ ${trinityText}
 ${hierarchyText}
 ${timeText}
 </glossary>
-`);
+`,
+);
 
 // Export individual components
-export const philosophicalStanceAtom: Atom<void> = defineAtom({ atomId: "atoms/core/glossary#philosophicalStanceAtom", source: "atoms/core/glossary.ts", exportName: "philosophicalStanceAtom" }, () => philosophyText);
-export const trinityAtom: Atom<void> = defineAtom({ atomId: "atoms/core/glossary#trinityAtom", source: "atoms/core/glossary.ts", exportName: "trinityAtom" }, () => trinityText);
-export const ontologicalPriorityAtom: Atom<void> = defineAtom({ atomId: "atoms/core/glossary#ontologicalPriorityAtom", source: "atoms/core/glossary.ts", exportName: "ontologicalPriorityAtom" }, () => hierarchyText);
-export const temporalPhilosophyGlossaryAtom: Atom<void> = defineAtom({ atomId: "atoms/core/glossary#temporalPhilosophyGlossaryAtom", source: "atoms/core/glossary.ts", exportName: "temporalPhilosophyGlossaryAtom" }, () => timeText);
+export const philosophicalStanceAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/glossary#philosophicalStanceAtom",
+    source: "atoms/core/glossary.ts",
+    exportName: "philosophicalStanceAtom",
+  },
+  () => philosophyText,
+);
+export const trinityAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/glossary#trinityAtom",
+    source: "atoms/core/glossary.ts",
+    exportName: "trinityAtom",
+  },
+  () => trinityText,
+);
+export const ontologicalPriorityAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/glossary#ontologicalPriorityAtom",
+    source: "atoms/core/glossary.ts",
+    exportName: "ontologicalPriorityAtom",
+  },
+  () => hierarchyText,
+);
+export const temporalPhilosophyGlossaryAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/glossary#temporalPhilosophyGlossaryAtom",
+    source: "atoms/core/glossary.ts",
+    exportName: "temporalPhilosophyGlossaryAtom",
+  },
+  () => timeText,
+);
 
 export default glossary;

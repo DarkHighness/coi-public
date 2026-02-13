@@ -10,11 +10,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Magic Systems - 完整版
  */
-export const magicSystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/magic#magicSystem", source: "atoms/worldbuilding/magic.ts", exportName: "magicSystem" }, () => `
+export const magicSystem: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/magic#magicSystem",
+    source: "atoms/worldbuilding/magic.ts",
+    exportName: "magicSystem",
+  },
+  () => `
 <worldbuilding_context>
 **MAGIC SYSTEM DESIGN:**
 
@@ -234,12 +239,19 @@ Good answers:
 - What do they regret?
 </learning_progression>
 </worldbuilding_context>
-`);
+`,
+);
 
 /**
  * Magic systems primer (system-prompt safe).
  */
-export const magicSystemPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/magic#magicSystemPrimer", source: "atoms/worldbuilding/magic.ts", exportName: "magicSystemPrimer" }, () => `
+export const magicSystemPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/magic#magicSystemPrimer",
+    source: "atoms/worldbuilding/magic.ts",
+    exportName: "magicSystemPrimer",
+  },
+  () => `
 <worldbuilding_context>
 **MAGIC SYSTEMS**: Magic is debt written in flesh, paid in years, collected by forces that do not negotiate.
 - Cost framework (personal, material, social)
@@ -249,7 +261,8 @@ export const magicSystemPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbu
 - Failure modes (fizzle, backfire, corruption, escalation)
 - Learning progression (school, apprenticeship, self-taught, innate)
 </worldbuilding_context>
-`);
+`,
+);
 
 export default magicSystem;
 
@@ -257,10 +270,16 @@ export default magicSystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const magicSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/magic#magicSystemSkill", source: "atoms/worldbuilding/magic.ts", exportName: "magicSystemSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(magicSystem),
+export const magicSystemSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/magic#magicSystemSkill",
+    source: "atoms/worldbuilding/magic.ts",
+    exportName: "magicSystemSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(magicSystem),
 
-  quickStart: `
+    quickStart: `
 1. Every spell COSTS something (fatigue, components, sacrifice, debt)
 2. Limitations create drama (why doesn't magic solve everything?)
 3. Magic affects the world (items, creatures, corrupted lands)
@@ -269,56 +288,57 @@ export const magicSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atom
 6. Learning has a price (what do masters sacrifice?)
 `.trim(),
 
-  checklist: [
-    "Cost framework defined (what does magic cost)?",
-    "Limitations clear (why isn't magic solving everything)?",
-    "Magic ecology considered (items, creatures, lands)?",
-    "Social integration defined (how does society handle magic)?",
-    "Detection and countermeasures exist?",
-    "Failure modes have narrative consequences?",
-    "Learning progression has milestones and costs?",
-    "The Gandalf Problem addressed (why don't powerful mages just win)?",
-  ],
+    checklist: [
+      "Cost framework defined (what does magic cost)?",
+      "Limitations clear (why isn't magic solving everything)?",
+      "Magic ecology considered (items, creatures, lands)?",
+      "Social integration defined (how does society handle magic)?",
+      "Detection and countermeasures exist?",
+      "Failure modes have narrative consequences?",
+      "Learning progression has milestones and costs?",
+      "The Gandalf Problem addressed (why don't powerful mages just win)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Cost Framework",
-      wrong: `"He cast a fireball."
+    examples: [
+      {
+        scenario: "Cost Framework",
+        wrong: `"He cast a fireball."
 (No cost, no stakes.)`,
-      right: `"He spoke the Word of Burning. His hands blackened
+        right: `"He spoke the Word of Burning. His hands blackened
 from wrist to fingertips—that was three uses now.
 Two more and he'd never hold anything again."
 (Visible, cumulative, creates choices.)`,
-    },
-    {
-      scenario: "The Gandalf Problem",
-      wrong: `"The wizard is powerful enough to solve this,
+      },
+      {
+        scenario: "The Gandalf Problem",
+        wrong: `"The wizard is powerful enough to solve this,
 but he's busy doing other things."
 (Hand-wave, not satisfying.)`,
-      right: `"The Archmage could level the castle—but the Treaty of Seven Towers
+        right: `"The Archmage could level the castle—but the Treaty of Seven Towers
 forbids magic in siege warfare. Break it, and every other mage
 on the continent becomes an enemy. He's powerful. Not stupid."
 (Clear constraint, creates drama.)`,
-    },
-    {
-      scenario: "Failure Mode",
-      wrong: `"The spell failed."
+      },
+      {
+        scenario: "Failure Mode",
+        wrong: `"The spell failed."
 (No consequence, no drama.)`,
-      right: `"The healing worked—the wound closed, the blood stopped.
+        right: `"The healing worked—the wound closed, the blood stopped.
 But the flesh that grew back was pale. Cold. It didn't feel like his arm.
 It moved when he told it to. He tried not to think about what else
 might be living in there now."
 (Success with cost, ongoing consequence.)`,
-    },
-    {
-      scenario: "Social Integration",
-      wrong: `"Magic is normal in this world."
+      },
+      {
+        scenario: "Social Integration",
+        wrong: `"Magic is normal in this world."
 (No tension, no structure.)`,
-      right: `"Licensed mages wear the Iron Collar—marks them as Guild-bonded,
+        right: `"Licensed mages wear the Iron Collar—marks them as Guild-bonded,
 insured against accident, taxed at triple rate. Unlicensed magic
 is a hanging offense. The Hedge Witches work in the slums,
 healing for coin, one step ahead of the Inquisitors."
 (Structure creates conflict and story hooks.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

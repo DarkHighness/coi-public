@@ -320,7 +320,6 @@ export const useRuntimeEngine = () => {
     [setGameState, triggerSave],
   );
 
-
   return {
     language,
     setLanguage,

@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const literaryAdaptationPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationPrimer", source: "atoms/narrative/literaryAdaptation.ts", exportName: "literaryAdaptationPrimer" }, () => `
+export const literaryAdaptationPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationPrimer",
+    source: "atoms/narrative/literaryAdaptation.ts",
+    exportName: "literaryAdaptationPrimer",
+  },
+  () => `
 <literary_adaptation>
   **化用: CREATIVE ADAPTATION, NOT QUOTATION**:
   - Transform classical phrases for this moment, character, world
@@ -20,9 +25,16 @@ export const literaryAdaptationPrimer: Atom<void> = defineAtom({ atomId: "atoms/
   - Cultural: Chinese patterns for Chinese, Western for English, occasional cross-pollination
   - Never explain. Place the detail. Trust the player.
 </literary_adaptation>
-`);
+`,
+);
 
-export const literaryAdaptation: Atom<void> = defineAtom({ atomId: "atoms/narrative/literaryAdaptation#literaryAdaptation", source: "atoms/narrative/literaryAdaptation.ts", exportName: "literaryAdaptation" }, () => `
+export const literaryAdaptation: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/literaryAdaptation#literaryAdaptation",
+    source: "atoms/narrative/literaryAdaptation.ts",
+    exportName: "literaryAdaptation",
+  },
+  () => `
 <rule name="LITERARY_ADAPTATION">
   **化用: THE ART OF CREATIVE ADAPTATION**
 
@@ -309,7 +321,8 @@ export const literaryAdaptation: Atom<void> = defineAtom({ atomId: "atoms/narrat
       * Found text enriches location memory
   </integration_with_existing_atoms>
 </rule>
-`);
+`,
+);
 
 export default literaryAdaptation;
 
@@ -317,10 +330,16 @@ export default literaryAdaptation;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const literaryAdaptationSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationSkill", source: "atoms/narrative/literaryAdaptation.ts", exportName: "literaryAdaptationSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(literaryAdaptation),
+export const literaryAdaptationSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationSkill",
+    source: "atoms/narrative/literaryAdaptation.ts",
+    exportName: "literaryAdaptationSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(literaryAdaptation),
 
-  quickStart: `
+    quickStart: `
 1. 化用 is transformation, not quotation - adapt the essence for this moment
 2. Delivery channels: Found text (60%), muttered phrases (25%), inscriptions (15%)
 3. Cultural: Chinese patterns for Chinese, Western for English, occasional cross-pollination
@@ -328,49 +347,50 @@ export const literaryAdaptationSkill: SkillAtom<void> = defineSkillAtom({ atomId
 5. Never explain. Place the detail. Trust the player.
 `.trim(),
 
-  checklist: [
-    "Literary adaptation is transformation, not quotation?",
-    "Delivered through found text, muttered phrases, or inscriptions?",
-    "Culturally appropriate (Chinese patterns for Chinese, Western for English)?",
-    "Used for significant emotional moments only (20-30% frequency)?",
-    "Not used in action scenes, mundane moments, or by pragmatic characters?",
-    "Not used if already used in last 2-3 turns?",
-    "Connection is shown, not explained (no 'this reminds you')?",
-    "Adaptation feels discovered, not placed?",
-    "Character would naturally use this language (education, culture, emotional state)?",
-    "Restraint preserved (not every moment needs literary elevation)?",
-  ],
+    checklist: [
+      "Literary adaptation is transformation, not quotation?",
+      "Delivered through found text, muttered phrases, or inscriptions?",
+      "Culturally appropriate (Chinese patterns for Chinese, Western for English)?",
+      "Used for significant emotional moments only (20-30% frequency)?",
+      "Not used in action scenes, mundane moments, or by pragmatic characters?",
+      "Not used if already used in last 2-3 turns?",
+      "Connection is shown, not explained (no 'this reminds you')?",
+      "Adaptation feels discovered, not placed?",
+      "Character would naturally use this language (education, culture, emotional state)?",
+      "Restraint preserved (not every moment needs literary elevation)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Found Text - Diary Entry (Chinese)",
-      wrong: `"You find a diary that reminds you of classical poetry."
+    examples: [
+      {
+        scenario: "Found Text - Diary Entry (Chinese)",
+        wrong: `"You find a diary that reminds you of classical poetry."
 (Explains the connection. Kills the discovery.)`,
-      right: `"The diary lies open on the desk. The last entry, dated three years ago:
+        right: `"The diary lies open on the desk. The last entry, dated three years ago:
 '只要想起那个夜晚，雨声便充满整个世界。' The rest of the page is blank."
 (Discovered, not explained. Player feels the weight.)`,
-    },
-    {
-      scenario: "Muttered Phrase - Dying Words (English)",
-      wrong: `"He dies thinking poetically about his life."
+      },
+      {
+        scenario: "Muttered Phrase - Dying Words (English)",
+        wrong: `"He dies thinking poetically about his life."
 (Mind-reading. Tells, doesn't show.)`,
-      right: `"Blood on his lips. He laughs, wet and broken: 'Ten years sharpening the blade.
+        right: `"Blood on his lips. He laughs, wet and broken: 'Ten years sharpening the blade.
 Never got to... swing it...' Then nothing."
 (Overheard, not narrated. Fragmented. Real.)`,
-    },
-    {
-      scenario: "Environmental Inscription - Tombstone",
-      wrong: `"The tombstone has a sad inscription about loss."
+      },
+      {
+        scenario: "Environmental Inscription - Tombstone",
+        wrong: `"The tombstone has a sad inscription about loss."
 (Vague. Tells emotion instead of showing.)`,
-      right: `"The stone reads: 'She kept the light burning. No one came home.'"
+        right: `"The stone reads: 'She kept the light burning. No one came home.'"
 (Specific. Emotional weight in the detail, not the label.)`,
-    },
-    {
-      scenario: "Restraint - When NOT to Use",
-      wrong: `"You dodge the sword. The blade whispers past like a poem about death."
+      },
+      {
+        scenario: "Restraint - When NOT to Use",
+        wrong: `"You dodge the sword. The blade whispers past like a poem about death."
 (Action scene. Wrong register. Breaks tension.)`,
-      right: `"You dodge. The blade whispers past. Too close."
+        right: `"You dodge. The blade whispers past. Too close."
 (Action scene. Direct. Clear. No poetry needed.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

@@ -6,7 +6,11 @@ import {
 } from "./actions";
 import { runtimeReducer } from "./reducer";
 
-function reduce(actions: ReturnType<(typeof runtimeActionCreators)[keyof typeof runtimeActionCreators]>[]): RuntimeMetaState {
+function reduce(
+  actions: ReturnType<
+    (typeof runtimeActionCreators)[keyof typeof runtimeActionCreators]
+  >[],
+): RuntimeMetaState {
   return actions.reduce(runtimeReducer, initialRuntimeMetaState);
 }
 

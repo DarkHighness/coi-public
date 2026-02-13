@@ -65,7 +65,9 @@ const createAttemptRecord = (
   timestamp: Date.now(),
 });
 
-export function getRecoveryTrace(error: unknown): TurnRecoveryTrace | undefined {
+export function getRecoveryTrace(
+  error: unknown,
+): TurnRecoveryTrace | undefined {
   if (!error || typeof error !== "object") return undefined;
   return (error as any).recovery;
 }
@@ -96,7 +98,9 @@ export async function executeTurnWithRecovery<Result>({
   maxDurationMs = TURN_RECOVERY_MAX_DURATION_MS,
   sleep = defaultSleep,
   onLog,
-}: TurnRecoveryRunnerParams<Result>): Promise<TurnRecoveryRunnerResult<Result>> {
+}: TurnRecoveryRunnerParams<Result>): Promise<
+  TurnRecoveryRunnerResult<Result>
+> {
   const startedAt = Date.now();
   const attempts: TurnRecoveryAttempt[] = [];
 
@@ -126,7 +130,9 @@ export async function executeTurnWithRecovery<Result>({
         await sleep(delayMs);
       }
       const result = await runner();
-      attempts.push(createAttemptRecord(level, kind, attemptNo, undefined, delayMs));
+      attempts.push(
+        createAttemptRecord(level, kind, attemptNo, undefined, delayMs),
+      );
       onLog?.({
         phase: "attempt_success",
         level,
@@ -137,7 +143,9 @@ export async function executeTurnWithRecovery<Result>({
       });
       return result;
     } catch (error) {
-      attempts.push(createAttemptRecord(level, kind, attemptNo, error, delayMs));
+      attempts.push(
+        createAttemptRecord(level, kind, attemptNo, error, delayMs),
+      );
       onLog?.({
         phase: "attempt_failure",
         level,
@@ -261,7 +269,11 @@ export async function executeTurnWithRecovery<Result>({
 
   const plan = getTurnRecoveryPlan(errorKind);
 
-  for (let rollbackAttempt = 0; rollbackAttempt < plan.maxRollbackRetries; rollbackAttempt += 1) {
+  for (
+    let rollbackAttempt = 0;
+    rollbackAttempt < plan.maxRollbackRetries;
+    rollbackAttempt += 1
+  ) {
     if (!withinTimeBudget()) break;
 
     const rolledBack = rollbackToAnchor();
@@ -294,7 +306,11 @@ export async function executeTurnWithRecovery<Result>({
     }
   }
 
-  for (let resetAttempt = 0; resetAttempt < plan.maxSessionResetRetries; resetAttempt += 1) {
+  for (
+    let resetAttempt = 0;
+    resetAttempt < plan.maxSessionResetRetries;
+    resetAttempt += 1
+  ) {
     if (!withinTimeBudget()) break;
 
     const approved = await confirmAction(

@@ -632,7 +632,10 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                 </h3>
 
                 <div className="mt-4 text-theme-text-secondary text-sm md:text-[15px] leading-7 text-center italic">
-                  <MarkdownText content={gameState.outline.premise} disableIndent />
+                  <MarkdownText
+                    content={gameState.outline.premise}
+                    disableIndent
+                  />
                 </div>
 
                 {gameState.outline.mainGoal?.visible?.description && (
@@ -660,7 +663,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               currentHistory.length === 0 &&
               !gameState.isProcessing &&
               !gameState.error && (
-                <div className={`mb-8 mx-auto ${contentMaxWidth} text-center animate-fade-in`}>
+                <div
+                  className={`mb-8 mx-auto ${contentMaxWidth} text-center animate-fade-in`}
+                >
                   <p className="text-theme-text-secondary mb-5 text-sm md:text-[15px] leading-7">
                     {t(
                       "storyNotStarted",
@@ -810,7 +815,10 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                           {gameState.outline.title}
                         </h3>
                         <div className="mt-3 text-theme-text-secondary text-sm italic leading-7">
-                          <MarkdownText content={gameState.outline.premise} disableIndent />
+                          <MarkdownText
+                            content={gameState.outline.premise}
+                            disableIndent
+                          />
                         </div>
                       </section>
                     )}

@@ -17,7 +17,10 @@ import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { ALL_DEFINED_TOOLS, getVfsSearchToolDefinition } from "../../../tools";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
-import { getConversationMarker, type ConversationMarker } from "./resultAccumulator";
+import {
+  getConversationMarker,
+  type ConversationMarker,
+} from "./resultAccumulator";
 import type { ActivePresetSkillRequirement } from "../../utils";
 
 // ============================================================================
@@ -96,7 +99,8 @@ export function createLoopState(
     isCleanupMode,
   });
   const finishToolName = VFS_TOOLSETS.turn.finishToolName;
-  const resolvedVfsMode: VfsMode = vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
+  const resolvedVfsMode: VfsMode =
+    vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
   const conversationMarker = getConversationMarker(vfsSession);
   const requiredCommandSkillPaths = isCleanupMode
     ? ["skills/commands/runtime/cleanup/SKILL.md"]
@@ -169,27 +173,25 @@ export function createEmptyResponse(): GameResponse {
 /**
  * Create initial tool set based on mode
  */
-export function createInitialTools(
-  options: {
-    isSudoMode: boolean;
-    isRAGEnabled: boolean;
-    isCleanupMode: boolean;
-  },
-): ZodToolDefinition[] {
+export function createInitialTools(options: {
+  isSudoMode: boolean;
+  isRAGEnabled: boolean;
+  isCleanupMode: boolean;
+}): ZodToolDefinition[] {
   const { isSudoMode, isRAGEnabled, isCleanupMode } = options;
   void isSudoMode;
 
   const toolset = isCleanupMode ? VFS_TOOLSETS.cleanup : VFS_TOOLSETS.turn;
   const allowed = new Set<string>(toolset.tools);
 
-  return ALL_DEFINED_TOOLS
-    .filter((tool) => allowed.has(tool.name))
-    .map((tool) => {
+  return ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name)).map(
+    (tool) => {
       if (tool.name === "vfs_search") {
         return getVfsSearchToolDefinition(isRAGEnabled);
       }
       return tool;
-    });
+    },
+  );
 }
 
 /**

@@ -40,7 +40,7 @@ class AudioContextMock {
     disconnect: vi.fn(),
   }));
 
-  decodeAudioData = vi.fn(async () => ({ id: "buf" } as any));
+  decodeAudioData = vi.fn(async () => ({ id: "buf" }) as any);
   resume = vi.fn(async () => {
     this.state = "running";
   });
@@ -102,7 +102,9 @@ describe("webAudioManager", () => {
   });
 
   it("returns false for unknown environment", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
 
     const ok = await webAudioManager.play("unknown-world", 0.3);
 
@@ -157,7 +159,9 @@ describe("webAudioManager", () => {
   });
 
   it("returns null for deprecated getAudioTrack helper", () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
 
     const track = getAudioTrack("forest");
 

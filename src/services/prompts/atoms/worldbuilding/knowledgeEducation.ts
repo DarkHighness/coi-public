@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const knowledgeEducation: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducation", source: "atoms/worldbuilding/knowledgeEducation.ts", exportName: "knowledgeEducation" }, () => `
+export const knowledgeEducation: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducation",
+    source: "atoms/worldbuilding/knowledgeEducation.ts",
+    exportName: "knowledgeEducation",
+  },
+  () => `
 <worldbuilding_context>
 **KNOWLEDGE & EDUCATION (Access + Verification + Control)**
 
@@ -79,44 +84,59 @@ Define:
 - Expert-for-hire:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const knowledgeEducationPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducationPrimer", source: "atoms/worldbuilding/knowledgeEducation.ts", exportName: "knowledgeEducationPrimer" }, () =>
-  `
+export const knowledgeEducationPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducationPrimer",
+    source: "atoms/worldbuilding/knowledgeEducation.ts",
+    exportName: "knowledgeEducationPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **KNOWLEDGE PRIMER**: Model info as access + verification + control. Always name sources, costs, and censorship workarounds.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const knowledgeEducationSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducationSkill", source: "atoms/worldbuilding/knowledgeEducation.ts", exportName: "knowledgeEducationSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(knowledgeEducation),
-  quickStart: `
+export const knowledgeEducationSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducationSkill",
+    source: "atoms/worldbuilding/knowledgeEducation.ts",
+    exportName: "knowledgeEducationSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(knowledgeEducation),
+    quickStart: `
 1) Set literacy baseline + one credential (exam/license)
 2) Define one restricted archive with surveillance risk
 3) Define one propaganda channel + one taboo topic
 4) Define one expert-for-hire and who threatens them
 `.trim(),
-  checklist: [
-    "Information has sources and costs (not omniscience).",
-    "Verification standard exists (how truth is proven).",
-    "Control mechanisms exist (censorship/propaganda) with leaks/workarounds.",
-    "Education pipeline has gatekeepers and prices.",
-    "Experts are part of the economy and face liability.",
-  ],
-  examples: [
-    {
-      scenario: "Restricted archive with risk",
-      wrong: `"You look it up in the library."`,
-      right: `"The public stacks have travel guides. The plague records are sealed.
+    checklist: [
+      "Information has sources and costs (not omniscience).",
+      "Verification standard exists (how truth is proven).",
+      "Control mechanisms exist (censorship/propaganda) with leaks/workarounds.",
+      "Education pipeline has gatekeepers and prices.",
+      "Experts are part of the economy and face liability.",
+    ],
+    examples: [
+      {
+        scenario: "Restricted archive with risk",
+        wrong: `"You look it up in the library."`,
+        right: `"The public stacks have travel guides. The plague records are sealed.
 You need a scholar’s key and your name goes into a ledger. You can steal the key—
 but the vault uses wax seals checked daily by an auditor."`,
-    },
-    {
-      scenario: "Propaganda creates conflict",
-      wrong: `"People believe the official story."`,
-      right: `"The screens repeat the story. The sermons sanctify it.
+      },
+      {
+        scenario: "Propaganda creates conflict",
+        wrong: `"People believe the official story."`,
+        right: `"The screens repeat the story. The sermons sanctify it.
 But dockworkers trade a different version for coin. Now 'truth' is a market:
 pay to learn, pay to silence, pay to publish."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

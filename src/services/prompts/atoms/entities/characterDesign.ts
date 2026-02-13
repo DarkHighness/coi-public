@@ -10,7 +10,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export type CharacterDesignInput = {
   protagonistFeature?: string;
 };
@@ -18,9 +17,13 @@ export type CharacterDesignInput = {
 /**
  * 主角设计上下文 - 完整版
  */
-export const characterDesign: Atom<CharacterDesignInput> = defineAtom({ atomId: "atoms/entities/characterDesign#characterDesign", source: "atoms/entities/characterDesign.ts", exportName: "characterDesign" }, ({
-  protagonistFeature,
-}) => `
+export const characterDesign: Atom<CharacterDesignInput> = defineAtom(
+  {
+    atomId: "atoms/entities/characterDesign#characterDesign",
+    source: "atoms/entities/characterDesign.ts",
+    exportName: "characterDesign",
+  },
+  ({ protagonistFeature }) => `
 <game_system_context>
 **CHARACTER DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -105,14 +108,19 @@ Give the protagonist at least ONE petty, human weakness:
 - **Growth Potential**: By story's end, the protagonist should be able to overcome their flaw -- but only through suffering. The chrysalis must be earned.
 - **The Lie They Believe**: What false worldview do they hold? The story will press on this bruise until the truth bleeds through.
 </game_system_context>
-`);
+`,
+);
 
 /**
  * Character design primer (system-prompt safe).
  */
-export const characterDesignPrimer: Atom<CharacterDesignInput> = defineAtom({ atomId: "atoms/entities/characterDesign#characterDesignPrimer", source: "atoms/entities/characterDesign.ts", exportName: "characterDesignPrimer" }, ({
-  protagonistFeature,
-}) => `
+export const characterDesignPrimer: Atom<CharacterDesignInput> = defineAtom(
+  {
+    atomId: "atoms/entities/characterDesign#characterDesignPrimer",
+    source: "atoms/entities/characterDesign.ts",
+    exportName: "characterDesignPrimer",
+  },
+  ({ protagonistFeature }) => `
 <game_system_context>
 **CHARACTER DESIGN**: Protagonist will be TESTED.
 ${protagonistFeature ? `- MUST fit "${protagonistFeature}" role` : ""}
@@ -122,7 +130,8 @@ ${protagonistFeature ? `- MUST fit "${protagonistFeature}" role` : ""}
 - Narrative appearance (story behind the body)
 - Want vs Need, Fatal Flaw, The Lie They Believe
 </game_system_context>
-`);
+`,
+);
 
 export default characterDesign;
 
@@ -130,10 +139,16 @@ export default characterDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const characterDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/characterDesign#characterDesignSkill", source: "atoms/entities/characterDesign.ts", exportName: "characterDesignSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(characterDesign, {}),
+export const characterDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/characterDesign#characterDesignSkill",
+    source: "atoms/entities/characterDesign.ts",
+    exportName: "characterDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(characterDesign, {}),
 
-  quickStart: `
+    quickStart: `
 1. Moral alignment is flexible (saint, sinner, or monster are all valid)
 2. Psychology fields: coreTrauma (specific), copingMechanism, internalContradiction
 3. Resilience tiers: Civilian (0-1) → Veteran (2-3) → Fanatic (4-5)
@@ -142,50 +157,51 @@ export const characterDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "
 6. Arc setup: Want vs Need, Fatal Flaw, The Lie They Believe
 `.trim(),
 
-  checklist: [
-    "coreTrauma is specific (not 'sad childhood' but exact event)?",
-    "copingMechanism is behavioral (not 'gets angry' but specific habit)?",
-    "internalContradiction has Want vs Need tension?",
-    "Resilience tier appropriate to character's history?",
-    "At least one mundane flaw (petty human weakness)?",
-    "Appearance is narrative (history visible on body)?",
-    "Fatal flaw will CAUSE problems (not just inconvenience)?",
-    "The Lie They Believe defined (false worldview to challenge)?",
-  ],
+    checklist: [
+      "coreTrauma is specific (not 'sad childhood' but exact event)?",
+      "copingMechanism is behavioral (not 'gets angry' but specific habit)?",
+      "internalContradiction has Want vs Need tension?",
+      "Resilience tier appropriate to character's history?",
+      "At least one mundane flaw (petty human weakness)?",
+      "Appearance is narrative (history visible on body)?",
+      "Fatal flaw will CAUSE problems (not just inconvenience)?",
+      "The Lie They Believe defined (false worldview to challenge)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Core Trauma",
-      wrong: `coreTrauma: "Had a sad childhood."
+    examples: [
+      {
+        scenario: "Core Trauma",
+        wrong: `coreTrauma: "Had a sad childhood."
 (Vague, no specific event, no behavioral consequence.)`,
-      right: `coreTrauma: "Watched his sister drown while he stood frozen.
+        right: `coreTrauma: "Watched his sister drown while he stood frozen.
 Now freezes in any water-related danger."
 (Specific event, specific behavioral consequence.)`,
-    },
-    {
-      scenario: "Coping Mechanism",
-      wrong: `copingMechanism: "Gets angry sometimes."
+      },
+      {
+        scenario: "Coping Mechanism",
+        wrong: `copingMechanism: "Gets angry sometimes."
 (Label, not behavior.)`,
-      right: `copingMechanism: "Obsessively counts things when stressed—
+        right: `copingMechanism: "Obsessively counts things when stressed—
 coins, steps, breaths—until the panic subsides."
 (Specific behavioral response to stress.)`,
-    },
-    {
-      scenario: "Internal Contradiction",
-      wrong: `internalContradiction: "Wants to be good but sometimes does bad things."
+      },
+      {
+        scenario: "Internal Contradiction",
+        wrong: `internalContradiction: "Wants to be good but sometimes does bad things."
 (No tension, no stakes.)`,
-      right: `internalContradiction: "WANTS revenge on the cult that killed his family.
+        right: `internalContradiction: "WANTS revenge on the cult that killed his family.
 NEEDS to let go of hatred before it destroys him."
 (Clear Want vs Need conflict that drives story.)`,
-    },
-    {
-      scenario: "Narrative Appearance",
-      wrong: `"Height: 180cm, Hair: Black, Eyes: Brown"
+      },
+      {
+        scenario: "Narrative Appearance",
+        wrong: `"Height: 180cm, Hair: Black, Eyes: Brown"
 (Feature list, no story.)`,
-      right: `"Lean from years of hunger. Calloused hands from sword practice.
+        right: `"Lean from years of hunger. Calloused hands from sword practice.
 A scar across the left eye—he says it was a duel, but the angle suggests
 someone struck him while he was down."
 (History visible on the body.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

@@ -28,18 +28,23 @@ describe("generateEntityCleanup", () => {
     const result = await generateEntityCleanup(inputState, context);
 
     expect(mockedGenerateAdventureTurn).toHaveBeenCalledTimes(1);
-    const [, calledContext] = mockedGenerateAdventureTurn.mock.calls[0] as any[];
+    const [, calledContext] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
 
     expect(calledContext.slotId).toBe("slot-clean");
     expect(typeof calledContext.userAction).toBe("string");
     expect(calledContext.userAction.startsWith("[CLEANUP]")).toBe(true);
     expect(calledContext.userAction).toContain("<cleanup_anchor>");
-    expect(calledContext.userAction).toContain("<target_fork_id>7</target_fork_id>");
+    expect(calledContext.userAction).toContain(
+      "<target_fork_id>7</target_fork_id>",
+    );
     expect(calledContext.userAction).toContain("required_first_read");
     expect(calledContext.userAction).toContain("Never read/mutate other forks");
     expect(calledContext.userAction).toContain("vfs_ls");
     expect(calledContext.userAction).toContain("vfs_search");
-    expect(calledContext.userAction).toContain("CRITICAL NARRATIVE PRIVACY RULE");
+    expect(calledContext.userAction).toContain(
+      "CRITICAL NARRATIVE PRIVACY RULE",
+    );
 
     expect(result).toEqual({
       response: { narrative: "cleanup done", choices: [{ text: "Continue" }] },
@@ -64,13 +69,16 @@ describe("generateEntityCleanup", () => {
     await generateEntityCleanup(inputState, { userAction: "ignored" } as any);
 
     expect(inputState).toEqual(originalState);
-    const [, calledContext] = mockedGenerateAdventureTurn.mock.calls[0] as any[];
+    const [, calledContext] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
     expect(calledContext.userAction).not.toBe("ignored");
   });
 
   it("passes recovery trace through when cleanup recovered", async () => {
     const recovery = {
-      attempts: [{ level: 2, kind: "context", attempt: 3, timestamp: Date.now() }],
+      attempts: [
+        { level: 2, kind: "context", attempt: 3, timestamp: Date.now() },
+      ],
       finalLevel: 2,
       kind: "context",
       recovered: true,
@@ -86,9 +94,12 @@ describe("generateEntityCleanup", () => {
       recovery,
     } as any);
 
-    const result = await generateEntityCleanup({} as any, {
-      userAction: "ignored",
-    } as any);
+    const result = await generateEntityCleanup(
+      {} as any,
+      {
+        userAction: "ignored",
+      } as any,
+    );
 
     expect(result.recovery).toEqual(recovery);
   });

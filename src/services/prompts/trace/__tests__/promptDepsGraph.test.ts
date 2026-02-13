@@ -5,11 +5,13 @@ import { getPromptEntryAtoms } from "../graph";
 const loadGraph = () =>
   JSON.parse(
     fs.readFileSync(
-      path.resolve(process.cwd(), "src/services/prompts/trace/generated/prompt-atom-graph.json"),
+      path.resolve(
+        process.cwd(),
+        "src/services/prompts/trace/generated/prompt-atom-graph.json",
+      ),
       "utf8",
     ),
   );
-
 
 describe("prompt atom dependency graph", () => {
   it("captures technologySkill -> technology via trace.record", () => {
@@ -34,6 +36,5 @@ describe("prompt atom dependency graph", () => {
     expect(entry.transitive).toContain(
       "atoms/core/hiddenLayerQuality#hiddenLayerQualityPrimer",
     );
-
   });
 });

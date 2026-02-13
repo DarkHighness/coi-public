@@ -7,7 +7,12 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import type { SaveSlot, ImportValidation, ImportResult, I18nMessage } from "../types";
+import type {
+  SaveSlot,
+  ImportValidation,
+  ImportResult,
+  I18nMessage,
+} from "../types";
 import { validateImport, importSave } from "../services/saveExportService";
 
 interface ImportSaveModalProps {
@@ -218,8 +223,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
                     "Drop a save file here or click to browse"}
                 </div>
                 <div className="text-xs text-theme-text-secondary/80">
-                  {t("import.supportedFormats") ||
-                    "Supports .zip files"}
+                  {t("import.supportedFormats") || "Supports .zip files"}
                 </div>
               </div>
             )}
@@ -299,7 +303,8 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
               {((validation.warningsI18n?.length ?? 0) > 0 ||
                 validation.warnings.length > 0) && (
                 <div className="space-y-2">
-                  {(validation.warningsI18n && validation.warningsI18n.length > 0
+                  {(validation.warningsI18n &&
+                  validation.warningsI18n.length > 0
                     ? validation.warningsI18n.map((warning) =>
                         t(warning.key, warning.params),
                       )

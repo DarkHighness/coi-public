@@ -68,7 +68,10 @@ describe("RAGDatabase tiered eviction order", () => {
         };
       }
 
-      if (sql.includes("SELECT save_id FROM save_metadata") && sql.includes("UNION")) {
+      if (
+        sql.includes("SELECT save_id FROM save_metadata") &&
+        sql.includes("UNION")
+      ) {
         return { rows: [], affectedRows: 0 };
       }
 

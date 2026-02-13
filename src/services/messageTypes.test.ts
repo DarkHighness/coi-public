@@ -108,11 +108,16 @@ describe("messageTypes", () => {
     const unified = fromGeminiFormat([
       {
         role: "model",
-        parts: [{ text: "hello" }, { functionCall: { name: "vfs_ls", args: {} } }],
+        parts: [
+          { text: "hello" },
+          { functionCall: { name: "vfs_ls", args: {} } },
+        ],
       },
       {
         role: "function",
-        parts: [{ functionResponse: { name: "vfs_ls", response: { content: "ok" } } }],
+        parts: [
+          { functionResponse: { name: "vfs_ls", response: { content: "ok" } } },
+        ],
       },
     ]);
 
@@ -229,7 +234,10 @@ describe("messageTypes", () => {
       role: "user",
       content: [
         { type: "text", text: "show me" },
-        { type: "image_url", image_url: { url: "data:image/jpeg;base64,base64data" } },
+        {
+          type: "image_url",
+          image_url: { url: "data:image/jpeg;base64,base64data" },
+        },
       ],
     });
   });

@@ -13,6 +13,7 @@
 ### Task 1: Add current/ alias helpers
 
 **Files:**
+
 - Create: `src/services/vfs/currentAlias.ts`
 - Test: `src/services/vfs/__tests__/currentAlias.test.ts`
 
@@ -89,6 +90,7 @@ git commit -m "[Feat]: add current alias helpers"
 ### Task 2: Enforce current/ in VFS handlers
 
 **Files:**
+
 - Modify: `src/services/tools/handlers/vfsHandlers.ts`
 - Modify: `src/services/tools/__tests__/vfsHandlers.test.ts`
 
@@ -101,14 +103,30 @@ it("rejects non-current paths and returns current-prefixed paths", () => {
 
   const badWrite = dispatchToolCall(
     "vfs_write",
-    { files: [{ path: "world/global.json", content: "{}", contentType: "application/json" }] },
+    {
+      files: [
+        {
+          path: "world/global.json",
+          content: "{}",
+          contentType: "application/json",
+        },
+      ],
+    },
     ctx,
   ) as { success: boolean };
   expect(badWrite.success).toBe(false);
 
   const okWrite = dispatchToolCall(
     "vfs_write",
-    { files: [{ path: "current/world/global.json", content: "{}", contentType: "application/json" }] },
+    {
+      files: [
+        {
+          path: "current/world/global.json",
+          content: "{}",
+          contentType: "application/json",
+        },
+      ],
+    },
     ctx,
   ) as { success: boolean };
   expect(okWrite.success).toBe(true);
@@ -151,6 +169,7 @@ git commit -m "[Feat]: enforce current alias in VFS handlers"
 ### Task 3: Prefix snapshot paths for turns
 
 **Files:**
+
 - Modify: `src/services/vfs/persistence.ts`
 - Modify: `src/services/vfs/__tests__/vfsPersistence.test.ts`
 
@@ -202,6 +221,7 @@ git commit -m "[Feat]: prefix VFS snapshot paths by turn"
 ### Task 4: Seed VFS from GameState
 
 **Files:**
+
 - Create: `src/services/vfs/seed.ts`
 - Test: `src/services/vfs/__tests__/vfsSeed.test.ts`
 
@@ -255,6 +275,7 @@ git commit -m "[Feat]: seed VFS from GameState"
 ### Task 5: Wire persistence load/save + seeding
 
 **Files:**
+
 - Modify: `src/hooks/useVfsPersistence.ts`
 - Modify: `src/hooks/useGameEngine.ts`
 
@@ -290,6 +311,7 @@ git commit -m "[Feat]: wire current alias persistence flow"
 ### Task 6: Update prompts to use current/
 
 **Files:**
+
 - Modify: `src/services/prompts/atoms/core/stateManagement.ts`
 - Modify: `src/services/prompts/atoms/core/__tests__/stateManagement.test.ts`
 

@@ -79,13 +79,15 @@ describe("messageBuilder", () => {
     const messages = buildInitialContext(createGameState(), createSession());
     const texts = messages.map(getText);
 
-    expect(texts.some((text) => text.includes("[CONTEXT: World Foundation]"))).toBe(
+    expect(
+      texts.some((text) => text.includes("[CONTEXT: World Foundation]")),
+    ).toBe(true);
+    expect(
+      texts.some((text) => text.includes("[CONTEXT: Story Summary]")),
+    ).toBe(true);
+    expect(texts.some((text) => text.includes("[CONTEXT: God Mode]"))).toBe(
       true,
     );
-    expect(texts.some((text) => text.includes("[CONTEXT: Story Summary]"))).toBe(
-      true,
-    );
-    expect(texts.some((text) => text.includes("[CONTEXT: God Mode]"))).toBe(true);
     expect(texts[texts.length - 1]).toBe("[Awaiting player action.]");
 
     expect(
@@ -102,7 +104,8 @@ describe("messageBuilder", () => {
           {
             id: 1,
             displayText: "old",
-            nextSessionReferencesMarkdown: "- current/skills/commands/runtime/SKILL.md",
+            nextSessionReferencesMarkdown:
+              "- current/skills/commands/runtime/SKILL.md",
           },
           {
             id: 2,
@@ -122,7 +125,9 @@ describe("messageBuilder", () => {
     expect(hotStartBlock).toContain("current/conversation/session.jsonl");
     expect(hotStartBlock).toContain("current/skills/index.json");
     expect(
-      texts.some((text) => text.includes("[Hot-start references acknowledged.]")),
+      texts.some((text) =>
+        text.includes("[Hot-start references acknowledged.]"),
+      ),
     ).toBe(true);
   });
 

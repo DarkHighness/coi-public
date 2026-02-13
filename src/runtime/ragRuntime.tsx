@@ -387,7 +387,10 @@ export function useRagRuntime(): RagRuntimeValue {
       }
 
       try {
-        const changedEntities = changedEntityIds.map((id) => ({ id, type: "unknown" }));
+        const changedEntities = changedEntityIds.map((id) => ({
+          id,
+          type: "unknown",
+        }));
 
         await updateRAGDocumentsBackground(
           changedEntities,

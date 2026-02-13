@@ -18,7 +18,9 @@ describe("directory scaffolds", () => {
     expect(session.readFile("world/locations/README.md")).toBeTruthy();
     expect(session.readFile("world/causal_chains/README.md")).toBeTruthy();
     expect(session.readFile("custom_rules/README.md")).toBeTruthy();
-    expect(session.readFile("custom_rules/00-system-core/README.md")).toBeTruthy();
+    expect(
+      session.readFile("custom_rules/00-system-core/README.md"),
+    ).toBeTruthy();
     expect(session.readFile("custom_rules/12-custom/README.md")).toBeTruthy();
     expect(session.readFile("custom_rules/00-system-core/RULES.md")).toBeNull();
   });

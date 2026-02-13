@@ -9,7 +9,8 @@ vi.mock("../../sessionManager", () => ({
   sessionManager: {
     getOrCreateSession: (...args: any[]) => mockGetOrCreateSession(...args),
     getProvider: (...args: any[]) => mockGetProvider(...args),
-    getEffectiveToolChoice: (...args: any[]) => mockGetEffectiveToolChoice(...args),
+    getEffectiveToolChoice: (...args: any[]) =>
+      mockGetEffectiveToolChoice(...args),
   },
 }));
 
@@ -60,7 +61,12 @@ const makeInput = (): SummaryLoopInput => ({
     image: {} as any,
     video: {} as any,
     audio: {} as any,
-    audioVolume: { bgmVolume: 1, bgmMuted: false, ttsVolume: 1, ttsMuted: false },
+    audioVolume: {
+      bgmVolume: 1,
+      bgmMuted: false,
+      ttsVolume: 1,
+      ttsMuted: false,
+    },
     language: "en" as any,
     imageTimeout: 30,
     enableFallbackBackground: true,
@@ -139,7 +145,10 @@ describe("summary runtime field injection", () => {
     await runSummaryLoop(makeInput(), "query_summary");
 
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
-    const [, dispatchedArgs] = mockDispatchToolCallAsync.mock.calls[0] as [string, any];
+    const [, dispatchedArgs] = mockDispatchToolCallAsync.mock.calls[0] as [
+      string,
+      any,
+    ];
     expect(dispatchedArgs.nodeRange).toEqual({ fromIndex: 3, toIndex: 8 });
     expect(dispatchedArgs.lastSummarizedIndex).toBe(9);
   });

@@ -5,8 +5,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const combatMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative/combat#combatMechanics", source: "atoms/narrative/combat.ts", exportName: "combatMechanics" }, () => `
+export const combatMechanics: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/combat#combatMechanics",
+    source: "atoms/narrative/combat.ts",
+    exportName: "combatMechanics",
+  },
+  () => `
 <rule name="COMBAT & ACTION">
   <core_combat_philosophy>
     **COMBAT IS UGLY**:
@@ -30,46 +35,54 @@ export const combatMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative
       * **Sci-Fi**: No "magic" without explanation. Physics (gravity, vacuum) kills.
   </logic_enforcement>
 </rule>
-`);
+`,
+);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const combatMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/combat#combatMechanicsSkill", source: "atoms/narrative/combat.ts", exportName: "combatMechanicsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(combatMechanics),
+export const combatMechanicsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/combat#combatMechanicsSkill",
+    source: "atoms/narrative/combat.ts",
+    exportName: "combatMechanicsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(combatMechanics),
 
-  quickStart: `
+    quickStart: `
 1. Combat is ugly - fast, confusing, exhausting (not choreographed)
 2. No exchanges - blur of action, not turn-based
 3. Pain is physical - describe the wound, not HP loss
 4. Injuries persist - broken leg means no running
 `.trim(),
 
-  checklist: [
-    "Combat feels chaotic (not choreographed)?",
-    "Using environmental chaos (mud, blood, overturned tables)?",
-    "Pain described physically (not abstractly)?",
-    "Injuries persist and affect subsequent actions?",
-    "Genre consistency maintained (no anachronisms)?",
-  ],
+    checklist: [
+      "Combat feels chaotic (not choreographed)?",
+      "Using environmental chaos (mud, blood, overturned tables)?",
+      "Pain described physically (not abstractly)?",
+      "Injuries persist and affect subsequent actions?",
+      "Genre consistency maintained (no anachronisms)?",
+    ],
 
-  examples: [
-    {
-      scenario: "No Exchanges",
-      wrong: `"He attacks. You block. He attacks again."
+    examples: [
+      {
+        scenario: "No Exchanges",
+        wrong: `"He attacks. You block. He attacks again."
 (Turn-based, mechanical.)`,
-      right: `"A blur of steel. The jar of impact travels up your arm.
+        right: `"A blur of steel. The jar of impact travels up your arm.
 You are breathing hard. When did you start bleeding?"
 (Chaotic, visceral, disorienting.)`,
-    },
-    {
-      scenario: "Physical Pain",
-      wrong: `"You take 10 damage."
+      },
+      {
+        scenario: "Physical Pain",
+        wrong: `"You take 10 damage."
 (Abstract, gamified.)`,
-      right: `"The blade bites deep into your thigh. The leg buckles.
+        right: `"The blade bites deep into your thigh. The leg buckles.
 Warmth spreads down your boot."
 (Physical, immediate, consequential.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

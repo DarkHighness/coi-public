@@ -57,7 +57,9 @@ describe("transformersEngine", () => {
       .mockResolvedValueOnce(
         new Response("export default {};", { status: 200 }),
       )
-      .mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]), { status: 200 }));
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const createObjectURLMock = vi
@@ -118,4 +120,3 @@ describe("transformersEngine", () => {
     expect(vectors[0]).toHaveLength(3);
   });
 });
-

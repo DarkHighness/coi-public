@@ -83,7 +83,7 @@ export const shouldRestartOutlineFromPhase1 = (
 ): boolean =>
   Boolean(
     conversation &&
-      Number(conversation.phaseSchemaVersion ?? -1) !== expectedSchemaVersion,
+    Number(conversation.phaseSchemaVersion ?? -1) !== expectedSchemaVersion,
   );
 
 export const writeOutlineProgress = (

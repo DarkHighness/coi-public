@@ -62,7 +62,9 @@ describe("toolResult helpers", () => {
       recovery: ["Read file before write."],
     });
 
-    expect(merged.details?.category).toBe(inferErrorCategoryFromCode("INVALID_ACTION"));
+    expect(merged.details?.category).toBe(
+      inferErrorCategoryFromCode("INVALID_ACTION"),
+    );
     expect(merged.details?.refs).toEqual([
       "current/refs/tools/vfs_write.md",
       "current/refs/tools/README.md",

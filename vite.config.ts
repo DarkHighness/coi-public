@@ -94,7 +94,10 @@ export default defineConfig(({ mode }) => {
             }
 
             if (id.includes("components/") && !id.includes("node_modules")) {
-              if (id.includes("SettingsModal") || id.includes("components/settings/")) {
+              if (
+                id.includes("SettingsModal") ||
+                id.includes("components/settings/")
+              ) {
                 return "settings-ui";
               }
 

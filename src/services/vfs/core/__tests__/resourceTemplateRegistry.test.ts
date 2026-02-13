@@ -3,7 +3,9 @@ import { vfsResourceTemplateRegistry } from "../resourceTemplateRegistry";
 
 describe("vfsResourceTemplateRegistry", () => {
   it("matches immutable shared system templates", () => {
-    const template = vfsResourceTemplateRegistry.match("shared/system/skills/README.md");
+    const template = vfsResourceTemplateRegistry.match(
+      "shared/system/skills/README.md",
+    );
 
     expect(template.id).toBe("template.system.skills");
     expect(template.permissionClass).toBe("immutable_readonly");
@@ -19,7 +21,9 @@ describe("vfsResourceTemplateRegistry", () => {
     expect(conversation.domain).toBe("story");
     expect(conversation.allowedWriteOps).toContain("finish_commit");
 
-    const summary = vfsResourceTemplateRegistry.match("forks/0/story/summary/state.json");
+    const summary = vfsResourceTemplateRegistry.match(
+      "forks/0/story/summary/state.json",
+    );
     expect(summary.permissionClass).toBe("finish_guarded");
     expect(summary.id).toBe("template.story.summary");
     expect(summary.allowedWriteOps).toEqual(["finish_summary"]);
@@ -33,7 +37,9 @@ describe("vfsResourceTemplateRegistry", () => {
   });
 
   it("matches elevated templates for outline phases and history rewrites", () => {
-    const outline = vfsResourceTemplateRegistry.match("shared/narrative/outline/phases/phase0.json");
+    const outline = vfsResourceTemplateRegistry.match(
+      "shared/narrative/outline/phases/phase0.json",
+    );
     expect(outline.permissionClass).toBe("elevated_editable");
     expect(outline.criticality).toBe("core");
 
@@ -57,7 +63,9 @@ describe("vfsResourceTemplateRegistry", () => {
   });
 
   it("falls back to fork runtime template for unmatched paths", () => {
-    const fallback = vfsResourceTemplateRegistry.match("forks/0/runtime/misc/notes.txt");
+    const fallback = vfsResourceTemplateRegistry.match(
+      "forks/0/runtime/misc/notes.txt",
+    );
     expect(fallback.id).toBe("template.runtime.fork");
     expect(fallback.criticality).toBe("ephemeral");
     expect(fallback.retention).toBe("session");

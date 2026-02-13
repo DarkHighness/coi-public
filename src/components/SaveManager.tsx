@@ -270,7 +270,10 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                                 }}
                                 autoFocus
                                 className="min-w-[12rem] bg-theme-bg border border-theme-primary/60 rounded px-2 py-1 text-sm text-theme-text focus:border-theme-primary outline-none"
-                                placeholder={t("saveManager.renamePlaceholder") || "Save name"}
+                                placeholder={
+                                  t("saveManager.renamePlaceholder") ||
+                                  "Save name"
+                                }
                                 maxLength={80}
                                 disabled={isRenaming}
                               />
@@ -362,7 +365,10 @@ export const SaveManager: React.FC<SaveManagerProps> = ({
                                     editingName.trim() === slot.name.trim()
                                   }
                                   className="p-1.5 text-theme-text-secondary hover:text-green-500 hover:bg-green-500/10 rounded transition-colors disabled:opacity-40 disabled:pointer-events-none"
-                                  title={t("saveManager.renameConfirm") || "Save name"}
+                                  title={
+                                    t("saveManager.renameConfirm") ||
+                                    "Save name"
+                                  }
                                 >
                                   <svg
                                     className="w-5 h-5"

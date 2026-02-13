@@ -5,7 +5,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface StyleGuideInput {
   themeStyle?: string;
 }
@@ -20,25 +19,38 @@ const humanizerTone = `
 </humanizer_tone>
 `;
 
-export const styleGuidePrimer: Atom<StyleGuideInput> = defineAtom({ atomId: "atoms/core/styleGuide#styleGuidePrimer", source: "atoms/core/styleGuide.ts", exportName: "styleGuidePrimer" }, ({ themeStyle }) => {
-  const toneSection = themeStyle
-    ? `<tone>${themeStyle}</tone>`
-    : "<tone>Gritty, grounded, visceral.</tone>";
+export const styleGuidePrimer: Atom<StyleGuideInput> = defineAtom(
+  {
+    atomId: "atoms/core/styleGuide#styleGuidePrimer",
+    source: "atoms/core/styleGuide.ts",
+    exportName: "styleGuidePrimer",
+  },
+  ({ themeStyle }) => {
+    const toneSection = themeStyle
+      ? `<tone>${themeStyle}</tone>`
+      : "<tone>Gritty, grounded, visceral.</tone>";
 
-  return `
+    return `
 <style>
 ${toneSection}
 ${humanizerTone}
 </style>
 `;
-});
+  },
+);
 
-export const styleGuide: Atom<StyleGuideInput> = defineAtom({ atomId: "atoms/core/styleGuide#styleGuide", source: "atoms/core/styleGuide.ts", exportName: "styleGuide" }, ({ themeStyle }) => {
-  const toneSection = themeStyle
-    ? `<tone>${themeStyle}</tone>`
-    : "<tone>Gritty, grounded, visceral.</tone>";
+export const styleGuide: Atom<StyleGuideInput> = defineAtom(
+  {
+    atomId: "atoms/core/styleGuide#styleGuide",
+    source: "atoms/core/styleGuide.ts",
+    exportName: "styleGuide",
+  },
+  ({ themeStyle }) => {
+    const toneSection = themeStyle
+      ? `<tone>${themeStyle}</tone>`
+      : "<tone>Gritty, grounded, visceral.</tone>";
 
-  return `
+    return `
 <style>
 ${toneSection}
 ${humanizerTone}
@@ -171,4 +183,5 @@ ${humanizerTone}
 </markdown_formatting>
 </style>
 `;
-});
+  },
+);

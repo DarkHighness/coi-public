@@ -276,7 +276,10 @@ const DEFAULT_RESOURCE_TEMPLATES: VfsResourceTemplate[] = [
   {
     id: "template.ops.history_rewrites",
     description: "Fork history rewrite workspace",
-    patterns: ["forks/*/ops/history_rewrites", "forks/*/ops/history_rewrites/**"],
+    patterns: [
+      "forks/*/ops/history_rewrites",
+      "forks/*/ops/history_rewrites/**",
+    ],
     domain: "ops",
     shape: "append_log",
     criticality: "core",
@@ -312,7 +315,8 @@ const DEFAULT_RESOURCE_TEMPLATES: VfsResourceTemplate[] = [
   },
   {
     id: "template.fallback.shared",
-    description: "Shared fallback resources (read-only until explicitly registered)",
+    description:
+      "Shared fallback resources (read-only until explicitly registered)",
     patterns: ["shared/**"],
     domain: "runtime",
     shape: "text_blob",
@@ -324,7 +328,8 @@ const DEFAULT_RESOURCE_TEMPLATES: VfsResourceTemplate[] = [
   },
   {
     id: "template.fallback.fork",
-    description: "Fork fallback resources (read-only until explicitly registered)",
+    description:
+      "Fork fallback resources (read-only until explicitly registered)",
     patterns: ["forks/*/**", "**"],
     domain: "runtime",
     shape: "text_blob",
@@ -344,7 +349,9 @@ export class VfsResourceTemplateRegistry {
   }
 
   public list(): VfsResourceTemplate[] {
-    return this.templates.map(({ matches: _matches, ...rest }) => ({ ...rest }));
+    return this.templates.map(({ matches: _matches, ...rest }) => ({
+      ...rest,
+    }));
   }
 
   /**

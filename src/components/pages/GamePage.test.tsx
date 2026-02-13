@@ -111,8 +111,16 @@ vi.mock("../layout/DesktopGameLayout", () => ({
     React.createElement(
       "div",
       null,
-      React.createElement("button", { onClick: props.onSettings }, "open-settings"),
-      React.createElement("button", { onClick: props.onOpenSaves }, "open-saves"),
+      React.createElement(
+        "button",
+        { onClick: props.onSettings },
+        "open-settings",
+      ),
+      React.createElement(
+        "button",
+        { onClick: props.onOpenSaves },
+        "open-saves",
+      ),
       React.createElement(
         "button",
         { onClick: props.onOpenStateEditor },
@@ -165,7 +173,10 @@ describe("GamePage", () => {
     vi.clearAllMocks();
     runtimeState.state.gameState.outline = { id: "outline" };
     runtimeState.state.gameState.outlineConversation = null;
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
   });
 
   it("redirects to home when outline is missing", () => {

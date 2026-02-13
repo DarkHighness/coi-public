@@ -10,7 +10,8 @@ import { getToolSchemaHint } from "../utils";
 
 const serialize = (value: unknown): string => JSON.stringify(value);
 
-const forbiddenOutputPattern = /"type"\s*:\s*"any"|"type"\s*:\s*"unknown"|Record<string,\s*any>|Array<\s*any\s*>|Array<\s*unknown\s*>/i;
+const forbiddenOutputPattern =
+  /"type"\s*:\s*"any"|"type"\s*:\s*"unknown"|Record<string,\s*any>|Array<\s*any\s*>|Array<\s*unknown\s*>/i;
 
 describe("provider schema guardrails", () => {
   it("keeps OpenAI/Gemini/Claude compatible tool schemas free of any/unknown textual types", () => {
@@ -74,14 +75,22 @@ describe("provider schema guardrails", () => {
   });
 
   it("keeps vfs_commit_summary schema and schemaHint free of runtime-only fields", () => {
-    const tool = ALL_DEFINED_TOOLS.find((item) => item.name === "vfs_commit_summary");
+    const tool = ALL_DEFINED_TOOLS.find(
+      (item) => item.name === "vfs_commit_summary",
+    );
     expect(tool).toBeDefined();
     if (!tool) return;
 
     const openaiSchema = serialize(zodToOpenAISchema(tool.parameters, true));
-    const geminiSchema = serialize(zodToGeminiCompatibleSchema(tool.parameters));
-    const claudeSchema = serialize(zodToClaudeCompatibleSchema(tool.parameters));
-    const hint = getToolSchemaHint(tool.parameters, "", { toolName: tool.name });
+    const geminiSchema = serialize(
+      zodToGeminiCompatibleSchema(tool.parameters),
+    );
+    const claudeSchema = serialize(
+      zodToClaudeCompatibleSchema(tool.parameters),
+    );
+    const hint = getToolSchemaHint(tool.parameters, "", {
+      toolName: tool.name,
+    });
     for (const text of [openaiSchema, geminiSchema, claudeSchema, hint]) {
       expect(text).not.toContain("nodeRange");
       expect(text).not.toContain("lastSummarizedIndex");
@@ -89,7 +98,7 @@ describe("provider schema guardrails", () => {
 
     for (const text of [openaiSchema, geminiSchema, claudeSchema, hint]) {
       expect(text).not.toContain("createdAt");
-      expect(text).not.toContain("\"id\"");
+      expect(text).not.toContain('"id"');
     }
   });
 });

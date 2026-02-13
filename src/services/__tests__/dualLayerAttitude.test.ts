@@ -65,4 +65,3 @@ describe("Dual-layer relations (attitude vs perception)", () => {
     expect(actor.id).toBe("char:npc_1");
   });
 });
-

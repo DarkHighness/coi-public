@@ -6,7 +6,9 @@ import {
   type CommandContext,
 } from "./index";
 
-function createContext(overrides: Partial<CommandContext> = {}): CommandContext {
+function createContext(
+  overrides: Partial<CommandContext> = {},
+): CommandContext {
   return {
     gameState: {
       godMode: false,

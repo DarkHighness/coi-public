@@ -23,11 +23,13 @@ import { validatePromptTrace } from "../policy";
 const loadGraph = () =>
   JSON.parse(
     fs.readFileSync(
-      path.resolve(process.cwd(), "src/services/prompts/trace/generated/prompt-atom-graph.json"),
+      path.resolve(
+        process.cwd(),
+        "src/services/prompts/trace/generated/prompt-atom-graph.json",
+      ),
       "utf8",
     ),
   );
-
 
 describe("prompt trace coverage - outline", () => {
   afterEach(() => {
@@ -78,7 +80,8 @@ describe("prompt trace coverage - outline", () => {
       },
       {
         promptId: "outline.phase3.playerActor",
-        build: () => getOutlinePhase2Prompt("wanderer", "vfs_commit_outline_phase_3"),
+        build: () =>
+          getOutlinePhase2Prompt("wanderer", "vfs_commit_outline_phase_3"),
       },
       {
         promptId: "outline.phase4.locations",
@@ -102,7 +105,8 @@ describe("prompt trace coverage - outline", () => {
       },
       {
         promptId: "outline.phase9.openingNarrative",
-        build: () => getOutlinePhase9Prompt(false, "vfs_commit_outline_phase_9"),
+        build: () =>
+          getOutlinePhase9Prompt(false, "vfs_commit_outline_phase_9"),
       },
     ] as const;
 

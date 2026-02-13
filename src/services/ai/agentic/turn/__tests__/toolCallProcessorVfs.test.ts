@@ -4,7 +4,10 @@ import { VfsSession } from "@/services/vfs/vfsSession";
 import { deriveGameStateFromVfs } from "@/services/vfs/derivations";
 import { createLoopState } from "../loopInitializer";
 import { executeGenericTool } from "../toolCallProcessor";
-import { buildResponseFromVfs, getConversationMarker } from "../resultAccumulator";
+import {
+  buildResponseFromVfs,
+  getConversationMarker,
+} from "../resultAccumulator";
 
 const createValidGlobal = () => ({
   time: "Day 1",
@@ -194,7 +197,7 @@ describe("toolCallProcessor VFS integration", () => {
       session,
       [],
     );
-  
+
     expect(
       loopState.activeTools.every((tool) => tool.name.startsWith("vfs_")),
     ).toBe(true);

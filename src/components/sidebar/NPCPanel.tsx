@@ -1,7 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TFunction } from "i18next";
-import { ActorBundle, NPC, ListState, Location, RelationEdge } from "../../types";
+import {
+  ActorBundle,
+  NPC,
+  ListState,
+  Location,
+  RelationEdge,
+} from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
@@ -104,9 +110,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
     return loc ? loc.name : locId;
   };
 
-  const attitude = (Array.isArray((rel as any).relations)
-    ? ((rel as any).relations as any[])
-    : []
+  const attitude = (
+    Array.isArray((rel as any).relations)
+      ? ((rel as any).relations as any[])
+      : []
   ).find(
     (r) =>
       r?.kind === "attitude" &&
@@ -114,7 +121,9 @@ const NpcItem: React.FC<NpcItemProps> = ({
       r?.to?.id === playerActorId,
   ) as any | undefined;
 
-  const perception = (Array.isArray(playerRelations) ? playerRelations : []).find(
+  const perception = (
+    Array.isArray(playerRelations) ? playerRelations : []
+  ).find(
     (r: any) =>
       r?.kind === "perception" &&
       r?.to?.kind === "character" &&
@@ -123,7 +132,9 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
   const showTrueAttitude = Boolean(unlockMode || attitude?.unlocked === true);
   const trueAffinity =
-    typeof attitude?.hidden?.affinity === "number" ? attitude.hidden.affinity : null;
+    typeof attitude?.hidden?.affinity === "number"
+      ? attitude.hidden.affinity
+      : null;
 
   return (
     <div
@@ -277,7 +288,9 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                       {t("perceivedStatus") || "Currently (Your Perception)"}
                     </span>
-                    <p className="text-theme-text-secondary">{rel.visible.status}</p>
+                    <p className="text-theme-text-secondary">
+                      {rel.visible.status}
+                    </p>
                   </div>
                 )}
 
@@ -305,7 +318,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
                       {attitude?.visible?.reputationTag && (
                         <div>
                           <span className="uppercase tracking-wider text-[9px] opacity-70">
-                            {t("gameViewer.reputationTag", { defaultValue: "Tag" })}:
+                            {t("gameViewer.reputationTag", {
+                              defaultValue: "Tag",
+                            })}
+                            :
                           </span>{" "}
                           {attitude.visible.reputationTag}
                         </div>
@@ -315,19 +331,25 @@ const NpcItem: React.FC<NpcItemProps> = ({
                           <span className="uppercase tracking-wider text-[9px] opacity-70">
                             {t("gameViewer.claimedIntent", {
                               defaultValue: "Claims",
-                            })}:
+                            })}
+                            :
                           </span>{" "}
-                          <MarkdownText content={attitude.visible.claimedIntent} inline />
+                          <MarkdownText
+                            content={attitude.visible.claimedIntent}
+                            inline
+                          />
                         </div>
                       )}
                       {Array.isArray(attitude?.visible?.signals) &&
                         attitude.visible.signals.length > 0 && (
                           <ul className="list-disc list-inside space-y-0.5">
-                            {attitude.visible.signals.map((s: string, i: number) => (
-                              <li key={i}>
-                                <MarkdownText content={s} inline />
-                              </li>
-                            ))}
+                            {attitude.visible.signals.map(
+                              (s: string, i: number) => (
+                                <li key={i}>
+                                  <MarkdownText content={s} inline />
+                                </li>
+                              ),
+                            )}
                           </ul>
                         )}
                     </div>
@@ -343,21 +365,27 @@ const NpcItem: React.FC<NpcItemProps> = ({
                       })}
                     </span>
                     <div className="text-theme-text/90 text-xs">
-                      <MarkdownText content={perception.visible.description} indentSize={2} />
+                      <MarkdownText
+                        content={perception.visible.description}
+                        indentSize={2}
+                      />
                       {Array.isArray(perception.visible.evidence) &&
                         perception.visible.evidence.length > 0 && (
                           <div className="mt-2">
                             <span className="text-[9px] uppercase tracking-wider text-theme-primary/70 block mb-0.5">
                               {t("gameViewer.evidence", {
                                 defaultValue: "Evidence",
-                              })}:
+                              })}
+                              :
                             </span>
                             <ul className="list-disc list-inside space-y-0.5">
-                              {perception.visible.evidence.map((e: string, i: number) => (
-                                <li key={i}>
-                                  <MarkdownText content={e} inline />
-                                </li>
-                              ))}
+                              {perception.visible.evidence.map(
+                                (e: string, i: number) => (
+                                  <li key={i}>
+                                    <MarkdownText content={e} inline />
+                                  </li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
@@ -377,7 +405,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
                       </span>
                       {attitude?.hidden?.impression && (
                         <span className="text-theme-text-secondary">
-                          <MarkdownText content={attitude.hidden.impression} inline />
+                          <MarkdownText
+                            content={attitude.hidden.impression}
+                            inline
+                          />
                         </span>
                       )}
                     </div>

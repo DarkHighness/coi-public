@@ -53,7 +53,7 @@ class AudioContextMock {
     return this.sourceNode;
   });
 
-  decodeAudioData = vi.fn(async () => ({ duration: 1 } as AudioBuffer));
+  decodeAudioData = vi.fn(async () => ({ duration: 1 }) as AudioBuffer);
   resume = vi.fn(async () => {
     this.state = "running";
   });
@@ -117,8 +117,21 @@ describe("useStoryAudio", () => {
     } as any);
 
     const Probe = () => {
-      api = useStoryAudio("cached text", {} as any, 0.8, false, undefined, undefined, undefined, "audio:key");
-      return React.createElement("div", null, api!.isPlaying ? "playing" : "idle");
+      api = useStoryAudio(
+        "cached text",
+        {} as any,
+        0.8,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        "audio:key",
+      );
+      return React.createElement(
+        "div",
+        null,
+        api!.isPlaying ? "playing" : "idle",
+      );
     };
 
     render(React.createElement(Probe));
@@ -189,7 +202,11 @@ describe("useStoryAudio", () => {
 
     const Probe = () => {
       api = useStoryAudio("toggle", {} as any);
-      return React.createElement("div", null, api!.isPlaying ? "playing" : "idle");
+      return React.createElement(
+        "div",
+        null,
+        api!.isPlaying ? "playing" : "idle",
+      );
     };
 
     render(React.createElement(Probe));
@@ -210,15 +227,30 @@ describe("useStoryAudio", () => {
   });
 
   it("logs and exits when no audio data is available", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     let api: ReturnType<typeof useStoryAudio> | null = null;
 
     loadAudioMock.mockResolvedValue(null);
     generateSpeechMock.mockResolvedValue(null);
 
     const Probe = () => {
-      api = useStoryAudio("empty", {} as any, 1, false, undefined, undefined, undefined, "cache:none");
-      return React.createElement("div", null, api!.isLoadingAudio ? "loading" : "ready");
+      api = useStoryAudio(
+        "empty",
+        {} as any,
+        1,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        "cache:none",
+      );
+      return React.createElement(
+        "div",
+        null,
+        api!.isLoadingAudio ? "loading" : "ready",
+      );
     };
 
     render(React.createElement(Probe));
@@ -243,7 +275,9 @@ describe("useStoryAudio", () => {
       return React.createElement("div");
     };
 
-    const view = render(React.createElement(Probe, { volume: 0.7, muted: false }));
+    const view = render(
+      React.createElement(Probe, { volume: 0.7, muted: false }),
+    );
 
     await act(async () => {
       await api!.playAudio();

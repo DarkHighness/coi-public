@@ -52,7 +52,12 @@ describe("ai utils", () => {
     const settings = {
       providers: {
         instances: [
-          { id: "provider-1", protocol: "openrouter", enabled: true, apiKey: "k" },
+          {
+            id: "provider-1",
+            protocol: "openrouter",
+            enabled: true,
+            apiKey: "k",
+          },
         ],
       },
       story: {
@@ -153,8 +158,8 @@ describe("ai utils", () => {
 
   it("extracts JSON from direct text, markdown blocks and substrings", () => {
     expect(extractJson('{"ok":true}')).toEqual({ ok: true });
-    expect(extractJson("```json\n{\"a\":1}\n```")) .toEqual({ a: 1 });
-    expect(extractJson("prefix text {\"b\":2} suffix")) .toEqual({ b: 2 });
+    expect(extractJson('```json\n{"a":1}\n```')).toEqual({ a: 1 });
+    expect(extractJson('prefix text {"b":2} suffix')).toEqual({ b: 2 });
     expect(extractJson("not json")).toBeNull();
   });
 });

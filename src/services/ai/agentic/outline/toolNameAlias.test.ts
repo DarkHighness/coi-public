@@ -36,9 +36,8 @@ describe("resolveOutlineToolNameAlias", () => {
   });
 
   it("returns original name when no allowed candidate can be resolved", () => {
-    expect(resolveOutlineToolNameAlias("default_api:nonexistent_tool", allowed)).toBe(
-      "default_api:nonexistent_tool",
-    );
+    expect(
+      resolveOutlineToolNameAlias("default_api:nonexistent_tool", allowed),
+    ).toBe("default_api:nonexistent_tool");
   });
 });
-

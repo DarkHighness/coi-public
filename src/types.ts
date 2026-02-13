@@ -1286,7 +1286,6 @@ export interface AISettings {
   playerProfile?: string;
 }
 
-
 export type CustomRulesAckPendingReason = "customRules";
 
 export interface CustomRulesAckState {
@@ -1316,10 +1315,7 @@ export type EmbeddingTaskType =
   | "classification"
   | "clustering";
 
-export type EmbeddingRuntime =
-  | "remote"
-  | "local_transformers"
-  | "local_tfjs";
+export type EmbeddingRuntime = "remote" | "local_transformers" | "local_tfjs";
 export type LocalEmbeddingBackend = "webgpu" | "webgl" | "cpu";
 export type LocalTransformersDevice = "webgpu" | "wasm" | "cpu";
 

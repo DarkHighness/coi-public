@@ -15,7 +15,8 @@ vi.mock("../../sessionManager", () => ({
     getProvider: (...args: any[]) => mockGetProvider(...args),
     getHistory: (...args: any[]) => mockGetHistory(...args),
     getSystemInstruction: (...args: any[]) => mockGetSystemInstruction(...args),
-    getEffectiveToolChoice: (...args: any[]) => mockGetEffectiveToolChoice(...args),
+    getEffectiveToolChoice: (...args: any[]) =>
+      mockGetEffectiveToolChoice(...args),
   },
 }));
 
@@ -70,7 +71,12 @@ function makeInput(overrides?: Partial<SummaryLoopInput>): SummaryLoopInput {
       image: {} as any,
       video: {} as any,
       audio: {} as any,
-      audioVolume: { bgmVolume: 1, bgmMuted: false, ttsVolume: 1, ttsMuted: false },
+      audioVolume: {
+        bgmVolume: 1,
+        bgmMuted: false,
+        ttsVolume: 1,
+        ttsMuted: false,
+      },
       language: "en" as any,
       imageTimeout: 30,
       enableFallbackBackground: true,
@@ -238,7 +244,6 @@ describe("runSummaryLoop", () => {
     expect(anchorText).toContain("query-style reads only");
   });
 
-
   it("uses compact-specific anchor contract in session_compact mode", async () => {
     const input = makeInput({
       forkId: 3,
@@ -285,7 +290,9 @@ describe("runSummaryLoop", () => {
       "`current/skills/commands/runtime/compact/SKILL.md`",
     );
     expect(compactAnchor).toContain("MODE CONTRACT: SESSION_COMPACT");
-    expect(compactAnchor).toContain("Current session history already loaded in context");
+    expect(compactAnchor).toContain(
+      "Current session history already loaded in context",
+    );
     expect(compactAnchor).toContain("Verification-only reads (optional)");
     expect(compactAnchor).toContain("Structured error recovery");
   });

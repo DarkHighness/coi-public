@@ -10,11 +10,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Law Systems - 完整版
  */
-export const lawSystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/law#lawSystem", source: "atoms/worldbuilding/law.ts", exportName: "lawSystem" }, () => `
+export const lawSystem: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/law#lawSystem",
+    source: "atoms/worldbuilding/law.ts",
+    exportName: "lawSystem",
+  },
+  () => `
 <worldbuilding_context>
 **LAW & JUSTICE SYSTEM DESIGN:**
 
@@ -241,12 +246,19 @@ The question isn't "Is it legal?" but "Who holds the pen that writes the law, an
 - Must work within or around the system
 </player_interaction>
 </worldbuilding_context>
-`);
+`,
+);
 
 /**
  * Law Systems - 精简版
  */
-export const lawSystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/law#lawSystemLite", source: "atoms/worldbuilding/law.ts", exportName: "lawSystemLite" }, () => `
+export const lawSystemLite: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/law#lawSystemLite",
+    source: "atoms/worldbuilding/law.ts",
+    exportName: "lawSystemLite",
+  },
+  () => `
 <worldbuilding_context>
 **LAW & JUSTICE**: Law is what the powerful write to protect what they have.
 - Legal systems (formal, customary, religious, martial)
@@ -256,7 +268,8 @@ export const lawSystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbuildi
 - Punishment spectrum (warning → execution)
 - Legal leverage (using law as weapon, defending against law)
 </worldbuilding_context>
-`);
+`,
+);
 
 export default lawSystem;
 
@@ -264,10 +277,16 @@ export default lawSystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const lawSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/law#lawSystemSkill", source: "atoms/worldbuilding/law.ts", exportName: "lawSystemSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(lawSystem),
+export const lawSystemSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/law#lawSystemSkill",
+    source: "atoms/worldbuilding/law.ts",
+    exportName: "lawSystemSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(lawSystem),
 
-  quickStart: `
+    quickStart: `
 1. Law is a tool, not justice (who decides what's legal?)
 2. Multiple jurisdictions overlap (church, guild, city, lord)
 3. Enforcement is limited (budget, territory, politics)
@@ -276,53 +295,54 @@ export const lawSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/
 6. Punishment scales (warning → stocks → prison → maiming → death)
 `.trim(),
 
-  checklist: [
-    "Legal system type defined (formal, customary, religious)?",
-    "Enforcement bodies established (who arrests, who judges)?",
-    "Corruption patterns present (bribery scale, influence)?",
-    "Jurisdictional conflicts exist (church vs state, guild vs city)?",
-    "Sanctuary options available (where can people flee)?",
-    "Punishment spectrum appropriate to setting?",
-    "Legal leverage usable by players and NPCs?",
-    "Gray zones exist (where law is weak or absent)?",
-  ],
+    checklist: [
+      "Legal system type defined (formal, customary, religious)?",
+      "Enforcement bodies established (who arrests, who judges)?",
+      "Corruption patterns present (bribery scale, influence)?",
+      "Jurisdictional conflicts exist (church vs state, guild vs city)?",
+      "Sanctuary options available (where can people flee)?",
+      "Punishment spectrum appropriate to setting?",
+      "Legal leverage usable by players and NPCs?",
+      "Gray zones exist (where law is weak or absent)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Corruption as Normal",
-      wrong: `"The law is fair and just."
+    examples: [
+      {
+        scenario: "Corruption as Normal",
+        wrong: `"The law is fair and just."
 (Idealistic, no gameplay hooks.)`,
-      right: `"Justice costs money. A copper gets the guard to look away.
+        right: `"Justice costs money. A copper gets the guard to look away.
 A silver gets the case delayed. A gold gets it dismissed.
 Everyone knows the rates. It's not corruption—it's the system."
 (Specific costs, normalized, creates choices.)`,
-    },
-    {
-      scenario: "Jurisdictional Conflict",
-      wrong: `"He was arrested and tried."
+      },
+      {
+        scenario: "Jurisdictional Conflict",
+        wrong: `"He was arrested and tried."
 (Simple, no complexity.)`,
-      right: `"The Temple claims him—sin against the gods. The Guild claims him—
+        right: `"The Temple claims him—sin against the gods. The Guild claims him—
 violated trade law. The Watch claims him—murder on city streets.
 Three courts. Three verdicts. Three punishments. Which one gets him?"
 (Competing authorities, political tension.)`,
-    },
-    {
-      scenario: "Sanctuary",
-      wrong: `"He fled to the church."
+      },
+      {
+        scenario: "Sanctuary",
+        wrong: `"He fled to the church."
 (No rules, no tension.)`,
-      right: `"Temple sanctuary lasts until the next holy day—seven days.
+        right: `"Temple sanctuary lasts until the next holy day—seven days.
 Then the priests must decide: shelter the fugitive and anger the Duke,
 or surrender him and anger the gods. They're not sure which is worse."
 (Time limit, difficult choice, political stakes.)`,
-    },
-    {
-      scenario: "Selective Enforcement",
-      wrong: `"The law applies equally to everyone."
+      },
+      {
+        scenario: "Selective Enforcement",
+        wrong: `"The law applies equally to everyone."
 (Naive, no drama.)`,
-      right: `"The Duke's son killed a merchant. Self-defense, they say.
+        right: `"The Duke's son killed a merchant. Self-defense, they say.
 The merchant's brother killed a Duke's servant. Murder, they say.
 Same act. Different outcome. The law is blind—to who has power."
 (Hypocrisy creates resentment and story hooks.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

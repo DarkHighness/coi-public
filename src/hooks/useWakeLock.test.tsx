@@ -120,7 +120,9 @@ describe("useWakeLock", () => {
   });
 
   it("warns when wake lock request fails", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     const request = vi.fn(async () => {
       throw new Error("denied");
     });
@@ -143,7 +145,9 @@ describe("useWakeLock", () => {
   });
 
   it("keeps idle when wakeLock object is missing", () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
 
     Object.defineProperty(navigator, "wakeLock", {
       value: undefined,

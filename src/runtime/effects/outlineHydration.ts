@@ -5,8 +5,14 @@ import { getThemeName } from "../../services/ai/utils";
 import type { GameState, ResolvedThemeConfig, StorySegment } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
 import { seedVfsSessionFromOutline } from "../../services/vfs/seed";
-import { clearOutlineProgress, writeOutlineFile } from "../../services/vfs/outline";
-import { writeConversationIndex, writeTurnFile } from "../../services/vfs/conversation";
+import {
+  clearOutlineProgress,
+  writeOutlineFile,
+} from "../../services/vfs/outline";
+import {
+  writeConversationIndex,
+  writeTurnFile,
+} from "../../services/vfs/conversation";
 
 interface TokenUsageAccumulator {
   promptTokens: number;
@@ -55,7 +61,8 @@ export function calculateAccumulatedTokens(logs: any[]): TokenUsageAccumulator {
   return logs.reduce(
     (acc, log) => ({
       promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
-      completionTokens: acc.completionTokens + (log.usage?.completionTokens || 0),
+      completionTokens:
+        acc.completionTokens + (log.usage?.completionTokens || 0),
       totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
       cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
       cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
@@ -118,7 +125,8 @@ export function buildOutlineHydratedState({
       attributes: Array.isArray(visible.attributes) ? visible.attributes : [],
       appearance: visible.appearance ?? baseState.character.appearance,
       age: visible.age ?? baseState.character.age ?? "Unknown",
-      profession: visible.profession ?? baseState.character.profession ?? "Unknown",
+      profession:
+        visible.profession ?? baseState.character.profession ?? "Unknown",
       background: visible.background ?? baseState.character.background ?? "",
       race: visible.race ?? baseState.character.race ?? "Unknown",
       currentLocation:
@@ -165,12 +173,19 @@ export function buildOutlineHydratedState({
     isProcessing: true,
     logs: [...logs, ...(baseState.logs || [])],
     tokenUsage: {
-      promptTokens: (baseState.tokenUsage?.promptTokens || 0) + accumulatedTokens.promptTokens,
+      promptTokens:
+        (baseState.tokenUsage?.promptTokens || 0) +
+        accumulatedTokens.promptTokens,
       completionTokens:
-        (baseState.tokenUsage?.completionTokens || 0) + accumulatedTokens.completionTokens,
-      totalTokens: (baseState.tokenUsage?.totalTokens || 0) + accumulatedTokens.totalTokens,
-      cacheRead: (baseState.tokenUsage?.cacheRead || 0) + accumulatedTokens.cacheRead,
-      cacheWrite: (baseState.tokenUsage?.cacheWrite || 0) + accumulatedTokens.cacheWrite,
+        (baseState.tokenUsage?.completionTokens || 0) +
+        accumulatedTokens.completionTokens,
+      totalTokens:
+        (baseState.tokenUsage?.totalTokens || 0) +
+        accumulatedTokens.totalTokens,
+      cacheRead:
+        (baseState.tokenUsage?.cacheRead || 0) + accumulatedTokens.cacheRead,
+      cacheWrite:
+        (baseState.tokenUsage?.cacheWrite || 0) + accumulatedTokens.cacheWrite,
     },
     summaries: [],
     language,

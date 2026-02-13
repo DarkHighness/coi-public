@@ -8,7 +8,8 @@ import {
 export const toCurrentPath = (
   path: string,
   options?: { activeForkId?: number },
-): string => toCurrentDisplayPath(path, { activeForkId: options?.activeForkId });
+): string =>
+  toCurrentDisplayPath(path, { activeForkId: options?.activeForkId });
 
 export const stripCurrentPath = (
   path?: string,

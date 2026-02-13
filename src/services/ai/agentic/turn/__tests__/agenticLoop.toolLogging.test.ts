@@ -241,11 +241,9 @@ describe("agenticLoop tool logging", () => {
 
     expect(result.response.narrative).toBe("new narrative");
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(3);
-    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
-      "vfs_read",
-      "vfs_write",
-      "vfs_commit_turn",
-    ]);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_read", "vfs_write", "vfs_commit_turn"]);
 
     const blockedFinishLog = result.logs.find(
       (log) =>
@@ -390,11 +388,9 @@ describe("agenticLoop tool logging", () => {
 
     expect(result.response.narrative).toBe("new narrative");
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(3);
-    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
-      "vfs_write",
-      "vfs_write",
-      "vfs_commit_turn",
-    ]);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write", "vfs_write", "vfs_commit_turn"]);
 
     const writeBlockedLog = result.logs.find(
       (log) =>
@@ -478,10 +474,9 @@ describe("agenticLoop tool logging", () => {
 
     expect(result.response.narrative).toBe("new narrative");
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
-    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
-      "vfs_write",
-      "vfs_commit_turn",
-    ]);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write", "vfs_commit_turn"]);
   });
 
   it("soft-blocks read-only batches before finish to avoid token waste", async () => {
@@ -557,9 +552,9 @@ describe("agenticLoop tool logging", () => {
 
     expect(result.response.narrative).toBe("new narrative");
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(2);
-    expect(toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0])).toEqual([
-      "vfs_commit_turn",
-    ]);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_commit_turn"]);
 
     const historyText = JSON.stringify(result._conversationHistory);
     expect(historyText).toContain("PRE_FINISH_READ_ONLY_SEQUENCE");
@@ -626,7 +621,9 @@ describe("agenticLoop tool logging", () => {
       vfsSession,
     });
 
-    const toolLogs = result.logs.filter((log) => log.endpoint === "tool_execution");
+    const toolLogs = result.logs.filter(
+      (log) => log.endpoint === "tool_execution",
+    );
     expect(toolLogs).toHaveLength(2);
     expect(toolLogs.map((log) => log.toolName)).toEqual([
       "vfs_write",

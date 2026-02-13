@@ -74,7 +74,9 @@ describe("VFS global skills generator", () => {
     expect(identitySkill).toContain("`core/essence`");
 
     expect(stateManagementSkill).toContain("## STATE MANAGEMENT");
-    expect(stateManagementSkill).not.toContain('<rule name="STATE MANAGEMENT">');
+    expect(stateManagementSkill).not.toContain(
+      '<rule name="STATE MANAGEMENT">',
+    );
 
     const commandSudo = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/sudo/SKILL.md",
@@ -87,7 +89,8 @@ describe("VFS global skills generator", () => {
     )?.content;
     const commandSudoRef = seeds.find(
       (seed) =>
-        seed.path === "skills/commands/runtime/sudo/references/coverage-audit.md",
+        seed.path ===
+        "skills/commands/runtime/sudo/references/coverage-audit.md",
     )?.content;
     const commandRuntimeHub = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/SKILL.md",
@@ -109,10 +112,16 @@ describe("VFS global skills generator", () => {
     expect(commandSudo).toContain("domain: commands");
     expect(commandSudo).toContain("vfs_search");
     expect(commandSudoChecklist).toContain("residual verification");
-    expect(commandSudoExamples).toContain("Protagonist rename across world files");
+    expect(commandSudoExamples).toContain(
+      "Protagonist rename across world files",
+    );
     expect(commandSudoRef).toContain("Coverage Audit for /sudo");
-    expect(commandRuntimeHub).toContain("current/skills/commands/runtime/turn/SKILL.md");
-    expect(commandRuntimeHub).toContain("current/skills/commands/runtime/outline/SKILL.md");
+    expect(commandRuntimeHub).toContain(
+      "current/skills/commands/runtime/turn/SKILL.md",
+    );
+    expect(commandRuntimeHub).toContain(
+      "current/skills/commands/runtime/outline/SKILL.md",
+    );
     expect(commandTurn).toContain("name: commands-turn");
     expect(commandTurn).toContain("vfs_commit_turn");
     expect(commandSummary).toContain("name: commands-summary");
@@ -132,7 +141,9 @@ describe("VFS global skills generator", () => {
     const seeds = generateVfsSkillSeeds();
 
     const identity = entries.find((entry) => entry.id === "core-identity");
-    const commandSummary = entries.find((entry) => entry.id === "commands-summary");
+    const commandSummary = entries.find(
+      (entry) => entry.id === "commands-summary",
+    );
     const commandSummarySeed = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/summary/SKILL.md",
     )?.content;
@@ -204,12 +215,14 @@ describe("VFS global skills generator", () => {
 
     expect(
       seeds.some(
-        (seed) => seed.path === "skills/presets/runtime/narrative-style/SKILL.md",
+        (seed) =>
+          seed.path === "skills/presets/runtime/narrative-style/SKILL.md",
       ),
     ).toBe(true);
     expect(
       seeds.some(
-        (seed) => seed.path === "skills/presets/runtime/world-disposition/SKILL.md",
+        (seed) =>
+          seed.path === "skills/presets/runtime/world-disposition/SKILL.md",
       ),
     ).toBe(true);
     expect(
@@ -221,7 +234,8 @@ describe("VFS global skills generator", () => {
     expect(
       seeds.some(
         (seed) =>
-          seed.path === "skills/presets/runtime/player-malice-intensity/SKILL.md",
+          seed.path ===
+          "skills/presets/runtime/player-malice-intensity/SKILL.md",
       ),
     ).toBe(true);
 
@@ -233,7 +247,8 @@ describe("VFS global skills generator", () => {
     expect(
       entries.some(
         (entry) =>
-          entry.path === "current/skills/presets/runtime/narrative-style/SKILL.md",
+          entry.path ===
+          "current/skills/presets/runtime/narrative-style/SKILL.md",
       ),
     ).toBe(false);
   });

@@ -54,7 +54,9 @@ const readStoredUsage = (): Record<string, ThemeUsageStats> => {
       const lastUsedAtRaw = (value as { lastUsedAt?: unknown }).lastUsedAt;
 
       const count =
-        typeof countRaw === "number" && Number.isFinite(countRaw) && countRaw > 0
+        typeof countRaw === "number" &&
+        Number.isFinite(countRaw) &&
+        countRaw > 0
           ? Math.floor(countRaw)
           : 0;
       const lastUsedAt =
@@ -81,9 +83,9 @@ export const useThemePreferences = () => {
   const [favoriteThemeKeys, setFavoriteThemeKeys] = useState<string[]>(() =>
     readStoredFavorites(),
   );
-  const [usageByTheme, setUsageByTheme] = useState<Record<string, ThemeUsageStats>>(
-    () => readStoredUsage(),
-  );
+  const [usageByTheme, setUsageByTheme] = useState<
+    Record<string, ThemeUsageStats>
+  >(() => readStoredUsage());
 
   useEffect(() => {
     try {
@@ -95,7 +97,10 @@ export const useThemePreferences = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(THEME_FAVORITES_KEY, JSON.stringify(favoriteThemeKeys));
+      localStorage.setItem(
+        THEME_FAVORITES_KEY,
+        JSON.stringify(favoriteThemeKeys),
+      );
     } catch {
       // ignore
     }

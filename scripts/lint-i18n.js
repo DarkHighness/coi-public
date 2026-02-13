@@ -8,14 +8,7 @@ const EXCLUDE_DIR_PREFIXES = [
   path.join("src", "services", "prompts") + path.sep,
 ];
 
-const INCLUDED_EXTS = new Set([
-  ".ts",
-  ".tsx",
-  ".js",
-  ".jsx",
-  ".cjs",
-  ".mjs",
-]);
+const INCLUDED_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".cjs", ".mjs"]);
 
 const USER_VISIBLE_CALLEES = [
   { kind: "id", name: "showToast" },
@@ -331,7 +324,10 @@ function scanFile(relativePath, text) {
                 col: loc.col,
                 message: `${callee.kind === "id" ? callee.name : `${callee.object}.${callee.name}`} must not use a raw template literal; use i18n (t(...))`,
               });
-            } else if (!templateSource.includes("t(") && !templateSource.includes(".t(")) {
+            } else if (
+              !templateSource.includes("t(") &&
+              !templateSource.includes(".t(")
+            ) {
               errors.push({
                 rule: "user-visible-i18n",
                 file: relativePath,
@@ -444,7 +440,10 @@ function scanFile(relativePath, text) {
     const lineLoc = offsetToLineCol(lineIndex, start);
     const lineStart = lineIndex[lineLoc.line - 1];
     const lineEnd = text.indexOf("\n", lineStart);
-    const lineText = text.slice(lineStart, lineEnd === -1 ? text.length : lineEnd);
+    const lineText = text.slice(
+      lineStart,
+      lineEnd === -1 ? text.length : lineEnd,
+    );
     if (!lineText.includes("t(")) {
       warnings.push({
         rule: "user-visible-review",
@@ -487,16 +486,12 @@ async function main() {
     for (const e of errors) {
       errorCount++;
       // eslint-disable-next-line no-console
-      console.error(
-        `${e.file}:${e.line}:${e.col} [${e.rule}] ${e.message}`,
-      );
+      console.error(`${e.file}:${e.line}:${e.col} [${e.rule}] ${e.message}`);
     }
     for (const w of warnings) {
       warningCount++;
       // eslint-disable-next-line no-console
-      console.warn(
-        `${w.file}:${w.line}:${w.col} [${w.rule}] ${w.message}`,
-      );
+      console.warn(`${w.file}:${w.line}:${w.col} [${w.rule}] ${w.message}`);
     }
   }
 

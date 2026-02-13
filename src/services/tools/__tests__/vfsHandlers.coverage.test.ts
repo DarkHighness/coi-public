@@ -20,7 +20,11 @@ describe("VFS handlers additional coverage", () => {
 
   it("requires pointers for vfs_read(json)", () => {
     const session = new VfsSession();
-    session.writeFile("world/test.json", JSON.stringify({ a: 1 }), "application/json");
+    session.writeFile(
+      "world/test.json",
+      JSON.stringify({ a: 1 }),
+      "application/json",
+    );
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
@@ -52,7 +56,11 @@ describe("VFS handlers additional coverage", () => {
 
   it("supports successful line-window reads in vfs_read(lines)", () => {
     const session = new VfsSession();
-    session.writeFile("world/lines.txt", ["alpha", "beta", "gamma"].join("\n"), "text/plain");
+    session.writeFile(
+      "world/lines.txt",
+      ["alpha", "beta", "gamma"].join("\n"),
+      "text/plain",
+    );
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
@@ -154,7 +162,9 @@ describe("VFS handlers additional coverage", () => {
   it("supports semantic search when embeddings are enabled and local semantic index returns hits", async () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "alpha", "text/markdown");
-    session.setSemanticIndexer(() => [{ path: "world/notes.md", line: 1, text: "alpha" }]);
+    session.setSemanticIndexer(() => [
+      { path: "world/notes.md", line: 1, text: "alpha" },
+    ]);
     const ctx = { vfsSession: session, embeddingEnabled: true };
 
     const result = (await dispatchToolCallAsync(

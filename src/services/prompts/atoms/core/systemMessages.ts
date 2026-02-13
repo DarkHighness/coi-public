@@ -59,14 +59,20 @@ const gateSemanticCapabilityText = (
 /**
  * SUDO Mode Instruction
  */
-export const sudoModeInstruction: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#sudoModeInstruction", source: "atoms/core/systemMessages.ts", exportName: "sudoModeInstruction" }, (input) => {
-  const { toolsetId = "turn", ragEnabled = true } = input || {};
-  const capabilityText = gateSemanticCapabilityText(
-    formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools),
-    ragEnabled,
-  );
+export const sudoModeInstruction: Atom<SystemMessageInput> = defineAtom(
+  {
+    atomId: "atoms/core/systemMessages#sudoModeInstruction",
+    source: "atoms/core/systemMessages.ts",
+    exportName: "sudoModeInstruction",
+  },
+  (input) => {
+    const { toolsetId = "turn", ragEnabled = true } = input || {};
+    const capabilityText = gateSemanticCapabilityText(
+      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools),
+      ragEnabled,
+    );
 
-  return `[SYSTEM: FORCE UPDATE MODE (/sudo)]
+    return `[SYSTEM: FORCE UPDATE MODE (/sudo)]
 This is a **GM COMMAND**. You must:
 1. The user action is already prefixed with **[SUDO]**. Treat it as a forced elevated update payload, while still respecting immutable/finish policy constraints.
 2. Use **VFS-only tools** (this loop's allowlist):
@@ -82,21 +88,25 @@ This is a **GM COMMAND**. You must:
 8. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\`.
 9. ${CONVERSATION_GUARD_LINE}
 `;
-});
+  },
+);
 
 /**
  * Normal Turn Instruction
  */
-export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#normalTurnInstruction", source: "atoms/core/systemMessages.ts", exportName: "normalTurnInstruction" }, ({
-  finishToolName,
-  ragEnabled = true,
-}) => {
-  const capabilityText = gateSemanticCapabilityText(
-    formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools),
-    ragEnabled,
-  );
+export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
+  {
+    atomId: "atoms/core/systemMessages#normalTurnInstruction",
+    source: "atoms/core/systemMessages.ts",
+    exportName: "normalTurnInstruction",
+  },
+  ({ finishToolName, ragEnabled = true }) => {
+    const capabilityText = gateSemanticCapabilityText(
+      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools),
+      ragEnabled,
+    );
 
-  return `[SYSTEM: TOOL USAGE INSTRUCTION]
+    return `[SYSTEM: TOOL USAGE INSTRUCTION]
 You are in AGENTIC MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
    AVAILABLE TOOLS in this loop:
@@ -124,21 +134,25 @@ You are in AGENTIC MODE (VFS-only).
   3) \`${finishToolName || "vfs_commit_turn"}\` with { userAction, assistant: { narrative, choices } } as the LAST call
 </examples>
 `;
-});
+  },
+);
 
 /**
  * Cleanup Turn Instruction
  */
-export const cleanupTurnInstruction: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#cleanupTurnInstruction", source: "atoms/core/systemMessages.ts", exportName: "cleanupTurnInstruction" }, ({
-  finishToolName,
-  ragEnabled = true,
-}) => {
-  const capabilityText = gateSemanticCapabilityText(
-    formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.cleanup.tools),
-    ragEnabled,
-  );
+export const cleanupTurnInstruction: Atom<SystemMessageInput> = defineAtom(
+  {
+    atomId: "atoms/core/systemMessages#cleanupTurnInstruction",
+    source: "atoms/core/systemMessages.ts",
+    exportName: "cleanupTurnInstruction",
+  },
+  ({ finishToolName, ragEnabled = true }) => {
+    const capabilityText = gateSemanticCapabilityText(
+      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.cleanup.tools),
+      ragEnabled,
+    );
 
-  return `[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]
+    return `[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]
 You are in CLEANUP MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
    AVAILABLE TOOLS in this loop:
@@ -163,37 +177,60 @@ You are in CLEANUP MODE (VFS-only).
   4) \`${finishToolName || "vfs_commit_turn"}\` as the LAST call
 </examples>
 `;
-});
+  },
+);
 
 /**
  * Pending Consequences Message
  */
-export const pendingConsequencesMessage: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#pendingConsequencesMessage", source: "atoms/core/systemMessages.ts", exportName: "pendingConsequencesMessage" }, ({
-  readyConsequences,
-}) => {
-  if (!readyConsequences || readyConsequences.length === 0) return "";
-  const list = readyConsequences.join("\n");
-  return `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${list}\n\nUpdate relevant world files under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) to apply these consequences.`;
-});
+export const pendingConsequencesMessage: Atom<SystemMessageInput> = defineAtom(
+  {
+    atomId: "atoms/core/systemMessages#pendingConsequencesMessage",
+    source: "atoms/core/systemMessages.ts",
+    exportName: "pendingConsequencesMessage",
+  },
+  ({ readyConsequences }) => {
+    if (!readyConsequences || readyConsequences.length === 0) return "";
+    const list = readyConsequences.join("\n");
+    return `[SYSTEM: PENDING CONSEQUENCES]\nReady to trigger:\n${list}\n\nUpdate relevant world files under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) to apply these consequences.`;
+  },
+);
 
 /**
  * Budget Status Message
  */
-export const budgetStatusMessage: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#budgetStatusMessage", source: "atoms/core/systemMessages.ts", exportName: "budgetStatusMessage" }, ({
-  budgetPrompt,
-}) => `[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`);
+export const budgetStatusMessage: Atom<SystemMessageInput> = defineAtom(
+  {
+    atomId: "atoms/core/systemMessages#budgetStatusMessage",
+    source: "atoms/core/systemMessages.ts",
+    exportName: "budgetStatusMessage",
+  },
+  ({ budgetPrompt }) => `[SYSTEM: BUDGET STATUS]\n${budgetPrompt}`,
+);
 
 /**
  * Retcon ACK required message
  */
-export const retconAckRequiredMessage: Atom<RetconAckSystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#retconAckRequiredMessage", source: "atoms/core/systemMessages.ts", exportName: "retconAckRequiredMessage" }, ({
-  pendingHash,
-  pendingReason,
-}) =>
-  `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- hash: "${pendingHash}"\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.\nUse \`vfs_commit_turn\` with matching \`retconAck.hash\`.`);
+export const retconAckRequiredMessage: Atom<RetconAckSystemMessageInput> =
+  defineAtom(
+    {
+      atomId: "atoms/core/systemMessages#retconAckRequiredMessage",
+      source: "atoms/core/systemMessages.ts",
+      exportName: "retconAckRequiredMessage",
+    },
+    ({ pendingHash, pendingReason }) =>
+      `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- hash: "${pendingHash}"\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.\nUse \`vfs_commit_turn\` with matching \`retconAck.hash\`.`,
+  );
 
 /**
  * No Tool Call Error Message
  */
-export const noToolCallError: Atom<SystemMessageInput> = defineAtom({ atomId: "atoms/core/systemMessages#noToolCallError", source: "atoms/core/systemMessages.ts", exportName: "noToolCallError" }, () =>
-  `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`vfs_commit_turn\` as the LAST tool call. Bare text is not allowed.`);
+export const noToolCallError: Atom<SystemMessageInput> = defineAtom(
+  {
+    atomId: "atoms/core/systemMessages#noToolCallError",
+    source: "atoms/core/systemMessages.ts",
+    exportName: "noToolCallError",
+  },
+  () =>
+    `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`vfs_commit_turn\` as the LAST tool call. Bare text is not allowed.`,
+);

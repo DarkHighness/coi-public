@@ -27,19 +27,25 @@ export interface ToolUsageInput {
   ragEnabled?: boolean;
 }
 
-export const toolUsage: Atom<ToolUsageInput> = defineAtom({ atomId: "atoms/core/toolUsage#toolUsage", source: "atoms/core/toolUsage.ts", exportName: "toolUsage" }, (input) => {
-  void input?.finishToolName;
-  const ragEnabled = input?.ragEnabled ?? true;
+export const toolUsage: Atom<ToolUsageInput> = defineAtom(
+  {
+    atomId: "atoms/core/toolUsage#toolUsage",
+    source: "atoms/core/toolUsage.ts",
+    exportName: "toolUsage",
+  },
+  (input) => {
+    void input?.finishToolName;
+    const ragEnabled = input?.ragEnabled ?? true;
 
-  const capabilityText = gateSemanticCapabilityText(
-    formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools),
-    ragEnabled,
-  );
-  const searchModes = ragEnabled
-    ? "text/regex/fuzzy/semantic"
-    : "text/regex/fuzzy";
+    const capabilityText = gateSemanticCapabilityText(
+      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools),
+      ragEnabled,
+    );
+    const searchModes = ragEnabled
+      ? "text/regex/fuzzy/semantic"
+      : "text/regex/fuzzy";
 
-  return `
+    return `
 <tool_usage>
   **FILE-ONLY TOOLING (VFS)**:
   ${capabilityText}
@@ -72,4 +78,5 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom({ atomId: "atoms/core/
   - Do NOT write finish-guarded conversation/summary paths via generic mutation tools.
 </tool_usage>
 `;
-});
+  },
+);

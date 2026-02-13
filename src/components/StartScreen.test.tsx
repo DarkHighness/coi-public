@@ -166,7 +166,9 @@ describe("StartScreen", () => {
     );
 
     const file = new File(["{}"], "save.json", { type: "application/json" });
-    const input = container.querySelector("input[type='file']") as HTMLInputElement;
+    const input = container.querySelector(
+      "input[type='file']",
+    ) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
 
     expect(onLoad).toHaveBeenCalledWith(file);
@@ -196,12 +198,7 @@ describe("StartScreen", () => {
       vi.advanceTimersByTime(1600);
     });
 
-    expect(onStart).toHaveBeenCalledWith(
-      "fantasy",
-      "",
-      undefined,
-      "wanderer",
-    );
+    expect(onStart).toHaveBeenCalledWith("fantasy", "", undefined, "wanderer");
   });
 
   it("clears preview when exiting theme selection", () => {

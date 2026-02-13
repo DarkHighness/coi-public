@@ -35,7 +35,10 @@ import {
   type UpdateDocumentPayload,
   type UpsertFileChunksPayload,
 } from "./types";
-import { embedTextsLocally, resetLocalEmbeddingEngines } from "./localEmbedding";
+import {
+  embedTextsLocally,
+  resetLocalEmbeddingEngines,
+} from "./localEmbedding";
 
 export type RAGEventCallback = (event: RAGEvent) => void;
 
@@ -174,8 +177,7 @@ export class RAGService {
     return {
       ...merged,
       backend: "transformers_js",
-      transformersModel:
-        merged.transformersModel || "Xenova/all-MiniLM-L6-v2",
+      transformersModel: merged.transformersModel || "Xenova/all-MiniLM-L6-v2",
       deviceOrder: merged.deviceOrder || ["webgpu", "wasm", "cpu"],
     };
   }
@@ -190,7 +192,8 @@ export class RAGService {
     const missing = documents
       .map((doc, index) => ({ index, doc }))
       .filter(
-        ({ doc }) => !Array.isArray(doc.embedding) || doc.embedding.length === 0,
+        ({ doc }) =>
+          !Array.isArray(doc.embedding) || doc.embedding.length === 0,
       );
 
     if (missing.length === 0) {
@@ -220,7 +223,10 @@ export class RAGService {
 
         missing.forEach((entry, offset) => {
           const reusableEmbedding = reusable.embeddings[offset];
-          if (Array.isArray(reusableEmbedding) && reusableEmbedding.length > 0) {
+          if (
+            Array.isArray(reusableEmbedding) &&
+            reusableEmbedding.length > 0
+          ) {
             prepared[entry.index] = {
               ...prepared[entry.index],
               embedding: reusableEmbedding,
@@ -261,7 +267,6 @@ export class RAGService {
     return prepared;
   }
 
-
   // ======================================================================
   // File-centric indexing API
   // ======================================================================
@@ -271,7 +276,9 @@ export class RAGService {
   ): Promise<{ count: number }> {
     this.ensureInitialized();
     const preparedDocuments = await this.ensureLocalEmbeddings(documents);
-    return this.sendRequest("upsertFileChunks", { documents: preparedDocuments });
+    return this.sendRequest("upsertFileChunks", {
+      documents: preparedDocuments,
+    });
   }
 
   async deleteByPaths(
@@ -292,7 +299,9 @@ export class RAGService {
     params: ReindexAllPayload,
   ): Promise<{ deleted: number; count: number }> {
     this.ensureInitialized();
-    const preparedDocuments = await this.ensureLocalEmbeddings(params.documents);
+    const preparedDocuments = await this.ensureLocalEmbeddings(
+      params.documents,
+    );
     return this.sendRequest("reindexAll", {
       ...params,
       documents: preparedDocuments,
@@ -420,16 +429,19 @@ export class RAGService {
     return this.sendRequest("cleanup", {});
   }
 
-  async updateConfig(config: Partial<RAGConfig>): Promise<{ success: boolean }> {
+  async updateConfig(
+    config: Partial<RAGConfig>,
+  ): Promise<{ success: boolean }> {
     const nextConfig: RAGConfig = {
       ...this.config,
       ...config,
       local: {
-        ...(this.config.local || DEFAULT_RAG_CONFIG.local || {
-          backend: "transformers_js",
-          model: "use-lite-512",
-          transformersModel: "Xenova/all-MiniLM-L6-v2",
-        }),
+        ...(this.config.local ||
+          DEFAULT_RAG_CONFIG.local || {
+            backend: "transformers_js",
+            model: "use-lite-512",
+            transformersModel: "Xenova/all-MiniLM-L6-v2",
+          }),
         ...(config.local ?? {}),
       },
     };

@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  executeGenericTool,
-  validateToolArgs,
-} from "../toolCallProcessor";
+import { executeGenericTool, validateToolArgs } from "../toolCallProcessor";
 
 const handlerMocks = vi.hoisted(() => ({
   hasHandler: vi.fn(),
@@ -28,7 +25,9 @@ const createContext = () => ({
     changedEntities: new Map<string, string>(),
     vfsSession: {},
     requiredCommandSkillPaths: ["skills/commands/runtime/sudo/SKILL.md"],
-    requiredPresetSkillPaths: ["skills/presets/runtime/narrative-style/SKILL.md"],
+    requiredPresetSkillPaths: [
+      "skills/presets/runtime/narrative-style/SKILL.md",
+    ],
   },
   gameState: { forkId: 0 },
   settings: { story: { modelId: "m1" } },

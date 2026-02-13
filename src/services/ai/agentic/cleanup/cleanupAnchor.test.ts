@@ -32,18 +32,23 @@ describe("generateEntityCleanup anchor and context forwarding", () => {
       } as any,
     );
 
-    const [, calledContext] = mockedGenerateAdventureTurn.mock.calls[0] as any[];
+    const [, calledContext] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
 
     expect(calledContext.userAction).toContain("<cleanup_anchor>");
     expect(calledContext.userAction).toContain("<loop_quickstart>");
-    expect(calledContext.userAction).toContain("<target_fork_id>5</target_fork_id>");
+    expect(calledContext.userAction).toContain(
+      "<target_fork_id>5</target_fork_id>",
+    );
     expect(calledContext.userAction).toContain(
       "<target_turn_number>42</target_turn_number>",
     );
     expect(calledContext.userAction).toContain(
       "use `vfs_read` to load command protocol (hub first)",
     );
-    expect(calledContext.userAction).toContain("current/skills/commands/runtime/SKILL.md");
+    expect(calledContext.userAction).toContain(
+      "current/skills/commands/runtime/SKILL.md",
+    );
     expect(calledContext.userAction).toContain(
       "current/skills/commands/runtime/cleanup/SKILL.md",
     );
@@ -59,7 +64,8 @@ describe("generateEntityCleanup anchor and context forwarding", () => {
       } as any,
     );
 
-    const [, calledContext] = mockedGenerateAdventureTurn.mock.calls[0] as any[];
+    const [, calledContext] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
 
     expect(calledContext.vfsMode).toBe("normal");
     expect(calledContext.vfsElevationToken).toBeNull();

@@ -35,9 +35,7 @@ const ensureTurnIdentity = (
   };
 };
 
-const withRewritePrivileges = (
-  context: VfsWriteContext,
-): VfsWriteContext => ({
+const withRewritePrivileges = (context: VfsWriteContext): VfsWriteContext => ({
   ...context,
   operation: "history_rewrite",
   allowFinishGuardedWrite: true,
@@ -46,7 +44,9 @@ const withRewritePrivileges = (
     context.elevationScopeTemplateIds ?? "all_elevated",
 });
 
-const normalizeConversationIndex = (index: ConversationIndex): ConversationIndex => {
+const normalizeConversationIndex = (
+  index: ConversationIndex,
+): ConversationIndex => {
   const normalized: ConversationIndex = {
     ...index,
     rootTurnIdByFork: { ...index.rootTurnIdByFork },
@@ -60,7 +60,9 @@ const normalizeConversationIndex = (index: ConversationIndex): ConversationIndex
       continue;
     }
 
-    const deduped = Array.from(new Set(order.filter((turnId) => typeof turnId === "string")));
+    const deduped = Array.from(
+      new Set(order.filter((turnId) => typeof turnId === "string")),
+    );
     normalized.turnOrderByFork[forkKey] = deduped;
 
     if (deduped.length > 0 && !normalized.rootTurnIdByFork[forkKey]) {
@@ -121,7 +123,10 @@ export class ConversationHistoryRewriteService {
     return nextTurn;
   }
 
-  public rewriteIndex(session: VfsSession, params: RewriteIndexParams): ConversationIndex {
+  public rewriteIndex(
+    session: VfsSession,
+    params: RewriteIndexParams,
+  ): ConversationIndex {
     const { mutate, writeContext } = params;
     const snapshot = session.snapshot();
     const existing = readConversationIndex(snapshot);
@@ -132,7 +137,9 @@ export class ConversationHistoryRewriteService {
     const nextIndex = normalizeConversationIndex(mutate({ ...existing }));
 
     session.withWriteContext(withRewritePrivileges(writeContext), () => {
-      writeConversationIndex(session, nextIndex, { operation: "history_rewrite" });
+      writeConversationIndex(session, nextIndex, {
+        operation: "history_rewrite",
+      });
     });
 
     return nextIndex;

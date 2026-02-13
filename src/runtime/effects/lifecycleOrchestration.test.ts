@@ -131,16 +131,20 @@ function makeOutlineResult() {
 beforeEach(() => {
   vi.clearAllMocks();
 
-  applyCustomContextThemeOverridesMock.mockImplementation((config: any) => config);
+  applyCustomContextThemeOverridesMock.mockImplementation(
+    (config: any) => config,
+  );
   indexInitialEntitiesMock.mockResolvedValue(undefined);
   persistOutlineCheckpointMock.mockResolvedValue(undefined);
 
-  buildOutlineHydratedStateMock.mockImplementation(({ baseState, outline }: any) => ({
-    ...baseState,
-    outline,
-    currentLocation: "loc:start",
-    time: "Day 1",
-  }));
+  buildOutlineHydratedStateMock.mockImplementation(
+    ({ baseState, outline }: any) => ({
+      ...baseState,
+      outline,
+      currentLocation: "loc:start",
+      time: "Day 1",
+    }),
+  );
 
   buildOpeningNarrativeSegmentMock.mockReturnValue({
     firstNode: {
@@ -160,24 +164,31 @@ beforeEach(() => {
     fallbackPrompt: "initial prompt",
   });
 
-  applyOpeningNarrativeStateMock.mockImplementation((state: any, firstNode: any) => ({
-    ...state,
-    nodes: { [firstNode.id]: firstNode },
-    activeNodeId: firstNode.id,
-    rootNodeId: firstNode.id,
-    currentFork: [firstNode],
-    initialPrompt: "initial prompt",
-    isProcessing: false,
-    liveToolCalls: [],
-  }));
+  applyOpeningNarrativeStateMock.mockImplementation(
+    (state: any, firstNode: any) => ({
+      ...state,
+      nodes: { [firstNode.id]: firstNode },
+      activeNodeId: firstNode.id,
+      rootNodeId: firstNode.id,
+      currentFork: [firstNode],
+      initialPrompt: "initial prompt",
+      isProcessing: false,
+      liveToolCalls: [],
+    }),
+  );
 });
 
 describe("createLifecycleActions", () => {
   it("uses imageBased theme key for image-start flow", async () => {
-    runOutlineGenerationPhasedMock.mockRejectedValueOnce(new Error("outline failed"));
+    runOutlineGenerationPhasedMock.mockRejectedValueOnce(
+      new Error("outline failed"),
+    );
 
     const deps = createBaseDeps();
-    const actions = createLifecycleActions({ ...deps, confirm: vi.fn(() => false) } as any);
+    const actions = createLifecycleActions({
+      ...deps,
+      confirm: vi.fn(() => false),
+    } as any);
 
     await actions.startNewGame(
       undefined,
@@ -209,26 +220,28 @@ describe("createLifecycleActions", () => {
     } as any;
 
     buildOutlineHydratedStateMock.mockReturnValue(hydratedState);
-    buildOpeningNarrativeSegmentMock.mockImplementation(({ baseState }: any) => {
-      expect(baseState).toBe(hydratedState);
-      return {
-        firstNode: {
-          id: "model-fork-0/turn-0",
-          parentId: null,
-          text: "Opening",
-          choices: [{ text: "Continue" }],
-          imagePrompt: "",
-          role: "model",
-          timestamp: 1,
-          segmentIdx: 0,
-          summaries: [],
-          summarizedIndex: 0,
-          ending: "continue",
-        },
-        openingAtmosphere: { envTheme: "fantasy", ambience: "quiet" },
-        fallbackPrompt: "initial prompt",
-      };
-    });
+    buildOpeningNarrativeSegmentMock.mockImplementation(
+      ({ baseState }: any) => {
+        expect(baseState).toBe(hydratedState);
+        return {
+          firstNode: {
+            id: "model-fork-0/turn-0",
+            parentId: null,
+            text: "Opening",
+            choices: [{ text: "Continue" }],
+            imagePrompt: "",
+            role: "model",
+            timestamp: 1,
+            segmentIdx: 0,
+            summaries: [],
+            summarizedIndex: 0,
+            ending: "continue",
+          },
+          openingAtmosphere: { envTheme: "fantasy", ambience: "quiet" },
+          fallbackPrompt: "initial prompt",
+        };
+      },
+    );
     applyOpeningNarrativeStateMock.mockReturnValue(committedState);
 
     const actions = createLifecycleActions(deps as any);
@@ -263,7 +276,9 @@ describe("createLifecycleActions", () => {
   });
 
   it("restarts via startNewGame when model mismatch and confirm restart", async () => {
-    runOutlineGenerationPhasedMock.mockRejectedValueOnce(new Error("stop early"));
+    runOutlineGenerationPhasedMock.mockRejectedValueOnce(
+      new Error("stop early"),
+    );
 
     const deps = createBaseDeps();
     deps.aiSettings.lore = { modelId: "model-b", providerId: "provider-b" };
@@ -273,7 +288,10 @@ describe("createLifecycleActions", () => {
       .mockReturnValueOnce(true)
       .mockReturnValueOnce(false);
 
-    const actions = createLifecycleActions({ ...deps, confirm: confirmSpy } as any);
+    const actions = createLifecycleActions({
+      ...deps,
+      confirm: confirmSpy,
+    } as any);
     await actions.resumeOutlineGeneration();
 
     expect(confirmSpy).toHaveBeenCalled();
@@ -304,7 +322,9 @@ describe("createLifecycleActions", () => {
 
   it("retries resume with sanitized checkpoint after history corruption", async () => {
     runOutlineGenerationPhasedMock
-      .mockRejectedValueOnce(new HistoryCorruptedError(new Error("bad history")))
+      .mockRejectedValueOnce(
+        new HistoryCorruptedError(new Error("bad history")),
+      )
       .mockResolvedValueOnce(makeOutlineResult());
 
     const deps = createBaseDeps();
@@ -320,7 +340,11 @@ describe("createLifecycleActions", () => {
           content: [
             {
               type: "tool_use",
-              toolUse: { id: "call-1", name: "submit_outline_phase_3", args: {} },
+              toolUse: {
+                id: "call-1",
+                name: "submit_outline_phase_3",
+                args: {},
+              },
             },
             { type: "text", text: "Trying phase" },
           ],
@@ -368,7 +392,9 @@ describe("createLifecycleActions", () => {
 
   it("retries resume after context-length failure with trimmed checkpoint", async () => {
     runOutlineGenerationPhasedMock
-      .mockRejectedValueOnce(new Error("context_length_exceeded: too many tokens"))
+      .mockRejectedValueOnce(
+        new Error("context_length_exceeded: too many tokens"),
+      )
       .mockResolvedValueOnce(makeOutlineResult());
 
     const deps = createBaseDeps();
@@ -415,9 +441,13 @@ describe("createLifecycleActions", () => {
     const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
     expect(retryCall?.sessionTag).toContain("context-recovery-");
     expect(retryCall?.resumeFrom?.liveToolCalls).toEqual([]);
-    expect(retryCall?.resumeFrom?.conversationHistory.length).toBeLessThanOrEqual(24);
     expect(
-      retryCall?.resumeFrom?.conversationHistory.some((msg: any) => msg.role === "tool"),
+      retryCall?.resumeFrom?.conversationHistory.length,
+    ).toBeLessThanOrEqual(24);
+    expect(
+      retryCall?.resumeFrom?.conversationHistory.some(
+        (msg: any) => msg.role === "tool",
+      ),
     ).toBe(false);
     expect(deps.navigate).toHaveBeenCalledWith("/game");
   });
@@ -476,7 +506,10 @@ describe("createLifecycleActions", () => {
       .mockRejectedValueOnce(new Error("first attempt failed"))
       .mockRejectedValueOnce(new Error("second attempt failed"));
 
-    const actions = createLifecycleActions({ ...deps, confirm: confirmSpy } as any);
+    const actions = createLifecycleActions({
+      ...deps,
+      confirm: confirmSpy,
+    } as any);
     await actions.startNewGame("fantasy", "ctx");
 
     expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
@@ -505,7 +538,10 @@ describe("createLifecycleActions", () => {
       .mockRejectedValueOnce(new Error("outline failed"))
       .mockRejectedValueOnce(new Error("resume failed"));
 
-    const actions = createLifecycleActions({ ...deps, confirm: confirmSpy } as any);
+    const actions = createLifecycleActions({
+      ...deps,
+      confirm: confirmSpy,
+    } as any);
     await actions.startNewGame("fantasy", "ctx");
 
     expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);

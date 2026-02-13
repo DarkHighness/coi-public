@@ -17,8 +17,10 @@ vi.mock("../localEmbedding", () => ({
 const embedTextsLocallyMock = vi.mocked(embedTextsLocally);
 
 const createService = (
-  provider: "local_transformers" | "local_tfjs" | "gemini" =
-    "local_transformers",
+  provider:
+    | "local_transformers"
+    | "local_tfjs"
+    | "gemini" = "local_transformers",
 ) => {
   const service = new RAGService() as any;
   service.isInitialized = true;
@@ -83,15 +85,17 @@ describe("RAGService local embedding runtime", () => {
 
   it("precomputes only missing chunk embeddings before upsert in local_tfjs runtime", async () => {
     const service = createService("local_tfjs");
-    service.sendRequest.mockImplementation(async (type: string, payload: any) => {
-      if (type === "lookupReusableEmbeddings") {
-        return { embeddings: [null] };
-      }
-      if (type === "upsertFileChunks") {
-        return { count: payload.documents.length };
-      }
-      throw new Error(`Unexpected request: ${type}`);
-    });
+    service.sendRequest.mockImplementation(
+      async (type: string, payload: any) => {
+        if (type === "lookupReusableEmbeddings") {
+          return { embeddings: [null] };
+        }
+        if (type === "upsertFileChunks") {
+          return { count: payload.documents.length };
+        }
+        throw new Error(`Unexpected request: ${type}`);
+      },
+    );
 
     embedTextsLocallyMock.mockResolvedValue([[0.33, 0.44]]);
 

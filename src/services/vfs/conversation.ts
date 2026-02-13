@@ -1,7 +1,10 @@
 import type { VfsFileMap } from "./types";
 import { VfsSession, type VfsWriteOptions } from "./vfsSession";
 import { normalizeVfsPath } from "./utils";
-import { canonicalToLogicalVfsPath, toCanonicalVfsPath } from "./core/pathResolver";
+import {
+  canonicalToLogicalVfsPath,
+  toCanonicalVfsPath,
+} from "./core/pathResolver";
 import type { ForkTree, TokenUsage } from "@/types";
 
 export interface ConversationIndex {
@@ -136,8 +139,7 @@ export const readTurnFile = (
   files: VfsFileMap,
   forkId: number,
   turn: number,
-): TurnFile | null =>
-  parseJson<TurnFile>(files, buildTurnPath(forkId, turn));
+): TurnFile | null => parseJson<TurnFile>(files, buildTurnPath(forkId, turn));
 
 const toJsonlLine = (entry: unknown, index: number): string => {
   try {

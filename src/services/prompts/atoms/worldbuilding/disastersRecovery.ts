@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const disastersRecovery: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/disastersRecovery#disastersRecovery", source: "atoms/worldbuilding/disastersRecovery.ts", exportName: "disastersRecovery" }, () => `
+export const disastersRecovery: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/disastersRecovery#disastersRecovery",
+    source: "atoms/worldbuilding/disastersRecovery.ts",
+    exportName: "disastersRecovery",
+  },
+  () => `
 <worldbuilding_context>
 **DISASTERS & RECOVERY (The great equalizer)**
 
@@ -81,44 +86,59 @@ Recovery creates:
 - Recovery debt:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const disastersRecoveryPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/disastersRecovery#disastersRecoveryPrimer", source: "atoms/worldbuilding/disastersRecovery.ts", exportName: "disastersRecoveryPrimer" }, () =>
-  `
+export const disastersRecoveryPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/disastersRecovery#disastersRecoveryPrimer",
+    source: "atoms/worldbuilding/disastersRecovery.ts",
+    exportName: "disastersRecoveryPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **DISASTER PRIMER**: Model crises as cascades + triage + control measures + exploitation + recovery debt. Always define secondary disasters.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const disastersRecoverySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/disastersRecovery#disastersRecoverySkill", source: "atoms/worldbuilding/disastersRecovery.ts", exportName: "disastersRecoverySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(disastersRecovery),
-  quickStart: `
+export const disastersRecoverySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/disastersRecovery#disastersRecoverySkill",
+    source: "atoms/worldbuilding/disastersRecovery.ts",
+    exportName: "disastersRecoverySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(disastersRecovery),
+    quickStart: `
 1) Pick one primary disaster and two secondary cascades
 2) Define visible vs hidden triage rules
 3) Pick one control measure (passes/curfew/rationing) and a workaround with risk
 4) Define one recovery debt (new law, new surveillance, new resentment)
 `.trim(),
-  checklist: [
-    "Two secondary disasters are defined and plausible.",
-    "Triage has visible and hidden rules (politics exists).",
-    "Control measures have enforcement limits and workarounds.",
-    "Exploitation occurs (profiteers/power grabs/scapegoats).",
-    "Recovery creates debt and reforms that persist.",
-  ],
-  examples: [
-    {
-      scenario: "Secondary disaster cascade",
-      wrong: `"A flood happens and people are sad."`,
-      right: `"Flood destroys the granary. Two days later bread prices triple.
+    checklist: [
+      "Two secondary disasters are defined and plausible.",
+      "Triage has visible and hidden rules (politics exists).",
+      "Control measures have enforcement limits and workarounds.",
+      "Exploitation occurs (profiteers/power grabs/scapegoats).",
+      "Recovery creates debt and reforms that persist.",
+    ],
+    examples: [
+      {
+        scenario: "Secondary disaster cascade",
+        wrong: `"A flood happens and people are sad."`,
+        right: `"Flood destroys the granary. Two days later bread prices triple.
 Quarantine blocks refugees at the bridge. Disease spreads in camps.
 Merchants sell 'clean water' that’s counterfeit. Now every choice has stakes."`,
-    },
-    {
-      scenario: "Control measure with workaround",
-      wrong: `"The city is under curfew."`,
-      right: `"Curfew is enforced by patrols, but only on main streets.
+      },
+      {
+        scenario: "Control measure with workaround",
+        wrong: `"The city is under curfew."`,
+        right: `"Curfew is enforced by patrols, but only on main streets.
 Smugglers use maintenance tunnels. Access requires a union token—expensive—
 and the token is logged (audit risk)."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

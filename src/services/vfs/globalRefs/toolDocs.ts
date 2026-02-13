@@ -4,7 +4,13 @@ import { getToolSchemaHint } from "../../providers/utils";
 import type { VfsFile, VfsFileMap, VfsContentType } from "../types";
 import { hashContent } from "../utils";
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [k: string]: JsonValue };
 
 const createFile = (
   path: string,
@@ -109,7 +115,8 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
     {
       displayText: "The party reached the ruins and uncovered recent activity.",
       visible: {
-        narrative: "The group entered old ruins and found signs of a recent struggle.",
+        narrative:
+          "The group entered old ruins and found signs of a recent struggle.",
         majorEvents: ["Reached ruins", "Found claw marks"],
         characterDevelopment: "The protagonist became more cautious.",
         worldState: "The ruins are now a confirmed conflict hotspot.",
@@ -174,16 +181,24 @@ const sampleValueForSchema = (
   }
   if (inner instanceof z.ZodDiscriminatedUnion) {
     const first = (inner._def.options as z.ZodObject<any>[])[0];
-    return first ? buildExampleFromObject(first, depth + 1) : { value: "<union>" };
+    return first
+      ? buildExampleFromObject(first, depth + 1)
+      : { value: "<union>" };
   }
   if (inner instanceof z.ZodUnion) {
     const options = inner._def.options as z.ZodTypeAny[];
-    return options.length > 0 ? sampleValueForSchema(options[0], depth + 1) : "<union>";
+    return options.length > 0
+      ? sampleValueForSchema(options[0], depth + 1)
+      : "<union>";
   }
   if (inner instanceof z.ZodRecord) {
-    const valueSchema = (inner as any)?._def?.valueType as z.ZodTypeAny | undefined;
+    const valueSchema = (inner as any)?._def?.valueType as
+      | z.ZodTypeAny
+      | undefined;
     return {
-      "<key>": valueSchema ? sampleValueForSchema(valueSchema, depth + 1) : "<value>",
+      "<key>": valueSchema
+        ? sampleValueForSchema(valueSchema, depth + 1)
+        : "<value>",
     };
   }
   if (inner instanceof z.ZodLazy) {
@@ -266,7 +281,9 @@ const buildToolDocMarkdown = (
 };
 
 const buildToolsReadme = (): string => {
-  const toolLines = ALL_DEFINED_TOOLS.map((tool) => `- \`${tool.name}\` -> \`refs/tools/${tool.name}.md\``);
+  const toolLines = ALL_DEFINED_TOOLS.map(
+    (tool) => `- \`${tool.name}\` -> \`refs/tools/${tool.name}.md\``,
+  );
   return [
     "# Tool Docs Reference (VFS)",
     "",
@@ -319,4 +336,3 @@ export const buildGlobalVfsToolDocs = (): VfsFileMap => {
 
   return files;
 };
-

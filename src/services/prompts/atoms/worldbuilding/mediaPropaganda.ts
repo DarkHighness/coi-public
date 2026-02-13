@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const mediaPropaganda: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropaganda", source: "atoms/worldbuilding/mediaPropaganda.ts", exportName: "mediaPropaganda" }, () => `
+export const mediaPropaganda: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropaganda",
+    source: "atoms/worldbuilding/mediaPropaganda.ts",
+    exportName: "mediaPropaganda",
+  },
+  () => `
 <worldbuilding_context>
 **MEDIA & PROPAGANDA (Narratives with Infrastructure)**
 
@@ -80,46 +85,61 @@ Reputation changes access:
 - One reputation mark that persists:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const mediaPropagandaPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaPrimer", source: "atoms/worldbuilding/mediaPropaganda.ts", exportName: "mediaPropagandaPrimer" }, () =>
-  `
+export const mediaPropagandaPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaPrimer",
+    source: "atoms/worldbuilding/mediaPropaganda.ts",
+    exportName: "mediaPropagandaPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **MEDIA PRIMER**: Narratives travel via channels with gatekeepers. Proof standards differ by audience. Public stories trigger procedural response ladders and persistent reputation marks.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const mediaPropagandaSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaSkill", source: "atoms/worldbuilding/mediaPropaganda.ts", exportName: "mediaPropagandaSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(mediaPropaganda),
-  quickStart: `
+export const mediaPropagandaSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaSkill",
+    source: "atoms/worldbuilding/mediaPropaganda.ts",
+    exportName: "mediaPropagandaSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(mediaPropaganda),
+    quickStart: `
 1) Define 2 channels (press/rumor/platform/sermons) and their gatekeepers
 2) Define censorship rule + backchannel (control creates markets)
 3) Define proof standards for two audiences (public vs authority)
 4) Define a response ladder (whisper → crackdown) with a timeline
 5) Add a reputation mark that changes access tomorrow
 `.trim(),
-  checklist: [
-    "At least one channel + gatekeeper exists (who can publish?).",
-    "Censorship/control has a mechanism and failure modes.",
-    "Proof standards differ across audiences (public vs court vs institution).",
-    "Stories have latency and persistence (when does it peak, when does it die?).",
-    "A response ladder exists (rumor → headline → official response → crackdown).",
-    "Reputation marks persist and change access (doors open/close).",
-  ],
-  examples: [
-    {
-      scenario: "Proof vs story tradeoff",
-      wrong: `"We leak it and everyone believes us."`,
-      right: `"The leak spreads fast, but the institution claims it’s forged. To make it stick,
+    checklist: [
+      "At least one channel + gatekeeper exists (who can publish?).",
+      "Censorship/control has a mechanism and failure modes.",
+      "Proof standards differ across audiences (public vs court vs institution).",
+      "Stories have latency and persistence (when does it peak, when does it die?).",
+      "A response ladder exists (rumor → headline → official response → crackdown).",
+      "Reputation marks persist and change access (doors open/close).",
+    ],
+    examples: [
+      {
+        scenario: "Proof vs story tradeoff",
+        wrong: `"We leak it and everyone believes us."`,
+        right: `"The leak spreads fast, but the institution claims it’s forged. To make it stick,
 you need a witness or a second document. If you verify quietly, the story may die—or your source
 may be arrested. Publishing now buys momentum but triggers a crackdown within 24 hours."`,
-    },
-    {
-      scenario: "Censorship creates markets",
-      wrong: `"Censorship means no one talks about it."`,
-      right: `"Banning the topic pushes it into coded sermons and rumor brokers who charge for access.
+      },
+      {
+        scenario: "Censorship creates markets",
+        wrong: `"Censorship means no one talks about it."`,
+        right: `"Banning the topic pushes it into coded sermons and rumor brokers who charge for access.
 False positives occur: the censor hits unrelated messages. Corrupt officers sell 'safe' permits.
 The player can use backchannels but risks leaving a pattern."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

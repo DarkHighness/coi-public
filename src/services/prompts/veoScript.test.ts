@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-const adaptationMock = vi.hoisted(() => vi.fn((lang: string) => `[culture:${lang}]`));
+const adaptationMock = vi.hoisted(() =>
+  vi.fn((lang: string) => `[culture:${lang}]`),
+);
 
 vi.mock("./common", () => ({
   getCulturalAdaptationInstruction: adaptationMock,

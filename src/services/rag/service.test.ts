@@ -145,17 +145,25 @@ describe("RAGService", () => {
     });
 
     const service = new RAGService();
-    await service.initialize({ provider: "openai", modelId: "model-x" } as any, {
-      openai: { apiKey: "k" },
-    });
+    await service.initialize(
+      { provider: "openai", modelId: "model-x" } as any,
+      {
+        openai: { apiKey: "k" },
+      },
+    );
 
-    await service.addDocuments([{ entityId: "npc:1", saveId: "s", forkId: 0, turnNumber: 1 }] as any);
+    await service.addDocuments([
+      { entityId: "npc:1", saveId: "s", forkId: 0, turnNumber: 1 },
+    ] as any);
     await service.updateDocument({ entityId: "npc:1" } as any);
     await service.deleteDocuments({ saveId: "s" } as any);
     const search = await service.search("harbor", { topK: 3 });
-    const byEmbedding = await service.searchWithEmbedding(new Float32Array([1, 2, 3]), {
-      threshold: 0.5,
-    });
+    const byEmbedding = await service.searchWithEmbedding(
+      new Float32Array([1, 2, 3]),
+      {
+        threshold: 0.5,
+      },
+    );
     const recent = await service.getRecentDocuments(5, ["npc"] as any);
     await service.getDocumentsPaginated(0, 10, ["story"] as any);
     await service.switchSave("save-1", 0, { nodes: {} } as any);
@@ -204,13 +212,20 @@ describe("RAGService", () => {
   });
 
   it("handles worker events, unknown events, and message errors", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
 
     const service = new RAGService();
-    await service.initialize({ provider: "openai", modelId: "model-x" } as any, {
-      openai: { apiKey: "k" },
-    });
+    await service.initialize(
+      { provider: "openai", modelId: "model-x" } as any,
+      {
+        openai: { apiKey: "k" },
+      },
+    );
 
     const onReady = vi.fn();
     const onError = vi.fn();
@@ -247,11 +262,16 @@ describe("RAGService", () => {
     };
 
     const service = new RAGService();
-    await service.initialize({ provider: "openai", modelId: "model-x" } as any, {
-      openai: { apiKey: "k" },
-    });
+    await service.initialize(
+      { provider: "openai", modelId: "model-x" } as any,
+      {
+        openai: { apiKey: "k" },
+      },
+    );
 
-    const promise = service.addDocuments([{ entityId: "npc:1", saveId: "s", forkId: 0, turnNumber: 0 }] as any);
+    const promise = service.addDocuments([
+      { entityId: "npc:1", saveId: "s", forkId: 0, turnNumber: 0 },
+    ] as any);
     const rejection = expect(promise).rejects.toThrow("timed out");
 
     await vi.advanceTimersByTimeAsync(60001);
@@ -270,9 +290,12 @@ describe("RAGService", () => {
     };
 
     const service = new RAGService();
-    await service.initialize({ provider: "openai", modelId: "model-x" } as any, {
-      openai: { apiKey: "k" },
-    });
+    await service.initialize(
+      { provider: "openai", modelId: "model-x" } as any,
+      {
+        openai: { apiKey: "k" },
+      },
+    );
 
     const pending = service.search("pending-query");
     const rejection = expect(pending).rejects.toThrow("Service terminated");

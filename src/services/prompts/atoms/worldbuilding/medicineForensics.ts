@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const medicineForensics: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/medicineForensics#medicineForensics", source: "atoms/worldbuilding/medicineForensics.ts", exportName: "medicineForensics" }, () => `
+export const medicineForensics: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/medicineForensics#medicineForensics",
+    source: "atoms/worldbuilding/medicineForensics.ts",
+    exportName: "medicineForensics",
+  },
+  () => `
 <worldbuilding_context>
 **MEDICINE & FORENSICS (Pressure, Proof, and Persistent Consequence)**
 
@@ -78,46 +83,61 @@ Chain-of-custody template:
 - Counterfeit market (what’s faked, who sells):
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const medicineForensicsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/medicineForensics#medicineForensicsPrimer", source: "atoms/worldbuilding/medicineForensics.ts", exportName: "medicineForensicsPrimer" }, () =>
-  `
+export const medicineForensicsPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/medicineForensics#medicineForensicsPrimer",
+    source: "atoms/worldbuilding/medicineForensics.ts",
+    exportName: "medicineForensicsPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **MEDICINE PRIMER**: Treat injuries as clocks with capacity + access gates. Make proof a mechanic (chain-of-custody, standards, tampering).
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const medicineForensicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/medicineForensics#medicineForensicsSkill", source: "atoms/worldbuilding/medicineForensics.ts", exportName: "medicineForensicsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(medicineForensics),
-  quickStart: `
+export const medicineForensicsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/medicineForensics#medicineForensicsSkill",
+    source: "atoms/worldbuilding/medicineForensics.ts",
+    exportName: "medicineForensicsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(medicineForensics),
+    quickStart: `
 1) Make one injury a clock (bleeding/infection/shock)
 2) Add one access gate to treatment (fee/sponsor/triage/license)
 3) Add one workaround (black-market clinic/forged referral) with audit risk
 4) Define what counts as proof (test/record/witness) and how it can be faked
 5) Put an explicit choice: heal now vs stay hidden vs keep evidence clean
 `.trim(),
-  checklist: [
-    "At least one wound has a clock and a failure mode.",
-    "Treatment access is gated (capacity, payment, sponsor, or license).",
-    "A workaround exists with verification/audit risk.",
-    "Evidence has a chain-of-custody (and a tampering vector).",
-    "Proof standard is explicit for the relevant authority (court/police/temple/corp).",
-    "Counterfeit meds/toxins exist if scarcity + profit + enforcement gaps exist.",
-  ],
-  examples: [
-    {
-      scenario: "Injury creates choices",
-      wrong: `"You patch the wound and keep going. Nothing changes."`,
-      right: `"The wound stops bleeding but infection clock starts (4 segments). The clinic can treat it,
+    checklist: [
+      "At least one wound has a clock and a failure mode.",
+      "Treatment access is gated (capacity, payment, sponsor, or license).",
+      "A workaround exists with verification/audit risk.",
+      "Evidence has a chain-of-custody (and a tampering vector).",
+      "Proof standard is explicit for the relevant authority (court/police/temple/corp).",
+      "Counterfeit meds/toxins exist if scarcity + profit + enforcement gaps exist.",
+    ],
+    examples: [
+      {
+        scenario: "Injury creates choices",
+        wrong: `"You patch the wound and keep going. Nothing changes."`,
+        right: `"The wound stops bleeding but infection clock starts (4 segments). The clinic can treat it,
 but requires ID + a logged payment. A street medic can help without ID—if you steal antibiotics
 from a warehouse, which will show up on a missing-inventory audit in 24 hours."`,
-    },
-    {
-      scenario: "Forensics as gameplay",
-      wrong: `"The detective finds DNA and solves the case immediately."`,
-      right: `"The sample must be sealed and processed at a lab with logs. The suspect can bribe the courier
+      },
+      {
+        scenario: "Forensics as gameplay",
+        wrong: `"The detective finds DNA and solves the case immediately."`,
+        right: `"The sample must be sealed and processed at a lab with logs. The suspect can bribe the courier
 or contaminate the sample route. The player can protect the chain-of-custody—or take a faster path
 that gets results sooner but creates a tampering vulnerability."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

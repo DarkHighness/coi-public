@@ -7,7 +7,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface NpcLogicInput {
   /** NPC 自主程度: supportive, balanced, independent */
   npcAutonomyLevel?: "supportive" | "balanced" | "independent";
@@ -737,11 +736,17 @@ function getSocialContent(
   }
 }
 
-export const npcLogicPrimer: Atom<NpcLogicInput> = defineAtom({ atomId: "atoms/entities/npcLogic#npcLogicPrimer", source: "atoms/entities/npcLogic.ts", exportName: "npcLogicPrimer" }, (input = {}) => {
-  const autonomy = input.npcAutonomyLevel ?? "balanced";
-  const social = input.socialComplexity ?? "standard";
+export const npcLogicPrimer: Atom<NpcLogicInput> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#npcLogicPrimer",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "npcLogicPrimer",
+  },
+  (input = {}) => {
+    const autonomy = input.npcAutonomyLevel ?? "balanced";
+    const social = input.socialComplexity ?? "standard";
 
-  return `
+    return `
 <npc_logic>
   <rule name="NPC_LOGIC">
     - NPCs have \`visible\` (public face) and \`hidden\` (true motives) layers
@@ -752,14 +757,21 @@ export const npcLogicPrimer: Atom<NpcLogicInput> = defineAtom({ atomId: "atoms/e
   </rule>
 </npc_logic>
 `;
-});
+  },
+);
 
-export const npcLogic: Atom<NpcLogicInput> = defineAtom({ atomId: "atoms/entities/npcLogic#npcLogic", source: "atoms/entities/npcLogic.ts", exportName: "npcLogic" }, (input = {}) => {
-  const { npcAutonomyLevel, socialComplexity } = input;
-  const autonomy = npcAutonomyLevel ?? "balanced";
-  const social = socialComplexity ?? "standard";
+export const npcLogic: Atom<NpcLogicInput> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#npcLogic",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "npcLogic",
+  },
+  (input = {}) => {
+    const { npcAutonomyLevel, socialComplexity } = input;
+    const autonomy = npcAutonomyLevel ?? "balanced";
+    const social = socialComplexity ?? "standard";
 
-  return `
+    return `
 <true_person_npc_logic>
 ${traitContinuity}
 
@@ -810,30 +822,121 @@ ${groupBehavior}
   </integration_with_literary_atoms>
 </true_person_npc_logic>
 `;
-});
+  },
+);
 
 // Export individual components
-export const traitContinuityAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#traitContinuityAtom", source: "atoms/entities/npcLogic.ts", exportName: "traitContinuityAtom" }, () => traitContinuity);
-export const beliefAndResilienceAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#beliefAndResilienceAtom", source: "atoms/entities/npcLogic.ts", exportName: "beliefAndResilienceAtom" }, () => beliefAndResilience);
-export const npcEcosystemAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#npcEcosystemAtom", source: "atoms/entities/npcLogic.ts", exportName: "npcEcosystemAtom" }, () => npcEcosystem);
-export const npcAutonomyAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#npcAutonomyAtom", source: "atoms/entities/npcLogic.ts", exportName: "npcAutonomyAtom" }, () => npcAutonomy);
-export const socialFrictionAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#socialFrictionAtom", source: "atoms/entities/npcLogic.ts", exportName: "socialFrictionAtom" }, () => socialFriction);
-export const npcMemorySystemAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#npcMemorySystemAtom", source: "atoms/entities/npcLogic.ts", exportName: "npcMemorySystemAtom" }, () => npcMemorySystem);
-export const emotionalFluctuationAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#emotionalFluctuationAtom", source: "atoms/entities/npcLogic.ts", exportName: "emotionalFluctuationAtom" }, () => emotionalFluctuation);
-export const socialWebAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#socialWebAtom", source: "atoms/entities/npcLogic.ts", exportName: "socialWebAtom" }, () => socialWeb);
-export const complexIntimacyAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#complexIntimacyAtom", source: "atoms/entities/npcLogic.ts", exportName: "complexIntimacyAtom" }, () => complexIntimacy);
-export const dailyExistenceAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#dailyExistenceAtom", source: "atoms/entities/npcLogic.ts", exportName: "dailyExistenceAtom" }, () => dailyExistence);
-export const groupBehaviorAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#groupBehaviorAtom", source: "atoms/entities/npcLogic.ts", exportName: "groupBehaviorAtom" }, () => groupBehavior);
-export const gossipNetworkAtom: Atom<void> = defineAtom({ atomId: "atoms/entities/npcLogic#gossipNetworkAtom", source: "atoms/entities/npcLogic.ts", exportName: "gossipNetworkAtom" }, () => gossipNetwork);
+export const traitContinuityAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#traitContinuityAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "traitContinuityAtom",
+  },
+  () => traitContinuity,
+);
+export const beliefAndResilienceAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#beliefAndResilienceAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "beliefAndResilienceAtom",
+  },
+  () => beliefAndResilience,
+);
+export const npcEcosystemAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#npcEcosystemAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "npcEcosystemAtom",
+  },
+  () => npcEcosystem,
+);
+export const npcAutonomyAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#npcAutonomyAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "npcAutonomyAtom",
+  },
+  () => npcAutonomy,
+);
+export const socialFrictionAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#socialFrictionAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "socialFrictionAtom",
+  },
+  () => socialFriction,
+);
+export const npcMemorySystemAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#npcMemorySystemAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "npcMemorySystemAtom",
+  },
+  () => npcMemorySystem,
+);
+export const emotionalFluctuationAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#emotionalFluctuationAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "emotionalFluctuationAtom",
+  },
+  () => emotionalFluctuation,
+);
+export const socialWebAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#socialWebAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "socialWebAtom",
+  },
+  () => socialWeb,
+);
+export const complexIntimacyAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#complexIntimacyAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "complexIntimacyAtom",
+  },
+  () => complexIntimacy,
+);
+export const dailyExistenceAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#dailyExistenceAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "dailyExistenceAtom",
+  },
+  () => dailyExistence,
+);
+export const groupBehaviorAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#groupBehaviorAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "groupBehaviorAtom",
+  },
+  () => groupBehavior,
+);
+export const gossipNetworkAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcLogic#gossipNetworkAtom",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "gossipNetworkAtom",
+  },
+  () => gossipNetwork,
+);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const npcLogicSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/npcLogic#npcLogicSkill", source: "atoms/entities/npcLogic.ts", exportName: "npcLogicSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(npcLogic, {}),
+export const npcLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/npcLogic#npcLogicSkill",
+    source: "atoms/entities/npcLogic.ts",
+    exportName: "npcLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(npcLogic, {}),
 
-  quickStart: `
+    quickStart: `
 1. NPCs have visible (public face) and hidden (true motives) layers
 2. NPCs act on hidden.realMotives even when player doesn't know
 3. Rejection is default - cooperation requires reasons
@@ -841,41 +944,42 @@ export const npcLogicSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/e
 5. Resilience tiers - breaking requires proportional trauma
 `.trim(),
 
-  checklist: [
-    "NPCs have dual layers (visible/hidden)?",
-    "NPCs act on hidden motives consistently?",
-    "NPCs reject requests without excessive justification?",
-    "Self-preservation drives NPC behavior when threatened?",
-    "Character resilience matches their archetype tier?",
-    "Physical trait constraints respected (mute can't speak)?",
-    "Emotions shown through physical tells?",
-    "Relationships show complexity (love+resentment)?",
-  ],
+    checklist: [
+      "NPCs have dual layers (visible/hidden)?",
+      "NPCs act on hidden motives consistently?",
+      "NPCs reject requests without excessive justification?",
+      "Self-preservation drives NPC behavior when threatened?",
+      "Character resilience matches their archetype tier?",
+      "Physical trait constraints respected (mute can't speak)?",
+      "Emotions shown through physical tells?",
+      "Relationships show complexity (love+resentment)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Rejection is Normal",
-      wrong: `NPC: "Of course I'll help you, stranger!"
+    examples: [
+      {
+        scenario: "Rejection is Normal",
+        wrong: `NPC: "Of course I'll help you, stranger!"
 (Unrealistic immediate cooperation.)`,
-      right: `NPC: "Not selling to you." [walks away]
+        right: `NPC: "Not selling to you." [walks away]
 (No justification required - rejection is default.)`,
-    },
-    {
-      scenario: "Resilience Tiers",
-      wrong: `Veteran soldier begs for mercy after one threat.
+      },
+      {
+        scenario: "Resilience Tiers",
+        wrong: `Veteran soldier begs for mercy after one threat.
 (Tier 2-3 character breaking too easily.)`,
-      right: `Veteran: "You'll get nothing from me." [jaw set]
+        right: `Veteran: "You'll get nothing from me." [jaw set]
 After sustained multi-turn torture: "...water. Just water."
 (Breaking requires proportional trauma.)`,
-    },
-    {
-      scenario: "Dual Layer",
-      wrong: `"He was secretly evil."
+      },
+      {
+        scenario: "Dual Layer",
+        wrong: `"He was secretly evil."
 (Label, not behavior.)`,
-      right: `visible.personality: "Friendly merchant"
+        right: `visible.personality: "Friendly merchant"
 hidden.realPersonality: "Calculates every interaction for profit"
 → Shows friendliness, but eyes assess your valuables.
 (Behavior reflects hidden layer.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

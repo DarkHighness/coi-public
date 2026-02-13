@@ -7,8 +7,7 @@ export interface LocalTransformersModelOption {
   description: string;
 }
 
-export const DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID =
-  "Xenova/all-MiniLM-L6-v2";
+export const DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID = "Xenova/all-MiniLM-L6-v2";
 
 export const LOCAL_TRANSFORMERS_MODEL_OPTIONS: LocalTransformersModelOption[] =
   [
@@ -51,4 +50,3 @@ export const getLocalTransformersModelMeta = (
 ): LocalTransformersModelOption | undefined => {
   return LOCAL_TRANSFORMERS_MODEL_OPTIONS.find((item) => item.id === modelId);
 };
-

@@ -22,7 +22,6 @@ describe("systemMessages atoms", () => {
     expect(content).not.toContain(legacySearchTool);
   });
 
-
   it("removes semantic guidance when RAG is disabled", () => {
     const normal = normalTurnInstruction({ ragEnabled: false });
     const cleanup = cleanupTurnInstruction({ ragEnabled: false });

@@ -1,10 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { CATEGORY_KEYS, CategoryKey } from "../../utils/constants/themes";
-import {
-  THEME_SORT_OPTIONS,
-  ThemeSortMode,
-} from "./themeSort";
+import { THEME_SORT_OPTIONS, ThemeSortMode } from "./themeSort";
 
 interface ThemeFiltersProps {
   searchQuery: string;
@@ -108,7 +105,9 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
             </span>
             <select
               value={sortMode}
-              onChange={(event) => setSortMode(event.target.value as ThemeSortMode)}
+              onChange={(event) =>
+                setSortMode(event.target.value as ThemeSortMode)
+              }
               className={`h-7 px-2 text-xs border border-theme-divider/70 bg-theme-bg text-theme-text focus:outline-none focus:border-theme-primary/60 ${
                 isDesktop ? "min-w-[150px]" : "min-w-[132px]"
               }`}

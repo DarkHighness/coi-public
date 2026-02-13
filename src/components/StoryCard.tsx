@@ -237,30 +237,28 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
   }
 
   return (
-    <div
-      className={`w-full animate-slide-in ${maxWidthClass} mx-auto`}
-    >
+    <div className={`w-full animate-slide-in ${maxWidthClass} mx-auto`}>
       {/* Summary Snapshot Display */}
-	      {segment.summarySnapshot && (
-	        <div className="flex justify-center my-6 animate-fade-in">
-	          <div className="w-full max-w-[72ch]">
-	            <div className="h-px w-full bg-gradient-to-r from-transparent via-theme-border/50 to-transparent opacity-70" />
-	            <div className="py-4">
-	              <div className="flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest text-theme-muted mb-3">
-	                <span className="h-px w-10 bg-theme-border/45" />
-	                <span className="font-serif italic tracking-wide text-theme-text/80">
-	                  {t("summarySnapshot")}
-	                </span>
-	                <span className="h-px w-10 bg-theme-border/45" />
-	              </div>
-	              <div className="text-sm text-theme-text/85 font-serif leading-relaxed">
-	                {segment.summarySnapshot?.displayText || "No Summary Yet."}
-	              </div>
-	            </div>
-	            <div className="h-px w-full bg-gradient-to-r from-transparent via-theme-border/50 to-transparent opacity-70" />
-	          </div>
-	        </div>
-	      )}
+      {segment.summarySnapshot && (
+        <div className="flex justify-center my-6 animate-fade-in">
+          <div className="w-full max-w-[72ch]">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-theme-border/50 to-transparent opacity-70" />
+            <div className="py-4">
+              <div className="flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest text-theme-muted mb-3">
+                <span className="h-px w-10 bg-theme-border/45" />
+                <span className="font-serif italic tracking-wide text-theme-text/80">
+                  {t("summarySnapshot")}
+                </span>
+                <span className="h-px w-10 bg-theme-border/45" />
+              </div>
+              <div className="text-sm text-theme-text/85 font-serif leading-relaxed">
+                {segment.summarySnapshot?.displayText || "No Summary Yet."}
+              </div>
+            </div>
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-theme-border/50 to-transparent opacity-70" />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 md:gap-5 py-5 md:py-6">
         <StoryImage

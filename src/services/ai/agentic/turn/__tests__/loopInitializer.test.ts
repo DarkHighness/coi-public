@@ -34,10 +34,12 @@ describe("loopInitializer", () => {
     });
 
     expect(turnTools.length).toBe(VFS_TOOLSETS.turn.tools.length);
-    expect(turnTools.every((tool) => VFS_TOOLSETS.turn.tools.includes(tool.name))).toBe(
+    expect(
+      turnTools.every((tool) => VFS_TOOLSETS.turn.tools.includes(tool.name)),
+    ).toBe(true);
+    expect(turnTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(
       true,
     );
-    expect(turnTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(true);
     expect(turnTools.some((tool) => tool.name === "vfs_commit_summary")).toBe(
       false,
     );
@@ -51,7 +53,9 @@ describe("loopInitializer", () => {
       isRAGEnabled: true,
       isCleanupMode: false,
     });
-    const ragSearchTool = ragEnabledTools.find((tool) => tool.name === "vfs_search");
+    const ragSearchTool = ragEnabledTools.find(
+      (tool) => tool.name === "vfs_search",
+    );
     expect(ragSearchTool).toBeDefined();
     expect((ragSearchTool?.parameters as any).shape.semantic).toBeDefined();
 
@@ -61,7 +65,9 @@ describe("loopInitializer", () => {
       isCleanupMode: true,
     });
     expect(
-      cleanupTools.every((tool) => VFS_TOOLSETS.cleanup.tools.includes(tool.name)),
+      cleanupTools.every((tool) =>
+        VFS_TOOLSETS.cleanup.tools.includes(tool.name),
+      ),
     ).toBe(true);
   });
 
@@ -74,7 +80,9 @@ describe("loopInitializer", () => {
     const existing = activeTools[0];
 
     expect(addToolIfNew(activeTools, existing)).toBe(false);
-    expect(activeTools.filter((tool) => tool.name === existing.name)).toHaveLength(1);
+    expect(
+      activeTools.filter((tool) => tool.name === existing.name),
+    ).toHaveLength(1);
 
     const totalUsage = { promptTokens: 1, completionTokens: 2, totalTokens: 3 };
     accumulateUsage(totalUsage, {

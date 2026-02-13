@@ -66,7 +66,9 @@ const mapLogicalToCanonical = (logicalPath: string, forkId: number): string => {
   }
 
   if (startsWithSegment(logical, "conversation/history_rewrites")) {
-    const suffix = logical.slice("conversation/history_rewrites".length).replace(/^\//, "");
+    const suffix = logical
+      .slice("conversation/history_rewrites".length)
+      .replace(/^\//, "");
     return withForkPrefix(
       forkId,
       suffix ? `ops/history_rewrites/${suffix}` : "ops/history_rewrites",

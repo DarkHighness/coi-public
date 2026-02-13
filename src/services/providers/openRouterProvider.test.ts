@@ -155,7 +155,9 @@ describe("openRouterProvider exports", () => {
   it("validates connection via models list", async () => {
     sdkMocks.modelsList.mockResolvedValueOnce({ data: [] });
 
-    await expect(validateConnection({ apiKey: "k" } as any)).resolves.toBeUndefined();
+    await expect(
+      validateConnection({ apiKey: "k" } as any),
+    ).resolves.toBeUndefined();
     expect(sdkMocks.modelsList).toHaveBeenCalledTimes(1);
   });
 
@@ -222,7 +224,9 @@ describe("openRouterProvider exports", () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        choices: [{ message: { images: [{ image_url: { url: "https://img.test" } }] } }],
+        choices: [
+          { message: { images: [{ image_url: { url: "https://img.test" } }] } },
+        ],
       }),
     }));
     vi.stubGlobal("fetch", fetchMock as any);
@@ -286,7 +290,9 @@ describe("openRouterProvider exports", () => {
   it("rejects unsupported video generation", async () => {
     await expect(
       generateVideo({ apiKey: "k" } as any, "model", "base64", "prompt"),
-    ).rejects.toThrow("Video generation is not supported by OpenRouter provider");
+    ).rejects.toThrow(
+      "Video generation is not supported by OpenRouter provider",
+    );
   });
 
   it("loads embedding models via sdk and filters non-embedding items", async () => {

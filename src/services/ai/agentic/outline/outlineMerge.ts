@@ -73,7 +73,11 @@ type ActorBundleShape = {
 
 const prepareActorBundle = (
   input: ActorBundleShape,
-  options: { requiredKind: "player" | "npc"; requiredId?: string; idPrefix: string },
+  options: {
+    requiredKind: "player" | "npc";
+    requiredId?: string;
+    idPrefix: string;
+  },
 ): ActorBundleShape => {
   const profile = input.profile ?? ({} as any);
   const id =
@@ -179,8 +183,8 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
       (p8 as any).timeline as StoryOutline["timeline"],
       "evt",
     ) as StoryOutline["timeline"],
-    initialAtmosphere:
-      (p8 as any).initialAtmosphere as StoryOutline["initialAtmosphere"],
+    initialAtmosphere: (p8 as any)
+      .initialAtmosphere as StoryOutline["initialAtmosphere"],
 
     // Phase 6: NPCs + placeholders
     npcs: Array.isArray((p6 as any).npcs)
@@ -188,7 +192,8 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
           prepareActorBundle(bundle as any, {
             requiredKind: "npc",
             requiredId:
-              typeof bundle?.profile?.id === "string" && bundle.profile.id.trim()
+              typeof bundle?.profile?.id === "string" &&
+              bundle.profile.id.trim()
                 ? bundle.profile.id.trim()
                 : `npc:${idx + 1}`,
             idPrefix: "npc",
@@ -207,7 +212,8 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
       : [],
 
     // Phase 9: Opening Narrative
-    openingNarrative: (p9 as any).openingNarrative as StoryOutline["openingNarrative"],
+    openingNarrative: (p9 as any)
+      .openingNarrative as StoryOutline["openingNarrative"],
   };
 
   return outline;

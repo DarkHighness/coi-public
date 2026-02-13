@@ -142,14 +142,13 @@ export const buildFilteredThemeKeys = ({
       typeof narrativeStyleRaw === "string" ? narrativeStyleRaw : "";
     const usage = usageMap[key];
     const usageCount =
-      typeof usage?.count === "number" && usage.count > 0
-        ? usage.count
-        : 0;
+      typeof usage?.count === "number" && usage.count > 0 ? usage.count : 0;
     const lastUsedAt =
       typeof usage?.lastUsedAt === "number" && usage.lastUsedAt > 0
         ? usage.lastUsedAt
         : 0;
-    const isIpTheme = Boolean(themes[key].restricted) || IP_THEME_PATTERN.test(name);
+    const isIpTheme =
+      Boolean(themes[key].restricted) || IP_THEME_PATTERN.test(name);
 
     return {
       key,

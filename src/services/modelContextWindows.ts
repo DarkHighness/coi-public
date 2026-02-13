@@ -239,8 +239,7 @@ const MODEL_CONTEXT_WINDOW_RULES: ModelContextWindowRule[] = [
   // OpenAI snapshots often include date suffixes.
   {
     providerProtocol: "openai",
-    pattern:
-      /^gpt-5(?:\.[0-9]+)?-chat-latest(?:-\d{4}-\d{2}-\d{2})?$/,
+    pattern: /^gpt-5(?:\.[0-9]+)?-chat-latest(?:-\d{4}-\d{2}-\d{2})?$/,
     contextWindow: 128000,
   },
   {
@@ -356,7 +355,9 @@ export function getLearnedModelContextWindow(
   if (!key) {
     return undefined;
   }
-  return sanitizePositiveContextWindow(settings.learnedModelContextWindows?.[key]);
+  return sanitizePositiveContextWindow(
+    settings.learnedModelContextWindows?.[key],
+  );
 }
 
 export function upsertPerModelContextWindowOverride(
@@ -556,7 +557,9 @@ export function deriveLearnedContextWindowFromOverflow(
   }
 
   if (limitTokens) {
-    return sanitizePositiveContextWindow(Math.floor(limitTokens * safetyWithLimit));
+    return sanitizePositiveContextWindow(
+      Math.floor(limitTokens * safetyWithLimit),
+    );
   }
 
   if (requestedTokens) {
@@ -655,12 +658,18 @@ export function resolveModelContextWindowUpperBound(
     fallback,
   } = params;
 
-  const override = getPerModelContextWindowOverride(settings, providerId, modelId);
+  const override = getPerModelContextWindowOverride(
+    settings,
+    providerId,
+    modelId,
+  );
   if (override) {
     return override;
   }
 
-  const providerValue = sanitizePositiveContextWindow(providerReportedContextLength);
+  const providerValue = sanitizePositiveContextWindow(
+    providerReportedContextLength,
+  );
   if (providerValue) {
     return providerValue;
   }
@@ -691,7 +700,11 @@ export function resolveModelContextWindowTokens(params: {
 
   const upperBound = resolveModelContextWindowUpperBound(params);
 
-  const override = getPerModelContextWindowOverride(settings, providerId, modelId);
+  const override = getPerModelContextWindowOverride(
+    settings,
+    providerId,
+    modelId,
+  );
   if (override) {
     return {
       value: override,
@@ -707,7 +720,9 @@ export function resolveModelContextWindowTokens(params: {
     };
   }
 
-  const providerValue = sanitizePositiveContextWindow(providerReportedContextLength);
+  const providerValue = sanitizePositiveContextWindow(
+    providerReportedContextLength,
+  );
   if (providerValue) {
     return {
       value: providerValue,
@@ -729,7 +744,10 @@ export function resolveModelContextWindowTokens(params: {
   };
 }
 
-export function getCopyableModelContextWindowDefaults(): Record<string, number> {
+export function getCopyableModelContextWindowDefaults(): Record<
+  string,
+  number
+> {
   return MODEL_CONTEXT_WINDOW_DEFAULTS.reduce<Record<string, number>>(
     (acc, item) => {
       acc[`${item.providerProtocol}/${item.modelId}`] = item.contextWindow;

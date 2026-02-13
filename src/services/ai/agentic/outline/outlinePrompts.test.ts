@@ -92,7 +92,9 @@ describe("outlinePrompts", () => {
         protagonistFeature: "hero",
       }),
     ).toBe("prelude\n\np2");
-    expect(promptsMock.getOutlinePhase2WorldFoundationPrompt).toHaveBeenCalledWith(
+    expect(
+      promptsMock.getOutlinePhase2WorldFoundationPrompt,
+    ).toHaveBeenCalledWith(
       "th",
       "en",
       "ctx2",
@@ -147,7 +149,9 @@ describe("outlinePrompts", () => {
   });
 
   it("returns null for unknown phases", () => {
-    expect(getPhasePrompt(99, "vfs_commit_outline_phase_99", sharedContext)).toBeNull();
+    expect(
+      getPhasePrompt(99, "vfs_commit_outline_phase_99", sharedContext),
+    ).toBeNull();
     expect(promptsMock.getOutlinePhasePreludePrompt).not.toHaveBeenCalled();
   });
 

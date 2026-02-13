@@ -53,7 +53,8 @@ describe("outlineCrossPhaseValidation", () => {
       { profile: { id: "char:npc-2", currentLocation: "loc:chapel" } },
     ] as any;
 
-    expect(validatePhase6NpcLocationsExist(locations, npcs)).toEqual({ ok: true });
+    expect(validatePhase6NpcLocationsExist(locations, npcs)).toEqual({
+      ok: true,
+    });
   });
 });
-

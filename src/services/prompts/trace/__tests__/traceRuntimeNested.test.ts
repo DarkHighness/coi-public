@@ -61,7 +61,9 @@ describe("trace runtime nested recording", () => {
 
     const registered = getRegisteredPromptAtoms();
     expect(
-      registered.some((item) => item.atomId === "atoms/test/technology#technology"),
+      registered.some(
+        (item) => item.atomId === "atoms/test/technology#technology",
+      ),
     ).toBe(true);
     expect(
       registered.some(
@@ -91,14 +93,17 @@ describe("trace runtime nested recording", () => {
 
     setPromptTraceEnabled(true);
 
-    runPromptWithTrace("test.trace.runtime.inline", () =>
-      composedSkill(undefined).main,
+    runPromptWithTrace(
+      "test.trace.runtime.inline",
+      () => composedSkill(undefined).main,
     );
 
     const trace = getLatestPromptTrace("test.trace.runtime.inline");
     expect(trace).toBeDefined();
     expect(
-      trace?.atoms.some((item) => item.atomId === "atoms/test/inline#rawFragment"),
+      trace?.atoms.some(
+        (item) => item.atomId === "atoms/test/inline#rawFragment",
+      ),
     ).toBe(true);
   });
 });

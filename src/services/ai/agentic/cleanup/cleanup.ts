@@ -235,7 +235,9 @@ function buildCleanupPrompt(state: GameState): string {
   );
 }
 
-export function getCleanupLoopSystemPrompt(state: Pick<GameState, "forkId" | "turnNumber">): string {
+export function getCleanupLoopSystemPrompt(
+  state: Pick<GameState, "forkId" | "turnNumber">,
+): string {
   return buildCleanupPrompt(state as GameState);
 }
 

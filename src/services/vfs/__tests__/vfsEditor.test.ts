@@ -26,9 +26,7 @@ describe("vfs editor helper", () => {
       currentLocation: "Forest",
     });
 
-    const updated = JSON.parse(
-      session.readFile("world/global.json")!.content,
-    );
+    const updated = JSON.parse(session.readFile("world/global.json")!.content);
     expect(updated.language).toBe("fr");
     expect(updated.time).toBe("Night 1");
     expect(updated.currentLocation).toBe("Forest");
@@ -42,8 +40,12 @@ describe("vfs editor helper", () => {
       "application/json",
     );
     applySectionEdit(session, "inventory", [{ id: "inv_1", name: "Item" }]);
-    expect(session.readFile("world/characters/char:player/inventory/old.json")).toBeNull();
-    expect(session.readFile("world/characters/char:player/inventory/inv_1.json")).toBeTruthy();
+    expect(
+      session.readFile("world/characters/char:player/inventory/old.json"),
+    ).toBeNull();
+    expect(
+      session.readFile("world/characters/char:player/inventory/inv_1.json"),
+    ).toBeTruthy();
   });
 
   it("blocks outline edits unless allowed", () => {
@@ -51,7 +53,12 @@ describe("vfs editor helper", () => {
     expect(() =>
       applySectionEdit(session, "outline", { title: "New" }),
     ).toThrow();
-    applySectionEdit(session, "outline", { title: "New" }, { allowOutlineEdit: true });
+    applySectionEdit(
+      session,
+      "outline",
+      { title: "New" },
+      { allowOutlineEdit: true },
+    );
     expect(session.readFile("outline/outline.json")).toBeTruthy();
   });
 
@@ -67,7 +74,9 @@ describe("vfs editor helper", () => {
 
     expect(session.readFile("custom_rules/legacy-pack/RULES.md")).toBeNull();
     expect(session.readFile("custom_rules/README.md")).toBeTruthy();
-    expect(session.readFile("custom_rules/00-system-core/README.md")).toBeTruthy();
+    expect(
+      session.readFile("custom_rules/00-system-core/README.md"),
+    ).toBeTruthy();
     expect(session.readFile("custom_rules/12-custom/README.md")).toBeTruthy();
     expect(session.readFile("custom_rules/00-system-core/RULES.md")).toBeNull();
   });
@@ -121,9 +130,15 @@ describe("vfs editor helper", () => {
       { id: "npc:new", name: "New NPC", knownBy: ["char:player"] },
     ]);
 
-    expect(session.readFile("world/characters/npc:old/profile.json")).toBeNull();
-    expect(session.readFile("world/characters/npc:new/profile.json")).toBeTruthy();
-    expect(session.readFile("world/characters/char:player/profile.json")).toBeTruthy();
+    expect(
+      session.readFile("world/characters/npc:old/profile.json"),
+    ).toBeNull();
+    expect(
+      session.readFile("world/characters/npc:new/profile.json"),
+    ).toBeTruthy();
+    expect(
+      session.readFile("world/characters/char:player/profile.json"),
+    ).toBeTruthy();
 
     expect(() =>
       applySectionEdit(session, "npcs", [{ name: "Missing ID" }] as any),
@@ -140,8 +155,9 @@ describe("vfs editor helper", () => {
       applySectionEdit(session, "causalChains", [{ id: "wrong" }] as any),
     ).toThrow("Missing chainId for causalChains entry.");
     expect(() =>
-      applySectionEdit(session, "customRules", [{ title: "Missing ID" }] as any),
+      applySectionEdit(session, "customRules", [
+        { title: "Missing ID" },
+      ] as any),
     ).toThrow("Missing id for custom rule entry.");
   });
-
 });

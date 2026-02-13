@@ -42,23 +42,23 @@ Each entry includes key + CN/EN name + hook + suggested `envTheme/ambience` + vi
 
 以下 15 个候选用于补足当前主题池相对稀缺方向。每条包含 key、中英文名、核心卖点、建议 `envTheme/ambience` 与可见分类。
 
-| Theme Key | 中文名 | English Name | 核心卖点 / Core Hook | Suggested Atmosphere | Suggested Categories |
-| --- | --- | --- | --- | --- | --- |
-| `climate_crisis` | 气候危机 | Climate Crisis | 灾难治理、政策博弈与生存抉择 | `wasteland` + `storm` | `modern`, `suspense` |
-| `forensic_pathologist` | 法医追凶 | Forensic Pathologist | 法医证据链推动悬疑破案 | `foundation` + `hospital` | `modern`, `suspense` |
-| `courtroom_thriller` | 高压法庭 | Courtroom Thriller | 法庭攻防与证据交叉盘问 | `intrigue` + `courtroom` | `modern`, `suspense` |
-| `archaeology_expedition` | 文明考古远征 | Archaeology Expedition | 遗迹探索、机关解谜与文明冲突 | `sepia` + `ruins` | `ancient`, `fantasy`, `suspense` |
-| `deep_sea_colony` | 深海殖民 | Deep Sea Colony | 封闭生态、资源危机与秩序崩塌 | `abyssal` + `underwater` | `scifi`, `suspense` |
-| `space_salvage` | 太空打捞 | Space Salvage | 轨道打捞合同、零重力风险与黑市交易 | `interstellar` + `space` | `scifi`, `game` |
-| `disaster_response` | 城市应急指挥 | Disaster Response | 多线救援、资源分配与决策压力 | `war` + `city` | `modern`, `suspense` |
-| `supply_chain_tycoon` | 供应链风云 | Supply Chain Tycoon | 物流网络建设、市场波动与商业谈判 | `modern` + `office` | `modern`, `game` |
-| `biotech_startup` | 生物科技创业 | Biotech Startup | 技术突破、伦理边界与资本博弈 | `foundation` + `laboratory` | `modern`, `scifi` |
-| `urban_planning` | 城市更新计划 | Urban Planning | 基建推进、民生权衡与政策协调 | `modern` + `city` | `modern` |
-| `time_loop_forensics` | 时间循环刑侦 | Time-loop Forensics | 重复日调查与因果拼图 | `mystery` + `city` | `modern`, `suspense`, `scifi` |
-| `mythpunk_city` | 神话赛博都市 | Mythpunk City | 古神规则与高科技治理并存 | `cyberpunk` + `city` | `fantasy`, `scifi` |
-| `expedition_logistics` | 极地后勤线 | Expedition Logistics | 极端环境运输、队伍协同与补给危机 | `cold` + `mountain` | `modern`, `suspense` |
-| `frontier_medicine` | 边境医疗 | Frontier Medicine | 医疗资源稀缺下的伦理抉择 | `modern` + `village` | `modern` |
-| `slow_burn_detective` | 慢燃侦探档案 | Slow-burn Detective | 人物关系驱动的长期悬疑线 | `mystery` + `rain` | `modern`, `suspense`, `novel` |
+| Theme Key                | 中文名       | English Name           | 核心卖点 / Core Hook               | Suggested Atmosphere        | Suggested Categories             |
+| ------------------------ | ------------ | ---------------------- | ---------------------------------- | --------------------------- | -------------------------------- |
+| `climate_crisis`         | 气候危机     | Climate Crisis         | 灾难治理、政策博弈与生存抉择       | `wasteland` + `storm`       | `modern`, `suspense`             |
+| `forensic_pathologist`   | 法医追凶     | Forensic Pathologist   | 法医证据链推动悬疑破案             | `foundation` + `hospital`   | `modern`, `suspense`             |
+| `courtroom_thriller`     | 高压法庭     | Courtroom Thriller     | 法庭攻防与证据交叉盘问             | `intrigue` + `courtroom`    | `modern`, `suspense`             |
+| `archaeology_expedition` | 文明考古远征 | Archaeology Expedition | 遗迹探索、机关解谜与文明冲突       | `sepia` + `ruins`           | `ancient`, `fantasy`, `suspense` |
+| `deep_sea_colony`        | 深海殖民     | Deep Sea Colony        | 封闭生态、资源危机与秩序崩塌       | `abyssal` + `underwater`    | `scifi`, `suspense`              |
+| `space_salvage`          | 太空打捞     | Space Salvage          | 轨道打捞合同、零重力风险与黑市交易 | `interstellar` + `space`    | `scifi`, `game`                  |
+| `disaster_response`      | 城市应急指挥 | Disaster Response      | 多线救援、资源分配与决策压力       | `war` + `city`              | `modern`, `suspense`             |
+| `supply_chain_tycoon`    | 供应链风云   | Supply Chain Tycoon    | 物流网络建设、市场波动与商业谈判   | `modern` + `office`         | `modern`, `game`                 |
+| `biotech_startup`        | 生物科技创业 | Biotech Startup        | 技术突破、伦理边界与资本博弈       | `foundation` + `laboratory` | `modern`, `scifi`                |
+| `urban_planning`         | 城市更新计划 | Urban Planning         | 基建推进、民生权衡与政策协调       | `modern` + `city`           | `modern`                         |
+| `time_loop_forensics`    | 时间循环刑侦 | Time-loop Forensics    | 重复日调查与因果拼图               | `mystery` + `city`          | `modern`, `suspense`, `scifi`    |
+| `mythpunk_city`          | 神话赛博都市 | Mythpunk City          | 古神规则与高科技治理并存           | `cyberpunk` + `city`        | `fantasy`, `scifi`               |
+| `expedition_logistics`   | 极地后勤线   | Expedition Logistics   | 极端环境运输、队伍协同与补给危机   | `cold` + `mountain`         | `modern`, `suspense`             |
+| `frontier_medicine`      | 边境医疗     | Frontier Medicine      | 医疗资源稀缺下的伦理抉择           | `modern` + `village`        | `modern`                         |
+| `slow_burn_detective`    | 慢燃侦探档案 | Slow-burn Detective    | 人物关系驱动的长期悬疑线           | `mystery` + `rain`          | `modern`, `suspense`, `novel`    |
 
 ---
 

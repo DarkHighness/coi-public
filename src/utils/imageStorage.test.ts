@@ -31,7 +31,12 @@ type RequestLike = {
 };
 
 const successRequest = (result: any): RequestLike => {
-  const req: RequestLike = { result: undefined, error: null, onsuccess: null, onerror: null };
+  const req: RequestLike = {
+    result: undefined,
+    error: null,
+    onsuccess: null,
+    onerror: null,
+  };
   queueMicrotask(() => {
     req.result = result;
     req.onsuccess?.();
@@ -40,7 +45,12 @@ const successRequest = (result: any): RequestLike => {
 };
 
 const errorRequest = (error: any): RequestLike => {
-  const req: RequestLike = { result: undefined, error, onsuccess: null, onerror: null };
+  const req: RequestLike = {
+    result: undefined,
+    error,
+    onsuccess: null,
+    onerror: null,
+  };
   queueMicrotask(() => {
     req.onerror?.();
   });
@@ -48,7 +58,12 @@ const errorRequest = (error: any): RequestLike => {
 };
 
 const keyCursorRequest = (keys: string[]): RequestLike => {
-  const req: RequestLike = { result: null, error: null, onsuccess: null, onerror: null };
+  const req: RequestLike = {
+    result: null,
+    error: null,
+    onsuccess: null,
+    onerror: null,
+  };
   let idx = 0;
 
   const emit = () => {
@@ -141,7 +156,9 @@ describe("imageStorage", () => {
 
   it("rejects when initial segment lookup fails", async () => {
     const store = {
-      index: vi.fn(() => ({ get: vi.fn(() => errorRequest(new Error("lookup failed"))) })),
+      index: vi.fn(() => ({
+        get: vi.fn(() => errorRequest(new Error("lookup failed"))),
+      })),
     };
 
     openDBMock.mockResolvedValue({
@@ -155,7 +172,8 @@ describe("imageStorage", () => {
 
   it("reads image blob and returns null when missing", async () => {
     const store = {
-      get: vi.fn()
+      get: vi
+        .fn()
         .mockImplementationOnce(() => successRequest({ blob: new Blob(["a"]) }))
         .mockImplementationOnce(() => successRequest(undefined)),
     };
@@ -211,7 +229,8 @@ describe("imageStorage", () => {
     ];
 
     const store = {
-      getAll: vi.fn()
+      getAll: vi
+        .fn()
         .mockImplementationOnce(() => successRequest(images))
         .mockImplementationOnce(() => successRequest([...images]))
         .mockImplementationOnce(() => successRequest([...images])),

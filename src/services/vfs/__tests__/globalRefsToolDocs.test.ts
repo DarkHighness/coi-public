@@ -33,4 +33,3 @@ describe("VFS global refs tool docs", () => {
     }
   });
 });
-

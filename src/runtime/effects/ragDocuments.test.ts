@@ -15,7 +15,10 @@ const createFile = (
   path: string,
   content: string,
   hash: string,
-  contentType: "text/plain" | "application/json" | "text/markdown" = "text/plain",
+  contentType:
+    | "text/plain"
+    | "application/json"
+    | "text/markdown" = "text/plain",
 ) => ({
   path,
   content,
@@ -37,16 +40,8 @@ describe("runtime/effects/ragDocuments", () => {
     getRAGServiceMock.mockReturnValue(ragService);
 
     const snapshot1: VfsFileMap = {
-      "current/world/a.txt": createFile(
-        "current/world/a.txt",
-        "alpha",
-        "ha-1",
-      ),
-      "current/world/b.txt": createFile(
-        "current/world/b.txt",
-        "beta",
-        "hb-1",
-      ),
+      "current/world/a.txt": createFile("current/world/a.txt", "alpha", "ha-1"),
+      "current/world/b.txt": createFile("current/world/b.txt", "beta", "hb-1"),
     };
 
     const snapshot2: VfsFileMap = {
@@ -55,11 +50,7 @@ describe("runtime/effects/ragDocuments", () => {
         "alpha changed",
         "ha-2",
       ),
-      "current/world/c.txt": createFile(
-        "current/world/c.txt",
-        "gamma",
-        "hc-1",
-      ),
+      "current/world/c.txt": createFile("current/world/c.txt", "gamma", "hc-1"),
     };
 
     const snapshots = [snapshot1, snapshot2];

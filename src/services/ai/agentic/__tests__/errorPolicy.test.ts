@@ -23,9 +23,9 @@ describe("errorPolicy", () => {
       classifyAgenticError(new Error("maximum context length exceeded")).kind,
     ).toBe("rebuild_required");
 
-    expect(
-      classifyAgenticError(new Error("invalid request format")).kind,
-    ).toBe("rebuild_required");
+    expect(classifyAgenticError(new Error("invalid request format")).kind).toBe(
+      "rebuild_required",
+    );
   });
 
   it("classifies terminal provider failures", () => {
@@ -45,7 +45,11 @@ describe("errorPolicy", () => {
     });
 
     expect(feedback).toContain("MALFORMED_TOOL_CALL");
-    expect(feedback).toContain("Raw provider error: invalid tool payload: expected object");
-    expect(feedback).toContain('If you call "vfs_commit_turn", it must be the LAST tool call.');
+    expect(feedback).toContain(
+      "Raw provider error: invalid tool payload: expected object",
+    );
+    expect(feedback).toContain(
+      'If you call "vfs_commit_turn", it must be the LAST tool call.',
+    );
   });
 });

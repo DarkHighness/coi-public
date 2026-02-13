@@ -121,7 +121,10 @@ describe("provider registry", () => {
   });
 
   it("caches model list by id and config hash", async () => {
-    const instance = createInstance({ id: "cache-provider", protocol: "openai" });
+    const instance = createInstance({
+      id: "cache-provider",
+      protocol: "openai",
+    });
 
     const first = await getModelsForInstance(instance);
     const second = await getModelsForInstance(instance);
@@ -167,7 +170,9 @@ describe("provider registry", () => {
   });
 
   it("creates protocol-specific provider config", () => {
-    expect(createProviderConfig(createInstance({ protocol: "gemini" }))).toMatchObject({
+    expect(
+      createProviderConfig(createInstance({ protocol: "gemini" })),
+    ).toMatchObject({
       apiKey: "key",
       baseUrl: "https://api.example.com",
     });
@@ -197,7 +202,9 @@ describe("provider registry", () => {
     expect(
       createProviderConfig(createInstance({ protocol: "openrouter" })),
     ).toEqual({ apiKey: "key" });
-    expect(createProviderConfig(createInstance({ protocol: "claude" }))).toMatchObject({
+    expect(
+      createProviderConfig(createInstance({ protocol: "claude" })),
+    ).toMatchObject({
       apiKey: "key",
       baseUrl: "https://api.example.com",
     });

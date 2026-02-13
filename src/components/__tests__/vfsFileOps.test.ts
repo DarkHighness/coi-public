@@ -24,7 +24,10 @@ describe("vfs file ops", () => {
   });
 
   it("pretty-prints valid json content", () => {
-    const formatted = formatVfsContent('{"a":1,"b":{"c":2}}', "application/json");
+    const formatted = formatVfsContent(
+      '{"a":1,"b":{"c":2}}',
+      "application/json",
+    );
 
     expect(formatted).toBe('{\n  "a": 1,\n  "b": {\n    "c": 2\n  }\n}');
   });

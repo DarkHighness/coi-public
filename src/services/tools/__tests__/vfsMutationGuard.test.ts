@@ -20,7 +20,9 @@ const expectInvalidPayload = (
   expect(result.error.error).toContain(textIncludes);
   expect(result.error.details?.tool).toBe("vfs_write");
   expect(result.error.details?.category).toBe("validation");
-  expect(result.error.details?.refs).toContain("current/refs/tools/vfs_write.md");
+  expect(result.error.details?.refs).toContain(
+    "current/refs/tools/vfs_write.md",
+  );
 };
 
 describe("vfsMutationGuard", () => {
@@ -158,7 +160,10 @@ describe("vfsMutationGuard", () => {
         "application/json",
       );
 
-      expectInvalidPayload(result, "only allowed for matching *.json or *.jsonl");
+      expectInvalidPayload(
+        result,
+        "only allowed for matching *.json or *.jsonl",
+      );
     });
 
     it("rejects jsonl path with non-jsonl contentType", () => {

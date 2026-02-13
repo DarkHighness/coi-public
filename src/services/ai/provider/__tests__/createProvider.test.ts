@@ -77,7 +77,10 @@ const createInstance = (protocol: string) =>
 describe("createProvider", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.createProviderConfig.mockReturnValue({ apiKey: "k", baseUrl: "https://api" });
+    mocks.createProviderConfig.mockReturnValue({
+      apiKey: "k",
+      baseUrl: "https://api",
+    });
   });
 
   afterEach(() => {
@@ -85,8 +88,14 @@ describe("createProvider", () => {
   });
 
   it("routes gemini chat through unified-message conversion", async () => {
-    mocks.fromUnifiedToGemini.mockReturnValue([{ role: "user", parts: [{ text: "converted" }] }]);
-    mocks.geminiGenerateContent.mockResolvedValue({ result: { text: "ok" }, usage, raw: { raw: 1 } });
+    mocks.fromUnifiedToGemini.mockReturnValue([
+      { role: "user", parts: [{ text: "converted" }] },
+    ]);
+    mocks.geminiGenerateContent.mockResolvedValue({
+      result: { text: "ok" },
+      usage,
+      raw: { raw: 1 },
+    });
 
     const provider = createProvider(createInstance("gemini"));
     const schema = z.object({ foo: z.string() });
@@ -109,7 +118,10 @@ describe("createProvider", () => {
       "sys",
       [{ role: "user", parts: [{ text: "converted" }] }],
       schema,
-      expect.objectContaining({ toolChoice: "required", mediaResolution: "high" }),
+      expect.objectContaining({
+        toolChoice: "required",
+        mediaResolution: "high",
+      }),
     );
     expect(result).toEqual({ result: { text: "ok" }, usage, raw: { raw: 1 } });
   });
@@ -127,7 +139,9 @@ describe("createProvider", () => {
       modelId: "gpt-4o",
       systemInstruction: "sys2",
       messages: [{ role: "user", content: "hello" }],
-      tools: [{ name: "vfs_ls", description: "list", parameters: z.object({}) }],
+      tools: [
+        { name: "vfs_ls", description: "list", parameters: z.object({}) },
+      ],
       toolChoice: "auto",
       temperature: 0.6,
       topP: 0.9,
@@ -157,13 +171,24 @@ describe("createProvider", () => {
     const blob = new Blob(["img"], { type: "image/png" });
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, blob: vi.fn().mockResolvedValue(blob) })
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: vi.fn().mockResolvedValue(blob),
+      })
       .mockRejectedValueOnce(new Error("network"));
     vi.stubGlobal("fetch", fetchMock as any);
 
     mocks.openaiGenerateImage
-      .mockResolvedValueOnce({ url: "https://img.test/1.png", usage, raw: { img: 1 } })
-      .mockResolvedValueOnce({ url: "https://img.test/2.png", usage, raw: { img: 2 } });
+      .mockResolvedValueOnce({
+        url: "https://img.test/1.png",
+        usage,
+        raw: { img: 1 },
+      })
+      .mockResolvedValueOnce({
+        url: "https://img.test/2.png",
+        usage,
+        raw: { img: 2 },
+      });
 
     const provider = createProvider(createInstance("openai"));
 
@@ -185,7 +210,11 @@ describe("createProvider", () => {
   });
 
   it("supports video only for gemini", async () => {
-    mocks.geminiGenerateVideo.mockResolvedValue({ url: "https://video.test/v.mp4", usage, raw: { v: 1 } });
+    mocks.geminiGenerateVideo.mockResolvedValue({
+      url: "https://video.test/v.mp4",
+      usage,
+      raw: { v: 1 },
+    });
 
     const geminiProvider = createProvider(createInstance("gemini"));
     const video = await geminiProvider.generateVideo!({
@@ -194,7 +223,11 @@ describe("createProvider", () => {
       resolution: "720p",
     });
 
-    expect(video).toEqual({ url: "https://video.test/v.mp4", usage, raw: { v: 1 } });
+    expect(video).toEqual({
+      url: "https://video.test/v.mp4",
+      usage,
+      raw: { v: 1 },
+    });
 
     const openaiProvider = createProvider(createInstance("openai"));
     await expect(
@@ -229,7 +262,11 @@ describe("createProvider", () => {
       "or-speech",
       "hello",
       "alloy",
-      expect.objectContaining({ speed: 1.1, format: "mp3", instructions: "cheerful" }),
+      expect.objectContaining({
+        speed: 1.1,
+        format: "mp3",
+        instructions: "cheerful",
+      }),
     );
 
     await geminiProvider.generateSpeech!({

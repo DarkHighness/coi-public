@@ -43,12 +43,16 @@ describe("entity display resolver", () => {
 
   it("returns raw location ref when no mapping exists", () => {
     const state = buildState();
-    expect(resolveLocationDisplayName("loc:unknown", state)).toBe("loc:unknown");
+    expect(resolveLocationDisplayName("loc:unknown", state)).toBe(
+      "loc:unknown",
+    );
   });
 
   it("keeps entity resolver fallback behavior", () => {
     const state = buildState();
     expect(resolveEntityDisplayName("char:npc_marcus", state)).toBe("Marcus");
-    expect(resolveEntityDisplayName("char:missing", state)).toBe("char:missing");
+    expect(resolveEntityDisplayName("char:missing", state)).toBe(
+      "char:missing",
+    );
   });
 });

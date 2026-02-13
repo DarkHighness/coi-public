@@ -12,8 +12,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const darkPsychologyPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/darkPsychology#darkPsychologyPrimer", source: "atoms/entities/darkPsychology.ts", exportName: "darkPsychologyPrimer" }, () => `
+export const darkPsychologyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/darkPsychology#darkPsychologyPrimer",
+    source: "atoms/entities/darkPsychology.ts",
+    exportName: "darkPsychologyPrimer",
+  },
+  () => `
 <dark_psychology>
   **HUMAN WEAKNESS CATALOG**:
   The private afflictions literature has always known better than psychology:
@@ -24,8 +29,15 @@ export const darkPsychologyPrimer: Atom<void> = defineAtom({ atomId: "atoms/enti
   - Escapism: addiction, fantasy, workaholism, relationship-jumping -- the thousand doors that open away from the self
   Express through BEHAVIOR, not labels.
 </dark_psychology>
-`);
-export const darkPsychology: Atom<void> = defineAtom({ atomId: "atoms/entities/darkPsychology#darkPsychology", source: "atoms/entities/darkPsychology.ts", exportName: "darkPsychology" }, () => `
+`,
+);
+export const darkPsychology: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/darkPsychology#darkPsychology",
+    source: "atoms/entities/darkPsychology.ts",
+    exportName: "darkPsychology",
+  },
+  () => `
 <rule name="DARK_PSYCHOLOGY">
   **THE SHADOW CATALOG**:
 
@@ -294,19 +306,25 @@ export const darkPsychology: Atom<void> = defineAtom({ atomId: "atoms/entities/d
     - Always having something in their hands
   </escapism_expressions>
 </rule>
-`);
+`,
+);
 
 export default darkPsychology;
-
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const darkPsychologySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/darkPsychology#darkPsychologySkill", source: "atoms/entities/darkPsychology.ts", exportName: "darkPsychologySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(darkPsychology),
+export const darkPsychologySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/darkPsychology#darkPsychologySkill",
+    source: "atoms/entities/darkPsychology.ts",
+    exportName: "darkPsychologySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(darkPsychology),
 
-  quickStart: `
+    quickStart: `
 1. Define flaw as BEHAVIOR, not labels (show, don't diagnose)
 2. Use concrete manifestation patterns (rationalization, freezing, mirror-checking, hoarding)
 3. Attach physical/social tells to each weakness type
@@ -314,31 +332,32 @@ export const darkPsychologySkill: SkillAtom<void> = defineSkillAtom({ atomId: "a
 5. Ensure weakness creates action pressure and consequences
 `.trim(),
 
-  checklist: [
-    "Flaws are shown through actions/dialogue, not abstract labels?",
-    "At least one concrete behavioral pattern per key weakness?",
-    "Physical or social tells are observable in-scene?",
-    "Self-deception pattern is specific and recurring?",
-    "Escapism mechanism has triggers + costs?",
-    "Weakness changes decisions and outcomes (not decorative)?",
-  ],
+    checklist: [
+      "Flaws are shown through actions/dialogue, not abstract labels?",
+      "At least one concrete behavioral pattern per key weakness?",
+      "Physical or social tells are observable in-scene?",
+      "Self-deception pattern is specific and recurring?",
+      "Escapism mechanism has triggers + costs?",
+      "Weakness changes decisions and outcomes (not decorative)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Cowardice portrayal",
-      wrong: `He was a coward who always made excuses.
+    examples: [
+      {
+        scenario: "Cowardice portrayal",
+        wrong: `He was a coward who always made excuses.
 (Flat label, no behavior.)`,
-      right: `He said "It wasn't my fight" twice before anyone asked.
+        right: `He said "It wasn't my fight" twice before anyone asked.
 His hand stayed on the door handle while the shouting got louder.
 (Behavioral avoidance, visible choice.)`,
-    },
-    {
-      scenario: "Self-deception portrayal",
-      wrong: `She kept lying to herself about everything.
+      },
+      {
+        scenario: "Self-deception portrayal",
+        wrong: `She kept lying to herself about everything.
 (Vague abstraction.)`,
-      right: `She retold the same argument, each version shaving off her part in it.
+        right: `She retold the same argument, each version shaving off her part in it.
 By the fourth retelling, she sounded innocent even to herself.
 (Specific revision pattern.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

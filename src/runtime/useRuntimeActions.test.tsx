@@ -119,8 +119,14 @@ describe("useRuntimeActions", () => {
       "script",
       undefined,
     );
-    expect(params.engineActions.toggleGodMode).toHaveBeenCalledWith(true, undefined);
-    expect(params.engineActions.setUnlockMode).toHaveBeenCalledWith(true, undefined);
+    expect(params.engineActions.toggleGodMode).toHaveBeenCalledWith(
+      true,
+      undefined,
+    );
+    expect(params.engineActions.setUnlockMode).toHaveBeenCalledWith(
+      true,
+      undefined,
+    );
     expect(params.engineActions.applyVfsMutation).toHaveBeenCalledWith(
       nextState,
       undefined,
@@ -131,12 +137,18 @@ describe("useRuntimeActions", () => {
     );
 
     expect(params.markMutation).toHaveBeenCalledWith("ui", "ui.feedLayout");
-    expect(params.markMutation).toHaveBeenCalledWith("ui", "ui.viewedSegmentId");
+    expect(params.markMutation).toHaveBeenCalledWith(
+      "ui",
+      "ui.viewedSegmentId",
+    );
     expect(params.markMutation).toHaveBeenCalledWith("domain", "node.node-1");
     expect(params.markMutation).toHaveBeenCalledWith("domain", "veoScript");
     expect(params.markMutation).toHaveBeenCalledWith("domain", "godMode");
     expect(params.markMutation).toHaveBeenCalledWith("domain", "unlockMode");
-    expect(params.markMutation).toHaveBeenCalledWith("domain", "applyVfsMutation");
+    expect(params.markMutation).toHaveBeenCalledWith(
+      "domain",
+      "applyVfsMutation",
+    );
     expect(params.markMutation).toHaveBeenCalledWith(
       "domain",
       "applyVfsDerivedState",
@@ -163,7 +175,10 @@ describe("useRuntimeActions", () => {
         switchSave: params.ragRuntime.actions.switchSave,
       }),
     );
-    expect(params.markMutation).toHaveBeenCalledWith("rag", "rag.switchSave:save-2");
+    expect(params.markMutation).toHaveBeenCalledWith(
+      "rag",
+      "rag.switchSave:save-2",
+    );
   });
 
   it("does not mark rag mutation when sync reports no change", async () => {

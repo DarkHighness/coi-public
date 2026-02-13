@@ -175,7 +175,10 @@ describe("agenticLoop command skill gate", () => {
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
       if (name === "vfs_read") {
-        return { success: true, path: "current/skills/commands/runtime/sudo/SKILL.md" };
+        return {
+          success: true,
+          path: "current/skills/commands/runtime/sudo/SKILL.md",
+        };
       }
       return { success: true };
     });
@@ -356,7 +359,9 @@ describe("agenticLoop command skill gate", () => {
         settings: createSettings(),
         sessionId: "session-preset-gate",
         vfsSession,
-        requiredPresetSkillPaths: ["skills/presets/runtime/narrative-style/SKILL.md"],
+        requiredPresetSkillPaths: [
+          "skills/presets/runtime/narrative-style/SKILL.md",
+        ],
       }),
     ).rejects.toThrow(/TURN_NOT_COMMITTED/);
 

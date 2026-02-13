@@ -111,14 +111,14 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
 
   const visibleLines = useMemo(() => {
     const length = safeItems.length;
-    if (length === 0) return [] as Array<{
-      offset: number;
-      index: number;
-      item: CarouselItem;
-    }>;
+    if (length === 0)
+      return [] as Array<{
+        offset: number;
+        index: number;
+        item: CarouselItem;
+      }>;
 
-    const offsets =
-      length <= 1 ? [0] : length === 2 ? [-1, 0] : [-1, 0, 1];
+    const offsets = length <= 1 ? [0] : length === 2 ? [-1, 0] : [-1, 0, 1];
 
     return offsets.map((offset) => {
       const index = (activeIndex + offset + length * 10) % length;
@@ -149,7 +149,9 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
             >
               <div
                 className={`text-center font-mono leading-relaxed break-all px-2 ${
-                  isActive ? "text-[12px] md:text-sm text-theme-text" : "text-[11px] md:text-xs"
+                  isActive
+                    ? "text-[12px] md:text-sm text-theme-text"
+                    : "text-[11px] md:text-xs"
                 }`}
               >
                 <span className={getStatusClass(item.status, isActive)}>

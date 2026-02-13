@@ -63,7 +63,9 @@ export const isSameEntityRef = (left: unknown, right: unknown): boolean => {
     return true;
   }
 
-  return normalizeEntityRef(normalizedLeft) === normalizeEntityRef(normalizedRight);
+  return (
+    normalizeEntityRef(normalizedLeft) === normalizeEntityRef(normalizedRight)
+  );
 };
 
 const firstNonEmpty = (...values: unknown[]): string | null => {
@@ -131,13 +133,17 @@ export const resolveEntityDisplayName = (
     return actorName;
   }
 
-  const npcMatch = (gameState.npcs || []).find((npc) => isSameEntityRef(npc.id, raw));
+  const npcMatch = (gameState.npcs || []).find((npc) =>
+    isSameEntityRef(npc.id, raw),
+  );
   const npcName = firstNonEmpty(npcMatch?.visible?.name, npcMatch?.id);
   if (npcName) {
     return npcName;
   }
 
-  const questMatch = (gameState.quests || []).find((quest) => isSameEntityRef(quest.id, raw));
+  const questMatch = (gameState.quests || []).find((quest) =>
+    isSameEntityRef(quest.id, raw),
+  );
   if (questMatch?.title) {
     return questMatch.title;
   }

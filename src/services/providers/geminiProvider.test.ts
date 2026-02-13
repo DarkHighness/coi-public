@@ -46,7 +46,10 @@ describe("geminiProvider helpers", () => {
     expect(content.role).toBe("model");
     expect(content.parts[0]).toMatchObject({ text: "I will read state" });
     expect(content.parts[1]).toMatchObject({
-      functionCall: { name: "vfs_read", args: { path: "current/world/README.md" } },
+      functionCall: {
+        name: "vfs_read",
+        args: { path: "current/world/README.md" },
+      },
       thoughtSignature: "sig-1",
     });
   });
@@ -74,10 +77,7 @@ describe("geminiProvider helpers", () => {
       candidates: [
         {
           content: {
-            parts: [
-              { text: "alpha" },
-              { text: "beta" },
-            ],
+            parts: [{ text: "alpha" }, { text: "beta" }],
           },
         },
       ],

@@ -3,7 +3,11 @@ import type {
   LocalEmbeddingRuntimeConfig,
 } from "../types";
 
-const DEFAULT_BACKEND_ORDER: LocalEmbeddingBackend[] = ["webgpu", "webgl", "cpu"];
+const DEFAULT_BACKEND_ORDER: LocalEmbeddingBackend[] = [
+  "webgpu",
+  "webgl",
+  "cpu",
+];
 const DEFAULT_BATCH_SIZE = 8;
 
 interface TfjsEmbeddingEngine {
@@ -97,7 +101,10 @@ const createEngine = async (
   const tf = await import("@tensorflow/tfjs-core");
   const use = await import("@tensorflow-models/universal-sentence-encoder");
 
-  const backend = await pickBackend(tf, config.backendOrder || DEFAULT_BACKEND_ORDER);
+  const backend = await pickBackend(
+    tf,
+    config.backendOrder || DEFAULT_BACKEND_ORDER,
+  );
   const model = await use.load();
 
   const embed = async (texts: string[]): Promise<number[][]> => {
@@ -107,7 +114,9 @@ const createEngine = async (
     const batchSize = config.batchSize || DEFAULT_BATCH_SIZE;
 
     for (let start = 0; start < texts.length; start += batchSize) {
-      const batch = texts.slice(start, start + batchSize).map((text) => text || " ");
+      const batch = texts
+        .slice(start, start + batchSize)
+        .map((text) => text || " ");
       const tensor = await model.embed(batch);
       const vectors = (await tensor.array()) as number[][];
       tensor.dispose();

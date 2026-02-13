@@ -1,5 +1,10 @@
 import type { OutlinePhaseProgress } from "../../services/aiService";
-import type { ForkTree, GameState, SavePresetProfile, SaveSlot } from "../../types";
+import type {
+  ForkTree,
+  GameState,
+  SavePresetProfile,
+  SaveSlot,
+} from "../../types";
 import type { RuntimeContinueResult, RuntimeLoadSlotResult } from "../state";
 
 export interface ContinuationCallbacks {
@@ -67,7 +72,10 @@ function resolveForkTree(
 async function resolveLoadedSlotState(
   result: LoadSlotResult,
   callbacks: ContinuationCallbacks | undefined,
-  deps: Pick<LoadSlotForPlayDeps, "gameState" | "resumeOutlineGeneration" | "syncRagSaveContext">,
+  deps: Pick<
+    LoadSlotForPlayDeps,
+    "gameState" | "resumeOutlineGeneration" | "syncRagSaveContext"
+  >,
   slotId: string,
   reason: string,
 ): Promise<RuntimeLoadSlotResult> {
@@ -136,7 +144,9 @@ export async function runContinueGame(
     return "no-save";
   }
 
-  const mostRecent = [...deps.saveSlots].sort((a, b) => b.timestamp - a.timestamp)[0];
+  const mostRecent = [...deps.saveSlots].sort(
+    (a, b) => b.timestamp - a.timestamp,
+  )[0];
   const loadResult = await deps.loadSlot(mostRecent.id);
 
   if (!loadResult.success) {

@@ -115,15 +115,15 @@ describe("claudeProvider fallbacks and unsupported features", () => {
   });
 
   it("rejects unsupported image/video/speech/embedding generation", async () => {
-    await expect(generateImage({ apiKey: "x" }, "model", "prompt")).rejects.toThrow(
-      "Image generation is not supported",
-    );
+    await expect(
+      generateImage({ apiKey: "x" }, "model", "prompt"),
+    ).rejects.toThrow("Image generation is not supported");
     await expect(
       generateVideo({ apiKey: "x" }, "model", "base64", "prompt"),
     ).rejects.toThrow("Video generation is not supported");
-    await expect(generateSpeech({ apiKey: "x" }, "model", "hello")).rejects.toThrow(
-      "Speech generation is not supported",
-    );
+    await expect(
+      generateSpeech({ apiKey: "x" }, "model", "hello"),
+    ).rejects.toThrow("Speech generation is not supported");
     await expect(
       generateEmbedding({ apiKey: "x" }, "model", ["hello"]),
     ).rejects.toThrow("Embedding generation is not supported");

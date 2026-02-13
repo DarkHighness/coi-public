@@ -1,7 +1,11 @@
 import type { PromptAtomGraph } from "./types";
 
-export function getAtomGraphNodeMap(graph: PromptAtomGraph): Map<string, string[]> {
-  return new Map(graph.atomNodes.map((node) => [node.atomId, node.directDependencies]));
+export function getAtomGraphNodeMap(
+  graph: PromptAtomGraph,
+): Map<string, string[]> {
+  return new Map(
+    graph.atomNodes.map((node) => [node.atomId, node.directDependencies]),
+  );
 }
 
 export function collectTransitiveAtomDependencies(

@@ -6,9 +6,7 @@ import { preloadAudio } from "../../utils/audioLoader";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
 import { InitializingButterflies } from "../effects/InitializingButterflies";
-import {
-  ToolCallCarousel,
-} from "../common/ToolCallCarousel";
+import { ToolCallCarousel } from "../common/ToolCallCarousel";
 import type { ToolCallRecord } from "../../types";
 import type { OutlinePhaseProgress } from "../../services/aiService";
 

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatImageStyleRules,
-  getRulesForCategory,
-} from "./rulesInjector";
+import { formatImageStyleRules, getRulesForCategory } from "./rulesInjector";
 
 const rules = [
   {

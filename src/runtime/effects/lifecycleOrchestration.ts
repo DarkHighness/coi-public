@@ -23,7 +23,10 @@ import type {
   UnifiedMessage,
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
-import { clearOutlineProgress, writeOutlineProgress } from "../../services/vfs/outline";
+import {
+  clearOutlineProgress,
+  writeOutlineProgress,
+} from "../../services/vfs/outline";
 import { seedVfsSessionFromDefaults } from "../../services/vfs/seed";
 import {
   applyOpeningNarrativeState,
@@ -107,7 +110,8 @@ export function createLifecycleActions({
   deleteSlot,
   resetState,
 }: LifecycleActionsDeps) {
-  const confirmAction: Confirm = confirm ?? ((message?: string) => window.confirm(message));
+  const confirmAction: Confirm =
+    confirm ?? ((message?: string) => window.confirm(message));
 
   const sanitizeOutlineConversationForRecovery = (
     conversation: OutlineConversationState,
@@ -118,23 +122,23 @@ export function createLifecycleActions({
       if (!message || typeof message !== "object") continue;
       if (message.role === "tool") continue;
 
-      const nextContent = (Array.isArray(message.content) ? message.content : []).filter(
-        (part) => {
-          if (!part || typeof part !== "object") return false;
-          if (part.type === "tool_use" || part.type === "tool_result") {
-            return false;
-          }
-          if (
-            part.type === "text" &&
-            typeof part.text === "string" &&
-            (part.text.startsWith("[SYSTEM: BUDGET STATUS]") ||
-              part.text.startsWith("[SYSTEM: BUDGET UPDATE]"))
-          ) {
-            return false;
-          }
-          return true;
-        },
-      );
+      const nextContent = (
+        Array.isArray(message.content) ? message.content : []
+      ).filter((part) => {
+        if (!part || typeof part !== "object") return false;
+        if (part.type === "tool_use" || part.type === "tool_result") {
+          return false;
+        }
+        if (
+          part.type === "text" &&
+          typeof part.text === "string" &&
+          (part.text.startsWith("[SYSTEM: BUDGET STATUS]") ||
+            part.text.startsWith("[SYSTEM: BUDGET UPDATE]"))
+        ) {
+          return false;
+        }
+        return true;
+      });
 
       if (nextContent.length === 0) continue;
       sanitizedHistory.push({
@@ -168,7 +172,10 @@ export function createLifecycleActions({
   };
 
   const getResumeRecoveryKind = (error: unknown): ResumeRecoveryKind | null => {
-    if (error instanceof HistoryCorruptedError || isInvalidArgumentError(error)) {
+    if (
+      error instanceof HistoryCorruptedError ||
+      isInvalidArgumentError(error)
+    ) {
       return "history";
     }
     if (error instanceof ContextOverflowError || isContextLengthError(error)) {
@@ -244,9 +251,8 @@ export function createLifecycleActions({
     });
 
     const hydratedWithPresetProfile = hydratedState;
-    hydratedWithPresetProfile.presetProfile = normalizeSavePresetProfile(
-      presetProfile,
-    );
+    hydratedWithPresetProfile.presetProfile =
+      normalizeSavePresetProfile(presetProfile);
 
     const { firstNode, openingAtmosphere, fallbackPrompt } =
       buildOpeningNarrativeSegment({
@@ -310,7 +316,10 @@ export function createLifecycleActions({
 
     if (aiSettings.embedding?.enabled) {
       indexInitialEntities(nextState, saveId, vfsSession).catch((error) => {
-        console.error(`[${logPrefix}] Failed to index initial entities:`, error);
+        console.error(
+          `[${logPrefix}] Failed to index initial entities:`,
+          error,
+        );
       });
     }
   };
@@ -650,7 +659,8 @@ export function createLifecycleActions({
     setGameState((prev) => ({
       ...prev,
       isProcessing: true,
-      liveToolCalls: gameStateRef.current.outlineConversation?.liveToolCalls || [],
+      liveToolCalls:
+        gameStateRef.current.outlineConversation?.liveToolCalls || [],
     }));
     navigate("/initializing");
 
@@ -765,7 +775,8 @@ export function createLifecycleActions({
     }
 
     const shouldClearCorruptedProgress =
-      finalError instanceof HistoryCorruptedError || isInvalidArgumentError(finalError);
+      finalError instanceof HistoryCorruptedError ||
+      isInvalidArgumentError(finalError);
     if (shouldClearCorruptedProgress) {
       console.log(
         "[ResumeOutline] History corrupted - clearing saved conversation state",

@@ -61,7 +61,15 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         usageByTheme,
         t,
       }),
-    [themes, selectedCategory, searchQuery, sortMode, favoriteSet, usageByTheme, t],
+    [
+      themes,
+      selectedCategory,
+      searchQuery,
+      sortMode,
+      favoriteSet,
+      usageByTheme,
+      t,
+    ],
   );
 
   const showRandomOption = selectedCategory === "all" && !searchQuery.trim();
@@ -215,7 +223,10 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                           <div className="text-sm font-semibold tracking-[0.01em] truncate flex items-center gap-1">
                             {name}
                             {isFavorite && (
-                              <span className="text-theme-primary/90" aria-hidden>
+                              <span
+                                className="text-theme-primary/90"
+                                aria-hidden
+                              >
                                 ★
                               </span>
                             )}
@@ -263,7 +274,8 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                 <h3
                   className={`text-[1.05rem] font-semibold text-theme-primary truncate ${
                     previewData
-                      ? ENV_THEMES[previewData.envTheme]?.fontClass || "font-sans"
+                      ? ENV_THEMES[previewData.envTheme]?.fontClass ||
+                        "font-sans"
                       : "font-sans"
                   }`}
                 >
@@ -272,9 +284,7 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                     : t("randomTheme")}
                 </h3>
                 <p className="mt-1 text-xs text-theme-text-secondary leading-relaxed">
-                  {previewData
-                    ? t("themeSelectionHint")
-                    : t("randomThemeDesc")}
+                  {previewData ? t("themeSelectionHint") : t("randomThemeDesc")}
                 </p>
               </div>
 
@@ -300,7 +310,9 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                   <svg
                     className="w-4 h-4"
                     viewBox="0 0 20 20"
-                    fill={favoriteSet.has(previewThemeKey) ? "currentColor" : "none"}
+                    fill={
+                      favoriteSet.has(previewThemeKey) ? "currentColor" : "none"
+                    }
                     stroke="currentColor"
                     strokeWidth="1.5"
                   >
@@ -353,10 +365,13 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
                   </section>
 
                   {(() => {
-                    const roles = t(`${previewThemeKey}.protagonist_preference`, {
-                      ns: "themes",
-                      returnObjects: true,
-                    }) as string[] | undefined;
+                    const roles = t(
+                      `${previewThemeKey}.protagonist_preference`,
+                      {
+                        ns: "themes",
+                        returnObjects: true,
+                      },
+                    ) as string[] | undefined;
 
                     if (!Array.isArray(roles) || roles.length === 0) {
                       return null;

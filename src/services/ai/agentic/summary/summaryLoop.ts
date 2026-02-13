@@ -1,7 +1,10 @@
 import type { SummaryLoopInput, SummaryAgenticLoopResult } from "./summary";
 import { runCompactSummaryLoop } from "./summaryCompactLoop";
 import { runQuerySummaryLoop } from "./summaryQueryLoop";
-import { isContextLengthError, HistoryCorruptedError } from "../../contextCompressor";
+import {
+  isContextLengthError,
+  HistoryCorruptedError,
+} from "../../contextCompressor";
 
 export type SummaryLoopMode = "auto" | "session_compact" | "query_summary";
 

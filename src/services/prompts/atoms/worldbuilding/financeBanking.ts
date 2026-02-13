@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const financeBanking: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/financeBanking#financeBanking", source: "atoms/worldbuilding/financeBanking.ts", exportName: "financeBanking" }, () => `
+export const financeBanking: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/financeBanking#financeBanking",
+    source: "atoms/worldbuilding/financeBanking.ts",
+    exportName: "financeBanking",
+  },
+  () => `
 <worldbuilding_context>
 **FINANCE & BANKING (Receipts, Trust, and Freeze Power)**
 
@@ -93,45 +98,60 @@ Use a response ladder:
 - One fraud vector (how to fake/steal):
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const financeBankingPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/financeBanking#financeBankingPrimer", source: "atoms/worldbuilding/financeBanking.ts", exportName: "financeBankingPrimer" }, () =>
-  `
+export const financeBankingPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/financeBanking#financeBankingPrimer",
+    source: "atoms/worldbuilding/financeBanking.ts",
+    exportName: "financeBankingPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **FINANCE PRIMER**: Money systems are ledgers + identity proof + audits + freeze power. Debt creates clocks; transfers create receipts.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const financeBankingSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/financeBanking#financeBankingSkill", source: "atoms/worldbuilding/financeBanking.ts", exportName: "financeBankingSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(financeBanking),
-  quickStart: `
+export const financeBankingSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/financeBanking#financeBankingSkill",
+    source: "atoms/worldbuilding/financeBanking.ts",
+    exportName: "financeBankingSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(financeBanking),
+    quickStart: `
 1) Define the ledger authority and identity proof
 2) Add a debt clock (payment date + default ladder)
 3) Define audit cadence and capacity limits
 4) Define freeze authority and triggers (flags → hold → freeze)
 5) Add one fraud vector and one verification method
 `.trim(),
-  checklist: [
-    "Value is recorded somewhere (ledger) with a real access gate.",
-    "Ownership proof exists (seals/tokens/biometrics/witnesses) and can be disputed.",
-    "Debt default has a ladder (fees → seizure → warrants), not instant ruin.",
-    "Transfers leave receipts that can be audited later.",
-    "Freeze power exists and is rule-bound/capacity-limited (not arbitrary omniscience).",
-    "Fraud vectors exist (forgery, identity theft, insider abuse) with counterplay.",
-  ],
-  examples: [
-    {
-      scenario: "Freeze power creates a scene engine",
-      wrong: `"We pay the bribe and it disappears forever."`,
-      right: `"The payment clears today, but the bank reconciles weekly. A clerk flags an unusual transfer.
+    checklist: [
+      "Value is recorded somewhere (ledger) with a real access gate.",
+      "Ownership proof exists (seals/tokens/biometrics/witnesses) and can be disputed.",
+      "Debt default has a ladder (fees → seizure → warrants), not instant ruin.",
+      "Transfers leave receipts that can be audited later.",
+      "Freeze power exists and is rule-bound/capacity-limited (not arbitrary omniscience).",
+      "Fraud vectors exist (forgery, identity theft, insider abuse) with counterplay.",
+    ],
+    examples: [
+      {
+        scenario: "Freeze power creates a scene engine",
+        wrong: `"We pay the bribe and it disappears forever."`,
+        right: `"The payment clears today, but the bank reconciles weekly. A clerk flags an unusual transfer.
 The account is put on a 24h hold pending review. You can wait (risk a full freeze), produce documents,
 or move assets through a letter-of-credit broker who demands collateral."`,
-    },
-    {
-      scenario: "Debt as a clock, not a binary",
-      wrong: `"You miss payment; you're instantly arrested."`,
-      right: `"Default triggers a ladder: 3-day grace, then fees, then collateral seizure, then a warrant.
+      },
+      {
+        scenario: "Debt as a clock, not a binary",
+        wrong: `"You miss payment; you're instantly arrested."`,
+        right: `"Default triggers a ladder: 3-day grace, then fees, then collateral seizure, then a warrant.
 You can negotiate a restructuring, trade a favor to an auditor, or accept seizure to buy time."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

@@ -338,12 +338,8 @@ describe("Claude vs Gemini Independence", () => {
 
     // Both should have been called with different warning prefixes
     const calls = consoleSpy.mock.calls;
-    expect(calls.some((call) => String(call[0]).includes("Gemini"))).toBe(
-      true,
-    );
-    expect(calls.some((call) => String(call[0]).includes("Claude"))).toBe(
-      true,
-    );
+    expect(calls.some((call) => String(call[0]).includes("Gemini"))).toBe(true);
+    expect(calls.some((call) => String(call[0]).includes("Claude"))).toBe(true);
 
     consoleSpy.mockRestore();
   });

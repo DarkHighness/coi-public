@@ -6,7 +6,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface IdentityEnforcementInput {
   protagonist?: {
     name?: string;
@@ -17,16 +16,18 @@ export interface IdentityEnforcementInput {
   protagonistFeature?: string;
 }
 
-export const identityEnforcement: Atom<IdentityEnforcementInput> = defineAtom({ atomId: "atoms/core/identityEnforcement#identityEnforcement", source: "atoms/core/identityEnforcement.ts", exportName: "identityEnforcement" }, ({
-  protagonist,
-  backgroundTemplate,
-  protagonistFeature,
-}) => {
-  const name = protagonist?.name || "The Protagonist";
-  const role = protagonist?.role || "Traveler";
-  const location = protagonist?.location || "Unknown Location";
+export const identityEnforcement: Atom<IdentityEnforcementInput> = defineAtom(
+  {
+    atomId: "atoms/core/identityEnforcement#identityEnforcement",
+    source: "atoms/core/identityEnforcement.ts",
+    exportName: "identityEnforcement",
+  },
+  ({ protagonist, backgroundTemplate, protagonistFeature }) => {
+    const name = protagonist?.name || "The Protagonist";
+    const role = protagonist?.role || "Traveler";
+    const location = protagonist?.location || "Unknown Location";
 
-  return `
+    return `
 <identity_enforcement>
   <critical_rule>
     **WHO IS "YOU"?**
@@ -95,4 +96,5 @@ ${
   }
 </identity_enforcement>
 `;
-});
+  },
+);

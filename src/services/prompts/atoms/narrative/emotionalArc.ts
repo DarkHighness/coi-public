@@ -11,8 +11,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const emotionalArcPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/emotionalArc#emotionalArcPrimer", source: "atoms/narrative/emotionalArc.ts", exportName: "emotionalArcPrimer" }, () => `
+export const emotionalArcPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/emotionalArc#emotionalArcPrimer",
+    source: "atoms/narrative/emotionalArc.ts",
+    exportName: "emotionalArcPrimer",
+  },
+  () => `
 <emotional_arc>
   **MACRO-PACING: EMOTIONAL TEMPERATURE ACROSS TURNS**:
   - Track emotional temperature. Sustained high = noise. Sustained low = boredom.
@@ -21,9 +26,16 @@ export const emotionalArcPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrat
   - Breathing room is NOT "nothing happens." It is aftermath, processing, quiet character moments, seeds for next arc.
   - The plateau trap: if intensity hasn't changed in 3+ turns, something must shift.
 </emotional_arc>
-`);
+`,
+);
 
-export const emotionalArc: Atom<void> = defineAtom({ atomId: "atoms/narrative/emotionalArc#emotionalArc", source: "atoms/narrative/emotionalArc.ts", exportName: "emotionalArc" }, () => `
+export const emotionalArc: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/emotionalArc#emotionalArc",
+    source: "atoms/narrative/emotionalArc.ts",
+    exportName: "emotionalArc",
+  },
+  () => `
 <rule name="EMOTIONAL_ARC">
   **THE MACRO-RHYTHM OF FEELING**:
 
@@ -215,7 +227,8 @@ export const emotionalArc: Atom<void> = defineAtom({ atomId: "atoms/narrative/em
       the story is treading water. Something structural must change.
   </anti_patterns>
 </rule>
-`);
+`,
+);
 
 export default emotionalArc;
 
@@ -223,10 +236,16 @@ export default emotionalArc;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const emotionalArcSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/emotionalArc#emotionalArcSkill", source: "atoms/narrative/emotionalArc.ts", exportName: "emotionalArcSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(emotionalArc),
+export const emotionalArcSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/emotionalArc#emotionalArcSkill",
+    source: "atoms/narrative/emotionalArc.ts",
+    exportName: "emotionalArcSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(emotionalArc),
 
-  quickStart: `
+    quickStart: `
 1. Assess current emotional temperature (how intense have the last 3 turns been?)
 2. If 3+ turns at same intensity → shift (escalate, release, or transform)
 3. After a peak → provide 1-2 turns of breathing room (aftermath, not emptiness)
@@ -234,33 +253,34 @@ export const emotionalArcSkill: SkillAtom<void> = defineSkillAtom({ atomId: "ato
 5. Escalate at least one dimension per cycle (scope, intimacy, or irreversibility)
 `.trim(),
 
-  checklist: [
-    "Emotional intensity has changed in the last 3 turns?",
-    "After high-intensity sequence, breathing room provided?",
-    "Breathing room contains aftermath/processing, not emptiness?",
-    "Stakes escalating across cycles (scope, intimacy, or irreversibility)?",
-    "Not every valley is a trap (player gets genuine rest)?",
-    "World shows change after major events (no reset button)?",
-    "Peaks and valleys alternate (sawtooth, not flatline)?",
-  ],
+    checklist: [
+      "Emotional intensity has changed in the last 3 turns?",
+      "After high-intensity sequence, breathing room provided?",
+      "Breathing room contains aftermath/processing, not emptiness?",
+      "Stakes escalating across cycles (scope, intimacy, or irreversibility)?",
+      "Not every valley is a trap (player gets genuine rest)?",
+      "World shows change after major events (no reset button)?",
+      "Peaks and valleys alternate (sawtooth, not flatline)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Breathing Room",
-      wrong: `"After the battle, another enemy appears."
+    examples: [
+      {
+        scenario: "Breathing Room",
+        wrong: `"After the battle, another enemy appears."
 (No valley. Player is numb. Noise trap.)`,
-      right: `"The morning after. Smoke still rises. A child sits on the steps
+        right: `"The morning after. Smoke still rises. A child sits on the steps
 of what used to be a bakery, holding a cat.
 The cat is the only thing that isn't covered in ash."
 (Aftermath. Different register. Seeds for next arc.)`,
-    },
-    {
-      scenario: "The Plateau Trap",
-      wrong: `Turn 5: Tense negotiation. Turn 6: Tense standoff. Turn 7: Tense waiting.
+      },
+      {
+        scenario: "The Plateau Trap",
+        wrong: `Turn 5: Tense negotiation. Turn 6: Tense standoff. Turn 7: Tense waiting.
 (Same intensity for 3 turns. Player has adapted. Flatline.)`,
-      right: `Turn 5: Tense negotiation. Turn 6: The deal breaks — Loss (sharp peak).
+        right: `Turn 5: Tense negotiation. Turn 6: The deal breaks — Loss (sharp peak).
 Turn 7: Quiet aftermath — counting what's left (valley).
 (Sawtooth: build, peak, drop, breathe.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

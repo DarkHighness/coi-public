@@ -15,6 +15,7 @@
 ### Task 1: Prompt rules for outline immutability + VFS layout
 
 **Files:**
+
 - Modify: `src/services/prompts/atoms/core/stateManagement.ts`
 - Test: `src/services/prompts/atoms/core/__tests__/stateManagement.test.ts`
 
@@ -62,6 +63,7 @@ git commit -m "[Feat]: document outline VFS rules"
 ### Task 2: Remove legacy tool references in core policy prompts
 
 **Files:**
+
 - Modify: `src/services/prompts/atoms/core/idAndEntityPolicy.ts`
 - Modify: `src/services/prompts/atoms/core/memoryPolicy.ts`
 - Modify: `src/services/prompts/atoms/core/__tests__/promptHygiene.test.ts`
@@ -91,7 +93,7 @@ Expected: FAIL (legacy tool references)
 
 **Step 3: Write minimal implementation**
 
-- Replace list/query/add_* examples with VFS inspection + file writes.
+- Replace list/query/add\_\* examples with VFS inspection + file writes.
 - In `memoryPolicy`, remove `update_notes`/`query_notes` references. Prefer:
   - Write persistent knowledge entries under `current/world/knowledge/`.
   - Use `vfs_search`/`vfs_grep` to avoid duplicates.
@@ -113,6 +115,7 @@ git commit -m "[Refactor]: replace legacy tool references in prompts"
 ### Task 3: Add VFS editor helper for section edits
 
 **Files:**
+
 - Create: `src/services/vfs/editor.ts`
 - Test: `src/services/vfs/__tests__/vfsEditor.test.ts`
 
@@ -127,14 +130,23 @@ const json = (value: unknown) => JSON.stringify(value);
 
 it("merges global edits without losing extra fields", () => {
   const session = new VfsSession();
-  session.writeFile("world/global.json", json({
-    time: "Day 1", theme: "fantasy", currentLocation: "Town",
-    atmosphere: { envTheme: "fantasy", ambience: "quiet" },
-    turnNumber: 1, forkId: 0, language: "fr",
-  }), "application/json");
+  session.writeFile(
+    "world/global.json",
+    json({
+      time: "Day 1",
+      theme: "fantasy",
+      currentLocation: "Town",
+      atmosphere: { envTheme: "fantasy", ambience: "quiet" },
+      turnNumber: 1,
+      forkId: 0,
+      language: "fr",
+    }),
+    "application/json",
+  );
 
   applySectionEdit(session, "global", {
-    time: "Night 1", currentLocation: "Forest",
+    time: "Night 1",
+    currentLocation: "Forest",
   });
 
   const updated = JSON.parse(session.readFile("world/global.json")!.content);
@@ -145,7 +157,11 @@ it("merges global edits without losing extra fields", () => {
 
 it("replaces inventory files from list", () => {
   const session = new VfsSession();
-  session.writeFile("world/inventory/old.json", json({ id: "old" }), "application/json");
+  session.writeFile(
+    "world/inventory/old.json",
+    json({ id: "old" }),
+    "application/json",
+  );
   applySectionEdit(session, "inventory", [{ id: "inv_1", name: "Item" }]);
   expect(session.readFile("world/inventory/old.json")).toBeNull();
   expect(session.readFile("world/inventory/inv_1.json")).toBeTruthy();
@@ -153,8 +169,15 @@ it("replaces inventory files from list", () => {
 
 it("blocks outline edits unless allowed", () => {
   const session = new VfsSession();
-  expect(() => applySectionEdit(session, "outline", { title: "New" })).toThrow();
-  applySectionEdit(session, "outline", { title: "New" }, { allowOutlineEdit: true });
+  expect(() =>
+    applySectionEdit(session, "outline", { title: "New" }),
+  ).toThrow();
+  applySectionEdit(
+    session,
+    "outline",
+    { title: "New" },
+    { allowOutlineEdit: true },
+  );
   expect(session.readFile("outline/outline.json")).toBeTruthy();
 });
 ```
@@ -191,6 +214,7 @@ git commit -m "[Feat]: add VFS editor helper"
 ### Task 4: Refactor StateEditor to write via VFS
 
 **Files:**
+
 - Modify: `src/components/StateEditor.tsx`
 - Modify: `src/hooks/useGameEngine.ts`
 - Modify: `src/contexts/GameEngineContext.tsx`

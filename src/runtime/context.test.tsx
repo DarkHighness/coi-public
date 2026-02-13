@@ -40,7 +40,8 @@ vi.mock("./builders", () => ({
 
 vi.mock("./engineBridge", () => ({
   buildRuntimeEngineActionsFromSource: buildRuntimeEngineActionsFromSourceMock,
-  buildRuntimeEngineBaseStateFromSource: buildRuntimeEngineBaseStateFromSourceMock,
+  buildRuntimeEngineBaseStateFromSource:
+    buildRuntimeEngineBaseStateFromSourceMock,
 }));
 
 import {
@@ -80,9 +81,13 @@ describe("runtime context", () => {
     });
 
     resolveRuntimeThemeConfigMock.mockReturnValue({ key: "resolved-theme" });
-    buildRuntimeEngineBaseStateFromSourceMock.mockReturnValue({ key: "base-state" });
+    buildRuntimeEngineBaseStateFromSourceMock.mockReturnValue({
+      key: "base-state",
+    });
     buildRuntimeEngineStateMock.mockReturnValue({ key: "engine-state" });
-    buildRuntimeEngineActionsFromSourceMock.mockReturnValue({ key: "engine-actions" });
+    buildRuntimeEngineActionsFromSourceMock.mockReturnValue({
+      key: "engine-actions",
+    });
     useRuntimeActionsAdapterMock.mockReturnValue({ key: "runtime-actions" });
     buildRuntimeStateMock.mockReturnValue({ key: "runtime-state" });
   });
@@ -130,11 +135,7 @@ describe("runtime context", () => {
     };
 
     render(
-      React.createElement(
-        RuntimeProvider,
-        null,
-        React.createElement(Probe),
-      ),
+      React.createElement(RuntimeProvider, null, React.createElement(Probe)),
     );
 
     expect(resolveRuntimeThemeConfigMock).toHaveBeenCalledWith(

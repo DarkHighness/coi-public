@@ -10,11 +10,16 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * 双层现实说明 - 无参数
  */
-export const dualLayerReality: Atom<void> = defineAtom({ atomId: "atoms/core/dualLayerReality#dualLayerReality", source: "atoms/core/dualLayerReality.ts", exportName: "dualLayerReality" }, () => `
+export const dualLayerReality: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/dualLayerReality#dualLayerReality",
+    source: "atoms/core/dualLayerReality.ts",
+    exportName: "dualLayerReality",
+  },
+  () => `
 <dual_layer_reality>
 Every entity in this world has TWO layers:
 - **Visible**: what the protagonist can reasonably know *right now* (evidence-based, incomplete, sometimes wrong)
@@ -30,6 +35,7 @@ Examples:
 
 Do not reveal hidden names or truths in narrative until unlocked by proof.
 </dual_layer_reality>
-`);
+`,
+);
 
 export default dualLayerReality;

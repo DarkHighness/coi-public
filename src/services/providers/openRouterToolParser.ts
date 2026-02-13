@@ -39,8 +39,7 @@ export const extractOpenRouterToolCalls = (
       name: fn.name || call.name || "",
       args,
       thoughtSignature:
-        call.extra_content?.google?.thought_signature ||
-        fn.thought_signature,
+        call.extra_content?.google?.thought_signature || fn.thought_signature,
     };
   });
 };

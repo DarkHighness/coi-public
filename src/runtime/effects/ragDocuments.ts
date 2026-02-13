@@ -13,7 +13,8 @@ interface SaveAwareGameState extends GameState {
 
 const snapshotCache = new Map<string, VfsFileMap>();
 
-const buildCacheKey = (saveId: string, forkId: number): string => `${saveId}::${forkId}`;
+const buildCacheKey = (saveId: string, forkId: number): string =>
+  `${saveId}::${forkId}`;
 
 const cloneSnapshot = (snapshot: VfsFileMap): VfsFileMap => {
   const next: VfsFileMap = {};
@@ -28,7 +29,10 @@ function extractXmlTagValue(
   tagName: string,
 ): string | undefined {
   if (!input) return undefined;
-  const regex = new RegExp(`<${tagName}>\\s*([\\s\\S]*?)\\s*<\\/${tagName}>`, "i");
+  const regex = new RegExp(
+    `<${tagName}>\\s*([\\s\\S]*?)\\s*<\\/${tagName}>`,
+    "i",
+  );
   const match = input.match(regex);
   const value = match?.[1]?.trim();
   return value ? value : undefined;
@@ -114,7 +118,10 @@ export async function updateRAGDocumentsBackground(
     });
 
     const changedSnapshot = getChangedSnapshot(snapshot, diff.changedPaths);
-    const changedDocuments = extractFileChunksFromSnapshot(changedSnapshot, options);
+    const changedDocuments = extractFileChunksFromSnapshot(
+      changedSnapshot,
+      options,
+    );
 
     if (changedDocuments.length > 0) {
       await ragService.upsertFileChunks(changedDocuments);

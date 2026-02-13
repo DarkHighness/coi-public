@@ -127,7 +127,7 @@ export const buildNodeActions = ({
       fallbackLabel: meta.fallbackLabel,
       danger: meta.danger,
       disabled: !enabled,
-      disabledReason: enabled ? null : config.disabledReason ?? null,
+      disabledReason: enabled ? null : (config.disabledReason ?? null),
       onSelect: config.onSelect,
     });
   }

@@ -5,7 +5,12 @@
  */
 
 import type { SummaryLoopInput } from "./summary";
-import { readConversationIndex, readForkTree, readTurnFile, buildTurnPath } from "../../../vfs/conversation";
+import {
+  readConversationIndex,
+  readForkTree,
+  readTurnFile,
+  buildTurnPath,
+} from "../../../vfs/conversation";
 
 // Atoms
 import {
@@ -158,7 +163,10 @@ const summarySystemInstructionAtom = defineAtom(
     source: "ai/agentic/summary/summaryContext.ts",
     exportName: "summarySystemInstructionAtom",
   },
-  ({ language, nsfw, detailedDescription }: SummarySystemInstructionInput, trace) => {
+  (
+    { language, nsfw, detailedDescription }: SummarySystemInstructionInput,
+    trace,
+  ) => {
     const { code: canonicalLanguage } = canonicalizeLanguage(language);
     const header = [
       "You are a diligent chronicler tasked with summarizing story events in a world simulation.",
@@ -176,7 +184,9 @@ const summarySystemInstructionAtom = defineAtom(
       header,
       trace.record(summaryRoleAtom),
       trace.record(summaryToolsAtom),
-      trace.record(summaryCriticalRulesAtom, { languageCode: canonicalLanguage }),
+      trace.record(summaryCriticalRulesAtom, {
+        languageCode: canonicalLanguage,
+      }),
       trace.record(gmKnowledge),
       trace.record(entityDefinitions),
       trace.record(summaryStyleInjectionAtom),
@@ -207,8 +217,13 @@ export function getSummarySystemInstruction(
  * Lists ALL segments with clear turn markers so AI doesn't need to query them
  */
 export function buildSummaryInitialContext(input: SummaryLoopInput): string {
-  const { baseSummaries, baseIndex, nodeRange, pendingPlayerAction, vfsSession } =
-    input;
+  const {
+    baseSummaries,
+    baseIndex,
+    nodeRange,
+    pendingPlayerAction,
+    vfsSession,
+  } = input;
   const parts: string[] = [];
 
   const previousSummary =
@@ -221,7 +236,9 @@ export function buildSummaryInitialContext(input: SummaryLoopInput): string {
   const activeForkId =
     typeof index?.activeForkId === "number" ? index.activeForkId : null;
   const forkCount =
-    typeof forkTree?.nextForkId === "number" ? Math.max(forkTree.nextForkId - 1, 0) : null;
+    typeof forkTree?.nextForkId === "number"
+      ? Math.max(forkTree.nextForkId - 1, 0)
+      : null;
   const activeTurnNumber =
     activeForkId !== null
       ? (index?.latestTurnNumberByFork?.[String(activeForkId)] ?? null)
@@ -283,7 +300,9 @@ ${previousSummary.nodeRange ? `<node_range from="${previousSummary.nodeRange.fro
 
   const turnItems: string[] = [];
   const order =
-    activeForkId !== null ? (index?.turnOrderByFork?.[String(activeForkId)] ?? []) : [];
+    activeForkId !== null
+      ? (index?.turnOrderByFork?.[String(activeForkId)] ?? [])
+      : [];
 
   let segmentIdx = 0;
   for (const turnId of order) {

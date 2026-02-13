@@ -27,7 +27,10 @@ const veoScriptPromptAtom = defineAtom(
     source: "prompts/veoScript.ts",
     exportName: "veoScriptPromptAtom",
   },
-  ({ gameState, history, language = "English" }: VeoScriptPromptInput, trace) => {
+  (
+    { gameState, history, language = "English" }: VeoScriptPromptInput,
+    trace,
+  ) => {
     const recentHistoryXml = history
       .slice(-20)
       .filter((h) => h.role === "user" || h.role === "system")

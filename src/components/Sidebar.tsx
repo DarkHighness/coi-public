@@ -58,7 +58,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const showDesktopMenu = gameState.uiState?.showSystemFooter !== false;
 
   const activeQuest = gameState.quests?.find((q) => q.status === "active");
-  const locationContext = resolveLocationDisplayName(gameState.currentLocation, gameState);
+  const locationContext = resolveLocationDisplayName(
+    gameState.currentLocation,
+    gameState,
+  );
   const itemContext = `Theme: ${gameState.theme}. Quest: ${activeQuest?.title || "None"}. Location: ${locationContext}.`;
 
   const embeddingProgress = useEmbeddingStatus();
@@ -185,7 +188,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               themeFont={currentThemeConfig.fontClass}
               itemContext={itemContext}
               listState={gameState.uiState?.locations}
-              onUpdateList={(newState) => onUpdateUIState("locations", newState)}
+              onUpdateList={(newState) =>
+                onUpdateUIState("locations", newState)
+              }
             />
           </section>
           <section className="py-3">
@@ -214,7 +219,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               themeFont={currentThemeConfig.fontClass}
               itemContext={itemContext}
               listState={gameState.uiState?.inventory}
-              onUpdateList={(newState) => onUpdateUIState("inventory", newState)}
+              onUpdateList={(newState) =>
+                onUpdateUIState("inventory", newState)
+              }
             />
           </section>
           <section className="py-3">
@@ -222,7 +229,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               knowledge={gameState.knowledge || []}
               themeFont={currentThemeConfig.fontClass}
               listState={gameState.uiState?.knowledge}
-              onUpdateList={(newState) => onUpdateUIState("knowledge", newState)}
+              onUpdateList={(newState) =>
+                onUpdateUIState("knowledge", newState)
+              }
             />
           </section>
 
@@ -245,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             />
           </section>
 
-        {/* Token Usage Panel - Mobile Only */}
+          {/* Token Usage Panel - Mobile Only */}
           <section className="py-3 md:hidden">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-wide text-theme-text-secondary">
@@ -279,7 +288,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </span>
         <div className="flex items-center divide-x divide-theme-divider/60">
           <button
-            onClick={() => onUpdateUIState("showSystemFooter", !showDesktopMenu)}
+            onClick={() =>
+              onUpdateUIState("showSystemFooter", !showDesktopMenu)
+            }
             className="hidden md:grid h-8 w-8 place-items-center text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
             title={showDesktopMenu ? t("hideSystem") : t("showSystem")}
             aria-label={showDesktopMenu ? t("hideSystem") : t("showSystem")}
@@ -433,7 +444,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  <span className="text-sm truncate">{t("settings.title")}</span>
+                  <span className="text-sm truncate">
+                    {t("settings.title")}
+                  </span>
                 </span>
                 <svg
                   className="w-4 h-4 text-theme-text-secondary shrink-0"
@@ -547,7 +560,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <span className="text-sm truncate">{t("gallery.title")}</span>
+                    <span className="text-sm truncate">
+                      {t("gallery.title")}
+                    </span>
                   </span>
                   <svg
                     className="w-4 h-4 text-theme-text-secondary shrink-0"
@@ -584,7 +599,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                     />
                   </svg>
-                  <span className="text-sm truncate">{t("magicMirror.title")}</span>
+                  <span className="text-sm truncate">
+                    {t("magicMirror.title")}
+                  </span>
                 </span>
                 <svg
                   className="w-4 h-4 text-theme-text-secondary shrink-0"
@@ -620,7 +637,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  <span className="text-sm truncate">{t("veoScript.title")}</span>
+                  <span className="text-sm truncate">
+                    {t("veoScript.title")}
+                  </span>
                 </span>
                 <svg
                   className="w-4 h-4 text-theme-text-secondary shrink-0"

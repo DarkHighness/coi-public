@@ -17,9 +17,7 @@ import { isContextLengthError } from "../../contextCompressor";
 
 import { UnifiedMessage } from "../../../messageTypes";
 
-import {
-  buildCoreSystemInstructionWithSkills,
-} from "../../../prompts/skills";
+import { buildCoreSystemInstructionWithSkills } from "../../../prompts/skills";
 
 import {
   getProviderConfig,
@@ -62,7 +60,6 @@ import {
   getRecoveryTrace,
 } from "./turnRecoveryRunner";
 
-
 // ============================================================================
 // Turn Context and Agentic Loop
 // ============================================================================
@@ -101,10 +98,10 @@ export const generateAdventureTurn = async (
 
   const narrativeStyleOverride = (gameState.outline as any)?.narrativeStyle;
   const baseNarrativeStyle =
-    typeof narrativeStyleOverride === "string" &&
-    narrativeStyleOverride.trim()
+    typeof narrativeStyleOverride === "string" && narrativeStyleOverride.trim()
       ? narrativeStyleOverride.trim()
-      : resolvedThemeConfig?.narrativeStyle || fallbackThemeConfig.narrativeStyle;
+      : resolvedThemeConfig?.narrativeStyle ||
+        fallbackThemeConfig.narrativeStyle;
 
   const effectivePresetProfile = resolveEffectivePresetProfile({
     customContext: gameState.customContext,
@@ -152,7 +149,8 @@ export const generateAdventureTurn = async (
   });
 
   const backgroundTemplate =
-    resolvedThemeConfig?.backgroundTemplate || fallbackThemeConfig.backgroundTemplate;
+    resolvedThemeConfig?.backgroundTemplate ||
+    fallbackThemeConfig.backgroundTemplate;
   const example = resolvedThemeConfig?.example || fallbackThemeConfig.example;
   const worldSetting =
     resolvedThemeConfig?.worldSetting || fallbackThemeConfig.worldSetting;
@@ -292,9 +290,8 @@ export const generateAdventureTurn = async (
     isInit: context.isInit,
   };
 
-  const { sessionId, activeHistory: initialHistory } = await setupSession(
-    sessionSetupOptions,
-  );
+  const { sessionId, activeHistory: initialHistory } =
+    await setupSession(sessionSetupOptions);
 
   context.vfsSession.bindConversationSession(sessionId);
 
@@ -433,7 +430,11 @@ export const generateAdventureTurn = async (
         console.log("[TurnRecovery]", {
           sessionId,
           forkId: gameState.forkId ?? 0,
-          actionMode: isSudoMode ? "sudo" : isCleanupMode ? "cleanup" : "normal",
+          actionMode: isSudoMode
+            ? "sudo"
+            : isCleanupMode
+              ? "cleanup"
+              : "normal",
           ...payload,
         });
       },

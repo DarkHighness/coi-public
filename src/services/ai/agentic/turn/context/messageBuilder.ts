@@ -107,7 +107,9 @@ export function buildInitialContext(
   const worldFoundation = buildWorldFoundation(vfsSession);
   const protagonist = buildProtagonist(vfsSession);
 
-  const staticContext = [worldFoundation, protagonist].filter(Boolean).join("\n");
+  const staticContext = [worldFoundation, protagonist]
+    .filter(Boolean)
+    .join("\n");
 
   if (staticContext) {
     messages.push(
@@ -121,7 +123,9 @@ export function buildInitialContext(
 
   const latestSummary = buildLatestSummaryContext(gameState);
   if (latestSummary) {
-    messages.push(createUserMessage(`[CONTEXT: Story Summary]\n${latestSummary}`));
+    messages.push(
+      createUserMessage(`[CONTEXT: Story Summary]\n${latestSummary}`),
+    );
     messages.push({
       role: "assistant",
       content: [{ type: "text", text: "[Story summary acknowledged.]" }],

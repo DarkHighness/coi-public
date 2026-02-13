@@ -49,10 +49,7 @@ const isDisplayPlaceholder = (value: unknown): boolean => {
   return DISPLAY_PLACEHOLDER_VALUES.has(normalized.toLowerCase());
 };
 
-const pickDisplayValue = (
-  candidates: unknown[],
-  fallback: string,
-): string => {
+const pickDisplayValue = (candidates: unknown[], fallback: string): string => {
   for (const candidate of candidates) {
     const normalized = normalizeDisplayText(candidate);
     if (!normalized) {

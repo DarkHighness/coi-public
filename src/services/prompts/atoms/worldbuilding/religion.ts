@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const religion: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/religion#religion", source: "atoms/worldbuilding/religion.ts", exportName: "religion" }, () => `
+export const religion: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/religion#religion",
+    source: "atoms/worldbuilding/religion.ts",
+    exportName: "religion",
+  },
+  () => `
 <worldbuilding_context>
 **RELIGION & SACRED POWER (Mechanics, not set dressing)**
 
@@ -97,44 +102,59 @@ Religion often becomes:
 - Sacred site + threshold:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const religionPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/religion#religionPrimer", source: "atoms/worldbuilding/religion.ts", exportName: "religionPrimer" }, () =>
-  `
+export const religionPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/religion#religionPrimer",
+    source: "atoms/worldbuilding/religion.ts",
+    exportName: "religionPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **RELIGION PRIMER**: Model religion as legitimacy + sorting + resource control. Define rituals with gatekeepers, prices, and enforceable heresy/exemptions.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const religionSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/religion#religionSkill", source: "atoms/worldbuilding/religion.ts", exportName: "religionSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(religion),
-  quickStart: `
+export const religionSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/religion#religionSkill",
+    source: "atoms/worldbuilding/religion.ts",
+    exportName: "religionSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(religion),
+    quickStart: `
 1) Pick 2 functions (legitimacy/sorting/resources/meaning)
 2) Define one ritual with a price and a gatekeeper
 3) Define one enforceable heresy and one buyable exemption
 4) Define one sacred site with access control
 `.trim(),
-  checklist: [
-    "Religion has concrete power (legitimacy/resources), not just beliefs.",
-    "At least one ritual has a price and a gatekeeper.",
-    "There is an enforceable heresy (actually punished).",
-    "There is an exemption/dispensation mechanism (creates deals).",
-    "Sacred sites have thresholds and surveillance, not open access.",
-  ],
-  examples: [
-    {
-      scenario: "Exemption as gameplay",
-      wrong: `"The church forbids magic, but you can do it anyway."`,
-      right: `"Magic is heresy—unless you carry a relic-seal issued by the abbey.
+    checklist: [
+      "Religion has concrete power (legitimacy/resources), not just beliefs.",
+      "At least one ritual has a price and a gatekeeper.",
+      "There is an enforceable heresy (actually punished).",
+      "There is an exemption/dispensation mechanism (creates deals).",
+      "Sacred sites have thresholds and surveillance, not open access.",
+    ],
+    examples: [
+      {
+        scenario: "Exemption as gameplay",
+        wrong: `"The church forbids magic, but you can do it anyway."`,
+        right: `"Magic is heresy—unless you carry a relic-seal issued by the abbey.
 The seal expires in seven days. Renewal requires 'service' (a favor) or a tithe.
 Now magic use creates a clock: pay, negotiate, hide, or convert."`,
-    },
-    {
-      scenario: "Ritual economy creates stakes",
-      wrong: `"You get blessed for free."`,
-      right: `"Blessing requires incense imported through the Temple Gate.
+      },
+      {
+        scenario: "Ritual economy creates stakes",
+        wrong: `"You get blessed for free."`,
+        right: `"Blessing requires incense imported through the Temple Gate.
 Without it, the priest can still bless you—but the community will treat you as 'unwitnessed':
 merchants won't extend credit, and guards search you at checkpoints."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

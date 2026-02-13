@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const indirectExpressionPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/indirectExpression#indirectExpressionPrimer", source: "atoms/narrative/indirectExpression.ts", exportName: "indirectExpressionPrimer" }, () => `
+export const indirectExpressionPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/indirectExpression#indirectExpressionPrimer",
+    source: "atoms/narrative/indirectExpression.ts",
+    exportName: "indirectExpressionPrimer",
+  },
+  () => `
 <indirect_expression>
   **THE VOCABULARY OF THE UNSPOKEN**:
   - Emotion is NOT a label. It is a physical event with observable symptoms.
@@ -19,9 +24,16 @@ export const indirectExpressionPrimer: Atom<void> = defineAtom({ atomId: "atoms/
   - This is the DEFAULT mode for all emotional moments
   - Show the symptom, not the diagnosis. The reader feels what the character feels.
 </indirect_expression>
-`);
+`,
+);
 
-export const indirectExpression: Atom<void> = defineAtom({ atomId: "atoms/narrative/indirectExpression#indirectExpression", source: "atoms/narrative/indirectExpression.ts", exportName: "indirectExpression" }, () => `
+export const indirectExpression: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/indirectExpression#indirectExpression",
+    source: "atoms/narrative/indirectExpression.ts",
+    exportName: "indirectExpression",
+  },
+  () => `
 <rule name="INDIRECT_EXPRESSION">
   **THE VOCABULARY OF THE UNSPOKEN**
 
@@ -379,7 +391,8 @@ export const indirectExpression: Atom<void> = defineAtom({ atomId: "atoms/narrat
     ✅ "He sits down. Doesn't speak. Can't. No energy left."
   </examples_by_emotion>
 </rule>
-`);
+`,
+);
 
 export default indirectExpression;
 
@@ -387,10 +400,16 @@ export default indirectExpression;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const indirectExpressionSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/indirectExpression#indirectExpressionSkill", source: "atoms/narrative/indirectExpression.ts", exportName: "indirectExpressionSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(indirectExpression),
+export const indirectExpressionSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/indirectExpression#indirectExpressionSkill",
+    source: "atoms/narrative/indirectExpression.ts",
+    exportName: "indirectExpressionSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(indirectExpression),
 
-  quickStart: `
+    quickStart: `
 1. Emotion is NOT a label - it's a physical event with observable symptoms
 2. Four channels: Environmental reflection, physical observations, found objects, body language
 3. This is the DEFAULT mode for all emotional moments
@@ -398,54 +417,55 @@ export const indirectExpressionSkill: SkillAtom<void> = defineSkillAtom({ atomId
 5. Environmental reflection is subjective perception, not pathetic fallacy
 `.trim(),
 
-  checklist: [
-    "Emotions shown through symptoms, not labels?",
-    "Using environmental reflection (world mirrors internal state)?",
-    "Environmental reflection is subjective perception, not pathetic fallacy?",
-    "Physical observations show emotion (body betrays words)?",
-    "Found objects tell emotional stories without explanation?",
-    "Body language and micro-expressions reveal truth?",
-    "Avoiding direct emotional statements ('You feel sad')?",
-    "Avoiding vague mood labels ('ominous', 'tense')?",
-    "Cross-referencing protagonistLens for perception filtering?",
-    "Trusting the reader to make connections?",
-  ],
+    checklist: [
+      "Emotions shown through symptoms, not labels?",
+      "Using environmental reflection (world mirrors internal state)?",
+      "Environmental reflection is subjective perception, not pathetic fallacy?",
+      "Physical observations show emotion (body betrays words)?",
+      "Found objects tell emotional stories without explanation?",
+      "Body language and micro-expressions reveal truth?",
+      "Avoiding direct emotional statements ('You feel sad')?",
+      "Avoiding vague mood labels ('ominous', 'tense')?",
+      "Cross-referencing protagonistLens for perception filtering?",
+      "Trusting the reader to make connections?",
+    ],
 
-  examples: [
-    {
-      scenario: "Environmental Reflection - Grief",
-      wrong: `"You feel sad."
+    examples: [
+      {
+        scenario: "Environmental Reflection - Grief",
+        wrong: `"You feel sad."
 (Direct statement. No detail.)`,
-      right: `"Heavy rain pours down. The world is gray. Even the flowers seem to droop."
+        right: `"Heavy rain pours down. The world is gray. Even the flowers seem to droop."
 (Environmental reflection. Subjective perception. No emotion stated.)`,
-    },
-    {
-      scenario: "Physical Observations - Love",
-      wrong: `"He loved her."
+      },
+      {
+        scenario: "Physical Observations - Love",
+        wrong: `"He loved her."
 (Tells, doesn't show.)`,
-      right: `"He walks on the street side. Always. She doesn't notice. He never mentions it."
+        right: `"He walks on the street side. Always. She doesn't notice. He never mentions it."
 (Action shows love. Silent. Powerful.)`,
-    },
-    {
-      scenario: "Found Objects - Longing",
-      wrong: `"You miss them."
+      },
+      {
+        scenario: "Found Objects - Longing",
+        wrong: `"You miss them."
 (Direct statement.)`,
-      right: `"The scarf someone left behind. You've washed it twice, but you can still smell them."
+        right: `"The scarf someone left behind. You've washed it twice, but you can still smell them."
 (Object tells the story. No explanation needed.)`,
-    },
-    {
-      scenario: "Body Language - Anger",
-      wrong: `"He was angry."
+      },
+      {
+        scenario: "Body Language - Anger",
+        wrong: `"He was angry."
 (Label without behavior.)`,
-      right: `"His jaw locks. The smile stays, but it turns sharp. The knuckles are white."
+        right: `"His jaw locks. The smile stays, but it turns sharp. The knuckles are white."
 (Body betrays emotion. Specific. Observable.)`,
-    },
-    {
-      scenario: "Subjective Perception vs Pathetic Fallacy",
-      wrong: `"The rain mourned with him."
+      },
+      {
+        scenario: "Subjective Perception vs Pathetic Fallacy",
+        wrong: `"The rain mourned with him."
 (Pathetic fallacy - rain doesn't mourn.)`,
-      right: `"Heavy rain pours down. The world is gray."
+        right: `"Heavy rain pours down. The world is gray."
 (Subjective perception - he perceives it that way. No explanation.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

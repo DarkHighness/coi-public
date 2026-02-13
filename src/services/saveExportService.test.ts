@@ -4,9 +4,7 @@ import JSZip from "jszip";
 const saveMetadataMock = vi.fn<(key: string, value: any) => Promise<void>>(
   async () => undefined,
 );
-const loadMetadataMock = vi.fn<(key: string) => Promise<any>>(
-  async () => null,
-);
+const loadMetadataMock = vi.fn<(key: string) => Promise<any>>(async () => null);
 
 const vfsMetaRowsRef: { rows: any[] } = { rows: [] };
 
@@ -48,7 +46,11 @@ const saveSnapshotMock = vi.fn(async (snapshot: SnapshotRecord) => {
 });
 
 const loadSnapshotMock = vi.fn(
-  async (saveId: string, forkId: number, turn: number): Promise<SnapshotRecord | null> => {
+  async (
+    saveId: string,
+    forkId: number,
+    turn: number,
+  ): Promise<SnapshotRecord | null> => {
     const found = sourceSnapshots.get(snapshotKey(saveId, forkId, turn));
     if (!found) return null;
     return JSON.parse(JSON.stringify(found));
@@ -129,7 +131,9 @@ vi.mock("./vfs/outline", () => ({
 }));
 
 vi.mock("./vfs/conversation", () => ({
-  buildTurnId: vi.fn((forkId: number, turn: number) => `fork-${forkId}/turn-${turn}`),
+  buildTurnId: vi.fn(
+    (forkId: number, turn: number) => `fork-${forkId}/turn-${turn}`,
+  ),
   writeConversationIndex: vi.fn(),
   writeForkTree: vi.fn(),
   writeTurnFile: vi.fn(),
@@ -248,7 +252,10 @@ describe("saveExportService", () => {
       "vfs/index.json",
       JSON.stringify({ version: 1, snapshots: [{ forkId: 0, turn: 0 }] }),
     );
-    zip.file("vfs/snapshots/fork-0/turn-0.json", JSON.stringify(makeSnapshot("slot-x")));
+    zip.file(
+      "vfs/snapshots/fork-0/turn-0.json",
+      JSON.stringify(makeSnapshot("slot-x")),
+    );
 
     const file = await createZipFile(zip, "broken.zip");
     const result = await validateImport(file);
@@ -295,7 +302,9 @@ describe("saveExportService", () => {
 
     expect(result.success).toBe(true);
 
-    const slotsCall = saveMetadataMock.mock.calls.find((call) => call[0] === "slots");
+    const slotsCall = saveMetadataMock.mock.calls.find(
+      (call) => call[0] === "slots",
+    );
     expect(slotsCall).toBeTruthy();
 
     const savedSlots = slotsCall?.[1] as Array<{ previewImage?: string }>;
@@ -307,7 +316,9 @@ describe("saveExportService", () => {
 
     const slotId = "slot-export";
     sourceSnapshots.set(snapshotKey(slotId, 0, 0), makeSnapshot(slotId));
-    vfsMetaRowsRef.rows = [{ saveId: slotId, forkId: 0, turn: 0, createdAt: 1 }];
+    vfsMetaRowsRef.rows = [
+      { saveId: slotId, forkId: 0, turn: 0, createdAt: 1 },
+    ];
     loadMetadataMock.mockImplementation(async (key: string) => {
       if (key === `vfs_latest:${slotId}`) {
         return { forkId: 0, turn: 0 };
@@ -442,7 +453,9 @@ describe("saveExportService validation edge cases", () => {
     const result = await validateImport(file);
 
     expect(result.valid).toBe(false);
-    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.missingSnapshotFile");
+    expect(result.errorsI18n?.[0]?.key).toBe(
+      "import.errors.missingSnapshotFile",
+    );
   });
 
   it("importSave keeps working and reports embeddings parse warning", async () => {
@@ -486,7 +499,11 @@ describe("saveExportService validation edge cases", () => {
     const result = await importSave(file, []);
 
     expect(result.success).toBe(true);
-    expect(result.warningsI18n?.some((warning) => warning.key === "import.warnings.embeddingsRegen")).toBe(true);
+    expect(
+      result.warningsI18n?.some(
+        (warning) => warning.key === "import.warnings.embeddingsRegen",
+      ),
+    ).toBe(true);
   });
 });
 
@@ -523,7 +540,9 @@ describe("saveExportService import/export additional branches", () => {
     const result = await validateImport(file);
 
     expect(result.valid).toBe(false);
-    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.unreadableVfsIndex");
+    expect(result.errorsI18n?.[0]?.key).toBe(
+      "import.errors.unreadableVfsIndex",
+    );
   });
 
   it("importSave returns noSnapshotsImported when index entries are unusable", async () => {

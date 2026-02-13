@@ -181,19 +181,23 @@ export const ensureTextFile = (
   if (isTextType(existing.contentType)) {
     return null;
   }
-  return createVfsWriteGuardError(`File is not a text file: ${path}`, "INVALID_DATA", {
-    category: "validation",
-    issues: [
-      {
-        path,
-        code: "INVALID_CONTENT_TYPE",
-        message: `Expected text/plain or text/markdown, got ${existing.contentType}.`,
-      },
-    ],
-    recovery: [
-      "Use JSON operations for JSON files or target a text/markdown file for text edits.",
-    ],
-  });
+  return createVfsWriteGuardError(
+    `File is not a text file: ${path}`,
+    "INVALID_DATA",
+    {
+      category: "validation",
+      issues: [
+        {
+          path,
+          code: "INVALID_CONTENT_TYPE",
+          message: `Expected text/plain or text/markdown, got ${existing.contentType}.`,
+        },
+      ],
+      recovery: [
+        "Use JSON operations for JSON files or target a text/markdown file for text edits.",
+      ],
+    },
+  );
 };
 
 export const resolveTextContentType = (
@@ -227,7 +231,8 @@ export const validateWritePayload = (
             {
               path: toCurrentPath(normalizedPath),
               code: "CONTENT_TYPE_MISMATCH",
-              message: "JSON file writes must use application/json contentType.",
+              message:
+                "JSON file writes must use application/json contentType.",
               expected: "application/json",
               received: contentType,
             },
@@ -249,12 +254,15 @@ export const validateWritePayload = (
             {
               path: toCurrentPath(normalizedPath),
               code: "CONTENT_TYPE_MISMATCH",
-              message: "JSONL file writes must use application/jsonl contentType.",
+              message:
+                "JSONL file writes must use application/jsonl contentType.",
               expected: "application/jsonl",
               received: contentType,
             },
           ],
-          recovery: ["Set contentType to application/jsonl for *.jsonl targets."],
+          recovery: [
+            "Set contentType to application/jsonl for *.jsonl targets.",
+          ],
         },
       ),
     };
@@ -379,7 +387,8 @@ export const validateWritePayload = (
 
   let validated: unknown;
   try {
-    const strictSchema = schema instanceof z.ZodObject ? schema.strict() : schema;
+    const strictSchema =
+      schema instanceof z.ZodObject ? schema.strict() : schema;
     validated = strictSchema.parse(parsed);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -419,7 +428,9 @@ export const validateWritePayload = (
               message: "Payload includes keys outside strict schema.",
             },
           ],
-          recovery: ["Remove unknown keys and retry with schema-approved fields only."],
+          recovery: [
+            "Remove unknown keys and retry with schema-approved fields only.",
+          ],
         },
       ),
     };

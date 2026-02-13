@@ -29,7 +29,11 @@ describe("generateForceUpdate", () => {
       _conversationHistory: [],
     } as any);
 
-    const result = await generateForceUpdate("refresh world", inputState, context);
+    const result = await generateForceUpdate(
+      "refresh world",
+      inputState,
+      context,
+    );
 
     expect(mockedGenerateAdventureTurn).toHaveBeenCalledWith(
       inputState,
@@ -41,7 +45,11 @@ describe("generateForceUpdate", () => {
 
     expect((result.response as any).finalState).toBe(inputState);
     expect(result.logs).toEqual([{ endpoint: "x" }]);
-    expect(result.usage).toEqual({ promptTokens: 1, completionTokens: 2, totalTokens: 3 });
+    expect(result.usage).toEqual({
+      promptTokens: 1,
+      completionTokens: 2,
+      totalTokens: 3,
+    });
     expect(result.changedEntities).toEqual([{ id: "npc:1", type: "npc" }]);
   });
 
@@ -70,7 +78,9 @@ describe("generateForceUpdate", () => {
 
   it("passes recovery trace through when adventure turn recovered", async () => {
     const recovery = {
-      attempts: [{ level: 1, kind: "history", attempt: 2, timestamp: Date.now() }],
+      attempts: [
+        { level: 1, kind: "history", attempt: 2, timestamp: Date.now() },
+      ],
       finalLevel: 1,
       kind: "history",
       recovered: true,
@@ -86,9 +96,13 @@ describe("generateForceUpdate", () => {
       recovery,
     } as any);
 
-    const result = await generateForceUpdate("noop", {} as any, {
-      userAction: "ignored",
-    } as any);
+    const result = await generateForceUpdate(
+      "noop",
+      {} as any,
+      {
+        userAction: "ignored",
+      } as any,
+    );
 
     expect(result.recovery).toEqual(recovery);
   });

@@ -13,6 +13,7 @@
 ### Task 1: VFS tree builder + read-only rules
 
 **Files:**
+
 - Create: `src/components/vfsExplorer/tree.ts`
 - Test: `src/components/__tests__/vfsTree.test.ts`
 
@@ -47,11 +48,13 @@ Expected: FAIL (module not found)
 **Step 3: Write minimal implementation**
 
 Create `buildVfsTree(files)` that:
+
 - Accepts a VFS snapshot map and builds a nested tree.
 - Uses display root `current/` but stores relative paths (no `current/`).
 - Sorts folders before files.
 
 Add `isReadonlyPath(path, allowOutlineEdit, allowConversationEdit)`:
+
 - `outline/outline.json` readonly unless allowOutlineEdit.
 - `conversation/**` readonly unless allowConversationEdit.
 
@@ -72,6 +75,7 @@ git commit -m "[Feat]: add VFS file tree helpers"
 ### Task 2: File read/write helpers with JSON + schema validation
 
 **Files:**
+
 - Create: `src/components/vfsExplorer/fileOps.ts`
 - Test: `src/components/__tests__/vfsFileOps.test.ts`
 
@@ -100,6 +104,7 @@ Expected: FAIL (module not found)
 **Step 3: Write minimal implementation**
 
 Implement:
+
 - `readVfsFile(session, path)` -> `{ content, contentType } | null`
 - `formatVfsContent(content, contentType)` -> pretty JSON if JSON
 - `writeVfsFile(session, path, content, contentType)`:
@@ -124,6 +129,7 @@ git commit -m "[Feat]: add VFS file ops helpers"
 ### Task 3: Replace StateEditor UI with file tree editor
 
 **Files:**
+
 - Modify: `src/components/StateEditor.tsx`
 - Modify: `src/components/stateEditorUtils.ts`
 - Test: `src/components/__tests__/stateEditorUtils.test.ts`
@@ -159,11 +165,11 @@ Expected: FAIL
 
 **Step 3: Write minimal implementation**
 
-1) Extend `stateEditorUtils.ts` with `applyVfsFileEdit(...)`:
+1. Extend `stateEditorUtils.ts` with `applyVfsFileEdit(...)`:
    - Use `writeVfsFile`.
    - Re-derive with `deriveGameStateFromVfs` + `mergeDerivedViewState`.
 
-2) Replace `StateEditor.tsx` UI:
+2. Replace `StateEditor.tsx` UI:
    - Left file tree from `buildVfsTree(snapshot)`.
    - Search filter input (path + content).
    - Toggle “Allow /sudo outline edit”.
@@ -189,12 +195,14 @@ git commit -m "[Refactor]: replace StateEditor with VFS file tree editor"
 ### Task 4: Localization updates
 
 **Files:**
+
 - Modify: `src/locales/en/translation.json`
 - Modify: `src/locales/zh/translation.json`
 
 **Step 1: Update translations**
 
 Add keys under `stateEditor` for:
+
 - `fileTree`, `searchPlaceholder`, `newFile`, `newFolder`, `rename`, `delete`, `save`
 - `readOnly`, `allowOutlineEdit`, `unlockConversationEdit`, `invalidSchema`
 

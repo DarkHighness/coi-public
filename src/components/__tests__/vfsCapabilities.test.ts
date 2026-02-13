@@ -14,7 +14,11 @@ const createContext = () => ({
 describe("vfs capabilities", () => {
   it("locks README move/delete but keeps editing enabled", () => {
     const session = new VfsSession();
-    session.writeFile("world/characters/README.md", "# Characters", "text/markdown");
+    session.writeFile(
+      "world/characters/README.md",
+      "# Characters",
+      "text/markdown",
+    );
 
     const capabilities = getFilePathCapabilities(
       "world/characters/README.md",
@@ -42,7 +46,6 @@ describe("vfs capabilities", () => {
     expect(capabilities.deleteReason).toContain("Scaffold");
   });
 
-
   it("marks outline story plan as editable", () => {
     const capabilities = getFilePathCapabilities(
       "outline/story_outline/plan.md",
@@ -61,7 +64,11 @@ describe("vfs capabilities", () => {
       "# tmp",
       "text/markdown",
     );
-    session.writeFile("world/knowledge/tmp/rules.md", "- item", "text/markdown");
+    session.writeFile(
+      "world/knowledge/tmp/rules.md",
+      "- item",
+      "text/markdown",
+    );
 
     const capabilities = getDirectoryPathCapabilities(
       "world/knowledge/tmp",

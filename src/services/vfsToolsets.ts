@@ -57,7 +57,9 @@ const OUTLINE_TOOL_ORDER = [
 
 const ensureRegisteredTool = (toolName: string): string => {
   if (!vfsToolCapabilityRegistry.get(toolName)) {
-    throw new Error(`Missing VFS capability registration for tool: ${toolName}`);
+    throw new Error(
+      `Missing VFS capability registration for tool: ${toolName}`,
+    );
   }
   return toolName;
 };

@@ -96,12 +96,8 @@ describe("core prompt hygiene", () => {
     const content = [styleGuide({}), writingCraft()].join("\n");
 
     expect(content).toContain("<humanizer_tone>");
-    expect(content).toContain(
-      "Style polish must NOT alter canonical state",
-    );
-    expect(content).toContain(
-      "Never rewrite canonical state for style",
-    );
+    expect(content).toContain("Style polish must NOT alter canonical state");
+    expect(content).toContain("Never rewrite canonical state for style");
     expect(content).toContain("inventory");
     expect(content).toContain("timeline");
   });

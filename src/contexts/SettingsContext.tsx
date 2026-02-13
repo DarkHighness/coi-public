@@ -10,9 +10,7 @@ import { useTranslation } from "react-i18next";
 import { AISettings, ModelInfo, LanguageCode } from "../types";
 import { DEFAULTS } from "../utils/constants";
 import { getModels } from "../services/aiService";
-import {
-  upsertPerModelContextWindowOverride,
-} from "../services/modelContextWindows";
+import { upsertPerModelContextWindowOverride } from "../services/modelContextWindows";
 
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
@@ -90,7 +88,8 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
     migratedExtra.customInstructionEnabled == null &&
     typeof migratedExtra.promptInjectionEnabled === "boolean"
   ) {
-    migratedExtra.customInstructionEnabled = migratedExtra.promptInjectionEnabled;
+    migratedExtra.customInstructionEnabled =
+      migratedExtra.promptInjectionEnabled;
   }
   // Remove retired setting; kept here only for backward compatibility.
   delete migratedExtra.clearerSearchTool;
@@ -115,8 +114,7 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
     providers: {
       ...DEFAULTS.providers,
       ...(sanitized.providers || {}),
-      instances:
-        sanitized.providers?.instances || DEFAULTS.providers.instances,
+      instances: sanitized.providers?.instances || DEFAULTS.providers.instances,
       nextId: sanitized.providers?.nextId || DEFAULTS.providers.nextId,
     },
     story: { ...DEFAULTS.story, ...(sanitized.story || {}) },

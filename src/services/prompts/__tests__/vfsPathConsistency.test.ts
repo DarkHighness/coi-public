@@ -76,8 +76,12 @@ describe("prompt vfs path consistency", () => {
   it("maps prompt-mentioned VFS paths to registered resource templates", () => {
     const files = PROMPT_PATHS_TO_SCAN.flatMap((root) => walkFiles(root));
 
-    const invalid: Array<{ file: string; token: string; sample: string; reason: string }> =
-      [];
+    const invalid: Array<{
+      file: string;
+      token: string;
+      sample: string;
+      reason: string;
+    }> = [];
     const fallbackMatches: Array<{
       file: string;
       token: string;
@@ -96,9 +100,12 @@ describe("prompt vfs path consistency", () => {
 
         try {
           const resolved = resolveVfsPath(sample, { activeForkId: 0 });
-          const classification = vfsPathRegistry.classify(resolved.canonicalPath, {
-            activeForkId: 0,
-          });
+          const classification = vfsPathRegistry.classify(
+            resolved.canonicalPath,
+            {
+              activeForkId: 0,
+            },
+          );
           const hasWildcardToken = token.includes("*");
           if (
             !hasWildcardToken &&

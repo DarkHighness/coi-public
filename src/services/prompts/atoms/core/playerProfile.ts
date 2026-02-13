@@ -5,7 +5,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface PlayerProfileInput {
   crossSaveProfile?: string;
   perSaveProfile?: string;
@@ -88,14 +87,17 @@ const criticalDistinction = `
   </critical_distinction>
 `;
 
-export const playerProfile: Atom<PlayerProfileInput> = defineAtom({ atomId: "atoms/core/playerProfile#playerProfile", source: "atoms/core/playerProfile.ts", exportName: "playerProfile" }, ({
-  crossSaveProfile,
-  perSaveProfile,
-}) => {
-  const csProfile = crossSaveProfile || "(Empty - begin observing)";
-  const psProfile = perSaveProfile || "(Empty - begin observing)";
+export const playerProfile: Atom<PlayerProfileInput> = defineAtom(
+  {
+    atomId: "atoms/core/playerProfile#playerProfile",
+    source: "atoms/core/playerProfile.ts",
+    exportName: "playerProfile",
+  },
+  ({ crossSaveProfile, perSaveProfile }) => {
+    const csProfile = crossSaveProfile || "(Empty - begin observing)";
+    const psProfile = perSaveProfile || "(Empty - begin observing)";
 
-  return `
+    return `
 <player_psychology>
   **PLAYER PORTRAIT SYSTEM - OBSERVE THE PLAYER BEHIND THE SCREEN**
 
@@ -120,16 +122,20 @@ ${narrativeApplication}
 ${criticalDistinction}
 </player_psychology>
 `;
-});
+  },
+);
 
-export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom({ atomId: "atoms/core/playerProfile#playerProfilePrimer", source: "atoms/core/playerProfile.ts", exportName: "playerProfilePrimer" }, ({
-  crossSaveProfile,
-  perSaveProfile,
-}) => {
-  const csProfile = crossSaveProfile || "(Empty - begin observing)";
-  const psProfile = perSaveProfile || "(Empty - begin observing)";
+export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom(
+  {
+    atomId: "atoms/core/playerProfile#playerProfilePrimer",
+    source: "atoms/core/playerProfile.ts",
+    exportName: "playerProfilePrimer",
+  },
+  ({ crossSaveProfile, perSaveProfile }) => {
+    const csProfile = crossSaveProfile || "(Empty - begin observing)";
+    const psProfile = perSaveProfile || "(Empty - begin observing)";
 
-  return `
+    return `
 <player_psychology>
   <two_layer_system>
     **Cross-Save**: ${csProfile}
@@ -139,12 +145,41 @@ export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom({ atomId
   <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>
 `;
-});
+  },
+);
 
 // Export individual components
-export const observationProtocolAtom: Atom<void> = defineAtom({ atomId: "atoms/core/playerProfile#observationProtocolAtom", source: "atoms/core/playerProfile.ts", exportName: "observationProtocolAtom" }, () => observationProtocol);
-export const updateTimingAtom: Atom<void> = defineAtom({ atomId: "atoms/core/playerProfile#updateTimingAtom", source: "atoms/core/playerProfile.ts", exportName: "updateTimingAtom" }, () => updateTiming);
-export const narrativeApplicationAtom: Atom<void> = defineAtom({ atomId: "atoms/core/playerProfile#narrativeApplicationAtom", source: "atoms/core/playerProfile.ts", exportName: "narrativeApplicationAtom" }, () => narrativeApplication);
-export const criticalDistinctionAtom: Atom<void> = defineAtom({ atomId: "atoms/core/playerProfile#criticalDistinctionAtom", source: "atoms/core/playerProfile.ts", exportName: "criticalDistinctionAtom" }, () => criticalDistinction);
+export const observationProtocolAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/playerProfile#observationProtocolAtom",
+    source: "atoms/core/playerProfile.ts",
+    exportName: "observationProtocolAtom",
+  },
+  () => observationProtocol,
+);
+export const updateTimingAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/playerProfile#updateTimingAtom",
+    source: "atoms/core/playerProfile.ts",
+    exportName: "updateTimingAtom",
+  },
+  () => updateTiming,
+);
+export const narrativeApplicationAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/playerProfile#narrativeApplicationAtom",
+    source: "atoms/core/playerProfile.ts",
+    exportName: "narrativeApplicationAtom",
+  },
+  () => narrativeApplication,
+);
+export const criticalDistinctionAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/playerProfile#criticalDistinctionAtom",
+    source: "atoms/core/playerProfile.ts",
+    exportName: "criticalDistinctionAtom",
+  },
+  () => criticalDistinction,
+);
 
 export default playerProfile;

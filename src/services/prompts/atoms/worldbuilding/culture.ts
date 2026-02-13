@@ -10,11 +10,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Culture Systems - 完整版
  */
-export const cultureSystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/culture#cultureSystem", source: "atoms/worldbuilding/culture.ts", exportName: "cultureSystem" }, () => `
+export const cultureSystem: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/culture#cultureSystem",
+    source: "atoms/worldbuilding/culture.ts",
+    exportName: "cultureSystem",
+  },
+  () => `
 <worldbuilding_context>
 **CULTURE & CUSTOMS DESIGN:**
 
@@ -243,12 +248,19 @@ Breaking them carries no legal penalty — only the slow suffocation of social d
 - Food taboo creates conflict
 </food_drink>
 </worldbuilding_context>
-`);
+`,
+);
 
 /**
  * Culture Systems - 精简版
  */
-export const cultureSystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/culture#cultureSystemLite", source: "atoms/worldbuilding/culture.ts", exportName: "cultureSystemLite" }, () => `
+export const cultureSystemLite: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/culture#cultureSystemLite",
+    source: "atoms/worldbuilding/culture.ts",
+    exportName: "cultureSystemLite",
+  },
+  () => `
 <worldbuilding_context>
 **CULTURE & CUSTOMS**: Culture is the invisible architecture of belonging. Customs are law without courts.
 - Taboos & sacred (food, body, speech, place, person)
@@ -259,7 +271,8 @@ export const cultureSystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbu
 - Gender & age roles (expectations, exceptions, transgression)
 - Food & drink (staples, forbidden, rituals)
 </worldbuilding_context>
-`);
+`,
+);
 
 export default cultureSystem;
 
@@ -267,10 +280,16 @@ export default cultureSystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const cultureSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/culture#cultureSystemSkill", source: "atoms/worldbuilding/culture.ts", exportName: "cultureSystemSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(cultureSystem),
+export const cultureSystemSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/culture#cultureSystemSkill",
+    source: "atoms/worldbuilding/culture.ts",
+    exportName: "cultureSystemSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(cultureSystem),
 
-  quickStart: `
+    quickStart: `
 1. Taboos are law without courts (breaking them = social death)
 2. Hierarchy determines who speaks to whom, who enters where
 3. Rituals mark transitions (birth, adulthood, marriage, death)
@@ -279,55 +298,56 @@ export const cultureSystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "at
 6. Food reveals culture (what's eaten, what's forbidden, who eats first)
 `.trim(),
 
-  checklist: [
-    "Key taboos defined (what can NEVER be done)?",
-    "Social hierarchy clear (who ranks above whom)?",
-    "Important rituals established (life stages, seasons)?",
-    "Hospitality rules specified (guest rights, obligations)?",
-    "Communication style described (direct/indirect)?",
-    "Gender/age expectations outlined?",
-    "Food culture present (staples, forbidden, rituals)?",
-    "Outsider treatment defined?",
-  ],
+    checklist: [
+      "Key taboos defined (what can NEVER be done)?",
+      "Social hierarchy clear (who ranks above whom)?",
+      "Important rituals established (life stages, seasons)?",
+      "Hospitality rules specified (guest rights, obligations)?",
+      "Communication style described (direct/indirect)?",
+      "Gender/age expectations outlined?",
+      "Food culture present (staples, forbidden, rituals)?",
+      "Outsider treatment defined?",
+    ],
 
-  examples: [
-    {
-      scenario: "Taboo Creates Drama",
-      wrong: `"They have some taboos."
+    examples: [
+      {
+        scenario: "Taboo Creates Drama",
+        wrong: `"They have some taboos."
 (Vague, no gameplay.)`,
-      right: `"Never speak the dead king's name. Ever. Those who do are marked—
+        right: `"Never speak the dead king's name. Ever. Those who do are marked—
 shunned by all, unable to trade or marry. But the only map to the tomb
 has his name as the password. You must say it to open the door."
 (Specific taboo, forced violation, clear consequence.)`,
-    },
-    {
-      scenario: "Hospitality Rules",
-      wrong: `"Guests are treated well."
+      },
+      {
+        scenario: "Hospitality Rules",
+        wrong: `"Guests are treated well."
 (No structure, no drama.)`,
-      right: `"Guest rights last three days. The host must protect you—
+        right: `"Guest rights last three days. The host must protect you—
 even from their own allies. But on day four, you're fair game.
 The assassin became my guest yesterday. I have two days
 to figure out how to survive what happens when he leaves."
 (Timer, protection, exploitation.)`,
-    },
-    {
-      scenario: "Social Hierarchy",
-      wrong: `"There are nobles and commoners."
+      },
+      {
+        scenario: "Social Hierarchy",
+        wrong: `"There are nobles and commoners."
 (Generic, no texture.)`,
-      right: `"She's a merchant's daughter—richer than most nobles,
+        right: `"She's a merchant's daughter—richer than most nobles,
 but she enters through the servants' door. He's a ruined knight—
 penniless, but he sits at the high table. Wealth and status
 are different currencies here."
 (Specific rules, creates tension.)`,
-    },
-    {
-      scenario: "Communication Style",
-      wrong: `"They communicate formally."
+      },
+      {
+        scenario: "Communication Style",
+        wrong: `"They communicate formally."
 (No detail.)`,
-      right: `"'That would be difficult' means 'no.' 'I will consider it' means 'never.'
+        right: `"'That would be difficult' means 'no.' 'I will consider it' means 'never.'
 'With respect' means 'you're an idiot.' She's been saying 'no' for an hour,
 and he keeps asking because he doesn't speak the language of refusal."
 (Indirect communication creates misunderstanding.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

@@ -6,7 +6,10 @@ import {
 import { vfsToolCapabilityRegistry } from "./toolCapabilityRegistry";
 
 export class VfsToolRouter {
-  public register<T extends ZodToolDefinition>(tool: T, handler: ToolHandler): void {
+  public register<T extends ZodToolDefinition>(
+    tool: T,
+    handler: ToolHandler,
+  ): void {
     const capability = vfsToolCapabilityRegistry.get(tool.name);
     if (!capability) {
       throw new Error(

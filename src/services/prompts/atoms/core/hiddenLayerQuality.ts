@@ -10,20 +10,32 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Hidden 层质量要求 - 无参数
  */
-export const hiddenLayerQualityPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/hiddenLayerQuality#hiddenLayerQualityPrimer", source: "atoms/core/hiddenLayerQuality.ts", exportName: "hiddenLayerQualityPrimer" }, () => `
+export const hiddenLayerQualityPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/hiddenLayerQuality#hiddenLayerQualityPrimer",
+    source: "atoms/core/hiddenLayerQuality.ts",
+    exportName: "hiddenLayerQualityPrimer",
+  },
+  () => `
 <hidden_layer_quality_primer>
   - HIDDEN fields must explain ORIGIN + MECHANISM + CONSEQUENCE.
   - Avoid vague hidden text. Use named actors, concrete methods, and actionable details.
   - Hidden truth must be runnable in-world (who benefits, what changes, what fails if exposed).
   - Keep hidden locked by default; unlock only with definitive in-world proof via VFS updates.
 </hidden_layer_quality_primer>
-`);
+`,
+);
 
-export const hiddenLayerQuality: Atom<void> = defineAtom({ atomId: "atoms/core/hiddenLayerQuality#hiddenLayerQuality", source: "atoms/core/hiddenLayerQuality.ts", exportName: "hiddenLayerQuality" }, () => `
+export const hiddenLayerQuality: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/hiddenLayerQuality#hiddenLayerQuality",
+    source: "atoms/core/hiddenLayerQuality.ts",
+    exportName: "hiddenLayerQuality",
+  },
+  () => `
 <hidden_layer_quality_requirements>
   **CRITICAL: HIDDEN LAYER = The "Soul" of the entity.**
 
@@ -71,6 +83,7 @@ export const hiddenLayerQuality: Atom<void> = defineAtom({ atomId: "atoms/core/h
     ✅ REQUIRE: Named origins, specific mechanics, causal chains, concrete details
   </quality_check>
 </hidden_layer_quality_requirements>
-`);
+`,
+);
 
 export default hiddenLayerQuality;

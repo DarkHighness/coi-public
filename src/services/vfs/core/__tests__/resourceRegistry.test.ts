@@ -15,7 +15,9 @@ describe("vfsResourceRegistry", () => {
   });
 
   it("resolves immutable resources via templates", () => {
-    const match = vfsResourceRegistry.match("shared/system/refs/atmosphere/options.md");
+    const match = vfsResourceRegistry.match(
+      "shared/system/refs/atmosphere/options.md",
+    );
 
     expect(match.permissionClass).toBe("immutable_readonly");
     expect(match.domain).toBe("system");

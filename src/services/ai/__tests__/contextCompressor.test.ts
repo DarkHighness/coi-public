@@ -24,24 +24,24 @@ describe("contextCompressor error classifiers", () => {
     expect(
       isInvalidArgumentError(new Error("INVALID_ARGUMENT: malformed payload")),
     ).toBe(true);
-    expect(
-      isInvalidArgumentError(new Error("does not match schema")),
-    ).toBe(true);
+    expect(isInvalidArgumentError(new Error("does not match schema"))).toBe(
+      true,
+    );
     expect(isInvalidArgumentError(new Error("unexpected role sequence"))).toBe(
       true,
     );
     expect(isInvalidArgumentError(new Error("rate limit exceeded"))).toBe(
       false,
     );
-    expect(isInvalidArgumentError(new Error("MALFORMED_TOOL_CALL: bad args"))).toBe(
-      false,
-    );
+    expect(
+      isInvalidArgumentError(new Error("MALFORMED_TOOL_CALL: bad args")),
+    ).toBe(false);
   });
 
   it("requires rebuild when either classifier matches", () => {
-    expect(
-      requiresHistoryRebuild(new Error("context_length_exceeded")),
-    ).toBe(true);
+    expect(requiresHistoryRebuild(new Error("context_length_exceeded"))).toBe(
+      true,
+    );
     expect(requiresHistoryRebuild(new Error("invalid request format"))).toBe(
       true,
     );

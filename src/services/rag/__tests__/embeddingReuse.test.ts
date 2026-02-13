@@ -43,16 +43,18 @@ describe("RAGService embedding reuse", () => {
   it("reuses matched embeddings and computes only misses", async () => {
     const service = createService();
 
-    service.sendRequest.mockImplementation(async (type: string, payload: any) => {
-      if (type === "lookupReusableEmbeddings") {
-        expect(payload.items).toHaveLength(2);
-        return { embeddings: [[1, 2, 3], null] };
-      }
-      if (type === "upsertFileChunks") {
-        return { count: payload.documents.length };
-      }
-      throw new Error(`Unexpected request: ${type}`);
-    });
+    service.sendRequest.mockImplementation(
+      async (type: string, payload: any) => {
+        if (type === "lookupReusableEmbeddings") {
+          expect(payload.items).toHaveLength(2);
+          return { embeddings: [[1, 2, 3], null] };
+        }
+        if (type === "upsertFileChunks") {
+          return { count: payload.documents.length };
+        }
+        throw new Error(`Unexpected request: ${type}`);
+      },
+    );
 
     embedTextsLocallyMock.mockResolvedValue([[9, 8, 7]]);
 
@@ -101,19 +103,20 @@ describe("RAGService embedding reuse", () => {
     expect(upsertPayload.documents[1].embedding).toEqual([9, 8, 7]);
   });
 
-
   it("falls back to local embedding when reuse lookup fails", async () => {
     const service = createService();
 
-    service.sendRequest.mockImplementation(async (type: string, payload: any) => {
-      if (type === "lookupReusableEmbeddings") {
-        throw new Error("lookup unavailable");
-      }
-      if (type === "upsertFileChunks") {
-        return { count: payload.documents.length };
-      }
-      throw new Error(`Unexpected request: ${type}`);
-    });
+    service.sendRequest.mockImplementation(
+      async (type: string, payload: any) => {
+        if (type === "lookupReusableEmbeddings") {
+          throw new Error("lookup unavailable");
+        }
+        if (type === "upsertFileChunks") {
+          return { count: payload.documents.length };
+        }
+        throw new Error(`Unexpected request: ${type}`);
+      },
+    );
 
     embedTextsLocallyMock.mockResolvedValue([[0.11, 0.22]]);
 
@@ -143,15 +146,17 @@ describe("RAGService embedding reuse", () => {
   it("skips local embedding compute when all chunks are reusable", async () => {
     const service = createService();
 
-    service.sendRequest.mockImplementation(async (type: string, payload: any) => {
-      if (type === "lookupReusableEmbeddings") {
-        return { embeddings: [[5, 6, 7]] };
-      }
-      if (type === "upsertFileChunks") {
-        return { count: payload.documents.length };
-      }
-      throw new Error(`Unexpected request: ${type}`);
-    });
+    service.sendRequest.mockImplementation(
+      async (type: string, payload: any) => {
+        if (type === "lookupReusableEmbeddings") {
+          return { embeddings: [[5, 6, 7]] };
+        }
+        if (type === "upsertFileChunks") {
+          return { count: payload.documents.length };
+        }
+        throw new Error(`Unexpected request: ${type}`);
+      },
+    );
 
     const result = await service.upsertFileChunks([
       {

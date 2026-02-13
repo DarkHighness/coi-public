@@ -220,7 +220,9 @@ export class RAGDatabase {
     `);
   }
 
-  private estimateDocumentBytes(doc: Pick<RAGDocument, "content" | "embedding">): number {
+  private estimateDocumentBytes(
+    doc: Pick<RAGDocument, "content" | "embedding">,
+  ): number {
     const contentBytes = Math.max(0, doc.content.length * 2);
     const embeddingBytes = doc.embedding ? doc.embedding.length * 4 : 0;
     return contentBytes + embeddingBytes + 256;
@@ -381,7 +383,9 @@ export class RAGDatabase {
       [saveId],
     );
 
-    await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [saveId]);
+    await this.db.query(`DELETE FROM save_metadata WHERE save_id = $1`, [
+      saveId,
+    ]);
 
     return Number(result.affectedRows ?? 0);
   }
@@ -400,7 +404,9 @@ export class RAGDatabase {
       forkId === undefined
         ? `DELETE FROM documents WHERE save_id = $1 AND canonical_path = ANY($2)`
         : `DELETE FROM documents WHERE save_id = $1 AND fork_id = $2 AND canonical_path = ANY($3)`,
-      forkId === undefined ? [saveId, normalized] : [saveId, forkId, normalized],
+      forkId === undefined
+        ? [saveId, normalized]
+        : [saveId, forkId, normalized],
     );
 
     await this.refreshSaveMetadata(saveId, forkId ?? 0);
@@ -512,7 +518,10 @@ export class RAGDatabase {
   }
 
   // Legacy alias used by old worker code path
-  async getDocumentsByEntity(entityId: string, saveId: string): Promise<RAGDocument[]> {
+  async getDocumentsByEntity(
+    entityId: string,
+    saveId: string,
+  ): Promise<RAGDocument[]> {
     return this.getDocumentsBySourcePath(entityId, saveId);
   }
 
@@ -566,7 +575,9 @@ export class RAGDatabase {
     } = options;
 
     if (forkId === undefined) {
-      throw new Error("searchSimilar requires forkId for strict fork isolation");
+      throw new Error(
+        "searchSimilar requires forkId for strict fork isolation",
+      );
     }
 
     const where: string[] = ["d.save_id = $2", "d.is_latest = TRUE"];
@@ -729,7 +740,9 @@ export class RAGDatabase {
     return result.rows.map((row: any) => this.rowToDocumentMeta(row));
   }
 
-  async getDocumentsWithEmbeddingsForSave(saveId: string): Promise<RAGDocument[]> {
+  async getDocumentsWithEmbeddingsForSave(
+    saveId: string,
+  ): Promise<RAGDocument[]> {
     if (!this.db) throw new Error("Database not initialized");
 
     const result = await this.db.query<any>(
@@ -1040,7 +1053,8 @@ export class RAGDatabase {
     if (!this.db) throw new Error("Database not initialized");
 
     const storage = await this.getStorageTierBytes();
-    const protectedOverflow = storage.protectedBytes > this.config.maxStorageBytes;
+    const protectedOverflow =
+      storage.protectedBytes > this.config.maxStorageBytes;
     const exceedsLimit = storage.totalBytes > this.config.maxStorageBytes;
 
     if (!protectedOverflow && !exceedsLimit) {
@@ -1064,7 +1078,9 @@ export class RAGDatabase {
     }));
 
     const suggestedDeletions = saveRows.rows
-      .filter((row: any) => !row.is_active && Number(row.document_count ?? 0) > 0)
+      .filter(
+        (row: any) => !row.is_active && Number(row.document_count ?? 0) > 0,
+      )
       .map((row: any) => String(row.save_id));
 
     return {
@@ -1092,7 +1108,9 @@ export class RAGDatabase {
       [uniqueIds],
     );
 
-    await this.db.query(`DELETE FROM save_metadata WHERE save_id = ANY($1)`, [uniqueIds]);
+    await this.db.query(`DELETE FROM save_metadata WHERE save_id = ANY($1)`, [
+      uniqueIds,
+    ]);
 
     return Number(result.affectedRows ?? 0);
   }
@@ -1121,7 +1139,9 @@ export class RAGDatabase {
       totalDocuments: Number(totalResult.rows[0]?.count ?? 0),
       totalSaves: saves.length,
       saves,
-      estimatedStorageBytes: Number(totalResult.rows[0]?.estimated_storage ?? 0),
+      estimatedStorageBytes: Number(
+        totalResult.rows[0]?.estimated_storage ?? 0,
+      ),
     };
   }
 
@@ -1251,7 +1271,10 @@ export class RAGDatabase {
     );
   }
 
-  private async refreshSaveMetadata(saveId: string, forkId: number): Promise<void> {
+  private async refreshSaveMetadata(
+    saveId: string,
+    forkId: number,
+  ): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
     const countResult = await this.db.query<any>(
@@ -1274,10 +1297,13 @@ export class RAGDatabase {
     );
 
     const isActive = Boolean(existingMeta.rows[0]?.is_active ?? false);
-    const currentForkId = Number(existingMeta.rows[0]?.current_fork_id ?? forkId);
+    const currentForkId = Number(
+      existingMeta.rows[0]?.current_fork_id ?? forkId,
+    );
 
     const model = modelResult.rows[0]?.embedding_model || this.config.modelId;
-    const provider = modelResult.rows[0]?.embedding_provider || this.config.provider;
+    const provider =
+      modelResult.rows[0]?.embedding_provider || this.config.provider;
 
     const now = Date.now();
 

@@ -10,11 +10,18 @@ describe("RAGDatabase retireLatestByPaths", () => {
     }) as any;
 
     const queryMock = vi.fn(async (sql: string, params?: any[]) => {
-      if (sql.includes("UPDATE documents") && sql.includes("superseded_at_turn")) {
+      if (
+        sql.includes("UPDATE documents") &&
+        sql.includes("superseded_at_turn")
+      ) {
         return { rows: [], affectedRows: 3 };
       }
 
-      if (sql.includes("SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1")) {
+      if (
+        sql.includes(
+          "SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1",
+        )
+      ) {
         return { rows: [{ count: 3 }], affectedRows: 0 };
       }
 
@@ -30,7 +37,9 @@ describe("RAGDatabase retireLatestByPaths", () => {
         };
       }
 
-      if (sql.includes("SELECT is_active, current_fork_id FROM save_metadata")) {
+      if (
+        sql.includes("SELECT is_active, current_fork_id FROM save_metadata")
+      ) {
         return {
           rows: [{ is_active: true, current_fork_id: 2 }],
           affectedRows: 0,
@@ -46,17 +55,17 @@ describe("RAGDatabase retireLatestByPaths", () => {
 
     db.db = { query: queryMock };
 
-    const retired = await db.retireLatestByPaths(
-      "save-1",
-      2,
-      99,
-      ["current/world/a.txt", "current/world/b.txt", "current/world/a.txt"],
-    );
+    const retired = await db.retireLatestByPaths("save-1", 2, 99, [
+      "current/world/a.txt",
+      "current/world/b.txt",
+      "current/world/a.txt",
+    ]);
 
     expect(retired).toBe(3);
 
-    const updateCall = queryMock.mock.calls.find(([sql]: [string]) =>
-      sql.includes("UPDATE documents") && sql.includes("superseded_at_turn"),
+    const updateCall = queryMock.mock.calls.find(
+      ([sql]: [string]) =>
+        sql.includes("UPDATE documents") && sql.includes("superseded_at_turn"),
     );
     expect(updateCall).toBeDefined();
 

@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const maritimeLogistics: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogistics", source: "atoms/worldbuilding/maritimeLogistics.ts", exportName: "maritimeLogistics" }, () => `
+export const maritimeLogistics: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogistics",
+    source: "atoms/worldbuilding/maritimeLogistics.ts",
+    exportName: "maritimeLogistics",
+  },
+  () => `
 <worldbuilding_context>
 **MARITIME & LOGISTICS (Ports, Paperwork, and Season Clocks)**
 
@@ -84,46 +89,61 @@ War pressure:
 - One dispute (weight/spoilage/seal/fraud):
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const maritimeLogisticsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsPrimer", source: "atoms/worldbuilding/maritimeLogistics.ts", exportName: "maritimeLogisticsPrimer" }, () =>
-  `
+export const maritimeLogisticsPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsPrimer",
+    source: "atoms/worldbuilding/maritimeLogistics.ts",
+    exportName: "maritimeLogisticsPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **MARITIME PRIMER**: Ports are gates (customs, inspection, quarantine). Routes have season clocks; cargo creates proof disputes; protection is procedural.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const maritimeLogisticsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsSkill", source: "atoms/worldbuilding/maritimeLogistics.ts", exportName: "maritimeLogisticsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(maritimeLogistics),
-  quickStart: `
+export const maritimeLogisticsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsSkill",
+    source: "atoms/worldbuilding/maritimeLogistics.ts",
+    exportName: "maritimeLogisticsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(maritimeLogistics),
+    quickStart: `
 1) Define a route + chokepoint + controller
 2) Add 2 port gates (customs + berth/quarantine/inspection)
 3) Add a season clock (depart now vs wait weeks)
 4) Add a protection system (convoy/insurance/escort) with corruption/audit risk
 5) Add a cargo dispute engine (weight/spoilage/forged seal)
 `.trim(),
-  checklist: [
-    "A port has at least one procedural gate (customs, quarantine, inspection).",
-    "Routes have chokepoints and controllers with fees/bribes.",
-    "Seasonality changes travel time and feasibility (deadline beats).",
-    "Protection is systemic (convoys, insurance, patrols), not random encounters.",
-    "Cargo has ownership proof and dispute vectors (seals, weights, manifests).",
-    "Failure modes exist (storms, blockade, disease, sabotage) with predictable clocks.",
-  ],
-  examples: [
-    {
-      scenario: "Customs as gameplay",
-      wrong: `"We arrive and unload. No one cares."`,
-      right: `"Customs requires a manifest stamped by a guild clerk. The berth fee is logged.
+    checklist: [
+      "A port has at least one procedural gate (customs, quarantine, inspection).",
+      "Routes have chokepoints and controllers with fees/bribes.",
+      "Seasonality changes travel time and feasibility (deadline beats).",
+      "Protection is systemic (convoys, insurance, patrols), not random encounters.",
+      "Cargo has ownership proof and dispute vectors (seals, weights, manifests).",
+      "Failure modes exist (storms, blockade, disease, sabotage) with predictable clocks.",
+    ],
+    examples: [
+      {
+        scenario: "Customs as gameplay",
+        wrong: `"We arrive and unload. No one cares."`,
+        right: `"Customs requires a manifest stamped by a guild clerk. The berth fee is logged.
 If you unload at night, you avoid inspection but create a missing-berth record and a rumor trail.
 Quarantine rules can delay you 3 days unless a sponsor signs liability."`,
-    },
-    {
-      scenario: "Season clock creates pressure",
-      wrong: `"We sail whenever we want."`,
-      right: `"The wind shifts in 48 hours. Depart now with a risky route through reefs,
+      },
+      {
+        scenario: "Season clock creates pressure",
+        wrong: `"We sail whenever we want."`,
+        right: `"The wind shifts in 48 hours. Depart now with a risky route through reefs,
 or wait three weeks for the safe window. Meanwhile, rivals can corner the market
 and inspectors may audit your cargo paperwork."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

@@ -130,10 +130,9 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
 
   const storyProvider = getProviderById(currentSettings.story.providerId);
   const storyModelId = currentSettings.story.modelId;
-  const storyProviderModelMetadata =
-    providerModels[currentSettings.story.providerId]?.find(
-      (m) => m.id === storyModelId,
-    )?.contextLength;
+  const storyProviderModelMetadata = providerModels[
+    currentSettings.story.providerId
+  ]?.find((m) => m.id === storyModelId)?.contextLength;
   const currentContextOverride = getPerModelContextWindowOverride(
     currentSettings,
     currentSettings.story.providerId,
@@ -149,7 +148,8 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     storyModelId,
   );
   const currentLearnedSuccessStreak = currentContextKey
-    ? currentSettings.learnedModelContextSuccessStreaks?.[currentContextKey] || 0
+    ? currentSettings.learnedModelContextSuccessStreaks?.[currentContextKey] ||
+      0
     : 0;
   const learnedTotalCount = Object.keys(
     currentSettings.learnedModelContextWindows || {},
@@ -421,14 +421,14 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
               });
             }}
             className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${
-              currentSettings.extra?.autoCompactEnabled ?? true
+              (currentSettings.extra?.autoCompactEnabled ?? true)
                 ? "bg-theme-primary"
                 : "bg-theme-border"
             }`}
           >
             <span
               className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                currentSettings.extra?.autoCompactEnabled ?? true
+                (currentSettings.extra?.autoCompactEnabled ?? true)
                   ? "translate-x-5"
                   : ""
               }`}
@@ -444,8 +444,8 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             </label>
             <span className="text-theme-text font-mono">
               {Math.round(
-                ((currentSettings.extra?.autoCompactThreshold ?? 0.7) as number) *
-                  100,
+                ((currentSettings.extra?.autoCompactThreshold ??
+                  0.7) as number) * 100,
               )}
               %
             </span>
@@ -501,8 +501,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
               value={currentContextOverride ?? ""}
               onChange={(e) => {
                 const raw = e.target.value;
-                const next =
-                  raw.trim() === "" ? undefined : parseInt(raw, 10);
+                const next = raw.trim() === "" ? undefined : parseInt(raw, 10);
                 onUpdateSettings({
                   ...currentSettings,
                   modelContextWindows: upsertPerModelContextWindowOverride(
@@ -556,7 +555,9 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                   <span className="text-[10px] uppercase tracking-wider text-theme-muted">
                     {t("models.contextDebugSource") || "Source"}
                   </span>
-                  <span className="text-xs text-theme-text">{contextSourceLabel}</span>
+                  <span className="text-xs text-theme-text">
+                    {contextSourceLabel}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-2 py-0.5">
                   <span className="text-[10px] uppercase tracking-wider text-theme-muted">
@@ -631,7 +632,6 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
             </button>
           </div>
         </div>
-
       </div>
 
       {(

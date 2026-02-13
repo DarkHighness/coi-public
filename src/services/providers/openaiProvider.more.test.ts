@@ -106,7 +106,9 @@ describe("openaiProvider additional branches", () => {
     expect(markdownResult.usage?.totalTokens).toBe(3);
 
     sdkMocks.chatCreate.mockResolvedValueOnce({
-      choices: [{ message: { content: "use this https://img.test/b.png now" } }],
+      choices: [
+        { message: { content: "use this https://img.test/b.png now" } },
+      ],
       usage: { prompt_tokens: 1, total_tokens: 1 },
     });
 

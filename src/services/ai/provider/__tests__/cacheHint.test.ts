@@ -17,10 +17,14 @@ describe("buildCacheHint", () => {
 
   it("changes key when prompt material changes", () => {
     const base = buildCacheHint("openrouter", "sys", [{ id: 1 }]);
-    const changedInstruction = buildCacheHint("openrouter", "sys-2", [{ id: 1 }]);
+    const changedInstruction = buildCacheHint("openrouter", "sys-2", [
+      { id: 1 },
+    ]);
     const changedMessages = buildCacheHint("openrouter", "sys", [{ id: 2 }]);
 
-    expect((base as any).cacheKey).not.toBe((changedInstruction as any).cacheKey);
+    expect((base as any).cacheKey).not.toBe(
+      (changedInstruction as any).cacheKey,
+    );
     expect((base as any).cacheKey).not.toBe((changedMessages as any).cacheKey);
   });
 

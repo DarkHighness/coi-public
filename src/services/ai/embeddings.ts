@@ -7,21 +7,13 @@ import {
   ClaudeConfig,
 } from "../providers/types";
 
-import {
-  getEmbeddingModels as getGeminiEmbeddingModels,
-} from "../providers/geminiProvider";
+import { getEmbeddingModels as getGeminiEmbeddingModels } from "../providers/geminiProvider";
 
-import {
-  getEmbeddingModels as getOpenAIEmbeddingModels,
-} from "../providers/openaiProvider";
+import { getEmbeddingModels as getOpenAIEmbeddingModels } from "../providers/openaiProvider";
 
-import {
-  getEmbeddingModels as getOpenRouterEmbeddingModels,
-} from "../providers/openRouterProvider";
+import { getEmbeddingModels as getOpenRouterEmbeddingModels } from "../providers/openRouterProvider";
 
-import {
-  getEmbeddingModels as getClaudeEmbeddingModels,
-} from "../providers/claudeProvider";
+import { getEmbeddingModels as getClaudeEmbeddingModels } from "../providers/claudeProvider";
 
 import { getProviderInstance, createProviderConfig } from "./utils";
 

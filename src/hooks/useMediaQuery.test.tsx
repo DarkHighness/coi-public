@@ -16,7 +16,8 @@ const createMatchMediaMock = (initialMap: Record<string, boolean>) => {
     return {
       matches: Boolean(state.get(query)),
       media: query,
-      addEventListener: (_: string, cb: Listener) => listeners.get(query)!.add(cb),
+      addEventListener: (_: string, cb: Listener) =>
+        listeners.get(query)!.add(cb),
       removeEventListener: (_: string, cb: Listener) =>
         listeners.get(query)!.delete(cb),
       dispatch: (matches: boolean) => {

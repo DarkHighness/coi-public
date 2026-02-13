@@ -4,7 +4,12 @@ import {
   toCanonicalVfsPath,
 } from "../vfs/core/pathResolver";
 import { normalizeVfsPath } from "../vfs/utils";
-import type { ChunkMeta, ChunkStrategy, DocumentType, FileChunkInput } from "./types";
+import type {
+  ChunkMeta,
+  ChunkStrategy,
+  DocumentType,
+  FileChunkInput,
+} from "./types";
 
 const MAX_CHUNK_CHARS = 1800;
 const MIN_CHUNK_CHARS = 320;
@@ -25,7 +30,11 @@ const EXCLUDED_CANONICAL_PREFIXES = [
 ];
 
 const isExcludedCanonicalPath = (canonicalPath: string): boolean => {
-  if (EXCLUDED_CANONICAL_PREFIXES.some((prefix) => canonicalPath.startsWith(prefix))) {
+  if (
+    EXCLUDED_CANONICAL_PREFIXES.some((prefix) =>
+      canonicalPath.startsWith(prefix),
+    )
+  ) {
     return true;
   }
 
@@ -113,9 +122,12 @@ const splitByMaxChars = (text: string, maxChars: number): string[] => {
       );
       const wordBreak = window.lastIndexOf(" ");
 
-      const preferredBreak = [paragraphBreak, lineBreak, sentenceBreak, wordBreak].find(
-        (idx) => idx > Math.max(MIN_CHUNK_CHARS / 2, 40),
-      );
+      const preferredBreak = [
+        paragraphBreak,
+        lineBreak,
+        sentenceBreak,
+        wordBreak,
+      ].find((idx) => idx > Math.max(MIN_CHUNK_CHARS / 2, 40));
 
       if (typeof preferredBreak === "number") {
         next = cursor + preferredBreak + 1;
@@ -330,7 +342,11 @@ interface JsonUnit {
   value: unknown;
 }
 
-const collectJsonUnits = (value: unknown, path: string, units: JsonUnit[]): void => {
+const collectJsonUnits = (
+  value: unknown,
+  path: string,
+  units: JsonUnit[],
+): void => {
   const normalizedPath = path || "$";
   const rendered = safeStringify(value, 2);
 
@@ -391,7 +407,10 @@ const splitJsonIntoChunkSeeds = (jsonContent: string): ChunkSeed[] => {
     const rendered = safeStringify(unit.value, 2) || "null";
 
     const prefix = `path: ${pathLabel}`;
-    const maxBodyChars = Math.max(MIN_CHUNK_CHARS, MAX_CHUNK_CHARS - prefix.length - 20);
+    const maxBodyChars = Math.max(
+      MIN_CHUNK_CHARS,
+      MAX_CHUNK_CHARS - prefix.length - 20,
+    );
     const bodyParts = splitByMaxChars(rendered, maxBodyChars);
 
     bodyParts.forEach((part, index) => {
@@ -407,7 +426,10 @@ const splitJsonIntoChunkSeeds = (jsonContent: string): ChunkSeed[] => {
   return seeds;
 };
 
-const splitFileContent = (type: DocumentType, content: string): ChunkOutput[] => {
+const splitFileContent = (
+  type: DocumentType,
+  content: string,
+): ChunkOutput[] => {
   if (!content.trim()) return [];
 
   switch (type) {
@@ -438,7 +460,9 @@ export const extractFileChunksFromSnapshot = (
       continue;
     }
 
-    const canonicalPath = toCanonicalVfsPath(file.path, { activeForkId: forkId });
+    const canonicalPath = toCanonicalVfsPath(file.path, {
+      activeForkId: forkId,
+    });
     if (!canonicalPath || isExcludedCanonicalPath(canonicalPath)) {
       continue;
     }

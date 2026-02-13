@@ -158,12 +158,18 @@ const schemaRegistry: Array<{ pattern: RegExp; schema: z.ZodSchema }> = [
     pattern: /^world\/characters\/[^/]+\/views\/causal_chains\/[^/]+\.json$/,
     schema: causalChainViewSchema,
   },
-  { pattern: /^world\/characters\/[^/]+\/skills\/[^/]+\.json$/, schema: skillSchema },
+  {
+    pattern: /^world\/characters\/[^/]+\/skills\/[^/]+\.json$/,
+    schema: skillSchema,
+  },
   {
     pattern: /^world\/characters\/[^/]+\/conditions\/[^/]+\.json$/,
     schema: conditionSchema,
   },
-  { pattern: /^world\/characters\/[^/]+\/traits\/[^/]+\.json$/, schema: hiddenTraitSchema },
+  {
+    pattern: /^world\/characters\/[^/]+\/traits\/[^/]+\.json$/,
+    schema: hiddenTraitSchema,
+  },
   {
     pattern: /^world\/characters\/[^/]+\/inventory\/[^/]+\.json$/,
     schema: inventoryItemSchema,

@@ -10,4 +10,3 @@ import atmosphereDescriptionsData from "@/resources/atmosphere_descriptions.json
 
 export const ATMOSPHERE_DESCRIPTIONS =
   atmosphereDescriptionsData as typeof atmosphereDescriptionsData;
-

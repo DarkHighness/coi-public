@@ -105,7 +105,9 @@ export function classifyAgenticError(
 
 const normalizeRawError = (message: string): string => {
   const normalized = message?.trim() || "Unknown provider error";
-  return normalized.length > 500 ? `${normalized.slice(0, 500)}...` : normalized;
+  return normalized.length > 500
+    ? `${normalized.slice(0, 500)}...`
+    : normalized;
 };
 
 export function buildMalformedToolCallFeedback(options: {

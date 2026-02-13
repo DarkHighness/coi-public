@@ -4,20 +4,18 @@ import { createLogEntry, getProviderConfig } from "../../utils";
 import { runSummaryAgenticLoop } from "./summary";
 import type { SummaryLoopMode } from "./summaryLoop";
 
-export const summarizeContext = async (
-  input: {
-    vfsSession: VfsSession;
-    slotId: string;
-    forkId: number;
-    baseSummaries: StorySummary[];
-    baseIndex: number;
-    nodeRange: { fromIndex: number; toIndex: number };
-    language: string;
-    settings: AISettings;
-    pendingPlayerAction?: { segmentIdx: number; text: string } | null;
-    mode?: SummaryLoopMode;
-  },
-): Promise<{
+export const summarizeContext = async (input: {
+  vfsSession: VfsSession;
+  slotId: string;
+  forkId: number;
+  baseSummaries: StorySummary[];
+  baseIndex: number;
+  nodeRange: { fromIndex: number; toIndex: number };
+  language: string;
+  settings: AISettings;
+  pendingPlayerAction?: { segmentIdx: number; text: string } | null;
+  mode?: SummaryLoopMode;
+}): Promise<{
   summary: StorySummary | null;
   logs: LogEntry[];
   error?: string;

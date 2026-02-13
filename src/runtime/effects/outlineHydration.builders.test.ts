@@ -123,7 +123,10 @@ describe("outlineHydration builders", () => {
       npcs: [{ profile: { id: "npc-1", name: "Guide" } }],
       placeholders: [{ id: "ph-1" }],
       quests: [{ id: "quest-1", title: "Find relic" }],
-      locations: [{ id: "loc:start", name: "Town" }, { id: "loc:2", name: "Forest" }],
+      locations: [
+        { id: "loc:start", name: "Town" },
+        { id: "loc:2", name: "Forest" },
+      ],
       knowledge: [{ id: "know-1", text: "Lore" }],
       factions: [{ id: "fac-1", name: "Guild" }],
       timeline: [{ id: "event-1", title: "Arrival" }],
@@ -154,7 +157,9 @@ describe("outlineHydration builders", () => {
       seedImageId: "seed-9",
     });
 
-    expect(normalizeAtmosphereMock).toHaveBeenCalledWith(outline.initialAtmosphere);
+    expect(normalizeAtmosphereMock).toHaveBeenCalledWith(
+      outline.initialAtmosphere,
+    );
     expect(nextState.worldInfo.title).toBe("Outline Title");
     expect(nextState.actors).toHaveLength(2);
     expect(nextState.playerActorId).toBe("char:hero");
@@ -173,7 +178,10 @@ describe("outlineHydration builders", () => {
     });
     expect(nextState.locations[0].isVisited).toBe(true);
     expect(nextState.locations[1].isVisited).toBe(false);
-    expect(nextState.logs.map((log: any) => log.id)).toEqual(["new-log", "old-log"]);
+    expect(nextState.logs.map((log: any) => log.id)).toEqual([
+      "new-log",
+      "old-log",
+    ]);
     expect(nextState.tokenUsage).toEqual({
       promptTokens: 15,
       completionTokens: 26,
@@ -243,7 +251,9 @@ describe("outlineHydration builders", () => {
       { text: "Enter", consequence: undefined },
       { text: "Wait", consequence: "observe" },
     ]);
-    expect(result.fallbackPrompt).toBe("BEGIN:Fantasy Name CONTEXT: fog and silence");
+    expect(result.fallbackPrompt).toBe(
+      "BEGIN:Fantasy Name CONTEXT: fog and silence",
+    );
   });
 
   it("applies opening segment as root node and resets transient state", () => {

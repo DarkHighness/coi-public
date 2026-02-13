@@ -11,7 +11,11 @@ const writeText = (session: VfsSession, path: string, value: string) => {
   if (isSharedReadOnlyPath(path)) {
     return;
   }
-  session.writeFile(path, value, path.endsWith(".md") ? "text/markdown" : "text/plain");
+  session.writeFile(
+    path,
+    value,
+    path.endsWith(".md") ? "text/markdown" : "text/plain",
+  );
 };
 
 /**

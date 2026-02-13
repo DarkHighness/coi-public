@@ -36,7 +36,9 @@ describe("VFS tools", () => {
   });
 
   it("only exposes vfs tools", () => {
-    expect(ALL_DEFINED_TOOLS.every((t) => t.name.startsWith("vfs_"))).toBe(true);
+    expect(ALL_DEFINED_TOOLS.every((t) => t.name.startsWith("vfs_"))).toBe(
+      true,
+    );
   });
 
   it("accepts null for optional VFS path parameters", () => {

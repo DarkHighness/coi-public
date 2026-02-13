@@ -15,9 +15,7 @@ const REQUIRED_ATOMS: Record<string, string[]> = {
     "atoms/core/livingWorld#livingWorldPrimer",
     "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedPrimer",
   ],
-  "outline.system": [
-    "atoms/outline/system#getOutlineSystemInstruction",
-  ],
+  "outline.system": ["atoms/outline/system#getOutlineSystemInstruction"],
   "outline.phase0": ["atoms/cultural/languageEnforcement#languageEnforcement"],
   "outline.phase1": [
     "atoms/core/gameSystemDesign#gameSystemDesign",
@@ -28,7 +26,9 @@ const REQUIRED_ATOMS: Record<string, string[]> = {
   "outline.phase2.worldFoundation": [
     "atoms/outline/phase2#getOutlinePhase2WorldFoundationPrompt",
   ],
-  "outline.phase3.playerActor": ["atoms/entities/characterDesign#characterDesign"],
+  "outline.phase3.playerActor": [
+    "atoms/entities/characterDesign#characterDesign",
+  ],
   "outline.phase4.locations": ["atoms/entities/locationDesign#locationDesign"],
   "outline.phase5.factions": ["atoms/entities/factionDesign#factionDesign"],
   "outline.phase6.npcs": ["atoms/entities/npcDesign#npcDesign"],
@@ -84,7 +84,9 @@ export function validatePromptTrace(
   const required = getRequiredAtomsForPrompt(promptId);
 
   const runtimeSeen = new Set(trace.atoms.map((atom) => atom.atomId));
-  const missingRuntimeAtoms = required.filter((atomId) => !runtimeSeen.has(atomId));
+  const missingRuntimeAtoms = required.filter(
+    (atomId) => !runtimeSeen.has(atomId),
+  );
 
   const errors: string[] = [];
   const warnings: string[] = [];

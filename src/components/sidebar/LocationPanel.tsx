@@ -277,31 +277,32 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   )}
 
                   {/* Dropped/placed items in this location */}
-                  {Array.isArray(item.itemsHere) && item.itemsHere.length > 0 && (
-                    <div className="mt-3">
-                      <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                        {t("sidebar.location.itemsHere", {
-                          defaultValue: "Items here",
-                        })}
-                      </span>
-                      <ul className="list-disc list-inside text-theme-text space-y-0.5">
-                        {item.itemsHere.map((it) => (
-                          <li key={it.id}>
-                            <span className="mr-1">
-                              {getValidIcon(it.icon, "📦")}
-                            </span>
-                            <span className="font-semibold">{it.name}</span>
-                            {it.visible?.condition && (
-                              <span className="text-theme-text-secondary">
-                                {" "}
-                                ({it.visible.condition})
+                  {Array.isArray(item.itemsHere) &&
+                    item.itemsHere.length > 0 && (
+                      <div className="mt-3">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                          {t("sidebar.location.itemsHere", {
+                            defaultValue: "Items here",
+                          })}
+                        </span>
+                        <ul className="list-disc list-inside text-theme-text space-y-0.5">
+                          {item.itemsHere.map((it) => (
+                            <li key={it.id}>
+                              <span className="mr-1">
+                                {getValidIcon(it.icon, "📦")}
                               </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                              <span className="font-semibold">{it.name}</span>
+                              {it.visible?.condition && (
+                                <span className="text-theme-text-secondary">
+                                  {" "}
+                                  ({it.visible.condition})
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                   {/* Interactables */}
                   {locationData.visible?.interactables &&

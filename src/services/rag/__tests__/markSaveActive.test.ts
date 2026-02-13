@@ -10,7 +10,11 @@ describe("RAGDatabase markSaveActive", () => {
     }) as any;
 
     const queryMock = vi.fn(async (sql: string, _params?: any[]) => {
-      if (sql.includes("SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1")) {
+      if (
+        sql.includes(
+          "SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1",
+        )
+      ) {
         return { rows: [{ count: 8 }], affectedRows: 0 };
       }
 
@@ -26,14 +30,20 @@ describe("RAGDatabase markSaveActive", () => {
         };
       }
 
-      if (sql.includes("SELECT is_active, current_fork_id FROM save_metadata")) {
+      if (
+        sql.includes("SELECT is_active, current_fork_id FROM save_metadata")
+      ) {
         return {
           rows: [{ is_active: true, current_fork_id: 3 }],
           affectedRows: 0,
         };
       }
 
-      if (sql.includes("SELECT is_active, current_fork_id FROM save_metadata WHERE save_id = $1 LIMIT 1")) {
+      if (
+        sql.includes(
+          "SELECT is_active, current_fork_id FROM save_metadata WHERE save_id = $1 LIMIT 1",
+        )
+      ) {
         return {
           rows: [{ is_active: true, current_fork_id: 3 }],
           affectedRows: 0,
@@ -44,7 +54,12 @@ describe("RAGDatabase markSaveActive", () => {
         return { rows: [], affectedRows: 1 };
       }
 
-      if (sql.includes("UPDATE save_metadata") && sql.includes("SET is_active = CASE WHEN save_id = $1 THEN TRUE ELSE FALSE END")) {
+      if (
+        sql.includes("UPDATE save_metadata") &&
+        sql.includes(
+          "SET is_active = CASE WHEN save_id = $1 THEN TRUE ELSE FALSE END",
+        )
+      ) {
         return { rows: [], affectedRows: 2 };
       }
 
@@ -56,7 +71,9 @@ describe("RAGDatabase markSaveActive", () => {
     await db.markSaveActive("save-b", 3);
 
     const updateCall = queryMock.mock.calls.find(([sql]) =>
-      sql.includes("SET is_active = CASE WHEN save_id = $1 THEN TRUE ELSE FALSE END"),
+      sql.includes(
+        "SET is_active = CASE WHEN save_id = $1 THEN TRUE ELSE FALSE END",
+      ),
     );
     expect(updateCall).toBeDefined();
 
@@ -69,7 +86,9 @@ describe("RAGDatabase markSaveActive", () => {
       sql.includes("INSERT INTO save_metadata"),
     );
     const updateIndex = queryMock.mock.calls.findIndex(([sql]) =>
-      sql.includes("SET is_active = CASE WHEN save_id = $1 THEN TRUE ELSE FALSE END"),
+      sql.includes(
+        "SET is_active = CASE WHEN save_id = $1 THEN TRUE ELSE FALSE END",
+      ),
     );
     expect(firstInsertIndex).toBeGreaterThanOrEqual(0);
     expect(updateIndex).toBeGreaterThan(firstInsertIndex);

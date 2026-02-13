@@ -43,4 +43,3 @@ describe("print-loop-prompts script", () => {
     expect(content).not.toContain("## turn (static)");
   });
 });
-

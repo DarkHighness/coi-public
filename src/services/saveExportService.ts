@@ -26,10 +26,7 @@ import {
   openVfsDB,
   VFS_META_STORE,
 } from "../utils/indexedDB";
-import {
-  getImagesBySaveId,
-  saveImage,
-} from "../utils/imageStorage";
+import { getImagesBySaveId, saveImage } from "../utils/imageStorage";
 import { getRAGService } from "./rag";
 import type { RAGExportData } from "./rag/types";
 import { IndexedDbVfsStore } from "./vfs/store";
@@ -104,7 +101,9 @@ const transformJsonValueForImageReferences = (
   }
 
   const nextObject: Record<string, unknown> = {};
-  for (const [key, rawChild] of Object.entries(value as Record<string, unknown>)) {
+  for (const [key, rawChild] of Object.entries(
+    value as Record<string, unknown>,
+  )) {
     if (options.stripImageReferences && IMAGE_REFERENCE_KEYS.has(key)) {
       continue;
     }
@@ -200,7 +199,9 @@ const isValidLatestMeta = (value: unknown): value is VfsLatestMeta => {
   return typeof forkId === "number" && typeof turn === "number";
 };
 
-const loadLatestVfsMeta = async (saveId: string): Promise<VfsLatestMeta | null> => {
+const loadLatestVfsMeta = async (
+  saveId: string,
+): Promise<VfsLatestMeta | null> => {
   try {
     const meta = await loadMetadata<unknown>(`vfs_latest:${saveId}`);
     if (isValidLatestMeta(meta)) {
@@ -213,11 +214,14 @@ const loadLatestVfsMeta = async (saveId: string): Promise<VfsLatestMeta | null> 
   try {
     const entries = await listVfsSnapshotIndexEntries(saveId);
     if (entries.length === 0) return null;
-    const latest = entries.reduce((best, entry) => {
-      if (!best) return entry;
-      if (entry.createdAt > best.createdAt) return entry;
-      return best;
-    }, null as VfsExportIndexEntry | null);
+    const latest = entries.reduce(
+      (best, entry) => {
+        if (!best) return entry;
+        if (entry.createdAt > best.createdAt) return entry;
+        return best;
+      },
+      null as VfsExportIndexEntry | null,
+    );
     return latest ? { forkId: latest.forkId, turn: latest.turn } : null;
   } catch (error) {
     console.warn("[SaveExport] Failed to infer latest VFS snapshot:", error);
@@ -265,7 +269,9 @@ const loadSharedMutableStateForSave = async (
   latestSnapshot?: VfsSnapshot | null,
 ): Promise<Record<string, any> | null> => {
   try {
-    const stored = await loadMetadata<{ files?: unknown }>(`vfs_shared:${saveId}`);
+    const stored = await loadMetadata<{ files?: unknown }>(
+      `vfs_shared:${saveId}`,
+    );
     if (stored?.files && typeof stored.files === "object") {
       return stored.files as Record<string, any>;
     }
@@ -274,7 +280,9 @@ const loadSharedMutableStateForSave = async (
   }
 
   if (latestSnapshot) {
-    const inferred = extractSharedMutableStateFromSnapshot(latestSnapshot as any);
+    const inferred = extractSharedMutableStateFromSnapshot(
+      latestSnapshot as any,
+    );
     if (Object.keys(inferred).length > 0) {
       return inferred as Record<string, any>;
     }
@@ -303,7 +311,9 @@ const loadDerivedStateFromLatestVfsSnapshot = async (
     applySharedMutableStateToSession(session, shared as any);
   }
 
-  const derived = deriveGameStateFromVfs(session.snapshot()) as VersionedGameState;
+  const derived = deriveGameStateFromVfs(
+    session.snapshot(),
+  ) as VersionedGameState;
   if (!derived._saveVersion) {
     derived._saveVersion = {
       version: CURRENT_SAVE_VERSION,
@@ -347,7 +357,11 @@ const writeVfsSnapshotsToZip = async (
   let written = 0;
   for (const entry of indexEntries) {
     try {
-      const snapshot = await store.loadSnapshot(saveId, entry.forkId, entry.turn);
+      const snapshot = await store.loadSnapshot(
+        saveId,
+        entry.forkId,
+        entry.turn,
+      );
       if (!snapshot) {
         console.warn(
           `[SaveExport] Missing VFS snapshot for fork=${entry.forkId} turn=${entry.turn}`,
@@ -378,7 +392,11 @@ const writeVfsSnapshotsToZip = async (
 
   let latestSnapshot: VfsSnapshot | null = null;
   if (latest) {
-    latestSnapshot = await store.loadSnapshot(saveId, latest.forkId, latest.turn);
+    latestSnapshot = await store.loadSnapshot(
+      saveId,
+      latest.forkId,
+      latest.turn,
+    );
   }
 
   const shared = await loadSharedMutableStateForSave(saveId, latestSnapshot);
@@ -462,7 +480,9 @@ const createVfsSnapshotsFromLegacyState = async (
 
   const latestTurnByFork = new Map<number, number>();
   for (const [forkId, turns] of turnsIndex.entries()) {
-    const turnNumbers = Array.from(turns.keys()).filter((t) => Number.isFinite(t));
+    const turnNumbers = Array.from(turns.keys()).filter((t) =>
+      Number.isFinite(t),
+    );
     const maxTurn = turnNumbers.length > 0 ? Math.max(...turnNumbers) : -1;
     if (maxTurn >= 0) latestTurnByFork.set(forkId, maxTurn);
   }
@@ -489,7 +509,8 @@ const createVfsSnapshotsFromLegacyState = async (
           forkId,
           turnNumber: turn,
           parentTurnId: turn === 0 ? null : buildTurnId(forkId, turn - 1),
-          createdAt: typeof model.timestamp === "number" ? model.timestamp : Date.now(),
+          createdAt:
+            typeof model.timestamp === "number" ? model.timestamp : Date.now(),
           userAction,
           assistant: {
             narrative: model.text || "",
@@ -523,17 +544,19 @@ const createVfsSnapshotsFromLegacyState = async (
 
   const activeParsed = parseLegacyNodeId(state.activeNodeId ?? "");
   const activeForkId =
-    activeParsed && (activeParsed.kind === "turn" || activeParsed.kind === "turnId")
+    activeParsed &&
+    (activeParsed.kind === "turn" || activeParsed.kind === "turnId")
       ? activeParsed.forkId
       : typeof state.forkId === "number"
         ? state.forkId
         : forkIds[0];
   const activeTurn =
-    activeParsed && (activeParsed.kind === "turn" || activeParsed.kind === "turnId")
+    activeParsed &&
+    (activeParsed.kind === "turn" || activeParsed.kind === "turnId")
       ? activeParsed.turn
       : typeof state.turnNumber === "number"
         ? state.turnNumber
-        : latestTurnByFork.get(activeForkId) ?? 0;
+        : (latestTurnByFork.get(activeForkId) ?? 0);
 
   const fallbackLatest: VfsLatestMeta = {
     forkId: activeForkId,
@@ -551,7 +574,8 @@ const createVfsSnapshotsFromLegacyState = async (
 
       const session = new VfsSession();
 
-      const snapshotState = (model.stateSnapshot as GameStateSnapshot | undefined) ?? null;
+      const snapshotState =
+        (model.stateSnapshot as GameStateSnapshot | undefined) ?? null;
       const worldState: GameState = {
         ...(state as any),
         ...(snapshotState ? (snapshotState as any) : {}),
@@ -571,7 +595,10 @@ const createVfsSnapshotsFromLegacyState = async (
         writeOutlineFile(session, (state as any).outline);
       }
       if ((state as any).outlineConversation) {
-        writeOutlineProgress(session, (state as any).outlineConversation ?? null);
+        writeOutlineProgress(
+          session,
+          (state as any).outlineConversation ?? null,
+        );
       }
 
       writeForkTree(session, (state as any).forkTree);
@@ -583,13 +610,14 @@ const createVfsSnapshotsFromLegacyState = async (
         const fullLatest = latestTurnByFork.get(id) ?? 0;
         const latest = id === forkId ? turn : fullLatest;
         latestForSnapshot[String(id)] = latest;
-        orderForSnapshot[String(id)] =
-          (turnOrderByFork[String(id)] || []).filter((turnId) => {
-            const match = /fork-(\d+)\/turn-(\d+)/.exec(turnId);
-            if (!match) return false;
-            const parsedTurn = Number(match[2]);
-            return Number.isFinite(parsedTurn) && parsedTurn <= latest;
-          });
+        orderForSnapshot[String(id)] = (
+          turnOrderByFork[String(id)] || []
+        ).filter((turnId) => {
+          const match = /fork-(\d+)\/turn-(\d+)/.exec(turnId);
+          if (!match) return false;
+          const parsedTurn = Number(match[2]);
+          return Number.isFinite(parsedTurn) && parsedTurn <= latest;
+        });
       }
 
       for (const entry of turnFiles) {
@@ -612,7 +640,8 @@ const createVfsSnapshotsFromLegacyState = async (
         saveId: newSaveId,
         forkId,
         turn,
-        createdAt: typeof model.timestamp === "number" ? model.timestamp : Date.now(),
+        createdAt:
+          typeof model.timestamp === "number" ? model.timestamp : Date.now(),
       });
       written += 1;
     }
@@ -1009,7 +1038,9 @@ export async function validateImport(file: File): Promise<ImportValidation> {
     try {
       const indexJson = await vfsIndexFile.async("text");
       const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
-      const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
+      const snapshots = Array.isArray(bundle?.snapshots)
+        ? bundle.snapshots
+        : [];
       if (snapshots.length === 0) {
         pushError(
           "import.errors.emptyVfsIndex",
@@ -1178,7 +1209,9 @@ export async function importSave(
       const indexJson = await vfsIndexFile.async("text");
       const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
       const latestMeta = bundle?.latest ?? null;
-      const snapshots = Array.isArray(bundle?.snapshots) ? bundle.snapshots : [];
+      const snapshots = Array.isArray(bundle?.snapshots)
+        ? bundle.snapshots
+        : [];
 
       let importedSharedFiles: Record<string, any> | null = null;
       const sharedFile = zip.file("vfs/shared.json");
@@ -1193,7 +1226,9 @@ export async function importSave(
           }
         } catch (error) {
           console.warn("[SaveImport] Failed to parse vfs/shared.json:", error);
-          warnings.push("Failed to parse vfs/shared.json. Shared VFS layer will be rebuilt.");
+          warnings.push(
+            "Failed to parse vfs/shared.json. Shared VFS layer will be rebuilt.",
+          );
         }
       }
       if (snapshots.length === 0) {
@@ -1223,9 +1258,12 @@ export async function importSave(
         const snapshot = JSON.parse(snapshotJson) as VfsSnapshot;
         if (!snapshot || typeof snapshot !== "object") continue;
 
-        const snapshotWithMappedImages = rewriteSnapshotImageReferences(snapshot, {
-          remapImageIds: imageIdMapping,
-        });
+        const snapshotWithMappedImages = rewriteSnapshotImageReferences(
+          snapshot,
+          {
+            remapImageIds: imageIdMapping,
+          },
+        );
 
         snapshotWithMappedImages.saveId = newSlotId;
         await store.saveSnapshot(snapshotWithMappedImages);
@@ -1249,10 +1287,13 @@ export async function importSave(
         latestTurn = latestMeta.turn;
       } else {
         const indexes = await listVfsSnapshotIndexEntries(newSlotId);
-        const best = indexes.reduce((acc, item) => {
-          if (!acc) return item;
-          return item.createdAt > acc.createdAt ? item : acc;
-        }, null as VfsExportIndexEntry | null);
+        const best = indexes.reduce(
+          (acc, item) => {
+            if (!acc) return item;
+            return item.createdAt > acc.createdAt ? item : acc;
+          },
+          null as VfsExportIndexEntry | null,
+        );
         if (best) {
           latestForkId = best.forkId;
           latestTurn = best.turn;
@@ -1277,7 +1318,9 @@ export async function importSave(
           );
           if (latestSnapshot) {
             if (!sharedForSave) {
-              const inferred = extractSharedMutableStateFromSnapshot(latestSnapshot as any);
+              const inferred = extractSharedMutableStateFromSnapshot(
+                latestSnapshot as any,
+              );
               sharedForSave =
                 Object.keys(inferred).length > 0
                   ? (inferred as Record<string, any>)
@@ -1291,7 +1334,8 @@ export async function importSave(
             }
 
             const derived = deriveGameStateFromVfs(session.snapshot()) as any;
-            derivedTheme = typeof derived?.theme === "string" ? derived.theme : undefined;
+            derivedTheme =
+              typeof derived?.theme === "string" ? derived.theme : undefined;
             derivedName =
               typeof derived?.outline?.title === "string"
                 ? derived.outline.title
@@ -1299,14 +1343,20 @@ export async function importSave(
             derivedSummary =
               typeof derived?.outline?.premise === "string"
                 ? derived.outline.premise
-                : typeof derived?.outline?.openingNarrative?.narrative === "string"
+                : typeof derived?.outline?.openingNarrative?.narrative ===
+                    "string"
                   ? derived.outline.openingNarrative.narrative.slice(0, 160)
                   : undefined;
             derivedPreviewImage =
-              typeof derived?.seedImageId === "string" ? derived.seedImageId : undefined;
+              typeof derived?.seedImageId === "string"
+                ? derived.seedImageId
+                : undefined;
           }
         } catch (err) {
-          console.warn("[SaveImport] Failed to derive slot info from VFS snapshot:", err);
+          console.warn(
+            "[SaveImport] Failed to derive slot info from VFS snapshot:",
+            err,
+          );
         }
       }
 
@@ -1318,7 +1368,10 @@ export async function importSave(
 
       console.log(`[SaveImport] Imported ${imported} VFS snapshots`);
     } catch (error) {
-      console.warn("[SaveImport] Failed to import/reconstruct VFS snapshots:", error);
+      console.warn(
+        "[SaveImport] Failed to import/reconstruct VFS snapshots:",
+        error,
+      );
       return {
         success: false,
         error: "Failed to import VFS snapshots.",
@@ -1331,14 +1384,18 @@ export async function importSave(
     // Create new slot metadata
     const newSlot: SaveSlot = {
       id: newSlotId,
-      name: generateUniqueName(derivedName || manifest.slot.name, existingSlots),
+      name: generateUniqueName(
+        derivedName || manifest.slot.name,
+        existingSlots,
+      ),
       timestamp: Date.now(),
       theme: derivedTheme || manifest.slot.theme,
       summary: derivedSummary || manifest.slot.summary || "",
       previewImage:
         derivedPreviewImage ||
         (manifest.slot.previewImage
-          ? imageIdMapping.get(manifest.slot.previewImage) || manifest.slot.previewImage
+          ? imageIdMapping.get(manifest.slot.previewImage) ||
+            manifest.slot.previewImage
           : undefined),
     };
 
@@ -1390,9 +1447,7 @@ async function importImages(
 
   const imageFiles = allFiles.filter(
     (file) =>
-      !file.dir &&
-      isUnderRoot(file.name) &&
-      !file.name.endsWith(".meta.json"),
+      !file.dir && isUnderRoot(file.name) && !file.name.endsWith(".meta.json"),
   );
 
   const findMetaFile = (filename: string, oldId: string) => {
@@ -1470,7 +1525,6 @@ async function importImages(
   console.log(`[SaveImport] Imported ${mapping.size} images`);
   return mapping;
 }
-
 
 /**
  * Update image references in nodes with new IDs

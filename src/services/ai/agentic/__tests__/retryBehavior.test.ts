@@ -57,7 +57,8 @@ describe("callWithAgenticRetry behavior", () => {
       { requiredToolName: toolName, maxRetries: 0 },
     );
 
-    const calls = (result.result as { functionCalls?: Array<any> }).functionCalls;
+    const calls = (result.result as { functionCalls?: Array<any> })
+      .functionCalls;
     expect(calls).toHaveLength(1);
     expect(calls?.[0].name).toBe(toolName);
     expect(calls?.[0].args).toEqual({ foo: "bar" });
@@ -97,9 +98,9 @@ describe("callWithAgenticRetry behavior", () => {
     expect(result.retries).toBe(1);
     expect(result.usage).toEqual(makeUsage(4, 3));
     expect(history).toHaveLength(1);
-    expect(((result.result as any).functionCalls?.[0]?.id as string) || "").toMatch(
-      /^call_/,
-    );
+    expect(
+      ((result.result as any).functionCalls?.[0]?.id as string) || "",
+    ).toMatch(/^call_/);
   });
 
   it("estimates prompt usage when provider does not report usage", async () => {
@@ -146,7 +147,9 @@ describe("callWithAgenticRetry behavior", () => {
       },
       {
         result: {
-          functionCalls: [{ id: "call_2", name: toolName, args: { foo: "ok" } }],
+          functionCalls: [
+            { id: "call_2", name: toolName, args: { foo: "ok" } },
+          ],
         },
         usage: makeUsage(1, 1),
         raw: null,
@@ -177,7 +180,9 @@ describe("callWithAgenticRetry behavior", () => {
       new Error("MALFORMED_TOOL_CALL: invalid JSON payload"),
       {
         result: {
-          functionCalls: [{ id: "call_2", name: toolName, args: { foo: "ok" } }],
+          functionCalls: [
+            { id: "call_2", name: toolName, args: { foo: "ok" } },
+          ],
         },
         usage: makeUsage(1, 1),
         raw: null,
@@ -186,27 +191,41 @@ describe("callWithAgenticRetry behavior", () => {
 
     const history: any[] = [];
 
-    const result = await callWithAgenticRetry(provider, makeRequest() as any, history, {
-      requiredToolName: toolName,
-      maxRetries: 1,
-      finishToolName: "vfs_commit_turn",
-    });
+    const result = await callWithAgenticRetry(
+      provider,
+      makeRequest() as any,
+      history,
+      {
+        requiredToolName: toolName,
+        maxRetries: 1,
+        finishToolName: "vfs_commit_turn",
+      },
+    );
 
     expect(result.retries).toBe(1);
     expect(history).toHaveLength(2);
     expect(history[0]?.role).toBe("assistant");
     const feedbackText =
-      history[1]?.content?.find((part: any) => part.type === "text")?.text ?? "";
+      history[1]?.content?.find((part: any) => part.type === "text")?.text ??
+      "";
     expect(feedbackText).toContain("MALFORMED_TOOL_CALL");
-    expect(feedbackText).toContain("Raw provider error: MALFORMED_TOOL_CALL: invalid JSON payload");
-    expect(feedbackText).toContain('If you call "vfs_commit_turn", it must be the LAST tool call.');
+    expect(feedbackText).toContain(
+      "Raw provider error: MALFORMED_TOOL_CALL: invalid JSON payload",
+    );
+    expect(feedbackText).toContain(
+      'If you call "vfs_commit_turn", it must be the LAST tool call.',
+    );
   });
 
   it("throws unknown provider errors without automatic retry", async () => {
-    const provider = createProvider([new Error("backend panic without classification")]);
+    const provider = createProvider([
+      new Error("backend panic without classification"),
+    ]);
 
     await expect(
-      callWithAgenticRetry(provider, makeRequest() as any, [], { maxRetries: 2 }),
+      callWithAgenticRetry(provider, makeRequest() as any, [], {
+        maxRetries: 2,
+      }),
     ).rejects.toThrow("[ERROR: UNKNOWN_PROVIDER_ERROR]");
 
     expect(provider.generateChat).toHaveBeenCalledTimes(1);
@@ -217,7 +236,9 @@ describe("callWithAgenticRetry behavior", () => {
       new Error("429 rate limit exceeded"),
       {
         result: {
-          functionCalls: [{ id: "call_ok", name: toolName, args: { foo: "ok" } }],
+          functionCalls: [
+            { id: "call_ok", name: toolName, args: { foo: "ok" } },
+          ],
         },
         usage: makeUsage(1, 1),
         raw: null,
@@ -227,11 +248,16 @@ describe("callWithAgenticRetry behavior", () => {
     const onRetry = vi.fn();
     const history = [createUserMessage("seed")];
 
-    const result = await callWithAgenticRetry(provider, makeRequest() as any, history, {
-      requiredToolName: toolName,
-      maxRetries: 1,
-      onRetry,
-    });
+    const result = await callWithAgenticRetry(
+      provider,
+      makeRequest() as any,
+      history,
+      {
+        requiredToolName: toolName,
+        maxRetries: 1,
+        onRetry,
+      },
+    );
 
     expect(result.retries).toBe(1);
     expect(history).toHaveLength(1);

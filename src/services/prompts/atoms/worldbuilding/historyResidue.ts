@@ -11,8 +11,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const historyResidue: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/historyResidue#historyResidue", source: "atoms/worldbuilding/historyResidue.ts", exportName: "historyResidue" }, () => `
+export const historyResidue: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/historyResidue#historyResidue",
+    source: "atoms/worldbuilding/historyResidue.ts",
+    exportName: "historyResidue",
+  },
+  () => `
 <worldbuilding_context>
 **HISTORY-AS-RESIDUE (The past is not behind us — it is beneath the floorboards)**
 
@@ -68,43 +73,58 @@ Reveals should change **actions**, not just lore. A truth that doesn't alter wha
 - One contested truth:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const historyResiduePrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/historyResidue#historyResiduePrimer", source: "atoms/worldbuilding/historyResidue.ts", exportName: "historyResiduePrimer" }, () =>
-  `
+export const historyResiduePrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/historyResidue#historyResiduePrimer",
+    source: "atoms/worldbuilding/historyResidue.ts",
+    exportName: "historyResiduePrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **HISTORY PRIMER**: The past is not behind us -- it is beneath the floorboards. Show it as residue (physical/institutional/psychological) that creates constraints and leverage now.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const historyResidueSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/historyResidue#historyResidueSkill", source: "atoms/worldbuilding/historyResidue.ts", exportName: "historyResidueSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(historyResidue),
-  quickStart: `
+export const historyResidueSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/historyResidue#historyResidueSkill",
+    source: "atoms/worldbuilding/historyResidue.ts",
+    exportName: "historyResidueSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(historyResidue),
+    quickStart: `
 1) Define 3 eras (old order → rupture → compromise)
 2) For each era: 1 thing still used + 1 thing still feared
 3) Add 1 physical + 1 institutional + 1 psychological residue
 4) Write 1 contested truth and who hides it
 `.trim(),
-  checklist: [
-    "Three residue layers exist (physical/institutional/psychological).",
-    "At least one residue changes player options (not just lore).",
-    "History is contested (official vs folk vs private).",
-    "Reveals change actions or alliances, not only exposition.",
-  ],
-  examples: [
-    {
-      scenario: "Residue creates leverage",
-      wrong: `"Long ago there was a war. Anyway, you go to the tavern."`,
-      right: `"The tavern’s floor is old fortress stone—still warm in winter because of buried steam pipes.
+    checklist: [
+      "Three residue layers exist (physical/institutional/psychological).",
+      "At least one residue changes player options (not just lore).",
+      "History is contested (official vs folk vs private).",
+      "Reveals change actions or alliances, not only exposition.",
+    ],
+    examples: [
+      {
+        scenario: "Residue creates leverage",
+        wrong: `"Long ago there was a war. Anyway, you go to the tavern."`,
+        right: `"The tavern’s floor is old fortress stone—still warm in winter because of buried steam pipes.
 The guild controls the valves. The last time someone tampered with them, a neighborhood burned.
 Now the pipes are leverage: comfort, industry, and sabotage in one place."`,
-    },
-    {
-      scenario: "Contested truth changes play",
-      wrong: `"The king was evil and was overthrown."`,
-      right: `"Officially: the king was a tyrant. Folk story: he held back the plague at terrible cost.
+      },
+      {
+        scenario: "Contested truth changes play",
+        wrong: `"The king was evil and was overthrown."`,
+        right: `"Officially: the king was a tyrant. Folk story: he held back the plague at terrible cost.
 Private archive: the 'plague' was a weapon. If you reveal it, the current council loses legitimacy—
 and the border treaty collapses. Truth is an action, not trivia."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

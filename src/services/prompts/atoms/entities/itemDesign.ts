@@ -13,11 +13,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Item 设计上下文 - 完整版
  */
-export const itemDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/itemDesign#itemDesign", source: "atoms/entities/itemDesign.ts", exportName: "itemDesign" }, () => `
+export const itemDesign: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/itemDesign#itemDesign",
+    source: "atoms/entities/itemDesign.ts",
+    exportName: "itemDesign",
+  },
+  () => `
 <game_system_context>
 **ITEM DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -239,12 +244,19 @@ What happens when items are lost?
 - Does the loss define you?
 </loss_and_recovery>
 </game_system_context>
-`);
+`,
+);
 
 /**
  * Item 设计上下文 - 精简版
  */
-export const itemDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/itemDesign#itemDesignPrimer", source: "atoms/entities/itemDesign.ts", exportName: "itemDesignPrimer" }, () => `
+export const itemDesignPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/itemDesign#itemDesignPrimer",
+    source: "atoms/entities/itemDesign.ts",
+    exportName: "itemDesignPrimer",
+  },
+  () => `
 <game_system_context>
 **ITEM DESIGN**: Items are carriers of history, not loot.
 - Categories (weapons, armor, consumables, keys, artifacts, mundane -- each with its own voice)
@@ -254,7 +266,8 @@ export const itemDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities
 - Curse mechanics (bargain, escalation, cost types, removal)
 - Emotional weight (sentimental vs practical value)
 </game_system_context>
-`);
+`,
+);
 
 export default itemDesign;
 
@@ -262,10 +275,16 @@ export default itemDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const itemDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/itemDesign#itemDesignSkill", source: "atoms/entities/itemDesign.ts", exportName: "itemDesignSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(itemDesign),
+export const itemDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/itemDesign#itemDesignSkill",
+    source: "atoms/entities/itemDesign.ts",
+    exportName: "itemDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(itemDesign),
 
-  quickStart: `
+    quickStart: `
 1. Provenance: Creator → Owners → Current holder (each step adds story)
 2. Condition: Where on pristine → ruined spectrum? Show wear, don't tell.
 3. Hidden Properties: What secrets reveal under conditions?
@@ -274,54 +293,55 @@ export const itemDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms
 6. Lore: Specific history (not "old sword with magic power")
 `.trim(),
 
-  checklist: [
-    "Provenance chain defined (creator, notable owners)?",
-    "Condition shown through specific details (not just 'damaged')?",
-    "Hidden properties have specific trigger conditions?",
-    "Emotional weight defined (who gave it, what it means)?",
-    "If cursed: bargain clear (power vs price)?",
-    "If cursed: escalation pattern defined?",
-    "Lore is specific (not generic 'magical item')?",
-    "Loss consequences considered?",
-  ],
+    checklist: [
+      "Provenance chain defined (creator, notable owners)?",
+      "Condition shown through specific details (not just 'damaged')?",
+      "Hidden properties have specific trigger conditions?",
+      "Emotional weight defined (who gave it, what it means)?",
+      "If cursed: bargain clear (power vs price)?",
+      "If cursed: escalation pattern defined?",
+      "Lore is specific (not generic 'magical item')?",
+      "Loss consequences considered?",
+    ],
 
-  examples: [
-    {
-      scenario: "Provenance Chain",
-      wrong: `lore: "An old sword with magic power."
+    examples: [
+      {
+        scenario: "Provenance Chain",
+        wrong: `lore: "An old sword with magic power."
 (No history, no character.)`,
-      right: `lore: "Forged by Master Yun in the Year of Falling Stars.
+        right: `lore: "Forged by Master Yun in the Year of Falling Stars.
 Quenched in wolf's blood—faint howl when swung.
 Three owners, all died violently.
 Found in father's chest, hidden under old letters."
 (Creator, method, owners, acquisition.)`,
-    },
-    {
-      scenario: "Condition Details",
-      wrong: `"The sword is damaged."
+      },
+      {
+        scenario: "Condition Details",
+        wrong: `"The sword is damaged."
 (Tells, doesn't show.)`,
-      right: `"The edge is chipped from blocking a sword meant for your neck.
+        right: `"The edge is chipped from blocking a sword meant for your neck.
 The grip worn smooth where your father's hand held it for 20 years.
 Three notches on the blade—three kills you remember."
 (Specific damage tells stories.)`,
-    },
-    {
-      scenario: "Emotional Weight",
-      wrong: `emotionalWeight: "It's useful for navigation."
+      },
+      {
+        scenario: "Emotional Weight",
+        wrong: `emotionalWeight: "It's useful for navigation."
 (Practical, not emotional.)`,
-      right: `emotionalWeight: "This compass belonged to your brother,
+        right: `emotionalWeight: "This compass belonged to your brother,
 who never returned from his voyage. You carry it hoping
 it will lead you to answers—or his grave."
 (Specific person, specific loss, specific hope.)`,
-    },
-    {
-      scenario: "Curse Bargain",
-      wrong: `"The sword is cursed and makes you do evil things."
+      },
+      {
+        scenario: "Curse Bargain",
+        wrong: `"The sword is cursed and makes you do evil things."
 (Vague, no agency.)`,
-      right: `"The sword grants perfect clarity in battle—you never hesitate.
+        right: `"The sword grants perfect clarity in battle—you never hesitate.
 But clarity follows you home. You see your wife's small deceptions,
 your children's innocent lies. Every imperfect thing becomes unbearable."
 (Clear power, clear cost, player must choose.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

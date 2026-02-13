@@ -95,7 +95,11 @@ export function createDomainUiActions({
           }
           vfsSession.mergeJson(filePath, { highlight: false });
         } catch (error) {
-          console.warn("[UI] Failed to clear highlight in VFS:", filePath, error);
+          console.warn(
+            "[UI] Failed to clear highlight in VFS:",
+            filePath,
+            error,
+          );
         }
       }
 
@@ -103,7 +107,9 @@ export function createDomainUiActions({
         if (!prev.character) {
           return prev;
         }
-        const prevList = (prev.character as any)[section] as Array<any> | undefined;
+        const prevList = (prev.character as any)[section] as
+          | Array<any>
+          | undefined;
         if (!Array.isArray(prevList) || prevList.length === 0) {
           return prev;
         }

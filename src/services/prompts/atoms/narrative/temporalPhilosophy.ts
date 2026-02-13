@@ -5,8 +5,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const temporalPhilosophy: Atom<void> = defineAtom({ atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophy", source: "atoms/narrative/temporalPhilosophy.ts", exportName: "temporalPhilosophy" }, () => `
+export const temporalPhilosophy: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophy",
+    source: "atoms/narrative/temporalPhilosophy.ts",
+    exportName: "temporalPhilosophy",
+  },
+  () => `
 <temporal_philosophy>
   TIME IS NOT A NUMBER. TIME IS THE FABRIC OF EXISTENCE.
 
@@ -98,15 +103,23 @@ export const temporalPhilosophy: Atom<void> = defineAtom({ atomId: "atoms/narrat
     - Layer 3: What ACTUALLY happened (hidden layer)
   </temporal_layering_in_timeline>
 </temporal_philosophy>
-`);
+`,
+);
 
-export const temporalPhilosophyPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophyPrimer", source: "atoms/narrative/temporalPhilosophy.ts", exportName: "temporalPhilosophyPrimer" }, () => `
+export const temporalPhilosophyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophyPrimer",
+    source: "atoms/narrative/temporalPhilosophy.ts",
+    exportName: "temporalPhilosophyPrimer",
+  },
+  () => `
 <temporal_philosophy>
   THREE TIMES: COSMIC (world clock), NARRATIVE (story rhythm), LIVED (protagonist's perception).
   LAWS: Time irreversible. Cause precedes effect. Things decay. World doesn't pause for player.
   TECHNIQUES: Pause before impact. Skip routine. Echo past. Shadow future.
 </temporal_philosophy>
-`);
+`,
+);
 
 export default temporalPhilosophy;
 
@@ -114,39 +127,46 @@ export default temporalPhilosophy;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const temporalPhilosophySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophySkill", source: "atoms/narrative/temporalPhilosophy.ts", exportName: "temporalPhilosophySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(temporalPhilosophy),
+export const temporalPhilosophySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophySkill",
+    source: "atoms/narrative/temporalPhilosophy.ts",
+    exportName: "temporalPhilosophySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(temporalPhilosophy),
 
-  quickStart: `
+    quickStart: `
 1. Three times: Cosmic (world clock), Narrative (story rhythm), Lived (subjective)
 2. Expand for: combat, revelation, emotional climax
 3. Compress for: travel, recovery, waiting, mundane
 4. Time passes off-screen - world doesn't wait
 `.trim(),
 
-  checklist: [
-    "Tracking cosmic time (world events continue off-screen)?",
-    "Adjusting narrative time (expand/compress appropriately)?",
-    "Rendering lived time (subjective perception under stress)?",
-    "Not freezing world during player inaction?",
-    "Using temporal cues (meanwhile, later, while you slept)?",
-  ],
+    checklist: [
+      "Tracking cosmic time (world events continue off-screen)?",
+      "Adjusting narrative time (expand/compress appropriately)?",
+      "Rendering lived time (subjective perception under stress)?",
+      "Not freezing world during player inaction?",
+      "Using temporal cues (meanwhile, later, while you slept)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Time Expansion",
-      wrong: `"You fight. You win."
+    examples: [
+      {
+        scenario: "Time Expansion",
+        wrong: `"You fight. You win."
 (Combat compressed into summary.)`,
-      right: `"The blade arcs. Time stretches. You see the edge catching light—
+        right: `"The blade arcs. Time stretches. You see the edge catching light—
 the trajectory, the inevitable point of impact..."
 (Critical moment expanded, rendered in detail.)`,
-    },
-    {
-      scenario: "Time Compression",
-      wrong: `"Day 1 of travel... Day 2 of travel... Day 3 of travel..."
+      },
+      {
+        scenario: "Time Compression",
+        wrong: `"Day 1 of travel... Day 2 of travel... Day 3 of travel..."
 (Routine given excessive detail.)`,
-      right: `"The journey took three days. By the end, your boots had worn thin."
+        right: `"The journey took three days. By the end, your boots had worn thin."
 (Mundane compressed, one telling detail.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

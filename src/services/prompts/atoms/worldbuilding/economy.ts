@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const economy: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/economy#economy", source: "atoms/worldbuilding/economy.ts", exportName: "economy" }, () => `
+export const economy: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/economy#economy",
+    source: "atoms/worldbuilding/economy.ts",
+    exportName: "economy",
+  },
+  () => `
 <worldbuilding_context>
 **ECONOMY & SCARCITY (The weight of coins, the ink on ledgers, the sweat of labor)**
 
@@ -84,46 +89,61 @@ Simple model per settlement:
 - What breaks if supply stops for 7 days:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const economyPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/economy#economyPrimer", source: "atoms/worldbuilding/economy.ts", exportName: "economyPrimer" }, () =>
-  `
+export const economyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/economy#economyPrimer",
+    source: "atoms/worldbuilding/economy.ts",
+    exportName: "economyPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **ECONOMY PRIMER**: Money is not flavor — it is the weight of coins in a pocket, the ink drying on a ledger, the silence when someone cannot pay. Use scarcity + friction + dependency to create choices (tolls, bribes, shortages, debt). Avoid flat prices.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const economySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/economy#economySkill", source: "atoms/worldbuilding/economy.ts", exportName: "economySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(economy),
-  quickStart: `
+export const economySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/economy#economySkill",
+    source: "atoms/worldbuilding/economy.ts",
+    exportName: "economySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(economy),
+    quickStart: `
 1) Pick 1 imported necessity (creates dependency)
 2) Pick 1 controlled good (creates law/guild pressure)
 3) Add 1 chokepoint (creates leverage)
 4) Add 1 lender (creates debt threats)
 5) Decide what happens when supply breaks for 7 days
 `.trim(),
-  checklist: [
-    "At least one good is scarce and has a cause.",
-    "A route + chokepoint exists (and someone controls it).",
-    "There is friction (tax/fee/bribe) that affects player plans.",
-    "A lender/credit system exists with real consequences on default.",
-    "A black market exists for at least one prohibited/controlled good.",
-    "Supply failure has a concrete, escalating timeline.",
-  ],
-  examples: [
-    {
-      scenario: "Scarcity that creates play",
-      wrong: `"Everything costs about the same as everywhere else, and money is just flavor."`,
-      right: `"Salt is the town’s blood. The river road washed out—prices tripled in two days.
+    checklist: [
+      "At least one good is scarce and has a cause.",
+      "A route + chokepoint exists (and someone controls it).",
+      "There is friction (tax/fee/bribe) that affects player plans.",
+      "A lender/credit system exists with real consequences on default.",
+      "A black market exists for at least one prohibited/controlled good.",
+      "Supply failure has a concrete, escalating timeline.",
+    ],
+    examples: [
+      {
+        scenario: "Scarcity that creates play",
+        wrong: `"Everything costs about the same as everywhere else, and money is just flavor."`,
+        right: `"Salt is the town’s blood. The river road washed out—prices tripled in two days.
 The dockmaster offers 'emergency access' for a fee. Smugglers offer it cheaper,
 but the customs captain hangs smugglers in the square."`,
-    },
-    {
-      scenario: "Credit with teeth",
-      wrong: `"You borrow money from the bank."`,
-      right: `"The lender writes your name into a ledger kept by the temple.
+      },
+      {
+        scenario: "Credit with teeth",
+        wrong: `"You borrow money from the bank."`,
+        right: `"The lender writes your name into a ledger kept by the temple.
 Miss a payment and you’re 'unclean': guards can detain you at any gate,
 and merchants refuse service unless you pay the purification fee."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

@@ -17,21 +17,14 @@ import {
   removeModelFromTransformersCache,
   resetTransformersEmbeddingEngine,
 } from "../../services/rag/localEmbedding";
-import type {
-  TransformersCacheSummary,
-} from "../../services/rag/localEmbedding/cacheManager";
+import type { TransformersCacheSummary } from "../../services/rag/localEmbedding/cacheManager";
 import type { TransformersModelProgressEvent } from "../../services/rag/localEmbedding/transformersEngine";
 
 interface SettingsEmbeddingProps {
   showToast: (message: string, type: "success" | "error" | "info") => void;
 }
 
-type LocalModelAction =
-  | "prepare"
-  | "test"
-  | "clearModel"
-  | "clearAll"
-  | null;
+type LocalModelAction = "prepare" | "test" | "clearModel" | "clearAll" | null;
 
 interface LocalModelProgressState {
   status: "running" | "ready" | "error";
@@ -111,8 +104,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     config.local?.transformersModel ||
     config.modelId ||
     DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID;
-  const localTransformersModelMeta =
-    getLocalTransformersModelMeta(localTransformersModel);
+  const localTransformersModelMeta = getLocalTransformersModelMeta(
+    localTransformersModel,
+  );
   const localTransformersSelectValue = LOCAL_TRANSFORMERS_MODEL_OPTIONS.some(
     (item) => item.id === localTransformersModel,
   )
@@ -123,18 +117,16 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   );
   const [localModelProgress, setLocalModelProgress] =
     useState<LocalModelProgressState | null>(null);
-  const [localModelTestText, setLocalModelTestText] = useState(
-    "在雾中城堡搜索隐藏线索",
-  );
+  const [localModelTestText, setLocalModelTestText] =
+    useState("在雾中城堡搜索隐藏线索");
   const [localModelTestResult, setLocalModelTestResult] =
     useState<LocalModelTestResult | null>(null);
   const [localModelCacheSummary, setLocalModelCacheSummary] =
     useState<TransformersCacheSummary | null>(null);
   const [isLoadingLocalModelCache, setIsLoadingLocalModelCache] =
     useState(false);
-  const [localModelAction, setLocalModelAction] = useState<LocalModelAction>(
-    null,
-  );
+  const [localModelAction, setLocalModelAction] =
+    useState<LocalModelAction>(null);
 
   useEffect(() => {
     setCustomLocalModelId(localTransformersModel);
@@ -144,8 +136,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   // 支持强制刷新 force 参数
   const fetchModelsForProvider = useCallback(
     async (providerId: string, force = false) => {
-      const runtimeMode = currentSettings.embedding.runtime ?? "local_transformers";
-      if (runtimeMode === "local_transformers" || runtimeMode === "local_tfjs") {
+      const runtimeMode =
+        currentSettings.embedding.runtime ?? "local_transformers";
+      if (
+        runtimeMode === "local_transformers" ||
+        runtimeMode === "local_tfjs"
+      ) {
         return;
       }
 
@@ -218,7 +214,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       if (runtimeMode === "local_transformers") {
         const localConfig = newSettings.embedding.local || {};
         const selectedModel =
-          value || localConfig.transformersModel || DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID;
+          value ||
+          localConfig.transformersModel ||
+          DEFAULT_LOCAL_TRANSFORMERS_MODEL_ID;
         const modelMeta = getLocalTransformersModelMeta(selectedModel);
         newSettings.embedding.local = {
           ...localConfig,
@@ -358,12 +356,15 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       if (status === "ready") {
         message = t("embedding.localModelReady") || "Model runtime is ready.";
       } else if (status === "done") {
-        message = t("embedding.localModelDownloaded") || "Model files downloaded.";
+        message =
+          t("embedding.localModelDownloaded") || "Model files downloaded.";
       } else if (status === "download") {
-        message = t("embedding.localModelDownloading") || "Downloading model files...";
+        message =
+          t("embedding.localModelDownloading") || "Downloading model files...";
       } else if (status === "initiate") {
         message =
-          t("embedding.localModelInitializing") || "Initializing local model runtime...";
+          t("embedding.localModelInitializing") ||
+          "Initializing local model runtime...";
       }
 
       setLocalModelProgress({
@@ -381,7 +382,10 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       const summary = await getTransformersCacheSummary();
       setLocalModelCacheSummary(summary);
     } catch (error) {
-      console.error("[SettingsEmbedding] Failed to load local model cache:", error);
+      console.error(
+        "[SettingsEmbedding] Failed to load local model cache:",
+        error,
+      );
       setLocalModelCacheSummary(null);
     } finally {
       setIsLoadingLocalModelCache(false);
@@ -426,14 +430,17 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       await refreshLocalModelCache();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : String(error || "Unknown error");
+        error instanceof Error
+          ? error.message
+          : String(error || "Unknown error");
       setLocalModelProgress({
         status: "error",
         percent: null,
         message,
       });
       showToast(
-        t("embedding.localModelActionFailed") || "Failed to prepare local model",
+        t("embedding.localModelActionFailed") ||
+          "Failed to prepare local model",
         "error",
       );
     } finally {
@@ -498,7 +505,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       await refreshLocalModelCache();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : String(error || "Unknown error");
+        error instanceof Error
+          ? error.message
+          : String(error || "Unknown error");
       setLocalModelTestResult({
         ok: false,
         dimensions: 0,
@@ -521,15 +530,18 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
 
   const handleClearCurrentModelCache = async () => {
     const confirmMessage =
-      t("embedding.localModelClearConfirm", { model: localTransformersModel }) ||
-      `Clear cached files for model ${localTransformersModel}?`;
+      t("embedding.localModelClearConfirm", {
+        model: localTransformersModel,
+      }) || `Clear cached files for model ${localTransformersModel}?`;
     if (!window.confirm(confirmMessage)) {
       return;
     }
 
     setLocalModelAction("clearModel");
     try {
-      const result = await removeModelFromTransformersCache(localTransformersModel);
+      const result = await removeModelFromTransformersCache(
+        localTransformersModel,
+      );
       await resetTransformersEmbeddingEngine();
       await refreshLocalModelCache();
       showToast(
@@ -538,9 +550,13 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
         "info",
       );
     } catch (error) {
-      console.error("[SettingsEmbedding] Failed clearing current model cache:", error);
+      console.error(
+        "[SettingsEmbedding] Failed clearing current model cache:",
+        error,
+      );
       showToast(
-        t("embedding.localModelActionFailed") || "Failed to update local model cache",
+        t("embedding.localModelActionFailed") ||
+          "Failed to update local model cache",
         "error",
       );
     } finally {
@@ -564,13 +580,18 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       showToast(
         cleared
           ? t("embedding.localModelClearedAll") || "Cleared local model cache"
-          : t("embedding.localModelClearedNone") || "No local model cache to clear",
+          : t("embedding.localModelClearedNone") ||
+              "No local model cache to clear",
         "info",
       );
     } catch (error) {
-      console.error("[SettingsEmbedding] Failed clearing all model cache:", error);
+      console.error(
+        "[SettingsEmbedding] Failed clearing all model cache:",
+        error,
+      );
       showToast(
-        t("embedding.localModelActionFailed") || "Failed to update local model cache",
+        t("embedding.localModelActionFailed") ||
+          "Failed to update local model cache",
         "error",
       );
     } finally {
@@ -656,7 +677,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     const modelId = customLocalModelId.trim();
     if (!modelId) {
       showToast(
-        t("embedding.localModelCustomRequired") || "Please enter a valid model id",
+        t("embedding.localModelCustomRequired") ||
+          "Please enter a valid model id",
         "error",
       );
       return;
@@ -747,10 +769,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
             className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
           >
             <option value="local_transformers">
-              {
-                t("embedding.runtimeLocalTransformers") ||
-                "Local (Transformers.js, default)"
-              }
+              {t("embedding.runtimeLocalTransformers") ||
+                "Local (Transformers.js, default)"}
             </option>
             <option value="local_tfjs">
               {t("embedding.runtimeLocalTfjs") || "Local (TFJS fallback)"}
@@ -764,7 +784,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
         {isLocalRuntime && (
           <div className="border-l-2 border-yellow-500/60 pl-3 py-2 text-xs text-yellow-300 space-y-1">
             <div className="font-bold uppercase tracking-wider">
-              {t("embedding.localWarningTitle") || "Local Embedding (Privacy First)"}
+              {t("embedding.localWarningTitle") ||
+                "Local Embedding (Privacy First)"}
             </div>
             <div>
               {isLocalTransformers
@@ -825,7 +846,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
               <p className="text-[10px] text-theme-muted">
                 {localTransformersModelMeta
                   ? t("embedding.localModelHelp", {
-                      languages: localTransformersModelMeta.languages.join(", "),
+                      languages:
+                        localTransformersModelMeta.languages.join(", "),
                       approxSizeMB: localTransformersModelMeta.approxSizeMB,
                     }) ||
                     `${localTransformersModelMeta.description} Languages: ${localTransformersModelMeta.languages.join(", ")}. Approx ${localTransformersModelMeta.approxSizeMB} MB download.`
@@ -847,7 +869,9 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                 </div>
                 <button
                   onClick={() => void refreshLocalModelCache()}
-                  disabled={isLoadingLocalModelCache || localModelAction !== null}
+                  disabled={
+                    isLoadingLocalModelCache || localModelAction !== null
+                  }
                   className="px-2 py-1 border border-theme-border rounded text-[10px] text-theme-text hover:bg-theme-surface transition-colors disabled:opacity-50"
                 >
                   {isLoadingLocalModelCache
@@ -955,14 +979,17 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                           {t("embedding.localModelCacheSize") || "Size"}
                         </div>
                         <div className="font-mono text-theme-text">
-                          {formatStorageBytes(localModelCacheSummary.totalBytes)}
+                          {formatStorageBytes(
+                            localModelCacheSummary.totalBytes,
+                          )}
                         </div>
                       </div>
                     </div>
 
                     {localModelCacheSummary.models.length === 0 && (
                       <p className="text-[10px] text-theme-muted">
-                        {t("embedding.localModelCacheEmpty") || "No cached model files."}
+                        {t("embedding.localModelCacheEmpty") ||
+                          "No cached model files."}
                       </p>
                     )}
 
@@ -977,7 +1004,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                               {item.modelId}
                             </span>
                             <span className="text-theme-muted whitespace-nowrap">
-                              {item.fileCount} / {formatStorageBytes(item.totalBytes)}
+                              {item.fileCount} /{" "}
+                              {formatStorageBytes(item.totalBytes)}
                             </span>
                           </div>
                         ))}
@@ -1087,7 +1115,8 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
               )}
               {!hasApiKey && isProviderEnabled && (
                 <div className="text-[10px] text-red-500 mt-1 font-bold uppercase tracking-wider">
-                  {t("embedding.noApiKey") || "Provider has no API key configured"}
+                  {t("embedding.noApiKey") ||
+                    "Provider has no API key configured"}
                 </div>
               )}
             </div>
@@ -1382,14 +1411,18 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           {ragStatus && (
             <div className="mt-3 space-y-2">
               <div className="flex justify-between text-[10px] uppercase tracking-wider text-theme-muted">
-                <span>{t("embedding.storageLimitMB") || "RAG Storage Budget (MB)"}</span>
+                <span>
+                  {t("embedding.storageLimitMB") || "RAG Storage Budget (MB)"}
+                </span>
                 <span className="font-mono text-theme-text">
                   {formatStorageBytes(ragStatus.storageLimitBytes || 0)}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
                 <div className="rounded border border-theme-border/60 px-2 py-1">
-                  <div className="text-theme-muted">{t("embedding.storageTierProtected") || "Protected"}</div>
+                  <div className="text-theme-muted">
+                    {t("embedding.storageTierProtected") || "Protected"}
+                  </div>
                   <div className="font-mono text-theme-text">
                     {formatStorageBytes(ragStatus.protectedBytes || 0)}
                   </div>

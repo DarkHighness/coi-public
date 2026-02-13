@@ -63,7 +63,8 @@ const createFakeIndexedDB = () => {
           store.clear();
         }),
       count: () => createRequest(() => store.size),
-      getAll: () => createRequest(() => [...store.values()].map((v) => ({ ...v }))),
+      getAll: () =>
+        createRequest(() => [...store.values()].map((v) => ({ ...v }))),
       index: (indexName: string) => ({
         openCursor: (keyRange?: { value?: string }) => {
           const all = [...store.values()];
@@ -211,7 +212,10 @@ describe("sessionStorage", () => {
     expect(s1?.id).toBe("s1");
 
     const statsBeforeDelete = await sessionStorage.getStats();
-    expect(statsBeforeDelete).toEqual({ sessionCount: 2, totalHistoryItems: 2 });
+    expect(statsBeforeDelete).toEqual({
+      sessionCount: 2,
+      totalHistoryItems: 2,
+    });
 
     await sessionStorage.deleteSession("s1");
     expect(await sessionStorage.getSession("s1")).toBeUndefined();

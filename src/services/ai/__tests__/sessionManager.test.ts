@@ -86,7 +86,10 @@ describe("sessionManager", () => {
     sessionManager.rollbackToLastCheckpoint(session.id);
 
     expect(sessionManager.getHistoryLength(session.id)).toBe(2);
-    expect(sessionManager.getHistory(session.id)).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(sessionManager.getHistory(session.id)).toEqual([
+      { id: 1 },
+      { id: 2 },
+    ]);
   });
 
   it("clears history and cache hint when summary is created", async () => {
@@ -136,7 +139,9 @@ describe("sessionManager", () => {
 
     const session = await sessionManager.getOrCreateSession(configA as any);
 
-    expect(session.nativeHistory).toEqual([{ role: "assistant", content: "stable" }]);
+    expect(session.nativeHistory).toEqual([
+      { role: "assistant", content: "stable" },
+    ]);
 
     await vi.runOnlyPendingTimersAsync();
     expect(storage.saveSession).toHaveBeenCalledWith(
@@ -201,7 +206,9 @@ describe("sessionManager", () => {
   });
 
   it("handles context overflow and manual invalidation even when storage delete fails", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     const session = await sessionManager.getOrCreateSession(configA as any);
 
     sessionManager.appendHistory(session.id, [{ id: "msg-1" }]);
@@ -259,7 +266,9 @@ describe("sessionManager", () => {
   });
 
   it("returns fallback session when storage loading throws", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     storage.getSession.mockRejectedValueOnce(new Error("db offline"));
 
     const session = await sessionManager.getOrCreateSession(configA as any);
@@ -273,14 +282,19 @@ describe("sessionManager", () => {
   });
 
   it("no-ops non-current operations while overflow still requests summary", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
 
     sessionManager.setHistory("missing", [{ id: 1 }]);
     sessionManager.appendHistory("missing", [{ id: 1 }]);
     sessionManager.rollbackHistory("missing", 2);
     sessionManager.rollbackToLastCheckpoint("missing");
     sessionManager.checkpoint("missing");
-    sessionManager.setCacheHint("missing", { protocol: "openai", cacheKey: "x" });
+    sessionManager.setCacheHint("missing", {
+      protocol: "openai",
+      cacheKey: "x",
+    });
     sessionManager.setSystemInstruction("missing", "sys");
     await sessionManager.onSummaryCreated("missing", "sum-1");
     await sessionManager.invalidate("missing", "manual_clear");
@@ -292,13 +306,17 @@ describe("sessionManager", () => {
   });
 
   it("flush skips empty session persistence and recovers from save failures", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     const session = await sessionManager.getOrCreateSession(configA as any);
 
     await sessionManager.flush();
     expect(storage.saveSession).not.toHaveBeenCalled();
 
-    sessionManager.appendHistory(session.id, [{ role: "user", content: "hello" }]);
+    sessionManager.appendHistory(session.id, [
+      { role: "user", content: "hello" },
+    ]);
 
     storage.saveSession.mockRejectedValueOnce(new Error("save failed"));
     await sessionManager.flush();
@@ -314,7 +332,9 @@ describe("sessionManager", () => {
   });
 
   it("initializes once and tolerates storage initialize failures", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     storage.initialize.mockRejectedValueOnce(new Error("no indexeddb"));
 
     await sessionManager.initialize();

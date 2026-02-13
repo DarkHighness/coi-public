@@ -135,7 +135,11 @@ export class InMemoryVfsStore implements VfsStore {
   private indexes = new Map<string, VfsIndex>();
 
   async saveSnapshot(snapshot: VfsSnapshot): Promise<void> {
-    const key = this.snapshotKey(snapshot.saveId, snapshot.forkId, snapshot.turn);
+    const key = this.snapshotKey(
+      snapshot.saveId,
+      snapshot.forkId,
+      snapshot.turn,
+    );
     const storedSnapshot = cloneSnapshot(snapshot);
     this.snapshots.set(key, storedSnapshot);
     this.indexes.set(

@@ -108,7 +108,10 @@ const listSections: Record<
   Exclude<SectionName, "global" | "character" | "outline" | "npcs">,
   { prefix: string; idField: "id" | "chainId" }
 > = {
-  inventory: { prefix: `world/characters/${PLAYER_ID}/inventory`, idField: "id" },
+  inventory: {
+    prefix: `world/characters/${PLAYER_ID}/inventory`,
+    idField: "id",
+  },
   // Note: "npcs" is handled explicitly below (actor bundles under world/characters/*).
   locations: { prefix: "world/locations", idField: "id" },
   quests: { prefix: "world/quests", idField: "id" },
@@ -170,7 +173,8 @@ export const applySectionEdit = (
     const profile = {
       id: PLAYER_ID,
       kind: "player",
-      currentLocation: typeof currentLocation === "string" ? currentLocation : "Unknown",
+      currentLocation:
+        typeof currentLocation === "string" ? currentLocation : "Unknown",
       knownBy: [PLAYER_ID],
       visible: {
         name: typeof name === "string" ? name : "Player",
@@ -205,7 +209,10 @@ export const applySectionEdit = (
     const actorIds = session.list("world/characters");
     for (const actorId of actorIds) {
       if (actorId === PLAYER_ID) continue;
-      const profile = readJson(session, `world/characters/${actorId}/profile.json`) as any;
+      const profile = readJson(
+        session,
+        `world/characters/${actorId}/profile.json`,
+      ) as any;
       if (profile && typeof profile === "object" && profile.kind === "npc") {
         deleteActorBundle(session, actorId);
       }
@@ -263,7 +270,9 @@ export const applySectionEdit = (
       const title = (rule as any).title;
       const content = (rule as any).content;
       const priority =
-        typeof (rule as any).priority === "number" ? (rule as any).priority : 99;
+        typeof (rule as any).priority === "number"
+          ? (rule as any).priority
+          : 99;
       if (typeof id !== "string" || id.trim().length === 0) {
         throw new Error("Missing id for custom rule entry.");
       }

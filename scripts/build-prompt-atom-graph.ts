@@ -86,7 +86,10 @@ function hasExportModifier(node: ts.Node): boolean {
   );
 }
 
-function resolveImportTarget(fromFile: string, specifier: string): string | null {
+function resolveImportTarget(
+  fromFile: string,
+  specifier: string,
+): string | null {
   const candidates: string[] = [];
 
   if (specifier.startsWith("@/")) {
@@ -108,7 +111,9 @@ function resolveImportTarget(fromFile: string, specifier: string): string | null
   return null;
 }
 
-function collectImportBindings(source: ts.SourceFile): Map<string, ImportBinding> {
+function collectImportBindings(
+  source: ts.SourceFile,
+): Map<string, ImportBinding> {
   const bindings = new Map<string, ImportBinding>();
 
   for (const statement of source.statements) {
@@ -198,7 +203,10 @@ function parseAtomDeclarations(
 
     for (const declaration of statement.declarationList.declarations) {
       if (!ts.isIdentifier(declaration.name)) continue;
-      if (!declaration.initializer || !ts.isCallExpression(declaration.initializer)) {
+      if (
+        !declaration.initializer ||
+        !ts.isCallExpression(declaration.initializer)
+      ) {
         continue;
       }
 
@@ -212,7 +220,8 @@ function parseAtomDeclarations(
       const atomId = getObjectLiteralStringProp(metaArg, "atomId");
       if (!atomId) continue;
 
-      const callbackNode = call.arguments.length > 1 ? call.arguments[1] : undefined;
+      const callbackNode =
+        call.arguments.length > 1 ? call.arguments[1] : undefined;
       records.push({
         exportName: declaration.name.text,
         atomId,
@@ -306,7 +315,9 @@ function loadAtomsFileInfo(): Map<string, FileInfo> {
   return infoMap;
 }
 
-function buildDirectAtomExportLookup(fileInfoMap: Map<string, FileInfo>): Map<string, string> {
+function buildDirectAtomExportLookup(
+  fileInfoMap: Map<string, FileInfo>,
+): Map<string, string> {
   const lookup = new Map<string, string>();
 
   for (const [file, info] of fileInfoMap) {
@@ -373,9 +384,10 @@ function collectCalledAtomIds(
   rootNode: ts.Node,
   imports: Map<string, ImportBinding>,
   localAtomIds: Map<string, string>,
-  resolveImportedAtomId: (binding: ImportBinding, propertyName?: string) =>
-    | string
-    | undefined,
+  resolveImportedAtomId: (
+    binding: ImportBinding,
+    propertyName?: string,
+  ) => string | undefined,
 ): string[] {
   const deps = new Set<string>();
 
@@ -443,7 +455,6 @@ function collectCalledAtomIds(
   visit(rootNode);
   return [...deps].sort((a, b) => a.localeCompare(b));
 }
-
 
 function buildAtomNodes(
   fileInfoMap: Map<string, FileInfo>,
@@ -581,7 +592,9 @@ function buildPromptEntries(
     );
 
     const imports = collectImportBindings(source);
-    const localAtomRecords = parseAtomDeclarations(source, { exportedOnly: false });
+    const localAtomRecords = parseAtomDeclarations(source, {
+      exportedOnly: false,
+    });
     const localAtomMap = new Map<string, string>(
       localAtomRecords.map((item) => [item.exportName, item.atomId]),
     );
@@ -687,7 +700,11 @@ function buildGraph(): PromptAtomGraph {
   const fileInfoMap = loadAtomsFileInfo();
   const directLookup = buildDirectAtomExportLookup(fileInfoMap);
   const atomNodes = buildAtomNodes(fileInfoMap, directLookup);
-  const promptEntries = buildPromptEntries(fileInfoMap, directLookup, atomNodes);
+  const promptEntries = buildPromptEntries(
+    fileInfoMap,
+    directLookup,
+    atomNodes,
+  );
 
   return {
     generatedAt: new Date().toISOString(),
@@ -696,7 +713,9 @@ function buildGraph(): PromptAtomGraph {
   };
 }
 
-function stripGeneratedAt(graph: PromptAtomGraph): Omit<PromptAtomGraph, "generatedAt"> {
+function stripGeneratedAt(
+  graph: PromptAtomGraph,
+): Omit<PromptAtomGraph, "generatedAt"> {
   const { generatedAt, ...rest } = graph;
   void generatedAt;
   return rest;

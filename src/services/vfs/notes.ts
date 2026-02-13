@@ -31,7 +31,11 @@ export const buildEntityNotesPath = (entityJsonPath: string): string => {
   ) {
     const parts = normalized.split("/").filter(Boolean);
     // world/characters/<charId>/profile.json
-    if (parts.length === 4 && parts[0] === "world" && parts[1] === "characters") {
+    if (
+      parts.length === 4 &&
+      parts[0] === "world" &&
+      parts[1] === "characters"
+    ) {
       return `world/characters/${parts[2]}/notes.md`;
     }
   }
@@ -43,4 +47,3 @@ export const buildEntityNotesPath = (entityJsonPath: string): string => {
   const withoutExt = normalized.slice(0, -".json".length);
   return `${withoutExt}/notes.md`;
 };
-

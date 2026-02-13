@@ -165,4 +165,3 @@ export const getDirectoryPathCapabilities = (
     deleteReason: del.reason,
   };
 };
-

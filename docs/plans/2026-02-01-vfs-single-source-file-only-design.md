@@ -1,20 +1,24 @@
 # VFS-Only State (Single Source of Truth) Design
 
 ## Goal
+
 Make VFS the **only** canonical state store. All prior domain tools are **hard removed**. The AI and runtime may only read/write game state through file tools (`vfs_*`). The UI renders a **derived view state** from VFS snapshots and never mutates a canonical `GameState`.
 
 ## Non-Goals
+
 - No backward compatibility with existing save formats or tool surfaces.
 - No hybrid DB + VFS support.
 - No partial tool retention; old tools are removed, not hidden.
 
 ## Core Principles
+
 - **Single source of truth:** all canonical state lives under `current/`.
 - **File tools only:** AI uses `vfs_ls/read/write/edit/search/grep/move/delete` exclusively.
 - **Derived UI:** view state is computed from VFS snapshots and is never canonical.
 - **Fork-native:** conversation turns are organized by `forkId` and `turnNumber`.
 
 ## File Layout (Canonical)
+
 ```
 current/
   world/
@@ -36,7 +40,9 @@ current/
 ```
 
 ### `current/conversation/turns/fork-<id>/turn-<n>.json` (Full Snapshot)
+
 Each turn file is self-contained for rendering.
+
 ```
 {
   "turnId": "fork-0/turn-3",
@@ -59,7 +65,9 @@ Each turn file is self-contained for rendering.
 ```
 
 ### `current/conversation/index.json`
+
 Authoritative index for navigation and active turn selection.
+
 ```
 {
   "activeForkId": 0,
@@ -73,21 +81,25 @@ Authoritative index for navigation and active turn selection.
 ```
 
 ## Tooling Changes (Hard Removal)
+
 - Remove all non-VFS tools from definitions, handlers, prompts, and tests.
 - The tool registry registers **only** `vfsHandlers`.
 - `GameDatabase`-based mutations are removed from runtime paths.
 
 ## Runtime & Data Flow
+
 - **Writes:** AI updates state by writing files under `current/` only.
 - **Reads:** UI calls `deriveViewStateFromVfs(snapshot)` to compute render state.
 - **No canonical GameState:** any in-memory state is an ephemeral view model derived from VFS and is fully replaceable.
 
 ## Implications
+
 - Remove or repurpose `GameDatabase` usage.
 - Replace any direct `setGameState` for canonical data with re-derivation from VFS.
 - Update prompts and tests to enforce file-only tool usage.
 
 ## Open Decisions (resolved)
+
 - Conversation storage: per-turn files under `turns/fork-<id>/turn-<n>.json`.
 - Turn file contents: full snapshot.
 - Fork layout: foldered by fork, not flat.

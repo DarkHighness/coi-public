@@ -38,4 +38,3 @@ describe("pickModelMatchedPrompt", () => {
     expect(result).toBe("first matched prompt wins");
   });
 });
-

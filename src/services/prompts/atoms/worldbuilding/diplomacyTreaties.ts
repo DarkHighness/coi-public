@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const diplomacyTreaties: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreaties", source: "atoms/worldbuilding/diplomacyTreaties.ts", exportName: "diplomacyTreaties" }, () => `
+export const diplomacyTreaties: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreaties",
+    source: "atoms/worldbuilding/diplomacyTreaties.ts",
+    exportName: "diplomacyTreaties",
+  },
+  () => `
 <worldbuilding_context>
 **DIPLOMACY & TREATIES (Elegant violence in the language of compromise)**
 
@@ -85,46 +90,61 @@ Keep it legible:
 - One protocol rule (gift/seating/title) that matters:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const diplomacyTreatiesPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesPrimer", source: "atoms/worldbuilding/diplomacyTreaties.ts", exportName: "diplomacyTreatiesPrimer" }, () =>
-  `
+export const diplomacyTreatiesPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesPrimer",
+    source: "atoms/worldbuilding/diplomacyTreaties.ts",
+    exportName: "diplomacyTreatiesPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **DIPLOMACY PRIMER**: Treaties need scope + verification + enforcement + guarantees. Diplomacy creates access gates and breach clocks.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const diplomacyTreatiesSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesSkill", source: "atoms/worldbuilding/diplomacyTreaties.ts", exportName: "diplomacyTreatiesSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(diplomacyTreaties),
-  quickStart: `
+export const diplomacyTreatiesSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesSkill",
+    source: "atoms/worldbuilding/diplomacyTreaties.ts",
+    exportName: "diplomacyTreatiesSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(diplomacyTreaties),
+    quickStart: `
 1) Define the treaty skeleton (parties, scope, concessions)
 2) Pick 1 verification mechanism (inspectors/ledgers/ritual) with limits
 3) Pick 1 guarantee (hostage/escrow/guarantor/oath) with failure mode
 4) Define breach threshold and response ladder (24h/7 days/season)
 5) Put a protocol gate into the scene (audience, gifts, safe conduct)
 `.trim(),
-  checklist: [
-    "Treaty has a clear scope and parties (including who’s excluded).",
-    "Concessions create access gates (routes, ports, archives, audiences).",
-    "Verification exists and is capacity-limited (not omniscient).",
-    "Enforcement is procedural with a timeline (retaliation clocks).",
-    "Guarantee/collateral exists and can fail in a specific way.",
-    "Protocol rules matter (titles, witnesses, gift debt).",
-  ],
-  examples: [
-    {
-      scenario: "Guarantees with teeth",
-      wrong: `"They sign a treaty and everyone trusts it."`,
-      right: `"They sign a ceasefire with inspection rights at two bridges. A third-party city holds
+    checklist: [
+      "Treaty has a clear scope and parties (including who’s excluded).",
+      "Concessions create access gates (routes, ports, archives, audiences).",
+      "Verification exists and is capacity-limited (not omniscient).",
+      "Enforcement is procedural with a timeline (retaliation clocks).",
+      "Guarantee/collateral exists and can fail in a specific way.",
+      "Protocol rules matter (titles, witnesses, gift debt).",
+    ],
+    examples: [
+      {
+        scenario: "Guarantees with teeth",
+        wrong: `"They sign a treaty and everyone trusts it."`,
+        right: `"They sign a ceasefire with inspection rights at two bridges. A third-party city holds
 escrowed grain shipments; breach triggers automatic seizure. The prince’s ward stays at court:
 harm to them is breach, and retaliation starts within 24 hours."`,
-    },
-    {
-      scenario: "Breach as a clock",
-      wrong: `"They break the treaty and war instantly starts."`,
-      right: `"Breach starts with a protest note and an inspection demand. If refused, visas are revoked
+      },
+      {
+        scenario: "Breach as a clock",
+        wrong: `"They break the treaty and war instantly starts."`,
+        right: `"Breach starts with a protest note and an inspection demand. If refused, visas are revoked
 and assets frozen (7 days). Only after those fail do raids and proxy funding begin. Hawks push
 faster escalation; doves try to trade concessions for time."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

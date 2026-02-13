@@ -10,7 +10,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export type CulturalAdaptationInput = {
   language: string;
 };
@@ -18,15 +17,19 @@ export type CulturalAdaptationInput = {
 /**
  * 文化适配指导 - 完整版
  */
-export const culturalAdaptation: Atom<CulturalAdaptationInput> = defineAtom({ atomId: "atoms/cultural/adaptation#culturalAdaptation", source: "atoms/cultural/adaptation.ts", exportName: "culturalAdaptation" }, ({
-  language,
-}) => {
-  const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
-    language,
-  );
+export const culturalAdaptation: Atom<CulturalAdaptationInput> = defineAtom(
+  {
+    atomId: "atoms/cultural/adaptation#culturalAdaptation",
+    source: "atoms/cultural/adaptation.ts",
+    exportName: "culturalAdaptation",
+  },
+  ({ language }) => {
+    const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
+      language,
+    );
 
-  if (isChineseFamily) {
-    return `
+    if (isChineseFamily) {
+      return `
 <cultural_adaptation>
   <critical>
     - **World View & Aesthetics**: For ALL themes (unless explicitly Western/Foreign), you MUST use **Chinese-style backgrounds, philosophy, and social structures**.
@@ -90,15 +93,15 @@ export const culturalAdaptation: Atom<CulturalAdaptationInput> = defineAtom({ at
   </style>
 </cultural_adaptation>
 `;
-  }
+    }
 
-  if (
-    language === "en" ||
-    language === "en-US" ||
-    language === "en-GB" ||
-    language === "English"
-  ) {
-    return `
+    if (
+      language === "en" ||
+      language === "en-US" ||
+      language === "en-GB" ||
+      language === "English"
+    ) {
+      return `
 <cultural_adaptation>
   <critical>
     - **World View**: Adhere strictly to the provided 'World Setting'. If the setting is Eastern/Chinese (e.g., Wuxia, Xianxia), maintain the cultural nuances and translate cultural terms into accessible English (e.g., 'Sect' instead of 'Menpai', 'Cultivation' instead of 'Xiulian'). **IMPORTANT**: This means using PURE ENGLISH—do NOT include the original Chinese/foreign terms alongside the translation (e.g., ❌ "Sect (门派)" is forbidden; ✅ "Sect" is correct).
@@ -130,10 +133,10 @@ export const culturalAdaptation: Atom<CulturalAdaptationInput> = defineAtom({ at
   </style>
 </cultural_adaptation>
 `;
-  }
+    }
 
-  // Fallback for other languages
-  return `<cultural_adaptation>
+    // Fallback for other languages
+    return `<cultural_adaptation>
 You are writing for a **${language}-speaking audience**.
 
 Adapt cultural references appropriately:
@@ -142,30 +145,37 @@ Adapt cultural references appropriately:
 - Social norms should be internally consistent with the world
 - Names should follow conventions appropriate to the setting
 </cultural_adaptation>`;
-});
+  },
+);
 
 /**
  * Cultural adaptation primer (system-prompt safe).
  */
-export const culturalAdaptationPrimer: Atom<CulturalAdaptationInput> = defineAtom({ atomId: "atoms/cultural/adaptation#culturalAdaptationPrimer", source: "atoms/cultural/adaptation.ts", exportName: "culturalAdaptationPrimer" }, ({
-  language,
-}) => {
-  const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
-    language,
-  );
+export const culturalAdaptationPrimer: Atom<CulturalAdaptationInput> =
+  defineAtom(
+    {
+      atomId: "atoms/cultural/adaptation#culturalAdaptationPrimer",
+      source: "atoms/cultural/adaptation.ts",
+      exportName: "culturalAdaptationPrimer",
+    },
+    ({ language }) => {
+      const isChineseFamily = ["zh", "zh-CN", "zh-TW", "Chinese"].includes(
+        language,
+      );
 
-  if (isChineseFamily) {
-    return `<cultural_adaptation>
+      if (isChineseFamily) {
+        return `<cultural_adaptation>
 - Use Chinese names, idioms, and cultural references
 - Describe characters with East Asian features
 - Avoid "translation-ese" patterns
 - Use specific verbs and native phrasing
 </cultural_adaptation>`;
-  }
+      }
 
-  return `<cultural_adaptation>
+      return `<cultural_adaptation>
 Write for ${language} audience. Match cultural references to the setting.
 </cultural_adaptation>`;
-});
+    },
+  );
 
 export default culturalAdaptation;

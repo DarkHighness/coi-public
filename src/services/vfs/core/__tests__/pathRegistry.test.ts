@@ -16,9 +16,13 @@ describe("vfsPathRegistry", () => {
   });
 
   it("classifies outline story plan as editable shared markdown", () => {
-    const result = vfsPathRegistry.classify("current/outline/story_outline/plan.md");
+    const result = vfsPathRegistry.classify(
+      "current/outline/story_outline/plan.md",
+    );
 
-    expect(result.canonicalPath).toBe("shared/narrative/outline/story_outline/plan.md");
+    expect(result.canonicalPath).toBe(
+      "shared/narrative/outline/story_outline/plan.md",
+    );
     expect(result.scope).toBe("shared");
     expect(result.permissionClass).toBe("default_editable");
     expect(result.domain).toBe("narrative");

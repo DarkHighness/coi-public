@@ -230,7 +230,14 @@ export type RuntimeValidationIssueType =
 
 export interface RuntimeValidationIssue {
   type: RuntimeValidationIssueType;
-  feature: "story" | "lore" | "image" | "audio" | "video" | "embedding" | "script";
+  feature:
+    | "story"
+    | "lore"
+    | "image"
+    | "audio"
+    | "video"
+    | "embedding"
+    | "script";
   providerId: string;
   providerName: string;
   error?: string;
@@ -241,8 +248,10 @@ export interface RuntimeValidationResult {
   issues: RuntimeValidationIssue[];
 }
 
-export interface RuntimeActions
-  extends Omit<RuntimeEngineActions, "setGameState"> {
+export interface RuntimeActions extends Omit<
+  RuntimeEngineActions,
+  "setGameState"
+> {
   rag: RuntimeRagActions;
   updateUiState: <K extends keyof UIState>(
     section: K,
@@ -258,18 +267,9 @@ export interface RuntimeActions
     patch: Partial<StorySegment>,
     options?: RuntimeMutationOptions,
   ) => void;
-  setVeoScript: (
-    script: string,
-    options?: RuntimeMutationOptions,
-  ) => void;
-  toggleGodMode: (
-    enable: boolean,
-    options?: RuntimeMutationOptions,
-  ) => void;
-  setUnlockMode: (
-    enable: boolean,
-    options?: RuntimeMutationOptions,
-  ) => void;
+  setVeoScript: (script: string, options?: RuntimeMutationOptions) => void;
+  toggleGodMode: (enable: boolean, options?: RuntimeMutationOptions) => void;
+  setUnlockMode: (enable: boolean, options?: RuntimeMutationOptions) => void;
   applyVfsMutation: (
     nextState: GameState,
     options?: RuntimeMutationOptions,

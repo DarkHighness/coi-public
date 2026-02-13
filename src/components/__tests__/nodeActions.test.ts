@@ -57,7 +57,9 @@ describe("nodeActions", () => {
       },
     });
 
-    expect(actions.map((item) => item.id)).toEqual(["quick_rule_template_here"]);
+    expect(actions.map((item) => item.id)).toEqual([
+      "quick_rule_template_here",
+    ]);
     expect(actions[0]?.labelKey).toBe("stateEditor.quickRuleTemplateHere");
   });
 });

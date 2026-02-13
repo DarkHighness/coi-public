@@ -265,25 +265,25 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                             {faction.name}
                           </span>
                         </span>
-                      {/* Unlocked indicator */}
-                      {faction.unlocked && (
-                        <span
-                          className="text-theme-unlocked"
-                          title={t("unlocked") || "Unlocked"}
-                        >
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
+                        {/* Unlocked indicator */}
+                        {faction.unlocked && (
+                          <span
+                            className="text-theme-unlocked"
+                            title={t("unlocked") || "Unlocked"}
                           >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </span>
-                      )}
+                            <svg
+                              className="w-3.5 h-3.5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-theme-text/80 mt-1 leading-relaxed">
                         <MarkdownText
@@ -304,19 +304,21 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                                   {t("faction.members") || "Members"}
                                 </div>
                                 <ul className="text-xs text-theme-text/80 space-y-1 pl-3 border-l border-theme-divider/60">
-                                  {faction.visible.members.map((member, idx) => (
-                                    <li key={idx}>
-                                      <span className="text-theme-text/90">
-                                        {member.name}
-                                      </span>
-                                      {member.title && (
-                                        <span className="text-theme-text-secondary">
-                                          {" "}
-                                          ({member.title})
+                                  {faction.visible.members.map(
+                                    (member, idx) => (
+                                      <li key={idx}>
+                                        <span className="text-theme-text/90">
+                                          {member.name}
                                         </span>
-                                      )}
-                                    </li>
-                                  ))}
+                                        {member.title && (
+                                          <span className="text-theme-text-secondary">
+                                            {" "}
+                                            ({member.title})
+                                          </span>
+                                        )}
+                                      </li>
+                                    ),
+                                  )}
                                 </ul>
                               </div>
                             )}
@@ -391,19 +393,21 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                                     {t("faction.members") || "Members"}
                                   </span>
                                   <ul className="text-xs text-theme-danger/80 space-y-1 pl-3 border-l border-theme-divider/60">
-                                    {faction.hidden.members.map((member, idx) => (
-                                      <li key={idx}>
-                                        <span className="text-theme-danger/90">
-                                          {member.name}
-                                        </span>
-                                        {member.title && (
-                                          <span className="text-theme-danger/60">
-                                            {" "}
-                                            ({member.title})
+                                    {faction.hidden.members.map(
+                                      (member, idx) => (
+                                        <li key={idx}>
+                                          <span className="text-theme-danger/90">
+                                            {member.name}
                                           </span>
-                                        )}
-                                      </li>
-                                    ))}
+                                          {member.title && (
+                                            <span className="text-theme-danger/60">
+                                              {" "}
+                                              ({member.title})
+                                            </span>
+                                          )}
+                                        </li>
+                                      ),
+                                    )}
                                   </ul>
                                 </div>
                               )}
@@ -424,19 +428,21 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                                     {t("faction.relations") || "Relations"}
                                   </span>
                                   <div className="pl-3 border-l border-theme-divider/60 divide-y divide-theme-divider/60">
-                                    {faction.hidden.relations.map((rel, idx) => (
-                                      <div
-                                        key={idx}
-                                        className="py-1 flex justify-between gap-2"
-                                      >
-                                        <span className="text-theme-danger/80">
-                                          {rel.target}
-                                        </span>
-                                        <span className="text-theme-danger/70">
-                                          {rel.status}
-                                        </span>
-                                      </div>
-                                    ))}
+                                    {faction.hidden.relations.map(
+                                      (rel, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="py-1 flex justify-between gap-2"
+                                        >
+                                          <span className="text-theme-danger/80">
+                                            {rel.target}
+                                          </span>
+                                          <span className="text-theme-danger/70">
+                                            {rel.status}
+                                          </span>
+                                        </div>
+                                      ),
+                                    )}
                                   </div>
                                 </div>
                               )}

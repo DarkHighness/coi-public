@@ -29,7 +29,9 @@ describe("VFS global skills docs", () => {
     expect(faceSlapping).toContain("# Face-Slapping Reversal Theme");
     expect(faceSlapping).toContain("## Anti-patterns");
     expect(faceSlapping).toContain("## Checklist");
-    expect(faceSlapping).toContain("tags: [theme, face-slapping-reversal, shuangwen]");
+    expect(faceSlapping).toContain(
+      "tags: [theme, face-slapping-reversal, shuangwen]",
+    );
     expect(ipFaithful).toContain("# IP Faithful Adaptation Theme");
     expect(ipFaithful).toContain("## When to Use");
     expect(ipFaithful).toContain("## Anti-patterns");
@@ -43,13 +45,17 @@ describe("VFS global skills docs", () => {
     const worldDisposition =
       files["skills/presets/runtime/world-disposition/SKILL.md"]?.content ?? "";
     const maliceProfile =
-      files["skills/presets/runtime/player-malice-profile/SKILL.md"]?.content ?? "";
+      files["skills/presets/runtime/player-malice-profile/SKILL.md"]?.content ??
+      "";
     const maliceIntensity =
-      files["skills/presets/runtime/player-malice-intensity/SKILL.md"]?.content ?? "";
+      files["skills/presets/runtime/player-malice-intensity/SKILL.md"]
+        ?.content ?? "";
 
     expect(narrativeStyle).toContain("# Preset Narrative Style Runtime");
     expect(worldDisposition).toContain("# Preset World Disposition Runtime");
     expect(maliceProfile).toContain("# Preset Player Malice Profile Runtime");
-    expect(maliceIntensity).toContain("# Preset Player Malice Intensity Runtime");
+    expect(maliceIntensity).toContain(
+      "# Preset Player Malice Intensity Runtime",
+    );
   });
 });

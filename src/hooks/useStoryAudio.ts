@@ -59,8 +59,9 @@ export const useStoryAudio = (
 
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext ||
-          (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        audioContextRef.current = new (
+          window.AudioContext || (window as any).webkitAudioContext
+        )({ sampleRate: 24000 });
         gainNodeRef.current = audioContextRef.current.createGain();
         gainNodeRef.current.connect(audioContextRef.current.destination);
       }

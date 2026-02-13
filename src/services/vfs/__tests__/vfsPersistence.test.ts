@@ -36,7 +36,14 @@ describe("VFS persistence", () => {
     session.writeFile("world/global.json", "{}", "application/json");
     session.writeFile(
       "world/theme_config.json",
-      JSON.stringify({ name: "T", narrativeStyle: "", worldSetting: "", backgroundTemplate: "", example: "", isRestricted: false }),
+      JSON.stringify({
+        name: "T",
+        narrativeStyle: "",
+        worldSetting: "",
+        backgroundTemplate: "",
+        example: "",
+        isRestricted: false,
+      }),
       "application/json",
     );
     session.writeFile(
@@ -56,7 +63,9 @@ describe("VFS persistence", () => {
     const paths = Object.keys(loaded?.files ?? {});
 
     expect(paths).toContain("turns/fork-0/turn-2/world/global.json");
-    expect(paths.some((path) => path.includes("world/theme_config.json"))).toBe(false);
+    expect(paths.some((path) => path.includes("world/theme_config.json"))).toBe(
+      false,
+    );
     expect(paths.some((path) => path.includes("custom_rules/"))).toBe(false);
   });
 
@@ -110,9 +119,9 @@ describe("VFS persistence", () => {
     expect(restored.readFile("custom_rules/00-core/RULES.md")).toBeNull();
 
     applySharedMutableStateToSession(restored, shared);
-    expect(restored.readFile("custom_rules/00-core/RULES.md")?.content).toContain(
-      "What This Category Is",
-    );
+    expect(
+      restored.readFile("custom_rules/00-core/RULES.md")?.content,
+    ).toContain("What This Category Is");
   });
 
   it("extracts shared mutable files from legacy snapshots for migration", () => {

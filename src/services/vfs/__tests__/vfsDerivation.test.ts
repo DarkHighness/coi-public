@@ -166,7 +166,9 @@ describe("deriveGameStateFromVfs", () => {
       }),
     };
 
-    expect(() => deriveGameStateFromVfs(files)).toThrow(/SAVE_INCOMPATIBLE_LAYOUT/);
+    expect(() => deriveGameStateFromVfs(files)).toThrow(
+      /SAVE_INCOMPATIBLE_LAYOUT/,
+    );
   });
 
   it("derives summary state and restores summary markers", () => {
@@ -246,9 +248,9 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.lastSummarizedIndex).toBe(3);
 
     // Summary toIndex=2 => marker prefers segmentIdx=3 (the model node for turn-1).
-    expect(state.nodes["model-fork-0/turn-1"]?.summarySnapshot?.displayText).toBe(
-      "Summary",
-    );
+    expect(
+      state.nodes["model-fork-0/turn-1"]?.summarySnapshot?.displayText,
+    ).toBe("Summary");
   });
 
   it("derives conversation nodes from turn files", () => {

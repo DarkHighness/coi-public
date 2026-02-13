@@ -116,9 +116,13 @@ export const notifySessionSummaryCreated = async (
   // Now we can safely call onSummaryCreated
   await sessionManager.onSummaryCreated(storySession.id, String(summaryId));
   vfsSession.setActiveForkId(forkId);
-  writeSessionHistoryJsonl(vfsSession, sessionManager.getHistory(storySession.id), {
-    operation: "finish_commit",
-  });
+  writeSessionHistoryJsonl(
+    vfsSession,
+    sessionManager.getHistory(storySession.id),
+    {
+      operation: "finish_commit",
+    },
+  );
   await rebuildSessionIfPresent(aiSettings, slotId, forkId, "summary");
   await rebuildSessionIfPresent(aiSettings, slotId, forkId, "cleanup");
   vfsSession.beginReadEpoch("summary_created");
@@ -254,7 +258,10 @@ export const handleSummarization = async (
 }> => {
   const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
 
-  const committedContextNodes = deriveHistory(gameState.nodes, effectiveParentId);
+  const committedContextNodes = deriveHistory(
+    gameState.nodes,
+    effectiveParentId,
+  );
   let contextNodes = [...committedContextNodes];
 
   // Create temp user node for context calculation (only if not forced or if we have an action)
@@ -324,7 +331,10 @@ export const handleSummarization = async (
       });
       return resolution.value;
     } catch (error) {
-      console.warn("[Summarization] Failed to resolve model context length", error);
+      console.warn(
+        "[Summarization] Failed to resolve model context length",
+        error,
+      );
       const resolution = resolveModelContextWindowTokens({
         settings: aiSettings,
         providerId: aiSettings.story.providerId,
@@ -350,7 +360,8 @@ export const handleSummarization = async (
       effectiveParentId && gameState.nodes[effectiveParentId]
         ? gameState.nodes[effectiveParentId]
         : null;
-    const parentUsage = parentNode?.role === "model" ? parentNode.usage : undefined;
+    const parentUsage =
+      parentNode?.role === "model" ? parentNode.usage : undefined;
     const lastPromptTokens =
       typeof parentUsage?.promptTokens === "number" &&
       parentUsage.promptTokens > 0

@@ -42,9 +42,10 @@ const normalizeCustomRulesFileSet = (files: VfsFileMap): string => {
       const path = normalizeVfsPath(file.path);
       return {
         path,
-        hash: typeof file.hash === "string" && file.hash.trim()
-          ? file.hash
-          : hashContent(file.content),
+        hash:
+          typeof file.hash === "string" && file.hash.trim()
+            ? file.hash
+            : hashContent(file.content),
       };
     })
     .filter((entry) => isCustomRulesContentPath(entry.path))
@@ -172,7 +173,8 @@ export const syncCustomRulesAckState = (
     customRulesHash: digest.customRulesHash,
   };
 
-  const hasCustomRulesChange = previous.customRulesHash !== digest.customRulesHash;
+  const hasCustomRulesChange =
+    previous.customRulesHash !== digest.customRulesHash;
   if (hasCustomRulesChange) {
     next.pendingHash = digest.effectiveHash;
     next.pendingReason = "customRules";
@@ -193,10 +195,10 @@ export const syncCustomRulesAckState = (
 };
 
 const readCurrentGameTime = (session: VfsSession): string => {
-  const raw = readJson(
-    session,
-    "world/global.json",
-  ) as Record<string, unknown> | null;
+  const raw = readJson(session, "world/global.json") as Record<
+    string,
+    unknown
+  > | null;
   const value = raw?.time;
   if (typeof value === "string" && value.trim()) {
     return value.trim();
@@ -228,10 +230,7 @@ const appendRetconTimelineEvent = (
     hidden: {
       trueDescription: `Custom rules retcon acknowledged. hash=${pendingHash}, reason=${reasonText}.`,
       trueCausedBy: "system:custom_rules",
-      consequences: [
-        `ack:${pendingHash}`,
-        `reason:${reasonText}`,
-      ],
+      consequences: [`ack:${pendingHash}`, `reason:${reasonText}`],
     },
   };
 
@@ -295,8 +294,7 @@ export const applyCustomRulesRetconAck = (
     return {
       ok: false,
       code: "INVALID_DATA",
-      message:
-        `[ERROR: RETCON_ACK_HASH_MISMATCH] Expected retconAck.hash="${state.pendingHash}", got "${retconAck.hash}".`,
+      message: `[ERROR: RETCON_ACK_HASH_MISMATCH] Expected retconAck.hash="${state.pendingHash}", got "${retconAck.hash}".`,
     };
   }
 

@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const infrastructure: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/infrastructure#infrastructure", source: "atoms/worldbuilding/infrastructure.ts", exportName: "infrastructure" }, () => `
+export const infrastructure: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/infrastructure#infrastructure",
+    source: "atoms/worldbuilding/infrastructure.ts",
+    exportName: "infrastructure",
+  },
+  () => `
 <worldbuilding_context>
 **INFRASTRUCTURE & SERVICES (Capacity + Bottlenecks)**
 
@@ -78,44 +83,59 @@ Play hooks:
 - Who controls access (permits/rationing):
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const infrastructurePrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/infrastructure#infrastructurePrimer", source: "atoms/worldbuilding/infrastructure.ts", exportName: "infrastructurePrimer" }, () =>
-  `
+export const infrastructurePrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/infrastructure#infrastructurePrimer",
+    source: "atoms/worldbuilding/infrastructure.ts",
+    exportName: "infrastructurePrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **INFRA PRIMER**: Define capacity + bottlenecks + controllers. Infrastructure failures should cascade into choices and consequences.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const infrastructureSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/infrastructure#infrastructureSkill", source: "atoms/worldbuilding/infrastructure.ts", exportName: "infrastructureSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(infrastructure),
-  quickStart: `
+export const infrastructureSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/infrastructure#infrastructureSkill",
+    source: "atoms/worldbuilding/infrastructure.ts",
+    exportName: "infrastructureSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(infrastructure),
+    quickStart: `
 1) Pick 2 critical services (water + power is enough)
 2) Give each a bottleneck controller (who rations, who profits)
 3) Define a failure mode (contamination, blackout, strike)
 4) Decide who gets priority (and who riots)
 `.trim(),
-  checklist: [
-    "At least two services are defined (water/power/comms/transit/health).",
-    "Each service has capacity and a bottleneck (single point of failure).",
-    "A controller exists (permits/rationing/priority rules).",
-    "Failure modes create cascading consequences.",
-    "Maintenance/payment incentives exist (who pays, who skims).",
-  ],
-  examples: [
-    {
-      scenario: "Infrastructure as a target",
-      wrong: `"The city is advanced and has infrastructure."`,
-      right: `"The district runs on one pumping station. The union controls access to the maintenance tunnel.
+    checklist: [
+      "At least two services are defined (water/power/comms/transit/health).",
+      "Each service has capacity and a bottleneck (single point of failure).",
+      "A controller exists (permits/rationing/priority rules).",
+      "Failure modes create cascading consequences.",
+      "Maintenance/payment incentives exist (who pays, who skims).",
+    ],
+    examples: [
+      {
+        scenario: "Infrastructure as a target",
+        wrong: `"The city is advanced and has infrastructure."`,
+        right: `"The district runs on one pumping station. The union controls access to the maintenance tunnel.
 If the pump fails, the lower blocks flood and sewage backs up. A rival offers you a key—
 for a favor. Now the pump is leverage."`,
-    },
-    {
-      scenario: "Priority rules create conflict",
-      wrong: `"A blackout happens."`,
-      right: `"Rolling blackout: Corp Tower stays lit. Hospital gets 30 minutes per hour.
+      },
+      {
+        scenario: "Priority rules create conflict",
+        wrong: `"A blackout happens."`,
+        right: `"Rolling blackout: Corp Tower stays lit. Hospital gets 30 minutes per hour.
 The slums get none. Generators require ration cards. A black-market broker sells cards,
 but the security chief tracks serial numbers."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

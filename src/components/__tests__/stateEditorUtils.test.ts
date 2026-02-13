@@ -188,7 +188,11 @@ describe("stateEditorUtils", () => {
     const session = new VfsSession();
     const baseState = { base: true } as any;
 
-    session.writeFile("sandbox/source/docs/README.md", "# Docs", "text/markdown");
+    session.writeFile(
+      "sandbox/source/docs/README.md",
+      "# Docs",
+      "text/markdown",
+    );
     session.writeFile("sandbox/source/docs/file.md", "F", "text/markdown");
     session.writeFile("sandbox/target/README.md", "# Target", "text/markdown");
 
@@ -246,7 +250,10 @@ describe("stateEditorUtils", () => {
     expect(() =>
       applyVfsBatchMoveFiles({
         session,
-        sourcePaths: ["sandbox/source-a/shared.md", "sandbox/source-b/shared.md"],
+        sourcePaths: [
+          "sandbox/source-a/shared.md",
+          "sandbox/source-b/shared.md",
+        ],
         targetDirectory: "sandbox/target",
         baseState,
       }),
@@ -272,5 +279,4 @@ describe("stateEditorUtils", () => {
       }),
     ).toThrow("Source file not found: sandbox/source/missing.md");
   });
-
 });

@@ -10,7 +10,8 @@ import {
   trackChangedEntity,
 } from "../toolHandlerRegistry";
 
-const makeUniqueName = (seed: string) => `${seed}_${Math.random().toString(36).slice(2, 9)}`;
+const makeUniqueName = (seed: string) =>
+  `${seed}_${Math.random().toString(36).slice(2, 9)}`;
 
 describe("toolHandlerRegistry", () => {
   it("registers handler by tool definition and dispatches", () => {
@@ -21,7 +22,10 @@ describe("toolHandlerRegistry", () => {
       parameters: z.object({ value: z.string() }),
     } as any;
 
-    registerToolHandler(tool, (args) => ({ success: true, echoed: args.value }));
+    registerToolHandler(tool, (args) => ({
+      success: true,
+      echoed: args.value,
+    }));
 
     expect(hasHandler(toolName)).toBe(true);
     expect(getRegisteredToolNames()).toContain(toolName);
@@ -110,9 +114,21 @@ describe("toolHandlerRegistry", () => {
   it("tracks changed entities only on successful id-bearing result", () => {
     const changed = new Map<string, string>();
 
-    trackChangedEntity(changed, { success: true, data: { id: "npc:1" } }, "npc");
-    trackChangedEntity(changed, { success: true, data: { name: "NoId" } }, "npc");
-    trackChangedEntity(changed, { success: false, data: { id: "npc:2" } }, "npc");
+    trackChangedEntity(
+      changed,
+      { success: true, data: { id: "npc:1" } },
+      "npc",
+    );
+    trackChangedEntity(
+      changed,
+      { success: true, data: { name: "NoId" } },
+      "npc",
+    );
+    trackChangedEntity(
+      changed,
+      { success: false, data: { id: "npc:2" } },
+      "npc",
+    );
 
     expect(Array.from(changed.entries())).toEqual([["npc:1", "npc"]]);
   });

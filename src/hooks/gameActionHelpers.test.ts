@@ -69,7 +69,9 @@ const createUserNode = (
   ending: "continue",
 });
 
-const createMinimalGameState = (overrides: Partial<GameState> = {}): GameState => {
+const createMinimalGameState = (
+  overrides: Partial<GameState> = {},
+): GameState => {
   const userNode = createUserNode();
   const base: GameState = {
     nodes: { [userNode.id]: userNode },
@@ -168,7 +170,10 @@ beforeEach(() => {
     instance: { id: "provider-1", protocol: "openai" },
     modelId: "model-1",
   });
-  getProviderInstanceMock.mockReturnValue({ id: "provider-1", protocol: "openai" });
+  getProviderInstanceMock.mockReturnValue({
+    id: "provider-1",
+    protocol: "openai",
+  });
   sessionManagerMock.getOrCreateSession.mockResolvedValue({
     id: "slot-1:0:provider-1:model-1",
   });

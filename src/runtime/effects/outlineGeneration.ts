@@ -1,6 +1,9 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import type { TFunction } from "i18next";
-import { generateStoryOutlinePhased, type OutlinePhaseProgress } from "../../services/aiService";
+import {
+  generateStoryOutlinePhased,
+  type OutlinePhaseProgress,
+} from "../../services/aiService";
 import { writeOutlineProgress } from "../../services/vfs/outline";
 import type {
   AISettings,

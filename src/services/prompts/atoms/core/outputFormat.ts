@@ -5,19 +5,21 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface OutputFormatInput {
   language: string;
   finishToolName?: string;
 }
 
-export const outputFormat: Atom<OutputFormatInput> = defineAtom({ atomId: "atoms/core/outputFormat#outputFormat", source: "atoms/core/outputFormat.ts", exportName: "outputFormat" }, ({
-  language,
-  finishToolName,
-}) => {
-  void finishToolName;
+export const outputFormat: Atom<OutputFormatInput> = defineAtom(
+  {
+    atomId: "atoms/core/outputFormat#outputFormat",
+    source: "atoms/core/outputFormat.ts",
+    exportName: "outputFormat",
+  },
+  ({ language, finishToolName }) => {
+    void finishToolName;
 
-  return `
+    return `
 <output_format>
   <critical>**YOU MUST USE VFS TOOLS**</critical>
 
@@ -57,4 +59,5 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom({ atomId: "atoms
   </rules>
 </output_format>
 `;
-});
+  },
+);

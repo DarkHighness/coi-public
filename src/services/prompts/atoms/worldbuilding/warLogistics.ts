@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const warLogistics: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/warLogistics#warLogistics", source: "atoms/worldbuilding/warLogistics.ts", exportName: "warLogistics" }, () => `
+export const warLogistics: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/warLogistics#warLogistics",
+    source: "atoms/worldbuilding/warLogistics.ts",
+    exportName: "warLogistics",
+  },
+  () => `
 <worldbuilding_context>
 **WAR LOGISTICS & CAMPAIGN PRESSURE (Supply lines are gameplay)**
 
@@ -107,43 +112,58 @@ Make at least one of these a *plot clock*.
 - Insurgency method:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const warLogisticsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/warLogistics#warLogisticsPrimer", source: "atoms/worldbuilding/warLogistics.ts", exportName: "warLogisticsPrimer" }, () =>
-  `
+export const warLogisticsPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/warLogistics#warLogisticsPrimer",
+    source: "atoms/worldbuilding/warLogistics.ts",
+    exportName: "warLogisticsPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **WAR LOGISTICS PRIMER**: Model war via supply lines + clocks + occupation cost. Make depots, routes, and chokepoints the real objectives.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const warLogisticsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/warLogistics#warLogisticsSkill", source: "atoms/worldbuilding/warLogistics.ts", exportName: "warLogisticsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(warLogistics),
-  quickStart: `
+export const warLogisticsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/warLogistics#warLogisticsSkill",
+    source: "atoms/worldbuilding/warLogistics.ts",
+    exportName: "warLogisticsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(warLogistics),
+    quickStart: `
 1) Define supply origin + route + chokepoint
 2) Pick one campaign clock (rations/ammo/morale/politics)
 3) Define one civilian pressure effect (prices/refugees/disease)
 4) Define one occupation rule and one insurgency method
 `.trim(),
-  checklist: [
-    "Supply line has origin, route, chokepoint, and vulnerability.",
-    "A campaign clock exists and forces decisions.",
-    "Civilian markets react (scarcity, riots, corruption).",
-    "Occupation has explicit costs and policing rules.",
-    "Insurgency/sabotage is plausible and targeted at infrastructure.",
-  ],
-  examples: [
-    {
-      scenario: "Chokepoint as objective",
-      wrong: `"The army marches and wins battles."`,
-      right: `"The army can fight—but only while the river barges arrive.
+    checklist: [
+      "Supply line has origin, route, chokepoint, and vulnerability.",
+      "A campaign clock exists and forces decisions.",
+      "Civilian markets react (scarcity, riots, corruption).",
+      "Occupation has explicit costs and policing rules.",
+      "Insurgency/sabotage is plausible and targeted at infrastructure.",
+    ],
+    examples: [
+      {
+        scenario: "Chokepoint as objective",
+        wrong: `"The army marches and wins battles."`,
+        right: `"The army can fight—but only while the river barges arrive.
 Take the lock station and their rations rot upstream. Suddenly the 'battle' is a night raid on a dock."`,
-    },
-    {
-      scenario: "Occupation cost creates pressure",
-      wrong: `"You occupy the city and it's yours."`,
-      right: `"Occupation means curfews, permits, and patrols. Every patrol is a target.
+      },
+      {
+        scenario: "Occupation cost creates pressure",
+        wrong: `"You occupy the city and it's yours."`,
+        right: `"Occupation means curfews, permits, and patrols. Every patrol is a target.
 The city runs on one pumping station—sabotage it and cholera spreads.
 Now governance is logistics."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

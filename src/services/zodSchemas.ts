@@ -389,7 +389,10 @@ export const locationViewModelSchema = locationSchema.extend({
     .nullish()
     .describe("Per-actor view: whether hidden truth is revealed."),
   unlockReason: z.string().nullish().describe("Per-actor view: unlock reason."),
-  discoveredAt: z.number().nullish().describe("Per-actor view: discovered time."),
+  discoveredAt: z
+    .number()
+    .nullish()
+    .describe("Per-actor view: discovered time."),
   highlight: z.boolean().nullish().describe("UI-only highlight flag."),
   lastAccess: accessTimestampSchema
     .nullish()
@@ -703,7 +706,10 @@ export const knowledgeEntrySchema = z.object({
  */
 export const knowledgeEntryViewModelSchema = knowledgeEntrySchema.extend({
   // Per-actor view fields
-  discoveredAt: z.string().nullish().describe("Per-actor view: discovered time."),
+  discoveredAt: z
+    .string()
+    .nullish()
+    .describe("Per-actor view: discovered time."),
   unlocked: z
     .boolean()
     .nullish()
@@ -750,7 +756,11 @@ export const timelineEventHiddenSchema = z.object({
 
 /** 完整时间线事件 Schema */
 export const timelineEventSchema = z.object({
-  id: z.string().describe("Unique ID for the event. Use descriptive snake_case (e.g., great_flood_start, ancient_pact_sealing)."),
+  id: z
+    .string()
+    .describe(
+      "Unique ID for the event. Use descriptive snake_case (e.g., great_flood_start, ancient_pact_sealing).",
+    ),
   knownBy: knownBySchema.describe(
     "Existence visibility: which actors know this timeline event exists.",
   ),
@@ -981,15 +991,14 @@ export const factionViewModelSchema = factionSchema.extend({
  */
 export const actorEntityViewBaseSchema = z
   .object({
-    entityId: z.string().describe("Canonical entity id (e.g. 'quest:foo' -> 'foo')."),
+    entityId: z
+      .string()
+      .describe("Canonical entity id (e.g. 'quest:foo' -> 'foo')."),
     unlocked: z
       .boolean()
       .nullish()
       .describe("Per-actor revelation: whether hidden truth is revealed."),
-    unlockReason: z
-      .string()
-      .nullish()
-      .describe("REQUIRED when unlocked=true."),
+    unlockReason: z.string().nullish().describe("REQUIRED when unlocked=true."),
     evidence: z
       .array(z.string())
       .nullish()
@@ -1023,59 +1032,73 @@ export const questObjectiveStateSchema = z
   })
   .strict();
 
-export const questViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
-  .extend({
-    status: questStatusSchema.describe("Per-actor quest status."),
-    objectiveState: z.array(questObjectiveStateSchema).nullish(),
-    acceptedAtGameTime: z.string().nullish(),
-    completedAtGameTime: z.string().nullish(),
-  })
-  .strict());
+export const questViewSchema = withUnlockReasonRequirement(
+  actorEntityViewBaseSchema
+    .extend({
+      status: questStatusSchema.describe("Per-actor quest status."),
+      objectiveState: z.array(questObjectiveStateSchema).nullish(),
+      acceptedAtGameTime: z.string().nullish(),
+      completedAtGameTime: z.string().nullish(),
+    })
+    .strict(),
+);
 
-export const knowledgeEntryViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
-  .extend({
-    discoveredAtGameTime: z.string().nullish(),
-    beliefSummary: z
-      .string()
-      .nullish()
-      .describe("Per-actor current understanding (may be wrong but coherent)."),
-  })
-  .strict());
+export const knowledgeEntryViewSchema = withUnlockReasonRequirement(
+  actorEntityViewBaseSchema
+    .extend({
+      discoveredAtGameTime: z.string().nullish(),
+      beliefSummary: z
+        .string()
+        .nullish()
+        .describe(
+          "Per-actor current understanding (may be wrong but coherent).",
+        ),
+    })
+    .strict(),
+);
 
-export const timelineEventViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
-  .extend({
-    rememberedAs: z
-      .string()
-      .nullish()
-      .describe("Per-actor remembered narrative (may be biased)."),
-    suspicions: z
-      .array(z.string())
-      .nullish()
-      .describe("Per-actor suspicion links (entity ids only)."),
-  })
-  .strict());
+export const timelineEventViewSchema = withUnlockReasonRequirement(
+  actorEntityViewBaseSchema
+    .extend({
+      rememberedAs: z
+        .string()
+        .nullish()
+        .describe("Per-actor remembered narrative (may be biased)."),
+      suspicions: z
+        .array(z.string())
+        .nullish()
+        .describe("Per-actor suspicion links (entity ids only)."),
+    })
+    .strict(),
+);
 
-export const locationViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
-  .extend({
-    isVisited: z.boolean().nullish(),
-    visitedCount: z.number().int().nonnegative().nullish(),
-    discoveredAtGameTime: z.string().nullish(),
-  })
-  .strict());
+export const locationViewSchema = withUnlockReasonRequirement(
+  actorEntityViewBaseSchema
+    .extend({
+      isVisited: z.boolean().nullish(),
+      visitedCount: z.number().int().nonnegative().nullish(),
+      discoveredAtGameTime: z.string().nullish(),
+    })
+    .strict(),
+);
 
-export const factionViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
-  .extend({
-    standing: z.number().int().min(-100).max(100).nullish(),
-    standingTag: z.string().nullish(),
-  })
-  .strict());
+export const factionViewSchema = withUnlockReasonRequirement(
+  actorEntityViewBaseSchema
+    .extend({
+      standing: z.number().int().min(-100).max(100).nullish(),
+      standingTag: z.string().nullish(),
+    })
+    .strict(),
+);
 
-export const causalChainViewSchema = withUnlockReasonRequirement(actorEntityViewBaseSchema
-  .extend({
-    investigationNotes: z.string().nullish(),
-    linkedEventIds: z.array(z.string()).nullish(),
-  })
-  .strict());
+export const causalChainViewSchema = withUnlockReasonRequirement(
+  actorEntityViewBaseSchema
+    .extend({
+      investigationNotes: z.string().nullish(),
+      linkedEventIds: z.array(z.string()).nullish(),
+    })
+    .strict(),
+);
 
 // ============================================================================
 // 角色属性 Schemas
@@ -1235,7 +1258,9 @@ export const relationAttitudeSchema = relationBaseSchema.extend({
       observation: z
         .string()
         .nullish()
-        .describe("NPC's observations of the protagonist's behavior/knowledge."),
+        .describe(
+          "NPC's observations of the protagonist's behavior/knowledge.",
+        ),
       ambivalence: z
         .string()
         .nullish()
@@ -1291,13 +1316,14 @@ export const actorVisibleSchema = z.object({
   title: z.string().nullish().describe("Surface title/role (player-facing)."),
   age: z.string().nullish().describe("Apparent age (player-facing)."),
   profession: z.string().nullish().describe("Surface profession/role."),
-  background: z.string().nullish().describe("Surface background (player-facing)."),
+  background: z
+    .string()
+    .nullish()
+    .describe("Surface background (player-facing)."),
   race: z
     .string()
     .nullish()
-    .describe(
-      "Race/species + gender combined when relevant (player-facing).",
-    ),
+    .describe("Race/species + gender combined when relevant (player-facing)."),
   attributes: z
     .array(characterAttributeSchema)
     .nullish()
@@ -1322,7 +1348,10 @@ export const actorVisibleSchema = z.object({
 
 export const actorHiddenSchema = z.object({
   trueName: z.string().nullish().describe("True name (GM truth)."),
-  realPersonality: z.string().nullish().describe("True personality (GM truth)."),
+  realPersonality: z
+    .string()
+    .nullish()
+    .describe("True personality (GM truth)."),
   realMotives: z.string().nullish().describe("True motives (GM truth)."),
   routine: z.string().nullish().describe("Daily routine (GM truth)."),
   currentThought: z.string().nullish().describe("Inner monologue (GM truth)."),
@@ -1356,11 +1385,11 @@ export const actorProfileSchema = z.object({
     .describe(
       "AI DECISION: Set true only when the player's view is allowed to see hidden fields for this actor.",
     ),
-  unlockReason: z
+  unlockReason: z.string().nullish().describe("REQUIRED when unlocked=true."),
+  icon: z
     .string()
     .nullish()
-    .describe("REQUIRED when unlocked=true."),
-  icon: z.string().nullish().describe("A single emoji representing this actor."),
+    .describe("A single emoji representing this actor."),
   highlight: z.boolean().nullish().describe("INVISIBLE to AI."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
@@ -1410,10 +1439,19 @@ export const placeholderSchema = z.object({
 export const characterProfileSchema = z.object({
   name: z.string().describe("Name of the protagonist."),
   title: z.string().describe("Starting Class/Role/Title."),
-  status: z.string().nullish().describe("Initial condition (e.g. Healthy, Amnesiac)."),
-  attributes: z.array(characterAttributeSchema).default([]).describe("Character attributes."),
+  status: z
+    .string()
+    .nullish()
+    .describe("Initial condition (e.g. Healthy, Amnesiac)."),
+  attributes: z
+    .array(characterAttributeSchema)
+    .default([])
+    .describe("Character attributes."),
   appearance: z.string().nullish().describe("Detailed physical appearance."),
-  age: z.string().nullish().describe("Character's age (e.g. '25', 'Unknown', 'Ancient')."),
+  age: z
+    .string()
+    .nullish()
+    .describe("Character's age (e.g. '25', 'Unknown', 'Ancient')."),
   profession: z.string().nullish().describe("Character's occupation or class."),
   background: z.string().nullish().describe("Brief life story and background."),
   race: z
@@ -1585,7 +1623,8 @@ export const worldInfoViewSchema = z
     if (value.worldSettingUnlocked && !value.worldSettingUnlockReason) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "worldSettingUnlockReason is required when worldSettingUnlocked=true",
+        message:
+          "worldSettingUnlockReason is required when worldSettingUnlocked=true",
         path: ["worldSettingUnlockReason"],
       });
     }
@@ -1612,10 +1651,7 @@ export const actorBundleSchema = z.object({
     .array(conditionSchema)
     .default([])
     .describe("Actor conditions/buffs."),
-  traits: z
-    .array(hiddenTraitSchema)
-    .default([])
-    .describe("Actor traits."),
+  traits: z.array(hiddenTraitSchema).default([]).describe("Actor traits."),
   inventory: z
     .array(inventoryItemSchema)
     .default([])
@@ -1648,13 +1684,17 @@ export const strictPlayerVisibleSchema = actorVisibleSchema.extend({
 export const strictPlayerProfileSchema = actorProfileSchema.extend({
   id: z.literal("char:player"),
   kind: z.literal("player"),
-  currentLocation: requiredConcretePlayerString("player.profile.currentLocation"),
+  currentLocation: requiredConcretePlayerString(
+    "player.profile.currentLocation",
+  ),
   visible: strictPlayerVisibleSchema,
 });
 
 export const strictPlayerBundleSchema = actorBundleSchema.extend({
   profile: strictPlayerProfileSchema,
-  skills: z.array(skillSchema).describe("Player skills (required; can be empty)."),
+  skills: z
+    .array(skillSchema)
+    .describe("Player skills (required; can be empty)."),
   conditions: z
     .array(conditionSchema)
     .describe("Player conditions (required; can be empty)."),
@@ -1667,7 +1707,6 @@ export const strictPlayerBundleSchema = actorBundleSchema.extend({
     .default([])
     .describe("Player inventory items (optional; defaults to empty)."),
 });
-
 
 /** 故事大纲 Schema (Actor-first; no legacy NPC/inventory globals) */
 export const storyOutlineSchema = z.object({
@@ -1842,10 +1881,14 @@ export const outlinePhase1Schema = z.object({
         .object({
           allowNaturalRecovery: z
             .boolean()
-            .describe("Allow non-forced narrative recovery back to existing arcs."),
+            .describe(
+              "Allow non-forced narrative recovery back to existing arcs.",
+            ),
           allowOutlineRevision: z
             .boolean()
-            .describe("Allow revising plan.md when player intent changes trajectory."),
+            .describe(
+              "Allow revising plan.md when player intent changes trajectory.",
+            ),
           forbidDeusExMachina: z
             .boolean()
             .describe("Forbid deus-ex-machina corrections.")
@@ -2151,9 +2194,11 @@ export const gameResponseSchema = z.object({
           .describe(
             "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the NPC (CANNOT change existing ID).",
           ),
-        knownBy: knownBySchema.nullish().describe(
-          "Existence visibility: which actors know this actor exists.",
-        ),
+        knownBy: knownBySchema
+          .nullish()
+          .describe(
+            "Existence visibility: which actors know this actor exists.",
+          ),
         currentLocation: z.string().nullish().describe("Current location ID."),
         visible: actorVisibleSchema.partial().nullish(),
         hidden: actorHiddenSchema.partial().nullish(),
@@ -2687,9 +2732,13 @@ export type QuestViewModel = z.infer<typeof questViewModelSchema>;
 export type Skill = z.infer<typeof skillSchema>;
 export type Condition = z.infer<typeof conditionSchema>;
 export type KnowledgeEntry = z.infer<typeof knowledgeEntrySchema>;
-export type KnowledgeEntryViewModel = z.infer<typeof knowledgeEntryViewModelSchema>;
+export type KnowledgeEntryViewModel = z.infer<
+  typeof knowledgeEntryViewModelSchema
+>;
 export type TimelineEvent = z.infer<typeof timelineEventSchema>;
-export type TimelineEventViewModel = z.infer<typeof timelineEventViewModelSchema>;
+export type TimelineEventViewModel = z.infer<
+  typeof timelineEventViewModelSchema
+>;
 export type CausalChain = z.infer<typeof causalChainSchema>;
 export type Faction = z.infer<typeof factionSchema>;
 export type FactionViewModel = z.infer<typeof factionViewModelSchema>;

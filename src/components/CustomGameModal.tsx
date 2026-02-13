@@ -115,8 +115,9 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
   const [rules, setRules] = useState("");
   const [openingScene, setOpeningScene] = useState("");
   const [legacyText, setLegacyText] = useState("");
-  const [presetProfile, setPresetProfile] =
-    useState<SavePresetProfile>(DEFAULT_SAVE_PRESET_PROFILE);
+  const [presetProfile, setPresetProfile] = useState<SavePresetProfile>(
+    DEFAULT_SAVE_PRESET_PROFILE,
+  );
 
   const fieldLabelClassName =
     "block text-xs font-bold uppercase tracking-wider text-theme-text-secondary mb-2";
@@ -183,8 +184,7 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
   if (!isOpen) return null;
 
   const handleStart = () => {
-    const selectedContext =
-      mode === "text" ? legacyText.trim() : customContext;
+    const selectedContext = mode === "text" ? legacyText.trim() : customContext;
     onStart({
       customContext: selectedContext ? selectedContext : undefined,
       protagonistRole: protagonistRole.trim() || undefined,
@@ -327,7 +327,9 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
               </div>
 
               <div>
-                <label className={fieldLabelClassName}>{t("customContext")}</label>
+                <label className={fieldLabelClassName}>
+                  {t("customContext")}
+                </label>
                 <textarea
                   value={legacyText}
                   onChange={(e) => setLegacyText(e.target.value)}
@@ -340,145 +342,147 @@ export const CustomGameModal: React.FC<CustomGameModalProps> = ({
           )}
 
           <button
-              type="button"
-              onClick={() => setShowAdvanced((v) => !v)}
-              className="w-full flex items-center justify-between py-3 border-y border-theme-divider/60 hover:bg-theme-surface-highlight/25 transition-colors"
-              aria-expanded={showAdvanced}
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="w-full flex items-center justify-between py-3 border-y border-theme-divider/60 hover:bg-theme-surface-highlight/25 transition-colors"
+            aria-expanded={showAdvanced}
+          >
+            <span className="text-sm font-bold uppercase tracking-wider text-theme-text-secondary">
+              {t("customGame.advanced")}
+            </span>
+            <svg
+              className={`w-5 h-5 text-theme-text-secondary transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <span className="text-sm font-bold uppercase tracking-wider text-theme-text-secondary">
-                {t("customGame.advanced")}
-              </span>
-              <svg
-                className={`w-5 h-5 text-theme-text-secondary transition-transform ${showAdvanced ? "rotate-180" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
 
           {showAdvanced && (
             <div className="space-y-4 animate-fade-in pt-1">
               {mode === "structured" && (
                 <>
-              <div>
-                <label className={fieldLabelClassName}>
-                  {t("customGame.fields.narrativeStyle")}
-                </label>
-                <textarea
-                  value={narrativeStyle}
-                  onChange={(e) => setNarrativeStyle(e.target.value)}
-                  placeholder={t("customGame.placeholders.narrativeStyle")}
-                  className={`${textareaClassName} h-24`}
-                />
-                <p className="mt-2 text-[11px] text-theme-text-secondary leading-relaxed">
-                  {t("customGame.narrativeStyleOverrideHint")}
-                </p>
-              </div>
+                  <div>
+                    <label className={fieldLabelClassName}>
+                      {t("customGame.fields.narrativeStyle")}
+                    </label>
+                    <textarea
+                      value={narrativeStyle}
+                      onChange={(e) => setNarrativeStyle(e.target.value)}
+                      placeholder={t("customGame.placeholders.narrativeStyle")}
+                      className={`${textareaClassName} h-24`}
+                    />
+                    <p className="mt-2 text-[11px] text-theme-text-secondary leading-relaxed">
+                      {t("customGame.narrativeStyleOverrideHint")}
+                    </p>
+                  </div>
 
-              <div>
-                <label className={fieldLabelClassName}>
-                  {t("customGame.fields.gameplayFocus")}
-                </label>
-                <div className="text-xs text-theme-text-secondary mb-3">
-                  {t("customGame.gameplay.hint")}
-                </div>
-                <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
-                  {GAMEPLAY_PRESET_KEYS.map((key) => (
-                    <div
-                      key={key}
-                      className="flex items-center gap-3 px-2 py-2"
-                    >
-                      <div className="w-28 shrink-0 text-xs font-bold uppercase tracking-wider text-theme-text-secondary">
-                        {t(`customGame.gameplay.presets.${key}`)}
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="5"
-                        value={gameplayWeights[key] ?? 0}
-                        onChange={(e) => {
-                          const value = Math.max(
-                            0,
-                            Math.min(100, Number(e.target.value) || 0),
-                          );
-                          setGameplayWeights((prev) => ({
-                            ...prev,
-                            [key]: value,
-                          }));
-                        }}
-                        className="flex-1 accent-theme-primary"
-                      />
-                      <div className="w-12 shrink-0 text-right text-xs font-bold text-theme-text">
-                        {(gameplayWeights[key] ?? 0).toString()}%
-                      </div>
+                  <div>
+                    <label className={fieldLabelClassName}>
+                      {t("customGame.fields.gameplayFocus")}
+                    </label>
+                    <div className="text-xs text-theme-text-secondary mb-3">
+                      {t("customGame.gameplay.hint")}
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between mt-2 text-xs text-theme-text-secondary">
-                  <span>
-                    {t("customGame.gameplay.total")}: {totalGameplayWeight}%
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setGameplayWeights({ ...DEFAULT_GAMEPLAY_WEIGHTS })
-                    }
-                    className="px-3 py-1.5 rounded-lg border border-theme-divider/60 hover:border-theme-muted hover:bg-theme-surface-highlight/40 transition-colors"
-                  >
-                    {t("customGame.gameplay.reset")}
-                  </button>
-                </div>
-                <input
-                  value={gameplayFocusNotes}
-                  onChange={(e) => setGameplayFocusNotes(e.target.value)}
-                  placeholder={t("customGame.placeholders.gameplayFocus")}
-                  className={`mt-3 ${inputClassName}`}
-                />
-              </div>
+                    <div className="border-y border-theme-divider/60 divide-y divide-theme-divider/60">
+                      {GAMEPLAY_PRESET_KEYS.map((key) => (
+                        <div
+                          key={key}
+                          className="flex items-center gap-3 px-2 py-2"
+                        >
+                          <div className="w-28 shrink-0 text-xs font-bold uppercase tracking-wider text-theme-text-secondary">
+                            {t(`customGame.gameplay.presets.${key}`)}
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={gameplayWeights[key] ?? 0}
+                            onChange={(e) => {
+                              const value = Math.max(
+                                0,
+                                Math.min(100, Number(e.target.value) || 0),
+                              );
+                              setGameplayWeights((prev) => ({
+                                ...prev,
+                                [key]: value,
+                              }));
+                            }}
+                            className="flex-1 accent-theme-primary"
+                          />
+                          <div className="w-12 shrink-0 text-right text-xs font-bold text-theme-text">
+                            {(gameplayWeights[key] ?? 0).toString()}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between mt-2 text-xs text-theme-text-secondary">
+                      <span>
+                        {t("customGame.gameplay.total")}: {totalGameplayWeight}%
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setGameplayWeights({ ...DEFAULT_GAMEPLAY_WEIGHTS })
+                        }
+                        className="px-3 py-1.5 rounded-lg border border-theme-divider/60 hover:border-theme-muted hover:bg-theme-surface-highlight/40 transition-colors"
+                      >
+                        {t("customGame.gameplay.reset")}
+                      </button>
+                    </div>
+                    <input
+                      value={gameplayFocusNotes}
+                      onChange={(e) => setGameplayFocusNotes(e.target.value)}
+                      placeholder={t("customGame.placeholders.gameplayFocus")}
+                      className={`mt-3 ${inputClassName}`}
+                    />
+                  </div>
 
-              <div>
-                <label className={fieldLabelClassName}>
-                  {t("customGame.fields.contentBoundaries")}
-                </label>
-                <textarea
-                  value={contentBoundaries}
-                  onChange={(e) => setContentBoundaries(e.target.value)}
-                  placeholder={t("customGame.placeholders.contentBoundaries")}
-                  className={`${textareaClassName} h-24`}
-                />
-              </div>
+                  <div>
+                    <label className={fieldLabelClassName}>
+                      {t("customGame.fields.contentBoundaries")}
+                    </label>
+                    <textarea
+                      value={contentBoundaries}
+                      onChange={(e) => setContentBoundaries(e.target.value)}
+                      placeholder={t(
+                        "customGame.placeholders.contentBoundaries",
+                      )}
+                      className={`${textareaClassName} h-24`}
+                    />
+                  </div>
 
-              <div>
-                <label className={fieldLabelClassName}>
-                  {t("customGame.fields.rules")}
-                </label>
-                <textarea
-                  value={rules}
-                  onChange={(e) => setRules(e.target.value)}
-                  placeholder={t("customGame.placeholders.rules")}
-                  className={`${textareaClassName} h-24`}
-                />
-              </div>
+                  <div>
+                    <label className={fieldLabelClassName}>
+                      {t("customGame.fields.rules")}
+                    </label>
+                    <textarea
+                      value={rules}
+                      onChange={(e) => setRules(e.target.value)}
+                      placeholder={t("customGame.placeholders.rules")}
+                      className={`${textareaClassName} h-24`}
+                    />
+                  </div>
 
-              <div>
-                <label className={fieldLabelClassName}>
-                  {t("customGame.fields.openingScene")}
-                </label>
-                <textarea
-                  value={openingScene}
-                  onChange={(e) => setOpeningScene(e.target.value)}
-                  placeholder={t("customGame.placeholders.openingScene")}
-                  className={`${textareaClassName} h-24`}
-                />
-              </div>
+                  <div>
+                    <label className={fieldLabelClassName}>
+                      {t("customGame.fields.openingScene")}
+                    </label>
+                    <textarea
+                      value={openingScene}
+                      onChange={(e) => setOpeningScene(e.target.value)}
+                      placeholder={t("customGame.placeholders.openingScene")}
+                      className={`${textareaClassName} h-24`}
+                    />
+                  </div>
                 </>
               )}
 

@@ -81,7 +81,10 @@ describe("snapshotManager", () => {
     expect(snapshot.currentLocation).toBe("loc:fallback");
     expect(snapshot.time).toBe("Night");
     expect(snapshot.lastSummarizedIndex).toBe(3);
-    expect(snapshot.atmosphere).toEqual({ envTheme: "horror", ambience: "storm" });
+    expect(snapshot.atmosphere).toEqual({
+      envTheme: "horror",
+      ambience: "storm",
+    });
     expect(snapshot.turnNumber).toBe(9);
     expect(snapshot.forkId).toBe(7);
     expect(snapshot.forkTree.nextForkId).toBe(8);
@@ -105,34 +108,40 @@ describe("snapshotManager", () => {
       atmosphere: { envTheme: "modern", ambience: "city" },
     });
 
-    const snapshot = createStateSnapshot(createMinimalGameState({ currentLocation: "" }), {
-      summaries: [],
-      lastSummarizedIndex: 1,
-      currentLocation: "loc:snapshot",
-      time: "Dusk",
-      atmosphere: { envTheme: "fantasy", ambience: "forest" },
-      uiState: currentState.uiState,
-      turnNumber: 5,
-      forkId: 0,
-      forkTree: {
-        nodes: {
-          0: {
-            id: 0,
-            parentId: null,
-            createdAt: 0,
-            createdAtTurn: 0,
-            sourceNodeId: "",
+    const snapshot = createStateSnapshot(
+      createMinimalGameState({ currentLocation: "" }),
+      {
+        summaries: [],
+        lastSummarizedIndex: 1,
+        currentLocation: "loc:snapshot",
+        time: "Dusk",
+        atmosphere: { envTheme: "fantasy", ambience: "forest" },
+        uiState: currentState.uiState,
+        turnNumber: 5,
+        forkId: 0,
+        forkTree: {
+          nodes: {
+            0: {
+              id: 0,
+              parentId: null,
+              createdAt: 0,
+              createdAtTurn: 0,
+              sourceNodeId: "",
+            },
           },
+          nextForkId: 1,
         },
-        nextForkId: 1,
       },
-    });
+    );
 
     const restored = restoreStateFromSnapshot(currentState, snapshot);
 
     expect(restored.currentLocation).toBe("loc:snapshot");
     expect(restored.time).toBe("Dusk");
-    expect(restored.atmosphere).toEqual({ envTheme: "fantasy", ambience: "forest" });
+    expect(restored.atmosphere).toEqual({
+      envTheme: "fantasy",
+      ambience: "forest",
+    });
 
     expect(restored.forkId).toBe(99);
     expect(restored.forkTree.nextForkId).toBe(100);
@@ -167,9 +176,27 @@ describe("snapshotManager", () => {
   it("resolves ancestor chain from leaf to root", () => {
     const forkTree = {
       nodes: {
-        0: { id: 0, parentId: null, createdAt: 0, createdAtTurn: 0, sourceNodeId: "" },
-        1: { id: 1, parentId: 0, createdAt: 1, createdAtTurn: 1, sourceNodeId: "n1" },
-        2: { id: 2, parentId: 1, createdAt: 2, createdAtTurn: 2, sourceNodeId: "n2" },
+        0: {
+          id: 0,
+          parentId: null,
+          createdAt: 0,
+          createdAtTurn: 0,
+          sourceNodeId: "",
+        },
+        1: {
+          id: 1,
+          parentId: 0,
+          createdAt: 1,
+          createdAtTurn: 1,
+          sourceNodeId: "n1",
+        },
+        2: {
+          id: 2,
+          parentId: 1,
+          createdAt: 2,
+          createdAtTurn: 2,
+          sourceNodeId: "n2",
+        },
       },
       nextForkId: 3,
     };

@@ -92,9 +92,14 @@ function createSettings(overrides: Record<string, unknown> = {}) {
   } as any;
 }
 
-function replaceProviderApiKey(settings: any, providerId: string, apiKey: string) {
-  settings.providers.instances = settings.providers.instances.map((instance: any) =>
-    instance.id === providerId ? { ...instance, apiKey } : instance,
+function replaceProviderApiKey(
+  settings: any,
+  providerId: string,
+  apiKey: string,
+) {
+  settings.providers.instances = settings.providers.instances.map(
+    (instance: any) =>
+      instance.id === providerId ? { ...instance, apiKey } : instance,
   );
 }
 
@@ -103,7 +108,11 @@ describe("validateProvidersForMode", () => {
     validateConnectionMock.mockReset();
     getEnvApiKeyMock.mockReset();
     getEnvApiKeyMock.mockReturnValue("");
-    validateConnectionMock.mockResolvedValue({ isValid: true, error: null, localError: false });
+    validateConnectionMock.mockResolvedValue({
+      isValid: true,
+      error: null,
+      localError: false,
+    });
   });
 
   it("checks only required providers in continue mode", async () => {
@@ -130,9 +139,9 @@ describe("validateProvidersForMode", () => {
 
     const result = await validateProvidersForMode(settings, "start");
 
-    expect(
-      result.issues.some((issue) => issue.feature === "embedding"),
-    ).toBe(false);
+    expect(result.issues.some((issue) => issue.feature === "embedding")).toBe(
+      false,
+    );
   });
 
   it("skips embedding provider checks when local transformers runtime is enabled", async () => {
@@ -148,9 +157,9 @@ describe("validateProvidersForMode", () => {
 
     const result = await validateProvidersForMode(settings, "start");
 
-    expect(
-      result.issues.some((issue) => issue.feature === "embedding"),
-    ).toBe(false);
+    expect(result.issues.some((issue) => issue.feature === "embedding")).toBe(
+      false,
+    );
   });
 
   it("returns missing_optional_api_key for enabled optional providers in start mode", async () => {
@@ -201,7 +210,10 @@ describe("validateProvidersForMode", () => {
       settings,
       "story-provider",
     );
-    expect(validateConnectionMock).toHaveBeenCalledWith(settings, "lore-provider");
+    expect(validateConnectionMock).toHaveBeenCalledWith(
+      settings,
+      "lore-provider",
+    );
   });
 
   it("reports optional warnings and skips duplicate optional checks on story provider", async () => {

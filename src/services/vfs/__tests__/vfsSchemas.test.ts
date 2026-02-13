@@ -17,17 +17,23 @@ describe("vfs schemas", () => {
   });
 
   it("normalizes actor profile paths before matching", () => {
-    const schema = getSchemaForPath("/world/characters//char:npc_1//profile.json");
+    const schema = getSchemaForPath(
+      "/world/characters//char:npc_1//profile.json",
+    );
     expect(schema).toBe(actorProfileSchema);
   });
 
   it("matches player profile path to strict player schema", () => {
-    const schema = getSchemaForPath("world/characters/char:player/profile.json");
+    const schema = getSchemaForPath(
+      "world/characters/char:player/profile.json",
+    );
     expect(schema).toBe(strictPlayerProfileSchema);
   });
 
   it("rejects player profile when required visible fields are missing", () => {
-    const schema = getSchemaForPath("world/characters/char:player/profile.json");
+    const schema = getSchemaForPath(
+      "world/characters/char:player/profile.json",
+    );
     expect(() =>
       schema.parse({
         id: "char:player",
@@ -50,7 +56,9 @@ describe("vfs schemas", () => {
   });
 
   it("rejects player profile placeholders for required fields", () => {
-    const schema = getSchemaForPath("world/characters/char:player/profile.json");
+    const schema = getSchemaForPath(
+      "world/characters/char:player/profile.json",
+    );
     expect(() =>
       schema.parse({
         id: "char:player",
@@ -158,7 +166,9 @@ describe("vfs schemas", () => {
   });
 
   it("matches character skill paths to skill schema", () => {
-    const schema = getSchemaForPath("world/characters/char:player/skills/skill:1.json");
+    const schema = getSchemaForPath(
+      "world/characters/char:player/skills/skill:1.json",
+    );
     expect(schema).toBe(skillSchema);
   });
 
@@ -170,7 +180,9 @@ describe("vfs schemas", () => {
   });
 
   it("matches character trait paths to hidden trait schema", () => {
-    const schema = getSchemaForPath("world/characters/char:player/traits/trait:1.json");
+    const schema = getSchemaForPath(
+      "world/characters/char:player/traits/trait:1.json",
+    );
     expect(schema).toBe(hiddenTraitSchema);
   });
 

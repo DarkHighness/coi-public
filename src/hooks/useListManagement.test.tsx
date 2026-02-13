@@ -78,7 +78,11 @@ describe("useListManagement", () => {
 
   it("reorders items with drag/hover ids", () => {
     const onUpdate = vi.fn();
-    const listState = { pinnedIds: [], customOrder: ["a", "b", "c"], hiddenIds: [] };
+    const listState = {
+      pinnedIds: [],
+      customOrder: ["a", "b", "c"],
+      hiddenIds: [],
+    };
 
     let api: ReturnType<typeof useListManagement<any>> | null = null;
     const Harness = () => {

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { VfsSession } from "@/services/vfs/vfsSession";
-import { writeConversationIndex, writeTurnFile } from "@/services/vfs/conversation";
+import {
+  writeConversationIndex,
+  writeTurnFile,
+} from "@/services/vfs/conversation";
 import {
   buildResponseFromVfs,
   createFinalLog,
@@ -60,7 +63,10 @@ describe("resultAccumulator", () => {
     expect(response?.narrative).toBe("A cold wind rises.");
     expect(response?.choices).toEqual([{ text: "Move" }, { text: "Wait" }]);
     expect(response?.narrativeTone).toBe("tense");
-    expect(response?.atmosphere).toEqual({ envTheme: "horror", ambience: "storm" });
+    expect(response?.atmosphere).toEqual({
+      envTheme: "horror",
+      ambience: "storm",
+    });
     expect(response?.finalState).toBeTruthy();
 
     expect(buildResponseFromVfs(session, marker)).toBeNull();
@@ -73,7 +79,9 @@ describe("resultAccumulator", () => {
     trackChangedEntity(changed, { success: false, id: "npc:2" }, "npc");
     trackChangedEntity(changed, { success: true }, "npc");
 
-    expect(getChangedEntitiesArray(changed)).toEqual([{ id: "npc:1", type: "npc" }]);
+    expect(getChangedEntitiesArray(changed)).toEqual([
+      { id: "npc:1", type: "npc" },
+    ]);
 
     const usage = { promptTokens: 1, completionTokens: 2, totalTokens: 3 };
 

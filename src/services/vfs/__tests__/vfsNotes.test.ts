@@ -16,9 +16,9 @@ describe("vfs notes paths", () => {
   });
 
   it("special-cases actor profile.json to character notes.md", () => {
-    expect(buildEntityNotesPath("world/characters/char:player/profile.json")).toBe(
-      "world/characters/char:player/notes.md",
-    );
+    expect(
+      buildEntityNotesPath("world/characters/char:player/profile.json"),
+    ).toBe("world/characters/char:player/notes.md");
   });
 
   it("accepts current/ prefixed paths", () => {
@@ -27,4 +27,3 @@ describe("vfs notes paths", () => {
     );
   });
 });
-

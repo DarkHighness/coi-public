@@ -69,5 +69,4 @@ describe("validateGenderPreferencePhase3", () => {
 
     expect(validateGenderPreferencePhase3(phase3, "male")).toBeNull();
   });
-
 });

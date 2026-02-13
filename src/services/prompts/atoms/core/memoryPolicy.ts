@@ -5,7 +5,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 const globalNotes = `
   <rule name="NOTES (VFS MARKDOWN) - SCRATCH PAD">
     **NOTES ARE A FLEXIBLE FALLBACK.**
@@ -159,10 +158,31 @@ const memoryQuery = `
   </rule>
 `;
 
-export const memoryPolicy: Atom<void> = defineAtom({ atomId: "atoms/core/memoryPolicy#memoryPolicy", source: "atoms/core/memoryPolicy.ts", exportName: "memoryPolicy" }, () => `
+export const memoryPolicy: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/memoryPolicy#memoryPolicy",
+    source: "atoms/core/memoryPolicy.ts",
+    exportName: "memoryPolicy",
+  },
+  () => `
 ${globalNotes}
 ${memoryQuery}
-`);
+`,
+);
 
-export const globalNotesAtom: Atom<void> = defineAtom({ atomId: "atoms/core/memoryPolicy#globalNotesAtom", source: "atoms/core/memoryPolicy.ts", exportName: "globalNotesAtom" }, () => globalNotes);
-export const memoryQueryAtom: Atom<void> = defineAtom({ atomId: "atoms/core/memoryPolicy#memoryQueryAtom", source: "atoms/core/memoryPolicy.ts", exportName: "memoryQueryAtom" }, () => memoryQuery);
+export const globalNotesAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/memoryPolicy#globalNotesAtom",
+    source: "atoms/core/memoryPolicy.ts",
+    exportName: "globalNotesAtom",
+  },
+  () => globalNotes,
+);
+export const memoryQueryAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/memoryPolicy#memoryQueryAtom",
+    source: "atoms/core/memoryPolicy.ts",
+    exportName: "memoryQueryAtom",
+  },
+  () => memoryQuery,
+);

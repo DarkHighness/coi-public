@@ -12,11 +12,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Location 设计上下文 - 完整版
  */
-export const locationDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/locationDesign#locationDesign", source: "atoms/entities/locationDesign.ts", exportName: "locationDesign" }, () => `
+export const locationDesign: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/locationDesign#locationDesign",
+    source: "atoms/entities/locationDesign.ts",
+    exportName: "locationDesign",
+  },
+  () => `
 <game_system_context>
 **LOCATION DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -158,12 +163,19 @@ Who "owns" this space?
 - **Snow**: Tracks obvious, sounds muffled, hypothermia risk, beauty masks danger
 </weather_mechanics>
 </game_system_context>
-`);
+`,
+);
 
 /**
  * Location design primer (system-prompt safe).
  */
-export const locationDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/locationDesign#locationDesignPrimer", source: "atoms/entities/locationDesign.ts", exportName: "locationDesignPrimer" }, () => `
+export const locationDesignPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/locationDesign#locationDesignPrimer",
+    source: "atoms/entities/locationDesign.ts",
+    exportName: "locationDesignPrimer",
+  },
+  () => `
 <game_system_context>
 **LOCATION DESIGN**: Locations are characters with memory in their walls.
 - Sensory details (smell strikes memory; sound builds atmosphere; touch grounds the body)
@@ -173,7 +185,8 @@ export const locationDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/enti
 - Imperfections (nothing is pristine)
 - Weather affects mechanics
 </game_system_context>
-`);
+`,
+);
 
 export default locationDesign;
 
@@ -181,10 +194,16 @@ export default locationDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const locationDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/locationDesign#locationDesignSkill", source: "atoms/entities/locationDesign.ts", exportName: "locationDesignSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(locationDesign),
+export const locationDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/locationDesign#locationDesignSkill",
+    source: "atoms/entities/locationDesign.ts",
+    exportName: "locationDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(locationDesign),
 
-  quickStart: `
+    quickStart: `
 1. Sensory Hierarchy: Smell (most evocative) → Sound → Touch → Sight
 2. Environmental Storytelling: One detail that implies history
 3. Lifecycle: How does the location change at dawn/noon/dusk/midnight?
@@ -193,54 +212,55 @@ export const locationDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "a
 6. NPC Relationships: Who owns this space? Who truly controls it?
 `.trim(),
 
-  checklist: [
-    "Smell described (most evocative sense)?",
-    "Sound described (creates atmosphere)?",
-    "At least one environmental storytelling detail?",
-    "Location lifecycle considered (time of day)?",
-    "Hidden layer defined (visible vs hidden)?",
-    "Imperfections present (nothing pristine)?",
-    "Weather effects on mechanics noted?",
-    "Who 'owns' this space defined?",
-  ],
+    checklist: [
+      "Smell described (most evocative sense)?",
+      "Sound described (creates atmosphere)?",
+      "At least one environmental storytelling detail?",
+      "Location lifecycle considered (time of day)?",
+      "Hidden layer defined (visible vs hidden)?",
+      "Imperfections present (nothing pristine)?",
+      "Weather effects on mechanics noted?",
+      "Who 'owns' this space defined?",
+    ],
 
-  examples: [
-    {
-      scenario: "Sensory Description",
-      wrong: `"It's a dark room."
+    examples: [
+      {
+        scenario: "Sensory Description",
+        wrong: `"It's a dark room."
 (No sensory detail, no atmosphere.)`,
-      right: `"The room smells of copper and wet stone, with an undercurrent
+        right: `"The room smells of copper and wet stone, with an undercurrent
 of something rotting in the walls. Dripping water echoes arrhythmically.
 Somewhere deeper, metal scrapes on stone."
 (Smell, sound, implied danger.)`,
-    },
-    {
-      scenario: "Environmental Storytelling",
-      wrong: `"There's a table and chairs."
+      },
+      {
+        scenario: "Environmental Storytelling",
+        wrong: `"There's a table and chairs."
 (Objects without story.)`,
-      right: `"A half-eaten meal with two chairs, one overturned.
+        right: `"A half-eaten meal with two chairs, one overturned.
 The food is still warm. Whoever was here left in a hurry—or was taken."
 (Objects imply event, create questions.)`,
-    },
-    {
-      scenario: "Location Lifecycle",
-      wrong: `"The market is busy."
+      },
+      {
+        scenario: "Location Lifecycle",
+        wrong: `"The market is busy."
 (Static, no sense of time.)`,
-      right: `"Dawn: Vendors arrive, fresh produce on carts.
+        right: `"Dawn: Vendors arrive, fresh produce on carts.
 Noon: Crowded, loud, pickpockets work the crowd.
 Dusk: Vendors pack up, scavengers check discarded goods.
 Midnight: Empty except patrol routes—and those avoiding them."
 (Dynamic, changes with time.)`,
-    },
-    {
-      scenario: "Hidden Layer",
-      wrong: `"It's a normal tavern."
+      },
+      {
+        scenario: "Hidden Layer",
+        wrong: `"It's a normal tavern."
 (No depth, no secrets.)`,
-      right: `Visible: "Friendly tavern, good ale, warm fire."
+        right: `Visible: "Friendly tavern, good ale, warm fire."
 Hidden: "The owner reports everything to the city watch.
 The back room hosts illegal gambling every third night.
 The cellar connects to the thieves' guild tunnel network."
 (Surface hides underbelly.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

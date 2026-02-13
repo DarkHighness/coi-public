@@ -65,7 +65,9 @@ const buildVfsToolPermissionContract = (toolName: string): string | null => {
   }
 
   if (capability.immutableZones.length > 0) {
-    clauses.push(`immutable zones blocked: ${capability.immutableZones.join(", ")}`);
+    clauses.push(
+      `immutable zones blocked: ${capability.immutableZones.join(", ")}`,
+    );
   }
 
   return `Permission contract: ${clauses.join("; ")}.`;
@@ -187,13 +189,15 @@ export const VFS_LS_TOOL = defineTool({
     "List VFS entries. Supports plain listing, glob filtering via patterns, and optional ls -l style metadata.",
   parameters: z
     .object({
-      path: vfsOptionalPathSchema.describe("Optional base directory path. Omit for root."),
+      path: vfsOptionalPathSchema.describe(
+        "Optional base directory path. Omit for root.",
+      ),
       patterns: z
         .array(z.string().min(1))
         .min(1)
         .nullish()
         .describe(
-          "Optional glob patterns under path (e.g. [\"current/world/**/*.json\"]).",
+          'Optional glob patterns under path (e.g. ["current/world/**/*.json"]).',
         ),
       excludePatterns: z
         .array(z.string().min(1))
@@ -253,7 +257,9 @@ export const VFS_READ_TOOL = defineTool({
         .int()
         .positive()
         .nullish()
-        .describe("Chars mode: optional number of characters to read from start."),
+        .describe(
+          "Chars mode: optional number of characters to read from start.",
+        ),
       maxChars: z
         .number()
         .int()
@@ -337,7 +343,9 @@ export const VFS_SEARCH_TOOL = defineTool({
         .int()
         .positive()
         .nullish()
-        .describe("Max results. Default: 20. Prefer omitting; null is default."),
+        .describe(
+          "Max results. Default: 20. Prefer omitting; null is default.",
+        ),
     })
     .strict(),
 });
@@ -375,7 +383,9 @@ const vfsWriteOpSchema = z.discriminatedUnion("op", [
       ensureNewline: z
         .boolean()
         .nullish()
-        .describe("If true, insert newline when needed. Prefer omitting; default true."),
+        .describe(
+          "If true, insert newline when needed. Prefer omitting; default true.",
+        ),
       maxTotalChars: z
         .number()
         .int()
@@ -436,7 +446,10 @@ const vfsWriteOpSchema = z.discriminatedUnion("op", [
     .object({
       op: z.literal("patch_json"),
       path: vfsFilePathSchema.describe("JSON file path."),
-      patch: z.array(vfsJsonPatchOpSchema).min(1).describe("JSON Patch operations."),
+      patch: z
+        .array(vfsJsonPatchOpSchema)
+        .min(1)
+        .describe("JSON Patch operations."),
     })
     .strict(),
   z
@@ -453,7 +466,10 @@ export const VFS_WRITE_TOOL = defineTool({
   description: "Apply write/update operations to VFS files (atomic batch).",
   parameters: z
     .object({
-      ops: z.array(vfsWriteOpSchema).min(1).describe("Ordered write operations."),
+      ops: z
+        .array(vfsWriteOpSchema)
+        .min(1)
+        .describe("Ordered write operations."),
     })
     .strict(),
 });
@@ -496,12 +512,16 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
     .object({
       userAction: z
         .string()
-        .describe("The player's action text for this turn (stored in the turn file)."),
+        .describe(
+          "The player's action text for this turn (stored in the turn file).",
+        ),
       assistant: z
         .object({
           narrative: z
             .string()
-            .describe("The assistant narrative (Markdown text for the player)."),
+            .describe(
+              "The assistant narrative (Markdown text for the player).",
+            ),
           choices: z
             .array(
               z
@@ -523,7 +543,9 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
         .describe("Assistant payload stored in the turn file."),
       retconAck: z
         .object({
-          hash: z.string().describe("Pending prompt injection hash to acknowledge."),
+          hash: z
+            .string()
+            .describe("Pending prompt injection hash to acknowledge."),
           summary: z
             .string()
             .describe("Short in-world retcon acknowledgement summary."),
@@ -539,7 +561,9 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
 
 const summaryVisibleToolSchema = z
   .object({
-    narrative: z.string().describe("What happened from the protagonist's perspective"),
+    narrative: z
+      .string()
+      .describe("What happened from the protagonist's perspective"),
     majorEvents: z
       .array(z.string())
       .describe("Key events the protagonist witnessed/participated in"),
@@ -553,10 +577,14 @@ const summaryVisibleToolSchema = z
 const summaryHiddenToolSchema = z
   .object({
     truthNarrative: z.string().describe("What ACTUALLY happened (GM truth)"),
-    hiddenPlots: z.array(z.string()).describe("Plot threads player doesn't know about"),
+    hiddenPlots: z
+      .array(z.string())
+      .describe("Plot threads player doesn't know about"),
     npcActions: z.array(z.string()).describe("What NPCs did off-screen"),
     worldTruth: z.string().describe("Real state of the world"),
-    unrevealed: z.array(z.string()).describe("Secrets not yet revealed to player"),
+    unrevealed: z
+      .array(z.string())
+      .describe("Secrets not yet revealed to player"),
   })
   .strict();
 
@@ -568,7 +596,9 @@ export const VFS_COMMIT_SUMMARY_TOOL = defineTool({
     .object({
       displayText: z
         .string()
-        .describe("Concise 2-3 sentence summary for UI display. MUST be in story language."),
+        .describe(
+          "Concise 2-3 sentence summary for UI display. MUST be in story language.",
+        ),
       visible: summaryVisibleToolSchema,
       hidden: summaryHiddenToolSchema,
       timeRange: z
@@ -678,7 +708,9 @@ export type VfsWriteParams = InferToolParams<typeof VFS_WRITE_TOOL>;
 export type VfsMoveParams = InferToolParams<typeof VFS_MOVE_TOOL>;
 export type VfsDeleteParams = InferToolParams<typeof VFS_DELETE_TOOL>;
 export type VfsCommitTurnParams = InferToolParams<typeof VFS_COMMIT_TURN_TOOL>;
-export type VfsCommitSummaryParams = InferToolParams<typeof VFS_COMMIT_SUMMARY_TOOL>;
+export type VfsCommitSummaryParams = InferToolParams<
+  typeof VFS_COMMIT_SUMMARY_TOOL
+>;
 export type VfsCommitOutlinePhase0Params = InferToolParams<
   typeof VFS_COMMIT_OUTLINE_PHASE_0_TOOL
 >;

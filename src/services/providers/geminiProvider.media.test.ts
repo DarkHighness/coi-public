@@ -127,12 +127,12 @@ describe("geminiProvider media and embedding branches", () => {
       createObjectURL: createObjectUrl,
     } as any);
 
-    const timeoutSpy = vi
-      .spyOn(globalThis, "setTimeout")
-      .mockImplementation(((fn: any) => {
-        fn();
-        return 0 as any;
-      }) as any);
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: any,
+    ) => {
+      fn();
+      return 0 as any;
+    }) as any);
 
     sdkMocks.generateVideos.mockResolvedValueOnce({ done: false });
     sdkMocks.getVideosOperation.mockResolvedValueOnce({
@@ -149,13 +149,17 @@ describe("geminiProvider media and embedding branches", () => {
       "make it cinematic",
     );
 
-    expect(fetchMock).toHaveBeenCalledWith("https://video.example/file.mp4&key=k");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://video.example/file.mp4&key=k",
+    );
     expect(result.url).toBe("blob:video-url");
     expect(timeoutSpy).toHaveBeenCalled();
   });
 
   it("generates speech with instructions and wraps PCM audio", async () => {
-    const pcmBase64 = Buffer.from(Uint8Array.from([1, 2, 3, 4])).toString("base64");
+    const pcmBase64 = Buffer.from(Uint8Array.from([1, 2, 3, 4])).toString(
+      "base64",
+    );
 
     sdkMocks.generateContent.mockResolvedValueOnce({
       candidates: [
@@ -213,7 +217,10 @@ describe("geminiProvider media and embedding branches", () => {
   it("lists embedding models and falls back on failures", async () => {
     sdkMocks.listModels.mockResolvedValueOnce(
       (async function* () {
-        yield { name: "models/gemini-embedding-001", displayName: "Gemini Embed" };
+        yield {
+          name: "models/gemini-embedding-001",
+          displayName: "Gemini Embed",
+        };
         yield { name: "models/gemini-2.5-pro", displayName: "Gemini Pro" };
       })(),
     );

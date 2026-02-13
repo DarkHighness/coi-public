@@ -77,14 +77,19 @@ const renderLifecycle = (state: any, actions: any) => {
   const view = render(React.createElement(Probe, { s: state, a: actions }));
   return {
     rerender: (nextState: any, nextActions: any = actions) =>
-      view.rerender(React.createElement(Probe, { s: nextState, a: nextActions })),
+      view.rerender(
+        React.createElement(Probe, { s: nextState, a: nextActions }),
+      ),
   };
 };
 
 describe("useRuntimeLifecycleEffects", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal("confirm", vi.fn(() => false));
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
   });
 
   it("initializes rag when embedding is enabled and not initialized", async () => {
@@ -115,7 +120,12 @@ describe("useRuntimeLifecycleEffects", () => {
     renderLifecycle(
       createState({
         aiSettings: {
-          embedding: { enabled: false, providerId: "p1", modelId: "m1", dimensions: 1024 },
+          embedding: {
+            enabled: false,
+            providerId: "p1",
+            modelId: "m1",
+            dimensions: 1024,
+          },
         },
         rag: {
           isInitialized: true,
@@ -139,7 +149,12 @@ describe("useRuntimeLifecycleEffects", () => {
     const { rerender } = renderLifecycle(
       createState({
         aiSettings: {
-          embedding: { enabled: false, providerId: "p1", modelId: "m1", dimensions: 1024 },
+          embedding: {
+            enabled: false,
+            providerId: "p1",
+            modelId: "m1",
+            dimensions: 1024,
+          },
         },
         rag: {
           isInitialized: true,
@@ -188,7 +203,12 @@ describe("useRuntimeLifecycleEffects", () => {
     const { rerender } = renderLifecycle(
       createState({
         aiSettings: {
-          embedding: { enabled: false, providerId: "p1", modelId: "m1", dimensions: 1024 },
+          embedding: {
+            enabled: false,
+            providerId: "p1",
+            modelId: "m1",
+            dimensions: 1024,
+          },
         },
         rag: {
           isInitialized: true,
@@ -221,8 +241,9 @@ describe("useRuntimeLifecycleEffects", () => {
 
   it("handles model mismatch actions across rebuild/disable/continue branches", async () => {
     const actionsA = createActions();
-    (window.confirm as any as ReturnType<typeof vi.fn>)
-      .mockReturnValueOnce(true);
+    (window.confirm as any as ReturnType<typeof vi.fn>).mockReturnValueOnce(
+      true,
+    );
 
     renderLifecycle(
       createState({

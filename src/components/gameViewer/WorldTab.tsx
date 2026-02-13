@@ -52,7 +52,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
                     {t("gameViewer.rules") || "Rules"}
                   </span>
-                  <MarkdownText content={worldInfo.worldSetting.visible.rules} />
+                  <MarkdownText
+                    content={worldInfo.worldSetting.visible.rules}
+                  />
                 </div>
               )}
             </div>

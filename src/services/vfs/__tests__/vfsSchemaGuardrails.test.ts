@@ -35,4 +35,3 @@ describe("vfs schema guardrails", () => {
     expect(findings).toEqual([]);
   });
 });
-

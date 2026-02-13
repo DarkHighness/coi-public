@@ -98,10 +98,7 @@ export function validateToolArgs(
         "If mutating files, re-read targets first when required by the tool contract.",
         `Open \`current/refs/tools/${name}.md\` for examples and parameter guidance.`,
       ],
-      refs: [
-        `current/refs/tools/${name}.md`,
-        "current/refs/tools/README.md",
-      ],
+      refs: [`current/refs/tools/${name}.md`, "current/refs/tools/README.md"],
     }),
   };
 }

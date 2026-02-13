@@ -5,6 +5,7 @@
 本次 VFS v2 为破坏性重构（无向后兼容层），目标是把文件系统抽象提升为单一内核，并让权限、路径、资源、工具能力完全中心化。
 
 ### 核心目标
+
 - 以 VFS 作为**唯一状态事实来源**（state = files）。
 - 把“可访问什么、可写什么、谁可以写”从散落代码迁移到注册中心。
 - 支持 fork/shared 双语义并严格隔离。
@@ -12,6 +13,7 @@
 - 工具文案、系统 prompt、工具 schema 描述与真实权限保持一致。
 
 ### 明确约束
+
 - `skills/**`、`refs/**` 永久只读（任何 actor/mode 都不可写）。
 - AI 默认可写普通资源（`default_editable`）。
 - StateEditor 默认可编辑，但必须每次打开确认（内存 token）。
@@ -200,6 +202,7 @@ sequenceDiagram
 ### 6.1 工具能力注册中心
 
 每个 `vfs_*` 工具在 `VfsToolCapabilityRegistry` 声明：
+
 - `readOnly`
 - `mayWriteClasses`
 - `needsElevationFor`
@@ -214,6 +217,7 @@ sequenceDiagram
 ### 6.3 Tool Schema 描述自动注入
 
 `defineTool()` 在 `src/services/tools.ts` 内自动附加权限契约文本：
+
 - 工具描述（schema）与注册中心统一。
 - 避免“工具参数说明”和“实际可写能力”漂移。
 
@@ -230,6 +234,7 @@ sequenceDiagram
 ## 8. 历史对话修订（受控）
 
 `ConversationHistoryRewriteService` 提供：
+
 - `rewriteTurn()`：改写指定 turn
 - `rewriteIndex()`：改写并归一化 conversation index
 - `recordRewriteEvent()`：写入 `conversation/history_rewrites/**`
@@ -254,6 +259,7 @@ sequenceDiagram
 ## 10. 测试策略与验收
 
 新增与更新测试覆盖：
+
 - 权限矩阵（actor × mode × class）
 - elevation token 生命周期（一次性、批次内 latch）
 - StateEditor 会话确认
@@ -263,6 +269,7 @@ sequenceDiagram
 - prompt / schema 与 capability registry 一致性
 
 关键测试文件（新增/重点）：
+
 - `src/services/vfs/core/__tests__/policyEngine.test.ts`
 - `src/services/vfs/core/__tests__/elevation.test.ts`
 - `src/services/vfs/core/__tests__/conversationHistoryRewriteService.test.ts`
@@ -275,6 +282,7 @@ sequenceDiagram
 ## 11. 扩展指南
 
 新增资源类别时：
+
 1. 在 `VfsPathRegistry` 添加路径规则（permissionClass + scope）。
 2. 在 `VfsResourceRegistry` 添加资源描述（resourceType + patterns + contentTypes）。
 3. 在 `VfsToolCapabilityRegistry` 更新相关工具能力。
@@ -282,6 +290,7 @@ sequenceDiagram
 5. 补充 policy/prompt/schema 一致性测试。
 
 新增提权场景时：
+
 - 优先新增路径规则与能力声明，不要在 handler 内写特判。
 - token 生命周期必须保持内存态、短周期、可撤销。
 
@@ -292,7 +301,6 @@ sequenceDiagram
 - 不提供向后兼容迁移层。
 - 不引入持久化授权状态（避免越权残留）。
 - 不允许跳过 VFS 直接写会话核心文件。
-
 
 ---
 
@@ -511,6 +519,7 @@ This keeps tooling output, prompt instructions, and policy runtime in lock-step.
 - `protocols`：`[SUDO]` 明确为受控提权入口（immutable/finish 保护仍生效），不再描述为硬绕过。
 
 对应回归测试已增强并通过：
+
 - `src/services/prompts/atoms/core/__tests__/promptHygiene.test.ts`
 - `src/services/prompts/atoms/core/__tests__/stateManagement.test.ts`
 - `src/services/prompts/atoms/core/__tests__/systemMessages.test.ts`
@@ -521,6 +530,7 @@ This keeps tooling output, prompt instructions, and policy runtime in lock-step.
 ### 17.1 提权闭环（intent + scope + 一次性 token）
 
 核心改动：
+
 - `src/services/vfs/core/types.ts`
   - 新增 `VfsElevationIntent`：
     - `outline_submit | sudo_command | god_turn | history_rewrite | editor_session`
@@ -537,6 +547,7 @@ This keeps tooling output, prompt instructions, and policy runtime in lock-step.
   - 首次消费 token 成功后，批次内通过 `elevationGrantedIntent/scope` 复用授权
 
 结果：
+
 - token 不能跨意图复用（如 `sudo_command` token 不能写 `outline_submit` 专用范围）。
 - token 不能跨模板越权写入。
 - `skills/refs` 依旧全局永久只读。
@@ -661,6 +672,7 @@ sequenceDiagram
   - 断言 outline 特例仅在 outline prompt，可防止泄漏到 turn/cleanup/runtime。
 
 本轮结果：
+
 - Outline 提交 elevated 可写恢复且受最小权限约束；
 - 非 outline 流程不再暴露该提权例外；
 - 双 Summary 模式与 cleanup 的会话生命周期策略一致；

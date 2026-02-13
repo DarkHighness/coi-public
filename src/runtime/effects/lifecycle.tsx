@@ -102,13 +102,15 @@ export function useRuntimeLifecycleEffects({
             );
           }
 
-
           showToast(
             t("runtime.indexedExistingDocuments", "Indexed existing documents"),
             "info",
           );
         } catch (error) {
-          console.error("[RuntimeLifecycle] Failed to index existing content:", error);
+          console.error(
+            "[RuntimeLifecycle] Failed to index existing content:",
+            error,
+          );
           showToast(
             t(
               "runtime.failedToIndexExistingContent",
@@ -144,10 +146,7 @@ export function useRuntimeLifecycleEffects({
         actions.rag.handleModelMismatch("rebuild");
       } else {
         const disableRAG = window.confirm(
-          t(
-            "runtime.disableRagPrompt",
-            "Disable RAG for this session?",
-          ),
+          t("runtime.disableRagPrompt", "Disable RAG for this session?"),
         );
         if (disableRAG) {
           actions.rag.handleModelMismatch("disable");

@@ -65,7 +65,10 @@ export interface ToolCallError {
 
 export type ToolCallResult<T = unknown> = ToolCallSuccess<T> | ToolCallError;
 
-export const createSuccess = <T>(data: T, message: string): ToolCallSuccess<T> => ({
+export const createSuccess = <T>(
+  data: T,
+  message: string,
+): ToolCallSuccess<T> => ({
   success: true,
   data,
   message,
@@ -84,7 +87,9 @@ const uniqueStrings = (items: Array<string | undefined>): string[] => {
   return next;
 };
 
-const dedupeIssues = (issues: Array<ToolErrorIssue | undefined>): ToolErrorIssue[] => {
+const dedupeIssues = (
+  issues: Array<ToolErrorIssue | undefined>,
+): ToolErrorIssue[] => {
   const seen = new Set<string>();
   const next: ToolErrorIssue[] = [];
   for (const issue of issues) {
@@ -125,7 +130,9 @@ export const inferErrorCategoryFromCode = (
   return "execution";
 };
 
-const normalizeDetails = (details: ToolErrorDetails): ToolErrorDetails | undefined => {
+const normalizeDetails = (
+  details: ToolErrorDetails,
+): ToolErrorDetails | undefined => {
   const normalized: ToolErrorDetails = {};
 
   if (details.category) normalized.category = details.category;
@@ -144,12 +151,20 @@ const normalizeDetails = (details: ToolErrorDetails): ToolErrorDetails | undefin
   }
   if (details.batch) {
     const batch: ToolErrorBatch = {};
-    if (typeof details.batch.index === "number") batch.index = details.batch.index;
-    if (typeof details.batch.total === "number") batch.total = details.batch.total;
-    if (typeof details.batch.operation === "string" && details.batch.operation.length > 0) {
+    if (typeof details.batch.index === "number")
+      batch.index = details.batch.index;
+    if (typeof details.batch.total === "number")
+      batch.total = details.batch.total;
+    if (
+      typeof details.batch.operation === "string" &&
+      details.batch.operation.length > 0
+    ) {
       batch.operation = details.batch.operation;
     }
-    if (typeof details.batch.path === "string" && details.batch.path.length > 0) {
+    if (
+      typeof details.batch.path === "string" &&
+      details.batch.path.length > 0
+    ) {
       batch.path = details.batch.path;
     }
     if (Object.keys(batch).length > 0) normalized.batch = batch;
@@ -197,18 +212,9 @@ export const mergeToolErrorDetails = (
       error.details?.category ??
       inferErrorCategoryFromCode(error.code),
     tool: details.tool ?? error.details?.tool,
-    issues: [
-      ...(error.details?.issues ?? []),
-      ...(details.issues ?? []),
-    ],
-    recovery: [
-      ...(error.details?.recovery ?? []),
-      ...(details.recovery ?? []),
-    ],
-    refs: [
-      ...(error.details?.refs ?? []),
-      ...(details.refs ?? []),
-    ],
+    issues: [...(error.details?.issues ?? []), ...(details.issues ?? [])],
+    recovery: [...(error.details?.recovery ?? []), ...(details.recovery ?? [])],
+    refs: [...(error.details?.refs ?? []), ...(details.refs ?? [])],
     batch: details.batch ?? error.details?.batch,
   });
 

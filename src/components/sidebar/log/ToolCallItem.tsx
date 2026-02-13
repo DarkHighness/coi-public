@@ -8,9 +8,12 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
   const [isExpanded, setIsExpanded] = useState(isError); // Auto-expand errors
   const { t } = useTranslation();
 
-  const isQuery = new Set(["vfs_ls", "vfs_schema", "vfs_read", "vfs_search"]).has(
-    call.name,
-  );
+  const isQuery = new Set([
+    "vfs_ls",
+    "vfs_schema",
+    "vfs_read",
+    "vfs_search",
+  ]).has(call.name);
 
   const isOutlineCommit = /^vfs_commit_outline_phase_[0-9]+$/.test(call.name);
 

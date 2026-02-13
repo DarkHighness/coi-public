@@ -6,7 +6,11 @@ import { createValidGlobal } from "./vfsHandlers.helpers";
 describe("VFS handlers read/schema/ls", () => {
   it("supports char slicing and guards invalid start-only char reads", () => {
     const session = new VfsSession();
-    session.writeFile("world/slice.txt", "abcdefghijklmnopqrstuvwxyz", "text/plain");
+    session.writeFile(
+      "world/slice.txt",
+      "abcdefghijklmnopqrstuvwxyz",
+      "text/plain",
+    );
     const ctx = { vfsSession: session };
 
     const ok = dispatchToolCall(
@@ -40,7 +44,11 @@ describe("VFS handlers read/schema/ls", () => {
 
     const result = dispatchToolCall(
       "vfs_read",
-      { path: "current/world/global.json", mode: "json", pointers: ["/theme", "/missing"] },
+      {
+        path: "current/world/global.json",
+        mode: "json",
+        pointers: ["/theme", "/missing"],
+      },
       ctx,
     ) as any;
 
@@ -79,7 +87,12 @@ describe("VFS handlers read/schema/ls", () => {
 
     const result = dispatchToolCall(
       "vfs_read",
-      { path: "current/world/huge-lines.txt", mode: "lines", startLine: 1, endLine: 12 },
+      {
+        path: "current/world/huge-lines.txt",
+        mode: "lines",
+        startLine: 1,
+        endLine: 12,
+      },
       ctx,
     ) as any;
 
@@ -116,13 +129,20 @@ describe("VFS handlers read/schema/ls", () => {
 
     const result = dispatchToolCall(
       "vfs_schema",
-      { paths: ["current/world/global.json", "current/outline/phases/phase42.json"] },
+      {
+        paths: [
+          "current/world/global.json",
+          "current/outline/phases/phase42.json",
+        ],
+      },
       ctx,
     ) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.missing).toEqual([]);
-    expect(result.data.schemas[0].classification.templateId).toBe("template.story.world");
+    expect(result.data.schemas[0].classification.templateId).toBe(
+      "template.story.world",
+    );
     expect(result.data.schemas[1].classification.templateId).toBe(
       "template.narrative.outline.phases",
     );

@@ -1135,10 +1135,7 @@ function processZodToGeminiCompatible(
     const valueSchema = (schema as ZodRecord<any>)._def.valueType;
     const result: OpenAISchema = {
       type: "object",
-      additionalProperties: processZodToGeminiCompatible(
-        valueSchema,
-        false,
-      ),
+      additionalProperties: processZodToGeminiCompatible(valueSchema, false),
     };
     if (schema.description) result.description = schema.description;
     return result;

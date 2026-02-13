@@ -68,7 +68,9 @@ describe("runSummaryLoop dispatch", () => {
 
   it("falls back to query_summary when compact fails with context overflow", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    compactMock.mockRejectedValue(new Error("CONTEXT_LENGTH_EXCEEDED: too long"));
+    compactMock.mockRejectedValue(
+      new Error("CONTEXT_LENGTH_EXCEEDED: too long"),
+    );
 
     const queryResult = makeResult("query");
     queryMock.mockResolvedValue(queryResult);

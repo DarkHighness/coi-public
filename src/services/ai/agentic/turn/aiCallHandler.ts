@@ -98,9 +98,7 @@ export async function handleAICall(
         requiredToolName,
         finishToolName: loopState.finishToolName,
         onRetry: (err, count, meta) => {
-          console.warn(
-            `[AICall] Retry ${count}/${remainingRetries}: ${err}`,
-          );
+          console.warn(`[AICall] Retry ${count}/${remainingRetries}: ${err}`);
           if (!meta?.silent) {
             incrementRetries(loopState.budgetState);
             const retryPrompt = generateBudgetPrompt(

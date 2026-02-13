@@ -29,7 +29,8 @@ vi.mock("../../sessionManager", () => ({
     setHistory: (...args: any[]) => mockSetHistory(...args),
     setCacheHint: (...args: any[]) => mockSetCacheHint(...args),
     getProvider: (...args: any[]) => mockGetProvider(...args),
-    getEffectiveToolChoice: (...args: any[]) => mockGetEffectiveToolChoice(...args),
+    getEffectiveToolChoice: (...args: any[]) =>
+      mockGetEffectiveToolChoice(...args),
   },
 }));
 
@@ -102,7 +103,8 @@ describe("generateStoryOutlinePhased (coverage)", () => {
           conditions: "Follow the traces and survive the night.",
         },
         hidden: {
-          trueDescription: "A sealed pact is weakening and something is waking.",
+          trueDescription:
+            "A sealed pact is weakening and something is waking.",
           trueConditions: "Restore the seal or pay the price.",
         },
       },
@@ -141,7 +143,8 @@ describe("generateStoryOutlinePhased (coverage)", () => {
           knownBy: ["char:player"],
           name: "Abandoned Chapel",
           visible: {
-            description: "A chapel with cracked stone and a bell that won't ring.",
+            description:
+              "A chapel with cracked stone and a bell that won't ring.",
             knownFeatures: ["cracked altar", "hanging bell"],
           },
         },
@@ -200,7 +203,8 @@ describe("generateStoryOutlinePhased (coverage)", () => {
           title: "Chapel Rumors",
           category: "legend",
           visible: {
-            description: "Locals whisper about a bell that wards off nightmares.",
+            description:
+              "Locals whisper about a bell that wards off nightmares.",
           },
         },
       ],
@@ -227,7 +231,10 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       openingNarrative: {
         narrative:
           "The bell tower looms above you. The rope is still, yet the air feels heavy.",
-        choices: [{ text: "Enter the chapel" }, { text: "Inspect the bell rope" }],
+        choices: [
+          { text: "Enter the chapel" },
+          { text: "Inspect the bell rope" },
+        ],
       },
     };
 
@@ -244,12 +251,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
     };
 
     mockCallWithAgenticRetry.mockImplementation(
-      async (
-        _provider: any,
-        _request: any,
-        _history: any,
-        opts: any,
-      ) => {
+      async (_provider: any, _request: any, _history: any, opts: any) => {
         const toolName = String(opts?.finishToolName ?? "");
         const data = dataByToolName[toolName];
         if (!toolName || !data) {
@@ -291,8 +293,9 @@ describe("generateStoryOutlinePhased (coverage)", () => {
 
     expect(result.outline.title).toBe("Demo Adventure");
     expect(result.outline.player.profile.currentLocation).toBe("loc:start");
-    expect(result.outline.locations.some((l) => l.id === "loc:start")).toBe(true);
+    expect(result.outline.locations.some((l) => l.id === "loc:start")).toBe(
+      true,
+    );
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(9);
   });
 });
-

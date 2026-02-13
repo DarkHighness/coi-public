@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const travel: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/travel#travel", source: "atoms/worldbuilding/travel.ts", exportName: "travel" }, () => `
+export const travel: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/travel#travel",
+    source: "atoms/worldbuilding/travel.ts",
+    exportName: "travel",
+  },
+  () => `
 <worldbuilding_context>
 **TRAVEL & DISTANCE (The road changes the traveler)**
 
@@ -74,43 +79,58 @@ Question:
 - Day 3 hazard:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const travelPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/travel#travelPrimer", source: "atoms/worldbuilding/travel.ts", exportName: "travelPrimer" }, () =>
-  `
+export const travelPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/travel#travelPrimer",
+    source: "atoms/worldbuilding/travel.ts",
+    exportName: "travelPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **TRAVEL PRIMER**: Travel should cost time/resources/exposure/risk. Always offer at least two routes with different tradeoffs.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const travelSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/travel#travelSkill", source: "atoms/worldbuilding/travel.ts", exportName: "travelSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(travel),
-  quickStart: `
+export const travelSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/travel#travelSkill",
+    source: "atoms/worldbuilding/travel.ts",
+    exportName: "travelSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(travel),
+    quickStart: `
 1) Offer 2 routes (fast vs safe) with real tradeoffs
 2) Add 1 chokepoint (someone controls passage)
 3) Pick 2 travel costs (time/resources/exposure/risk)
 4) Define a day-3 hazard (escalation)
 `.trim(),
-  checklist: [
-    "At least two routes exist and feel meaningfully different.",
-    "A chokepoint exists with a controller and a price.",
-    "Travel has 2+ costs (not just narration).",
-    "Information velocity is considered (who hears what, when).",
-    "Escalation clock exists for longer trips.",
-  ],
-  examples: [
-    {
-      scenario: "Two routes with tradeoffs",
-      wrong: `"You travel for three days and arrive."`,
-      right: `"Two ways to the city:
+    checklist: [
+      "At least two routes exist and feel meaningfully different.",
+      "A chokepoint exists with a controller and a price.",
+      "Travel has 2+ costs (not just narration).",
+      "Information velocity is considered (who hears what, when).",
+      "Escalation clock exists for longer trips.",
+    ],
+    examples: [
+      {
+        scenario: "Two routes with tradeoffs",
+        wrong: `"You travel for three days and arrive."`,
+        right: `"Two ways to the city:
 1) The toll road (1 day). The gate captain knows your face and wants a 'processing fee.'
 2) The marsh path (3 days). No tolls, but leeches, fever, and smugglers who ask questions."`,
-    },
-    {
-      scenario: "Exposure as a cost",
-      wrong: `"The player moves unseen because it's convenient."`,
-      right: `"Every inn requires a register stamp. Skip inns and you camp—safe from paper trails,
+      },
+      {
+        scenario: "Exposure as a cost",
+        wrong: `"The player moves unseen because it's convenient."`,
+        right: `"Every inn requires a register stamp. Skip inns and you camp—safe from paper trails,
 but you light fires. Fires draw eyes. Eyes sell rumors."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

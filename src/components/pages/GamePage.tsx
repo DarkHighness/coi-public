@@ -140,7 +140,9 @@ export const GamePage: React.FC<GamePageProps> = ({
   const [magicMirrorImage, setMagicMirrorImage] = useState<string | null>(null);
   const [isVeoScriptOpen, setIsVeoScriptOpen] = useState(false);
   const [isStateEditorOpen, setIsStateEditorOpen] = useState(false);
-  const [stateEditorSessionToken, setStateEditorSessionToken] = useState<string | null>(null);
+  const [stateEditorSessionToken, setStateEditorSessionToken] = useState<
+    string | null
+  >(null);
   const [isGameStateViewerOpen, setIsGameStateViewerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("story");
@@ -428,18 +430,26 @@ export const GamePage: React.FC<GamePageProps> = ({
   };
 
   const handleImageUpload = (nodeId: string, imageId: string) => {
-    updateNodeMeta(nodeId, { imageId, imageUrl: undefined }, {
-      reason: "gamePage.imageUpload",
-      persist: true,
-    });
+    updateNodeMeta(
+      nodeId,
+      { imageId, imageUrl: undefined },
+      {
+        reason: "gamePage.imageUpload",
+        persist: true,
+      },
+    );
     showToast(t("imageUploaded", "Image uploaded successfully"), "info");
   };
 
   const handleImageDelete = (nodeId: string) => {
-    updateNodeMeta(nodeId, { imageId: undefined, imageUrl: undefined }, {
-      reason: "gamePage.imageDelete",
-      persist: true,
-    });
+    updateNodeMeta(
+      nodeId,
+      { imageId: undefined, imageUrl: undefined },
+      {
+        reason: "gamePage.imageDelete",
+        persist: true,
+      },
+    );
     showToast(t("imageDeleted", "Image deleted successfully"), "info");
   };
 
@@ -463,7 +473,9 @@ export const GamePage: React.FC<GamePageProps> = ({
 
   const handleCloseStateEditor = () => {
     if (stateEditorSessionToken) {
-      vfsElevationTokenManager.revokeEditorSessionToken(stateEditorSessionToken);
+      vfsElevationTokenManager.revokeEditorSessionToken(
+        stateEditorSessionToken,
+      );
     }
     setStateEditorSessionToken(null);
     setIsStateEditorOpen(false);
@@ -472,7 +484,9 @@ export const GamePage: React.FC<GamePageProps> = ({
   useEffect(() => {
     return () => {
       if (stateEditorSessionToken) {
-        vfsElevationTokenManager.revokeEditorSessionToken(stateEditorSessionToken);
+        vfsElevationTokenManager.revokeEditorSessionToken(
+          stateEditorSessionToken,
+        );
       }
     };
   }, [stateEditorSessionToken]);
@@ -631,7 +645,6 @@ export const GamePage: React.FC<GamePageProps> = ({
             currentSaveTitle={gameState.outline?.title}
           />
         )}
-
       </Suspense>
       {/* Tutorial is now handled by TutorialContext and TutorialSpotlight in App.tsx */}
     </div>

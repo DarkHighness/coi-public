@@ -53,6 +53,6 @@ export function modelInfoToCapabilities(
     supportsImage: caps?.image ?? fallback.supportsImage,
     supportsVideo: caps?.video ?? fallback.supportsVideo,
     supportsAudio: caps?.audio ?? fallback.supportsAudio,
-          supportsEmbedding: true, // vendor models list generally doesn't contain embedding, handled by protocol default capabilities
-        };
-      }
+    supportsEmbedding: true, // vendor models list generally doesn't contain embedding, handled by protocol default capabilities
+  };
+}

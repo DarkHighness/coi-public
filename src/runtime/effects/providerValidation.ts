@@ -55,7 +55,9 @@ export function getOptionalConnectionWarnings(
 }
 
 function getProviderInstance(aiSettings: AISettings, providerId: string) {
-  return aiSettings.providers.instances.find((instance) => instance.id === providerId);
+  return aiSettings.providers.instances.find(
+    (instance) => instance.id === providerId,
+  );
 }
 
 function hasApiKey(aiSettings: AISettings, providerId: string): boolean {
@@ -69,7 +71,10 @@ function hasApiKey(aiSettings: AISettings, providerId: string): boolean {
   return !!(instance.apiKey && instance.apiKey.trim() !== "");
 }
 
-function isProviderAvailable(aiSettings: AISettings, providerId: string): boolean {
+function isProviderAvailable(
+  aiSettings: AISettings,
+  providerId: string,
+): boolean {
   const instance = getProviderInstance(aiSettings, providerId);
   if (!instance) return false;
   return instance.enabled && hasApiKey(aiSettings, providerId);
@@ -81,10 +86,13 @@ function pushMissingApiKeyIssue(
   config: FeatureConfig,
 ) {
   const providerName =
-    getProviderInstance(aiSettings, config.providerId)?.name || config.providerId;
+    getProviderInstance(aiSettings, config.providerId)?.name ||
+    config.providerId;
 
   issues.push({
-    type: config.required ? "missing_required_api_key" : "missing_optional_api_key",
+    type: config.required
+      ? "missing_required_api_key"
+      : "missing_optional_api_key",
     feature: config.feature,
     providerId: config.providerId,
     providerName,
@@ -139,7 +147,8 @@ export async function validateProvidersForMode(
     {
       feature: "embedding",
       providerId: aiSettings.embedding.providerId,
-      enabled: aiSettings.embedding.enabled === true && embeddingUsesRemoteProvider,
+      enabled:
+        aiSettings.embedding.enabled === true && embeddingUsesRemoteProvider,
       required: false,
     },
     {
@@ -177,7 +186,8 @@ export async function validateProvidersForMode(
   const requiredConnectionChecks = requiredFeatures;
   for (const feature of requiredConnectionChecks) {
     const providerName =
-      getProviderInstance(aiSettings, feature.providerId)?.name || feature.providerId;
+      getProviderInstance(aiSettings, feature.providerId)?.name ||
+      feature.providerId;
     const { isValid, error, localError } = await validateConnection(
       aiSettings,
       feature.providerId,
@@ -195,12 +205,14 @@ export async function validateProvidersForMode(
   }
 
   const optionalConnectionChecks = optionalFeatures.filter(
-    (feature) => feature.enabled && feature.providerId !== aiSettings.story.providerId,
+    (feature) =>
+      feature.enabled && feature.providerId !== aiSettings.story.providerId,
   );
 
   for (const feature of optionalConnectionChecks) {
     const providerName =
-      getProviderInstance(aiSettings, feature.providerId)?.name || feature.providerId;
+      getProviderInstance(aiSettings, feature.providerId)?.name ||
+      feature.providerId;
 
     const { isValid, error, localError } = await validateConnection(
       aiSettings,

@@ -10,11 +10,16 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * Timeline 设计上下文 - 完整版
  */
-export const timelineDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/timelineDesign#timelineDesign", source: "atoms/entities/timelineDesign.ts", exportName: "timelineDesign" }, () => `
+export const timelineDesign: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/timelineDesign#timelineDesign",
+    source: "atoms/entities/timelineDesign.ts",
+    exportName: "timelineDesign",
+  },
+  () => `
 <game_system_context>
 **TIMELINE DESIGN FOR REALITY RENDERING ENGINE:**
 
@@ -62,12 +67,19 @@ The LAST timeline event should set up why the story begins NOW:
 - The protagonist's origin story should MIRROR a larger world event (microcosm/macrocosm).
 - The final timeline event should set up the INCITING INCIDENT of the story.
 </game_system_context>
-`);
+`,
+);
 
 /**
  * Timeline 设计上下文 - 精简版
  */
-export const timelineDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/timelineDesign#timelineDesignPrimer", source: "atoms/entities/timelineDesign.ts", exportName: "timelineDesignPrimer" }, () => `
+export const timelineDesignPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/timelineDesign#timelineDesignPrimer",
+    source: "atoms/entities/timelineDesign.ts",
+    exportName: "timelineDesignPrimer",
+  },
+  () => `
 <game_system_context>
 **TIMELINE DESIGN**: Events create cause-and-effect chains.
 - Causal chain (Event A → B → C)
@@ -76,6 +88,7 @@ export const timelineDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/enti
 - Inciting incident (why story begins NOW)
 - Thematic resonance
 </game_system_context>
-`);
+`,
+);
 
 export default timelineDesign;

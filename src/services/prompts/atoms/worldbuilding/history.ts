@@ -10,11 +10,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * History Systems - 完整版
  */
-export const historySystem: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/history#historySystem", source: "atoms/worldbuilding/history.ts", exportName: "historySystem" }, () => `
+export const historySystem: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/history#historySystem",
+    source: "atoms/worldbuilding/history.ts",
+    exportName: "historySystem",
+  },
+  () => `
 <worldbuilding_context>
 **HISTORY & LEGENDS DESIGN:**
 
@@ -221,12 +226,19 @@ What happened then doesn't stay buried; it leaks through cracks in the present l
 - Wisdom from past mistakes
 </gm_use>
 </worldbuilding_context>
-`);
+`,
+);
 
 /**
  * History Systems - 精简版
  */
-export const historySystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/history#historySystemLite", source: "atoms/worldbuilding/history.ts", exportName: "historySystemLite" }, () => `
+export const historySystemLite: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/history#historySystemLite",
+    source: "atoms/worldbuilding/history.ts",
+    exportName: "historySystemLite",
+  },
+  () => `
 <worldbuilding_context>
 **HISTORY & LEGENDS**: History is not past—it is residue. The dead have opinions, and the ground does not forget.
 - Living history (ruins, grudges, traditions from trauma)
@@ -237,7 +249,8 @@ export const historySystemLite: Atom<void> = defineAtom({ atomId: "atoms/worldbu
 - Historical trauma (cultural scars, manifestations, recovery)
 - GM use (pacing, motivation, constraint, resource)
 </worldbuilding_context>
-`);
+`,
+);
 
 export default historySystem;
 
@@ -245,10 +258,16 @@ export default historySystem;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const historySystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/history#historySystemSkill", source: "atoms/worldbuilding/history.ts", exportName: "historySystemSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(historySystem),
+export const historySystemSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/history#historySystemSkill",
+    source: "atoms/worldbuilding/history.ts",
+    exportName: "historySystemSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(historySystem),
 
-  quickStart: `
+    quickStart: `
 1. History is residue (past shapes present through ruins, grudges, traditions)
 2. Truth has layers (official records vs folk memory vs hidden truth)
 3. Oral tradition encodes warnings (fairy tales, songs, proverbs have meaning)
@@ -257,57 +276,58 @@ export const historySystemSkill: SkillAtom<void> = defineSkillAtom({ atomId: "at
 6. History is a weapon (legitimacy, obligation, threat of revelation)
 `.trim(),
 
-  checklist: [
-    "Living history present (how past affects now)?",
-    "Truth has layers (competing narratives)?",
-    "Historical hooks available (wars, disasters, lost civilizations)?",
-    "Monuments/ruins have meaning and mystery?",
-    "Oral traditions exist (songs, stories, proverbs)?",
-    "Historical trauma has behavioral effects?",
-    "History usable as motivation for NPCs/factions?",
-    "History reveals gradually (early hints → late revelation)?",
-  ],
+    checklist: [
+      "Living history present (how past affects now)?",
+      "Truth has layers (competing narratives)?",
+      "Historical hooks available (wars, disasters, lost civilizations)?",
+      "Monuments/ruins have meaning and mystery?",
+      "Oral traditions exist (songs, stories, proverbs)?",
+      "Historical trauma has behavioral effects?",
+      "History usable as motivation for NPCs/factions?",
+      "History reveals gradually (early hints → late revelation)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Living History",
-      wrong: `"There was a war 200 years ago."
+    examples: [
+      {
+        scenario: "Living History",
+        wrong: `"There was a war 200 years ago."
 (Dead history, no current effect.)`,
-      right: `"Every household in the valley has a sword above the door.
+        right: `"Every household in the valley has a sword above the door.
 They haven't fought in 200 years. But the sword is sharpened
 each spring, the day the southerners came last time.
 Just in case."
 (Past event creates present behavior.)`,
-    },
-    {
-      scenario: "Layers of Truth",
-      wrong: `"The king was a hero."
+      },
+      {
+        scenario: "Layers of Truth",
+        wrong: `"The king was a hero."
 (One story, no complexity.)`,
-      right: `"The temples say King Aldric was a saint who united the kingdom.
+        right: `"The temples say King Aldric was a saint who united the kingdom.
 The old families whisper he poisoned his brothers.
 The archives burned in the fire—convenient, that.
 But the gravediggers' guild keeps their own records."
 (Competing narratives, hints at hidden truth.)`,
-    },
-    {
-      scenario: "Oral Tradition as Clue",
-      wrong: `"They sing old songs."
+      },
+      {
+        scenario: "Oral Tradition as Clue",
+        wrong: `"They sing old songs."
 (Atmosphere, no meaning.)`,
-      right: `"'Never dig where the three stones meet, never dig when the moon is sweet.'
+        right: `"'Never dig where the three stones meet, never dig when the moon is sweet.'
 Children sing it. No one remembers why. But the three stones are on the hill,
 and the full moon is in three days. Someone buried something
 they didn't want found."
 (Children's rhyme encodes real warning.)`,
-    },
-    {
-      scenario: "Historical Trauma",
-      wrong: `"They survived a plague."
+      },
+      {
+        scenario: "Historical Trauma",
+        wrong: `"They survived a plague."
 (Past event, no current effect.)`,
-      right: `"No one shares cups in this town. Ever. Not even family.
+        right: `"No one shares cups in this town. Ever. Not even family.
 The plague was 50 years ago. Everyone who shared cups died.
 The fear was passed down with the dishes.
 When the stranger drank from the shared flagon, silence fell."
 (Trauma creates behavior that affects current events.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

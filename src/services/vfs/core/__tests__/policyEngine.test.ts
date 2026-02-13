@@ -11,7 +11,10 @@ describe("vfsPolicyEngine", () => {
     const decision = vfsPolicyEngine.canWrite("skills/README.md", {
       actor: "ai",
       mode: "sudo",
-      elevationToken: vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" }),
+      elevationToken: vfsElevationTokenManager.issueAiElevationToken({
+        intent: "sudo_command",
+        scopeTemplateIds: "all_elevated",
+      }),
     });
 
     expect(decision.allowed).toBe(false);
@@ -76,7 +79,10 @@ describe("vfsPolicyEngine", () => {
     expect(denied.allowed).toBe(false);
     expect(denied.code).toBe("ELEVATION_REQUIRED");
 
-    const token = vfsElevationTokenManager.issueAiElevationToken({ intent: "sudo_command", scopeTemplateIds: "all_elevated" });
+    const token = vfsElevationTokenManager.issueAiElevationToken({
+      intent: "sudo_command",
+      scopeTemplateIds: "all_elevated",
+    });
     const batchContext = {
       actor: "ai" as const,
       mode: "sudo" as const,
@@ -85,7 +91,10 @@ describe("vfsPolicyEngine", () => {
       elevationScopeTemplateIds: "all_elevated" as const,
     };
 
-    const first = vfsPolicyEngine.canWrite("outline/phases/phase0.json", batchContext);
+    const first = vfsPolicyEngine.canWrite(
+      "outline/phases/phase0.json",
+      batchContext,
+    );
     expect(first.allowed).toBe(true);
 
     const second = vfsPolicyEngine.canWrite(
@@ -114,11 +123,14 @@ describe("vfsPolicyEngine", () => {
       mode: "normal",
       activeForkId: 2,
     });
-    const canonical = vfsPolicyEngine.canWrite("forks/2/story/world/global.json", {
-      actor: "ai",
-      mode: "normal",
-      activeForkId: 2,
-    });
+    const canonical = vfsPolicyEngine.canWrite(
+      "forks/2/story/world/global.json",
+      {
+        actor: "ai",
+        mode: "normal",
+        activeForkId: 2,
+      },
+    );
 
     expect(alias.allowed).toBe(canonical.allowed);
     expect(alias.code).toBe(canonical.code);
@@ -195,10 +207,16 @@ describe("vfsPolicyEngine", () => {
       elevationScopeTemplateIds: ["template.narrative.outline.phases"],
     };
 
-    const first = vfsPolicyEngine.canWrite("outline/phases/phase0.json", context);
+    const first = vfsPolicyEngine.canWrite(
+      "outline/phases/phase0.json",
+      context,
+    );
     expect(first.allowed).toBe(true);
 
-    const second = vfsPolicyEngine.canWrite("outline/phases/phase1.json", context);
+    const second = vfsPolicyEngine.canWrite(
+      "outline/phases/phase1.json",
+      context,
+    );
     expect(second.allowed).toBe(true);
 
     const deniedOutsideScope = vfsPolicyEngine.canWrite(

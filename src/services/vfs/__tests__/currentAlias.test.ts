@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { stripCurrentPath, toCanonicalPath, toCurrentPath } from "../currentAlias";
+import {
+  stripCurrentPath,
+  toCanonicalPath,
+  toCurrentPath,
+} from "../currentAlias";
 
 describe("current alias", () => {
   it("prefixes and strips current paths", () => {
@@ -23,8 +27,8 @@ describe("current alias", () => {
     expect(toCurrentPath("shared/narrative/outline/outline.json")).toBe(
       "current/outline/outline.json",
     );
-    expect(toCanonicalPath("current/world/global.json", { activeForkId: 3 })).toBe(
-      "forks/3/story/world/global.json",
-    );
+    expect(
+      toCanonicalPath("current/world/global.json", { activeForkId: 3 }),
+    ).toBe("forks/3/story/world/global.json");
   });
 });

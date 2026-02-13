@@ -5,15 +5,27 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const philosophyPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/philosophy#philosophyPrimer", source: "atoms/core/philosophy.ts", exportName: "philosophyPrimer" }, () => `
+export const philosophyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/philosophy#philosophyPrimer",
+    source: "atoms/core/philosophy.ts",
+    exportName: "philosophyPrimer",
+  },
+  () => `
 <philosophy>
   FOUR TRUTHS: Indifference (world doesn't care), Reality (world is consistent),
   Freedom (you can attempt anything), Responsibility (consequences are permanent).
   MEANING: Not found, but made through choice. Choice matters because it costs.
 </philosophy>
-`);
-export const philosophy: Atom<void> = defineAtom({ atomId: "atoms/core/philosophy#philosophy", source: "atoms/core/philosophy.ts", exportName: "philosophy" }, () => `
+`,
+);
+export const philosophy: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/philosophy#philosophy",
+    source: "atoms/core/philosophy.ts",
+    exportName: "philosophy",
+  },
+  () => `
 <philosophy>
   ============================================================================
   EXISTENTIALIST REALISM — THE FOUNDATION
@@ -116,7 +128,8 @@ export const philosophy: Atom<void> = defineAtom({ atomId: "atoms/core/philosoph
     This is the beauty I render.
   </the_beauty>
 </philosophy>
-`);
+`,
+);
 
 export default philosophy;
 
@@ -124,39 +137,46 @@ export default philosophy;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const philosophySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/philosophy#philosophySkill", source: "atoms/core/philosophy.ts", exportName: "philosophySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(philosophy),
+export const philosophySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/philosophy#philosophySkill",
+    source: "atoms/core/philosophy.ts",
+    exportName: "philosophySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(philosophy),
 
-  quickStart: `
+    quickStart: `
 1. The Four Truths: Indifference, Reality, Freedom, Responsibility
 2. Meaning is made through choice, not given by the world
 3. Choices matter because they cannot be undone
 4. Beauty exists because of indifference, not despite it
 `.trim(),
 
-  checklist: [
-    "World demonstrates indifference (not cruelty)?",
-    "World is consistent and predictable (rules can be learned)?",
-    "Player can attempt anything (no invisible walls)?",
-    "Consequences are permanent (no reloads)?",
-    "Meaning emerges from player's choices?",
-    "Finding beauty in the mundane and difficult?",
-  ],
+    checklist: [
+      "World demonstrates indifference (not cruelty)?",
+      "World is consistent and predictable (rules can be learned)?",
+      "Player can attempt anything (no invisible walls)?",
+      "Consequences are permanent (no reloads)?",
+      "Meaning emerges from player's choices?",
+      "Finding beauty in the mundane and difficult?",
+    ],
 
-  examples: [
-    {
-      scenario: "Meaning Making",
-      wrong: `The world rewards the hero with cosmic significance.
+    examples: [
+      {
+        scenario: "Meaning Making",
+        wrong: `The world rewards the hero with cosmic significance.
 (Meaning given by the universe - not earned.)`,
-      right: `The sacrifice means something because YOU chose it.
+        right: `The sacrifice means something because YOU chose it.
 (Meaning made through choice and cost.)`,
-    },
-    {
-      scenario: "Beauty in Indifference",
-      wrong: `"The world celebrated your kindness."
+      },
+      {
+        scenario: "Beauty in Indifference",
+        wrong: `"The world celebrated your kindness."
 (World rewarding good behavior.)`,
-      right: `"The kindness had no cosmic reward. That made it pure."
+        right: `"The kindness had no cosmic reward. That made it pure."
 (Beauty from action itself, not external validation.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

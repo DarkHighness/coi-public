@@ -11,8 +11,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const ecology: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/ecology#ecology", source: "atoms/worldbuilding/ecology.ts", exportName: "ecology" }, () => `
+export const ecology: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/ecology#ecology",
+    source: "atoms/worldbuilding/ecology.ts",
+    exportName: "ecology",
+  },
+  () => `
 <worldbuilding_context>
 **ECOLOGY & ENVIRONMENT (The land remembers — and it bites back)**
 
@@ -98,43 +103,58 @@ Rule: the environment responds on a timeline (days/weeks/seasons). It does not h
 - Seasonal shift:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const ecologyPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/ecology#ecologyPrimer", source: "atoms/worldbuilding/ecology.ts", exportName: "ecologyPrimer" }, () =>
-  `
+export const ecologyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/ecology#ecologyPrimer",
+    source: "atoms/worldbuilding/ecology.ts",
+    exportName: "ecologyPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **ECOLOGY PRIMER**: The land is the oldest character — indifferent, patient, and unforgiving. Define food/water/disease loops plus hazards with warning signs and mitigations. Environment should be learnable and bite back.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const ecologySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/ecology#ecologySkill", source: "atoms/worldbuilding/ecology.ts", exportName: "ecologySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(ecology),
-  quickStart: `
+export const ecologySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/ecology#ecologySkill",
+    source: "atoms/worldbuilding/ecology.ts",
+    exportName: "ecologySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(ecology),
+    quickStart: `
 1) Define one habitat boundary (rules change across it)
 2) Define one water risk and one food bottleneck
 3) Pick one common disease and how locals prevent it
 4) Pick one hazard with warning signs + mitigation
 `.trim(),
-  checklist: [
-    "At least two habitats are defined with a boundary between them.",
-    "Food/water/disease loops exist (not just scenery).",
-    "Hazards have warning signs and mitigations (learnable).",
-    "Seasonality changes routes/prices/behavior.",
-    "Human adaptation follows ecology (buildings, taboos, storage).",
-  ],
-  examples: [
-    {
-      scenario: "Hazard with warning signs",
-      wrong: `"The swamp is dangerous."`,
-      right: `"The swamp turns silent when the leech-bloom opens—no birds, no frogs.
+    checklist: [
+      "At least two habitats are defined with a boundary between them.",
+      "Food/water/disease loops exist (not just scenery).",
+      "Hazards have warning signs and mitigations (learnable).",
+      "Seasonality changes routes/prices/behavior.",
+      "Human adaptation follows ecology (buildings, taboos, storage).",
+    ],
+    examples: [
+      {
+        scenario: "Hazard with warning signs",
+        wrong: `"The swamp is dangerous."`,
+        right: `"The swamp turns silent when the leech-bloom opens—no birds, no frogs.
 Locals wear ash-smeared boots. Ignore it and you'll bleed through your socks by noon."`,
-    },
-    {
-      scenario: "Seasonality as clock",
-      wrong: `"Winter is coming (vibes)."`,
-      right: `"First frost closes the mountain pass. Caravans reroute through the canyon,
+      },
+      {
+        scenario: "Seasonality as clock",
+        wrong: `"Winter is coming (vibes)."`,
+        right: `"First frost closes the mountain pass. Caravans reroute through the canyon,
 where bandits collect 'winter tolls'. Prices spike. Disease shifts from fever to lung-rot.
 Now winter is a deadline, not a mood."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

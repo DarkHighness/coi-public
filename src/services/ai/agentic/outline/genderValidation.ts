@@ -96,27 +96,39 @@ const RELATIONSHIP_IDENTITY_KEYWORDS = [
 ];
 
 const normalizeText = (value: unknown): string =>
-  String(value ?? "").trim().toLowerCase();
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
 
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const isEnglishKeyword = (keyword: string): boolean => /^[a-z][a-z- ]*$/i.test(keyword);
+const isEnglishKeyword = (keyword: string): boolean =>
+  /^[a-z][a-z- ]*$/i.test(keyword);
 
 const containsKeyword = (text: string, keyword: string): boolean => {
   if (!text || !keyword) return false;
 
   if (isEnglishKeyword(keyword)) {
-    const pattern = new RegExp(`\\b${escapeRegex(keyword.toLowerCase())}\\b`, "i");
+    const pattern = new RegExp(
+      `\\b${escapeRegex(keyword.toLowerCase())}\\b`,
+      "i",
+    );
     return pattern.test(text);
   }
 
   return text.includes(keyword.toLowerCase());
 };
 
-const detectGenderSignal = (text: string): { hasMale: boolean; hasFemale: boolean } => {
-  const hasMale = MALE_KEYWORDS.some((keyword) => containsKeyword(text, keyword));
-  const hasFemale = FEMALE_KEYWORDS.some((keyword) => containsKeyword(text, keyword));
+const detectGenderSignal = (
+  text: string,
+): { hasMale: boolean; hasFemale: boolean } => {
+  const hasMale = MALE_KEYWORDS.some((keyword) =>
+    containsKeyword(text, keyword),
+  );
+  const hasFemale = FEMALE_KEYWORDS.some((keyword) =>
+    containsKeyword(text, keyword),
+  );
   return { hasMale, hasFemale };
 };
 
@@ -161,8 +173,8 @@ export const validateGenderPreferencePhase3 = (
   for (const field of relationshipIdentityRestrictedFields) {
     const fieldText = normalizeText(field.value);
     if (!fieldText) continue;
-    const hasRelationshipIdentity = RELATIONSHIP_IDENTITY_KEYWORDS.some((keyword) =>
-      containsKeyword(fieldText, keyword),
+    const hasRelationshipIdentity = RELATIONSHIP_IDENTITY_KEYWORDS.some(
+      (keyword) => containsKeyword(fieldText, keyword),
     );
 
     if (!hasRelationshipIdentity) continue;

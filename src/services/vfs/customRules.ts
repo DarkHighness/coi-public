@@ -114,7 +114,9 @@ const inferCategoryTag = (category: string): CustomRule["category"] => {
   return "custom";
 };
 
-const inferCategoryTagFromFolder = (folderName: string): CustomRule["category"] | null => {
+const inferCategoryTagFromFolder = (
+  folderName: string,
+): CustomRule["category"] | null => {
   const match = /^(\d{2})-/.exec(folderName);
   if (!match) {
     return null;
@@ -128,7 +130,9 @@ const inferCategoryTagFromFolder = (folderName: string): CustomRule["category"] 
   }
 
   const slug = folderName.replace(/^\d{2}-/, "");
-  const bySlug = CUSTOM_RULE_CATEGORY_PRESETS.find((preset) => preset.slug === slug);
+  const bySlug = CUSTOM_RULE_CATEGORY_PRESETS.find(
+    (preset) => preset.slug === slug,
+  );
   return bySlug?.category ?? null;
 };
 
@@ -162,7 +166,9 @@ const toCustomRuleFromPack = (
   }
 
   const categoryFromFolder = inferCategoryTagFromFolder(folder);
-  const fallbackTitleFromFolder = folder.replace(/^\d{2}-/, "").replace(/-/g, " ");
+  const fallbackTitleFromFolder = folder
+    .replace(/^\d{2}-/, "")
+    .replace(/-/g, " ");
 
   return {
     id: `pack:${folder}`,
@@ -184,7 +190,10 @@ export const deriveCustomRulesFromVfs = (files: VfsFileMap): CustomRule[] => {
       looseFork: true,
     });
 
-    if (logicalPath.startsWith("world/custom_rules/") && logicalPath.endsWith(".json")) {
+    if (
+      logicalPath.startsWith("world/custom_rules/") &&
+      logicalPath.endsWith(".json")
+    ) {
       try {
         const parsed = JSON.parse(file.content) as CustomRule;
         rules.push(parsed);
@@ -205,7 +214,9 @@ export const deriveCustomRulesFromVfs = (files: VfsFileMap): CustomRule[] => {
     }
   }
 
-  return rules.sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
+  return rules.sort(
+    (a, b) => a.priority - b.priority || a.id.localeCompare(b.id),
+  );
 };
 
 const slugify = (value: string): string =>
@@ -240,7 +251,9 @@ export const CUSTOM_RULES_README_CONTENT = [
   "",
 ].join("\n");
 
-export const toCustomRulePackPathForCategory = (category: RuleCategory): string => {
+export const toCustomRulePackPathForCategory = (
+  category: RuleCategory,
+): string => {
   const directoryPath = getCustomRuleCategoryDirectoryPath(category);
   return `${directoryPath}/RULES.md`;
 };

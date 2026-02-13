@@ -34,9 +34,9 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searchTypeFilter, setSearchTypeFilter] = useState<DocumentType | "all">(
-    "all",
-  );
+  const [searchTypeFilter, setSearchTypeFilter] = useState<
+    DocumentType | "all"
+  >("all");
 
   const [documents, setDocuments] = useState<any[]>([]);
   const [documentsTotal, setDocumentsTotal] = useState(0);
@@ -85,7 +85,13 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
     } finally {
       setSearching(false);
     }
-  }, [gameState.forkId, gameState.turnNumber, query, ragActions, searchTypeFilter]);
+  }, [
+    gameState.forkId,
+    gameState.turnNumber,
+    query,
+    ragActions,
+    searchTypeFilter,
+  ]);
 
   const loadDocuments = useCallback(async () => {
     if (!ragService) {
@@ -135,7 +141,9 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
 
   const rebuildIndex = useCallback(async () => {
     if (!ragService || !currentSaveId) {
-      setStatsError(t("ragDebugger.noEmbeddingManager", "RAG service not initialized"));
+      setStatsError(
+        t("ragDebugger.noEmbeddingManager", "RAG service not initialized"),
+      );
       return;
     }
 
@@ -202,7 +210,10 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
                 void handleSearch();
               }
             }}
-            placeholder={t("ragDebugger.searchPlaceholder", "Enter search query...")}
+            placeholder={t(
+              "ragDebugger.searchPlaceholder",
+              "Enter search query...",
+            )}
             className="flex-1 bg-theme-surface border border-theme-divider/60 rounded px-3 py-2 text-theme-text focus:outline-none focus:border-theme-primary"
           />
           <select
@@ -212,7 +223,9 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
             }
             className="bg-theme-surface border border-theme-divider/60 rounded px-2 py-2 text-sm text-theme-text"
           >
-            <option value="all">{t("ragDebugger.allTypes", "All Types")}</option>
+            <option value="all">
+              {t("ragDebugger.allTypes", "All Types")}
+            </option>
             {documentTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -225,7 +238,9 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
             disabled={searching || !query.trim()}
             className="px-4 py-2 rounded bg-theme-primary text-theme-bg font-semibold disabled:opacity-60"
           >
-            {searching ? t("ragDebugger.searching", "Searching...") : t("ragDebugger.search", "Search")}
+            {searching
+              ? t("ragDebugger.searching", "Searching...")
+              : t("ragDebugger.search", "Search")}
           </button>
         </div>
 
@@ -238,7 +253,10 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
         <div className="space-y-3">
           {searchResults.length === 0 && !searching ? (
             <div className="text-sm text-theme-text-secondary">
-              {t("ragDebugger.noResults", "Enter a query to search the embedding index.")}
+              {t(
+                "ragDebugger.noResults",
+                "Enter a query to search the embedding index.",
+              )}
             </div>
           ) : (
             searchResults.map((result) => (
@@ -247,11 +265,16 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
                 className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60"
               >
                 <div className="flex items-center justify-between gap-2 text-xs text-theme-text-secondary mb-2">
-                  <span className="font-mono">{result.document.sourcePath}</span>
+                  <span className="font-mono">
+                    {result.document.sourcePath}
+                  </span>
                   <span>{(result.adjustedScore * 100).toFixed(1)}%</span>
                 </div>
                 <div className="text-xs text-theme-text-secondary mb-2">
-                  {result.document.type} · chunk {result.document.chunkIndex + 1}/{result.document.chunkCount} · fork {result.document.forkId} · turn {result.document.turnNumber}
+                  {result.document.type} · chunk{" "}
+                  {result.document.chunkIndex + 1}/{result.document.chunkCount}{" "}
+                  · fork {result.document.forkId} · turn{" "}
+                  {result.document.turnNumber}
                 </div>
                 <pre className="text-sm text-theme-text whitespace-pre-wrap break-words leading-relaxed">
                   {formatPreview(result.document.content)}
@@ -275,20 +298,36 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">{t("ragDebugger.storageDocs", "Stored Documents")}</div>
-            <div className="text-lg font-semibold text-theme-primary">{ragStatus?.storageDocuments ?? 0}</div>
+            <div className="text-theme-text-secondary mb-1">
+              {t("ragDebugger.storageDocs", "Stored Documents")}
+            </div>
+            <div className="text-lg font-semibold text-theme-primary">
+              {ragStatus?.storageDocuments ?? 0}
+            </div>
           </div>
           <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">{t("ragDebugger.model", "Embedding Model")}</div>
-            <div className="text-sm font-mono text-theme-text break-all">{ragStatus?.currentModel || "-"}</div>
+            <div className="text-theme-text-secondary mb-1">
+              {t("ragDebugger.model", "Embedding Model")}
+            </div>
+            <div className="text-sm font-mono text-theme-text break-all">
+              {ragStatus?.currentModel || "-"}
+            </div>
           </div>
           <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">{t("ragDebugger.provider", "Provider")}</div>
-            <div className="text-sm font-mono text-theme-text">{ragStatus?.currentProvider || "-"}</div>
+            <div className="text-theme-text-secondary mb-1">
+              {t("ragDebugger.provider", "Provider")}
+            </div>
+            <div className="text-sm font-mono text-theme-text">
+              {ragStatus?.currentProvider || "-"}
+            </div>
           </div>
           <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">{t("ragDebugger.saveId", "Save ID")}</div>
-            <div className="text-sm font-mono text-theme-text break-all">{currentSaveId || "-"}</div>
+            <div className="text-theme-text-secondary mb-1">
+              {t("ragDebugger.saveId", "Save ID")}
+            </div>
+            <div className="text-sm font-mono text-theme-text break-all">
+              {currentSaveId || "-"}
+            </div>
           </div>
         </div>
 
@@ -375,13 +414,22 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
               </tr>
             ) : (
               documents.map((doc) => (
-                <tr key={doc.id} className="border-t border-theme-divider/40 align-top">
-                  <td className="px-3 py-2 text-theme-text-secondary">{doc.type}</td>
-                  <td className="px-3 py-2 font-mono text-theme-text break-all">{doc.sourcePath}</td>
+                <tr
+                  key={doc.id}
+                  className="border-t border-theme-divider/40 align-top"
+                >
+                  <td className="px-3 py-2 text-theme-text-secondary">
+                    {doc.type}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-theme-text break-all">
+                    {doc.sourcePath}
+                  </td>
                   <td className="px-3 py-2 text-theme-text-secondary">
                     {doc.chunkIndex + 1}/{doc.chunkCount}
                   </td>
-                  <td className="px-3 py-2 text-theme-text">{formatPreview(doc.content)}</td>
+                  <td className="px-3 py-2 text-theme-text">
+                    {formatPreview(doc.content)}
+                  </td>
                 </tr>
               ))
             )}
@@ -407,7 +455,9 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
           </span>
           <button
             type="button"
-            onClick={() => setDocumentsPage((page) => Math.min(totalPages, page + 1))}
+            onClick={() =>
+              setDocumentsPage((page) => Math.min(totalPages, page + 1))
+            }
             disabled={documentsPage >= totalPages}
             className="px-2 py-1 rounded border border-theme-divider/60 disabled:opacity-50"
           >

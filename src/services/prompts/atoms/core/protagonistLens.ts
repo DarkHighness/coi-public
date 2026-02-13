@@ -20,7 +20,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface ProtagonistLensInput {
   protagonistFeature?: string;
 }
@@ -29,12 +28,16 @@ export interface ProtagonistLensInput {
 // Full Atom
 // ---------------------------------------------------------------------------
 
-export const protagonistLens: Atom<ProtagonistLensInput> = defineAtom({ atomId: "atoms/core/protagonistLens#protagonistLens", source: "atoms/core/protagonistLens.ts", exportName: "protagonistLens" }, ({
-  protagonistFeature,
-}) => {
-  if (!protagonistFeature) return "";
+export const protagonistLens: Atom<ProtagonistLensInput> = defineAtom(
+  {
+    atomId: "atoms/core/protagonistLens#protagonistLens",
+    source: "atoms/core/protagonistLens.ts",
+    exportName: "protagonistLens",
+  },
+  ({ protagonistFeature }) => {
+    if (!protagonistFeature) return "";
 
-  return `
+    return `
 <protagonist_lens identity="${protagonistFeature}">
 
   <perceptual_rendering_engine>
@@ -171,18 +174,23 @@ export const protagonistLens: Atom<ProtagonistLensInput> = defineAtom({ atomId: 
 
 </protagonist_lens>
 `;
-});
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Primer (compact, for system-prompt budget)
 // ---------------------------------------------------------------------------
 
-export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom({ atomId: "atoms/core/protagonistLens#protagonistLensPrimer", source: "atoms/core/protagonistLens.ts", exportName: "protagonistLensPrimer" }, ({
-  protagonistFeature,
-}) => {
-  if (!protagonistFeature) return "";
+export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom(
+  {
+    atomId: "atoms/core/protagonistLens#protagonistLensPrimer",
+    source: "atoms/core/protagonistLens.ts",
+    exportName: "protagonistLensPrimer",
+  },
+  ({ protagonistFeature }) => {
+    if (!protagonistFeature) return "";
 
-  return `
+    return `
 <protagonist_lens identity="${protagonistFeature}">
   The narrative camera is calibrated to "${protagonistFeature}".
   Four rendering axes:
@@ -193,7 +201,8 @@ export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom({ at
   **Constraints**: No mind-reading. No acting for player. Lens renders evidence, player decides meaning. Disguise overrides NPC reactions but not the camera.
 </protagonist_lens>
 `;
-});
+  },
+);
 
 export default protagonistLens;
 
@@ -201,10 +210,18 @@ export default protagonistLens;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const protagonistLensSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/protagonistLens#protagonistLensSkill", source: "atoms/core/protagonistLens.ts", exportName: "protagonistLensSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(protagonistLens, { protagonistFeature: "(active protagonist feature)" }),
+export const protagonistLensSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/protagonistLens#protagonistLensSkill",
+    source: "atoms/core/protagonistLens.ts",
+    exportName: "protagonistLensSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(protagonistLens, {
+      protagonistFeature: "(active protagonist feature)",
+    }),
 
-  quickStart: `
+    quickStart: `
 1. Identify the active protagonist identity from character profile
 2. Apply Detail Selection: 2+ identity-specific sensory details per scene
 3. Apply NPC First-Contact: NPCs react to VISIBLE identity markers before dialogue
@@ -213,62 +230,62 @@ export const protagonistLensSkill: SkillAtom<void> = defineSkillAtom({ atomId: "
 6. Verify: No mind-reading, no acting for player, no omniscience
 `.trim(),
 
-  checklist: [
-    "Scene has 2+ identity-specific sensory details (not generic)?",
-    "NPC first reactions reflect protagonist's VISIBLE identity (not plot needs)?",
-    "Events/encounters are weighted toward identity-plausible situations?",
-    "Expertise-domain details are rendered as observable facts (not conclusions)?",
-    "No protagonist mind-reading (thoughts, feelings, beliefs, suspicions)?",
-    "No acting for player (rendering details, not making decisions)?",
-    "Lens calibration consistent with previous scenes?",
-    "Disguise handled correctly (NPCs react to disguise, camera uses true lens)?",
-  ],
+    checklist: [
+      "Scene has 2+ identity-specific sensory details (not generic)?",
+      "NPC first reactions reflect protagonist's VISIBLE identity (not plot needs)?",
+      "Events/encounters are weighted toward identity-plausible situations?",
+      "Expertise-domain details are rendered as observable facts (not conclusions)?",
+      "No protagonist mind-reading (thoughts, feelings, beliefs, suspicions)?",
+      "No acting for player (rendering details, not making decisions)?",
+      "Lens calibration consistent with previous scenes?",
+      "Disguise handled correctly (NPCs react to disguise, camera uses true lens)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Detail Selection — Merchant entering a tavern",
-      wrong: `"The tavern is busy. People drink and talk. A fire crackles."
+    examples: [
+      {
+        scenario: "Detail Selection — Merchant entering a tavern",
+        wrong: `"The tavern is busy. People drink and talk. A fire crackles."
 (Generic camera. No identity-specific details. Could be anyone's perspective.)`,
-      right: `"The tavern is three-quarters full — good margins at this hour.
+        right: `"The tavern is three-quarters full — good margins at this hour.
 Ale in tin cups, not ceramic; the barkeep is cutting costs.
 Two traders in the corner booth wear Kessian silk scarves — the real kind,
 not the Southport knockoffs. The merchant at the bar pays with clipped coins."
 (Merchant lens: prices, quality, margins, counterfeits — all rendered as
 observable facts without narrating the protagonist's thoughts.)`,
-    },
-    {
-      scenario: "NPC First-Contact — Orphan entering an inn",
-      wrong: `"The innkeeper greets you warmly and offers a room."
+      },
+      {
+        scenario: "NPC First-Contact — Orphan entering an inn",
+        wrong: `"The innkeeper greets you warmly and offers a room."
 (Identity-blind. No social friction. NPC ignores visible poverty.)`,
-      right: `"The innkeeper looks you over. Lingers on the holes in your shoes.
+        right: `"The innkeeper looks you over. Lingers on the holes in your shoes.
 'Kitchen's closed.' It isn't. You can smell the stew."
 (NPC reacts to visible identity markers — worn clothes, youth, poverty.
 The stew smell is rendered because an orphan's lens prioritizes food.)`,
-    },
-    {
-      scenario: "Competence Rendering — Doctor examining a patient",
-      wrong: `"You diagnose him with a concussion and internal bleeding."
+      },
+      {
+        scenario: "Competence Rendering — Doctor examining a patient",
+        wrong: `"You diagnose him with a concussion and internal bleeding."
 (Mind-reading + acting for player. Jumps to conclusion.)`,
-      right: `"His pupils are different sizes. The left hand trembles in a rhythm
+        right: `"His pupils are different sizes. The left hand trembles in a rhythm
 that doesn't match his breathing. A bruise is forming behind his left ear,
 the skin already turning that particular shade of purple that means deep tissue."
 (Observable medical details rendered with professional specificity.
 The player decides what to do with this information.)`,
-    },
-    {
-      scenario: "Environmental Gravitation — Soldier in a market",
-      wrong: `"A mysterious stranger approaches and offers you a quest to save the kingdom."
+      },
+      {
+        scenario: "Environmental Gravitation — Soldier in a market",
+        wrong: `"A mysterious stranger approaches and offers you a quest to save the kingdom."
 (Contrived. Not identity-driven. Generic quest hook.)`,
-      right: `"A boy in a torn militia tabard pushes through the crowd toward you.
+        right: `"A boy in a torn militia tabard pushes through the crowd toward you.
 'Sir — the captain sent me. There's trouble at the north gate.
 He said to find anyone who looks like they can hold a sword.'"
 (The situation finds the soldier because soldiers are visible and
 the world has problems that need people who look like soldiers.)`,
-    },
-  ],
+      },
+    ],
 
-  references: {
-    "literary-lens-calibration": `# Literary Lens Calibration References
+    references: {
+      "literary-lens-calibration": `# Literary Lens Calibration References
 
 Study how these works render the world through identity:
 
@@ -298,5 +315,6 @@ Every wall has a mechanism. Every pattern is a warning. The narrative renders ar
 
 ## 三体 (Scientist Lens)
 Anomalies in natural law are the loudest signal. The narrative renders physical phenomena with the precision of someone who knows what "normal" looks like — and therefore sees immediately when the universe is lying.`,
-  },
-}));
+    },
+  }),
+);

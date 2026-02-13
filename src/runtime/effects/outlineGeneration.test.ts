@@ -11,10 +11,7 @@ vi.mock("../../services/vfs/outline", () => ({
   writeOutlineProgress: writeOutlineProgressMock,
 }));
 
-import {
-  blobToDataUrl,
-  runOutlineGenerationPhased,
-} from "./outlineGeneration";
+import { blobToDataUrl, runOutlineGenerationPhased } from "./outlineGeneration";
 
 describe("outlineGeneration", () => {
   beforeEach(() => {
@@ -110,7 +107,10 @@ describe("outlineGeneration", () => {
     expect(gameStateRef.current.liveToolCalls).toEqual(
       checkpoint.liveToolCalls,
     );
-    expect(writeOutlineProgressMock).toHaveBeenCalledWith(vfsSession, checkpoint);
+    expect(writeOutlineProgressMock).toHaveBeenCalledWith(
+      vfsSession,
+      checkpoint,
+    );
     expect(saveToSlot).toHaveBeenCalledWith("slot-1", gameStateRef.current);
     expect(onPhaseProgress).toHaveBeenCalledWith({ phase: 3 });
   });

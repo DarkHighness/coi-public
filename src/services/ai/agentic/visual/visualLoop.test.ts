@@ -44,7 +44,9 @@ describe("runVisualLoop", () => {
     mockedBuildVisualContextMessages.mockReturnValue([
       { role: "user", content: [{ type: "text", text: "ctx" }] },
     ] as any);
-    mockedCreateLogEntry.mockReturnValue({ endpoint: "visual-iteration-1" } as any);
+    mockedCreateLogEntry.mockReturnValue({
+      endpoint: "visual-iteration-1",
+    } as any);
     mockedGetOrCreateSession.mockResolvedValue({ id: "visual-session" } as any);
     mockedGetProvider.mockReturnValue({ provider: "instance" } as any);
   });
@@ -99,7 +101,10 @@ describe("runVisualLoop", () => {
       onProgress,
     });
 
-    expect(mockedGetProviderConfig).toHaveBeenCalledWith(expect.anything(), "image");
+    expect(mockedGetProviderConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      "image",
+    );
     expect(mockedGetOrCreateSession).toHaveBeenCalledWith(
       expect.objectContaining({
         slotId: "visual-99",

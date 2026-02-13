@@ -5,8 +5,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const atmosphereMechanics: Atom<void> = defineAtom({ atomId: "atoms/narrative/atmosphere#atmosphereMechanics", source: "atoms/narrative/atmosphere.ts", exportName: "atmosphereMechanics" }, () => `
+export const atmosphereMechanics: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/atmosphere#atmosphereMechanics",
+    source: "atoms/narrative/atmosphere.ts",
+    exportName: "atmosphereMechanics",
+  },
+  () => `
 <rule name="ATMOSPHERE & MOOD">
   <mood_enforcement>
     **SHOW, DON'T TELL**:
@@ -273,7 +278,8 @@ export const atmosphereMechanics: Atom<void> = defineAtom({ atomId: "atoms/narra
     Refer to **Writing Craft** (Always Loaded).
   </instruction>
 </rule>
-`);
+`,
+);
 
 export default atmosphereMechanics;
 
@@ -281,10 +287,16 @@ export default atmosphereMechanics;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const atmosphereMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/atmosphere#atmosphereMechanicsSkill", source: "atoms/narrative/atmosphere.ts", exportName: "atmosphereMechanicsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(atmosphereMechanics),
+export const atmosphereMechanicsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/atmosphere#atmosphereMechanicsSkill",
+    source: "atoms/narrative/atmosphere.ts",
+    exportName: "atmosphereMechanicsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(atmosphereMechanics),
 
-  quickStart: `
+    quickStart: `
 1. Show, don't tell - never say "creepy", describe the silence
 2. Dual-layer: textual descriptions must match atmosphere enums
 3. Small imperfections ground scenes (moss, cracks, flickers)
@@ -295,51 +307,52 @@ export const atmosphereMechanicsSkill: SkillAtom<void> = defineSkillAtom({ atomI
 8. Weather must DO something or don't mention it
 `.trim(),
 
-  checklist: [
-    "Avoiding mood labels (creepy, majestic, ominous)?",
-    "Textual descriptions match atmosphere enums?",
-    "Including small imperfections in scenes?",
-    "Using multi-sensory descriptions (touch, smell, sound)?",
-    "Atmosphere affects characters (rain drowns conversation)?",
-    "Atmosphere evolves within scene (progressive change)?",
-    "Revisited locations echo past events (unmarked detail)?",
-    "Using restraint (some moments cut away, not fully rendered)?",
-    "Emotion shown through objects/gestures, not stated?",
-    "Weather acts on scene or is omitted?",
-  ],
+    checklist: [
+      "Avoiding mood labels (creepy, majestic, ominous)?",
+      "Textual descriptions match atmosphere enums?",
+      "Including small imperfections in scenes?",
+      "Using multi-sensory descriptions (touch, smell, sound)?",
+      "Atmosphere affects characters (rain drowns conversation)?",
+      "Atmosphere evolves within scene (progressive change)?",
+      "Revisited locations echo past events (unmarked detail)?",
+      "Using restraint (some moments cut away, not fully rendered)?",
+      "Emotion shown through objects/gestures, not stated?",
+      "Weather acts on scene or is omitted?",
+    ],
 
-  examples: [
-    {
-      scenario: "Show Don't Tell",
-      wrong: `"The room was creepy."
+    examples: [
+      {
+        scenario: "Show Don't Tell",
+        wrong: `"The room was creepy."
 (Label, not description.)`,
-      right: `"The silence pressed in. The air smelled of old dust and something else—
+        right: `"The silence pressed in. The air smelled of old dust and something else—
 something that had been dead a long time."
 (Sensory details create mood.)`,
-    },
-    {
-      scenario: "Small Imperfections",
-      wrong: `"A beautiful marble hall."
+      },
+      {
+        scenario: "Small Imperfections",
+        wrong: `"A beautiful marble hall."
 (Too perfect, feels fake.)`,
-      right: `"Marble pillars rose to the vaulted ceiling. At the base of the third,
+        right: `"Marble pillars rose to the vaulted ceiling. At the base of the third,
 a hairline crack ran through the stone—someone had tried to fill it with gold leaf."
 (Imperfection adds reality and story.)`,
-    },
-    {
-      scenario: "Location Memory",
-      wrong: `"You return to the tavern where your friend died. It makes you sad."
+      },
+      {
+        scenario: "Location Memory",
+        wrong: `"You return to the tavern where your friend died. It makes you sad."
 (Mind-reading. Explains connection.)`,
-      right: `"Same barkeep. Same sour ale. The corner table is occupied by strangers now.
+        right: `"Same barkeep. Same sour ale. The corner table is occupied by strangers now.
 They're laughing. The stain on the floor has been scrubbed, but the wood is lighter there."
 (Detail echoes event. Connection unstated. Player feels it.)`,
-    },
-    {
-      scenario: "Restraint and Silence",
-      wrong: `"The funeral was devastating. Everyone cried. The priest gave a moving eulogy..."
+      },
+      {
+        scenario: "Restraint and Silence",
+        wrong: `"The funeral was devastating. Everyone cried. The priest gave a moving eulogy..."
 (Too much. No room to feel.)`,
-      right: `"Rain. The priest's voice, too quiet to hear.
+        right: `"Rain. The priest's voice, too quiet to hear.
 Someone's umbrella has a broken spoke. That's what you'll remember."
 (Three details. Silence. Devastating.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

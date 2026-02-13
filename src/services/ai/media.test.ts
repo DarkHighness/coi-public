@@ -53,11 +53,7 @@ vi.mock("../providers/claudeProvider", () => ({
   generateSpeech: generateClaudeSpeech,
 }));
 
-import {
-  generateSceneImage,
-  generateSpeech,
-  generateVeoScript,
-} from "./media";
+import { generateSceneImage, generateSpeech, generateVeoScript } from "./media";
 
 describe("media service", () => {
   beforeEach(() => {
@@ -212,6 +208,8 @@ describe("media service", () => {
       provider: "openai",
       endpoint: "generateVeoScript",
     });
-    expect((result.log as any).response.error).toContain("provider unavailable");
+    expect((result.log as any).response.error).toContain(
+      "provider unavailable",
+    );
   });
 });

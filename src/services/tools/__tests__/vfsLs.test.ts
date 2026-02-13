@@ -7,9 +7,13 @@ describe("vfs_ls v5", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "hello", "text/markdown");
 
-    const result = dispatchToolCall("vfs_ls", { path: "current/world" }, {
-      vfsSession: session,
-    }) as any;
+    const result = dispatchToolCall(
+      "vfs_ls",
+      { path: "current/world" },
+      {
+        vfsSession: session,
+      },
+    ) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.entries).toContain("notes.md");

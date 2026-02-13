@@ -126,9 +126,7 @@ const TimelineSelectItem: React.FC<{
           {segment.stateSnapshot?.currentLocation && (
             <>
               <span>•</span>
-              <span className="truncate">
-                {locationDisplay}
-              </span>
+              <span className="truncate">{locationDisplay}</span>
             </>
           )}
         </div>

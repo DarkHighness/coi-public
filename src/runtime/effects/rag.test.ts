@@ -71,7 +71,9 @@ describe("ensureRagSaveContext", () => {
   });
 
   it("returns false and logs error when switchSave throws", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     const switchSave = vi.fn(async () => {
       throw new Error("network");
     });

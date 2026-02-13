@@ -1,11 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import type {
-  EmbeddingIndex,
-  ForkTree,
-  GameState,
-  SaveSlot,
-} from "../types";
+import type { EmbeddingIndex, ForkTree, GameState, SaveSlot } from "../types";
 import {
   saveMetadata,
   loadMetadata,
@@ -66,10 +61,7 @@ export const shouldReplaceGeneratedSlotName = (value: unknown): boolean => {
 };
 
 export const deriveSlotNameFromState = (
-  state:
-    | Pick<GameState, "outline" | "currentLocation">
-    | null
-    | undefined,
+  state: Pick<GameState, "outline" | "currentLocation"> | null | undefined,
 ): string | null => {
   const outlineTitle = normalizeSlotName(state?.outline?.title);
   if (outlineTitle && !isPlaceholderSlotName(outlineTitle)) return outlineTitle;
@@ -100,30 +92,24 @@ export const useVfsPersistence = (
   const uiStateSaveTimeoutRef = useRef<number | null>(null);
   const { t } = useTranslation();
 
-  const saveSharedMutableState = useCallback(
-    async (saveId: string) => {
-      const shared = buildSharedMutableStateFromSession(vfsSessionRef.current);
-      await saveMetadata(`vfs_shared:${saveId}`, {
-        files: shared,
-        updatedAt: Date.now(),
-      });
-    },
-    [],
-  );
+  const saveSharedMutableState = useCallback(async (saveId: string) => {
+    const shared = buildSharedMutableStateFromSession(vfsSessionRef.current);
+    await saveMetadata(`vfs_shared:${saveId}`, {
+      files: shared,
+      updatedAt: Date.now(),
+    });
+  }, []);
 
-  const loadSharedMutableState = useCallback(
-    async (saveId: string) => {
-      const data = await loadMetadata<{
-        files?: unknown;
-      }>(`vfs_shared:${saveId}`);
-      const files = data?.files;
-      if (!files || typeof files !== "object") {
-        return null;
-      }
-      return files as Record<string, any>;
-    },
-    [],
-  );
+  const loadSharedMutableState = useCallback(async (saveId: string) => {
+    const data = await loadMetadata<{
+      files?: unknown;
+    }>(`vfs_shared:${saveId}`);
+    const files = data?.files;
+    if (!files || typeof files !== "object") {
+      return null;
+    }
+    return files as Record<string, any>;
+  }, []);
 
   const ensureSharedLayerForSave = useCallback(
     async (saveId: string, snapshot: { files: Record<string, any> }) => {
@@ -132,9 +118,7 @@ export const useVfsPersistence = (
         return existing;
       }
 
-      const inferred = extractSharedMutableStateFromSnapshot(
-        snapshot as any,
-      );
+      const inferred = extractSharedMutableStateFromSnapshot(snapshot as any);
       await saveMetadata(`vfs_shared:${saveId}`, {
         files: inferred,
         updatedAt: Date.now(),
@@ -182,19 +166,21 @@ export const useVfsPersistence = (
   }, [saveSlots]);
 
   const mergeUiState = useCallback(
-    (
-      base: GameState["uiState"],
-      stored: unknown,
-    ): GameState["uiState"] => {
+    (base: GameState["uiState"], stored: unknown): GameState["uiState"] => {
       const isRecord = (value: unknown): value is Record<string, unknown> =>
         typeof value === "object" && value !== null;
 
       const isStringArray = (value: unknown): value is string[] =>
-        Array.isArray(value) && value.every((entry) => typeof entry === "string");
+        Array.isArray(value) &&
+        value.every((entry) => typeof entry === "string");
 
       const isListState = (
         value: unknown,
-      ): value is { pinnedIds: string[]; customOrder: string[]; hiddenIds?: string[] } => {
+      ): value is {
+        pinnedIds: string[];
+        customOrder: string[];
+        hiddenIds?: string[];
+      } => {
         if (!isRecord(value)) return false;
         if (!isStringArray(value.pinnedIds)) return false;
         if (!isStringArray(value.customOrder)) return false;
@@ -207,7 +193,13 @@ export const useVfsPersistence = (
         return base;
       }
 
-      const sections = ["inventory", "locations", "npcs", "knowledge", "quests"] as const;
+      const sections = [
+        "inventory",
+        "locations",
+        "npcs",
+        "knowledge",
+        "quests",
+      ] as const;
       const merged: GameState["uiState"] = { ...base };
 
       for (const section of sections) {
@@ -302,12 +294,16 @@ export const useVfsPersistence = (
                   previewImage:
                     slot.previewImage ||
                     snapshotState.seedImageId ||
-                    snapshotState.nodes?.[snapshotState.activeNodeId || ""]?.imageId,
+                    snapshotState.nodes?.[snapshotState.activeNodeId || ""]
+                      ?.imageId,
                 }
               : slot,
           );
           saveMetadata("slots", updated).catch((err) => {
-            console.warn("[VFS Persistence] Failed to persist updated slots:", err);
+            console.warn(
+              "[VFS Persistence] Failed to persist updated slots:",
+              err,
+            );
           });
           return updated;
         });
@@ -346,7 +342,10 @@ export const useVfsPersistence = (
 
         const shared = await ensureSharedLayerForSave(saveId, snapshot as any);
         if (shared) {
-          applySharedMutableStateToSession(vfsSessionRef.current, shared as any);
+          applySharedMutableStateToSession(
+            vfsSessionRef.current,
+            shared as any,
+          );
         }
 
         return true;
@@ -367,9 +366,7 @@ export const useVfsPersistence = (
 
         const inferSlotsIfMissing = async (): Promise<SaveSlot[]> => {
           const candidateIds = Array.from(
-            new Set([
-              ...(await getAllVfsSaveIds()),
-            ]),
+            new Set([...(await getAllVfsSaveIds())]),
           );
           if (candidateIds.length === 0) return [];
 
@@ -380,7 +377,10 @@ export const useVfsPersistence = (
               const snapshot = await loadLatestSnapshotForSaveId(saveId);
 
               if (snapshot) {
-                const shared = await ensureSharedLayerForSave(saveId, snapshot as any);
+                const shared = await ensureSharedLayerForSave(
+                  saveId,
+                  snapshot as any,
+                );
                 if (shared) {
                   const session = new VfsSession();
                   restoreVfsSessionFromSnapshot(session, snapshot as any);
@@ -409,17 +409,17 @@ export const useVfsPersistence = (
                 }
               }
 
-              const derived =
-                snapshot ? (() => {
-                  const session = new VfsSession();
-                  restoreVfsSessionFromSnapshot(session, snapshot as any);
-                  return deriveGameStateFromVfs(session.snapshot());
-                })() : null;
+              const derived = snapshot
+                ? (() => {
+                    const session = new VfsSession();
+                    restoreVfsSessionFromSnapshot(session, snapshot as any);
+                    return deriveGameStateFromVfs(session.snapshot());
+                  })()
+                : null;
 
               const theme = derived?.theme || "fantasy";
               const title =
-                deriveSlotNameFromState(derived) ||
-                t("saves.title", "Save");
+                deriveSlotNameFromState(derived) || t("saves.title", "Save");
 
               const summary =
                 derived?.outline?.premise ||
@@ -436,7 +436,11 @@ export const useVfsPersistence = (
                 previewImage: derived?.seedImageId,
               });
             } catch (error) {
-              console.warn("[VFS Persistence] Failed to infer slot:", saveId, error);
+              console.warn(
+                "[VFS Persistence] Failed to infer slot:",
+                saveId,
+                error,
+              );
             }
           }
 
@@ -445,7 +449,10 @@ export const useVfsPersistence = (
             try {
               await saveMetadata("slots", inferred);
             } catch (error) {
-              console.warn("[VFS Persistence] Failed to persist inferred slots:", error);
+              console.warn(
+                "[VFS Persistence] Failed to persist inferred slots:",
+                error,
+              );
             }
           }
           return inferred;
@@ -466,7 +473,10 @@ export const useVfsPersistence = (
                 const snapshot = await loadLatestSnapshotForSaveId(slot.id);
                 if (!snapshot) return slot;
 
-                const shared = await ensureSharedLayerForSave(slot.id, snapshot as any);
+                const shared = await ensureSharedLayerForSave(
+                  slot.id,
+                  snapshot as any,
+                );
                 const session = new VfsSession();
                 restoreVfsSessionFromSnapshot(session, snapshot as any);
                 if (shared) {
@@ -520,8 +530,9 @@ export const useVfsPersistence = (
         if (slots && Array.isArray(slots) && slots.length > 0) {
           try {
             const existingIds = new Set<string>(await getAllVfsSaveIds());
-            const validSlots = slots.filter((slot: any) =>
-              slot && typeof slot.id === "string" && existingIds.has(slot.id),
+            const validSlots = slots.filter(
+              (slot: any) =>
+                slot && typeof slot.id === "string" && existingIds.has(slot.id),
             );
             if (validSlots.length !== slots.length) {
               console.log(
@@ -531,7 +542,10 @@ export const useVfsPersistence = (
               slots = validSlots;
             }
           } catch (error) {
-            console.warn("[VFS Persistence] Failed to cleanup ghost slots:", error);
+            console.warn(
+              "[VFS Persistence] Failed to cleanup ghost slots:",
+              error,
+            );
           }
         }
 
@@ -549,9 +563,15 @@ export const useVfsPersistence = (
 
             if (snapshot) {
               restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
-              const shared = await ensureSharedLayerForSave(lastSlotId, snapshot as any);
+              const shared = await ensureSharedLayerForSave(
+                lastSlotId,
+                snapshot as any,
+              );
               if (shared) {
-                applySharedMutableStateToSession(vfsSessionRef.current, shared as any);
+                applySharedMutableStateToSession(
+                  vfsSessionRef.current,
+                  shared as any,
+                );
               }
               const derived = deriveGameStateFromVfs(
                 vfsSessionRef.current.snapshot(),
@@ -600,7 +620,8 @@ export const useVfsPersistence = (
                       slot.id === lastSlotId
                         ? {
                             ...slot,
-                            timestamp: snapshot.createdAt || slot.timestamp || now,
+                            timestamp:
+                              snapshot.createdAt || slot.timestamp || now,
                             theme: slot.theme || derived.theme || "fantasy",
                             name:
                               (derivedName &&
@@ -613,7 +634,8 @@ export const useVfsPersistence = (
                             previewImage:
                               slot.previewImage ||
                               derived.seedImageId ||
-                              derived.nodes?.[derived.activeNodeId || ""]?.imageId,
+                              derived.nodes?.[derived.activeNodeId || ""]
+                                ?.imageId,
                           }
                         : slot,
                     );
@@ -897,7 +919,10 @@ export const useVfsPersistence = (
       try {
         await deleteMetadata("currentSlot");
       } catch (err) {
-        console.warn('[VFS Persistence] Failed to delete metadata "currentSlot"', err);
+        console.warn(
+          '[VFS Persistence] Failed to delete metadata "currentSlot"',
+          err,
+        );
       }
     }
 
@@ -926,7 +951,10 @@ export const useVfsPersistence = (
       try {
         await deleteMetadata(key);
       } catch (err) {
-        console.warn(`[VFS Persistence] Failed to delete metadata "${key}"`, err);
+        console.warn(
+          `[VFS Persistence] Failed to delete metadata "${key}"`,
+          err,
+        );
       }
     }
 
@@ -951,7 +979,10 @@ export const useVfsPersistence = (
         await rag.deleteDocuments({ saveId: id });
       }
     } catch (err) {
-      console.warn("[VFS Persistence] Failed to delete RAG docs for save:", err);
+      console.warn(
+        "[VFS Persistence] Failed to delete RAG docs for save:",
+        err,
+      );
     }
   };
 

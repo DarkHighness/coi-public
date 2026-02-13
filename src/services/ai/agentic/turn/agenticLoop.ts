@@ -45,7 +45,10 @@ import {
   incrementIterations,
   getBudgetSummary,
 } from "../budgetUtils";
-import { buildResponseFromVfs, getChangedEntitiesArray } from "./resultAccumulator";
+import {
+  buildResponseFromVfs,
+  getChangedEntitiesArray,
+} from "./resultAccumulator";
 import { normalizeVfsPath } from "../../../vfs/utils";
 import { rollbackVfsSessionToCheckpoint } from "../../../vfs/runtimeCheckpoints";
 import {
@@ -59,10 +62,7 @@ import {
 } from "../common/toolCallPolicies";
 
 // Import tool handling
-import {
-  executeGenericTool,
-  ToolCallContext,
-} from "./toolCallProcessor";
+import { executeGenericTool, ToolCallContext } from "./toolCallProcessor";
 import { handleAICall } from "./aiCallHandler";
 
 // ============================================================================
@@ -228,7 +228,8 @@ export async function runAgenticLoopRefactored(
       );
 
       const toolCallsRemaining =
-        loopState.budgetState.toolCallsMax - loopState.budgetState.toolCallsUsed;
+        loopState.budgetState.toolCallsMax -
+        loopState.budgetState.toolCallsUsed;
       const iterationsRemaining =
         loopState.budgetState.loopIterationsMax -
         loopState.budgetState.loopIterationsUsed;
@@ -301,7 +302,9 @@ export async function runAgenticLoopRefactored(
 
       // Add tool responses to history
       if (toolResult.responses.length > 0) {
-        conversationHistory.push(createToolResponseMessage(toolResult.responses));
+        conversationHistory.push(
+          createToolResponseMessage(toolResult.responses),
+        );
       }
 
       // Check if turn finished
@@ -330,7 +333,10 @@ export async function runAgenticLoopRefactored(
 
   if (!didFinishTurn) {
     onToolCallsUpdate?.([]);
-    const rolledBack = rollbackVfsSessionToCheckpoint(sessionId, config.vfsSession);
+    const rolledBack = rollbackVfsSessionToCheckpoint(
+      sessionId,
+      config.vfsSession,
+    );
     if (!rolledBack) {
       throw new Error(
         `[AgenticLoop] Missing VFS checkpoint for session "${sessionId}". Cannot rollback after TURN_NOT_COMMITTED.`,
@@ -455,14 +461,18 @@ const findTurnCrossForkViolations = (
 function checkCommandSkillReadGate(
   functionCalls: ToolCallResult[],
   loopState: LoopState,
-): { ok: true } | { ok: false; error: { success: false; error: string; code: string } } {
+):
+  | { ok: true }
+  | { ok: false; error: { success: false; error: string; code: string } } {
   const required = loopState.requiredCommandSkillPaths;
   if (!required || required.length === 0) {
     return { ok: true };
   }
 
   const readTools = new Set(["vfs_read"]);
-  const hasNonReadCall = functionCalls.some((call) => !readTools.has(call.name));
+  const hasNonReadCall = functionCalls.some(
+    (call) => !readTools.has(call.name),
+  );
   if (!hasNonReadCall) {
     return { ok: true };
   }
@@ -490,14 +500,18 @@ function checkCommandSkillReadGate(
 function checkPresetSkillReadGate(
   functionCalls: ToolCallResult[],
   loopState: LoopState,
-): { ok: true } | { ok: false; error: { success: false; error: string; code: string } } {
+):
+  | { ok: true }
+  | { ok: false; error: { success: false; error: string; code: string } } {
   const required = loopState.requiredPresetSkillPaths;
   if (!required || required.length === 0) {
     return { ok: true };
   }
 
   const readTools = new Set(["vfs_read"]);
-  const hasNonReadCall = functionCalls.some((call) => !readTools.has(call.name));
+  const hasNonReadCall = functionCalls.some(
+    (call) => !readTools.has(call.name),
+  );
   if (!hasNonReadCall) {
     return { ok: true };
   }
@@ -796,7 +810,9 @@ async function processToolCalls(
     let output: unknown;
     let isError = false;
     const isWriteTool = isWriteMutationToolName(call.name);
-    const writeTargets = isWriteTool ? collectWriteTargetsFromToolCall(call) : [];
+    const writeTargets = isWriteTool
+      ? collectWriteTargetsFromToolCall(call)
+      : [];
 
     if (isFinishToolCall(call) && hasPriorNonWriteFailure) {
       output = {
@@ -879,7 +895,9 @@ async function processToolCalls(
       content: output,
     });
 
-    const callIndex = functionCalls.findIndex((toolCall) => toolCall.id === call.id);
+    const callIndex = functionCalls.findIndex(
+      (toolCall) => toolCall.id === call.id,
+    );
     if (callIndex >= 0) {
       liveToolCalls[callIndex] = {
         ...liveToolCalls[callIndex],

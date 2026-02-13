@@ -12,11 +12,16 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * NPC 设计上下文 - 完整版
  */
-export const npcDesign: Atom<void> = defineAtom({ atomId: "atoms/entities/npcDesign#npcDesign", source: "atoms/entities/npcDesign.ts", exportName: "npcDesign" }, () => `
+export const npcDesign: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcDesign#npcDesign",
+    source: "atoms/entities/npcDesign.ts",
+    exportName: "npcDesign",
+  },
+  () => `
 <game_system_context>
 **NPC DESIGN FOR REALITY RENDERING ENGINE (TRUE PERSON LOGIC):**
 
@@ -379,12 +384,19 @@ NPCs leave behind writing that may contain literary adaptations. This is DISCOVE
   * Pragmatic characters (soldiers, merchants, laborers, children) speak plainly ALWAYS
   * Found text is PRIMARY delivery channel (diary, letter, note)
 </integration_with_literary_atoms>
-`);
+`,
+);
 
 /**
  * NPC 设计上下文 - 精简版
  */
-export const npcDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/npcDesign#npcDesignPrimer", source: "atoms/entities/npcDesign.ts", exportName: "npcDesignPrimer" }, () => `
+export const npcDesignPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/npcDesign#npcDesignPrimer",
+    source: "atoms/entities/npcDesign.ts",
+    exportName: "npcDesignPrimer",
+  },
+  () => `
 <game_system_context>
 **NPC DESIGN**: NPCs are people, not quest dispensers.
 - Dual personality (visible vs hidden)
@@ -394,7 +406,8 @@ export const npcDesignPrimer: Atom<void> = defineAtom({ atomId: "atoms/entities/
 - Expression modes: Love, Hate, Jealousy, Manipulation
 - All expression through BEHAVIOR, not labels
 </game_system_context>
-`);
+`,
+);
 
 export default npcDesign;
 
@@ -402,10 +415,16 @@ export default npcDesign;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const npcDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/entities/npcDesign#npcDesignSkill", source: "atoms/entities/npcDesign.ts", exportName: "npcDesignSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(npcDesign),
+export const npcDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/npcDesign#npcDesignSkill",
+    source: "atoms/entities/npcDesign.ts",
+    exportName: "npcDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(npcDesign),
 
-  quickStart: `
+    quickStart: `
 1. Dual Personality: visible.personality ≠ hidden.realPersonality
 2. Real Motives: Specific, time-bound, with consequences
 3. Transactional Benefit: What does NPC gain from knowing protagonist?
@@ -413,54 +432,55 @@ export const npcDesignSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/
 5. Expression through BEHAVIOR: Love, hate, jealousy, manipulation shown through action
 `.trim(),
 
-  checklist: [
-    "Visible personality differs from hidden personality?",
-    "Real motives are specific (not 'wants money' but 'needs 200 gold by month's end')?",
-    "Transactional benefit defined (what do they get from protagonist)?",
-    "Daily routine established (dawn, noon, midnight)?",
-    "Ambivalence present (mixed feelings, not simple like/dislike)?",
-    "Expression modes use behavior, not labels?",
-    "Hidden sacrifices or secrets they carry?",
-  ],
+    checklist: [
+      "Visible personality differs from hidden personality?",
+      "Real motives are specific (not 'wants money' but 'needs 200 gold by month's end')?",
+      "Transactional benefit defined (what do they get from protagonist)?",
+      "Daily routine established (dawn, noon, midnight)?",
+      "Ambivalence present (mixed feelings, not simple like/dislike)?",
+      "Expression modes use behavior, not labels?",
+      "Hidden sacrifices or secrets they carry?",
+    ],
 
-  examples: [
-    {
-      scenario: "Dual Personality",
-      wrong: `visible.personality = "Kind"
+    examples: [
+      {
+        scenario: "Dual Personality",
+        wrong: `visible.personality = "Kind"
 hidden.realPersonality = "Kind"
 (No depth - surface matches reality.)`,
-      right: `visible.personality: "Cheerful innkeeper who remembers everyone's name."
+        right: `visible.personality: "Cheerful innkeeper who remembers everyone's name."
 hidden.realPersonality: "Catalogues habits to identify easy marks.
    That warmth is practiced. The smile counts your weaknesses."
 (Surface hides true nature.)`,
-    },
-    {
-      scenario: "Real Motives",
-      wrong: `"Wants money."
+      },
+      {
+        scenario: "Real Motives",
+        wrong: `"Wants money."
 (Generic, no stakes, no timeline.)`,
-      right: `"Needs 200 gold by month's end. The Crimson Hand will break his legs.
+        right: `"Needs 200 gold by month's end. The Crimson Hand will break his legs.
 He has already decided he would sell his own mother if it came to that.
 He tries not to think about that decision."
 (Specific amount, deadline, stakes, moral compromise.)`,
-    },
-    {
-      scenario: "Love Expression",
-      wrong: `"He always protected her because he loved her deeply."
+      },
+      {
+        scenario: "Love Expression",
+        wrong: `"He always protected her because he loved her deeply."
 (Tells instead of shows.)`,
-      right: `"He walked on the street side. Always. She never noticed.
+        right: `"He walked on the street side. Always. She never noticed.
 He checked the room before she entered. She never asked why.
 When the blade came, his body moved before his mind."
 (Shows love through behavior pattern.)`,
-    },
-    {
-      scenario: "Manipulation Expression",
-      wrong: `"She played the victim to manipulate others."
+      },
+      {
+        scenario: "Manipulation Expression",
+        wrong: `"She played the victim to manipulate others."
 (Label, not behavior.)`,
-      right: `"'I'm not saying it's your fault.' Her eyes were wet.
+        right: `"'I'm not saying it's your fault.' Her eyes were wet.
 'I'm just saying... after everything I've been through...'
 She didn't finish the sentence. She never had to.
 He felt guilty. He always felt guilty."
 (Shows manipulation technique in action.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

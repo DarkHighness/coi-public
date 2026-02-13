@@ -22,7 +22,11 @@ describe("useEmbeddingStatus", () => {
 
     const Probe = () => {
       const progress = useEmbeddingStatus();
-      return React.createElement("div", null, progress ? "has-progress" : "none");
+      return React.createElement(
+        "div",
+        null,
+        progress ? "has-progress" : "none",
+      );
     };
 
     render(React.createElement(Probe));
@@ -63,7 +67,10 @@ describe("useEmbeddingStatus", () => {
     });
 
     expect(screen.getByText("indexing:3/9")).toBeTruthy();
-    expect(ragService.on).toHaveBeenCalledWith("progress", expect.any(Function));
+    expect(ragService.on).toHaveBeenCalledWith(
+      "progress",
+      expect.any(Function),
+    );
   });
 
   it("unsubscribes from progress on unmount", () => {

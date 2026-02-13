@@ -89,13 +89,17 @@ describe("SettingsExtra", () => {
     render(React.createElement(SettingsExtra));
 
     expect(screen.queryByText("settings.extra.clearerSearchTool")).toBeNull();
-    expect(screen.queryByText("settings.extra.clearerSearchToolHelp")).toBeNull();
+    expect(
+      screen.queryByText("settings.extra.clearerSearchToolHelp"),
+    ).toBeNull();
   });
 
   it("clamps numeric extra settings to valid ranges", () => {
     render(React.createElement(SettingsExtra));
 
-    const numberInputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    const numberInputs = screen.getAllByRole(
+      "spinbutton",
+    ) as HTMLInputElement[];
     expect(numberInputs).toHaveLength(6);
 
     fireEvent.change(numberInputs[0], { target: { value: "999" } });

@@ -5,7 +5,6 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface ProtocolsInput {}
 
 const messageProtocol = `
@@ -123,14 +122,27 @@ const terminology = `
 </terminology>
 `;
 
-export const protocolsPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#protocolsPrimer", source: "atoms/core/protocols.ts", exportName: "protocolsPrimer" }, () => `
+export const protocolsPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/protocols#protocolsPrimer",
+    source: "atoms/core/protocols.ts",
+    exportName: "protocolsPrimer",
+  },
+  () => `
 <protocols>
   MESSAGES: [PLAYER_ACTION] = simulate, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
   TOOLS: Every turn MUST call tools. Query before create. Handle errors.
   TWO "YOU": In rules = AI. In narrative = protagonist.
 </protocols>
-`);
-export const protocols: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#protocols", source: "atoms/core/protocols.ts", exportName: "protocols" }, () => `
+`,
+);
+export const protocols: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/protocols#protocols",
+    source: "atoms/core/protocols.ts",
+    exportName: "protocols",
+  },
+  () => `
 <protocols>
 ${messageProtocol}
 ${errorRecovery}
@@ -138,23 +150,65 @@ ${toolMandate}
 ${entityDiscipline}
 ${terminology}
 </protocols>
-`);
+`,
+);
 
 // Export individual components if needed by others
-export const messageProtocolAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#messageProtocolAtom", source: "atoms/core/protocols.ts", exportName: "messageProtocolAtom" }, () => messageProtocol);
-export const errorRecoveryAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#errorRecoveryAtom", source: "atoms/core/protocols.ts", exportName: "errorRecoveryAtom" }, () => errorRecovery);
-export const toolMandateAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#toolMandateAtom", source: "atoms/core/protocols.ts", exportName: "toolMandateAtom" }, () => toolMandate);
-export const entityDisciplineAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#entityDisciplineAtom", source: "atoms/core/protocols.ts", exportName: "entityDisciplineAtom" }, () => entityDiscipline);
-export const terminologyAtom: Atom<void> = defineAtom({ atomId: "atoms/core/protocols#terminologyAtom", source: "atoms/core/protocols.ts", exportName: "terminologyAtom" }, () => terminology);
+export const messageProtocolAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/protocols#messageProtocolAtom",
+    source: "atoms/core/protocols.ts",
+    exportName: "messageProtocolAtom",
+  },
+  () => messageProtocol,
+);
+export const errorRecoveryAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/protocols#errorRecoveryAtom",
+    source: "atoms/core/protocols.ts",
+    exportName: "errorRecoveryAtom",
+  },
+  () => errorRecovery,
+);
+export const toolMandateAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/protocols#toolMandateAtom",
+    source: "atoms/core/protocols.ts",
+    exportName: "toolMandateAtom",
+  },
+  () => toolMandate,
+);
+export const entityDisciplineAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/protocols#entityDisciplineAtom",
+    source: "atoms/core/protocols.ts",
+    exportName: "entityDisciplineAtom",
+  },
+  () => entityDiscipline,
+);
+export const terminologyAtom: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/protocols#terminologyAtom",
+    source: "atoms/core/protocols.ts",
+    exportName: "terminologyAtom",
+  },
+  () => terminology,
+);
 
 // ============================================================================
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const protocolsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/protocols#protocolsSkill", source: "atoms/core/protocols.ts", exportName: "protocolsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(protocols),
+export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/protocols#protocolsSkill",
+    source: "atoms/core/protocols.ts",
+    exportName: "protocolsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(protocols),
 
-  quickStart: `
+    quickStart: `
 1. Read [PLAYER_ACTION] to determine what to simulate
 2. Handle [ERROR] by retrying with corrected arguments
 3. Call tools in every response (mandatory)
@@ -162,36 +216,37 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/
 5. "You" in rules = AI, "You" in narrative = protagonist
 `.trim(),
 
-  checklist: [
-    "Identifying message markers correctly ([PLAYER_ACTION], [SUDO], [ERROR])?",
-    "Handling errors before finishing turn?",
-    "Using 'Did you mean?' suggestions from errors?",
-    "Including tool calls in every response?",
-    "Searching before creating new entities?",
-    "Using correct 'You' for context (AI vs protagonist)?",
-  ],
+    checklist: [
+      "Identifying message markers correctly ([PLAYER_ACTION], [SUDO], [ERROR])?",
+      "Handling errors before finishing turn?",
+      "Using 'Did you mean?' suggestions from errors?",
+      "Including tool calls in every response?",
+      "Searching before creating new entities?",
+      "Using correct 'You' for context (AI vs protagonist)?",
+    ],
 
-  examples: [
-    {
-      scenario: "Error Handling",
-      wrong: `[NOT_FOUND] error → Ignore and continue
+    examples: [
+      {
+        scenario: "Error Handling",
+        wrong: `[NOT_FOUND] error → Ignore and continue
 (Bypassing errors breaks game state.)`,
-      right: `[NOT_FOUND] error → Use vfs_search to find correct ID → Retry
+        right: `[NOT_FOUND] error → Use vfs_search to find correct ID → Retry
 (Self-correct before finishing turn.)`,
-    },
-    {
-      scenario: "Message Processing",
-      wrong: `[CONTEXT: Scene is tense] → Narrate protagonist reacting to context
+      },
+      {
+        scenario: "Message Processing",
+        wrong: `[CONTEXT: Scene is tense] → Narrate protagonist reacting to context
 (Context is for AI reference, not player action.)`,
-      right: `[PLAYER_ACTION] I search the desk → Simulate the search action
+        right: `[PLAYER_ACTION] I search the desk → Simulate the search action
 (Process the actual player input.)`,
-    },
-    {
-      scenario: "Duplicate Prevention",
-      wrong: `Create "Iron Sword" → Write new item file
+      },
+      {
+        scenario: "Duplicate Prevention",
+        wrong: `Create "Iron Sword" → Write new item file
 (May duplicate existing item.)`,
-      right: `Create "Iron Sword" → vfs_search inventory → Update or create
+        right: `Create "Iron Sword" → vfs_search inventory → Update or create
 (Always check before creating.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

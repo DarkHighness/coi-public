@@ -27,7 +27,10 @@
     --theme-primary-muted,
     var(--theme-primary-hover, var(--theme-primary))
   );
-  --color-theme-primary-contrast: var(--theme-primary-contrast, var(--theme-bg));
+  --color-theme-primary-contrast: var(
+    --theme-primary-contrast,
+    var(--theme-bg)
+  );
   --color-theme-text-primary: var(--theme-text);
   --color-theme-text-secondary: var(--theme-text-secondary, var(--theme-muted));
 
@@ -131,13 +134,8 @@ input:disabled {
 
 .story-text {
   font-family:
-    "Merriweather",
-    "Noto Serif",
-    "Noto Serif SC",
-    "Source Han Serif SC",
-    "Songti SC",
-    "STSong",
-    serif;
+    "Merriweather", "Noto Serif", "Noto Serif SC", "Source Han Serif SC",
+    "Songti SC", "STSong", serif;
 }
 
 /* Custom Scrollbar */
@@ -244,14 +242,16 @@ input:disabled {
 }
 
 .state-editor-cm .cm-content {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   font-size: 0.875rem;
 }
 
 .state-editor-cm .cm-gutters {
   background: color-mix(in srgb, var(--theme-surface) 70%, transparent);
-  border-right: 1px solid color-mix(in srgb, var(--theme-divider) 60%, transparent);
+  border-right: 1px solid
+    color-mix(in srgb, var(--theme-divider) 60%, transparent);
 }
 
 .ui-emoji-slot {

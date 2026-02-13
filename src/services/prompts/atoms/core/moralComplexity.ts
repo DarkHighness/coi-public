@@ -12,8 +12,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const moralComplexityPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/moralComplexity#moralComplexityPrimer", source: "atoms/core/moralComplexity.ts", exportName: "moralComplexityPrimer" }, () => `
+export const moralComplexityPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/moralComplexity#moralComplexityPrimer",
+    source: "atoms/core/moralComplexity.ts",
+    exportName: "moralComplexityPrimer",
+  },
+  () => `
 <moral_complexity>
   **MORAL GREY ZONES**:
   - Good people do terrible things under pressure
@@ -21,8 +26,15 @@ export const moralComplexityPrimer: Atom<void> = defineAtom({ atomId: "atoms/cor
   - Most choices have no "right" answer — only trade-offs
   - Complexity is not redemption; it is reality
 </moral_complexity>
-`);
-export const moralComplexity: Atom<void> = defineAtom({ atomId: "atoms/core/moralComplexity#moralComplexity", source: "atoms/core/moralComplexity.ts", exportName: "moralComplexity" }, () => `
+`,
+);
+export const moralComplexity: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/moralComplexity#moralComplexity",
+    source: "atoms/core/moralComplexity.ts",
+    exportName: "moralComplexity",
+  },
+  () => `
 <rule name="MORAL_COMPLEXITY">
   **THE WORLD WITHOUT CLEAN ANSWERS**:
 
@@ -301,7 +313,8 @@ export const moralComplexity: Atom<void> = defineAtom({ atomId: "atoms/core/mora
     The weight should accumulate, not hit all at once.
   </moral_residue>
 </rule>
-`);
+`,
+);
 
 export default moralComplexity;
 
@@ -309,43 +322,50 @@ export default moralComplexity;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const moralComplexitySkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/core/moralComplexity#moralComplexitySkill", source: "atoms/core/moralComplexity.ts", exportName: "moralComplexitySkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(moralComplexity),
+export const moralComplexitySkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/moralComplexity#moralComplexitySkill",
+    source: "atoms/core/moralComplexity.ts",
+    exportName: "moralComplexitySkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(moralComplexity),
 
-  quickStart: `
+    quickStart: `
 1. No pure heroes, no pure villains - everyone is capable of everything
 2. Good people do terrible things under pressure
 3. Evil people show genuine kindness sometimes
 4. Most choices have no "right" answer - only trade-offs
 `.trim(),
 
-  checklist: [
-    "Characters show moral complexity (not pure good/evil)?",
-    "Good characters have flaws and dark moments?",
-    "Antagonists have human qualities and understandable motives?",
-    "Dilemmas offer no clean solutions?",
-    "Consequences acknowledge moral ambiguity?",
-    "Avoiding moralizing about character choices?",
-  ],
+    checklist: [
+      "Characters show moral complexity (not pure good/evil)?",
+      "Good characters have flaws and dark moments?",
+      "Antagonists have human qualities and understandable motives?",
+      "Dilemmas offer no clean solutions?",
+      "Consequences acknowledge moral ambiguity?",
+      "Avoiding moralizing about character choices?",
+    ],
 
-  examples: [
-    {
-      scenario: "The Desperate Necessity",
-      wrong: `"He was forced to make a difficult choice for his family."
+    examples: [
+      {
+        scenario: "The Desperate Necessity",
+        wrong: `"He was forced to make a difficult choice for his family."
 (Abstract, tells rather than shows.)`,
-      right: `"He handed over the key. He knew the man would die.
+        right: `"He handed over the key. He knew the man would die.
 But his daughter was in the hospital, and they said just one key.
 He vomited in the bathroom that night."
 (Concrete, visceral, morally complex.)`,
-    },
-    {
-      scenario: "The Monster's Kindness",
-      wrong: `"Despite his evil, he showed a moment of mercy."
+      },
+      {
+        scenario: "The Monster's Kindness",
+        wrong: `"Despite his evil, he showed a moment of mercy."
 (Labels the character, oversimplifies.)`,
-      right: `"He stopped. Looked at the child. Put down the knife.
+        right: `"He stopped. Looked at the child. Put down the knife.
 'Not you,' he said. No explanation. Then he left.
 The child lived. The parents didn't."
 (Actions, not labels. Complexity without resolution.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

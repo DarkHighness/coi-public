@@ -201,7 +201,12 @@ const INTERNAL_FIELDS = new Set([
   "lastAccess",
 ]);
 
-const VFS_INTERNAL_FIELDS = new Set(["createdAt", "updatedAt", "modifiedAt", "lastAccess"]);
+const VFS_INTERNAL_FIELDS = new Set([
+  "createdAt",
+  "updatedAt",
+  "modifiedAt",
+  "lastAccess",
+]);
 
 export const RUNTIME_INJECTED_FIELD_MARKER = "@runtimeInjected";
 
@@ -232,8 +237,9 @@ const shouldHideToolField = (
     if (description && description.includes(RUNTIME_INJECTED_FIELD_MARKER)) {
       return true;
     }
-    const runtimeFields =
-      options?.toolName ? RUNTIME_INJECTED_FIELDS_BY_TOOL[options.toolName] : null;
+    const runtimeFields = options?.toolName
+      ? RUNTIME_INJECTED_FIELDS_BY_TOOL[options.toolName]
+      : null;
     if (runtimeFields?.includes(key)) {
       return true;
     }
@@ -274,7 +280,10 @@ function unwrapHintSchema(schema: ZodTypeAny): {
   return { schema: current, isOptional };
 }
 
-function getGenericTypeHintVfs(schema: ZodTypeAny, indent: string = ""): string {
+function getGenericTypeHintVfs(
+  schema: ZodTypeAny,
+  indent: string = "",
+): string {
   schema = unwrapHintSchema(schema).schema;
 
   if (schema instanceof ZodString) return "string";
@@ -399,7 +408,10 @@ export function getToolSchemaHint(
   if (schema instanceof ZodObject) {
     const shape = schema.shape;
     const lines = Object.entries(shape)
-      .filter(([key, value]) => !shouldHideToolField(key, value as ZodTypeAny, options))
+      .filter(
+        ([key, value]) =>
+          !shouldHideToolField(key, value as ZodTypeAny, options),
+      )
       .map(([key, value]) => {
         let fieldSchema = value as ZodTypeAny;
         const unwrapped = unwrapHintSchema(fieldSchema);

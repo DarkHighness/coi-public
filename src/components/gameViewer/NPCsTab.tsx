@@ -33,11 +33,12 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
   t,
 }) => {
   const playerId = gameState.playerActorId || "char:player";
-  const playerProfile = gameState.actors.find((b) => b?.profile?.id === playerId)
-    ?.profile as any;
-  const playerRelations = (Array.isArray(playerProfile?.relations)
-    ? playerProfile.relations
-    : []) as RelationEdge[];
+  const playerProfile = gameState.actors.find(
+    (b) => b?.profile?.id === playerId,
+  )?.profile as any;
+  const playerRelations = (
+    Array.isArray(playerProfile?.relations) ? playerProfile.relations : []
+  ) as RelationEdge[];
 
   const visibleNpcs = (gameState.npcs || []).filter(
     (npc: any) =>
@@ -60,7 +61,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
         ) : (
           <div className="space-y-3">
             {visibleNpcs.map((npc: any) => {
-              const attitude = (Array.isArray(npc.relations) ? npc.relations : []).find(
+              const attitude = (
+                Array.isArray(npc.relations) ? npc.relations : []
+              ).find(
                 (r: any) =>
                   r?.kind === "attitude" &&
                   r?.to?.kind === "character" &&
@@ -70,7 +73,8 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                 gameState.unlockMode || attitude?.unlocked === true,
               );
               const affinity =
-                showTrueAttitude && typeof attitude?.hidden?.affinity === "number"
+                showTrueAttitude &&
+                typeof attitude?.hidden?.affinity === "number"
                   ? attitude.hidden.affinity
                   : null;
 
@@ -137,7 +141,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
 
                     {npc.visible?.roleTag && (
                       <InfoRow
-                        label={t("gameViewer.roleTag", { defaultValue: "Role" })}
+                        label={t("gameViewer.roleTag", {
+                          defaultValue: "Role",
+                        })}
                         value={npc.visible.roleTag}
                       />
                     )}
@@ -173,17 +179,22 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 })}
                                 :
                               </span>{" "}
-                              <MarkdownText content={attitude.visible.claimedIntent} inline />
+                              <MarkdownText
+                                content={attitude.visible.claimedIntent}
+                                inline
+                              />
                             </div>
                           )}
                           {Array.isArray(attitude?.visible?.signals) &&
                             attitude.visible.signals.length > 0 && (
                               <ul className="list-disc list-inside">
-                                {attitude.visible.signals.map((s: string, i: number) => (
-                                  <li key={i}>
-                                    <MarkdownText content={s} inline />
-                                  </li>
-                                ))}
+                                {attitude.visible.signals.map(
+                                  (s: string, i: number) => (
+                                    <li key={i}>
+                                      <MarkdownText content={s} inline />
+                                    </li>
+                                  ),
+                                )}
                               </ul>
                             )}
                         </div>
@@ -199,7 +210,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                           :
                         </span>
                         <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
-                          <MarkdownText content={perception.visible.description} />
+                          <MarkdownText
+                            content={perception.visible.description}
+                          />
                         </div>
                       </div>
                     )}
@@ -221,7 +234,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                               <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
                                 {t("hidden.personality")}:
                               </span>
-                              <MarkdownText content={npc.hidden.realPersonality} />
+                              <MarkdownText
+                                content={npc.hidden.realPersonality}
+                              />
                             </div>
                           )}
                           {npc.hidden.realMotives && (
@@ -235,7 +250,10 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                           {npc.hidden.routine && (
                             <div>
                               <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("hidden.routine", { defaultValue: "Routine" })}:
+                                {t("hidden.routine", {
+                                  defaultValue: "Routine",
+                                })}
+                                :
                               </span>
                               <MarkdownText content={npc.hidden.routine} />
                             </div>
@@ -245,27 +263,35 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                               <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
                                 {t("sidebar.npc.currentThought")}:
                               </span>
-                              <MarkdownText content={npc.hidden.currentThought} />
+                              <MarkdownText
+                                content={npc.hidden.currentThought}
+                              />
                             </div>
                           )}
-                          {Array.isArray(npc.hidden.secrets) && npc.hidden.secrets.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("hidden.secrets")}:
-                              </span>
-                              <ul className="list-disc list-inside">
-                                {npc.hidden.secrets.map((s: string, i: number) => (
-                                  <li key={i}>
-                                    <MarkdownText content={s} inline />
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {Array.isArray(npc.hidden.secrets) &&
+                            npc.hidden.secrets.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                  {t("hidden.secrets")}:
+                                </span>
+                                <ul className="list-disc list-inside">
+                                  {npc.hidden.secrets.map(
+                                    (s: string, i: number) => (
+                                      <li key={i}>
+                                        <MarkdownText content={s} inline />
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+                            )}
                           {npc.hidden.status && (
                             <div>
                               <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("hidden.actualStatus", { defaultValue: "Actually Doing" })}:
+                                {t("hidden.actualStatus", {
+                                  defaultValue: "Actually Doing",
+                                })}
+                                :
                               </span>
                               <MarkdownText content={npc.hidden.status} />
                             </div>
@@ -283,4 +309,3 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
     </div>
   );
 };
-

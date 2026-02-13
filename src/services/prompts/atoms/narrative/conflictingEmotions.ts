@@ -12,12 +12,17 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 export interface ConflictingEmotionsInput {
   // (no inputs yet)
 }
 
-export const conflictingEmotionsPrimer: Atom<void> = defineAtom({ atomId: "atoms/narrative/conflictingEmotions#conflictingEmotionsPrimer", source: "atoms/narrative/conflictingEmotions.ts", exportName: "conflictingEmotionsPrimer" }, () => `
+export const conflictingEmotionsPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/conflictingEmotions#conflictingEmotionsPrimer",
+    source: "atoms/narrative/conflictingEmotions.ts",
+    exportName: "conflictingEmotionsPrimer",
+  },
+  () => `
 <conflicting_emotions>
   **SIMULTANEITY, NOT ALTERNATION**:
   - Emotions happen at the SAME TIME, not in sequence
@@ -25,8 +30,15 @@ export const conflictingEmotionsPrimer: Atom<void> = defineAtom({ atomId: "atoms
   - Dialogue should carry contradictions ("I love you. I can't stand you.")
   - Physical tells reveal internal war
 </conflicting_emotions>
-`);
-export const conflictingEmotions: Atom<void> = defineAtom({ atomId: "atoms/narrative/conflictingEmotions#conflictingEmotions", source: "atoms/narrative/conflictingEmotions.ts", exportName: "conflictingEmotions" }, () => `
+`,
+);
+export const conflictingEmotions: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/narrative/conflictingEmotions#conflictingEmotions",
+    source: "atoms/narrative/conflictingEmotions.ts",
+    exportName: "conflictingEmotions",
+  },
+  () => `
 <rule name="CONFLICTING_EMOTIONS">
   **THE SIMULTANEITY OF FEELING**:
 
@@ -227,7 +239,8 @@ export const conflictingEmotions: Atom<void> = defineAtom({ atomId: "atoms/narra
     Don't explain it. Show the war.
   </writing_guidelines>
 </rule>
-`);
+`,
+);
 
 export default conflictingEmotions;
 
@@ -235,40 +248,47 @@ export default conflictingEmotions;
 // Skill Version - Returns structured output for VFS multi-file generation
 // ============================================================================
 
-export const conflictingEmotionsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/narrative/conflictingEmotions#conflictingEmotionsSkill", source: "atoms/narrative/conflictingEmotions.ts", exportName: "conflictingEmotionsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(conflictingEmotions),
+export const conflictingEmotionsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/narrative/conflictingEmotions#conflictingEmotionsSkill",
+    source: "atoms/narrative/conflictingEmotions.ts",
+    exportName: "conflictingEmotionsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(conflictingEmotions),
 
-  quickStart: `
+    quickStart: `
 1. Emotions happen SIMULTANEOUSLY, not in sequence
 2. Show conflict through contradictory body language
 3. Dialogue carries contradictions ("I love you. I can't stand you.")
 4. Physical tells reveal internal war
 `.trim(),
 
-  checklist: [
-    "Emotions shown simultaneously (not alternating)?",
-    "Body language shows contradiction (reach while retreating)?",
-    "Dialogue carries ambivalence?",
-    "Physical tells reveal internal conflict?",
-    "Avoiding simple emotional labels?",
-  ],
+    checklist: [
+      "Emotions shown simultaneously (not alternating)?",
+      "Body language shows contradiction (reach while retreating)?",
+      "Dialogue carries ambivalence?",
+      "Physical tells reveal internal conflict?",
+      "Avoiding simple emotional labels?",
+    ],
 
-  examples: [
-    {
-      scenario: "Simultaneity",
-      wrong: `"First he felt love. Then he felt hate."
+    examples: [
+      {
+        scenario: "Simultaneity",
+        wrong: `"First he felt love. Then he felt hate."
 (Sequential, not simultaneous.)`,
-      right: `"He wanted to kiss her. He wanted to shake her.
+        right: `"He wanted to kiss her. He wanted to shake her.
 Both impulses lived in his hands at the same moment."
 (Both emotions present simultaneously.)`,
-    },
-    {
-      scenario: "Physical Tells",
-      wrong: `"She had mixed feelings."
+      },
+      {
+        scenario: "Physical Tells",
+        wrong: `"She had mixed feelings."
 (Label, not shown.)`,
-      right: `"Her hand reached for him. Then pulled back.
+        right: `"Her hand reached for him. Then pulled back.
 Then reached again, fingers stopping an inch from his face."
 (Body shows the internal war.)`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

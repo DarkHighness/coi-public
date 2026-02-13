@@ -64,10 +64,16 @@ describe("SettingsContext", () => {
     };
 
     render(
-      React.createElement(SettingsProvider, null, React.createElement(Consumer)),
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
     );
 
-    expect(captured.settings.extra.customInstruction).toBe("legacy instruction");
+    expect(captured.settings.extra.customInstruction).toBe(
+      "legacy instruction",
+    );
     expect(captured.settings.extra.customInstructionEnabled).toBe(true);
     expect(
       (captured.settings.extra as Record<string, unknown>).clearerSearchTool,
@@ -83,7 +89,11 @@ describe("SettingsContext", () => {
     };
 
     render(
-      React.createElement(SettingsProvider, null, React.createElement(Consumer)),
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
     );
 
     await act(async () => {
@@ -95,7 +105,9 @@ describe("SettingsContext", () => {
       });
     });
 
-    const saved = JSON.parse(localStorage.getItem("chronicles_aisettings") || "{}");
+    const saved = JSON.parse(
+      localStorage.getItem("chronicles_aisettings") || "{}",
+    );
     expect(saved.extra.nsfw).toBe(true);
   });
 
@@ -107,7 +119,11 @@ describe("SettingsContext", () => {
     };
 
     render(
-      React.createElement(SettingsProvider, null, React.createElement(Consumer)),
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
     );
 
     expect(captured.themeMode).toBe("system");
@@ -141,7 +157,11 @@ describe("SettingsContext", () => {
     };
 
     render(
-      React.createElement(SettingsProvider, null, React.createElement(Consumer)),
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
     );
 
     await act(async () => {

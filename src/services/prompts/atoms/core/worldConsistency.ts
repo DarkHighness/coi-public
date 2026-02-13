@@ -12,7 +12,6 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
 /**
  * 主题世界参数 - 用于特化世界规则
  */
@@ -25,14 +24,21 @@ export interface ThemeWorldParams {
   culturalHint?: string;
 }
 
-export const worldConsistencyPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/worldConsistency#worldConsistencyPrimer", source: "atoms/core/worldConsistency.ts", exportName: "worldConsistencyPrimer" }, () => `
+export const worldConsistencyPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/worldConsistency#worldConsistencyPrimer",
+    source: "atoms/core/worldConsistency.ts",
+    exportName: "worldConsistencyPrimer",
+  },
+  () => `
 <world_consistency_primer>
   - Enforce genre boundaries: no cross-genre imports without in-world cause.
   - Apply consistent cause-and-effect for physics, institutions, and social response.
   - Reject convenience spawns and selective logic; outcomes follow world rules, not author need.
   - Keep consequences proportional and persistent across turns.
 </world_consistency_primer>
-`);
+`,
+);
 
 /**
  * 根据物理严格程度生成不同内容
@@ -151,14 +157,18 @@ function getIndifferenceContent(
 /**
  * 世界一致性规则 - 支持主题特化
  */
-export const worldConsistency: Atom<ThemeWorldParams | void> = defineAtom({ atomId: "atoms/core/worldConsistency#worldConsistency", source: "atoms/core/worldConsistency.ts", exportName: "worldConsistency" }, (
-  params?: ThemeWorldParams,
-) => {
-  const harshness = params?.physicsHarshness ?? "standard";
-  const indifference = params?.worldIndifference ?? "neutral";
-  const culturalHint = params?.culturalHint ?? "";
+export const worldConsistency: Atom<ThemeWorldParams | void> = defineAtom(
+  {
+    atomId: "atoms/core/worldConsistency#worldConsistency",
+    source: "atoms/core/worldConsistency.ts",
+    exportName: "worldConsistency",
+  },
+  (params?: ThemeWorldParams) => {
+    const harshness = params?.physicsHarshness ?? "standard";
+    const indifference = params?.worldIndifference ?? "neutral";
+    const culturalHint = params?.culturalHint ?? "";
 
-  return `
+    return `
   <rule name="WORLD_CONSISTENCY">
 
     <CONTEXT_AWARE_APPLICATION>
@@ -211,6 +221,7 @@ ${getIndifferenceContent(indifference)}
     </immersion_breakers>
   </rule>
 `;
-});
+  },
+);
 
 export default worldConsistency;

@@ -73,11 +73,16 @@ describe("VfsSession", () => {
 
   it("exposes global read-only skills files", () => {
     const session = new VfsSession();
-    expect(session.readFile("skills/README.md")?.contentType).toBe("text/markdown");
+    expect(session.readFile("skills/README.md")?.contentType).toBe(
+      "text/markdown",
+    );
     const indexContent = session.readFile("skills/index.json")?.content ?? "";
-    const indexJson = JSON.parse(indexContent) as { skills?: Array<{ id?: string }> };
-    const ids = new Set((indexJson.skills ?? []).map((s) => s.id).filter(Boolean));
-    
+    const indexJson = JSON.parse(indexContent) as {
+      skills?: Array<{ id?: string }>;
+    };
+    const ids = new Set(
+      (indexJson.skills ?? []).map((s) => s.id).filter(Boolean),
+    );
 
     // Representative skill IDs across domains (keep this resilient to library evolution).
     for (const id of [
@@ -97,7 +102,7 @@ describe("VfsSession", () => {
       expect(ids.has(id)).toBe(true);
     }
 
-expect(session.list("skills")).toEqual(
+    expect(session.list("skills")).toEqual(
       expect.arrayContaining([
         "README.md",
         "index.json",
@@ -139,14 +144,15 @@ expect(session.list("skills")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
 
-
     expect(session.list("skills/gm/fail-forward")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
     expect(session.list("skills/craft/scene-beats")).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
-    expect(session.list("skills/worldbuilding/systems/medicine-forensics")).toEqual(
+    expect(
+      session.list("skills/worldbuilding/systems/medicine-forensics"),
+    ).toEqual(
       expect.arrayContaining(["SKILL.md", "CHECKLIST.md", "EXAMPLES.md"]),
     );
     expect(session.list("skills/theme/element-media")).toEqual(
@@ -160,14 +166,16 @@ expect(session.list("skills")).toEqual(
     expect(() =>
       session.writeFile("skills/custom.txt", "nope", "text/plain"),
     ).toThrow(/read-only/i);
-    expect(() => session.renameFile("skills/README.md", "skills/x.txt")).toThrow(
-      /read-only/i,
-    );
+    expect(() =>
+      session.renameFile("skills/README.md", "skills/x.txt"),
+    ).toThrow(/read-only/i);
     expect(() => session.deleteFile("skills/README.md")).toThrow(/read-only/i);
 
     const snapshot = session.snapshot();
     expect(snapshot["skills/README.md"]).toBeUndefined();
-    expect(Object.keys(snapshot).some((p) => p.startsWith("skills/"))).toBe(false);
+    expect(Object.keys(snapshot).some((p) => p.startsWith("skills/"))).toBe(
+      false,
+    );
   });
 
   it("treats refs/** as read-only virtual files", () => {
@@ -338,5 +346,4 @@ expect(session.list("skills")).toEqual(
       { path: "custom_rules/01-guide.md", changeType: "modified" },
     ]);
   });
-
 });

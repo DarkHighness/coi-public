@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const failForwardConsequences: Atom<void> = defineAtom({ atomId: "atoms/core/failForwardConsequences#failForwardConsequences", source: "atoms/core/failForwardConsequences.ts", exportName: "failForwardConsequences" }, () => `
+export const failForwardConsequences: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/failForwardConsequences#failForwardConsequences",
+    source: "atoms/core/failForwardConsequences.ts",
+    exportName: "failForwardConsequences",
+  },
+  () => `
 <gm_context>
 **FAIL-FORWARD & CONSEQUENCES (No Dead Ends, Persistent World)**
 
@@ -65,40 +70,53 @@ When unsure, answer:
 4) What **new decision** must be made now?
 </quick_table>
 </gm_context>
-`);
+`,
+);
 
-export const failForwardConsequencesPrimer: Atom<void> = defineAtom({ atomId: "atoms/core/failForwardConsequences#failForwardConsequencesPrimer", source: "atoms/core/failForwardConsequences.ts", exportName: "failForwardConsequencesPrimer" }, () =>
-  `
+export const failForwardConsequencesPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/core/failForwardConsequences#failForwardConsequencesPrimer",
+    source: "atoms/core/failForwardConsequences.ts",
+    exportName: "failForwardConsequencesPrimer",
+  },
+  () =>
+    `
 <gm_context>
 **FAIL-FORWARD PRIMER**: Avoid dead ends. Failure should create a new constraint/lead/obligation + a receipt (trace) + a clock.
 </gm_context>
-`.trim());
+`.trim(),
+);
 
-export const failForwardConsequencesSkill: SkillAtom<
-  void
-> = defineSkillAtom({ atomId: "atoms/core/failForwardConsequences#failForwardConsequencesSkill", source: "atoms/core/failForwardConsequences.ts", exportName: "failForwardConsequencesSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(failForwardConsequences),
-  quickStart: `
+export const failForwardConsequencesSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/core/failForwardConsequences#failForwardConsequencesSkill",
+    source: "atoms/core/failForwardConsequences.ts",
+    exportName: "failForwardConsequencesSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(failForwardConsequences),
+    quickStart: `
 1) Decide outcome mode (success / partial / fail-forward)
 2) Pick 1-2 consequence types (time/trace/access/resource/injury/relationship/institution)
 3) Start/advance one clock with a clear trigger
 4) Add a receipt (log/witness/rumor/ledger) for later audits
 5) End with an immediate decision hook
 `.trim(),
-  checklist: [
-    "No dead ends: failure still changes state.",
-    "Consequence types are limited (1-2) and legible.",
-    "A receipt/trace exists that can return later.",
-    "A clock starts/advances with a clear trigger.",
-    "An immediate decision hook is presented.",
-  ],
-  examples: [
-    {
-      scenario: "Fail-forward after a failed roll",
-      wrong: `"You fail. Nothing happens. Try again."`,
-      right: `"You fail the pickup, but you spot the courier’s route (new lead).
+    checklist: [
+      "No dead ends: failure still changes state.",
+      "Consequence types are limited (1-2) and legible.",
+      "A receipt/trace exists that can return later.",
+      "A clock starts/advances with a clear trigger.",
+      "An immediate decision hook is presented.",
+    ],
+    examples: [
+      {
+        scenario: "Fail-forward after a failed roll",
+        wrong: `"You fail. Nothing happens. Try again."`,
+        right: `"You fail the pickup, but you spot the courier’s route (new lead).
 Your attempt leaves a camera timestamp (receipt). A 24h review clock starts.
 You can flee now, or stay to confirm identity (higher certainty, higher exposure). "`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

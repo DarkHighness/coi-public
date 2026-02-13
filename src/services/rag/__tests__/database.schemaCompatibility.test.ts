@@ -45,7 +45,9 @@ describe("RAGDatabase schema compatibility", () => {
 
     expect(resetSchema).toHaveBeenCalledTimes(1);
     expect(exec).toHaveBeenCalledTimes(1);
-    expect(exec).toHaveBeenCalledWith(expect.stringContaining("CREATE TABLE IF NOT EXISTS documents"));
+    expect(exec).toHaveBeenCalledWith(
+      expect.stringContaining("CREATE TABLE IF NOT EXISTS documents"),
+    );
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO rag_meta"),
       ["5"],

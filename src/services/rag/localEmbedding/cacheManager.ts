@@ -13,7 +13,8 @@ export interface TransformersCacheSummary {
   models: LocalModelCacheStat[];
 }
 
-const MODEL_URL_PATTERN = /https?:\/\/huggingface\.co\/([^/]+\/[^/]+)\/resolve\//i;
+const MODEL_URL_PATTERN =
+  /https?:\/\/huggingface\.co\/([^/]+\/[^/]+)\/resolve\//i;
 
 const extractModelIdFromUrl = (url: string): string | null => {
   const match = url.match(MODEL_URL_PATTERN);
@@ -97,7 +98,10 @@ export const getTransformersCacheSummary =
         ),
       };
     } catch (error) {
-      console.warn("[LocalEmbedding] Failed to inspect transformers cache:", error);
+      console.warn(
+        "[LocalEmbedding] Failed to inspect transformers cache:",
+        error,
+      );
       return emptySummary(true);
     }
   };
@@ -114,7 +118,10 @@ export const removeModelFromTransformersCache = async (
     return { deleted: 0 };
   }
 
-  const patterns = [`/${trimmed}/resolve/`, `/${encodeURIComponent(trimmed)}/resolve/`];
+  const patterns = [
+    `/${trimmed}/resolve/`,
+    `/${encodeURIComponent(trimmed)}/resolve/`,
+  ];
 
   try {
     const cache = await caches.open(TRANSFORMERS_CACHE_KEY);
@@ -151,4 +158,3 @@ export const clearTransformersCache = async (): Promise<boolean> => {
     return false;
   }
 };
-

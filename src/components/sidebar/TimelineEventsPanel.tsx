@@ -153,10 +153,7 @@ const TimelineEventCard: React.FC<{
             </span>
             <div className="flex flex-wrap gap-1">
               {event.involvedEntities.map((entityId, idx) => (
-                <span
-                  key={idx}
-                  className="text-[10px] text-theme-text/70 px-1"
-                >
+                <span key={idx} className="text-[10px] text-theme-text/70 px-1">
                   {resolveEntityDisplayName(entityId, gameState)}
                 </span>
               ))}
@@ -268,8 +265,7 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
   const recentEvents = events
     ? [...events]
         .filter(
-          (e: any) =>
-            !Array.isArray(e.knownBy) || e.knownBy.includes(playerId),
+          (e: any) => !Array.isArray(e.knownBy) || e.knownBy.includes(playerId),
         )
         .reverse()
         .slice(0, 5)

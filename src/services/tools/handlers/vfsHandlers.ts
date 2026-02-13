@@ -178,7 +178,9 @@ const qualifyPathForRecovery = (
   const qualifiedWithoutTrailingSlash = qualifiedPath.replace(/\/$/, "");
   const lastSlash = qualifiedWithoutTrailingSlash.lastIndexOf("/");
   const parentDir =
-    lastSlash > 0 ? qualifiedWithoutTrailingSlash.slice(0, lastSlash) : "current";
+    lastSlash > 0
+      ? qualifiedWithoutTrailingSlash.slice(0, lastSlash)
+      : "current";
   const fileName =
     lastSlash >= 0
       ? qualifiedWithoutTrailingSlash.slice(lastSlash + 1)
@@ -188,7 +190,8 @@ const qualifyPathForRecovery = (
 };
 
 const buildNotFoundRecovery = (inputPath: string): string[] => {
-  const { qualifiedPath, parentDir, fileName } = qualifyPathForRecovery(inputPath);
+  const { qualifiedPath, parentDir, fileName } =
+    qualifyPathForRecovery(inputPath);
   return [
     `Try: vfs_ls({ path: "${parentDir}" })`,
     `Then: vfs_search({ path: "${parentDir}", query: "${fileName}", fuzzy: true })`,
@@ -238,7 +241,9 @@ const withToolErrorDetails = (
     Array.isArray(error.details?.recovery) && error.details.recovery.length > 0;
   const effectiveRecovery =
     details?.recovery ??
-    (hasExistingRecovery ? undefined : defaultRecoveryByCode(error.code, normalizedTool));
+    (hasExistingRecovery
+      ? undefined
+      : defaultRecoveryByCode(error.code, normalizedTool));
 
   return mergeToolErrorDetails(error, {
     category: details?.category ?? inferErrorCategoryFromCode(error.code),
@@ -257,7 +262,9 @@ const registerToolHandlerWithStructuredErrors = (
     ctx: ToolContext,
   ) => unknown | Promise<unknown>,
   options?: {
-    batchFromArgs?: (args: Record<string, unknown>) => ToolErrorBatch | undefined;
+    batchFromArgs?: (
+      args: Record<string, unknown>,
+    ) => ToolErrorBatch | undefined;
   },
 ): void => {
   const wrapped = (args: Record<string, unknown>, ctx: ToolContext) => {
@@ -343,7 +350,8 @@ const ensureNotFinishGuardedMutation = (
           {
             path: toCurrentPath(normalized),
             code: "FINISH_GUARDED",
-            message: "Target path can only be mutated through finish/commit tools.",
+            message:
+              "Target path can only be mutated through finish/commit tools.",
           },
         ],
       },
@@ -403,10 +411,7 @@ const resolveJsonPointer = (
   }
 
   let current: unknown = document;
-  const tokens = pointer
-    .split("/")
-    .slice(1)
-    .map(decodeJsonPointerToken);
+  const tokens = pointer.split("/").slice(1).map(decodeJsonPointerToken);
 
   for (const token of tokens) {
     if (Array.isArray(current)) {
@@ -417,7 +422,11 @@ const resolveJsonPointer = (
         };
       }
       const index = Number(token);
-      if (!Number.isSafeInteger(index) || index < 0 || index >= current.length) {
+      if (
+        !Number.isSafeInteger(index) ||
+        index < 0 ||
+        index >= current.length
+      ) {
         return { ok: false, error: `Array index out of bounds: ${token}` };
       }
       current = current[index];
@@ -595,7 +604,10 @@ const FALLBACK_TEMPLATE_IDS = new Set([
   "template.fallback.fork",
 ]);
 
-const PLAIN_OR_MARKDOWN_CONTENT_TYPES = new Set(["text/plain", "text/markdown"]);
+const PLAIN_OR_MARKDOWN_CONTENT_TYPES = new Set([
+  "text/plain",
+  "text/markdown",
+]);
 
 const inferContentTypeFromPath = (path: string): string | null => {
   const normalized = normalizeVfsPath(path).toLowerCase();
@@ -629,7 +641,9 @@ const formatTemplateDefinitionHint = (input: {
   resolvedContentType?: string | null;
 }): string => {
   const contentTypesText =
-    input.contentTypes.length > 0 ? input.contentTypes.join(" | ") : "unspecified";
+    input.contentTypes.length > 0
+      ? input.contentTypes.join(" | ")
+      : "unspecified";
   const resolvedTypeText = input.resolvedContentType ?? "unknown";
 
   return [
@@ -812,7 +826,9 @@ const formatRagPreview = (content: unknown): string => {
   if (typeof content !== "string") {
     return "";
   }
-  const firstLine = content.split(/\r?\n/).find((line) => line.trim().length > 0);
+  const firstLine = content
+    .split(/\r?\n/)
+    .find((line) => line.trim().length > 0);
   const preview = (firstLine ?? content).trim();
   if (preview.length <= 240) {
     return preview;
@@ -879,7 +895,10 @@ const searchSemanticWithRag = async (
 
     return mapped;
   } catch (error) {
-    console.warn("[VFS] Semantic search via RAG failed, falling back to text.", error);
+    console.warn(
+      "[VFS] Semantic search via RAG failed, falling back to text.",
+      error,
+    );
     return [];
   }
 };
@@ -938,7 +957,9 @@ const deriveConversationIndexFromSnapshot = (
   const activeForkKey = String(activeForkId);
   const activeOrder = turnOrderByFork[activeForkKey] ?? [];
   const activeTurnId =
-    activeOrder.length > 0 ? activeOrder[activeOrder.length - 1] : "fork-0/turn-0";
+    activeOrder.length > 0
+      ? activeOrder[activeOrder.length - 1]
+      : "fork-0/turn-0";
 
   return {
     index: {
@@ -1072,8 +1093,10 @@ registerToolHandlerWithStructuredErrors(VFS_LS_TOOL, (args, ctx) => {
   ): string[] => {
     const triggers: string[] = [];
     if (allowedWriteOps.includes("finish_commit")) triggers.push("turn_commit");
-    if (allowedWriteOps.includes("finish_summary")) triggers.push("summary_commit");
-    if (allowedWriteOps.includes("history_rewrite")) triggers.push("history_rewrite");
+    if (allowedWriteOps.includes("finish_summary"))
+      triggers.push("summary_commit");
+    if (allowedWriteOps.includes("history_rewrite"))
+      triggers.push("history_rewrite");
     if (
       allowedWriteOps.some((op) =>
         ["write", "json_patch", "json_merge", "move", "delete"].includes(op),
@@ -1236,10 +1259,7 @@ registerToolHandlerWithStructuredErrors(VFS_LS_TOOL, (args, ctx) => {
     payload.access = selectedMatches.map(toAccessMeta);
   }
 
-  return createSuccess(
-    payload,
-    "VFS glob listing complete",
-  );
+  return createSuccess(payload, "VFS glob listing complete");
 });
 
 registerToolHandlerWithStructuredErrors(VFS_READ_TOOL, (args, ctx) => {
@@ -1264,7 +1284,9 @@ registerToolHandlerWithStructuredErrors(VFS_READ_TOOL, (args, ctx) => {
     const qualifiedWithoutTrailingSlash = qualifiedPath.replace(/\/$/, "");
     const lastSlash = qualifiedWithoutTrailingSlash.lastIndexOf("/");
     const parentDir =
-      lastSlash > 0 ? qualifiedWithoutTrailingSlash.slice(0, lastSlash) : "current";
+      lastSlash > 0
+        ? qualifiedWithoutTrailingSlash.slice(0, lastSlash)
+        : "current";
     const fileName =
       lastSlash >= 0
         ? qualifiedWithoutTrailingSlash.slice(lastSlash + 1)
@@ -1573,7 +1595,9 @@ registerToolHandlerWithStructuredErrors(VFS_SCHEMA_TOOL, (args, ctx) => {
     } catch (schemaError) {
       if (!hasSpecificTemplateDefinition(classification.templateId)) {
         const message =
-          schemaError instanceof Error ? schemaError.message : String(schemaError);
+          schemaError instanceof Error
+            ? schemaError.message
+            : String(schemaError);
         missing.push({ path: inputPath, error: message });
         continue;
       }
@@ -1635,7 +1659,9 @@ registerToolHandlerWithStructuredErrors(VFS_SEARCH_TOOL, async (args, ctx) => {
     return createSuccess({ results: [] }, "VFS search complete");
   }
 
-  const resolvedPath = typedArgs.path ? resolveCurrentPath(ctx, typedArgs.path) : null;
+  const resolvedPath = typedArgs.path
+    ? resolveCurrentPath(ctx, typedArgs.path)
+    : null;
   if (resolvedPath && isPathResolveError(resolvedPath)) {
     return resolvedPath.error;
   }
@@ -1659,7 +1685,12 @@ registerToolHandlerWithStructuredErrors(VFS_SEARCH_TOOL, async (args, ctx) => {
       });
     }
 
-    const rawResults = collectMatches(files, rootPath, makeRegexMatcher(regexObj), limit);
+    const rawResults = collectMatches(
+      files,
+      rootPath,
+      makeRegexMatcher(regexObj),
+      limit,
+    );
     const results = rawResults.map((match) => ({
       ...match,
       path: toCurrentPath(match.path),
@@ -1676,7 +1707,9 @@ registerToolHandlerWithStructuredErrors(VFS_SEARCH_TOOL, async (args, ctx) => {
     }
 
     const forkId =
-      typeof ctx.gameState?.forkId === "number" ? ctx.gameState.forkId : undefined;
+      typeof ctx.gameState?.forkId === "number"
+        ? ctx.gameState.forkId
+        : undefined;
     const beforeTurn =
       typeof ctx.gameState?.turnNumber === "number"
         ? ctx.gameState.turnNumber
@@ -1711,7 +1744,12 @@ registerToolHandlerWithStructuredErrors(VFS_SEARCH_TOOL, async (args, ctx) => {
 
   const rawResults = fuzzy
     ? collectFuzzyMatches(files, rootPath, typedArgs.query, limit)
-    : collectMatches(files, rootPath, (line) => line.includes(typedArgs.query), limit);
+    : collectMatches(
+        files,
+        rootPath,
+        (line) => line.includes(typedArgs.query),
+        limit,
+      );
 
   const results = rawResults.map((match) => ({
     ...match,
@@ -1728,546 +1766,603 @@ const ensureSeparatorNewline = (left: string, right: string): string => {
   return "\n";
 };
 
-registerToolHandlerWithStructuredErrors(VFS_WRITE_TOOL, (args, ctx) => {
-  const typedArgs = getTypedArgs("vfs_write", args);
+registerToolHandlerWithStructuredErrors(
+  VFS_WRITE_TOOL,
+  (args, ctx) => {
+    const typedArgs = getTypedArgs("vfs_write", args);
 
-  return withAtomicSession(ctx, (draft) => {
-    const written: string[] = [];
-    const appended: string[] = [];
-    const edited: string[] = [];
-    const patched: string[] = [];
-    const merged: string[] = [];
-    const withBatchError = (
-      error: ToolCallError,
-      opIndex: number,
-      operation: string,
-      path?: string,
-    ): ToolCallError =>
-      withToolErrorDetails(error, "vfs_write", {
-        batch: {
-          index: opIndex + 1,
-          total: typedArgs.ops.length,
-          operation,
-          path,
-        },
-      });
+    return withAtomicSession(ctx, (draft) => {
+      const written: string[] = [];
+      const appended: string[] = [];
+      const edited: string[] = [];
+      const patched: string[] = [];
+      const merged: string[] = [];
+      const withBatchError = (
+        error: ToolCallError,
+        opIndex: number,
+        operation: string,
+        path?: string,
+      ): ToolCallError =>
+        withToolErrorDetails(error, "vfs_write", {
+          batch: {
+            index: opIndex + 1,
+            total: typedArgs.ops.length,
+            operation,
+            path,
+          },
+        });
 
-    for (const [opIndex, op] of typedArgs.ops.entries()) {
-      if (op.op === "write_file") {
-        const resolved = resolveCurrentPath(ctx, op.path);
-        if (isPathResolveError(resolved)) {
-          return withBatchError(resolved.error, opIndex, op.op, op.path);
-        }
-        const finishGuardError = ensureNotFinishGuardedMutation(
-          resolved.path,
-          "vfs_write(write_file)",
-        );
-        if (finishGuardError) {
-          return withBatchError(finishGuardError, opIndex, op.op, op.path);
-        }
-
-        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "overwrite");
-        if (seenError) {
-          return withBatchError(seenError, opIndex, op.op, op.path);
-        }
-
-        const validated = validateWritePayload(
-          resolved.path,
-          op.content,
-          op.contentType,
-        );
-        if ("error" in validated) {
-          return withBatchError(validated.error, opIndex, op.op, op.path);
-        }
-
-        draft.writeFile(
-          resolved.path,
-          validated.normalizedContent,
-          validated.contentType,
-        );
-        draft.noteToolAccessFile(resolved.path);
-        written.push(toCurrentPath(resolved.path));
-        continue;
-      }
-
-      if (op.op === "append_text") {
-        const resolved = resolveCurrentPath(ctx, op.path);
-        if (isPathResolveError(resolved)) {
-          return withBatchError(resolved.error, opIndex, op.op, op.path);
-        }
-        const finishGuardError = ensureNotFinishGuardedMutation(
-          resolved.path,
-          "vfs_write(append_text)",
-        );
-        if (finishGuardError) {
-          return withBatchError(finishGuardError, opIndex, op.op, op.path);
-        }
-
-        const existing = draft.readFile(resolved.path);
-        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "append");
-        if (seenError) {
-          return withBatchError(seenError, opIndex, op.op, op.path);
-        }
-
-        const hashError = validateExpectedHash(existing, op.expectedHash, op.path);
-        if (hashError) {
-          return withBatchError(hashError, opIndex, op.op, op.path);
-        }
-
-        const textTypeError = ensureTextFile(existing, op.path);
-        if (textTypeError) {
-          return withBatchError(textTypeError, opIndex, op.op, op.path);
-        }
-
-        const base = existing ? existing.content : "";
-        const ensureNewline = op.ensureNewline ?? true;
-        const sep =
-          existing && ensureNewline ? ensureSeparatorNewline(base, op.content) : "";
-        const next = `${base}${sep}${op.content}`;
-
-        if (op.maxTotalChars && next.length > op.maxTotalChars) {
-          return withBatchError(
-            createError(
-              `Append would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
-              "INVALID_DATA",
-            ),
-            opIndex,
-            op.op,
-            op.path,
+      for (const [opIndex, op] of typedArgs.ops.entries()) {
+        if (op.op === "write_file") {
+          const resolved = resolveCurrentPath(ctx, op.path);
+          if (isPathResolveError(resolved)) {
+            return withBatchError(resolved.error, opIndex, op.op, op.path);
+          }
+          const finishGuardError = ensureNotFinishGuardedMutation(
+            resolved.path,
+            "vfs_write(write_file)",
           );
-        }
+          if (finishGuardError) {
+            return withBatchError(finishGuardError, opIndex, op.op, op.path);
+          }
 
-        draft.writeFile(
-          resolved.path,
-          next,
-          resolveTextContentType(resolved.path, existing),
-        );
-        draft.noteToolAccessFile(resolved.path);
-
-        appended.push(toCurrentPath(resolved.path));
-        continue;
-      }
-
-      if (op.op === "edit_lines") {
-        const resolved = resolveCurrentPath(ctx, op.path);
-        if (isPathResolveError(resolved)) {
-          return withBatchError(resolved.error, opIndex, op.op, op.path);
-        }
-        const finishGuardError = ensureNotFinishGuardedMutation(
-          resolved.path,
-          "vfs_write(edit_lines)",
-        );
-        if (finishGuardError) {
-          return withBatchError(finishGuardError, opIndex, op.op, op.path);
-        }
-
-        const existing = draft.readFile(resolved.path);
-        const createIfMissing = op.createIfMissing ?? true;
-      if (!existing && !createIfMissing) {
-        return withBatchError(
-          createError(`File not found: ${op.path}`, "NOT_FOUND", {
-            recovery: buildNotFoundRecovery(op.path),
-          }),
-          opIndex,
-          op.op,
-          op.path,
-        );
-      }
-
-        if (existing) {
-          const seenError = requireToolSeenForExistingFile(draft, resolved.path, "text_edit");
+          const seenError = requireToolSeenForExistingFile(
+            draft,
+            resolved.path,
+            "overwrite",
+          );
           if (seenError) {
             return withBatchError(seenError, opIndex, op.op, op.path);
           }
-          const hashError = validateExpectedHash(existing, op.expectedHash, op.path);
+
+          const validated = validateWritePayload(
+            resolved.path,
+            op.content,
+            op.contentType,
+          );
+          if ("error" in validated) {
+            return withBatchError(validated.error, opIndex, op.op, op.path);
+          }
+
+          draft.writeFile(
+            resolved.path,
+            validated.normalizedContent,
+            validated.contentType,
+          );
+          draft.noteToolAccessFile(resolved.path);
+          written.push(toCurrentPath(resolved.path));
+          continue;
+        }
+
+        if (op.op === "append_text") {
+          const resolved = resolveCurrentPath(ctx, op.path);
+          if (isPathResolveError(resolved)) {
+            return withBatchError(resolved.error, opIndex, op.op, op.path);
+          }
+          const finishGuardError = ensureNotFinishGuardedMutation(
+            resolved.path,
+            "vfs_write(append_text)",
+          );
+          if (finishGuardError) {
+            return withBatchError(finishGuardError, opIndex, op.op, op.path);
+          }
+
+          const existing = draft.readFile(resolved.path);
+          const seenError = requireToolSeenForExistingFile(
+            draft,
+            resolved.path,
+            "append",
+          );
+          if (seenError) {
+            return withBatchError(seenError, opIndex, op.op, op.path);
+          }
+
+          const hashError = validateExpectedHash(
+            existing,
+            op.expectedHash,
+            op.path,
+          );
           if (hashError) {
             return withBatchError(hashError, opIndex, op.op, op.path);
           }
+
           const textTypeError = ensureTextFile(existing, op.path);
           if (textTypeError) {
             return withBatchError(textTypeError, opIndex, op.op, op.path);
           }
-        }
 
-        let content = existing ? existing.content : "";
+          const base = existing ? existing.content : "";
+          const ensureNewline = op.ensureNewline ?? true;
+          const sep =
+            existing && ensureNewline
+              ? ensureSeparatorNewline(base, op.content)
+              : "";
+          const next = `${base}${sep}${op.content}`;
 
-        for (const edit of op.edits) {
-          const lines = content.split("\n");
-          if (edit.kind === "insert_before") {
-            const insertIdx = edit.line - 1;
-            if (insertIdx < 0 || insertIdx > lines.length) {
-              return withBatchError(
-                createError(
-                  `Line out of range for insert_before: ${op.path}`,
-                  "INVALID_DATA",
-                  { recovery: buildReadLinesRecovery(op.path) },
-                ),
-                opIndex,
-                op.op,
-                op.path,
-              );
-            }
-            const insertLines = edit.content.split("\n");
-            content = [
-              ...lines.slice(0, insertIdx),
-              ...insertLines,
-              ...lines.slice(insertIdx),
-            ].join("\n");
-            continue;
-          }
-
-          if (edit.kind === "insert_after") {
-            const afterIdx = edit.line;
-            if (afterIdx < 0 || afterIdx > lines.length) {
-              return withBatchError(
-                createError(
-                  `Line out of range for insert_after: ${op.path}`,
-                  "INVALID_DATA",
-                  { recovery: buildReadLinesRecovery(op.path) },
-                ),
-                opIndex,
-                op.op,
-                op.path,
-              );
-            }
-            const insertLines = edit.content.split("\n");
-            content = [
-              ...lines.slice(0, afterIdx),
-              ...insertLines,
-              ...lines.slice(afterIdx),
-            ].join("\n");
-            continue;
-          }
-
-          if (edit.kind === "replace_range") {
-            if (edit.startLine > edit.endLine) {
-              return withBatchError(
-                createError(
-                  `Invalid line range (startLine > endLine): ${op.path}`,
-                  "INVALID_DATA",
-                  { recovery: buildReadLinesRecovery(op.path) },
-                ),
-                opIndex,
-                op.op,
-                op.path,
-              );
-            }
-            if (edit.endLine > lines.length) {
-              return withBatchError(
-                createError(
-                  `Line out of range for replace_range: ${op.path}`,
-                  "INVALID_DATA",
-                  { recovery: buildReadLinesRecovery(op.path) },
-                ),
-                opIndex,
-                op.op,
-                op.path,
-              );
-            }
-            const startIdx = edit.startLine - 1;
-            const endIdxExclusive = edit.endLine;
-            const replacement = edit.content.split("\n");
-            content = [
-              ...lines.slice(0, startIdx),
-              ...replacement,
-              ...lines.slice(endIdxExclusive),
-            ].join("\n");
-          }
-        }
-
-        if (op.maxTotalChars && content.length > op.maxTotalChars) {
-          return withBatchError(
-            createError(
-              `Edits would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
-              "INVALID_DATA",
-            ),
-            opIndex,
-            op.op,
-            op.path,
-          );
-        }
-
-        draft.writeFile(
-          resolved.path,
-          content,
-          resolveTextContentType(resolved.path, existing),
-        );
-        draft.noteToolAccessFile(resolved.path);
-        edited.push(toCurrentPath(resolved.path));
-        continue;
-      }
-
-      if (op.op === "patch_json") {
-        const resolved = resolveCurrentPath(ctx, op.path);
-        if (isPathResolveError(resolved)) {
-          return withBatchError(resolved.error, opIndex, op.op, op.path);
-        }
-        const finishGuardError = ensureNotFinishGuardedMutation(
-          resolved.path,
-          "vfs_write(patch_json)",
-        );
-        if (finishGuardError) {
-          return withBatchError(finishGuardError, opIndex, op.op, op.path);
-        }
-
-        const existing = draft.readFile(resolved.path);
-        if (!existing) {
-          return withBatchError(
-            createError(`File not found: ${op.path}`, "NOT_FOUND", {
-              recovery: buildNotFoundRecovery(op.path),
-            }),
-            opIndex,
-            op.op,
-            op.path,
-          );
-        }
-        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "edit");
-        if (seenError) {
-          return withBatchError(seenError, opIndex, op.op, op.path);
-        }
-
-        try {
-          draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
-        } catch (error) {
-          if (error instanceof VfsWriteAccessError) {
+          if (op.maxTotalChars && next.length > op.maxTotalChars) {
             return withBatchError(
-              createError(error.message, error.code),
+              createError(
+                `Append would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
+                "INVALID_DATA",
+              ),
               opIndex,
               op.op,
               op.path,
             );
           }
-          const message = error instanceof Error ? error.message : String(error);
-          const isNotFound = message.startsWith("File not found:");
-          return withBatchError(
-            createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
-              recovery: isNotFound
-                ? buildNotFoundRecovery(op.path)
-                : buildSchemaAndReadRecovery(op.path),
-            }),
-            opIndex,
-            op.op,
-            op.path,
+
+          draft.writeFile(
+            resolved.path,
+            next,
+            resolveTextContentType(resolved.path, existing),
           );
-        }
-        draft.noteToolAccessFile(resolved.path);
-        patched.push(toCurrentPath(resolved.path));
-        continue;
-      }
+          draft.noteToolAccessFile(resolved.path);
 
-      if (op.op === "merge_json") {
-        const resolved = resolveCurrentPath(ctx, op.path);
-        if (isPathResolveError(resolved)) {
-          return withBatchError(resolved.error, opIndex, op.op, op.path);
-        }
-        const finishGuardError = ensureNotFinishGuardedMutation(
-          resolved.path,
-          "vfs_write(merge_json)",
-        );
-        if (finishGuardError) {
-          return withBatchError(finishGuardError, opIndex, op.op, op.path);
-        }
-        const seenError = requireToolSeenForExistingFile(draft, resolved.path, "merge");
-        if (seenError) {
-          return withBatchError(seenError, opIndex, op.op, op.path);
+          appended.push(toCurrentPath(resolved.path));
+          continue;
         }
 
-        try {
-          draft.mergeJson(resolved.path, op.content);
-        } catch (error) {
-          if (error instanceof VfsWriteAccessError) {
+        if (op.op === "edit_lines") {
+          const resolved = resolveCurrentPath(ctx, op.path);
+          if (isPathResolveError(resolved)) {
+            return withBatchError(resolved.error, opIndex, op.op, op.path);
+          }
+          const finishGuardError = ensureNotFinishGuardedMutation(
+            resolved.path,
+            "vfs_write(edit_lines)",
+          );
+          if (finishGuardError) {
+            return withBatchError(finishGuardError, opIndex, op.op, op.path);
+          }
+
+          const existing = draft.readFile(resolved.path);
+          const createIfMissing = op.createIfMissing ?? true;
+          if (!existing && !createIfMissing) {
             return withBatchError(
-              createError(error.message, error.code),
+              createError(`File not found: ${op.path}`, "NOT_FOUND", {
+                recovery: buildNotFoundRecovery(op.path),
+              }),
               opIndex,
               op.op,
               op.path,
             );
           }
-          const message = error instanceof Error ? error.message : String(error);
-          const isNotFound = message.startsWith("File not found:");
-          return withBatchError(
-            createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
-              recovery: isNotFound
-                ? buildNotFoundRecovery(op.path)
-                : buildSchemaAndReadRecovery(op.path),
-            }),
-            opIndex,
-            op.op,
-            op.path,
-          );
-        }
-        draft.noteToolAccessFile(resolved.path);
-        merged.push(toCurrentPath(resolved.path));
-      }
-    }
 
-    return createSuccess(
-      { written, appended, edited, patched, merged },
-      "VFS write operations applied",
-    );
-  });
-}, {
-  batchFromArgs: (rawArgs) => {
-    const typed = getTypedArgs("vfs_write", rawArgs);
-    return { total: typed.ops.length };
+          if (existing) {
+            const seenError = requireToolSeenForExistingFile(
+              draft,
+              resolved.path,
+              "text_edit",
+            );
+            if (seenError) {
+              return withBatchError(seenError, opIndex, op.op, op.path);
+            }
+            const hashError = validateExpectedHash(
+              existing,
+              op.expectedHash,
+              op.path,
+            );
+            if (hashError) {
+              return withBatchError(hashError, opIndex, op.op, op.path);
+            }
+            const textTypeError = ensureTextFile(existing, op.path);
+            if (textTypeError) {
+              return withBatchError(textTypeError, opIndex, op.op, op.path);
+            }
+          }
+
+          let content = existing ? existing.content : "";
+
+          for (const edit of op.edits) {
+            const lines = content.split("\n");
+            if (edit.kind === "insert_before") {
+              const insertIdx = edit.line - 1;
+              if (insertIdx < 0 || insertIdx > lines.length) {
+                return withBatchError(
+                  createError(
+                    `Line out of range for insert_before: ${op.path}`,
+                    "INVALID_DATA",
+                    { recovery: buildReadLinesRecovery(op.path) },
+                  ),
+                  opIndex,
+                  op.op,
+                  op.path,
+                );
+              }
+              const insertLines = edit.content.split("\n");
+              content = [
+                ...lines.slice(0, insertIdx),
+                ...insertLines,
+                ...lines.slice(insertIdx),
+              ].join("\n");
+              continue;
+            }
+
+            if (edit.kind === "insert_after") {
+              const afterIdx = edit.line;
+              if (afterIdx < 0 || afterIdx > lines.length) {
+                return withBatchError(
+                  createError(
+                    `Line out of range for insert_after: ${op.path}`,
+                    "INVALID_DATA",
+                    { recovery: buildReadLinesRecovery(op.path) },
+                  ),
+                  opIndex,
+                  op.op,
+                  op.path,
+                );
+              }
+              const insertLines = edit.content.split("\n");
+              content = [
+                ...lines.slice(0, afterIdx),
+                ...insertLines,
+                ...lines.slice(afterIdx),
+              ].join("\n");
+              continue;
+            }
+
+            if (edit.kind === "replace_range") {
+              if (edit.startLine > edit.endLine) {
+                return withBatchError(
+                  createError(
+                    `Invalid line range (startLine > endLine): ${op.path}`,
+                    "INVALID_DATA",
+                    { recovery: buildReadLinesRecovery(op.path) },
+                  ),
+                  opIndex,
+                  op.op,
+                  op.path,
+                );
+              }
+              if (edit.endLine > lines.length) {
+                return withBatchError(
+                  createError(
+                    `Line out of range for replace_range: ${op.path}`,
+                    "INVALID_DATA",
+                    { recovery: buildReadLinesRecovery(op.path) },
+                  ),
+                  opIndex,
+                  op.op,
+                  op.path,
+                );
+              }
+              const startIdx = edit.startLine - 1;
+              const endIdxExclusive = edit.endLine;
+              const replacement = edit.content.split("\n");
+              content = [
+                ...lines.slice(0, startIdx),
+                ...replacement,
+                ...lines.slice(endIdxExclusive),
+              ].join("\n");
+            }
+          }
+
+          if (op.maxTotalChars && content.length > op.maxTotalChars) {
+            return withBatchError(
+              createError(
+                `Edits would exceed maxTotalChars (${op.maxTotalChars}) for ${op.path}`,
+                "INVALID_DATA",
+              ),
+              opIndex,
+              op.op,
+              op.path,
+            );
+          }
+
+          draft.writeFile(
+            resolved.path,
+            content,
+            resolveTextContentType(resolved.path, existing),
+          );
+          draft.noteToolAccessFile(resolved.path);
+          edited.push(toCurrentPath(resolved.path));
+          continue;
+        }
+
+        if (op.op === "patch_json") {
+          const resolved = resolveCurrentPath(ctx, op.path);
+          if (isPathResolveError(resolved)) {
+            return withBatchError(resolved.error, opIndex, op.op, op.path);
+          }
+          const finishGuardError = ensureNotFinishGuardedMutation(
+            resolved.path,
+            "vfs_write(patch_json)",
+          );
+          if (finishGuardError) {
+            return withBatchError(finishGuardError, opIndex, op.op, op.path);
+          }
+
+          const existing = draft.readFile(resolved.path);
+          if (!existing) {
+            return withBatchError(
+              createError(`File not found: ${op.path}`, "NOT_FOUND", {
+                recovery: buildNotFoundRecovery(op.path),
+              }),
+              opIndex,
+              op.op,
+              op.path,
+            );
+          }
+          const seenError = requireToolSeenForExistingFile(
+            draft,
+            resolved.path,
+            "edit",
+          );
+          if (seenError) {
+            return withBatchError(seenError, opIndex, op.op, op.path);
+          }
+
+          try {
+            draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
+          } catch (error) {
+            if (error instanceof VfsWriteAccessError) {
+              return withBatchError(
+                createError(error.message, error.code),
+                opIndex,
+                op.op,
+                op.path,
+              );
+            }
+            const message =
+              error instanceof Error ? error.message : String(error);
+            const isNotFound = message.startsWith("File not found:");
+            return withBatchError(
+              createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
+                recovery: isNotFound
+                  ? buildNotFoundRecovery(op.path)
+                  : buildSchemaAndReadRecovery(op.path),
+              }),
+              opIndex,
+              op.op,
+              op.path,
+            );
+          }
+          draft.noteToolAccessFile(resolved.path);
+          patched.push(toCurrentPath(resolved.path));
+          continue;
+        }
+
+        if (op.op === "merge_json") {
+          const resolved = resolveCurrentPath(ctx, op.path);
+          if (isPathResolveError(resolved)) {
+            return withBatchError(resolved.error, opIndex, op.op, op.path);
+          }
+          const finishGuardError = ensureNotFinishGuardedMutation(
+            resolved.path,
+            "vfs_write(merge_json)",
+          );
+          if (finishGuardError) {
+            return withBatchError(finishGuardError, opIndex, op.op, op.path);
+          }
+          const seenError = requireToolSeenForExistingFile(
+            draft,
+            resolved.path,
+            "merge",
+          );
+          if (seenError) {
+            return withBatchError(seenError, opIndex, op.op, op.path);
+          }
+
+          try {
+            draft.mergeJson(resolved.path, op.content);
+          } catch (error) {
+            if (error instanceof VfsWriteAccessError) {
+              return withBatchError(
+                createError(error.message, error.code),
+                opIndex,
+                op.op,
+                op.path,
+              );
+            }
+            const message =
+              error instanceof Error ? error.message : String(error);
+            const isNotFound = message.startsWith("File not found:");
+            return withBatchError(
+              createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
+                recovery: isNotFound
+                  ? buildNotFoundRecovery(op.path)
+                  : buildSchemaAndReadRecovery(op.path),
+              }),
+              opIndex,
+              op.op,
+              op.path,
+            );
+          }
+          draft.noteToolAccessFile(resolved.path);
+          merged.push(toCurrentPath(resolved.path));
+        }
+      }
+
+      return createSuccess(
+        { written, appended, edited, patched, merged },
+        "VFS write operations applied",
+      );
+    });
   },
-});
+  {
+    batchFromArgs: (rawArgs) => {
+      const typed = getTypedArgs("vfs_write", rawArgs);
+      return { total: typed.ops.length };
+    },
+  },
+);
 
-registerToolHandlerWithStructuredErrors(VFS_MOVE_TOOL, (args, ctx) => {
-  const typedArgs = getTypedArgs("vfs_move", args);
+registerToolHandlerWithStructuredErrors(
+  VFS_MOVE_TOOL,
+  (args, ctx) => {
+    const typedArgs = getTypedArgs("vfs_move", args);
 
-  return withAtomicSession(ctx, (draft) => {
-    const moved: Array<{ from: string; to: string }> = [];
-    const withMoveBatchError = (
-      error: ToolCallError,
-      moveIndex: number,
-      move: { from: string; to: string },
-    ): ToolCallError =>
-      withToolErrorDetails(error, "vfs_move", {
-        batch: {
-          index: moveIndex + 1,
-          total: typedArgs.moves.length,
-          operation: "move",
-          path: `${move.from} -> ${move.to}`,
-        },
-      });
+    return withAtomicSession(ctx, (draft) => {
+      const moved: Array<{ from: string; to: string }> = [];
+      const withMoveBatchError = (
+        error: ToolCallError,
+        moveIndex: number,
+        move: { from: string; to: string },
+      ): ToolCallError =>
+        withToolErrorDetails(error, "vfs_move", {
+          batch: {
+            index: moveIndex + 1,
+            total: typedArgs.moves.length,
+            operation: "move",
+            path: `${move.from} -> ${move.to}`,
+          },
+        });
 
-    for (const [moveIndex, move] of typedArgs.moves.entries()) {
-      const resolvedFrom = resolveCurrentPath(ctx, move.from);
-      if (isPathResolveError(resolvedFrom)) {
-        return withMoveBatchError(resolvedFrom.error, moveIndex, move);
-      }
-      const resolvedTo = resolveCurrentPath(ctx, move.to);
-      if (isPathResolveError(resolvedTo)) {
-        return withMoveBatchError(resolvedTo.error, moveIndex, move);
-      }
+      for (const [moveIndex, move] of typedArgs.moves.entries()) {
+        const resolvedFrom = resolveCurrentPath(ctx, move.from);
+        if (isPathResolveError(resolvedFrom)) {
+          return withMoveBatchError(resolvedFrom.error, moveIndex, move);
+        }
+        const resolvedTo = resolveCurrentPath(ctx, move.to);
+        if (isPathResolveError(resolvedTo)) {
+          return withMoveBatchError(resolvedTo.error, moveIndex, move);
+        }
 
-      const finishGuardFrom = ensureNotFinishGuardedMutation(
-        resolvedFrom.path,
-        "vfs_move",
-      );
-      if (finishGuardFrom) {
-        return withMoveBatchError(finishGuardFrom, moveIndex, move);
-      }
-      const finishGuardTo = ensureNotFinishGuardedMutation(
-        resolvedTo.path,
-        "vfs_move",
-      );
-      if (finishGuardTo) {
-        return withMoveBatchError(finishGuardTo, moveIndex, move);
-      }
+        const finishGuardFrom = ensureNotFinishGuardedMutation(
+          resolvedFrom.path,
+          "vfs_move",
+        );
+        if (finishGuardFrom) {
+          return withMoveBatchError(finishGuardFrom, moveIndex, move);
+        }
+        const finishGuardTo = ensureNotFinishGuardedMutation(
+          resolvedTo.path,
+          "vfs_move",
+        );
+        if (finishGuardTo) {
+          return withMoveBatchError(finishGuardTo, moveIndex, move);
+        }
 
-      const from = normalizeVfsPath(resolvedFrom.path);
-      const to = normalizeVfsPath(resolvedTo.path);
+        const from = normalizeVfsPath(resolvedFrom.path);
+        const to = normalizeVfsPath(resolvedTo.path);
 
-      const seenError = requireToolSeenForExistingFile(draft, to, "overwrite");
-      if (seenError) {
-        return withMoveBatchError(seenError, moveIndex, move);
-      }
+        const seenError = requireToolSeenForExistingFile(
+          draft,
+          to,
+          "overwrite",
+        );
+        if (seenError) {
+          return withMoveBatchError(seenError, moveIndex, move);
+        }
 
-      try {
-        draft.renameFile(from, to);
-      } catch (error) {
-        if (error instanceof VfsWriteAccessError) {
+        try {
+          draft.renameFile(from, to);
+        } catch (error) {
+          if (error instanceof VfsWriteAccessError) {
+            return withMoveBatchError(
+              createError(error.message, error.code),
+              moveIndex,
+              move,
+            );
+          }
+          const message =
+            error instanceof Error ? error.message : String(error);
           return withMoveBatchError(
-            createError(error.message, error.code),
+            createError(message, "NOT_FOUND", {
+              recovery: buildNotFoundRecovery(move.from),
+            }),
             moveIndex,
             move,
           );
         }
-        const message = error instanceof Error ? error.message : String(error);
-        return withMoveBatchError(
-          createError(message, "NOT_FOUND", {
-            recovery: buildNotFoundRecovery(move.from),
-          }),
-          moveIndex,
-          move,
-        );
+
+        draft.renameToolSeenPath(from, to);
+        draft.noteToolAccessFile(from);
+        draft.noteToolAccessFile(to);
+        moved.push({ from: toCurrentPath(from), to: toCurrentPath(to) });
       }
 
-      draft.renameToolSeenPath(from, to);
-      draft.noteToolAccessFile(from);
-      draft.noteToolAccessFile(to);
-      moved.push({ from: toCurrentPath(from), to: toCurrentPath(to) });
-    }
-
-    return createSuccess({ moved }, "VFS files moved");
-  });
-}, {
-  batchFromArgs: (rawArgs) => {
-    const typed = getTypedArgs("vfs_move", rawArgs);
-    return { total: typed.moves.length };
+      return createSuccess({ moved }, "VFS files moved");
+    });
   },
-});
+  {
+    batchFromArgs: (rawArgs) => {
+      const typed = getTypedArgs("vfs_move", rawArgs);
+      return { total: typed.moves.length };
+    },
+  },
+);
 
-registerToolHandlerWithStructuredErrors(VFS_DELETE_TOOL, (args, ctx) => {
-  const typedArgs = getTypedArgs("vfs_delete", args);
+registerToolHandlerWithStructuredErrors(
+  VFS_DELETE_TOOL,
+  (args, ctx) => {
+    const typedArgs = getTypedArgs("vfs_delete", args);
 
-  return withAtomicSession(ctx, (draft) => {
-    const deleted: string[] = [];
-    const withDeleteBatchError = (
-      error: ToolCallError,
-      pathIndex: number,
-      path: string,
-    ): ToolCallError =>
-      withToolErrorDetails(error, "vfs_delete", {
-        batch: {
-          index: pathIndex + 1,
-          total: typedArgs.paths.length,
-          operation: "delete",
-          path,
-        },
-      });
+    return withAtomicSession(ctx, (draft) => {
+      const deleted: string[] = [];
+      const withDeleteBatchError = (
+        error: ToolCallError,
+        pathIndex: number,
+        path: string,
+      ): ToolCallError =>
+        withToolErrorDetails(error, "vfs_delete", {
+          batch: {
+            index: pathIndex + 1,
+            total: typedArgs.paths.length,
+            operation: "delete",
+            path,
+          },
+        });
 
-    for (const [pathIndex, path] of typedArgs.paths.entries()) {
-      const resolved = resolveCurrentPath(ctx, path);
-      if (isPathResolveError(resolved)) {
-        return withDeleteBatchError(resolved.error, pathIndex, path);
-      }
+      for (const [pathIndex, path] of typedArgs.paths.entries()) {
+        const resolved = resolveCurrentPath(ctx, path);
+        if (isPathResolveError(resolved)) {
+          return withDeleteBatchError(resolved.error, pathIndex, path);
+        }
 
-      const finishGuard = ensureNotFinishGuardedMutation(resolved.path, "vfs_delete");
-      if (finishGuard) {
-        return withDeleteBatchError(finishGuard, pathIndex, path);
-      }
+        const finishGuard = ensureNotFinishGuardedMutation(
+          resolved.path,
+          "vfs_delete",
+        );
+        if (finishGuard) {
+          return withDeleteBatchError(finishGuard, pathIndex, path);
+        }
 
-      const normalized = normalizeVfsPath(resolved.path);
-      const seenError = requireToolSeenForExistingFile(draft, normalized, "delete");
-      if (seenError) {
-        return withDeleteBatchError(seenError, pathIndex, path);
-      }
+        const normalized = normalizeVfsPath(resolved.path);
+        const seenError = requireToolSeenForExistingFile(
+          draft,
+          normalized,
+          "delete",
+        );
+        if (seenError) {
+          return withDeleteBatchError(seenError, pathIndex, path);
+        }
 
-      try {
-        draft.deleteFile(normalized);
-      } catch (error) {
-        if (error instanceof VfsWriteAccessError) {
+        try {
+          draft.deleteFile(normalized);
+        } catch (error) {
+          if (error instanceof VfsWriteAccessError) {
+            return withDeleteBatchError(
+              createError(error.message, error.code),
+              pathIndex,
+              path,
+            );
+          }
+          const message =
+            error instanceof Error ? error.message : String(error);
           return withDeleteBatchError(
-            createError(error.message, error.code),
+            createError(message, "NOT_FOUND", {
+              recovery: buildNotFoundRecovery(path),
+            }),
             pathIndex,
             path,
           );
         }
-        const message = error instanceof Error ? error.message : String(error);
-        return withDeleteBatchError(
-          createError(message, "NOT_FOUND", {
-            recovery: buildNotFoundRecovery(path),
-          }),
-          pathIndex,
-          path,
-        );
+        draft.noteToolAccessFile(normalized);
+        draft.forgetToolSeenPath(normalized);
+        deleted.push(toCurrentPath(normalized));
       }
-      draft.noteToolAccessFile(normalized);
-      draft.forgetToolSeenPath(normalized);
-      deleted.push(toCurrentPath(normalized));
-    }
 
-    return createSuccess({ deleted }, "VFS files deleted");
-  });
-}, {
-  batchFromArgs: (rawArgs) => {
-    const typed = getTypedArgs("vfs_delete", rawArgs);
-    return { total: typed.paths.length };
+      return createSuccess({ deleted }, "VFS files deleted");
+    });
   },
-});
+  {
+    batchFromArgs: (rawArgs) => {
+      const typed = getTypedArgs("vfs_delete", rawArgs);
+      return { total: typed.paths.length };
+    },
+  },
+);
 
 registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_commit_turn", args);
@@ -2292,12 +2387,17 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
         );
       }
 
-      const retconAckResult = applyCustomRulesRetconAck(draft, normalizedRetconAck);
+      const retconAckResult = applyCustomRulesRetconAck(
+        draft,
+        normalizedRetconAck,
+      );
       if (retconAckResult.ok === false) {
         return createError(retconAckResult.message, retconAckResult.code);
       }
 
-      const existingIndex = ensureConversationIndex(draft, { operation: "finish_commit" });
+      const existingIndex = ensureConversationIndex(draft, {
+        operation: "finish_commit",
+      });
 
       const forkId = existingIndex.activeForkId ?? 0;
       const forkKey = String(forkId);
@@ -2373,107 +2473,123 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
       return createSuccess({ turnId, forkId, turnNumber }, "Turn committed");
     },
     {
-      writeContext: resolveAiWriteContext(ctx, { allowFinishGuardedWrite: true }),
+      writeContext: resolveAiWriteContext(ctx, {
+        allowFinishGuardedWrite: true,
+      }),
     },
   );
 });
 
-registerToolHandlerWithStructuredErrors(VFS_COMMIT_SUMMARY_TOOL, (args, ctx) => {
-  const typedArgs = getTypedArgs("vfs_commit_summary", args);
-  const runtime = args as Record<string, unknown>;
+registerToolHandlerWithStructuredErrors(
+  VFS_COMMIT_SUMMARY_TOOL,
+  (args, ctx) => {
+    const typedArgs = getTypedArgs("vfs_commit_summary", args);
+    const runtime = args as Record<string, unknown>;
 
-  if ("id" in runtime || "createdAt" in runtime) {
-    return createError(
-      "vfs_commit_summary: runtime fields id/createdAt are system-managed and must not be provided by AI.",
-      "INVALID_DATA",
-    );
-  }
-
-  const nodeRangeRaw = runtime.nodeRange as
-    | { fromIndex?: unknown; toIndex?: unknown }
-    | undefined;
-  const lastSummarizedIndexRaw = runtime.lastSummarizedIndex;
-
-  const fromIndex =
-    typeof nodeRangeRaw?.fromIndex === "number" &&
-    Number.isFinite(nodeRangeRaw.fromIndex)
-      ? Math.floor(nodeRangeRaw.fromIndex)
-      : null;
-  const toIndex =
-    typeof nodeRangeRaw?.toIndex === "number" &&
-    Number.isFinite(nodeRangeRaw.toIndex)
-      ? Math.floor(nodeRangeRaw.toIndex)
-      : null;
-  const lastSummarizedIndex =
-    typeof lastSummarizedIndexRaw === "number" && Number.isFinite(lastSummarizedIndexRaw)
-      ? Math.floor(lastSummarizedIndexRaw)
-      : null;
-
-  if (fromIndex === null || toIndex === null || lastSummarizedIndex === null) {
-    return createError(
-      "vfs_commit_summary: runtime fields nodeRange and lastSummarizedIndex are required. They must be injected by summary loop.",
-      "INVALID_DATA",
-    );
-  }
-
-  if (lastSummarizedIndex !== toIndex + 1) {
-    return createError(
-      `vfs_commit_summary: lastSummarizedIndex must equal nodeRange.toIndex + 1 (expected ${toIndex + 1}, got ${lastSummarizedIndex})`,
-      "INVALID_DATA",
-    );
-  }
-
-  return withAtomicSession(
-    ctx,
-    (draft) => {
-      const existingFile = draft.readFile("summary/state.json");
-      const parsed = existingFile ? safeParseJson(existingFile.content) : null;
-      const existingState = parsed as any;
-      const existingSummaries = Array.isArray(existingState?.summaries)
-        ? existingState.summaries
-        : [];
-
-      const maxId = existingSummaries.reduce((max: number, summary: any) => {
-        const id = summary?.id;
-        return typeof id === "number" && Number.isFinite(id) ? Math.max(max, id) : max;
-      }, -1);
-      const nextId = maxId + 1;
-
-      const summary = {
-        id: nextId,
-        createdAt: Date.now(),
-        displayText: typedArgs.displayText,
-        visible: typedArgs.visible,
-        hidden: typedArgs.hidden,
-        timeRange: typedArgs.timeRange ?? null,
-        nodeRange: {
-          fromIndex,
-          toIndex,
-        },
-        nextSessionReferencesMarkdown:
-          typedArgs.nextSessionReferencesMarkdown ?? null,
-      };
-
-      const nextSummaries = [...existingSummaries, summary];
-      draft.mergeJson(
-        "summary/state.json",
-        {
-          summaries: nextSummaries,
-          lastSummarizedIndex,
-        },
-        { operation: "finish_summary" },
+    if ("id" in runtime || "createdAt" in runtime) {
+      return createError(
+        "vfs_commit_summary: runtime fields id/createdAt are system-managed and must not be provided by AI.",
+        "INVALID_DATA",
       );
+    }
 
-      return createSuccess(
-        { summary, path: "current/summary/state.json" },
-        "Summary committed",
+    const nodeRangeRaw = runtime.nodeRange as
+      | { fromIndex?: unknown; toIndex?: unknown }
+      | undefined;
+    const lastSummarizedIndexRaw = runtime.lastSummarizedIndex;
+
+    const fromIndex =
+      typeof nodeRangeRaw?.fromIndex === "number" &&
+      Number.isFinite(nodeRangeRaw.fromIndex)
+        ? Math.floor(nodeRangeRaw.fromIndex)
+        : null;
+    const toIndex =
+      typeof nodeRangeRaw?.toIndex === "number" &&
+      Number.isFinite(nodeRangeRaw.toIndex)
+        ? Math.floor(nodeRangeRaw.toIndex)
+        : null;
+    const lastSummarizedIndex =
+      typeof lastSummarizedIndexRaw === "number" &&
+      Number.isFinite(lastSummarizedIndexRaw)
+        ? Math.floor(lastSummarizedIndexRaw)
+        : null;
+
+    if (
+      fromIndex === null ||
+      toIndex === null ||
+      lastSummarizedIndex === null
+    ) {
+      return createError(
+        "vfs_commit_summary: runtime fields nodeRange and lastSummarizedIndex are required. They must be injected by summary loop.",
+        "INVALID_DATA",
       );
-    },
-    {
-      writeContext: resolveAiWriteContext(ctx, { allowFinishGuardedWrite: true }),
-    },
-  );
-});
+    }
+
+    if (lastSummarizedIndex !== toIndex + 1) {
+      return createError(
+        `vfs_commit_summary: lastSummarizedIndex must equal nodeRange.toIndex + 1 (expected ${toIndex + 1}, got ${lastSummarizedIndex})`,
+        "INVALID_DATA",
+      );
+    }
+
+    return withAtomicSession(
+      ctx,
+      (draft) => {
+        const existingFile = draft.readFile("summary/state.json");
+        const parsed = existingFile
+          ? safeParseJson(existingFile.content)
+          : null;
+        const existingState = parsed as any;
+        const existingSummaries = Array.isArray(existingState?.summaries)
+          ? existingState.summaries
+          : [];
+
+        const maxId = existingSummaries.reduce((max: number, summary: any) => {
+          const id = summary?.id;
+          return typeof id === "number" && Number.isFinite(id)
+            ? Math.max(max, id)
+            : max;
+        }, -1);
+        const nextId = maxId + 1;
+
+        const summary = {
+          id: nextId,
+          createdAt: Date.now(),
+          displayText: typedArgs.displayText,
+          visible: typedArgs.visible,
+          hidden: typedArgs.hidden,
+          timeRange: typedArgs.timeRange ?? null,
+          nodeRange: {
+            fromIndex,
+            toIndex,
+          },
+          nextSessionReferencesMarkdown:
+            typedArgs.nextSessionReferencesMarkdown ?? null,
+        };
+
+        const nextSummaries = [...existingSummaries, summary];
+        draft.mergeJson(
+          "summary/state.json",
+          {
+            summaries: nextSummaries,
+            lastSummarizedIndex,
+          },
+          { operation: "finish_summary" },
+        );
+
+        return createSuccess(
+          { summary, path: "current/summary/state.json" },
+          "Summary committed",
+        );
+      },
+      {
+        writeContext: resolveAiWriteContext(ctx, {
+          allowFinishGuardedWrite: true,
+        }),
+      },
+    );
+  },
+);
 
 const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase0Schema,
@@ -2505,17 +2621,20 @@ const formatOutlineCommitValidationError = (error: unknown): string => {
             .join(".")
             .replace(/\.\[/g, "[")
         : "";
-      const message = typeof issue?.message === "string" ? issue.message : "Invalid";
+      const message =
+        typeof issue?.message === "string" ? issue.message : "Invalid";
       return path ? `${path}: ${message}` : message;
     })
     .join("; ");
 };
 
-const OUTLINE_COMMIT_DEFS = VFS_COMMIT_OUTLINE_PHASE_TOOLS.map((tool, phase) => ({
-  tool,
-  phase,
-  schema: OUTLINE_PHASE_SCHEMAS[phase],
-}));
+const OUTLINE_COMMIT_DEFS = VFS_COMMIT_OUTLINE_PHASE_TOOLS.map(
+  (tool, phase) => ({
+    tool,
+    phase,
+    schema: OUTLINE_PHASE_SCHEMAS[phase],
+  }),
+);
 
 for (const { tool, phase, schema } of OUTLINE_COMMIT_DEFS) {
   registerToolHandlerWithStructuredErrors(tool, (args, ctx) => {
@@ -2539,7 +2658,11 @@ for (const { tool, phase, schema } of OUTLINE_COMMIT_DEFS) {
       ctx,
       (draft) => {
         const path = `outline/phases/phase${phase}.json`;
-        draft.writeFile(path, JSON.stringify(parsedData.data), "application/json");
+        draft.writeFile(
+          path,
+          JSON.stringify(parsedData.data),
+          "application/json",
+        );
 
         let planPath: string | undefined;
         if (phase === 1) {

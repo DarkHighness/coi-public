@@ -19,7 +19,11 @@ import { HistoryCorruptedError } from "../services/ai/contextCompressor";
 import { LANG_MAP } from "../utils/constants";
 import { deriveHistory } from "../utils/storyUtils";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
-import { readConversationIndex, readTurnFile, writeTurnFile } from "../services/vfs/conversation";
+import {
+  readConversationIndex,
+  readTurnFile,
+  writeTurnFile,
+} from "../services/vfs/conversation";
 import {
   updateProviderStats,
   handleForking,
@@ -76,15 +80,12 @@ export const useGameAction = ({
     return (error as { recovery?: TurnRecoveryTrace }).recovery;
   };
 
-  const getRecoveryKind =
-    (error: unknown): string | undefined => {
-      if (!error || typeof error !== "object") return undefined;
-      return (error as { recoveryKind?: string }).recoveryKind;
-    };
+  const getRecoveryKind = (error: unknown): string | undefined => {
+    if (!error || typeof error !== "object") return undefined;
+    return (error as { recoveryKind?: string }).recoveryKind;
+  };
 
-  const normalizeUsageForPersistence = (
-    usage: TokenUsage,
-  ): TokenUsage => {
+  const normalizeUsageForPersistence = (usage: TokenUsage): TokenUsage => {
     const normalize = (value: unknown): number => {
       if (typeof value !== "number" || !Number.isFinite(value)) {
         return 0;
@@ -409,7 +410,9 @@ export const useGameAction = ({
         const pNode = gameStateRef.current.nodes[effectiveParentId];
         baseSummaries = pNode.summaries ?? gameStateRef.current.summaries ?? [];
         baseIndex =
-          pNode.summarizedIndex ?? gameStateRef.current.lastSummarizedIndex ?? 0;
+          pNode.summarizedIndex ??
+          gameStateRef.current.lastSummarizedIndex ??
+          0;
       } else {
         baseSummaries = gameStateRef.current.summaries ?? [];
         baseIndex = gameStateRef.current.lastSummarizedIndex ?? 0;
@@ -622,8 +625,7 @@ export const useGameAction = ({
         }: {
           type: "turn_retry_boost" | "session_rebuild";
           message: string;
-        }) =>
-          typeof window !== "undefined" ? window.confirm(message) : false;
+        }) => (typeof window !== "undefined" ? window.confirm(message) : false);
         let vfsElevationToken: string | null = null;
         let vfsElevationIntent:
           | "god_turn"
@@ -1071,7 +1073,8 @@ export const useGameAction = ({
       if (!parentId) throw new Error("No active node to rebuild context from");
 
       const pNode = gameStateRef.current.nodes[parentId];
-      const baseSummaries = pNode.summaries ?? gameStateRef.current.summaries ?? [];
+      const baseSummaries =
+        pNode.summaries ?? gameStateRef.current.summaries ?? [];
       const baseIndex =
         pNode.summarizedIndex ?? gameStateRef.current.lastSummarizedIndex ?? 0;
 

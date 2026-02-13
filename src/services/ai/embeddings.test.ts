@@ -68,9 +68,9 @@ describe("ai/embeddings", () => {
     ]);
 
     getProviderInstanceMock.mockReturnValueOnce({ protocol: "openrouter" });
-    await expect(getEmbeddingModels({} as any, "p-openrouter")).resolves.toEqual([
-      { id: "r-1" },
-    ]);
+    await expect(
+      getEmbeddingModels({} as any, "p-openrouter"),
+    ).resolves.toEqual([{ id: "r-1" }]);
 
     getProviderInstanceMock.mockReturnValueOnce({ protocol: "claude" });
     await expect(getEmbeddingModels({} as any, "p-claude")).resolves.toEqual([
@@ -87,7 +87,9 @@ describe("ai/embeddings", () => {
   });
 
   it("returns empty list when provider fetch throws", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     getProviderInstanceMock.mockReturnValue({ protocol: "gemini" });
     getGeminiEmbeddingModelsMock.mockRejectedValue(new Error("network down"));
 

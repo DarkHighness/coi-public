@@ -23,7 +23,8 @@ vi.mock("../../hooks/vfsViewState", () => ({
 }));
 
 vi.mock("../../utils/snapshotManager", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../utils/snapshotManager")>();
+  const actual =
+    await importOriginal<typeof import("../../utils/snapshotManager")>();
   return {
     ...actual,
     createStateSnapshot: createStateSnapshotMock,
@@ -180,7 +181,9 @@ describe("commandActions", () => {
     const deps = createDeps();
     const actions = createCommandActions(deps as any);
 
-    const result = await actions.handleForceUpdate("Shift weather to thunderstorm");
+    const result = await actions.handleForceUpdate(
+      "Shift weather to thunderstorm",
+    );
 
     expect(result).toEqual({ success: true });
 

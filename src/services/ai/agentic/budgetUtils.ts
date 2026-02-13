@@ -68,7 +68,8 @@ export function createBudgetState(
     retriesUsed: 0,
     retriesMax: resolveRetryLimit(settings, loopType, defaults),
     loopIterationsUsed: 0,
-    loopIterationsMax: settings.extra?.maxAgenticRounds ?? defaults.maxAgenticRounds,
+    loopIterationsMax:
+      settings.extra?.maxAgenticRounds ?? defaults.maxAgenticRounds,
   };
 }
 

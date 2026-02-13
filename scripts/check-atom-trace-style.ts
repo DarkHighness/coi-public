@@ -84,7 +84,9 @@ function isTraceRecordCall(node: ts.CallExpression): boolean {
 
 function main(): void {
   const graph = readGraph();
-  const atomExportNames = new Set(graph.atomNodes.map((item) => item.exportName));
+  const atomExportNames = new Set(
+    graph.atomNodes.map((item) => item.exportName),
+  );
 
   const directDepsByFileExport = new Map<string, Map<string, Set<string>>>();
   for (const node of graph.atomNodes) {
@@ -151,7 +153,10 @@ function main(): void {
         const expectedDeps = exportDepMap.get(exportName);
         if (!expectedDeps || expectedDeps.size === 0) continue;
 
-        if (!declaration.initializer || !ts.isCallExpression(declaration.initializer)) {
+        if (
+          !declaration.initializer ||
+          !ts.isCallExpression(declaration.initializer)
+        ) {
           continue;
         }
 
@@ -160,7 +165,10 @@ function main(): void {
 
         const callback = initCall.arguments[1];
         if (!callback) continue;
-        if (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) {
+        if (
+          !ts.isArrowFunction(callback) &&
+          !ts.isFunctionExpression(callback)
+        ) {
           continue;
         }
 
@@ -174,9 +182,8 @@ function main(): void {
                 parent.arguments.includes(node);
 
               if (!wrappedByRecord) {
-                const { line, character } = source.getLineAndCharacterOfPosition(
-                  node.getStart(source),
-                );
+                const { line, character } =
+                  source.getLineAndCharacterOfPosition(node.getStart(source));
                 errors.push(
                   `${toRel(file)}:${line + 1}:${character + 1} dependency ${node.expression.text} in ${exportName} must use trace.record(...).`,
                 );

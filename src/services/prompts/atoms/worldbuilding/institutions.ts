@@ -10,8 +10,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const institutions: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/institutions#institutions", source: "atoms/worldbuilding/institutions.ts", exportName: "institutions" }, () => `
+export const institutions: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/institutions#institutions",
+    source: "atoms/worldbuilding/institutions.ts",
+    exportName: "institutions",
+  },
+  () => `
 <worldbuilding_context>
 **INSTITUTIONS & BUREAUCRACY (Process is power)**
 
@@ -107,43 +112,58 @@ This creates insider-leverage and negotiation scenes.
 - Audit trigger:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const institutionsPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/institutions#institutionsPrimer", source: "atoms/worldbuilding/institutions.ts", exportName: "institutionsPrimer" }, () =>
-  `
+export const institutionsPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/institutions#institutionsPrimer",
+    source: "atoms/worldbuilding/institutions.ts",
+    exportName: "institutionsPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **INSTITUTIONS PRIMER**: Model power as process + bottlenecks + incentives. Always define docs, timelines, and workarounds (insiders, forged papers, bribes).
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const institutionsSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/institutions#institutionsSkill", source: "atoms/worldbuilding/institutions.ts", exportName: "institutionsSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(institutions),
-  quickStart: `
+export const institutionsSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/institutions#institutionsSkill",
+    source: "atoms/worldbuilding/institutions.ts",
+    exportName: "institutionsSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(institutions),
+    quickStart: `
 1) Pick one institutional action (permit/license/badge)
 2) Define required documents + one bottleneck official
 3) Set a timeline and a failure mode ("come back tomorrow")
 4) Add two workarounds (insider, forged stamp, bribe, temp pass)
 `.trim(),
-  checklist: [
-    "Institution has authority and a concrete action it controls.",
-    "Process has documents, steps, and a bottleneck.",
-    "Staff incentives/quotas explain behavior.",
-    "At least two workarounds exist with risks.",
-    "Audit/verification exists (workarounds can fail).",
-  ],
-  examples: [
-    {
-      scenario: "Paperwork as leverage",
-      wrong: `"You go to the office and get a permit."`,
-      right: `"The clerk accepts your fee—then slides a form back: missing 'Residence Verification.'
+    checklist: [
+      "Institution has authority and a concrete action it controls.",
+      "Process has documents, steps, and a bottleneck.",
+      "Staff incentives/quotas explain behavior.",
+      "At least two workarounds exist with risks.",
+      "Audit/verification exists (workarounds can fail).",
+    ],
+    examples: [
+      {
+        scenario: "Paperwork as leverage",
+        wrong: `"You go to the office and get a permit."`,
+        right: `"The clerk accepts your fee—then slides a form back: missing 'Residence Verification.'
 The only verifier is the neighborhood captain, who hates your faction.
 An insider offers a sponsor letter. A forger offers a stamp. Either way, you pick risk."`,
-    },
-    {
-      scenario: "Temporary pass creates a clock",
-      wrong: `"You get access to the restricted district."`,
-      right: `"You get a 48-hour temporary badge. It pings security every time you cross a gate.
+      },
+      {
+        scenario: "Temporary pass creates a clock",
+        wrong: `"You get access to the restricted district."`,
+        right: `"You get a 48-hour temporary badge. It pings security every time you cross a gate.
 If you fail your task, your badge becomes evidence of trespass."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

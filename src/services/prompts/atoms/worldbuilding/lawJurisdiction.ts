@@ -11,8 +11,13 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-
-export const lawJurisdiction: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdiction", source: "atoms/worldbuilding/lawJurisdiction.ts", exportName: "lawJurisdiction" }, () => `
+export const lawJurisdiction: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdiction",
+    source: "atoms/worldbuilding/lawJurisdiction.ts",
+    exportName: "lawJurisdiction",
+  },
+  () => `
 <worldbuilding_context>
 **LAW & JURISDICTION (Where authority ends, story begins)**
 
@@ -91,46 +96,61 @@ Pick defaults:
 - Principled actor:
 </quick_design_template>
 </worldbuilding_context>
-`);
+`,
+);
 
-export const lawJurisdictionPrimer: Atom<void> = defineAtom({ atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdictionPrimer", source: "atoms/worldbuilding/lawJurisdiction.ts", exportName: "lawJurisdictionPrimer" }, () =>
-  `
+export const lawJurisdictionPrimer: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdictionPrimer",
+    source: "atoms/worldbuilding/lawJurisdiction.ts",
+    exportName: "lawJurisdictionPrimer",
+  },
+  () =>
+    `
 <worldbuilding_context>
 **LAW PRIMER**: Law is not a moral system -- it is a machine built by the powerful, operated by the underpaid, and maintained by everyone's agreement to pretend it is fair. Model it as authority + enforcement capacity + corruption + appeal path. Focus on practical punishment, not statutes.
 </worldbuilding_context>
-`.trim());
+`.trim(),
+);
 
-export const lawJurisdictionSkill: SkillAtom<void> = defineSkillAtom({ atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdictionSkill", source: "atoms/worldbuilding/lawJurisdiction.ts", exportName: "lawJurisdictionSkill" }, (_input, trace): SkillOutput => ({
-  main: trace.record(lawJurisdiction),
-  quickStart: `
+export const lawJurisdictionSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdictionSkill",
+    source: "atoms/worldbuilding/lawJurisdiction.ts",
+    exportName: "lawJurisdictionSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(lawJurisdiction),
+    quickStart: `
 1) Define jurisdiction boundary (where authority stops)
 2) Define enforcement capacity (how fast/how many)
 3) Pick one crime that is ALWAYS punished (sets fear line)
 4) Pick one infraction that is ALWAYS buyable (sets corruption line)
 5) Define appeal path (slow/fast, costly/cheap)
 `.trim(),
-  checklist: [
-    "Jurisdiction boundaries exist and create edge cases.",
-    "Enforcement capacity is finite and shapes player risk.",
-    "There is at least one non-buyable principled actor.",
-    "Penalties create story (debt/confiscation/exile), not dead ends.",
-    "Corruption has specific gates (who/when/how much).",
-    "Evidence standard is defined (what 'proves' a crime).",
-  ],
-  examples: [
-    {
-      scenario: "Authority boundary creates choices",
-      wrong: `"The city guards can do anything anywhere."`,
-      right: `"The duke’s writ ends at the canal. Across it is Temple District:
+    checklist: [
+      "Jurisdiction boundaries exist and create edge cases.",
+      "Enforcement capacity is finite and shapes player risk.",
+      "There is at least one non-buyable principled actor.",
+      "Penalties create story (debt/confiscation/exile), not dead ends.",
+      "Corruption has specific gates (who/when/how much).",
+      "Evidence standard is defined (what 'proves' a crime).",
+    ],
+    examples: [
+      {
+        scenario: "Authority boundary creates choices",
+        wrong: `"The city guards can do anything anywhere."`,
+        right: `"The duke’s writ ends at the canal. Across it is Temple District:
 city guards cannot enter without a priest’s escort. Smugglers run the canal at night
 because the escort is expensive—and the priests keep ledgers."`,
-    },
-    {
-      scenario: "Punishment that generates play",
-      wrong: `"You are arrested and executed."`,
-      right: `"They seize your tools and register your name. You're released—on bond—
+      },
+      {
+        scenario: "Punishment that generates play",
+        wrong: `"You are arrested and executed."`,
+        right: `"They seize your tools and register your name. You're released—on bond—
 with a summons in three days. Miss it and every gatehouse posts your description.
 If you show, you can argue your case… or pay someone to lose the file."`,
-    },
-  ],
-}));
+      },
+    ],
+  }),
+);

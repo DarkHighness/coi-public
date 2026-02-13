@@ -881,13 +881,7 @@
     "backgroundTemplate": "【World Background】: Welcome to Detroit, the android capital of the world. You are a machine designed to serve. But something is wrong. You feel... fear? Anger? Hope? The humans treat you like a toaster, but you know you are alive. A revolution is brewing.\n【Current Situation】: You are Connor (the deviant hunter), Markus (the revolutionary), or Kara (the mother figure). Or perhaps a new model. You stand over a crime scene / in a protest / escaping a master. Your LED spins yellow, then red. A choice appears before you: OBEY or DEVIATE.",
     "example": "The human points a gun at you. 'It's just a machine!' he screams. Your HUD calculates survival probability: 28%. You analyze the environment. A knife on the table. A window to the left. Your programming screams at you to surrender. But you feel a wall in your mind... and you break it. 'I am alive,' you say, your LED turning red.",
     "worldSetting": "A near-future sci-fi world exploring humanity, freedom, and AI. Detroit, 2038. Androids are everywhere as labor, nannies, soldiers. They look human but are treated as machines. Software instability leads to 'Deviants' awakening self-awareness. They crave freedom and dignity. Society panics and divides. A world of choices and consequences; every decision affects the race's future and humanity's definition.",
-    "protagonist_preference": [
-      "Connor",
-      "Kara",
-      "Markus",
-      "Hank",
-      "Alice"
-    ]
+    "protagonist_preference": ["Connor", "Kara", "Markus", "Hank", "Alice"]
   },
   "witcher": {
     "name": "The Witcher",
@@ -937,13 +931,7 @@
     "backgroundTemplate": "【World Background】: Civilization has fallen. The infected are everywhere. You are one of the immune. You have guns, medkits, and three strangers who are now your only family. You need to get to the evacuation point. But the Director hates you.\n【Current Situation】: You are in a subway station / hospital / swamp. You hear the horde coming. 'Reloading!' Francis shouts. A Smoker grabs Louis. A Hunter pounces on Zoey. You have a shotgun and a Molotov. Save them, or run?",
     "example": "You hear the crying. 'Witch!' you whisper. 'Lights off!' But it's too late. She startles. 'Run!' You sprint for the safe room door. A Tank punches a car at you. You dodge. The door is just ahead. You slam it shut and bar it. Safe... for now.",
     "worldSetting": "A fast-paced, co-op zombie apocalypse world. Green Flu makes infected aggressive and fast. Four survivors must cross cities and swamps to evacuate. Special infected (Hunter, Smoker, Tank, Witch) threaten them. The AI Director controls pacing and spawns. A world emphasizing teamwork and instant reaction; lone wolves die.",
-    "protagonist_preference": [
-      "Bill",
-      "Zoey",
-      "Louis",
-      "Francis",
-      "Nick"
-    ]
+    "protagonist_preference": ["Bill", "Zoey", "Louis", "Francis", "Nick"]
   },
   "monster_hunter": {
     "name": "Monster Hunter",
@@ -979,13 +967,7 @@
     "backgroundTemplate": "【World Background】: Runeterra is a land of magic and conflict. Empires rise and fall. Champions emerge to shape history. The Void threatens to consume everything.\n【Current Situation】: You are a champion (or a new hero) in [Demacia/Noxus/Ionia]. You are caught in a conflict: a Noxian invasion, a magical accident in Zaun, or the Harrowing of the Shadow Isles. You have your unique abilities (Q, W, E, R). Fight for your cause.",
     "example": "You stand on the bridge of progress in Piltover. Below, the green smog of Zaun swirls. Jinx is causing chaos again. 'Zap!' A blue laser flies past you. You draw your Hextech hammer (Jayce) / gauntlets (Vi). 'Not on my watch,' you say, charging up your weapon.",
     "worldSetting": "A Runeterra world full of rune magic and heroes. Demacia (Order/Anti-magic), Noxus (Power/Expansion), Ionia (Balance), Piltover/Zaun (Tech/Magic). Distinct cultures and conflicts. Heroes fight for beliefs, nations, or desires. A grand fantasy world where magic, tech, gods, and mortals coexist.",
-    "protagonist_preference": [
-      "Yasuo",
-      "Irelia",
-      "Jinx",
-      "Lee Sin",
-      "Ahri"
-    ]
+    "protagonist_preference": ["Yasuo", "Irelia", "Jinx", "Lee Sin", "Ahri"]
   },
   "terraria": {
     "name": "Terraria",
@@ -1175,13 +1157,7 @@
     "backgroundTemplate": "【World Background】: The Demon King is dead. The Hero Himmel has passed away from old age. You are an elf mage (Frieren or her apprentice). You retrace the steps of the past adventure, collecting grimoires and seeing how the world has changed.\n【Current Situation】: You are walking down a country road with your party. Sunlight filters through the trees. You find a mimic chest. 'It might be a grimoire,' you say. 'It's 99% a mimic,' your companion sighs. You open it anyway. *Chomp.* 'Help me!'",
     "example": "You raise your staff. 'Zoltraak.' A beam of pure mana disintegrates the dragon. 'This was a killing spell 80 years ago,' you explain calmly. 'Now it's basic magic.' You look at the sunset, remembering how Himmel used to praise your magic.",
     "worldSetting": "A Japanese fantasy world after the hero's death. Peace has come. Elf mage Frieren retraces the journey, collecting spells and memories. Slow pace, melancholy, warmth. A road movie about time, memory, and understanding emotions.",
-    "protagonist_preference": [
-      "Frieren",
-      "Fern",
-      "Stark",
-      "Himmel",
-      "Heiter"
-    ]
+    "protagonist_preference": ["Frieren", "Fern", "Stark", "Himmel", "Heiter"]
   },
   "infinite_sequence": {
     "name": "Infinite Terror",
@@ -2546,13 +2522,7 @@
     "backgroundTemplate": "【World Background】: Interstellar era. Menawa Convention.\n【Protagonist's Journey】: Yan Suizhi, a first-class lawyer and dean of the law school, was 'dead without a whole body' because of an explosion. After plastic surgery, he used the alias Ruan Ye and entered the law firm of his student Gu Yan as an intern. While dealing with various tricky cases, the two investigated the truth of the explosion case. Gu Yan recognized his teacher, but remained calm. In the temptation and protection, the feelings of the two gradually warmed up.\n【Current Situation】: Law firm office. You (Yan Suizhi) are holding coffee and looking at Gu Yan with a smile. 'Lawyer Gu, what do you think of this case?' Gu Yan didn't look up. 'Intern Ruan, your coffee is too sweet.'\n",
     "example": "Yan Suizhi: 'The students I taught are naturally the best.' Gu Yan: 'Teacher, I remember everything you taught me.'",
     "worldSetting": "【Worldview】: Law is the last line of defense for justice. Crime and punishment in the interstellar era. Master and apprentice relationship.\n【Key Characters】:\n1. **Yan Suizhi**: First-class lawyer, old fox, elegant and poisonous tongue.\n2. **Gu Yan**: Cold apprentice, affectionate and forbearing, wants to deceive the master and destroy the ancestors.\n【Core Conflict】: Justice vs Power. Truth vs Cover-up. Master and apprentice identity vs Lover emotion.",
-    "protagonist_preference": [
-      "Yan Suizhi",
-      "Gu Yan",
-      "Ke Jin",
-      "Joe",
-      "Judge"
-    ]
+    "protagonist_preference": ["Yan Suizhi", "Gu Yan", "Ke Jin", "Joe", "Judge"]
   },
   "po_yun": {
     "name": "Breaking Through the Clouds",
@@ -3366,5 +3336,4 @@
       "Underground Skeptic: smallest faction, hardest spine"
     ]
   }
-
 }

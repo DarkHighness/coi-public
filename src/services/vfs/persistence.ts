@@ -18,10 +18,7 @@ export interface VfsSnapshotMeta {
 export const buildTurnRoot = (forkId: number, turn: number): string =>
   `turns/fork-${forkId}/turn-${turn}`;
 
-const prefixSnapshotFiles = (
-  files: VfsFileMap,
-  root: string,
-): VfsFileMap => {
+const prefixSnapshotFiles = (files: VfsFileMap, root: string): VfsFileMap => {
   const prefixed: VfsFileMap = {};
   const normalizedRoot = normalizeVfsPath(root);
 
@@ -36,10 +33,7 @@ const prefixSnapshotFiles = (
   return prefixed;
 };
 
-const stripSnapshotPrefix = (
-  files: VfsFileMap,
-  root: string,
-): VfsFileMap => {
+const stripSnapshotPrefix = (files: VfsFileMap, root: string): VfsFileMap => {
   const stripped: VfsFileMap = {};
   const normalizedRoot = normalizeVfsPath(root);
 

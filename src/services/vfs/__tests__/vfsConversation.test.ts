@@ -15,9 +15,7 @@ import {
 describe("VFS conversation helpers", () => {
   it("builds ids and paths", () => {
     expect(buildTurnId(0, 3)).toBe("fork-0/turn-3");
-    expect(buildTurnPath(0, 3)).toBe(
-      "conversation/turns/fork-0/turn-3.json",
-    );
+    expect(buildTurnPath(0, 3)).toBe("conversation/turns/fork-0/turn-3.json");
   });
 
   it("writes and reads index + turn files", () => {
@@ -54,7 +52,9 @@ describe("VFS conversation helpers", () => {
       { role: "assistant", content: "hi" },
     ];
 
-    writeSessionHistoryJsonl(session, nativeHistory, { operation: "finish_commit" });
+    writeSessionHistoryJsonl(session, nativeHistory, {
+      operation: "finish_commit",
+    });
 
     const file = session.readFile(SESSION_JSONL_PATH);
     expect(file?.contentType).toBe("application/jsonl");
@@ -90,7 +90,9 @@ describe("VFS conversation helpers", () => {
   it("throws when a history entry cannot be serialized to jsonl", () => {
     const session = new VfsSession();
     expect(() =>
-      writeSessionHistoryJsonl(session, [() => "not serializable"] as unknown[]),
+      writeSessionHistoryJsonl(session, [
+        () => "not serializable",
+      ] as unknown[]),
     ).toThrow("Failed to serialize provider-native history entry at index 0");
   });
 });

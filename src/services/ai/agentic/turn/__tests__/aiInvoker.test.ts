@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { ContextOverflowError, HistoryCorruptedError } from "@/services/ai/contextCompressor";
+import {
+  ContextOverflowError,
+  HistoryCorruptedError,
+} from "@/services/ai/contextCompressor";
 import { invokeAI, ensureToolCallIds } from "../aiInvoker";
 import { callWithAgenticRetry } from "../../retry";
 
@@ -57,7 +60,9 @@ describe("aiInvoker", () => {
     mockedCallWithAgenticRetry.mockResolvedValue({
       result: {
         text: "ok",
-        functionCalls: [{ id: "call-1", name: "vfs_ls", args: { path: "current" } }],
+        functionCalls: [
+          { id: "call-1", name: "vfs_ls", args: { path: "current" } },
+        ],
       },
       usage,
       retries: 0,
@@ -92,7 +97,9 @@ describe("aiInvoker", () => {
 
     expect(result).toEqual({
       text: "ok",
-      functionCalls: [{ id: "call-1", name: "vfs_ls", args: { path: "current" } }],
+      functionCalls: [
+        { id: "call-1", name: "vfs_ls", args: { path: "current" } },
+      ],
       usage,
       retries: 0,
     });

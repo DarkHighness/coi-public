@@ -64,13 +64,15 @@ describe("summaryContext", () => {
     expect(instruction).toContain("in en, visible layer only");
     expect(instruction).toContain("read command protocol (hub first)");
     expect(instruction).toContain("current/skills/commands/runtime/SKILL.md");
-    expect(instruction).toContain("current/skills/commands/runtime/summary/SKILL.md");
+    expect(instruction).toContain(
+      "current/skills/commands/runtime/summary/SKILL.md",
+    );
     expect(instruction).toContain("current/skills/core/protocols/SKILL.md");
     expect(instruction).toContain("current/skills/craft/writing/SKILL.md");
     expect(instruction).toContain("Loop quick-start (recommended)");
     expect(instruction).toContain("Read fork anchors");
     expect(instruction).toContain("current/conversation/session.jsonl");
-    expect(instruction).toContain("mode: \"lines\"");
+    expect(instruction).toContain('mode: "lines"');
     expect(instruction).toContain("Do NOT full-read large session.jsonl files");
     expect(instruction).toContain("Structured error recovery flow");
     expect(instruction).toContain("RUNTIME_FIELDS_FORBIDDEN");
@@ -153,7 +155,9 @@ describe("summaryContext", () => {
 
     expect(context).toContain('active_fork_id="0"');
     expect(context).toContain('fork_count="1"');
-    expect(context).toContain('<display_text>A concise summary.</display_text>');
+    expect(context).toContain(
+      "<display_text>A concise summary.</display_text>",
+    );
 
     expect(context).toContain('<turn_files count="1">');
     expect(context).toContain(buildTurnPath(0, 1));
