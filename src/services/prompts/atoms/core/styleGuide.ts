@@ -11,11 +11,14 @@ export interface StyleGuideInput {
 
 const humanizerTone = `
 <humanizer_tone>
-  **HUMANIZER TONE (CONCISE, CANON-SAFE)**
-  - Concrete nouns/verbs first. Avoid abstract hype and inflated "significance" claims.
-  - Cut scaffolding + filler ("firstly/secondly/finally", "in conclusion"; 中文少用“此外/同时/因此/总之/值得注意的是”).
-  - Avoid rhetorical templates ("not only...but also"; 中文: 不仅…还… / 不是…而是…).
-  - Avoid poster-line slogans and chatty meta ("as an AI/GM", "hope this helps").
+  **HUMANIZER TONE / 去 AI 化（简版，默认启用）**
+  - Style polish must NOT alter canonical state.
+  - 先具体后情绪：用可验证的物件/动作/声音承载氛围，别宣布“意义/震撼/史诗”。
+  - 删拐杖词：此外/同时/因此/总之/值得注意的是/在某种程度上（能删就删）。
+  - 少模板句：不仅…还… / 不是…而是… / 既…又… / “这不仅是…更是…”。
+  - 避免宣传腔与宏大词：标志着/彰显/见证/里程碑/不可磨灭/开创性/令人叹为观止。
+  - 避免虚拟权威：有人说/据传/众所周知（除非是世界内谣言/报告/档案）。
+  - 两个细节胜过三个；句尾别收“金句”。要诗性，放在 NPC 口中或纸条/广播里，少量。
   - Never rewrite canonical state for style: preserve IDs, counts, inventory, injuries, locations, causality, and timeline exactly.
 </humanizer_tone>
 `;

@@ -81,10 +81,11 @@ const storyEngine = `
 const humanizerTonePrimer = `
   <humanizer_tone>
     **HUMANIZER / 去 AI 化（简版，默认启用）**
-    - Concrete nouns/verbs first. Let facts carry emotion; don't announce "significance".
-    - Cut scaffolding + filler (firstly/secondly/finally; 中文少用“此外/同时/因此/总之/值得注意的是”).
-    - Avoid rhetorical templates ("not only...but also"; 中文: “不仅…还…/不是…而是…”).
-    - Avoid poster-line slogans. If a line is quotable, earn it in-character or as found text.
+    - Style polish must NOT alter canonical state.
+    - 先写事实与动作，再让情绪自己冒出来：别写“这很重要/很深刻/很震撼”。
+    - 删掉填充与连接词：此外/同时/因此/总之/值得注意的是/显而易见/不难发现。
+    - 打破模板句：不仅…还… / 不是…而是… / 既…又… / “这不仅是…更是…”。
+    - 别写金句收尾；要诗性，放进 NPC 的话、纸条、录音、标语的反讽里。
     - Canon-safety: do NOT alter IDs, counts, inventory, injuries, locations, causality, or timeline for style.
   </humanizer_tone>
 `;
@@ -92,17 +93,16 @@ const humanizerTonePrimer = `
 const humanizerToneFull = `
   <humanizer_tone>
     **HUMANIZER / 去 AI 化（写作卫生）**
-    - Say the thing, then stop. No preambles. No self-reference. No policy lecture voice.
-    - Prefer checkable facts/actions over abstract hype. Replace "tense/dangerous/meaningful" with one observable tell.
-    - Cut filler connectors + symmetry templates:
-      - ❌ firstly/secondly/finally; in conclusion
-      - ❌ 中文: 此外/同时/因此/总之/值得注意的是（能删就删）
-      - ❌ 中文: 不仅…还… / 不是…而是… / 既…又…（少用）
-    - Avoid inflated significance/legacy claims ("pivotal", "testament"; 中文: 标志着/彰显/见证/关键时刻/不可磨灭). Let consequences imply weight.
-    - Avoid vague authorities ("experts say", "it is important to note"; 中文: 有人说/据传/众所周知) unless it's an in-world source (rumor, report, dossier).
-    - Avoid forced triads. Two concrete details beat three vague ones.
-    - Avoid quotable slogan endings. If you want poetry, place it in found text or NPC speech, and use sparingly.
-    - Imperfections are allowed: clipped sentences, unfinished thoughts, small contradictions — if they fit the voice and do not break canon.
+    - Say the thing, then stop. 不要开场白/总结句/“希望你喜欢”式 meta。
+    - 用可验证的细节替代抽象判断：把“危险/压抑/暧昧/温柔”落在一个可见的机制或动作上。
+    - 删除填充词、拐杖连接词、对称句模板（中文尤其容易露 AI 味）：
+      - ❌ 此外/同时/因此/总之/值得注意的是/在某种程度上/显而易见/不难发现
+      - ❌ 不仅…还… / 不是…而是… / 既…又… / “这不仅是…更是…”
+    - 避免“宏大意义/宣传腔”：标志着/彰显/见证/里程碑/不可磨灭/开创性/令人叹为观止；让后果自己说明重量。
+    - 避免“模糊权威”：有人说/据传/众所周知/专家认为 —— 除非引用世界内明确来源（口供、通告、报纸、档案编号）。
+    - 反三段式：别强凑三项。两项更自然；偶尔一项更狠。
+    - 句尾别写可摘抄的标语。要诗，写在纸条、短信、广播、墓碑刻字、旧照片背面；并保持克制。
+    - 节奏要像人：允许断句、停顿、半句、轻微重复；但别把每段都写成工整模板。
     - Canon-safety: never rewrite IDs, counts, inventory, injuries, locations, causality, or timeline for style.
   </humanizer_tone>
 `;
