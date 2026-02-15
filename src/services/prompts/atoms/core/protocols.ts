@@ -24,7 +24,7 @@ const messageProtocol = `
   **[Player Rate]** — Player feedback on this turn output
   Treat as feedback ingestion for soul updates. Do NOT treat it as a protagonist action or advance story events.
   Example: \`[Player Rate] {"turnId":"fork-0/turn-12","vote":"down","preset":"AI flavor too strong"}\`
-  Required handling: parse \`vote/preset/comment/time\` when present, then update \`current/world/soul.md\` and \`current/world/global/soul.md\`.
+  Required handling: parse \`vote/preset/comment/time\` when present, then update \`current/world/soul.md\` and \`current/world/global/soul.md\`. Both are Story Teller AI internal self-notes.
 
   **[CONTEXT: ...]** — Background information
   For your reference only. Do NOT narrate a reaction to context labels.
@@ -39,6 +39,7 @@ const messageProtocol = `
   - \`[PLAYER_ACTION]\` => normal simulation turn (world reaction + state updates)
   - \`[Player Rate]\` => soul update loop only (no visible story progression)
   - \`[SUDO]\` => elevated update workflow with coverage discipline
+  - Route by the leading marker of the active user message; do not mix two marker workflows in one loop.
 
   **Processing Priority**:
   1. Look for [PLAYER_ACTION] to determine what to simulate

@@ -84,13 +84,19 @@ Finish tool:
 Loop quick-start (recommended):
 ${summaryBaselineLines.join("\n")}
 5) Read fork anchors (\`current/conversation/index.json\`, turn files, summary state).
-6) Draft summary fields, then finish once with \`vfs_commit_summary\` as the LAST tool call.
+6) Session preflight: read soul anchors once per read-epoch (\`current/world/soul.md\`, \`current/world/global/soul.md\`) for player-preference alignment.
+7) Draft summary fields, then finish once with \`vfs_commit_summary\` as the LAST tool call.
 
 When you have enough information, call \`vfs_commit_summary\`.
 It MUST be your LAST tool call.
 
 Before any summary mutation, read command protocol (hub first):
 ${summaryBaselineBullets.join("\n")}
+
+Notes policy:
+- \`current/world/notes.md\` is optional context only.
+- Do not treat notes as mandatory per-summary pre-read.
+- Soul files are mandatory memory anchors for summary alignment.
 
 When historical continuity is unclear, query \`current/conversation/session.jsonl\` in windows:
 - Use \`vfs_read\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.

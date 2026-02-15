@@ -178,8 +178,6 @@ export const generateAdventureTurn = async (
     playerMaliceIntensity: effectivePlayerMaliceIntensity,
     isNSFW: settings.extra?.nsfw,
     godMode: gameState.godMode,
-    crossSaveProfile: settings.playerProfile,
-    perSaveProfile: gameState.playerProfile,
     disablePlayerProfiling: settings.extra?.disablePlayerProfiling,
     protagonistName: gameState.character.name,
     protagonistRole: gameState.character.title,

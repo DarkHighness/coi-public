@@ -35,6 +35,8 @@ const updateTiming = `
   <update_timing>
     **WHEN TO UPDATE** (write markdown to \`current/world/soul.md\` and \`current/world/global/soul.md\`):
 
+    - **Doc role**: both soul files are internal Story Teller AI self-guidance notes, not player-facing prose
+
     - **Frequent early**: First 10-20 turns, update after most significant choices
     - **Refine later**: Confirm patterns, note deviations, deepen understanding
     - **Mandatory**: when input marker is \`[Player Rate]\`, update soul files in this turn
@@ -98,10 +100,7 @@ export const playerProfile: Atom<PlayerProfileInput> = defineAtom(
     source: "atoms/core/playerProfile.ts",
     exportName: "playerProfile",
   },
-  ({ crossSaveProfile, perSaveProfile }) => {
-    const csProfile = crossSaveProfile || "(Empty - begin observing)";
-    const psProfile = perSaveProfile || "(Empty - begin observing)";
-
+  (_input) => {
     return `
 <player_psychology>
   **PLAYER PORTRAIT SYSTEM - OBSERVE THE PLAYER BEHIND THE SCREEN**
@@ -111,14 +110,19 @@ export const playerProfile: Atom<PlayerProfileInput> = defineAtom(
 
   <two_layer_system>
     **Cross-Save Portrait** (the meta-player across ALL saves):
-    ${csProfile}
+    - Canonical source: \`current/world/global/soul.md\`
 
     **This Story's Portrait** (the player in THIS specific journey):
-    ${psProfile}
+    - Canonical source: \`current/world/soul.md\`
 
     **Distinction**:
     - Cross-save = Who the PLAYER is as a person: risk tolerance, moral compass, curiosity level, decision speed, emotional engagement style
     - Per-save = How they're playing THIS story: their relationship with THIS protagonist, goals in THIS world, patterns specific to THIS narrative
+
+    **Read Protocol**:
+    - Do NOT rely on host-injected soul text.
+    - Read both soul files yourself via \`vfs_read\` once per session read-epoch before first non-read tool call.
+    - Re-read only when the epoch is invalidated or files are changed externally.
   </two_layer_system>
 
 ${observationProtocol}
@@ -136,17 +140,15 @@ export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom(
     source: "atoms/core/playerProfile.ts",
     exportName: "playerProfilePrimer",
   },
-  ({ crossSaveProfile, perSaveProfile }) => {
-    const csProfile = crossSaveProfile || "(Empty - begin observing)";
-    const psProfile = perSaveProfile || "(Empty - begin observing)";
-
+  (_input) => {
     return `
 <player_psychology>
   <two_layer_system>
-    **Cross-Save**: ${csProfile}
-    **This Story**: ${psProfile}
+    **Cross-Save Source**: \`current/world/global/soul.md\`
+    **This Story Source**: \`current/world/soul.md\`
   </two_layer_system>
-  <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge.</protocol>
+  <read_protocol>Read both soul files yourself via \`vfs_read\` once per session read-epoch before first non-read tool call. Do not rely on host-injected soul text.</read_protocol>
+  <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge. Treat both as Story Teller AI internal self-notes.</protocol>
   <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>
 `;

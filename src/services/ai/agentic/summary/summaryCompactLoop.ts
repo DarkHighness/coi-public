@@ -49,6 +49,10 @@ import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { readConversationIndex } from "../../../vfs/conversation";
 import { VFS_TOOLSETS } from "../../../vfsToolsets";
 import { canonicalizeLanguage } from "../../../prompts/languageCanonical";
+import {
+  CURRENT_SOUL_LOGICAL_PATH,
+  GLOBAL_SOUL_LOGICAL_PATH,
+} from "../../../vfs/soulTemplates";
 
 // ============================================================================
 // Main Loop
@@ -62,6 +66,10 @@ const SUMMARY_PATH_ARG_KEYS = new Set([
   "patterns",
   "excludePatterns",
 ]);
+const SUMMARY_REQUIRED_SOUL_PATHS = [
+  CURRENT_SOUL_LOGICAL_PATH,
+  GLOBAL_SOUL_LOGICAL_PATH,
+] as const;
 
 const containsForbiddenSummaryTokens = (summary: StorySummary): boolean => {
   const forbidden = [
@@ -196,6 +204,48 @@ const injectSummaryRuntimeArgs = (
       toIndex: expectedRange.toIndex,
     },
     lastSummarizedIndex: expectedRange.toIndex + 1,
+  };
+};
+
+const checkSummarySoulReadGate = (
+  functionCalls: ToolCallResult[],
+  vfsSession: SummaryLoopInput["vfsSession"],
+):
+  | null
+  | {
+      success: false;
+      error: string;
+      code: "SOUL_NOT_READ";
+    } => {
+  const hasNonReadCall = functionCalls.some((call) => call.name !== "vfs_read");
+  if (!hasNonReadCall) {
+    return null;
+  }
+
+  const hasToolSeenInCurrentEpoch = (
+    vfsSession as {
+      hasToolSeenInCurrentEpoch?: (path: string) => boolean;
+    }
+  ).hasToolSeenInCurrentEpoch;
+
+  if (typeof hasToolSeenInCurrentEpoch !== "function") {
+    return null;
+  }
+
+  const missing = SUMMARY_REQUIRED_SOUL_PATHS.filter(
+    (path) => !hasToolSeenInCurrentEpoch(path),
+  );
+
+  if (missing.length === 0) {
+    return null;
+  }
+
+  return {
+    success: false,
+    error: `[ERROR: SOUL_NOT_READ] Session preflight requires reading soul memory anchors before non-read tools: ${missing
+      .map((path) => `current/${path}`)
+      .join(", ")}. Use vfs_read first.`,
+    code: "SOUL_NOT_READ",
   };
 };
 
@@ -395,6 +445,24 @@ async function runSummaryLoopCore(options: {
           })),
         ),
       );
+
+      const soulGateError = checkSummarySoulReadGate(
+        functionCalls,
+        input.vfsSession,
+      );
+      if (soulGateError) {
+        conversationHistory.push(
+          createToolResponseMessage(
+            functionCalls.map((call) => ({
+              toolCallId: call.id,
+              name: call.name,
+              content: soulGateError,
+            })),
+          ),
+        );
+        incrementIterations(loopState.budgetState);
+        continue;
+      }
 
       const mustOnlyFinish =
         loopState.activeTools.length === 1 &&

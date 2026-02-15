@@ -136,6 +136,8 @@ const createVfsSession = (
     "skills/commands/runtime/cleanup/SKILL.md",
     "skills/commands/runtime/god/SKILL.md",
     "skills/commands/runtime/unlock/SKILL.md",
+    "world/soul.md",
+    "world/global/soul.md",
     "skills/presets/runtime/narrative-style/SKILL.md",
   ];
 
@@ -334,6 +336,51 @@ describe("agenticLoop command skill gate", () => {
     expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
     expect(vfsSession.hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
       "skills/commands/runtime/player-rate/SKILL.md",
+    );
+  });
+
+  it("blocks non-read tools when soul anchors are unread in current epoch", async () => {
+    const vfsSession = createVfsSession(true, [
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+    ]);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-1",
+          name: "vfs_write",
+          args: { edits: [] },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-soul-gate",
+        vfsSession,
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+    expect(vfsSession.hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
+      "world/soul.md",
+    );
+    expect(vfsSession.hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
+      "world/global/soul.md",
     );
   });
 

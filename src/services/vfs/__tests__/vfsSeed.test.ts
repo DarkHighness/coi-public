@@ -15,6 +15,13 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(
       session.readFile("conversation/turns/fork-0/turn-0.json"),
     ).toBeTruthy();
+
+    const notes = session.readFile("world/notes.md")?.content ?? "";
+    const currentSoul = session.readFile("world/soul.md")?.content ?? "";
+    const globalSoul = session.readFile("world/global/soul.md")?.content ?? "";
+    expect(notes).toContain("Story Teller AI");
+    expect(currentSoul).toContain("Story Teller AI");
+    expect(globalSoul).toContain("Story Teller AI");
   });
 
   it("keeps scaffold folders and README markers on repeated seed", () => {

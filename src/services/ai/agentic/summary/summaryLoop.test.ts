@@ -768,4 +768,80 @@ describe("runSummaryLoop", () => {
       expect.any(Object),
     );
   });
+
+  it("blocks query summary finish until soul anchors are read in current epoch", async () => {
+    mockCallWithAgenticRetry.mockResolvedValueOnce({
+      result: {
+        functionCalls: [
+          {
+            id: "call_soul_gate_query",
+            name: VFS_TOOLSETS.summary.finishToolName,
+            args: makeCommitSummaryArgs(),
+          },
+        ],
+      },
+      usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+      raw: {},
+    });
+
+    const input = makeInput({
+      settings: {
+        ...makeInput().settings,
+        extra: {
+          maxToolCalls: 2,
+          maxAgenticRounds: 1,
+          summaryRetryLimit: 1,
+        },
+      } as any,
+    });
+    (input.vfsSession as any).hasToolSeenInCurrentEpoch = vi.fn(
+      (_path: string) => false,
+    );
+
+    const result = await runSummaryLoop(input, "query_summary");
+
+    expect(result.summary).toBeNull();
+    expect(mockDispatchToolCallAsync).not.toHaveBeenCalled();
+  });
+
+  it("blocks compact summary finish until soul anchors are read in current epoch", async () => {
+    mockCallWithAgenticRetry.mockResolvedValueOnce({
+      result: {
+        functionCalls: [
+          {
+            id: "call_soul_gate_compact",
+            name: VFS_TOOLSETS.summary.finishToolName,
+            args: makeCommitSummaryArgs(),
+          },
+        ],
+      },
+      usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+      raw: {},
+    });
+
+    const input = makeInput({
+      settings: {
+        ...makeInput().settings,
+        extra: {
+          maxToolCalls: 2,
+          maxAgenticRounds: 1,
+          summaryRetryLimit: 1,
+        },
+      } as any,
+    });
+    (input.vfsSession as any).hasToolSeenInCurrentEpoch = vi.fn(
+      (_path: string) => false,
+    );
+
+    const result = await runSummaryLoop(input, "session_compact");
+
+    expect(result.summary).toBeNull();
+    expect(mockDispatchToolCallAsync).not.toHaveBeenCalled();
+    expect((input.vfsSession as any).hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
+      "world/soul.md",
+    );
+    expect((input.vfsSession as any).hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
+      "world/global/soul.md",
+    );
+  });
 });

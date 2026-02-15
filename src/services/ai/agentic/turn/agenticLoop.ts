@@ -529,6 +529,45 @@ function checkCommandSkillReadGate(
   };
 }
 
+function checkSoulReadGate(
+  functionCalls: ToolCallResult[],
+  loopState: LoopState,
+):
+  | { ok: true }
+  | { ok: false; error: { success: false; error: string; code: string } } {
+  const required = loopState.requiredSoulReadPaths;
+  if (!required || required.length === 0) {
+    return { ok: true };
+  }
+
+  const readTools = new Set(["vfs_read"]);
+  const hasNonReadCall = functionCalls.some(
+    (call) => !readTools.has(call.name),
+  );
+  if (!hasNonReadCall) {
+    return { ok: true };
+  }
+
+  const missing = required.filter(
+    (path) => !loopState.vfsSession.hasToolSeenInCurrentEpoch(path),
+  );
+
+  if (missing.length === 0) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    error: {
+      success: false,
+      error: `[ERROR: SOUL_NOT_READ] Session preflight requires reading soul memory anchors before non-read tools: ${missing
+        .map((p) => `current/${p}`)
+        .join(", ")}. Read each once via vfs_read, then continue.`,
+      code: "SOUL_NOT_READ",
+    },
+  };
+}
+
 function checkPresetSkillReadGate(
   functionCalls: ToolCallResult[],
   loopState: LoopState,
@@ -590,6 +629,19 @@ async function processToolCalls(
   const skillGate = checkCommandSkillReadGate(functionCalls, loopState);
   if ("error" in skillGate) {
     const gateError = skillGate.error;
+    return {
+      responses: functionCalls.map((call) => ({
+        toolCallId: call.id,
+        name: call.name,
+        content: gateError,
+      })),
+      turnFinished: false,
+    };
+  }
+
+  const soulGate = checkSoulReadGate(functionCalls, loopState);
+  if ("error" in soulGate) {
+    const gateError = soulGate.error;
     return {
       responses: functionCalls.map((call) => ({
         toolCallId: call.id,

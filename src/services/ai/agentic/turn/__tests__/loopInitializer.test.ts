@@ -122,6 +122,10 @@ describe("loopInitializer", () => {
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/turn/SKILL.md",
     ]);
+    expect(state.requiredSoulReadPaths).toEqual([
+      "world/soul.md",
+      "world/global/soul.md",
+    ]);
     expect(state.requiredPresetSkillPaths).toEqual([]);
     expect(state.requiredPresetSkillRequirements).toEqual([]);
   });
@@ -154,6 +158,7 @@ describe("loopInitializer", () => {
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/cleanup/SKILL.md",
     ]);
+    expect(cleanupState.requiredSoulReadPaths).toEqual([]);
   });
 
   it("uses player-rate protocol skill when rate mode is active", () => {

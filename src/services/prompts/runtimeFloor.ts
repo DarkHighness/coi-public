@@ -20,9 +20,11 @@ You MUST follow these runtime protocol constraints:
 - Loop preflight (required before non-read tools):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
   2) Read the active command protocol skill (\`current/skills/commands/runtime/turn/SKILL.md\` for normal turns, \`current/skills/commands/runtime/player-rate/SKILL.md\` for \`[Player Rate]\` loops, \`current/skills/commands/runtime/cleanup/SKILL.md\` for cleanup, \`current/skills/commands/runtime/sudo/SKILL.md\` for /sudo).
-  3) Build a short tool plan: read anchors -> mutate -> verify -> finish.
-  4) Keep one finish call, and make it last.
-- Hard gate (enforced): before first non-read tool call in this epoch, you MUST read \`current/skills/commands/runtime/SKILL.md\` plus the active command protocol skill for this loop.
+  3) Read soul anchors once per session read-epoch before first non-read tool call: \`current/world/soul.md\` and \`current/world/global/soul.md\`.
+  4) Build a short tool plan: read anchors -> mutate -> verify -> finish.
+  5) Keep one finish call, and make it last.
+- \`current/world/notes.md\` and other \`**/notes.md\` are optional references, not mandatory pre-read anchors.
+- Hard gate (enforced): before first non-read tool call in this epoch, you MUST read \`current/skills/commands/runtime/SKILL.md\`, the active command protocol skill for this loop, and both soul anchors (\`current/world/soul.md\`, \`current/world/global/soul.md\`).
 - Structured error recovery flow (when a tool returns \`{ success:false, code, error }\`):
   1) Do NOT finish yet.
   2) Fix the cause by \`code\` with the smallest helpful lookup:

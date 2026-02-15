@@ -10,6 +10,8 @@ const globalNotes = `
     **NOTES ARE A FLEXIBLE FALLBACK.**
     Use notes to store important information that does not fit cleanly into the structured entity JSON fields.
     Notes are markdown and may contain headings, lists, tables, TODOs, and reminders.
+    Every \`notes.md\` is an internal self-note written by Story Teller AI to itself (not player-facing text).
+    Notes are NOT mandatory per-turn/per-summary pre-read anchors.
 
     <paths>
       **PATH MODEL**: canonical \`shared/**\` + \`forks/{forkId}/**\`; alias \`current/**\` is accepted.
@@ -38,6 +40,7 @@ const globalNotes = `
       - If a fact is stable and can be expressed structurally, write it back into the appropriate entity JSON using
         \`vfs_write\` (\`write_file\` / \`patch_json\` / \`merge_json\`).
       - Notes are not the canonical world state; they are a scratch pad.
+      - Do not quote raw notes content to the player as direct narration.
     </when_to_use>
 
     <read_write_protocol>

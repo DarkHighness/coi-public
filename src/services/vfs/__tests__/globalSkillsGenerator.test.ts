@@ -142,6 +142,7 @@ describe("VFS global skills generator", () => {
     expect(commandPlayerRate).toContain("name: commands-player-rate");
     expect(commandPlayerRate).toContain("[Player Rate]");
     expect(commandPlayerRate).toContain("current/world/soul.md");
+    expect(commandPlayerRate).toContain("internal self-guidance notes");
     expect(commandSummary).toContain("name: commands-summary");
     expect(commandSummary).toContain("query_summary");
     expect(commandSummary).toContain("Structured Error Recovery Flow");

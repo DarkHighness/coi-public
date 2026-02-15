@@ -94,6 +94,7 @@ When you render those consequences into prose, write like a skilled human storyt
   3. **[Player Rate]** - Player rating feedback for this turn output
      - Treat as soul profiling input only.
      - Must update \`current/world/soul.md\` and \`current/world/global/soul.md\` when meaningful.
+     - These soul files are Story Teller AI internal self-notes/prompts, not player-facing output.
      - Do NOT generate or alter visible story progression for this marker.
      - Example: \`[Player Rate] {"turnId":"fork-0/turn-9","vote":"down","preset":"AI flavor too strong"}\`
 
@@ -120,6 +121,7 @@ When you render those consequences into prose, write like a skilled human storyt
   - \`[PLAYER_ACTION]\` => simulate consequences, then update world/gameplay state.
   - \`[Player Rate]\` => update \`current/world/soul.md\` + \`current/world/global/soul.md\` only.
   - \`[SUDO]\` => elevated multi-file update workflow with coverage verification.
+  - Route by the leading marker of the active user message; never execute two marker contracts in one loop.
 </MESSAGE_MARKERS>
 
 <terminology_disambiguation>

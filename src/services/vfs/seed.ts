@@ -60,11 +60,23 @@ const normalizePresetProfile = (
   locked: true,
 });
 
+const buildGlobalNotesMarkdown = (): string =>
+  [
+    "# World Notes (Story Teller AI)",
+    "",
+    "- Owner: Story Teller AI (self-guidance only)",
+    "- Purpose: Internal notes/prompts written by Story Teller AI for continuity and planning.",
+    "- Visibility: Internal only. Do not surface raw notes content to player-facing narrative.",
+    "",
+    "## Index",
+    "- Add concise bullets and link to topic notes when needed.",
+    "",
+  ].join("\n");
+
 const ensureGlobalNotes = (session: VfsSession): void => {
-  // Notes are a flexible scratch pad (markdown).
-  // Keep it empty by default; the AI may populate it when needed.
+  // Notes are Story Teller AI internal markdown self-notes.
   if (!session.readFile("world/notes.md")) {
-    session.writeFile("world/notes.md", "", "text/markdown");
+    session.writeFile("world/notes.md", buildGlobalNotesMarkdown(), "text/markdown");
   }
 };
 

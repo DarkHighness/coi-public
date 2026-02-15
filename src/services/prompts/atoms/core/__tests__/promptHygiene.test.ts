@@ -51,6 +51,7 @@ describe("core prompt hygiene", () => {
     // Notes scratch pad policy (VFS markdown)
     expect(content).toContain("current/world/notes.md");
     expect(content).toContain("current/**/notes.md");
+    expect(content).toContain("Story Teller AI to itself");
     expect(content).toContain("read → modify → write");
     expect(content).toContain("vfs_write");
     expect(content).toContain("vfs_write");
