@@ -518,7 +518,7 @@ describe("createLifecycleActions", () => {
     expect(deps.navigate).toHaveBeenLastCalledWith("/");
   });
 
-  it("switches to resume flow when startNewGame has saved progress", async () => {
+  it("does not reuse stale outline progress from previous save on retry", async () => {
     const deps = createBaseDeps();
     deps.gameStateRef.current.outlineConversation = {
       theme: "fantasy",
@@ -545,12 +545,7 @@ describe("createLifecycleActions", () => {
     await actions.startNewGame("fantasy", "ctx");
 
     expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
-    const resumeCallArgs = runOutlineGenerationPhasedMock.mock.calls[1]?.[0];
-    expect(resumeCallArgs?.resumeFrom).toBeDefined();
-    expect(deps.showToast).toHaveBeenCalledWith(
-      "initializing.errors.resumeFailed",
-      "error",
-      5000,
-    );
+    const retryCallArgs = runOutlineGenerationPhasedMock.mock.calls[1]?.[0];
+    expect(retryCallArgs?.resumeFrom).toBeUndefined();
   });
 });

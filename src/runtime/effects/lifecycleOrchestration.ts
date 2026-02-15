@@ -39,6 +39,7 @@ import {
   applyCustomContextThemeOverrides,
   indexInitialEntities,
 } from "./ragDocuments";
+import { createResetGameState } from "../../hooks/useGameState";
 
 type ShowToast = (
   message: string,
@@ -65,7 +66,6 @@ interface LifecycleActionsDeps {
   currentSlotId: string | null;
   saveToSlot: (slotId: string, state: GameState) => Promise<boolean>;
   deleteSlot: (slotId: string) => void;
-  resetState: (theme: string) => void;
 }
 
 interface BuildOpeningStateParams {
@@ -108,7 +108,6 @@ export function createLifecycleActions({
   currentSlotId,
   saveToSlot,
   deleteSlot,
-  resetState,
 }: LifecycleActionsDeps) {
   const confirmAction: Confirm =
     confirm ?? ((message?: string) => window.confirm(message));
@@ -367,6 +366,20 @@ export function createLifecycleActions({
     const normalizedPresetProfile = normalizeSavePresetProfile(
       presetProfile ?? gameStateRef.current.presetProfile,
     );
+    const freshRuntimeState: GameState = {
+      ...createResetGameState(displayTheme),
+      theme: persistedTheme,
+      language,
+      customContext,
+      presetProfile: normalizedPresetProfile,
+      isProcessing: true,
+      liveToolCalls: [],
+    };
+
+    // Set in-memory state immediately so async outline checkpoints never merge
+    // old save content into a new save session.
+    gameStateRef.current = freshRuntimeState;
+    setGameState(freshRuntimeState);
 
     try {
       vfsSession.restore({});
@@ -388,47 +401,13 @@ export function createLifecycleActions({
       );
 
       await saveToSlot(slotId, {
-        ...gameStateRef.current,
-        nodes: {},
-        activeNodeId: null,
-        rootNodeId: null,
-        currentFork: [],
-        actors: [],
-        inventory: [],
-        npcs: [],
-        quests: [],
-        factions: [],
-        knowledge: [],
-        locations: [],
-        locationItemsByLocationId: {},
-        outline: null,
-        summaries: [],
-        lastSummarizedIndex: 0,
-        logs: [],
+        ...freshRuntimeState,
+        isProcessing: false,
         liveToolCalls: [],
-        turnNumber: 0,
-        forkId: 0,
-        theme: persistedTheme,
-        language,
-        customContext,
-        presetProfile: normalizedPresetProfile,
       });
     } catch (e) {
       console.warn("[StartNewGame] Failed to persist initial save snapshot", e);
     }
-
-    resetState(displayTheme);
-    setGameState((prev) => {
-      const nextState = {
-        ...prev,
-        customContext,
-        presetProfile: normalizedPresetProfile,
-        isProcessing: true,
-        liveToolCalls: [],
-      };
-      gameStateRef.current = nextState;
-      return nextState;
-    });
 
     navigate("/initializing");
 

@@ -89,35 +89,37 @@ const INITIAL_STATE: GameState = {
   customRules: [],
 };
 
+export const createResetGameState = (theme: string): GameState => ({
+  ...INITIAL_STATE,
+  theme: theme,
+  atmosphere: { envTheme: "fantasy", ambience: "quiet" }, // Default atmosphere
+  // Ensure explicit reset of all accumulation fields
+  summaries: [],
+  nodes: {},
+  rootNodeId: null,
+  activeNodeId: null,
+  outline: null,
+  logs: [],
+  liveToolCalls: [],
+  turnNumber: 0,
+  // Reset fork system
+  forkId: 0,
+  forkTree: INITIAL_FORK_TREE,
+  // Reset outline conversation state (important for new game isolation)
+  outlineConversation: undefined,
+  // God mode and unlocked mode
+  godMode: false,
+  unlockMode: false,
+  // Custom rules (preserve from previous or start empty)
+  customRules: [],
+  presetProfile: DEFAULT_SAVE_PRESET_PROFILE,
+});
+
 export const useGameState = () => {
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
 
   const resetState = (theme: string) => {
-    setGameState({
-      ...INITIAL_STATE,
-      theme: theme,
-      atmosphere: { envTheme: "fantasy", ambience: "quiet" }, // Default atmosphere
-      // Ensure explicit reset of all accumulation fields
-      summaries: [],
-      nodes: {},
-      rootNodeId: null,
-      activeNodeId: null,
-      outline: null,
-      logs: [],
-      liveToolCalls: [],
-      turnNumber: 0,
-      // Reset fork system
-      forkId: 0,
-      forkTree: INITIAL_FORK_TREE,
-      // Reset outline conversation state (important for new game isolation)
-      outlineConversation: undefined,
-      // God mode and unlocked mode
-      godMode: false,
-      unlockMode: false,
-      // Custom rules (preserve from previous or start empty)
-      customRules: [],
-      presetProfile: DEFAULT_SAVE_PRESET_PROFILE,
-    });
+    setGameState(createResetGameState(theme));
   };
 
   const updateCharacter = (char: CharacterStatus) => {

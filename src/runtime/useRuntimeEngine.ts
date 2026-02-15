@@ -20,7 +20,7 @@ import { createLifecycleActions } from "./effects/lifecycleOrchestration";
 import { reconcileGlobalSoulWithSettingsOnLoad } from "../services/vfs/soulSync";
 
 export const useRuntimeEngine = () => {
-  const { gameState, setGameState, resetState } = useGameState();
+  const { gameState, setGameState } = useGameState();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
@@ -206,7 +206,6 @@ export const useRuntimeEngine = () => {
         currentSlotId,
         saveToSlot,
         deleteSlot,
-        resetState,
       }),
     [
       aiSettings,
@@ -221,7 +220,6 @@ export const useRuntimeEngine = () => {
       currentSlotId,
       saveToSlot,
       deleteSlot,
-      resetState,
     ],
   );
 
