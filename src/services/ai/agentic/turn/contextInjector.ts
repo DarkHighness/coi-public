@@ -183,10 +183,10 @@ export function injectNormalTurnInstruction(
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
   modeSkillLines.push(
     "Do not skip required skill preflight above. Non-read tools are hard-blocked until those reads are done.",
-    "Strongly recommended after preflight:",
+    "Strongly recommended per session (not every turn):",
     '- `vfs_read({ path: "current/skills/index.json" })`',
-    "- Select and read 1-3 additional skill files relevant to this exact turn before non-trivial writes.",
-    "- Prioritize domain/theme/mechanics skills that directly match the current player action.",
+    "- At session cold start/rebuild, select and read 1-3 additional skill files aligned with active domain/theme/mechanics.",
+    "- Reuse those skill docs across later turns; re-read only when requirements change or files are updated.",
   );
   if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
     modeSkillLines.push(

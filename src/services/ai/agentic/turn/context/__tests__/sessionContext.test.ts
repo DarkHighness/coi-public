@@ -175,6 +175,9 @@ describe("sessionContext", () => {
     expect(coldStartText?.text).toContain(
       "Read 1-3 additional skill files",
     );
+    expect(coldStartText?.text).toContain(
+      "Reuse those skill docs across turns",
+    );
     expect(coldStartText?.text).toContain("current/conversation/session.jsonl");
     expect(coldStartText?.text).toContain("lines/search windows");
     expect(initializedHistory).toEqual(

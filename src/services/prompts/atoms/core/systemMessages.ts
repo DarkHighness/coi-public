@@ -84,7 +84,7 @@ This is a **GM COMMAND**. You must:
 5. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 6. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-7. **SKILL DISCOVERY (RECOMMENDED)**: Read current/skills/index.json and load additional relevant skill docs (1-3) for this exact command domain before major writes.
+7. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
 8. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
 9. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
 10. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\`.
@@ -125,7 +125,7 @@ You are in AGENTIC MODE (VFS-only).
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, the active command protocol skill ("turn" or "player-rate"), current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-6. **SKILL DISCOVERY (RECOMMENDED)**: Read current/skills/index.json and load additional relevant skill docs (1-3) before non-trivial writes.
+6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
 7. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\` (chars/lines/json), and \`vfs_search\` before changing files.
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
    - For large JSON, prefer \`vfs_read\` with \`mode: "json"\` + narrow \`pointers\` or \`mode: "lines"\`; avoid broad full-file char reads.
@@ -188,7 +188,7 @@ You are in CLEANUP MODE (VFS-only).
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-6. **SKILL DISCOVERY (RECOMMENDED)**: Read current/skills/index.json and load additional relevant skill docs (1-3) before non-trivial cleanup edits.
+6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
 7. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read\` to locate and verify duplicate candidates.
    - For large JSON, prefer pointer/line scoped reads instead of broad full-file char reads.
 8. **APPLY FIXES**: Use \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` as needed.
