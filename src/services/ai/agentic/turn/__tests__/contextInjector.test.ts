@@ -69,9 +69,12 @@ describe("contextInjector", () => {
     expect(getText(history[3])).toContain("commands/runtime/turn/SKILL.md");
     expect(getText(history[3])).toContain("commands/runtime/god/SKILL.md");
     expect(getText(history[3])).toContain("commands/runtime/unlock/SKILL.md");
+    expect(getText(history[3])).toContain("skills/core/protocols/SKILL.md");
+    expect(getText(history[3])).toContain("skills/craft/writing/SKILL.md");
     expect(getText(history[4])).toContain("MODE SKILL GUIDANCE");
-    expect(getText(history[4])).toContain("core/protocols/SKILL.md");
-    expect(getText(history[4])).toContain("craft/writing/SKILL.md");
+    expect(getText(history[4])).toContain(
+      "Do not skip required skill preflight",
+    );
     expect(getText(history[4])).toContain("You are currently in God mode.");
     expect(getText(history[4])).toContain("Unlock mode is currently ON.");
     expect(getText(history[5])).toContain("PRESET SKILLS ACTIVE");
@@ -89,13 +92,16 @@ describe("contextInjector", () => {
     expect(getText(history[8])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[8])).toContain("commands/runtime/SKILL.md");
     expect(getText(history[8])).toContain("commands/runtime/cleanup/SKILL.md");
+    expect(getText(history[8])).toContain("skills/core/protocols/SKILL.md");
+    expect(getText(history[8])).toContain("skills/craft/writing/SKILL.md");
     expect(getText(history[9])).toContain("CLEANUP CONSISTENCY ANCHOR");
     expect(getText(history[9])).toContain("Target forkId: 3");
     expect(getText(history[9])).toContain("Target turnNumber: 27");
     expect(getText(history[9])).toContain("Structured error recovery");
     expect(getText(history[10])).toContain("MODE SKILL GUIDANCE");
-    expect(getText(history[10])).toContain("core/protocols/SKILL.md");
-    expect(getText(history[10])).toContain("craft/writing/SKILL.md");
+    expect(getText(history[10])).toContain(
+      "Do not skip required skill preflight",
+    );
   });
 
   it("injects normal turn instruction without semantic hints when RAG is off", () => {
@@ -138,6 +144,8 @@ describe("contextInjector", () => {
     expect(getText(history[1])).toContain(
       "commands/runtime/player-rate/SKILL.md",
     );
+    expect(getText(history[1])).toContain("skills/core/protocols/SKILL.md");
+    expect(getText(history[1])).toContain("skills/craft/writing/SKILL.md");
     expect(getText(history[0])).toContain("vfs_commit_soul");
     expect(getText(history[1])).not.toContain("commands/runtime/god/SKILL.md");
     expect(getText(history[1])).not.toContain(
@@ -148,6 +156,9 @@ describe("contextInjector", () => {
     expect(getText(history[2])).toContain("current/world/global/soul.md");
     expect(getText(history[2])).toContain("vfs_commit_soul");
     expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[3])).toContain(
+      "Do not skip required skill preflight",
+    );
   });
 
   it("injects budget and no-tool-call messages", () => {

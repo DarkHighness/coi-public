@@ -124,6 +124,8 @@ describe("loopInitializer", () => {
     expect(state.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/turn/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
     ]);
     expect(state.requiredSoulReadPaths).toEqual([
       "world/soul.md",
@@ -147,6 +149,8 @@ describe("loopInitializer", () => {
     expect(sudoState.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/sudo/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
     ]);
 
     const cleanupState = createLoopState(
@@ -160,6 +164,8 @@ describe("loopInitializer", () => {
     expect(cleanupState.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/cleanup/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
     ]);
     expect(cleanupState.requiredSoulReadPaths).toEqual([]);
   });
@@ -189,6 +195,8 @@ describe("loopInitializer", () => {
     expect(state.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/player-rate/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
     ]);
     expect(state.activeTools.some((tool) => tool.name === "vfs_commit_soul")).toBe(
       true,
@@ -213,6 +221,8 @@ describe("loopInitializer", () => {
     expect(state.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/turn/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
       "skills/commands/runtime/god/SKILL.md",
       "skills/commands/runtime/unlock/SKILL.md",
     ]);

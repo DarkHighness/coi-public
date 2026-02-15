@@ -134,6 +134,8 @@ const createVfsSession = (
     "skills/commands/runtime/player-rate/SKILL.md",
     "skills/commands/runtime/sudo/SKILL.md",
     "skills/commands/runtime/cleanup/SKILL.md",
+    "skills/core/protocols/SKILL.md",
+    "skills/craft/writing/SKILL.md",
     "skills/commands/runtime/god/SKILL.md",
     "skills/commands/runtime/unlock/SKILL.md",
     "world/soul.md",
@@ -449,6 +451,8 @@ describe("agenticLoop command skill gate", () => {
     const vfsSession = createVfsSession(true, [
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/turn/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
     ]);
 
     aiHandlerMock.handleAICall.mockResolvedValue({

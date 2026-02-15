@@ -54,6 +54,8 @@ export function injectSudoModeInstruction(
         "Hard gate (enforced): before any non-read tool call in this epoch, read:",
         "- `current/skills/commands/runtime/SKILL.md`",
         "- `current/skills/commands/runtime/sudo/SKILL.md`",
+        "- `current/skills/core/protocols/SKILL.md`",
+        "- `current/skills/craft/writing/SKILL.md`",
       ].join("\n"),
     ),
   );
@@ -100,6 +102,8 @@ export function injectNormalTurnInstruction(
           "Hard gate (enforced): before any non-read tool call in this epoch, read:",
           "- `current/skills/commands/runtime/SKILL.md`",
           "- `current/skills/commands/runtime/cleanup/SKILL.md`",
+          "- `current/skills/core/protocols/SKILL.md`",
+          "- `current/skills/craft/writing/SKILL.md`",
         ].join("\n"),
       ),
     );
@@ -145,6 +149,8 @@ export function injectNormalTurnInstruction(
       "Hard gate (enforced): before any non-read tool call in this epoch, read:",
       "- `current/skills/commands/runtime/SKILL.md`",
       `- \`${activeCommandSkillPath}\``,
+      "- `current/skills/core/protocols/SKILL.md`",
+      "- `current/skills/craft/writing/SKILL.md`",
     ];
     if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
       commandSkillLines.push(
@@ -176,9 +182,7 @@ export function injectNormalTurnInstruction(
 
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
   modeSkillLines.push(
-    "Optional deepening (load only when needed):",
-    "- `current/skills/core/protocols/SKILL.md`",
-    "- `current/skills/craft/writing/SKILL.md`",
+    "Do not skip required skill preflight above. Non-read tools are hard-blocked until those reads are done.",
   );
   if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
     modeSkillLines.push(

@@ -130,7 +130,9 @@ export function createLoopState(
             ? "skills/commands/runtime/sudo/SKILL.md"
             : isPlayerRateMode
               ? "skills/commands/runtime/player-rate/SKILL.md"
-            : "skills/commands/runtime/turn/SKILL.md",
+              : "skills/commands/runtime/turn/SKILL.md",
+        "skills/core/protocols/SKILL.md",
+        "skills/craft/writing/SKILL.md",
         !isCleanupMode &&
         !isSudoMode &&
         !isPlayerRateMode &&

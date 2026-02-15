@@ -60,7 +60,7 @@ const buildColdStartSkillHintMessage = (
       "Hard gate (enforced): before first non-read tool call this turn, read:",
       "- `current/skills/commands/runtime/SKILL.md`",
       `- \`${commandProtocolSkillPath}\``,
-      "Optional deepening when needed:",
+      "Also mandatory before first non-read tool call:",
       "- `current/skills/core/protocols/SKILL.md`",
       "- `current/skills/craft/writing/SKILL.md`",
       "- `current/skills/index.json` (discover relevant skills first)",
