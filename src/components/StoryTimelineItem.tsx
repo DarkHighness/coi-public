@@ -4,8 +4,6 @@ import { StorySegment } from "../types";
 import { useTranslation } from "react-i18next";
 import { MarkdownText } from "./render/MarkdownText";
 import { useImageURL } from "../hooks/useImageStorage";
-import { useOptionalRuntimeContext } from "../runtime/context";
-import { resolveLocationDisplayName } from "../utils/entityDisplay";
 
 interface StoryTimelineItemProps {
   segment: StorySegment;
@@ -15,6 +13,7 @@ interface StoryTimelineItemProps {
   isExpanded: boolean;
   isHovered: boolean;
   fallbackTime?: string;
+  snapshotLocationDisplay?: string;
   onToggle: (id: string) => void;
   onHover: (id: string | null) => void;
   onImageClick: (url: string) => void;
@@ -33,6 +32,7 @@ const StoryTimelineItemComponent: React.FC<StoryTimelineItemProps> = ({
   isExpanded,
   isHovered,
   fallbackTime,
+  snapshotLocationDisplay = "",
   onToggle,
   onHover,
   onImageClick,
@@ -43,14 +43,6 @@ const StoryTimelineItemComponent: React.FC<StoryTimelineItemProps> = ({
   const { t } = useTranslation();
   const { url: resolvedUrl } = useImageURL(segment.imageId);
   const displayUrl = resolvedUrl || segment.imageUrl;
-
-  const runtime = useOptionalRuntimeContext();
-  const knownLocations = runtime?.state.gameState.locations ?? [];
-  const snapshotLocationDisplay = segment.stateSnapshot?.currentLocation
-    ? resolveLocationDisplayName(segment.stateSnapshot.currentLocation, {
-        locations: knownLocations,
-      })
-    : "";
 
   const isSystemRole = segment.role === "system";
   const isModelRole = segment.role === "model";

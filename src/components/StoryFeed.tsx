@@ -380,23 +380,25 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
       const observer = new IntersectionObserver(
         (entries) => {
-          // Find the entry that is most visible
-          const visibleEntries = entries.filter(
-            (entry) => entry.isIntersecting,
-          );
-          if (visibleEntries.length > 0) {
-            // Sort by intersection ratio (descending)
-            visibleEntries.sort(
-              (a, b) => b.intersectionRatio - a.intersectionRatio,
-            );
-            const mostVisible = visibleEntries[0];
+          // Find the currently most visible entry in one pass.
+          let mostVisible: IntersectionObserverEntry | null = null;
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            if (
+              !mostVisible ||
+              entry.intersectionRatio > mostVisible.intersectionRatio
+            ) {
+              mostVisible = entry;
+            }
+          }
+
+          if (mostVisible) {
             const segmentId =
               mostVisible.target.getAttribute("data-segment-id");
-            if (segmentId) {
-              const segment = segmentByIdRef.current.get(segmentId);
-              if (segment) {
-                onViewedSegmentChange(segment);
-              }
+            if (!segmentId) return;
+            const segment = segmentByIdRef.current.get(segmentId);
+            if (segment) {
+              onViewedSegmentChange(segment);
             }
           }
         },

@@ -10,6 +10,7 @@ import { TimelineExportModal } from "./TimelineExportModal";
 import { StoryTimelineItem } from "./StoryTimelineItem";
 import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
+import { resolveLocationDisplayName } from "../utils/entityDisplay";
 
 interface StoryTimelineProps {
   title?: string;
@@ -200,6 +201,14 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                     isExpanded={isExpanded}
                     isHovered={isHovered}
                     fallbackTime={gameState.time}
+                    snapshotLocationDisplay={
+                      seg.stateSnapshot?.currentLocation
+                        ? resolveLocationDisplayName(
+                            seg.stateSnapshot.currentLocation,
+                            { locations: gameState.locations ?? [] },
+                          )
+                        : ""
+                    }
                     onToggle={toggleItem}
                     onHover={setHoveredSegment}
                     onImageClick={setSelectedImage}
