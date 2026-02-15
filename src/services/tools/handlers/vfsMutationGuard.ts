@@ -353,8 +353,9 @@ export const filterCanonicalWorldEntityUnlockPatchOps = (
   let strippedCount = 0;
 
   for (const op of patchOps) {
-    const pathPointer = toPatchPointer((op as Record<string, unknown>).path);
-    const fromPointer = toPatchPointer((op as Record<string, unknown>).from);
+    const opRecord = op as unknown as Record<string, unknown>;
+    const pathPointer = toPatchPointer(opRecord.path);
+    const fromPointer = toPatchPointer(opRecord.from);
     if (
       pointsToCanonicalUnlockField(pathPointer) ||
       pointsToCanonicalUnlockField(fromPointer)

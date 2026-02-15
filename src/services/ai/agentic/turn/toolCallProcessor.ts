@@ -62,6 +62,47 @@ export function validateToolArgs(
   const validationResult = strictSchema.safeParse(args);
 
   if (validationResult.success) {
+    if (name === "vfs_commit_soul") {
+      const parsed = validationResult.data as {
+        currentSoul?: unknown;
+        globalSoul?: unknown;
+      };
+      const hasCurrentSoul =
+        typeof parsed.currentSoul === "string" &&
+        parsed.currentSoul.trim().length > 0;
+      const hasGlobalSoul =
+        typeof parsed.globalSoul === "string" &&
+        parsed.globalSoul.trim().length > 0;
+      if (!hasCurrentSoul && !hasGlobalSoul) {
+        return {
+          valid: false,
+          error: createError(
+            `[VALIDATION_ERROR] Invalid parameters for "vfs_commit_soul".\n\nMissing required fields:\n- at least one of currentSoul/globalSoul (non-empty string)\n\nPlease refer to the schema:\n${getToolInfo(toolDef as any)}\n\nTool docs:\n- \`current/refs/tools/vfs_commit_soul.md\`\n- \`current/refs/tools/README.md\``,
+            "INVALID_PARAMS",
+            {
+              category: "validation",
+              tool: name,
+              issues: [
+                {
+                  path: "(root)",
+                  code: "MISSING_ONE_OF",
+                  message:
+                    "At least one of currentSoul/globalSoul must be a non-empty string.",
+                },
+              ],
+              recovery: [
+                'Call "vfs_commit_soul" with currentSoul and/or globalSoul.',
+                "Open `current/refs/tools/vfs_commit_soul.md` for examples.",
+              ],
+              refs: [
+                "current/refs/tools/vfs_commit_soul.md",
+                "current/refs/tools/README.md",
+              ],
+            },
+          ),
+        };
+      }
+    }
     return { valid: true };
   }
 

@@ -378,7 +378,7 @@ describe("vfsMutationGuard", () => {
       const session = new VfsSession();
       const resolved = resolveWriteContentType(session, "world/mystery", null);
       expect(resolved.ok).toBe(false);
-      if (!resolved.ok) {
+      if (resolved.ok === false) {
         expect(resolved.error.code).toBe("INVALID_DATA");
         expect(resolved.error.error).toContain("Unable to infer contentType");
       }

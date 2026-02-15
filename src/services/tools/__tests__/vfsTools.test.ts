@@ -153,7 +153,7 @@ describe("VFS tools", () => {
 
   it("accepts optional target fields in vfs_commit_soul schema", () => {
     const empty = VFS_COMMIT_SOUL_TOOL.parameters.safeParse({});
-    expect(empty.success).toBe(false);
+    expect(empty.success).toBe(true);
 
     const currentOnly = VFS_COMMIT_SOUL_TOOL.parameters.safeParse({
       currentSoul: "# Player Soul (This Save)\n",

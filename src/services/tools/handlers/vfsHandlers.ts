@@ -1826,7 +1826,7 @@ registerToolHandlerWithStructuredErrors(
             resolved.path,
             op.contentType ?? null,
           );
-          if (!resolvedContentType.ok) {
+          if (resolvedContentType.ok === false) {
             return withBatchError(
               resolvedContentType.error,
               opIndex,

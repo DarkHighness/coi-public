@@ -583,18 +583,7 @@ export const VFS_COMMIT_SOUL_TOOL = defineTool({
           "Optional markdown content for global soul mirror (`current/world/global/soul.md`).",
         ),
     })
-    .strict()
-    .refine(
-      (value) =>
-        (typeof value.currentSoul === "string" &&
-          value.currentSoul.trim().length > 0) ||
-        (typeof value.globalSoul === "string" &&
-          value.globalSoul.trim().length > 0),
-      {
-        message:
-          "At least one of currentSoul or globalSoul must be a non-empty string.",
-      },
-    ),
+    .strict(),
 });
 
 const summaryVisibleToolSchema = z

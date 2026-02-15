@@ -166,4 +166,19 @@ describe("toolCallProcessor", () => {
       expect.any(Object),
     );
   });
+
+  it("rejects empty vfs_commit_soul payload during validation", () => {
+    handlerMocks.hasHandler.mockReturnValue(true);
+
+    const result = executeGenericTool(
+      "vfs_commit_soul",
+      {},
+      createContext() as any,
+    ) as { success?: boolean; code?: string; error?: string };
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_PARAMS");
+    expect(result.error).toContain("currentSoul/globalSoul");
+    expect(handlerMocks.dispatchToolCall).not.toHaveBeenCalled();
+  });
 });
