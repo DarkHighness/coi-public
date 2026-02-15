@@ -9,6 +9,7 @@ import React from "react";
 import { GameState, RelationEdge } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { resolveLocationDisplayName } from "../../utils/entityDisplay";
 import { Section, InfoRow, EmptyState, HiddenContent } from "./helpers";
 
 interface NpcsTabProps {
@@ -84,6 +85,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                   r?.to?.kind === "character" &&
                   r?.to?.id === npc.id,
               ) as any;
+              const npcCurrentLocationDisplay = npc.currentLocation
+                ? resolveLocationDisplayName(npc.currentLocation, gameState)
+                : "";
 
               return (
                 <div
@@ -121,10 +125,10 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                   )}
 
                   <div className="mt-3 space-y-2 text-sm">
-                    {npc.currentLocation && (
+                    {npcCurrentLocationDisplay && (
                       <InfoRow
                         label={t("gameViewer.currentLocation") || "Location"}
-                        value={npc.currentLocation}
+                        value={npcCurrentLocationDisplay}
                       />
                     )}
 

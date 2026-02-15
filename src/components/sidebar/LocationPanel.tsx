@@ -6,6 +6,7 @@ import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { DetailedListModal } from "../DetailedListModal";
 import { useOptionalRuntimeContext } from "../../runtime/context";
+import { isSameEntityRef } from "../../utils/entityDisplay";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -560,7 +561,9 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     return locations.map((loc) => ({
       id: loc.id || loc.name, // Use ID, fallback to name for compatibility
       name: loc.name,
-      isCurrent: loc.id === currentLocation || loc.name === currentLocation,
+      isCurrent:
+        isSameEntityRef(loc.id, currentLocation) ||
+        loc.name === currentLocation,
       data: loc,
       itemsHere: locationItemsByLocationId?.[loc.id] ?? [],
     }));

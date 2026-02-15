@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  extractBracketDisplayName,
   resolveEntityDisplayName,
   resolveLocationDisplayName,
 } from "../entityDisplay";
@@ -45,6 +46,19 @@ describe("entity display resolver", () => {
     const state = buildState();
     expect(resolveLocationDisplayName("loc:unknown", state)).toBe(
       "loc:unknown",
+    );
+  });
+
+  it("uses bracket alias as direct display name", () => {
+    const state = buildState();
+    expect(resolveLocationDisplayName("[Shadow Alley]", state)).toBe(
+      "Shadow Alley",
+    );
+    expect(resolveEntityDisplayName("[Unknown Informant]", state)).toBe(
+      "Unknown Informant",
+    );
+    expect(extractBracketDisplayName("[  Hidden Wharf  ]")).toBe(
+      "Hidden Wharf",
     );
   });
 

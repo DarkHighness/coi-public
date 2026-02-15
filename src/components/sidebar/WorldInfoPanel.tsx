@@ -3,6 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Faction, StoryOutline, WorldInfo } from "../../types";
 import { MarkdownText } from "../render/MarkdownText";
 import { getValidIcon } from "../../utils/emojiValidator";
+import {
+  extractBracketDisplayName,
+  isSameEntityRef,
+} from "../../utils/entityDisplay";
 
 interface WorldInfoPanelProps {
   history?: string;
@@ -35,6 +39,23 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation();
+  const resolveFactionTarget = (target: unknown): string => {
+    if (typeof target !== "string") {
+      return "";
+    }
+    const raw = target.trim();
+    if (!raw) {
+      return "";
+    }
+    const specialDisplayName = extractBracketDisplayName(raw);
+    if (specialDisplayName) {
+      return specialDisplayName;
+    }
+    const matchedFaction = factions.find(
+      (faction) => isSameEntityRef(faction.id, raw) || faction.name === raw,
+    );
+    return matchedFaction?.name || raw;
+  };
 
   // Check if world info is unlocked (either via unlock mode or story progress)
   const isWorldSettingUnlocked =
@@ -347,7 +368,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                                       className="py-1 flex justify-between gap-2"
                                     >
                                       <span className="text-theme-text/80">
-                                        {rel.target}
+                                        {resolveFactionTarget(rel.target)}
                                       </span>
                                       <span className="text-theme-text/60">
                                         {rel.status}
@@ -435,7 +456,7 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
                                           className="py-1 flex justify-between gap-2"
                                         >
                                           <span className="text-theme-danger/80">
-                                            {rel.target}
+                                            {resolveFactionTarget(rel.target)}
                                           </span>
                                           <span className="text-theme-danger/70">
                                             {rel.status}

@@ -43,6 +43,9 @@ export const stateManagement: Atom<void> = defineAtom(
       * Actors are stored under \`current/world/characters/<charId>/profile.json\` with optional subfolders:
         - \`inventory/\`, \`skills/\`, \`conditions/\`, \`traits/\`
       * **currentLocation MUST be a location.id** and updated immediately when an actor moves.
+      * **Reference fields are ID-first**: \`currentLocation\`, \`knownBy[]\`, \`relations[].to.id\`, \`timeline[].involvedEntities[]\`, \`faction.visible.relations[].target\`, \`faction.hidden.relations[].target\`.
+      * **Special unresolved reference protocol**: if canonical ID is not available yet, you may use a bracket alias \`[Display Name]\` in the reference field.
+      * **Never mix ID+name in one field** (e.g., \`"loc_tavern (Silver Inn)"\`, \`"loc_tavern [Silver Inn]"\` are forbidden).
       * **Player psychology ban**: NEVER write player hidden monologue or inner motives. Do not invent player thoughts.
 
     - **Inventory (Actor-owned, NOT global)**:
@@ -82,6 +85,7 @@ export const stateManagement: Atom<void> = defineAtom(
 
     - **Relations (Dual Layer, STRICT)**:
       * Relationships are stored as directed edges in \`profile.relations[]\` (on the source actor).
+      * \`relations[].to.id\` MUST be canonical actor/placeholder ID; if unresolved this turn, use \`[Display Name]\` temporary alias.
       * **Player → NPC** MUST be \`kind="perception"\`: objective, evidence-based, NO affinity numbers.
       * **NPC → Player / NPC → NPC** MUST be \`kind="attitude"\`:
         - \`visible\`: ONLY observable surface signals and public stance (no numeric affinity).

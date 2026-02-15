@@ -7,6 +7,7 @@ import React from "react";
 import { GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
+import { isSameEntityRef } from "../../utils/entityDisplay";
 import {
   Section,
   InfoRow,
@@ -124,99 +125,104 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           <EmptyState message={t("gameViewer.noLocations")} />
         ) : (
           <div className="space-y-3">
-            {gameState.locations.map((loc, idx) => (
-              <div
-                key={loc.id || idx}
-                className={`p-4 rounded-none border ${
-                  loc.id === gameState.currentLocation
-                    ? "bg-theme-primary/10 border-theme-primary/50"
-                    : "bg-theme-bg border-theme-border/40"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-bold text-theme-primary text-base flex items-center gap-2">
-                    <span>{getValidIcon(loc.icon, "📍")}</span>
-                    {loc.name}
-                  </span>
-                  {loc.id === gameState.currentLocation && (
-                    <span className="text-xs px-2 py-0.5 bg-theme-primary/20 text-theme-primary rounded font-bold uppercase tracking-wider">
-                      {t("gameViewer.currentLabel")}
+            {gameState.locations.map((loc, idx) => {
+              const isCurrentLocation =
+                isSameEntityRef(loc.id, gameState.currentLocation) ||
+                loc.name === gameState.currentLocation;
+              return (
+                <div
+                  key={loc.id || idx}
+                  className={`p-4 rounded-none border ${
+                    isCurrentLocation
+                      ? "bg-theme-primary/10 border-theme-primary/50"
+                      : "bg-theme-bg border-theme-border/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-bold text-theme-primary text-base flex items-center gap-2">
+                      <span>{getValidIcon(loc.icon, "📍")}</span>
+                      {loc.name}
                     </span>
-                  )}
-                  {loc.isVisited && (
-                    <span className="text-xs text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
-                      ✓ {t("gameViewer.visited")}
-                    </span>
-                  )}
-                </div>
-                <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
-                  <MarkdownText content={loc.visible.description} />
-                </div>
-                {/* Visible Details */}
-                <div className="mt-2 space-y-2 text-sm">
-                  {/* Textual descriptions */}
-                  {loc.visible?.environment && (
-                    <div className="text-xs">
-                      <span className="uppercase tracking-wider text-theme-primary/80">
-                        {t("gameViewer.environment") || "Environment"}:
-                      </span>{" "}
-                      <span className="text-theme-text/90">
-                        {loc.visible.environment}
+                    {isCurrentLocation && (
+                      <span className="text-xs px-2 py-0.5 bg-theme-primary/20 text-theme-primary rounded font-bold uppercase tracking-wider">
+                        {t("gameViewer.currentLabel")}
                       </span>
-                    </div>
-                  )}
-                  {loc.visible?.ambience && (
-                    <div className="text-xs">
-                      <span className="uppercase tracking-wider text-theme-primary/80">
-                        {t("gameViewer.ambience") || "Ambience"}:
-                      </span>{" "}
-                      <span className="text-theme-text/90">
-                        {loc.visible.ambience}
+                    )}
+                    {loc.isVisited && (
+                      <span className="text-xs text-theme-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
+                        ✓ {t("gameViewer.visited")}
                       </span>
-                    </div>
-                  )}
-                  {loc.visible?.weather && (
-                    <div className="text-xs">
-                      <span className="uppercase tracking-wider text-theme-primary/80">
-                        {t("gameViewer.weather") || "Weather"}:
-                      </span>{" "}
-                      <span className="text-theme-text/90">
-                        {loc.visible.weather}
-                      </span>
-                    </div>
-                  )}
-                  {/* Atmosphere */}
-                  {loc.visible?.atmosphere && (
-                    <div className="mt-2">
-                      <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                        {t("gameViewer.atmosphere") || "Atmosphere"}
-                      </span>
-                      <div className="pl-2 border-l-2 border-theme-border/30 space-y-1">
-                        {loc.visible.atmosphere.weather && (
-                          <InfoRow
-                            label={t("gameViewer.weather") || "Weather"}
-                            value={t(
-                              `weatherNames.${loc.visible.atmosphere.weather}`,
-                              {
-                                defaultValue: loc.visible.atmosphere.weather,
-                              },
-                            )}
-                          />
-                        )}
-                        {loc.visible.atmosphere.ambience && (
-                          <InfoRow
-                            label={t("gameViewer.ambience") || "Ambience"}
-                            value={t(
-                              `ambienceNames.${loc.visible.atmosphere.ambience}`,
-                              {
-                                defaultValue: loc.visible.atmosphere.ambience,
-                              },
-                            )}
-                          />
-                        )}
+                    )}
+                  </div>
+                  <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
+                    <MarkdownText content={loc.visible.description} />
+                  </div>
+                  {/* Visible Details */}
+                  <div className="mt-2 space-y-2 text-sm">
+                    {/* Textual descriptions */}
+                    {loc.visible?.environment && (
+                      <div className="text-xs">
+                        <span className="uppercase tracking-wider text-theme-primary/80">
+                          {t("gameViewer.environment") || "Environment"}:
+                        </span>{" "}
+                        <span className="text-theme-text/90">
+                          {loc.visible.environment}
+                        </span>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {loc.visible?.ambience && (
+                      <div className="text-xs">
+                        <span className="uppercase tracking-wider text-theme-primary/80">
+                          {t("gameViewer.ambience") || "Ambience"}:
+                        </span>{" "}
+                        <span className="text-theme-text/90">
+                          {loc.visible.ambience}
+                        </span>
+                      </div>
+                    )}
+                    {loc.visible?.weather && (
+                      <div className="text-xs">
+                        <span className="uppercase tracking-wider text-theme-primary/80">
+                          {t("gameViewer.weather") || "Weather"}:
+                        </span>{" "}
+                        <span className="text-theme-text/90">
+                          {loc.visible.weather}
+                        </span>
+                      </div>
+                    )}
+                    {/* Atmosphere */}
+                    {loc.visible?.atmosphere && (
+                      <div className="mt-2">
+                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.atmosphere") || "Atmosphere"}
+                        </span>
+                        <div className="pl-2 border-l-2 border-theme-border/30 space-y-1">
+                          {loc.visible.atmosphere.weather && (
+                            <InfoRow
+                              label={t("gameViewer.weather") || "Weather"}
+                              value={t(
+                                `weatherNames.${loc.visible.atmosphere.weather}`,
+                                {
+                                  defaultValue: loc.visible.atmosphere.weather,
+                                },
+                              )}
+                            />
+                          )}
+                          {loc.visible.atmosphere.ambience && (
+                            <InfoRow
+                              label={t("gameViewer.ambience") || "Ambience"}
+                              value={t(
+                                `ambienceNames.${loc.visible.atmosphere.ambience}`,
+                                {
+                                  defaultValue:
+                                    loc.visible.atmosphere.ambience,
+                                },
+                              )}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                   {/* Sensory Details */}
                   {loc.visible?.sensory && (
@@ -306,62 +312,65 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       </div>
                     </div>
                   )}
+                  </div>
+                  {(loc.unlocked || gameState.unlockMode) && loc.hidden && (
+                    <HiddenContent
+                      t={t}
+                      content={
+                        <div className="space-y-2">
+                          {loc.hidden.fullDescription && (
+                            <MarkdownText content={loc.hidden.fullDescription} />
+                          )}
+                          {loc.hidden.dangers &&
+                            loc.hidden.dangers.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.dangers") || "Dangers"}:
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {loc.hidden.dangers.map((danger, i) => (
+                                    <li key={i}>{danger}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          {loc.hidden.hiddenFeatures &&
+                            loc.hidden.hiddenFeatures.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.hiddenFeatures")}:
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {loc.hidden.hiddenFeatures.map(
+                                    (feature, i) => (
+                                      <li key={i}>{feature}</li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+                          {loc.hidden.secrets &&
+                            loc.hidden.secrets.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.secrets")}:
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {loc.hidden.secrets.map((secret, i) => (
+                                    <li key={i}>
+                                      <MarkdownText content={secret} inline />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
+                      }
+                    />
+                  )}
                 </div>
-                {(loc.unlocked || gameState.unlockMode) && loc.hidden && (
-                  <HiddenContent
-                    t={t}
-                    content={
-                      <div className="space-y-2">
-                        {loc.hidden.fullDescription && (
-                          <MarkdownText content={loc.hidden.fullDescription} />
-                        )}
-                        {loc.hidden.dangers &&
-                          loc.hidden.dangers.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.dangers") || "Dangers"}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2">
-                                {loc.hidden.dangers.map((danger, i) => (
-                                  <li key={i}>{danger}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        {loc.hidden.hiddenFeatures &&
-                          loc.hidden.hiddenFeatures.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.hiddenFeatures")}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2">
-                                {loc.hidden.hiddenFeatures.map((feature, i) => (
-                                  <li key={i}>{feature}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        {loc.hidden.secrets &&
-                          loc.hidden.secrets.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.secrets")}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2">
-                                {loc.hidden.secrets.map((secret, i) => (
-                                  <li key={i}>
-                                    <MarkdownText content={secret} inline />
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                      </div>
-                    }
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Section>

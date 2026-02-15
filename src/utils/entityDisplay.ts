@@ -24,6 +24,7 @@ const ENTITY_PREFIXES = [
   "inv",
   "item",
 ] as const;
+const BRACKET_SPECIAL_NAME_PATTERN = /^\[(.+)\]$/;
 
 const normalizeText = (value: unknown): string | null => {
   if (typeof value === "string") {
@@ -36,10 +37,27 @@ const normalizeText = (value: unknown): string | null => {
   return null;
 };
 
+export const extractBracketDisplayName = (value: unknown): string | null => {
+  const normalized = normalizeText(value);
+  if (!normalized) {
+    return null;
+  }
+  const match = BRACKET_SPECIAL_NAME_PATTERN.exec(normalized);
+  if (!match) {
+    return null;
+  }
+  const label = match[1].trim();
+  return label.length > 0 ? label : null;
+};
+
 const normalizeEntityRef = (value: string): string => {
   const trimmed = value.trim();
   if (!trimmed) {
     return "";
+  }
+  const specialDisplayName = extractBracketDisplayName(trimmed);
+  if (specialDisplayName) {
+    return specialDisplayName.toLowerCase();
   }
 
   const lower = trimmed.toLowerCase();
@@ -86,6 +104,10 @@ export const resolveLocationDisplayName = (
   if (!raw) {
     return "";
   }
+  const specialDisplayName = extractBracketDisplayName(raw);
+  if (specialDisplayName) {
+    return specialDisplayName;
+  }
 
   const locationMatch = (gameState.locations || []).find(
     (loc) => isSameEntityRef(loc.id, raw) || loc.name === raw,
@@ -104,6 +126,10 @@ export const resolveEntityDisplayName = (
   const raw = normalizeText(ref);
   if (!raw) {
     return "";
+  }
+  const specialDisplayName = extractBracketDisplayName(raw);
+  if (specialDisplayName) {
+    return specialDisplayName;
   }
 
   const playerId = gameState.playerActorId || "char:player";

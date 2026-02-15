@@ -19,6 +19,20 @@ const idUsage = `
     ✅ VFS file edits: \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/characters/char:marcus/profile.json", patch: [...] }] })\`
     ✅ Entity \`currentLocation\` field (references location ID): \`{ currentLocation: "loc_tavern" }\`
     ✅ Timeline \`involvedEntities\` arrays (entity references): \`["char:player", "char:marcus", "loc_tavern"]\`
+    ✅ Relationship references: \`relation.to.id\`, \`knownBy[]\` (actor IDs only)
+    ✅ Faction relation targets: \`faction.visible.relations[].target\` / \`faction.hidden.relations[].target\` (faction ID only)
+
+    **REFERENCE FIELD FORMAT (STRICT)**:
+    - Reference fields MUST contain EITHER:
+      1) ONE canonical ID string, OR
+      2) ONE bracket alias in the form \`[Display Name]\` when canonical ID does not exist yet.
+    - \`[Display Name]\` is a special temporary name protocol for UI fallback display.
+    - Never return plain display names (without brackets) in reference fields.
+    - Never return mixed forms such as:
+      * \`"loc_tavern (Silver Inn)"\`
+      * \`"char:marcus|Marcus"\`
+      * \`"Silver Inn"\` in an ID field
+      * \`"loc_tavern [Silver Inn]"\` (ID + bracket alias together)
 
     **WHERE IDs MUST NEVER APPEAR**:
     ❌ \`narrative\` field: "You see npc_marcus approaching..." → WRONG!

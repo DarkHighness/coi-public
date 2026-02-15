@@ -898,7 +898,11 @@ export const factionMemberSchema = z.object({
 
 /** 阵营关系 */
 export const factionRelationSchema = z.object({
-  target: z.string().describe("Target faction name."),
+  target: z
+    .string()
+    .describe(
+      "Target faction ID (faction.id). If unresolved, temporary bracket alias [Faction Name] is allowed.",
+    ),
   status: z.string().describe("NPC status."),
 });
 
@@ -1171,7 +1175,11 @@ export const actorKindSchema = z.enum(["player", "npc"]);
 
 export const entityRefSchema = z.object({
   kind: z.enum(["character", "placeholder"]).describe("Reference target kind."),
-  id: z.string().describe("Target ID."),
+  id: z
+    .string()
+    .describe(
+      "Target ID. If canonical ID is unknown this turn, use temporary bracket alias [Display Name].",
+    ),
 });
 
 const relationBaseSchema = z.object({
@@ -1369,7 +1377,11 @@ export const actorProfileSchema = z.object({
       "REQUIRED. Unique actor ID. Player must be 'char:player'. NPC IDs should be stable.",
     ),
   kind: actorKindSchema.describe("Actor kind: player or npc."),
-  currentLocation: z.string().describe("Current location ID."),
+  currentLocation: z
+    .string()
+    .describe(
+      "Current location ID. If unresolved, temporary bracket alias [Location Name] is allowed.",
+    ),
   knownBy: knownBySchema.describe(
     "Existence visibility: which actors know this character exists.",
   ),
@@ -1471,7 +1483,9 @@ export const characterProfileSchema = z.object({
   currentLocation: z
     .string()
     .nullish()
-    .describe("The protagonist's current location name."),
+    .describe(
+      "The protagonist's current location ID (location.id). If unresolved, temporary bracket alias [Location Name] is allowed.",
+    ),
 });
 
 /** 完整角色状态 Schema */
@@ -1509,7 +1523,9 @@ export const characterStatusSchema = z.object({
     .describe("Psychological depth profile."),
   currentLocation: z
     .string()
-    .describe("The protagonist's current location name."),
+    .describe(
+      "The protagonist's current location ID (location.id). If unresolved, temporary bracket alias [Location Name] is allowed.",
+    ),
 });
 
 // ============================================================================
@@ -2199,7 +2215,12 @@ export const gameResponseSchema = z.object({
           .describe(
             "Existence visibility: which actors know this actor exists.",
           ),
-        currentLocation: z.string().nullish().describe("Current location ID."),
+        currentLocation: z
+          .string()
+          .nullish()
+          .describe(
+            "Current location ID. If unresolved, temporary bracket alias [Location Name] is allowed.",
+          ),
         visible: actorVisibleSchema.partial().nullish(),
         hidden: actorHiddenSchema.partial().nullish(),
         relations: z.array(relationEdgeSchema).nullish(),

@@ -13,6 +13,7 @@ import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
+import { resolveLocationDisplayName } from "../../utils/entityDisplay";
 
 interface NpcPanelProps {
   npcs: NPC[];
@@ -105,9 +106,15 @@ const NpcItem: React.FC<NpcItemProps> = ({
   };
 
   const getLocationName = (locId?: string) => {
-    if (!locId || locId === "unknown") return t("unknown") || "Unknown";
-    const loc = locations?.find((l) => l.id === locId || l.name === locId);
-    return loc ? loc.name : locId;
+    const normalized = typeof locId === "string" ? locId.trim() : "";
+    if (!normalized || normalized.toLowerCase() === "unknown") {
+      return t("unknown") || "Unknown";
+    }
+    return (
+      resolveLocationDisplayName(normalized, {
+        locations: locations || [],
+      }) || normalized
+    );
   };
 
   const attitude = (
