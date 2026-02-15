@@ -106,4 +106,52 @@ describe("mergeDerivedViewState", () => {
     expect(merged.isProcessing).toBe(false);
     expect(merged.outline?.title).toBe("New");
   });
+
+  it("preserves playerRate metadata when derived nodes omit it", () => {
+    const base = makeState({
+      nodes: {
+        "model-fork-0/turn-1": {
+          id: "model-fork-0/turn-1",
+          parentId: null,
+          text: "Base",
+          choices: [],
+          imagePrompt: "",
+          role: "model",
+          timestamp: 1,
+          segmentIdx: 0,
+          ending: "continue",
+          playerRate: {
+            vote: "up",
+            createdAt: 100,
+            processedAt: 200,
+          },
+        } as any,
+      },
+      activeNodeId: "model-fork-0/turn-1",
+    });
+
+    const derived = makeState({
+      nodes: {
+        "model-fork-0/turn-1": {
+          id: "model-fork-0/turn-1",
+          parentId: null,
+          text: "Derived",
+          choices: [],
+          imagePrompt: "",
+          role: "model",
+          timestamp: 2,
+          segmentIdx: 0,
+          ending: "continue",
+        } as any,
+      },
+      activeNodeId: "model-fork-0/turn-1",
+    });
+
+    const merged = mergeDerivedViewState(base, derived);
+    expect(merged.nodes["model-fork-0/turn-1"]?.playerRate).toEqual({
+      vote: "up",
+      createdAt: 100,
+      processedAt: 200,
+    });
+  });
 });

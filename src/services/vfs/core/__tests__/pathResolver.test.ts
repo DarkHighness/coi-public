@@ -64,6 +64,11 @@ describe("pathResolver", () => {
         activeForkId: 4,
       }),
     ).toBe("forks/4/story/conversation/session.jsonl");
+    expect(
+      toCanonicalVfsPath("current/world/global/soul.md", {
+        activeForkId: 4,
+      }),
+    ).toBe("shared/config/runtime/soul.md");
   });
 
   it("keeps non-active fork world files canonical unless loose mode", () => {
@@ -88,5 +93,10 @@ describe("pathResolver", () => {
         activeForkId: 1,
       }),
     ).toBe("current/summary/state.json");
+    expect(
+      toCurrentDisplayPath("shared/config/runtime/soul.md", {
+        activeForkId: 1,
+      }),
+    ).toBe("current/world/global/soul.md");
   });
 });

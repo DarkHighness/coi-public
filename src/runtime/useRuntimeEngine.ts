@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { StorySegment } from "../types";
+import { PlayerRateInput, StorySegment } from "../types";
 import { useGameState } from "../hooks/useGameState";
 import { useVfsPersistence } from "../hooks/useVfsPersistence";
 import { useSettings } from "../hooks/useSettings";
@@ -17,6 +17,7 @@ import { createCommandActions } from "./effects/commandActions";
 import { useImageGenerationQueue } from "./effects/imageGeneration";
 import { createDomainUiActions } from "./effects/domainUiActions";
 import { createLifecycleActions } from "./effects/lifecycleOrchestration";
+import { reconcileGlobalSoulWithSettingsOnLoad } from "../services/vfs/soulSync";
 
 export const useRuntimeEngine = () => {
   const { gameState, setGameState, resetState } = useGameState();
@@ -227,6 +228,21 @@ export const useRuntimeEngine = () => {
   const startNewGame = lifecycleActions.startNewGame;
   const resumeOutlineGeneration = lifecycleActions.resumeOutlineGeneration;
 
+  const loadSlotWithSoulSync = useCallback(
+    async (id: string) => {
+      const result = await loadSlot(id);
+      if (result?.success) {
+        reconcileGlobalSoulWithSettingsOnLoad({
+          vfsSession,
+          settings: aiSettings,
+          updateSettings: handleSaveSettings,
+        });
+      }
+      return result;
+    },
+    [aiSettings, handleSaveSettings, loadSlot, vfsSession],
+  );
+
   const commandActions = useMemo(
     () =>
       createCommandActions({
@@ -235,6 +251,7 @@ export const useRuntimeEngine = () => {
         currentSlotId,
         gameStateRef,
         setGameState,
+        handleSaveSettings,
         showToast,
         t,
         vfsSession,
@@ -247,6 +264,7 @@ export const useRuntimeEngine = () => {
       language,
       currentSlotId,
       setGameState,
+      handleSaveSettings,
       showToast,
       t,
       vfsSession,
@@ -311,6 +329,12 @@ export const useRuntimeEngine = () => {
     [commandActions],
   );
 
+  const handlePlayerRate = useCallback(
+    async (segmentId: string, rate: PlayerRateInput) =>
+      commandActions.handlePlayerRate(segmentId, rate),
+    [commandActions],
+  );
+
   const domainMutations = useMemo(
     () =>
       createDomainMutationActions({
@@ -336,6 +360,7 @@ export const useRuntimeEngine = () => {
     magicMirrorImage,
     setMagicMirrorImage,
     handleForceUpdate,
+    handlePlayerRate,
     cleanupEntities: handleCleanupEntities,
     isVeoScriptOpen,
     setIsVeoScriptOpen,
@@ -346,7 +371,7 @@ export const useRuntimeEngine = () => {
     currentHistory,
     saveSlots,
     renameSlot,
-    loadSlot,
+    loadSlot: loadSlotWithSoulSync,
     deleteSlot,
     currentSlotId,
     themeMode,

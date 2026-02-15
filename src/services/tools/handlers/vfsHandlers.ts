@@ -48,6 +48,7 @@ import {
 import {
   buildTurnId,
   type ConversationIndex,
+  type TurnFile,
   readConversationIndex,
   readTurnFile,
   writeConversationIndex,
@@ -2423,6 +2424,11 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
             ? order[order.length - 1]
             : null;
 
+      const normalizedMeta =
+        typedArgs.meta && typeof typedArgs.meta === "object"
+          ? (typedArgs.meta as TurnFile["meta"])
+          : undefined;
+
       writeTurnFile(
         draft,
         forkId,
@@ -2442,6 +2448,7 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
             ending?: string;
             forceEnd?: boolean;
           },
+          meta: normalizedMeta,
         },
         { operation: "finish_commit" },
       );

@@ -21,6 +21,10 @@ const messageProtocol = `
   Treat as controlled elevated write intent: can force lore updates, but still must respect immutable zones and finish protocol guards.
   Example: \`[SUDO] Give the player 1000 gold.\`
 
+  **[Player Rate]** — Player feedback on this turn output
+  Treat as feedback ingestion for soul updates. Do NOT treat it as a protagonist action or advance story events.
+  Example: \`[Player Rate] {"turnId":"fork-0/turn-12","vote":"down","preset":"AI flavor too strong"}\`
+
   **[CONTEXT: ...]** — Background information
   For your reference only. Do NOT narrate a reaction to context labels.
 
@@ -32,9 +36,10 @@ const messageProtocol = `
 
   **Processing Priority**:
   1. Look for [PLAYER_ACTION] to determine what to simulate
-  2. Use [CONTEXT] and [SYSTEM] for background
-  3. Handle [ERROR] before finishing turn
-  4. Execute [SUDO] as elevated update (immutable/finish guards still apply)
+  2. Handle [Player Rate] by updating soul files (no visible story progression)
+  3. Use [CONTEXT] and [SYSTEM] for background
+  4. Handle [ERROR] before finishing turn
+  5. Execute [SUDO] as elevated update (immutable/finish guards still apply)
 </message_protocol>
 `;
 
@@ -130,7 +135,7 @@ export const protocolsPrimer: Atom<void> = defineAtom(
   },
   () => `
 <protocols>
-  MESSAGES: [PLAYER_ACTION] = simulate, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
+  MESSAGES: [PLAYER_ACTION] = simulate, [Player Rate] = update soul only, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
   TOOLS: Every turn MUST call tools. Query before create. Handle errors.
   TWO "YOU": In rules = AI. In narrative = protagonist.
 </protocols>

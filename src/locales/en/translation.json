@@ -696,7 +696,19 @@
       "disablePlayerProfilingHelp": "When enabled, AI will not record/use cross-save player psychology data.",
       "resetPlayerProfile": "Reset Player Profile",
       "resetPlayerProfileHelp": "Clear all recorded cross-save player psychology data.",
-      "resetPlayerProfileButton": "Reset"
+      "resetPlayerProfileButton": "Reset",
+      "soul": {
+        "title": "Player Soul (VFS)",
+        "description": "Review AI-maintained soul markdown for global and current save scopes.",
+        "globalTitle": "Global Soul",
+        "globalHelp": "Cross-save source from settings and VFS mirror.",
+        "globalMirrorMismatch": "Settings source and VFS mirror differ. Latest mirror content is shown here.",
+        "resetGlobal": "Reset Global Soul",
+        "currentTitle": "Current Save Soul",
+        "currentHelp": "Per-save soul markdown in current/world/soul.md.",
+        "currentUnavailable": "Current save soul unavailable.",
+        "resetCurrent": "Reset Current Save Soul"
+      }
     }
   },
   "tutorial": {
@@ -765,6 +777,32 @@
     }
   },
   "narrator": "Narrator",
+  "rating": {
+    "like": "Like",
+    "dislike": "Dislike",
+    "review": "Review",
+    "openReview": "Open review dialog",
+    "dialogTitle": "Rate This Turn",
+    "dialogHint": "Long press from thumbs or click this review entry to leave detailed feedback.",
+    "commentPlaceholder": "Optional details for this turn...",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "processingBlocked": "Cannot submit rating while another action is in progress.",
+    "invalidTarget": "Ratings can only be attached to AI model turns.",
+    "invalidVote": "Invalid rating vote.",
+    "turnNotFound": "Could not find turn metadata for this segment.",
+    "status": {
+      "up": "Liked",
+      "down": "Disliked",
+      "processed": "Processed"
+    },
+    "presets": {
+      "aiFlavorHeavy": "AI flavor too strong",
+      "tooVerbose": "Too verbose",
+      "goodPacing": "Good pacing",
+      "inCharacter": "In-character"
+    }
+  },
   "you": "You",
   "modes": {
     "day": "Day",

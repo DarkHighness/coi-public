@@ -24,6 +24,11 @@ import {
   toCustomRulePackPath,
 } from "./customRules";
 import { ensureDirectoryScaffolds } from "./directoryScaffolds";
+import {
+  CURRENT_SOUL_LOGICAL_PATH,
+  GLOBAL_SOUL_LOGICAL_PATH,
+  normalizeSoulMarkdown,
+} from "./soulTemplates";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
   session.writeFile(path, JSON.stringify(value), "application/json");
@@ -71,6 +76,24 @@ const ensureCustomRulesReadme = (session: VfsSession): void => {
       "text/markdown",
     );
   }
+};
+
+const writeSoulDocuments = (
+  session: VfsSession,
+  options?: {
+    currentProfile?: string;
+    globalProfile?: string;
+  },
+): void => {
+  const currentSoul = normalizeSoulMarkdown("current", options?.currentProfile, {
+    legacyProfile: options?.currentProfile,
+  });
+  const globalSoul = normalizeSoulMarkdown("global", options?.globalProfile, {
+    legacyProfile: options?.globalProfile,
+  });
+
+  session.writeFile(CURRENT_SOUL_LOGICAL_PATH, currentSoul, "text/markdown");
+  session.writeFile(GLOBAL_SOUL_LOGICAL_PATH, globalSoul, "text/markdown");
 };
 
 const ensureDirectoryStructure = (session: VfsSession): void => {
@@ -247,6 +270,10 @@ export const seedVfsSessionFromGameState = (
   ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
+  writeSoulDocuments(session, {
+    currentProfile: state.playerProfile,
+    globalProfile: state.playerProfile,
+  });
 
   writeJson(session, "world/global.json", {
     time: state.time,
@@ -301,12 +328,6 @@ export const seedVfsSessionFromGameState = (
 
   for (const actor of state.actors) {
     writeActorBundle(session, actor);
-  }
-
-  if (state.playerProfile) {
-    writeJson(session, "world/player_profile.json", {
-      profile: state.playerProfile,
-    });
   }
 
   const playerActorId = state.playerActorId || "char:player";
@@ -384,6 +405,7 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
   ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
+  writeSoulDocuments(session);
 
   writeJson(session, "world/global.json", {
     time: "Day 1, 08:00",
@@ -471,6 +493,7 @@ export const seedVfsSessionFromOutline = (
   ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
+  writeSoulDocuments(session);
 
   writeJson(session, "world/global.json", {
     time: options.time,

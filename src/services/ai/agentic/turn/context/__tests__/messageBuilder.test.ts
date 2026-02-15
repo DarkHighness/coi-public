@@ -147,5 +147,14 @@ describe("messageBuilder", () => {
     );
     expect(getText(sudo.userMessage)).toBe("[SUDO] reset world");
     expect(sudo.godModeContext).toContain("GOD MODE ACTIVE");
+
+    const rate = buildTurnMessages(
+      createGameState(),
+      "[Player Rate] {\"vote\":\"down\"}",
+      createSession(),
+    );
+    expect(getText(rate.userMessage)).toBe(
+      "[Player Rate] {\"vote\":\"down\"}",
+    );
   });
 });

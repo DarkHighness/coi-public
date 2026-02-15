@@ -1,17 +1,79 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "../../hooks/useSettings";
+import { useOptionalRuntimeContext } from "../../runtime/context";
+import { deriveGameStateFromVfs } from "../../services/vfs/derivations";
+import type { VfsSession } from "../../services/vfs/vfsSession";
+import {
+  buildSoulMarkdown,
+  CURRENT_SOUL_LOGICAL_PATH,
+  GLOBAL_SOUL_CANONICAL_PATH,
+  GLOBAL_SOUL_LOGICAL_PATH,
+  normalizeSoulMarkdown,
+} from "../../services/vfs/soulTemplates";
+
+const readGlobalSoulMirror = (
+  snapshot: ReturnType<VfsSession["snapshot"]>,
+): string | null => {
+  const candidates = [
+    GLOBAL_SOUL_CANONICAL_PATH,
+    GLOBAL_SOUL_LOGICAL_PATH,
+    `current/${GLOBAL_SOUL_LOGICAL_PATH}`,
+  ];
+
+  for (const path of candidates) {
+    const file = snapshot[path];
+    if (!file) continue;
+    if (
+      file.contentType === "text/markdown" ||
+      file.contentType === "text/plain"
+    ) {
+      return normalizeSoulMarkdown("global", file.content);
+    }
+  }
+
+  return null;
+};
 
 export const SettingsExtra: React.FC = () => {
   const { t } = useTranslation();
   const { settings: currentSettings, updateSettings: onUpdateSettings } =
     useSettings();
+  const runtimeContext = useOptionalRuntimeContext();
   const extra = currentSettings.extra || {};
   const customInstructionRaw = extra.customInstruction || "";
   const customInstructionTrimmed =
     typeof customInstructionRaw === "string" ? customInstructionRaw.trim() : "";
   const customInstructionEnabled =
     extra.customInstructionEnabled ?? Boolean(customInstructionTrimmed);
+  const runtimeRevision = runtimeContext?.state.runtimeRevision;
+  const vfsSession = runtimeContext?.state.vfsSession;
+  const runtimeGameState = runtimeContext?.state.gameState;
+  const currentSlotId = runtimeContext?.state.currentSlotId ?? null;
+  const hasActiveSave = Boolean(currentSlotId);
+  const applyVfsDerivedState = runtimeContext?.actions.applyVfsDerivedState;
+  const triggerRuntimeSave = runtimeContext?.actions.triggerSave;
+
+  const globalSoulSource = React.useMemo(
+    () => normalizeSoulMarkdown("global", currentSettings.playerProfile),
+    [currentSettings.playerProfile],
+  );
+
+  const globalSoulMirror = React.useMemo(() => {
+    if (!vfsSession) {
+      return null;
+    }
+    return readGlobalSoulMirror(vfsSession.snapshot());
+  }, [vfsSession, runtimeRevision]);
+
+  const globalSoulDisplay = globalSoulMirror ?? globalSoulSource;
+
+  const currentSoulDisplay = React.useMemo(() => {
+    if (!hasActiveSave) {
+      return "";
+    }
+    return normalizeSoulMarkdown("current", runtimeGameState?.playerProfile);
+  }, [hasActiveSave, runtimeGameState?.playerProfile]);
 
   const updateExtra = (field: string, value: any) => {
     onUpdateSettings({
@@ -21,6 +83,34 @@ export const SettingsExtra: React.FC = () => {
         [field]: value,
       },
     });
+  };
+
+  const handleResetGlobalSoul = () => {
+    const resetSoul = buildSoulMarkdown("global");
+    onUpdateSettings({
+      ...currentSettings,
+      playerProfile: resetSoul,
+    });
+
+    if (!vfsSession) {
+      return;
+    }
+
+    vfsSession.writeFile(GLOBAL_SOUL_LOGICAL_PATH, resetSoul, "text/markdown");
+    triggerRuntimeSave?.();
+  };
+
+  const handleResetCurrentSoul = () => {
+    if (!vfsSession || !hasActiveSave) {
+      return;
+    }
+
+    const resetSoul = buildSoulMarkdown("current");
+    vfsSession.writeFile(CURRENT_SOUL_LOGICAL_PATH, resetSoul, "text/markdown");
+
+    const derived = deriveGameStateFromVfs(vfsSession.snapshot());
+    applyVfsDerivedState?.(derived, "settings.extra.resetCurrentSoul");
+    triggerRuntimeSave?.();
   };
 
   return (
@@ -148,28 +238,87 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
-        {/* Reset Player Profile Button */}
-        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
+        {/* Soul Documents */}
+        <div className="py-4 border-b border-theme-border/25 space-y-4">
           <div>
             <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.resetPlayerProfile") || "Reset Player Profile"}
+              {t("settings.extra.soul.title") || "Player Soul (VFS)"}
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
-              {t("settings.extra.resetPlayerProfileHelp") ||
-                "Clear all recorded cross-save player psychology data."}
+              {t("settings.extra.soul.description") ||
+                "Review AI-maintained soul markdown for global and current save scopes."}
             </div>
           </div>
-          <button
-            onClick={() => {
-              onUpdateSettings({
-                ...currentSettings,
-                playerProfile: undefined,
-              });
-            }}
-            className="px-3 py-1.5 text-xs font-bold bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors"
-          >
-            {t("settings.extra.resetPlayerProfileButton") || "Reset"}
-          </button>
+
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+                  {t("settings.extra.soul.globalTitle") || "Global Soul"}
+                </div>
+                <div className="text-[10px] text-theme-muted mt-1">
+                  {t("settings.extra.soul.globalHelp") ||
+                    "Cross-save source from settings and VFS mirror."}
+                </div>
+              </div>
+              <button
+                onClick={handleResetGlobalSoul}
+                className="px-3 py-1.5 text-xs font-bold bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border border-theme-border rounded transition-colors"
+              >
+                {t("settings.extra.soul.resetGlobal") || "Reset Global Soul"}
+              </button>
+            </div>
+            <textarea
+              readOnly
+              value={globalSoulDisplay}
+              className="w-full h-32 p-2 text-xs bg-theme-surface border border-theme-border rounded resize-none text-theme-text"
+            />
+            {globalSoulMirror && globalSoulMirror !== globalSoulSource && (
+              <div className="text-[10px] text-theme-warning">
+                {t("settings.extra.soul.globalMirrorMismatch") ||
+                  "Settings source and VFS mirror differ. Latest mirror content is shown here."}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+                  {t("settings.extra.soul.currentTitle") ||
+                    "Current Save Soul"}
+                </div>
+                <div className="text-[10px] text-theme-muted mt-1">
+                  {t("settings.extra.soul.currentHelp") ||
+                    "Per-save soul markdown in current/world/soul.md."}
+                </div>
+              </div>
+              <button
+                onClick={handleResetCurrentSoul}
+                disabled={!hasActiveSave}
+                className={`px-3 py-1.5 text-xs font-bold border rounded transition-colors ${
+                  hasActiveSave
+                    ? "bg-theme-surface-highlight hover:bg-theme-primary hover:text-theme-bg border-theme-border"
+                    : "bg-theme-surface border-theme-border/40 text-theme-muted cursor-not-allowed"
+                }`}
+              >
+                {t("settings.extra.soul.resetCurrent") ||
+                  "Reset Current Save Soul"}
+              </button>
+            </div>
+            {hasActiveSave ? (
+              <textarea
+                readOnly
+                value={currentSoulDisplay}
+                className="w-full h-32 p-2 text-xs bg-theme-surface border border-theme-border rounded resize-none text-theme-text"
+              />
+            ) : (
+              <div className="text-[10px] text-theme-muted italic">
+                {t("settings.extra.soul.currentUnavailable") ||
+                  "Current save soul unavailable."}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Gender Preference */}

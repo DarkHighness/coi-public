@@ -7,7 +7,13 @@ import React, {
   useCallback,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { GameState, FeedLayout, StorySegment, AISettings } from "../types";
+import {
+  GameState,
+  FeedLayout,
+  StorySegment,
+  AISettings,
+  PlayerRateInput,
+} from "../types";
 import { StoryCard } from "./StoryCard";
 import { FeedHeader } from "./feed/FeedHeader";
 import { StackControls } from "./feed/StackControls";
@@ -44,6 +50,7 @@ interface StoryFeedProps {
   onAudioGenerated?: (id: string, key: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
   onImageDelete?: (id: string) => void;
+  onRate?: (id: string, rate: PlayerRateInput) => void;
   sidebarCollapsed?: boolean;
   timelineCollapsed?: boolean;
 }
@@ -65,6 +72,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       onAudioGenerated,
       onImageUpload,
       onImageDelete,
+      onRate,
       sidebarCollapsed = false,
       timelineCollapsed = false,
     },
@@ -774,6 +782,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                           onAudioGenerated={onAudioGenerated}
                           onImageUpload={onImageUpload}
                           onImageDelete={onImageDelete}
+                          onRate={onRate}
                           gameState={gameState}
                           saveId={saveId}
                           hasFailed={failedImageNodes?.has(segment.id)}
@@ -852,6 +861,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                           onAudioGenerated={onAudioGenerated}
                           onImageUpload={onImageUpload}
                           onImageDelete={onImageDelete}
+                          onRate={onRate}
                           gameState={gameState}
                           saveId={saveId}
                           hasFailed={failedImageNodes?.has(introSegment.id)}
@@ -956,6 +966,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
                               onAudioGenerated={onAudioGenerated}
                               onImageUpload={onImageUpload}
                               onImageDelete={onImageDelete}
+                              onRate={onRate}
                               gameState={gameState}
                               saveId={saveId}
                               hasFailed={failedImageNodes?.has(segment.id)}

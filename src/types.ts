@@ -380,8 +380,8 @@ export interface GameState {
   // Custom Rules for per-save prompt customization
   customRules?: CustomRule[];
 
-  // Player Psychology System - per-save player portrait
-  // Records how the player is approaching THIS specific story
+  // Player Psychology System - per-save soul markdown content
+  // Records how the player is approaching THIS specific story (current/world/soul.md)
   playerProfile?: string;
 
   // Narrative Scale - AI's creative decision about story scope
@@ -640,6 +640,20 @@ export interface Choice {
   consequence?: string;
 }
 
+export interface PlayerRate {
+  vote: "up" | "down";
+  preset?: string;
+  comment?: string;
+  createdAt: number;
+  processedAt?: number;
+}
+
+export interface PlayerRateInput {
+  vote: PlayerRate["vote"];
+  preset?: string;
+  comment?: string;
+}
+
 export interface StorySegment {
   id: string;
   parentId: string | null; // Pointer to parent for Tree Structure
@@ -672,6 +686,7 @@ export interface StorySegment {
   // Game Ending
   ending: EndingType; // Story continuation status - "continue" means story continues normally
   forceEnd?: boolean; // If true, game ends permanently (no continue); if false/undefined, player can continue
+  playerRate?: PlayerRate; // Player thumbs up/down rating and optional review for this model turn
 }
 
 // Game Ending Types
@@ -1281,8 +1296,8 @@ export interface AISettings {
     autoCompactThreshold?: number;
   };
 
-  // Player Psychology System - cross-save player portrait
-  // Records the meta-player's personality patterns across all saves
+  // Player Psychology System - cross-save global soul content
+  // Source of truth across all saves (mirrored to current/world/global/soul.md)
   playerProfile?: string;
 }
 

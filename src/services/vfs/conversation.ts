@@ -5,7 +5,7 @@ import {
   canonicalToLogicalVfsPath,
   toCanonicalVfsPath,
 } from "./core/pathResolver";
-import type { ForkTree, TokenUsage } from "@/types";
+import type { ForkTree, PlayerRate, TokenUsage } from "@/types";
 
 export interface ConversationIndex {
   activeForkId: number;
@@ -32,7 +32,10 @@ export interface TurnFile {
     usage?: TokenUsage;
   };
   media?: Record<string, unknown>;
-  meta?: Record<string, unknown>;
+  meta?: {
+    playerRate?: PlayerRate;
+    [key: string]: unknown;
+  };
 }
 
 const INDEX_PATH = "conversation/index.json";

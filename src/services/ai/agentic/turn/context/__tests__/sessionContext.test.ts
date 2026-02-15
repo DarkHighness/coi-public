@@ -107,6 +107,7 @@ describe("sessionContext", () => {
     const contextMessages = [createTextMessage("system", "seed")];
     const recentHistory = [
       { role: "user", text: "look around" },
+      { role: "user", text: "[Player Rate] {\"vote\":\"up\"}" },
       { role: "command", text: "grant access" },
       { role: "model", text: "response" },
     ] as any[];
@@ -176,6 +177,7 @@ describe("sessionContext", () => {
     expect(initializedHistory).toEqual(
       expect.arrayContaining([
         createTextMessage("user", "[PLAYER_ACTION] look around"),
+        createTextMessage("user", "[Player Rate] {\"vote\":\"up\"}"),
         createTextMessage("user", "[SUDO] grant access"),
         createTextMessage("assistant", "response"),
       ]),
@@ -303,9 +305,16 @@ describe("sessionContext", () => {
       {} as any,
     );
 
-    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(
-      1,
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(1);
+
+    handleRetryDetection(
+      "session-1",
+      [createTextMessage("user", "[Player Rate] {\"vote\":\"down\"}")],
+      "[Player Rate] {\"vote\":\"down\"}",
+      "openai",
+      {} as any,
     );
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(2);
 
     const unmatchedHistory = [
       createTextMessage("user", "[PLAYER_ACTION] inspect"),
@@ -318,9 +327,7 @@ describe("sessionContext", () => {
       {} as any,
     );
 
-    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(2);
     expect(untouched).toBe(unmatchedHistory);
   });
 

@@ -57,6 +57,10 @@ const mapLogicalToCanonical = (logicalPath: string, forkId: number): string => {
     return withSharedPrefix("config/runtime/custom_rules_ack_state.json");
   }
 
+  if (logical === "world/global/soul.md") {
+    return withSharedPrefix("config/runtime/soul.md");
+  }
+
   if (logical === "conversation/index.json") {
     return withSharedPrefix("narrative/conversation/index.json");
   }
@@ -128,6 +132,10 @@ const mapCanonicalToLogical = (
 
   if (canonical === "shared/config/runtime/custom_rules_ack_state.json") {
     return "world/runtime/custom_rules_ack_state.json";
+  }
+
+  if (canonical === "shared/config/runtime/soul.md") {
+    return "world/global/soul.md";
   }
 
   if (canonical === "shared/narrative/outline") {

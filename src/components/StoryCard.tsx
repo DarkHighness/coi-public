@@ -6,6 +6,7 @@ import {
   NPC,
   Location as GameLocation,
   GameState,
+  PlayerRateInput,
 } from "../types";
 import { getSceneImagePrompt } from "../services/prompts/index";
 import { useImageStorageContext } from "../contexts/ImageStorageContext";
@@ -45,6 +46,7 @@ export interface StoryCardProps {
   onGeneratePrompt?: (id: string) => void;
   onGenerateImageFull?: (id: string) => void;
   onGenerateCinematic?: (id: string) => void;
+  onRate?: (id: string, rate: PlayerRateInput) => void;
 }
 
 export const StoryCardComponent: React.FC<StoryCardProps> = ({
@@ -69,6 +71,7 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
   onGeneratePrompt,
   onGenerateImageFull,
   onGenerateCinematic,
+  onRate,
 }) => {
   const { t } = useTranslation();
   const { saveImage, deleteImage } = useImageStorageContext();
@@ -323,6 +326,8 @@ export const StoryCardComponent: React.FC<StoryCardProps> = ({
             onCopyPrompt={segment.imagePrompt ? handleCopyPrompt : undefined}
             onUpload={onImageUpload ? handleUploadClick : undefined}
             onFork={onFork}
+            playerRate={segment.playerRate}
+            onRate={onRate ? (rate) => onRate(segment.id, rate) : undefined}
           />
 
           {/* Ending Banner */}

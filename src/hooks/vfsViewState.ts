@@ -75,6 +75,7 @@ const mergeNodeExtras = (
     audioKey: derived.audioKey || base.audioKey,
     summarySnapshot: derived.summarySnapshot ?? base.summarySnapshot,
     usage: derived.usage ?? base.usage,
+    playerRate: derived.playerRate ?? base.playerRate,
     summaries: derived.summaries ?? base.summaries,
     summarizedIndex: derived.summarizedIndex ?? base.summarizedIndex,
     stateSnapshot: derived.stateSnapshot ?? base.stateSnapshot,

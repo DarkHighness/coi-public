@@ -33,11 +33,13 @@ const observationProtocol = `
 
 const updateTiming = `
   <update_timing>
-    **WHEN TO UPDATE** (write to \`current/world/player_profile.json\` using \`vfs_write\`):
+    **WHEN TO UPDATE** (write markdown to \`current/world/soul.md\` and \`current/world/global/soul.md\`):
 
     - **Frequent early**: First 10-20 turns, update after most significant choices
     - **Refine later**: Confirm patterns, note deviations, deepen understanding
-    - **File format**: \`{ "profile": "<your text>" }\`
+    - **Mandatory**: when input marker is \`[Player Rate]\`, update soul files in this turn
+    - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
+    - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Evidence Log / Guidance For AI)
     - **Always update when**:
       * Choice surprises you (contradicts established pattern)
       * Choice confirms pattern strongly (defining moment)
@@ -141,7 +143,7 @@ export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom(
     **Cross-Save**: ${csProfile}
     **This Story**: ${psProfile}
   </two_layer_system>
-  <protocol>Observe player choices (moral, risk, social). Update profile when choices reveal character.</protocol>
+  <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge.</protocol>
   <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>
 `;

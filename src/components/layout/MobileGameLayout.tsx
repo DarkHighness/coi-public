@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { FeedLayout, UIState, StorySegment } from "../../types";
+import { FeedLayout, UIState, StorySegment, PlayerRateInput } from "../../types";
 import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { StoryTimeline } from "../StoryTimeline";
 import { ActionPanel } from "../ActionPanel";
@@ -45,6 +45,7 @@ interface MobileGameLayoutProps {
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
   onImageDelete?: (id: string) => void;
+  onRate?: (id: string, rate: PlayerRateInput) => void;
 }
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
@@ -77,6 +78,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   onForceUpdate,
   onImageUpload,
   onImageDelete,
+  onRate,
 }) => {
   const { t } = useTranslation();
 
@@ -167,6 +169,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
           onAudioGenerated={onAudioGenerated}
           onImageUpload={onImageUpload}
           onImageDelete={onImageDelete}
+          onRate={onRate}
         />
 
         {/* Action Panel fixed at bottom of feed */}

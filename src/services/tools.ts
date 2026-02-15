@@ -541,6 +541,22 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
         })
         .strict()
         .describe("Assistant payload stored in the turn file."),
+      meta: z
+        .object({
+          playerRate: z
+            .object({
+              vote: z.enum(["up", "down"]),
+              preset: z.string().nullish(),
+              comment: z.string().nullish(),
+              createdAt: z.number().finite(),
+              processedAt: z.number().finite().nullish(),
+            })
+            .strict()
+            .nullish(),
+        })
+        .strict()
+        .nullish()
+        .describe("Optional turn metadata (e.g. player rating payload)."),
       retconAck: z
         .object({
           hash: z

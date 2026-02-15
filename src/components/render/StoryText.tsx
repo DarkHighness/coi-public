@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TypewriterText } from "../TypewriterText";
 import { useStoryAudio } from "../../hooks/useStoryAudio";
-import { AISettings } from "../../types";
+import { AISettings, PlayerRate, PlayerRateInput } from "../../types";
 import { StoryTextHeader } from "./StoryTextHeader";
 import { markdownComponents } from "../../utils/markdownComponents";
 import { MarkdownText } from "./MarkdownText";
@@ -23,6 +23,8 @@ interface StoryTextProps {
   onCopyPrompt?: () => string | Promise<string>;
   onUpload?: () => void;
   onFork?: () => void;
+  playerRate?: PlayerRate;
+  onRate?: (rate: PlayerRateInput) => void;
 }
 
 export const StoryText: React.FC<StoryTextProps> = ({
@@ -38,6 +40,8 @@ export const StoryText: React.FC<StoryTextProps> = ({
   onCopyPrompt,
   onUpload,
   onFork,
+  playerRate,
+  onRate,
 }) => {
   const { t } = useTranslation();
   const [warning, setWarning] = React.useState<string | null>(null);
@@ -86,6 +90,8 @@ export const StoryText: React.FC<StoryTextProps> = ({
             onCopyPrompt={onCopyPrompt}
             onUpload={onUpload}
             onFork={onFork}
+            playerRate={playerRate}
+            onRate={onRate}
             showOnHover={!isLast}
           />
         )}

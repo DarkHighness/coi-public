@@ -62,6 +62,11 @@ const buildColdStartSkillHintMessage = (): UnifiedMessage =>
     ].join("\n"),
   );
 
+const hasKnownUserMarker = (text: string): boolean =>
+  text.startsWith("[PLAYER_ACTION]") ||
+  text.startsWith("[SUDO]") ||
+  text.startsWith("[Player Rate]");
+
 const syncSessionHistoryMirror = (
   sessionId: string,
   vfsSession: VfsSession,
@@ -195,7 +200,7 @@ function hydrateSegments(segments: StorySegment[]): UnifiedMessage[] {
 
     let prefix = "";
     if (seg.role === "user") {
-      prefix = seg.text.startsWith("[PLAYER_ACTION]") ? "" : "[PLAYER_ACTION] ";
+      prefix = hasKnownUserMarker(seg.text) ? "" : "[PLAYER_ACTION] ";
     } else if (seg.role === "command") {
       prefix = seg.text.startsWith("[SUDO]") ? "" : "[SUDO] ";
     }
@@ -282,7 +287,7 @@ export function handleRetryDetection(
   const lastUserText =
     lastUserMsg.content.find((p) => p.type === "text")?.text || "";
 
-  const expectedMarkedAction = userAction.startsWith("[SUDO]")
+  const expectedMarkedAction = hasKnownUserMarker(userAction)
     ? userAction
     : `[PLAYER_ACTION] ${userAction}`;
 

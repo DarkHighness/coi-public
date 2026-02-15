@@ -15,6 +15,11 @@ import {
   buildGodModeContext,
 } from "./worldContext";
 
+const hasKnownUserMarker = (text: string): boolean =>
+  text.startsWith("[PLAYER_ACTION]") ||
+  text.startsWith("[SUDO]") ||
+  text.startsWith("[Player Rate]");
+
 function buildLatestSummaryContext(gameState: GameState): string {
   const summaries = (gameState as any).summaries as
     | Array<{
@@ -170,7 +175,7 @@ export function buildTurnMessages(
 ): TurnMessagesResult {
   const contextMessages = buildInitialContext(gameState, vfsSession);
 
-  const markedAction = userAction.startsWith("[SUDO]")
+  const markedAction = hasKnownUserMarker(userAction)
     ? userAction
     : `[PLAYER_ACTION] ${userAction}`;
 

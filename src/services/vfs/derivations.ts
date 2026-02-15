@@ -11,6 +11,7 @@ import type {
   KnowledgeEntry,
   Location,
   NPC,
+  PlayerRate,
   Placeholder,
   Quest,
   SavePresetProfile,
@@ -26,6 +27,7 @@ import { canonicalToLogicalVfsPath } from "./core/pathResolver";
 import { readConversationIndex, readTurnFile } from "./conversation";
 import { readOutlineFile, readOutlineProgress } from "./outline";
 import { deriveCustomRulesFromVfs } from "./customRules";
+import { normalizeSoulMarkdown } from "./soulTemplates";
 
 const DEFAULT_FORK_TREE = {
   nodes: {
@@ -102,6 +104,52 @@ const normalizeTokenUsage = (usage: unknown): TokenUsage | undefined => {
     ...(typeof source.reported === "boolean"
       ? { reported: source.reported }
       : {}),
+  };
+};
+
+const normalizePlayerRate = (rate: unknown): PlayerRate | undefined => {
+  if (!rate || typeof rate !== "object") {
+    return undefined;
+  }
+
+  const source = rate as Record<string, unknown>;
+  const vote = source.vote;
+  if (vote !== "up" && vote !== "down") {
+    return undefined;
+  }
+
+  const createdAt =
+    typeof source.createdAt === "number" && Number.isFinite(source.createdAt)
+      ? Math.floor(source.createdAt)
+      : undefined;
+
+  if (typeof createdAt !== "number" || createdAt <= 0) {
+    return undefined;
+  }
+
+  const preset =
+    typeof source.preset === "string" && source.preset.trim().length > 0
+      ? source.preset.trim()
+      : undefined;
+
+  const comment =
+    typeof source.comment === "string" && source.comment.trim().length > 0
+      ? source.comment.trim()
+      : undefined;
+
+  const processedAt =
+    typeof source.processedAt === "number" &&
+    Number.isFinite(source.processedAt) &&
+    source.processedAt > 0
+      ? Math.floor(source.processedAt)
+      : undefined;
+
+  return {
+    vote,
+    createdAt,
+    preset,
+    comment,
+    ...(typeof processedAt === "number" ? { processedAt } : {}),
   };
 };
 
@@ -331,6 +379,7 @@ const deriveConversationNodes = (
       narrativeTone: turn.assistant.narrativeTone,
       ending: (turn.assistant.ending as any) || "continue",
       forceEnd: turn.assistant.forceEnd,
+      playerRate: normalizePlayerRate((turn.meta as any)?.playerRate),
     };
     segmentIdx += 1;
   }
@@ -383,14 +432,36 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const playerCausalChainViews = new Map<string, any>();
   let playerWorldInfoView: any | null = null;
   let hasGlobalTheme = false;
+  let currentSoulMarkdown: string | null = null;
+  let globalSoulMarkdown: string | null = null;
+  let legacyPerSaveProfile: string | null = null;
 
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
     const pathWithoutCurrent = stripCurrentPrefix(normalizedPath);
-    const data = parseJsonFile(file);
-    if (data === null) {
+
+    if (pathWithoutCurrent === "world/soul.md") {
+      if (
+        file.contentType === "text/markdown" ||
+        file.contentType === "text/plain"
+      ) {
+        currentSoulMarkdown = normalizeSoulMarkdown("current", file.content);
+      }
       continue;
     }
+
+    if (pathWithoutCurrent === "world/global/soul.md") {
+      if (
+        file.contentType === "text/markdown" ||
+        file.contentType === "text/plain"
+      ) {
+        globalSoulMarkdown = normalizeSoulMarkdown("global", file.content);
+      }
+      continue;
+    }
+
+    const data = parseJsonFile(file);
+    if (data === null) continue;
 
     if (pathWithoutCurrent === "world/global.json") {
       const globalData = data as {
@@ -596,7 +667,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     if (pathWithoutCurrent === "world/player_profile.json") {
       const profile = (data as { profile?: unknown })?.profile;
       if (typeof profile === "string") {
-        state.playerProfile = profile;
+        legacyPerSaveProfile = profile;
       }
       continue;
     }
@@ -658,6 +729,16 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   }
 
   state.customRules = deriveCustomRulesFromVfs(files);
+
+  if (currentSoulMarkdown) {
+    state.playerProfile = currentSoulMarkdown;
+  } else if (legacyPerSaveProfile) {
+    state.playerProfile = normalizeSoulMarkdown("current", undefined, {
+      legacyProfile: legacyPerSaveProfile,
+    });
+  } else if (globalSoulMarkdown) {
+    state.playerProfile = normalizeSoulMarkdown("current", globalSoulMarkdown);
+  }
 
   // Merge canonical entities with player views into UI-friendly view models.
   const playerId = state.playerActorId;

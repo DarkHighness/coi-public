@@ -380,4 +380,81 @@ describe("deriveGameStateFromVfs", () => {
     expect(hasEmptyUser).toBe(false);
     expect(state.nodes["model-fork-0/turn-0"]).toBeTruthy();
   });
+
+  it("reads current soul markdown and prefers it over legacy json profile", () => {
+    const files: VfsFileMap = {
+      "world/soul.md": makeMarkdownFile(
+        "world/soul.md",
+        "# Player Soul (This Save)\n\n- Scope: This Save\n",
+      ),
+      "world/global/soul.md": makeMarkdownFile(
+        "world/global/soul.md",
+        "# Player Soul (Global)\n\n- Scope: Global\n",
+      ),
+      "world/player_profile.json": makeJsonFile("world/player_profile.json", {
+        profile: "legacy-profile-should-not-win",
+      }),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+    expect(state.playerProfile).toContain("Player Soul (This Save)");
+    expect(state.playerProfile).not.toContain("legacy-profile-should-not-win");
+  });
+
+  it("falls back to legacy player_profile.json when soul markdown is missing", () => {
+    const files: VfsFileMap = {
+      "world/player_profile.json": makeJsonFile("world/player_profile.json", {
+        profile: "Player prefers terse, low-AI-voice narration.",
+      }),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+    expect(state.playerProfile).toContain("Player Soul (This Save)");
+    expect(state.playerProfile).toContain("Player prefers terse, low-AI-voice narration.");
+  });
+
+  it("restores turn.meta.playerRate into model nodes", () => {
+    const files: VfsFileMap = {
+      "current/conversation/index.json": makeJsonFile(
+        "current/conversation/index.json",
+        {
+          activeForkId: 0,
+          activeTurnId: "fork-0/turn-0",
+          rootTurnIdByFork: { "0": "fork-0/turn-0" },
+          latestTurnNumberByFork: { "0": 0 },
+          turnOrderByFork: { "0": ["fork-0/turn-0"] },
+        },
+      ),
+      "current/conversation/turns/fork-0/turn-0.json": makeJsonFile(
+        "current/conversation/turns/fork-0/turn-0.json",
+        {
+          turnId: "fork-0/turn-0",
+          forkId: 0,
+          turnNumber: 0,
+          parentTurnId: null,
+          createdAt: 1,
+          userAction: "start",
+          assistant: { narrative: "hello", choices: [] },
+          meta: {
+            playerRate: {
+              vote: "down",
+              preset: "Too much AI flavor",
+              comment: "keep it tighter",
+              createdAt: 123,
+              processedAt: 456,
+            },
+          },
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+    expect(state.nodes["model-fork-0/turn-0"]?.playerRate).toEqual({
+      vote: "down",
+      preset: "Too much AI flavor",
+      comment: "keep it tighter",
+      createdAt: 123,
+      processedAt: 456,
+    });
+  });
 });

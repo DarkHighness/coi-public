@@ -1,6 +1,7 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import type { TFunction } from "i18next";
 import {
+  generateAdventureTurn,
   generateEntityCleanup,
   generateForceUpdate,
 } from "../../services/aiService";
@@ -16,7 +17,9 @@ import {
 } from "../../utils/constants/atmosphere";
 import {
   forkConversation,
+  readTurnFile,
   writeForkTree,
+  writeTurnFile,
 } from "../../services/vfs/conversation";
 import { getRAGService } from "../../services/rag";
 import { updateRAGDocumentsBackground } from "./ragDocuments";
@@ -25,11 +28,20 @@ import type {
   ForkTree,
   GameState,
   LanguageCode,
+  PlayerRate,
+  PlayerRateInput,
   StorySegment,
   TurnContext,
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
 import { vfsElevationTokenManager } from "../../services/vfs/core/elevation";
+import { normalizeVfsPath } from "../../services/vfs/utils";
+import {
+  CURRENT_SOUL_LOGICAL_PATH,
+  GLOBAL_SOUL_CANONICAL_PATH,
+  GLOBAL_SOUL_LOGICAL_PATH,
+  normalizeSoulMarkdown,
+} from "../../services/vfs/soulTemplates";
 
 type ShowToast = (
   message: string,
@@ -43,6 +55,7 @@ interface CommandActionsDeps {
   currentSlotId: string | null;
   gameStateRef: MutableRefObject<GameState>;
   setGameState: Dispatch<SetStateAction<GameState>>;
+  handleSaveSettings: (settings: AISettings) => void;
   showToast: ShowToast;
   t: TFunction;
   vfsSession: VfsSession;
@@ -61,6 +74,7 @@ export function createCommandActions({
   currentSlotId,
   gameStateRef,
   setGameState,
+  handleSaveSettings,
   showToast,
   t,
   vfsSession,
@@ -113,7 +127,7 @@ export function createCommandActions({
   };
 
   const emitRecoveryNotice = (
-    mode: "sudo" | "cleanup",
+    mode: "sudo" | "cleanup" | "rate",
     recovery?: {
       recovered?: boolean;
       kind?: string;
@@ -152,6 +166,188 @@ export function createCommandActions({
     type: "turn_retry_boost" | "session_rebuild";
     message: string;
   }) => (typeof window !== "undefined" ? window.confirm(message) : false);
+
+  const snapshotCandidatesForGlobalSoul = [
+    GLOBAL_SOUL_CANONICAL_PATH,
+    GLOBAL_SOUL_LOGICAL_PATH,
+    `current/${GLOBAL_SOUL_LOGICAL_PATH}`,
+  ];
+
+  const isSoulPath = (path: string): boolean => {
+    const normalized = normalizeVfsPath(path);
+    return (
+      normalized === CURRENT_SOUL_LOGICAL_PATH ||
+      normalized === `current/${CURRENT_SOUL_LOGICAL_PATH}` ||
+      normalized === GLOBAL_SOUL_LOGICAL_PATH ||
+      normalized === `current/${GLOBAL_SOUL_LOGICAL_PATH}` ||
+      normalized === GLOBAL_SOUL_CANONICAL_PATH ||
+      /\/story\/world\/soul\.md$/.test(normalized)
+    );
+  };
+
+  const captureSnapshotFiles = () => {
+    const snapshot = vfsSession.snapshot();
+    const cloned: Record<
+      string,
+      {
+        content: string;
+        contentType: (typeof snapshot)[string]["contentType"];
+      }
+    > = {};
+
+    for (const [path, file] of Object.entries(snapshot)) {
+      cloned[path] = {
+        content: file.content,
+        contentType: file.contentType,
+      };
+    }
+
+    return cloned;
+  };
+
+  const restoreSnapshotExceptSoul = (
+    baseline: Record<
+      string,
+      {
+        content: string;
+        contentType: ReturnType<VfsSession["snapshot"]>[string]["contentType"];
+      }
+    >,
+  ) => {
+    const after = vfsSession.snapshot();
+
+    for (const [path, file] of Object.entries(after)) {
+      if (isSoulPath(path)) {
+        continue;
+      }
+
+      const baselineFile = baseline[path];
+      if (!baselineFile) {
+        try {
+          vfsSession.deleteFile(path);
+        } catch (error) {
+          console.warn("[PlayerRate] Failed to delete non-baseline file", {
+            path,
+            error,
+          });
+        }
+        continue;
+      }
+
+      if (
+        baselineFile.content !== file.content ||
+        baselineFile.contentType !== file.contentType
+      ) {
+        vfsSession.writeFile(path, baselineFile.content, baselineFile.contentType);
+      }
+    }
+
+    for (const [path, file] of Object.entries(baseline)) {
+      if (isSoulPath(path)) {
+        continue;
+      }
+      if (after[path]) {
+        continue;
+      }
+      vfsSession.writeFile(path, file.content, file.contentType);
+    }
+  };
+
+  const readGlobalSoulFromSnapshot = (snapshot: ReturnType<VfsSession["snapshot"]>) => {
+    for (const path of snapshotCandidatesForGlobalSoul) {
+      const file = snapshot[path];
+      if (!file) continue;
+      if (
+        file.contentType === "text/markdown" ||
+        file.contentType === "text/plain"
+      ) {
+        return normalizeSoulMarkdown("global", file.content);
+      }
+    }
+    return null;
+  };
+
+  const syncSettingsFromGlobalSoulMirror = (
+    snapshot: ReturnType<VfsSession["snapshot"]>,
+  ) => {
+    const globalSoul = readGlobalSoulFromSnapshot(snapshot);
+    if (!globalSoul) return;
+    if (globalSoul === aiSettings.playerProfile) return;
+
+    handleSaveSettings({
+      ...aiSettings,
+      playerProfile: globalSoul,
+    });
+  };
+
+  const parseTurnFromModelSegmentId = (
+    segmentId: string,
+  ): { forkId: number; turnNumber: number; turnId: string } | null => {
+    const match = /^model-(fork-(\d+)\/turn-(\d+))$/.exec(segmentId);
+    if (!match) return null;
+
+    const forkId = Number(match[2]);
+    const turnNumber = Number(match[3]);
+    if (!Number.isFinite(forkId) || !Number.isFinite(turnNumber)) {
+      return null;
+    }
+
+    return {
+      forkId,
+      turnNumber,
+      turnId: match[1],
+    };
+  };
+
+  const persistPlayerRateToTurn = (
+    segmentId: string,
+    rate: PlayerRate,
+  ): { forkId: number; turnNumber: number; turnId: string } | null => {
+    const parsed = parseTurnFromModelSegmentId(segmentId);
+    if (!parsed) {
+      return null;
+    }
+
+    const snapshot = vfsSession.snapshot();
+    const turn = readTurnFile(snapshot, parsed.forkId, parsed.turnNumber);
+    if (!turn) {
+      return null;
+    }
+
+    writeTurnFile(vfsSession, parsed.forkId, parsed.turnNumber, {
+      ...turn,
+      meta: {
+        ...(turn.meta || {}),
+        playerRate: rate,
+      },
+    });
+
+    return parsed;
+  };
+
+  const updateNodePlayerRate = (segmentId: string, playerRate: PlayerRate) => {
+    setGameState((prev) => {
+      const existing = prev.nodes[segmentId];
+      if (!existing) return prev;
+      const updated = {
+        ...existing,
+        playerRate,
+      };
+      const nodes = {
+        ...prev.nodes,
+        [segmentId]: updated,
+      };
+      const next = {
+        ...prev,
+        nodes,
+        currentFork: prev.activeNodeId
+          ? deriveHistory(nodes, prev.activeNodeId)
+          : prev.currentFork,
+      };
+      gameStateRef.current = next;
+      return next;
+    });
+  };
 
   const buildSystemNode = ({
     id,
@@ -655,9 +851,160 @@ export function createCommandActions({
     }
   };
 
+  const handlePlayerRate = async (
+    segmentId: string,
+    rateInput: PlayerRateInput,
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (gameStateRef.current.isProcessing) {
+      return {
+        success: false,
+        error:
+          t("rating.processingBlocked") ||
+          "Cannot submit rating while another action is in progress.",
+      };
+    }
+
+    if (!segmentId.startsWith("model-")) {
+      return {
+        success: false,
+        error:
+          t("rating.invalidTarget") ||
+          "Ratings can only be attached to AI model turns.",
+      };
+    }
+
+    if (rateInput.vote !== "up" && rateInput.vote !== "down") {
+      return {
+        success: false,
+        error: t("rating.invalidVote") || "Invalid rating vote.",
+      };
+    }
+
+    const createdAt = Date.now();
+    const playerRate: PlayerRate = {
+      vote: rateInput.vote,
+      createdAt,
+      ...(rateInput.preset?.trim()
+        ? { preset: rateInput.preset.trim() }
+        : {}),
+      ...(rateInput.comment?.trim()
+        ? { comment: rateInput.comment.trim() }
+        : {}),
+    };
+
+    const persistedTurn = persistPlayerRateToTurn(segmentId, playerRate);
+    if (!persistedTurn) {
+      return {
+        success: false,
+        error:
+          t("rating.turnNotFound") ||
+          "Could not find turn metadata for this segment.",
+      };
+    }
+
+    updateNodePlayerRate(segmentId, playerRate);
+    const baselineSnapshot = captureSnapshotFiles();
+
+    setGameState((prev) => ({
+      ...prev,
+      isProcessing: true,
+      liveToolCalls: [],
+      error: null,
+    }));
+
+    try {
+      const fullHistory = deriveHistory(
+        gameStateRef.current.nodes,
+        gameStateRef.current.activeNodeId,
+        true,
+      );
+
+      const ratePayload = JSON.stringify({
+        turnId: persistedTurn.turnId,
+        vote: playerRate.vote,
+        preset: playerRate.preset,
+        comment: playerRate.comment,
+        time: new Date(playerRate.createdAt).toISOString(),
+      });
+
+      const context: TurnContext = {
+        recentHistory: fullHistory,
+        userAction: `[Player Rate] ${ratePayload}`,
+        language: LANG_MAP[language],
+        themeKey: gameStateRef.current.theme,
+        tFunc: t,
+        settings: aiSettings,
+        slotId: `${currentSlotId || "default"}:rate`,
+        vfsSession,
+        onToolCallsUpdate: (toolCalls) => {
+          setGameState((prev) => ({
+            ...prev,
+            liveToolCalls: toolCalls,
+          }));
+        },
+        vfsMode: "normal",
+        confirmRecoveryAction,
+      };
+
+      const { recovery } = await generateAdventureTurn(gameStateRef.current, context);
+
+      // Restore all non-soul writes from the isolated rate-processing turn.
+      restoreSnapshotExceptSoul(baselineSnapshot);
+
+      const processedAt = Date.now();
+      const processedRate: PlayerRate = {
+        ...playerRate,
+        processedAt,
+      };
+      persistPlayerRateToTurn(segmentId, processedRate);
+      updateNodePlayerRate(segmentId, processedRate);
+
+      const vfsSnapshot = requireNonEmptyVfsSnapshot("player rate");
+      const derivedState = deriveGameStateFromVfs(vfsSnapshot);
+      const nextState = mergeDerivedViewState(gameStateRef.current, derivedState, {
+        resetRuntime: true,
+      });
+
+      gameStateRef.current = {
+        ...nextState,
+        isProcessing: false,
+        liveToolCalls: [],
+        error: null,
+      };
+      setGameState(gameStateRef.current);
+
+      syncSettingsFromGlobalSoulMirror(vfsSnapshot);
+      emitRecoveryNotice("rate", recovery);
+      triggerSave();
+      return { success: true };
+    } catch (error: unknown) {
+      try {
+        restoreSnapshotExceptSoul(baselineSnapshot);
+      } catch (rollbackError) {
+        console.warn("[PlayerRate] Failed to rollback isolated rate turn", rollbackError);
+      }
+
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to process player rating";
+
+      setGameState((prev) => ({
+        ...prev,
+        isProcessing: false,
+        liveToolCalls: [],
+        error: errorMsg,
+      }));
+
+      return {
+        success: false,
+        error: errorMsg,
+      };
+    }
+  };
+
   return {
     navigateToNode,
     handleForceUpdate,
+    handlePlayerRate,
     handleCleanupEntities,
   };
 }

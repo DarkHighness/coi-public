@@ -608,6 +608,32 @@
   },
   "noDescription": "暂无描述。",
   "narrator": "讲述者",
+  "rating": {
+    "like": "点赞",
+    "dislike": "点踩",
+    "review": "点评",
+    "openReview": "打开点评弹窗",
+    "dialogTitle": "评价本轮生成",
+    "dialogHint": "长按点赞/点踩，或点击点评入口，提交更具体反馈。",
+    "commentPlaceholder": "可选：补充本轮的具体反馈...",
+    "cancel": "取消",
+    "submit": "提交",
+    "processingBlocked": "当前有进行中的操作，暂时无法提交评分。",
+    "invalidTarget": "评分只能绑定在 AI 生成回合上。",
+    "invalidVote": "无效评分类型。",
+    "turnNotFound": "未找到该段落对应的回合元数据。",
+    "status": {
+      "up": "已点赞",
+      "down": "已点踩",
+      "processed": "已处理"
+    },
+    "presets": {
+      "aiFlavorHeavy": "AI味太重",
+      "tooVerbose": "过于啰嗦",
+      "goodPacing": "节奏很好",
+      "inCharacter": "角色感到位"
+    }
+  },
   "you": "你",
   "settings": {
     "title": "设置",
@@ -698,7 +724,19 @@
       "disablePlayerProfilingHelp": "启用后，AI 将不会记录/使用跨存档的玩家心理数据。",
       "resetPlayerProfile": "重置玩家画像",
       "resetPlayerProfileHelp": "清除所有已记录的跨存档玩家心理数据。",
-      "resetPlayerProfileButton": "重置"
+      "resetPlayerProfileButton": "重置",
+      "soul": {
+        "title": "玩家灵魂画像 (VFS)",
+        "description": "查看 AI 维护的全局与当前存档 soul Markdown 文档。",
+        "globalTitle": "全局 Soul",
+        "globalHelp": "跨存档真源（settings）及其 VFS 镜像。",
+        "globalMirrorMismatch": "Settings 真源与 VFS 镜像不一致，当前展示镜像最新内容。",
+        "resetGlobal": "重置全局 Soul",
+        "currentTitle": "当前存档 Soul",
+        "currentHelp": "当前存档的 current/world/soul.md。",
+        "currentUnavailable": "当前存档 soul 不可用。",
+        "resetCurrent": "重置当前存档 Soul"
+      }
     }
   },
   "tutorial": {

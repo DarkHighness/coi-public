@@ -62,6 +62,15 @@ describe("vfsResourceTemplateRegistry", () => {
     expect(plan.allowedWriteOps).toContain("write");
   });
 
+  it("matches editable global soul runtime template", () => {
+    const soul = vfsResourceTemplateRegistry.match("shared/config/runtime/soul.md");
+
+    expect(soul.id).toBe("template.config.runtime_soul");
+    expect(soul.permissionClass).toBe("default_editable");
+    expect(soul.scope).toBe("shared");
+    expect(soul.contentTypes).toContain("text/markdown");
+  });
+
   it("falls back to fork runtime template for unmatched paths", () => {
     const fallback = vfsResourceTemplateRegistry.match(
       "forks/0/runtime/misc/notes.txt",

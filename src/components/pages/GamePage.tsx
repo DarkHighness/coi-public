@@ -17,6 +17,7 @@ import {
   StorySegment,
   SaveSlot,
   LanguageCode,
+  PlayerRateInput,
 } from "../../types";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
@@ -120,6 +121,7 @@ export const GamePage: React.FC<GamePageProps> = ({
     deleteSlot,
     triggerSave,
     handleForceUpdate,
+    handlePlayerRate,
     rebuildContext,
     invalidateSession,
     updateUiState,
@@ -453,6 +455,16 @@ export const GamePage: React.FC<GamePageProps> = ({
     showToast(t("imageDeleted", "Image deleted successfully"), "info");
   };
 
+  const handleSegmentRate = useCallback(
+    async (segmentId: string, rate: PlayerRateInput) => {
+      const result = await handlePlayerRate(segmentId, rate);
+      if (!result.success && result.error) {
+        showToast(result.error, "error");
+      }
+    },
+    [handlePlayerRate, showToast],
+  );
+
   const handleOpenStateEditor = () => {
     const confirmed =
       typeof window !== "undefined"
@@ -536,6 +548,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onForceUpdate={handleForceUpdate}
             onImageUpload={handleImageUpload}
             onImageDelete={handleImageDelete}
+            onRate={handleSegmentRate}
           />
         ) : (
           <DesktopGameLayout
@@ -568,6 +581,7 @@ export const GamePage: React.FC<GamePageProps> = ({
             onForceUpdate={handleForceUpdate}
             onImageUpload={handleImageUpload}
             onImageDelete={handleImageDelete}
+            onRate={handleSegmentRate}
           />
         )}
 

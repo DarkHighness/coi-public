@@ -4,6 +4,7 @@ import type {
   ForkTree,
   GameState,
   LanguageCode,
+  PlayerRateInput,
   SaveSlot,
   SavePresetProfile,
   StorySegment,
@@ -156,6 +157,10 @@ export interface RuntimeEngineActions {
   ) => void;
   triggerSave: () => void;
   handleForceUpdate: (prompt: string) => void;
+  handlePlayerRate: (
+    segmentId: string,
+    rate: PlayerRateInput,
+  ) => Promise<{ success: boolean; error?: string }>;
   cleanupEntities: () => Promise<{ success: boolean; error?: string } | void>;
   rebuildContext: () => Promise<void>;
   invalidateSession: () => Promise<void>;

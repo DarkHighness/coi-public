@@ -1,5 +1,5 @@
 import React, { Suspense, useRef } from "react";
-import { FeedLayout, UIState, StorySegment } from "../../types";
+import { FeedLayout, UIState, StorySegment, PlayerRateInput } from "../../types";
 import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
@@ -39,6 +39,7 @@ interface DesktopGameLayoutProps {
   onForceUpdate?: (prompt: string) => void;
   onImageUpload?: (id: string, imageId: string) => void;
   onImageDelete?: (id: string) => void;
+  onRate?: (id: string, rate: PlayerRateInput) => void;
 }
 
 export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
@@ -69,6 +70,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   onForceUpdate,
   onImageUpload,
   onImageDelete,
+  onRate,
 }) => {
   // Get state and actions from context
   const { state, actions } = useRuntimeContext();
@@ -273,6 +275,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onAudioGenerated={onAudioGenerated}
             onImageUpload={onImageUpload}
             onImageDelete={onImageDelete}
+            onRate={onRate}
             sidebarCollapsed={sidebarCollapsed}
             timelineCollapsed={timelineCollapsed}
           />

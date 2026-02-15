@@ -3,6 +3,7 @@ import { createCommandActions } from "./commandActions";
 
 const generateForceUpdateMock = vi.hoisted(() => vi.fn());
 const generateEntityCleanupMock = vi.hoisted(() => vi.fn());
+const generateAdventureTurnMock = vi.hoisted(() => vi.fn());
 const deriveGameStateFromVfsMock = vi.hoisted(() => vi.fn());
 const mergeDerivedViewStateMock = vi.hoisted(() => vi.fn());
 const createStateSnapshotMock = vi.hoisted(() => vi.fn());
@@ -12,6 +13,7 @@ const rebuildSessionsAfterHeavyMutationMock = vi.hoisted(() => vi.fn());
 vi.mock("../../services/aiService", () => ({
   generateForceUpdate: generateForceUpdateMock,
   generateEntityCleanup: generateEntityCleanupMock,
+  generateAdventureTurn: generateAdventureTurnMock,
 }));
 
 vi.mock("../../services/vfs/derivations", () => ({
@@ -126,11 +128,13 @@ function createDeps(overrides: Record<string, unknown> = {}) {
   return {
     aiSettings: {
       embedding: { enabled: false },
+      playerProfile: "# Player Soul (Global)",
     } as any,
     language: "en" as any,
     currentSlotId: "slot-1",
     gameStateRef,
     setGameState,
+    handleSaveSettings: vi.fn(),
     showToast: vi.fn(),
     t: (key: string) => key,
     vfsSession,
@@ -173,6 +177,14 @@ beforeEach(() => {
     },
     logs: [],
     changedEntities: [],
+  });
+
+  generateAdventureTurnMock.mockResolvedValue({
+    response: { narrative: "", choices: [] },
+    logs: [],
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    changedEntities: [],
+    _conversationHistory: [],
   });
 });
 
@@ -272,6 +284,134 @@ describe("commandActions", () => {
       "slot-1",
       0,
     );
+    expect(deps.triggerSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("processes player rating immediately without adding visible nodes", async () => {
+    const turnPayload = {
+      turnId: "fork-0/turn-2",
+      forkId: 0,
+      turnNumber: 2,
+      parentTurnId: "fork-0/turn-1",
+      createdAt: 100,
+      userAction: "inspect",
+      assistant: { narrative: "result", choices: [{ text: "Continue" }] },
+      meta: {},
+    };
+
+    const baseNode = {
+      id: "model-fork-0/turn-2",
+      parentId: "user-fork-0/turn-2",
+      text: "result",
+      role: "model",
+      segmentIdx: 2,
+      choices: [{ text: "Continue" }],
+      imagePrompt: "",
+      timestamp: 100,
+      ending: "continue",
+    } as any;
+
+    const baselineSnapshot = {
+      "conversation/turns/fork-0/turn-2.json": {
+        content: JSON.stringify(turnPayload),
+        contentType: "application/json",
+      },
+      "conversation/index.json": {
+        content: JSON.stringify({ activeTurnId: "fork-0/turn-2" }),
+        contentType: "application/json",
+      },
+      "world/global.json": {
+        content: "{\"time\":\"Day 1\"}",
+        contentType: "application/json",
+      },
+      "world/soul.md": {
+        content: "# Player Soul (This Save)\n",
+        contentType: "text/markdown",
+      },
+      "shared/config/runtime/soul.md": {
+        content: "# Player Soul (Global)\n- Scope: Global\n",
+        contentType: "text/markdown",
+      },
+    } as any;
+
+    const afterRateSnapshot = {
+      ...baselineSnapshot,
+      "conversation/turns/fork-0/turn-3.json": {
+        content: "{}",
+        contentType: "application/json",
+      },
+      "world/global.json": {
+        content: "{\"time\":\"Day 2\"}",
+        contentType: "application/json",
+      },
+      "world/soul.md": {
+        content: "# Player Soul (This Save)\n- Last Updated: changed\n",
+        contentType: "text/markdown",
+      },
+      "shared/config/runtime/soul.md": {
+        content: "# Player Soul (Global)\n- Last Updated: changed\n",
+        contentType: "text/markdown",
+      },
+    } as any;
+
+    const deps = createDeps({
+      vfsSession: {
+        snapshot: vi
+          .fn()
+          .mockReturnValueOnce(baselineSnapshot)
+          .mockReturnValueOnce(baselineSnapshot)
+          .mockReturnValueOnce(afterRateSnapshot)
+          .mockReturnValueOnce(baselineSnapshot)
+          .mockReturnValueOnce(baselineSnapshot),
+        deleteFile: vi.fn(),
+        writeFile: vi.fn(),
+      },
+    });
+    deps.gameStateRef.current = {
+      ...createBaseGameState(),
+      nodes: { [baseNode.id]: baseNode },
+      activeNodeId: baseNode.id,
+      currentFork: [baseNode],
+    } as any;
+
+    deriveGameStateFromVfsMock.mockImplementation(() => ({
+      ...deps.gameStateRef.current,
+      isProcessing: false,
+      liveToolCalls: [],
+    }));
+
+    const actions = createCommandActions(deps as any);
+    const beforeNodeCount = Object.keys(deps.gameStateRef.current.nodes).length;
+
+    const result = await actions.handlePlayerRate("model-fork-0/turn-2", {
+      vote: "down",
+      preset: "AI flavor too strong",
+      comment: "trim adjectives",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(generateAdventureTurnMock).toHaveBeenCalledTimes(1);
+    expect(generateAdventureTurnMock.mock.calls[0]?.[1]?.userAction).toContain(
+      "[Player Rate]",
+    );
+
+    const afterNodeCount = Object.keys(deps.gameStateRef.current.nodes).length;
+    expect(afterNodeCount).toBe(beforeNodeCount);
+    expect(deps.gameStateRef.current.nodes["model-fork-0/turn-2"]?.playerRate).toMatchObject({
+      vote: "down",
+      preset: "AI flavor too strong",
+      comment: "trim adjectives",
+    });
+
+    expect(deps.vfsSession.deleteFile).toHaveBeenCalledWith(
+      "conversation/turns/fork-0/turn-3.json",
+    );
+    expect(deps.vfsSession.writeFile).toHaveBeenCalledWith(
+      "world/global.json",
+      "{\"time\":\"Day 1\"}",
+      "application/json",
+    );
+    expect(deps.handleSaveSettings).toHaveBeenCalledTimes(1);
     expect(deps.triggerSave).toHaveBeenCalledTimes(1);
   });
 });

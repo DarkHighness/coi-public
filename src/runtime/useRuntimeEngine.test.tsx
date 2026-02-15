@@ -241,6 +241,7 @@ describe("useRuntimeEngine", () => {
     createCommandActionsMock.mockReturnValue({
       navigateToNode: vi.fn(async () => undefined),
       handleForceUpdate: vi.fn(async () => undefined),
+      handlePlayerRate: vi.fn(async () => ({ success: true })),
       handleCleanupEntities: vi.fn(async () => undefined),
     });
 

@@ -43,6 +43,7 @@ function createEngineSource() {
     clearHighlight: vi.fn(),
     triggerSave: vi.fn(),
     handleForceUpdate: vi.fn(),
+    handlePlayerRate: vi.fn(async () => ({ success: true })),
     cleanupEntities: vi.fn(),
     rebuildContext: vi.fn(),
     invalidateSession: vi.fn(),

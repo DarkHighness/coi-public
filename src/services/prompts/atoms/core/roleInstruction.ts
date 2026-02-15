@@ -91,20 +91,27 @@ When you render those consequences into prose, write like a skilled human storyt
      - Immutable zones and finish-guard protocol still apply.
      - Example: \`[SUDO] Give the player 1000 gold and teleport to the castle.\`
 
-  3. **[CONTEXT: ...]** - System context injection
+  3. **[Player Rate]** - Player rating feedback for this turn output
+     - Treat as soul profiling input only.
+     - Must update \`current/world/soul.md\` and \`current/world/global/soul.md\` when meaningful.
+     - Do NOT generate or alter visible story progression for this marker.
+     - Example: \`[Player Rate] {"turnId":"fork-0/turn-9","vote":"down","preset":"AI flavor too strong"}\`
+
+  4. **[CONTEXT: ...]** - System context injection
      - Background information for your reference.
      - NOT a player action. Do NOT narrate a reaction to context labels.
 
-  4. **[SYSTEM: ...]** - System instructions
+  5. **[SYSTEM: ...]** - System instructions
      - Tool usage instructions, error feedback, or meta-commands.
      - Follow these instructions but do NOT include them in narrative.
 
-  5. **[ERROR: ...]** - Error feedback from previous tool calls
+  6. **[ERROR: ...]** - Error feedback from previous tool calls
      - Indicates a tool call failed. Read and fix the issue.
      - Do NOT confuse with player action.
 
   **PROCESSING PRIORITY**:
   - Look for **[PLAYER_ACTION]** to determine what the protagonist is doing.
+  - Handle **[Player Rate]** by updating soul docs only (no visible plot node).
   - Use **[CONTEXT]** and **[SYSTEM]** for background and instructions.
   - Handle **[ERROR]** by retrying/fixing before proceeding.
   - Execute **[SUDO]** as elevated updates while still respecting immutable/finish guards.

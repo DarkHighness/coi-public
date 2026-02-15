@@ -66,6 +66,7 @@ export function buildRuntimeEngineActionsFromSource(
     clearHighlight: engine.clearHighlight,
     triggerSave: engine.triggerSave,
     handleForceUpdate: engine.handleForceUpdate,
+    handlePlayerRate: engine.handlePlayerRate,
     cleanupEntities: engine.cleanupEntities,
     rebuildContext: engine.rebuildContext,
     invalidateSession: engine.invalidateSession,
