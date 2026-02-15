@@ -299,6 +299,7 @@ describe("runSummaryLoop", () => {
     expect(compactAnchor).toContain("nextSessionReferencesMarkdown");
     expect(compactAnchor).toContain("useful SKILL docs first");
     expect(compactAnchor).toContain("Structured error recovery");
+    expect(compactAnchor).toContain("FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE");
     expect(compactTrigger).toContain("nextSessionReferencesMarkdown");
     expect(compactTrigger).toContain("short markdown handoff notes");
   });

@@ -253,6 +253,8 @@ describe("VFS handlers mutations", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
     expect(result.error).toContain('pointer "/missing/path" does not exist');
+    expect(result.error).toContain("current/world/global.json");
+    expect(result.error).not.toContain("forks/0/story/world/global.json");
     expect(result.error).not.toContain("tree:");
   });
 
@@ -548,6 +550,8 @@ describe("VFS handlers mutations", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("IMMUTABLE_READONLY");
+    expect(result.error).toContain("current/skills/local-test.md");
+    expect(result.error).not.toContain("shared/system/skills");
   });
 
   it("blocks generic writes to finish-guarded summary path", () => {

@@ -11,6 +11,7 @@ import {
 } from "./types";
 import { normalizeVfsPath, hashContent } from "./utils";
 import { deepMergeJson } from "./merge";
+import { toCurrentPath } from "./currentAlias";
 import { buildGlobalVfsSkills } from "./globalSkills";
 import { buildGlobalVfsRefs } from "./globalRefs";
 import { vfsPathRegistry } from "./core/pathRegistry";
@@ -694,9 +695,15 @@ export class VfsSession {
     if (!decision.allowed) {
       const errorCode =
         decision.code === "OK" ? "IMMUTABLE_READONLY" : decision.code;
+      const displayPath = toCurrentPath(canonicalPath, {
+        activeForkId:
+          typeof writeContext.activeForkId === "number"
+            ? writeContext.activeForkId
+            : this.activeForkId,
+      });
       throw new VfsWriteAccessError(
         errorCode,
-        `${decision.reason} (${canonicalPath})`,
+        `${decision.reason} (${displayPath})`,
       );
     }
 

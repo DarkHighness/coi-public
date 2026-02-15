@@ -321,7 +321,9 @@ export async function callWithAgenticRetry(
 
         if (classified.kind === "unknown") {
           throw new Error(
-            `[ERROR: UNKNOWN_PROVIDER_ERROR] ${classified.rawMessage || fallback.message}`,
+            `[ERROR: UNKNOWN_PROVIDER_ERROR] Provider returned an unexpected, non-retryable error. ` +
+              `Raw provider details: ${classified.rawMessage || fallback.message}. ` +
+              "Confirm provider health (credentials, rate limits, network) before retrying; escalate if it persists.",
           );
         }
 
@@ -348,7 +350,9 @@ export async function callWithAgenticRetry(
             rawMessage: classified.rawMessage,
             finishToolName,
           })
-        : `[ERROR: PROVIDER_CALL_FAILED] ${classified.rawMessage}`;
+        : `[ERROR: PROVIDER_CALL_FAILED] Provider rejected this tool call. ` +
+          `Raw provider details: ${classified.rawMessage}. ` +
+          "Validate the tool payload (JSON vs. schema) and provider status before retrying once the underlying issue is fixed.";
 
       history.push(
         createAssistantMessage(

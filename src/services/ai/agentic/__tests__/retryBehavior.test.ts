@@ -508,9 +508,43 @@ describe("callWithAgenticRetry behavior", () => {
       callWithAgenticRetry(provider, makeRequest() as any, [], {
         maxRetries: 2,
       }),
-    ).rejects.toThrow("[ERROR: UNKNOWN_PROVIDER_ERROR]");
+    ).rejects.toThrow("Confirm provider health");
 
     expect(provider.generateChat).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds actionable feedback for model-fixable provider call failures", async () => {
+    const provider = createProvider([
+      new Error("schema validation failed by provider"),
+      {
+        result: {
+          functionCalls: [
+            { id: "call_ok", name: toolName, args: { foo: "ok" } },
+          ],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    const history: any[] = [];
+    const result = await callWithAgenticRetry(
+      provider,
+      makeRequest() as any,
+      history,
+      {
+        requiredToolName: toolName,
+        maxRetries: 1,
+      },
+    );
+
+    expect(result.retries).toBe(1);
+    expect(history).toHaveLength(2);
+    const feedbackText =
+      history[1]?.content?.find((part: any) => part.type === "text")?.text ??
+      "";
+    expect(feedbackText).toContain("[ERROR: PROVIDER_CALL_FAILED]");
+    expect(feedbackText).toContain("Validate the tool payload");
   });
 
   it("keeps history unchanged for silent provider retries", async () => {

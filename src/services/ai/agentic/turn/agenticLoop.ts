@@ -202,8 +202,8 @@ const classifyWriteFailure = (params: {
       disposition: "error_unrecoverable_non_blocking",
       retryTargets: [],
       guidance:
-        `[ERROR: WRITE_UNRECOVERABLE_NON_BLOCKING] Write failed due to unrecoverable permission/policy constraints. ` +
-        `This does NOT block finish. Change path/operation instead of blind retry. Targets: ${allTargetList}.`,
+        `[ERROR: WRITE_UNRECOVERABLE_NON_BLOCKING] Write failed because policy/ACL forbids these targets: ${allTargetList}. ` +
+        "This does NOT block finish. Choose an allowed path/operation or request policy change before retrying.",
     };
   }
 

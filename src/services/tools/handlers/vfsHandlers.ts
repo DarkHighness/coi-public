@@ -220,6 +220,48 @@ const buildSchemaAndReadRecovery = (inputPath: string): string[] => {
   ];
 };
 
+const rewriteResolvedPathInMessage = (
+  message: string,
+  resolvedPath: string,
+): string => {
+  const aliasPath = toCurrentPath(resolvedPath);
+  return message.split(resolvedPath).join(aliasPath);
+};
+
+const classifyJsonMutationError = (params: {
+  error: unknown;
+  opPath: string;
+  resolvedPath: string;
+}): {
+  code: "NOT_FOUND" | "INVALID_DATA";
+  message: string;
+  recovery: string[];
+} => {
+  const rawMessage =
+    params.error instanceof Error ? params.error.message : String(params.error);
+  const isNotFound = rawMessage.startsWith("File not found:");
+  const isSchemaValidationError = rawMessage.startsWith(
+    "Schema validation failed for",
+  );
+  const message = rewriteResolvedPathInMessage(rawMessage, params.resolvedPath);
+
+  if (isNotFound) {
+    return {
+      code: "NOT_FOUND",
+      message,
+      recovery: buildNotFoundRecovery(params.opPath),
+    };
+  }
+
+  return {
+    code: "INVALID_DATA",
+    message,
+    recovery: isSchemaValidationError
+      ? buildSchemaAndReadRecovery(params.opPath)
+      : buildReadLinesRecovery(params.opPath),
+  };
+};
+
 const isToolCallErrorResult = (value: unknown): value is ToolCallError => {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
@@ -2133,14 +2175,14 @@ registerToolHandlerWithStructuredErrors(
                 op.path,
               );
             }
-            const message =
-              error instanceof Error ? error.message : String(error);
-            const isNotFound = message.startsWith("File not found:");
+            const normalized = classifyJsonMutationError({
+              error,
+              opPath: op.path,
+              resolvedPath: resolved.path,
+            });
             return withBatchError(
-              createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
-                recovery: isNotFound
-                  ? buildNotFoundRecovery(op.path)
-                  : buildSchemaAndReadRecovery(op.path),
+              createError(normalized.message, normalized.code, {
+                recovery: normalized.recovery,
               }),
               opIndex,
               op.op,
@@ -2197,14 +2239,14 @@ registerToolHandlerWithStructuredErrors(
                 op.path,
               );
             }
-            const message =
-              error instanceof Error ? error.message : String(error);
-            const isNotFound = message.startsWith("File not found:");
+            const normalized = classifyJsonMutationError({
+              error,
+              opPath: op.path,
+              resolvedPath: resolved.path,
+            });
             return withBatchError(
-              createError(message, isNotFound ? "NOT_FOUND" : "INVALID_DATA", {
-                recovery: isNotFound
-                  ? buildNotFoundRecovery(op.path)
-                  : buildSchemaAndReadRecovery(op.path),
+              createError(normalized.message, normalized.code, {
+                recovery: normalized.recovery,
               }),
               opIndex,
               op.op,
