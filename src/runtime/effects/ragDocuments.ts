@@ -110,10 +110,11 @@ export async function updateRAGDocumentsBackground(
       return;
     }
 
-    await ragService.retireLatestByPaths({
+    // Replace path history in-place to avoid unbounded storage growth from
+    // superseded versions on high-frequency updates.
+    await ragService.deleteByPaths({
       saveId: options.saveId,
       forkId: options.forkId,
-      turnNumber: options.turnNumber,
       paths: pathsToDelete,
     });
 

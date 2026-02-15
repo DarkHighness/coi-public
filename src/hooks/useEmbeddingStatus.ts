@@ -28,15 +28,47 @@ const areMessageParamsEqual = (
   return leftKeys.every((key) => left[key] === right[key]);
 };
 
+const toFiniteNumber = (value: unknown): number | null => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  return value;
+};
+
+const resolveDisplayProgress = (
+  event: ProgressEvent["data"],
+): { current: number; total: number } => {
+  const paramCurrent = toFiniteNumber(event.messageParams?.current);
+  const paramTotal = toFiniteNumber(event.messageParams?.total);
+
+  if (paramCurrent !== null && paramTotal !== null && paramTotal > 0) {
+    return {
+      current: Math.max(0, Math.min(paramTotal, paramCurrent)),
+      total: paramTotal,
+    };
+  }
+
+  const count = toFiniteNumber(event.messageParams?.count);
+  if (count !== null && count > 0) {
+    return { current: count, total: count };
+  }
+
+  return {
+    current: Math.max(0, event.current),
+    total: Math.max(1, event.total),
+  };
+};
+
 export const useEmbeddingStatus = () => {
   const [progress, setProgress] = useState<EmbeddingProgress | null>(null);
 
   const handleProgress = useCallback((event: ProgressEvent["data"]) => {
     setProgress((prev) => {
+      const display = resolveDisplayProgress(event);
       const next: EmbeddingProgress = {
         stage: event.phase as EmbeddingProgress["stage"],
-        current: event.current,
-        total: event.total,
+        current: display.current,
+        total: display.total,
         message: event.message,
         messageKey: event.messageKey,
         messageParams: event.messageParams,

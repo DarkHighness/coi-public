@@ -244,7 +244,10 @@ export class RAGDatabase {
     return contentBytes + embeddingBytes + 256;
   }
 
-  async addDocument(doc: RAGDocument): Promise<void> {
+  async addDocument(
+    doc: RAGDocument,
+    options?: { skipSaveMetadataTouch?: boolean },
+  ): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
     const tagsJson = doc.tags ? JSON.stringify(doc.tags) : null;
@@ -348,19 +351,21 @@ export class RAGDatabase {
       );
     }
 
-    await this.touchSaveMetadata(
-      doc.saveId,
-      doc.forkId,
-      doc.embeddingModel,
-      doc.embeddingProvider,
-    );
+    if (!options?.skipSaveMetadataTouch) {
+      await this.touchSaveMetadata(
+        doc.saveId,
+        doc.forkId,
+        doc.embeddingModel,
+        doc.embeddingProvider,
+      );
+    }
   }
 
   async addDocuments(docs: RAGDocument[]): Promise<void> {
     if (docs.length === 0) return;
 
     for (const doc of docs) {
-      await this.addDocument(doc);
+      await this.addDocument(doc, { skipSaveMetadataTouch: true });
     }
 
     const touched = new Map<string, number>();

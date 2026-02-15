@@ -11,7 +11,7 @@ interface RAGPanelProps {
 export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const isIndexing = Boolean(progress);
+  const isIndexing = Boolean(progress && progress.current < progress.total);
   const [stats, setStats] = useState<{
     totalDocs: number;
     pendingRequests: number;

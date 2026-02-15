@@ -80,6 +80,47 @@ describe("useEmbeddingStatus", () => {
     );
   });
 
+  it("uses completion count as displayed progress when provided", () => {
+    let progressHandler: ((event: any) => void) | null = null;
+    const ragService = {
+      on: vi.fn((event: string, handler: (payload: any) => void) => {
+        if (event === "progress") {
+          progressHandler = handler;
+        }
+      }),
+      off: vi.fn(),
+    };
+
+    getRAGServiceMock.mockReturnValue(ragService);
+
+    const Probe = () => {
+      const progress = useEmbeddingStatus();
+      const text = progress
+        ? `${progress.stage}:${progress.current}/${progress.total}:${progress.messageKey || "no-key"}`
+        : "none";
+      return React.createElement("div", null, text);
+    };
+
+    render(React.createElement(Probe));
+
+    act(() => {
+      progressHandler?.({
+        phase: "indexing",
+        current: 970,
+        total: 970,
+        message: "Reindex complete (484 chunks)",
+        messageKey: "ragDebugger.progressReindexComplete",
+        messageParams: {
+          count: 484,
+        },
+      });
+    });
+
+    expect(
+      screen.getByText("indexing:484/484:ragDebugger.progressReindexComplete"),
+    ).toBeTruthy();
+  });
+
   it("unsubscribes from progress on unmount", () => {
     let progressHandler: ((event: any) => void) | null = null;
     const ragService = {

@@ -744,7 +744,11 @@ async function handleReindexAll(
         total: totalProgress,
         message: `Reindex complete (${upserted.count} chunks)`,
         messageKey: "ragDebugger.progressReindexComplete",
-        messageParams: { count: upserted.count },
+        messageParams: {
+          count: upserted.count,
+          current: upserted.count,
+          total: upserted.count,
+        },
       },
     });
 

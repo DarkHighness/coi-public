@@ -29,11 +29,11 @@ const createFile = (
 });
 
 describe("runtime/effects/ragDocuments", () => {
-  it("uses retireLatestByPaths for incremental updates and upserts changed chunks", async () => {
+  it("deletes old path chunks for incremental updates and upserts changed chunks", async () => {
     const ragService = {
       initialized: true,
       reindexAll: vi.fn().mockResolvedValue({ deleted: 0, count: 2 }),
-      retireLatestByPaths: vi.fn().mockResolvedValue({ deleted: 2 }),
+      deleteByPaths: vi.fn().mockResolvedValue({ deleted: 2 }),
       upsertFileChunks: vi.fn().mockResolvedValue({ count: 2 }),
     };
 
@@ -65,7 +65,7 @@ describe("runtime/effects/ragDocuments", () => {
     );
 
     expect(ragService.reindexAll).toHaveBeenCalledTimes(1);
-    expect(ragService.retireLatestByPaths).not.toHaveBeenCalled();
+    expect(ragService.deleteByPaths).not.toHaveBeenCalled();
 
     await updateRAGDocumentsBackground(
       [],
@@ -73,12 +73,11 @@ describe("runtime/effects/ragDocuments", () => {
       vfsSession,
     );
 
-    expect(ragService.retireLatestByPaths).toHaveBeenCalledTimes(1);
-    const retirePayload = ragService.retireLatestByPaths.mock.calls[0]?.[0];
-    expect(retirePayload.saveId).toBe("save-inc-1");
-    expect(retirePayload.forkId).toBe(0);
-    expect(retirePayload.turnNumber).toBe(2);
-    expect(retirePayload.paths).toEqual(
+    expect(ragService.deleteByPaths).toHaveBeenCalledTimes(1);
+    const deletePayload = ragService.deleteByPaths.mock.calls[0]?.[0];
+    expect(deletePayload.saveId).toBe("save-inc-1");
+    expect(deletePayload.forkId).toBe(0);
+    expect(deletePayload.paths).toEqual(
       expect.arrayContaining([
         "current/world/a.txt",
         "current/world/b.txt",

@@ -20,7 +20,7 @@ const createFile = (
 });
 
 describe("vfsExtraction", () => {
-  it("extracts JSON chunks with path+miniobject strategy", () => {
+  it("extracts JSON chunks with per-file overlap strategy", () => {
     const largeJson = JSON.stringify(
       {
         world: {
@@ -28,8 +28,8 @@ describe("vfsExtraction", () => {
           npcs: Array.from({ length: 6 }, (_, index) => ({
             id: `npc-${index}`,
             profile: {
-              bio: `Bio-${index}-` + "x".repeat(320),
-              hidden: `Secret-${index}-` + "y".repeat(320),
+              bio: `Bio-${index}-` + "x".repeat(820),
+              hidden: `Secret-${index}-` + "y".repeat(820),
             },
           })),
         },
@@ -53,22 +53,20 @@ describe("vfsExtraction", () => {
       turnNumber: 3,
     });
 
-    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.length).toBeGreaterThan(0);
     expect(
-      chunks.every((chunk) => chunk.chunkMeta?.strategy === "json_path_object"),
+      chunks.every((chunk) => chunk.chunkMeta?.strategy === "text_window"),
     ).toBe(true);
-    expect(chunks.some((chunk) => chunk.content.includes("path:"))).toBe(true);
-    expect(chunks.some((chunk) => chunk.content.includes("world.npcs"))).toBe(
-      true,
-    );
+    expect(chunks.some((chunk) => chunk.content.includes('"npcs"'))).toBe(true);
+    expect(chunks.some((chunk) => chunk.content.includes("path:"))).toBe(false);
   });
 
-  it("applies default JSON window rules for large arrays", () => {
+  it("uses file-level overlap chunking for large JSON arrays", () => {
     const largeJson = JSON.stringify(
       {
-        conversation: Array.from({ length: 35 }, (_, index) => ({
+        conversation: Array.from({ length: 140 }, (_, index) => ({
           role: index % 2 === 0 ? "user" : "assistant",
-          content: `message-${index}`,
+          content: `message-${index}-` + "z".repeat(180),
         })),
       },
       null,
@@ -90,37 +88,30 @@ describe("vfsExtraction", () => {
       turnNumber: 3,
     });
 
-    const conversationWindows = Array.from(
-      new Set(
-        chunks
-          .flatMap((chunk) =>
-            Array.from(
-              chunk.content.matchAll(/path:\s+(conversation\[\d+-\d+\])/g),
-            ).map((match) => match[1]),
-          )
-          .filter(Boolean),
-      ),
-    );
-
-    expect(conversationWindows.length).toBe(4);
+    expect(chunks.length).toBeGreaterThan(0);
     expect(
-      conversationWindows.every((path) =>
-        /conversation\[\d+-\d+\]/.test(path),
+      chunks.every((chunk) => chunk.chunkMeta?.strategy === "text_window"),
+    ).toBe(true);
+    expect(
+      chunks.every(
+        (chunk) =>
+          !chunk.content.includes("path: conversation[") &&
+          !chunk.content.includes("heading_path:"),
       ),
     ).toBe(true);
   });
 
-  it("extracts Markdown chunks with heading path", () => {
+  it("extracts Markdown chunks with the same overlap strategy", () => {
     const markdown = [
       "# Chapter One",
       "",
       "## Scene Alpha",
       "",
-      "Alpha paragraph " + "a".repeat(1400),
+      "Alpha paragraph " + "a".repeat(3600),
       "",
       "## Scene Beta",
       "",
-      "Beta paragraph " + "b".repeat(1400),
+      "Beta paragraph " + "b".repeat(3600),
     ].join("\n");
 
     const snapshot: VfsFileMap = {
@@ -138,19 +129,13 @@ describe("vfsExtraction", () => {
       turnNumber: 3,
     });
 
-    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.length).toBeGreaterThan(0);
     expect(
-      chunks.every((chunk) => chunk.chunkMeta?.strategy === "markdown_heading"),
+      chunks.every((chunk) => chunk.chunkMeta?.strategy === "text_window"),
     ).toBe(true);
-    expect(
-      chunks.some((chunk) => chunk.content.includes("heading_path:")),
-    ).toBe(true);
-    expect(
-      chunks.some(
-        (chunk) =>
-          chunk.chunkMeta?.overlapChars && chunk.chunkMeta.overlapChars > 0,
-      ),
-    ).toBe(true);
+    expect(chunks.some((chunk) => chunk.content.includes("## Scene Alpha"))).toBe(
+      true,
+    );
   });
 
   it("applies adaptive overlap for text chunks", () => {
@@ -182,13 +167,13 @@ describe("vfsExtraction", () => {
       .map((chunk) => chunk.chunkMeta?.overlapChars ?? 0)
       .slice(1);
 
-    expect(overlapValues.every((value) => value >= 0 && value <= 320)).toBe(
+    expect(overlapValues.every((value) => value >= 0 && value <= 1600)).toBe(
       true,
     );
-    expect(overlapValues.some((value) => value >= 80)).toBe(true);
+    expect(overlapValues.some((value) => value >= 700)).toBe(true);
   });
 
-  it("falls back to coarse json chunking when path units are excessive", () => {
+  it("keeps huge JSON chunking at file level without path fan-out", () => {
     const hugeObject = {
       entries: Object.fromEntries(
         Array.from({ length: 420 }, (_, index) => [
@@ -221,8 +206,13 @@ describe("vfsExtraction", () => {
     });
 
     expect(chunks.length).toBeGreaterThan(0);
-    expect(chunks.length).toBeLessThan(180);
-    expect(chunks.every((chunk) => chunk.content.includes("path: $"))).toBe(true);
+    expect(chunks.length).toBeLessThanOrEqual(36);
+    expect(chunks.some((chunk) => chunk.content.includes('"entries"'))).toBe(
+      true,
+    );
+    expect(chunks.some((chunk) => chunk.content.includes("path: $"))).toBe(
+      false,
+    );
   });
 
   it("caps per-file chunk count to avoid runaway indexing", () => {
@@ -245,7 +235,7 @@ describe("vfsExtraction", () => {
       turnNumber: 3,
     });
 
-    expect(chunks.length).toBeLessThanOrEqual(180);
+    expect(chunks.length).toBeLessThanOrEqual(36);
   });
 
   it("diffs snapshots by changed and removed paths", () => {
