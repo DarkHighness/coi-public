@@ -84,10 +84,11 @@ This is a **GM COMMAND**. You must:
 5. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 6. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-7. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
-8. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
-9. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\`.
-10. ${CONVERSATION_GUARD_LINE}
+7. **SKILL DISCOVERY (RECOMMENDED)**: Read current/skills/index.json and load additional relevant skill docs (1-3) for this exact command domain before major writes.
+8. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
+9. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
+10. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\`.
+11. ${CONVERSATION_GUARD_LINE}
 `;
   },
 );
@@ -124,22 +125,23 @@ You are in AGENTIC MODE (VFS-only).
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, the active command protocol skill ("turn" or "player-rate"), current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-6. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\` (chars/lines/json), and \`vfs_search\` before changing files.
+6. **SKILL DISCOVERY (RECOMMENDED)**: Read current/skills/index.json and load additional relevant skill docs (1-3) before non-trivial writes.
+7. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\` (chars/lines/json), and \`vfs_search\` before changing files.
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
    - For large JSON, prefer \`vfs_read\` with \`mode: "json"\` + narrow \`pointers\` or \`mode: "lines"\`; avoid broad full-file char reads.
-7. ${
+8. ${
       isPlayerRateToolset
         ? "**SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` by calling `vfs_commit_soul`."
         : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with `vfs_write` using `write_file` / `patch_json` / `merge_json`. Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are writable and may be proactively refined via `vfs_write` when evidence is strong."
     }
-8. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
-9. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
-10. **WRITE FAILURE REPAIR MODE**: If a writable write fails, your next calls must repair those failed targets (inspect+retry same targets). Do NOT call \`${resolvedFinishToolName}\` until they succeed.
-11. **NO COMMIT SPAM**: Repeating \`${resolvedFinishToolName}\` while failed writable targets remain unresolved is invalid.
-12. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
-13. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
-14. **NO DUPLICATES**: Check existing files before adding new entities.
-15. ${
+9. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
+10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
+11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, your next calls must repair those failed targets (inspect+retry same targets). Do NOT call \`${resolvedFinishToolName}\` until they succeed.
+12. **NO COMMIT SPAM**: Repeating \`${resolvedFinishToolName}\` while failed writable targets remain unresolved is invalid.
+13. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
+14. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
+15. **NO DUPLICATES**: Check existing files before adding new entities.
+16. ${
       isPlayerRateToolset
         ? "**NO PLOT PROGRESSION**: `[Player Rate]` loops must not advance visible story nodes or produce new choices."
         : "**CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly."
@@ -186,13 +188,14 @@ You are in CLEANUP MODE (VFS-only).
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-6. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read\` to locate and verify duplicate candidates.
+6. **SKILL DISCOVERY (RECOMMENDED)**: Read current/skills/index.json and load additional relevant skill docs (1-3) before non-trivial cleanup edits.
+7. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read\` to locate and verify duplicate candidates.
    - For large JSON, prefer pointer/line scoped reads instead of broad full-file char reads.
-7. **APPLY FIXES**: Use \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` as needed.
-8. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
-9. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
-10. **WRITE FAILURE REPAIR MODE**: If a writable write fails, next calls must repair those failed targets first; do not finish until resolved.
-11. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
+8. **APPLY FIXES**: Use \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` as needed.
+9. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
+10. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
+11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, next calls must repair those failed targets first; do not finish until resolved.
+12. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 
 <examples>
 - Example (find duplicates → fix → finish):

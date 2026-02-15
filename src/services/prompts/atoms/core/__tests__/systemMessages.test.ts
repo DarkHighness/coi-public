@@ -19,6 +19,8 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("shared/system/refs/**");
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
     expect(content).toContain("NO COMMIT SPAM");
+    expect(content).toContain("SKILL DISCOVERY (RECOMMENDED)");
+    expect(content).toContain("current/skills/index.json");
     expect(content).toContain("broad full-file char reads");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
     expect(content).not.toContain(legacyFinishTool);
@@ -47,6 +49,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("vfs_ls");
     expect(content).toContain("vfs_search");
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
+    expect(content).toContain("SKILL DISCOVERY (RECOMMENDED)");
   });
 
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {
@@ -56,6 +59,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("already prefixed with **[SUDO]**");
     expect(content).toContain("forced elevated update payload");
     expect(content).toContain("immutable/finish policy constraints");
+    expect(content).toContain("SKILL DISCOVERY (RECOMMENDED)");
     expect(content).not.toContain("bypass normal simulation constraints");
     expect(content).not.toContain(legacyForceUpdateTool);
   });

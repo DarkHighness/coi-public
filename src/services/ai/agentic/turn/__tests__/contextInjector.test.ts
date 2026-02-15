@@ -75,6 +75,10 @@ describe("contextInjector", () => {
     expect(getText(history[4])).toContain(
       "Do not skip required skill preflight",
     );
+    expect(getText(history[4])).toContain("current/skills/index.json");
+    expect(getText(history[4])).toContain(
+      "Select and read 1-3 additional skill files",
+    );
     expect(getText(history[4])).toContain("You are currently in God mode.");
     expect(getText(history[4])).toContain("Unlock mode is currently ON.");
     expect(getText(history[5])).toContain("PRESET SKILLS ACTIVE");
@@ -102,6 +106,7 @@ describe("contextInjector", () => {
     expect(getText(history[10])).toContain(
       "Do not skip required skill preflight",
     );
+    expect(getText(history[10])).toContain("current/skills/index.json");
   });
 
   it("injects normal turn instruction without semantic hints when RAG is off", () => {
@@ -159,6 +164,7 @@ describe("contextInjector", () => {
     expect(getText(history[3])).toContain(
       "Do not skip required skill preflight",
     );
+    expect(getText(history[3])).toContain("current/skills/index.json");
   });
 
   it("injects budget and no-tool-call messages", () => {
