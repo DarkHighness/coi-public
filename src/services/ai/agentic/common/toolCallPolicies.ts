@@ -14,9 +14,11 @@ export const WRITE_MUTATION_TOOL_NAMES = new Set([
   "vfs_delete",
 ]);
 
-export const NON_RETRYABLE_WRITE_ERROR_CODES = new Set([
+export const UNRECOVERABLE_WRITE_ERROR_CODES = new Set([
   "IMMUTABLE_READONLY",
   "FINISH_GUARD_REQUIRED",
+  "ELEVATION_REQUIRED",
+  "EDITOR_CONFIRM_REQUIRED",
 ]);
 
 export const UNKNOWN_WRITE_TARGET = "(unknown-write-target)";
@@ -94,11 +96,6 @@ export const getToolErrorCode = (output: unknown): string | null => {
   if (!output || typeof output !== "object") return null;
   const rawCode = (output as Record<string, unknown>).code;
   return typeof rawCode === "string" ? rawCode : null;
-};
-
-export const shouldTrackWriteFailure = (errorCode: string | null): boolean => {
-  if (!errorCode) return true;
-  return !NON_RETRYABLE_WRITE_ERROR_CODES.has(errorCode);
 };
 
 export const formatPendingWriteFailurePaths = (

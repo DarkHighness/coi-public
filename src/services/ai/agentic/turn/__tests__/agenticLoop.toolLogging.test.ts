@@ -123,9 +123,36 @@ const createVfsSession = () => {
   ];
 
   let cursor = 0;
+  const existingMutablePaths = new Set<string>([
+    "world/global.json",
+    "world/notes.md",
+  ]);
+  const existingReadonlyPaths = new Set<string>([
+    "skills/commands/runtime/SKILL.md",
+  ]);
 
   return {
     snapshot: () => snapshots[Math.min(cursor, snapshots.length - 1)],
+    readFile: vi.fn((path: string) => {
+      const normalized = String(path || "").replace(/^current\//, "");
+      if (existingMutablePaths.has(normalized)) {
+        return {
+          path: `current/${normalized}`,
+          contentType: normalized.endsWith(".json")
+            ? "application/json"
+            : "text/markdown",
+          content: normalized.endsWith(".json") ? "{}" : "",
+        };
+      }
+      if (existingReadonlyPaths.has(normalized)) {
+        return {
+          path: `current/${normalized}`,
+          contentType: "text/markdown",
+          content: "# read-only",
+        };
+      }
+      return null;
+    }),
     checkpoint: vi.fn(),
     rollback: vi.fn(() => true),
     beginReadEpoch: vi.fn(),
@@ -230,7 +257,7 @@ describe("agenticLoop tool logging", () => {
         log.endpoint === "tool_execution" &&
         log.toolName === "vfs_commit_turn" &&
         String((log as any).toolOutput?.error || "").includes(
-          "FINISH_BLOCKED_BY_WRITE_FAILURE",
+          "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
         ),
     );
     expect(blockedFinishLog).toBeUndefined();
@@ -377,7 +404,7 @@ describe("agenticLoop tool logging", () => {
         log.endpoint === "tool_execution" &&
         log.toolName === "vfs_commit_turn" &&
         String((log as any).toolOutput?.error || "").includes(
-          "FINISH_BLOCKED_BY_WRITE_FAILURE",
+          "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
         ),
     );
     expect(writeBlockedLog).toBeDefined();
@@ -386,10 +413,10 @@ describe("agenticLoop tool logging", () => {
     );
   });
 
-  it("does not require retry for immutable write failures on read-only files", async () => {
+  it("does not block finish for unrecoverable write failures and emits guidance", async () => {
     const vfsSession = createVfsSession();
 
-    aiHandlerMock.handleAICall.mockResolvedValue({
+    aiHandlerMock.handleAICall.mockResolvedValueOnce({
       text: "",
       usage: {
         promptTokens: 5,
@@ -457,6 +484,118 @@ describe("agenticLoop tool logging", () => {
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
     ).toEqual(["vfs_write", "vfs_commit_turn"]);
+
+    const blockedFinishLog = result.logs.find(
+      (log) =>
+        log.endpoint === "tool_execution" &&
+        log.toolName === "vfs_commit_turn" &&
+        String((log as any).toolOutput?.error || "").includes(
+          "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
+        ),
+    );
+    expect(blockedFinishLog).toBeUndefined();
+
+    const writeLog = result.logs.find(
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write",
+    );
+    expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
+      "WRITE_UNRECOVERABLE_NON_BLOCKING",
+    );
+    expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
+      "current/skills/commands/runtime/SKILL.md",
+    );
+  });
+
+  it("does not block finish for missing-target write failures and emits warning", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall.mockResolvedValueOnce({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-write-missing-target",
+          name: "vfs_write",
+          args: {
+            ops: [
+              {
+                op: "patch_json",
+                path: "current/world/newly-created/profile.json",
+                patches: [{ op: "replace", path: "/foo", value: "bar" }],
+              },
+            ],
+          },
+        },
+        {
+          id: "call-finish-ok",
+          name: "vfs_commit_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_write") {
+        return {
+          success: false,
+          error: "file not found",
+          code: "NOT_FOUND",
+        };
+      }
+      if (name === "vfs_commit_turn") {
+        vfsSession.markConversationTouched();
+        return { success: true };
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write", "vfs_commit_turn"]);
+
+    const blockedFinishLog = result.logs.find(
+      (log) =>
+        log.endpoint === "tool_execution" &&
+        log.toolName === "vfs_commit_turn" &&
+        String((log as any).toolOutput?.error || "").includes(
+          "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
+        ),
+    );
+    expect(blockedFinishLog).toBeUndefined();
+
+    const writeLog = result.logs.find(
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write",
+    );
+    expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
+      "WRITE_NON_EXISTENT_TARGET_NON_BLOCKING",
+    );
+    expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
+      "current/world/newly-created/profile.json",
+    );
   });
 
   it("soft-blocks read-only batches before finish to avoid token waste", async () => {

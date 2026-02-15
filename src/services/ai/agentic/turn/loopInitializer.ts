@@ -72,7 +72,7 @@ export interface LoopState {
   vfsElevationIntent?: VfsElevationIntent;
   /** Declared elevation scope for current request token */
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
-  /** Pending write targets that failed and must be retried successfully before finish */
+  /** Pending existing-file write targets that must be retried successfully before finish */
   pendingWriteFailurePaths: Set<string>;
 }
 

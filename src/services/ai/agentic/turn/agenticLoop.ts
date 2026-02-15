@@ -59,7 +59,7 @@ import {
   isReadOnlyInspectionToolName,
   isLikelyNoOpReadBeforeFinishBatch,
   isWriteMutationToolName,
-  shouldTrackWriteFailure,
+  UNRECOVERABLE_WRITE_ERROR_CODES,
   UNKNOWN_WRITE_TARGET,
 } from "../common/toolCallPolicies";
 
@@ -133,6 +133,79 @@ const detectPlayerRateMode = (
   }
 
   return false;
+};
+
+type WriteFailureDisposition =
+  | "retry_required_existing_target"
+  | "warn_missing_target_non_blocking"
+  | "error_unrecoverable_non_blocking";
+
+interface WriteFailureClassification {
+  disposition: WriteFailureDisposition;
+  retryTargets: string[];
+  guidance: string;
+}
+
+const appendWriteFailureGuidance = (
+  output: unknown,
+  guidance: string,
+): unknown => {
+  if (!output || typeof output !== "object") {
+    return output;
+  }
+  const record = output as Record<string, unknown>;
+  const existingError = typeof record.error === "string" ? record.error : "";
+  if (existingError.includes(guidance)) {
+    return output;
+  }
+  return {
+    ...record,
+    error: existingError ? `${existingError}\n\n${guidance}` : guidance,
+  };
+};
+
+const classifyWriteFailure = (params: {
+  errorCode: string | null;
+  writeTargets: string[];
+  existingWriteTargets: string[];
+}): WriteFailureClassification => {
+  const { errorCode, writeTargets, existingWriteTargets } = params;
+  const allTargets =
+    writeTargets.length > 0 ? writeTargets : [UNKNOWN_WRITE_TARGET];
+  const existingTargets =
+    existingWriteTargets.length > 0
+      ? existingWriteTargets
+      : [UNKNOWN_WRITE_TARGET];
+  const allTargetList = allTargets.join(", ");
+  const existingTargetList = existingTargets.join(", ");
+
+  if (errorCode && UNRECOVERABLE_WRITE_ERROR_CODES.has(errorCode)) {
+    return {
+      disposition: "error_unrecoverable_non_blocking",
+      retryTargets: [],
+      guidance:
+        `[ERROR: WRITE_UNRECOVERABLE_NON_BLOCKING] Write failed due to unrecoverable permission/policy constraints. ` +
+        `This does NOT block finish. Change path/operation instead of blind retry. Targets: ${allTargetList}.`,
+    };
+  }
+
+  if (existingWriteTargets.length > 0 || writeTargets.length === 0) {
+    return {
+      disposition: "retry_required_existing_target",
+      retryTargets: existingTargets,
+      guidance:
+        `[ERROR: WRITE_EXISTING_TARGET_RETRY_REQUIRED] Write to existing target failed and must be retried before finish. ` +
+        `Retry targets: ${existingTargetList}.`,
+    };
+  }
+
+  return {
+    disposition: "warn_missing_target_non_blocking",
+    retryTargets: [],
+    guidance:
+      `[WARNING: WRITE_NON_EXISTENT_TARGET_NON_BLOCKING] Write failed on non-existent target path(s). ` +
+      `This does NOT block finish. If creation is still required, fix path/operation and retry. Targets: ${allTargetList}.`,
+  };
 };
 
 // ============================================================================
@@ -934,6 +1007,9 @@ async function processToolCalls(
     const writeTargets = isWriteTool
       ? collectWriteTargetsFromToolCall(call)
       : [];
+    const existingWriteTargets = isWriteTool
+      ? writeTargets.filter((target) => loopState.vfsSession.readFile(target))
+      : [];
 
     if (
       isFinishToolCall(call) &&
@@ -945,7 +1021,7 @@ async function processToolCalls(
       output = {
         success: false,
         error:
-          `[ERROR: FINISH_BLOCKED_BY_WRITE_FAILURE] Pending write targets failed earlier and must succeed before finish. ` +
+          `[ERROR: FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE] Existing-file write targets failed earlier and must succeed before finish. ` +
           `Retry writes for: ${pendingList}.`,
         code: "INVALID_ACTION",
       };
@@ -977,13 +1053,15 @@ async function processToolCalls(
 
     if (isWriteTool) {
       if (isError) {
-        const code = getToolErrorCode(output);
-        const shouldTrackFailure = shouldTrackWriteFailure(code);
+        const classification = classifyWriteFailure({
+          errorCode: getToolErrorCode(output),
+          writeTargets,
+          existingWriteTargets,
+        });
+        output = appendWriteFailureGuidance(output, classification.guidance);
 
-        if (shouldTrackFailure) {
-          const targetsToTrack =
-            writeTargets.length > 0 ? writeTargets : [UNKNOWN_WRITE_TARGET];
-          for (const target of targetsToTrack) {
+        if (classification.disposition === "retry_required_existing_target") {
+          for (const target of classification.retryTargets) {
             loopState.pendingWriteFailurePaths.add(target);
           }
         }
