@@ -7,11 +7,9 @@ import {
 } from "../utils/constants/atmosphere";
 import { useSettings } from "../hooks/useSettings";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface EnvironmentalEffectsProps {
-  currentText: string;
-  imagePrompt?: string;
   /** Unified atmosphere object */
   atmosphere?: AtmosphereObject;
   backgroundImage?: string;
@@ -20,144 +18,141 @@ interface EnvironmentalEffectsProps {
 
 type EffectType = VisualEffect;
 
-export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
-  currentText,
-  imagePrompt,
+interface StyleItem {
+  id: string;
+  style: React.CSSProperties;
+}
+
+const FALLBACK_BACKGROUND_KEYS = Object.keys(BACKGROUND_IMAGES);
+
+const rand = (min: number, max: number): number =>
+  min + Math.random() * (max - min);
+
+const resolveVisualEffect = (
+  resolvedAtmosphere: AtmosphereObject,
+): EffectType => {
+  const atmosphereEffect = getEffectForAtmosphere(resolvedAtmosphere);
+  const weather = resolvedAtmosphere.weather;
+
+  if (!weather) {
+    return atmosphereEffect;
+  }
+  if (weather === "none") {
+    return null;
+  }
+
+  if (
+    ["rain", "drizzle", "heavy_rain", "storm", "thunderstorm"].includes(weather)
+  ) {
+    return "rain";
+  }
+  if (["snow", "light_snow", "heavy_snow", "blizzard"].includes(weather)) {
+    return "snow";
+  }
+  if (["fog", "mist", "haze", "cloudy", "overcast"].includes(weather)) {
+    return "fog";
+  }
+  if (["sunny", "clear", "partly_cloudy"].includes(weather)) {
+    return "sunny";
+  }
+  if (["dust", "dust_storm", "sandstorm"].includes(weather)) {
+    return "dust";
+  }
+  if (weather === "embers") {
+    return "embers";
+  }
+  if (weather === "flicker") {
+    return "flicker";
+  }
+
+  return (
+    ["rain", "snow", "fog", "embers", "flicker", "sunny", "dust"].includes(
+      weather,
+    )
+      ? weather
+      : null
+  ) as EffectType;
+};
+
+const areAtmospheresEquivalent = (
+  a: AtmosphereObject | undefined,
+  b: AtmosphereObject | undefined,
+): boolean => {
+  const na = normalizeAtmosphere(a);
+  const nb = normalizeAtmosphere(b);
+  return (
+    na.envTheme === nb.envTheme &&
+    na.ambience === nb.ambience &&
+    (na.weather ?? null) === (nb.weather ?? null)
+  );
+};
+
+const EnvironmentalEffectsComponent: React.FC<EnvironmentalEffectsProps> = ({
   atmosphere,
   backgroundImage,
   fallbackEnabled = true,
 }) => {
-  // Use settings directly
   const { settings } = useSettings();
   const effectsDisabled = settings.disableEnvironmentalEffects;
 
-  const [effect, setEffect] = useState<EffectType>(null);
-  const [loadedBgSource, setLoadedBgSource] = useState<string | null>(null);
+  const resolvedAtmosphere = useMemo(
+    () => normalizeAtmosphere(atmosphere),
+    [atmosphere],
+  );
+  const weather = resolvedAtmosphere.weather;
 
-  // Normalize the atmosphere to get the unified object
-  const resolvedAtmosphere = normalizeAtmosphere(atmosphere);
+  const effect = useMemo(
+    () => resolveVisualEffect(resolvedAtmosphere),
+    [resolvedAtmosphere],
+  );
 
-  useEffect(() => {
-    // ... effect detection logic (unchanged)
-    // Get default effect from atmosphere
-    const atmosphereEffect = getEffectForAtmosphere(resolvedAtmosphere);
-
-    // Priority Detection Logic - text-based overrides
-    let detectedEffect: EffectType = atmosphereEffect;
-    let weatherType = resolvedAtmosphere.weather; // Keep track of specific weather
-
-    // 1. Check for explicit weather enum from AI (Highest Priority)
-    if (resolvedAtmosphere.weather) {
-      if (resolvedAtmosphere.weather === "none") {
-        detectedEffect = null;
-      } else {
-        // Map specific weathers to core visual effects
-        const w = resolvedAtmosphere.weather;
-        if (
-          ["rain", "drizzle", "heavy_rain", "storm", "thunderstorm"].includes(w)
-        ) {
-          detectedEffect = "rain";
-        } else if (
-          ["snow", "light_snow", "heavy_snow", "blizzard"].includes(w)
-        ) {
-          detectedEffect = "snow";
-        } else if (["fog", "mist", "haze", "cloudy", "overcast"].includes(w)) {
-          detectedEffect = "fog";
-        } else if (["sunny", "clear", "partly_cloudy"].includes(w)) {
-          detectedEffect = "sunny";
-        } else if (["dust", "dust_storm", "sandstorm"].includes(w)) {
-          detectedEffect = "dust";
-        } else if (["embers"].includes(w)) {
-          detectedEffect = "embers";
-        } else if (["flicker"].includes(w)) {
-          detectedEffect = "flicker";
-        } else {
-          // Fallback if generic string provided
-          // strict cast might fail if string is random, but detectedEffect is typed as VisualEffect
-          // We'll trust the mapping or fallback to null if unknown
-          detectedEffect = (
-            [
-              "rain",
-              "snow",
-              "fog",
-              "embers",
-              "flicker",
-              "sunny",
-              "dust",
-            ].includes(w)
-              ? w
-              : null
-          ) as EffectType;
-        }
-      }
-    }
-
-    setEffect(detectedEffect);
-  }, [currentText, imagePrompt, resolvedAtmosphere]);
-
-  // Determine background source and preload
-  useEffect(() => {
+  const loadedBgSource = useMemo(() => {
     let bgSource = backgroundImage;
-    let isFallback = false;
 
-    // Extract ambience string for background lookup
     const ambienceKey = resolvedAtmosphere.ambience;
-
     if (!bgSource && fallbackEnabled && ambienceKey) {
-      // Try to find a matching background from constants
-      // First try exact match
       if (BACKGROUND_IMAGES[ambienceKey]) {
         bgSource = BACKGROUND_IMAGES[ambienceKey];
-        isFallback = true;
-      }
-      // If no exact match, try to find by partial match or default to fantasy
-      else {
-        // Simple fallback logic: check if ambience contains key words
+      } else {
         const ambienceLower = ambienceKey.toLowerCase();
-        const foundKey = Object.keys(BACKGROUND_IMAGES).find((key) =>
+        const foundKey = FALLBACK_BACKGROUND_KEYS.find((key) =>
           ambienceLower.includes(key),
         );
         if (foundKey) {
           bgSource = BACKGROUND_IMAGES[foundKey];
-          isFallback = true;
         }
       }
     }
 
-    // If we have a background source, set it directly
-    // CSS background-image handles cross-origin resources more gracefully than JS Image objects
-    if (bgSource) {
-      setLoadedBgSource(bgSource);
-    } else {
-      // If no background, we might want to keep the old one or clear it?
-      // Clearing it might cause a flash to black/transparent.
-      // Let's clear it if explicitly null.
-      setLoadedBgSource(null);
-    }
-  }, [backgroundImage, fallbackEnabled, resolvedAtmosphere]);
+    return bgSource ?? null;
+  }, [backgroundImage, fallbackEnabled, resolvedAtmosphere.ambience]);
 
-  // Double buffering for smooth transitions
-  const [bg1, setBg1] = useState<string | null>(null);
-  const [bg2, setBg2] = useState<string | null>(null);
-  const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
+  const [backgroundLayers, setBackgroundLayers] = useState<{
+    bg1: string | null;
+    bg2: string | null;
+    active: 1 | 2;
+  }>({
+    bg1: null,
+    bg2: null,
+    active: 1,
+  });
 
   useEffect(() => {
-    // When a new background is loaded, switch layers
-    if (activeLayer === 1) {
-      if (bg1 !== loadedBgSource) {
-        setBg2(loadedBgSource);
-        setActiveLayer(2);
+    setBackgroundLayers((prev) => {
+      if (prev.active === 1) {
+        if (prev.bg2 === loadedBgSource) {
+          return prev;
+        }
+        return { ...prev, bg2: loadedBgSource, active: 2 };
       }
-    } else {
-      if (bg2 !== loadedBgSource) {
-        setBg1(loadedBgSource);
-        setActiveLayer(1);
+
+      if (prev.bg1 === loadedBgSource) {
+        return prev;
       }
-    }
+      return { ...prev, bg1: loadedBgSource, active: 1 };
+    });
   }, [loadedBgSource]);
 
-  // Derived intensity based on specific weather string
-  const weather = resolvedAtmosphere.weather;
   const isHeavyRain = ["heavy_rain", "storm", "thunderstorm"].includes(
     weather || "",
   );
@@ -168,79 +163,155 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
   const isLightFog = ["mist", "haze", "partly_cloudy"].includes(weather || "");
   const isSandstorm = ["sandstorm", "dust_storm"].includes(weather || "");
 
+  const rainParticles = useMemo<StyleItem[]>(() => {
+    if (effectsDisabled || effect !== "rain") {
+      return [];
+    }
+    const count = isHeavyRain ? 80 : isLightRain ? 20 : 40;
+    return Array.from({ length: count }, (_, i) => ({
+      id: `rain-${i}`,
+      style: {
+        left: `${rand(0, 100)}%`,
+        animationDuration: `${rand(0.5, 0.8) * (isHeavyRain ? 0.7 : 1)}s`,
+        animationDelay: `${rand(0, 2)}s`,
+        opacity: (rand(0.1, 0.4) * (isHeavyRain ? 1.5 : 1)).toFixed(2),
+        height: isHeavyRain ? `${rand(15, 30)}px` : undefined,
+      },
+    }));
+  }, [effectsDisabled, effect, isHeavyRain, isLightRain]);
+
+  const snowParticles = useMemo<StyleItem[]>(() => {
+    if (effectsDisabled || effect !== "snow") {
+      return [];
+    }
+    const count = isHeavySnow ? 100 : isLightSnow ? 20 : 50;
+    return Array.from({ length: count }, (_, i) => ({
+      id: `snow-${i}`,
+      style: {
+        left: `${rand(0, 100)}%`,
+        animationDuration: `${rand(3, 8) * (isHeavySnow ? 0.5 : 1)}s`,
+        animationDelay: `${rand(0, 5)}s`,
+        width: `${rand(2, 6)}px`,
+        height: `${rand(2, 6)}px`,
+        opacity: isHeavySnow ? 0.8 : undefined,
+      },
+    }));
+  }, [effectsDisabled, effect, isHeavySnow, isLightSnow]);
+
+  const emberParticles = useMemo<StyleItem[]>(() => {
+    if (effectsDisabled || effect !== "embers") {
+      return [];
+    }
+    return Array.from({ length: 20 }, (_, i) => ({
+      id: `ember-${i}`,
+      style: {
+        left: `${rand(0, 100)}%`,
+        animationDuration: `${rand(2, 5)}s`,
+        animationDelay: `${rand(0, 2)}s`,
+      },
+    }));
+  }, [effectsDisabled, effect]);
+
+  const sunParticles = useMemo<StyleItem[]>(() => {
+    if (effectsDisabled || effect !== "sunny") {
+      return [];
+    }
+    return Array.from({ length: 15 }, (_, i) => ({
+      id: `sun-${i}`,
+      style: {
+        left: `${rand(0, 100)}%`,
+        top: `${rand(0, 100)}%`,
+        animationDuration: `${rand(4, 8)}s`,
+        animationDelay: `${rand(0, 2)}s`,
+      },
+    }));
+  }, [effectsDisabled, effect]);
+
+  const dustParticles = useMemo<StyleItem[]>(() => {
+    if (effectsDisabled || effect !== "dust") {
+      return [];
+    }
+    const count = isSandstorm ? 40 : 20;
+    return Array.from({ length: count }, (_, i) => ({
+      id: `dust-${i}`,
+      style: {
+        left: `${rand(0, 100)}%`,
+        top: `${rand(0, 100)}%`,
+        width: `${rand(2, 5)}px`,
+        height: `${rand(2, 5)}px`,
+        animation: `float ${rand(10, 20)}s linear infinite`,
+        animationDelay: `-${rand(0, 10)}s`,
+        opacity: rand(0.2, 0.5).toFixed(2),
+      },
+    }));
+  }, [effectsDisabled, effect, isSandstorm]);
+
+  const sandstormWinds = useMemo<StyleItem[]>(() => {
+    if (effectsDisabled || effect !== "dust" || !isSandstorm) {
+      return [];
+    }
+    return Array.from({ length: 10 }, (_, i) => ({
+      id: `wind-${i}`,
+      style: {
+        top: `${rand(0, 100)}%`,
+        opacity: 0.15,
+        height: "20%",
+        background:
+          "linear-gradient(90deg, transparent, rgba(160, 82, 45, 0.2), transparent)",
+        animationDuration: `${rand(2, 3)}s`,
+      },
+    }));
+  }, [effectsDisabled, effect, isSandstorm]);
+
   return (
     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-      {/* Background Layer 1 - Using img element for proper CORS handling */}
-      {bg1 && (
+      {backgroundLayers.bg1 && (
         <img
-          src={bg1}
+          src={backgroundLayers.bg1}
           alt=""
           crossOrigin="anonymous"
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
-            activeLayer === 1 ? "opacity-30" : "opacity-0"
+            backgroundLayers.active === 1 ? "opacity-30" : "opacity-0"
           }`}
           style={{
             filter: "blur(8px) brightness(0.6)",
+            willChange: "opacity",
           }}
         />
       )}
-      {/* Background Layer 2 - Using img element for proper CORS handling */}
-      {bg2 && (
+      {backgroundLayers.bg2 && (
         <img
-          src={bg2}
+          src={backgroundLayers.bg2}
           alt=""
           crossOrigin="anonymous"
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
-            activeLayer === 2 ? "opacity-30" : "opacity-0"
+            backgroundLayers.active === 2 ? "opacity-30" : "opacity-0"
           }`}
           style={{
             filter: "blur(8px) brightness(0.6)",
+            willChange: "opacity",
           }}
         />
       )}
 
       {!effectsDisabled && effect === "rain" && (
         <div className="w-full h-full">
-          {[...Array(isHeavyRain ? 80 : isLightRain ? 20 : 40)].map((_, i) => (
-            <div
-              key={i}
-              className="weather-rain"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDuration: `${(0.5 + Math.random() * 0.3) * (isHeavyRain ? 0.7 : 1)}s`,
-                animationDelay: `${Math.random() * 2}s`,
-                opacity: (0.1 + Math.random() * 0.3) * (isHeavyRain ? 1.5 : 1),
-                height: isHeavyRain
-                  ? `${15 + Math.random() * 15}px`
-                  : undefined,
-              }}
-            />
+          {rainParticles.map((item) => (
+            <div key={item.id} className="weather-rain" style={item.style} />
           ))}
         </div>
       )}
 
       {!effectsDisabled && effect === "snow" && (
         <div className="w-full h-full">
-          {[...Array(isHeavySnow ? 100 : isLightSnow ? 20 : 50)].map((_, i) => (
-            <div
-              key={i}
-              className="weather-snow"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDuration: `${(3 + Math.random() * 5) * (isHeavySnow ? 0.5 : 1)}s`,
-                animationDelay: `${Math.random() * 5}s`,
-                width: `${2 + Math.random() * 4}px`,
-                height: `${2 + Math.random() * 4}px`,
-                opacity: isHeavySnow ? 0.8 : undefined,
-              }}
-            />
+          {snowParticles.map((item) => (
+            <div key={item.id} className="weather-snow" style={item.style} />
           ))}
         </div>
       )}
 
       {!effectsDisabled && effect === "fog" && (
         <>
-          {/* Multiple fog layers for depth */}
           <div
             className="weather-fog"
             style={{
@@ -270,16 +341,8 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
       {!effectsDisabled && effect === "embers" && (
         <div className="w-full h-full">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="weather-ember"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDuration: `${2 + Math.random() * 3}s`,
-                animationDelay: `${Math.random() * 2}s`,
-              }}
-            />
+          {emberParticles.map((item) => (
+            <div key={item.id} className="weather-ember" style={item.style} />
           ))}
         </div>
       )}
@@ -290,16 +353,11 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
       {!effectsDisabled && effect === "sunny" && (
         <div className="w-full h-full">
-          {[...Array(15)].map((_, i) => (
+          {sunParticles.map((item) => (
             <div
-              key={i}
+              key={item.id}
               className="weather-particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDuration: `${4 + Math.random() * 4}s`,
-                animationDelay: `${Math.random() * 2}s`,
-              }}
+              style={item.style}
             />
           ))}
         </div>
@@ -307,44 +365,31 @@ export const EnvironmentalEffects: React.FC<EnvironmentalEffectsProps> = ({
 
       {!effectsDisabled && effect === "dust" && (
         <div className="w-full h-full pointer-events-none">
-          {/* Dust tint */}
           <div
             className={`absolute inset-0 bg-yellow-900/10 ${isSandstorm ? "bg-orange-700/20" : ""}`}
           ></div>
-          {/* Dust particles */}
-          {[...Array(isSandstorm ? 40 : 20)].map((_, i) => (
+          {dustParticles.map((item) => (
             <div
-              key={i}
+              key={item.id}
               className="absolute rounded-full bg-orange-100/30 blur-[1px]"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: `${2 + Math.random() * 3}px`,
-                height: `${2 + Math.random() * 3}px`,
-                animation: `float ${10 + Math.random() * 10}s linear infinite`,
-                animationDelay: `-${Math.random() * 10}s`,
-                opacity: 0.2 + Math.random() * 0.3,
-              }}
+              style={item.style}
             />
           ))}
-          {/* Horizontal wind for sandstorm */}
-          {isSandstorm &&
-            [...Array(10)].map((_, i) => (
-              <div
-                key={`wind-${i}`}
-                className="weather-fog"
-                style={{
-                  top: `${Math.random() * 100}%`,
-                  opacity: 0.15,
-                  height: "20%",
-                  background:
-                    "linear-gradient(90deg, transparent, rgba(160, 82, 45, 0.2), transparent)",
-                  animationDuration: `${2 + Math.random()}s`,
-                }}
-              />
-            ))}
+          {sandstormWinds.map((item) => (
+            <div key={item.id} className="weather-fog" style={item.style} />
+          ))}
         </div>
       )}
     </div>
   );
 };
+
+export const EnvironmentalEffects = React.memo(
+  EnvironmentalEffectsComponent,
+  (prevProps, nextProps) =>
+    prevProps.backgroundImage === nextProps.backgroundImage &&
+    prevProps.fallbackEnabled === nextProps.fallbackEnabled &&
+    areAtmospheresEquivalent(prevProps.atmosphere, nextProps.atmosphere),
+);
+
+EnvironmentalEffects.displayName = "EnvironmentalEffects";

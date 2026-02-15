@@ -320,13 +320,6 @@ function AppContent() {
 
   // Determine current context for effects
   const isStartScreen = location.pathname === "/";
-  const currentSegment = currentHistory[currentHistory.length - 1];
-
-  // Reset effects on Start Screen
-  const effectText =
-    !isStartScreen && currentSegment ? currentSegment.text : "";
-  const effectPrompt =
-    !isStartScreen && currentSegment ? currentSegment.imagePrompt : "";
 
   // Calculate Sticky Background
   const stickyBackground = React.useMemo(() => {
@@ -488,8 +481,6 @@ function AppContent() {
           }
         >
           <EnvironmentalEffects
-            currentText={effectText}
-            imagePrompt={effectPrompt}
             atmosphere={currentAtmosphere}
             backgroundImage={stickyBackground}
             fallbackEnabled={aiSettings.enableFallbackBackground}

@@ -14,8 +14,6 @@ import {
   CommandAction,
   COMMAND_DEFINITIONS,
 } from "../utils/commands";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
 import { resolveModelContextWindowTokens } from "../services/modelContextWindows";
@@ -1174,75 +1172,54 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                       return (
                         <div
                           key={idx}
-                          className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-divider/60 hover:bg-theme-surface/10 transition-colors"
+                          className="group relative -mx-2 border-b border-theme-divider/60 hover:bg-theme-surface/10 transition-colors"
                         >
-                          <div className="flex items-start gap-3">
-                            <button
-                              type="button"
-                              onClick={() => onAction(label)}
-                              disabled={isDisabled}
-                              className="flex-1 flex items-start gap-3 text-left text-theme-text font-serif leading-6 md:leading-7 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
-                                {idx + 1}
-                              </div>
+                          <button
+                            type="button"
+                            onClick={() => onAction(label)}
+                            disabled={isDisabled}
+                            className="w-full flex items-start gap-3 px-2 py-2 md:py-2.5 pr-12 text-left text-theme-text font-serif leading-6 md:leading-7 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                          >
+                            <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
+                              {idx + 1}
+                            </div>
 
-                              <div className="flex-1">
-                                <div className="text-[15px] md:text-base font-medium">
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      p: ({ children }) => (
-                                        <span className="inline">
-                                          {children}
-                                        </span>
-                                      ),
-                                      strong: ({ children }) => (
-                                        <span className="font-bold">
-                                          {children}
-                                        </span>
-                                      ),
-                                      em: ({ children }) => (
-                                        <span className="italic">
-                                          {children}
-                                        </span>
-                                      ),
-                                    }}
-                                  >
-                                    {label}
-                                  </ReactMarkdown>
-                                </div>
-                                {(rawChoice as any).consequence &&
-                                  gameState.unlockMode && (
-                                    <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
-                                      {(rawChoice as any).consequence}
-                                    </div>
-                                  )}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[15px] md:text-base font-medium">
+                                <span className="whitespace-pre-wrap break-words">
+                                  {label}
+                                </span>
                               </div>
-                            </button>
+                              {(rawChoice as any).consequence &&
+                                gameState.unlockMode && (
+                                  <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
+                                    {(rawChoice as any).consequence}
+                                  </div>
+                                )}
+                            </div>
+                          </button>
 
-                            <button
-                              type="button"
-                              onClick={(e) => handleRollClick(e, label)}
-                              disabled={isDisabled}
-                              className="flex-none mt-0.5 p-2 rounded-md text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface/10 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity disabled:opacity-30 touch-manipulation"
-                              title={t("roll")}
+                          <button
+                            type="button"
+                            onClick={(e) => handleRollClick(e, label)}
+                            disabled={isDisabled}
+                            className="absolute right-1.5 top-1.5 md:top-2 flex-none p-2 rounded-md text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface/10 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity disabled:opacity-30 touch-manipulation"
+                            title={t("roll")}
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="1.5"
-                                  d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
-                                ></path>
-                              </svg>
-                            </button>
-                          </div>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.5"
+                                d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+                              ></path>
+                            </svg>
+                          </button>
                         </div>
                       );
                     })}
