@@ -692,7 +692,7 @@ async function handleReindexAll(
     const forkPaths = Array.from(
       new Set(
         existing
-          .filter((doc) => doc.forkId === forkId && doc.isLatest)
+          .filter((doc) => doc.forkId === forkId)
           .map((doc) => doc.canonicalPath),
       ),
     );
