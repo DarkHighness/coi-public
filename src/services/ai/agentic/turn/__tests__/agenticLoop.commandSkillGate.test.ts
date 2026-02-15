@@ -287,6 +287,53 @@ describe("agenticLoop command skill gate", () => {
     expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
   });
 
+  it("allows read-only inspection tools in cold start even when runtime skills are unread", async () => {
+    const vfsSession = createVfsSession(false);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-readonly-search",
+          name: "vfs_search",
+          args: { query: "soul", path: "current/world" },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockResolvedValue({
+      success: true,
+      data: { results: [] },
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-readonly-cold-start",
+        vfsSession,
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalled();
+    const onlyReadOnlyCalls =
+      toolProcessorMock.executeGenericTool.mock.calls.every(
+        (call) => call[0] === "vfs_search",
+      );
+    expect(onlyReadOnlyCalls).toBe(true);
+  });
+
   it("blocks non-read tools in player-rate mode when player-rate skill is unread", async () => {
     const vfsSession = createVfsSession(true, [
       "skills/commands/runtime/SKILL.md",

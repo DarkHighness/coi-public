@@ -56,6 +56,7 @@ import {
   collectWriteTargetsFromToolCall,
   formatPendingWriteFailurePaths,
   getToolErrorCode,
+  isReadOnlyInspectionToolName,
   isLikelyNoOpReadBeforeFinishBatch,
   isWriteMutationToolName,
   shouldTrackWriteFailure,
@@ -508,11 +509,10 @@ function checkCommandSkillReadGate(
     return { ok: true };
   }
 
-  const readTools = new Set(["vfs_read"]);
-  const hasNonReadCall = functionCalls.some(
-    (call) => !readTools.has(call.name),
+  const hasMutationLikeCall = functionCalls.some(
+    (call) => !isReadOnlyInspectionToolName(call.name),
   );
-  if (!hasNonReadCall) {
+  if (!hasMutationLikeCall) {
     return { ok: true };
   }
 
@@ -547,11 +547,10 @@ function checkSoulReadGate(
     return { ok: true };
   }
 
-  const readTools = new Set(["vfs_read"]);
-  const hasNonReadCall = functionCalls.some(
-    (call) => !readTools.has(call.name),
+  const hasMutationLikeCall = functionCalls.some(
+    (call) => !isReadOnlyInspectionToolName(call.name),
   );
-  if (!hasNonReadCall) {
+  if (!hasMutationLikeCall) {
     return { ok: true };
   }
 
@@ -586,11 +585,10 @@ function checkPresetSkillReadGate(
     return { ok: true };
   }
 
-  const readTools = new Set(["vfs_read"]);
-  const hasNonReadCall = functionCalls.some(
-    (call) => !readTools.has(call.name),
+  const hasMutationLikeCall = functionCalls.some(
+    (call) => !isReadOnlyInspectionToolName(call.name),
   );
-  if (!hasNonReadCall) {
+  if (!hasMutationLikeCall) {
     return { ok: true };
   }
 
