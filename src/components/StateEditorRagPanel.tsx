@@ -1,9 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOptionalRuntimeContext } from "../runtime/context";
 import type { GameState } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
-import type { DocumentType, SearchResult } from "../services/rag";
+import type {
+  DocumentType,
+  LocalEmbeddingRuntimeInfo,
+  SearchResult,
+} from "../services/rag";
 import { extractFileChunksFromSnapshot } from "../services/rag/vfsExtraction";
 
 interface StateEditorRagPanelProps {
@@ -13,6 +17,14 @@ interface StateEditorRagPanelProps {
 }
 
 const documentTypes: Array<DocumentType> = ["json", "markdown", "text"];
+
+interface RebuildProgressState {
+  phase: "embedding" | "indexing" | "searching" | "cleanup";
+  current: number;
+  total: number;
+  message?: string;
+  runtime?: LocalEmbeddingRuntimeInfo;
+}
 
 const formatPreview = (content: string): string => {
   const preview = content.trim().replace(/\s+/g, " ");
@@ -50,6 +62,10 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
 
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [isRebuilding, setIsRebuilding] = useState(false);
+  const [rebuildProgress, setRebuildProgress] =
+    useState<RebuildProgressState | null>(null);
+  const rebuildActiveRef = useRef(false);
 
   const ragStatus = runtime?.state.rag.status ?? null;
   const ragActions = runtime?.actions.rag;
@@ -125,6 +141,26 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
     loadDocuments();
   }, [loadDocuments, mode]);
 
+  useEffect(() => {
+    if (!ragService) return;
+
+    const unsubscribe = ragService.on("progress", (data) => {
+      if (!rebuildActiveRef.current) return;
+
+      setRebuildProgress({
+        phase: data.phase,
+        current: data.current,
+        total: data.total,
+        message: data.message,
+        runtime: data.runtime,
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [ragService]);
+
   const refreshStats = useCallback(async () => {
     if (!ragActions?.refreshStatus) return;
     setStatsLoading(true);
@@ -140,6 +176,10 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
   }, [ragActions]);
 
   const rebuildIndex = useCallback(async () => {
+    if (rebuildActiveRef.current) {
+      return;
+    }
+
     if (!ragService || !currentSaveId) {
       setStatsError(
         t("ragDebugger.noEmbeddingManager", "RAG service not initialized"),
@@ -147,8 +187,19 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
       return;
     }
 
+    rebuildActiveRef.current = true;
+    setIsRebuilding(true);
     setStatsLoading(true);
     setStatsError(null);
+    setRebuildProgress({
+      phase: "indexing",
+      current: 0,
+      total: 1,
+      message: t(
+        "ragDebugger.rebuildPreparing",
+        "Preparing to rebuild index...",
+      ),
+    });
 
     try {
       const forkId = gameState.forkId || 0;
@@ -167,15 +218,40 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
         documents,
       });
 
+      setRebuildProgress((prev) => {
+        const total = Math.max(1, prev?.total ?? 1);
+        return {
+          phase: "indexing",
+          current: total,
+          total,
+          message: t(
+            "ragDebugger.rebuildComplete",
+            "Rebuild completed successfully.",
+          ),
+        };
+      });
+
       await ragActions?.refreshStatus?.();
       if (mode === "documents") {
-        loadDocuments();
+        await loadDocuments();
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setStatsError(message);
+      const lockError = /reindex already in progress/i.test(message);
+      setStatsError(
+        lockError
+          ? t(
+              "ragDebugger.rebuildAlreadyInProgress",
+              "A reindex is already running. Please wait for it to finish.",
+            )
+          : message,
+      );
+      setRebuildProgress(null);
     } finally {
+      rebuildActiveRef.current = false;
+      setIsRebuilding(false);
       setStatsLoading(false);
+      setRebuildProgress(null);
     }
   }, [
     currentSaveId,
@@ -188,6 +264,19 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
     t,
     vfsSession,
   ]);
+
+  const rebuildTotal = Math.max(1, rebuildProgress?.total ?? 1);
+  const rebuildCurrent = Math.max(
+    0,
+    Math.min(rebuildTotal, rebuildProgress?.current ?? 0),
+  );
+  const rebuildPercent = Math.round((rebuildCurrent / rebuildTotal) * 100);
+  const runtimeEngineLabel =
+    ragStatus?.localRuntime?.engine ||
+    t("ragDebugger.runtimeUnknown", "Unknown");
+  const runtimeBackendLabel =
+    ragStatus?.localRuntime?.backend ||
+    t("ragDebugger.runtimeUnknown", "Unknown");
 
   if (!runtime || !runtime.state.rag.isInitialized) {
     return (
@@ -289,69 +378,130 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
 
   if (mode === "stats") {
     return (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {statsError && (
-          <div className="text-sm text-theme-error border border-theme-error/40 bg-theme-error/10 rounded p-3">
-            {statsError}
+      <>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {statsError && (
+            <div className="text-sm text-theme-error border border-theme-error/40 bg-theme-error/10 rounded p-3">
+              {statsError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
+              <div className="text-theme-text-secondary mb-1">
+                {t("ragDebugger.storageDocs", "Stored Documents")}
+              </div>
+              <div className="text-lg font-semibold text-theme-primary">
+                {ragStatus?.storageDocuments ?? 0}
+              </div>
+            </div>
+            <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
+              <div className="text-theme-text-secondary mb-1">
+                {t("ragDebugger.model", "Embedding Model")}
+              </div>
+              <div className="text-sm font-mono text-theme-text break-all">
+                {ragStatus?.currentModel || "-"}
+              </div>
+            </div>
+            <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
+              <div className="text-theme-text-secondary mb-1">
+                {t("ragDebugger.provider", "Provider")}
+              </div>
+              <div className="text-sm font-mono text-theme-text">
+                {ragStatus?.currentProvider || "-"}
+              </div>
+            </div>
+            <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
+              <div className="text-theme-text-secondary mb-1">
+                {t("ragDebugger.saveId", "Save ID")}
+              </div>
+              <div className="text-sm font-mono text-theme-text break-all">
+                {currentSaveId || "-"}
+              </div>
+            </div>
+            <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
+              <div className="text-theme-text-secondary mb-1">
+                {t("ragDebugger.runtimeEngine", "Runtime Engine")}
+              </div>
+              <div className="text-sm font-mono text-theme-text break-all">
+                {runtimeEngineLabel}
+              </div>
+            </div>
+            <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
+              <div className="text-theme-text-secondary mb-1">
+                {t("ragDebugger.runtimeBackend", "Runtime Backend")}
+              </div>
+              <div className="text-sm font-mono text-theme-text break-all">
+                {runtimeBackendLabel}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void refreshStats()}
+              disabled={statsLoading || isRebuilding}
+              className="px-3 py-2 rounded border border-theme-divider/60 text-sm text-theme-text hover:bg-theme-bg/15 disabled:opacity-60"
+            >
+              {t("ragDebugger.refresh", "Refresh Stats")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void rebuildIndex()}
+              disabled={statsLoading || isRebuilding || !currentSaveId}
+              className="px-3 py-2 rounded bg-theme-primary text-theme-bg text-sm font-semibold disabled:opacity-60"
+            >
+              {isRebuilding
+                ? t("ragDebugger.rebuilding", "Rebuilding...")
+                : t("ragDebugger.rebuildIndex", "Rebuild Index")}
+            </button>
+          </div>
+        </div>
+
+        {isRebuilding && (
+          <div
+            className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="w-full max-w-md rounded-lg border border-theme-divider/60 bg-theme-surface p-5 space-y-4 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 rounded-full border-2 border-theme-primary border-t-transparent animate-spin" />
+                <div className="text-sm font-semibold text-theme-text">
+                  {t("ragDebugger.rebuilding", "Rebuilding...")}
+                </div>
+                <div className="ml-auto text-xs text-theme-text-secondary font-mono">
+                  {rebuildPercent}%
+                </div>
+              </div>
+
+              <div className="h-2 w-full rounded bg-theme-divider/60 overflow-hidden">
+                <div
+                  className="h-full bg-theme-primary transition-all duration-200"
+                  style={{ width: `${rebuildPercent}%` }}
+                />
+              </div>
+
+              <div className="text-xs text-theme-text-secondary leading-relaxed">
+                {rebuildProgress?.message ||
+                  t(
+                    "ragDebugger.rebuildInProgress",
+                    "Index rebuilding is in progress. Please wait.",
+                  )}
+                {rebuildProgress?.runtime && (
+                  <div className="mt-2 font-mono text-[11px] text-theme-text">
+                    {t("ragDebugger.runtimeUsing", "Runtime: {{engine}} / {{backend}}", {
+                      engine: rebuildProgress.runtime.engine,
+                      backend: rebuildProgress.runtime.backend,
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">
-              {t("ragDebugger.storageDocs", "Stored Documents")}
-            </div>
-            <div className="text-lg font-semibold text-theme-primary">
-              {ragStatus?.storageDocuments ?? 0}
-            </div>
-          </div>
-          <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">
-              {t("ragDebugger.model", "Embedding Model")}
-            </div>
-            <div className="text-sm font-mono text-theme-text break-all">
-              {ragStatus?.currentModel || "-"}
-            </div>
-          </div>
-          <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">
-              {t("ragDebugger.provider", "Provider")}
-            </div>
-            <div className="text-sm font-mono text-theme-text">
-              {ragStatus?.currentProvider || "-"}
-            </div>
-          </div>
-          <div className="border border-theme-divider/60 rounded p-3 bg-theme-surface/60">
-            <div className="text-theme-text-secondary mb-1">
-              {t("ragDebugger.saveId", "Save ID")}
-            </div>
-            <div className="text-sm font-mono text-theme-text break-all">
-              {currentSaveId || "-"}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => void refreshStats()}
-            disabled={statsLoading}
-            className="px-3 py-2 rounded border border-theme-divider/60 text-sm text-theme-text hover:bg-theme-bg/15 disabled:opacity-60"
-          >
-            {t("ragDebugger.refresh", "Refresh Stats")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void rebuildIndex()}
-            disabled={statsLoading || !currentSaveId}
-            className="px-3 py-2 rounded bg-theme-primary text-theme-bg text-sm font-semibold disabled:opacity-60"
-          >
-            {statsLoading
-              ? t("ragDebugger.rebuilding", "Rebuilding...")
-              : t("ragDebugger.rebuildIndex", "Rebuild Index")}
-          </button>
-        </div>
-      </div>
+      </>
     );
   }
 

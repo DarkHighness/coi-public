@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getRAGService, type ProgressEvent } from "../services/rag";
 
 export interface EmbeddingProgress {
-  stage: "indexing" | "searching" | "idle";
+  stage: "embedding" | "indexing" | "searching" | "cleanup" | "idle";
   current: number;
   total: number;
   message?: string;
@@ -13,7 +13,7 @@ export const useEmbeddingStatus = () => {
 
   const handleProgress = useCallback((event: ProgressEvent["data"]) => {
     setProgress({
-      stage: event.phase as "indexing" | "searching" | "idle",
+      stage: event.phase as EmbeddingProgress["stage"],
       current: event.current,
       total: event.total,
       message: event.message,

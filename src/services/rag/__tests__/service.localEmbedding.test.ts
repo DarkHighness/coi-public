@@ -83,7 +83,7 @@ describe("RAGService local embedding runtime", () => {
     expect(queryVector[2]).toBeCloseTo(0.3);
   });
 
-  it("precomputes only missing chunk embeddings before upsert in local_tfjs runtime", async () => {
+  it("defers missing chunk embeddings to worker in local_tfjs runtime", async () => {
     const service = createService("local_tfjs");
     service.sendRequest.mockImplementation(
       async (type: string, payload: any) => {
@@ -131,11 +131,7 @@ describe("RAGService local embedding runtime", () => {
 
     await service.upsertFileChunks(docs);
 
-    expect(embedTextsLocallyMock).toHaveBeenCalledTimes(1);
-    expect(embedTextsLocallyMock).toHaveBeenCalledWith(
-      ["alpha"],
-      expect.objectContaining({ backend: "tfjs", model: "use-lite-512" }),
-    );
+    expect(embedTextsLocallyMock).not.toHaveBeenCalled();
 
     const upsertCall = service.sendRequest.mock.calls.find(
       ([requestType]: [string]) => requestType === "upsertFileChunks",
@@ -143,7 +139,7 @@ describe("RAGService local embedding runtime", () => {
     expect(upsertCall).toBeTruthy();
     const payload = upsertCall?.[1];
     expect(payload.documents).toHaveLength(2);
-    expect(payload.documents[0].embedding).toEqual([0.33, 0.44]);
+    expect(payload.documents[0].embedding).toBeUndefined();
     expect(payload.documents[1].embedding).toEqual([9, 9]);
   });
 

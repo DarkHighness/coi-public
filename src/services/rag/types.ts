@@ -26,6 +26,18 @@ export type LocalEmbeddingEngine = "transformers_js" | "tfjs";
 
 export type LocalTransformersDevice = "webgpu" | "wasm" | "cpu";
 
+export type LocalEmbeddingRuntimeBackend =
+  | "webgpu"
+  | "webgl"
+  | "wasm"
+  | "cpu";
+
+export interface LocalEmbeddingRuntimeInfo {
+  engine: LocalEmbeddingEngine;
+  backend: LocalEmbeddingRuntimeBackend;
+  model: string;
+}
+
 export interface LocalEmbeddingRuntimeConfig {
   backend?: LocalEmbeddingEngine;
   model?: "use-lite-512";
@@ -397,6 +409,7 @@ export interface RAGStatus {
   currentSaveId: string | null;
   currentModel: string;
   currentProvider: string;
+  localRuntime?: LocalEmbeddingRuntimeInfo | null;
   storageDocuments: number;
   isSearching: boolean;
   pending: number;
@@ -436,6 +449,7 @@ export interface ProgressEvent extends RAGEvent {
     current: number;
     total: number;
     message?: string;
+    runtime?: LocalEmbeddingRuntimeInfo;
   };
 }
 

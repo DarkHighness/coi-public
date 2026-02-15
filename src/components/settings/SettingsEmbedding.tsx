@@ -66,6 +66,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     runtime === "local_transformers" || runtime === "local_tfjs";
   const isLocalTransformers = runtime === "local_transformers";
   const ragStatus = runtimeContext?.state.rag.status ?? null;
+  const localRuntimeEngine =
+    ragStatus?.localRuntime?.engine ||
+    (t("embedding.runtimeUnknown") || "Unknown");
+  const localRuntimeBackend =
+    ragStatus?.localRuntime?.backend ||
+    (t("embedding.runtimeUnknown") || "Unknown");
 
   // Track previous model ID for model change detection
   const previousModelIdRef = useRef<string | null>(config?.modelId || null);
@@ -782,7 +788,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
         </div>
 
         {isLocalRuntime && (
-          <div className="border-l-2 border-yellow-500/60 pl-3 py-2 text-xs text-yellow-300 space-y-1">
+          <div className="border-l-2 border-red-500/60 pl-3 py-2 text-xs text-red-400 space-y-1">
             <div className="font-bold uppercase tracking-wider">
               {t("embedding.localWarningTitle") ||
                 "Local Embedding (Privacy First)"}
@@ -1451,6 +1457,22 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
                   </div>
                   <div className="font-mono text-theme-text">
                     {formatStorageBytes(ragStatus.inactiveGameBytes || 0)}
+                  </div>
+                </div>
+                <div className="rounded border border-theme-border/60 px-2 py-1">
+                  <div className="text-theme-muted">
+                    {t("embedding.runtimeEngineLabel") || "Runtime Engine"}
+                  </div>
+                  <div className="font-mono text-theme-text">
+                    {localRuntimeEngine}
+                  </div>
+                </div>
+                <div className="rounded border border-theme-border/60 px-2 py-1">
+                  <div className="text-theme-muted">
+                    {t("embedding.runtimeBackendLabel") || "Runtime Backend"}
+                  </div>
+                  <div className="font-mono text-theme-text">
+                    {localRuntimeBackend}
                   </div>
                 </div>
               </div>

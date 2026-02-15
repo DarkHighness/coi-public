@@ -12,6 +12,7 @@ export type {
   RAGConfig,
   SaveStats,
   RAGStatus,
+  LocalEmbeddingRuntimeInfo,
   ProgressEvent,
   ModelMismatchInfo,
   ModelMismatchAction,

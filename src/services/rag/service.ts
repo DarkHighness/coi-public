@@ -13,6 +13,7 @@ import {
   type GlobalStorageStats,
   type ImportSaveDataPayload,
   type InitPayload,
+  type LocalEmbeddingRuntimeInfo,
   type LookupReusableEmbeddingsResult,
   type ModelMismatchEvent,
   type ModelMismatchInfo,
@@ -56,6 +57,7 @@ export interface RAGServiceEvents {
     current: number;
     total: number;
     message?: string;
+    runtime?: LocalEmbeddingRuntimeInfo;
   }) => void;
   modelMismatch: (data: ModelMismatchInfo) => void;
   storageOverflow: (data: StorageOverflowInfo) => void;
@@ -79,6 +81,7 @@ export class RAGService {
   private config: RAGConfig = { ...DEFAULT_RAG_CONFIG };
 
   private readonly REQUEST_TIMEOUT = 60000;
+  private readonly LONG_RUNNING_REQUEST_TIMEOUT = 10 * 60 * 1000;
 
   async initialize(
     config: Partial<RAGConfig>,
@@ -191,10 +194,10 @@ export class RAGService {
     };
   }
 
-  private async ensureLocalEmbeddings(
+  private async attachReusableEmbeddings(
     documents: UpsertFileChunksPayload["documents"],
   ): Promise<UpsertFileChunksPayload["documents"]> {
-    if (!this.isLocalRuntime() || documents.length === 0) {
+    if (documents.length === 0) {
       return documents;
     }
 
@@ -211,9 +214,6 @@ export class RAGService {
 
     const prepared = documents.map((doc) => ({ ...doc }));
 
-    type MissingItem = (typeof missing)[number];
-    let misses: MissingItem[] = missing;
-
     try {
       const reusable = await this.sendRequest<LookupReusableEmbeddingsResult>(
         "lookupReusableEmbeddings",
@@ -228,8 +228,6 @@ export class RAGService {
       );
 
       if (reusable?.embeddings?.length === missing.length) {
-        const nextMisses: MissingItem[] = [];
-
         missing.forEach((entry, offset) => {
           const reusableEmbedding = reusable.embeddings[offset];
           if (
@@ -240,38 +238,12 @@ export class RAGService {
               ...prepared[entry.index],
               embedding: reusableEmbedding,
             };
-          } else {
-            nextMisses.push(entry);
           }
         });
-
-        misses = nextMisses;
       }
     } catch (error) {
       console.warn("[RAGService] Reusable embedding lookup failed:", error);
     }
-
-    if (misses.length === 0) {
-      return prepared;
-    }
-
-    const vectors = await embedTextsLocally(
-      misses.map(({ doc }) => doc.content),
-      this.getLocalEmbeddingConfig(),
-    );
-
-    if (vectors.length !== misses.length) {
-      throw new Error(
-        `Local embedding size mismatch: expected ${misses.length}, got ${vectors.length}`,
-      );
-    }
-
-    misses.forEach(({ index }, vectorIndex) => {
-      prepared[index] = {
-        ...prepared[index],
-        embedding: vectors[vectorIndex],
-      };
-    });
 
     return prepared;
   }
@@ -284,10 +256,10 @@ export class RAGService {
     documents: UpsertFileChunksPayload["documents"],
   ): Promise<{ count: number }> {
     this.ensureInitialized();
-    const preparedDocuments = await this.ensureLocalEmbeddings(documents);
+    const preparedDocuments = await this.attachReusableEmbeddings(documents);
     return this.sendRequest("upsertFileChunks", {
       documents: preparedDocuments,
-    });
+    }, this.LONG_RUNNING_REQUEST_TIMEOUT);
   }
 
   async deleteByPaths(
@@ -308,13 +280,11 @@ export class RAGService {
     params: ReindexAllPayload,
   ): Promise<{ deleted: number; count: number }> {
     this.ensureInitialized();
-    const preparedDocuments = await this.ensureLocalEmbeddings(
-      params.documents,
-    );
+    const preparedDocuments = await this.attachReusableEmbeddings(params.documents);
     return this.sendRequest("reindexAll", {
       ...params,
       documents: preparedDocuments,
-    });
+    }, this.LONG_RUNNING_REQUEST_TIMEOUT);
   }
 
   // ======================================================================
@@ -614,7 +584,11 @@ export class RAGService {
     }
   }
 
-  private async sendRequest<T>(type: string, payload: any): Promise<T> {
+  private async sendRequest<T>(
+    type: string,
+    payload: any,
+    timeoutMs: number = this.REQUEST_TIMEOUT,
+  ): Promise<T> {
     if (!this.port) {
       throw new Error("Worker port not available");
     }
@@ -626,10 +600,10 @@ export class RAGService {
         this.pendingRequests.delete(id);
         reject(
           new Error(
-            `Request ${type} timed out after ${this.REQUEST_TIMEOUT}ms`,
+            `Request ${type} timed out after ${timeoutMs}ms`,
           ),
         );
-      }, this.REQUEST_TIMEOUT);
+      }, timeoutMs);
 
       this.pendingRequests.set(id, { resolve, reject, timeout });
 

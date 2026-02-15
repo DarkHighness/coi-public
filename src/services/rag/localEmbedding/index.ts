@@ -1,4 +1,7 @@
-import type { LocalEmbeddingRuntimeConfig } from "../types";
+import type {
+  LocalEmbeddingRuntimeConfig,
+  LocalEmbeddingRuntimeInfo,
+} from "../types";
 import {
   embedTextsWithTfjs,
   getTfjsEmbeddingEngine,
@@ -35,6 +38,27 @@ export const embedTextsLocally = async (
     return embedTextsWithTfjs(texts, config);
   }
   return embedTextsWithTransformers(texts, config);
+};
+
+export const getLocalEmbeddingRuntimeInfo = async (
+  config?: Partial<LocalEmbeddingRuntimeConfig>,
+): Promise<LocalEmbeddingRuntimeInfo> => {
+  const backend = resolveBackend(config);
+  if (backend === "tfjs") {
+    const engine = await getTfjsEmbeddingEngine(config);
+    return {
+      engine: "tfjs",
+      backend: engine.backend,
+      model: config?.model || "use-lite-512",
+    };
+  }
+
+  const engine = await getTransformersEmbeddingEngine(config);
+  return {
+    engine: "transformers_js",
+    backend: engine.device,
+    model: engine.model,
+  };
 };
 
 export const resetLocalEmbeddingEngines = async (): Promise<void> => {

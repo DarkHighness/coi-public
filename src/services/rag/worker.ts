@@ -7,6 +7,11 @@
 import { RAGDatabase } from "./database";
 import { buildRagDocumentId } from "./documentId";
 import {
+  embedTextsLocally,
+  getLocalEmbeddingRuntimeInfo,
+  resetLocalEmbeddingEngines,
+} from "./localEmbedding";
+import {
   DEFAULT_RAG_CONFIG,
   type AddDocumentsPayload,
   type DeleteByPathsPayload,
@@ -20,6 +25,7 @@ import {
   type InitPayload,
   type LookupReusableEmbeddingsPayload,
   type LookupReusableEmbeddingsResult,
+  type LocalEmbeddingRuntimeInfo,
   type ModelMismatchInfo,
   type RAGConfig,
   type RAGDocument,
@@ -55,6 +61,8 @@ let isInitialized = false;
 let isSearching = false;
 let lastError: string | null = null;
 let pendingDocuments = 0;
+let isReindexing = false;
+let localRuntimeInfo: LocalEmbeddingRuntimeInfo | null = null;
 
 const ports: Set<MessagePort> = new Set();
 
@@ -192,15 +200,92 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
   }
 }
 
+const isLocalRuntimeProvider = (
+  provider: RAGConfig["provider"] = config.provider,
+): boolean => {
+  return provider === "local_tfjs" || provider === "local_transformers";
+};
+
+const getWorkerLocalEmbeddingConfig = (): NonNullable<RAGConfig["local"]> => {
+  const merged = {
+    ...(DEFAULT_RAG_CONFIG.local || {
+      backend: "transformers_js",
+      model: "use-lite-512",
+      transformersModel: "Xenova/all-MiniLM-L6-v2",
+      backendOrder: ["webgpu", "webgl", "cpu"],
+      deviceOrder: ["webgpu", "wasm", "cpu"],
+      quantized: true,
+    }),
+    ...(config.local || {}),
+  };
+
+  if (config.provider === "local_tfjs") {
+    return {
+      ...merged,
+      backend: "tfjs",
+      model: "use-lite-512",
+      backendOrder: merged.backendOrder || ["webgpu", "webgl", "cpu"],
+    };
+  }
+
+  return {
+    ...merged,
+    backend: "transformers_js",
+    transformersModel: merged.transformersModel || "Xenova/all-MiniLM-L6-v2",
+    deviceOrder: merged.deviceOrder || ["webgpu", "wasm", "cpu"],
+  };
+};
+
+const hasLocalRuntimeConfigChanged = (
+  previous: RAGConfig,
+  next: RAGConfig,
+): boolean => {
+  if (previous.provider !== next.provider) {
+    return true;
+  }
+
+  if (!isLocalRuntimeProvider(previous.provider) && !isLocalRuntimeProvider(next.provider)) {
+    return false;
+  }
+
+  return JSON.stringify(previous.local || null) !== JSON.stringify(next.local || null);
+};
+
+const resetLocalRuntimeState = async (): Promise<void> => {
+  localRuntimeInfo = null;
+  await resetLocalEmbeddingEngines().catch(() => undefined);
+};
+
 async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
   if (isInitialized) {
-    config = { ...config, ...payload.config };
+    const previousConfig = config;
+    config = {
+      ...config,
+      ...payload.config,
+      local: {
+        ...(config.local || DEFAULT_RAG_CONFIG.local || {}),
+        ...(payload.config.local || {}),
+      },
+    };
     credentials = payload.credentials;
+
+    if (hasLocalRuntimeConfigChanged(previousConfig, config)) {
+      await resetLocalRuntimeState();
+    }
+
     return { success: true };
   }
 
-  config = { ...DEFAULT_RAG_CONFIG, ...payload.config };
+  config = {
+    ...DEFAULT_RAG_CONFIG,
+    ...payload.config,
+    local: {
+      ...(DEFAULT_RAG_CONFIG.local || {}),
+      ...(payload.config.local || {}),
+    },
+  };
   credentials = payload.credentials;
+  localRuntimeInfo = null;
 
   database = new RAGDatabase(config);
   await database.initialize();
@@ -210,15 +295,11 @@ async function handleInit(payload: InitPayload): Promise<{ success: boolean }> {
   return { success: true };
 }
 
-const normalizeFileChunk = async (
+const normalizeFileChunk = (
   doc: UpsertFileChunksPayload["documents"][number],
-): Promise<RAGDocument> => {
+  embedding: Float32Array,
+): RAGDocument => {
   const now = Date.now();
-  const embedding =
-    Array.isArray(doc.embedding) && doc.embedding.length > 0
-      ? new Float32Array(doc.embedding)
-      : await generateEmbedding(doc.content);
-
   const estimatedBytes = doc.content.length * 2 + embedding.length * 4 + 256;
 
   return {
@@ -256,8 +337,138 @@ const normalizeFileChunk = async (
   };
 };
 
+interface UpsertProgressData {
+  phase: "embedding" | "indexing";
+  current: number;
+  total: number;
+  message?: string;
+  runtime?: LocalEmbeddingRuntimeInfo;
+}
+
+const toFloat32Embedding = (embedding?: number[]): Float32Array | null => {
+  if (!Array.isArray(embedding) || embedding.length === 0) {
+    return null;
+  }
+  return new Float32Array(embedding);
+};
+
+const resolveDocumentEmbeddings = async (
+  inputDocuments: UpsertFileChunksPayload["documents"],
+  onProgress?: (data: UpsertProgressData) => void,
+): Promise<Float32Array[]> => {
+  const total = inputDocuments.length;
+  const embeddings: Array<Float32Array | null> = Array.from(
+    { length: total },
+    () => null,
+  );
+
+  const missing: Array<{
+    index: number;
+    doc: UpsertFileChunksPayload["documents"][number];
+  }> = [];
+  let embeddedCount = 0;
+
+  inputDocuments.forEach((doc, index) => {
+    const provided = toFloat32Embedding(doc.embedding);
+    if (provided) {
+      embeddings[index] = provided;
+      embeddedCount += 1;
+      return;
+    }
+    missing.push({ index, doc });
+  });
+
+  if (missing.length === 0) {
+    onProgress?.({
+      phase: "embedding",
+      current: total,
+      total,
+      message: `Embedding chunks (${total}/${total})`,
+      runtime: localRuntimeInfo || undefined,
+    });
+  } else if (isLocalRuntimeProvider()) {
+    const localConfig = getWorkerLocalEmbeddingConfig();
+    const runtime = await getLocalEmbeddingRuntimeInfo(localConfig);
+    localRuntimeInfo = runtime;
+
+    const batchSize = Math.max(1, localConfig.batchSize || 8);
+    onProgress?.({
+      phase: "embedding",
+      current: embeddedCount,
+      total,
+      message: `Embedding chunks (${embeddedCount}/${total})`,
+      runtime,
+    });
+
+    for (let start = 0; start < missing.length; start += batchSize) {
+      const batch = missing.slice(start, start + batchSize);
+      const vectors = await embedTextsLocally(
+        batch.map(({ doc }) => doc.content),
+        localConfig,
+      );
+
+      if (vectors.length !== batch.length) {
+        throw new Error(
+          `Local embedding size mismatch: expected ${batch.length}, got ${vectors.length}`,
+        );
+      }
+
+      batch.forEach(({ index }, vectorIndex) => {
+        embeddings[index] = new Float32Array(vectors[vectorIndex]);
+      });
+
+      embeddedCount += batch.length;
+      onProgress?.({
+        phase: "embedding",
+        current: embeddedCount,
+        total,
+        message: `Embedding chunks (${embeddedCount}/${total})`,
+        runtime,
+      });
+    }
+  } else {
+    const maxConcurrency = Math.min(4, missing.length);
+    const progressBase = embeddedCount;
+    let cursor = 0;
+    let completed = 0;
+
+    const workers = Array.from({ length: maxConcurrency }, async () => {
+      while (true) {
+        const offset = cursor;
+        cursor += 1;
+        if (offset >= missing.length) {
+          return;
+        }
+
+        const entry = missing[offset];
+        embeddings[entry.index] = await generateEmbedding(entry.doc.content);
+        completed += 1;
+
+        onProgress?.({
+          phase: "embedding",
+          current: progressBase + completed,
+          total,
+          message: `Embedding chunks (${progressBase + completed}/${total})`,
+        });
+      }
+    });
+
+    await Promise.all(workers);
+  }
+
+  return embeddings.map((embedding, index) => {
+    if (!embedding) {
+      throw new Error(
+        `Failed to resolve embedding for chunk ${index + 1}/${total}`,
+      );
+    }
+    return embedding;
+  });
+};
+
 async function handleUpsertFileChunks(
   payload: UpsertFileChunksPayload,
+  onProgress?: (data: UpsertProgressData) => void,
 ): Promise<{ count: number }> {
   ensureInitialized();
 
@@ -267,14 +478,30 @@ async function handleUpsertFileChunks(
   }
 
   pendingDocuments += inputDocuments.length;
-  const ragDocuments: RAGDocument[] = [];
+  const total = inputDocuments.length;
 
   try {
-    for (const doc of inputDocuments) {
-      const normalized = await normalizeFileChunk(doc);
+    const embeddings = await resolveDocumentEmbeddings(inputDocuments, onProgress);
+    const ragDocuments: RAGDocument[] = [];
+
+    for (let index = 0; index < inputDocuments.length; index += 1) {
+      const normalized = normalizeFileChunk(inputDocuments[index], embeddings[index]);
       ragDocuments.push(normalized);
-      pendingDocuments -= 1;
+
+      onProgress?.({
+        phase: "indexing",
+        current: index + 1,
+        total,
+        message: `Indexing chunks (${index + 1}/${total})`,
+      });
     }
+
+    onProgress?.({
+      phase: "indexing",
+      current: total,
+      total,
+      message: "Writing chunks to index...",
+    });
 
     await database!.addDocuments(ragDocuments);
 
@@ -295,12 +522,11 @@ async function handleUpsertFileChunks(
     });
 
     return { count: ragDocuments.length };
-  } catch (error) {
+  } finally {
     pendingDocuments = Math.max(
       0,
-      pendingDocuments - (inputDocuments.length - ragDocuments.length),
+      pendingDocuments - inputDocuments.length,
     );
-    throw error;
   }
 }
 
@@ -392,33 +618,92 @@ async function handleReindexAll(
   payload: ReindexAllPayload,
 ): Promise<{ deleted: number; count: number }> {
   ensureInitialized();
-
-  const { saveId, forkId, documents } = payload;
-
-  const existing = await database!.getDocumentsForSave(saveId);
-  const forkPaths = Array.from(
-    new Set(
-      existing
-        .filter((doc) => doc.forkId === forkId && doc.isLatest)
-        .map((doc) => doc.canonicalPath),
-    ),
-  );
-
-  let deleted = 0;
-  if (forkPaths.length > 0) {
-    deleted = await database!.retireLatestByPaths(
-      saveId,
-      forkId,
-      payload.turnNumber,
-      forkPaths,
-    );
+  if (isReindexing) {
+    throw new Error("Reindex already in progress. Please wait.");
   }
 
-  const upserted = await handleUpsertFileChunks({ documents });
-  return {
-    deleted,
-    count: upserted.count,
-  };
+  isReindexing = true;
+
+  try {
+    const { saveId, forkId, documents } = payload;
+    const documentCount = documents.length;
+    const totalProgress = Math.max(2, documentCount * 2 + 2);
+    const embeddingBase = 1;
+    const indexingBase = 1 + documentCount;
+
+    broadcastEvent({
+      type: "progress",
+      data: {
+        phase: "indexing",
+        current: 1,
+        total: totalProgress,
+        message: "Preparing reindex...",
+      },
+    });
+
+    const existing = await database!.getDocumentsForSave(saveId);
+    const forkPaths = Array.from(
+      new Set(
+        existing
+          .filter((doc) => doc.forkId === forkId && doc.isLatest)
+          .map((doc) => doc.canonicalPath),
+      ),
+    );
+
+    let deleted = 0;
+    if (forkPaths.length > 0) {
+      deleted = await database!.retireLatestByPaths(
+        saveId,
+        forkId,
+        payload.turnNumber,
+        forkPaths,
+      );
+    }
+
+    broadcastEvent({
+      type: "progress",
+      data: {
+        phase: "indexing",
+        current: 1,
+        total: totalProgress,
+        message: "Clearing previous latest chunks...",
+      },
+    });
+
+    const upserted = await handleUpsertFileChunks({ documents }, (progress) => {
+      const base = progress.phase === "embedding" ? embeddingBase : indexingBase;
+      broadcastEvent({
+        type: "progress",
+        data: {
+          phase: progress.phase,
+          current: Math.min(
+            totalProgress - 1,
+            base + Math.min(documentCount, progress.current),
+          ),
+          total: totalProgress,
+          message: progress.message,
+          runtime: progress.runtime,
+        },
+      });
+    });
+
+    broadcastEvent({
+      type: "progress",
+      data: {
+        phase: "indexing",
+        current: totalProgress,
+        total: totalProgress,
+        message: `Reindex complete (${upserted.count} chunks)`,
+      },
+    });
+
+    return {
+      deleted,
+      count: upserted.count,
+    };
+  } finally {
+    isReindexing = false;
+  }
 }
 
 // Legacy compatibility routes
@@ -516,16 +801,6 @@ async function handleSearch(payload: SearchPayload): Promise<SearchResult[]> {
   isSearching = true;
 
   try {
-    if (
-      !payload.queryEmbedding &&
-      (config.provider === "local_tfjs" ||
-        config.provider === "local_transformers")
-    ) {
-      throw new Error(
-        "Local embedding runtime requires precomputed queryEmbedding from main thread",
-      );
-    }
-
     const queryEmbedding = payload.queryEmbedding
       ? payload.queryEmbedding
       : await generateEmbedding(payload.query);
@@ -648,6 +923,7 @@ async function handleCleanup(): Promise<{
 async function handleUpdateConfig(
   newConfig: Partial<RAGConfig>,
 ): Promise<{ success: boolean }> {
+  const previousConfig = config;
   config = {
     ...config,
     ...newConfig,
@@ -656,6 +932,11 @@ async function handleUpdateConfig(
       ...(newConfig.local || {}),
     },
   };
+
+  if (hasLocalRuntimeConfigChanged(previousConfig, config)) {
+    await resetLocalRuntimeState();
+  }
+
   return { success: true };
 }
 
@@ -672,6 +953,7 @@ async function handleGetStatus(): Promise<RAGStatus> {
     currentSaveId,
     currentModel: config.modelId,
     currentProvider: config.provider,
+    localRuntime: localRuntimeInfo,
     storageDocuments: saveStats?.totalDocuments || 0,
     isSearching,
     pending: pendingDocuments,
@@ -811,12 +1093,23 @@ async function generateEmbedding(text: string): Promise<Float32Array> {
       );
     case "local_tfjs":
     case "local_transformers":
-      throw new Error(
-        "Local embedding runtime requires precomputed embeddings from main thread",
-      );
+      return generateLocalEmbedding(text);
     default:
       throw new Error(`Unknown embedding provider: ${config.provider}`);
   }
+}
+
+async function generateLocalEmbedding(text: string): Promise<Float32Array> {
+  const localConfig = getWorkerLocalEmbeddingConfig();
+  const runtime = await getLocalEmbeddingRuntimeInfo(localConfig);
+  localRuntimeInfo = runtime;
+
+  const vectors = await embedTextsLocally([text], localConfig);
+  if (!vectors[0] || vectors[0].length === 0) {
+    throw new Error("Failed to generate local embedding for query");
+  }
+
+  return new Float32Array(vectors[0]);
 }
 
 async function generateGeminiEmbedding(text: string): Promise<Float32Array> {
