@@ -80,9 +80,7 @@ const pickOptionalRefs = (
   const specificSkillRefs = parsed.skillRefs.filter(
     (path) => !isBroadReferencePath(path),
   );
-  const broadSkillRefs = parsed.skillRefs.filter((path) =>
-    isBroadReferencePath(path),
-  );
+  const broadRefs = parsed.validRefs.filter((path) => isBroadReferencePath(path));
 
   const anchors = parsed.anchorRefs.filter(
     (path) =>
@@ -94,13 +92,13 @@ const pickOptionalRefs = (
     (path) =>
       !specificSkillRefs.includes(path) &&
       !anchors.includes(path) &&
-      !broadSkillRefs.includes(path),
+      !broadRefs.includes(path),
   );
 
   const ordered: string[] = [
     ...specificSkillRefs,
     ...anchors,
-    ...(specificSkillRefs.length === 0 ? broadSkillRefs : []),
+    ...(specificSkillRefs.length === 0 ? broadRefs : []),
     ...others,
   ];
 

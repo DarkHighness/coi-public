@@ -90,4 +90,13 @@ describe("sessionReferencesMarkdown", () => {
 
     expect(markdown).toBe("- current/skills/commands/runtime/turn/SKILL.md");
   });
+
+  it("returns null for missing or blank handoff markdown", () => {
+    expect(getLatestSummaryReferencesMarkdown({ summaries: [] } as any)).toBeNull();
+    expect(
+      getLatestSummaryReferencesMarkdown({
+        summaries: [{ nextSessionReferencesMarkdown: "   " }],
+      } as any),
+    ).toBeNull();
+  });
 });

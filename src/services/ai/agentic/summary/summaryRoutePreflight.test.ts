@@ -5,6 +5,7 @@ const getOrCreateSessionMock = vi.hoisted(() => vi.fn());
 const getSystemInstructionMock = vi.hoisted(() => vi.fn());
 const getHistoryMock = vi.hoisted(() => vi.fn());
 const readConversationIndexMock = vi.hoisted(() => vi.fn());
+const fromGeminiFormatMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../utils", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
@@ -29,6 +30,10 @@ vi.mock("../../../vfs/conversation", async (importOriginal) => {
     readConversationIndex: (...args: any[]) => readConversationIndexMock(...args),
   };
 });
+
+vi.mock("../../../messageTypes", () => ({
+  fromGeminiFormat: (...args: any[]) => fromGeminiFormatMock(...args),
+}));
 
 import { preflightSummaryRoute } from "./summaryRoutePreflight";
 
@@ -78,6 +83,7 @@ describe("preflightSummaryRoute", () => {
         content: [{ type: "text", text: "history" }],
       },
     ]);
+    fromGeminiFormatMock.mockImplementation((history) => history);
     readConversationIndexMock.mockReturnValue({
       activeForkId: 1,
       activeTurnId: "fork-1/turn-3",
@@ -110,5 +116,67 @@ describe("preflightSummaryRoute", () => {
 
     expect(decision.mode).toBe("query_summary");
     expect(decision.reason).toBe("story_history_too_large");
+  });
+
+  it("routes to query_summary when story provider is missing", async () => {
+    getProviderConfigMock.mockReturnValue(null);
+
+    const decision = await preflightSummaryRoute(makeInput());
+
+    expect(decision.mode).toBe("query_summary");
+    expect(decision.reason).toBe("story_provider_missing");
+  });
+
+  it("routes to query_summary when story session is unavailable", async () => {
+    getOrCreateSessionMock.mockRejectedValueOnce(new Error("session failed"));
+
+    const decision = await preflightSummaryRoute(makeInput());
+
+    expect(decision.mode).toBe("query_summary");
+    expect(decision.reason).toBe("story_session_unavailable");
+  });
+
+  it("routes to query_summary when story history is empty", async () => {
+    getHistoryMock.mockReturnValue([]);
+
+    const decision = await preflightSummaryRoute(makeInput());
+
+    expect(decision.mode).toBe("query_summary");
+    expect(decision.reason).toBe("story_history_empty");
+  });
+
+  it("routes to query_summary when conversation anchor is missing", async () => {
+    readConversationIndexMock.mockReturnValue(null);
+
+    const decision = await preflightSummaryRoute(makeInput());
+
+    expect(decision.mode).toBe("query_summary");
+    expect(decision.reason).toBe("conversation_anchor_missing");
+    expect(decision.diagnostics.hasConversationIndex).toBe(false);
+  });
+
+  it("converts gemini history before preflight checks", async () => {
+    getProviderConfigMock.mockReturnValue({
+      instance: {
+        id: "p1",
+        protocol: "gemini",
+      },
+      modelId: "m1",
+    });
+    getHistoryMock.mockReturnValue([{ role: "model", parts: [{ text: "raw" }] }]);
+    fromGeminiFormatMock.mockReturnValue([
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "converted" }],
+      },
+    ]);
+
+    const decision = await preflightSummaryRoute(makeInput());
+
+    expect(fromGeminiFormatMock).toHaveBeenCalledWith([
+      { role: "model", parts: [{ text: "raw" }] },
+    ]);
+    expect(decision.mode).toBe("session_compact");
+    expect(decision.reason).toBe("compact_ready");
   });
 });
