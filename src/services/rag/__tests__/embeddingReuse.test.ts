@@ -40,7 +40,7 @@ describe("RAGService embedding reuse", () => {
     embedTextsLocallyMock.mockReset();
   });
 
-  it("reuses matched embeddings and computes only misses", async () => {
+  it("reuses matched embeddings and leaves misses for worker-side embedding", async () => {
     const service = createService();
 
     service.sendRequest.mockImplementation(
@@ -55,8 +55,6 @@ describe("RAGService embedding reuse", () => {
         throw new Error(`Unexpected request: ${type}`);
       },
     );
-
-    embedTextsLocallyMock.mockResolvedValue([[9, 8, 7]]);
 
     const result = await service.upsertFileChunks([
       {
@@ -88,11 +86,7 @@ describe("RAGService embedding reuse", () => {
     ]);
 
     expect(result).toEqual({ count: 2 });
-    expect(embedTextsLocallyMock).toHaveBeenCalledTimes(1);
-    expect(embedTextsLocallyMock).toHaveBeenCalledWith(
-      ["beta"],
-      expect.objectContaining({ backend: "transformers_js" }),
-    );
+    expect(embedTextsLocallyMock).not.toHaveBeenCalled();
 
     const upsertCall = service.sendRequest.mock.calls.find(
       ([type]: [string]) => type === "upsertFileChunks",
@@ -100,10 +94,10 @@ describe("RAGService embedding reuse", () => {
     expect(upsertCall).toBeTruthy();
     const upsertPayload = upsertCall?.[1];
     expect(upsertPayload.documents[0].embedding).toEqual([1, 2, 3]);
-    expect(upsertPayload.documents[1].embedding).toEqual([9, 8, 7]);
+    expect(upsertPayload.documents[1].embedding).toBeUndefined();
   });
 
-  it("falls back to local embedding when reuse lookup fails", async () => {
+  it("continues without local embedding when reuse lookup fails", async () => {
     const service = createService();
 
     service.sendRequest.mockImplementation(
@@ -117,8 +111,6 @@ describe("RAGService embedding reuse", () => {
         throw new Error(`Unexpected request: ${type}`);
       },
     );
-
-    embedTextsLocallyMock.mockResolvedValue([[0.11, 0.22]]);
 
     const result = await service.upsertFileChunks([
       {
@@ -137,10 +129,7 @@ describe("RAGService embedding reuse", () => {
     ]);
 
     expect(result).toEqual({ count: 1 });
-    expect(embedTextsLocallyMock).toHaveBeenCalledWith(
-      ["fallback"],
-      expect.objectContaining({ backend: "transformers_js" }),
-    );
+    expect(embedTextsLocallyMock).not.toHaveBeenCalled();
   });
 
   it("skips local embedding compute when all chunks are reusable", async () => {

@@ -327,14 +327,14 @@ const requireToolSeenForExistingFile = (
   session: VfsSession,
   path: string,
   operation: "overwrite" | "append" | "text_edit" | "edit" | "merge" | "delete",
-): ToolCallResult<never> | null => {
+): ToolCallError | null => {
   return requireReadBeforeMutateForExistingFile(session, path, operation);
 };
 
 const ensureNotFinishGuardedMutation = (
   path: string,
   toolName: string,
-): ToolCallResult<never> | null => {
+): ToolCallError | null => {
   const normalized = normalizeVfsPath(path);
   const classification = vfsPathRegistry.classify(normalized);
   if (classification.permissionClass !== "finish_guarded") {
@@ -2210,13 +2210,30 @@ registerToolHandlerWithStructuredErrors(
         });
 
       for (const [moveIndex, move] of typedArgs.moves.entries()) {
-        const resolvedFrom = resolveCurrentPath(ctx, move.from);
-        if (isPathResolveError(resolvedFrom)) {
-          return withMoveBatchError(resolvedFrom.error, moveIndex, move);
+        const fromInput = move.from;
+        const toInput = move.to;
+        if (
+          typeof fromInput !== "string" ||
+          fromInput.trim() === "" ||
+          typeof toInput !== "string" ||
+          toInput.trim() === ""
+        ) {
+          return withMoveBatchError(
+            createError("Each move must include non-empty from and to paths", "INVALID_PARAMS"),
+            moveIndex,
+            { from: fromInput ?? "", to: toInput ?? "" },
+          );
         }
-        const resolvedTo = resolveCurrentPath(ctx, move.to);
+
+        const movePair = { from: fromInput, to: toInput };
+
+        const resolvedFrom = resolveCurrentPath(ctx, movePair.from);
+        if (isPathResolveError(resolvedFrom)) {
+          return withMoveBatchError(resolvedFrom.error, moveIndex, movePair);
+        }
+        const resolvedTo = resolveCurrentPath(ctx, movePair.to);
         if (isPathResolveError(resolvedTo)) {
-          return withMoveBatchError(resolvedTo.error, moveIndex, move);
+          return withMoveBatchError(resolvedTo.error, moveIndex, movePair);
         }
 
         const finishGuardFrom = ensureNotFinishGuardedMutation(
@@ -2224,14 +2241,14 @@ registerToolHandlerWithStructuredErrors(
           "vfs_move",
         );
         if (finishGuardFrom) {
-          return withMoveBatchError(finishGuardFrom, moveIndex, move);
+          return withMoveBatchError(finishGuardFrom, moveIndex, movePair);
         }
         const finishGuardTo = ensureNotFinishGuardedMutation(
           resolvedTo.path,
           "vfs_move",
         );
         if (finishGuardTo) {
-          return withMoveBatchError(finishGuardTo, moveIndex, move);
+          return withMoveBatchError(finishGuardTo, moveIndex, movePair);
         }
 
         const from = normalizeVfsPath(resolvedFrom.path);
@@ -2243,7 +2260,7 @@ registerToolHandlerWithStructuredErrors(
           "overwrite",
         );
         if (seenError) {
-          return withMoveBatchError(seenError, moveIndex, move);
+          return withMoveBatchError(seenError, moveIndex, movePair);
         }
 
         try {
@@ -2253,17 +2270,17 @@ registerToolHandlerWithStructuredErrors(
             return withMoveBatchError(
               createError(error.message, error.code),
               moveIndex,
-              move,
+              movePair,
             );
           }
           const message =
             error instanceof Error ? error.message : String(error);
           return withMoveBatchError(
             createError(message, "NOT_FOUND", {
-              recovery: buildNotFoundRecovery(move.from),
+              recovery: buildNotFoundRecovery(movePair.from),
             }),
             moveIndex,
-            move,
+            movePair,
           );
         }
 

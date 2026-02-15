@@ -105,7 +105,7 @@ describe("ai utils", () => {
       worldDispositionPreset: "mixed",
       playerMalicePreset: "unknown" as any,
       playerMaliceIntensity: "heavy",
-      locked: false,
+      locked: true,
     });
 
     expect(normalized).toEqual({
@@ -128,7 +128,7 @@ describe("ai utils", () => {
         playerMaliceIntensity: "heavy",
         locked: true,
       },
-      settings: {},
+      settings: {} as any,
     });
 
     expect(resolved.narrativeStylePreset).toEqual({

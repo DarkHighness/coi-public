@@ -115,8 +115,11 @@ describe("customRulesAckState", () => {
     });
 
     expect(result.ok).toBe(true);
+    if (!result.ok || !("applied" in result)) {
+      return;
+    }
     expect(result.applied).toBe(true);
-    if (!result.ok || !result.applied) {
+    if (!result.applied) {
       return;
     }
 

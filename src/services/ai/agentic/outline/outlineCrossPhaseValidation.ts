@@ -4,7 +4,9 @@ import type {
   OutlinePhase6,
 } from "../../../schemas";
 
-type ValidationResult = { ok: true } | { ok: false; error: string };
+type ValidationResult =
+  | { ok: true; error?: undefined }
+  | { ok: false; error: string };
 
 const uniqueIds = (items: Array<{ id?: string }>): string[] => {
   const seen = new Set<string>();

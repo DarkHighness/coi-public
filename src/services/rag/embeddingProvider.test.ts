@@ -15,12 +15,10 @@ const createProvider = (
   new EmbeddingProvider(
     {
       dbName: "test",
+      schemaVersion: 5,
       maxDocumentsPerSave: 100,
       maxTotalStorageDocuments: 1000,
-      maxDocumentsPerType: 100,
-      storyMaxEntries: 50,
-      maxVersionsPerEntity: 3,
-      maxVersionsAcrossForks: 5,
+      maxStorageBytes: 10 * 1024 * 1024,
       currentForkBonus: 0.5,
       ancestorForkBonus: 0.2,
       turnDecayFactor: 0.01,
@@ -65,7 +63,12 @@ describe("EmbeddingProvider", () => {
       expect.objectContaining({ method: "POST" }),
     );
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const firstCall = (
+      fetchMock.mock.calls as unknown as Array<[unknown, RequestInit | undefined]>
+    )[0];
+    expect(firstCall).toBeDefined();
+    const requestInit = firstCall?.[1] ?? {};
+    const body = JSON.parse((requestInit.body as string) || "{}");
     expect(body.requests[0].taskType).toBe("RETRIEVAL_QUERY");
   });
 
@@ -129,7 +132,12 @@ describe("EmbeddingProvider", () => {
     expect(result.usage).toEqual({ promptTokens: 2, totalTokens: 4 });
     expect(result.embeddings).toHaveLength(1);
 
-    const headers = fetchMock.mock.calls[0][1].headers;
+    const firstCall = (
+      fetchMock.mock.calls as unknown as Array<[unknown, RequestInit | undefined]>
+    )[0];
+    expect(firstCall).toBeDefined();
+    const requestInit = firstCall?.[1] ?? {};
+    const headers = (requestInit.headers ?? {}) as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer r-key");
     expect(headers["HTTP-Referer"]).toBe("https://coi.game");
   });
@@ -214,7 +222,12 @@ describe("EmbeddingProvider", () => {
     const vec = await provider.embed("single", "clustering");
 
     expect(normalizeVec(vec)).toEqual([0.2, 0.4, 0.6]);
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const firstCall = (
+      fetchMock.mock.calls as unknown as Array<[unknown, RequestInit | undefined]>
+    )[0];
+    expect(firstCall).toBeDefined();
+    const requestInit = firstCall?.[1] ?? {};
+    const body = JSON.parse((requestInit.body as string) || "{}");
     expect(body.dimensions).toBe(9);
     expect(body.model).toBe("text-embedding-3-small");
   });

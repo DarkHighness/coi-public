@@ -3912,17 +3912,20 @@ const THEME_SKILLS: GlobalSkillSeed[] = buildThemeSkillSeeds();
 
 const buildThemeCatalogEntries = (): SkillCatalogEntry[] => {
   return buildResolvedThemeSkillDefs()
-    .map((def) => ({
-      id: `theme-${def.slug}`,
-      title: `${def.title} Theme`,
-      tags: ["theme", def.slug, ...(def.aliases ?? [])],
-      path: `current/skills/theme/${def.slug}/SKILL.md`,
-      domain: "theme",
-      priority: "medium",
-      description: def.description,
-      whenToLoad: def.whenToLoad,
-      seeAlso: [],
-    }))
+    .map((def) => {
+      const entry: SkillCatalogEntry = {
+        id: `theme-${def.slug}`,
+        title: `${def.title} Theme`,
+        tags: ["theme", def.slug, ...(def.aliases ?? [])],
+        path: `current/skills/theme/${def.slug}/SKILL.md`,
+        domain: "theme",
+        priority: "medium",
+        description: def.description,
+        whenToLoad: def.whenToLoad,
+        seeAlso: [],
+      };
+      return entry;
+    })
     .sort((a, b) => a.id.localeCompare(b.id));
 };
 

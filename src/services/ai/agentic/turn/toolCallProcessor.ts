@@ -80,7 +80,7 @@ export function validateToolArgs(
       category: "validation",
       tool: name,
       issues: errors.map((issue) => {
-        const issueRecord = issue as Record<string, unknown>;
+        const issueRecord = issue as unknown as Record<string, unknown>;
         return {
           path: issue.path.join(".") || "(root)",
           code: issue.code,
