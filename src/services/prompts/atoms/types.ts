@@ -44,6 +44,12 @@ export type Atom<TInput = void> = (input: TInput) => string;
 export interface SkillExample {
   /** Scenario description */
   scenario?: string;
+  /** Optional context envelope for this example */
+  context?: string[];
+  /** Optional constraints that should remain true in this scenario */
+  constraints?: string[];
+  /** Optional pitfalls to avoid when adapting this example */
+  pitfalls?: string[];
   /** Wrong approach */
   wrong: string;
   /** Right approach */

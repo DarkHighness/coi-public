@@ -27,6 +27,9 @@ import {
 
 type ThemeSkillExample = {
   scenario: string;
+  context?: string[];
+  constraints?: string[];
+  pitfalls?: string[];
   wrong: string;
   right: string;
 };
@@ -34,6 +37,10 @@ type ThemeSkillExample = {
 type ThemeSkillTemplate = {
   name: string;
   body: string;
+  useWhen?: string[];
+  constraints?: string[];
+  pitfalls?: string[];
+  recovery?: string[];
 };
 
 type ThemeSkillDef = {
@@ -54,6 +61,309 @@ type ThemeSkillDef = {
 
 function mdList(items: string[]): string {
   return items.map((i) => `- ${i}`).join("\n");
+}
+
+function summarizeThemeExampleText(text: string, maxLength = 180): string {
+  const normalized = text
+    .replace(/\r/g, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/^["'`]+|["'`]+$/g, "");
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}...`;
+}
+
+function buildThemeExampleContext(
+  def: ThemeSkillResolvedDef,
+  example: ThemeSkillExample,
+): string[] {
+  const context = [
+    `Theme objective: ${def.description}`,
+    `Use trigger: ${def.whenToLoad}`,
+    `Scenario focus: ${example.scenario}`,
+    `Failure signal: ${summarizeThemeExampleText(example.wrong)}`,
+    `Correction target: ${summarizeThemeExampleText(example.right)}`,
+  ];
+
+  if (def.pressureMechanisms.length > 0) {
+    context.push(`Theme pressure anchor: ${def.pressureMechanisms[0]}`);
+  }
+
+  if (def.aliases && def.aliases.length > 0) {
+    context.push(`Theme aliases: ${def.aliases.join(", ")}`);
+  }
+
+  if (example.context && example.context.length > 0) {
+    context.push(...example.context);
+  }
+
+  return context;
+}
+
+function buildThemeExampleConstraints(
+  def: ThemeSkillResolvedDef,
+  example: ThemeSkillExample,
+): string[] {
+  const constraints = [
+    `Preserve core constraints from the \`${def.slug}\` theme during adaptation.`,
+    ...def.coreConstraints.slice(0, 3).map((constraint) => `Core: ${constraint}`),
+    `Reject this failure pattern in implementation: ${summarizeThemeExampleText(example.wrong, 140)}`,
+    `Reach this minimum correction pattern: ${summarizeThemeExampleText(example.right, 140)}`,
+  ];
+
+  if (example.constraints && example.constraints.length > 0) {
+    constraints.push(...example.constraints);
+  }
+
+  return constraints;
+}
+
+function buildThemeExamplePitfalls(
+  def: ThemeSkillResolvedDef,
+  example: ThemeSkillExample,
+): string[] {
+  const pitfalls = [
+    "Copying surface tone without carrying forward mechanism-level pressure.",
+    "Dropping constraint and cost structure, then reducing theme to decoration.",
+    `Over-generalizing this scenario without re-checking trigger boundaries: ${example.scenario}.`,
+    `Reintroducing the same failure mode in a different form: ${summarizeThemeExampleText(example.wrong, 130)}`,
+  ];
+
+  if (example.pitfalls && example.pitfalls.length > 0) {
+    pitfalls.push(...example.pitfalls);
+  }
+
+  pitfalls.push(
+    `Missed goal: keep \`${def.slug}\` theme pressures legible in playable decisions.`,
+  );
+
+  return pitfalls;
+}
+
+function extractThemeTemplateFields(body: string, maxFields = 4): string[] {
+  const fields = body
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- ") && line.includes(":"))
+    .map((line) => line.slice(2, line.indexOf(":")).trim())
+    .filter((field) => field.length > 0);
+
+  return Array.from(new Set(fields)).slice(0, maxFields);
+}
+
+function buildThemeTemplateUseWhen(
+  def: ThemeSkillResolvedDef,
+  template: ThemeSkillTemplate,
+): string[] {
+  const useWhen = [
+    `Use this template when a \`${def.slug}\` scene needs explicit decision scaffolding instead of ad-hoc prose.`,
+    `Prefer this template when theme pressure must be made legible: ${def.pressureMechanisms[0] ?? "cost, gate, and consequence visibility."}`,
+  ];
+
+  if (template.useWhen && template.useWhen.length > 0) {
+    useWhen.push(...template.useWhen);
+  }
+
+  return useWhen;
+}
+
+function buildThemeTemplateConstraints(
+  def: ThemeSkillResolvedDef,
+  template: ThemeSkillTemplate,
+): string[] {
+  const fields = extractThemeTemplateFields(template.body);
+  const constraints = [
+    "Fill every template field before writing final scene prose.",
+    "At minimum, specify one cost/constraint and one concrete consequence/clock.",
+    ...def.coreConstraints
+      .slice(0, 2)
+      .map((constraint) => `Core alignment: ${constraint}`),
+  ];
+
+  if (fields.length > 0) {
+    constraints.push(`Do not omit key fields: ${fields.join(", ")}.`);
+  }
+
+  if (template.constraints && template.constraints.length > 0) {
+    constraints.push(...template.constraints);
+  }
+
+  return constraints;
+}
+
+function buildThemeTemplatePitfalls(
+  def: ThemeSkillResolvedDef,
+  template: ThemeSkillTemplate,
+): string[] {
+  const pitfalls = [
+    "Treating the template as flavor text instead of a decision engine.",
+    "Leaving placeholders unresolved and jumping directly to narration.",
+    `Ignoring \`${def.slug}\` pressure and producing scenes that could belong to any genre.`,
+  ];
+
+  if (template.pitfalls && template.pitfalls.length > 0) {
+    pitfalls.push(...template.pitfalls);
+  }
+
+  return pitfalls;
+}
+
+function buildThemeTemplateRecovery(
+  def: ThemeSkillResolvedDef,
+  template: ThemeSkillTemplate,
+): string[] {
+  const recovery = [
+    "If the output feels generic, rewrite one field to enforce a verifiable gate.",
+    "If stakes feel flat, add or tighten a clock tied to actor incentives.",
+    `If theme signal is weak, re-anchor one step to this pressure: ${def.pressureMechanisms[0] ?? "cost and consequence visibility."}`,
+  ];
+
+  if (template.recovery && template.recovery.length > 0) {
+    recovery.push(...template.recovery);
+  }
+
+  return recovery;
+}
+
+type ThemeLevelStage = "level1" | "level2" | "advanced";
+
+const THEME_LEVEL_STAGE_GUIDANCE: Record<
+  ThemeLevelStage,
+  { trigger: string; failure: string; recovery: string }
+> = {
+  level1: {
+    trigger:
+      "Use during scene setup or first-pass planning when you need immediate playable structure.",
+    failure:
+      "Scenes feel atmospheric but lack clear gates, costs, or decision hooks.",
+    recovery:
+      "Add one explicit gate and one immediate consequence before writing final prose.",
+  },
+  level2: {
+    trigger:
+      "Use during active scene execution when multiple actors and pressures are already moving.",
+    failure:
+      "Pressure exists but escalation logic is muddy, making choices feel arbitrary.",
+    recovery:
+      "Attach one measurable escalation signal (clock, audit, witness, scarcity) to the current action.",
+  },
+  advanced: {
+    trigger:
+      "Use for campaign-scale continuity where local scenes must reinforce long-tail stakes.",
+    failure:
+      "Set pieces happen, but campaign memory and systemic consequences do not accumulate.",
+    recovery:
+      "Connect the scene outcome to one persistent ledger (debt, legitimacy, supply, stigma, treaty, heat).",
+  },
+};
+
+function buildThemeLevelSection(
+  def: ThemeSkillResolvedDef,
+  title: string,
+  stage: ThemeLevelStage,
+  items: string[],
+): string {
+  if (items.length === 0) {
+    return `## ${title}\n\n`;
+  }
+
+  const stageGuide = THEME_LEVEL_STAGE_GUIDANCE[stage];
+  const cards = items
+    .map((item, index) => {
+      const actionFocus = item.trim();
+      const pressureAnchor =
+        def.pressureMechanisms[index % def.pressureMechanisms.length];
+      const coreConstraint = def.coreConstraints[index % def.coreConstraints.length];
+
+      return `### Step ${index + 1}
+
+- Action focus: ${actionFocus}
+- Trigger condition: ${stageGuide.trigger}
+- Pressure anchor: ${pressureAnchor}
+- Constraint check: ${coreConstraint}
+- Failure signal: ${stageGuide.failure}
+- Recovery move: ${stageGuide.recovery}`;
+    })
+    .join("\n\n");
+
+  return `## ${title}\n\n${cards}\n`;
+}
+
+type ThemeOperationalStage = "scenePattern" | "clock" | "checklist";
+
+const THEME_OPERATIONAL_GUIDANCE: Record<
+  ThemeOperationalStage,
+  {
+    cardTitle: string;
+    focusLabel: string;
+    trigger: string;
+    failure: string;
+    recovery: string;
+  }
+> = {
+  scenePattern: {
+    cardTitle: "Pattern",
+    focusLabel: "Pattern focus",
+    trigger:
+      "Use when a scene needs concrete causal structure, not only atmosphere.",
+    failure:
+      "The pattern is named in notes but actor choices and consequences stay vague.",
+    recovery:
+      "Pin one actor action to a verifiable gate and one immediate consequence.",
+  },
+  clock: {
+    cardTitle: "Clock",
+    focusLabel: "Clock focus",
+    trigger:
+      "Use when delayed consequences, escalation cadence, or exposure timing must be legible.",
+    failure:
+      "A clock is declared but no trigger events or deadline pressure appear in play.",
+    recovery:
+      "Define who can advance the clock, what advances it, and what changes at each threshold.",
+  },
+  checklist: {
+    cardTitle: "Checkpoint",
+    focusLabel: "Checkpoint focus",
+    trigger:
+      "Use before scene close to verify the theme translated into actionable state.",
+    failure:
+      "Checklist items are mentioned but no state, gate, or pressure update is actually rendered.",
+    recovery:
+      "Add one explicit state update and one follow-up pressure hook before closing the scene.",
+  },
+};
+
+function buildThemeOperationalSection(
+  def: ThemeSkillResolvedDef,
+  title: string,
+  stage: ThemeOperationalStage,
+  items: string[],
+): string {
+  if (items.length === 0) {
+    return "";
+  }
+
+  const guide = THEME_OPERATIONAL_GUIDANCE[stage];
+  const cards = items
+    .map((item, index) => {
+      const coreConstraint = def.coreConstraints[index % def.coreConstraints.length];
+      const pressureAnchor =
+        def.pressureMechanisms[index % def.pressureMechanisms.length];
+
+      return `### ${guide.cardTitle} ${index + 1}
+
+- ${guide.focusLabel}: ${item.trim()}
+- Trigger condition: ${guide.trigger}
+- Constraint check: ${coreConstraint}
+- Pressure anchor: ${pressureAnchor}
+- Failure signal: ${guide.failure}
+- Recovery move: ${guide.recovery}`;
+    })
+    .join("\n\n");
+
+  return `## ${title}\n\n${cards}\n`;
 }
 
 type ThemeDepth = {
@@ -1149,39 +1459,129 @@ priority: medium
 }
 
 function buildThemeSkillMarkdown(def: ThemeSkillResolvedDef): string {
-  const patternsMd =
-    def.scenePatterns.length === 0
-      ? ""
-      : `## Scene Patterns\n\n${mdList(def.scenePatterns)}\n`;
+  const patternsMd = buildThemeOperationalSection(
+    def,
+    "Scene Patterns",
+    "scenePattern",
+    def.scenePatterns,
+  );
 
-  const clocksMd =
-    def.clocks.length === 0 ? "" : `## Clocks\n\n${mdList(def.clocks)}\n`;
+  const clocksMd = buildThemeOperationalSection(def, "Clocks", "clock", def.clocks);
 
-  const checklistMd =
-    def.checklist.length === 0
-      ? ""
-      : `## Checklist\n\n${mdList(def.checklist)}\n`;
+  const checklistMd = buildThemeOperationalSection(
+    def,
+    "Checklist",
+    "checklist",
+    def.checklist,
+  );
 
   const templatesMd =
     def.templates.length === 0
       ? ""
       : `## Templates\n\n${def.templates
-          .map((t) => `### ${t.name}\n\n\`\`\`\n${t.body.trim()}\n\`\`\`\n`)
+          .map((template) => {
+            const useWhen = buildThemeTemplateUseWhen(def, template);
+            const constraints = buildThemeTemplateConstraints(def, template);
+            const pitfalls = buildThemeTemplatePitfalls(def, template);
+            const recovery = buildThemeTemplateRecovery(def, template);
+
+            return `### ${template.name}
+
+#### When to Use
+
+${useWhen.map((item) => `- ${item}`).join("\n")}
+
+#### Execution Constraints
+
+${constraints.map((item) => `- ${item}`).join("\n")}
+
+#### Misuse Signals
+
+${pitfalls.map((item) => `- ${item}`).join("\n")}
+
+#### Recovery Moves
+
+${recovery.map((item) => `- ${item}`).join("\n")}
+
+#### Template Body
+
+\`\`\`text
+${template.body.trim()}
+\`\`\`
+`;
+          })
           .join("\n")}`;
 
   const examplesMd =
     def.examples.length === 0
       ? ""
       : `## Examples\n\n${def.examples
-          .map(
-            (e) =>
-              `### ${e.scenario}\n\n**Wrong**:\n> ${e.wrong
-                .trim()
-                .replace(/\n/g, "\n> ")}\n\n**Right**:\n> ${e.right
-                .trim()
-                .replace(/\n/g, "\n> ")}\n`,
-          )
+          .map((e) => {
+            const context = buildThemeExampleContext(def, e);
+            const constraints = buildThemeExampleConstraints(def, e);
+            const pitfalls = buildThemeExamplePitfalls(def, e);
+            const wrong = e.wrong.trim();
+            const right = e.right.trim();
+
+            return `### ${e.scenario}
+
+#### Context
+
+${context.map((item) => `- ${item}`).join("\n")}
+
+#### Constraints to Keep True
+
+${constraints.map((item) => `- ${item}`).join("\n")}
+
+#### Misleading / Incomplete Pattern
+
+\`\`\`text
+${wrong}
+\`\`\`
+
+#### Why It Fails
+
+- It violates one or more core constraints of the \`${def.slug}\` theme.
+- It weakens playable pressure by disconnecting cause, cost, and consequence.
+- It imitates tone while dropping mechanism-level stakes.
+
+#### Contextual Pattern
+
+\`\`\`text
+${right}
+\`\`\`
+
+#### Why It Works
+
+- It keeps theme pressure mechanisms visible in scene-level action.
+- It preserves constraint-driven causality instead of cosmetic labeling.
+- It remains reusable because the decision pattern is explicit.
+
+#### Adaptation Pitfalls
+
+${pitfalls.map((item) => `- ${item}`).join("\n")}
+`;
+          })
           .join("\n")}`;
+
+  const level1Md = buildThemeLevelSection(
+    def,
+    "Level 1 (Quick Start)",
+    "level1",
+    def.level1,
+  );
+  const level2Md = buildThemeLevelSection(
+    def,
+    "Level 2 (Scene Engines)",
+    "level2",
+    def.level2,
+  );
+  const advancedMd = buildThemeLevelSection(
+    def,
+    "Advanced (Campaign Drivers)",
+    "advanced",
+    def.advanced,
+  );
 
   return `${buildThemeFrontmatter(def)}
 
@@ -1201,17 +1601,9 @@ ${mdList(def.coreConstraints)}
 
 ${mdList(def.pressureMechanisms)}
 
-## Level 1 (Quick Start)
-
-${mdList(def.level1)}
-
-## Level 2 (Scene Engines)
-
-${mdList(def.level2)}
-
-## Advanced (Campaign Drivers)
-
-${mdList(def.advanced)}
+${level1Md}
+${level2Md}
+${advancedMd}
 
 ## Anti-patterns
 

@@ -115,6 +115,15 @@ describe("VFS global skills generator", () => {
     expect(commandSudoExamples).toContain(
       "Protagonist rename across world files",
     );
+    expect(commandSudoExamples).toContain("## How to Use These Examples");
+    expect(commandSudoExamples).toContain("### Context");
+    expect(commandSudoExamples).toContain("### Why It Fails");
+    expect(commandSudoExamples).toContain("### Why It Works");
+    expect(commandSudoExamples).toContain("Scenario focus:");
+    expect(commandSudoExamples).toContain("Failure signal:");
+    expect(commandSudoExamples).toContain(
+      "Reach this minimum correction pattern:",
+    );
     expect(commandSudoRef).toContain("Coverage Audit for /sudo");
     expect(commandRuntimeHub).toContain(
       "current/skills/commands/runtime/turn/SKILL.md",
@@ -134,6 +143,55 @@ describe("VFS global skills generator", () => {
     expect(commandCompact).toContain("Structured Error Recovery Flow");
     expect(commandOutline).toContain("name: commands-outline");
     expect(commandOutline).toContain("vfs_commit_outline_phase_4");
+  });
+
+  it("embeds gameplay-specific constraints in runtime examples", () => {
+    const seeds = generateVfsSkillSeeds();
+    const unlockExamples = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/unlock/EXAMPLES.md",
+    )?.content;
+    const summaryExamples = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/summary/EXAMPLES.md",
+    )?.content;
+    const compactExamples = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/compact/EXAMPLES.md",
+    )?.content;
+    const maliceIntensityExamples = seeds.find(
+      (seed) =>
+        seed.path ===
+        "skills/presets/runtime/player-malice-intensity/EXAMPLES.md",
+    )?.content;
+
+    expect(unlockExamples).toContain(
+      "Some entities are already canonically unlocked due to prior player actions.",
+    );
+    expect(summaryExamples).toContain(
+      "Summarize only the target fork turn range.",
+    );
+    expect(compactExamples).toContain(
+      "Any verification read must stay within target-fork paths.",
+    );
+    expect(maliceIntensityExamples).toContain(
+      "Tune only risk curve dimensions (Trace/Heat, thresholds, latency), not profile identity.",
+    );
+  });
+
+  it("expands all examples files with per-scenario context details", () => {
+    const seeds = generateVfsSkillSeeds();
+    const exampleSeeds = seeds.filter((seed) => seed.path.endsWith("/EXAMPLES.md"));
+
+    expect(exampleSeeds.length).toBeGreaterThan(0);
+
+    for (const exampleSeed of exampleSeeds) {
+      expect(exampleSeed.content).toContain("Scenario focus:");
+      expect(exampleSeed.content).toContain("Failure signal:");
+      expect(exampleSeed.content).toContain(
+        "Reach this minimum correction pattern:",
+      );
+      expect(exampleSeed.content).toContain(
+        "Over-generalizing this scenario without re-checking trigger boundaries:",
+      );
+    }
   });
 
   it("derives catalog metadata from SKILL.md frontmatter and sections", () => {
