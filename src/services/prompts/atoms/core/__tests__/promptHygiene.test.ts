@@ -59,7 +59,10 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("current/summary/state.json");
     expect(content).toContain("forks/{activeFork}/story/world/**");
     expect(content).toContain("current/world/global.json");
-    expect(content).toContain('vfs_ls patterns=["current/**/notes.md"]');
+    expect(content).toContain('vfs_ls({ patterns: ["current/**/notes.md"] })');
+    expect(content).not.toContain("vfs_read path=");
+    expect(content).not.toContain("vfs_ls patterns=");
+    expect(content).not.toContain("vfs_write({ path:");
 
     // Turn finish protocol should avoid generic conversation writes
     expect(content).toContain("vfs_commit_turn");
@@ -84,6 +87,8 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("plan.md is guidance");
     expect(content).toContain("Natural recovery");
     expect(content).toContain("No deus-ex-machina corrections");
+    expect(content).toContain("worldSettingUnlocked");
+    expect(content).toContain("mainGoalUnlocked");
 
     // SUDO semantics must remain controlled (not hard bypass)
     expect(content).toContain("elevated update");

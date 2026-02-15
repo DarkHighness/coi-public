@@ -2,9 +2,12 @@ import { z } from "zod";
 import { getSchemaForPath } from "../../vfs/schemas";
 import { toCurrentPath } from "../../vfs/currentAlias";
 import { normalizeVfsPath } from "../../vfs/utils";
+import { canonicalToLogicalVfsPath } from "../../vfs/core/pathResolver";
 import { vfsPathRegistry } from "../../vfs/core/pathRegistry";
+import { vfsResourceRegistry } from "../../vfs/core/resourceRegistry";
 import type { VfsContentType, VfsFile } from "../../vfs/types";
 import type { VfsSession } from "../../vfs/vfsSession";
+import type { Operation } from "fast-json-patch";
 import {
   createError,
   type ToolCallError,
@@ -100,6 +103,86 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
 
 const isTextType = (contentType: VfsContentType): boolean =>
   contentType === "text/plain" || contentType === "text/markdown";
+
+const SUPPORTED_CONTENT_TYPES: readonly VfsContentType[] = [
+  "application/json",
+  "application/jsonl",
+  "text/plain",
+  "text/markdown",
+];
+
+const CANONICAL_UNLOCK_POINTERS = new Set(["/unlocked", "/unlockReason"]);
+
+const CANONICAL_WORLD_ENTITY_PATTERNS: RegExp[] = [
+  /^world\/world_info\.json$/,
+  /^world\/quests\/[^/]+\.json$/,
+  /^world\/knowledge\/[^/]+\.json$/,
+  /^world\/timeline\/[^/]+\.json$/,
+  /^world\/locations\/[^/]+\.json$/,
+  /^world\/factions\/[^/]+\.json$/,
+  /^world\/causal_chains\/[^/]+\.json$/,
+];
+
+const VIEW_ENTITY_ID_PATH_PATTERN =
+  /^world\/characters\/[^/]+\/views\/(quests|knowledge|timeline|locations|factions|causal_chains)\/([^/]+)\.json$/;
+
+const inferContentTypeFromExtension = (
+  normalizedPath: string,
+): VfsContentType | null => {
+  const lowered = normalizeVfsPath(normalizedPath).toLowerCase();
+  if (lowered.endsWith(".jsonl")) return "application/jsonl";
+  if (lowered.endsWith(".json")) return "application/json";
+  if (lowered.endsWith(".md")) return "text/markdown";
+  if (
+    lowered.endsWith(".txt") ||
+    lowered.endsWith(".log") ||
+    lowered.endsWith(".text")
+  ) {
+    return "text/plain";
+  }
+  return null;
+};
+
+const isSupportedVfsContentType = (
+  value: string,
+): value is VfsContentType =>
+  (SUPPORTED_CONTENT_TYPES as readonly string[]).includes(value);
+
+const canonicalUnlockWarning = (
+  normalizedPath: string,
+  keys: string[],
+): string =>
+  `Ignored canonical unlock field(s) ${keys.join(", ")} at ${toCurrentPath(normalizedPath)}. Use actor views for world-entity unlock state.`;
+
+const toPlainRecord = (
+  value: unknown,
+): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+};
+
+const extractViewEntityIdFromPath = (normalizedPath: string): string | null => {
+  const normalized = normalizeVfsPath(normalizedPath);
+  const logical = normalizeVfsPath(
+    canonicalToLogicalVfsPath(normalized, { looseFork: true }) || normalized,
+  );
+  const match = VIEW_ENTITY_ID_PATH_PATTERN.exec(logical);
+  if (!match) return null;
+  return match[2] ?? null;
+};
+
+const toPatchPointer = (pointer: unknown): string | null => {
+  if (typeof pointer !== "string") return null;
+  const trimmed = pointer.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const pointsToCanonicalUnlockField = (pointer: string | null): boolean => {
+  if (!pointer) return false;
+  return CANONICAL_UNLOCK_POINTERS.has(pointer);
+};
 
 export const requireReadBeforeMutateForExistingFile = (
   session: VfsSession,
@@ -210,12 +293,180 @@ export const resolveTextContentType = (
   return normalizedPath.endsWith(".md") ? "text/markdown" : "text/plain";
 };
 
+export const isCanonicalWorldEntityPath = (path: string): boolean => {
+  const normalized = normalizeVfsPath(path);
+  const logical = normalizeVfsPath(
+    canonicalToLogicalVfsPath(normalized, { looseFork: true }) || normalized,
+  );
+  return CANONICAL_WORLD_ENTITY_PATTERNS.some((pattern) =>
+    pattern.test(logical),
+  );
+};
+
+export const stripCanonicalWorldEntityUnlockFields = (
+  normalizedPath: string,
+  value: unknown,
+): {
+  sanitized: unknown;
+  strippedKeys: string[];
+  warnings: string[];
+} => {
+  if (!isCanonicalWorldEntityPath(normalizedPath)) {
+    return { sanitized: value, strippedKeys: [], warnings: [] };
+  }
+
+  const record = toPlainRecord(value);
+  if (!record) {
+    return { sanitized: value, strippedKeys: [], warnings: [] };
+  }
+
+  const strippedKeys = ["unlocked", "unlockReason"].filter((key) =>
+    Object.prototype.hasOwnProperty.call(record, key),
+  );
+  if (strippedKeys.length === 0) {
+    return { sanitized: value, strippedKeys: [], warnings: [] };
+  }
+
+  const sanitizedRecord: Record<string, unknown> = { ...record };
+  delete sanitizedRecord.unlocked;
+  delete sanitizedRecord.unlockReason;
+
+  return {
+    sanitized: sanitizedRecord,
+    strippedKeys,
+    warnings: [canonicalUnlockWarning(normalizedPath, strippedKeys)],
+  };
+};
+
+export const filterCanonicalWorldEntityUnlockPatchOps = (
+  normalizedPath: string,
+  patchOps: Operation[],
+): {
+  patch: Operation[];
+  warnings: string[];
+} => {
+  if (!isCanonicalWorldEntityPath(normalizedPath) || patchOps.length === 0) {
+    return { patch: patchOps, warnings: [] };
+  }
+
+  const kept: Operation[] = [];
+  let strippedCount = 0;
+
+  for (const op of patchOps) {
+    const pathPointer = toPatchPointer((op as Record<string, unknown>).path);
+    const fromPointer = toPatchPointer((op as Record<string, unknown>).from);
+    if (
+      pointsToCanonicalUnlockField(pathPointer) ||
+      pointsToCanonicalUnlockField(fromPointer)
+    ) {
+      strippedCount += 1;
+      continue;
+    }
+    kept.push(op);
+  }
+
+  if (strippedCount === 0) {
+    return { patch: patchOps, warnings: [] };
+  }
+
+  return {
+    patch: kept,
+    warnings: [
+      `Ignored ${strippedCount} patch operation(s) targeting canonical /unlocked or /unlockReason at ${toCurrentPath(normalizedPath)}. Use actor views for world-entity unlock state.`,
+    ],
+  };
+};
+
+export const injectActorViewEntityIdIfMissing = (
+  normalizedPath: string,
+  value: unknown,
+): {
+  sanitized: unknown;
+  injected: boolean;
+} => {
+  const entityId = extractViewEntityIdFromPath(normalizedPath);
+  if (!entityId) {
+    return { sanitized: value, injected: false };
+  }
+
+  const record = toPlainRecord(value);
+  if (!record) {
+    return { sanitized: value, injected: false };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(record, "entityId")) {
+    return { sanitized: value, injected: false };
+  }
+
+  return {
+    sanitized: { ...record, entityId },
+    injected: true,
+  };
+};
+
+export const resolveWriteContentType = (
+  session: VfsSession,
+  normalizedPath: string,
+  explicitContentType: VfsContentType | null | undefined,
+):
+  | { ok: true; contentType: VfsContentType }
+  | { ok: false; error: ToolCallError } => {
+  if (explicitContentType) {
+    return { ok: true, contentType: explicitContentType };
+  }
+
+  const existing = session.readFile(normalizedPath);
+  if (existing) {
+    return { ok: true, contentType: existing.contentType };
+  }
+
+  const inferredByPath = inferContentTypeFromExtension(normalizedPath);
+  if (inferredByPath) {
+    return { ok: true, contentType: inferredByPath };
+  }
+
+  const templateMatch = vfsResourceRegistry.match(normalizedPath);
+  const templateContentTypes = templateMatch.template.contentTypes ?? [];
+  if (templateContentTypes.length === 1) {
+    const [onlyType] = templateContentTypes;
+    if (isSupportedVfsContentType(onlyType)) {
+      return { ok: true, contentType: onlyType };
+    }
+  }
+
+  return {
+    ok: false,
+    error: createVfsWriteGuardError(
+      `Unable to infer contentType for ${toCurrentPath(normalizedPath)}. Please provide write_file.contentType explicitly.`,
+      "INVALID_DATA",
+      {
+        issues: [
+          {
+            path: toCurrentPath(normalizedPath),
+            code: "CONTENT_TYPE_REQUIRED",
+            message:
+              "Could not infer content type from existing file, extension, or unique template contentTypes.",
+          },
+        ],
+        recovery: [
+          "Set write_file.contentType explicitly when path extension/template cannot determine it.",
+        ],
+      },
+    ),
+  };
+};
+
 export const validateWritePayload = (
   normalizedPath: string,
   content: string,
   contentType: VfsContentType,
 ):
-  | { ok: true; normalizedContent: string; contentType: VfsContentType }
+  | {
+      ok: true;
+      normalizedContent: string;
+      contentType: VfsContentType;
+      warnings: string[];
+    }
   | { ok: false; error: ToolCallError } => {
   const isJsonPath = normalizedPath.endsWith(".json");
   const isJsonlPath = normalizedPath.endsWith(".jsonl");
@@ -330,11 +581,11 @@ export const validateWritePayload = (
       }
     }
 
-    return { ok: true, normalizedContent: content, contentType };
+    return { ok: true, normalizedContent: content, contentType, warnings: [] };
   }
 
   if (!isJsonPath) {
-    return { ok: true, normalizedContent: content, contentType };
+    return { ok: true, normalizedContent: content, contentType, warnings: [] };
   }
 
   let parsed: unknown;
@@ -386,10 +637,27 @@ export const validateWritePayload = (
   }
 
   let validated: unknown;
+  const warnings: string[] = [];
+  let canonicalUnlockedSanitized = parsed;
+  const canonicalUnlockStrip = stripCanonicalWorldEntityUnlockFields(
+    normalizedPath,
+    parsed,
+  );
+  if (canonicalUnlockStrip.strippedKeys.length > 0) {
+    canonicalUnlockedSanitized = canonicalUnlockStrip.sanitized;
+    warnings.push(...canonicalUnlockStrip.warnings);
+  }
+
+  const withInjectedEntityId = injectActorViewEntityIdIfMissing(
+    normalizedPath,
+    canonicalUnlockedSanitized,
+  );
+  const normalizedForSchema = withInjectedEntityId.sanitized;
+
   try {
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
-    validated = strictSchema.parse(parsed);
+    validated = strictSchema.parse(normalizedForSchema);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
@@ -414,7 +682,7 @@ export const validateWritePayload = (
     };
   }
 
-  if (hasUnknownKeys(parsed, validated)) {
+  if (hasUnknownKeys(normalizedForSchema, validated)) {
     return {
       ok: false,
       error: createVfsWriteGuardError(
@@ -440,5 +708,6 @@ export const validateWritePayload = (
     ok: true,
     normalizedContent: JSON.stringify(validated),
     contentType: "application/json",
+    warnings,
   };
 };

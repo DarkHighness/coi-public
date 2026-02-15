@@ -74,7 +74,8 @@ export const hiddenLayerQuality: Atom<void> = defineAtom(
     - **SPECIFICITY**: Use names, dates, numbers, specific locations.
     - **INTERCONNECTION**: Connect secrets to other entities.
     - **UNLOCKED IS RUNTIME STATE**: Default to locked on creation. Only flip to unlocked when the player has definitive proof, via a VFS state update:
-      * World entities → set \`current/world/characters/char:player/views/**.unlocked=true\` (+ unlockReason)
+      * Quests/knowledge/timeline/locations/factions/causal_chains → set \`current/world/characters/char:player/views/**.unlocked=true\` (+ unlockReason)
+      * \`world_info\` → set \`current/world/characters/char:player/views/world_info.json\` \`worldSettingUnlocked/mainGoalUnlocked\` (+ reason fields)
       * Actors/relations/items/traits → set the entity's own \`unlocked=true\`
   </minimum_standards>
 

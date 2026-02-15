@@ -130,4 +130,40 @@ describe("toolCallProcessor", () => {
       error: "Unknown tool: tool_does_not_exist",
     });
   });
+
+  it("strips legacy vfs_commit_turn.meta before validation and dispatch", () => {
+    handlerMocks.hasHandler.mockReturnValue(true);
+    handlerMocks.dispatchToolCall.mockReturnValue({ success: true });
+
+    const result = executeGenericTool(
+      "vfs_commit_turn",
+      {
+        userAction: "look around",
+        assistant: {
+          narrative: "You scan the room.",
+          choices: [{ text: "Inspect desk" }, { text: "Open door" }],
+        },
+        meta: {
+          playerRate: {
+            vote: "up",
+            createdAt: Date.now(),
+          },
+        },
+      },
+      createContext() as any,
+    ) as { success?: boolean };
+
+    expect(result.success).toBe(true);
+    expect(handlerMocks.dispatchToolCall).toHaveBeenCalledWith(
+      "vfs_commit_turn",
+      {
+        userAction: "look around",
+        assistant: {
+          narrative: "You scan the room.",
+          choices: [{ text: "Inspect desk" }, { text: "Open door" }],
+        },
+      },
+      expect.any(Object),
+    );
+  });
 });

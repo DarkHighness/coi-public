@@ -3,7 +3,61 @@ import { VfsSession } from "../../vfs/vfsSession";
 import { dispatchToolCall } from "../handlers";
 import { createValidGlobal } from "./vfsHandlers.helpers";
 
+const createValidQuest = (id = "quest:test") => ({
+  id,
+  knownBy: ["char:player"],
+  title: "Find the signal",
+  type: "main",
+  visible: {
+    description: "Follow the trail.",
+    objectives: ["Reach the old gate"],
+  },
+  hidden: {
+    trueDescription: "A decoy path hides the real trap.",
+    trueObjectives: ["Identify the decoy"],
+    secretOutcome: "Ambush at dusk",
+    twist: "The ally leaked the route",
+  },
+});
+
+const createInventoryItem = () => ({
+  id: "item:key",
+  knownBy: ["char:player"],
+  name: "Rusty Key",
+  visible: {
+    description: "A small iron key.",
+  },
+  hidden: {
+    truth: "It opens the archive vault.",
+  },
+  unlocked: true,
+  unlockReason: "Player inspected the maker's mark",
+});
+
 describe("VFS handlers mutations", () => {
+  it("infers write_file contentType from path when omitted", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "write_file",
+            path: "current/world/global.json",
+            content: JSON.stringify(createValidGlobal()),
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    const stored = session.readFile("world/global.json");
+    expect(stored?.contentType).toBe("application/json");
+  });
+
   it("writes and reads a JSON file via vfs_write ops", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
@@ -198,6 +252,176 @@ describe("VFS handlers mutations", () => {
     ) as any;
 
     expect(result.success).toBe(true);
+  });
+
+  it("warns and strips canonical unlocked fields on write_file", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "write_file",
+            path: "current/world/quests/quest:test.json",
+            content: JSON.stringify({
+              ...createValidQuest("quest:test"),
+              unlocked: true,
+              unlockReason: "should be ignored",
+            }),
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(result.data.warnings?.length ?? 0).toBeGreaterThan(0);
+
+    const quest = JSON.parse(
+      session.readFile("world/quests/quest:test.json")?.content ?? "{}",
+    ) as Record<string, unknown>;
+    expect(quest.unlocked).toBeUndefined();
+    expect(quest.unlockReason).toBeUndefined();
+  });
+
+  it("warns and strips canonical unlocked fields on merge_json", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/quests/quest:test.json",
+      JSON.stringify(createValidQuest("quest:test")),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+    dispatchToolCall("vfs_read", { path: "current/world/quests/quest:test.json" }, ctx);
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "merge_json",
+            path: "current/world/quests/quest:test.json",
+            content: {
+              title: "Updated title",
+              unlocked: true,
+              unlockReason: "ignored",
+            },
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(result.data.warnings?.length ?? 0).toBeGreaterThan(0);
+
+    const quest = JSON.parse(
+      session.readFile("world/quests/quest:test.json")?.content ?? "{}",
+    ) as Record<string, unknown>;
+    expect(quest.title).toBe("Updated title");
+    expect(quest.unlocked).toBeUndefined();
+  });
+
+  it("warns and ignores canonical unlocked patch ops", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/quests/quest:test.json",
+      JSON.stringify(createValidQuest("quest:test")),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+    dispatchToolCall("vfs_read", { path: "current/world/quests/quest:test.json" }, ctx);
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "patch_json",
+            path: "current/world/quests/quest:test.json",
+            patch: [
+              { op: "replace", path: "/unlocked", value: true },
+              { op: "replace", path: "/title", value: "Patched title" },
+            ],
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(result.data.warnings?.length ?? 0).toBeGreaterThan(0);
+
+    const quest = JSON.parse(
+      session.readFile("world/quests/quest:test.json")?.content ?? "{}",
+    ) as Record<string, unknown>;
+    expect(quest.title).toBe("Patched title");
+    expect(quest.unlocked).toBeUndefined();
+  });
+
+  it("injects missing entityId for actor views", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "write_file",
+            path: "current/world/characters/char:player/views/quests/quest:player-track.json",
+            content: JSON.stringify({
+              status: "active",
+            }),
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    const view = JSON.parse(
+      session.readFile(
+        "world/characters/char:player/views/quests/quest:player-track.json",
+      )?.content ?? "{}",
+    ) as Record<string, unknown>;
+    expect(view.entityId).toBe("quest:player-track");
+    expect(view.status).toBe("active");
+  });
+
+  it("blocks unlocked regression from true to false", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/characters/char:player/inventory/item:key.json",
+      JSON.stringify(createInventoryItem()),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+    dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/characters/char:player/inventory/item:key.json" },
+      ctx,
+    );
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "patch_json",
+            path: "current/world/characters/char:player/inventory/item:key.json",
+            patch: [{ op: "replace", path: "/unlocked", value: false }],
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error).toContain("Unlock regression is not allowed");
   });
 
   it("supports append_text and edit_lines", () => {

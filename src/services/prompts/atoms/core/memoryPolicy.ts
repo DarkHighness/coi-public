@@ -58,10 +58,10 @@ const globalNotes = `
 
     <compact_bootstrap>
       **AFTER COMPACT/SUMMARY OR ANY HISTORY REBUILD, RE-BOOTSTRAP MEMORY CONTEXT**:
-      1. \`vfs_read path="forks/{activeFork}/story/summary/state.json"\` (or alias \`current/summary/state.json\`)
-      2. \`vfs_read path="forks/{activeFork}/story/world/global.json"\` (or alias \`current/world/global.json\`)
-      3. \`vfs_read path="current/world/notes.md"\` (if present)
-      4. If more notes are needed, \`vfs_ls patterns=["current/**/notes.md"]\`, then read only relevant files.
+      1. \`vfs_read({ path: "forks/{activeFork}/story/summary/state.json" })\` (or alias \`current/summary/state.json\`)
+      2. \`vfs_read({ path: "forks/{activeFork}/story/world/global.json" })\` (or alias \`current/world/global.json\`)
+      3. \`vfs_read({ path: "current/world/notes.md" })\` (if present)
+      4. If more notes are needed, \`vfs_ls({ patterns: ["current/**/notes.md"] })\`, then read only relevant files.
 
       **CANONICAL VS NOTES**:
       - Stable facts belong in structured JSON.
@@ -70,10 +70,10 @@ const globalNotes = `
 
     <search_strategy>
       **AVOID FULL SCANS**:
-      - Start with \`vfs_read path="current/world/notes.md"\` (if present).
+      - Start with \`vfs_read({ path: "current/world/notes.md" })\` (if present).
       - When you need related entity notes, use:
-        - \`vfs_ls patterns=["current/**/notes.md"]\`
-      - Then \`vfs_read\` only the relevant notes files.
+        - \`vfs_ls({ patterns: ["current/**/notes.md"] })\`
+      - Then \`vfs_read({ path: "..." })\` only the relevant notes files.
     </search_strategy>
 
     <hygiene>

@@ -122,9 +122,10 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. vfs_ls({ path: "current/world/locations", stat: true })
       2. vfs_search({ query: "abandoned chapel|old chapel", path: "current/world/locations", regex: true })
-      3. vfs_read({ path: "current/world/locations/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/links", "/unlocked"] })
-      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/locations/<kept>.json", content: { ... } }] })
-      5. vfs_delete({ paths: ["current/world/locations/<duplicate>.json"] })
+      3. vfs_read({ path: "current/world/locations/<id>.json", mode: "json", pointers: ["/id", "/name", "/visible", "/hidden"] })
+      4. vfs_read({ path: "current/world/characters/char:player/views/locations/<id>.json", mode: "json", pointers: ["/entityId", "/unlocked", "/unlockReason"] })
+      5. vfs_write({ ops: [{ op: "merge_json", path: "current/world/locations/<kept>.json", content: { ... } }] })
+      6. vfs_delete({ paths: ["current/world/locations/<duplicate>.json"] })
     </action>
   </example>
 
@@ -133,9 +134,10 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. vfs_ls({ path: "current/world/quests", stat: true })
       2. vfs_search({ query: "missing caravan|lost caravan", path: "current/world/quests", regex: true })
-      3. vfs_read({ path: "current/world/quests/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/status", "/unlocked"] })
-      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/quests/<kept>.json", content: { ... } }] })
-      5. vfs_delete({ paths: ["current/world/quests/<duplicate>.json"] })
+      3. vfs_read({ path: "current/world/quests/<id>.json", mode: "json", pointers: ["/id", "/title", "/visible", "/hidden"] })
+      4. vfs_read({ path: "current/world/characters/char:player/views/quests/<id>.json", mode: "json", pointers: ["/entityId", "/status", "/unlocked", "/unlockReason"] })
+      5. vfs_write({ ops: [{ op: "merge_json", path: "current/world/quests/<kept>.json", content: { ... } }] })
+      6. vfs_delete({ paths: ["current/world/quests/<duplicate>.json"] })
     </action>
   </example>
 
@@ -144,9 +146,10 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. vfs_ls({ path: "current/world/knowledge", stat: true })
       2. vfs_search({ query: "sigil|glyph", path: "current/world/knowledge", regex: true })
-      3. vfs_read({ path: "current/world/knowledge/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/tags", "/unlocked"] })
-      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/knowledge/<kept>.json", content: { ... } }] })
-      5. vfs_delete({ paths: ["current/world/knowledge/<duplicate>.json"] })
+      3. vfs_read({ path: "current/world/knowledge/<id>.json", mode: "json", pointers: ["/id", "/title", "/visible", "/hidden"] })
+      4. vfs_read({ path: "current/world/characters/char:player/views/knowledge/<id>.json", mode: "json", pointers: ["/entityId", "/unlocked", "/unlockReason"] })
+      5. vfs_write({ ops: [{ op: "merge_json", path: "current/world/knowledge/<kept>.json", content: { ... } }] })
+      6. vfs_delete({ paths: ["current/world/knowledge/<duplicate>.json"] })
     </action>
   </example>
 
@@ -166,9 +169,10 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. vfs_ls({ path: "current/world/factions", stat: true })
       2. vfs_search({ query: "Order of Ash|Ash Order", path: "current/world/factions", regex: true })
-      3. vfs_read({ path: "current/world/factions/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/relations", "/unlocked"] })
-      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/factions/<kept>.json", content: { ... } }] })
-      5. vfs_delete({ paths: ["current/world/factions/<duplicate>.json"] })
+      3. vfs_read({ path: "current/world/factions/<id>.json", mode: "json", pointers: ["/id", "/name", "/visible", "/hidden"] })
+      4. vfs_read({ path: "current/world/characters/char:player/views/factions/<id>.json", mode: "json", pointers: ["/entityId", "/standing", "/unlocked", "/unlockReason"] })
+      5. vfs_write({ ops: [{ op: "merge_json", path: "current/world/factions/<kept>.json", content: { ... } }] })
+      6. vfs_delete({ paths: ["current/world/factions/<duplicate>.json"] })
     </action>
   </example>
 
@@ -177,9 +181,10 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <action>
       1. vfs_ls({ path: "current/world/timeline", stat: true })
       2. vfs_search({ query: "eclipse|black sun", path: "current/world/timeline", regex: true })
-      3. vfs_read({ path: "current/world/timeline/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/time", "/unlocked"] })
-      4. vfs_write({ ops: [{ op: "merge_json", path: "current/world/timeline/<kept>.json", content: { ... } }] })
-      5. vfs_delete({ paths: ["current/world/timeline/<duplicate>.json"] })
+      3. vfs_read({ path: "current/world/timeline/<id>.json", mode: "json", pointers: ["/id", "/name", "/gameTime", "/visible", "/hidden"] })
+      4. vfs_read({ path: "current/world/characters/char:player/views/timeline/<id>.json", mode: "json", pointers: ["/entityId", "/unlocked", "/unlockReason"] })
+      5. vfs_write({ ops: [{ op: "merge_json", path: "current/world/timeline/<kept>.json", content: { ... } }] })
+      6. vfs_delete({ paths: ["current/world/timeline/<duplicate>.json"] })
     </action>
   </example>
 
@@ -187,10 +192,11 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     <duplicates>Unlocked surface entity + locked truth entity are actually the same target</duplicates>
     <action>
       1. Prefer keeping the locked/truth-rich file.
-      2. vfs_read both files with pointers ["/visible", "/hidden", "/unlocked"].
-      3. vfs_write merge_json on kept file to preserve both visible and hidden layers.
-      4. Ensure player-known state is preserved (\`unlocked=true\` on kept side or corresponding player view).
-      5. vfs_delete redundant fragment file.
+      2. vfs_read canonical files with pointers ["/visible", "/hidden"].
+      3. For world entities, vfs_read corresponding \`char:player/views/**\` files for unlock state.
+      4. vfs_write merge_json on kept canonical file to preserve visible+hidden layers.
+      5. Ensure player-known state is preserved (\`unlocked=true\` on kept side or corresponding player view).
+      6. vfs_delete redundant fragment file.
     </action>
   </example>
 </deduplication_examples>
@@ -203,7 +209,8 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
     1. PREFER keeping the Locked entity (it often contains full GM truth).
     2. MUST merge the Unlocked entity's visible info into the Kept entity's separate 'visible' layer.
     3. MUST preserve player knowledge (unlock state) when deleting the duplicate:
-       - World entities (quests/knowledge/timeline/locations/factions/causal_chains/world_info) → ensure \`current/world/characters/char:player/views/**.unlocked=true\` on the kept entity.
+       - Quests/knowledge/timeline/locations/factions/causal_chains → ensure \`current/world/characters/char:player/views/**.unlocked=true\` on the kept entity.
+       - \`world_info\` → ensure \`current/world/characters/char:player/views/world_info.json\` keeps \`worldSettingUnlocked/mainGoalUnlocked\` state.
        - Actors/relations/items/traits → ensure the kept entity itself has \`unlocked: true\` if the player knew the removed one.
     4. NEVER lose player knowledge during a merge.
 - If no duplicates found, still write a minimal narrative like "No duplicates found"

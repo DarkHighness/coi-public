@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
 import {
   ensureTextFile,
+  filterCanonicalWorldEntityUnlockPatchOps,
   requireReadBeforeMutateForExistingFile,
+  resolveWriteContentType,
   resolveTextContentType,
+  stripCanonicalWorldEntityUnlockFields,
   validateExpectedHash,
   validateWritePayload,
 } from "../handlers/vfsMutationGuard";
@@ -197,6 +200,7 @@ describe("vfsMutationGuard", () => {
         ok: true,
         normalizedContent: "# hello",
         contentType: "text/markdown",
+        warnings: [],
       });
     });
 
@@ -231,6 +235,7 @@ describe("vfsMutationGuard", () => {
         ok: true,
         normalizedContent: '{"role":"user"}\n{"role":"assistant"}',
         contentType: "application/jsonl",
+        warnings: [],
       });
     });
 
@@ -281,7 +286,135 @@ describe("vfsMutationGuard", () => {
           currentLocation: "loc:1",
           turnNumber: 1,
         });
+        expect(result.warnings).toEqual([]);
       }
+    });
+
+    it("strips canonical unlocked fields with warning for world entities", () => {
+      const result = validateWritePayload(
+        "world/world_info.json",
+        JSON.stringify({
+          title: "World",
+          premise: "Premise",
+          worldSetting: {
+            visible: { description: "Known world", rules: "Known rules" },
+            hidden: { hiddenRules: "Secret rules", secrets: ["secret"] },
+            history: "Ancient history",
+          },
+          mainGoal: {
+            visible: { description: "Goal", conditions: "Known conditions" },
+            hidden: {
+              trueDescription: "True goal",
+              trueConditions: "True conditions",
+            },
+          },
+          unlocked: true,
+          unlockReason: "should be ignored",
+        }),
+        "application/json",
+      );
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        const parsed = JSON.parse(result.normalizedContent) as Record<
+          string,
+          unknown
+        >;
+        expect(parsed.unlocked).toBeUndefined();
+        expect(parsed.unlockReason).toBeUndefined();
+        expect(result.warnings.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("injects missing entityId for actor view payloads", () => {
+      const result = validateWritePayload(
+        "world/characters/char:player/views/quests/quest:welcome.json",
+        JSON.stringify({
+          status: "active",
+        }),
+        "application/json",
+      );
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(JSON.parse(result.normalizedContent)).toMatchObject({
+          entityId: "quest:welcome",
+          status: "active",
+        });
+      }
+    });
+  });
+
+  describe("resolveWriteContentType", () => {
+    it("infers from existing file first", () => {
+      const session = new VfsSession();
+      session.writeFile("world/notes.md", "# hi", "text/markdown");
+
+      const resolved = resolveWriteContentType(
+        session,
+        "world/notes.md",
+        undefined,
+      );
+      expect(resolved.ok).toBe(true);
+      if (resolved.ok) {
+        expect(resolved.contentType).toBe("text/markdown");
+      }
+    });
+
+    it("infers from extension when file does not exist", () => {
+      const session = new VfsSession();
+      const resolved = resolveWriteContentType(
+        session,
+        "world/notes.log",
+        undefined,
+      );
+      expect(resolved.ok).toBe(true);
+      if (resolved.ok) {
+        expect(resolved.contentType).toBe("text/plain");
+      }
+    });
+
+    it("returns INVALID_DATA when inference is not possible", () => {
+      const session = new VfsSession();
+      const resolved = resolveWriteContentType(session, "world/mystery", null);
+      expect(resolved.ok).toBe(false);
+      if (!resolved.ok) {
+        expect(resolved.error.code).toBe("INVALID_DATA");
+        expect(resolved.error.error).toContain("Unable to infer contentType");
+      }
+    });
+  });
+
+  describe("canonical unlocked patch/merge helpers", () => {
+    it("strips unlocked fields from canonical merge objects", () => {
+      const result = stripCanonicalWorldEntityUnlockFields(
+        "world/quests/quest:1.json",
+        {
+          unlocked: true,
+          unlockReason: "proof",
+          visible: { description: "x", objectives: ["a"] },
+        },
+      );
+
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.sanitized).toEqual({
+        visible: { description: "x", objectives: ["a"] },
+      });
+    });
+
+    it("filters patch operations that target canonical unlock fields", () => {
+      const result = filterCanonicalWorldEntityUnlockPatchOps(
+        "world/quests/quest:1.json",
+        [
+          { op: "replace", path: "/unlocked", value: true } as any,
+          { op: "replace", path: "/visible/description", value: "updated" } as any,
+          { op: "remove", path: "/unlockReason" } as any,
+        ],
+      );
+
+      expect(result.patch).toHaveLength(1);
+      expect((result.patch[0] as any).path).toBe("/visible/description");
+      expect(result.warnings.length).toBeGreaterThan(0);
     });
   });
 });

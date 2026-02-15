@@ -1,11 +1,140 @@
 import { describe, it, expect } from "vitest";
 import { VfsSession } from "../vfsSession";
 
+const createProfileWithRelationUnlock = () => ({
+  id: "char:npc_test",
+  kind: "npc",
+  currentLocation: "loc:gate",
+  knownBy: ["char:player"],
+  visible: {
+    name: "Gate Keeper",
+  },
+  hidden: {
+    trueName: "Gate Keeper",
+  },
+  relations: [
+    {
+      id: "rel:1",
+      to: { kind: "character", id: "char:player" },
+      knownBy: ["char:player"],
+      unlocked: true,
+      unlockReason: "saw the confession",
+      kind: "attitude",
+      visible: {
+        description: "Watches carefully",
+        publicStance: "neutral",
+        signals: ["keeps distance"],
+      },
+      hidden: {
+        affinity: 70,
+        privateIntent: "protect from threat",
+      },
+    },
+  ],
+  unlocked: true,
+  unlockReason: "identity confirmed",
+});
+
+const createWorldInfoView = () => ({
+  worldSettingUnlocked: true,
+  worldSettingUnlockReason: "decoded chronicle",
+  mainGoalUnlocked: true,
+  mainGoalUnlockReason: "artifact analysis",
+});
+
 describe("VfsSession", () => {
   it("writes and reads files", () => {
     const session = new VfsSession();
     session.writeFile("world/global.json", "{}", "application/json");
     expect(session.readFile("world/global.json")?.content).toBe("{}");
+  });
+
+  it("injects entityId for actor view JSON files when missing", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/characters/char:player/views/quests/quest:inject.json",
+      JSON.stringify({ status: "active" }),
+      "application/json",
+    );
+
+    const view = JSON.parse(
+      session.readFile(
+        "world/characters/char:player/views/quests/quest:inject.json",
+      )?.content ?? "{}",
+    ) as Record<string, unknown>;
+    expect(view.entityId).toBe("quest:inject");
+  });
+
+  it("blocks top-level unlocked regression from true to false", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/placeholders/ph:test.json",
+      JSON.stringify({
+        id: "ph:test",
+        label: "Mysterious Figure",
+        knownBy: ["char:player"],
+        visible: { description: "A cloaked silhouette." },
+        unlocked: true,
+        unlockReason: "face revealed",
+      }),
+      "application/json",
+    );
+
+    expect(() =>
+      session.writeFile(
+        "world/placeholders/ph:test.json",
+        JSON.stringify({
+          id: "ph:test",
+          label: "Mysterious Figure",
+          knownBy: ["char:player"],
+          visible: { description: "A cloaked silhouette." },
+          unlocked: false,
+        }),
+        "application/json",
+      ),
+    ).toThrow("Unlock regression is not allowed");
+  });
+
+  it("blocks relation-level unlocked regression inside actor profile", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/characters/char:npc_test/profile.json",
+      JSON.stringify(createProfileWithRelationUnlock()),
+      "application/json",
+    );
+
+    const regressed = createProfileWithRelationUnlock();
+    (regressed.relations[0] as Record<string, unknown>).unlocked = false;
+
+    expect(() =>
+      session.writeFile(
+        "world/characters/char:npc_test/profile.json",
+        JSON.stringify(regressed),
+        "application/json",
+      ),
+    ).toThrow("relations[id=rel:1].unlocked");
+  });
+
+  it("blocks world_info view unlock regression", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/characters/char:player/views/world_info.json",
+      JSON.stringify(createWorldInfoView()),
+      "application/json",
+    );
+
+    expect(() =>
+      session.writeFile(
+        "world/characters/char:player/views/world_info.json",
+        JSON.stringify({
+          worldSettingUnlocked: false,
+          worldSettingUnlockReason: "regressed",
+          mainGoalUnlocked: true,
+          mainGoalUnlockReason: "artifact analysis",
+        }),
+        "application/json",
+      ),
+    ).toThrow("worldSettingUnlocked");
   });
 
   it("lists directories", () => {

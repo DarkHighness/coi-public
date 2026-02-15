@@ -49,7 +49,6 @@ import {
 import {
   buildTurnId,
   type ConversationIndex,
-  type TurnFile,
   readConversationIndex,
   readTurnFile,
   writeConversationIndex,
@@ -59,8 +58,11 @@ import { type ToolContext } from "../toolHandlerRegistry";
 import { getVfsSchemaHint } from "../../providers/utils";
 import {
   ensureTextFile,
+  filterCanonicalWorldEntityUnlockPatchOps,
   requireReadBeforeMutateForExistingFile,
+  resolveWriteContentType,
   resolveTextContentType,
+  stripCanonicalWorldEntityUnlockFields,
   validateExpectedHash,
   validateWritePayload,
 } from "./vfsMutationGuard";
@@ -1780,6 +1782,7 @@ registerToolHandlerWithStructuredErrors(
       const edited: string[] = [];
       const patched: string[] = [];
       const merged: string[] = [];
+      const warnings: string[] = [];
       const withBatchError = (
         error: ToolCallError,
         opIndex: number,
@@ -1818,14 +1821,29 @@ registerToolHandlerWithStructuredErrors(
             return withBatchError(seenError, opIndex, op.op, op.path);
           }
 
+          const resolvedContentType = resolveWriteContentType(
+            draft,
+            resolved.path,
+            op.contentType ?? null,
+          );
+          if (!resolvedContentType.ok) {
+            return withBatchError(
+              resolvedContentType.error,
+              opIndex,
+              op.op,
+              op.path,
+            );
+          }
+
           const validated = validateWritePayload(
             resolved.path,
             op.content,
-            op.contentType,
+            resolvedContentType.contentType,
           );
           if ("error" in validated) {
             return withBatchError(validated.error, opIndex, op.op, op.path);
           }
+          warnings.push(...validated.warnings);
 
           draft.writeFile(
             resolved.path,
@@ -2095,8 +2113,17 @@ registerToolHandlerWithStructuredErrors(
             return withBatchError(seenError, opIndex, op.op, op.path);
           }
 
+          const filteredPatch = filterCanonicalWorldEntityUnlockPatchOps(
+            resolved.path,
+            op.patch as Operation[],
+          );
+          warnings.push(...filteredPatch.warnings);
+          if (filteredPatch.patch.length === 0) {
+            continue;
+          }
+
           try {
-            draft.applyJsonPatch(resolved.path, op.patch as Operation[]);
+            draft.applyJsonPatch(resolved.path, filteredPatch.patch);
           } catch (error) {
             if (error instanceof VfsWriteAccessError) {
               return withBatchError(
@@ -2146,8 +2173,21 @@ registerToolHandlerWithStructuredErrors(
             return withBatchError(seenError, opIndex, op.op, op.path);
           }
 
+          const sanitizedMerge = stripCanonicalWorldEntityUnlockFields(
+            resolved.path,
+            op.content,
+          );
+          warnings.push(...sanitizedMerge.warnings);
+          const mergeContent = sanitizedMerge.sanitized as Record<
+            string,
+            unknown
+          >;
+          if (Object.keys(mergeContent).length === 0) {
+            continue;
+          }
+
           try {
-            draft.mergeJson(resolved.path, op.content);
+            draft.mergeJson(resolved.path, mergeContent);
           } catch (error) {
             if (error instanceof VfsWriteAccessError) {
               return withBatchError(
@@ -2176,8 +2216,16 @@ registerToolHandlerWithStructuredErrors(
         }
       }
 
+      const uniqueWarnings = Array.from(new Set(warnings));
       return createSuccess(
-        { written, appended, edited, patched, merged },
+        {
+          written,
+          appended,
+          edited,
+          patched,
+          merged,
+          ...(uniqueWarnings.length > 0 ? { warnings: uniqueWarnings } : {}),
+        },
         "VFS write operations applied",
       );
     });
@@ -2391,18 +2439,20 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
     ctx,
     (draft) => {
       const normalizedRetconAck =
-        typedArgs.retconAck &&
-        typeof typedArgs.retconAck.hash === "string" &&
-        typeof typedArgs.retconAck.summary === "string"
+        typedArgs.retconAck && typeof typedArgs.retconAck.hash === "string"
           ? {
               hash: typedArgs.retconAck.hash,
-              summary: typedArgs.retconAck.summary,
+              summary:
+                typeof typedArgs.retconAck.summary === "string" &&
+                typedArgs.retconAck.summary.trim().length > 0
+                  ? typedArgs.retconAck.summary
+                  : "Retcon acknowledgement applied.",
             }
           : undefined;
 
       if (typedArgs.retconAck && !normalizedRetconAck) {
         return createError(
-          "vfs_commit_turn: retconAck must include hash and summary strings",
+          "vfs_commit_turn: retconAck must include a hash string",
           "INVALID_DATA",
         );
       }
@@ -2443,11 +2493,6 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
             ? order[order.length - 1]
             : null;
 
-      const normalizedMeta =
-        typedArgs.meta && typeof typedArgs.meta === "object"
-          ? (typedArgs.meta as TurnFile["meta"])
-          : undefined;
-
       writeTurnFile(
         draft,
         forkId,
@@ -2467,7 +2512,6 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
             ending?: string;
             forceEnd?: boolean;
           },
-          meta: normalizedMeta,
         },
         { operation: "finish_commit" },
       );
@@ -2508,8 +2552,12 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
 
 registerToolHandlerWithStructuredErrors(VFS_COMMIT_SOUL_TOOL, (args, ctx) => {
   const typedArgs = getTypedArgs("vfs_commit_soul", args);
-  const hasCurrentSoul = typeof typedArgs.currentSoul === "string";
-  const hasGlobalSoul = typeof typedArgs.globalSoul === "string";
+  const hasCurrentSoul =
+    typeof typedArgs.currentSoul === "string" &&
+    typedArgs.currentSoul.trim().length > 0;
+  const hasGlobalSoul =
+    typeof typedArgs.globalSoul === "string" &&
+    typedArgs.globalSoul.trim().length > 0;
 
   if (!hasCurrentSoul && !hasGlobalSoul) {
     return createError(

@@ -24,6 +24,22 @@ export interface ToolCallContext {
   settings: any;
 }
 
+const sanitizeLegacyToolArgs = (
+  name: string,
+  args: Record<string, unknown>,
+): Record<string, unknown> => {
+  if (name !== "vfs_commit_turn") {
+    return args;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(args, "meta")) {
+    return args;
+  }
+
+  const { meta: _legacyMeta, ...rest } = args;
+  return rest;
+};
+
 // ============================================================================
 // Generic Tool Execution
 // ============================================================================
@@ -109,9 +125,10 @@ export function executeGenericTool(
   ctx: ToolCallContext,
 ): unknown {
   const { loopState, gameState, settings } = ctx;
+  const sanitizedArgs = sanitizeLegacyToolArgs(name, args);
 
   // Validate arguments before execution
-  const validation = validateToolArgs(name, args);
+  const validation = validateToolArgs(name, sanitizedArgs);
   if (!validation.valid) {
     return (validation as { valid: false; error: unknown }).error;
   }
@@ -132,7 +149,7 @@ export function executeGenericTool(
       vfsElevationIntent: loopState.vfsElevationIntent,
       vfsElevationScopeTemplateIds: loopState.vfsElevationScopeTemplateIds,
     };
-    return dispatchToolCall(name, args, toolContext);
+    return dispatchToolCall(name, sanitizedArgs, toolContext);
   }
 
   return { success: false, error: `Unknown tool: ${name}` };

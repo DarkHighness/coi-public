@@ -52,6 +52,18 @@ describe("generateEntityCleanup anchor and context forwarding", () => {
     expect(calledContext.userAction).toContain(
       "current/skills/commands/runtime/cleanup/SKILL.md",
     );
+    expect(calledContext.userAction).toContain(
+      "current/world/characters/char:player/views/quests/<id>.json",
+    );
+    expect(calledContext.userAction).toContain(
+      "worldSettingUnlocked/mainGoalUnlocked",
+    );
+    expect(calledContext.userAction).not.toContain(
+      'current/world/quests/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/status", "/unlocked"]',
+    );
+    expect(calledContext.userAction).not.toContain(
+      'current/world/timeline/<id>.json", mode: "json", pointers: ["/visible", "/hidden", "/time", "/unlocked"]',
+    );
   });
 
   it("defaults vfsMode/vfsElevationToken when they are not provided", async () => {

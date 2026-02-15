@@ -111,6 +111,43 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
   return false;
 };
 
+const VIEW_ENTITY_ID_PATH_PATTERN =
+  /^world\/characters\/[^/]+\/views\/(quests|knowledge|timeline|locations|factions|causal_chains)\/([^/]+)\.json$/;
+
+const PROFILE_PATH_PATTERN = /^world\/characters\/[^/]+\/profile\.json$/;
+const TOP_LEVEL_UNLOCK_PATH_PATTERNS: RegExp[] = [
+  PROFILE_PATH_PATTERN,
+  /^world\/characters\/[^/]+\/inventory\/[^/]+\.json$/,
+  /^world\/characters\/[^/]+\/skills\/[^/]+\.json$/,
+  /^world\/characters\/[^/]+\/conditions\/[^/]+\.json$/,
+  /^world\/characters\/[^/]+\/traits\/[^/]+\.json$/,
+  /^world\/placeholders\/[^/]+\.json$/,
+  /^world\/characters\/[^/]+\/views\/(quests|knowledge|timeline|locations|factions|causal_chains)\/[^/]+\.json$/,
+];
+const WORLD_INFO_VIEW_PATH_PATTERN =
+  /^world\/characters\/[^/]+\/views\/world_info\.json$/;
+
+const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+};
+
+const readBoolean = (value: unknown): boolean | null =>
+  typeof value === "boolean" ? value : null;
+
+const readJsonObjectFromFile = (file: VfsFile | undefined): unknown => {
+  if (!file || file.contentType !== "application/json") {
+    return null;
+  }
+  try {
+    return JSON.parse(file.content) as unknown;
+  } catch {
+    return null;
+  }
+};
+
 const DEFAULT_SYSTEM_WRITE_CONTEXT: VfsWriteContext = {
   actor: "system",
   mode: "normal",
@@ -624,6 +661,132 @@ export class VfsSession {
     return canonicalPath;
   }
 
+  private normalizeJsonDocumentForPath(
+    canonicalPath: string,
+    value: unknown,
+  ): unknown {
+    const normalizedPath = normalizeVfsPath(
+      canonicalToLogicalVfsPath(canonicalPath, {
+        activeForkId: this.activeForkId,
+        looseFork: true,
+      }) || canonicalPath,
+    );
+    const viewMatch = VIEW_ENTITY_ID_PATH_PATTERN.exec(normalizedPath);
+    if (!viewMatch) {
+      return value;
+    }
+
+    const record = toObjectRecord(value);
+    if (!record) {
+      return value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(record, "entityId")) {
+      return value;
+    }
+
+    const entityId = viewMatch[2];
+    return {
+      ...record,
+      entityId,
+    };
+  }
+
+  private assertUnlockRegressionForbidden(
+    canonicalPath: string,
+    previous: unknown,
+    next: unknown,
+  ): void {
+    const normalizedPath = normalizeVfsPath(
+      canonicalToLogicalVfsPath(canonicalPath, {
+        activeForkId: this.activeForkId,
+        looseFork: true,
+      }) || canonicalPath,
+    );
+    const previousRecord = toObjectRecord(previous);
+    const nextRecord = toObjectRecord(next);
+    if (!previousRecord || !nextRecord) {
+      return;
+    }
+
+    const violations: string[] = [];
+
+    const shouldCheckTopLevelUnlock = TOP_LEVEL_UNLOCK_PATH_PATTERNS.some(
+      (pattern) => pattern.test(normalizedPath),
+    );
+    if (shouldCheckTopLevelUnlock) {
+      const previousUnlocked = readBoolean(previousRecord.unlocked);
+      const nextUnlocked = readBoolean(nextRecord.unlocked);
+      if (previousUnlocked === true && nextUnlocked === false) {
+        violations.push("unlocked");
+      }
+    }
+
+    if (PROFILE_PATH_PATTERN.test(normalizedPath)) {
+      const previousRelations = Array.isArray(previousRecord.relations)
+        ? (previousRecord.relations as unknown[])
+        : [];
+      const nextRelations = Array.isArray(nextRecord.relations)
+        ? (nextRecord.relations as unknown[])
+        : [];
+
+      const nextById = new Map<string, Record<string, unknown>>();
+      for (const relation of nextRelations) {
+        const relationRecord = toObjectRecord(relation);
+        if (!relationRecord) continue;
+        const relationId = relationRecord.id;
+        if (typeof relationId !== "string" || relationId.trim().length === 0) {
+          continue;
+        }
+        nextById.set(relationId, relationRecord);
+      }
+
+      for (const relation of previousRelations) {
+        const previousRelation = toObjectRecord(relation);
+        if (!previousRelation) continue;
+        const relationId = previousRelation.id;
+        if (typeof relationId !== "string" || relationId.trim().length === 0) {
+          continue;
+        }
+        const previousUnlocked = readBoolean(previousRelation.unlocked);
+        if (previousUnlocked !== true) continue;
+        const nextRelation = nextById.get(relationId);
+        if (!nextRelation) continue;
+        const nextUnlocked = readBoolean(nextRelation.unlocked);
+        if (nextUnlocked === false) {
+          violations.push(`relations[id=${relationId}].unlocked`);
+        }
+      }
+    }
+
+    if (WORLD_INFO_VIEW_PATH_PATTERN.test(normalizedPath)) {
+      const previousWorldSettingUnlocked = readBoolean(
+        previousRecord.worldSettingUnlocked,
+      );
+      const nextWorldSettingUnlocked = readBoolean(
+        nextRecord.worldSettingUnlocked,
+      );
+      if (
+        previousWorldSettingUnlocked === true &&
+        nextWorldSettingUnlocked === false
+      ) {
+        violations.push("worldSettingUnlocked");
+      }
+
+      const previousMainGoalUnlocked = readBoolean(previousRecord.mainGoalUnlocked);
+      const nextMainGoalUnlocked = readBoolean(nextRecord.mainGoalUnlocked);
+      if (previousMainGoalUnlocked === true && nextMainGoalUnlocked === false) {
+        violations.push("mainGoalUnlocked");
+      }
+    }
+
+    if (violations.length > 0) {
+      throw new Error(
+        `Unlock regression is not allowed for ${canonicalPath}: ${violations.join(", ")} cannot change from true to false.`,
+      );
+    }
+  }
+
   public writeFile(
     path: string,
     content: string,
@@ -631,13 +794,41 @@ export class VfsSession {
     options?: VfsWriteOptions,
   ) {
     const canonicalPath = this.assertWritablePath(path, options, "write");
-    const hash = hashContent(content);
+    let normalizedContent = content;
+
+    if (contentType === "application/json") {
+      let parsedNext: unknown;
+      try {
+        parsedNext = JSON.parse(content) as unknown;
+      } catch (error) {
+        throw new Error(`Invalid JSON content: ${canonicalPath}`, {
+          cause: error,
+        });
+      }
+
+      const normalizedNext = this.normalizeJsonDocumentForPath(
+        canonicalPath,
+        parsedNext,
+      );
+      const existing =
+        this.files[canonicalPath] ?? this.readonlyFiles[canonicalPath];
+      const parsedPrevious = readJsonObjectFromFile(existing);
+      this.assertUnlockRegressionForbidden(
+        canonicalPath,
+        parsedPrevious,
+        normalizedNext,
+      );
+
+      normalizedContent = JSON.stringify(normalizedNext);
+    }
+
+    const hash = hashContent(normalizedContent);
     this.files[canonicalPath] = {
       path: canonicalPath,
-      content,
+      content: normalizedContent,
       contentType,
       hash,
-      size: content.length,
+      size: normalizedContent.length,
       updatedAt: Date.now(),
     };
   }
@@ -752,12 +943,16 @@ export class VfsSession {
     }
 
     const patched = applyPatchFn(document, patchOps, true, false).newDocument;
+    const normalizedPatched = this.normalizeJsonDocumentForPath(
+      canonicalPath,
+      patched,
+    );
     const schema = getSchemaForPath(canonicalPath);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
-    const validated = strictSchema.parse(patched);
+    const validated = strictSchema.parse(normalizedPatched);
 
-    if (hasUnknownKeys(patched, validated)) {
+    if (hasUnknownKeys(normalizedPatched, validated)) {
       throw new Error(`Unknown keys found after validation: ${canonicalPath}`);
     }
 
@@ -801,12 +996,16 @@ export class VfsSession {
     }
 
     const merged = deepMergeJson(document, content);
+    const normalizedMerged = this.normalizeJsonDocumentForPath(
+      canonicalPath,
+      merged,
+    );
     const schema = getSchemaForPath(canonicalPath);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
-    const validated = strictSchema.parse(merged);
+    const validated = strictSchema.parse(normalizedMerged);
 
-    if (hasUnknownKeys(merged, validated)) {
+    if (hasUnknownKeys(normalizedMerged, validated)) {
       throw new Error(`Unknown keys found after validation: ${canonicalPath}`);
     }
 

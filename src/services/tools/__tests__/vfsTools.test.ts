@@ -91,6 +91,20 @@ describe("VFS tools", () => {
     expect(result.success).toBe(true);
   });
 
+  it("allows write_file contentType to be omitted for system inference", () => {
+    const result = VFS_WRITE_TOOL.parameters.safeParse({
+      ops: [
+        {
+          op: "write_file",
+          path: "current/world/global.json",
+          content: "{}",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("rejects runtime-only fields in vfs_commit_summary AI args", () => {
     const result = VFS_COMMIT_SUMMARY_TOOL.parameters.safeParse({
       displayText: "summary",
@@ -139,7 +153,7 @@ describe("VFS tools", () => {
 
   it("accepts optional target fields in vfs_commit_soul schema", () => {
     const empty = VFS_COMMIT_SOUL_TOOL.parameters.safeParse({});
-    expect(empty.success).toBe(true);
+    expect(empty.success).toBe(false);
 
     const currentOnly = VFS_COMMIT_SOUL_TOOL.parameters.safeParse({
       currentSoul: "# Player Soul (This Save)\n",
@@ -150,6 +164,28 @@ describe("VFS tools", () => {
       globalSoul: "# Player Soul (Global)\n",
     });
     expect(globalOnly.success).toBe(true);
+  });
+
+  it("does not expose vfs_commit_turn meta and accepts retconAck without summary", () => {
+    const withMeta = VFS_COMMIT_TURN_TOOL.parameters.safeParse({
+      userAction: "look around",
+      assistant: {
+        narrative: "You scan the room.",
+        choices: [{ text: "Inspect desk" }, { text: "Open door" }],
+      },
+      meta: { playerRate: { vote: "up", createdAt: Date.now() } },
+    });
+    expect(withMeta.success).toBe(false);
+
+    const withoutSummary = VFS_COMMIT_TURN_TOOL.parameters.safeParse({
+      userAction: "look around",
+      assistant: {
+        narrative: "You scan the room.",
+        choices: [{ text: "Inspect desk" }, { text: "Open door" }],
+      },
+      retconAck: { hash: "abc123" },
+    });
+    expect(withoutSummary.success).toBe(true);
   });
 
   it("embeds permission contract into vfs tool descriptions", () => {

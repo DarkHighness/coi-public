@@ -174,7 +174,7 @@ describe("VFS global skills generator", () => {
     )?.content;
 
     expect(unlockExamples).toContain(
-      "Some entities are already canonically unlocked due to prior player actions.",
+      "Some entities are already unlocked due to prior player actions (stored either on canonical actor/item files or on player view files for world entities).",
     );
     expect(summaryExamples).toContain(
       "Summarize only the target fork turn range.",

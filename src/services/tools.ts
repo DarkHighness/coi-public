@@ -368,7 +368,11 @@ const vfsWriteOpSchema = z.discriminatedUnion("op", [
       op: z.literal("write_file"),
       path: vfsFilePathSchema.describe("File path."),
       content: z.string().describe("File contents."),
-      contentType: vfsContentTypeSchema.describe("Content type."),
+      contentType: vfsContentTypeSchema
+        .nullish()
+        .describe(
+          "Optional content type. Prefer omitting; system infers from existing file/path/template when possible.",
+        ),
     })
     .strict(),
   z
@@ -541,22 +545,6 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
         })
         .strict()
         .describe("Assistant payload stored in the turn file."),
-      meta: z
-        .object({
-          playerRate: z
-            .object({
-              vote: z.enum(["up", "down"]),
-              preset: z.string().nullish(),
-              comment: z.string().nullish(),
-              createdAt: z.number().finite(),
-              processedAt: z.number().finite().nullish(),
-            })
-            .strict()
-            .nullish(),
-        })
-        .strict()
-        .nullish()
-        .describe("Optional turn metadata (e.g. player rating payload)."),
       retconAck: z
         .object({
           hash: z
@@ -564,6 +552,7 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
             .describe("Pending prompt injection hash to acknowledge."),
           summary: z
             .string()
+            .nullish()
             .describe("Short in-world retcon acknowledgement summary."),
         })
         .strict()
@@ -594,7 +583,18 @@ export const VFS_COMMIT_SOUL_TOOL = defineTool({
           "Optional markdown content for global soul mirror (`current/world/global/soul.md`).",
         ),
     })
-    .strict(),
+    .strict()
+    .refine(
+      (value) =>
+        (typeof value.currentSoul === "string" &&
+          value.currentSoul.trim().length > 0) ||
+        (typeof value.globalSoul === "string" &&
+          value.globalSoul.trim().length > 0),
+      {
+        message:
+          "At least one of currentSoul or globalSoul must be a non-empty string.",
+      },
+    ),
 });
 
 const summaryVisibleToolSchema = z

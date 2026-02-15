@@ -40,7 +40,16 @@ describe("VFS handlers additional coverage", () => {
 
   it("rejects vfs_read(json) when file contents are invalid JSON", () => {
     const session = new VfsSession();
-    session.writeFile("world/bad.json", "{", "application/json");
+    session.restore({
+      "world/bad.json": {
+        path: "world/bad.json",
+        content: "{",
+        contentType: "application/json",
+        hash: "bad",
+        size: 1,
+        updatedAt: Date.now(),
+      },
+    });
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
@@ -105,6 +114,29 @@ describe("VFS handlers additional coverage", () => {
     expect(result.code).toBe("INVALID_DATA");
     expect(result.details?.tool).toBe("vfs_write");
     expect(result.error).toContain("application/json");
+  });
+
+  it("requires explicit contentType when write_file inference is impossible", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "write_file",
+            path: "current/world/mystery_blob",
+            content: "opaque",
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error).toContain("Unable to infer contentType");
   });
 
   it("enforces maxTotalChars on append_text", async () => {

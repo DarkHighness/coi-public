@@ -81,7 +81,9 @@ export const stateManagement: Atom<void> = defineAtom(
         - When the protagonist first CONFIRMS an entity exists, add \`char:player\` to canonical \`knownBy\` AND create the corresponding player view file.
       * **Unlock is view-only (non-actor entities)**:
         - NEVER write \`unlocked/unlockReason\` to canonical quests/knowledge/timeline/locations/factions/causal_chains/world_info.
-        - Instead, set \`views/**.unlocked=true\` + \`unlockReason\`.
+        - For quests/knowledge/timeline/locations/factions/causal_chains, set \`views/**.unlocked=true\` + \`unlockReason\`.
+        - For \`world_info\`, use \`current/world/characters/<actorId>/views/world_info.json\` fields:
+          \`worldSettingUnlocked/worldSettingUnlockReason\`, \`mainGoalUnlocked/mainGoalUnlockReason\`.
 
     - **Relations (Dual Layer, STRICT)**:
       * Relationships are stored as directed edges in \`profile.relations[]\` (on the source actor).
@@ -188,7 +190,7 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
         wrong: `Narrative: "She gives you the key."
 (No tool call - state not updated.)`,
         right: `Narrative: "She gives you the key."
-+ Tool: vfs_write({ path: "current/world/characters/char:player/inventory/key.json", ... })
++ Tool: vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/key.json", content: "{...}" }] })
 (State updated in same turn.)`,
       },
       {
