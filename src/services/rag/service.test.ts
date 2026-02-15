@@ -321,4 +321,61 @@ describe("RAGService", () => {
     terminateRAGService();
     expect(getRAGService()).toBeNull();
   });
+
+  it("allows retrying initialize on the same instance after failure", async () => {
+    let initCalls = 0;
+    requestHandler = (request) => {
+      if (request.type !== "init") {
+        return { id: request.id, success: true, data: {} };
+      }
+      initCalls += 1;
+      if (initCalls === 1) {
+        return { id: request.id, success: false, error: "init failed once" };
+      }
+      return { id: request.id, success: true, data: {} };
+    };
+
+    const service = new RAGService();
+    await expect(
+      service.initialize({ provider: "openai", modelId: "m1" } as any, {
+        openai: { apiKey: "k1" },
+      }),
+    ).rejects.toThrow("init failed once");
+
+    expect(service.initialized).toBe(false);
+    expect(workerCreateCount).toBe(1);
+
+    await expect(
+      service.initialize({ provider: "openai", modelId: "m2" } as any, {
+        openai: { apiKey: "k2" },
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(service.initialized).toBe(true);
+    expect(workerCreateCount).toBe(2);
+  });
+
+  it("clears failed singleton init so a later initializeRAGService can recover", async () => {
+    let initCalls = 0;
+    requestHandler = (request) => {
+      if (request.type !== "init") {
+        return { id: request.id, success: true, data: {} };
+      }
+      initCalls += 1;
+      if (initCalls === 1) {
+        return { id: request.id, success: false, error: "singleton init failed" };
+      }
+      return { id: request.id, success: true, data: {} };
+    };
+
+    await expect(initializeRAGService({ modelId: "m-a" }, {})).rejects.toThrow(
+      "singleton init failed",
+    );
+    expect(getRAGService()).toBeNull();
+
+    const recovered = await initializeRAGService({ modelId: "m-b" }, {});
+    expect(recovered.initialized).toBe(true);
+    expect(getRAGService()).toBe(recovered);
+    expect(workerCreateCount).toBe(2);
+  });
 });

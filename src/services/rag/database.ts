@@ -134,12 +134,28 @@ export class RAGDatabase {
     });
 
     await this.db.waitReady;
-    await this.db.exec(SCHEMA);
+    await this.applySchemaWithCompatibilityRecovery();
     await this.ensureSchemaVersion();
     await this.ensureDocumentColumns();
 
     this.initialized = true;
     console.log("[RAGDatabase] Initialized");
+  }
+
+  private async applySchemaWithCompatibilityRecovery(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    try {
+      await this.db.exec(SCHEMA);
+    } catch (error) {
+      if (!this.isMissingColumnError(error)) {
+        throw error;
+      }
+
+      await this.rebuildSchema(
+        "Detected legacy schema missing required columns during bootstrap",
+      );
+    }
   }
 
   private async setSchemaVersion(version: string): Promise<void> {

@@ -285,6 +285,11 @@ export function useRagRuntime(): RagRuntimeValue {
 
         // Get initial status
         const status = await service.getStatus();
+        if (status.initialized === false) {
+          throw new Error(
+            "RAG service reported uninitialized after initialize call",
+          );
+        }
 
         setState((prev) => ({
           ...prev,

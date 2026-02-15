@@ -3,6 +3,30 @@ import { RAGDatabase } from "../database";
 import { DEFAULT_RAG_CONFIG } from "../types";
 
 describe("RAGDatabase schema compatibility", () => {
+  it("rebuilds schema when bootstrap schema exec fails on missing column", async () => {
+    const db = new RAGDatabase({
+      ...DEFAULT_RAG_CONFIG,
+      maxStorageBytes: 1024 * 1024,
+      schemaVersion: 5,
+    }) as any;
+
+    const exec = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('column "source_path" does not exist'))
+      .mockResolvedValue(undefined);
+    const query = vi.fn(async () => ({ rows: [], affectedRows: 0 }));
+    const rebuildSchema = vi.spyOn(db, "rebuildSchema").mockResolvedValue(undefined);
+
+    db.db = { exec, query };
+
+    await db.applySchemaWithCompatibilityRecovery();
+
+    expect(rebuildSchema).toHaveBeenCalledTimes(1);
+    expect(rebuildSchema).toHaveBeenCalledWith(
+      expect.stringContaining("legacy schema"),
+    );
+  });
+
   it("keeps schema when required document columns exist", async () => {
     const db = new RAGDatabase({
       ...DEFAULT_RAG_CONFIG,

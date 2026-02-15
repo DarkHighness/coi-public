@@ -84,11 +84,20 @@ export class RAGService {
     config: Partial<RAGConfig>,
     credentials: InitPayload["credentials"],
   ): Promise<void> {
+    if (this.isInitialized) {
+      await this.updateConfig(config);
+      return;
+    }
+
     if (this.initPromise) {
       return this.initPromise;
     }
 
-    this.initPromise = this.doInitialize(config, credentials);
+    this.initPromise = this.doInitialize(config, credentials).catch((error) => {
+      // Reset partially initialized worker state so a later retry can succeed.
+      this.terminate();
+      throw error;
+    });
     return this.initPromise;
   }
 
@@ -694,14 +703,29 @@ export async function initializeRAGService(
 ): Promise<RAGService> {
   let ragServiceInstance = getRAGService();
   if (ragServiceInstance) {
+    if (!ragServiceInstance.initialized) {
+      await ragServiceInstance.initialize(config, credentials);
+      return ragServiceInstance;
+    }
+
     await ragServiceInstance.updateConfig(config);
     return ragServiceInstance;
   }
 
-  (window as any).ragServiceInstance = new RAGService();
-  await (window as any).ragServiceInstance.initialize(config, credentials);
+  ragServiceInstance = new RAGService();
+  (window as any).ragServiceInstance = ragServiceInstance;
 
-  return (window as any).ragServiceInstance;
+  try {
+    await ragServiceInstance.initialize(config, credentials);
+  } catch (error) {
+    ragServiceInstance.terminate();
+    if ((window as any).ragServiceInstance === ragServiceInstance) {
+      (window as any).ragServiceInstance = null;
+    }
+    throw error;
+  }
+
+  return ragServiceInstance;
 }
 
 export function terminateRAGService(): void {
