@@ -5,6 +5,10 @@ import { normalizeVfsPath } from "../../vfs/utils";
 import { canonicalToLogicalVfsPath } from "../../vfs/core/pathResolver";
 import { vfsPathRegistry } from "../../vfs/core/pathRegistry";
 import { vfsResourceRegistry } from "../../vfs/core/resourceRegistry";
+import {
+  formatJsonValidationSummary,
+  summarizeJsonValidationError,
+} from "../../vfs/jsonValidationSummary";
 import type { VfsContentType, VfsFile } from "../../vfs/types";
 import type { VfsSession } from "../../vfs/vfsSession";
 import type { Operation } from "fast-json-patch";
@@ -660,20 +664,42 @@ export const validateWritePayload = (
       schema instanceof z.ZodObject ? schema.strict() : schema;
     validated = strictSchema.parse(normalizedForSchema);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const compactIssues = summarizeJsonValidationError(
+      error,
+      normalizedForSchema,
+    );
+    const message =
+      compactIssues && compactIssues.length > 0
+        ? formatJsonValidationSummary(compactIssues)
+        : error instanceof Error
+          ? error.message
+          : String(error);
     return {
       ok: false,
       error: createVfsWriteGuardError(
         `Schema validation failed for ${toCurrentPath(normalizedPath)}: ${message}`,
         "INVALID_DATA",
         {
-          issues: [
-            {
-              path: toCurrentPath(normalizedPath),
-              code: "SCHEMA_VALIDATION_FAILED",
-              message,
-            },
-          ],
+          issues:
+            compactIssues && compactIssues.length > 0
+              ? compactIssues.map((issue) => ({
+                  path:
+                    issue.pointer === "/"
+                      ? toCurrentPath(normalizedPath)
+                      : `${toCurrentPath(normalizedPath)}${issue.pointer}`,
+                  code: "SCHEMA_VALIDATION_FAILED",
+                  message:
+                    issue.directSubfields.length > 0
+                      ? `${issue.message}; directSubfields=[${issue.directSubfields.join(", ")}]`
+                      : issue.message,
+                }))
+              : [
+                  {
+                    path: toCurrentPath(normalizedPath),
+                    code: "SCHEMA_VALIDATION_FAILED",
+                    message,
+                  },
+                ],
           recovery: [
             "Align payload fields/types with schema constraints and retry.",
             `Reference current/refs/tools/vfs_write.md for write patterns.`,

@@ -21,6 +21,10 @@ import {
   toCanonicalVfsPath,
 } from "./core/pathResolver";
 import type { VfsWriteContext, VfsWriteOperation } from "./core/types";
+import {
+  formatJsonValidationSummary,
+  summarizeJsonValidationError,
+} from "./jsonValidationSummary";
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
@@ -950,7 +954,21 @@ export class VfsSession {
     const schema = getSchemaForPath(canonicalPath);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
-    const validated = strictSchema.parse(normalizedPatched);
+    let validated: unknown;
+    try {
+      validated = strictSchema.parse(normalizedPatched);
+    } catch (error) {
+      const compactIssues = summarizeJsonValidationError(
+        error,
+        normalizedPatched,
+      );
+      if (compactIssues && compactIssues.length > 0) {
+        throw new Error(
+          `Schema validation failed for ${canonicalPath}: ${formatJsonValidationSummary(compactIssues)}`,
+        );
+      }
+      throw error;
+    }
 
     if (hasUnknownKeys(normalizedPatched, validated)) {
       throw new Error(`Unknown keys found after validation: ${canonicalPath}`);
@@ -1003,7 +1021,21 @@ export class VfsSession {
     const schema = getSchemaForPath(canonicalPath);
     const strictSchema =
       schema instanceof z.ZodObject ? schema.strict() : schema;
-    const validated = strictSchema.parse(normalizedMerged);
+    let validated: unknown;
+    try {
+      validated = strictSchema.parse(normalizedMerged);
+    } catch (error) {
+      const compactIssues = summarizeJsonValidationError(
+        error,
+        normalizedMerged,
+      );
+      if (compactIssues && compactIssues.length > 0) {
+        throw new Error(
+          `Schema validation failed for ${canonicalPath}: ${formatJsonValidationSummary(compactIssues)}`,
+        );
+      }
+      throw error;
+    }
 
     if (hasUnknownKeys(normalizedMerged, validated)) {
       throw new Error(`Unknown keys found after validation: ${canonicalPath}`);

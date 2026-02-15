@@ -261,6 +261,38 @@ describe("vfsMutationGuard", () => {
       expectInvalidPayload(result, "Unknown keys found after validation");
     });
 
+    it("returns compact field-level schema errors for JSON writes", () => {
+      const result = validateWritePayload(
+        "world/global.json",
+        JSON.stringify({
+          time: "Day 1",
+          theme: "fantasy",
+          currentLocation: "loc:1",
+          atmosphere: {
+            envTheme: "fantasy",
+            ambience: "forest",
+            weather: "INVALID_WEATHER",
+          },
+          turnNumber: 1,
+          forkId: 0,
+        }),
+        "application/json",
+      );
+
+      expect(result.ok).toBe(false);
+      if (!("error" in result)) {
+        throw new Error("Expected schema validation failure.");
+      }
+      expect(result.error.error).toContain("/atmosphere/weather");
+      expect(result.error.error).toContain("directSubfields=[");
+      expect(result.error.error.length).toBeLessThan(700);
+      const schemaIssue = result.error.details?.issues?.find(
+        (issue) => issue.code === "SCHEMA_VALIDATION_FAILED",
+      );
+      expect(schemaIssue?.path).toContain("/atmosphere/weather");
+      expect(schemaIssue?.message).toContain("directSubfields=[");
+    });
+
     it("normalizes valid JSON payload to canonical string", () => {
       const result = validateWritePayload(
         "world/global.json",

@@ -164,6 +164,54 @@ describe("VFS handlers additional coverage", () => {
     expect(result.error).toContain("maxTotalChars");
   });
 
+  it("returns compact field-level schema errors for invalid JSON patch", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/global.json",
+      JSON.stringify({
+        time: "Day 1",
+        theme: "fantasy",
+        currentLocation: "loc:1",
+        atmosphere: {
+          envTheme: "fantasy",
+          ambience: "forest",
+          weather: "clear",
+        },
+        turnNumber: 1,
+        forkId: 0,
+      }),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+    dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "patch_json",
+            path: "current/world/global.json",
+            patch: [
+              {
+                op: "replace",
+                path: "/atmosphere/weather",
+                value: "INVALID_WEATHER",
+              },
+            ],
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error).toContain("/atmosphere/weather");
+    expect(result.error).toContain("directSubfields=[");
+    expect(result.error.length).toBeLessThan(900);
+  });
+
   it("rejects append_text when expectedHash mismatches existing file", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "hello", "text/markdown");
