@@ -10,9 +10,10 @@ export const META_STORE = "meta";
 export const AUDIO_STORE = "audio";
 export const IMAGES_STORE = "images";
 export const VFS_DB_NAME = "ChroniclesOfInfinityVFS";
-const VFS_DB_VERSION = 1;
+const VFS_DB_VERSION = 2;
 export const VFS_SNAPSHOTS_STORE = "vfs_snapshots";
 export const VFS_META_STORE = "vfs_meta";
+export const VFS_BLOBS_STORE = "vfs_blobs";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 let vfsDbPromise: Promise<IDBDatabase> | null = null;
@@ -117,6 +118,18 @@ export const openVfsDB = (): Promise<IDBDatabase> => {
           });
         }
       }
+
+      if (!db.objectStoreNames.contains(VFS_BLOBS_STORE)) {
+        const store = db.createObjectStore(VFS_BLOBS_STORE, { keyPath: "id" });
+        store.createIndex("saveId", "saveId", { unique: false });
+      } else {
+        const store = (
+          event.target as IDBOpenDBRequest
+        ).transaction!.objectStore(VFS_BLOBS_STORE);
+        if (!store.indexNames.contains("saveId")) {
+          store.createIndex("saveId", "saveId", { unique: false });
+        }
+      }
     };
   });
 
@@ -202,18 +215,48 @@ export const deleteVfsSave = async (saveId: string): Promise<void> => {
 
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(
-      [VFS_META_STORE, VFS_SNAPSHOTS_STORE],
+      [VFS_META_STORE, VFS_SNAPSHOTS_STORE, VFS_BLOBS_STORE],
       "readwrite",
     );
     const metaStore = transaction.objectStore(VFS_META_STORE);
     const snapshotsStore = transaction.objectStore(VFS_SNAPSHOTS_STORE);
+    const blobsStore = transaction.objectStore(VFS_BLOBS_STORE);
 
     // 1) Delete any rows we can identify via VFS meta records.
     const metaCursorReq = metaStore.openCursor();
     metaCursorReq.onsuccess = () => {
       const cursor = metaCursorReq.result as IDBCursorWithValue | null;
       if (!cursor) {
-        // 2) Also delete orphan snapshot rows (if any) by key prefix.
+        // 2) Delete blobs for this save.
+        if (blobsStore.indexNames.contains("saveId")) {
+          const blobIndex = blobsStore.index("saveId");
+          const blobCursorReq = blobIndex.openKeyCursor(IDBKeyRange.only(saveId));
+          blobCursorReq.onsuccess = () => {
+            const blobCursor = blobCursorReq.result as IDBCursor | null;
+            if (!blobCursor) {
+              return;
+            }
+            blobsStore.delete(blobCursor.primaryKey);
+            blobCursor.continue();
+          };
+          blobCursorReq.onerror = () => reject(blobCursorReq.error);
+        } else {
+          const blobCursorReq = blobsStore.openKeyCursor();
+          blobCursorReq.onsuccess = () => {
+            const blobCursor = blobCursorReq.result as IDBCursor | null;
+            if (!blobCursor) {
+              return;
+            }
+            const key = String(blobCursor.primaryKey ?? "");
+            if (key.startsWith(prefix)) {
+              blobsStore.delete(blobCursor.primaryKey);
+            }
+            blobCursor.continue();
+          };
+          blobCursorReq.onerror = () => reject(blobCursorReq.error);
+        }
+
+        // 3) Also delete orphan snapshot rows (if any) by key prefix.
         const snapCursorReq = snapshotsStore.openKeyCursor();
         snapCursorReq.onsuccess = () => {
           const snapCursor = snapCursorReq.result as IDBCursor | null;

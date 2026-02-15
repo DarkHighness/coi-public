@@ -38,6 +38,21 @@ type SnapshotRecord = {
   files: Record<string, any>;
 };
 
+type ExportSnapshotV3 = {
+  encoding: "blob_ref_v1";
+  fileRefs: Record<
+    string,
+    {
+      path: string;
+      blobId: string;
+      contentType: string;
+      size: number;
+      updatedAt: number;
+      legacyHash?: string;
+    }
+  >;
+};
+
 const savedSnapshots: SnapshotRecord[] = [];
 
 const sourceSnapshots = new Map<string, SnapshotRecord>();
@@ -147,6 +162,146 @@ vi.mock("./vfs/conversation", () => ({
 const createZipFile = async (zip: JSZip, name: string) => {
   const bytes = await zip.generateAsync({ type: "uint8array" });
   return Object.assign(bytes, { name }) as unknown as File;
+};
+
+const getV3SnapshotFromZip = async (
+  zip: JSZip,
+  forkId: number,
+  turn: number,
+): Promise<ExportSnapshotV3> =>
+  JSON.parse(
+    await zip.file(`vfs/snapshots/fork-${forkId}/turn-${turn}.json`)!.async("text"),
+  ) as ExportSnapshotV3;
+
+const getBlobPayloadFromZip = async (
+  zip: JSZip,
+  blobId: string,
+): Promise<{ content: string }> =>
+  JSON.parse(
+    await zip.file(`vfs/blob_pool/blobs/${blobId}.json`)!.async("text"),
+  ) as { content: string };
+
+const getV3FileJsonFromZip = async (
+  zip: JSZip,
+  snapshot: ExportSnapshotV3,
+  path: string,
+) => {
+  const fileRef = snapshot.fileRefs[path];
+  expect(fileRef).toBeTruthy();
+  const blob = await getBlobPayloadFromZip(zip, fileRef.blobId);
+  return JSON.parse(blob.content);
+};
+
+const appendV3VfsBundleToZip = (
+  zip: JSZip,
+  snapshots: SnapshotRecord[],
+  latest: { forkId: number; turn: number } | null,
+) => {
+  const blobByContent = new Map<string, { blobId: string; content: string; contentType: string; size: number }>();
+  let blobCounter = 0;
+
+  const snapshotEntries = snapshots.map((snapshot) => {
+    const fileRefs: ExportSnapshotV3["fileRefs"] = {};
+    for (const file of Object.values(snapshot.files)) {
+      const contentKey = `${file.contentType}\n${file.content}`;
+      let blobEntry = blobByContent.get(contentKey);
+      if (!blobEntry) {
+        blobCounter += 1;
+        blobEntry = {
+          blobId: `blob-${blobCounter}`,
+          content: file.content,
+          contentType: file.contentType,
+          size: file.size,
+        };
+        blobByContent.set(contentKey, blobEntry);
+      }
+
+      fileRefs[file.path] = {
+        path: file.path,
+        blobId: blobEntry.blobId,
+        contentType: file.contentType,
+        size: file.size,
+        updatedAt: file.updatedAt,
+        legacyHash: file.hash,
+      };
+    }
+
+    zip.file(
+      `vfs/snapshots/fork-${snapshot.forkId}/turn-${snapshot.turn}.json`,
+      JSON.stringify(
+        {
+          version: 2,
+          encoding: "blob_ref_v1",
+          saveId: snapshot.saveId,
+          forkId: snapshot.forkId,
+          turn: snapshot.turn,
+          createdAt: snapshot.createdAt,
+          fileRefs,
+        },
+        null,
+        2,
+      ),
+    );
+
+    return {
+      forkId: snapshot.forkId,
+      turn: snapshot.turn,
+      createdAt: snapshot.createdAt,
+    };
+  });
+
+  const blobEntries = Array.from(blobByContent.values());
+  zip.file(
+    "vfs/blob_pool/index.json",
+    JSON.stringify(
+      {
+        version: 1,
+        encoding: "blob_ref_v1",
+        blobs: blobEntries.map((blob) => ({
+          blobId: blob.blobId,
+          contentType: blob.contentType,
+          size: blob.size,
+        })),
+      },
+      null,
+      2,
+    ),
+  );
+
+  for (const blob of blobEntries) {
+    zip.file(
+      `vfs/blob_pool/blobs/${blob.blobId}.json`,
+      JSON.stringify(
+        {
+          version: 1,
+          encoding: "blob_ref_v1",
+          blobId: blob.blobId,
+          contentType: blob.contentType,
+          size: blob.size,
+          content: blob.content,
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  zip.file(
+    "vfs/index.json",
+    JSON.stringify(
+      {
+        version: 1,
+        encoding: "blob_ref_v1",
+        latest,
+        snapshots: snapshotEntries,
+        blobs: {
+          count: blobEntries.length,
+        },
+      },
+      null,
+      2,
+    ),
+  );
 };
 
 const makeSnapshot = (saveId: string): SnapshotRecord => ({
@@ -293,7 +448,7 @@ const makeSnapshotWithSessionArtifacts = (saveId: string): SnapshotRecord => ({
 });
 
 const createValidManifest = () => ({
-  version: 2,
+  version: 3,
   exportDate: new Date().toISOString(),
   appVersion: "0.1.0",
   saveVersion: 2,
@@ -321,23 +476,7 @@ const createValidManifest = () => ({
 const createImportArchive = async () => {
   const zip = new JSZip();
   zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
-  zip.file(
-    "vfs/index.json",
-    JSON.stringify(
-      {
-        version: 1,
-        latest: { forkId: 0, turn: 0 },
-        snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
-      },
-      null,
-      2,
-    ),
-  );
-
-  zip.file(
-    "vfs/snapshots/fork-0/turn-0.json",
-    JSON.stringify(makeSnapshot("slot-old"), null, 2),
-  );
+  appendV3VfsBundleToZip(zip, [makeSnapshot("slot-old")], { forkId: 0, turn: 0 });
 
   zip.file("images/old-image-id.png", new Uint8Array([1, 2, 3, 4]));
 
@@ -461,24 +600,25 @@ describe("saveExportService", () => {
       new Uint8Array(await (blob as Blob).arrayBuffer()),
     );
 
-    const snapshotJson = JSON.parse(
-      await zip.file("vfs/snapshots/fork-0/turn-0.json")!.async("text"),
-    );
-
-    const worldGlobal = JSON.parse(
-      snapshotJson.files["turns/fork-0/turn-0/world/global.json"].content,
+    const snapshotJson = await getV3SnapshotFromZip(zip, 0, 0);
+    const worldGlobal = await getV3FileJsonFromZip(
+      zip,
+      snapshotJson,
+      "turns/fork-0/turn-0/world/global.json",
     );
     expect(worldGlobal.seedImageId).toBeUndefined();
 
-    const storyJson = JSON.parse(
-      snapshotJson.files["turns/fork-0/turn-0/world/story.json"].content,
+    const storyJson = await getV3FileJsonFromZip(
+      zip,
+      snapshotJson,
+      "turns/fork-0/turn-0/world/story.json",
     );
     expect(storyJson.nodes[0].imageId).toBeUndefined();
 
-    const turnJson = JSON.parse(
-      snapshotJson.files[
-        "turns/fork-0/turn-0/conversation/turns/fork-0/turn-0.json"
-      ].content,
+    const turnJson = await getV3FileJsonFromZip(
+      zip,
+      snapshotJson,
+      "turns/fork-0/turn-0/conversation/turns/fork-0/turn-0.json",
     );
     expect(turnJson.assistant.imageId).toBeUndefined();
     expect(turnJson.assistant.imageUrl).toBeUndefined();
@@ -627,26 +767,30 @@ describe("saveExportService", () => {
       new Uint8Array(await (blob as Blob).arrayBuffer()),
     );
 
-    expect(zip.file("vfs/README.md")).toBeTruthy();
+    expect(zip.file("vfs/README.md")).toBeNull();
+    expect(zip.file("vfs/history/fork-0/turn-0/world/global.json")).toBeNull();
+    expect(zip.file("vfs/current/world/global.json")).toBeNull();
+    expect(zip.file("vfs/current/conversation/turns/fork-0/turn-2.json")).toBeNull();
+
+    const vfsIndex = JSON.parse(
+      await zip.file("vfs/index.json")!.async("text"),
+    ) as {
+      encoding?: string;
+    };
+    expect(vfsIndex.encoding).toBe("blob_ref_v1");
+
+    const snapshotJson = await getV3SnapshotFromZip(zip, 0, 0);
     expect(
-      zip.file("vfs/history/fork-0/turn-0/world/global.json"),
-    ).toBeTruthy();
-    expect(
-      zip.file("vfs/current/world/global.json"),
-    ).toBeTruthy();
-    expect(zip.file("vfs/shared/conversation/index.json")).toBeTruthy();
-    expect(
-      zip.file("vfs/current/conversation/turns/fork-0/turn-2.json"),
+      snapshotJson.fileRefs["turns/fork-0/turn-0/world/global.json"],
     ).toBeTruthy();
 
-    const currentIndex = JSON.parse(
-      await zip
-        .file("vfs/current/conversation/index.json")!
-        .async("text"),
+    const shared = JSON.parse(await zip.file("vfs/shared.json")!.async("text"));
+    const sharedIndex = JSON.parse(
+      shared.files["conversation/index.json"].content,
     ) as {
       latestTurnNumberByFork: Record<string, number>;
     };
-    expect(currentIndex.latestTurnNumberByFork["0"]).toBe(2);
+    expect(sharedIndex.latestTurnNumberByFork["0"]).toBe(2);
   });
 
   it("exportSave includes runtime metadata when available", async () => {
@@ -706,6 +850,98 @@ describe("saveExportService", () => {
     expect(exportedStats).toEqual(runtimeStats);
   });
 
+  it("exportSave deduplicates repeated snapshot contents into one blob", async () => {
+    const { exportSave } = await import("./saveExportService");
+
+    const slotId = "slot-export-blob-dedupe";
+    const repeatedContent = JSON.stringify({ repeated: true });
+
+    sourceSnapshots.set(snapshotKey(slotId, 0, 0), {
+      saveId: slotId,
+      forkId: 0,
+      turn: 0,
+      createdAt: 1,
+      files: {
+        "turns/fork-0/turn-0/world/global.json": {
+          path: "turns/fork-0/turn-0/world/global.json",
+          content: repeatedContent,
+          contentType: "application/json",
+          hash: "h1",
+          size: repeatedContent.length,
+          updatedAt: 1,
+        },
+        "turns/fork-0/turn-0/world/story.json": {
+          path: "turns/fork-0/turn-0/world/story.json",
+          content: repeatedContent,
+          contentType: "application/json",
+          hash: "h2",
+          size: repeatedContent.length,
+          updatedAt: 1,
+        },
+      },
+    });
+
+    sourceSnapshots.set(snapshotKey(slotId, 0, 1), {
+      saveId: slotId,
+      forkId: 0,
+      turn: 1,
+      createdAt: 2,
+      files: {
+        "turns/fork-0/turn-1/world/global.json": {
+          path: "turns/fork-0/turn-1/world/global.json",
+          content: repeatedContent,
+          contentType: "application/json",
+          hash: "h3",
+          size: repeatedContent.length,
+          updatedAt: 2,
+        },
+      },
+    });
+
+    vfsMetaRowsRef.rows = [
+      { saveId: slotId, forkId: 0, turn: 0, createdAt: 1 },
+      { saveId: slotId, forkId: 0, turn: 1, createdAt: 2 },
+    ];
+    loadMetadataMock.mockImplementation(async (key: string) => {
+      if (key === `vfs_latest:${slotId}`) return { forkId: 0, turn: 1 };
+      if (key === `vfs_shared:${slotId}`) return { files: {} };
+      return null;
+    });
+
+    const slot = {
+      id: slotId,
+      name: "导出存档",
+      theme: "wuxia",
+      summary: "摘要",
+      timestamp: Date.now(),
+    };
+
+    const blob = await exportSave(slotId, slot as any, {
+      includeImages: false,
+      includeEmbeddings: false,
+      includeLogs: false,
+    });
+
+    expect(blob).toBeTruthy();
+    const zip = await JSZip.loadAsync(
+      new Uint8Array(await (blob as Blob).arrayBuffer()),
+    );
+
+    const blobPoolIndex = JSON.parse(
+      await zip.file("vfs/blob_pool/index.json")!.async("text"),
+    ) as { blobs: Array<{ blobId: string }> };
+    expect(blobPoolIndex.blobs).toHaveLength(1);
+
+    const snapshot0 = await getV3SnapshotFromZip(zip, 0, 0);
+    const snapshot1 = await getV3SnapshotFromZip(zip, 0, 1);
+    const ids = new Set([
+      snapshot0.fileRefs["turns/fork-0/turn-0/world/global.json"].blobId,
+      snapshot0.fileRefs["turns/fork-0/turn-0/world/story.json"].blobId,
+      snapshot1.fileRefs["turns/fork-0/turn-1/world/global.json"].blobId,
+    ]);
+    expect(ids.size).toBe(1);
+  });
+
   it("exportSave can include snapshots that exist only in vfs snapshot store", async () => {
     const { exportSave } = await import("./saveExportService");
 
@@ -757,7 +993,14 @@ describe("saveExportService", () => {
       new Uint8Array(await (blob as Blob).arrayBuffer()),
     );
     expect(zip.file("vfs/snapshots/fork-0/turn-3.json")).toBeTruthy();
-    expect(zip.file("vfs/history/fork-0/turn-3/world/global.json")).toBeTruthy();
+
+    const snapshotJson = await getV3SnapshotFromZip(zip, 0, 3);
+    const fileRef =
+      snapshotJson.fileRefs["turns/fork-0/turn-3/world/global.json"];
+    expect(fileRef).toBeTruthy();
+    expect(zip.file(`vfs/blob_pool/blobs/${fileRef.blobId}.json`)).toBeTruthy();
+
+    expect(zip.file("vfs/history/fork-0/turn-3/world/global.json")).toBeNull();
   });
 
   it("exportSave excludes rebuildable session artifacts from VFS payload", async () => {
@@ -797,10 +1040,8 @@ describe("saveExportService", () => {
       new Uint8Array(await (blob as Blob).arrayBuffer()),
     );
 
-    const exportedSnapshot = JSON.parse(
-      await zip.file("vfs/snapshots/fork-0/turn-0.json")!.async("text"),
-    ) as SnapshotRecord;
-    const snapshotPaths = Object.keys(exportedSnapshot.files);
+    const exportedSnapshot = await getV3SnapshotFromZip(zip, 0, 0);
+    const snapshotPaths = Object.keys(exportedSnapshot.fileRefs);
     expect(
       snapshotPaths.some((path) => path.endsWith("/conversation/session.jsonl")),
     ).toBe(false);
@@ -808,13 +1049,19 @@ describe("saveExportService", () => {
       snapshotPaths.some((path) => path.includes("/runtime/")),
     ).toBe(false);
 
+    expect(
+      snapshotPaths.includes("turns/fork-0/turn-0/world/global.json"),
+    ).toBe(true);
+    expect(
+      snapshotPaths.includes(
+        "turns/fork-0/turn-0/conversation/turns/fork-0/turn-0.json",
+      ),
+    ).toBe(true);
+
     expect(zip.file("vfs/history/fork-0/turn-0/conversation/session.jsonl")).toBeNull();
     expect(zip.file("vfs/current/conversation/session.jsonl")).toBeNull();
     expect(zip.file("vfs/history/fork-0/turn-0/runtime/transient.json")).toBeNull();
     expect(zip.file("vfs/current/runtime/transient.json")).toBeNull();
-
-    expect(zip.file("vfs/current/world/global.json")).toBeTruthy();
-    expect(zip.file("vfs/current/conversation/turns/fork-0/turn-0.json")).toBeTruthy();
   });
 });
 
@@ -832,6 +1079,32 @@ describe("saveExportService validation edge cases", () => {
     expect(result.errorsI18n?.[0]?.key).toBe("import.errors.unsupportedFormat");
   });
 
+  it("validateImport rejects legacy/non-blob-ref VFS indexes", async () => {
+    const { validateImport } = await import("./saveExportService");
+
+    const zip = new JSZip();
+    zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
+    zip.file(
+      "vfs/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          encoding: "full_snapshot_v1",
+          latest: { forkId: 0, turn: 0 },
+          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const file = await createZipFile(zip, "legacy-index.zip");
+    const result = await validateImport(file);
+
+    expect(result.valid).toBe(false);
+    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.unreadableVfsIndex");
+  });
+
   it("validateImport warns when export version is newer than supported", async () => {
     const { validateImport } = await import("./saveExportService");
 
@@ -847,22 +1120,10 @@ describe("saveExportService validation edge cases", () => {
         2,
       ),
     );
-    zip.file(
-      "vfs/index.json",
-      JSON.stringify(
-        {
-          version: 1,
-          latest: { forkId: 0, turn: 0 },
-          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
-        },
-        null,
-        2,
-      ),
-    );
-    zip.file(
-      "vfs/snapshots/fork-0/turn-0.json",
-      JSON.stringify(makeSnapshot("slot-x"), null, 2),
-    );
+    appendV3VfsBundleToZip(zip, [makeSnapshot("slot-x")], {
+      forkId: 0,
+      turn: 0,
+    });
 
     const file = await createZipFile(zip, "warn-version.zip");
     const result = await validateImport(file);
@@ -885,8 +1146,22 @@ describe("saveExportService validation edge cases", () => {
       JSON.stringify(
         {
           version: 1,
+          encoding: "blob_ref_v1",
           latest: { forkId: 9, turn: 9 },
           snapshots: [{ forkId: 9, turn: 9, createdAt: 1 }],
+          blobs: { count: 0 },
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "vfs/blob_pool/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          encoding: "blob_ref_v1",
+          blobs: [],
         },
         null,
         2,
@@ -921,22 +1196,10 @@ describe("saveExportService validation edge cases", () => {
         2,
       ),
     );
-    zip.file(
-      "vfs/index.json",
-      JSON.stringify(
-        {
-          version: 1,
-          latest: { forkId: 0, turn: 0 },
-          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
-        },
-        null,
-        2,
-      ),
-    );
-    zip.file(
-      "vfs/snapshots/fork-0/turn-0.json",
-      JSON.stringify(makeSnapshot("slot-old"), null, 2),
-    );
+    appendV3VfsBundleToZip(zip, [makeSnapshot("slot-old")], {
+      forkId: 0,
+      turn: 0,
+    });
     zip.file("embeddings.json", "{not-json");
 
     const file = await createZipFile(zip, "embeddings-broken.zip");
@@ -1000,8 +1263,22 @@ describe("saveExportService import/export additional branches", () => {
       JSON.stringify(
         {
           version: 1,
+          encoding: "blob_ref_v1",
           latest: null,
           snapshots: [{ createdAt: 1 }],
+          blobs: { count: 0 },
+        },
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "vfs/blob_pool/index.json",
+      JSON.stringify(
+        {
+          version: 1,
+          encoding: "blob_ref_v1",
+          blobs: [],
         },
         null,
         2,
@@ -1042,28 +1319,13 @@ describe("saveExportService import/export additional branches", () => {
         2,
       ),
     );
-    zip.file(
-      "vfs/index.json",
-      JSON.stringify(
-        {
-          version: 1,
-          latest: { forkId: 0, turn: 1 },
-          snapshots: [
-            { forkId: 0, turn: 0, createdAt: 1 },
-            { forkId: 0, turn: 1, createdAt: 2 },
-          ],
-        },
-        null,
-        2,
-      ),
-    );
-    zip.file(
-      "vfs/snapshots/fork-0/turn-0.json",
-      JSON.stringify(makeSnapshotWithConversationHistory("slot-old", 0, 1), null, 2),
-    );
-    zip.file(
-      "vfs/snapshots/fork-0/turn-1.json",
-      JSON.stringify(makeSnapshotWithConversationHistory("slot-old", 1, 5), null, 2),
+    appendV3VfsBundleToZip(
+      zip,
+      [
+        makeSnapshotWithConversationHistory("slot-old", 0, 1),
+        makeSnapshotWithConversationHistory("slot-old", 1, 5),
+      ],
+      { forkId: 0, turn: 1 },
     );
 
     const staleIndexContent = JSON.stringify(staleIndex);
@@ -1121,22 +1383,10 @@ describe("saveExportService import/export additional branches", () => {
 
     const zip = new JSZip();
     zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
-    zip.file(
-      "vfs/index.json",
-      JSON.stringify(
-        {
-          version: 1,
-          latest: { forkId: 0, turn: 0 },
-          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
-        },
-        null,
-        2,
-      ),
-    );
-    zip.file(
-      "vfs/snapshots/fork-0/turn-0.json",
-      JSON.stringify(makeSnapshot("slot-old"), null, 2),
-    );
+    appendV3VfsBundleToZip(zip, [makeSnapshot("slot-old")], {
+      forkId: 0,
+      turn: 0,
+    });
     zip.file("meta/ui_state.json", JSON.stringify({ panel: "rag", width: 300 }));
     zip.file(
       "meta/runtime_stats.json",
@@ -1176,22 +1426,10 @@ describe("saveExportService import/export additional branches", () => {
 
     const zip = new JSZip();
     zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
-    zip.file(
-      "vfs/index.json",
-      JSON.stringify(
-        {
-          version: 1,
-          latest: { forkId: 0, turn: 0 },
-          snapshots: [{ forkId: 0, turn: 0, createdAt: 1 }],
-        },
-        null,
-        2,
-      ),
-    );
-    zip.file(
-      "vfs/snapshots/fork-0/turn-0.json",
-      JSON.stringify(makeSnapshot("slot-old"), null, 2),
-    );
+    appendV3VfsBundleToZip(zip, [makeSnapshot("slot-old")], {
+      forkId: 0,
+      turn: 0,
+    });
 
     const file = await createZipFile(zip, "persist-fail.zip");
     const result = await importSave(file, []);

@@ -122,6 +122,123 @@ describe("VFS store", () => {
     expect(reloaded[0].files[0].hash).toBe("one");
   });
 
+  it("deduplicates identical file content across snapshots in memory store", async () => {
+    const store = new InMemoryVfsStore() as any;
+
+    const sharedFile = {
+      path: "world/global.json",
+      content: "{\"time\":\"Day 1\"}",
+      contentType: "application/json" as const,
+      hash: "legacy",
+      size: 16,
+      updatedAt: 1,
+    };
+
+    await store.saveSnapshot({
+      saveId: "s1",
+      forkId: 0,
+      turn: 1,
+      createdAt: 1,
+      files: {
+        "world/global.json": sharedFile,
+      },
+    });
+
+    await store.saveSnapshot({
+      saveId: "s1",
+      forkId: 0,
+      turn: 2,
+      createdAt: 2,
+      files: {
+        "world/global.json": { ...sharedFile, updatedAt: 2 },
+      },
+    });
+
+    expect(store.blobs.size).toBe(1);
+    const blob = Array.from(store.blobs.values())[0] as any;
+    expect(blob.refCount).toBe(2);
+  });
+
+  it("decrements old blob refs when overwriting the same snapshot key", async () => {
+    const store = new InMemoryVfsStore() as any;
+
+    await store.saveSnapshot({
+      saveId: "s1",
+      forkId: 0,
+      turn: 1,
+      createdAt: 1,
+      files: {
+        "world/global.json": {
+          path: "world/global.json",
+          content: "{\"state\":\"a\"}",
+          contentType: "application/json",
+          hash: "ha",
+          size: 12,
+          updatedAt: 1,
+        },
+      },
+    });
+
+    await store.saveSnapshot({
+      saveId: "s1",
+      forkId: 0,
+      turn: 1,
+      createdAt: 1,
+      files: {
+        "world/global.json": {
+          path: "world/global.json",
+          content: "{\"state\":\"b\"}",
+          contentType: "application/json",
+          hash: "hb",
+          size: 12,
+          updatedAt: 2,
+        },
+      },
+    });
+
+    expect(store.blobs.size).toBe(1);
+    const blob = Array.from(store.blobs.values())[0] as any;
+    expect(blob.content).toContain("\"b\"");
+    expect(blob.refCount).toBe(1);
+  });
+
+  it("reuses one blob when multiple files in one snapshot share same content", async () => {
+    const store = new InMemoryVfsStore() as any;
+
+    await store.saveSnapshot({
+      saveId: "s1",
+      forkId: 0,
+      turn: 1,
+      createdAt: 1,
+      files: {
+        "world/global.json": {
+          path: "world/global.json",
+          content: "{\"state\":\"same\"}",
+          contentType: "application/json",
+          hash: "h1",
+          size: 16,
+          updatedAt: 1,
+        },
+        "world/story.json": {
+          path: "world/story.json",
+          content: "{\"state\":\"same\"}",
+          contentType: "application/json",
+          hash: "h2",
+          size: 16,
+          updatedAt: 1,
+        },
+      },
+    });
+
+    expect(store.blobs.size).toBe(1);
+    const blob = Array.from(store.blobs.values())[0] as any;
+    expect(blob.refCount).toBe(2);
+
+    const loaded = await store.loadSnapshot("s1", 0, 1);
+    expect(loaded?.files["world/global.json"]?.content).toBe("{\"state\":\"same\"}");
+    expect(loaded?.files["world/story.json"]?.content).toBe("{\"state\":\"same\"}");
+  });
+
   it("delegates through IndexedDbVfsStore adapter and clones returned values", async () => {
     const adapter = {
       saveSnapshot: vi.fn(async () => undefined),

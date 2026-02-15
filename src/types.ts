@@ -1511,7 +1511,34 @@ export interface UnifiedToolCallResult {
 // ============================================================================
 
 /** Current export format version */
-export const CURRENT_EXPORT_VERSION = 2;
+export const CURRENT_EXPORT_VERSION = 3;
+
+export interface VfsExportIndexEntry {
+  forkId: number;
+  turn: number;
+  createdAt: number;
+}
+
+export interface VfsExportLatestMeta {
+  forkId: number;
+  turn: number;
+}
+
+export interface VfsExportBlobPoolIndexEntry {
+  blobId: string;
+  contentType: string;
+  size: number;
+}
+
+export interface VfsExportBundleIndexV3 {
+  version: number;
+  encoding: "blob_ref_v1";
+  latest: VfsExportLatestMeta | null;
+  snapshots: VfsExportIndexEntry[];
+  blobs: {
+    count: number;
+  };
+}
 
 /** Options for exporting a save */
 export interface ExportOptions {

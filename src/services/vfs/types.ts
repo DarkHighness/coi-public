@@ -30,6 +30,39 @@ export interface VfsSnapshot {
   files: VfsFileMap;
 }
 
+export interface VfsSnapshotFileRef {
+  path: string;
+  blobId: string;
+  contentType: VfsContentType;
+  size: number;
+  updatedAt: number;
+  legacyHash?: string;
+}
+
+export type VfsSnapshotFileRefMap = Record<string, VfsSnapshotFileRef>;
+
+export interface VfsBlobRecord {
+  id: string;
+  saveId: string;
+  blobId: string;
+  content: string;
+  contentType: VfsContentType;
+  size: number;
+  refCount: number;
+  updatedAt: number;
+}
+
+export interface VfsStoredSnapshotV2 {
+  version: 2;
+  saveId: string;
+  forkId: number;
+  turn: number;
+  createdAt: number;
+  fileRefs: VfsSnapshotFileRefMap;
+}
+
+export type VfsStoredSnapshot = VfsStoredSnapshotV2;
+
 export interface VfsIndexEntry {
   path: string;
   hash: string;

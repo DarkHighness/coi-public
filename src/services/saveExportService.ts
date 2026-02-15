@@ -31,7 +31,12 @@ import { getImagesBySaveId, saveImage } from "../utils/imageStorage";
 import { getRAGService } from "./rag";
 import type { RAGExportData } from "./rag/types";
 import { IndexedDbVfsStore } from "./vfs/store";
-import type { VfsSnapshot } from "./vfs/types";
+import type {
+  VfsContentType,
+  VfsSnapshot,
+  VfsSnapshotFileRefMap,
+} from "./vfs/types";
+import { computeBlobId } from "./vfs/blobHash";
 import { VfsSession } from "./vfs/vfsSession";
 import { hashContent, normalizeVfsPath } from "./vfs/utils";
 import {
@@ -72,6 +77,37 @@ interface VfsExportBundleIndex {
   latest: VfsLatestMeta | null;
   snapshots: VfsExportIndexEntry[];
 }
+
+interface VfsExportBundleIndexV3 extends VfsExportBundleIndex {
+  encoding: "blob_ref_v1";
+  blobs: {
+    count: number;
+  };
+}
+
+interface VfsExportBlobPoolEntry {
+  blobId: string;
+  contentType: VfsContentType;
+  size: number;
+}
+
+interface VfsExportBlobPoolIndex {
+  version: number;
+  encoding: "blob_ref_v1";
+  blobs: VfsExportBlobPoolEntry[];
+}
+
+interface VfsExportSnapshotV3 {
+  version: 2;
+  encoding: "blob_ref_v1";
+  saveId: string;
+  forkId: number;
+  turn: number;
+  createdAt: number;
+  fileRefs: VfsSnapshotFileRefMap;
+}
+
+const VFS_BLOB_REF_ENCODING = "blob_ref_v1" as const;
 
 type SnapshotImageTransformOptions = {
   remapImageIds?: Map<string, string>;
@@ -206,6 +242,85 @@ const pruneRebuildableSessionFilesFromSnapshot = (
   return {
     ...snapshot,
     files: nextFiles,
+  };
+};
+
+type VfsExportBlobContent = {
+  content: string;
+  contentType: VfsContentType;
+  size: number;
+};
+
+const buildBlobPoolPath = (blobId: string): string =>
+  `vfs/blob_pool/blobs/${blobId}.json`;
+
+const toExportSnapshotV3 = async (
+  snapshot: VfsSnapshot,
+  blobPool: Map<string, VfsExportBlobContent>,
+): Promise<VfsExportSnapshotV3> => {
+  const fileRefs: VfsSnapshotFileRefMap = {};
+  for (const file of Object.values(snapshot.files ?? {})) {
+    const blobId = await computeBlobId(file.contentType, file.content);
+    fileRefs[file.path] = {
+      path: file.path,
+      blobId,
+      contentType: file.contentType,
+      size: file.size,
+      updatedAt: file.updatedAt,
+      legacyHash: file.hash,
+    };
+    if (!blobPool.has(blobId)) {
+      blobPool.set(blobId, {
+        content: file.content,
+        contentType: file.contentType,
+        size: file.size,
+      });
+    }
+  }
+
+  return {
+    version: 2,
+    encoding: VFS_BLOB_REF_ENCODING,
+    saveId: snapshot.saveId,
+    forkId: snapshot.forkId,
+    turn: snapshot.turn,
+    createdAt: snapshot.createdAt,
+    fileRefs,
+  };
+};
+
+const restoreSnapshotFromExportV3 = (
+  saveId: string,
+  snapshot: VfsExportSnapshotV3,
+  blobPool: Map<string, VfsExportBlobContent>,
+): VfsSnapshot => {
+  const files: Record<string, any> = {};
+  const updatedAtFallback = Date.now();
+
+  for (const fileRef of Object.values(snapshot.fileRefs ?? {})) {
+    const blob = blobPool.get(fileRef.blobId);
+    if (!blob) {
+      throw new Error(
+        `Missing VFS blob ${fileRef.blobId} for fork=${snapshot.forkId} turn=${snapshot.turn}`,
+      );
+    }
+
+    files[fileRef.path] = {
+      path: fileRef.path,
+      content: blob.content,
+      contentType: fileRef.contentType || blob.contentType,
+      hash: fileRef.legacyHash || hashContent(blob.content),
+      size: fileRef.size ?? blob.size ?? blob.content.length,
+      updatedAt: fileRef.updatedAt ?? updatedAtFallback,
+    };
+  }
+
+  return {
+    saveId,
+    forkId: snapshot.forkId,
+    turn: snapshot.turn,
+    createdAt: snapshot.createdAt,
+    files,
   };
 };
 
@@ -779,21 +894,13 @@ const writeVfsSnapshotsToZip = async (
   const latest = await loadLatestVfsMeta(saveId);
   const store = new IndexedDbVfsStore();
 
-  const bundle: VfsExportBundleIndex = {
-    version: 1,
-    latest,
-    snapshots: indexEntries,
-  };
-
-  zip.file("vfs/index.json", JSON.stringify(bundle, null, 2));
-
   const snapshotsRoot = zip.folder("vfs")?.folder("snapshots");
   if (!snapshotsRoot) {
     console.warn("[SaveExport] Failed to create vfs/snapshots folder in ZIP");
     return { snapshotCount: 0, latest };
   }
 
-  const exportedSnapshots: VfsSnapshot[] = [];
+  const blobPool = new Map<string, VfsExportBlobContent>();
   let written = 0;
   for (const entry of indexEntries) {
     try {
@@ -819,12 +926,10 @@ const writeVfsSnapshotsToZip = async (
             )
           : pruneRebuildableSessionFilesFromSnapshot(snapshot);
 
+      const snapshotV3 = await toExportSnapshotV3(snapshotForExport, blobPool);
+
       const forkFolder = snapshotsRoot.folder(`fork-${entry.forkId}`);
-      forkFolder?.file(
-        `turn-${entry.turn}.json`,
-        JSON.stringify(snapshotForExport, null, 2),
-      );
-      exportedSnapshots.push(snapshotForExport);
+      forkFolder?.file(`turn-${entry.turn}.json`, JSON.stringify(snapshotV3, null, 2));
       written += 1;
     } catch (error) {
       console.warn(
@@ -857,31 +962,49 @@ const writeVfsSnapshotsToZip = async (
     ),
   );
 
-  const latestSnapshotForExport =
-    options?.includeImages === false && latestSnapshot
-      ? rewriteSnapshotImageReferences(
-          pruneRebuildableSessionFilesFromSnapshot(latestSnapshot),
-          {
-            stripImageReferences: true,
-          },
-        )
-      : latestSnapshot
-        ? pruneRebuildableSessionFilesFromSnapshot(latestSnapshot)
-        : latestSnapshot;
+  const blobPoolEntries: VfsExportBlobPoolEntry[] = Array.from(blobPool.entries())
+    .map(([blobId, blob]) => ({
+      blobId,
+      contentType: blob.contentType,
+      size: blob.size,
+    }))
+    .sort((a, b) => a.blobId.localeCompare(b.blobId));
 
-  try {
-    writeStructuredVfsLayoutToZip(
-      zip,
-      exportedSnapshots,
-      latestSnapshotForExport,
-      shared,
-    );
-  } catch (error) {
-    console.warn(
-      "[SaveExport] Failed to write structured VFS layout to ZIP:",
-      error,
+  const blobPoolIndex: VfsExportBlobPoolIndex = {
+    version: 1,
+    encoding: VFS_BLOB_REF_ENCODING,
+    blobs: blobPoolEntries,
+  };
+  zip.file("vfs/blob_pool/index.json", JSON.stringify(blobPoolIndex, null, 2));
+
+  for (const [blobId, blob] of blobPool.entries()) {
+    zip.file(
+      buildBlobPoolPath(blobId),
+      JSON.stringify(
+        {
+          version: 1,
+          encoding: VFS_BLOB_REF_ENCODING,
+          blobId,
+          contentType: blob.contentType,
+          size: blob.size,
+          content: blob.content,
+        },
+        null,
+        2,
+      ),
     );
   }
+
+  const bundle: VfsExportBundleIndexV3 = {
+    version: 1,
+    encoding: VFS_BLOB_REF_ENCODING,
+    latest,
+    snapshots: indexEntries,
+    blobs: {
+      count: blobPoolEntries.length,
+    },
+  };
+  zip.file("vfs/index.json", JSON.stringify(bundle, null, 2));
 
   return { snapshotCount: written, latest };
 };
@@ -1577,7 +1700,16 @@ export async function validateImport(file: File): Promise<ImportValidation> {
 
     try {
       const indexJson = await vfsIndexFile.async("text");
-      const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
+      const bundle = JSON.parse(indexJson) as Partial<VfsExportBundleIndexV3>;
+      if (bundle.encoding !== VFS_BLOB_REF_ENCODING) {
+        pushError(
+          "import.errors.unreadableVfsIndex",
+          undefined,
+          "Unsupported VFS index encoding. This build only supports blob_ref_v1.",
+        );
+        return { valid: false, errors, warnings, errorsI18n, warningsI18n };
+      }
+
       const snapshots = Array.isArray(bundle?.snapshots)
         ? bundle.snapshots
         : [];
@@ -1585,9 +1717,120 @@ export async function validateImport(file: File): Promise<ImportValidation> {
         pushError(
           "import.errors.emptyVfsIndex",
           undefined,
-          "VFS snapshot index is empty (vfs/index.json).",
+        "VFS snapshot index is empty (vfs/index.json).",
         );
         return { valid: false, errors, warnings, errorsI18n, warningsI18n };
+      }
+
+      const blobIndexFile = zip.file("vfs/blob_pool/index.json");
+      if (!blobIndexFile) {
+        pushError(
+          "import.errors.unreadableVfsIndex",
+          undefined,
+          "Missing VFS blob pool index (vfs/blob_pool/index.json).",
+        );
+        return { valid: false, errors, warnings, errorsI18n, warningsI18n };
+      }
+
+      let blobIndex: VfsExportBlobPoolIndex | null = null;
+      try {
+        blobIndex = JSON.parse(
+          await blobIndexFile.async("text"),
+        ) as VfsExportBlobPoolIndex;
+      } catch (error) {
+        console.warn("[SaveImport] Failed to parse VFS blob pool index:", error);
+      }
+      if (
+        !blobIndex ||
+        blobIndex.encoding !== VFS_BLOB_REF_ENCODING ||
+        !Array.isArray(blobIndex.blobs)
+      ) {
+        pushError(
+          "import.errors.unreadableVfsIndex",
+          undefined,
+          "Failed to parse VFS blob pool index (vfs/blob_pool/index.json).",
+        );
+        return { valid: false, errors, warnings, errorsI18n, warningsI18n };
+      }
+
+      const missingBlobPaths: string[] = [];
+      for (const blob of blobIndex.blobs) {
+        if (!blob || typeof blob.blobId !== "string") continue;
+        const path = buildBlobPoolPath(blob.blobId);
+        if (!zip.file(path)) {
+          missingBlobPaths.push(path);
+        }
+      }
+
+      if (missingBlobPaths.length > 0) {
+        pushError(
+          "import.errors.missingSnapshotFile",
+          { path: missingBlobPaths[0] },
+          `Missing VFS blob file (${missingBlobPaths[0]}).`,
+        );
+        return { valid: false, errors, warnings, errorsI18n, warningsI18n };
+      }
+
+      const availableBlobIds = new Set(
+        blobIndex.blobs
+          .map((blob) =>
+            blob && typeof blob.blobId === "string" ? blob.blobId : null,
+          )
+          .filter((value): value is string => Boolean(value)),
+      );
+
+      for (const entry of snapshots) {
+        if (
+          !entry ||
+          typeof entry.forkId !== "number" ||
+          typeof entry.turn !== "number"
+        ) {
+          continue;
+        }
+        const snapshotPath = `vfs/snapshots/fork-${entry.forkId}/turn-${entry.turn}.json`;
+        const snapshotFile = zip.file(snapshotPath);
+        if (!snapshotFile) continue;
+        const snapshotV3 = JSON.parse(
+          await snapshotFile.async("text"),
+        ) as VfsExportSnapshotV3;
+        if (
+          !snapshotV3 ||
+          snapshotV3.encoding !== VFS_BLOB_REF_ENCODING ||
+          !snapshotV3.fileRefs ||
+          typeof snapshotV3.fileRefs !== "object"
+        ) {
+          pushError(
+            "import.errors.unreadableVfsIndex",
+            undefined,
+            `Failed to parse VFS v3 snapshot (${snapshotPath}).`,
+          );
+          return {
+            valid: false,
+            errors,
+            warnings,
+            errorsI18n,
+            warningsI18n,
+          };
+        }
+
+        for (const fileRef of Object.values(snapshotV3.fileRefs)) {
+          if (!fileRef || typeof fileRef.blobId !== "string") continue;
+          if (!availableBlobIds.has(fileRef.blobId)) {
+            const blobPath = buildBlobPoolPath(fileRef.blobId);
+            pushError(
+              "import.errors.missingSnapshotFile",
+              { path: blobPath },
+              `Missing VFS blob reference target (${blobPath}).`,
+            );
+            return {
+              valid: false,
+              errors,
+              warnings,
+              errorsI18n,
+              warningsI18n,
+            };
+          }
+        }
       }
 
       // Validate that at least the latest snapshot file exists.
@@ -1608,6 +1851,28 @@ export async function validateImport(file: File): Promise<ImportValidation> {
             `Missing VFS snapshot file (${snapshotPath}).`,
           );
           return { valid: false, errors, warnings, errorsI18n, warningsI18n };
+        }
+
+        const snapshotContent = await zip.file(snapshotPath)!.async("text");
+        const snapshotV3 = JSON.parse(snapshotContent) as VfsExportSnapshotV3;
+        if (
+          !snapshotV3 ||
+          snapshotV3.encoding !== VFS_BLOB_REF_ENCODING ||
+          !snapshotV3.fileRefs ||
+          typeof snapshotV3.fileRefs !== "object"
+        ) {
+          pushError(
+            "import.errors.unreadableVfsIndex",
+            undefined,
+            `Failed to parse VFS v3 snapshot (${snapshotPath}).`,
+          );
+          return {
+            valid: false,
+            errors,
+            warnings,
+            errorsI18n,
+            warningsI18n,
+          };
         }
       }
     } catch (error) {
@@ -1773,12 +2038,79 @@ export async function importSave(
         };
       }
       const indexJson = await vfsIndexFile.async("text");
-      const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
+      const bundle = JSON.parse(indexJson) as Partial<VfsExportBundleIndexV3>;
       const latestMeta = bundle?.latest ?? null;
       const declaredLatest = isValidLatestMeta(latestMeta) ? latestMeta : null;
       const snapshots = Array.isArray(bundle?.snapshots)
         ? bundle.snapshots
         : [];
+      if (
+        (bundle as Partial<VfsExportBundleIndexV3>)?.encoding !==
+        VFS_BLOB_REF_ENCODING
+      ) {
+        return {
+          success: false,
+          error: "Unsupported VFS index encoding. This build only supports blob_ref_v1.",
+          errorI18n: { key: "import.errors.unreadableVfsIndex" },
+          warnings,
+          warningsI18n,
+        };
+      }
+
+      let blobPool = new Map<string, VfsExportBlobContent>();
+      const blobPoolIndexFile = zip.file("vfs/blob_pool/index.json");
+      if (!blobPoolIndexFile) {
+        return {
+          success: false,
+          error: "Missing VFS blob pool index (vfs/blob_pool/index.json).",
+          errorI18n: { key: "import.errors.unreadableVfsIndex" },
+          warnings,
+          warningsI18n,
+        };
+      }
+
+      const blobPoolIndex = JSON.parse(
+        await blobPoolIndexFile.async("text"),
+      ) as VfsExportBlobPoolIndex;
+      if (
+        !blobPoolIndex ||
+        blobPoolIndex.encoding !== VFS_BLOB_REF_ENCODING ||
+        !Array.isArray(blobPoolIndex.blobs)
+      ) {
+        return {
+          success: false,
+          error: "Failed to parse VFS blob pool index.",
+          errorI18n: { key: "import.errors.unreadableVfsIndex" },
+          warnings,
+          warningsI18n,
+        };
+      }
+
+      for (const blobMeta of blobPoolIndex.blobs) {
+        if (!blobMeta || typeof blobMeta.blobId !== "string") continue;
+        const blobFile = zip.file(buildBlobPoolPath(blobMeta.blobId));
+        if (!blobFile) {
+          continue;
+        }
+        const payload = JSON.parse(await blobFile.async("text")) as {
+          content?: unknown;
+          contentType?: unknown;
+          size?: unknown;
+        };
+        if (typeof payload.content !== "string") continue;
+        const contentType =
+          typeof payload.contentType === "string"
+            ? (payload.contentType as VfsContentType)
+            : (blobMeta.contentType as VfsContentType);
+        blobPool.set(blobMeta.blobId, {
+          content: payload.content,
+          contentType,
+          size:
+            typeof payload.size === "number"
+              ? payload.size
+              : payload.content.length,
+        });
+      }
 
       let importedSharedFiles: Record<string, any> | null = null;
       const sharedFile = zip.file("vfs/shared.json");
@@ -1824,8 +2156,23 @@ export async function importSave(
         );
         if (!snapshotFile) continue;
         const snapshotJson = await snapshotFile.async("text");
-        const snapshot = JSON.parse(snapshotJson) as VfsSnapshot;
-        if (!snapshot || typeof snapshot !== "object") continue;
+        const snapshotV3 = JSON.parse(snapshotJson) as VfsExportSnapshotV3;
+        if (
+          !snapshotV3 ||
+          snapshotV3.encoding !== VFS_BLOB_REF_ENCODING ||
+          !snapshotV3.fileRefs ||
+          typeof snapshotV3.fileRefs !== "object"
+        ) {
+          continue;
+        }
+
+        const snapshot = restoreSnapshotFromExportV3(
+          newSlotId,
+          snapshotV3,
+          blobPool,
+        );
+
+        if (!snapshot) continue;
 
         const snapshotWithMappedImages = rewriteSnapshotImageReferences(
           snapshot,
