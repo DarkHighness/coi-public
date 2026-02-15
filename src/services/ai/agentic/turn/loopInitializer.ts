@@ -110,8 +110,13 @@ export function createLoopState(
     isSudoMode,
     isRAGEnabled,
     isCleanupMode,
+    isPlayerRateMode,
   });
-  const finishToolName = VFS_TOOLSETS.turn.finishToolName;
+  const finishToolName = isCleanupMode
+    ? VFS_TOOLSETS.cleanup.finishToolName
+    : isPlayerRateMode
+      ? VFS_TOOLSETS.playerRate.finishToolName
+      : VFS_TOOLSETS.turn.finishToolName;
   const resolvedVfsMode: VfsMode =
     vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
   const conversationMarker = getConversationMarker(vfsSession);
@@ -216,11 +221,17 @@ export function createInitialTools(options: {
   isSudoMode: boolean;
   isRAGEnabled: boolean;
   isCleanupMode: boolean;
+  isPlayerRateMode?: boolean;
 }): ZodToolDefinition[] {
-  const { isSudoMode, isRAGEnabled, isCleanupMode } = options;
+  const { isSudoMode, isRAGEnabled, isCleanupMode, isPlayerRateMode } =
+    options;
   void isSudoMode;
 
-  const toolset = isCleanupMode ? VFS_TOOLSETS.cleanup : VFS_TOOLSETS.turn;
+  const toolset = isCleanupMode
+    ? VFS_TOOLSETS.cleanup
+    : isPlayerRateMode
+      ? VFS_TOOLSETS.playerRate
+      : VFS_TOOLSETS.turn;
   const allowed = new Set<string>(toolset.tools);
 
   return ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name)).map(

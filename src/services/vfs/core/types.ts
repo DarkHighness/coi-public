@@ -161,7 +161,7 @@ export interface VfsToolCapability {
   mayWriteClasses: VfsPermissionClass[];
   needsElevationFor: VfsPermissionClass[];
   immutableZones: string[];
-  toolsets: Array<"turn" | "cleanup" | "summary" | "outline">;
+  toolsets: Array<"turn" | "playerRate" | "cleanup" | "summary" | "outline">;
   isFinishTool?: boolean;
 }
 

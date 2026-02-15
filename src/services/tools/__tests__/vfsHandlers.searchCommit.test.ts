@@ -122,4 +122,41 @@ describe("VFS handlers search/commit", () => {
     expect(summaryState.data.extracts[0].json).toBe("1");
     expect(summaryState.data.extracts[1].json).toBe('"A short recap."');
   });
+
+  it("commits soul markdown with dedicated finish tool", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session };
+
+    const invalid = dispatchToolCall("vfs_commit_soul", {}, ctx) as any;
+    expect(invalid.success).toBe(false);
+
+    const commit = dispatchToolCall(
+      "vfs_commit_soul",
+      {
+        currentSoul: "# Player Soul (This Save)\n\n## Guidance For AI\n- Keep concise.\n",
+        globalSoul: "# Player Soul (Global)\n\n## Guidance For AI\n- Reduce AI flavor.\n",
+      },
+      ctx,
+    ) as any;
+
+    expect(commit.success).toBe(true);
+    expect(commit.data.updated).toContain("current/world/soul.md");
+    expect(commit.data.updated).toContain("current/world/global/soul.md");
+
+    const currentSoul = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/soul.md" },
+      ctx,
+    ) as any;
+    expect(currentSoul.success).toBe(true);
+    expect(currentSoul.data.content).toContain("Player Soul (This Save)");
+
+    const globalSoul = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/global/soul.md" },
+      ctx,
+    ) as any;
+    expect(globalSoul.success).toBe(true);
+    expect(globalSoul.data.content).toContain("Player Soul (Global)");
+  });
 });

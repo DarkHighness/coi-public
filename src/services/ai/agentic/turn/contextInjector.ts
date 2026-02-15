@@ -68,6 +68,12 @@ export function injectNormalTurnInstruction(
     createUserMessage(
       (isCleanupMode ? cleanupTurnInstruction : normalTurnInstruction)({
         finishToolName,
+        toolsetId:
+          isCleanupMode
+            ? "cleanup"
+            : normalCommandProtocol === "player-rate"
+              ? "playerRate"
+              : "turn",
         ragEnabled,
       }),
     ),
@@ -148,6 +154,7 @@ export function injectNormalTurnInstruction(
           "This loop is triggered by `[Player Rate]` feedback.",
           "- Treat payload as feedback ingestion, not protagonist action simulation.",
           "- Update only `current/world/soul.md` and `current/world/global/soul.md` when evidence is meaningful.",
+          "- Finish this loop with `vfs_commit_soul` (provide `currentSoul` and/or `globalSoul`).",
           "- Keep visible plot progression unchanged for this isolated feedback loop.",
         ].join("\n"),
       ),

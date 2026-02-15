@@ -11,6 +11,7 @@ import {
   VFS_MOVE_TOOL,
   VFS_DELETE_TOOL,
   VFS_COMMIT_TURN_TOOL,
+  VFS_COMMIT_SOUL_TOOL,
   VFS_COMMIT_SUMMARY_TOOL,
   VFS_COMMIT_OUTLINE_PHASE_TOOLS,
   getTypedArgs,
@@ -71,6 +72,7 @@ import { vfsToolRouter } from "../../vfs/core/toolRouter";
 import type { VfsWriteContext } from "../../vfs/core/types";
 import { getSchemaForPath } from "../../vfs/schemas";
 import { buildVfsLayoutReport } from "../../vfs/layoutReport";
+import { normalizeSoulMarkdown } from "../../vfs/soulTemplates";
 
 interface VfsMatch {
   path: string;
@@ -2500,6 +2502,70 @@ registerToolHandlerWithStructuredErrors(VFS_COMMIT_TURN_TOOL, (args, ctx) => {
       writeContext: resolveAiWriteContext(ctx, {
         allowFinishGuardedWrite: true,
       }),
+    },
+  );
+});
+
+registerToolHandlerWithStructuredErrors(VFS_COMMIT_SOUL_TOOL, (args, ctx) => {
+  const typedArgs = getTypedArgs("vfs_commit_soul", args);
+  const hasCurrentSoul = typeof typedArgs.currentSoul === "string";
+  const hasGlobalSoul = typeof typedArgs.globalSoul === "string";
+
+  if (!hasCurrentSoul && !hasGlobalSoul) {
+    return createError(
+      "vfs_commit_soul: at least one of currentSoul or globalSoul must be provided.",
+      "INVALID_DATA",
+    );
+  }
+
+  return withAtomicSession(
+    ctx,
+    (draft) => {
+      const updated: string[] = [];
+
+      if (hasCurrentSoul) {
+        const resolvedCurrentSoul = resolveCurrentPath(ctx, "world/soul.md");
+        if (isPathResolveError(resolvedCurrentSoul)) {
+          return resolvedCurrentSoul.error;
+        }
+
+        const normalizedCurrentSoulPath = normalizeVfsPath(
+          resolvedCurrentSoul.path,
+        );
+        draft.writeFile(
+          normalizedCurrentSoulPath,
+          normalizeSoulMarkdown("current", typedArgs.currentSoul),
+          "text/markdown",
+        );
+        draft.noteToolAccessFile(normalizedCurrentSoulPath);
+        updated.push(toCurrentPath(normalizedCurrentSoulPath));
+      }
+
+      if (hasGlobalSoul) {
+        const resolvedGlobalSoul = resolveCurrentPath(
+          ctx,
+          "world/global/soul.md",
+        );
+        if (isPathResolveError(resolvedGlobalSoul)) {
+          return resolvedGlobalSoul.error;
+        }
+
+        const normalizedGlobalSoulPath = normalizeVfsPath(
+          resolvedGlobalSoul.path,
+        );
+        draft.writeFile(
+          normalizedGlobalSoulPath,
+          normalizeSoulMarkdown("global", typedArgs.globalSoul),
+          "text/markdown",
+        );
+        draft.noteToolAccessFile(normalizedGlobalSoulPath);
+        updated.push(toCurrentPath(normalizedGlobalSoulPath));
+      }
+
+      return createSuccess({ updated }, "Soul committed");
+    },
+    {
+      writeContext: resolveAiWriteContext(ctx),
     },
   );
 });

@@ -575,6 +575,28 @@ export const VFS_COMMIT_TURN_TOOL = defineTool({
     .strict(),
 });
 
+export const VFS_COMMIT_SOUL_TOOL = defineTool({
+  name: "vfs_commit_soul",
+  description:
+    "Finish a Player Rate feedback loop by updating soul markdown docs (current save and/or global mirror).",
+  parameters: z
+    .object({
+      currentSoul: z
+        .string()
+        .nullish()
+        .describe(
+          "Optional markdown content for current save soul (`current/world/soul.md`).",
+        ),
+      globalSoul: z
+        .string()
+        .nullish()
+        .describe(
+          "Optional markdown content for global soul mirror (`current/world/global/soul.md`).",
+        ),
+    })
+    .strict(),
+});
+
 const summaryVisibleToolSchema = z
   .object({
     narrative: z
@@ -710,6 +732,7 @@ export const ALL_DEFINED_TOOLS: ZodToolDefinition[] = [
   VFS_MOVE_TOOL,
   VFS_DELETE_TOOL,
   VFS_COMMIT_TURN_TOOL,
+  VFS_COMMIT_SOUL_TOOL,
   VFS_COMMIT_SUMMARY_TOOL,
   ...VFS_COMMIT_OUTLINE_PHASE_TOOLS,
 ];
@@ -724,6 +747,7 @@ export type VfsWriteParams = InferToolParams<typeof VFS_WRITE_TOOL>;
 export type VfsMoveParams = InferToolParams<typeof VFS_MOVE_TOOL>;
 export type VfsDeleteParams = InferToolParams<typeof VFS_DELETE_TOOL>;
 export type VfsCommitTurnParams = InferToolParams<typeof VFS_COMMIT_TURN_TOOL>;
+export type VfsCommitSoulParams = InferToolParams<typeof VFS_COMMIT_SOUL_TOOL>;
 export type VfsCommitSummaryParams = InferToolParams<
   typeof VFS_COMMIT_SUMMARY_TOOL
 >;
@@ -767,6 +791,7 @@ export interface ToolParamsMap {
   vfs_move: VfsMoveParams;
   vfs_delete: VfsDeleteParams;
   vfs_commit_turn: VfsCommitTurnParams;
+  vfs_commit_soul: VfsCommitSoulParams;
   vfs_commit_summary: VfsCommitSummaryParams;
   vfs_commit_outline_phase_0: VfsCommitOutlinePhase0Params;
   vfs_commit_outline_phase_1: VfsCommitOutlinePhase1Params;

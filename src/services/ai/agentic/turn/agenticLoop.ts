@@ -1016,6 +1016,12 @@ async function processToolCalls(
       onToolCallsUpdate?.([]);
       break;
     }
+
+    if (isFinishToolCall(call) && !isError) {
+      turnFinished = true;
+      onToolCallsUpdate?.([]);
+      break;
+    }
   }
 
   if (!turnFinished) {

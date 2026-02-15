@@ -8,6 +8,9 @@ import {
 describe("vfsToolsets", () => {
   it("ensures each toolset contains its own finish tool", () => {
     expect(VFS_TOOLSETS.turn.tools).toContain(VFS_TOOLSETS.turn.finishToolName);
+    expect(VFS_TOOLSETS.playerRate.tools).toContain(
+      VFS_TOOLSETS.playerRate.finishToolName,
+    );
     expect(VFS_TOOLSETS.cleanup.tools).toContain(
       VFS_TOOLSETS.cleanup.finishToolName,
     );
@@ -19,6 +22,10 @@ describe("vfsToolsets", () => {
     );
 
     expect(VFS_TOOLSETS.turn.tools).not.toContain("vfs_commit_summary");
+    expect(VFS_TOOLSETS.turn.tools).not.toContain("vfs_commit_soul");
+    expect(VFS_TOOLSETS.playerRate.tools).toContain("vfs_commit_soul");
+    expect(VFS_TOOLSETS.playerRate.tools).not.toContain("vfs_commit_turn");
+    expect(VFS_TOOLSETS.playerRate.tools).not.toContain("vfs_write");
     expect(VFS_TOOLSETS.cleanup.tools).not.toContain("vfs_commit_summary");
     expect(VFS_TOOLSETS.summary.tools).toContain("vfs_commit_summary");
     expect(VFS_TOOLSETS.outline.tools).toContain("vfs_commit_outline_phase_9");

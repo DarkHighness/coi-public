@@ -336,10 +336,6 @@ describe("commandActions", () => {
 
     const afterRateSnapshot = {
       ...baselineSnapshot,
-      "conversation/turns/fork-0/turn-3.json": {
-        content: "{}",
-        contentType: "application/json",
-      },
       "world/global.json": {
         content: "{\"time\":\"Day 2\"}",
         contentType: "application/json",
@@ -403,9 +399,7 @@ describe("commandActions", () => {
       comment: "trim adjectives",
     });
 
-    expect(deps.vfsSession.deleteFile).toHaveBeenCalledWith(
-      "conversation/turns/fork-0/turn-3.json",
-    );
+    expect(deps.vfsSession.deleteFile).not.toHaveBeenCalled();
     expect(deps.vfsSession.writeFile).toHaveBeenCalledWith(
       "world/global.json",
       "{\"time\":\"Day 1\"}",

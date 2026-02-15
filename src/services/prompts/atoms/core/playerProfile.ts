@@ -43,6 +43,7 @@ const updateTiming = `
       * Parse \`vote/preset/comment/time\` and record concrete evidence in \`Evidence Log\`
       * Apply feedback to \`Style Preferences\` and \`Guidance For AI\` first; avoid overfitting personality from one signal
       * Keep writes focused on \`current/world/soul.md\` and \`current/world/global/soul.md\`
+      * Finish with \`vfs_commit_soul\` (update one or both targets)
     - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
     - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Evidence Log / Guidance For AI)
     - **Always update when**:

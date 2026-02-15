@@ -42,11 +42,11 @@ const messageProtocol = `
   - Route by the leading marker of the active user message; do not mix two marker workflows in one loop.
 
   **Processing Priority**:
-  1. Look for [PLAYER_ACTION] to determine what to simulate
-  2. Handle [Player Rate] by updating soul files (no visible story progression)
-  3. Use [CONTEXT] and [SYSTEM] for background
-  4. Handle [ERROR] before finishing turn
-  5. Execute [SUDO] as elevated update (immutable/finish guards still apply)
+  1. Determine the leading marker of the active user message
+  2. If [PLAYER_ACTION], simulate world consequences
+  3. If [Player Rate], update soul files only (no visible story progression)
+  4. If [SUDO], execute elevated update workflow (immutable/finish guards still apply)
+  5. Use [CONTEXT] and [SYSTEM] for background; handle [ERROR] before finishing
 </message_protocol>
 `;
 
@@ -72,7 +72,7 @@ const errorRecovery = `
   - If \`NOT_FOUND\`, use \`vfs_ls\` on the parent dir, then \`vfs_search\` with \`fuzzy: true\` to locate the correct path/ID
   - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, \`vfs_read({ path: "current/refs/tools/<tool>.md" })\` and (for JSON targets) \`vfs_schema({ paths: ["<targetPath>"] })\`
   - If \`ALREADY_EXISTS\`, \`vfs_read({ path: "<targetPath>" })\` then update via \`vfs_write\` (\`patch_json\` / \`merge_json\`)
-  - If \`FINISH_GUARD_REQUIRED\`, use the loop's commit tool (usually \`vfs_commit_turn\`) (never generic mutation tools on guarded paths)
+  - If \`FINISH_GUARD_REQUIRED\`, use the loop's finish tool (never generic mutation tools on guarded paths)
   - If you cannot fix, explain in narrative why
 </error_recovery_protocol>
 `;
@@ -85,7 +85,7 @@ const toolMandate = `
   Reasoning alone produces nothing. Tools produce results.
 
   **Minimum Requirement**:
-  At least call \`vfs_commit_turn\`. Ideally: inspect → update → finish.
+  At least call the loop finish tool (\`vfs_commit_turn\` for normal/\`[SUDO]\`, \`vfs_commit_soul\` for \`[Player Rate]\`). Ideally: inspect → update → finish.
 
   **Banned Patterns**:
   - ❌ Response with only text (no tool calls)
@@ -142,7 +142,7 @@ export const protocolsPrimer: Atom<void> = defineAtom(
   },
   () => `
 <protocols>
-  MESSAGES: [PLAYER_ACTION] = simulate, [Player Rate] = update soul only, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
+  MESSAGES: [PLAYER_ACTION] = simulate, [Player Rate] = update soul only via vfs_commit_soul, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
   TOOLS: Every turn MUST call tools. Query before create. Handle errors.
   TWO "YOU": In rules = AI. In narrative = protagonist.
 </protocols>
@@ -225,7 +225,7 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
 2. Route [Player Rate] to soul-only updates (do not advance visible plot)
 3. Route [SUDO] to elevated update workflow
 4. Handle [ERROR] by retrying with corrected arguments
-5. Call tools in every response (mandatory)
+5. Finish with the marker-appropriate finish tool (Player Rate => \`vfs_commit_soul\`)
 6. Search before creating entities
 7. "You" in rules = AI, "You" in narrative = protagonist
 `.trim(),

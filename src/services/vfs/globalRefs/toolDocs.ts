@@ -111,6 +111,22 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
   ],
+  vfs_commit_soul: [
+    {
+      currentSoul:
+        "# Player Soul (This Save)\\n\\n## Guidance For AI\\n- Keep prose tighter when player asks for concise style.\\n",
+    },
+    {
+      globalSoul:
+        "# Player Soul (Global)\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
+    },
+    {
+      currentSoul:
+        "# Player Soul (This Save)\\n\\n## Guidance For AI\\n- Reduce ornamental metaphors.\\n",
+      globalSoul:
+        "# Player Soul (Global)\\n\\n## Style Preferences\\n- Prefer direct, concrete wording.\\n",
+    },
+  ],
   vfs_commit_summary: [
     {
       displayText: "The party reached the ruins and uncovered recent activity.",

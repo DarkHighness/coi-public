@@ -15,7 +15,7 @@ You MUST follow these runtime protocol constraints:
   - "Write/Move/Delete" means \`vfs_write\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic mutation tools).
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` => simulate world turn, \`[Player Rate]\` => update soul files only, \`[SUDO]\` => elevated update loop.
-- End turns ONLY via \`vfs_commit_turn\`, and it must be the LAST tool call.
+- End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_commit_turn\` for normal/cleanup/sudo, \`vfs_commit_soul\` for \`[Player Rate]\` loops).
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - Loop preflight (required before non-read tools):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
@@ -32,7 +32,7 @@ You MUST follow these runtime protocol constraints:
      - \`INVALID_PARAMS\`: \`vfs_read\` the tool doc (\`current/refs/tools/<tool>.md\`) and retry with schema-valid args.
      - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; \`vfs_read\` existing files before non-additive edits.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
-     - \`FINISH_GUARD_REQUIRED\`: use the loop's commit tool (usually \`vfs_commit_turn\`) instead of generic mutation tools.
+     - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
   3) Re-read the minimum anchor files, then retry one corrected tool call.
   4) If the same \`code\` repeats twice, narrow scope and report the blocker instead of forcing finish.
 </runtime_floor>`;

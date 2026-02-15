@@ -159,6 +159,12 @@ export const generateAdventureTurn = async (
 
   // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
+  const isSudoMode = context.userAction.startsWith("[SUDO]");
+  const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
+  const isPlayerRateMode = context.userAction.startsWith("[Player Rate]");
+  const finishToolName = isPlayerRateMode
+    ? "vfs_commit_soul"
+    : "vfs_commit_turn";
 
   // ===== Build system instruction using Skills System =====
   const baseSystemInstruction = buildCoreSystemInstructionWithSkills({
@@ -184,6 +190,7 @@ export const generateAdventureTurn = async (
     protagonistLocation:
       gameState.character.currentLocation || "Unknown Location",
     maxToolCalls: settings.extra?.maxToolCalls,
+    finishToolName,
     themeKey: context.themeKey, // Theme-based atom specialization
   });
 
@@ -229,12 +236,13 @@ export const generateAdventureTurn = async (
   });
 
   const customRulesAckState = syncCustomRulesAckState(context.vfsSession);
-  const retconAckPending = customRulesAckState.pendingHash
-    ? {
-        hash: customRulesAckState.pendingHash,
-        reason: customRulesAckState.pendingReason,
-      }
-    : undefined;
+  const retconAckPending =
+    !isPlayerRateMode && customRulesAckState.pendingHash
+      ? {
+          hash: customRulesAckState.pendingHash,
+          reason: customRulesAckState.pendingReason,
+        }
+      : undefined;
 
   if (retconAckPending) {
     console.warn(
@@ -274,9 +282,6 @@ export const generateAdventureTurn = async (
     nsfwEnabled,
   };
 
-  const isSudoMode = context.userAction.startsWith("[SUDO]");
-  const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
-  const isPlayerRateMode = context.userAction.startsWith("[Player Rate]");
   const commandProtocolSkillPath = isCleanupMode
     ? "current/skills/commands/runtime/cleanup/SKILL.md"
     : isSudoMode

@@ -16,7 +16,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary", "outline"],
+    toolsets: ["turn", "playerRate", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_schema",
@@ -25,7 +25,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary", "outline"],
+    toolsets: ["turn", "playerRate", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_read",
@@ -34,7 +34,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary", "outline"],
+    toolsets: ["turn", "playerRate", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_search",
@@ -43,7 +43,7 @@ const CAPABILITIES: VfsToolCapability[] = [
     mayWriteClasses: [],
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
-    toolsets: ["turn", "cleanup", "summary", "outline"],
+    toolsets: ["turn", "playerRate", "cleanup", "summary", "outline"],
   },
   {
     toolName: "vfs_write",
@@ -81,6 +81,17 @@ const CAPABILITIES: VfsToolCapability[] = [
     needsElevationFor: [],
     immutableZones: IMMUTABLE_ZONES,
     toolsets: ["turn", "cleanup"],
+    isFinishTool: true,
+  },
+  {
+    toolName: "vfs_commit_soul",
+    summary:
+      "Commit soul markdown updates for current save and/or global mirror.",
+    readOnly: false,
+    mayWriteClasses: ["default_editable"],
+    needsElevationFor: [],
+    immutableZones: IMMUTABLE_ZONES,
+    toolsets: ["playerRate"],
     isFinishTool: true,
   },
   {
@@ -130,7 +141,7 @@ export class VfsToolCapabilityRegistry {
   }
 
   public listForToolset(
-    toolset: "turn" | "cleanup" | "summary" | "outline",
+    toolset: "turn" | "playerRate" | "cleanup" | "summary" | "outline",
   ): VfsToolCapability[] {
     return this.list().filter((capability) =>
       capability.toolsets.includes(toolset),
@@ -138,7 +149,7 @@ export class VfsToolCapabilityRegistry {
   }
 
   public listToolNamesForToolset(
-    toolset: "turn" | "cleanup" | "summary" | "outline",
+    toolset: "turn" | "playerRate" | "cleanup" | "summary" | "outline",
   ): string[] {
     return this.listForToolset(toolset).map(
       (capability) => capability.toolName,

@@ -8,6 +8,7 @@ import {
   VFS_MOVE_TOOL,
   VFS_DELETE_TOOL,
   VFS_COMMIT_TURN_TOOL,
+  VFS_COMMIT_SOUL_TOOL,
   VFS_COMMIT_SUMMARY_TOOL,
   VFS_COMMIT_OUTLINE_PHASE_TOOLS,
   ALL_DEFINED_TOOLS,
@@ -24,6 +25,7 @@ describe("VFS tools", () => {
     expect(VFS_MOVE_TOOL.name).toBe("vfs_move");
     expect(VFS_DELETE_TOOL.name).toBe("vfs_delete");
     expect(VFS_COMMIT_TURN_TOOL.name).toBe("vfs_commit_turn");
+    expect(VFS_COMMIT_SOUL_TOOL.name).toBe("vfs_commit_soul");
     expect(VFS_COMMIT_SUMMARY_TOOL.name).toBe("vfs_commit_summary");
   });
 
@@ -135,6 +137,21 @@ describe("VFS tools", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts optional target fields in vfs_commit_soul schema", () => {
+    const empty = VFS_COMMIT_SOUL_TOOL.parameters.safeParse({});
+    expect(empty.success).toBe(true);
+
+    const currentOnly = VFS_COMMIT_SOUL_TOOL.parameters.safeParse({
+      currentSoul: "# Player Soul (This Save)\n",
+    });
+    expect(currentOnly.success).toBe(true);
+
+    const globalOnly = VFS_COMMIT_SOUL_TOOL.parameters.safeParse({
+      globalSoul: "# Player Soul (Global)\n",
+    });
+    expect(globalOnly.success).toBe(true);
+  });
+
   it("embeds permission contract into vfs tool descriptions", () => {
     expect(VFS_LS_TOOL.description).toContain("Permission contract:");
     expect(VFS_LS_TOOL.description).toContain("read-only");
@@ -142,6 +159,7 @@ describe("VFS tools", () => {
       "elevated_editable requires one-time user-confirmed token",
     );
     expect(VFS_COMMIT_TURN_TOOL.description).toContain("finish protocol tool");
+    expect(VFS_COMMIT_SOUL_TOOL.description).toContain("finish protocol tool");
   });
 
   it("keeps tool descriptions aligned with capability registry", () => {

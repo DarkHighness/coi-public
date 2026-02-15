@@ -19,7 +19,7 @@ describe("contextInjector", () => {
     injectSudoModeInstruction(history);
     injectNormalTurnInstruction(
       history,
-      "vfs_commit_turn",
+      "vfs_commit_soul",
       false,
       {
         godMode: true,
@@ -137,6 +137,7 @@ describe("contextInjector", () => {
     expect(getText(history[1])).toContain(
       "commands/runtime/player-rate/SKILL.md",
     );
+    expect(getText(history[0])).toContain("vfs_commit_soul");
     expect(getText(history[1])).not.toContain("commands/runtime/god/SKILL.md");
     expect(getText(history[1])).not.toContain(
       "commands/runtime/unlock/SKILL.md",
@@ -144,6 +145,7 @@ describe("contextInjector", () => {
     expect(getText(history[2])).toContain("PLAYER RATE MODE");
     expect(getText(history[2])).toContain("current/world/soul.md");
     expect(getText(history[2])).toContain("current/world/global/soul.md");
+    expect(getText(history[2])).toContain("vfs_commit_soul");
     expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
   });
 

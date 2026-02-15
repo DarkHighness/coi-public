@@ -339,6 +339,65 @@ describe("agenticLoop command skill gate", () => {
     );
   });
 
+  it("finishes player-rate loop via vfs_commit_soul without creating conversation turn", async () => {
+    const vfsSession = createVfsSession(true);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-rate-finish",
+          name: "vfs_commit_soul",
+          args: {
+            currentSoul:
+              "# Player Soul (This Save)\n\n## Guidance For AI\n- keep concise.\n",
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockResolvedValue({
+      success: true,
+      data: {
+        updated: ["current/world/soul.md"],
+      },
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: '[Player Rate] {"turnId":"fork-0/turn-2","vote":"down"}',
+            },
+          ],
+        } as any,
+      ],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-rate-finish",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("");
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledWith(
+      "vfs_commit_soul",
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
   it("blocks non-read tools when soul anchors are unread in current epoch", async () => {
     const vfsSession = createVfsSession(true, [
       "skills/commands/runtime/SKILL.md",

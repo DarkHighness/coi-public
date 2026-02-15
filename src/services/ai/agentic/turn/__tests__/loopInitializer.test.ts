@@ -40,6 +40,9 @@ describe("loopInitializer", () => {
     expect(turnTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(
       true,
     );
+    expect(turnTools.some((tool) => tool.name === "vfs_commit_soul")).toBe(
+      false,
+    );
     expect(turnTools.some((tool) => tool.name === "vfs_commit_summary")).toBe(
       false,
     );
@@ -182,10 +185,17 @@ describe("loopInitializer", () => {
     );
 
     expect(state.isPlayerRateMode).toBe(true);
+    expect(state.finishToolName).toBe("vfs_commit_soul");
     expect(state.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/player-rate/SKILL.md",
     ]);
+    expect(state.activeTools.some((tool) => tool.name === "vfs_commit_soul")).toBe(
+      true,
+    );
+    expect(state.activeTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(
+      false,
+    );
   });
 
   it("adds mode-specific runtime skill paths when god/unlock are active", () => {

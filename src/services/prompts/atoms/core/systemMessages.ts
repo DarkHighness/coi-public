@@ -100,9 +100,14 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
     source: "atoms/core/systemMessages.ts",
     exportName: "normalTurnInstruction",
   },
-  ({ finishToolName, ragEnabled = true }) => {
+  ({ finishToolName, toolsetId, ragEnabled = true }) => {
+    const resolvedToolsetId =
+      toolsetId ?? (finishToolName === "vfs_commit_soul" ? "playerRate" : "turn");
+    const isPlayerRateToolset = resolvedToolsetId === "playerRate";
+    const resolvedFinishToolName =
+      finishToolName || VFS_TOOLSETS[resolvedToolsetId].finishToolName;
     const capabilityText = gateSemanticCapabilityText(
-      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools),
+      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[resolvedToolsetId].tools),
       ragEnabled,
     );
 
@@ -110,7 +115,7 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
 You are in AGENTIC MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
    AVAILABLE TOOLS in this loop:
-   ${formatVfsToolsForPrompt(VFS_TOOLSETS.turn.tools)}
+   ${formatVfsToolsForPrompt(VFS_TOOLSETS[resolvedToolsetId].tools)}
 2. Respect this **TOOL CAPABILITY CONTRACT**:
    ${capabilityText}
 3. **PATH MODEL**:
@@ -119,19 +124,31 @@ You are in AGENTIC MODE (VFS-only).
    ${PERMISSION_MODEL_BLOCK}
 5. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\` (chars/lines/json), and \`vfs_search\` before changing files.
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
-6. **STATE CHANGES = FILE CHANGES**: Update world JSON under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`) with \`vfs_write\` using \`write_file\` / \`patch_json\` / \`merge_json\`.
-7. **FINISH RULE**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
+6. ${
+      isPlayerRateToolset
+        ? "**SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` by calling `vfs_commit_soul`."
+        : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with `vfs_write` using `write_file` / `patch_json` / `merge_json`."
+    }
+7. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
 8. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 9. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 10. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
 11. **NO DUPLICATES**: Check existing files before adding new entities.
-12. **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly.
+12. ${
+      isPlayerRateToolset
+        ? "**NO PLOT PROGRESSION**: `[Player Rate]` loops must not advance visible story nodes or produce new choices."
+        : "**CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly."
+    }
 
 <examples>
-- Example (inspect → edit → finish):
-  1) \`vfs_search\` within \`current/world/\` (or canonical fork world path) for a name/ID
-  2) \`vfs_write\` to patch the exact JSON pointer(s)
-  3) \`${finishToolName || "vfs_commit_turn"}\` with { userAction, assistant: { narrative, choices } } as the LAST call
+- Example (${isPlayerRateToolset ? "inspect → soul commit" : "inspect → edit → finish"}):
+  ${
+    isPlayerRateToolset
+      ? "1) `vfs_read` `current/world/soul.md` and `current/world/global/soul.md`\n  2) `vfs_commit_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
+      : "1) `vfs_search` within `current/world/` (or canonical fork world path) for a name/ID\n  2) `vfs_write` to patch the exact JSON pointer(s)\n  3) `" +
+        resolvedFinishToolName +
+        "` with { userAction, assistant: { narrative, choices } } as the LAST call"
+  }
 </examples>
 `;
   },
@@ -231,6 +248,6 @@ export const noToolCallError: Atom<SystemMessageInput> = defineAtom(
     source: "atoms/core/systemMessages.ts",
     exportName: "noToolCallError",
   },
-  () =>
-    `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`vfs_commit_turn\` as the LAST tool call. Bare text is not allowed.`,
+  ({ finishToolName }) =>
+    `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`${finishToolName || "vfs_commit_turn"}\` as the LAST tool call. Bare text is not allowed.`,
 );

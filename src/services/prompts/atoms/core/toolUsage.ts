@@ -34,11 +34,13 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
     exportName: "toolUsage",
   },
   (input) => {
-    void input?.finishToolName;
+    const finishToolName = input?.finishToolName || "vfs_commit_turn";
+    const toolsetId =
+      finishToolName === "vfs_commit_soul" ? "playerRate" : "turn";
     const ragEnabled = input?.ragEnabled ?? true;
 
     const capabilityText = gateSemanticCapabilityText(
-      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.turn.tools),
+      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools),
       ragEnabled,
     );
     const searchModes = ragEnabled
@@ -63,7 +65,11 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
 
   **STATE = FILES**:
   - Shared config lives under \`shared/config/**\` (alias: \`current/custom_rules/**\`, \`current/world/theme_config.json\`).
-  - Fork world state lives under \`forks/{activeFork}/story/world/**\` (alias: \`current/world/**\`).
+  - ${
+    toolsetId === "playerRate"
+      ? "In `[Player Rate]` loops, write scope is soul-only: `current/world/soul.md` and `current/world/global/soul.md`."
+      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`)."
+  }
   - Conversation/summary are finish-guarded under \`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`.
 
   **CUSTOM RULE PACKS (SHARED LAYER)**:
@@ -72,10 +78,15 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - This is not a hard gate; if no pack is relevant, proceed with normal inspection flow.
 
   **TURN COMPLETION**:
-  - Your LAST tool call must be \`vfs_commit_turn\`.
+  - Your LAST tool call must be \`${finishToolName}\`.
   - If a write-type call (\`vfs_write\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, retry those targets until success before finish.
   - Immutable/read-only write failures (skills/refs etc.) are exempt from the retry-before-finish requirement.
   - Do NOT write finish-guarded conversation/summary paths via generic mutation tools.
+  - ${
+    toolsetId === "playerRate"
+      ? "Do not advance visible story nodes in `[Player Rate]` loops."
+      : "Normal turn loops should still produce coherent narrative + choices in finish payload."
+  }
 </tool_usage>
 `;
   },

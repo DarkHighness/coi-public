@@ -2,7 +2,7 @@
  * VFS Toolsets
  * ============================================================================
  *
- * Central allowlists for agentic loops (turn / cleanup / summary).
+ * Central allowlists for agentic loops (turn / playerRate / cleanup / summary / outline).
  *
  * Tool names are validated against the centralized VFS capability registry to
  * ensure allowlists and permissions stay in sync.
@@ -10,7 +10,12 @@
 
 import { vfsToolCapabilityRegistry } from "./vfs/core/toolCapabilityRegistry";
 
-export type VfsToolsetId = "turn" | "cleanup" | "summary" | "outline";
+export type VfsToolsetId =
+  | "turn"
+  | "playerRate"
+  | "cleanup"
+  | "summary"
+  | "outline";
 
 export interface VfsToolset {
   tools: string[];
@@ -29,6 +34,14 @@ const TURN_TOOL_ORDER = [
 ] as const;
 
 const CLEANUP_TOOL_ORDER = [...TURN_TOOL_ORDER] as const;
+
+const PLAYER_RATE_TOOL_ORDER = [
+  "vfs_ls",
+  "vfs_schema",
+  "vfs_read",
+  "vfs_search",
+  "vfs_commit_soul",
+] as const;
 
 const SUMMARY_TOOL_ORDER = [
   "vfs_ls",
@@ -68,6 +81,10 @@ export const VFS_TOOLSETS: Record<VfsToolsetId, VfsToolset> = {
   turn: {
     tools: TURN_TOOL_ORDER.map(ensureRegisteredTool),
     finishToolName: "vfs_commit_turn",
+  },
+  playerRate: {
+    tools: PLAYER_RATE_TOOL_ORDER.map(ensureRegisteredTool),
+    finishToolName: "vfs_commit_soul",
   },
   cleanup: {
     tools: CLEANUP_TOOL_ORDER.map(ensureRegisteredTool),
