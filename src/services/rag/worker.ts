@@ -343,7 +343,31 @@ interface UpsertProgressData {
   total: number;
   message?: string;
   runtime?: LocalEmbeddingRuntimeInfo;
+  messageKey?: string;
+  messageParams?: Record<string, string | number>;
 }
+
+const createProgressThrottler = (
+  total: number,
+  maxEvents = 96,
+): ((current: number) => boolean) => {
+  const safeTotal = Math.max(1, total);
+  const step = Math.max(1, Math.ceil(safeTotal / Math.max(1, maxEvents)));
+  let last = 0;
+
+  return (current: number) => {
+    const normalized = Math.max(0, Math.min(safeTotal, current));
+    if (normalized >= safeTotal || normalized <= 1) {
+      last = normalized;
+      return true;
+    }
+    if (normalized - last >= step) {
+      last = normalized;
+      return true;
+    }
+    return false;
+  };
+};
 
 const toFloat32Embedding = (embedding?: number[]): Float32Array | null => {
   if (!Array.isArray(embedding) || embedding.length === 0) {
@@ -367,6 +391,7 @@ const resolveDocumentEmbeddings = async (
     doc: UpsertFileChunksPayload["documents"][number];
   }> = [];
   let embeddedCount = 0;
+  const shouldEmitEmbeddingProgress = createProgressThrottler(total);
 
   inputDocuments.forEach((doc, index) => {
     const provided = toFloat32Embedding(doc.embedding);
@@ -385,6 +410,8 @@ const resolveDocumentEmbeddings = async (
       total,
       message: `Embedding chunks (${total}/${total})`,
       runtime: localRuntimeInfo || undefined,
+      messageKey: "ragDebugger.progressEmbeddingChunks",
+      messageParams: { current: total, total },
     });
   } else if (isLocalRuntimeProvider()) {
     const localConfig = getWorkerLocalEmbeddingConfig();
@@ -392,13 +419,17 @@ const resolveDocumentEmbeddings = async (
     localRuntimeInfo = runtime;
 
     const batchSize = Math.max(1, localConfig.batchSize || 8);
-    onProgress?.({
-      phase: "embedding",
-      current: embeddedCount,
-      total,
-      message: `Embedding chunks (${embeddedCount}/${total})`,
-      runtime,
-    });
+    if (shouldEmitEmbeddingProgress(embeddedCount)) {
+      onProgress?.({
+        phase: "embedding",
+        current: embeddedCount,
+        total,
+        message: `Embedding chunks (${embeddedCount}/${total})`,
+        runtime,
+        messageKey: "ragDebugger.progressEmbeddingChunks",
+        messageParams: { current: embeddedCount, total },
+      });
+    }
 
     for (let start = 0; start < missing.length; start += batchSize) {
       const batch = missing.slice(start, start + batchSize);
@@ -418,13 +449,17 @@ const resolveDocumentEmbeddings = async (
       });
 
       embeddedCount += batch.length;
-      onProgress?.({
-        phase: "embedding",
-        current: embeddedCount,
-        total,
-        message: `Embedding chunks (${embeddedCount}/${total})`,
-        runtime,
-      });
+      if (shouldEmitEmbeddingProgress(embeddedCount)) {
+        onProgress?.({
+          phase: "embedding",
+          current: embeddedCount,
+          total,
+          message: `Embedding chunks (${embeddedCount}/${total})`,
+          runtime,
+          messageKey: "ragDebugger.progressEmbeddingChunks",
+          messageParams: { current: embeddedCount, total },
+        });
+      }
     }
   } else {
     const maxConcurrency = Math.min(4, missing.length);
@@ -443,13 +478,17 @@ const resolveDocumentEmbeddings = async (
         const entry = missing[offset];
         embeddings[entry.index] = await generateEmbedding(entry.doc.content);
         completed += 1;
-
-        onProgress?.({
-          phase: "embedding",
-          current: progressBase + completed,
-          total,
-          message: `Embedding chunks (${progressBase + completed}/${total})`,
-        });
+        const current = progressBase + completed;
+        if (shouldEmitEmbeddingProgress(current)) {
+          onProgress?.({
+            phase: "embedding",
+            current,
+            total,
+            message: `Embedding chunks (${current}/${total})`,
+            messageKey: "ragDebugger.progressEmbeddingChunks",
+            messageParams: { current, total },
+          });
+        }
       }
     });
 
@@ -483,17 +522,23 @@ async function handleUpsertFileChunks(
   try {
     const embeddings = await resolveDocumentEmbeddings(inputDocuments, onProgress);
     const ragDocuments: RAGDocument[] = [];
+    const shouldEmitIndexingProgress = createProgressThrottler(total);
 
     for (let index = 0; index < inputDocuments.length; index += 1) {
       const normalized = normalizeFileChunk(inputDocuments[index], embeddings[index]);
       ragDocuments.push(normalized);
 
-      onProgress?.({
-        phase: "indexing",
-        current: index + 1,
-        total,
-        message: `Indexing chunks (${index + 1}/${total})`,
-      });
+      const current = index + 1;
+      if (shouldEmitIndexingProgress(current)) {
+        onProgress?.({
+          phase: "indexing",
+          current,
+          total,
+          message: `Indexing chunks (${current}/${total})`,
+          messageKey: "ragDebugger.progressIndexingChunks",
+          messageParams: { current, total },
+        });
+      }
     }
 
     onProgress?.({
@@ -501,6 +546,7 @@ async function handleUpsertFileChunks(
       current: total,
       total,
       message: "Writing chunks to index...",
+      messageKey: "ragDebugger.progressWritingChunks",
     });
 
     await database!.addDocuments(ragDocuments);
@@ -638,6 +684,7 @@ async function handleReindexAll(
         current: 1,
         total: totalProgress,
         message: "Preparing reindex...",
+        messageKey: "ragDebugger.progressPreparingReindex",
       },
     });
 
@@ -652,11 +699,10 @@ async function handleReindexAll(
 
     let deleted = 0;
     if (forkPaths.length > 0) {
-      deleted = await database!.retireLatestByPaths(
+      deleted = await database!.deleteDocumentsByPaths(
         saveId,
-        forkId,
-        payload.turnNumber,
         forkPaths,
+        forkId,
       );
     }
 
@@ -667,6 +713,7 @@ async function handleReindexAll(
         current: 1,
         total: totalProgress,
         message: "Clearing previous latest chunks...",
+        messageKey: "ragDebugger.progressClearingPreviousChunks",
       },
     });
 
@@ -683,6 +730,8 @@ async function handleReindexAll(
           total: totalProgress,
           message: progress.message,
           runtime: progress.runtime,
+          messageKey: progress.messageKey,
+          messageParams: progress.messageParams,
         },
       });
     });
@@ -694,6 +743,8 @@ async function handleReindexAll(
         current: totalProgress,
         total: totalProgress,
         message: `Reindex complete (${upserted.count} chunks)`,
+        messageKey: "ragDebugger.progressReindexComplete",
+        messageParams: { count: upserted.count },
       },
     });
 

@@ -13,6 +13,8 @@ import type {
 
 const MAX_CHUNK_CHARS = 1800;
 const MIN_CHUNK_CHARS = 320;
+const MAX_CHUNKS_PER_FILE = 180;
+const MAX_JSON_UNITS = 240;
 
 const OVERLAP_RATIO_DEFAULT = 0.15;
 const OVERLAP_MIN_CHARS = 80;
@@ -169,6 +171,37 @@ interface ChunkOutput {
   content: string;
   chunkMeta: ChunkMeta;
 }
+
+const capChunkOutputs = (
+  chunks: ChunkOutput[],
+  maxChunks: number,
+): ChunkOutput[] => {
+  if (chunks.length <= maxChunks) {
+    return chunks;
+  }
+
+  const groupSize = Math.ceil(chunks.length / Math.max(1, maxChunks));
+  const merged: ChunkOutput[] = [];
+
+  for (let start = 0; start < chunks.length; start += groupSize) {
+    const group = chunks.slice(start, start + groupSize);
+    if (group.length === 0) {
+      continue;
+    }
+
+    const strategy = group[0].chunkMeta.strategy;
+    const combined = group.map((item) => item.content).join("\n\n");
+    merged.push({
+      content: combined,
+      chunkMeta: {
+        strategy,
+        overlapChars: 0,
+      },
+    });
+  }
+
+  return merged;
+};
 
 const withOverlap = (seeds: ChunkSeed[]): ChunkOutput[] => {
   const outputs: ChunkOutput[] = [];
@@ -400,6 +433,14 @@ const splitJsonIntoChunkSeeds = (jsonContent: string): ChunkSeed[] => {
     return [];
   }
 
+  if (units.length > MAX_JSON_UNITS) {
+    const pretty = safeStringify(parsed, 2) || jsonContent;
+    return splitByMaxChars(pretty, MAX_CHUNK_CHARS).map((content) => ({
+      strategy: "json_path_object",
+      content: `path: $\ncontent:\n${content}`,
+    }));
+  }
+
   const seeds: ChunkSeed[] = [];
 
   for (const unit of units) {
@@ -474,7 +515,10 @@ export const extractFileChunksFromSnapshot = (
       }) || normalizeVfsPath(file.path);
 
     const type = inferType(file.contentType, sourcePath);
-    const chunks = splitFileContent(type, file.content);
+    const chunks = capChunkOutputs(
+      splitFileContent(type, file.content),
+      MAX_CHUNKS_PER_FILE,
+    );
     if (chunks.length === 0) {
       continue;
     }

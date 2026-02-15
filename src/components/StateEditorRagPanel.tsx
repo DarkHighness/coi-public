@@ -24,6 +24,8 @@ interface RebuildProgressState {
   total: number;
   message?: string;
   runtime?: LocalEmbeddingRuntimeInfo;
+  messageKey?: string;
+  messageParams?: Record<string, string | number>;
 }
 
 const formatPreview = (content: string): string => {
@@ -69,7 +71,10 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
 
   const ragStatus = runtime?.state.rag.status ?? null;
   const ragActions = runtime?.actions.rag;
-  const ragService = ragActions?.getService?.() ?? null;
+  const ragService = useMemo(
+    () => ragActions?.getService?.() ?? null,
+    [ragActions],
+  );
   const currentSaveId = runtime?.state.rag.currentSaveId ?? null;
 
   const totalPages = useMemo(() => {
@@ -126,8 +131,16 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
         documentsPageSize,
         documentsFilter === "all" ? undefined : [documentsFilter],
       );
-      setDocuments(result.documents);
-      setDocumentsTotal(result.total);
+      setDocuments((prev) => {
+        if (
+          prev.length === result.documents.length &&
+          prev.every((doc, index) => doc?.id === result.documents[index]?.id)
+        ) {
+          return prev;
+        }
+        return result.documents;
+      });
+      setDocumentsTotal((prev) => (prev === result.total ? prev : result.total));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setDocumentsError(message);
@@ -153,6 +166,8 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
         total: data.total,
         message: data.message,
         runtime: data.runtime,
+        messageKey: data.messageKey,
+        messageParams: data.messageParams,
       });
     });
 
@@ -271,6 +286,9 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
     Math.min(rebuildTotal, rebuildProgress?.current ?? 0),
   );
   const rebuildPercent = Math.round((rebuildCurrent / rebuildTotal) * 100);
+  const rebuildMessage = rebuildProgress?.messageKey
+    ? t(rebuildProgress.messageKey, rebuildProgress.messageParams || {})
+    : rebuildProgress?.message;
   const runtimeEngineLabel =
     ragStatus?.localRuntime?.engine ||
     t("ragDebugger.runtimeUnknown", "Unknown");
@@ -484,7 +502,7 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
               </div>
 
               <div className="text-xs text-theme-text-secondary leading-relaxed">
-                {rebuildProgress?.message ||
+                {rebuildMessage ||
                   t(
                     "ragDebugger.rebuildInProgress",
                     "Index rebuilding is in progress. Please wait.",

@@ -450,6 +450,8 @@ export interface ProgressEvent extends RAGEvent {
     total: number;
     message?: string;
     runtime?: LocalEmbeddingRuntimeInfo;
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
   };
 }
 

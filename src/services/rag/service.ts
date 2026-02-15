@@ -58,6 +58,8 @@ export interface RAGServiceEvents {
     total: number;
     message?: string;
     runtime?: LocalEmbeddingRuntimeInfo;
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
   }) => void;
   modelMismatch: (data: ModelMismatchInfo) => void;
   storageOverflow: (data: StorageOverflowInfo) => void;

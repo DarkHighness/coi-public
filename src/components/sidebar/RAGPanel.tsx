@@ -22,10 +22,20 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
       const service = getRAGService();
       if (service) {
         const status = await service.getStatus();
-        setStats({
+        const next = {
           totalDocs: status.storageDocuments,
           pendingRequests: status.pending || 0,
           isIndexing: !!progress,
+        };
+        setStats((prev) => {
+          if (
+            prev.totalDocs === next.totalDocs &&
+            prev.pendingRequests === next.pendingRequests &&
+            prev.isIndexing === next.isIndexing
+          ) {
+            return prev;
+          }
+          return next;
         });
       }
     };
@@ -33,7 +43,7 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
     fetchStats();
     const interval = setInterval(fetchStats, 5000);
     return () => clearInterval(interval);
-  }, [progress]);
+  }, [progress?.stage, progress?.current, progress?.total]);
 
   const percentage =
     progress && progress.total > 0

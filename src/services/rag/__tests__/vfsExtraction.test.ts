@@ -141,6 +141,66 @@ describe("vfsExtraction", () => {
     expect(overlapValues.some((value) => value >= 80)).toBe(true);
   });
 
+  it("falls back to coarse json chunking when path units are excessive", () => {
+    const hugeObject = {
+      entries: Object.fromEntries(
+        Array.from({ length: 420 }, (_, index) => [
+          `node_${index}`,
+          {
+            name: `name-${index}`,
+            notes: `notes-${index}-` + "x".repeat(220),
+            flags: {
+              active: index % 2 === 0,
+              rank: index,
+            },
+          },
+        ]),
+      ),
+    };
+
+    const snapshot: VfsFileMap = {
+      "current/world/huge.json": createFile(
+        "current/world/huge.json",
+        JSON.stringify(hugeObject, null, 2),
+        "application/json",
+        "hash-json-huge",
+      ),
+    };
+
+    const chunks = extractFileChunksFromSnapshot(snapshot, {
+      saveId: "save-1",
+      forkId: 0,
+      turnNumber: 3,
+    });
+
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(chunks.length).toBeLessThan(180);
+    expect(chunks.every((chunk) => chunk.content.includes("path: $"))).toBe(true);
+  });
+
+  it("caps per-file chunk count to avoid runaway indexing", () => {
+    const text = Array.from({ length: 1200 }, (_, index) => {
+      return `Paragraph ${index} ` + "lorem ipsum ".repeat(90);
+    }).join("\n\n");
+
+    const snapshot: VfsFileMap = {
+      "current/world/very-long.txt": createFile(
+        "current/world/very-long.txt",
+        text,
+        "text/plain",
+        "hash-text-long",
+      ),
+    };
+
+    const chunks = extractFileChunksFromSnapshot(snapshot, {
+      saveId: "save-1",
+      forkId: 0,
+      turnNumber: 3,
+    });
+
+    expect(chunks.length).toBeLessThanOrEqual(180);
+  });
+
   it("diffs snapshots by changed and removed paths", () => {
     const previous: VfsFileMap = {
       "current/world/a.json": createFile(
