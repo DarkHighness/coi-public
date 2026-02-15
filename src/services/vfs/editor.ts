@@ -152,52 +152,9 @@ export const applySectionEdit = (
       return;
     }
 
-    // Back-compat for editor panels: treat as CharacterStatus-like object and
-    // map to the player actor bundle layout.
-    const {
-      skills,
-      conditions,
-      hiddenTraits,
-      currentLocation,
-      name,
-      title,
-      status,
-      attributes,
-      appearance,
-      age,
-      profession,
-      background,
-      race,
-    } = data as any;
-
-    const profile = {
-      id: PLAYER_ID,
-      kind: "player",
-      currentLocation:
-        typeof currentLocation === "string" ? currentLocation : "Unknown",
-      knownBy: [PLAYER_ID],
-      visible: {
-        name: typeof name === "string" ? name : "Player",
-        title: typeof title === "string" ? title : undefined,
-        status: typeof status === "string" ? status : undefined,
-        attributes: Array.isArray(attributes) ? attributes : [],
-        appearance: typeof appearance === "string" ? appearance : undefined,
-        age: typeof age === "string" ? age : undefined,
-        profession: typeof profession === "string" ? profession : undefined,
-        background: typeof background === "string" ? background : undefined,
-        race: typeof race === "string" ? race : undefined,
-      },
-      relations: [],
-    };
-
-    writeActorBundle(session, {
-      profile,
-      skills: Array.isArray(skills) ? skills : [],
-      conditions: Array.isArray(conditions) ? conditions : [],
-      traits: Array.isArray(hiddenTraits) ? hiddenTraits : [],
-      inventory: undefined,
-    });
-    return;
+    throw new Error(
+      "Character edits must use actor bundle shape: { profile, skills?, conditions?, traits?, inventory? }.",
+    );
   }
 
   if (section === "npcs") {

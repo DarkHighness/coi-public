@@ -81,18 +81,25 @@ describe("vfs editor helper", () => {
     expect(session.readFile("custom_rules/00-system-core/RULES.md")).toBeNull();
   });
 
-  it("maps legacy character payload to player actor bundle", () => {
+  it("writes character section from actor bundle payload", () => {
     const session = new VfsSession();
 
     applySectionEdit(session, "character", {
-      name: "Ari",
-      title: "Warden",
-      status: "Ready",
-      attributes: ["Calm"],
-      currentLocation: "Town",
+      profile: {
+        id: "char:player",
+        kind: "player",
+        currentLocation: "Town",
+        visible: {
+          name: "Ari",
+          title: "Warden",
+          status: "Ready",
+          attributes: ["Calm"],
+        },
+        relations: [],
+      },
       skills: [{ id: "skill-1", name: "Observe" }],
       conditions: [{ id: "cond-1", name: "Focused" }],
-      hiddenTraits: [{ id: "trait-1", name: "Secretive" }],
+      traits: [{ id: "trait-1", name: "Secretive" }],
     });
 
     const profile = JSON.parse(
@@ -111,6 +118,18 @@ describe("vfs editor helper", () => {
     expect(
       session.readFile("world/characters/char:player/traits/trait-1.json"),
     ).toBeTruthy();
+  });
+
+  it("rejects legacy character payload shape", () => {
+    const session = new VfsSession();
+
+    expect(() =>
+      applySectionEdit(session, "character", {
+        name: "Legacy Player",
+        currentLocation: "Town",
+        hiddenTraits: [{ id: "trait-1", name: "Secretive" }],
+      }),
+    ).toThrow("Character edits must use actor bundle shape");
   });
 
   it("replaces npc bundles while preserving player actor and validates npc ids", () => {
