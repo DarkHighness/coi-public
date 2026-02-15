@@ -704,6 +704,8 @@ export type EndingType =
 export interface TurnContext {
   recentHistory: StorySegment[];
   userAction: string;
+  /** Explicit regenerate/retry request for the same action (do not auto-infer from text equality). */
+  isRetryGeneration?: boolean;
   language: string;
   themeKey: string;
   tFunc: (key: string) => string;

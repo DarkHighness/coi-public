@@ -666,6 +666,7 @@ export const useGameAction = ({
         } = await generateAdventureTurn(effectiveGameState, {
           recentHistory: segmentsToSend,
           userAction: action,
+          isRetryGeneration: preventFork,
           language: LANG_MAP[language],
           themeKey: gameStateRef.current.theme,
           tFunc: t,

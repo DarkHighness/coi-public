@@ -214,6 +214,29 @@ describe("generateAdventureTurn recovery wiring", () => {
     );
   });
 
+  it("does not run retry detection by default", async () => {
+    const context = makeContext();
+    await generateAdventureTurn(baseGameState, context);
+
+    expect(handleRetryDetectionMock).not.toHaveBeenCalled();
+  });
+
+  it("runs retry detection only when isRetryGeneration=true", async () => {
+    const context = makeContext();
+    context.isRetryGeneration = true;
+
+    await generateAdventureTurn(baseGameState, context);
+
+    expect(handleRetryDetectionMock).toHaveBeenCalledTimes(1);
+    expect(handleRetryDetectionMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      context.userAction,
+      "openai",
+      context.vfsSession,
+    );
+  });
+
   it("passes recovery metadata through on successful execution", async () => {
     executeTurnWithRecoveryMock.mockImplementationOnce(
       async ({ execute }: { execute: () => Promise<unknown> }) => {

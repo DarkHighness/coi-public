@@ -310,14 +310,18 @@ export const generateAdventureTurn = async (
 
   context.vfsSession.bindConversationSession(sessionId);
 
-  // Handle retry detection
-  let activeHistory = handleRetryDetection(
-    sessionId,
-    initialHistory,
-    context.userAction,
-    instance.protocol,
-    context.vfsSession,
-  );
+  // Handle retry detection ONLY for explicit retry requests.
+  // Never infer retry from plain action text equality in normal turns.
+  let activeHistory = initialHistory;
+  if (context.isRetryGeneration === true) {
+    activeHistory = handleRetryDetection(
+      sessionId,
+      initialHistory,
+      context.userAction,
+      instance.protocol,
+      context.vfsSession,
+    );
+  }
 
   const requiredPresetSkillRequirements = resolveActivePresetSkillRequirements({
     settings,

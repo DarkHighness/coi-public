@@ -167,6 +167,36 @@ describe("toolCallProcessor", () => {
     );
   });
 
+  it("promotes legacy assistant.userAction to top-level vfs_commit_turn.userAction", () => {
+    handlerMocks.hasHandler.mockReturnValue(true);
+    handlerMocks.dispatchToolCall.mockReturnValue({ success: true });
+
+    const result = executeGenericTool(
+      "vfs_commit_turn",
+      {
+        assistant: {
+          userAction: "stabilize the power core",
+          narrative: "You reroute the power and stop the sparks.",
+          choices: [{ text: "Run diagnostics" }, { text: "Leave the room" }],
+        },
+      },
+      createContext() as any,
+    ) as { success?: boolean };
+
+    expect(result.success).toBe(true);
+    expect(handlerMocks.dispatchToolCall).toHaveBeenCalledWith(
+      "vfs_commit_turn",
+      {
+        userAction: "stabilize the power core",
+        assistant: {
+          narrative: "You reroute the power and stop the sparks.",
+          choices: [{ text: "Run diagnostics" }, { text: "Leave the room" }],
+        },
+      },
+      expect.any(Object),
+    );
+  });
+
   it("rejects empty vfs_commit_soul payload during validation", () => {
     handlerMocks.hasHandler.mockReturnValue(true);
 
