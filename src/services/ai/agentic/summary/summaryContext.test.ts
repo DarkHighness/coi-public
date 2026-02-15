@@ -79,6 +79,9 @@ describe("summaryContext", () => {
     expect(instruction).toContain("current/conversation/session.jsonl");
     expect(instruction).toContain('mode: "lines"');
     expect(instruction).toContain("Do NOT full-read large session.jsonl files");
+    expect(instruction).toContain("nextSessionReferencesMarkdown");
+    expect(instruction).toContain("useful SKILL docs");
+    expect(instruction).toContain("Avoid broad reads by default");
     expect(instruction).toContain("Structured error recovery flow");
     expect(instruction).toContain("RUNTIME_FIELDS_FORBIDDEN");
   });

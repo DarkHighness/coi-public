@@ -80,6 +80,7 @@ Hard constraints:
 - If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
 - If uncertain, use read-only VFS tools first (vfs_read/vfs_search).
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
+- In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
 - Output summary content only. Never mention tools/retries/errors/budgets.`;
 };
 
@@ -124,6 +125,7 @@ Hard constraints:
 - Do NOT summarize outside the specified summary range.
 - Preserve continuity with previous summaries and in-session events.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
+- In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
 - Output summary content only. Never mention tools/retries/errors/budgets.
 
 Structured error recovery (when tool response is \`{ success:false, code, error }\`):
@@ -157,6 +159,8 @@ export const buildCompactModeTriggerMessage = (input: {
     `- The summary MUST be in ${languageCode}.\n` +
     `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
     `- Runtime will set lastSummarizedIndex = ${input.targetLastSummarizedIndex}.\n` +
+    `- Fill \`nextSessionReferencesMarkdown\` with a short, path-only markdown list: prioritize useful \`current/skills/**/SKILL.md\`, then add at most 1-2 anchor files.\n` +
+    `- Keep handoff narrow: avoid broad catalog-only references such as \`current/skills/index.json\` unless no specific skill can be named.\n` +
     `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
     `If compact skill files are unavailable, continue with protocol-safe tool usage and keep finish last.\n` +
     `If you need to verify details, use read-only VFS tools (vfs_read/vfs_search/etc.) and stay on target fork only.`

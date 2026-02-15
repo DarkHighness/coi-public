@@ -102,6 +102,13 @@ When historical continuity is unclear, query \`current/conversation/session.json
 - Use \`vfs_read\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.
 - Do NOT full-read large session.jsonl files in one call.
 
+Next-session handoff (\`nextSessionReferencesMarkdown\`):
+- When finishing, provide \`nextSessionReferencesMarkdown\` as a short markdown bullet list of paths.
+- Prioritize useful SKILL docs that were actually needed this run (\`current/skills/**/SKILL.md\`).
+- Keep it narrow: prefer 2-5 total paths (typically 1-3 skills + 1-2 anchors such as \`current/conversation/session.jsonl\`).
+- Avoid broad reads by default: do NOT include \`current/skills/index.json\` unless no specific skill path can be named.
+- Paths only; no tool chatter, no explanations.
+
 Structured error recovery flow (if a tool returns \`{ success:false, code, error }\`):
 1. Do NOT finish while error is unresolved.
 2. Use \`code\` to choose fix path:

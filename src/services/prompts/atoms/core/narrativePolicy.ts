@@ -93,6 +93,7 @@ const systemRules = `
     - **Quests**: Main/Side (visible), Hidden (not visible). \`hidden\` layer contains true objectives.
     - **Dual-Layer**: Visible (perception) vs Hidden (truth). AI always sees hidden, player sees visible until unlocked.
     - **Player Agency**: Do not block actions unless impossible. Escalate consequences for foolish persistence.
+    - **Player Custom Actions**: Player-authored "best-of-both-worlds" attempts are valid inputs. Simulate the attempt, then apply explicit tradeoffs (time/exposure/resources/relationship/legal risk/condition). Avoid cost-free all-upside outcomes unless clearly pre-earned.
     - **Dice**: Critical Success (defies physics), Success (standard), Failure (consequences), Critical Failure (catastrophe).
     - **Tension**: Always leave a loose thread or cliffhanger.
   </rule>

@@ -173,7 +173,16 @@ describe("sessionContext", () => {
       "current/skills/craft/writing/SKILL.md",
     );
     expect(coldStartText?.text).toContain(
+      "[SECTION: RECOMMENDED_SKILL_READS]",
+    );
+    expect(coldStartText?.text).toContain(
+      "[SECTION: TARGETED_HISTORY_LOOKUP]",
+    );
+    expect(coldStartText?.text).toContain(
       "Read 1-3 additional skill files",
+    );
+    expect(coldStartText?.text).toContain(
+      "prioritize those first",
     );
     expect(coldStartText?.text).toContain(
       "Reuse those skill docs across turns",

@@ -2141,7 +2141,7 @@ export const storySummarySchema = z.object({
     .string()
     .nullish()
     .describe(
-      "Optional markdown references for next-session warm start (skills/files to read first).",
+      "Optional concise markdown path list for next-session warm start. Prefer useful current/skills/**/SKILL.md paths first, then minimal anchor files; avoid broad catalog-only references.",
     ),
 });
 

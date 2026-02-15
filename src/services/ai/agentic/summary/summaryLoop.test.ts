@@ -242,6 +242,8 @@ describe("runSummaryLoop", () => {
     expect(anchorText).toContain("NEVER cross forks");
     expect(anchorText).toContain("current/conversation/session.jsonl");
     expect(anchorText).toContain("query-style reads only");
+    expect(anchorText).toContain("nextSessionReferencesMarkdown");
+    expect(anchorText).toContain("useful SKILL docs first");
   });
 
   it("uses compact-specific anchor contract in session_compact mode", async () => {
@@ -294,7 +296,11 @@ describe("runSummaryLoop", () => {
       "Current session history already loaded in context",
     );
     expect(compactAnchor).toContain("Verification-only reads (optional)");
+    expect(compactAnchor).toContain("nextSessionReferencesMarkdown");
+    expect(compactAnchor).toContain("useful SKILL docs first");
     expect(compactAnchor).toContain("Structured error recovery");
+    expect(compactTrigger).toContain("nextSessionReferencesMarkdown");
+    expect(compactTrigger).toContain("path-only markdown list");
   });
 
   it("blocks cross-fork path arguments in summary tool calls", async () => {

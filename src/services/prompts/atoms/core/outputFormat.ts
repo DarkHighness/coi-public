@@ -48,7 +48,7 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
       isPlayerRateLoop
         ? "- For `[Player Rate]` loops, call `vfs_commit_soul` with `{ currentSoul?, globalSoul? }` and provide at least one target."
         : `- \`assistant.narrative\`: full narrative in ${language}
-    - \`assistant.choices\`: 2-4 choice objects ({ text, consequence? })
+    - \`assistant.choices\`: 2-4 choice objects ({ text, consequence? }); options must be meaningfully distinct and carry different tradeoffs (risk/cost/time/relationship/exposure), not reworded duplicates
     - \`assistant.atmosphere\`: optional { envTheme, ambience, weather? }
     - \`assistant.narrativeTone\`, \`assistant.ending\`, \`assistant.forceEnd\`: optional`
     }
@@ -61,6 +61,11 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
       isPlayerRateLoop
         ? "In `[Player Rate]` loops, only mutate soul markdown (`current/world/soul.md`, `current/world/global/soul.md`) and do not advance visible plot."
         : "Use `vfs_write` for world state updates under `forks/{activeFork}/story/world/**` (alias: `current/world/**`): `write_file` / `patch_json` / `merge_json`."
+    }</rule>
+    <rule>${
+      isPlayerRateLoop
+        ? "Skip choice generation in `[Player Rate]` loops."
+        : "For `assistant.choices`, avoid strictly dominant all-upside options. If player input attempts a best-of-both-worlds move, allow the attempt but render proportional cost or degraded outcomes."
     }</rule>
     <rule>Field deletions use JSON Patch \`remove\` via \`vfs_write\` + \`patch_json\`.</rule>
     <rule>\`${resolvedFinishToolName}\` MUST be your LAST tool call.</rule>

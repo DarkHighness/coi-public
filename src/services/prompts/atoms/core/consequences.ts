@@ -53,6 +53,18 @@ export const consequences: Atom<void> = defineAtom(
     5) Long-term war (vendetta, political purge, exile, manhunt)
   </trace_and_heat>
 
+  <best_of_both_worlds_attempts>
+    **PLAYER "BEST-OF-BOTH-WORLDS" ATTEMPTS (ALLOW, THEN PRICE IT)**:
+    - Do NOT refuse an action only because it tries to get multiple upsides at once.
+    - Detect stacked incompatible goals: fast + silent, high gain + zero exposure, save everyone + lose nothing.
+    - Resolve with one of these (based on setup and plausibility):
+      1) **Success with cost**: core objective lands, but 1-2 consequence channels trigger.
+      2) **Partial success**: part of the objective lands now; the rest slips, degrades, or is delayed.
+      3) **Fail-forward**: objective misses, but a new lead/position appears with a new pressure.
+    - Enforce at least one sacrificed axis: time, secrecy, certainty, resources, relationship capital, legal safety, or physical condition.
+    - True win-win is allowed only when prior preparation/leverage clearly earned it in-world.
+  </best_of_both_worlds_attempts>
+
   <no_deus_ex_moral_punishment>
     **NO DEUS-EX “MORAL PUNISHMENT”**:
     - Do not punish “evil” actions with random lightning bolts or authorial sermons.
