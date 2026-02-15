@@ -129,6 +129,10 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       () => currentHistory.map((segment) => segment.id).join("|"),
       [currentHistory],
     );
+    const getSegmentById = useCallback(
+      (segmentId: string) => segmentByIdRef.current.get(segmentId),
+      [],
+    );
 
     // Visual Generation Modal State
     const [isVisualModalOpen, setIsVisualModalOpen] = useState(false);
@@ -510,6 +514,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     const textScaleClass = bothCollapsed ? "scale-content-expanded" : "";
 
     const handleGeneratePrompt = async (id: string) => {
+      const segment = getSegmentById(id);
+      if (!segment) return;
+
       setVisualTarget("image_prompt");
       setIsVisualModalOpen(true);
       setVisualProgress(null);
@@ -517,7 +524,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       try {
         const result = await runVisualLoop({
           gameState,
-          segment: currentHistory.find((s) => s.id === id)!,
+          segment,
           settings,
           target: "image_prompt",
           language: settings.language || "English",
@@ -539,7 +546,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     };
 
     const handleGenerateImageFull = async (id: string) => {
-      const segment = currentHistory.find((s) => s.id === id);
+      const segment = getSegmentById(id);
       if (!segment) return;
 
       // If prompt already exists, just trigger image generation directly without modal
@@ -581,7 +588,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     };
 
     const handleGenerateCinematic = async (id: string) => {
-      const segment = currentHistory.find((s) => s.id === id);
+      const segment = getSegmentById(id);
       if (!segment || !segment.imageUrl) return;
 
       setVisualTarget("veo_script");
@@ -591,7 +598,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       try {
         const result = await runVisualLoop({
           gameState,
-          segment: currentHistory.find((s) => s.id === id)!,
+          segment,
           settings,
           target: "veo_script",
           language: settings.language || "English",
@@ -606,7 +613,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           );
 
           // Trigger animation with the script
-          onAnimate(currentHistory.find((s) => s.id === id)?.imageUrl || "");
+          onAnimate(segment.imageUrl || "");
         }
       } catch (error) {
         console.error("Failed to generate cinematic:", error);

@@ -25,7 +25,7 @@ interface StoryTimelineItemProps {
   isActive?: boolean;
 }
 
-export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
+const StoryTimelineItemComponent: React.FC<StoryTimelineItemProps> = ({
   segment,
   index,
   isFirst,
@@ -407,3 +407,6 @@ export const StoryTimelineItem: React.FC<StoryTimelineItemProps> = ({
     </motion.div>
   );
 };
+
+export const StoryTimelineItem = React.memo(StoryTimelineItemComponent);
+StoryTimelineItem.displayName = "StoryTimelineItem";

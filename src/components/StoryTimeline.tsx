@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import { StorySegment } from "../types";
 import { THEMES, ENV_THEMES } from "../utils/constants";
@@ -41,13 +41,15 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
 
   // Filter for model and system segments to show the narrative flow
-  const narrativeSegments = segments.filter(
-    (s) => s.role === "model" || s.role === "system",
+  const narrativeSegments = useMemo(
+    () => segments.filter((s) => s.role === "model" || s.role === "system"),
+    [segments],
   );
   // Get export segments based on settings
-  const exportSegments = exportIncludeUserActions
-    ? segments
-    : narrativeSegments;
+  const exportSegments = useMemo(
+    () => (exportIncludeUserActions ? segments : narrativeSegments),
+    [exportIncludeUserActions, segments, narrativeSegments],
+  );
 
   const currentStoryTheme = THEMES[theme] || THEMES.fantasy;
   // Use envTheme directly from story theme for consistent visual styling
@@ -63,7 +65,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
     }
   }, [narrativeSegments.length]);
 
-  const toggleItem = (id: string) => {
+  const toggleItem = useCallback((id: string) => {
     setExpandedItems((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -73,7 +75,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
       }
       return next;
     });
-  };
+  }, []);
 
   const handleExportClick = () => {
     if (isExporting || exportSegments.length === 0) return;

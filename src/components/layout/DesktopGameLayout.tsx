@@ -1,4 +1,4 @@
-import React, { Suspense, useRef } from "react";
+import React, { Suspense, useRef, useCallback } from "react";
 import { FeedLayout, UIState, StorySegment, PlayerRateInput } from "../../types";
 import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
@@ -112,25 +112,47 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   // Global resize handlers
   React.useEffect(() => {
     if (!isResizing) return;
+    let rafId: number | null = null;
+    let pendingClientX: number | null = null;
+
+    const applyResize = (clientX: number) => {
+      if (isResizing === "sidebar") {
+        // Clamp width: Min 250px, Max 800px
+        const newWidth = Math.max(250, Math.min(clientX, 800));
+        sidebarWidthRef.current = newWidth;
+        setSidebarWidth((prev) => (prev === newWidth ? prev : newWidth));
+      } else {
+        // Timeline resizes from right
+        const newWidth = Math.max(250, Math.min(window.innerWidth - clientX, 800));
+        timelineWidthRef.current = newWidth;
+        setTimelineWidth((prev) => (prev === newWidth ? prev : newWidth));
+      }
+    };
+
+    const flushPendingResize = () => {
+      if (pendingClientX === null) return;
+      applyResize(pendingClientX);
+      pendingClientX = null;
+    };
 
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
-
-      if (isResizing === "sidebar") {
-        // Clamp width: Min 250px, Max 800px
-        const newWidth = Math.max(250, Math.min(e.clientX, 800));
-        setSidebarWidth(newWidth);
-      } else {
-        // Timeline resizes from right
-        const newWidth = Math.max(
-          250,
-          Math.min(window.innerWidth - e.clientX, 800),
-        );
-        setTimelineWidth(newWidth);
+      pendingClientX = e.clientX;
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame(() => {
+          rafId = null;
+          flushPendingResize();
+        });
       }
     };
 
     const handleMouseUp = () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      flushPendingResize();
+
       if (isResizing === "sidebar") {
         onUpdateUIState("sidebarWidth", sidebarWidthRef.current);
       } else {
@@ -145,6 +167,9 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
     document.body.style.cursor = "col-resize";
 
     return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
       document.body.style.cursor = "";
@@ -157,14 +182,17 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       setIsResizing(panel);
     };
 
-  const handleGenerateImage = (nodeId: string) => {
-    generateImageForNode(nodeId, undefined, true);
-  };
+  const handleGenerateImage = useCallback(
+    (nodeId: string) => {
+      generateImageForNode(nodeId, undefined, true);
+    },
+    [generateImageForNode],
+  );
 
   // Handle navigation from timeline to story segment
-  const handleNavigateToSegment = (segmentId: string) => {
+  const handleNavigateToSegment = useCallback((segmentId: string) => {
     storyFeedRef.current?.scrollToSegment(segmentId);
-  };
+  }, []);
 
   const handleJumpToSegment = (input: string) => {
     // Determine if input is index or ID
