@@ -66,6 +66,11 @@ import {
 // Import tool handling
 import { executeGenericTool, ToolCallContext } from "./toolCallProcessor";
 import { handleAICall } from "./aiCallHandler";
+import {
+  buildSessionStartupProfile,
+  getLatestSummaryReferencesMarkdown,
+  type SessionStartupMode,
+} from "../startup";
 
 // ============================================================================
 // Types
@@ -184,6 +189,35 @@ export async function runAgenticLoopRefactored(
       isPlayerRateMode,
     },
   );
+  const startupMode: SessionStartupMode = isCleanupMode
+    ? "cleanup"
+    : isSudoMode
+      ? "sudo"
+      : isPlayerRateMode
+        ? "player-rate"
+        : "turn";
+  const startupProfile = buildSessionStartupProfile({
+    mode: startupMode,
+    latestSummaryReferencesMarkdown: getLatestSummaryReferencesMarkdown(
+      gameState,
+    ),
+    mandatoryReadPaths: [
+      ...loopState.requiredCommandSkillPaths,
+      ...loopState.requiredSoulReadPaths,
+      ...loopState.requiredPresetSkillPaths,
+    ],
+    maxOptionalRefs: 3,
+  });
+
+  if (startupProfile.metrics.candidateCount > 0) {
+    console.log(
+      `[StartupProfile] mode=${startupMode} parsed=${startupProfile.metrics.validCount}/${startupProfile.metrics.candidateCount} dropped=${startupProfile.metrics.droppedCount} fallback=${startupProfile.metrics.fallbackRefsUsed}`,
+    );
+  }
+  if (startupProfile.warnings.length > 0) {
+    console.warn(`[StartupProfile] ${startupProfile.warnings.join(" | ")}`);
+  }
+
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
   let didFinishTurn = false;
@@ -237,11 +271,10 @@ export async function runAgenticLoopRefactored(
       );
     }
 
-    injectColdStartRequiredReads(conversationHistory, [
-      ...loopState.requiredCommandSkillPaths,
-      ...loopState.requiredSoulReadPaths,
-      ...loopState.requiredPresetSkillPaths,
-    ]);
+    injectColdStartRequiredReads(
+      conversationHistory,
+      startupProfile.preloadReadPaths,
+    );
 
     // Main loop
     while (

@@ -4,6 +4,7 @@ import type { SummaryLoopInput } from "./summary";
 
 const compactMock = vi.fn();
 const queryMock = vi.fn();
+const preflightMock = vi.fn();
 
 vi.mock("./summaryCompactLoop", () => ({
   runCompactSummaryLoop: (...args: any[]) => compactMock(...args),
@@ -11,6 +12,10 @@ vi.mock("./summaryCompactLoop", () => ({
 
 vi.mock("./summaryQueryLoop", () => ({
   runQuerySummaryLoop: (...args: any[]) => queryMock(...args),
+}));
+
+vi.mock("./summaryRoutePreflight", () => ({
+  preflightSummaryRoute: (...args: any[]) => preflightMock(...args),
 }));
 
 import { runSummaryLoop } from "./summaryLoop";
@@ -53,6 +58,16 @@ const makeResult = (label: string) => ({
 describe("runSummaryLoop dispatch", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    preflightMock.mockResolvedValue({
+      mode: "session_compact",
+      reason: "compact_ready",
+      diagnostics: {
+        estimatedChars: 10,
+        historyLength: 1,
+        targetForkId: 0,
+        hasConversationIndex: true,
+      },
+    });
   });
 
   it("prefers compact mode in auto when compact succeeds", async () => {
@@ -91,6 +106,28 @@ describe("runSummaryLoop dispatch", () => {
 
     expect(compactMock).toHaveBeenCalledTimes(1);
     expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("uses query loop directly when preflight routes to query_summary", async () => {
+    preflightMock.mockResolvedValueOnce({
+      mode: "query_summary",
+      reason: "story_system_instruction_missing",
+      diagnostics: {
+        estimatedChars: 0,
+        historyLength: 0,
+        targetForkId: 0,
+        hasConversationIndex: false,
+      },
+    });
+
+    const queryResult = makeResult("query-routed");
+    queryMock.mockResolvedValue(queryResult);
+
+    const result = await runSummaryLoop(makeInput(), "auto");
+
+    expect(compactMock).not.toHaveBeenCalled();
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(result).toBe(queryResult);
   });
 
   it("uses query loop directly when mode=query_summary", async () => {

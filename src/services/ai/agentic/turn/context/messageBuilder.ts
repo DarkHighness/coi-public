@@ -8,6 +8,7 @@ import type { GameState } from "@/types";
 import type { UnifiedMessage } from "@/services/messageTypes";
 import { createUserMessage } from "@/services/messageTypes";
 import type { VfsSession } from "@/services/vfs/vfsSession";
+import { getLatestSummaryReferencesMarkdown } from "@/services/ai/agentic/startup";
 import type { TurnMessagesResult } from "./types";
 import {
   buildWorldFoundation,
@@ -89,18 +90,7 @@ function buildLatestSummaryContext(gameState: GameState): string {
 }
 
 function buildHotStartReferencesContext(gameState: GameState): string {
-  const summaries = (gameState as any).summaries as
-    | Array<{ nextSessionReferencesMarkdown?: string | null }>
-    | undefined;
-  if (!Array.isArray(summaries) || summaries.length === 0) {
-    return "";
-  }
-  const latest = summaries[summaries.length - 1];
-  const markdown = latest?.nextSessionReferencesMarkdown;
-  if (typeof markdown !== "string" || markdown.trim().length === 0) {
-    return "";
-  }
-  return markdown.trim();
+  return getLatestSummaryReferencesMarkdown(gameState) ?? "";
 }
 
 export function buildInitialContext(

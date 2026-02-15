@@ -638,7 +638,7 @@ export const VFS_COMMIT_SUMMARY_TOOL = defineTool({
         .string()
         .nullish()
         .describe(
-          "Optional concise markdown path list for next-session hot-start. Prefer useful current/skills/**/SKILL.md entries first, then 1-2 anchor files; avoid broad catalog-only references.",
+          "Optional free-form markdown handoff for next-session hot-start. Runtime parses paths best-effort (prefer useful current/skills/**/SKILL.md entries first, then 1-2 anchors).",
         ),
     })
     .strict(),

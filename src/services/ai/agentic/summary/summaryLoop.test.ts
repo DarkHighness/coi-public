@@ -300,7 +300,7 @@ describe("runSummaryLoop", () => {
     expect(compactAnchor).toContain("useful SKILL docs first");
     expect(compactAnchor).toContain("Structured error recovery");
     expect(compactTrigger).toContain("nextSessionReferencesMarkdown");
-    expect(compactTrigger).toContain("path-only markdown list");
+    expect(compactTrigger).toContain("short markdown handoff notes");
   });
 
   it("blocks cross-fork path arguments in summary tool calls", async () => {

@@ -16,6 +16,10 @@ import {
 } from "@/services/messageTypes";
 import { sessionManager, SessionConfig } from "@/services/ai/sessionManager";
 import { buildCacheHint } from "@/services/ai/provider/cacheHint";
+import {
+  buildSessionStartupProfile,
+  type SessionStartupMode,
+} from "@/services/ai/agentic/startup";
 import type { VfsSession } from "@/services/vfs/vfsSession";
 import { writeSessionHistoryJsonl } from "@/services/vfs/conversation";
 import {
@@ -41,6 +45,10 @@ export interface SessionSetupOptions {
   isInit?: boolean;
   /** Optional active command protocol skill path for cold-start hint */
   commandProtocolSkillPath?: string;
+  /** Optional markdown handoff from latest summary for startup guidance */
+  hotStartReferencesMarkdown?: string | null;
+  /** Startup mode for shaping cold-start guidance */
+  startupMode?: SessionStartupMode;
 }
 
 export interface SessionSetupResult {
@@ -52,9 +60,61 @@ const DEFAULT_COMMAND_PROTOCOL_SKILL_PATH =
   "current/skills/commands/runtime/turn/SKILL.md";
 
 const buildColdStartSkillHintMessage = (
-  commandProtocolSkillPath: string = DEFAULT_COMMAND_PROTOCOL_SKILL_PATH,
-): UnifiedMessage =>
-  createUserMessage(
+  options?: {
+    commandProtocolSkillPath?: string;
+    hotStartReferencesMarkdown?: string | null;
+    startupMode?: SessionStartupMode;
+  },
+): UnifiedMessage => {
+  const commandProtocolSkillPath =
+    options?.commandProtocolSkillPath ?? DEFAULT_COMMAND_PROTOCOL_SKILL_PATH;
+
+  const startupProfile = buildSessionStartupProfile({
+    mode: options?.startupMode ?? "turn",
+    latestSummaryReferencesMarkdown: options?.hotStartReferencesMarkdown ?? "",
+    mandatoryReadPaths: [
+      "current/skills/commands/runtime/SKILL.md",
+      commandProtocolSkillPath,
+      "current/skills/core/protocols/SKILL.md",
+      "current/skills/craft/writing/SKILL.md",
+    ],
+    maxOptionalRefs: 3,
+  });
+
+  const recommendedSkillPaths = startupProfile.recommendedReadPaths.filter(
+    (path) =>
+      path.startsWith("current/skills/") &&
+      path.endsWith("/SKILL.md") &&
+      path !== "current/skills/commands/runtime/SKILL.md" &&
+      path !== "current/skills/core/protocols/SKILL.md" &&
+      path !== "current/skills/craft/writing/SKILL.md",
+  );
+  const recommendedAnchorPaths = startupProfile.recommendedReadPaths.filter(
+    (path) => !recommendedSkillPaths.includes(path),
+  );
+
+  const hotStartPriorityLines =
+    recommendedSkillPaths.length > 0 || recommendedAnchorPaths.length > 0
+      ? [
+          "- Hot-start priority list from latest summary handoff:",
+          ...recommendedSkillPaths.map((path) => `  - \`${path}\` (skill)`),
+          ...recommendedAnchorPaths.map((path) => `  - \`${path}\` (anchor)`),
+        ]
+      : [
+          "- No high-confidence handoff paths were parsed; use narrow fallback anchors.",
+          "- Default fallback anchor: `current/conversation/session.jsonl`.",
+        ];
+
+  const diagnosticsLines =
+    startupProfile.warnings.length > 0
+      ? [
+          "",
+          "[SECTION: HOT_START_REFERENCE_DIAGNOSTICS]",
+          ...startupProfile.warnings.map((warning) => `- ${warning}`),
+        ]
+      : [];
+
+  return createUserMessage(
     [
       "[SYSTEM: COLD_START_SOFT_GUIDANCE]",
       "",
@@ -73,12 +133,15 @@ const buildColdStartSkillHintMessage = (
       "- If `[CONTEXT: Hot Start References]` lists specific `current/skills/**/SKILL.md` paths, prioritize those first.",
       "- Prefer specific SKILL files over broad catalog re-reads.",
       "- Reuse those skill docs across turns; avoid re-reading the same skill every turn unless requirements shift.",
+      ...hotStartPriorityLines,
+      ...diagnosticsLines,
       "",
       "[SECTION: TARGETED_HISTORY_LOOKUP]",
       "If prior context is needed, query `current/conversation/session.jsonl` with lines/search windows.",
       "Avoid full-file reads of `session.jsonl` in one shot.",
     ].join("\n"),
   );
+};
 
 const hasKnownUserMarker = (text: string): boolean =>
   text.startsWith("[PLAYER_ACTION]") ||
@@ -121,6 +184,8 @@ export async function setupSession(
     recentHistory,
     isInit,
     commandProtocolSkillPath,
+    hotStartReferencesMarkdown,
+    startupMode,
   } = options;
 
   // Create session config
@@ -159,7 +224,12 @@ export async function setupSession(
       contextMessages,
       recentHistory,
       protocol,
-      { includeColdStartGuidance: true, commandProtocolSkillPath },
+      {
+        includeColdStartGuidance: true,
+        commandProtocolSkillPath,
+        hotStartReferencesMarkdown,
+        startupMode,
+      },
     );
     sessionManager.setHistory(session.id, initialHistory);
   }
@@ -188,6 +258,8 @@ function buildInitialHistory(
   options?: {
     includeColdStartGuidance?: boolean;
     commandProtocolSkillPath?: string;
+    hotStartReferencesMarkdown?: string | null;
+    startupMode?: SessionStartupMode;
   },
 ): unknown[] {
   let initialHistory: UnifiedMessage[] = [...contextMessages];
@@ -195,7 +267,11 @@ function buildInitialHistory(
   if (options?.includeColdStartGuidance) {
     initialHistory = [
       ...initialHistory,
-      buildColdStartSkillHintMessage(options.commandProtocolSkillPath),
+      buildColdStartSkillHintMessage({
+        commandProtocolSkillPath: options.commandProtocolSkillPath,
+        hotStartReferencesMarkdown: options.hotStartReferencesMarkdown,
+        startupMode: options.startupMode,
+      }),
     ];
   }
 

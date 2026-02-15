@@ -159,7 +159,7 @@ export const buildCompactModeTriggerMessage = (input: {
     `- The summary MUST be in ${languageCode}.\n` +
     `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
     `- Runtime will set lastSummarizedIndex = ${input.targetLastSummarizedIndex}.\n` +
-    `- Fill \`nextSessionReferencesMarkdown\` with a short, path-only markdown list: prioritize useful \`current/skills/**/SKILL.md\`, then add at most 1-2 anchor files.\n` +
+    `- Fill \`nextSessionReferencesMarkdown\` with short markdown handoff notes; include explicit paths early (prefer useful \`current/skills/**/SKILL.md\`, then at most 1-2 anchors).\n` +
     `- Keep handoff narrow: avoid broad catalog-only references such as \`current/skills/index.json\` unless no specific skill can be named.\n` +
     `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
     `If compact skill files are unavailable, continue with protocol-safe tool usage and keep finish last.\n` +

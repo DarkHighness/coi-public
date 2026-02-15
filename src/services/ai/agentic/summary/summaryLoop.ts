@@ -1,6 +1,7 @@
 import type { SummaryLoopInput, SummaryAgenticLoopResult } from "./summary";
 import { runCompactSummaryLoop } from "./summaryCompactLoop";
 import { runQuerySummaryLoop } from "./summaryQueryLoop";
+import { preflightSummaryRoute } from "./summaryRoutePreflight";
 import {
   isContextLengthError,
   HistoryCorruptedError,
@@ -32,6 +33,16 @@ export async function runSummaryLoop(
 
   if (mode === "session_compact") {
     return runCompactSummaryLoop(input);
+  }
+
+  const routeDecision = await preflightSummaryRoute(input);
+
+  if (routeDecision.mode === "query_summary") {
+    console.warn(
+      `[SummaryLoop] Route preflight selected query_summary (${routeDecision.reason}).`,
+      routeDecision.diagnostics,
+    );
+    return runQuerySummaryLoop(input);
   }
 
   try {

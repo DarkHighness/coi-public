@@ -35,6 +35,10 @@ import { sessionManager } from "../../sessionManager";
 import type { VfsSession } from "../../../vfs/vfsSession";
 
 import promptToml from "@/prompt/prompt.toml";
+import {
+  getLatestSummaryReferencesMarkdown,
+  type SessionStartupMode,
+} from "@/services/ai/agentic/startup";
 
 // Import new modular context and tools
 import {
@@ -289,6 +293,15 @@ export const generateAdventureTurn = async (
       : isPlayerRateMode
         ? "current/skills/commands/runtime/player-rate/SKILL.md"
       : "current/skills/commands/runtime/turn/SKILL.md";
+  const startupMode: SessionStartupMode = isCleanupMode
+    ? "cleanup"
+    : isSudoMode
+      ? "sudo"
+      : isPlayerRateMode
+        ? "player-rate"
+        : "turn";
+  const latestHotStartReferencesMarkdown =
+    getLatestSummaryReferencesMarkdown(gameState);
 
   // === SESSION-BASED HISTORY MANAGEMENT (Using new modular context) ===
   const sessionSetupOptions = {
@@ -303,6 +316,8 @@ export const generateAdventureTurn = async (
     recentHistory: context.recentHistory,
     isInit: context.isInit,
     commandProtocolSkillPath,
+    hotStartReferencesMarkdown: latestHotStartReferencesMarkdown,
+    startupMode,
   };
 
   const { sessionId, activeHistory: initialHistory } =

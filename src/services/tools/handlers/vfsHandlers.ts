@@ -2701,6 +2701,8 @@ registerToolHandlerWithStructuredErrors(
             fromIndex,
             toIndex,
           },
+          // Markdown-first handoff: keep AI-authored markdown as-is.
+          // Runtime startup logic parses this field best-effort and degrades gracefully.
           nextSessionReferencesMarkdown:
             typedArgs.nextSessionReferencesMarkdown ?? null,
         };

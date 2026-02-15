@@ -300,6 +300,42 @@ describe("sessionContext", () => {
     );
   });
 
+  it("surfaces parsed hot-start refs in cold-start guidance", async () => {
+    sessionManagerMock.isEmpty.mockReturnValue(true);
+    sessionManagerMock.getHistory.mockReturnValue([]);
+
+    await setupSession({
+      slotId: "slot-hot-start",
+      forkId: 0,
+      vfsSession: { setActiveForkId: vi.fn() } as any,
+      providerId: "provider-hot",
+      modelId: "model-hot",
+      protocol: "openai",
+      systemInstruction: "system-inst",
+      contextMessages: [],
+      hotStartReferencesMarkdown: [
+        "- current/skills/worldbuilding/travel/SKILL.md",
+        "- current/conversation/session.jsonl",
+      ].join("\n"),
+    });
+
+    const initializedHistory = sessionManagerMock.setHistory.mock
+      .calls[0]?.[1] as UnifiedMessage[] | undefined;
+    const coldStartText = initializedHistory
+      ?.flatMap((msg) => msg.content)
+      .find(
+        (part) =>
+          part.type === "text" &&
+          part.text.includes("[SYSTEM: COLD_START_SOFT_GUIDANCE]"),
+      ) as { type: "text"; text: string } | undefined;
+
+    expect(coldStartText?.text).toContain("Hot-start priority list");
+    expect(coldStartText?.text).toContain(
+      "current/skills/worldbuilding/travel/SKILL.md",
+    );
+    expect(coldStartText?.text).toContain("current/conversation/session.jsonl");
+  });
+
   it("reuses existing non-empty session without resetting history", async () => {
     sessionManagerMock.isEmpty.mockReturnValue(false);
     const existingHistory = [createTextMessage("assistant", "persisted")];

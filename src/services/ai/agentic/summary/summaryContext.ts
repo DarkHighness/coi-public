@@ -103,11 +103,11 @@ When historical continuity is unclear, query \`current/conversation/session.json
 - Do NOT full-read large session.jsonl files in one call.
 
 Next-session handoff (\`nextSessionReferencesMarkdown\`):
-- When finishing, provide \`nextSessionReferencesMarkdown\` as a short markdown bullet list of paths.
+- When finishing, provide \`nextSessionReferencesMarkdown\` as short markdown handoff notes.
 - Prioritize useful SKILL docs that were actually needed this run (\`current/skills/**/SKILL.md\`).
 - Keep it narrow: prefer 2-5 total paths (typically 1-3 skills + 1-2 anchors such as \`current/conversation/session.jsonl\`).
 - Avoid broad reads by default: do NOT include \`current/skills/index.json\` unless no specific skill path can be named.
-- Paths only; no tool chatter, no explanations.
+- Free-form markdown is allowed, but keep explicit path references early and clear.
 
 Structured error recovery flow (if a tool returns \`{ success:false, code, error }\`):
 1. Do NOT finish while error is unresolved.
