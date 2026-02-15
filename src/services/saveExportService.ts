@@ -25,6 +25,7 @@ import {
   loadMetadata,
   openVfsDB,
   VFS_META_STORE,
+  VFS_SNAPSHOTS_STORE,
 } from "../utils/indexedDB";
 import { getImagesBySaveId, saveImage } from "../utils/imageStorage";
 import { getRAGService } from "./rag";
@@ -32,7 +33,7 @@ import type { RAGExportData } from "./rag/types";
 import { IndexedDbVfsStore } from "./vfs/store";
 import type { VfsSnapshot } from "./vfs/types";
 import { VfsSession } from "./vfs/vfsSession";
-import { hashContent } from "./vfs/utils";
+import { hashContent, normalizeVfsPath } from "./vfs/utils";
 import {
   applySharedMutableStateToSession,
   extractSharedMutableStateFromSnapshot,
@@ -42,8 +43,11 @@ import {
 import { deriveGameStateFromVfs } from "./vfs/derivations";
 import { seedVfsSessionFromGameState } from "./vfs/seed";
 import { writeOutlineFile, writeOutlineProgress } from "./vfs/outline";
+import { toCanonicalVfsPath } from "./vfs/core/pathResolver";
+import { vfsResourceTemplateRegistry } from "./vfs/core/resourceTemplateRegistry";
 import {
   buildTurnId,
+  type ConversationIndex,
   writeConversationIndex,
   writeForkTree,
   writeTurnFile,
@@ -166,6 +170,45 @@ const rewriteSnapshotImageReferences = (
   };
 };
 
+const shouldDropRebuildableSessionFile = (
+  snapshot: VfsSnapshot,
+  filePath: string,
+): boolean => {
+  const relativePath = getSnapshotRelativePath(snapshot, filePath);
+  if (!relativePath) return false;
+
+  const canonicalPath = toCanonicalVfsPath(relativePath, {
+    activeForkId: snapshot.forkId,
+  });
+  const template = vfsResourceTemplateRegistry.match(canonicalPath);
+
+  return (
+    template.id === "template.story.conversation.session_jsonl" ||
+    template.id === "template.runtime.fork"
+  );
+};
+
+const pruneRebuildableSessionFilesFromSnapshot = (
+  snapshot: VfsSnapshot,
+): VfsSnapshot => {
+  const nextFiles: Record<string, any> = {};
+  let changed = false;
+
+  for (const [path, file] of Object.entries(snapshot.files ?? {})) {
+    if (shouldDropRebuildableSessionFile(snapshot, path)) {
+      changed = true;
+      continue;
+    }
+    nextFiles[path] = file;
+  }
+
+  if (!changed) return snapshot;
+  return {
+    ...snapshot,
+    files: nextFiles,
+  };
+};
+
 const isValidExportManifest = (value: unknown): value is ExportManifest => {
   if (!value || typeof value !== "object") return false;
   const manifest = value as any;
@@ -234,58 +277,345 @@ const listVfsSnapshotIndexEntries = async (
 ): Promise<VfsExportIndexEntry[]> => {
   const db = await openVfsDB();
 
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([VFS_META_STORE], "readonly");
-    const store = transaction.objectStore(VFS_META_STORE);
-    const request = store.getAll();
+  const getAllRows = (storeName: string): Promise<any[]> =>
+    new Promise((resolve, reject) => {
+      const transaction = db.transaction([storeName], "readonly");
+      const store = transaction.objectStore(storeName);
+      const request = store.getAll();
+      request.onsuccess = () => resolve((request.result as any[] | undefined) ?? []);
+      request.onerror = () => reject(request.error);
+    });
 
-    request.onsuccess = () => {
-      const rows = (request.result as any[] | undefined) ?? [];
-      const filtered = rows
-        .filter(
-          (row) =>
-            row &&
-            typeof row.saveId === "string" &&
-            row.saveId === saveId &&
-            typeof row.forkId === "number" &&
-            typeof row.turn === "number",
-        )
-        .map((row) => ({
-          forkId: row.forkId as number,
-          turn: row.turn as number,
-          createdAt: typeof row.createdAt === "number" ? row.createdAt : 0,
-        }))
-        .sort((a, b) => a.forkId - b.forkId || a.turn - b.turn);
+  const [metaRows, snapshotRows] = await Promise.all([
+    getAllRows(VFS_META_STORE),
+    getAllRows(VFS_SNAPSHOTS_STORE),
+  ]);
 
-      resolve(filtered);
+  const merged = new Map<string, VfsExportIndexEntry>();
+
+  for (const row of metaRows) {
+    if (
+      !row ||
+      typeof row.saveId !== "string" ||
+      row.saveId !== saveId ||
+      typeof row.forkId !== "number" ||
+      typeof row.turn !== "number"
+    ) {
+      continue;
+    }
+    const key = `${row.forkId}:${row.turn}`;
+    merged.set(key, {
+      forkId: row.forkId,
+      turn: row.turn,
+      createdAt: typeof row.createdAt === "number" ? row.createdAt : 0,
+    });
+  }
+
+  for (const row of snapshotRows) {
+    if (
+      !row ||
+      typeof row.saveId !== "string" ||
+      row.saveId !== saveId ||
+      typeof row.forkId !== "number" ||
+      typeof row.turn !== "number"
+    ) {
+      continue;
+    }
+    const key = `${row.forkId}:${row.turn}`;
+    const existing = merged.get(key);
+    const rowCreatedAt = typeof row.createdAt === "number" ? row.createdAt : 0;
+    if (!existing) {
+      merged.set(key, {
+        forkId: row.forkId,
+        turn: row.turn,
+        createdAt: rowCreatedAt,
+      });
+      continue;
+    }
+    if (rowCreatedAt > existing.createdAt) {
+      merged.set(key, { ...existing, createdAt: rowCreatedAt });
+    }
+  }
+
+  return Array.from(merged.values()).sort(
+    (a, b) => a.forkId - b.forkId || a.turn - b.turn,
+  );
+};
+
+const SHARED_CONVERSATION_INDEX_PATHS = [
+  "conversation/index.json",
+  "shared/narrative/conversation/index.json",
+  "current/conversation/index.json",
+];
+
+const parseConversationTurnId = (
+  value: string,
+): { forkId: number; turn: number } | null => {
+  const match = /^fork-(\d+)\/turn-(\d+)$/.exec(value);
+  if (!match) return null;
+  return {
+    forkId: Number(match[1]),
+    turn: Number(match[2]),
+  };
+};
+
+const parseConversationTurnPath = (
+  path: string,
+): { forkId: number; turn: number } | null => {
+  const normalized = path.replace(/^\/+/, "");
+
+  const logicalMatch =
+    /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/.exec(normalized) ??
+    /^current\/conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/.exec(
+      normalized,
+    );
+  if (logicalMatch) {
+    return {
+      forkId: Number(logicalMatch[1]),
+      turn: Number(logicalMatch[2]),
     };
+  }
 
-    request.onerror = () => reject(request.error);
-  });
+  const canonicalMatch =
+    /^forks\/(\d+)\/story\/conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/.exec(
+      normalized,
+    );
+  if (!canonicalMatch) return null;
+
+  const forkFromPrefix = Number(canonicalMatch[1]);
+  const forkFromName = Number(canonicalMatch[2]);
+  return {
+    forkId: Number.isFinite(forkFromPrefix) ? forkFromPrefix : forkFromName,
+    turn: Number(canonicalMatch[3]),
+  };
+};
+
+const collectConversationTurnsFromSnapshot = (
+  snapshot: VfsSnapshot,
+): Map<number, number[]> => {
+  const turnsByFork = new Map<number, Set<number>>();
+  const snapshotRoot = `turns/fork-${snapshot.forkId}/turn-${snapshot.turn}/`;
+
+  for (const file of Object.values(snapshot.files ?? {})) {
+    const rawPath = typeof file?.path === "string" ? file.path : "";
+    if (!rawPath) continue;
+
+    const normalizedPath = rawPath.replace(/^\/+/, "");
+    const relativePath = normalizedPath.startsWith(snapshotRoot)
+      ? normalizedPath.slice(snapshotRoot.length)
+      : normalizedPath;
+
+    const parsed =
+      parseConversationTurnPath(relativePath) ??
+      parseConversationTurnPath(normalizedPath);
+    if (!parsed) continue;
+    if (!Number.isFinite(parsed.forkId) || !Number.isFinite(parsed.turn)) {
+      continue;
+    }
+
+    const turns = turnsByFork.get(parsed.forkId) ?? new Set<number>();
+    turns.add(parsed.turn);
+    turnsByFork.set(parsed.forkId, turns);
+  }
+
+  return new Map(
+    Array.from(turnsByFork.entries()).map(([forkId, turns]) => [
+      forkId,
+      Array.from(turns).sort((a, b) => a - b),
+    ]),
+  );
+};
+
+const buildConversationIndexFromSnapshot = (
+  snapshot: VfsSnapshot,
+  activeForkHint?: number | null,
+): ConversationIndex | null => {
+  const turnsByFork = collectConversationTurnsFromSnapshot(snapshot);
+  if (turnsByFork.size === 0) return null;
+
+  const forkIds = Array.from(turnsByFork.keys()).sort((a, b) => a - b);
+  const hintedForkId =
+    typeof activeForkHint === "number" && turnsByFork.has(activeForkHint)
+      ? activeForkHint
+      : null;
+  const activeForkId =
+    hintedForkId ??
+    (turnsByFork.has(snapshot.forkId) ? snapshot.forkId : forkIds[0] ?? 0);
+
+  const rootTurnIdByFork: Record<string, string> = {};
+  const latestTurnNumberByFork: Record<string, number> = {};
+  const turnOrderByFork: Record<string, string[]> = {};
+
+  for (const forkId of forkIds) {
+    const turns = turnsByFork.get(forkId) ?? [];
+    if (turns.length === 0) continue;
+    const forkKey = String(forkId);
+    rootTurnIdByFork[forkKey] = buildTurnId(forkId, turns[0]);
+    latestTurnNumberByFork[forkKey] = turns[turns.length - 1];
+    turnOrderByFork[forkKey] = turns.map((turn) => buildTurnId(forkId, turn));
+  }
+
+  const activeOrder = turnOrderByFork[String(activeForkId)] ?? [];
+  const activeTurnId =
+    activeOrder[activeOrder.length - 1] ??
+    buildTurnId(
+      activeForkId,
+      latestTurnNumberByFork[String(activeForkId)] ?? snapshot.turn,
+    );
+
+  return {
+    activeForkId,
+    activeTurnId,
+    rootTurnIdByFork,
+    latestTurnNumberByFork,
+    turnOrderByFork,
+  };
+};
+
+const isConversationIndexShape = (
+  value: unknown,
+): value is ConversationIndex => {
+  if (!value || typeof value !== "object") return false;
+  const maybe = value as Record<string, unknown>;
+  if (typeof maybe.activeForkId !== "number") return false;
+  if (typeof maybe.activeTurnId !== "string") return false;
+  if (
+    !maybe.rootTurnIdByFork ||
+    typeof maybe.rootTurnIdByFork !== "object" ||
+    !maybe.latestTurnNumberByFork ||
+    typeof maybe.latestTurnNumberByFork !== "object" ||
+    !maybe.turnOrderByFork ||
+    typeof maybe.turnOrderByFork !== "object"
+  ) {
+    return false;
+  }
+  return true;
+};
+
+const readConversationIndexFromSharedFiles = (
+  sharedFiles: Record<string, any> | null,
+): { path: string; index: ConversationIndex } | null => {
+  if (!sharedFiles || typeof sharedFiles !== "object") return null;
+
+  for (const path of SHARED_CONVERSATION_INDEX_PATHS) {
+    const file = sharedFiles[path];
+    if (!file || typeof file !== "object" || typeof file.content !== "string") {
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(file.content);
+      if (!isConversationIndexShape(parsed)) continue;
+      return { path, index: parsed };
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+};
+
+const conversationIndexNeedsRepair = (
+  existing: ConversationIndex | null,
+  rebuilt: ConversationIndex,
+): boolean => {
+  if (!existing) return true;
+
+  for (const [forkKey, rebuiltLatest] of Object.entries(
+    rebuilt.latestTurnNumberByFork,
+  )) {
+    const existingLatest = existing.latestTurnNumberByFork?.[forkKey];
+    if (typeof existingLatest !== "number" || existingLatest < rebuiltLatest) {
+      return true;
+    }
+
+    const rebuiltOrder = rebuilt.turnOrderByFork?.[forkKey] ?? [];
+    const existingOrder = existing.turnOrderByFork?.[forkKey] ?? [];
+    if (rebuiltOrder.length > existingOrder.length) {
+      return true;
+    }
+
+    const existingSet = new Set(existingOrder);
+    if (rebuiltOrder.some((turnId) => !existingSet.has(turnId))) {
+      return true;
+    }
+  }
+
+  const existingActive = parseConversationTurnId(existing.activeTurnId);
+  const rebuiltActive = parseConversationTurnId(rebuilt.activeTurnId);
+  if (existingActive && rebuiltActive) {
+    return (
+      rebuiltActive.forkId === existingActive.forkId &&
+      rebuiltActive.turn > existingActive.turn
+    );
+  }
+
+  return false;
+};
+
+const repairSharedConversationIndex = (
+  sharedFiles: Record<string, any> | null,
+  latestSnapshot: VfsSnapshot | null,
+  activeForkHint?: number | null,
+): Record<string, any> | null => {
+  if (!latestSnapshot) {
+    return sharedFiles;
+  }
+
+  const rebuilt = buildConversationIndexFromSnapshot(latestSnapshot, activeForkHint);
+  if (!rebuilt) {
+    return sharedFiles;
+  }
+
+  const existingEntry = readConversationIndexFromSharedFiles(sharedFiles);
+  const existingIndex = existingEntry?.index ?? null;
+  if (!conversationIndexNeedsRepair(existingIndex, rebuilt)) {
+    return sharedFiles;
+  }
+
+  const targetPath = existingEntry?.path ?? SHARED_CONVERSATION_INDEX_PATHS[0];
+  const content = JSON.stringify(rebuilt);
+  const updatedAt = Date.now();
+  const nextShared = { ...(sharedFiles ?? {}) };
+  nextShared[targetPath] = {
+    path: targetPath,
+    content,
+    contentType: "application/json",
+    hash: hashContent(content),
+    size: content.length,
+    updatedAt,
+  };
+  return nextShared;
 };
 
 const loadSharedMutableStateForSave = async (
   saveId: string,
   latestSnapshot?: VfsSnapshot | null,
 ): Promise<Record<string, any> | null> => {
+  let shared: Record<string, any> | null = null;
+
   try {
     const stored = await loadMetadata<{ files?: unknown }>(
       `vfs_shared:${saveId}`,
     );
     if (stored?.files && typeof stored.files === "object") {
-      return stored.files as Record<string, any>;
+      shared = stored.files as Record<string, any>;
     }
   } catch (error) {
     console.warn("[SaveExport] Failed to load vfs_shared metadata:", error);
   }
 
-  if (latestSnapshot) {
+  if (!shared && latestSnapshot) {
     const inferred = extractSharedMutableStateFromSnapshot(
       latestSnapshot as any,
     );
     if (Object.keys(inferred).length > 0) {
-      return inferred as Record<string, any>;
+      shared = inferred as Record<string, any>;
     }
+  }
+
+  const repaired = repairSharedConversationIndex(shared, latestSnapshot ?? null);
+  if (repaired && Object.keys(repaired).length > 0) {
+    return repaired;
   }
 
   return null;
@@ -324,6 +654,115 @@ const loadDerivedStateFromLatestVfsSnapshot = async (
   return { state: derived, latest };
 };
 
+const getSnapshotRelativePath = (
+  snapshot: VfsSnapshot,
+  rawPath: string,
+): string | null => {
+  if (typeof rawPath !== "string" || rawPath.length === 0) {
+    return null;
+  }
+
+  const normalizedPath = normalizeVfsPath(rawPath);
+  if (!normalizedPath) return null;
+
+  const snapshotRoot = normalizeVfsPath(
+    `turns/fork-${snapshot.forkId}/turn-${snapshot.turn}`,
+  );
+
+  if (normalizedPath === snapshotRoot) {
+    return null;
+  }
+
+  if (normalizedPath.startsWith(`${snapshotRoot}/`)) {
+    return normalizedPath.slice(snapshotRoot.length + 1);
+  }
+
+  return normalizedPath;
+};
+
+const collectStateEditorFilesFromSnapshot = (
+  snapshot: VfsSnapshot,
+): Record<string, string> => {
+  const files: Record<string, string> = {};
+
+  for (const file of Object.values(snapshot.files ?? {})) {
+    if (!file || typeof file !== "object") continue;
+    if (typeof file.content !== "string") continue;
+
+    const relativePath = getSnapshotRelativePath(snapshot, file.path);
+    if (!relativePath) continue;
+
+    files[relativePath] = file.content;
+  }
+
+  return files;
+};
+
+const collectStateEditorSharedFiles = (
+  sharedFiles: Record<string, any> | null,
+): Record<string, string> => {
+  const files: Record<string, string> = {};
+  if (!sharedFiles || typeof sharedFiles !== "object") return files;
+
+  for (const entry of Object.values(sharedFiles)) {
+    if (!entry || typeof entry !== "object") continue;
+    if (typeof (entry as any).path !== "string") continue;
+    if (typeof (entry as any).content !== "string") continue;
+
+    const normalizedPath = normalizeVfsPath((entry as any).path);
+    if (!normalizedPath) continue;
+
+    files[normalizedPath] = (entry as any).content;
+  }
+
+  return files;
+};
+
+const writeStructuredVfsLayoutToZip = (
+  zip: JSZip,
+  snapshots: VfsSnapshot[],
+  latestSnapshot: VfsSnapshot | null,
+  sharedFiles: Record<string, any> | null,
+): void => {
+  if (snapshots.length === 0 && !latestSnapshot && !sharedFiles) {
+    return;
+  }
+
+  zip.file(
+    "vfs/README.md",
+    [
+      "# VFS Layout",
+      "",
+      "- `current/`: Latest view aligned with StateEditor file tree.",
+      "- `history/`: Per-snapshot expanded files by `fork/turn`.",
+      "- `shared/`: Expanded shared mutable layer files.",
+    ].join("\n"),
+  );
+
+  for (const snapshot of snapshots) {
+    const files = collectStateEditorFilesFromSnapshot(snapshot);
+    const historyRoot = `vfs/history/fork-${snapshot.forkId}/turn-${snapshot.turn}`;
+    for (const [relativePath, content] of Object.entries(files)) {
+      zip.file(`${historyRoot}/${relativePath}`, content);
+    }
+  }
+
+  const sharedStateEditorFiles = collectStateEditorSharedFiles(sharedFiles);
+  for (const [relativePath, content] of Object.entries(sharedStateEditorFiles)) {
+    zip.file(`vfs/shared/${relativePath}`, content);
+  }
+
+  if (latestSnapshot) {
+    const currentFiles = {
+      ...collectStateEditorFilesFromSnapshot(latestSnapshot),
+      ...sharedStateEditorFiles,
+    };
+    for (const [relativePath, content] of Object.entries(currentFiles)) {
+      zip.file(`vfs/current/${relativePath}`, content);
+    }
+  }
+};
+
 const writeVfsSnapshotsToZip = async (
   zip: JSZip,
   saveId: string,
@@ -354,6 +793,7 @@ const writeVfsSnapshotsToZip = async (
     return { snapshotCount: 0, latest };
   }
 
+  const exportedSnapshots: VfsSnapshot[] = [];
   let written = 0;
   for (const entry of indexEntries) {
     try {
@@ -371,16 +811,20 @@ const writeVfsSnapshotsToZip = async (
 
       const snapshotForExport =
         options?.includeImages === false
-          ? rewriteSnapshotImageReferences(snapshot, {
-              stripImageReferences: true,
-            })
-          : snapshot;
+          ? rewriteSnapshotImageReferences(
+              pruneRebuildableSessionFilesFromSnapshot(snapshot),
+              {
+                stripImageReferences: true,
+              },
+            )
+          : pruneRebuildableSessionFilesFromSnapshot(snapshot);
 
       const forkFolder = snapshotsRoot.folder(`fork-${entry.forkId}`);
       forkFolder?.file(
         `turn-${entry.turn}.json`,
         JSON.stringify(snapshotForExport, null, 2),
       );
+      exportedSnapshots.push(snapshotForExport);
       written += 1;
     } catch (error) {
       console.warn(
@@ -412,6 +856,32 @@ const writeVfsSnapshotsToZip = async (
       2,
     ),
   );
+
+  const latestSnapshotForExport =
+    options?.includeImages === false && latestSnapshot
+      ? rewriteSnapshotImageReferences(
+          pruneRebuildableSessionFilesFromSnapshot(latestSnapshot),
+          {
+            stripImageReferences: true,
+          },
+        )
+      : latestSnapshot
+        ? pruneRebuildableSessionFilesFromSnapshot(latestSnapshot)
+        : latestSnapshot;
+
+  try {
+    writeStructuredVfsLayoutToZip(
+      zip,
+      exportedSnapshots,
+      latestSnapshotForExport,
+      shared,
+    );
+  } catch (error) {
+    console.warn(
+      "[SaveExport] Failed to write structured VFS layout to ZIP:",
+      error,
+    );
+  }
 
   return { snapshotCount: written, latest };
 };
@@ -659,6 +1129,8 @@ const createVfsSnapshotsFromLegacyState = async (
  */
 export async function getExportStats(
   slotId: string,
+  options?: ExportOptions,
+  slot?: SaveSlot,
 ): Promise<ExportStats | null> {
   try {
     const derived = await loadDerivedStateFromLatestVfsSnapshot(slotId);
@@ -689,13 +1161,52 @@ export async function getExportStats(
       console.warn("[SaveExport] Could not get RAG stats:", e);
     }
 
-    // Calculate estimated size
-    let estimatedSize = JSON.stringify(gameState).length;
-    for (const img of images) {
-      estimatedSize += img.blob.size;
+    const effectiveOptions: ExportOptions = options ?? {
+      includeImages: true,
+      includeEmbeddings: true,
+      includeLogs: true,
+    };
+
+    const fallbackSlot: SaveSlot = {
+      id: slotId,
+      name: slot?.name || gameState.outline?.title || "Save",
+      timestamp: Date.now(),
+      theme: slot?.theme || gameState.theme || "fantasy",
+      summary:
+        slot?.summary ||
+        gameState.outline?.premise ||
+        gameState.outline?.openingNarrative?.narrative?.slice(0, 160) ||
+        "",
+      previewImage: slot?.previewImage || gameState.seedImageId,
+    };
+
+    let estimatedSize: number | undefined;
+    try {
+      const estimateBlob = await exportSave(
+        slotId,
+        slot ?? fallbackSlot,
+        effectiveOptions,
+      );
+      estimatedSize = estimateBlob?.size;
+    } catch (error) {
+      console.warn("[SaveExport] Failed to generate accurate size estimate:", error);
     }
-    // Estimate embedding size (rough estimate: 1KB per document)
-    estimatedSize += embeddingCount * 1024;
+
+    if (typeof estimatedSize !== "number") {
+      // Conservative fallback (uncompressed-ish) when live estimation fails.
+      estimatedSize = JSON.stringify(gameState).length;
+      if (effectiveOptions.includeImages) {
+        for (const img of images) {
+          estimatedSize += img.blob.size;
+        }
+      }
+      if (effectiveOptions.includeEmbeddings) {
+        estimatedSize += embeddingCount * 1024;
+      }
+      if (!effectiveOptions.includeLogs) {
+        estimatedSize = Math.max(estimatedSize - (logCount * 5 * 1024), 0);
+      }
+    }
 
     return {
       nodeCount,
@@ -747,6 +1258,32 @@ function cleanupStateForExport(
 
   return cleanState;
 }
+
+const writeOptionalJsonFile = (
+  zip: JSZip,
+  path: string,
+  payload: unknown,
+): void => {
+  if (payload === undefined || payload === null) return;
+  zip.file(path, JSON.stringify(payload, null, 2));
+};
+
+const writeSaveRuntimeMetadataToZip = async (
+  zip: JSZip,
+  slotId: string,
+): Promise<void> => {
+  try {
+    const [uiState, runtimeStats] = await Promise.all([
+      loadMetadata(`ui_state:${slotId}`),
+      loadMetadata(`runtime_stats:${slotId}`),
+    ]);
+
+    writeOptionalJsonFile(zip, "meta/ui_state.json", uiState);
+    writeOptionalJsonFile(zip, "meta/runtime_stats.json", runtimeStats);
+  } catch (error) {
+    console.warn("[SaveExport] Failed to export runtime metadata:", error);
+  }
+};
 
 /**
  * Export a save to a ZIP file
@@ -874,6 +1411,9 @@ export async function exportSave(
     };
 
     zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+
+    // Export per-save runtime metadata (UI layout, runtime counters/log cache).
+    await writeSaveRuntimeMetadataToZip(zip, slotId);
 
     // Add VFS snapshots if present (required for VFS-based restores/forking).
     try {
@@ -1146,6 +1686,32 @@ export async function importSave(
     // Handle ZIP format
     const zip = await JSZip.loadAsync(file);
 
+    let importedUiState: unknown = null;
+    let importedRuntimeStats: unknown = null;
+
+    const uiStateFile = zip.file("meta/ui_state.json");
+    if (uiStateFile) {
+      try {
+        importedUiState = JSON.parse(await uiStateFile.async("text"));
+      } catch (error) {
+        console.warn("[SaveImport] Failed to parse meta/ui_state.json:", error);
+        warnings.push("Failed to parse saved UI state metadata.");
+      }
+    }
+
+    const runtimeStatsFile = zip.file("meta/runtime_stats.json");
+    if (runtimeStatsFile) {
+      try {
+        importedRuntimeStats = JSON.parse(await runtimeStatsFile.async("text"));
+      } catch (error) {
+        console.warn(
+          "[SaveImport] Failed to parse meta/runtime_stats.json:",
+          error,
+        );
+        warnings.push("Failed to parse saved runtime stats metadata.");
+      }
+    }
+
     // Import images if present
     let imageIdMapping = new Map<string, string>();
     if (manifest.includes.images) {
@@ -1209,6 +1775,7 @@ export async function importSave(
       const indexJson = await vfsIndexFile.async("text");
       const bundle = JSON.parse(indexJson) as VfsExportBundleIndex;
       const latestMeta = bundle?.latest ?? null;
+      const declaredLatest = isValidLatestMeta(latestMeta) ? latestMeta : null;
       const snapshots = Array.isArray(bundle?.snapshots)
         ? bundle.snapshots
         : [];
@@ -1242,6 +1809,8 @@ export async function importSave(
       }
 
       let imported = 0;
+      let latestImportedSnapshot: VfsSnapshot | null = null;
+      let latestImportedEntry: VfsExportIndexEntry | null = null;
       for (const entry of snapshots) {
         if (
           !entry ||
@@ -1268,6 +1837,38 @@ export async function importSave(
         snapshotWithMappedImages.saveId = newSlotId;
         await store.saveSnapshot(snapshotWithMappedImages);
         imported += 1;
+
+        const matchesDeclaredLatest =
+          declaredLatest?.forkId === entry.forkId &&
+          declaredLatest?.turn === entry.turn;
+        if (matchesDeclaredLatest) {
+          latestImportedSnapshot = snapshotWithMappedImages;
+          latestImportedEntry = {
+            forkId: entry.forkId,
+            turn: entry.turn,
+            createdAt:
+              typeof entry.createdAt === "number" ? entry.createdAt : Date.now(),
+          };
+        } else if (!declaredLatest) {
+          const candidateCreatedAt =
+            typeof entry.createdAt === "number" ? entry.createdAt : Date.now();
+          const existingCreatedAt = latestImportedEntry?.createdAt ?? -1;
+          const shouldReplace =
+            !latestImportedEntry ||
+            candidateCreatedAt > existingCreatedAt ||
+            (candidateCreatedAt === existingCreatedAt &&
+              (entry.forkId > latestImportedEntry.forkId ||
+                (entry.forkId === latestImportedEntry.forkId &&
+                  entry.turn > latestImportedEntry.turn)));
+          if (shouldReplace) {
+            latestImportedSnapshot = snapshotWithMappedImages;
+            latestImportedEntry = {
+              forkId: entry.forkId,
+              turn: entry.turn,
+              createdAt: candidateCreatedAt,
+            };
+          }
+        }
       }
 
       if (imported === 0) {
@@ -1282,9 +1883,12 @@ export async function importSave(
 
       let latestForkId: number | null = null;
       let latestTurn: number | null = null;
-      if (latestMeta && isValidLatestMeta(latestMeta)) {
-        latestForkId = latestMeta.forkId;
-        latestTurn = latestMeta.turn;
+      if (declaredLatest) {
+        latestForkId = declaredLatest.forkId;
+        latestTurn = declaredLatest.turn;
+      } else if (latestImportedEntry) {
+        latestForkId = latestImportedEntry.forkId;
+        latestTurn = latestImportedEntry.turn;
       } else {
         const indexes = await listVfsSnapshotIndexEntries(newSlotId);
         const best = indexes.reduce(
@@ -1311,12 +1915,19 @@ export async function importSave(
 
         // Derive lightweight slot info from latest snapshot for nicer UI.
         try {
-          const latestSnapshot = await store.loadSnapshot(
-            newSlotId,
-            latestForkId,
-            latestTurn,
-          );
+          const latestSnapshot =
+            latestImportedSnapshot &&
+            latestImportedSnapshot.forkId === latestForkId &&
+            latestImportedSnapshot.turn === latestTurn
+              ? latestImportedSnapshot
+              : await store.loadSnapshot(newSlotId, latestForkId, latestTurn);
           if (latestSnapshot) {
+            sharedForSave = repairSharedConversationIndex(
+              sharedForSave,
+              latestSnapshot,
+              latestForkId,
+            );
+
             if (!sharedForSave) {
               const inferred = extractSharedMutableStateFromSnapshot(
                 latestSnapshot as any,
@@ -1325,6 +1936,11 @@ export async function importSave(
                 Object.keys(inferred).length > 0
                   ? (inferred as Record<string, any>)
                   : null;
+              sharedForSave = repairSharedConversationIndex(
+                sharedForSave,
+                latestSnapshot,
+                latestForkId,
+              );
             }
 
             const session = new VfsSession();
@@ -1402,6 +2018,13 @@ export async function importSave(
     // Update slots metadata
     const updatedSlots = [...existingSlots, newSlot];
     await saveMetadata("slots", updatedSlots);
+
+    if (importedUiState !== null && importedUiState !== undefined) {
+      await saveMetadata(`ui_state:${newSlotId}`, importedUiState);
+    }
+    if (importedRuntimeStats !== null && importedRuntimeStats !== undefined) {
+      await saveMetadata(`runtime_stats:${newSlotId}`, importedRuntimeStats);
+    }
 
     console.log(`[SaveImport] Import complete: slot ${newSlotId}`);
 

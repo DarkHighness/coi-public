@@ -42,21 +42,47 @@ export const ExportOptionsModal: React.FC<ExportOptionsModalProps> = ({
 
   // Load stats on mount
   useEffect(() => {
+    let cancelled = false;
+
     const loadStats = async () => {
       setIsLoading(true);
       try {
-        const exportStats = await getExportStats(slotId);
-        setStats(exportStats);
+        const exportStats = await getExportStats(slotId, options, slot);
+        if (!cancelled) {
+          setStats(exportStats);
+        }
       } catch (err) {
         console.error("Failed to load export stats:", err);
-        setError(t("export.statsError") || "Failed to load export statistics");
+        if (!cancelled) {
+          setError(t("export.statsError") || "Failed to load export statistics");
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadStats();
-  }, [slotId, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    slotId,
+    slot,
+    options.includeImages,
+    options.includeEmbeddings,
+    options.includeLogs,
+    t,
+  ]);
+
+  const formatSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const estimatedSize = stats?.estimatedSize || 0;
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -78,40 +104,6 @@ export const ExportOptionsModal: React.FC<ExportOptionsModalProps> = ({
       setIsExporting(false);
     }
   };
-
-  const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  // Calculate estimated export size
-  const calculateEstimatedSize = (): number => {
-    if (!stats) return 0;
-    let size = stats.estimatedSize || 0;
-
-    // Subtract image size if not including images
-    if (!options.includeImages && stats.imageCount > 0) {
-      // Rough estimate: 100KB per image average
-      size -= stats.imageCount * 100 * 1024;
-    }
-
-    // Subtract embedding size if not including embeddings
-    if (!options.includeEmbeddings && stats.embeddingCount > 0) {
-      // Rough estimate: 1KB per embedding document
-      size -= stats.embeddingCount * 1024;
-    }
-
-    // Subtract log size if not including logs
-    if (!options.includeLogs && stats.logCount && stats.logCount > 0) {
-      // Rough estimate: 5KB per log entry (logs can be large with AI request/response)
-      size -= stats.logCount * 5 * 1024;
-    }
-
-    return Math.max(0, size);
-  };
-
-  const estimatedSize = calculateEstimatedSize();
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">

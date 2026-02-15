@@ -5,7 +5,7 @@
  * with validation and preview
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   SaveSlot,
@@ -30,7 +30,6 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
   initialFile,
 }) => {
   const { t } = useTranslation();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validation, setValidation] = useState<ImportValidation | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -98,6 +97,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
     if (file) {
       handleFileSelect(file);
     }
+    e.target.value = "";
   };
 
   const handleImport = async () => {
@@ -161,7 +161,7 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
         <div className="p-4 space-y-4">
           {/* Drop Zone */}
           <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
               dragActive
                 ? "border-theme-primary bg-theme-primary/10"
                 : selectedFile
@@ -171,14 +171,13 @@ export const ImportSaveModal: React.FC<ImportSaveModalProps> = ({
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
           >
             <input
-              ref={fileInputRef}
               type="file"
               accept=".zip"
               onChange={handleInputChange}
-              className="hidden"
+              aria-label={t("import.selectFile") || "Select save file"}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             />
 
             {selectedFile ? (
