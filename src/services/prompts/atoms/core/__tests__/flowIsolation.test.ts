@@ -32,11 +32,11 @@ describe("prompt flow isolation", () => {
     expect(stateManagement()).not.toContain(forbiddenPhrase);
   });
 
-  it("keeps runtime floor skill guidance as soft-gate (non-blocking)", () => {
-    expect(getTurnRuntimeFloor()).toContain("Loop quick-start (recommended)");
+  it("keeps runtime floor skill guidance explicit per loop type", () => {
     expect(getTurnRuntimeFloor()).toContain(
-      "Soft gate (advisory, not blocking)",
+      "Loop preflight (required before non-read tools)",
     );
+    expect(getTurnRuntimeFloor()).toContain("Hard gate (enforced)");
     expect(getTurnRuntimeFloor()).toContain("commands/runtime/turn/SKILL.md");
     expect(getTurnRuntimeFloor()).toContain("Structured error recovery flow");
 

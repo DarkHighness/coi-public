@@ -19,7 +19,6 @@ import {
   noToolCallError,
   retconAckRequiredMessage,
 } from "../../../prompts/atoms/core";
-import { formatLoopSkillBaseline } from "../../../prompts/skills/loopSkillBaseline";
 
 // ============================================================================
 // System Message Injection
@@ -32,7 +31,6 @@ export function injectSudoModeInstruction(
   history: UnifiedMessage[],
   ragEnabled: boolean = true,
 ): void {
-  const baseline = formatLoopSkillBaseline("turn");
   history.push(
     createUserMessage(sudoModeInstruction({ toolsetId: "turn", ragEnabled })),
   );
@@ -40,9 +38,9 @@ export function injectSudoModeInstruction(
     createUserMessage(
       [
         "[SYSTEM: COMMAND SKILL REQUIRED]",
-        "Soft gate baseline (advisory, not blocking):",
-        ...baseline,
-        "Before any non-read tool call, read: `current/skills/commands/runtime/sudo/SKILL.md`",
+        "Hard gate (enforced): before any non-read tool call in this epoch, read:",
+        "- `current/skills/commands/runtime/SKILL.md`",
+        "- `current/skills/commands/runtime/sudo/SKILL.md`",
       ].join("\n"),
     ),
   );
@@ -75,13 +73,13 @@ export function injectNormalTurnInstruction(
   );
 
   if (isCleanupMode) {
-    const cleanupBaseline = formatLoopSkillBaseline("cleanup");
     history.push(
       createUserMessage(
         [
           "[SYSTEM: COMMAND SKILL REQUIRED]",
-          "Soft gate baseline before cleanup mutation (advisory, not blocking):",
-          ...cleanupBaseline,
+          "Hard gate (enforced): before any non-read tool call in this epoch, read:",
+          "- `current/skills/commands/runtime/SKILL.md`",
+          "- `current/skills/commands/runtime/cleanup/SKILL.md`",
         ].join("\n"),
       ),
     );
@@ -117,27 +115,42 @@ export function injectNormalTurnInstruction(
     );
   }
 
-  const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
   if (!isCleanupMode) {
-    const turnBaseline = formatLoopSkillBaseline("turn");
-    modeSkillLines.push(
-      "Soft gate (advisory, not blocking) for normal turns:",
-      ...turnBaseline,
-      "If these skill files are unavailable, continue and keep tool usage protocol-compliant.",
-    );
+    const commandSkillLines: string[] = [
+      "[SYSTEM: COMMAND SKILL REQUIRED]",
+      "Hard gate (enforced): before any non-read tool call in this epoch, read:",
+      "- `current/skills/commands/runtime/SKILL.md`",
+      "- `current/skills/commands/runtime/turn/SKILL.md`",
+    ];
+    if (modeFlags?.godMode) {
+      commandSkillLines.push(
+        "- `current/skills/commands/runtime/god/SKILL.md` (god mode active)",
+      );
+    }
+    if (modeFlags?.unlockMode) {
+      commandSkillLines.push(
+        "- `current/skills/commands/runtime/unlock/SKILL.md` (unlock mode active)",
+      );
+    }
+    history.push(createUserMessage(commandSkillLines.join("\n")));
   }
+
+  const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
+  modeSkillLines.push(
+    "Optional deepening (load only when needed):",
+    "- `current/skills/core/protocols/SKILL.md`",
+    "- `current/skills/craft/writing/SKILL.md`",
+  );
   if (modeFlags?.godMode) {
     modeSkillLines.push(
       "You are currently in God mode.",
-      "Hub first: `current/skills/commands/runtime/SKILL.md`",
-      "Read: `current/skills/commands/runtime/god/SKILL.md`",
+      "Apply permissive outcomes with coherent state updates.",
     );
   }
   if (modeFlags?.unlockMode) {
     modeSkillLines.push(
       "Unlock mode is currently ON.",
-      "Hub first: `current/skills/commands/runtime/SKILL.md`",
-      "Read: `current/skills/commands/runtime/unlock/SKILL.md`",
+      "Keep hidden/visible layering deterministic.",
     );
   }
 

@@ -22,7 +22,6 @@ import {
   checkpointVfsSession,
   rollbackVfsSessionToCheckpoint,
 } from "@/services/vfs/runtimeCheckpoints";
-import { formatLoopSkillBaseline } from "@/services/prompts/skills/loopSkillBaseline";
 
 // ============================================================================
 // Types
@@ -51,8 +50,12 @@ const buildColdStartSkillHintMessage = (): UnifiedMessage =>
   createUserMessage(
     [
       "[SYSTEM: COLD_START_SOFT_GUIDANCE]",
-      "Soft guidance (non-blocking): before first non-read mutation, prefer reading baseline skills:",
-      ...formatLoopSkillBaseline("turn"),
+      "Hard gate (enforced): before first non-read tool call this turn, read:",
+      "- `current/skills/commands/runtime/SKILL.md`",
+      "- `current/skills/commands/runtime/turn/SKILL.md`",
+      "Optional deepening when needed:",
+      "- `current/skills/core/protocols/SKILL.md`",
+      "- `current/skills/craft/writing/SKILL.md`",
       "- `current/skills/index.json` (discover relevant skills first)",
       "If prior context is needed, query `current/conversation/session.jsonl` with lines/search windows.",
       "Avoid full-file reads of `session.jsonl` in one shot.",

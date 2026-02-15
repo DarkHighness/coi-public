@@ -16,12 +16,12 @@ You MUST follow these runtime protocol constraints:
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
 - End turns ONLY via \`vfs_commit_turn\`, and it must be the LAST tool call.
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
-- Loop quick-start (recommended):
+- Loop preflight (required before non-read tools):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
-  2) Read \`current/skills/commands/runtime/turn/SKILL.md\` (turn protocol).
+  2) Read the active command protocol skill (\`current/skills/commands/runtime/turn/SKILL.md\` for normal turns, \`current/skills/commands/runtime/cleanup/SKILL.md\` for cleanup, \`current/skills/commands/runtime/sudo/SKILL.md\` for /sudo).
   3) Build a short tool plan: read anchors -> mutate -> verify -> finish.
   4) Keep one finish call, and make it last.
-- Soft gate (advisory, not blocking): before first non-read mutation, prefer reading \`current/skills/commands/runtime/SKILL.md\` and \`current/skills/commands/runtime/turn/SKILL.md\`.
+- Hard gate (enforced): before first non-read tool call in this epoch, you MUST read \`current/skills/commands/runtime/SKILL.md\` plus the active command protocol skill for this loop.
 - Structured error recovery flow (when a tool returns \`{ success:false, code, error }\`):
   1) Do NOT finish yet.
   2) Fix the cause by \`code\` with the smallest helpful lookup:

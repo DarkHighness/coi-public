@@ -102,11 +102,24 @@ export function createLoopState(
   const resolvedVfsMode: VfsMode =
     vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
   const conversationMarker = getConversationMarker(vfsSession);
-  const requiredCommandSkillPaths = isCleanupMode
-    ? ["skills/commands/runtime/cleanup/SKILL.md"]
-    : isSudoMode
-      ? ["skills/commands/runtime/sudo/SKILL.md"]
-      : [];
+  const requiredCommandSkillPaths = Array.from(
+    new Set(
+      [
+        "skills/commands/runtime/SKILL.md",
+        isCleanupMode
+          ? "skills/commands/runtime/cleanup/SKILL.md"
+          : isSudoMode
+            ? "skills/commands/runtime/sudo/SKILL.md"
+            : "skills/commands/runtime/turn/SKILL.md",
+        !isCleanupMode && !isSudoMode && gameState.godMode === true
+          ? "skills/commands/runtime/god/SKILL.md"
+          : null,
+        !isCleanupMode && !isSudoMode && gameState.unlockMode === true
+          ? "skills/commands/runtime/unlock/SKILL.md"
+          : null,
+      ].filter((path): path is string => typeof path === "string"),
+    ),
+  );
   const uniqueRequiredPresetSkillPaths = Array.from(
     new Set(
       (requiredPresetSkillPaths || [])

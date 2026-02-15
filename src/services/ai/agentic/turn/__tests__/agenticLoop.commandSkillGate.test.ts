@@ -136,10 +136,15 @@ const createVfsSession = (hasSeenSkill: boolean) => {
     noteToolSeen: vi.fn(),
     hasToolSeenInCurrentEpoch: vi.fn((path: string) => {
       if (!hasSeenSkill) return false;
-      return (
-        path === "skills/commands/runtime/sudo/SKILL.md" ||
-        path === "skills/presets/runtime/narrative-style/SKILL.md"
-      );
+      return new Set([
+        "skills/commands/runtime/SKILL.md",
+        "skills/commands/runtime/turn/SKILL.md",
+        "skills/commands/runtime/sudo/SKILL.md",
+        "skills/commands/runtime/cleanup/SKILL.md",
+        "skills/commands/runtime/god/SKILL.md",
+        "skills/commands/runtime/unlock/SKILL.md",
+        "skills/presets/runtime/narrative-style/SKILL.md",
+      ]).has(path);
     }),
     markConversationTouched: vi.fn(() => {
       cursor = 1;
@@ -236,6 +241,43 @@ describe("agenticLoop command skill gate", () => {
       (call) => call[0] === "vfs_read",
     );
     expect(onlyReadCalls).toBe(true);
+  });
+
+  it("blocks non-read tools in normal mode when runtime skills are unread", async () => {
+    const vfsSession = createVfsSession(false);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-1",
+          name: "vfs_write",
+          args: { edits: [] },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-normal-gate",
+        vfsSession,
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
   });
 
   it("allows non-read tools in sudo mode after skill is read", async () => {

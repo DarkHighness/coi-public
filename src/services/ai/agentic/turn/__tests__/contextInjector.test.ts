@@ -57,43 +57,44 @@ describe("contextInjector", () => {
       },
     );
 
-    expect(history).toHaveLength(9);
+    expect(history).toHaveLength(11);
     expect(history.every((msg) => msg.role === "user")).toBe(true);
     expect(getText(history[0])).toContain("FORCE UPDATE MODE");
     expect(getText(history[1])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[1])).toContain("commands/runtime/SKILL.md");
-    expect(getText(history[1])).toContain("core/protocols/SKILL.md");
-    expect(getText(history[1])).toContain("craft/writing/SKILL.md");
+    expect(getText(history[1])).toContain("commands/runtime/sudo/SKILL.md");
     expect(getText(history[2])).toContain("[SYSTEM: TOOL USAGE INSTRUCTION]");
-    expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
-    expect(getText(history[3])).toContain("Soft gate (advisory, not blocking)");
+    expect(getText(history[3])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[3])).toContain("commands/runtime/turn/SKILL.md");
-    expect(getText(history[3])).toContain("core/protocols/SKILL.md");
-    expect(getText(history[3])).toContain("craft/writing/SKILL.md");
-    expect(getText(history[3])).toContain("You are currently in God mode.");
     expect(getText(history[3])).toContain("commands/runtime/god/SKILL.md");
     expect(getText(history[3])).toContain("commands/runtime/unlock/SKILL.md");
-    expect(getText(history[4])).toContain("PRESET SKILLS ACTIVE");
-    expect(getText(history[4])).toContain("presets/runtime/SKILL.md");
-    expect(getText(history[4])).toContain(
+    expect(getText(history[4])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[4])).toContain("core/protocols/SKILL.md");
+    expect(getText(history[4])).toContain("craft/writing/SKILL.md");
+    expect(getText(history[4])).toContain("You are currently in God mode.");
+    expect(getText(history[4])).toContain("Unlock mode is currently ON.");
+    expect(getText(history[5])).toContain("PRESET SKILLS ACTIVE");
+    expect(getText(history[5])).toContain("presets/runtime/SKILL.md");
+    expect(getText(history[5])).toContain(
       "skills/presets/runtime/narrative-style/SKILL.md",
     );
-    expect(getText(history[5])).toContain("PRESET PROFILES ACTIVE");
-    expect(getText(history[5])).toContain(
+    expect(getText(history[6])).toContain("PRESET PROFILES ACTIVE");
+    expect(getText(history[6])).toContain(
       "<narrative_style> profile=cinematic source=save_profile",
     );
-    expect(getText(history[6])).toContain(
+    expect(getText(history[7])).toContain(
       "[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]",
     );
-    expect(getText(history[7])).toContain("COMMAND SKILL REQUIRED");
-    expect(getText(history[7])).toContain("commands/runtime/SKILL.md");
-    expect(getText(history[7])).toContain("commands/runtime/cleanup/SKILL.md");
-    expect(getText(history[7])).toContain("core/protocols/SKILL.md");
-    expect(getText(history[7])).toContain("craft/writing/SKILL.md");
-    expect(getText(history[8])).toContain("CLEANUP CONSISTENCY ANCHOR");
-    expect(getText(history[8])).toContain("Target forkId: 3");
-    expect(getText(history[8])).toContain("Target turnNumber: 27");
-    expect(getText(history[8])).toContain("Structured error recovery");
+    expect(getText(history[8])).toContain("COMMAND SKILL REQUIRED");
+    expect(getText(history[8])).toContain("commands/runtime/SKILL.md");
+    expect(getText(history[8])).toContain("commands/runtime/cleanup/SKILL.md");
+    expect(getText(history[9])).toContain("CLEANUP CONSISTENCY ANCHOR");
+    expect(getText(history[9])).toContain("Target forkId: 3");
+    expect(getText(history[9])).toContain("Target turnNumber: 27");
+    expect(getText(history[9])).toContain("Structured error recovery");
+    expect(getText(history[10])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[10])).toContain("core/protocols/SKILL.md");
+    expect(getText(history[10])).toContain("craft/writing/SKILL.md");
   });
 
   it("injects normal turn instruction without semantic hints when RAG is off", () => {

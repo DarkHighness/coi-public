@@ -118,7 +118,10 @@ describe("loopInitializer", () => {
       retriesMax: 3,
       loopIterationsMax: 20,
     });
-    expect(state.requiredCommandSkillPaths).toEqual([]);
+    expect(state.requiredCommandSkillPaths).toEqual([
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+    ]);
     expect(state.requiredPresetSkillPaths).toEqual([]);
     expect(state.requiredPresetSkillRequirements).toEqual([]);
   });
@@ -135,6 +138,7 @@ describe("loopInitializer", () => {
       [],
     );
     expect(sudoState.requiredCommandSkillPaths).toEqual([
+      "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/sudo/SKILL.md",
     ]);
 
@@ -147,7 +151,28 @@ describe("loopInitializer", () => {
       [],
     );
     expect(cleanupState.requiredCommandSkillPaths).toEqual([
+      "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/cleanup/SKILL.md",
+    ]);
+  });
+
+  it("adds mode-specific runtime skill paths when god/unlock are active", () => {
+    const vfsSession = new VfsSession();
+
+    const state = createLoopState(
+      { godMode: true, unlockMode: true } as any,
+      { embedding: { enabled: false } } as any,
+      false,
+      false,
+      vfsSession,
+      [],
+    );
+
+    expect(state.requiredCommandSkillPaths).toEqual([
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+      "skills/commands/runtime/god/SKILL.md",
+      "skills/commands/runtime/unlock/SKILL.md",
     ]);
   });
 
