@@ -33,6 +33,7 @@ import { createLoopState, accumulateUsage, LoopState } from "./loopInitializer";
 import {
   injectSudoModeInstruction,
   injectNormalTurnInstruction,
+  injectColdStartRequiredReads,
   injectReadyConsequences,
   injectBudgetStatus,
   injectNoToolCallError,
@@ -234,6 +235,12 @@ export async function runAgenticLoopRefactored(
         isPlayerRateMode ? "player-rate" : "turn",
       );
     }
+
+    injectColdStartRequiredReads(conversationHistory, [
+      ...loopState.requiredCommandSkillPaths,
+      ...loopState.requiredSoulReadPaths,
+      ...loopState.requiredPresetSkillPaths,
+    ]);
 
     // Main loop
     while (

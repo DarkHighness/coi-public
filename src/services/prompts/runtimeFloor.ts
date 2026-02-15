@@ -26,6 +26,7 @@ You MUST follow these runtime protocol constraints:
   3) Read soul anchors once per session read-epoch before first non-read tool call: \`current/world/soul.md\` and \`current/world/global/soul.md\`.
   4) Build a short tool plan: read anchors -> mutate -> verify -> finish.
   5) Keep one finish call, and make it last.
+  6) Cold start optimization: first tool-call response should preload required files with \`vfs_read\` in one batch, instead of triggering gate errors first.
 - \`current/world/notes.md\` and other \`**/notes.md\` are optional references, not mandatory pre-read anchors.
 - Hard gate (enforced): before first non-read tool call in this epoch, you MUST read \`current/skills/commands/runtime/SKILL.md\`, the active command protocol skill for this loop, and both soul anchors (\`current/world/soul.md\`, \`current/world/global/soul.md\`).
 - Structured error recovery flow (when a tool returns \`{ success:false, code, error }\`):

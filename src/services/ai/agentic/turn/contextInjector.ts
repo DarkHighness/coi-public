@@ -20,6 +20,19 @@ import {
   retconAckRequiredMessage,
 } from "../../../prompts/atoms/core";
 
+const toCurrentReadablePath = (path: string): string => {
+  const normalized = path.trim().replace(/^\/+/, "");
+  if (!normalized) return "current";
+  if (
+    normalized.startsWith("current/") ||
+    normalized.startsWith("shared/") ||
+    normalized.startsWith("forks/")
+  ) {
+    return normalized;
+  }
+  return `current/${normalized}`;
+};
+
 // ============================================================================
 // System Message Injection
 // ============================================================================
@@ -205,6 +218,38 @@ export function injectNormalTurnInstruction(
     ];
     history.push(createUserMessage(lines.join("\n")));
   }
+}
+
+/**
+ * Inject explicit cold-start preload read plan to avoid first-call gate errors.
+ */
+export function injectColdStartRequiredReads(
+  history: UnifiedMessage[],
+  requiredReadPaths: string[],
+): void {
+  const uniquePaths = Array.from(
+    new Set(
+      (requiredReadPaths || [])
+        .map((path) => path.trim())
+        .filter((path) => path.length > 0)
+        .map(toCurrentReadablePath),
+    ),
+  );
+
+  if (uniquePaths.length === 0) {
+    return;
+  }
+
+  const lines = [
+    "[SYSTEM: COLD START REQUIRED READS]",
+    "Before any non-read tool call in this loop, perform these vfs_read calls once in current read-epoch (in order):",
+    ...uniquePaths.map(
+      (path, index) => `${index + 1}. \`vfs_read({ path: "${path}" })\``,
+    ),
+    "Run this preload at cold start to avoid avoidable gate/retry token waste.",
+  ];
+
+  history.push(createUserMessage(lines.join("\n")));
 }
 
 /**

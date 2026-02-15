@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   injectBudgetStatus,
+  injectColdStartRequiredReads,
   injectNoToolCallError,
   injectNormalTurnInstruction,
   injectReadyConsequences,
@@ -203,5 +204,30 @@ describe("contextInjector", () => {
     const history: any[] = [];
     injectReadyConsequences(history);
     expect(history).toHaveLength(0);
+  });
+
+  it("injects explicit cold-start preload read sequence", () => {
+    const history: any[] = [];
+
+    injectColdStartRequiredReads(history, [
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/player-rate/SKILL.md",
+      "world/soul.md",
+      "world/global/soul.md",
+      "skills/commands/runtime/SKILL.md",
+    ]);
+
+    expect(history).toHaveLength(1);
+    const text = getText(history[0]);
+    expect(text).toContain("COLD START REQUIRED READS");
+    expect(text).toContain(
+      'vfs_read({ path: "current/skills/commands/runtime/SKILL.md" })',
+    );
+    expect(text).toContain(
+      'vfs_read({ path: "current/world/soul.md" })',
+    );
+    expect(text).toContain(
+      'vfs_read({ path: "current/world/global/soul.md" })',
+    );
   });
 });
