@@ -14,7 +14,6 @@ import {
 import { ToolCallResult } from "../../providers/types";
 import { extractJson } from "../utils";
 import { formatZodError } from "../../providers/utils";
-import { normalizeToolArgsForCompatibility } from "../../tools/toolArgCompatibility";
 import {
   AgenticErrorKind,
   buildMalformedToolCallFeedback,
@@ -452,19 +451,13 @@ export async function callWithAgenticRetry(
     // --- 3. Schema validation for each tool call ---
     if (!errorMessage && functionCalls.length > 0) {
       for (const toolCall of functionCalls) {
-        const normalizedArgs = normalizeToolArgsForCompatibility(
-          toolCall.name,
-          toolCall.args,
-        ).args;
-        toolCall.args = normalizedArgs as Record<string, unknown>;
-
         const toolDef = request.tools?.find((t) => t.name === toolCall.name);
         const schema =
           toolDef?.parameters ||
           (toolCall.name === requiredToolName ? rootSchema : null);
 
         if (schema) {
-          const validationResult = schema.safeParse(normalizedArgs);
+          const validationResult = schema.safeParse(toolCall.args);
           if (!validationResult.success) {
             console.warn(`[ToolValidation] ${toolCall.name} invalid args`, {
               args: toolCall.args,

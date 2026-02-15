@@ -131,9 +131,8 @@ describe("toolCallProcessor", () => {
     });
   });
 
-  it("strips legacy vfs_commit_turn.meta before validation and dispatch", () => {
+  it("rejects legacy vfs_commit_turn.meta payload", () => {
     handlerMocks.hasHandler.mockReturnValue(true);
-    handlerMocks.dispatchToolCall.mockReturnValue({ success: true });
 
     const result = executeGenericTool(
       "vfs_commit_turn",
@@ -151,25 +150,15 @@ describe("toolCallProcessor", () => {
         },
       },
       createContext() as any,
-    ) as { success?: boolean };
+    ) as { success?: boolean; code?: string };
 
-    expect(result.success).toBe(true);
-    expect(handlerMocks.dispatchToolCall).toHaveBeenCalledWith(
-      "vfs_commit_turn",
-      {
-        userAction: "look around",
-        assistant: {
-          narrative: "You scan the room.",
-          choices: [{ text: "Inspect desk" }, { text: "Open door" }],
-        },
-      },
-      expect.any(Object),
-    );
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_PARAMS");
+    expect(handlerMocks.dispatchToolCall).not.toHaveBeenCalled();
   });
 
-  it("promotes legacy assistant.userAction to top-level vfs_commit_turn.userAction", () => {
+  it("rejects legacy assistant.userAction nested payload", () => {
     handlerMocks.hasHandler.mockReturnValue(true);
-    handlerMocks.dispatchToolCall.mockReturnValue({ success: true });
 
     const result = executeGenericTool(
       "vfs_commit_turn",
@@ -181,20 +170,11 @@ describe("toolCallProcessor", () => {
         },
       },
       createContext() as any,
-    ) as { success?: boolean };
+    ) as { success?: boolean; code?: string };
 
-    expect(result.success).toBe(true);
-    expect(handlerMocks.dispatchToolCall).toHaveBeenCalledWith(
-      "vfs_commit_turn",
-      {
-        userAction: "stabilize the power core",
-        assistant: {
-          narrative: "You reroute the power and stop the sparks.",
-          choices: [{ text: "Run diagnostics" }, { text: "Leave the room" }],
-        },
-      },
-      expect.any(Object),
-    );
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_PARAMS");
+    expect(handlerMocks.dispatchToolCall).not.toHaveBeenCalled();
   });
 
   it("rejects empty vfs_commit_soul payload during validation", () => {

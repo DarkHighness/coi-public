@@ -12,7 +12,6 @@ import {
   ToolContext,
 } from "../../../tools/handlers";
 import { createError } from "../../../tools/toolResult";
-import { normalizeToolArgsForCompatibility } from "../../../tools/toolArgCompatibility";
 import type { LoopState } from "./loopInitializer";
 
 // ============================================================================
@@ -151,11 +150,9 @@ export function executeGenericTool(
   ctx: ToolCallContext,
 ): unknown {
   const { loopState, gameState, settings } = ctx;
-  const normalizedArgs = normalizeToolArgsForCompatibility(name, args)
-    .args as Record<string, unknown>;
 
   // Validate arguments before execution
-  const validation = validateToolArgs(name, normalizedArgs);
+  const validation = validateToolArgs(name, args);
   if (!validation.valid) {
     return (validation as { valid: false; error: unknown }).error;
   }
@@ -176,7 +173,7 @@ export function executeGenericTool(
       vfsElevationIntent: loopState.vfsElevationIntent,
       vfsElevationScopeTemplateIds: loopState.vfsElevationScopeTemplateIds,
     };
-    return dispatchToolCall(name, normalizedArgs, toolContext);
+    return dispatchToolCall(name, args, toolContext);
   }
 
   return { success: false, error: `Unknown tool: ${name}` };

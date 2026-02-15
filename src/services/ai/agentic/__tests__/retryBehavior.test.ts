@@ -5,39 +5,6 @@ import { createUserMessage } from "../../../messageTypes";
 
 const toolSchema = z.object({ foo: z.string() });
 const toolName = "test_tool";
-const writeSchema = z
-  .object({
-    ops: z.array(
-      z
-        .object({
-          op: z.string(),
-          path: z.string(),
-        })
-        .strict(),
-    ),
-  })
-  .strict();
-const commitTurnSchema = z
-  .object({
-    userAction: z.string(),
-    assistant: z
-      .object({
-        narrative: z.string(),
-        choices: z
-          .array(
-            z
-              .object({
-                text: z.string(),
-                consequence: z.string().nullish(),
-              })
-              .strict(),
-          )
-          .min(2)
-          .max(4),
-      })
-      .strict(),
-  })
-  .strict();
 
 const makeRequest = () => ({
   modelId: "model-1",
@@ -169,7 +136,7 @@ describe("callWithAgenticRetry behavior", () => {
     );
   });
 
-  it("normalizes legacy vfs_commit_turn payload without failing a multi-tool batch", async () => {
+  it("rejects legacy vfs_commit_turn payload in multi-tool batch", async () => {
     const provider = createProvider([
       {
         result: {
@@ -215,37 +182,56 @@ describe("callWithAgenticRetry behavior", () => {
     const request = {
       ...makeRequest(),
       tools: [
-        { name: "vfs_write", description: "write", parameters: writeSchema },
+        {
+          name: "vfs_write",
+          description: "write",
+          parameters: z
+            .object({
+              ops: z.array(
+                z
+                  .object({
+                    op: z.string(),
+                    path: z.string(),
+                  })
+                  .strict(),
+              ),
+            })
+            .strict(),
+        },
         {
           name: "vfs_commit_turn",
           description: "commit turn",
-          parameters: commitTurnSchema,
+          parameters: z
+            .object({
+              userAction: z.string(),
+              assistant: z
+                .object({
+                  narrative: z.string(),
+                  choices: z
+                    .array(
+                      z
+                        .object({
+                          text: z.string(),
+                          consequence: z.string().nullish(),
+                        })
+                        .strict(),
+                    )
+                    .min(2)
+                    .max(4),
+                })
+                .strict(),
+            })
+            .strict(),
         },
       ],
     };
 
-    const result = await callWithAgenticRetry(provider, request as any, [], {
-      maxRetries: 0,
-    });
-
-    const calls = (result.result as { functionCalls?: Array<any> }).functionCalls;
-    expect(result.retries).toBe(0);
-    expect(calls).toHaveLength(2);
-    expect(calls?.[1]).toMatchObject({
-      name: "vfs_commit_turn",
-      args: {
-        userAction: "black out the cameras",
-        assistant: {
-          narrative: "You cut the surveillance feed in a clean sweep.",
-          choices: [
-            { text: "Slip into the hallway" },
-            { text: "Plant a decoy ping" },
-          ],
-        },
-      },
-    });
-    expect(calls?.[1]?.args?.assistant?.userAction).toBeUndefined();
-    expect(calls?.[1]?.args?.meta).toBeUndefined();
+    await expect(
+      callWithAgenticRetry(provider, request as any, [], {
+        maxRetries: 0,
+      }),
+    ).rejects.toThrow("INVALID_PARAMETERS");
+    expect(provider.generateChat).toHaveBeenCalledTimes(1);
   });
 
   it("appends assistant+user feedback on missing required tool and calls onRetry", async () => {
