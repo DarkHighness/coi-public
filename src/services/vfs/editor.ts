@@ -175,24 +175,19 @@ export const applySectionEdit = (
       }
     }
 
-    // Write new NPCs. Accept either actor bundles or plain actor profiles.
+    // Write new NPCs from actor bundles.
     for (const entry of data as any[]) {
       if (!entry || typeof entry !== "object") continue;
-      if (entry.profile && typeof entry.profile === "object") {
-        writeActorBundle(session, entry);
-        continue;
+      if (!entry.profile || typeof entry.profile !== "object") {
+        throw new Error(
+          "NPC entries must use actor bundle shape: { profile, skills?, conditions?, traits?, inventory? }.",
+        );
       }
-      const id = (entry as any).id;
-      if (typeof id !== "string" || id.trim().length === 0) {
-        throw new Error("Missing id for npc entry.");
+      const profileId = (entry.profile as any).id;
+      if (typeof profileId !== "string" || profileId.trim().length === 0) {
+        throw new Error("Missing profile.id for npc entry.");
       }
-      writeActorBundle(session, {
-        profile: { ...entry, id: id.trim(), kind: "npc" },
-        skills: [],
-        conditions: [],
-        traits: [],
-        inventory: [],
-      });
+      writeActorBundle(session, entry);
     }
     return;
   }

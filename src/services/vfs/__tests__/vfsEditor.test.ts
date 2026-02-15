@@ -146,7 +146,20 @@ describe("vfs editor helper", () => {
     );
 
     applySectionEdit(session, "npcs", [
-      { id: "npc:new", name: "New NPC", knownBy: ["char:player"] },
+      {
+        profile: {
+          id: "npc:new",
+          kind: "npc",
+          knownBy: ["char:player"],
+          currentLocation: "loc:test",
+          visible: { name: "New NPC" },
+          relations: [],
+        },
+        skills: [],
+        conditions: [],
+        traits: [],
+        inventory: [],
+      },
     ]);
 
     expect(
@@ -160,8 +173,26 @@ describe("vfs editor helper", () => {
     ).toBeTruthy();
 
     expect(() =>
-      applySectionEdit(session, "npcs", [{ name: "Missing ID" }] as any),
-    ).toThrow("Missing id for npc entry.");
+      applySectionEdit(session, "npcs", [{ name: "Legacy NPC" }] as any),
+    ).toThrow("NPC entries must use actor bundle shape");
+
+    expect(() =>
+      applySectionEdit(
+        session,
+        "npcs",
+        [
+          {
+            profile: {
+              kind: "npc",
+              knownBy: ["char:player"],
+              currentLocation: "loc:test",
+              visible: { name: "Missing ID" },
+              relations: [],
+            },
+          },
+        ] as any,
+      ),
+    ).toThrow("Missing profile.id for npc entry.");
   });
 
   it("validates section payload shape and required ids", () => {
