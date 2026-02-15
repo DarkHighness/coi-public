@@ -46,7 +46,10 @@ const createGameState = () =>
     unlockMode: false,
   }) as any;
 
-const createVfsSession = (hasSeenSkill: boolean) => {
+const createVfsSession = (
+  hasSeenSkill: boolean,
+  seenSkillPaths?: string[],
+) => {
   const snapshots: Record<string, any>[] = [
     {
       "conversation/index.json": {
@@ -125,6 +128,16 @@ const createVfsSession = (hasSeenSkill: boolean) => {
   ];
 
   let cursor = 0;
+  const defaultSeenPaths = [
+    "skills/commands/runtime/SKILL.md",
+    "skills/commands/runtime/turn/SKILL.md",
+    "skills/commands/runtime/player-rate/SKILL.md",
+    "skills/commands/runtime/sudo/SKILL.md",
+    "skills/commands/runtime/cleanup/SKILL.md",
+    "skills/commands/runtime/god/SKILL.md",
+    "skills/commands/runtime/unlock/SKILL.md",
+    "skills/presets/runtime/narrative-style/SKILL.md",
+  ];
 
   return {
     snapshot: () => snapshots[Math.min(cursor, snapshots.length - 1)],
@@ -136,15 +149,7 @@ const createVfsSession = (hasSeenSkill: boolean) => {
     noteToolSeen: vi.fn(),
     hasToolSeenInCurrentEpoch: vi.fn((path: string) => {
       if (!hasSeenSkill) return false;
-      return new Set([
-        "skills/commands/runtime/SKILL.md",
-        "skills/commands/runtime/turn/SKILL.md",
-        "skills/commands/runtime/sudo/SKILL.md",
-        "skills/commands/runtime/cleanup/SKILL.md",
-        "skills/commands/runtime/god/SKILL.md",
-        "skills/commands/runtime/unlock/SKILL.md",
-        "skills/presets/runtime/narrative-style/SKILL.md",
-      ]).has(path);
+      return new Set(seenSkillPaths ?? defaultSeenPaths).has(path);
     }),
     markConversationTouched: vi.fn(() => {
       cursor = 1;
@@ -278,6 +283,58 @@ describe("agenticLoop command skill gate", () => {
 
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
     expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+  });
+
+  it("blocks non-read tools in player-rate mode when player-rate skill is unread", async () => {
+    const vfsSession = createVfsSession(true, [
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+    ]);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-1",
+          name: "vfs_write",
+          args: { edits: [] },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: '[Player Rate] {"turnId":"fork-0/turn-2","vote":"down"}',
+              },
+            ],
+          } as any,
+        ],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-rate-gate",
+        vfsSession,
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+    expect(vfsSession.hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
+      "skills/commands/runtime/player-rate/SKILL.md",
+    );
   });
 
   it("allows non-read tools in sudo mode after skill is read", async () => {

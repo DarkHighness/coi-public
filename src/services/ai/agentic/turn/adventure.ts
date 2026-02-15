@@ -276,6 +276,17 @@ export const generateAdventureTurn = async (
     nsfwEnabled,
   };
 
+  const isSudoMode = context.userAction.startsWith("[SUDO]");
+  const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
+  const isPlayerRateMode = context.userAction.startsWith("[Player Rate]");
+  const commandProtocolSkillPath = isCleanupMode
+    ? "current/skills/commands/runtime/cleanup/SKILL.md"
+    : isSudoMode
+      ? "current/skills/commands/runtime/sudo/SKILL.md"
+      : isPlayerRateMode
+        ? "current/skills/commands/runtime/player-rate/SKILL.md"
+      : "current/skills/commands/runtime/turn/SKILL.md";
+
   // === SESSION-BASED HISTORY MANAGEMENT (Using new modular context) ===
   const sessionSetupOptions = {
     slotId: context.slotId,
@@ -288,6 +299,7 @@ export const generateAdventureTurn = async (
     contextMessages,
     recentHistory: context.recentHistory,
     isInit: context.isInit,
+    commandProtocolSkillPath,
   };
 
   const { sessionId, activeHistory: initialHistory } =
@@ -304,9 +316,6 @@ export const generateAdventureTurn = async (
     context.vfsSession,
   );
 
-  // Detect SUDO mode
-  const isSudoMode = context.userAction.startsWith("[SUDO]");
-  const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
   const requiredPresetSkillRequirements = resolveActivePresetSkillRequirements({
     settings,
     presetProfile: gameState.presetProfile,

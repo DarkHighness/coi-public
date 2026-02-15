@@ -381,7 +381,7 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.nodes["model-fork-0/turn-0"]).toBeTruthy();
   });
 
-  it("reads current soul markdown and prefers it over legacy json profile", () => {
+  it("reads current soul markdown and prefers it over global soul", () => {
     const files: VfsFileMap = {
       "world/soul.md": makeMarkdownFile(
         "world/soul.md",
@@ -391,26 +391,23 @@ describe("deriveGameStateFromVfs", () => {
         "world/global/soul.md",
         "# Player Soul (Global)\n\n- Scope: Global\n",
       ),
-      "world/player_profile.json": makeJsonFile("world/player_profile.json", {
-        profile: "legacy-profile-should-not-win",
-      }),
     };
 
     const state = deriveGameStateFromVfs(files);
     expect(state.playerProfile).toContain("Player Soul (This Save)");
-    expect(state.playerProfile).not.toContain("legacy-profile-should-not-win");
+    expect(state.playerProfile).not.toContain("Player Soul (Global)");
   });
 
-  it("falls back to legacy player_profile.json when soul markdown is missing", () => {
+  it("throws on legacy world/player_profile.json saves", () => {
     const files: VfsFileMap = {
       "world/player_profile.json": makeJsonFile("world/player_profile.json", {
         profile: "Player prefers terse, low-AI-voice narration.",
       }),
     };
 
-    const state = deriveGameStateFromVfs(files);
-    expect(state.playerProfile).toContain("Player Soul (This Save)");
-    expect(state.playerProfile).toContain("Player prefers terse, low-AI-voice narration.");
+    expect(() => deriveGameStateFromVfs(files)).toThrow(
+      /SAVE_INCOMPATIBLE_LAYOUT/,
+    );
   });
 
   it("restores turn.meta.playerRate into model nodes", () => {

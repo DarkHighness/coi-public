@@ -50,6 +50,8 @@ export interface LoopState {
   isRAGEnabled: boolean;
   /** Whether in CLEANUP mode */
   isCleanupMode: boolean;
+  /** Whether this loop is triggered by [Player Rate] */
+  isPlayerRateMode: boolean;
   /** Required command skill paths for this loop */
   requiredCommandSkillPaths: string[];
   /** Required preset skill paths for this loop */
@@ -87,7 +89,12 @@ export function createLoopState(
   requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
   vfsElevationIntent?: VfsElevationIntent,
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds,
+  options?: {
+    isPlayerRateMode?: boolean;
+  },
 ): LoopState {
+  const isPlayerRateMode =
+    options?.isPlayerRateMode === true && !isSudoMode && !isCleanupMode;
   const budgetState = createBudgetState(settings, {
     loopType: isCleanupMode ? "cleanup" : "turn",
   });
@@ -110,11 +117,19 @@ export function createLoopState(
           ? "skills/commands/runtime/cleanup/SKILL.md"
           : isSudoMode
             ? "skills/commands/runtime/sudo/SKILL.md"
+            : isPlayerRateMode
+              ? "skills/commands/runtime/player-rate/SKILL.md"
             : "skills/commands/runtime/turn/SKILL.md",
-        !isCleanupMode && !isSudoMode && gameState.godMode === true
+        !isCleanupMode &&
+        !isSudoMode &&
+        !isPlayerRateMode &&
+        gameState.godMode === true
           ? "skills/commands/runtime/god/SKILL.md"
           : null,
-        !isCleanupMode && !isSudoMode && gameState.unlockMode === true
+        !isCleanupMode &&
+        !isSudoMode &&
+        !isPlayerRateMode &&
+        gameState.unlockMode === true
           ? "skills/commands/runtime/unlock/SKILL.md"
           : null,
       ].filter((path): path is string => typeof path === "string"),
@@ -152,6 +167,7 @@ export function createLoopState(
     activeTools,
     isSudoMode,
     isCleanupMode,
+    isPlayerRateMode,
     finishToolName,
     isRAGEnabled,
     requiredCommandSkillPaths,

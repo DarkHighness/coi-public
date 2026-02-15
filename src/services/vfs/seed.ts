@@ -85,12 +85,8 @@ const writeSoulDocuments = (
     globalProfile?: string;
   },
 ): void => {
-  const currentSoul = normalizeSoulMarkdown("current", options?.currentProfile, {
-    legacyProfile: options?.currentProfile,
-  });
-  const globalSoul = normalizeSoulMarkdown("global", options?.globalProfile, {
-    legacyProfile: options?.globalProfile,
-  });
+  const currentSoul = normalizeSoulMarkdown("current", options?.currentProfile);
+  const globalSoul = normalizeSoulMarkdown("global", options?.globalProfile);
 
   session.writeFile(CURRENT_SOUL_LOGICAL_PATH, currentSoul, "text/markdown");
   session.writeFile(GLOBAL_SOUL_LOGICAL_PATH, globalSoul, "text/markdown");

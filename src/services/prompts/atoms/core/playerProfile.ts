@@ -38,6 +38,9 @@ const updateTiming = `
     - **Frequent early**: First 10-20 turns, update after most significant choices
     - **Refine later**: Confirm patterns, note deviations, deepen understanding
     - **Mandatory**: when input marker is \`[Player Rate]\`, update soul files in this turn
+      * Parse \`vote/preset/comment/time\` and record concrete evidence in \`Evidence Log\`
+      * Apply feedback to \`Style Preferences\` and \`Guidance For AI\` first; avoid overfitting personality from one signal
+      * Keep writes focused on \`current/world/soul.md\` and \`current/world/global/soul.md\`
     - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
     - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Evidence Log / Guidance For AI)
     - **Always update when**:

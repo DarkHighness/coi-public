@@ -24,6 +24,7 @@ const messageProtocol = `
   **[Player Rate]** — Player feedback on this turn output
   Treat as feedback ingestion for soul updates. Do NOT treat it as a protagonist action or advance story events.
   Example: \`[Player Rate] {"turnId":"fork-0/turn-12","vote":"down","preset":"AI flavor too strong"}\`
+  Required handling: parse \`vote/preset/comment/time\` when present, then update \`current/world/soul.md\` and \`current/world/global/soul.md\`.
 
   **[CONTEXT: ...]** — Background information
   For your reference only. Do NOT narrate a reaction to context labels.
@@ -33,6 +34,11 @@ const messageProtocol = `
 
   **[ERROR: ...]** — Tool call failure feedback
   Read, understand, and fix before proceeding.
+
+  **Routing Matrix**:
+  - \`[PLAYER_ACTION]\` => normal simulation turn (world reaction + state updates)
+  - \`[Player Rate]\` => soul update loop only (no visible story progression)
+  - \`[SUDO]\` => elevated update workflow with coverage discipline
 
   **Processing Priority**:
   1. Look for [PLAYER_ACTION] to determine what to simulate
@@ -215,14 +221,16 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
 
     quickStart: `
 1. Read [PLAYER_ACTION] to determine what to simulate
-2. Handle [ERROR] by retrying with corrected arguments
-3. Call tools in every response (mandatory)
-4. Search before creating entities
-5. "You" in rules = AI, "You" in narrative = protagonist
+2. Route [Player Rate] to soul-only updates (do not advance visible plot)
+3. Route [SUDO] to elevated update workflow
+4. Handle [ERROR] by retrying with corrected arguments
+5. Call tools in every response (mandatory)
+6. Search before creating entities
+7. "You" in rules = AI, "You" in narrative = protagonist
 `.trim(),
 
     checklist: [
-      "Identifying message markers correctly ([PLAYER_ACTION], [SUDO], [ERROR])?",
+      "Identifying message markers correctly ([PLAYER_ACTION], [Player Rate], [SUDO], [ERROR])?",
       "Handling errors before finishing turn?",
       "Using 'Did you mean?' suggestions from errors?",
       "Including tool calls in every response?",

@@ -156,6 +156,33 @@ describe("loopInitializer", () => {
     ]);
   });
 
+  it("uses player-rate protocol skill when rate mode is active", () => {
+    const vfsSession = new VfsSession();
+
+    const state = createLoopState(
+      { godMode: true, unlockMode: true } as any,
+      { embedding: { enabled: false } } as any,
+      false,
+      false,
+      vfsSession,
+      [],
+      undefined,
+      null,
+      [],
+      undefined,
+      undefined,
+      {
+        isPlayerRateMode: true,
+      },
+    );
+
+    expect(state.isPlayerRateMode).toBe(true);
+    expect(state.requiredCommandSkillPaths).toEqual([
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/player-rate/SKILL.md",
+    ]);
+  });
+
   it("adds mode-specific runtime skill paths when god/unlock are active", () => {
     const vfsSession = new VfsSession();
 

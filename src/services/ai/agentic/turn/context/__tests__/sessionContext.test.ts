@@ -249,6 +249,42 @@ describe("sessionContext", () => {
     expect(result.activeHistory[0]?.role).toBe("user");
   });
 
+  it("uses player-rate command skill path in cold-start guidance when provided", async () => {
+    sessionManagerMock.isEmpty.mockReturnValue(true);
+    sessionManagerMock.getHistory.mockReturnValue([]);
+
+    await setupSession({
+      slotId: "slot-rate",
+      forkId: 0,
+      vfsSession: { setActiveForkId: vi.fn() } as any,
+      providerId: "provider-rate",
+      modelId: "model-rate",
+      protocol: "openai",
+      systemInstruction: "system-inst",
+      contextMessages: [],
+      recentHistory: [],
+      commandProtocolSkillPath:
+        "current/skills/commands/runtime/player-rate/SKILL.md",
+    });
+
+    const initializedHistory = sessionManagerMock.setHistory.mock
+      .calls[0]?.[1] as UnifiedMessage[] | undefined;
+    const coldStartText = initializedHistory
+      ?.flatMap((msg) => msg.content)
+      .find(
+        (part) =>
+          part.type === "text" &&
+          part.text.includes("[SYSTEM: COLD_START_SOFT_GUIDANCE]"),
+      ) as { type: "text"; text: string } | undefined;
+
+    expect(coldStartText?.text).toContain(
+      "current/skills/commands/runtime/player-rate/SKILL.md",
+    );
+    expect(coldStartText?.text).not.toContain(
+      "current/skills/commands/runtime/turn/SKILL.md",
+    );
+  });
+
   it("reuses existing non-empty session without resetting history", async () => {
     sessionManagerMock.isEmpty.mockReturnValue(false);
     const existingHistory = [createTextMessage("assistant", "persisted")];

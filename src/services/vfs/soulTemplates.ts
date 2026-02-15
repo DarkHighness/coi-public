@@ -10,23 +10,12 @@ const scopeLabel = (scope: SoulScope): string =>
 
 const isoStamp = (updatedAt: number): string => new Date(updatedAt).toISOString();
 
-const toEvidenceBlock = (legacyProfile?: string): string => {
-  if (!legacyProfile || legacyProfile.trim().length === 0) {
-    return "- Initialized soul profile skeleton.";
-  }
-
-  const compact = legacyProfile.trim().replace(/\r?\n+/g, " ").slice(0, 400);
-  return [
-    "- Initialized from legacy player profile data.",
-    `- Legacy note: ${compact}`,
-  ].join("\n");
-};
+const toEvidenceBlock = (): string => "- Initialized soul profile skeleton.";
 
 export const buildSoulMarkdown = (
   scope: SoulScope,
   options?: {
     updatedAt?: number;
-    legacyProfile?: string;
   },
 ): string => {
   const updatedAt = options?.updatedAt ?? Date.now();
@@ -51,7 +40,7 @@ export const buildSoulMarkdown = (
     "- Track preference for exploration, negotiation, or conflict.",
     "",
     "## Evidence Log",
-    toEvidenceBlock(options?.legacyProfile),
+    toEvidenceBlock(),
     "",
     "## Guidance For AI",
     "- Use this file as behavioral evidence, not absolute truth.",
@@ -66,7 +55,6 @@ export const normalizeSoulMarkdown = (
   content: string | undefined | null,
   options?: {
     updatedAt?: number;
-    legacyProfile?: string;
   },
 ): string => {
   if (typeof content === "string" && content.trim().length > 0) {

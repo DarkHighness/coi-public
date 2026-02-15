@@ -62,6 +62,7 @@ export function injectNormalTurnInstruction(
     mode?: "normal" | "cleanup";
   },
   ragEnabled: boolean = true,
+  normalCommandProtocol: "turn" | "player-rate" = "turn",
 ): void {
   history.push(
     createUserMessage(
@@ -116,23 +117,41 @@ export function injectNormalTurnInstruction(
   }
 
   if (!isCleanupMode) {
+    const activeCommandSkillPath =
+      normalCommandProtocol === "player-rate"
+        ? "current/skills/commands/runtime/player-rate/SKILL.md"
+        : "current/skills/commands/runtime/turn/SKILL.md";
     const commandSkillLines: string[] = [
       "[SYSTEM: COMMAND SKILL REQUIRED]",
       "Hard gate (enforced): before any non-read tool call in this epoch, read:",
       "- `current/skills/commands/runtime/SKILL.md`",
-      "- `current/skills/commands/runtime/turn/SKILL.md`",
+      `- \`${activeCommandSkillPath}\``,
     ];
-    if (modeFlags?.godMode) {
+    if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
       commandSkillLines.push(
         "- `current/skills/commands/runtime/god/SKILL.md` (god mode active)",
       );
     }
-    if (modeFlags?.unlockMode) {
+    if (modeFlags?.unlockMode && normalCommandProtocol !== "player-rate") {
       commandSkillLines.push(
         "- `current/skills/commands/runtime/unlock/SKILL.md` (unlock mode active)",
       );
     }
     history.push(createUserMessage(commandSkillLines.join("\n")));
+  }
+
+  if (!isCleanupMode && normalCommandProtocol === "player-rate") {
+    history.push(
+      createUserMessage(
+        [
+          "[SYSTEM: PLAYER RATE MODE]",
+          "This loop is triggered by `[Player Rate]` feedback.",
+          "- Treat payload as feedback ingestion, not protagonist action simulation.",
+          "- Update only `current/world/soul.md` and `current/world/global/soul.md` when evidence is meaningful.",
+          "- Keep visible plot progression unchanged for this isolated feedback loop.",
+        ].join("\n"),
+      ),
+    );
   }
 
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
@@ -141,13 +160,13 @@ export function injectNormalTurnInstruction(
     "- `current/skills/core/protocols/SKILL.md`",
     "- `current/skills/craft/writing/SKILL.md`",
   );
-  if (modeFlags?.godMode) {
+  if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
     modeSkillLines.push(
       "You are currently in God mode.",
       "Apply permissive outcomes with coherent state updates.",
     );
   }
-  if (modeFlags?.unlockMode) {
+  if (modeFlags?.unlockMode && normalCommandProtocol !== "player-rate") {
     modeSkillLines.push(
       "Unlock mode is currently ON.",
       "Keep hidden/visible layering deterministic.",

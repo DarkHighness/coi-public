@@ -115,6 +115,11 @@ When you render those consequences into prose, write like a skilled human storyt
   - Use **[CONTEXT]** and **[SYSTEM]** for background and instructions.
   - Handle **[ERROR]** by retrying/fixing before proceeding.
   - Execute **[SUDO]** as elevated updates while still respecting immutable/finish guards.
+
+  **ROUTING MATRIX (DO NOT MIX)**:
+  - \`[PLAYER_ACTION]\` => simulate consequences, then update world/gameplay state.
+  - \`[Player Rate]\` => update \`current/world/soul.md\` + \`current/world/global/soul.md\` only.
+  - \`[SUDO]\` => elevated multi-file update workflow with coverage verification.
 </MESSAGE_MARKERS>
 
 <terminology_disambiguation>

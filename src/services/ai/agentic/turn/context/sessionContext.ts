@@ -39,6 +39,8 @@ export interface SessionSetupOptions {
   contextMessages: UnifiedMessage[];
   recentHistory?: StorySegment[];
   isInit?: boolean;
+  /** Optional active command protocol skill path for cold-start hint */
+  commandProtocolSkillPath?: string;
 }
 
 export interface SessionSetupResult {
@@ -46,13 +48,18 @@ export interface SessionSetupResult {
   activeHistory: UnifiedMessage[];
 }
 
-const buildColdStartSkillHintMessage = (): UnifiedMessage =>
+const DEFAULT_COMMAND_PROTOCOL_SKILL_PATH =
+  "current/skills/commands/runtime/turn/SKILL.md";
+
+const buildColdStartSkillHintMessage = (
+  commandProtocolSkillPath: string = DEFAULT_COMMAND_PROTOCOL_SKILL_PATH,
+): UnifiedMessage =>
   createUserMessage(
     [
       "[SYSTEM: COLD_START_SOFT_GUIDANCE]",
       "Hard gate (enforced): before first non-read tool call this turn, read:",
       "- `current/skills/commands/runtime/SKILL.md`",
-      "- `current/skills/commands/runtime/turn/SKILL.md`",
+      `- \`${commandProtocolSkillPath}\``,
       "Optional deepening when needed:",
       "- `current/skills/core/protocols/SKILL.md`",
       "- `current/skills/craft/writing/SKILL.md`",
@@ -102,6 +109,7 @@ export async function setupSession(
     contextMessages,
     recentHistory,
     isInit,
+    commandProtocolSkillPath,
   } = options;
 
   // Create session config
@@ -140,7 +148,7 @@ export async function setupSession(
       contextMessages,
       recentHistory,
       protocol,
-      { includeColdStartGuidance: true },
+      { includeColdStartGuidance: true, commandProtocolSkillPath },
     );
     sessionManager.setHistory(session.id, initialHistory);
   }
@@ -166,12 +174,18 @@ function buildInitialHistory(
   contextMessages: UnifiedMessage[],
   recentHistory: StorySegment[] | undefined,
   protocol: ProviderProtocol,
-  options?: { includeColdStartGuidance?: boolean },
+  options?: {
+    includeColdStartGuidance?: boolean;
+    commandProtocolSkillPath?: string;
+  },
 ): unknown[] {
   let initialHistory: UnifiedMessage[] = [...contextMessages];
 
   if (options?.includeColdStartGuidance) {
-    initialHistory = [...initialHistory, buildColdStartSkillHintMessage()];
+    initialHistory = [
+      ...initialHistory,
+      buildColdStartSkillHintMessage(options.commandProtocolSkillPath),
+    ];
   }
 
   if (recentHistory && recentHistory.length > 0) {

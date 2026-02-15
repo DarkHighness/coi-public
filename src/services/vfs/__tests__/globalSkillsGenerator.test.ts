@@ -98,6 +98,9 @@ describe("VFS global skills generator", () => {
     const commandTurn = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/turn/SKILL.md",
     )?.content;
+    const commandPlayerRate = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/player-rate/SKILL.md",
+    )?.content;
     const commandSummary = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/summary/SKILL.md",
     )?.content;
@@ -129,10 +132,16 @@ describe("VFS global skills generator", () => {
       "current/skills/commands/runtime/turn/SKILL.md",
     );
     expect(commandRuntimeHub).toContain(
+      "current/skills/commands/runtime/player-rate/SKILL.md",
+    );
+    expect(commandRuntimeHub).toContain(
       "current/skills/commands/runtime/outline/SKILL.md",
     );
     expect(commandTurn).toContain("name: commands-turn");
     expect(commandTurn).toContain("vfs_commit_turn");
+    expect(commandPlayerRate).toContain("name: commands-player-rate");
+    expect(commandPlayerRate).toContain("[Player Rate]");
+    expect(commandPlayerRate).toContain("current/world/soul.md");
     expect(commandSummary).toContain("name: commands-summary");
     expect(commandSummary).toContain("query_summary");
     expect(commandSummary).toContain("Structured Error Recovery Flow");

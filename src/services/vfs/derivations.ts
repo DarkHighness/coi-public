@@ -434,7 +434,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   let hasGlobalTheme = false;
   let currentSoulMarkdown: string | null = null;
   let globalSoulMarkdown: string | null = null;
-  let legacyPerSaveProfile: string | null = null;
 
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
@@ -566,7 +565,8 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       pathWithoutCurrent === "world/character.json" ||
       pathWithoutCurrent.startsWith("world/character/") ||
       pathWithoutCurrent.startsWith("world/inventory/") ||
-      pathWithoutCurrent.startsWith("world/npcs/")
+      pathWithoutCurrent.startsWith("world/npcs/") ||
+      pathWithoutCurrent === "world/player_profile.json"
     ) {
       throw new Error(
         `SAVE_INCOMPATIBLE_LAYOUT: Found legacy path "${pathWithoutCurrent}". This build requires Actor-first VFS layout under world/characters/.`,
@@ -664,14 +664,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
-    if (pathWithoutCurrent === "world/player_profile.json") {
-      const profile = (data as { profile?: unknown })?.profile;
-      if (typeof profile === "string") {
-        legacyPerSaveProfile = profile;
-      }
-      continue;
-    }
-
     if (pathWithoutCurrent === "conversation/fork_tree.json") {
       const tree = data as any;
       if (
@@ -732,10 +724,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   if (currentSoulMarkdown) {
     state.playerProfile = currentSoulMarkdown;
-  } else if (legacyPerSaveProfile) {
-    state.playerProfile = normalizeSoulMarkdown("current", undefined, {
-      legacyProfile: legacyPerSaveProfile,
-    });
   } else if (globalSoulMarkdown) {
     state.playerProfile = normalizeSoulMarkdown("current", globalSoulMarkdown);
   }

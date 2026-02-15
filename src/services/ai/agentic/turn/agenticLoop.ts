@@ -105,6 +105,29 @@ export interface AgenticLoopResult {
   _conversationHistory: UnifiedMessage[];
 }
 
+const getMessageText = (message: UnifiedMessage): string =>
+  message.content.find((part) => part.type === "text")?.text ?? "";
+
+const detectPlayerRateMode = (
+  initialContents: UnifiedMessage[],
+  isSudoMode: boolean,
+  isCleanupMode: boolean,
+): boolean => {
+  if (isSudoMode || isCleanupMode) {
+    return false;
+  }
+
+  for (let i = initialContents.length - 1; i >= 0; i -= 1) {
+    const message = initialContents[i];
+    if (message.role !== "user") {
+      continue;
+    }
+    return getMessageText(message).trimStart().startsWith("[Player Rate]");
+  }
+
+  return false;
+};
+
 // ============================================================================
 // Main Agentic Loop
 // ============================================================================
@@ -136,6 +159,11 @@ export async function runAgenticLoopRefactored(
 
   // Initialize provider
   const provider = sessionManager.getProvider(sessionId, instance);
+  const isPlayerRateMode = detectPlayerRateMode(
+    initialContents,
+    isSudoMode,
+    isCleanupMode,
+  );
 
   // Initialize loop state
   const loopState = createLoopState(
@@ -150,6 +178,9 @@ export async function runAgenticLoopRefactored(
     requiredPresetSkillRequirements ?? [],
     vfsElevationIntent,
     vfsElevationScopeTemplateIds,
+    {
+      isPlayerRateMode,
+    },
   );
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
@@ -200,6 +231,7 @@ export async function runAgenticLoopRefactored(
           mode: isCleanupMode ? "cleanup" : "normal",
         },
         loopState.isRAGEnabled,
+        isPlayerRateMode ? "player-rate" : "turn",
       );
     }
 

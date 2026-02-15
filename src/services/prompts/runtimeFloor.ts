@@ -14,11 +14,12 @@ You MUST follow these runtime protocol constraints:
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - "Write/Move/Delete" means \`vfs_write\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic mutation tools).
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
+  - Marker routing: \`[PLAYER_ACTION]\` => simulate world turn, \`[Player Rate]\` => update soul files only, \`[SUDO]\` => elevated update loop.
 - End turns ONLY via \`vfs_commit_turn\`, and it must be the LAST tool call.
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - Loop preflight (required before non-read tools):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
-  2) Read the active command protocol skill (\`current/skills/commands/runtime/turn/SKILL.md\` for normal turns, \`current/skills/commands/runtime/cleanup/SKILL.md\` for cleanup, \`current/skills/commands/runtime/sudo/SKILL.md\` for /sudo).
+  2) Read the active command protocol skill (\`current/skills/commands/runtime/turn/SKILL.md\` for normal turns, \`current/skills/commands/runtime/player-rate/SKILL.md\` for \`[Player Rate]\` loops, \`current/skills/commands/runtime/cleanup/SKILL.md\` for cleanup, \`current/skills/commands/runtime/sudo/SKILL.md\` for /sudo).
   3) Build a short tool plan: read anchors -> mutate -> verify -> finish.
   4) Keep one finish call, and make it last.
 - Hard gate (enforced): before first non-read tool call in this epoch, you MUST read \`current/skills/commands/runtime/SKILL.md\` plus the active command protocol skill for this loop.

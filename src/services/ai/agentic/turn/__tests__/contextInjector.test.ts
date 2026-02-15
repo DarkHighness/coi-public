@@ -114,6 +114,39 @@ describe("contextInjector", () => {
     expect(getText(history[0]).toLowerCase()).not.toContain("semantic");
   });
 
+  it("uses player-rate command protocol guidance for rating loops", () => {
+    const history: any[] = [];
+
+    injectNormalTurnInstruction(
+      history,
+      "vfs_commit_turn",
+      false,
+      {
+        godMode: true,
+        unlockMode: true,
+      },
+      [],
+      [],
+      undefined,
+      true,
+      "player-rate",
+    );
+
+    expect(history).toHaveLength(4);
+    expect(getText(history[1])).toContain("commands/runtime/SKILL.md");
+    expect(getText(history[1])).toContain(
+      "commands/runtime/player-rate/SKILL.md",
+    );
+    expect(getText(history[1])).not.toContain("commands/runtime/god/SKILL.md");
+    expect(getText(history[1])).not.toContain(
+      "commands/runtime/unlock/SKILL.md",
+    );
+    expect(getText(history[2])).toContain("PLAYER RATE MODE");
+    expect(getText(history[2])).toContain("current/world/soul.md");
+    expect(getText(history[2])).toContain("current/world/global/soul.md");
+    expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
+  });
+
   it("injects budget and no-tool-call messages", () => {
     const history: any[] = [];
 

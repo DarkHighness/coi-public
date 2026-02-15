@@ -67,9 +67,7 @@ export const reconcileGlobalSoulWithSettingsOnLoad = (params: {
   if (hasSettingsSoul && settingsSoul !== mirrorSoul) {
     params.vfsSession.writeFile(
       GLOBAL_SOUL_LOGICAL_PATH,
-      normalizeSoulMarkdown("global", settingsSoul, {
-        legacyProfile: settingsSoul,
-      }),
+      normalizeSoulMarkdown("global", settingsSoul),
       "text/markdown",
     );
   }

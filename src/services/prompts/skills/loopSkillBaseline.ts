@@ -11,6 +11,12 @@ export const LOOP_SKILL_BASELINE = {
     "current/skills/core/protocols/SKILL.md",
     "current/skills/craft/writing/SKILL.md",
   ],
+  rate: [
+    "current/skills/commands/runtime/SKILL.md",
+    "current/skills/commands/runtime/player-rate/SKILL.md",
+    "current/skills/core/protocols/SKILL.md",
+    "current/skills/craft/writing/SKILL.md",
+  ],
   summary_query: [
     "current/skills/commands/runtime/SKILL.md",
     "current/skills/commands/runtime/summary/SKILL.md",
