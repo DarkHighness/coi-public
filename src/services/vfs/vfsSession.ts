@@ -173,6 +173,44 @@ const applyPatchFn: typeof fastJsonPatch.applyPatch = (() => {
   throw new Error("fast-json-patch applyPatch export is unavailable");
 })();
 
+const normalizeErrorWhitespace = (message: string): string =>
+  message.replace(/\s+/g, " ").trim();
+
+const stripJsonPatchTreeDump = (message: string): string =>
+  message.replace(/\s+tree:\s+\{[\s\S]*$/i, "").trim();
+
+const extractJsonPatchPointer = (message: string): string | null => {
+  const pointerMatch = message.match(/"path"\s*:\s*"([^"]+)"/);
+  if (pointerMatch && pointerMatch[1]) {
+    return pointerMatch[1];
+  }
+  const inlineMatch = message.match(/\bpath:\s*([^\s,;]+)/i);
+  if (inlineMatch && inlineMatch[1]) {
+    return inlineMatch[1].replace(/^"|"$/g, "");
+  }
+  return null;
+};
+
+const formatJsonPatchApplyError = (
+  canonicalPath: string,
+  rawMessage: string,
+): string => {
+  const compact = normalizeErrorWhitespace(stripJsonPatchTreeDump(rawMessage));
+
+  if (
+    /OPERATION_PATH_UNRESOLVABLE/i.test(compact) ||
+    /Cannot perform the operation at a path that does not exist/i.test(compact)
+  ) {
+    const pointer = extractJsonPatchPointer(compact) ?? "(unknown pointer)";
+    return (
+      `JSON patch failed for ${canonicalPath}: pointer "${pointer}" does not exist in the target document. ` +
+      "Read the file and patch a valid pointer path."
+    );
+  }
+
+  return `JSON patch failed for ${canonicalPath}: ${compact}`;
+};
+
 type OutOfBandPathChangeType = "added" | "deleted" | "modified";
 
 export type OutOfBandReadInvalidation =
@@ -946,7 +984,13 @@ export class VfsSession {
       });
     }
 
-    const patched = applyPatchFn(document, patchOps, true, false).newDocument;
+    let patched: unknown;
+    try {
+      patched = applyPatchFn(document, patchOps, true, false).newDocument;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(formatJsonPatchApplyError(canonicalPath, message));
+    }
     const normalizedPatched = this.normalizeJsonDocumentForPath(
       canonicalPath,
       patched,

@@ -379,6 +379,45 @@ describe("callWithAgenticRetry behavior", () => {
     );
   });
 
+  it("caps INVALID_PARAMETERS issue list for oversized schema failures", async () => {
+    const provider = createProvider([
+      {
+        result: {
+          functionCalls: [{ id: "call_invalid", name: "big_tool", args: {} }],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    const request = {
+      modelId: "model-1",
+      systemInstruction: "system",
+      messages: [],
+      tools: [
+        {
+          name: "big_tool",
+          description: "big schema tool",
+          parameters: z
+            .object({
+              a: z.string(),
+              b: z.string(),
+              c: z.string(),
+              d: z.string(),
+              e: z.string(),
+              f: z.string(),
+              g: z.string(),
+            })
+            .strict(),
+        },
+      ],
+    };
+
+    await expect(
+      callWithAgenticRetry(provider, request as any, [], { maxRetries: 0 }),
+    ).rejects.toThrow("and 3 more issue(s)");
+  });
+
   it("appends assistant+user feedback on missing required tool and calls onRetry", async () => {
     const provider = createProvider([
       {

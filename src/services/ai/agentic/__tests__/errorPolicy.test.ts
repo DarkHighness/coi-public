@@ -52,4 +52,14 @@ describe("errorPolicy", () => {
       'If you call "vfs_commit_turn", it must be the LAST tool call.',
     );
   });
+
+  it("normalizes malformed raw provider error text without truncation", () => {
+    const raw = `bad payload:\n\n${"x".repeat(400)}\n\nnext line`;
+    const feedback = buildMalformedToolCallFeedback({
+      rawMessage: raw,
+    });
+
+    expect(feedback).toContain(`Raw provider error: bad payload: ${"x".repeat(400)} next line`);
+    expect(feedback).not.toContain("[truncated]");
+  });
 });

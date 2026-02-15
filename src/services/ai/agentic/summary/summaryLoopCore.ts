@@ -226,11 +226,13 @@ const checkSummarySoulReadGate = (
     return null;
   }
 
+  const shown = missing.map((path) => `current/${path}`).join(", ");
+
   return {
     success: false,
-    error: `[ERROR: SOUL_NOT_READ] Session preflight requires reading soul memory anchors before non-read tools: ${missing
-      .map((path) => `current/${path}`)
-      .join(", ")}. Use vfs_read first.`,
+    error:
+      `[ERROR: SOUL_NOT_READ] Read required soul anchors before non-read tools: ${shown}. ` +
+      "Action: call vfs_read on each missing anchor once, then continue.",
     code: "SOUL_NOT_READ",
   };
 };

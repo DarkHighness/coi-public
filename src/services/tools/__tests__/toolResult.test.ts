@@ -29,6 +29,14 @@ describe("toolResult helpers", () => {
     });
   });
 
+  it("keeps oversized error text intact while normalizing whitespace", () => {
+    const oversized = `${"x".repeat(900)}\n\n\n${"y".repeat(200)}`;
+    const result = createError(oversized, "INVALID_DATA");
+    expect(result.error.length).toBeGreaterThan(1000);
+    expect(result.error).not.toContain("[truncated]");
+    expect(result.error).toContain("\n");
+  });
+
   it("supports structured error details without breaking base fields", () => {
     const result = createError("invalid args", "INVALID_PARAMS", {
       tool: "vfs_read",

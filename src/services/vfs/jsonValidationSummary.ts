@@ -2,7 +2,6 @@ import { z } from "zod";
 
 const MAX_ISSUES = 3;
 const MAX_DIRECT_SUBFIELDS = 8;
-const MAX_ISSUE_MESSAGE_CHARS = 180;
 
 export interface JsonValidationIssueSummary {
   pointer: string;
@@ -18,14 +17,6 @@ const toJsonPointer = (path: Array<string | number>): string => {
     return "/";
   }
   return `/${path.map((segment) => escapeJsonPointerToken(String(segment))).join("/")}`;
-};
-
-const truncateMessage = (message: string): string => {
-  const trimmed = message.trim();
-  if (trimmed.length <= MAX_ISSUE_MESSAGE_CHARS) {
-    return trimmed;
-  }
-  return `${trimmed.slice(0, MAX_ISSUE_MESSAGE_CHARS)}...`;
 };
 
 const getValueAtPath = (
@@ -89,7 +80,7 @@ export const summarizeJsonValidationError = (
 
     return {
       pointer,
-      message: truncateMessage(issue.message),
+      message: issue.message.trim(),
       directSubfields,
     };
   });

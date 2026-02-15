@@ -226,6 +226,36 @@ describe("VFS handlers mutations", () => {
     expect(ok.success).toBe(true);
   });
 
+  it("returns concise patch_json error when pointer does not exist", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/global.json",
+      JSON.stringify(createValidGlobal()),
+      "application/json",
+    );
+    const ctx = { vfsSession: session };
+    dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
+
+    const result = dispatchToolCall(
+      "vfs_write",
+      {
+        ops: [
+          {
+            op: "patch_json",
+            path: "current/world/global.json",
+            patch: [{ op: "replace", path: "/missing/path", value: "x" }],
+          },
+        ],
+      },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.error).toContain('pointer "/missing/path" does not exist');
+    expect(result.error).not.toContain("tree:");
+  });
+
   it("supports merge_json after file is read", () => {
     const session = new VfsSession();
     session.writeFile(

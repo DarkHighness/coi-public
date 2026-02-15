@@ -100,11 +100,12 @@ export const getToolErrorCode = (output: unknown): string | null => {
 
 export const formatPendingWriteFailurePaths = (
   pending: Set<string>,
-  maxItems: number = 8,
 ): string => {
-  const items = Array.from(pending.values());
+  const items = Array.from(pending.values()).sort((a, b) =>
+    a.localeCompare(b),
+  );
   if (items.length === 0) return "";
-  return items.slice(0, maxItems).join(", ");
+  return items.join(", ");
 };
 
 export const isLikelyNoOpReadBeforeFinishBatch = (

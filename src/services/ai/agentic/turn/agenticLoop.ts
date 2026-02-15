@@ -135,6 +135,20 @@ const detectPlayerRateMode = (
   return false;
 };
 
+const formatPathPreview = (
+  paths: string[],
+  options?: { prefixCurrent?: boolean },
+): string => {
+  const normalized = paths
+    .map((path) => path.trim())
+    .filter((path) => path.length > 0);
+  return normalized
+    .map((path) =>
+    options?.prefixCurrent === false ? path : `current/${path}`,
+    )
+    .join(", ");
+};
+
 type WriteFailureDisposition =
   | "retry_required_existing_target"
   | "warn_missing_target_non_blocking"
@@ -176,8 +190,12 @@ const classifyWriteFailure = (params: {
     existingWriteTargets.length > 0
       ? existingWriteTargets
       : [UNKNOWN_WRITE_TARGET];
-  const allTargetList = allTargets.join(", ");
-  const existingTargetList = existingTargets.join(", ");
+  const allTargetList = formatPathPreview(allTargets, {
+    prefixCurrent: false,
+  });
+  const existingTargetList = formatPathPreview(existingTargets, {
+    prefixCurrent: false,
+  });
 
   if (errorCode && UNRECOVERABLE_WRITE_ERROR_CODES.has(errorCode)) {
     return {
@@ -635,8 +653,9 @@ function checkCommandSkillReadGate(
     error: {
       success: false,
       error: `[ERROR: COMMAND_SKILL_NOT_READ] You must read required command skill file(s) in current epoch before non-read tools: ${missing
-        .map((p) => `current/${p}`)
-        .join(", ")}. Use vfs_read first.`,
+        .length > 0
+        ? formatPathPreview(missing)
+        : "(none)"}.\nAction: call vfs_read on each missing file first.`,
       code: "SKILL_NOT_READ",
     },
   };
@@ -673,8 +692,9 @@ function checkSoulReadGate(
     error: {
       success: false,
       error: `[ERROR: SOUL_NOT_READ] Session preflight requires reading soul memory anchors before non-read tools: ${missing
-        .map((p) => `current/${p}`)
-        .join(", ")}. Read each once via vfs_read, then continue.`,
+        .length > 0
+        ? formatPathPreview(missing)
+        : "(none)"}.\nAction: call vfs_read on each anchor once, then continue.`,
       code: "SOUL_NOT_READ",
     },
   };
@@ -711,8 +731,9 @@ function checkPresetSkillReadGate(
     error: {
       success: false,
       error: `[ERROR: PRESET_SKILL_NOT_READ] Active preset skill file(s) must be read in current epoch before non-read tools: ${missing
-        .map((p) => `current/${p}`)
-        .join(", ")}. Use vfs_read first.`,
+        .length > 0
+        ? formatPathPreview(missing)
+        : "(none)"}.\nAction: call vfs_read on each missing file first.`,
       code: "PRESET_SKILL_NOT_READ",
     },
   };
@@ -959,9 +980,14 @@ async function processToolCalls(
 
   if (conversationTouched.length > 0) {
     const unique = Array.from(new Set(conversationTouched));
+    const preview = formatPathPreview(unique, {
+      prefixCurrent: false,
+    });
     const error = {
       success: false,
-      error: `[ERROR: CONVERSATION_WRITE_FORBIDDEN] Do not write to current/conversation/* using generic VFS write/move/delete tools. End the turn ONLY via "${finishToolName}" as the LAST tool call. Forbidden paths: ${unique.join(", ")}`,
+      error:
+        `[ERROR: CONVERSATION_WRITE_FORBIDDEN] Do not mutate current/conversation/* via generic write/move/delete tools. ` +
+        `Use "${finishToolName}" as the ONLY commit path at turn end. Forbidden: ${preview}.`,
       code: "INVALID_ACTION",
     };
     return {

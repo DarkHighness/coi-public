@@ -6,17 +6,9 @@ const handlerMocks = vi.hoisted(() => ({
   dispatchToolCall: vi.fn(),
 }));
 
-const providerUtilsMock = vi.hoisted(() => ({
-  getToolInfo: vi.fn(() => "mock-schema"),
-}));
-
 vi.mock("@/services/tools/handlers", () => ({
   hasHandler: handlerMocks.hasHandler,
   dispatchToolCall: handlerMocks.dispatchToolCall,
-}));
-
-vi.mock("@/services/providers/utils", () => ({
-  getToolInfo: providerUtilsMock.getToolInfo,
 }));
 
 const createContext = () => ({
@@ -36,7 +28,6 @@ const createContext = () => ({
 describe("toolCallProcessor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    providerUtilsMock.getToolInfo.mockReturnValue("mock-schema");
   });
 
   it("returns valid for unknown tools in schema validation", () => {
@@ -55,9 +46,8 @@ describe("toolCallProcessor", () => {
       };
       expect(err.code).toBe("INVALID_PARAMS");
       expect(err.error).toContain("[VALIDATION_ERROR]");
-      expect(err.error).toContain("Missing required fields:");
-      expect(err.error).toContain("- paths");
-      expect(err.error).toContain("mock-schema");
+      expect(err.error).toContain("Top issues:");
+      expect(err.error).toContain("- paths: Required");
       expect(err.error).toContain("current/refs/tools/vfs_schema.md");
       expect(err.details?.tool).toBe("vfs_schema");
       expect(err.details?.category).toBe("validation");
@@ -71,8 +61,26 @@ describe("toolCallProcessor", () => {
     expect(extra.valid).toBe(false);
     if (extra.valid === false) {
       const err = extra.error as { error: string };
-      expect(err.error).toContain("Unexpected extra fields");
-      expect(err.error).toContain("- unexpected");
+      expect(err.error).toContain("- unexpected: Unrecognized key");
+    }
+  });
+
+  it("caps validation issue lines to avoid oversized error payloads", () => {
+    const result = validateToolArgs("vfs_write", {
+      a: 1,
+      b: 2,
+      c: 3,
+      d: 4,
+      e: 5,
+      f: 6,
+      g: 7,
+    } as any);
+
+    expect(result.valid).toBe(false);
+    if (result.valid === false) {
+      const err = result.error as { error: string };
+      expect(err.error).toContain("Top issues:");
+      expect(err.error).toContain("...and");
     }
   });
 

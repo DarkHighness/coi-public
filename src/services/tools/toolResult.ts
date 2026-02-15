@@ -65,6 +65,10 @@ export interface ToolCallError {
 
 export type ToolCallResult<T = unknown> = ToolCallSuccess<T> | ToolCallError;
 
+const normalizeErrorMessage = (error: string): string => {
+  return error.replace(/\s+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+};
+
 export const createSuccess = <T>(
   data: T,
   message: string,
@@ -190,7 +194,7 @@ export const createError = (
 
   return {
     success: false,
-    error,
+    error: normalizeErrorMessage(error),
     code,
     ...(normalized ? { details: normalized } : {}),
   };

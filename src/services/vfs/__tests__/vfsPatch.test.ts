@@ -76,4 +76,21 @@ describe("VfsSession patch", () => {
       ]),
     ).toThrow();
   });
+
+  it("returns concise pointer-focused error for unresolved patch path", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/characters/char:npc_1/profile.json",
+      npcJson,
+      "application/json",
+    );
+
+    expect(() =>
+      session.applyJsonPatch("world/characters/char:npc_1/profile.json", [
+        { op: "replace", path: "/attributes/0/value", value: 1 },
+      ]),
+    ).toThrowError(
+      /JSON patch failed for .*world\/characters\/char:npc_1\/profile\.json: pointer "\/attributes\/0\/value" does not exist in the target document\. Read the file and patch a valid pointer path\./,
+    );
+  });
 });

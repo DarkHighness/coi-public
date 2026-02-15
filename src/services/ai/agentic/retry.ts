@@ -13,12 +13,12 @@ import {
 } from "../../messageTypes";
 import { ToolCallResult } from "../../providers/types";
 import { extractJson } from "../utils";
-import { formatZodError } from "../../providers/utils";
 import {
   AgenticErrorKind,
   buildMalformedToolCallFeedback,
   classifyAgenticError,
 } from "./errorPolicy";
+import type { ZodError } from "zod";
 
 export interface RetryOptions {
   maxRetries?: number;
@@ -38,6 +38,60 @@ export interface RetryOptions {
 export interface RetryResult extends ChatGenerateResponse {
   retries: number;
 }
+
+const MAX_VALIDATION_ISSUES_IN_ERROR = 4;
+
+const summarizeZodIssues = (
+  error: ZodError,
+  maxIssues: number = MAX_VALIDATION_ISSUES_IN_ERROR,
+): string => {
+  const issues = error.issues || [];
+  const lines = issues
+    .slice(0, maxIssues)
+    .map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
+      return `- ${path}: ${issue.message}`;
+    });
+
+  if (issues.length > maxIssues) {
+    lines.push(`- ...and ${issues.length - maxIssues} more issue(s)`);
+  }
+
+  return lines.join("\n");
+};
+
+const buildInvalidParametersMessage = (params: {
+  toolName: string;
+  validationError: ZodError;
+  toolDocRef: string;
+  includeReadHint: boolean;
+  repeatedGuidance: boolean;
+}): string => {
+  const {
+    toolName,
+    validationError,
+    toolDocRef,
+    includeReadHint,
+    repeatedGuidance,
+  } = params;
+  const issueSummary = summarizeZodIssues(validationError);
+  const hints: string[] = [
+    `Docs: \`${toolDocRef}\``,
+    "Docs index: `current/refs/tools/README.md`",
+  ];
+  if (includeReadHint) {
+    hints.push(`Use \`vfs_read\` on \`${toolDocRef}\` before retrying.`);
+  }
+  if (repeatedGuidance) {
+    hints.push("Schema guidance was already provided earlier in this retry chain.");
+  }
+
+  return (
+    `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolName}" were invalid.\n` +
+    `Top issues:\n${issueSummary}\n` +
+    `${hints.join("\n")}`
+  );
+};
 
 const toNonNegativeInt = (value: unknown): number => {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -446,13 +500,13 @@ export async function callWithAgenticRetry(
         (fc) => fc.name === requiredToolName,
       );
       if (!hasCorrectTool) {
-        errorMessage = `[ERROR: NO_TOOL_CALL] You provided a narrative response but failed to invoke the mandatory tool "${requiredToolName}". To proceed, you MUST call this tool with appropriate parameters. Bare text responses are prohibited at this stage.`;
+        errorMessage = `[ERROR: NO_TOOL_CALL] Mandatory tool "${requiredToolName}" was not called. Call it with valid arguments; plain-text response is not allowed in this step.`;
       }
     } else if (
       request.toolChoice === "required" &&
       functionCalls.length === 0
     ) {
-      errorMessage = `[ERROR: NO_TOOL_CALL] You provided a narrative response but failed to use any tools. In this agentic phase, at least one tool call is MANDATORY to proceed. Please invoke an appropriate tool from the available list. Bare text responses are prohibited.`;
+      errorMessage = `[ERROR: NO_TOOL_CALL] No tool was called. At least one tool call is required in this step; plain-text response is not allowed.`;
     }
 
     // --- 3. Schema validation for each tool call ---
@@ -471,27 +525,21 @@ export async function callWithAgenticRetry(
               issues: validationResult.error.issues,
             });
             const toolDocRef = `current/refs/tools/${toolCall.name}.md`;
-            const docsGuidance = [
-              `Tool docs: \`${toolDocRef}\``,
-              "Tool docs index: `current/refs/tools/README.md`",
-            ];
+            const wasGuidanceShown = schemaGuidanceShownByTool.has(
+              toolCall.name,
+            );
 
-            if (toolDef && !schemaGuidanceShownByTool.has(toolCall.name)) {
+            if (toolDef && !wasGuidanceShown) {
               schemaGuidanceShownByTool.add(toolCall.name);
-              docsGuidance.push(
-                `Use vfs_read on \`${toolDocRef}\` for INTRO/SCHEMA/EXAMPLES guidance before retrying.`,
-              );
-            } else if (toolDef) {
-              docsGuidance.push(
-                "Schema guidance for this tool was already provided earlier in this retry chain; avoid repeating the same invalid payload.",
-              );
             }
 
-            const validationErrorMessage =
-              `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolCall.name}" were invalid.\n\n` +
-              `Errors:\n${formatZodError(validationResult.error)}\n\n` +
-              `${docsGuidance.join("\n")}\n\n` +
-              `Please review the schema requirements and call "${toolCall.name}" again with corrected parameters.`;
+            const validationErrorMessage = buildInvalidParametersMessage({
+              toolName: toolCall.name,
+              validationError: validationResult.error,
+              toolDocRef,
+              includeReadHint: Boolean(toolDef && !wasGuidanceShown),
+              repeatedGuidance: Boolean(toolDef && wasGuidanceShown),
+            });
             invalidToolCallErrors.set(toolCall.id, {
               name: toolCall.name,
               error: validationErrorMessage,

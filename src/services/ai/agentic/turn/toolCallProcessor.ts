@@ -5,7 +5,6 @@
  */
 
 import { ALL_DEFINED_TOOLS } from "../../../tools";
-import { getToolInfo } from "../../../providers/utils";
 import {
   dispatchToolCall,
   hasHandler,
@@ -23,6 +22,24 @@ export interface ToolCallContext {
   gameState: any;
   settings: any;
 }
+
+const MAX_VALIDATION_ISSUES = 6;
+
+const summarizeValidationIssues = (
+  issues: Array<{ path: Array<string | number>; message: string }>,
+  maxIssues: number = MAX_VALIDATION_ISSUES,
+): string[] => {
+  const lines = issues.slice(0, maxIssues).map((issue) => {
+    const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
+    return `- ${path}: ${issue.message}`;
+  });
+  if (issues.length > maxIssues) {
+    lines.push(`- ...and ${issues.length - maxIssues} more issue(s)`);
+  }
+  return lines;
+};
+
+const toolDocRef = (name: string): string => `current/refs/tools/${name}.md`;
 
 // ============================================================================
 // Generic Tool Execution
@@ -61,7 +78,10 @@ export function validateToolArgs(
         return {
           valid: false,
           error: createError(
-            `[VALIDATION_ERROR] Invalid parameters for "vfs_commit_soul".\n\nMissing required fields:\n- at least one of currentSoul/globalSoul (non-empty string)\n\nPlease refer to the schema:\n${getToolInfo(toolDef as any)}\n\nTool docs:\n- \`current/refs/tools/vfs_commit_soul.md\`\n- \`current/refs/tools/README.md\``,
+            `[VALIDATION_ERROR] Invalid parameters for "vfs_commit_soul".\n` +
+              `Top issue:\n- (root): at least one of currentSoul/globalSoul must be a non-empty string.\n` +
+              `Docs: \`${toolDocRef("vfs_commit_soul")}\`\n` +
+              "Docs index: `current/refs/tools/README.md`",
             "INVALID_PARAMS",
             {
               category: "validation",
@@ -102,25 +122,48 @@ export function validateToolArgs(
     (e) => e.code !== "invalid_type" && e.code !== "unrecognized_keys",
   );
 
-  let errorMsg = `[VALIDATION_ERROR] Invalid parameters for "${name}".\n\n`;
+  const issueLines: string[] = [];
   if (missingFields.length > 0) {
-    errorMsg += `Missing required fields:\n${missingFields.map((f) => `- ${f}`).join("\n")}\n\n`;
+    issueLines.push(
+      ...missingFields.slice(0, MAX_VALIDATION_ISSUES).map((f) => `- ${f}: Required`),
+    );
   }
   if (extraFields.length > 0) {
-    errorMsg += `Unexpected extra fields (not in schema):\n${extraFields.map((f: string) => `- ${f}`).join("\n")}\n\n`;
+    issueLines.push(
+      ...extraFields
+        .slice(0, MAX_VALIDATION_ISSUES)
+        .map((f: string) => `- ${f}: Unrecognized key`),
+    );
   }
   if (otherErrors.length > 0) {
-    errorMsg += `Other validation errors:\n${otherErrors.map((e) => `- ${e.path.join(".") || "(root)"}: ${e.message}`).join("\n")}\n\n`;
+    issueLines.push(
+      ...summarizeValidationIssues(
+        otherErrors.map((e) => ({ path: e.path, message: e.message })),
+      ),
+    );
   }
-  errorMsg += `Please refer to the schema:\n${getToolInfo(toolDef as any)}`;
-  errorMsg += `\n\nTool docs:\n- \`current/refs/tools/${name}.md\`\n- \`current/refs/tools/README.md\``;
+  if (issueLines.length === 0) {
+    issueLines.push("- (root): Invalid parameters");
+  }
+  const trimmedIssueLines = issueLines.slice(0, MAX_VALIDATION_ISSUES);
+  if (issueLines.length > MAX_VALIDATION_ISSUES) {
+    trimmedIssueLines.push(
+      `- ...and ${issueLines.length - MAX_VALIDATION_ISSUES} more issue(s)`,
+    );
+  }
+
+  const errorMsg =
+    `[VALIDATION_ERROR] Invalid parameters for "${name}".\n` +
+    `Top issues:\n${trimmedIssueLines.join("\n")}\n` +
+    `Docs: \`${toolDocRef(name)}\`\n` +
+    "Docs index: `current/refs/tools/README.md`";
 
   return {
     valid: false,
     error: createError(errorMsg, "INVALID_PARAMS", {
       category: "validation",
       tool: name,
-      issues: errors.map((issue) => {
+      issues: errors.slice(0, 10).map((issue) => {
         const issueRecord = issue as unknown as Record<string, unknown>;
         return {
           path: issue.path.join(".") || "(root)",
@@ -137,9 +180,9 @@ export function validateToolArgs(
       recovery: [
         `Call "${name}" again with only schema-defined fields.`,
         "If mutating files, re-read targets first when required by the tool contract.",
-        `Open \`current/refs/tools/${name}.md\` for examples and parameter guidance.`,
+        `Open \`${toolDocRef(name)}\` for examples and parameter guidance.`,
       ],
-      refs: [`current/refs/tools/${name}.md`, "current/refs/tools/README.md"],
+      refs: [toolDocRef(name), "current/refs/tools/README.md"],
     }),
   };
 }
