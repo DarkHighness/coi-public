@@ -5,6 +5,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
   useCallback,
+  useMemo,
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -110,6 +111,24 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     const [disableVirtualization, setDisableVirtualization] = useState(true);
 
     const { t } = useTranslation();
+
+    // Keep a fast lookup for segment id -> segment without forcing observer recreation
+    // on every streaming text update.
+    const segmentByIdRef = useRef<Map<string, StorySegment>>(new Map());
+    useEffect(() => {
+      const map = new Map<string, StorySegment>();
+      for (const segment of currentHistory) {
+        map.set(segment.id, segment);
+      }
+      segmentByIdRef.current = map;
+    }, [currentHistory]);
+
+    // Rebuild IntersectionObserver only when segment identity changes
+    // (add/remove/reorder), not for every content mutation.
+    const historyIdsSignature = useMemo(
+      () => currentHistory.map((segment) => segment.id).join("|"),
+      [currentHistory],
+    );
 
     // Visual Generation Modal State
     const [isVisualModalOpen, setIsVisualModalOpen] = useState(false);
@@ -351,6 +370,9 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     // Intersection Observer for Scroll Layout to track viewed segment
     useEffect(() => {
       if (layout !== "scroll" || !onViewedSegmentChange) return;
+      const root = scrollContainerRef.current;
+      const scope = contentRef.current;
+      if (!root || !scope) return;
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -367,7 +389,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
             const segmentId =
               mostVisible.target.getAttribute("data-segment-id");
             if (segmentId) {
-              const segment = currentHistory.find((s) => s.id === segmentId);
+              const segment = segmentByIdRef.current.get(segmentId);
               if (segment) {
                 onViewedSegmentChange(segment);
               }
@@ -375,16 +397,16 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           }
         },
         {
-          root: scrollContainerRef.current,
+          root,
           threshold: [0.1, 0.5, 0.9], // Multiple thresholds for better accuracy
         },
       );
 
-      const elements = document.querySelectorAll(".story-card-wrapper");
+      const elements = scope.querySelectorAll(".story-card-wrapper");
       elements.forEach((el) => observer.observe(el));
 
       return () => observer.disconnect();
-    }, [layout, currentHistory, onViewedSegmentChange]);
+    }, [layout, onViewedSegmentChange, historyIdsSignature]);
 
     // Notify for Stack Layout
     useEffect(() => {

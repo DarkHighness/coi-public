@@ -4,6 +4,7 @@ import React, {
   useRef,
   Suspense,
   useCallback,
+  useMemo,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -211,10 +212,13 @@ export const GamePage: React.FC<GamePageProps> = ({
   const currentSegment = currentHistory[currentHistory.length - 1];
 
   // Get atmosphere from most recent segment (unified system)
-  const activeAtmosphere = currentHistory
-    .slice()
-    .reverse()
-    .find((seg) => seg.atmosphere)?.atmosphere;
+  const activeAtmosphere = useMemo(() => {
+    for (let i = currentHistory.length - 1; i >= 0; i -= 1) {
+      const atmosphere = currentHistory[i]?.atmosphere;
+      if (atmosphere) return atmosphere;
+    }
+    return undefined;
+  }, [currentHistory]);
 
   const { resumeAudio } = useAmbience(
     shouldPlayAmbience ? activeAtmosphere : undefined,
