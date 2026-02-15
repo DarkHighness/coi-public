@@ -236,6 +236,7 @@ describe("contextInjector", () => {
       "skills/commands/runtime/player-rate/SKILL.md",
       "world/soul.md",
       "world/global/soul.md",
+      "conversation/session.jsonl",
       "skills/commands/runtime/SKILL.md",
     ]);
 
@@ -250,6 +251,12 @@ describe("contextInjector", () => {
     );
     expect(text).toContain(
       'vfs_read({ path: "current/world/global/soul.md" })',
+    );
+    expect(text).toContain(
+      'vfs_read({ path: "current/conversation/session.jsonl", mode: "lines", startLine: 1, lineCount: 200 })',
+    );
+    expect(text).toContain(
+      "keep reads line-windowed; do not use unbounded chars mode",
     );
   });
 });

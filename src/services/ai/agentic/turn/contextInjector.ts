@@ -248,12 +248,20 @@ export function injectColdStartRequiredReads(
     return;
   }
 
+  const formatPreloadCall = (path: string): string => {
+    if (path === "current/conversation/session.jsonl") {
+      return `vfs_read({ path: "${path}", mode: "lines", startLine: 1, lineCount: 200 })`;
+    }
+    return `vfs_read({ path: "${path}" })`;
+  };
+
   const lines = [
     "[SYSTEM: COLD START REQUIRED READS]",
     "Before any non-read tool call in this loop, perform these vfs_read calls once in current read-epoch (in order):",
     ...uniquePaths.map(
-      (path, index) => `${index + 1}. \`vfs_read({ path: "${path}" })\``,
+      (path, index) => `${index + 1}. \`${formatPreloadCall(path)}\``,
     ),
+    'For `current/conversation/session.jsonl`, keep reads line-windowed; do not use unbounded chars mode.',
     "Run this preload at cold start to avoid avoidable gate/retry token waste.",
   ];
 

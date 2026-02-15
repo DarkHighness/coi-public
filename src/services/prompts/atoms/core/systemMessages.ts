@@ -129,12 +129,16 @@ You are in AGENTIC MODE (VFS-only).
 7. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\` (chars/lines/json), and \`vfs_search\` before changing files.
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
    - For large JSON, prefer \`vfs_read\` with \`mode: "json"\` + narrow \`pointers\` or \`mode: "lines"\`; avoid broad full-file char reads.
+   - For large text files (especially \`current/conversation/session.jsonl\`), do NOT issue unbounded chars reads; start with \`mode: "lines"\` + bounded \`startLine/lineCount\`.
+   - In \`vfs_read\` \`mode: "json"\`, \`pointers\` is REQUIRED; do not call json mode without pointers.
 8. ${
       isPlayerRateToolset
         ? "**SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` by calling `vfs_commit_soul`."
         : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with `vfs_write` using `write_file` / `patch_json` / `merge_json`. Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are writable and may be proactively refined via `vfs_write` when evidence is strong."
     }
 9. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
+   - For \`vfs_commit_turn\`, use exact args shape: \`{ userAction: "<string>", assistant: { narrative: "<string>", choices: [...] } }\`.
+   - \`userAction\` MUST be top-level; never nest \`userAction\` inside \`assistant\`.
 10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, your next calls must repair those failed targets (inspect+retry same targets). Do NOT call \`${resolvedFinishToolName}\` until they succeed.
 12. **NO COMMIT SPAM**: Repeating \`${resolvedFinishToolName}\` while failed writable targets remain unresolved is invalid.
@@ -154,7 +158,7 @@ You are in AGENTIC MODE (VFS-only).
       ? "1) `vfs_read` `current/world/soul.md` and `current/world/global/soul.md`\n  2) `vfs_commit_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
       : "1) `vfs_search` within `current/world/` (or canonical fork world path) for a name/ID\n  2) `vfs_write` to patch the exact JSON pointer(s)\n  3) `" +
         resolvedFinishToolName +
-        "` with { userAction, assistant: { narrative, choices } } as the LAST call"
+        "` with `{ userAction: \"...\", assistant: { narrative: \"...\", choices: [...] } }` as the LAST call (never `assistant.userAction`)"
   }
 </examples>
 `;

@@ -11,6 +11,8 @@ You MUST follow these runtime protocol constraints:
 - VFS primer (what "read/search/write" means):
   - Paths like \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
   - "Read \`some/path\`" means call \`vfs_read({ path: "some/path" })\`.
+  - For large files (especially \`current/conversation/session.jsonl\`), prefer \`vfs_read\` with \`mode: "lines"\` and bounded \`startLine/lineCount\`; avoid unbounded chars reads.
+  - In \`vfs_read\` \`mode: "json"\`, \`pointers\` is required.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - "Write/Move/Delete" means \`vfs_write\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic mutation tools).
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
@@ -34,7 +36,7 @@ You MUST follow these runtime protocol constraints:
   2) Fix the cause by \`code\` with the smallest helpful lookup:
      - \`NOT_FOUND\`: \`vfs_ls\` the parent dir, or \`vfs_search\` for the filename.
      - \`INVALID_PARAMS\`: \`vfs_read\` the tool doc (\`current/refs/tools/<tool>.md\`) and retry with schema-valid args.
-     - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; \`vfs_read\` existing files before non-additive edits.
+     - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; \`vfs_read\` existing files before non-additive edits. If read-limit exceeds, switch to \`mode: "lines"\` (bounded) or \`mode: "json"\` + \`pointers\`; do not repeat broad chars reads.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
   3) Re-read the minimum anchor files, then retry one corrected tool call.
