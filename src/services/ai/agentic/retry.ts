@@ -365,6 +365,13 @@ export async function callWithAgenticRetry(
     }
 
     let errorMessage: string | null = null;
+    const invalidToolCallErrors = new Map<
+      string,
+      {
+        name: string;
+        error: string;
+      }
+    >();
 
     // --- 1. Automatic JSON Fallback ---
     // If no native tool calls, try to extract from text
@@ -480,14 +487,28 @@ export async function callWithAgenticRetry(
               );
             }
 
-            errorMessage =
+            const validationErrorMessage =
               `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolCall.name}" were invalid.\n\n` +
               `Errors:\n${formatZodError(validationResult.error)}\n\n` +
               `${docsGuidance.join("\n")}\n\n` +
               `Please review the schema requirements and call "${toolCall.name}" again with corrected parameters.`;
-            break;
+            invalidToolCallErrors.set(toolCall.id, {
+              name: toolCall.name,
+              error: validationErrorMessage,
+            });
           }
         }
+      }
+    }
+
+    if (!errorMessage && invalidToolCallErrors.size > 0) {
+      if (invalidToolCallErrors.size < functionCalls.length) {
+        console.warn(
+          `[ToolValidation] ${invalidToolCallErrors.size}/${functionCalls.length} tool calls have invalid args; allowing partial execution for valid calls.`,
+        );
+      } else {
+        // All calls are invalid: keep retry behavior but preserve per-tool error mapping.
+        errorMessage = Array.from(invalidToolCallErrors.values())[0]?.error || null;
       }
     }
 
@@ -536,11 +557,43 @@ export async function callWithAgenticRetry(
       // 2. Add the tool response message (role: 'tool') for each call ID (OpenAI requirement)
       history.push(
         createToolResponseMessage(
-          functionCalls.map((fc) => ({
-            toolCallId: fc.id,
-            name: fc.name,
-            content: { success: false, error: errorMessage },
-          })),
+          functionCalls.map((fc) => {
+            if (invalidToolCallErrors.size === 0) {
+              return {
+                toolCallId: fc.id,
+                name: fc.name,
+                content: { success: false, error: errorMessage },
+              };
+            }
+
+            const invalidDetail = invalidToolCallErrors.get(fc.id);
+            if (invalidDetail) {
+              return {
+                toolCallId: fc.id,
+                name: fc.name,
+                content: {
+                  success: false,
+                  code: "INVALID_PARAMETERS",
+                  error: invalidDetail.error,
+                },
+              };
+            }
+
+            const firstInvalid =
+              Array.from(invalidToolCallErrors.values())[0] ?? null;
+            return {
+              toolCallId: fc.id,
+              name: fc.name,
+              content: {
+                success: false,
+                code: "BATCH_REJECTED",
+                error:
+                  `[ERROR: BATCH_REJECTED] This tool call was not executed because ` +
+                  `"${firstInvalid?.name || "another call"}" had invalid parameters in the same batch. ` +
+                  `Fix that call first, then re-issue "${fc.name}".`,
+              },
+            };
+          }),
         ),
       );
     } else {

@@ -144,7 +144,7 @@ describe("agenticLoop tool logging", () => {
     vi.clearAllMocks();
   });
 
-  it("blocks finish execution when previous tool in same batch failed", async () => {
+  it("allows finish execution when only non-write tools failed earlier in batch", async () => {
     const vfsSession = createVfsSession();
 
     aiHandlerMock.handleAICall
@@ -187,27 +187,6 @@ describe("agenticLoop tool logging", () => {
             },
           },
         ],
-      })
-      .mockResolvedValueOnce({
-        text: "",
-        usage: {
-          promptTokens: 4,
-          completionTokens: 2,
-          totalTokens: 6,
-        },
-        functionCalls: [
-          {
-            id: "call-finish-ok",
-            name: "vfs_commit_turn",
-            args: {
-              userAction: "next",
-              assistant: {
-                narrative: "new narrative",
-                choices: [{ text: "A" }],
-              },
-            },
-          },
-        ],
       });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
@@ -240,6 +219,7 @@ describe("agenticLoop tool logging", () => {
     });
 
     expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(3);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
@@ -250,10 +230,10 @@ describe("agenticLoop tool logging", () => {
         log.endpoint === "tool_execution" &&
         log.toolName === "vfs_commit_turn" &&
         String((log as any).toolOutput?.error || "").includes(
-          "FINISH_BLOCKED_BY_PREVIOUS_FAILURE",
+          "FINISH_BLOCKED_BY_WRITE_FAILURE",
         ),
     );
-    expect(blockedFinishLog).toBeDefined();
+    expect(blockedFinishLog).toBeUndefined();
   });
 
   it("blocks finish until failed write targets are retried successfully", async () => {

@@ -136,7 +136,7 @@ describe("callWithAgenticRetry behavior", () => {
     );
   });
 
-  it("rejects legacy vfs_commit_turn payload in multi-tool batch", async () => {
+  it("allows partial execution for mixed valid/invalid calls in one batch", async () => {
     const provider = createProvider([
       {
         result: {
@@ -226,12 +226,157 @@ describe("callWithAgenticRetry behavior", () => {
       ],
     };
 
-    await expect(
-      callWithAgenticRetry(provider, request as any, [], {
-        maxRetries: 0,
-      }),
-    ).rejects.toThrow("INVALID_PARAMETERS");
+    const history: any[] = [];
+
+    const result = await callWithAgenticRetry(
+      provider,
+      request as any,
+      history,
+      { maxRetries: 0 },
+    );
+
+    expect(result.retries).toBe(0);
+    expect(history).toHaveLength(0);
+    expect(
+      ((result.result as { functionCalls?: Array<any> }).functionCalls ?? []).map(
+        (call) => call.id,
+      ),
+    ).toEqual(["call_write", "call_commit"]);
     expect(provider.generateChat).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks each invalid tool as INVALID_PARAMETERS in retry feedback", async () => {
+    const provider = createProvider([
+      {
+        result: {
+          functionCalls: [
+            {
+              id: "call_write",
+              name: "vfs_write",
+              args: {
+                invalid: true,
+              },
+            },
+            {
+              id: "call_commit_invalid",
+              name: "vfs_commit_turn",
+              args: {
+                assistant: {
+                  userAction: "nested-legacy-shape",
+                  narrative: "narrative",
+                  choices: [{ text: "a" }, { text: "b" }],
+                },
+              },
+            },
+          ],
+        },
+        usage: makeUsage(2, 2),
+        raw: null,
+      },
+      {
+        result: {
+          functionCalls: [
+            {
+              id: "call_ok",
+              name: "vfs_write",
+              args: {
+                ops: [
+                  {
+                    op: "patch_json",
+                    path: "current/world/characters/char:player/profile.json",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    const request = {
+      ...makeRequest(),
+      tools: [
+        {
+          name: "vfs_write",
+          description: "write",
+          parameters: z
+            .object({
+              ops: z.array(
+                z
+                  .object({
+                    op: z.string(),
+                    path: z.string(),
+                  })
+                  .strict(),
+              ),
+            })
+            .strict(),
+        },
+        {
+          name: "vfs_commit_turn",
+          description: "commit turn",
+          parameters: z
+            .object({
+              userAction: z.string(),
+              assistant: z
+                .object({
+                  narrative: z.string(),
+                  choices: z
+                    .array(
+                      z
+                        .object({
+                          text: z.string(),
+                          consequence: z.string().nullish(),
+                        })
+                        .strict(),
+                    )
+                    .min(2)
+                    .max(4),
+                })
+                .strict(),
+            })
+            .strict(),
+        },
+      ],
+    };
+
+    const history: any[] = [];
+
+    const result = await callWithAgenticRetry(
+      provider,
+      request as any,
+      history,
+      { maxRetries: 1 },
+    );
+
+    expect(result.retries).toBe(1);
+    expect(history).toHaveLength(2);
+    expect(history[0]?.role).toBe("assistant");
+    expect(history[1]?.role).toBe("tool");
+
+    const toolParts =
+      history[1]?.content?.filter((part: any) => part.type === "tool_result") ??
+      [];
+    expect(toolParts).toHaveLength(2);
+
+    const writeResult = toolParts.find(
+      (part: any) => part.toolResult.name === "vfs_write",
+    )?.toolResult?.content as any;
+    const commitResult = toolParts.find(
+      (part: any) => part.toolResult.name === "vfs_commit_turn",
+    )?.toolResult?.content as any;
+
+    expect(writeResult?.code).toBe("INVALID_PARAMETERS");
+    expect(writeResult?.error).toContain(
+      'arguments you provided to "vfs_write" were invalid',
+    );
+
+    expect(commitResult?.code).toBe("INVALID_PARAMETERS");
+    expect(commitResult?.error).toContain(
+      'arguments you provided to "vfs_commit_turn" were invalid',
+    );
   });
 
   it("appends assistant+user feedback on missing required tool and calls onRetry", async () => {

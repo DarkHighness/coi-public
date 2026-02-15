@@ -912,7 +912,6 @@ async function processToolCalls(
     content: unknown;
   }> = [];
   let turnFinished = false;
-  let hasPriorNonWriteFailure = false;
 
   const liveToolCalls: ToolCallRecord[] = functionCalls.map((call) => ({
     name: call.name,
@@ -936,16 +935,7 @@ async function processToolCalls(
       ? collectWriteTargetsFromToolCall(call)
       : [];
 
-    if (isFinishToolCall(call) && hasPriorNonWriteFailure) {
-      output = {
-        success: false,
-        error:
-          `[ERROR: FINISH_BLOCKED_BY_PREVIOUS_FAILURE] One or more tool calls before finish failed in this batch. ` +
-          `Fix those failures first, then call "${finishToolName}" again as the LAST tool call.`,
-        code: "INVALID_ACTION",
-      };
-      isError = true;
-    } else if (
+    if (
       isFinishToolCall(call) &&
       loopState.pendingWriteFailurePaths.size > 0
     ) {
@@ -1007,8 +997,6 @@ async function processToolCalls(
         // indicates the model recovered its write workflow and can proceed.
         loopState.pendingWriteFailurePaths.delete(UNKNOWN_WRITE_TARGET);
       }
-    } else if (isError) {
-      hasPriorNonWriteFailure = true;
     }
 
     responses.push({
