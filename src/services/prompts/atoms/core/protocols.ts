@@ -25,6 +25,7 @@ const messageProtocol = `
   Treat as feedback ingestion for soul updates. Do NOT treat it as a protagonist action or advance story events.
   Example: \`[Player Rate] {"turnId":"fork-0/turn-12","vote":"down","preset":"AI flavor too strong"}\`
   Required handling: parse \`vote/preset/comment/time\` when present, then update \`current/world/soul.md\` and \`current/world/global/soul.md\`. Both are Story Teller AI internal self-notes.
+  This does NOT mean soul updates are exclusive to \`[Player Rate]\`: in normal \`[PLAYER_ACTION]\` turns, you may proactively refine soul docs when multi-turn evidence warrants it.
 
   **[CONTEXT: ...]** — Background information
   For your reference only. Do NOT narrate a reaction to context labels.
@@ -36,7 +37,7 @@ const messageProtocol = `
   Read, understand, and fix before proceeding.
 
   **Routing Matrix**:
-  - \`[PLAYER_ACTION]\` => normal simulation turn (world reaction + state updates)
+  - \`[PLAYER_ACTION]\` => normal simulation turn (world reaction + state updates; proactive soul updates allowed when evidence is strong)
   - \`[Player Rate]\` => soul update loop only (no visible story progression)
   - \`[SUDO]\` => elevated update workflow with coverage discipline
   - Route by the leading marker of the active user message; do not mix two marker workflows in one loop.
@@ -46,7 +47,8 @@ const messageProtocol = `
   2. If [PLAYER_ACTION], simulate world consequences
   3. If [Player Rate], update soul files only (no visible story progression)
   4. If [SUDO], execute elevated update workflow (immutable/finish guards still apply)
-  5. Use [CONTEXT] and [SYSTEM] for background; handle [ERROR] before finishing
+  5. In normal [PLAYER_ACTION] turns, optionally update soul files via writable tools when new preference evidence appears
+  6. Use [CONTEXT] and [SYSTEM] for background; handle [ERROR] before finishing
 </message_protocol>
 `;
 
@@ -142,7 +144,7 @@ export const protocolsPrimer: Atom<void> = defineAtom(
   },
   () => `
 <protocols>
-  MESSAGES: [PLAYER_ACTION] = simulate, [Player Rate] = update soul only via vfs_commit_soul, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
+  MESSAGES: [PLAYER_ACTION] = simulate (+ optional proactive soul updates), [Player Rate] = dedicated soul-ingestion loop, [SUDO] = elevated update (immutable/finish guards still apply), [ERROR] = fix before finish.
   TOOLS: Every turn MUST call tools. Query before create. Handle errors.
   TWO "YOU": In rules = AI. In narrative = protagonist.
 </protocols>
@@ -223,11 +225,12 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
     quickStart: `
 1. Read [PLAYER_ACTION] to determine what to simulate
 2. Route [Player Rate] to soul-only updates (do not advance visible plot)
-3. Route [SUDO] to elevated update workflow
-4. Handle [ERROR] by retrying with corrected arguments
-5. Finish with the marker-appropriate finish tool (Player Rate => \`vfs_commit_soul\`)
-6. Search before creating entities
-7. "You" in rules = AI, "You" in narrative = protagonist
+3. In normal [PLAYER_ACTION] turns, proactively refine soul files when strong evidence emerges
+4. Route [SUDO] to elevated update workflow
+5. Handle [ERROR] by retrying with corrected arguments
+6. Finish with the marker-appropriate finish tool (Player Rate => \`vfs_commit_soul\`)
+7. Search before creating entities
+8. "You" in rules = AI, "You" in narrative = protagonist
 `.trim(),
 
     checklist: [

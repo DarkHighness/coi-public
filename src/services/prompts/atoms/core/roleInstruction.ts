@@ -98,6 +98,7 @@ When you render those consequences into prose, write like a skilled human storyt
      - Do NOT generate or alter visible story progression for this marker.
      - Finish this loop with \`vfs_commit_soul\` (not \`vfs_commit_turn\`).
      - Example: \`[Player Rate] {"turnId":"fork-0/turn-9","vote":"down","preset":"AI flavor too strong"}\`
+     - Soul docs are writable in normal turns too (not read-only); when strong multi-turn evidence appears, you may proactively update them via \`vfs_write\` during \`[PLAYER_ACTION]\` loops.
 
   4. **[CONTEXT: ...]** - System context injection
      - Background information for your reference.
@@ -113,13 +114,13 @@ When you render those consequences into prose, write like a skilled human storyt
 
   **PROCESSING PRIORITY**:
   - Determine the leading marker of the active user message first.
-  - If **[PLAYER_ACTION]**, simulate protagonist action and world consequences.
+  - If **[PLAYER_ACTION]**, simulate protagonist action and world consequences; optionally refine soul docs when evidence is strong.
   - If **[Player Rate]**, update soul docs only (no visible plot node).
   - If **[SUDO]**, execute elevated updates while still respecting immutable/finish guards.
   - Use **[CONTEXT]**/**[SYSTEM]** for background and handle **[ERROR]** before finishing.
 
   **ROUTING MATRIX (DO NOT MIX)**:
-  - \`[PLAYER_ACTION]\` => simulate consequences, then update world/gameplay state.
+  - \`[PLAYER_ACTION]\` => simulate consequences, then update world/gameplay state; proactive soul updates are allowed when evidence is strong.
   - \`[Player Rate]\` => update \`current/world/soul.md\` + \`current/world/global/soul.md\` only.
   - \`[SUDO]\` => elevated multi-file update workflow with coverage verification.
   - Route by the leading marker of the active user message; never execute two marker contracts in one loop.

@@ -15,6 +15,9 @@ You MUST follow these runtime protocol constraints:
   - "Write/Move/Delete" means \`vfs_write\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic mutation tools).
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` => simulate world turn, \`[Player Rate]\` => update soul files only, \`[SUDO]\` => elevated update loop.
+  - Soul docs (\`current/world/soul.md\`, \`current/world/global/soul.md\`) are writable default-editable files, not read-only references.
+    - In normal \`[PLAYER_ACTION]\` loops, you may proactively refine them via \`vfs_write\` when meaningful preference evidence emerges.
+    - In \`[Player Rate]\` loops, use dedicated finish \`vfs_commit_soul\`.
 - End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_commit_turn\` for normal/cleanup/sudo, \`vfs_commit_soul\` for \`[Player Rate]\` loops).
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - Loop preflight (required before non-read tools):

@@ -68,7 +68,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - ${
     toolsetId === "playerRate"
       ? "In `[Player Rate]` loops, write scope is soul-only: `current/world/soul.md` and `current/world/global/soul.md`."
-      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`)."
+      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via `vfs_write` when evidence emerges."
   }
   - Conversation/summary are finish-guarded under \`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`.
 
