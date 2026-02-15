@@ -63,21 +63,6 @@ export const collectWriteTargetsFromToolCall = (
       }
     }
 
-    // Legacy payload compatibility: still capture paths for retry bookkeeping.
-    const files = (args as any)?.files;
-    if (Array.isArray(files)) {
-      for (const file of files) {
-        pushTarget((file as any)?.path);
-      }
-    }
-
-    const edits = (args as any)?.edits;
-    if (Array.isArray(edits)) {
-      for (const edit of edits) {
-        pushTarget((edit as any)?.path);
-      }
-    }
-
     return Array.from(targets.values());
   }
 

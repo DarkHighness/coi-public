@@ -178,7 +178,7 @@ describe("agenticLoop command skill gate", () => {
         {
           id: "call-1",
           name: "vfs_write",
-          args: { edits: [] },
+          args: { ops: [] },
         },
       ],
     });
@@ -222,7 +222,7 @@ describe("agenticLoop command skill gate", () => {
           {
             id: "call-2-edit",
             name: "vfs_write",
-            args: { edits: [] },
+            args: { ops: [] },
           },
         ],
       });
@@ -264,7 +264,7 @@ describe("agenticLoop command skill gate", () => {
         {
           id: "call-1",
           name: "vfs_write",
-          args: { edits: [] },
+          args: { ops: [] },
         },
       ],
     });
@@ -351,7 +351,7 @@ describe("agenticLoop command skill gate", () => {
         {
           id: "call-1",
           name: "vfs_write",
-          args: { edits: [] },
+          args: { ops: [] },
         },
       ],
     });
@@ -462,7 +462,7 @@ describe("agenticLoop command skill gate", () => {
         {
           id: "call-1",
           name: "vfs_write",
-          args: { edits: [] },
+          args: { ops: [] },
         },
       ],
     });
@@ -504,7 +504,7 @@ describe("agenticLoop command skill gate", () => {
         {
           id: "call-1",
           name: "vfs_write",
-          args: { edits: [] },
+          args: { ops: [] },
         },
         {
           id: "call-2",
@@ -595,7 +595,7 @@ describe("agenticLoop command skill gate", () => {
         {
           id: "call-1",
           name: "vfs_write",
-          args: { edits: [] },
+          args: { ops: [] },
         },
       ],
     });
