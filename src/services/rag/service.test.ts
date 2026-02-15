@@ -269,9 +269,7 @@ describe("RAGService", () => {
       },
     );
 
-    const promise = service.addDocuments([
-      { entityId: "npc:1", saveId: "s", forkId: 0, turnNumber: 0 },
-    ] as any);
+    const promise = service.search("timeout-query");
     const rejection = expect(promise).rejects.toThrow("timed out");
 
     await vi.advanceTimersByTimeAsync(60001);

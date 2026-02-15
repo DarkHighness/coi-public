@@ -554,6 +554,7 @@
     "maxVersions": "Versions Per Entity",
     "statusInfo": "Embeddings will be generated when story content is created. This enables semantic search for relevant context during story generation.",
     "status": "RAG Status",
+    "phaseLabel": "Phase",
     "phase": {
       "embedding": "Embedding",
       "indexing": "Indexing",

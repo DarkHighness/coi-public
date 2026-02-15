@@ -11,6 +11,7 @@ interface RAGPanelProps {
 export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
+  const isIndexing = Boolean(progress);
   const [stats, setStats] = useState<{
     totalDocs: number;
     pendingRequests: number;
@@ -25,7 +26,7 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
         const next = {
           totalDocs: status.storageDocuments,
           pendingRequests: status.pending || 0,
-          isIndexing: !!progress,
+          isIndexing,
         };
         setStats((prev) => {
           if (
@@ -43,12 +44,15 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
     fetchStats();
     const interval = setInterval(fetchStats, 5000);
     return () => clearInterval(interval);
-  }, [progress?.stage, progress?.current, progress?.total]);
+  }, [isIndexing]);
 
   const percentage =
     progress && progress.total > 0
       ? Math.round((progress.current / progress.total) * 100)
       : 0;
+  const progressMessage = progress?.messageKey
+    ? t(progress.messageKey, progress.messageParams || {})
+    : progress?.message;
 
   return (
     <div>
@@ -171,9 +175,9 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                {progress.message && (
+                {progressMessage && (
                   <p className="text-xs text-theme-text-secondary mt-2 leading-relaxed pl-2 border-l border-theme-divider/60">
-                    {progress.message}
+                    {progressMessage}
                   </p>
                 )}
               </div>

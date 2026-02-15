@@ -229,10 +229,10 @@ export class RAGDatabase {
     if (!this.db) throw new Error("Database not initialized");
 
     await this.db.exec(`
-      DROP TABLE IF EXISTS embeddings;
-      DROP TABLE IF EXISTS documents;
-      DROP TABLE IF EXISTS save_metadata;
-      DROP TABLE IF EXISTS rag_meta;
+      DROP TABLE IF EXISTS embeddings CASCADE;
+      DROP TABLE IF EXISTS documents CASCADE;
+      DROP TABLE IF EXISTS save_metadata CASCADE;
+      DROP TABLE IF EXISTS rag_meta CASCADE;
     `);
   }
 

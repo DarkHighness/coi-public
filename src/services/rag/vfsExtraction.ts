@@ -375,46 +375,155 @@ interface JsonUnit {
   value: unknown;
 }
 
-const collectJsonUnits = (
-  value: unknown,
-  path: string,
-  units: JsonUnit[],
-): void => {
-  const normalizedPath = path || "$";
-  const rendered = safeStringify(value, 2);
+const JSON_ROOT_PRIORITY_KEYS = [
+  "world",
+  "worldinfo",
+  "outline",
+  "character",
+  "player",
+  "actors",
+  "npcs",
+  "locations",
+  "inventory",
+  "quests",
+  "knowledge",
+  "timeline",
+  "events",
+  "conversation",
+  "messages",
+  "history",
+  "metadata",
+  "state",
+];
 
-  if (!value || typeof value !== "object") {
-    units.push({ path: normalizedPath, value });
-    return;
+const JSON_ARRAY_WINDOW_DEFAULT = 16;
+
+const JSON_ARRAY_WINDOW_BY_KEY: Record<string, number> = {
+  conversation: 10,
+  messages: 10,
+  history: 10,
+  timeline: 8,
+  events: 8,
+  logs: 8,
+  npcs: 12,
+  actors: 12,
+  locations: 12,
+  quests: 10,
+  inventory: 16,
+  knowledge: 16,
+};
+
+const normalizeJsonRuleKey = (pathLabel: string): string => {
+  const normalized = pathLabel.replace(/\[(.*?)\]/g, "");
+  const parts = normalized.split(".").filter(Boolean);
+  return (parts[parts.length - 1] || "$").toLowerCase();
+};
+
+const resolveJsonArrayWindowSize = (pathLabel: string): number => {
+  const key = normalizeJsonRuleKey(pathLabel);
+  return JSON_ARRAY_WINDOW_BY_KEY[key] || JSON_ARRAY_WINDOW_DEFAULT;
+};
+
+const chunkJsonArrayByRule = (
+  items: unknown[],
+  pathLabel: string,
+): JsonUnit[] => {
+  if (items.length === 0) {
+    return [{ path: pathLabel, value: items }];
   }
 
-  if (rendered.length <= MAX_CHUNK_CHARS * 0.9) {
-    units.push({ path: normalizedPath, value });
-    return;
-  }
+  const windowSize = Math.max(1, resolveJsonArrayWindowSize(pathLabel));
+  const units: JsonUnit[] = [];
 
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      units.push({ path: normalizedPath, value });
-      return;
-    }
-
-    value.forEach((item, index) => {
-      collectJsonUnits(item, `${normalizedPath}[${index}]`, units);
+  for (let start = 0; start < items.length; start += windowSize) {
+    const end = Math.min(items.length - 1, start + windowSize - 1);
+    const value = items.slice(start, end + 1);
+    units.push({
+      path: `${pathLabel}[${start}-${end}]`,
+      value,
     });
-    return;
   }
 
-  const entries = Object.entries(value as Record<string, unknown>);
+  return units;
+};
+
+const collectJsonObjectUnitsByDefaultRules = (
+  value: Record<string, unknown>,
+  pathLabel: string,
+): JsonUnit[] => {
+  const entries = Object.entries(value);
   if (entries.length === 0) {
-    units.push({ path: normalizedPath, value });
-    return;
+    return [{ path: pathLabel, value }];
   }
 
-  for (const [key, child] of entries) {
-    const childPath = path ? `${path}.${key}` : key;
-    collectJsonUnits(child, childPath, units);
+  const ordered = orderJsonRootEntries(entries);
+  const units: JsonUnit[] = [];
+
+  for (const [key, child] of ordered) {
+    const childPath = `${pathLabel}.${key}`;
+    if (Array.isArray(child)) {
+      units.push(...chunkJsonArrayByRule(child, childPath));
+      continue;
+    }
+    units.push({ path: childPath, value: child });
   }
+
+  return units;
+};
+
+const orderJsonRootEntries = (
+  entries: Array<[string, unknown]>,
+): Array<[string, unknown]> => {
+  const priority = new Map<string, number>();
+  JSON_ROOT_PRIORITY_KEYS.forEach((key, index) => {
+    priority.set(key, index);
+  });
+
+  return entries.sort(([a], [b]) => {
+    const aRank = priority.get(a.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+    const bRank = priority.get(b.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+    if (aRank !== bRank) {
+      return aRank - bRank;
+    }
+    return a.localeCompare(b);
+  });
+};
+
+const collectJsonUnitsByDefaultRules = (parsed: unknown): JsonUnit[] => {
+  if (Array.isArray(parsed)) {
+    return chunkJsonArrayByRule(parsed, "$");
+  }
+
+  if (!parsed || typeof parsed !== "object") {
+    return [{ path: "$", value: parsed }];
+  }
+
+  const entries = Object.entries(parsed as Record<string, unknown>);
+  if (entries.length === 0) {
+    return [{ path: "$", value: parsed }];
+  }
+
+  const ordered = orderJsonRootEntries(entries);
+  const units: JsonUnit[] = [];
+
+  for (const [key, value] of ordered) {
+    if (Array.isArray(value)) {
+      units.push(...chunkJsonArrayByRule(value, key));
+      continue;
+    }
+    if (value && typeof value === "object") {
+      units.push(
+        ...collectJsonObjectUnitsByDefaultRules(
+          value as Record<string, unknown>,
+          key,
+        ),
+      );
+      continue;
+    }
+    units.push({ path: key, value });
+  }
+
+  return units;
 };
 
 const splitJsonIntoChunkSeeds = (jsonContent: string): ChunkSeed[] => {
@@ -426,8 +535,7 @@ const splitJsonIntoChunkSeeds = (jsonContent: string): ChunkSeed[] => {
     return splitTextIntoChunkSeeds(jsonContent);
   }
 
-  const units: JsonUnit[] = [];
-  collectJsonUnits(parsed, "", units);
+  const units = collectJsonUnitsByDefaultRules(parsed);
 
   if (units.length === 0) {
     return [];

@@ -20,6 +20,10 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
   toggleSection,
   t,
 }) => {
+  const progressMessage = embeddingProgress?.messageKey
+    ? t(embeddingProgress.messageKey, embeddingProgress.messageParams || {})
+    : embeddingProgress?.message;
+
   return (
     <div className="space-y-4">
       <div className="p-6 bg-theme-bg rounded-none border border-theme-border/40 text-center">
@@ -43,7 +47,7 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
         >
           <div className="space-y-3">
             <InfoRow
-              label={t("embedding.phase") || "Phase"}
+              label={t("embedding.phaseLabel") || "Phase"}
               value={
                 t(`embedding.phase.${embeddingProgress.stage}`) ||
                 embeddingProgress.stage
@@ -53,9 +57,9 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
               label={t("embedding.progress") || "Progress"}
               value={`${embeddingProgress.current} / ${embeddingProgress.total}`}
             />
-            {embeddingProgress.message && (
+            {progressMessage && (
               <div className="text-xs text-theme-muted italic mt-2 p-2 bg-theme-bg rounded-none border border-theme-border/30">
-                {embeddingProgress.message}
+                {progressMessage}
               </div>
             )}
             <div className="mt-3 h-3 bg-theme-bg/50 rounded-full overflow-hidden border border-theme-border/30">

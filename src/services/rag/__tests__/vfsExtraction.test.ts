@@ -63,6 +63,53 @@ describe("vfsExtraction", () => {
     );
   });
 
+  it("applies default JSON window rules for large arrays", () => {
+    const largeJson = JSON.stringify(
+      {
+        conversation: Array.from({ length: 35 }, (_, index) => ({
+          role: index % 2 === 0 ? "user" : "assistant",
+          content: `message-${index}`,
+        })),
+      },
+      null,
+      2,
+    );
+
+    const snapshot: VfsFileMap = {
+      "current/conversation/history.json": createFile(
+        "current/conversation/history.json",
+        largeJson,
+        "application/json",
+        "hash-json-conversation",
+      ),
+    };
+
+    const chunks = extractFileChunksFromSnapshot(snapshot, {
+      saveId: "save-1",
+      forkId: 0,
+      turnNumber: 3,
+    });
+
+    const conversationWindows = Array.from(
+      new Set(
+        chunks
+          .flatMap((chunk) =>
+            Array.from(
+              chunk.content.matchAll(/path:\s+(conversation\[\d+-\d+\])/g),
+            ).map((match) => match[1]),
+          )
+          .filter(Boolean),
+      ),
+    );
+
+    expect(conversationWindows.length).toBe(4);
+    expect(
+      conversationWindows.every((path) =>
+        /conversation\[\d+-\d+\]/.test(path),
+      ),
+    ).toBe(true);
+  });
+
   it("extracts Markdown chunks with heading path", () => {
     const markdown = [
       "# Chapter One",

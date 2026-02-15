@@ -50,7 +50,7 @@ describe("useEmbeddingStatus", () => {
     const Probe = () => {
       const progress = useEmbeddingStatus();
       const text = progress
-        ? `${progress.stage}:${progress.current}/${progress.total}`
+        ? `${progress.stage}:${progress.current}/${progress.total}:${progress.messageKey || "no-key"}`
         : "none";
       return React.createElement("div", null, text);
     };
@@ -63,10 +63,17 @@ describe("useEmbeddingStatus", () => {
         current: 3,
         total: 9,
         message: "embedding",
+        messageKey: "ragDebugger.progressEmbeddingChunks",
+        messageParams: {
+          current: 3,
+          total: 9,
+        },
       });
     });
 
-    expect(screen.getByText("indexing:3/9")).toBeTruthy();
+    expect(
+      screen.getByText("indexing:3/9:ragDebugger.progressEmbeddingChunks"),
+    ).toBeTruthy();
     expect(ragService.on).toHaveBeenCalledWith(
       "progress",
       expect.any(Function),

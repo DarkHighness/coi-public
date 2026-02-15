@@ -556,6 +556,7 @@
     "maxVersions": "每个实体最大版本数",
     "statusInfo": "嵌入将在创建故事内容时生成。这使得在故事生成期间能够进行语义搜索以检索相关上下文。",
     "status": "RAG 状态",
+    "phaseLabel": "阶段",
     "phase": {
       "embedding": "嵌入中",
       "indexing": "索引中",

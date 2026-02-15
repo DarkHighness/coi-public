@@ -3,6 +3,27 @@ import { RAGDatabase } from "../database";
 import { DEFAULT_RAG_CONFIG } from "../types";
 
 describe("RAGDatabase schema compatibility", () => {
+  it("drops schema tables with CASCADE during full reset", async () => {
+    const db = new RAGDatabase({
+      ...DEFAULT_RAG_CONFIG,
+      maxStorageBytes: 1024 * 1024,
+      schemaVersion: 5,
+    }) as any;
+
+    const exec = vi.fn(async () => undefined);
+    db.db = { exec };
+
+    await db.resetSchema();
+
+    expect(exec).toHaveBeenCalledTimes(1);
+    expect(exec).toHaveBeenCalledWith(
+      expect.stringContaining("DROP TABLE IF EXISTS documents CASCADE"),
+    );
+    expect(exec).toHaveBeenCalledWith(
+      expect.stringContaining("DROP TABLE IF EXISTS embeddings CASCADE"),
+    );
+  });
+
   it("rebuilds schema when bootstrap schema exec fails on missing column", async () => {
     const db = new RAGDatabase({
       ...DEFAULT_RAG_CONFIG,
