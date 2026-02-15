@@ -17,6 +17,9 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("forks/{forkId}/**");
     expect(content).toContain("shared/system/skills/**");
     expect(content).toContain("shared/system/refs/**");
+    expect(content).toContain("WRITE FAILURE REPAIR MODE");
+    expect(content).toContain("NO COMMIT SPAM");
+    expect(content).toContain("broad full-file char reads");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).not.toContain(legacySearchTool);
@@ -43,6 +46,7 @@ describe("systemMessages atoms", () => {
     const content = cleanupTurnInstruction({});
     expect(content).toContain("vfs_ls");
     expect(content).toContain("vfs_search");
+    expect(content).toContain("WRITE FAILURE REPAIR MODE");
   });
 
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {

@@ -63,12 +63,16 @@ describe("core prompt hygiene", () => {
     expect(content).not.toContain("vfs_read path=");
     expect(content).not.toContain("vfs_ls patterns=");
     expect(content).not.toContain("vfs_write({ path:");
+    expect(content).toContain("mode: \"json\"");
+    expect(content).toContain("avoid full-file char reads by default");
 
     // Turn finish protocol should avoid generic conversation writes
     expect(content).toContain("vfs_commit_turn");
     expect(content).toContain("vfs_write");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");
+    expect(content).toContain("WRITE-FAILURE REPAIR MODE");
+    expect(content).toContain("NO COMMIT SPAM");
     expect(content).not.toContain(
       "write both files via `vfs_write`/`vfs_write`",
     );
@@ -89,6 +93,9 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("No deus-ex-machina corrections");
     expect(content).toContain("worldSettingUnlocked");
     expect(content).toContain("mainGoalUnlocked");
+    expect(content).toContain("is NOT a container for those collections");
+    expect(content).toContain("JSON pointer `/unlocked` or `/unlockReason`");
+    expect(content).toContain("Never guess leaf filenames");
 
     // SUDO semantics must remain controlled (not hard bypass)
     expect(content).toContain("elevated update");

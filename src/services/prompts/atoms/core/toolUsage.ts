@@ -79,8 +79,12 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
 
   **TURN COMPLETION**:
   - Your LAST tool call must be \`${finishToolName}\`.
+  - If a writable write fails, enter repair mode: next calls must inspect/retry those failed targets only until they succeed.
   - If a write-type call (\`vfs_write\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, retry those targets until success before finish.
+  - Do not spam \`${finishToolName}\` while failed writable targets remain unresolved.
+  - If the same write error repeats, change strategy first (inspect schema/pointers/path), then retry.
   - Immutable/read-only write failures (skills/refs etc.) are exempt from the retry-before-finish requirement.
+  - For large JSON files, prefer \`vfs_read\` with \`mode: "json"\` + narrow \`pointers\`, or \`mode: "lines"\`; avoid full-file char reads by default.
   - Do NOT write finish-guarded conversation/summary paths via generic mutation tools.
   - ${
     toolsetId === "playerRate"

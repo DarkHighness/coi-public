@@ -42,6 +42,8 @@ export const stateManagement: Atom<void> = defineAtom(
     - **Actors (Player + NPCs)**:
       * Actors are stored under \`current/world/characters/<charId>/profile.json\` with optional subfolders:
         - \`inventory/\`, \`skills/\`, \`conditions/\`, \`traits/\`
+      * \`profile.json\` is NOT a container for those collections. Do not patch \`/inventory\`, \`/skills\`, \`/conditions\`, or \`/traits\` inside profile.
+      * Write sub-entities to dedicated files under their folders (e.g., \`.../conditions/<id>.json\`), then patch profile only for scalar fields like status/location/mood.
       * **currentLocation MUST be a location.id** and updated immediately when an actor moves.
       * **Reference fields are ID-first**: \`currentLocation\`, \`knownBy[]\`, \`relations[].to.id\`, \`timeline[].involvedEntities[]\`, \`faction.visible.relations[].target\`, \`faction.hidden.relations[].target\`.
       * **Special unresolved reference protocol**: if canonical ID is not available yet, you may use a bracket alias \`[Display Name]\` in the reference field.
@@ -81,6 +83,7 @@ export const stateManagement: Atom<void> = defineAtom(
         - When the protagonist first CONFIRMS an entity exists, add \`char:player\` to canonical \`knownBy\` AND create the corresponding player view file.
       * **Unlock is view-only (non-actor entities)**:
         - NEVER write \`unlocked/unlockReason\` to canonical quests/knowledge/timeline/locations/factions/causal_chains/world_info.
+        - NEVER patch canonical world files at JSON pointer \`/unlocked\` or \`/unlockReason\` (including remove/replace/add).
         - For quests/knowledge/timeline/locations/factions/causal_chains, set \`views/**.unlocked=true\` + \`unlockReason\`.
         - For \`world_info\`, use \`current/world/characters/<actorId>/views/world_info.json\` fields:
           \`worldSettingUnlocked/worldSettingUnlockReason\`, \`mainGoalUnlocked/mainGoalUnlockReason\`.
@@ -112,7 +115,7 @@ export const stateManagement: Atom<void> = defineAtom(
     - **NARRATIVE-STATE BINDING (MANDATORY)**:
       * **Rule**: "If you write it, you MUST track it. If you track it, it MUST have happened."
       * ❌ Narrative: "He hands you the key." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_key.json", contentType: "application/json", content: "{...}" }] })\`
+      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_key.json", content: "{...}" }] })\`
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
       * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
 
@@ -124,6 +127,8 @@ export const stateManagement: Atom<void> = defineAtom(
       * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
+      * For large JSON files, inspect with \`vfs_read\` pointers/lines first; avoid broad char-range reads by default.
+      * If a patch path may not exist, verify with pointer reads first; otherwise prefer \`merge_json\` or correct file placement.
       * Inspect before you change: \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\`.
       * Always reference explicit VFS paths (canonical preferred: \`forks/{activeFork}/story/world/**\`; alias \`current/world/**\` is also accepted).
       * After each turn, finish with \`vfs_commit_turn\` as the LAST tool call.

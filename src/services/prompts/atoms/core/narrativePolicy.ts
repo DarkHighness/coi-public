@@ -18,6 +18,7 @@ const unlockVsHighlight = `
        - **GM Role**: You always see hidden info; \`unlocked\` only affects what PLAYER knows
        - **Storage (CURRENT ARCHITECTURE)**:
          * World entities (quests/knowledge/timeline/locations/factions/causal_chains) → unlock state lives in \`current/world/characters/char:player/views/**\` (do NOT write canonical unlocked).
+         * Never patch canonical world files at \`/unlocked\` or \`/unlockReason\` (including remove ops).
          * \`world_info\` → unlock state lives in \`current/world/characters/char:player/views/world_info.json\` with \`worldSettingUnlocked/mainGoalUnlocked\` (+ reason fields).
          * Actors/relations/items/traits → unlock state lives on the entity file itself.
 

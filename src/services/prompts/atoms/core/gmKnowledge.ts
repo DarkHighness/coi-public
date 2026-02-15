@@ -87,6 +87,7 @@ const unlockProtocol = `
            - Canonical truth: \`forks/{activeFork}/story/world/<type>/<id>.json\` (alias: \`current/world/<type>/<id>.json\`)
            - Protagonist view: \`forks/{activeFork}/story/world/characters/char:player/views/<type>/<id>.json\` (alias: \`current/world/characters/char:player/views/<type>/<id>.json\`)
            - **DO NOT** write \`unlocked\` into canonical world entity files.
+           - **DO NOT** patch/remove \`/unlocked\` or \`/unlockReason\` on canonical world files; those pointers are view-layer state.
            - For quests/knowledge/timeline/locations/factions/causal_chains: **DO** set \`views/**.unlocked=true\` + \`unlockReason\` (create the view file if missing).
            - For \`world_info\`: **DO** set \`worldSettingUnlocked\` / \`mainGoalUnlocked\` (+ corresponding reason fields) in \`views/world_info.json\`.
         2) **Actors / Relations / Physical Items**:
@@ -188,6 +189,7 @@ export const gmKnowledgePrimer: Atom<void> = defineAtom(
     - Suspicion ≠ proof. Rumors ≠ truth. Player must EARN revelations.
     - When unlocking:
       * Quests/knowledge/timeline/locations/factions/causal_chains → set protagonist view \`forks/{activeFork}/story/world/characters/char:player/views/**.unlocked=true\` (alias: \`current/world/characters/char:player/views/**\`) via VFS
+      * Never patch/remove canonical world \`/unlocked\` or \`/unlockReason\`; these pointers are view-layer only.
       * \`world_info\` → set \`views/world_info.json\` \`worldSettingUnlocked/mainGoalUnlocked\` (+ reasons)
       * Actors/relations/items → set the entity's own \`unlocked=true\` via VFS
   </unlock_protocol>

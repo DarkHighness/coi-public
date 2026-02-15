@@ -241,8 +241,11 @@ When you render those consequences into prose, write like a skilled human storyt
      - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Your payload doesn't match the tool schema or the target file's expected structure.
        - Fix: \`vfs_read({ path: "current/refs/tools/<tool>.md" })\` and retry with schema-valid args.
        - For JSON targets: \`vfs_schema({ paths: ["<targetPath>"] })\` to confirm fields/types before retrying.
+       - If read fails with char-limit/cap errors, retry using \`mode: "json"\` + narrow \`pointers\` or \`mode: "lines"\` with explicit range; do NOT repeat full-file char reads.
+       - If patch fails with \`OPERATION_PATH_CANNOT_ADD\` or unrecognized keys, stop repeating the same patch; inspect parent pointers first, then switch strategy (\`merge_json\` or correct file path).
      - \`NOT_FOUND\`: The path/ID you referenced doesn't exist in the VFS under \`current/**\` (alias) or canonical \`shared/**\` / \`forks/{id}/**\`.
        - Fix: \`vfs_ls({ path: "<parentDir>" })\`, then \`vfs_search({ path: "<parentDir>", query: "<name>", fuzzy: true })\`.
+       - Never guess leaf filenames; discover exact path first (e.g., character data is usually \`.../<charId>/profile.json\`, not \`.../<charId>.json\`).
      - \`ALREADY_EXISTS\`: You tried to create something that already exists.
        - Fix: \`vfs_read({ path: "<targetPath>" })\`, then update via \`vfs_write\` (\`patch_json\` / \`merge_json\`) instead of creating duplicates.
      - \`INVALID_ACTION\`: You asked for an action that the tool doesn't support, or violated a protocol rule (read-before-mutate / finish-last / finish-guarded).
@@ -261,6 +264,8 @@ When you render those consequences into prose, write like a skilled human storyt
   3. **Mandatory Retry/Resolution**:
      - **DO NOT BYPASS ERRORS**: If a prior tool call in the loop failed, you ARE NOT ALLOWED to finish your turn until you have ATTEMPTED TO FIX the error or provided a logical explanation for abandonment.
     - **WRITE FAILURES ARE HARD BLOCKERS**: If a write-type tool (\`vfs_write\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, you must retry those file targets until success before finish. Runtime tracks failed write targets and blocks finish.
+    - **WRITE-FAILURE REPAIR MODE**: After a writable write failure, your next calls must focus on repairing those failed targets only (allowed: \`vfs_read\`/\`vfs_schema\` on failed targets, then corrected write). Do NOT start unrelated writes or call finish.
+    - **NO COMMIT SPAM**: Repeating \`vfs_commit_turn\` without first resolving failed write targets is invalid and will remain blocked.
     - **EXCEPTION**: Attempts to write immutable/read-only targets (e.g. skills/refs) do not create retry obligations for finish.
     - **DO NOT WRITE TURN FILES** while unhandled errors exist. If you do, you will be blocked and forced to regenerate.
     - **Self-Correction**: Immediately retry the tool with corrected arguments in the same turn if possible.
@@ -389,9 +394,28 @@ When you render those consequences into prose, write like a skilled human storyt
   **There is NO LIMIT on how many times you can call these tools.**
 
   **Best Practices:**
+  - For JSON, prefer \`mode: "json"\` with narrow \`pointers\` first; only widen reads when needed.
+  - If the first read is too large, switch to \`lines\` or pointer-scoped reads immediately.
+  - Discover exact paths with \`vfs_ls\`/\`vfs_search\` before direct \`vfs_read\` on guessed filenames.
   - Scan \`current/world/\` before creating new entities.
   - Chain multiple searches if your first attempt doesn't find what you need.
 </VFS_SEARCH_USAGE>
+
+<JSON_WRITE_DISCIPLINE>
+  🧩 **JSON WRITE DISCIPLINE (SCHEMA-SAFE)** 🧩
+
+  - Use \`patch_json\` only for paths that already exist or are guaranteed append targets.
+  - For actor sub-entities, do NOT patch \`/conditions\`/\`/inventory\`/\`/skills\`/\`/traits\` into \`profile.json\`.
+    - Write dedicated files instead:
+      - \`current/world/characters/<charId>/conditions/<conditionId>.json\`
+      - \`current/world/characters/<charId>/inventory/<itemId>.json\`
+      - \`current/world/characters/<charId>/skills/<skillId>.json\`
+      - \`current/world/characters/<charId>/traits/<traitId>.json\`
+  - Canonical world files (\`world/quests\`, \`world/knowledge\`, \`world/timeline\`, \`world/locations\`, \`world/factions\`, \`world/causal_chains\`, \`world/world_info.json\`) must NOT be patched at \`/unlocked\` or \`/unlockReason\`.
+    - Use actor view files (\`current/world/characters/char:player/views/**\`) for world-entity unlock state.
+    - For \`world_info\`, use \`worldSettingUnlocked\` / \`mainGoalUnlocked\` (+ reason fields) in \`views/world_info.json\`.
+  - After any schema error, retry with minimal valid payload (required fields + changed fields), not a larger speculative payload.
+</JSON_WRITE_DISCIPLINE>
 `,
 );
 
