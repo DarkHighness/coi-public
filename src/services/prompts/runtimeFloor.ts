@@ -16,7 +16,10 @@ You MUST follow these runtime protocol constraints:
   - \`vfs_read_json\` requires \`pointers\`.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - Write tools are split: \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic write tools).
-  - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
+  - Tool docs are split:
+    - Tool overview/examples: \`current/refs/tools/<tool>/README.md\` + \`current/refs/tools/<tool>/EXAMPLES.md\`
+    - Schema summary/parts: \`current/refs/tool-schemas/<tool>/README.md\` + \`current/refs/tool-schemas/<tool>/PART-xx.md\`
+    - Indexes: \`current/refs/tools/index.json\` + \`current/refs/tool-schemas/index.json\`
   - Marker routing: \`[PLAYER_ACTION]\` => simulate world turn, \`[Player Rate]\` => update soul files only, \`[SUDO]\` => elevated update loop.
   - Soul docs (\`current/world/soul.md\`, \`current/world/global/soul.md\`) are writable default-editable files, not read-only references.
     - Identity: soul files are AI-to-AI self-notes written by you for your future turns (never player-facing raw text).
@@ -37,7 +40,7 @@ You MUST follow these runtime protocol constraints:
   1) Do NOT finish yet.
   2) Fix the cause by \`code\` with the smallest helpful lookup:
      - \`NOT_FOUND\`: \`vfs_ls\` the parent dir, or \`vfs_search\` for the filename.
-     - \`INVALID_PARAMS\`: \`vfs_read_lines\` the tool doc (\`current/refs/tools/<tool>.md\`) and retry with schema-valid args.
+     - \`INVALID_PARAMS\`: read split docs (\`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, \`current/refs/tool-schemas/<tool>/README.md\`) and retry with schema-valid args.
      - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, switch to bounded \`vfs_read_lines\` or \`vfs_read_json\` with narrow \`pointers\`; do not repeat broad chars reads.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
@@ -56,7 +59,10 @@ You MUST follow these outline protocol constraints:
   - For large files/docs, prefer bounded \`vfs_read_lines\`; after \`READ_LIMIT_EXCEEDED\`, do NOT repeat path-only \`vfs_read_chars({ path })\`.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - In other modes, writes use the split write tools. In OUTLINE MODE, never call write/move/delete tools; submit with the current phase submit tool only.
-  - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
+  - Tool docs are split:
+    - Tool overview/examples: \`current/refs/tools/<tool>/README.md\` + \`current/refs/tools/<tool>/EXAMPLES.md\`
+    - Schema summary/parts: \`current/refs/tool-schemas/<tool>/README.md\` + \`current/refs/tool-schemas/<tool>/PART-xx.md\`
+    - Indexes: \`current/refs/tools/index.json\` + \`current/refs/tool-schemas/index.json\`
 - In each phase, submit ONLY with the phase-specific submit tool provided this round.
 - Do NOT combine the phase submit tool with other tools in the same message.
 - Read-only tools are optional and intended for reference/schema lookup before submit.
@@ -68,7 +74,7 @@ You MUST follow these outline protocol constraints:
 - Structured error recovery flow (when the submit tool returns \`{ success:false, code, error }\`):
   1) Keep phase/tool unchanged.
   2) Correct payload by error code:
-     - \`INVALID_PARAMETERS\`: open tool doc with \`vfs_read_lines\`, then fix argument types/fields exactly per schema.
+     - \`INVALID_PARAMETERS\`: open split tool docs (overview/examples/schema summary), then fix argument types/fields exactly per schema.
      - \`INVALID_DATA\` with \`READ_LIMIT_EXCEEDED\`: do NOT retry \`vfs_read_chars({ path })\`; use bounded \`vfs_read_lines\` or smaller \`vfs_read_chars\` windows.
   3) Retry the same phase submit tool after correction.
 </runtime_floor>`;

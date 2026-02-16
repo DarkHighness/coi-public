@@ -186,7 +186,9 @@ describe("VFS handlers mutations", () => {
       total: 1,
       operation: "write_file",
     });
-    expect(blocked.details?.refs).toContain("current/refs/tools/vfs_write_file.md");
+    expect(blocked.details?.refs).toContain(
+      "current/refs/tools/vfs_write_file/README.md",
+    );
 
     dispatchToolCall("vfs_read_chars", { path: "current/world/global.json" }, ctx);
 

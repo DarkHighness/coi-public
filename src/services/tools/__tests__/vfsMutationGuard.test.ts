@@ -24,7 +24,7 @@ const expectInvalidPayload = (
   expect(result.error.details?.tool).toBe("vfs_write_file");
   expect(result.error.details?.category).toBe("validation");
   expect(result.error.details?.refs).toContain(
-    "current/refs/tools/vfs_write_file.md",
+    "current/refs/tools/vfs_write_file/README.md",
   );
 };
 

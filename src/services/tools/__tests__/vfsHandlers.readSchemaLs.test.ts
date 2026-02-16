@@ -82,7 +82,9 @@ describe("VFS handlers read/schema/ls", () => {
       'vfs_read_lines({ path: "current/world/huge.txt", startLine: 1, lineCount: 200 })',
     );
     expect(result.details?.recovery?.[1]).toContain("current/world/huge.txt");
-    expect(result.details?.refs).toContain("current/refs/tools/vfs_read_chars.md");
+    expect(result.details?.refs).toContain(
+      "current/refs/tools/vfs_read_chars/README.md",
+    );
   });
 
   it("rejects oversized line-window reads and guides chunked strategies", () => {

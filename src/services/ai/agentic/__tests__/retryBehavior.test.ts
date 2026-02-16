@@ -702,7 +702,7 @@ describe("callWithAgenticRetry behavior", () => {
     }
 
     expect(thrown).toBeTruthy();
-    expect(thrown?.message).toContain("current/refs/tools/test_tool.md");
+    expect(thrown?.message).toContain("current/refs/tools/test_tool/README.md");
     expect(thrown?.message).not.toContain("<tool_info>");
     expect(thrown?.message).toContain("already provided earlier");
   });

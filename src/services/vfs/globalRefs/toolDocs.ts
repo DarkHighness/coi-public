@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getToolSchemaHint } from "../../providers/utils";
 import { vfsToolRegistry } from "../tools";
-import type { VfsFile, VfsFileMap, VfsContentType } from "../types";
+import type { VfsContentType, VfsFile, VfsFileMap } from "../types";
 import { hashContent } from "../utils";
 
 type JsonValue =
@@ -11,6 +11,8 @@ type JsonValue =
   | null
   | JsonValue[]
   | { [k: string]: JsonValue };
+
+const TOOL_SCHEMA_PART_MAX_LINES = 140;
 
 const createFile = (
   path: string,
@@ -122,17 +124,14 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       userAction: "Inspect the ruined gate",
       assistant: {
         narrative: "You brush moss aside and find fresh claw marks.",
-        choices: [
-          { text: "Follow the tracks" },
-          { text: "Set up camp nearby" },
-        ],
+        choices: [{ text: "Follow the tracks" }, { text: "Set up camp nearby" }],
       },
     },
   ],
   vfs_finish_soul: [
     {
       currentSoul:
-        "# Player Soul (This Save)\\n\\n## Tool Usage Hints\\n- [INVALID_PARAMS] Missing required field -> re-read tool doc and send schema-valid args.\\n\\n## Guidance For AI\\n- Keep prose tighter when player asks for concise style.\\n",
+        "# Player Soul (This Save)\\n\\n## Tool Usage Hints\\n- [INVALID_PARAMS] Missing required field -> re-read tool docs and send schema-valid args.\\n\\n## Guidance For AI\\n- Keep prose tighter when player asks for concise style.\\n",
     },
     {
       globalSoul:
@@ -164,7 +163,6 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
   ],
-  vfs_finish_outline_phase_0: ["<See SCHEMA section for phase-0 payload fields>"],
 };
 
 const unwrapSchema = (
@@ -275,73 +273,55 @@ const buildExamplesForTool = (
   return [sampleValueForSchema(schema)];
 };
 
-const buildToolDocMarkdown = (
-  toolName: string,
-  description: string,
-  schema: z.ZodTypeAny,
-): string => {
-  const schemaHint = getToolSchemaHint(schema, "", { toolName });
-  const examples = buildExamplesForTool(toolName, schema);
-  const exampleBlocks = examples
-    .map((example, index) => {
-      return [
-        `### Example ${index + 1}`,
-        "```json",
-        JSON.stringify(example, null, 2),
-        "```",
-      ].join("\n");
-    })
-    .join("\n\n");
+const splitSchemaHintIntoParts = (schemaHint: string): string[] => {
+  const lines = schemaHint.split("\n");
+  if (lines.length <= TOOL_SCHEMA_PART_MAX_LINES) {
+    return [schemaHint];
+  }
 
-  return [
-    "---",
-    `tool: ${toolName}`,
-    "generatedFrom: vfsToolRegistry",
-    "---",
-    "",
-    `# ${toolName}`,
-    "",
-    "## INTRO",
-    description,
-    "",
-    "## SCHEMA",
-    "```ts",
-    schemaHint,
-    "```",
-    "",
-    "## EXAMPLES",
-    exampleBlocks,
-    "",
-  ].join("\n");
+  const parts: string[] = [];
+  for (let i = 0; i < lines.length; i += TOOL_SCHEMA_PART_MAX_LINES) {
+    parts.push(lines.slice(i, i + TOOL_SCHEMA_PART_MAX_LINES).join("\n"));
+  }
+  return parts;
 };
 
-const buildToolsReadme = (): string => {
-  return [
+const buildToolsReadme = (): string =>
+  [
     "# Tool Docs Reference (VFS)",
     "",
     "Generated from `vfsToolRegistry.getDefinitions()`.",
     "",
     "## Usage",
-    '- List docs: `vfs_ls({ path: "current/refs/tools" })`',
-    '- Read index: `vfs_read_json({ path: "current/refs/tools/index.json" })`',
-    '- Read one doc (bounded): `vfs_read_lines({ path: "current/refs/tools/vfs_read_lines.md", startLine: 1, lineCount: 200 })`',
-    '- Search docs: `vfs_search({ path: "current/refs/tools", query: "commit" })`',
+    '- List tools: `vfs_ls({ path: "current/refs/tools" })`',
+    '- Read tool index: `vfs_read_json({ path: "current/refs/tools/index.json" })`',
+    '- Read one tool overview: `vfs_read_chars({ path: "current/refs/tools/vfs_read_lines/README.md" })`',
+    '- Read one tool examples: `vfs_read_chars({ path: "current/refs/tools/vfs_read_lines/EXAMPLES.md" })`',
+    '- Read schema index: `vfs_read_json({ path: "current/refs/tool-schemas/index.json" })`',
+    '- Read schema summary: `vfs_read_chars({ path: "current/refs/tool-schemas/vfs_read_lines/README.md" })`',
+    '- Read a schema part: `vfs_read_lines({ path: "current/refs/tool-schemas/vfs_finish_outline_phase_6/PART-01.md", startLine: 1, lineCount: 120 })`',
     "",
-    "Keep this README lightweight. Full content lives in one-tool-per-file docs:",
-    "- `current/refs/tools/<tool>.md`",
-    "- `current/refs/tools/index.json`",
+    "## Layout",
+    "- `current/refs/tools/<tool>/README.md` -> concise tool overview",
+    "- `current/refs/tools/<tool>/EXAMPLES.md` -> worked examples",
+    "- `current/refs/tool-schemas/<tool>/README.md` -> schema summary + parts map",
+    "- `current/refs/tool-schemas/<tool>/PART-xx.md` -> split schema chunks",
+    "",
+    "This split keeps each file small to avoid oversized reads and repeated line-window tuning.",
     "",
   ].join("\n");
+
+type ToolIndexEntry = {
+  name: string;
+  description: string;
+  overviewPath: string;
+  examplesPath: string;
+  schemaSummaryPath: string;
+  schemaPartPaths: string[];
 };
 
-const buildToolsIndex = (): string => {
-  const allTools = vfsToolRegistry.getDefinitions();
-  const entries = allTools.map((tool) => ({
-    name: tool.name,
-    path: `current/refs/tools/${tool.name}.md`,
-    description: tool.description,
-  }));
-  return JSON.stringify(
+const buildToolsIndex = (entries: ToolIndexEntry[]): string =>
+  JSON.stringify(
     {
       generatedFrom: "vfsToolRegistry",
       count: entries.length,
@@ -350,23 +330,204 @@ const buildToolsIndex = (): string => {
     null,
     2,
   );
+
+const buildSchemaIndex = (entries: ToolIndexEntry[]): string =>
+  JSON.stringify(
+    {
+      generatedFrom: "vfsToolRegistry",
+      count: entries.length,
+      schemas: entries.map((entry) => ({
+        name: entry.name,
+        summaryPath: entry.schemaSummaryPath,
+        partPaths: entry.schemaPartPaths,
+      })),
+    },
+    null,
+    2,
+  );
+
+const buildToolOverviewMarkdown = (params: {
+  toolName: string;
+  description: string;
+  examplesPath: string;
+  schemaSummaryPath: string;
+}): string =>
+  [
+    "---",
+    `tool: ${params.toolName}`,
+    "kind: tool-overview",
+    "generatedFrom: vfsToolRegistry",
+    "---",
+    "",
+    `# ${params.toolName}`,
+    "",
+    "## INTRO",
+    params.description,
+    "",
+    "## WHERE TO READ NEXT",
+    `- Examples: \`${params.examplesPath}\``,
+    `- Schema summary: \`${params.schemaSummaryPath}\``,
+    "",
+    "This overview intentionally omits full schema blocks to keep reads compact.",
+    "",
+  ].join("\n");
+
+const buildToolExamplesMarkdown = (
+  toolName: string,
+  examples: JsonValue[],
+): string => {
+  const exampleBlocks = examples
+    .map((example, index) =>
+      [
+        `## Example ${index + 1}`,
+        "```json",
+        JSON.stringify(example, null, 2),
+        "```",
+      ].join("\n"),
+    )
+    .join("\n\n");
+
+  return [
+    "---",
+    `tool: ${toolName}`,
+    "kind: tool-examples",
+    "generatedFrom: vfsToolRegistry",
+    "---",
+    "",
+    `# ${toolName} Examples`,
+    "",
+    exampleBlocks,
+    "",
+  ].join("\n");
 };
+
+const buildToolSchemaSummaryMarkdown = (params: {
+  toolName: string;
+  partPaths: string[];
+}): string =>
+  [
+    "---",
+    `tool: ${params.toolName}`,
+    "kind: tool-schema-summary",
+    "generatedFrom: vfsToolRegistry",
+    "---",
+    "",
+    `# ${params.toolName} Schema`,
+    "",
+    "Schema is split into multiple part files to keep each read small.",
+    "",
+    "## Parts",
+    ...params.partPaths.map((path) => `- \`${path}\``),
+    "",
+  ].join("\n");
+
+const buildToolSchemaPartMarkdown = (params: {
+  toolName: string;
+  part: string;
+  index: number;
+  total: number;
+}): string =>
+  [
+    "---",
+    `tool: ${params.toolName}`,
+    "kind: tool-schema-part",
+    `part: ${params.index + 1}`,
+    `totalParts: ${params.total}`,
+    "generatedFrom: vfsToolRegistry",
+    "---",
+    "",
+    `# ${params.toolName} Schema Part ${params.index + 1}/${params.total}`,
+    "",
+    "```ts",
+    params.part,
+    "```",
+    "",
+  ].join("\n");
 
 export const buildGlobalVfsToolDocs = (): VfsFileMap => {
   const files: VfsFileMap = {};
   const allTools = vfsToolRegistry.getDefinitions();
 
+  const indexEntries: ToolIndexEntry[] = [];
+
   addText(files, "refs/tools/README.md", buildToolsReadme());
-  addText(files, "refs/tools/index.json", buildToolsIndex());
 
   for (const tool of allTools) {
-    const doc = buildToolDocMarkdown(
-      tool.name,
-      tool.description,
-      tool.parameters,
+    const toolName = tool.name;
+    const overviewPath = `current/refs/tools/${toolName}/README.md`;
+    const examplesPath = `current/refs/tools/${toolName}/EXAMPLES.md`;
+    const schemaSummaryPath = `current/refs/tool-schemas/${toolName}/README.md`;
+
+    const schemaHint = getToolSchemaHint(tool.parameters, "", { toolName });
+    const schemaParts = splitSchemaHintIntoParts(schemaHint);
+    const schemaPartPaths = schemaParts.map(
+      (_part, index) =>
+        `current/refs/tool-schemas/${toolName}/PART-${String(index + 1).padStart(2, "0")}.md`,
     );
-    addText(files, `refs/tools/${tool.name}.md`, doc);
+
+    indexEntries.push({
+      name: toolName,
+      description: tool.description,
+      overviewPath,
+      examplesPath,
+      schemaSummaryPath,
+      schemaPartPaths,
+    });
+
+    addText(
+      files,
+      `refs/tools/${toolName}/README.md`,
+      buildToolOverviewMarkdown({
+        toolName,
+        description: tool.description,
+        examplesPath,
+        schemaSummaryPath,
+      }),
+    );
+    addText(
+      files,
+      `refs/tools/${toolName}/EXAMPLES.md`,
+      buildToolExamplesMarkdown(
+        toolName,
+        buildExamplesForTool(toolName, tool.parameters),
+      ),
+    );
+    addText(
+      files,
+      `refs/tool-schemas/${toolName}/README.md`,
+      buildToolSchemaSummaryMarkdown({
+        toolName,
+        partPaths: schemaPartPaths,
+      }),
+    );
+    for (let i = 0; i < schemaParts.length; i += 1) {
+      addText(
+        files,
+        `refs/tool-schemas/${toolName}/PART-${String(i + 1).padStart(2, "0")}.md`,
+        buildToolSchemaPartMarkdown({
+          toolName,
+          part: schemaParts[i],
+          index: i,
+          total: schemaParts.length,
+        }),
+      );
+    }
   }
+
+  addText(files, "refs/tools/index.json", buildToolsIndex(indexEntries));
+  addText(
+    files,
+    "refs/tool-schemas/README.md",
+    [
+      "# Tool Schemas Reference (VFS)",
+      "",
+      "Use this folder for schema-only reads. Tool overview/examples live under `refs/tools/**`.",
+      "",
+      '- Read schema index: `vfs_read_json({ path: "current/refs/tool-schemas/index.json" })`',
+      "",
+    ].join("\n"),
+  );
+  addText(files, "refs/tool-schemas/index.json", buildSchemaIndex(indexEntries));
 
   return files;
 };

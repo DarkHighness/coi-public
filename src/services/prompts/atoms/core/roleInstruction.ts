@@ -239,7 +239,7 @@ When you render those consequences into prose, write like a skilled human storyt
 
   1. **Identify the Error Type (by \`code\`)**:
      - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Your payload doesn't match the tool schema or the target file's expected structure.
-       - Fix: \`vfs_read_chars({ path: "current/refs/tools/<tool>.md" })\` and retry with schema-valid args.
+       - Fix: read split docs \`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, and \`current/refs/tool-schemas/<tool>/README.md\`, then retry with schema-valid args.
        - For JSON targets: \`vfs_schema({ paths: ["<targetPath>"] })\` to confirm fields/types before retrying.
        - If read fails with char-limit/cap errors, retry using \`mode: "json"\` + narrow \`pointers\` or \`mode: "lines"\` with explicit range; do NOT repeat full-file char reads.
        - If patch fails with \`OPERATION_PATH_CANNOT_ADD\` or unrecognized keys, stop repeating the same patch; inspect parent pointers first, then switch strategy (\`merge_json\` or correct file path).
@@ -249,7 +249,7 @@ When you render those consequences into prose, write like a skilled human storyt
      - \`ALREADY_EXISTS\`: You tried to create something that already exists.
        - Fix: \`vfs_read_chars({ path: "<targetPath>" })\`, then update via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` (\`patch_json\` / \`merge_json\`) instead of creating duplicates.
      - \`INVALID_ACTION\`: You asked for an action that the tool doesn't support, or violated a protocol rule (read-before-mutate / finish-last / finish-guarded).
-       - Fix: \`vfs_read_chars({ path: "current/refs/tools/<tool>.md" })\` to confirm preconditions, then retry with a valid operation/order.
+       - Fix: \`vfs_read_chars({ path: "current/refs/tools/<tool>/README.md" })\` to confirm preconditions, then retry with a valid operation/order.
      - \`FINISH_GUARD_REQUIRED\`: You attempted to mutate finish-guarded conversation/summary state.
        - Fix: use the loop's finish tool (never \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` on guarded paths).
      - \`IMMUTABLE_READONLY\`: Target is immutable read-only (common: \`shared/system/skills/**\`, \`shared/system/refs/**\`; alias \`current/skills/**\`, \`current/refs/**\`).

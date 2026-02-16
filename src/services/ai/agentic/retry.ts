@@ -76,13 +76,19 @@ const buildDiscriminatorTypeHint = (error: ZodError): string | null => {
   return null;
 };
 
-const buildToolDocBoundedReadHint = (toolDocRef: string): string =>
-  `Use \`vfs_read_lines({ path: "${toolDocRef}", startLine: 1, lineCount: 200  })\` before retrying (avoid unbounded \`vfs_read_chars({ path: "${toolDocRef}" })\`).`;
+const buildToolDocBoundedReadHint = (params: {
+  toolDocRef: string;
+  toolExamplesRef: string;
+  toolSchemaRef: string;
+}): string =>
+  `Use \`vfs_read_chars({ path: "${params.toolDocRef}" })\` + \`vfs_read_chars({ path: "${params.toolExamplesRef}" })\` + \`vfs_read_chars({ path: "${params.toolSchemaRef}" })\` before retrying; if schema summary points to PART files, read only needed PART-xx.md.`;
 
 const buildInvalidParametersMessage = (params: {
   toolName: string;
   validationError: ZodError;
   toolDocRef: string;
+  toolExamplesRef: string;
+  toolSchemaRef: string;
   includeReadHint: boolean;
   repeatedGuidance: boolean;
 }): string => {
@@ -90,20 +96,30 @@ const buildInvalidParametersMessage = (params: {
     toolName,
     validationError,
     toolDocRef,
+    toolExamplesRef,
+    toolSchemaRef,
     includeReadHint,
     repeatedGuidance,
   } = params;
   const issueSummary = summarizeZodIssues(validationError);
   const hints: string[] = [
-    `Docs: \`${toolDocRef}\``,
+    `Tool docs: \`${toolDocRef}\` + \`${toolExamplesRef}\``,
+    `Schema docs: \`${toolSchemaRef}\``,
     "Docs index: `current/refs/tools/README.md`",
+    "Schema index: `current/refs/tool-schemas/index.json`",
   ];
   const discriminatorTypeHint = buildDiscriminatorTypeHint(validationError);
   if (discriminatorTypeHint) {
     hints.push(discriminatorTypeHint);
   }
   if (includeReadHint) {
-    hints.push(buildToolDocBoundedReadHint(toolDocRef));
+    hints.push(
+      buildToolDocBoundedReadHint({
+        toolDocRef,
+        toolExamplesRef,
+        toolSchemaRef,
+      }),
+    );
   }
   if (repeatedGuidance) {
     hints.push("Schema guidance was already provided earlier in this retry chain.");
@@ -551,7 +567,9 @@ export async function callWithAgenticRetry(
               args: toolCall.args,
               issues: validationResult.error.issues,
             });
-            const toolDocRef = `current/refs/tools/${toolCall.name}.md`;
+            const toolDocRef = `current/refs/tools/${toolCall.name}/README.md`;
+            const toolExamplesRef = `current/refs/tools/${toolCall.name}/EXAMPLES.md`;
+            const toolSchemaRef = `current/refs/tool-schemas/${toolCall.name}/README.md`;
             const wasGuidanceShown = schemaGuidanceShownByTool.has(
               toolCall.name,
             );
@@ -564,6 +582,8 @@ export async function callWithAgenticRetry(
               toolName: toolCall.name,
               validationError: validationResult.error,
               toolDocRef,
+              toolExamplesRef,
+              toolSchemaRef,
               includeReadHint: Boolean(toolDef && !wasGuidanceShown),
               repeatedGuidance: Boolean(toolDef && wasGuidanceShown),
             });

@@ -58,6 +58,8 @@ export type VfsToolHandler = (
 ) => unknown | Promise<unknown>;
 
 const TOOL_DOCS_README_REF = "current/refs/tools/README.md";
+const TOOL_SCHEMA_DOCS_README_REF = "current/refs/tool-schemas/README.md";
+const TOOL_SCHEMA_DOCS_INDEX_REF = "current/refs/tool-schemas/index.json";
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
 
 export const VFS_READ_HARD_TOKEN_BUDGET = 320;
@@ -79,7 +81,13 @@ export const normalizeToolDocName = (toolName: string): string =>
   toolName.includes("(") ? toolName.slice(0, toolName.indexOf("(")) : toolName;
 
 export const getToolDocRef = (toolName: string): string =>
-  `current/refs/tools/${normalizeToolDocName(toolName)}.md`;
+  `current/refs/tools/${normalizeToolDocName(toolName)}/README.md`;
+
+export const getToolExamplesRef = (toolName: string): string =>
+  `current/refs/tools/${normalizeToolDocName(toolName)}/EXAMPLES.md`;
+
+export const getToolSchemaRef = (toolName: string): string =>
+  `current/refs/tool-schemas/${normalizeToolDocName(toolName)}/README.md`;
 
 const uniqueStrings = (items: Array<string | undefined>): string[] => {
   const seen = new Set<string>();
@@ -95,7 +103,7 @@ const uniqueStrings = (items: Array<string | undefined>): string[] => {
 };
 
 const buildToolDocRecoveryReadCall = (toolDocRef: string): string =>
-  `vfs_read_lines({ path: "${toolDocRef}", startLine: 1, lineCount: 200 })`;
+  `vfs_read_chars({ path: "${toolDocRef}" })`;
 
 const SOUL_TOOL_LEARNING_RECOVERY =
   'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via one writable tool (`vfs_write_file`/`vfs_append_text`/`vfs_edit_lines`/`vfs_patch_json`/`vfs_merge_json`) or `vfs_finish_soul` in `[Player Rate]`.';
@@ -110,10 +118,13 @@ const defaultRecoveryByCode = (
   toolName: string,
 ): string[] => {
   const toolDocRef = getToolDocRef(toolName);
+  const toolExamplesRef = getToolExamplesRef(toolName);
+  const toolSchemaRef = getToolSchemaRef(toolName);
 
   if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
     return withSoulToolLearningRecovery([
-      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} (INTRO/SCHEMA/EXAMPLES), then retry with schema-valid arguments.`,
+      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for tool overview, ${buildToolDocRecoveryReadCall(toolExamplesRef)} for examples, and ${buildToolDocRecoveryReadCall(toolSchemaRef)} for schema summary. Then retry with schema-valid arguments.`,
+      `If schema summary points to PART files, read only the needed part from current/refs/tool-schemas/<tool>/PART-xx.md.`,
       "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
       "If you're modifying an existing file, read it first (read-before-mutate), then retry.",
     ]);
@@ -485,7 +496,13 @@ export const createReadLimitError = (
           },
         ],
         recovery,
-        refs: [getToolDocRef(resolvedToolName), TOOL_DOCS_README_REF],
+        refs: [
+          getToolDocRef(resolvedToolName),
+          getToolSchemaRef(resolvedToolName),
+          TOOL_DOCS_README_REF,
+          TOOL_SCHEMA_DOCS_README_REF,
+          TOOL_SCHEMA_DOCS_INDEX_REF,
+        ],
       },
     );
   })();

@@ -30,6 +30,7 @@ export type MutationOperation =
 
 const VFS_WRITE_DOC_REFS = [
   "current/refs/tools/README.md",
+  "current/refs/tool-schemas/README.md",
 ];
 
 const uniqueStrings = (items: Array<string | undefined>): string[] => {
@@ -53,7 +54,9 @@ const createVfsWriteGuardError = (
   const toolName = details?.tool ?? "vfs_write_file";
   const refs = uniqueStrings([
     ...(details?.refs ?? []),
-    `current/refs/tools/${toolName}.md`,
+    `current/refs/tools/${toolName}/README.md`,
+    `current/refs/tools/${toolName}/EXAMPLES.md`,
+    `current/refs/tool-schemas/${toolName}/README.md`,
     ...VFS_WRITE_DOC_REFS,
   ]);
   return createError(error, code, {
@@ -706,7 +709,7 @@ export const validateWritePayload = (
                 ],
           recovery: [
             "Align payload fields/types with schema constraints and retry.",
-            "Reference current/refs/tools/README.md plus the active write tool doc for write patterns.",
+            "Reference current/refs/tools/README.md plus current/refs/tools/<tool>/README.md and current/refs/tool-schemas/<tool>/README.md for write patterns.",
           ],
         },
       ),
