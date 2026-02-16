@@ -328,6 +328,97 @@ describe("messageTypes", () => {
     ]);
   });
 
+  it("preserves structured tool errors and warnings through OpenAI tool-result round-trip", () => {
+    const source = createToolResponseMessage([
+      {
+        toolCallId: "call_err",
+        name: "vfs_read_lines",
+        content: {
+          success: false,
+          code: "INVALID_DATA",
+          error: "vfs_read_lines: requested range exceeded limit",
+          details: {
+            tool: "vfs_read_lines",
+            recovery: ["retry with bounded range"],
+            hint: {
+              code: "READ_LIMIT_HINT",
+              summary: "Use smaller windows",
+              nextCalls: [
+                'vfs_read_lines({ path: "current/world/notes.md", startLine: 1, lineCount: 120 })',
+              ],
+            },
+          },
+        },
+      },
+      {
+        toolCallId: "call_warn",
+        name: "vfs_read_chars",
+        content: {
+          success: true,
+          data: {
+            content: "yz",
+            warnings: ["requested end=123 exceeds max end=26; clamped to 26."],
+          },
+          message: "VFS file read",
+        },
+      },
+    ]);
+
+    const openai = toOpenAIFormat([source]);
+    const unified = fromOpenAIFormat(openai);
+
+    expect(unified).toEqual([
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool_result",
+            toolResult: {
+              id: "call_err",
+              name: "unknown",
+              content: {
+                success: false,
+                code: "INVALID_DATA",
+                error: "vfs_read_lines: requested range exceeded limit",
+                details: {
+                  tool: "vfs_read_lines",
+                  recovery: ["retry with bounded range"],
+                  hint: {
+                    code: "READ_LIMIT_HINT",
+                    summary: "Use smaller windows",
+                    nextCalls: [
+                      'vfs_read_lines({ path: "current/world/notes.md", startLine: 1, lineCount: 120 })',
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool_result",
+            toolResult: {
+              id: "call_warn",
+              name: "unknown",
+              content: {
+                success: true,
+                data: {
+                  content: "yz",
+                  warnings: ["requested end=123 exceeds max end=26; clamped to 26."],
+                },
+                message: "VFS file read",
+              },
+            },
+          },
+        ],
+      },
+    ]);
+  });
+
   it("extracts system instruction and removes system content messages", () => {
     const messages = [
       { role: "system", content: [{ type: "text", text: "A" }] },

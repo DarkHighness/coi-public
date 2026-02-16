@@ -193,4 +193,33 @@ describe("toolCallProcessor VFS integration", () => {
       loopState.activeTools.every((tool) => tool.name.startsWith("vfs_")),
     ).toBe(true);
   });
+
+  it("returns read clamp warnings in tool output for downstream model recovery", () => {
+    const session = new VfsSession();
+    session.writeFile("world/lines.txt", "a\nb\nc", "text/plain");
+    const gameState = deriveGameStateFromVfs({});
+    const loopState = createLoopState(
+      gameState,
+      DEFAULTS,
+      false,
+      false,
+      session,
+      [],
+    );
+
+    const output = executeGenericTool(
+      "vfs_read_lines",
+      { path: "current/world/lines.txt", startLine: 2, endLine: 99 },
+      {
+        loopState,
+        gameState,
+        settings: DEFAULTS,
+      },
+    ) as any;
+
+    expect(output.success).toBe(true);
+    expect(output.data.lineEnd).toBe(3);
+    expect(output.data.requestedLineEnd).toBe(99);
+    expect(output.data.warnings?.[0]).toContain("clamped to 3");
+  });
 });

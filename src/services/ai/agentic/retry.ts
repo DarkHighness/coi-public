@@ -654,12 +654,16 @@ export async function callWithAgenticRetry(
         createToolResponseMessage(
           functionCalls.map((fc) => {
             if (invalidToolCallErrors.size === 0) {
-              return {
-                toolCallId: fc.id,
-                name: fc.name,
-                content: { success: false, error: errorMessage },
-              };
-            }
+                return {
+                  toolCallId: fc.id,
+                  name: fc.name,
+                  content: {
+                    success: false,
+                    code: "EXECUTION_ERROR",
+                    error: errorMessage,
+                  },
+                };
+              }
 
             const invalidDetail = invalidToolCallErrors.get(fc.id);
             if (invalidDetail) {
