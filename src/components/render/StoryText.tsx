@@ -1,14 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { TypewriterText } from "../TypewriterText";
 import { useStoryAudio } from "../../hooks/useStoryAudio";
 import { AISettings, PlayerRate, PlayerRateInput } from "../../types";
 import { StoryTextHeader } from "./StoryTextHeader";
-import { markdownComponents } from "../../utils/markdownComponents";
 import { MarkdownText } from "./MarkdownText";
 import { useSettings } from "../../hooks/useSettings";
+import { normalizeNarrativeMarkdown } from "./storyTextNormalization";
 
 interface StoryTextProps {
   text: string;
@@ -50,9 +48,13 @@ export const StoryText: React.FC<StoryTextProps> = ({
     themeMode === "system"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
       : themeMode === "night";
+  const normalizedText = React.useMemo(
+    () => normalizeNarrativeMarkdown(text),
+    [text],
+  );
 
   const { isPlaying, isLoadingAudio, playAudio } = useStoryAudio(
-    text,
+    normalizedText,
     aiSettings,
     aiSettings.audioVolume?.ttsVolume ?? 1.0,
     aiSettings.audioVolume?.ttsMuted ?? false,
@@ -110,14 +112,14 @@ export const StoryText: React.FC<StoryTextProps> = ({
         >
           {isLast ? (
             <TypewriterText
-              text={text}
+              text={normalizedText}
               speed={aiSettings.typewriterSpeed ?? 15}
               instant={!shouldAnimate}
               onComplete={onTypingComplete}
               enableMarkdown={true}
             />
           ) : (
-            <MarkdownText content={text} />
+            <MarkdownText content={normalizedText} />
           )}
         </div>
       </div>
