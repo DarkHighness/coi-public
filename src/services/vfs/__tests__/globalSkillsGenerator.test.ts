@@ -153,7 +153,7 @@ describe("VFS global skills generator", () => {
     expect(commandCompact).toContain("current session history in context");
     expect(commandCompact).toContain("Structured Error Recovery Flow");
     expect(commandOutline).toContain("name: commands-outline");
-    expect(commandOutline).toContain("vfs_finish_outline");
+    expect(commandOutline).toContain("vfs_finish_outline_phase_X");
   });
 
   it("embeds gameplay-specific constraints in runtime examples", () => {

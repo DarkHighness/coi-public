@@ -23,7 +23,7 @@ const writeText = (session: VfsSession, path: string, value: string) => {
  *
  * Why:
  * - Keeps large descriptions out of the always-loaded prompt context
- * - Lets the agent fetch only what it needs via vfs_ls / vfs_read / vfs_read / vfs_search
+ * - Lets the agent fetch only what it needs via vfs_ls / vfs_read_chars / vfs_read_lines / vfs_search
  */
 export const seedAtmosphereRefs = (session: VfsSession): void => {
   const writeItem = (
@@ -92,7 +92,7 @@ export const seedAtmosphereRefs = (session: VfsSession): void => {
       "",
       "## How to use (examples)",
       '- List: `vfs_ls({ path: \"current/refs/atmosphere/ambience\" })`',
-      '- Read one: `vfs_read({ path: \"current/refs/atmosphere/ambience/nightclub.md\" })`',
+      '- Read one: `vfs_read_chars({ path: \"current/refs/atmosphere/ambience/nightclub.md\" })`',
       '- Search: `vfs_search({ path: \"current/refs/atmosphere\", query: \"neon\" })`',
       "",
     ].join("\n"),

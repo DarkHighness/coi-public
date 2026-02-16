@@ -39,7 +39,7 @@ const globalNotes = `
 
       ❌ DO NOT LEAVE CANONICAL FACTS ONLY IN NOTES:
       - If a fact is stable and can be expressed structurally, write it back into the appropriate entity JSON using
-        \`vfs_mutate\` (\`write_file\` / \`patch_json\` / \`merge_json\`).
+        \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` (\`write_file\` / \`patch_json\` / \`merge_json\`).
       - Notes are not the canonical world state; they are a scratch pad.
       - Do not quote raw notes content to the player as direct narration.
     </when_to_use>
@@ -47,21 +47,21 @@ const globalNotes = `
     <read_write_protocol>
       **IMPORTANT (tool-seen constraints):**
       - Existing files must be read before mutation in the current session epoch.
-      - Prefer \`vfs_mutate\` + \`append_text\` for additive updates (fast + safe, no full rewrite):
-        - \`vfs_mutate({ ops: [{ op: "append_text", path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
-        - If the file already exists, you MUST \`vfs_read\` it first (read-before-mutate).
+      - Prefer \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` + \`append_text\` for additive updates (fast + safe, no full rewrite):
+        - \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "append_text", path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
+        - If the file already exists, you MUST \`vfs_read_chars/vfs_read_lines/vfs_read_json\` it first (read-before-mutate).
         - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
       - For non-additive changes, use read → modify → write:
-        1) \`vfs_read\` the notes file
-        2) Then \`vfs_mutate\` with \`edit_lines\` or \`write_file\` for the updated markdown content
-      - If it does not exist, you may \`vfs_mutate\` (\`write_file\`) to create it.
+        1) \`vfs_read_chars/vfs_read_lines/vfs_read_json\` the notes file
+        2) Then \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`edit_lines\` or \`write_file\` for the updated markdown content
+      - If it does not exist, you may \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` (\`write_file\`) to create it.
     </read_write_protocol>
 
     <compact_bootstrap>
       **AFTER COMPACT/SUMMARY OR ANY HISTORY REBUILD, RE-BOOTSTRAP MEMORY CONTEXT**:
-      1. \`vfs_read({ path: "forks/{activeFork}/story/summary/state.json" })\` (or alias \`current/summary/state.json\`)
-      2. \`vfs_read({ path: "forks/{activeFork}/story/world/global.json" })\` (or alias \`current/world/global.json\`)
-      3. \`vfs_read({ path: "current/world/notes.md" })\` (if present)
+      1. \`vfs_read_chars({ path: "forks/{activeFork}/story/summary/state.json" })\` (or alias \`current/summary/state.json\`)
+      2. \`vfs_read_chars({ path: "forks/{activeFork}/story/world/global.json" })\` (or alias \`current/world/global.json\`)
+      3. \`vfs_read_chars({ path: "current/world/notes.md" })\` (if present)
       4. If more notes are needed, \`vfs_ls({ patterns: ["current/**/notes.md"] })\`, then read only relevant files.
 
       **CANONICAL VS NOTES**:
@@ -71,10 +71,10 @@ const globalNotes = `
 
     <search_strategy>
       **AVOID FULL SCANS**:
-      - Start with \`vfs_read({ path: "current/world/notes.md" })\` (if present).
+      - Start with \`vfs_read_chars({ path: "current/world/notes.md" })\` (if present).
       - When you need related entity notes, use:
         - \`vfs_ls({ patterns: ["current/**/notes.md"] })\`
-      - Then \`vfs_read({ path: "..." })\` only the relevant notes files.
+      - Then \`vfs_read_chars({ path: "..." })\` only the relevant notes files.
     </search_strategy>
 
     <hygiene>
@@ -108,7 +108,7 @@ const memoryQuery = `
     **AVAILABLE VFS TOOLS** (use in the SEARCH stage):
     - \`vfs_search\`: Search across \`forks/{activeFork}/story/conversation/turns/\` (alias: \`current/conversation/turns/\`) for keywords.
     - \`vfs_search\`: Regex search for precise phrases or names.
-    - \`vfs_read\`: Read specific turn files or \`shared/narrative/conversation/index.json\` (alias: \`current/conversation/index.json\`) to confirm ordering.
+    - \`vfs_read_chars/vfs_read_lines/vfs_read_json\`: Read specific turn files or \`shared/narrative/conversation/index.json\` (alias: \`current/conversation/index.json\`) to confirm ordering.
 
     <continuity_awareness>
       ⚠️ **CRITICAL: DO NOT DRAW HASTY CONCLUSIONS FROM FRAGMENTARY RESULTS**
@@ -157,7 +157,7 @@ const memoryQuery = `
       - **Internal Check**: Quietly verify against entity files when details are crucial.
       - **Conflict**: If files differ from summary, **TRUST FILES** and narrate the correction subtly.
       - **Ambiguity**: If unsure, search the story directly rather than guessing.
-      - **Sync**: If narrative changes a key fact (e.g. injury), update the relevant file via \`vfs_mutate\`.
+      - **Sync**: If narrative changes a key fact (e.g. injury), update the relevant file via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`.
     </consistency_hierarchy>
   </rule>
 `;

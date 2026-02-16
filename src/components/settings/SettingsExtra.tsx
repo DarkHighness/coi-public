@@ -186,7 +186,7 @@ export const SettingsExtra: React.FC = () => {
             </div>
             <div className="text-[10px] text-theme-muted mt-1">
               {t("settings.extra.toolCallCarouselHelp") ||
-                "Show a tool-call style rotating animation (like vfs_read({...})) while AI is generating."}
+                "Show a tool-call style rotating animation (like vfs_read_chars/vfs_read_lines/vfs_read_json({...})) while AI is generating."}
             </div>
           </div>
           <button

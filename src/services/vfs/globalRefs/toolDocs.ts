@@ -43,17 +43,24 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       limit: 50,
     },
   ],
-  vfs_read: [
-    {
-      path: "current/world/global.json",
-      mode: "json",
-      pointers: ["/time", "/theme", "/currentLocation"],
-    },
+  vfs_read_chars: [
     {
       path: "current/world/notes.md",
-      mode: "chars",
       start: 0,
       offset: 1024,
+    },
+  ],
+  vfs_read_lines: [
+    {
+      path: "current/world/notes.md",
+      startLine: 1,
+      lineCount: 120,
+    },
+  ],
+  vfs_read_json: [
+    {
+      path: "current/world/global.json",
+      pointers: ["/time", "/theme", "/currentLocation"],
     },
   ],
   vfs_schema: [{ paths: ["current/world/global.json"] }],
@@ -61,40 +68,53 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
     { query: "dragon", path: "current/world", limit: 20 },
     { query: "dragn", path: "current/world", fuzzy: true },
   ],
-  vfs_mutate: [
+  vfs_write_file: [
     {
-      ops: [
+      path: "current/world/notes.md",
+      content: "# Session Notes\n\n- Entry",
+      contentType: "text/markdown",
+    },
+  ],
+  vfs_append_text: [
+    {
+      path: "current/world/notes.md",
+      content: "- Follow-up",
+      ensureNewline: true,
+    },
+  ],
+  vfs_edit_lines: [
+    {
+      path: "current/world/notes.md",
+      edits: [
         {
-          op: "write_file",
-          path: "current/world/notes.md",
-          content: "# Session Notes\n\n- Entry",
-          contentType: "text/markdown",
+          kind: "insert_after",
+          line: 1,
+          content: "- New clue",
         },
       ],
     },
+  ],
+  vfs_patch_json: [
     {
-      ops: [
-        {
-          op: "append_text",
-          path: "current/world/notes.md",
-          content: "- Follow-up",
-          ensureNewline: true,
-        },
-        {
-          op: "merge_json",
-          path: "current/world/global.json",
-          content: { turnNumber: 2 },
-        },
-        {
-          op: "move",
-          from: "current/world/tmp.md",
-          to: "current/world/archive/tmp.md",
-        },
-        {
-          op: "delete",
-          path: "current/world/archive/old.tmp",
-        },
-      ],
+      path: "current/world/global.json",
+      patch: [{ op: "replace", path: "/turnNumber", value: 2 }],
+    },
+  ],
+  vfs_merge_json: [
+    {
+      path: "current/world/global.json",
+      content: { turnNumber: 2 },
+    },
+  ],
+  vfs_move: [
+    {
+      from: "current/world/tmp.md",
+      to: "current/world/archive/tmp.md",
+    },
+  ],
+  vfs_delete: [
+    {
+      path: "current/world/archive/old.tmp",
     },
   ],
   vfs_finish_turn: [
@@ -116,7 +136,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
     },
     {
       globalSoul:
-        "# Player Soul (Global)\\n\\n## Tool Usage Hints\\n- [INVALID_ACTION] Read-before-mutate failed -> always vfs_read target before edit.\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
+        "# Player Soul (Global)\\n\\n## Tool Usage Hints\\n- [INVALID_ACTION] Read-before-write failed -> always read target via vfs_read_chars/vfs_read_lines/vfs_read_json before edit.\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
     },
     {
       currentSoul:
@@ -144,12 +164,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
   ],
-  vfs_finish_outline: [
-    {
-      phase: 0,
-      data: "<See SCHEMA section for phase payload fields>",
-    },
-  ],
+  vfs_finish_outline_phase_0: ["<See SCHEMA section for phase-0 payload fields>"],
 };
 
 const unwrapSchema = (
@@ -312,7 +327,7 @@ const buildToolsReadme = (): string => {
     "",
     "## Usage",
     '- List docs: `vfs_ls({ path: "current/refs/tools" })`',
-    '- Read one doc (bounded): `vfs_read({ path: "current/refs/tools/vfs_read.md", mode: "lines", startLine: 1, lineCount: 200 })`',
+    '- Read one doc (bounded): `vfs_read_lines({ path: "current/refs/tools/vfs_read_lines.md", startLine: 1, lineCount: 200 })`',
     '- Search docs: `vfs_search({ path: "current/refs/tools", query: "commit" })`',
     "",
     "## Contents",

@@ -5,11 +5,11 @@ describe("stateManagement atom", () => {
   it("requires VFS tools for state updates", () => {
     const content = stateManagement();
     const legacyFinishTool = "vfs_commit_turn";
-    expect(content).toContain("vfs_mutate");
-    expect(content).toContain("vfs_mutate");
-    expect(content).toContain("vfs_mutate");
+    expect(content).toContain("vfs_write_file");
+    expect(content).toContain("vfs_write_file");
+    expect(content).toContain("vfs_write_file");
     expect(content).toContain("JSON Patch");
-    expect(content).toContain("vfs_mutate");
+    expect(content).toContain("vfs_write_file");
     expect(content).toContain("current/world/");
     expect(content).toContain("forks/{forkId}/**");
     expect(content).toContain("current/**");

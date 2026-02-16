@@ -52,12 +52,12 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - Permission classes: \`immutable_readonly\` (never writable), \`default_editable\` (AI default writable), \`elevated_editable\` (requires one-time user-confirmed token in \`/god\` or \`/sudo\`), \`finish_guarded\` (write only via finish tools).
   - Immutable zones are always blocked: \`shared/system/skills/**\`, \`shared/system/refs/**\` (plus alias views \`skills/**\`, \`refs/**\`).
   - Resource templates enforce operation-level contracts (e.g. conversation expects \`finish_commit\`, summary expects \`finish_summary\`, rewrite flows use \`history_rewrite\`).
-  - Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\` (${searchModes}) to inspect.
-  - Use \`vfs_mutate\` with \`write_file\` to create/replace files.
-  - Use \`vfs_mutate\` with \`patch_json\` (RFC 6902) to update JSON.
-  - Use \`vfs_mutate\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
-  - Use \`vfs_mutate\` with \`move\` to rename paths, \`delete\` to remove files.
-  - Use \`vfs_mutate\` with multiple \`ops\` to batch related state updates.
+  - Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, \`vfs_search\` (${searchModes}) to inspect.
+  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`write_file\` to create/replace files.
+  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`patch_json\` (RFC 6902) to update JSON.
+  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
+  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`move\` to rename paths, \`delete\` to remove files.
+  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with multiple \`ops\` to batch related state updates.
   - Prefer omitting optional fields; use \`null\` only if you must, and treat it as “use defaults”.
 
   **STATE = FILES**:
@@ -66,14 +66,14 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - ${
     toolsetId === "playerRate"
       ? "In `[Player Rate]` loops, write scope is soul-only: `current/world/soul.md` and `current/world/global/soul.md`."
-      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via `vfs_mutate` when evidence emerges."
+      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via `vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete` when evidence emerges."
   }
   - If a tool call fails and later retry succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\`.
   - Conversation/summary are finish-guarded under \`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`.
 
   **CUSTOM RULE PACKS (SHARED LAYER)**:
   - User-defined rule packs live under \`shared/config/custom_rules/NN-*/RULES.md\` (alias: \`current/custom_rules/NN-*/RULES.md\`; lower \`NN\` = higher priority).
-  - Strong reminder: when turn intent matches a rule category, read relevant low-\`NN\` packs first via \`vfs_read\`.
+  - Strong reminder: when turn intent matches a rule category, read relevant low-\`NN\` packs first via \`vfs_read_chars/vfs_read_lines/vfs_read_json\`.
   - This is not a hard gate; if no pack is relevant, proceed with normal inspection flow.
 
   **TURN COMPLETION**:
@@ -84,7 +84,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - Do not spam \`${finishToolName}\` while failed writable targets remain unresolved.
   - If the same write error repeats, change strategy first (inspect schema/pointers/path), then retry.
   - Immutable/read-only write failures (skills/refs etc.) are exempt from the retry-before-finish requirement.
-  - For large JSON files, prefer \`vfs_read\` with \`mode: "json"\` + narrow \`pointers\`, or \`mode: "lines"\`; avoid full-file char reads by default.
+  - For large JSON files, prefer \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with \`mode: "json"\` + narrow \`pointers\`, or \`mode: "lines"\`; avoid full-file char reads by default.
   - Do NOT write finish-guarded conversation/summary paths via generic mutation tools.
   - ${
     toolsetId === "playerRate"

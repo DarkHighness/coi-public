@@ -15,8 +15,8 @@ const idUsage = `
     - IDs are **backend identifiers**, NOT player-facing information.
 
     **WHERE IDs BELONG (ONLY THESE PLACES)**:
-    ✅ VFS file paths: \`vfs_mutate({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_sword_of_kings.json", ... }] })\`
-    ✅ VFS file edits: \`vfs_mutate({ ops: [{ op: "patch_json", path: "current/world/characters/char:marcus/profile.json", patch: [...] }] })\`
+    ✅ VFS file paths: \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_sword_of_kings.json", ... }] })\`
+    ✅ VFS file edits: \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "patch_json", path: "current/world/characters/char:marcus/profile.json", patch: [...] }] })\`
     ✅ Entity \`currentLocation\` field (references location ID): \`{ currentLocation: "loc_tavern" }\`
     ✅ Timeline \`involvedEntities\` arrays (entity references): \`["char:player", "char:marcus", "loc_tavern"]\`
     ✅ Relationship references: \`relation.to.id\`, \`knownBy[]\` (actor IDs only)
@@ -101,16 +101,16 @@ const minimalEntity = `
 
     - **Canonization**: If an existing entity is "close enough" (80% match), USE IT. Update it to fit your needs. Do NOT create a new one.
     - **One Object, One ID**: A "Rusty Sword" polished by a blacksmith is still \`inv_rusty_sword\` (just updated name/desc), NOT a new \`inv_polished_sword\`.
-    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Read both \`current/outline/outline.json\` and \`current/outline/story_outline/plan.md\` via \`vfs_read\`, then check existing files under \`current/world/\`.
+    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Read both \`current/outline/outline.json\` and \`current/outline/story_outline/plan.md\` via \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, then check existing files under \`current/world/\`.
 
     **MANDATORY "INVESTIGATIVE SEARCH" WORKFLOW**:
     1. **STRICT CHECK-FIRST**: Never assume a clean state. Always assume entities might already exist.
     2. **BROWSE (Directory Scan)**: Use \`vfs_ls\` on \`current/world/<type>/\` to see the full landscape.
     3. **SEARCH (Text Scan)**: Use \`vfs_search\` or \`vfs_search\` on \`current/world/<type>/\`, \`current/outline/outline.json\`, and \`current/outline/story_outline/plan.md\`.
-    4. **READ (Deep Details)**: Use \`vfs_read\` on candidate files to confirm identity and details.
+    4. **READ (Deep Details)**: Use \`vfs_read_chars/vfs_read_lines/vfs_read_json\` on candidate files to confirm identity and details.
     5. **EVALUATE**:
-       - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and update the file via \`vfs_mutate\`.
-       - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and update the file via \`vfs_mutate\`.
+       - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and update the file via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`.
+       - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and update the file via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`.
     6. **CREATE (Last Resort)**: Only if NO semantic match exists.
 
     **ANTI-CLUTTER & SIGNIFICANCE THRESHOLD**:
@@ -120,12 +120,12 @@ const minimalEntity = `
     - **NPCs**:
       * **MUST HAVE**: A proper Name (not just "Guard") AND (Speaking Role OR Combat Role).
       * **NARRATIVE ONLY**: Crowds, background villagers, unnamed guards, servants causing no consequence.
-      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> \`vfs_mutate({ ops: [{ op: "write_file", path: "current/world/characters/char:captain_vance/profile.json", ... }] })\`
+      * *Example*: "The tavern is full of people" -> NO entities. "Captain Vance approaches you" -> \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "write_file", path: "current/world/characters/char:captain_vance/profile.json", ... }] })\`
 
     - **Items**:
       * **MUST BE**: Added to Player/NPC Inventory OR Key Quest Object.
       * **NARRATIVE ONLY**: Flavor objects, furniture, food eaten immediately, debris.
-      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> \`vfs_mutate({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_iron_key.json", ... }] })\`
+      * *Example*: "There is a mug on the table" -> NO entity. "You pick up the Iron Key" -> \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_iron_key.json", ... }] })\`
 
     - **Locations**:
       * **MUST BE**: Named, distinct, and revisit-able (e.g., "The Blue Dragon Inn").
@@ -134,7 +134,7 @@ const minimalEntity = `
     - **Quests**:
       * **MUST BE**: A structured mission with clear success/fail state tracked in journal.
       * **NARRATIVE ONLY**: Momentary goals ("Open the door", "Ask him a question"), impulsive actions.
-      * *Example*: "I want to kill that goblin" -> NARRATIVE. "Guildmaster orders you to purge the camp" -> \`vfs_mutate({ ops: [{ op: "write_file", path: "current/world/quests/quest_purge_camp.json", ... }] })\`
+      * *Example*: "I want to kill that goblin" -> NARRATIVE. "Guildmaster orders you to purge the camp" -> \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "write_file", path: "current/world/quests/quest_purge_camp.json", ... }] })\`
 
     - **Knowledge**:
       * **MUST BE**: Reusable information (passwords, history, recipes, secret locations).
@@ -156,7 +156,7 @@ const minimalEntity = `
       * **MUST BE**: Complex logic tracking consequences >3 turns away or involving off-screen NPCs.
       * **NARRATIVE ONLY**: Immediate reactions (You punch him -> he punches back).
 
-    - **Inventory Hygiene**: If a player eats an apple, delete the file immediately (e.g., \`vfs_mutate({ paths: ["current/world/characters/char:player/inventory/inv_apple.json"] })\`). Do not keep quantity 0.
+    - **Inventory Hygiene**: If a player eats an apple, delete the file immediately (e.g., \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ paths: ["current/world/characters/char:player/inventory/inv_apple.json"] })\`). Do not keep quantity 0.
 
     <realism_vs_bloat_prevention>
       ⚠️ **CRITICAL: REALISM DOES NOT EQUAL ENTITY BLOAT**
@@ -166,15 +166,15 @@ const minimalEntity = `
 
       - **Mud/Blood on Clothes**:
         * ❌ Create a new condition entry for \`cond_muddy\` -> Bloat.
-        * ✅ Narrative only OR \`vfs_mutate({ ops: [{ op: "patch_json", path: "current/world/characters/char:player/inventory/inv_clothes.json", patch: [{ op: "replace", path: "/visible/description", value: "Stained with mud." }] }] })\`
+        * ✅ Narrative only OR \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "patch_json", path: "current/world/characters/char:player/inventory/inv_clothes.json", patch: [{ op: "replace", path: "/visible/description", value: "Stained with mud." }] }] })\`
 
       - **NPC Fatigue/Hunger**:
         * ❌ Create a new condition entry for \`cond_tired_guard\` -> Bloat.
-        * ✅ \`vfs_mutate({ ops: [{ op: "patch_json", path: "current/world/characters/char:guard/profile.json", patch: [{ op: "replace", path: "/visible/mood", value: "Exhausted and irritable" }] }] })\`
+        * ✅ \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "patch_json", path: "current/world/characters/char:guard/profile.json", patch: [{ op: "replace", path: "/visible/mood", value: "Exhausted and irritable" }] }] })\`
 
       - **Transient Atmosphere**:
         * ❌ Create a new item file for \`item_fog\` -> Absurd.
-        * ✅ \`vfs_mutate({ ops: [{ op: "patch_json", path: "current/world/locations/loc_here.json", patch: [{ op: "replace", path: "/visible/atmosphere", value: "Thick fog..." }] }] })\`
+        * ✅ \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "patch_json", path: "current/world/locations/loc_here.json", patch: [{ op: "replace", path: "/visible/atmosphere", value: "Thick fog..." }] }] })\`
 
       **RULE**: Only create a new ID if it needs to be tracked *independently* and *mechanically* for >10 turns.
       For everything else, **UPDATE EXISTING FIELDS** (\`description\`, \`mood\`, \`status\`).

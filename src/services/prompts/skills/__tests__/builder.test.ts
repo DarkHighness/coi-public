@@ -22,9 +22,9 @@ describe("skills prompt builder hygiene", () => {
 
     expect(prompt).toContain("<theme_key>long_aotian</theme_key>");
     expect(prompt).toContain("<theme_skill_selection_protocol>");
-    expect(prompt).toContain('vfs_read({ path: "current/skills/index.json" })');
+    expect(prompt).toContain('vfs_read_chars({ path: "current/skills/index.json" })');
     expect(prompt).toContain(
-      'vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })',
+      'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
     );
     expect(prompt).toContain(
       "Theme skills are optional accelerators, not hard gates",
@@ -49,10 +49,10 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain("source: `explicit`");
     expect(prompt).toContain("effective circle: `japanese`");
     expect(prompt).toContain(
-      'vfs_read({ path: "current/skills/presets/runtime/culture/SKILL.md" })',
+      'vfs_read_chars({ path: "current/skills/presets/runtime/culture/SKILL.md" })',
     );
     expect(prompt).toContain(
-      'vfs_read({ path: "current/skills/presets/runtime/culture-japanese/SKILL.md" })',
+      'vfs_read_chars({ path: "current/skills/presets/runtime/culture-japanese/SKILL.md" })',
     );
     expect(prompt).toContain("single-script output, transliterated to output language");
   });

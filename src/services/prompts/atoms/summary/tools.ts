@@ -34,7 +34,7 @@ ${capabilityText}
 
 1. \`vfs_ls\` - Locate files (optionally with \`patterns\` and \`stat=true\`)
 2. \`vfs_schema\` - Inspect expected JSON fields for a path (read-only)
-3. \`vfs_read\` - Read specific VFS files/fields for details (chars/lines/json mode)
+3. \`vfs_read_chars/vfs_read_lines/vfs_read_json\` - Read specific VFS files/fields for details (chars/lines/json mode)
 4. \`vfs_search\` - Find details in the VFS (read-only)
 5. \`vfs_finish_summary\` - Finish by appending a summary and updating \`forks/{activeFork}/story/summary/state.json\` (alias: \`current/summary/state.json\`; template requires \`finish_summary\` operation)
 

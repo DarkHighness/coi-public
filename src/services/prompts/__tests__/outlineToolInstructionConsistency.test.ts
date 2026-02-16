@@ -10,7 +10,7 @@ describe("outline tool instruction consistency", () => {
     const systemPrompt = getOutlineSystemInstruction({ language: "en" });
     const phasePrelude = getOutlinePhasePreludePrompt(
       1,
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
       {
         theme: "fantasy",
         language: "en",
@@ -25,10 +25,12 @@ describe("outline tool instruction consistency", () => {
 
     expect(phasePrelude).toContain("[PHASE 1 PRELUDE: ROUND CONTRACT]");
     expect(phasePrelude).toContain("Use native function/tool calling");
-    expect(phasePrelude).toContain("`phase` must be an integer literal");
+    expect(phasePrelude).toContain(
+      "direct phase object schema (no `phase` wrapper, no `data` wrapper)",
+    );
     expect(phasePrelude).toContain("Tool names are exact and unprefixed");
-    expect(phasePrelude).toContain('mode: "lines"');
-    expect(phasePrelude).toContain("vfs_finish_outline");
+    expect(phasePrelude).toContain("vfs_read_lines");
+    expect(phasePrelude).toContain("vfs_finish_outline_phase_0");
   });
 
   it("phase 1 prompt enforces master plan markdown and governance metadata", () => {
@@ -40,9 +42,9 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).toContain("Runtime Adaptation Protocol");
     expect(prompt).toContain("forbidDeusExMachina");
     expect(prompt).toContain("current/skills/theme/<genre>/SKILL.md");
-    expect(prompt).toContain('vfs_read({ path: "current/skills/index.json" })');
+    expect(prompt).toContain('vfs_read_chars({ path: "current/skills/index.json" })');
     expect(prompt).toContain(
-      'vfs_read({ path: "current/skills/theme/<genre>/SKILL.md" })',
+      'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
     );
     expect(prompt).toContain("optional guidance in outline mode");
   });

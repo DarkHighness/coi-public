@@ -53,28 +53,28 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("current/**/notes.md");
     expect(content).toContain("Story Teller AI to itself");
     expect(content).toContain("read → modify → write");
-    expect(content).toContain("vfs_mutate");
-    expect(content).toContain("vfs_mutate");
-    expect(content).toContain("vfs_mutate");
+    expect(content).toContain("vfs_write_file");
+    expect(content).toContain("vfs_write_file");
+    expect(content).toContain("vfs_write_file");
     expect(content).toContain("current/summary/state.json");
     expect(content).toContain("forks/{activeFork}/story/world/**");
     expect(content).toContain("current/world/global.json");
     expect(content).toContain('vfs_ls({ patterns: ["current/**/notes.md"] })');
-    expect(content).not.toContain("vfs_read path=");
+    expect(content).not.toContain("vfs_read_chars path=");
     expect(content).not.toContain("vfs_ls patterns=");
-    expect(content).not.toContain("vfs_mutate({ path:");
+    expect(content).not.toContain("vfs_write_file({ path:");
     expect(content).toContain("mode: \"json\"");
     expect(content).toContain("avoid full-file char reads by default");
 
     // Turn finish protocol should avoid generic conversation writes
     expect(content).toContain("vfs_finish_turn");
-    expect(content).toContain("vfs_mutate");
+    expect(content).toContain("vfs_write_file");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");
     expect(content).toContain("WRITE-FAILURE REPAIR MODE");
     expect(content).toContain("NO COMMIT SPAM");
     expect(content).not.toContain(
-      "write both files via `vfs_mutate`/`vfs_mutate`",
+      "write both files via `vfs_write_file`/`vfs_write_file`",
     );
     expect(content).not.toContain("or conversation writes");
 

@@ -95,7 +95,7 @@ export const buildGlobalVfsRefs = (): VfsFileMap => {
       "",
       "## How to use (examples)",
       '- List: `vfs_ls({ path: "current/refs/atmosphere/ambience" })`',
-      '- Read one: `vfs_read({ path: "current/refs/atmosphere/ambience/nightclub.md" })`',
+      '- Read one: `vfs_read_chars({ path: "current/refs/atmosphere/ambience/nightclub.md" })`',
       '- Search: `vfs_search({ path: "current/refs/atmosphere", query: "neon" })`',
       "",
     ].join("\n"),

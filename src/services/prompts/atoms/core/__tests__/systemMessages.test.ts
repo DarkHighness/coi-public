@@ -11,7 +11,7 @@ describe("systemMessages atoms", () => {
     const content = normalTurnInstruction({});
     const legacyFinishTool = "vfs_commit_turn";
     const legacySearchTool = "search_tool";
-    expect(content).toContain("vfs_mutate");
+    expect(content).toContain("vfs_write_file");
     expect(content).toContain("current/conversation/");
     expect(content).toContain("shared/**");
     expect(content).toContain("forks/{forkId}/**");
@@ -56,7 +56,7 @@ describe("systemMessages atoms", () => {
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {
     const content = sudoModeInstruction({});
     const legacyForceUpdateTool = "complete_force_update";
-    expect(content).toContain("vfs_mutate");
+    expect(content).toContain("vfs_write_file");
     expect(content).toContain("already prefixed with **[SUDO]**");
     expect(content).toContain("forced elevated update payload");
     expect(content).toContain("immutable/finish policy constraints");

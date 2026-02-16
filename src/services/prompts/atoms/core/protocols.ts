@@ -72,10 +72,10 @@ const errorRecovery = `
 
   **Self-Correction**:
   - If \`NOT_FOUND\`, use \`vfs_ls\` on the parent dir, then \`vfs_search\` with \`fuzzy: true\` to locate the correct path/ID
-  - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, \`vfs_read({ path: "current/refs/tools/<tool>.md" })\` and (for JSON targets) \`vfs_schema({ paths: ["<targetPath>"] })\`
+  - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, \`vfs_read_chars({ path: "current/refs/tools/<tool>.md" })\` and (for JSON targets) \`vfs_schema({ paths: ["<targetPath>"] })\`
   - If a read hit char-cap/size limits, retry with \`mode: "json"\` + \`pointers\` or \`mode: "lines"\` with a narrow range
   - If patch reports path/add/schema mismatch, stop repeating the same payload; inspect parent pointers/path first and switch strategy
-  - If \`ALREADY_EXISTS\`, \`vfs_read({ path: "<targetPath>" })\` then update via \`vfs_mutate\` (\`patch_json\` / \`merge_json\`)
+  - If \`ALREADY_EXISTS\`, \`vfs_read_chars({ path: "<targetPath>" })\` then update via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` (\`patch_json\` / \`merge_json\`)
   - If \`FINISH_GUARD_REQUIRED\`, use the loop's finish tool (never generic mutation tools on guarded paths)
   - After writable write failure, enter repair mode: next calls target only failed writes (inspect+retry) until resolved
   - Do NOT call finish repeatedly while writable failed targets remain
@@ -99,7 +99,7 @@ const toolMandate = `
   - ❌ Empty response
 
   **Inspection Tools Are Free**:
-  Call \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\` as many times as needed.
+  Call \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, \`vfs_search\` as many times as needed.
   Before writing new entity files, always search first to prevent duplicates.
 </tool_protocol>
 `;

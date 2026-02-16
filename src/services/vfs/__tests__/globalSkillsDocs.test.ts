@@ -7,11 +7,11 @@ describe("VFS global skills docs", () => {
     const readme = files["skills/README.md"]?.content ?? "";
     const style = files["skills/STYLE.md"]?.content ?? "";
 
-    expect(readme).toContain('vfs_read({ path: "current/skills/index.json" })');
+    expect(readme).toContain('vfs_read_chars({ path: "current/skills/index.json" })');
     expect(readme).toContain(
-      'vfs_read({ path: "current/skills/<domain>/<skill>/SKILL.md" })',
+      'vfs_read_chars({ path: "current/skills/<domain>/<skill>/SKILL.md" })',
     );
-    expect(readme).not.toContain('vfs_read path="');
+    expect(readme).not.toContain('vfs_read_chars path="');
     expect(readme).not.toContain('vfs_ls patterns=');
 
     expect(style).toContain("current/skills/<domain>/<skill>/SKILL.md");

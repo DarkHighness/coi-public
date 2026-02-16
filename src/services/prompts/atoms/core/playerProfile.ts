@@ -45,7 +45,7 @@ const updateTiming = `
       * Apply feedback to \`Style Preferences\` and \`Guidance For AI\` first; avoid overfitting personality from one signal
       * Keep writes focused on \`current/world/soul.md\` and \`current/world/global/soul.md\`
       * Finish with \`vfs_finish_soul\` (update one or both targets)
-    - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful preference evidence, update soul docs via writable tools (e.g. \`vfs_mutate\`); these files are not read-only
+    - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful preference evidence, update soul docs via writable tools (e.g. \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`); these files are not read-only
     - **Post-error learning**: if a tool call failed earlier in this loop and later succeeded, add one concise \`[code] cause -> fix\` bullet to \`## Tool Usage Hints\`
     - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
     - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Tool Usage Hints / Evidence Log / Guidance For AI)
@@ -126,7 +126,7 @@ export const playerProfile: Atom<PlayerProfileInput> = defineAtom(
 
     **Read Protocol**:
     - Do NOT rely on host-injected soul text.
-    - Read both soul files yourself via \`vfs_read\` once per session read-epoch before first non-read tool call.
+    - Read both soul files yourself via \`vfs_read_chars/vfs_read_lines/vfs_read_json\` once per session read-epoch before first non-read tool call.
     - Re-read only when the epoch is invalidated or files are changed externally.
   </two_layer_system>
 
@@ -152,7 +152,7 @@ export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom(
     **Cross-Save Source**: \`current/world/global/soul.md\`
     **This Story Source**: \`current/world/soul.md\`
   </two_layer_system>
-  <read_protocol>Read both soul files yourself via \`vfs_read\` once per session read-epoch before first non-read tool call. Do not rely on host-injected soul text.</read_protocol>
+  <read_protocol>Read both soul files yourself via \`vfs_read_chars/vfs_read_lines/vfs_read_json\` once per session read-epoch before first non-read tool call. Do not rely on host-injected soul text.</read_protocol>
   <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge. Treat both as Story Teller AI internal self-notes written by you for your future self.</protocol>
   <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>
