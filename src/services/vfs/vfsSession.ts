@@ -139,6 +139,89 @@ const TOP_LEVEL_UNLOCK_PATH_PATTERNS: RegExp[] = [
 const WORLD_INFO_VIEW_PATH_PATTERN =
   /^world\/characters\/[^/]+\/views\/world_info\.json$/;
 
+const ENTITY_LOGICAL_WORLD_PATH_PATTERNS: RegExp[] = [
+  /^world\/world_info\.json$/,
+  /^world\/characters\/[^/]+\/profile\.json$/,
+  /^world\/characters\/[^/]+\/(skills|conditions|traits|inventory)\/[^/]+\.json$/,
+  /^world\/locations\/[^/]+\.json$/,
+  /^world\/locations\/[^/]+\/items\/[^/]+\.json$/,
+  /^world\/(quests|knowledge|timeline|factions|causal_chains)\/[^/]+\.json$/,
+];
+
+const CANONICAL_WORLD_PATH_PATTERN = /^forks\/([^/]+)\/story\/(world\/.+)$/;
+
+const isEntityLogicalWorldPath = (path: string): boolean =>
+  ENTITY_LOGICAL_WORLD_PATH_PATTERNS.some((pattern) => pattern.test(path));
+
+const toPlaceholderDraftLogicalCandidates = (
+  logicalWorldPath: string,
+): string[] => {
+  const normalized = normalizeVfsPath(logicalWorldPath);
+  if (!isEntityLogicalWorldPath(normalized)) {
+    return [];
+  }
+
+  if (
+    normalized.startsWith("world/placeholder/") ||
+    normalized.startsWith("world/placeholders/")
+  ) {
+    return [];
+  }
+
+  if (!normalized.endsWith(".json")) {
+    return [];
+  }
+
+  const rest = normalized.slice("world/".length, -".json".length);
+  const candidates = new Set<string>([`world/placeholder/${rest}.md`]);
+  const segments = rest.split("/").filter(Boolean);
+  if (segments.length === 0) {
+    return Array.from(candidates);
+  }
+
+  if (rest.endsWith("/profile")) {
+    const withoutProfile = rest.slice(0, -"/profile".length);
+    if (withoutProfile.length > 0) {
+      candidates.add(`world/placeholder/${withoutProfile}.md`);
+    }
+  }
+
+  let entityId = segments[segments.length - 1] ?? "";
+  if (entityId === "profile" && segments.length >= 2) {
+    entityId = segments[segments.length - 2] ?? "";
+  }
+
+  if (entityId.length > 0) {
+    candidates.add(`world/placeholder/${entityId}.md`);
+    if (segments.length >= 2) {
+      candidates.add(`world/placeholder/${segments[0]}/${entityId}.md`);
+    }
+  }
+
+  return Array.from(candidates);
+};
+
+const toPlaceholderDraftCanonicalCandidates = (
+  canonicalEntityPath: string,
+): string[] => {
+  const normalized = normalizeVfsPath(canonicalEntityPath);
+  const match = CANONICAL_WORLD_PATH_PATTERN.exec(normalized);
+  if (!match) {
+    return [];
+  }
+
+  const forkId = match[1];
+  const logicalWorldPath = match[2];
+  if (!forkId || !logicalWorldPath) {
+    return [];
+  }
+
+  const storyPrefix = `forks/${forkId}/story`;
+  return toPlaceholderDraftLogicalCandidates(logicalWorldPath).map((path) =>
+    normalizeVfsPath(`${storyPrefix}/${path}`),
+  );
+};
+
 const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
@@ -841,6 +924,19 @@ export class VfsSession {
     }
   }
 
+  private removePlaceholderDraftsForPromotedEntity(canonicalPath: string): void {
+    const candidates = toPlaceholderDraftCanonicalCandidates(canonicalPath);
+    for (const draftCanonicalPath of candidates) {
+      if (!this.files[draftCanonicalPath]) {
+        continue;
+      }
+      delete this.files[draftCanonicalPath];
+      this.seenByEpoch.delete(draftCanonicalPath);
+      this.accessedFilesByEpoch.delete(draftCanonicalPath);
+      this.outOfBandReadInvalidations.delete(draftCanonicalPath);
+    }
+  }
+
   public writeFile(
     path: string,
     content: string,
@@ -885,6 +981,10 @@ export class VfsSession {
       size: normalizedContent.length,
       updatedAt: Date.now(),
     };
+
+    if (contentType === "application/json") {
+      this.removePlaceholderDraftsForPromotedEntity(canonicalPath);
+    }
   }
 
   public readFile(path: string): VfsFile | null {
@@ -962,6 +1062,9 @@ export class VfsSession {
       updatedAt: Date.now(),
     };
     delete this.files[canonicalFrom];
+    if (file.contentType === "application/json") {
+      this.removePlaceholderDraftsForPromotedEntity(canonicalTo);
+    }
   }
 
   public deleteFile(path: string, options?: VfsWriteOptions): void {

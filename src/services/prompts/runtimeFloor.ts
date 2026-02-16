@@ -29,6 +29,8 @@ You MUST follow these runtime protocol constraints:
   - High-frequency schema traps (avoid these):
     - Canonical world entities (\`current/world/{quests|knowledge|timeline|locations|factions|causal_chains}/*.json\`, \`current/world/world_info.json\`) MUST NOT contain root \`unlocked\`/\`unlockReason\`; unlock state belongs in actor views (\`current/world/characters/<actorId>/views/**\`).
     - UI-only presentation fields (\`highlight\`, \`lastAccess\`) belong to \`ui_state:*\` metadata and MUST NOT be written into VFS world or view JSON files.
+    - Unresolved entity drafts belong in \`current/world/placeholder/**/*.md\`; once promoted to canonical JSON, delete the matching draft note in the same response.
+    - Reference placeholder \`[Display Name]\` is temporary. When identity becomes explicit (named mention/encounter/mechanical interaction), resolve to canonical ID in the same turn whenever possible; do not keep stale placeholders across turns.
     - Character profile location updates use root pointer \`/currentLocation\` (NOT \`/visible/currentLocation\`).
     - Character profile status/mood fields live under \`/visible/*\` (for example \`/visible/status\`, not \`/status\`).
     - If any context block shows merged read-model \`unlocked\` fields on world entities, NEVER copy those fields back into canonical world writes.

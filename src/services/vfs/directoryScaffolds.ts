@@ -245,6 +245,12 @@ const ROOT_CATEGORY_DIRECTORIES = [
     purpose: "Cause-effect traces for investigations and consequence modeling.",
   },
   {
+    path: "world/placeholder",
+    title: "Placeholder Drafts",
+    purpose:
+      "Markdown drafts for unresolved entities across all domains (characters, locations, items, skills, quests, knowledge, factions, timeline, causal chains). When an entity is promoted to structured JSON, remove its draft note.",
+  },
+  {
     path: "custom_rules",
     title: "Custom Rules",
     purpose:

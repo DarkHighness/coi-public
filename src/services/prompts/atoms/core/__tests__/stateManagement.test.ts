@@ -29,5 +29,8 @@ describe("stateManagement atom", () => {
     expect(content).toContain("Revise `plan.md`");
     expect(content).toContain("No deus-ex-machina corrections");
     expect(content).toContain("from only for move/copy");
+    expect(content).toContain("Placeholder promotion (MANDATORY)");
+    expect(content).toContain("knownBy vs unlocked decision protocol (STRICT)");
+    expect(content).toContain("current/world/placeholder/**/*.md");
   });
 });

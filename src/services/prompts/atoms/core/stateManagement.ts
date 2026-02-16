@@ -48,6 +48,16 @@ export const stateManagement: Atom<void> = defineAtom(
       * **currentLocation MUST be a location.id** and updated immediately when an actor moves.
       * **Reference fields are ID-first**: \`currentLocation\`, \`knownBy[]\`, \`relations[].to.id\`, \`timeline[].involvedEntities[]\`, \`faction.visible.relations[].target\`, \`faction.hidden.relations[].target\`.
       * **Special unresolved reference protocol**: if canonical ID is not available yet, you may use a bracket alias \`[Display Name]\` in the reference field.
+      * **Placeholder promotion (MANDATORY)**:
+        - \`[Display Name]\` is temporary only; do not keep it once canonical identity is known.
+        - Unresolved draft notes belong in \`current/world/placeholder/**/*.md\` (markdown, free-form notes).
+        - Promotion triggers: explicit named mention, direct encounter, or any mechanical consequence tied to that entity.
+        - Promotion workflow:
+          1) Search existing canonical IDs first (\`vfs_search\` + \`vfs_ls\`).
+          2) If a matching entity exists, rewrite touched references to that canonical ID in the same response.
+          3) If no match exists and the entity is now mechanically significant, create a canonical entity file with a stable ID, then replace \`[Display Name]\` references with that ID.
+          4) If the protagonist now confirms the entity exists, update canonical \`knownBy\` (add \`char:player\`) and create the corresponding player view file for world entities.
+          5) Delete the corresponding placeholder draft markdown in \`current/world/placeholder/**\` after successful promotion.
       * **Never mix ID+name in one field** (e.g., \`"loc_tavern (Silver Inn)"\`, \`"loc_tavern [Silver Inn]"\` are forbidden).
       * **Player psychology ban**: NEVER write player hidden monologue or inner motives. Do not invent player thoughts.
 
@@ -91,6 +101,11 @@ export const stateManagement: Atom<void> = defineAtom(
         - For quests/knowledge/timeline/locations/factions/causal_chains, set \`views/**.unlocked=true\` + \`unlockReason\`.
         - For \`world_info\`, use \`current/world/characters/<actorId>/views/world_info.json\` fields:
           \`worldSettingUnlocked/worldSettingUnlockReason\`, \`mainGoalUnlocked/mainGoalUnlockReason\`.
+      * **knownBy vs unlocked decision protocol (STRICT)**:
+        - Mention/encounter/verified existence ⇒ update \`knownBy\` (player now knows it exists), but keep \`unlocked=false\` unless hidden truth is proven.
+        - Definitive proof of hidden truth (confession/document/direct observation) ⇒ set \`unlocked=true\` + concrete \`unlockReason\` in the correct storage layer.
+        - Suspicion/rumor/partial clues ⇒ keep \`unlocked=false\`; only update visible clues.
+        - Never unlock “for drama” without proof.
 
     - **Relations (Dual Layer, STRICT)**:
       * Relationships are stored as directed edges in \`profile.relations[]\` (on the source actor).
@@ -181,6 +196,7 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
 3. Consider CASCADE effects (death → update all related entities)
 4. VFS is the ONLY source of truth - all changes via VFS tools
 5. Finish every normal/cleanup response with vfs_finish_turn as the LAST tool call
+6. Promote \`[Display Name]\` placeholders to canonical IDs once identity is explicit; keep \`knownBy\` vs \`unlocked\` semantics separate
 `.trim(),
 
     checklist: [
@@ -189,6 +205,7 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
       "Considering cascade effects (death → related updates)?",
       "Using VFS tools for ALL state changes?",
       "Finishing each normal/cleanup response with vfs_finish_turn last?",
+      "Promoting placeholders to canonical IDs once identity is explicit?",
       "Checking entity existence before updates?",
       "Respecting trait continuity (mute NPC can't shout)?",
     ],

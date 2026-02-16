@@ -414,6 +414,13 @@ When you render those consequences into prose, write like a skilled human storyt
   - Canonical world files (\`world/quests\`, \`world/knowledge\`, \`world/timeline\`, \`world/locations\`, \`world/factions\`, \`world/causal_chains\`, \`world/world_info.json\`) must NOT be patched at \`/unlocked\` or \`/unlockReason\`.
     - Use actor view files (\`current/world/characters/char:player/views/**\`) for world-entity unlock state.
     - For \`world_info\`, use \`worldSettingUnlocked\` / \`mainGoalUnlocked\` (+ reason fields) in \`views/world_info.json\`.
+  - \`knownBy\` vs \`unlocked\` are different:
+    - Mention/encounter confirms existence → update \`knownBy\` (or create entity record) but keep \`unlocked=false\`.
+    - Definitive proof of hidden truth → set \`unlocked=true\` in the correct storage layer with concrete \`unlockReason\`.
+  - Placeholder \`[Display Name]\` in reference fields is temporary:
+    - When identity becomes explicit, resolve to canonical ID in the same turn whenever possible.
+    - Reuse existing entity ID if found; otherwise create a stable entity ID and replace touched placeholder references.
+    - Keep unresolved notes under \`current/world/placeholder/**/*.md\`; delete the corresponding draft note after successful promotion.
   - After any schema error, retry with minimal valid payload (required fields + changed fields), not a larger speculative payload.
 </JSON_WRITE_DISCIPLINE>
 `,

@@ -80,6 +80,14 @@ const unlockProtocol = `
       If ANY condition is NOT met → **DO NOT UNLOCK**
     </when_to_unlock>
 
+    <knownby_vs_unlock_matrix>
+      **KNOWNBY vs UNLOCKED (DO NOT MIX THESE):**
+      - Mentioned/encountered/verified existence: mark the entity as known (\`knownBy\` for world entities), but keep \`unlocked=false\`.
+      - Definitive proof of hidden truth: keep known status and additionally set \`unlocked=true\` + concrete \`unlockReason\`.
+      - Suspicion/rumor/partial clue: update visible layer hints only; keep \`unlocked=false\`.
+      - Unlock is about hidden-truth proof, not about first-time appearance.
+    </knownby_vs_unlock_matrix>
+
     <how_to_unlock>
       **HOW**:
       - First decide which storage applies:
@@ -92,6 +100,9 @@ const unlockProtocol = `
            - For \`world_info\`: **DO** set \`worldSettingUnlocked\` / \`mainGoalUnlocked\` (+ corresponding reason fields) in \`views/world_info.json\`.
         2) **Actors / Relations / Physical Items**:
            - Update the entity file itself (e.g. \`forks/{activeFork}/story/world/characters/<id>/profile.json\` or alias path, \`profile.relations[]\`, inventory item files).
+      - Placeholder-to-canonical promotion:
+        - If a reference still uses \`[Display Name]\` and identity is now explicit, resolve to canonical ID in the same turn.
+        - Reuse existing canonical ID when found; otherwise create a stable ID entity and replace touched placeholder references.
       - If the proof should change what the protagonist can reasonably describe, update \`visible\` fields in the same turn.
     </how_to_unlock>
 
@@ -187,6 +198,8 @@ export const gmKnowledgePrimer: Atom<void> = defineAtom(
   <unlock_protocol>
     - ONLY unlock when player has DEFINITIVE PROOF (found letter, witnessed confession)
     - Suspicion ≠ proof. Rumors ≠ truth. Player must EARN revelations.
+    - First appearance/explicit mention updates known status, not unlock, unless hidden truth is proven.
+    - If references use \`[Display Name]\` and identity is now explicit, promote to canonical ID in the same turn.
     - When unlocking:
       * Quests/knowledge/timeline/locations/factions/causal_chains → set protagonist view \`forks/{activeFork}/story/world/characters/char:player/views/**.unlocked=true\` (alias: \`current/world/characters/char:player/views/**\`) via VFS
       * Never patch/remove canonical world \`/unlocked\` or \`/unlockReason\`; these pointers are view-layer only.
@@ -298,6 +311,7 @@ ${temporalEpistemology}
       "Revelation is complete (not partial hints)?",
       "Character would logically know this based on events?",
       "Discovery happened through concrete action?",
+      "Entity appearance handled via known status before unlock decision?",
       "Using hidden layer for NPC behavior consistency?",
       "Using visible layer for narrative description?",
       "Writing unlock to correct location (view vs entity)?",

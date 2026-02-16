@@ -27,6 +27,12 @@ const idUsage = `
       1) ONE canonical ID string, OR
       2) ONE bracket alias in the form \`[Display Name]\` when canonical ID does not exist yet.
     - \`[Display Name]\` is a special temporary name protocol for UI fallback display.
+    - Placeholder promotion is mandatory once identity is known:
+      * If entity identity becomes explicit in-story (named mention, encounter, concrete interaction), resolve \`[Display Name]\` to canonical ID in the same turn whenever possible.
+      * If canonical ID already exists, patch touched references to that ID immediately.
+      * If canonical ID does not exist and the entity is now mechanically significant, create the entity with a stable ID and replace \`[Display Name]\`.
+      * Keep unresolved notes in \`current/world/placeholder/**/*.md\` and delete the matching draft after successful promotion to canonical JSON.
+      * Do not persist placeholder aliases across later turns after canonical identity is available.
     - Never return plain display names (without brackets) in reference fields.
     - Never return mixed forms such as:
       * \`"loc_tavern (Silver Inn)"\`

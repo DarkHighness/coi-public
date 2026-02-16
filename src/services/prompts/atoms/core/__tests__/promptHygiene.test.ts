@@ -97,6 +97,12 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("is NOT a container for those collections");
     expect(content).toContain("JSON pointer `/unlocked` or `/unlockReason`");
     expect(content).toContain("Never guess leaf filenames");
+    expect(content).toContain("Placeholder promotion (MANDATORY)");
+    expect(content).toContain("knownBy vs unlocked decision protocol (STRICT)");
+    expect(content).toContain(
+      "hidden-truth proof, not about first-time appearance",
+    );
+    expect(content).toContain("current/world/placeholder/**/*.md");
 
     // SUDO semantics must remain controlled (not hard bypass)
     expect(content).toContain("elevated update");

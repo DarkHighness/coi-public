@@ -137,6 +137,71 @@ describe("VfsSession", () => {
     ).toThrow("worldSettingUnlocked");
   });
 
+  it("removes character placeholder draft markdown after profile promotion write", () => {
+    const session = new VfsSession();
+
+    session.writeFile(
+      "world/placeholder/char:npc_guard.md",
+      "# Placeholder Draft\n\n- id: char:npc_guard\n",
+      "text/markdown",
+    );
+
+    session.writeFile(
+      "world/characters/char:npc_guard/profile.json",
+      JSON.stringify({
+        id: "char:npc_guard",
+        kind: "npc",
+        currentLocation: "loc:gate",
+        knownBy: ["char:player"],
+        visible: { name: "Gate Guard" },
+        hidden: { trueName: "Raven Guard" },
+        relations: [],
+      }),
+      "application/json",
+    );
+
+    expect(session.readFile("world/placeholder/char:npc_guard.md")).toBeNull();
+  });
+
+  it("removes world placeholder draft markdown after non-character entity promotion write", () => {
+    const session = new VfsSession();
+
+    session.writeFile(
+      "world/placeholder/quest:signal.md",
+      "# Placeholder Draft\n\n- id: quest:signal\n",
+      "text/markdown",
+    );
+    session.writeFile(
+      "world/placeholder/quest:untouched.md",
+      "# Placeholder Draft\n\n- id: quest:untouched\n",
+      "text/markdown",
+    );
+
+    session.writeFile(
+      "world/quests/quest:signal.json",
+      JSON.stringify({
+        id: "quest:signal",
+        type: "main",
+        title: "The Signal at Dawn",
+        knownBy: ["char:player"],
+        visible: {
+          description: "Investigate the lighthouse signal.",
+          objectives: ["Reach the lighthouse"],
+        },
+        hidden: {
+          trueDescription: "Decode the covert warning message.",
+          trueObjectives: ["Obtain the cipher lens"],
+          secretOutcome: "Expose the smuggler route",
+          twist: "Signal was sent by a faction insider",
+        },
+      }),
+      "application/json",
+    );
+
+    expect(session.readFile("world/placeholder/quest:signal.md")).toBeNull();
+    expect(session.readFile("world/placeholder/quest:untouched.md")).toBeTruthy();
+  });
+
   it("lists directories", () => {
     const session = new VfsSession();
     session.writeFile("world/npcs/npc:1.json", "{}", "application/json");

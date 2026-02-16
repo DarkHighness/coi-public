@@ -126,6 +126,70 @@ const stripUiOnlyFields = <T extends Record<string, unknown>>(
   return next as T;
 };
 
+const buildPlaceholderDraftMarkdown = (
+  placeholder: Record<string, unknown>,
+): string => {
+  const id =
+    typeof placeholder.id === "string" && placeholder.id.trim().length > 0
+      ? placeholder.id.trim()
+      : "unknown";
+  const label =
+    typeof placeholder.label === "string" ? placeholder.label.trim() : "";
+  const description =
+    typeof (placeholder.visible as any)?.description === "string"
+      ? ((placeholder.visible as any).description as string).trim()
+      : "";
+  const knownBy = Array.isArray(placeholder.knownBy)
+    ? placeholder.knownBy
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0)
+    : [];
+
+  const lines: string[] = [
+    "# Placeholder Draft",
+    "",
+    `- id: ${id}`,
+  ];
+  if (label.length > 0) {
+    lines.push(`- label: ${label}`);
+  }
+  if (knownBy.length > 0) {
+    lines.push(`- knownBy: ${knownBy.join(", ")}`);
+  }
+
+  lines.push(
+    "",
+    "## Notes",
+    description.length > 0 ? description : "- Pending concretization.",
+    "",
+    "## Raw Seed",
+    "```json",
+    JSON.stringify(stripUiOnlyFields(placeholder), null, 2),
+    "```",
+    "",
+  );
+
+  return lines.join("\n");
+};
+
+const writePlaceholderArtifacts = (
+  session: VfsSession,
+  placeholder: Record<string, unknown>,
+): void => {
+  const id = placeholder.id;
+  if (typeof id !== "string" || id.trim().length === 0) {
+    return;
+  }
+  const placeholderId = id.trim();
+  writeJson(session, `world/placeholders/${placeholderId}.json`, placeholder);
+  session.writeFile(
+    `world/placeholder/${placeholderId}.md`,
+    buildPlaceholderDraftMarkdown(placeholder),
+    "text/markdown",
+  );
+};
+
 const writeWorldInfoAndView = (
   session: VfsSession,
   worldInfo: any,
@@ -407,6 +471,16 @@ export const seedVfsSessionFromGameState = (
       });
     }
   }
+
+  if (Array.isArray(state.placeholders)) {
+    for (const placeholder of state.placeholders as any[]) {
+      if (!placeholder || typeof placeholder !== "object") continue;
+      writePlaceholderArtifacts(
+        session,
+        stripUiOnlyFields(placeholder as Record<string, unknown>),
+      );
+    }
+  }
 };
 
 export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
@@ -566,11 +640,8 @@ export const seedVfsSessionFromOutline = (
   if (Array.isArray((outline as any).placeholders)) {
     for (const placeholder of (outline as any).placeholders as any[]) {
       if (!placeholder || typeof placeholder !== "object") continue;
-      const id = (placeholder as any).id;
-      if (typeof id !== "string" || id.trim().length === 0) continue;
-      writeJson(
+      writePlaceholderArtifacts(
         session,
-        `world/placeholders/${id.trim()}.json`,
         stripUiOnlyFields(placeholder as Record<string, unknown>),
       );
     }
