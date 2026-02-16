@@ -25,13 +25,9 @@ const createValidGlobal = () => ({
 const createAssistantPayload = (narrative: string) => ({
   narrative,
   choices: [
-    { text: "Continue", consequence: null },
-    { text: "Wait", consequence: null },
+    { text: "Continue" },
+    { text: "Wait" },
   ],
-  narrativeTone: null,
-  atmosphere: null,
-  ending: null,
-  forceEnd: null,
 });
 
 describe("toolCallProcessor VFS integration", () => {
@@ -48,7 +44,7 @@ describe("toolCallProcessor VFS integration", () => {
     );
 
     const output = executeGenericTool(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -88,7 +84,7 @@ describe("toolCallProcessor VFS integration", () => {
     );
 
     const commit = executeGenericTool(
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       {
         userAction: "start",
         assistant: createAssistantPayload("hello"),
@@ -119,7 +115,7 @@ describe("toolCallProcessor VFS integration", () => {
     );
 
     const commit = executeGenericTool(
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       {
         userAction: "start",
         assistant: createAssistantPayload("hello"),
@@ -151,7 +147,7 @@ describe("toolCallProcessor VFS integration", () => {
     );
 
     const firstCommit = executeGenericTool(
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       {
         userAction: "start",
         assistant: createAssistantPayload("hello"),
@@ -168,7 +164,7 @@ describe("toolCallProcessor VFS integration", () => {
     const baseline = getConversationMarker(session);
 
     const secondCommit = executeGenericTool(
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       {
         userAction: "next",
         assistant: createAssistantPayload("second"),

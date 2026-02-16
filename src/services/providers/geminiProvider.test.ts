@@ -211,7 +211,7 @@ describe("geminiProvider helpers", () => {
           type: "tool_use",
           toolUse: {
             id: "x",
-            name: "vfs_write",
+            name: "vfs_mutate",
             args: { path: "current/world/story.json" },
             thoughtSignature: "sig-x",
           },
@@ -225,7 +225,7 @@ describe("geminiProvider helpers", () => {
         { text: "prep" },
         {
           functionCall: {
-            name: "vfs_write",
+            name: "vfs_mutate",
             args: { path: "current/world/story.json" },
           },
           thoughtSignature: "sig-x",

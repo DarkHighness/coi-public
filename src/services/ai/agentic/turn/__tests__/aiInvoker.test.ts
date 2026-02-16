@@ -76,7 +76,7 @@ describe("aiInvoker", () => {
       createConfig() as any,
       history,
       budgetState as any,
-      "vfs_commit_turn",
+      "vfs_finish_turn",
     );
 
     expect(mockedCallWithAgenticRetry).toHaveBeenCalledWith(
@@ -128,7 +128,7 @@ describe("aiInvoker", () => {
       createConfig() as any,
       history,
       budgetState as any,
-      "vfs_commit_turn",
+      "vfs_finish_turn",
     );
 
     expect(budgetState.retriesUsed).toBe(0);
@@ -155,7 +155,7 @@ describe("aiInvoker", () => {
       createConfig() as any,
       history,
       budgetState as any,
-      "vfs_commit_turn",
+      "vfs_finish_turn",
     );
 
     expect(result.text).toBe("fallback");
@@ -176,7 +176,7 @@ describe("aiInvoker", () => {
         createConfig() as any,
         [],
         createBudgetState() as any,
-        "vfs_commit_turn",
+        "vfs_finish_turn",
       ),
     ).rejects.toBeInstanceOf(ContextOverflowError);
 
@@ -190,7 +190,7 @@ describe("aiInvoker", () => {
         createConfig() as any,
         [],
         createBudgetState() as any,
-        "vfs_commit_turn",
+        "vfs_finish_turn",
       ),
     ).rejects.toBeInstanceOf(HistoryCorruptedError);
   });

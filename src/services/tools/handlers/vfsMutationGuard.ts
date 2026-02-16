@@ -11,7 +11,7 @@ import {
 } from "../../vfs/jsonValidationSummary";
 import type { VfsContentType, VfsFile } from "../../vfs/types";
 import type { VfsSession } from "../../vfs/vfsSession";
-import type { Operation } from "fast-json-patch";
+import type { Operation } from "../../vfs/jsonPatchTypes";
 import {
   createError,
   type ToolCallError,
@@ -29,7 +29,7 @@ export type MutationOperation =
   | "delete";
 
 const VFS_WRITE_DOC_REFS = [
-  "current/refs/tools/vfs_write.md",
+  "current/refs/tools/vfs_mutate.md",
   "current/refs/tools/README.md",
 ];
 
@@ -54,7 +54,7 @@ const createVfsWriteGuardError = (
   const refs = uniqueStrings([...(details?.refs ?? []), ...VFS_WRITE_DOC_REFS]);
   return createError(error, code, {
     category: details?.category ?? inferErrorCategoryFromCode(code),
-    tool: details?.tool ?? "vfs_write",
+    tool: details?.tool ?? "vfs_mutate",
     issues: details?.issues,
     recovery: details?.recovery,
     refs,
@@ -702,7 +702,7 @@ export const validateWritePayload = (
                 ],
           recovery: [
             "Align payload fields/types with schema constraints and retry.",
-            `Reference current/refs/tools/vfs_write.md for write patterns.`,
+            `Reference current/refs/tools/vfs_mutate.md for write patterns.`,
           ],
         },
       ),

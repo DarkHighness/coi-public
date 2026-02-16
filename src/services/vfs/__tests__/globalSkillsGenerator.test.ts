@@ -138,22 +138,22 @@ describe("VFS global skills generator", () => {
       "current/skills/commands/runtime/outline/SKILL.md",
     );
     expect(commandTurn).toContain("name: commands-turn");
-    expect(commandTurn).toContain("vfs_commit_turn");
+    expect(commandTurn).toContain("vfs_finish_turn");
     expect(commandPlayerRate).toContain("name: commands-player-rate");
     expect(commandPlayerRate).toContain("[Player Rate]");
     expect(commandPlayerRate).toContain("current/world/soul.md");
-    expect(commandPlayerRate).toContain("vfs_commit_soul");
+    expect(commandPlayerRate).toContain("vfs_finish_soul");
     expect(commandPlayerRate).toContain("internal self-guidance notes");
     expect(commandSummary).toContain("name: commands-summary");
     expect(commandSummary).toContain("query_summary");
     expect(commandSummary).toContain("Structured Error Recovery Flow");
-    expect(commandSummary).toContain("vfs_commit_summary");
+    expect(commandSummary).toContain("vfs_finish_summary");
     expect(commandCompact).toContain("name: commands-compact");
     expect(commandCompact).toContain("session_compact");
     expect(commandCompact).toContain("current session history in context");
     expect(commandCompact).toContain("Structured Error Recovery Flow");
     expect(commandOutline).toContain("name: commands-outline");
-    expect(commandOutline).toContain("vfs_commit_outline_phase_4");
+    expect(commandOutline).toContain("vfs_finish_outline");
   });
 
   it("embeds gameplay-specific constraints in runtime examples", () => {

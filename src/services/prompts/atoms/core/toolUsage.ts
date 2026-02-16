@@ -3,10 +3,7 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
-import {
-  VFS_TOOLSETS,
-  formatVfsToolCapabilitiesForPrompt,
-} from "../../../vfsToolsets";
+import { vfsToolRegistry } from "../../../vfs/tools";
 import { defineAtom } from "../../trace/runtime";
 
 const gateSemanticCapabilityText = (
@@ -34,13 +31,13 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
     exportName: "toolUsage",
   },
   (input) => {
-    const finishToolName = input?.finishToolName || "vfs_commit_turn";
+    const finishToolName = input?.finishToolName || "vfs_finish_turn";
     const toolsetId =
-      finishToolName === "vfs_commit_soul" ? "playerRate" : "turn";
+      finishToolName === "vfs_finish_soul" ? "playerRate" : "turn";
     const ragEnabled = input?.ragEnabled ?? true;
 
     const capabilityText = gateSemanticCapabilityText(
-      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools),
+      vfsToolRegistry.formatCapabilitiesForPrompt(toolsetId),
       ragEnabled,
     );
     const searchModes = ragEnabled
@@ -56,11 +53,11 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - Immutable zones are always blocked: \`shared/system/skills/**\`, \`shared/system/refs/**\` (plus alias views \`skills/**\`, \`refs/**\`).
   - Resource templates enforce operation-level contracts (e.g. conversation expects \`finish_commit\`, summary expects \`finish_summary\`, rewrite flows use \`history_rewrite\`).
   - Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\` (${searchModes}) to inspect.
-  - Use \`vfs_write\` to create/replace files.
-  - Use \`vfs_write\` with JSON Patch (RFC 6902) to update JSON.
-  - Use \`vfs_write\` to deep-merge JSON objects (arrays replaced, no deletions).
-  - Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files.
-  - Use \`vfs_write\` with multiple \`ops\` to batch related state updates atomically.
+  - Use \`vfs_mutate\` with \`write_file\` to create/replace files.
+  - Use \`vfs_mutate\` with \`patch_json\` (RFC 6902) to update JSON.
+  - Use \`vfs_mutate\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
+  - Use \`vfs_mutate\` with \`move\` to rename paths, \`delete\` to remove files.
+  - Use \`vfs_mutate\` with multiple \`ops\` to batch related state updates.
   - Prefer omitting optional fields; use \`null\` only if you must, and treat it as “use defaults”.
 
   **STATE = FILES**:
@@ -68,7 +65,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - ${
     toolsetId === "playerRate"
       ? "In `[Player Rate]` loops, write scope is soul-only: `current/world/soul.md` and `current/world/global/soul.md`."
-      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via `vfs_write` when evidence emerges."
+      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via `vfs_mutate` when evidence emerges."
   }
   - Conversation/summary are finish-guarded under \`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`.
 

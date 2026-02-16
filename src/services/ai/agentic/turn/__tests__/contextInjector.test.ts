@@ -20,7 +20,7 @@ describe("contextInjector", () => {
     injectSudoModeInstruction(history);
     injectNormalTurnInstruction(
       history,
-      "vfs_commit_soul",
+      "vfs_finish_soul",
       false,
       {
         godMode: true,
@@ -43,7 +43,7 @@ describe("contextInjector", () => {
     );
     injectNormalTurnInstruction(
       history,
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       true,
       {
         godMode: false,
@@ -120,7 +120,7 @@ describe("contextInjector", () => {
 
     injectNormalTurnInstruction(
       history,
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       false,
       undefined,
       [],
@@ -137,7 +137,7 @@ describe("contextInjector", () => {
 
     injectNormalTurnInstruction(
       history,
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       false,
       {
         godMode: true,
@@ -157,7 +157,7 @@ describe("contextInjector", () => {
     );
     expect(getText(history[1])).toContain("skills/core/protocols/SKILL.md");
     expect(getText(history[1])).toContain("skills/craft/writing/SKILL.md");
-    expect(getText(history[0])).toContain("vfs_commit_soul");
+    expect(getText(history[0])).toContain("vfs_finish_soul");
     expect(getText(history[1])).not.toContain("commands/runtime/god/SKILL.md");
     expect(getText(history[1])).not.toContain(
       "commands/runtime/unlock/SKILL.md",
@@ -165,7 +165,7 @@ describe("contextInjector", () => {
     expect(getText(history[2])).toContain("PLAYER RATE MODE");
     expect(getText(history[2])).toContain("current/world/soul.md");
     expect(getText(history[2])).toContain("current/world/global/soul.md");
-    expect(getText(history[2])).toContain("vfs_commit_soul");
+    expect(getText(history[2])).toContain("vfs_finish_soul");
     expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
     expect(getText(history[3])).toContain(
       "Do not skip required skill preflight",
@@ -187,9 +187,9 @@ describe("contextInjector", () => {
         loopIterationsUsed: 4,
         loopIterationsMax: 20,
       },
-      "vfs_commit_turn",
+      "vfs_finish_turn",
     );
-    injectNoToolCallError(history, "vfs_commit_turn");
+    injectNoToolCallError(history, "vfs_finish_turn");
 
     expect(getText(history[0])).toContain("[SYSTEM: BUDGET STATUS]");
     expect(getText(history[0])).toContain("budget_status");

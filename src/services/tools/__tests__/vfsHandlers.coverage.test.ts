@@ -91,12 +91,12 @@ describe("VFS handlers additional coverage", () => {
     expect(result.data.truncated).toBe(true);
   });
 
-  it("rejects vfs_write to JSON paths with non-JSON contentType", () => {
+  it("rejects vfs_mutate to JSON paths with non-JSON contentType", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -112,7 +112,7 @@ describe("VFS handlers additional coverage", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.details?.tool).toBe("vfs_write");
+    expect(result.details?.tool).toBe("vfs_mutate");
     expect(result.error).toContain("application/json");
   });
 
@@ -121,7 +121,7 @@ describe("VFS handlers additional coverage", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -144,7 +144,7 @@ describe("VFS handlers additional coverage", () => {
     const ctx = { vfsSession: session };
 
     const result = (await dispatchToolCallAsync(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -160,7 +160,7 @@ describe("VFS handlers additional coverage", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.details?.tool).toBe("vfs_write");
+    expect(result.details?.tool).toBe("vfs_mutate");
     expect(result.error).toContain("maxTotalChars");
   });
 
@@ -186,7 +186,7 @@ describe("VFS handlers additional coverage", () => {
     dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -220,7 +220,7 @@ describe("VFS handlers additional coverage", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {

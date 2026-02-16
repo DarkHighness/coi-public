@@ -7,7 +7,7 @@ describe("resolveOutlineToolNameAlias", () => {
     "vfs_schema",
     "vfs_read",
     "vfs_search",
-    "vfs_commit_outline_phase_3",
+    "vfs_finish_outline",
   ];
 
   it("keeps exact tool name unchanged", () => {
@@ -23,10 +23,10 @@ describe("resolveOutlineToolNameAlias", () => {
     );
     expect(
       resolveOutlineToolNameAlias(
-        "default_api:functions.vfs_commit_outline_phase_3",
+        "default_api:functions.vfs_finish_outline",
         allowed,
       ),
-    ).toBe("vfs_commit_outline_phase_3");
+    ).toBe("vfs_finish_outline");
   });
 
   it("strips generic namespace prefixes when they wrap an allowed name", () => {

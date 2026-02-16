@@ -52,7 +52,7 @@ describe("prompt trace coverage - outline", () => {
       },
       {
         promptId: "outline.phase0",
-        build: () => getOutlinePhase0Prompt("en", "vfs_commit_outline_phase_0"),
+        build: () => getOutlinePhase0Prompt("en", "vfs_finish_outline"),
       },
       {
         promptId: "outline.phase1",
@@ -63,7 +63,7 @@ describe("prompt trace coverage - outline", () => {
             "ctx",
             false,
             "wanderer",
-            "vfs_commit_outline_phase_1",
+            "vfs_finish_outline",
           ),
       },
       {
@@ -75,38 +75,38 @@ describe("prompt trace coverage - outline", () => {
             "ctx",
             false,
             "wanderer",
-            "vfs_commit_outline_phase_2",
+            "vfs_finish_outline",
           ),
       },
       {
         promptId: "outline.phase3.playerActor",
         build: () =>
-          getOutlinePhase2Prompt("wanderer", "vfs_commit_outline_phase_3"),
+          getOutlinePhase2Prompt("wanderer", "vfs_finish_outline"),
       },
       {
         promptId: "outline.phase4.locations",
-        build: () => getOutlinePhase3Prompt("vfs_commit_outline_phase_4"),
+        build: () => getOutlinePhase3Prompt("vfs_finish_outline"),
       },
       {
         promptId: "outline.phase5.factions",
-        build: () => getOutlinePhase4Prompt("vfs_commit_outline_phase_5"),
+        build: () => getOutlinePhase4Prompt("vfs_finish_outline"),
       },
       {
         promptId: "outline.phase6.npcs",
-        build: () => getOutlinePhase5Prompt("vfs_commit_outline_phase_6"),
+        build: () => getOutlinePhase5Prompt("vfs_finish_outline"),
       },
       {
         promptId: "outline.phase7.questsKnowledge",
-        build: () => getOutlinePhase7Prompt("vfs_commit_outline_phase_7"),
+        build: () => getOutlinePhase7Prompt("vfs_finish_outline"),
       },
       {
         promptId: "outline.phase8.timelineAtmosphere",
-        build: () => getOutlinePhase8Prompt("vfs_commit_outline_phase_8"),
+        build: () => getOutlinePhase8Prompt("vfs_finish_outline"),
       },
       {
         promptId: "outline.phase9.openingNarrative",
         build: () =>
-          getOutlinePhase9Prompt(false, "vfs_commit_outline_phase_9"),
+          getOutlinePhase9Prompt(false, "vfs_finish_outline"),
       },
     ] as const;
 

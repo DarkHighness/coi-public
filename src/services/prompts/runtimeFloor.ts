@@ -14,13 +14,13 @@ You MUST follow these runtime protocol constraints:
   - For large files (especially \`current/conversation/session.jsonl\`), prefer \`vfs_read\` with \`mode: "lines"\` and bounded \`startLine/lineCount\`; avoid unbounded chars reads.
   - In \`vfs_read\` \`mode: "json"\`, \`pointers\` is required.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
-  - "Write/Move/Delete" means \`vfs_write\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic mutation tools).
+  - "Write/Move/Delete" means \`vfs_mutate\` with op=\`write_file|append_text|edit_lines|patch_json|merge_json|move|delete\` (never edit finish-guarded paths with generic mutation tools).
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` => simulate world turn, \`[Player Rate]\` => update soul files only, \`[SUDO]\` => elevated update loop.
   - Soul docs (\`current/world/soul.md\`, \`current/world/global/soul.md\`) are writable default-editable files, not read-only references.
-    - In normal \`[PLAYER_ACTION]\` loops, you may proactively refine them via \`vfs_write\` when meaningful preference evidence emerges.
-    - In \`[Player Rate]\` loops, use dedicated finish \`vfs_commit_soul\`.
-- End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_commit_turn\` for normal/cleanup/sudo, \`vfs_commit_soul\` for \`[Player Rate]\` loops).
+    - In normal \`[PLAYER_ACTION]\` loops, you may proactively refine them via \`vfs_mutate\` when meaningful preference evidence emerges.
+    - In \`[Player Rate]\` loops, use dedicated finish \`vfs_finish_soul\`.
+- End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_finish_soul\` for \`[Player Rate]\` loops).
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - Loop preflight (required before non-read tools):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
@@ -51,7 +51,7 @@ You MUST follow these outline protocol constraints:
   - If VFS tools exist this round, they are for reference lookup only (read-only).
   - "Read \`some/path\`" means call \`vfs_read({ path: "some/path" })\`.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
-  - In other modes, "Write/Move/Delete" would mean \`vfs_write\` / \`vfs_move\` / \`vfs_delete\`. In OUTLINE MODE, do NOT use those tools; submit via the phase tool only.
+  - In other modes, "Write/Move/Delete" means \`vfs_mutate\` ops. In OUTLINE MODE, do NOT use those tools; submit via \`vfs_finish_outline\` only.
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
 - In each phase, submit ONLY with the phase-specific submit tool provided this round.
 - Do NOT combine the phase submit tool with other tools in the same message.

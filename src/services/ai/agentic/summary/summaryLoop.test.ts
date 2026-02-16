@@ -32,7 +32,9 @@ vi.mock("../../../tools/handlers", () => ({
 
 // Import after mocks are registered
 import { runSummaryLoop } from "./summaryLoop";
-import { VFS_TOOLSETS } from "../../../vfsToolsets";
+import { vfsToolRegistry } from "../../../vfs/tools";
+
+const summaryToolset = vfsToolRegistry.getToolset("summary");
 
 function makeInput(overrides?: Partial<SummaryLoopInput>): SummaryLoopInput {
   const vfsSession = {
@@ -122,7 +124,7 @@ beforeEach(() => {
       functionCalls: [
         {
           id: "call_1",
-          name: VFS_TOOLSETS.summary.finishToolName,
+          name: summaryToolset.finishToolName,
           args: makeCommitSummaryArgs(),
         },
       ],
@@ -326,7 +328,7 @@ describe("runSummaryLoop", () => {
           functionCalls: [
             {
               id: "call-finish-ok",
-              name: VFS_TOOLSETS.summary.finishToolName,
+              name: summaryToolset.finishToolName,
               args: makeCommitSummaryArgs(),
             },
           ],
@@ -340,12 +342,12 @@ describe("runSummaryLoop", () => {
     expect(result.summary?.id).toBe("s1");
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
     expect(mockDispatchToolCallAsync.mock.calls[0]?.[0]).toBe(
-      VFS_TOOLSETS.summary.finishToolName,
+      summaryToolset.finishToolName,
     );
   });
 
   it("blocks finish calls when AI provides runtime-only fields", async () => {
-    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const finishTool = summaryToolset.finishToolName;
     const input = makeInput({
       forkId: 2,
       nodeRange: { fromIndex: 4, toIndex: 9 },
@@ -400,7 +402,7 @@ describe("runSummaryLoop", () => {
   });
 
   it("preserves nextSessionReferencesMarkdown on finish tool arguments", async () => {
-    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const finishTool = summaryToolset.finishToolName;
     const input = makeInput({
       forkId: 2,
       nodeRange: { fromIndex: 1, toIndex: 4 },
@@ -443,7 +445,7 @@ describe("runSummaryLoop", () => {
 
     let finishCount = 0;
     mockDispatchToolCallAsync.mockImplementation(async (name: string) => {
-      if (name !== VFS_TOOLSETS.summary.finishToolName) {
+      if (name !== summaryToolset.finishToolName) {
         return { success: false, error: "unexpected tool" };
       }
       finishCount += 1;
@@ -511,7 +513,7 @@ describe("runSummaryLoop", () => {
     (input.settings as any).extra = { maxAgenticRounds: 3 };
 
     mockDispatchToolCallAsync.mockImplementation(async (name: string) => {
-      if (name !== VFS_TOOLSETS.summary.finishToolName) {
+      if (name !== summaryToolset.finishToolName) {
         return { success: false, error: "unexpected tool" };
       }
       return {
@@ -519,7 +521,7 @@ describe("runSummaryLoop", () => {
         data: {
           summary: {
             id: "s_forbidden",
-            displayText: "includes vfs_write (forbidden)",
+            displayText: "includes vfs_mutate (forbidden)",
             visible: {
               narrative: "ok",
               majorEvents: [],
@@ -548,7 +550,7 @@ describe("runSummaryLoop", () => {
   });
 
   it("rejects finish calls when finish is not the last tool", async () => {
-    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const finishTool = summaryToolset.finishToolName;
 
     mockCallWithAgenticRetry
       .mockResolvedValueOnce({
@@ -597,7 +599,7 @@ describe("runSummaryLoop", () => {
   });
 
   it("rejects multiple finish calls in one response", async () => {
-    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const finishTool = summaryToolset.finishToolName;
 
     mockCallWithAgenticRetry
       .mockResolvedValueOnce({
@@ -641,7 +643,7 @@ describe("runSummaryLoop", () => {
   });
 
   it("blocks finish when earlier tools in the same batch fail", async () => {
-    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const finishTool = summaryToolset.finishToolName;
 
     mockCallWithAgenticRetry
       .mockResolvedValueOnce({
@@ -722,7 +724,7 @@ describe("runSummaryLoop", () => {
   });
 
   it("enforces finish-only mode when budget is critically low", async () => {
-    const finishTool = VFS_TOOLSETS.summary.finishToolName;
+    const finishTool = summaryToolset.finishToolName;
 
     mockCallWithAgenticRetry
       .mockResolvedValueOnce({
@@ -782,7 +784,7 @@ describe("runSummaryLoop", () => {
         functionCalls: [
           {
             id: "call_soul_gate_query",
-            name: VFS_TOOLSETS.summary.finishToolName,
+            name: summaryToolset.finishToolName,
             args: makeCommitSummaryArgs(),
           },
         ],
@@ -817,7 +819,7 @@ describe("runSummaryLoop", () => {
         functionCalls: [
           {
             id: "call_soul_gate_compact",
-            name: VFS_TOOLSETS.summary.finishToolName,
+            name: summaryToolset.finishToolName,
             args: makeCommitSummaryArgs(),
           },
         ],

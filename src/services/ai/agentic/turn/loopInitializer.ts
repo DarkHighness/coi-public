@@ -15,8 +15,7 @@ import type { VfsElevationIntent, VfsMode } from "../../../vfs/core/types";
 import type { VfsElevationScopeTemplateIds } from "../../../vfs/core/elevation";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
-import { ALL_DEFINED_TOOLS, getVfsSearchToolDefinition } from "../../../tools";
-import { VFS_TOOLSETS } from "../../../vfsToolsets";
+import { vfsToolRegistry } from "../../../vfs/tools";
 import {
   CURRENT_SOUL_LOGICAL_PATH,
   GLOBAL_SOUL_LOGICAL_PATH,
@@ -113,10 +112,10 @@ export function createLoopState(
     isPlayerRateMode,
   });
   const finishToolName = isCleanupMode
-    ? VFS_TOOLSETS.cleanup.finishToolName
+    ? vfsToolRegistry.getToolset("cleanup").finishToolName
     : isPlayerRateMode
-      ? VFS_TOOLSETS.playerRate.finishToolName
-      : VFS_TOOLSETS.turn.finishToolName;
+      ? vfsToolRegistry.getToolset("playerRate").finishToolName
+      : vfsToolRegistry.getToolset("turn").finishToolName;
   const resolvedVfsMode: VfsMode =
     vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
   const conversationMarker = getConversationMarker(vfsSession);
@@ -229,21 +228,15 @@ export function createInitialTools(options: {
     options;
   void isSudoMode;
 
-  const toolset = isCleanupMode
-    ? VFS_TOOLSETS.cleanup
+  const toolsetId = isCleanupMode
+    ? "cleanup"
     : isPlayerRateMode
-      ? VFS_TOOLSETS.playerRate
-      : VFS_TOOLSETS.turn;
-  const allowed = new Set<string>(toolset.tools);
+      ? "playerRate"
+      : "turn";
 
-  return ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name)).map(
-    (tool) => {
-      if (tool.name === "vfs_search") {
-        return getVfsSearchToolDefinition(isRAGEnabled);
-      }
-      return tool;
-    },
-  );
+  return vfsToolRegistry.getDefinitionsForToolset(toolsetId, {
+    ragEnabled: isRAGEnabled,
+  });
 }
 
 /**

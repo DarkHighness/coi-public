@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { VFS_TOOLSETS } from "@/services/vfsToolsets";
+import { vfsToolRegistry } from "@/services/vfs/tools";
 import {
   accumulateSummaryUsage,
   createSummaryLoopState,
@@ -26,13 +26,13 @@ describe("summaryInitializer", () => {
       loopIterationsMax: 9,
     });
 
-    const allowed = new Set(VFS_TOOLSETS.summary.tools);
+    const allowed = new Set<string>(vfsToolRegistry.getToolset("summary").tools);
     expect(state.activeTools.length).toBeGreaterThan(0);
     expect(state.activeTools.every((tool) => allowed.has(tool.name))).toBe(
       true,
     );
     expect(
-      state.activeTools.some((tool) => tool.name === "vfs_commit_summary"),
+      state.activeTools.some((tool) => tool.name === "vfs_finish_summary"),
     ).toBe(true);
 
     expect(state.totalUsage).toEqual({

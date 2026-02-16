@@ -190,7 +190,7 @@ describe("agenticLoop tool logging", () => {
           },
           {
             id: "call-write-pass",
-            name: "vfs_write",
+            name: "vfs_mutate",
             args: {
               ops: [
                 {
@@ -204,7 +204,7 @@ describe("agenticLoop tool logging", () => {
           },
           {
             id: "call-finish-blocked",
-            name: "vfs_commit_turn",
+            name: "vfs_finish_turn",
             args: {
               userAction: "next",
               assistant: {
@@ -221,11 +221,11 @@ describe("agenticLoop tool logging", () => {
         return { success: false, error: "read failed", code: "READ_FAILED" };
       }
 
-      if (name === "vfs_write") {
+      if (name === "vfs_mutate") {
         return { success: true };
       }
 
-      if (name === "vfs_commit_turn") {
+      if (name === "vfs_finish_turn") {
         vfsSession.markConversationTouched();
         return { success: true };
       }
@@ -250,12 +250,12 @@ describe("agenticLoop tool logging", () => {
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(3);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_read", "vfs_write", "vfs_commit_turn"]);
+    ).toEqual(["vfs_read", "vfs_mutate", "vfs_finish_turn"]);
 
     const blockedFinishLog = result.logs.find(
       (log) =>
         log.endpoint === "tool_execution" &&
-        log.toolName === "vfs_commit_turn" &&
+        log.toolName === "vfs_finish_turn" &&
         String((log as any).toolOutput?.error || "").includes(
           "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
         ),
@@ -277,7 +277,7 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-write-fail",
-            name: "vfs_write",
+            name: "vfs_mutate",
             args: {
               ops: [
                 {
@@ -291,7 +291,7 @@ describe("agenticLoop tool logging", () => {
           },
           {
             id: "call-finish-blocked-1",
-            name: "vfs_commit_turn",
+            name: "vfs_finish_turn",
             args: {
               userAction: "next",
               assistant: {
@@ -312,7 +312,7 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-finish-blocked-2",
-            name: "vfs_commit_turn",
+            name: "vfs_finish_turn",
             args: {
               userAction: "next",
               assistant: {
@@ -333,7 +333,7 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-write-ok",
-            name: "vfs_write",
+            name: "vfs_mutate",
             args: {
               ops: [
                 {
@@ -347,7 +347,7 @@ describe("agenticLoop tool logging", () => {
           },
           {
             id: "call-finish-ok",
-            name: "vfs_commit_turn",
+            name: "vfs_finish_turn",
             args: {
               userAction: "next",
               assistant: {
@@ -361,7 +361,7 @@ describe("agenticLoop tool logging", () => {
 
     let writeAttempt = 0;
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_write") {
+      if (name === "vfs_mutate") {
         writeAttempt += 1;
         if (writeAttempt === 1) {
           return {
@@ -373,7 +373,7 @@ describe("agenticLoop tool logging", () => {
         return { success: true };
       }
 
-      if (name === "vfs_commit_turn") {
+      if (name === "vfs_finish_turn") {
         vfsSession.markConversationTouched();
         return { success: true };
       }
@@ -397,12 +397,12 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(3);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_write", "vfs_write", "vfs_commit_turn"]);
+    ).toEqual(["vfs_mutate", "vfs_mutate", "vfs_finish_turn"]);
 
     const writeBlockedLog = result.logs.find(
       (log) =>
         log.endpoint === "tool_execution" &&
-        log.toolName === "vfs_commit_turn" &&
+        log.toolName === "vfs_finish_turn" &&
         String((log as any).toolOutput?.error || "").includes(
           "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
         ),
@@ -426,7 +426,7 @@ describe("agenticLoop tool logging", () => {
       functionCalls: [
         {
           id: "call-write-immutable",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: {
             ops: [
               {
@@ -440,7 +440,7 @@ describe("agenticLoop tool logging", () => {
         },
         {
           id: "call-finish-ok",
-          name: "vfs_commit_turn",
+          name: "vfs_finish_turn",
           args: {
             userAction: "next",
             assistant: {
@@ -453,14 +453,14 @@ describe("agenticLoop tool logging", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_write") {
+      if (name === "vfs_mutate") {
         return {
           success: false,
           error: "read-only path",
           code: "IMMUTABLE_READONLY",
         };
       }
-      if (name === "vfs_commit_turn") {
+      if (name === "vfs_finish_turn") {
         vfsSession.markConversationTouched();
         return { success: true };
       }
@@ -483,12 +483,12 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_write", "vfs_commit_turn"]);
+    ).toEqual(["vfs_mutate", "vfs_finish_turn"]);
 
     const blockedFinishLog = result.logs.find(
       (log) =>
         log.endpoint === "tool_execution" &&
-        log.toolName === "vfs_commit_turn" &&
+        log.toolName === "vfs_finish_turn" &&
         String((log as any).toolOutput?.error || "").includes(
           "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
         ),
@@ -496,7 +496,7 @@ describe("agenticLoop tool logging", () => {
     expect(blockedFinishLog).toBeUndefined();
 
     const writeLog = result.logs.find(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write",
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_mutate",
     );
     expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
       "WRITE_UNRECOVERABLE_NON_BLOCKING",
@@ -519,7 +519,7 @@ describe("agenticLoop tool logging", () => {
       functionCalls: [
         {
           id: "call-write-missing-target",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: {
             ops: [
               {
@@ -532,7 +532,7 @@ describe("agenticLoop tool logging", () => {
         },
         {
           id: "call-finish-ok",
-          name: "vfs_commit_turn",
+          name: "vfs_finish_turn",
           args: {
             userAction: "next",
             assistant: {
@@ -545,14 +545,14 @@ describe("agenticLoop tool logging", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_write") {
+      if (name === "vfs_mutate") {
         return {
           success: false,
           error: "file not found",
           code: "NOT_FOUND",
         };
       }
-      if (name === "vfs_commit_turn") {
+      if (name === "vfs_finish_turn") {
         vfsSession.markConversationTouched();
         return { success: true };
       }
@@ -575,12 +575,12 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_write", "vfs_commit_turn"]);
+    ).toEqual(["vfs_mutate", "vfs_finish_turn"]);
 
     const blockedFinishLog = result.logs.find(
       (log) =>
         log.endpoint === "tool_execution" &&
-        log.toolName === "vfs_commit_turn" &&
+        log.toolName === "vfs_finish_turn" &&
         String((log as any).toolOutput?.error || "").includes(
           "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
         ),
@@ -588,7 +588,7 @@ describe("agenticLoop tool logging", () => {
     expect(blockedFinishLog).toBeUndefined();
 
     const writeLog = result.logs.find(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write",
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_mutate",
     );
     expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
       "WRITE_NON_EXISTENT_TARGET_NON_BLOCKING",
@@ -617,7 +617,7 @@ describe("agenticLoop tool logging", () => {
           },
           {
             id: "call-finish-blocked",
-            name: "vfs_commit_turn",
+            name: "vfs_finish_turn",
             args: {
               userAction: "next",
               assistant: {
@@ -638,7 +638,7 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-finish-ok",
-            name: "vfs_commit_turn",
+            name: "vfs_finish_turn",
             args: {
               userAction: "next",
               assistant: {
@@ -651,7 +651,7 @@ describe("agenticLoop tool logging", () => {
       });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_commit_turn") {
+      if (name === "vfs_finish_turn") {
         vfsSession.markConversationTouched();
       }
       return { success: true };
@@ -673,7 +673,7 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(2);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_commit_turn"]);
+    ).toEqual(["vfs_finish_turn"]);
 
     const historyText = JSON.stringify(result._conversationHistory);
     expect(historyText).toContain("PRE_FINISH_READ_ONLY_SEQUENCE");
@@ -692,7 +692,7 @@ describe("agenticLoop tool logging", () => {
       functionCalls: [
         {
           id: "call-1-write",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: {
             ops: [
               {
@@ -706,7 +706,7 @@ describe("agenticLoop tool logging", () => {
         },
         {
           id: "call-2",
-          name: "vfs_commit_turn",
+          name: "vfs_finish_turn",
           args: {
             userAction: "next",
             assistant: {
@@ -719,10 +719,10 @@ describe("agenticLoop tool logging", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_write") {
+      if (name === "vfs_mutate") {
         return { success: true };
       }
-      if (name === "vfs_commit_turn") {
+      if (name === "vfs_finish_turn") {
         vfsSession.markConversationTouched();
       }
       return { success: true };
@@ -745,8 +745,8 @@ describe("agenticLoop tool logging", () => {
     );
     expect(toolLogs).toHaveLength(2);
     expect(toolLogs.map((log) => log.toolName)).toEqual([
-      "vfs_write",
-      "vfs_commit_turn",
+      "vfs_mutate",
+      "vfs_finish_turn",
     ]);
   });
 });

@@ -1,5 +1,4 @@
-import * as fastJsonPatch from "fast-json-patch";
-import type { Operation } from "fast-json-patch";
+import { createRequire } from "node:module";
 import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
 import {
@@ -26,6 +25,21 @@ import {
   formatJsonValidationSummary,
   summarizeJsonValidationError,
 } from "./jsonValidationSummary";
+import type { Operation } from "./jsonPatchTypes";
+
+const require = createRequire(import.meta.url);
+
+type ApplyPatchFn = (
+  document: unknown,
+  patch: Operation[],
+  validateOperation?: boolean,
+  mutateDocument?: boolean,
+) => { newDocument: unknown };
+
+const fastJsonPatchCore = require("fast-json-patch/commonjs/core.js") as {
+  applyPatch?: ApplyPatchFn;
+  default?: { applyPatch?: ApplyPatchFn };
+};
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
@@ -159,17 +173,12 @@ const DEFAULT_SYSTEM_WRITE_CONTEXT: VfsWriteContext = {
   allowFinishGuardedWrite: true,
 };
 
-const applyPatchFn: typeof fastJsonPatch.applyPatch = (() => {
-  if (typeof fastJsonPatch.applyPatch === "function") {
-    return fastJsonPatch.applyPatch;
+const applyPatchFn: ApplyPatchFn = (() => {
+  if (typeof fastJsonPatchCore.applyPatch === "function") {
+    return fastJsonPatchCore.applyPatch;
   }
-  const fromDefault = (
-    fastJsonPatch as {
-      default?: { applyPatch?: typeof fastJsonPatch.applyPatch };
-    }
-  ).default?.applyPatch;
-  if (typeof fromDefault === "function") {
-    return fromDefault;
+  if (typeof fastJsonPatchCore.default?.applyPatch === "function") {
+    return fastJsonPatchCore.default.applyPatch;
   }
   throw new Error("fast-json-patch applyPatch export is unavailable");
 })();

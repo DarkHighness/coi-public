@@ -9,9 +9,9 @@ import {
 describe("systemMessages atoms", () => {
   it("normal turn instruction uses VFS-only workflow", () => {
     const content = normalTurnInstruction({});
-    const legacyFinishTool = ["finish", "turn"].join("_");
-    const legacySearchTool = ["search", "tool"].join("_");
-    expect(content).toContain("vfs_write");
+    const legacyFinishTool = "vfs_commit_turn";
+    const legacySearchTool = "search_tool";
+    expect(content).toContain("vfs_mutate");
     expect(content).toContain("current/conversation/");
     expect(content).toContain("shared/**");
     expect(content).toContain("forks/{forkId}/**");
@@ -38,8 +38,8 @@ describe("systemMessages atoms", () => {
 
   it("no-tool-call error references VFS tools", () => {
     const content = noToolCallError({});
-    const legacyFinishTool = ["finish", "turn"].join("_");
-    const legacySearchTool = ["search", "tool"].join("_");
+    const legacyFinishTool = "vfs_commit_turn";
+    const legacySearchTool = "search_tool";
     expect(content).toContain("vfs_");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).not.toContain(legacySearchTool);
@@ -55,8 +55,8 @@ describe("systemMessages atoms", () => {
 
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {
     const content = sudoModeInstruction({});
-    const legacyForceUpdateTool = ["complete", "force", "update"].join("_");
-    expect(content).toContain("vfs_write");
+    const legacyForceUpdateTool = "complete_force_update";
+    expect(content).toContain("vfs_mutate");
     expect(content).toContain("already prefixed with **[SUDO]**");
     expect(content).toContain("forced elevated update payload");
     expect(content).toContain("immutable/finish policy constraints");

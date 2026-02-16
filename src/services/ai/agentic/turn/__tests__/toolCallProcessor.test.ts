@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { executeGenericTool, validateToolArgs } from "../toolCallProcessor";
+import { executeGenericTool } from "../toolCallProcessor";
 
 const handlerMocks = vi.hoisted(() => ({
   hasHandler: vi.fn(),
@@ -30,61 +30,7 @@ describe("toolCallProcessor", () => {
     vi.clearAllMocks();
   });
 
-  it("returns valid for unknown tools in schema validation", () => {
-    const result = validateToolArgs("tool_does_not_exist", { any: "value" });
-    expect(result).toEqual({ valid: true });
-  });
-
-  it("returns detailed validation errors for missing and extra fields", () => {
-    const missing = validateToolArgs("vfs_schema", {});
-    expect(missing.valid).toBe(false);
-    if (missing.valid === false) {
-      const err = missing.error as {
-        error: string;
-        code: string;
-        details?: { tool?: string; category?: string; refs?: string[] };
-      };
-      expect(err.code).toBe("INVALID_PARAMS");
-      expect(err.error).toContain("[VALIDATION_ERROR]");
-      expect(err.error).toContain("Top issues:");
-      expect(err.error).toContain("- paths: Required");
-      expect(err.error).toContain("current/refs/tools/vfs_schema.md");
-      expect(err.details?.tool).toBe("vfs_schema");
-      expect(err.details?.category).toBe("validation");
-      expect(err.details?.refs).toContain("current/refs/tools/README.md");
-    }
-
-    const extra = validateToolArgs("vfs_ls", {
-      path: "current",
-      unexpected: true,
-    });
-    expect(extra.valid).toBe(false);
-    if (extra.valid === false) {
-      const err = extra.error as { error: string };
-      expect(err.error).toContain("- unexpected: Unrecognized key");
-    }
-  });
-
-  it("caps validation issue lines to avoid oversized error payloads", () => {
-    const result = validateToolArgs("vfs_write", {
-      a: 1,
-      b: 2,
-      c: 3,
-      d: 4,
-      e: 5,
-      f: 6,
-      g: 7,
-    } as any);
-
-    expect(result.valid).toBe(false);
-    if (result.valid === false) {
-      const err = result.error as { error: string };
-      expect(err.error).toContain("Top issues:");
-      expect(err.error).toContain("...and");
-    }
-  });
-
-  it("dispatches to handler with normalized tool context when valid", () => {
+  it("dispatches to handler with normalized tool context when handler exists", () => {
     handlerMocks.hasHandler.mockReturnValue(true);
     handlerMocks.dispatchToolCall.mockReturnValue({ success: true, data: 123 });
 
@@ -112,18 +58,6 @@ describe("toolCallProcessor", () => {
     expect(result).toEqual({ success: true, data: 123 });
   });
 
-  it("returns validation error without dispatching handler", () => {
-    handlerMocks.hasHandler.mockReturnValue(true);
-
-    const result = executeGenericTool("vfs_schema", {}, createContext() as any);
-
-    expect(handlerMocks.dispatchToolCall).not.toHaveBeenCalled();
-    expect(result).toMatchObject({
-      success: false,
-      code: "INVALID_PARAMS",
-    });
-  });
-
   it("returns unknown-tool error when no handler exists", () => {
     handlerMocks.hasHandler.mockReturnValue(false);
 
@@ -136,67 +70,7 @@ describe("toolCallProcessor", () => {
     expect(result).toEqual({
       success: false,
       error: "Unknown tool: tool_does_not_exist",
+      code: "UNKNOWN",
     });
-  });
-
-  it("rejects legacy vfs_commit_turn.meta payload", () => {
-    handlerMocks.hasHandler.mockReturnValue(true);
-
-    const result = executeGenericTool(
-      "vfs_commit_turn",
-      {
-        userAction: "look around",
-        assistant: {
-          narrative: "You scan the room.",
-          choices: [{ text: "Inspect desk" }, { text: "Open door" }],
-        },
-        meta: {
-          playerRate: {
-            vote: "up",
-            createdAt: Date.now(),
-          },
-        },
-      },
-      createContext() as any,
-    ) as { success?: boolean; code?: string };
-
-    expect(result.success).toBe(false);
-    expect(result.code).toBe("INVALID_PARAMS");
-    expect(handlerMocks.dispatchToolCall).not.toHaveBeenCalled();
-  });
-
-  it("rejects legacy assistant.userAction nested payload", () => {
-    handlerMocks.hasHandler.mockReturnValue(true);
-
-    const result = executeGenericTool(
-      "vfs_commit_turn",
-      {
-        assistant: {
-          userAction: "stabilize the power core",
-          narrative: "You reroute the power and stop the sparks.",
-          choices: [{ text: "Run diagnostics" }, { text: "Leave the room" }],
-        },
-      },
-      createContext() as any,
-    ) as { success?: boolean; code?: string };
-
-    expect(result.success).toBe(false);
-    expect(result.code).toBe("INVALID_PARAMS");
-    expect(handlerMocks.dispatchToolCall).not.toHaveBeenCalled();
-  });
-
-  it("rejects empty vfs_commit_soul payload during validation", () => {
-    handlerMocks.hasHandler.mockReturnValue(true);
-
-    const result = executeGenericTool(
-      "vfs_commit_soul",
-      {},
-      createContext() as any,
-    ) as { success?: boolean; code?: string; error?: string };
-
-    expect(result.success).toBe(false);
-    expect(result.code).toBe("INVALID_PARAMS");
-    expect(result.error).toContain("currentSoul/globalSoul");
-    expect(handlerMocks.dispatchToolCall).not.toHaveBeenCalled();
   });
 });

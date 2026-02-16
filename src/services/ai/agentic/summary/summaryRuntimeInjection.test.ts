@@ -112,13 +112,13 @@ beforeEach(() => {
 });
 
 describe("summary runtime field injection", () => {
-  it("injects nodeRange/lastSummarizedIndex before dispatching vfs_commit_summary", async () => {
+  it("injects nodeRange/lastSummarizedIndex before dispatching vfs_finish_summary", async () => {
     mockCallWithAgenticRetry.mockResolvedValue({
       result: {
         functionCalls: [
           {
             id: "call_1",
-            name: "vfs_commit_summary",
+            name: "vfs_finish_summary",
             args: {
               displayText: "summary",
               visible: {
@@ -159,7 +159,7 @@ describe("summary runtime field injection", () => {
         functionCalls: [
           {
             id: "call_1",
-            name: "vfs_commit_summary",
+            name: "vfs_finish_summary",
             args: {
               displayText: "summary",
               visible: {

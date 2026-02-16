@@ -79,7 +79,7 @@ Hard constraints:
 - Keep continuity with existing summaries and established story facts.
 - If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
 - If uncertain, use read-only VFS tools first (vfs_read/vfs_search).
-- Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
+- Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
 - In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
 - Output summary content only. Never mention tools/retries/errors/budgets.`;
 };
@@ -124,7 +124,7 @@ Hard constraints:
 - Keep compaction scoped to target fork ${runtime.targetForkId}; NEVER cross forks.
 - Do NOT summarize outside the specified summary range.
 - Preserve continuity with previous summaries and in-session events.
-- Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_commit_summary\`.
+- Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
 - In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
 - Output summary content only. Never mention tools/retries/errors/budgets.
 
@@ -133,7 +133,7 @@ Structured error recovery (when tool response is \`{ success:false, code, error 
 - \`INVALID_ACTION\` / \`FORCED_FINISH\` / \`MULTIPLE_FINISH_CALLS\` / \`FINISH_NOT_LAST\`: reorder to one valid tool-call set with finish last.
 - \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`: retry failed existing-target writes first; finish remains blocked until they succeed.
 - \`COMPACT_SUMMARY_CROSS_FORK_BLOCKED\`: remove cross-fork paths and retry target-fork reads only.
-- \`COMPACT_SUMMARY_RUNTIME_FIELDS_FORBIDDEN\`: remove runtime-managed fields from \`vfs_commit_summary\` args.
+- \`COMPACT_SUMMARY_RUNTIME_FIELDS_FORBIDDEN\`: remove runtime-managed fields from \`vfs_finish_summary\` args.
 - \`SUMMARY_FORBIDDEN_TOKENS\`: rewrite summary fields to story facts only, then retry finish.
 - If the same \`code\` appears twice, shrink scope and re-read anchors before retry.`;
 };
@@ -154,9 +154,9 @@ export const buildCompactModeTriggerMessage = (input: {
     `Loop quick-start (recommended):\n` +
     `${compactBaseline}\n` +
     `5) If details are uncertain, do bounded read-only verification on current fork.\n` +
-    `6) Finish once via "vfs_commit_summary" as LAST tool call.\n\n` +
+    `6) Finish once via "vfs_finish_summary" as LAST tool call.\n\n` +
     `Requirements:\n` +
-    `- Produce exactly ONE summary by calling "vfs_commit_summary" as your LAST tool call.\n` +
+    `- Produce exactly ONE summary by calling "vfs_finish_summary" as your LAST tool call.\n` +
     `- The summary MUST be in ${languageCode}.\n` +
     `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
     `- Runtime will set lastSummarizedIndex = ${input.targetLastSummarizedIndex}.\n` +

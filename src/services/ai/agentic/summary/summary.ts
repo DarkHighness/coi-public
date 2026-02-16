@@ -65,7 +65,7 @@ export interface SummaryLoopInput {
  * Process:
  * 1. Start with minimal context (previous summary + turn overview)
  * 2. AI can query VFS for more detail if needed
- * 3. AI finishes via vfs_commit_summary (writes summary/state.json)
+ * 3. AI finishes via vfs_finish_summary (writes summary/state.json)
  */
 export const runSummaryAgenticLoop = async (
   input: SummaryLoopInput,

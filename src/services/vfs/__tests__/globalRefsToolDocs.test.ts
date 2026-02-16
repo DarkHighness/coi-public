@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ALL_DEFINED_TOOLS } from "../../tools";
+import { vfsToolRegistry } from "../tools";
 import { buildGlobalVfsRefs } from "../globalRefs";
+
+const definedTools = vfsToolRegistry.getDefinitions();
 
 describe("VFS global refs tool docs", () => {
   it("generates refs/tools README and index", () => {
@@ -12,16 +14,16 @@ describe("VFS global refs tool docs", () => {
       tools?: Array<{ name: string; path: string }>;
     };
 
-    expect(readme).toContain("Generated from `ALL_DEFINED_TOOLS`.");
+    expect(readme).toContain("Generated from `vfsToolRegistry.getDefinitions()`.");
     expect(readme).toContain('vfs_ls({ path: "current/refs/tools" })');
-    expect(index.count).toBe(ALL_DEFINED_TOOLS.length);
-    expect(index.tools?.length).toBe(ALL_DEFINED_TOOLS.length);
+    expect(index.count).toBe(definedTools.length);
+    expect(index.tools?.length).toBe(definedTools.length);
   });
 
   it("emits one markdown doc per defined tool with INTRO/SCHEMA/EXAMPLES sections", () => {
     const files = buildGlobalVfsRefs();
 
-    for (const tool of ALL_DEFINED_TOOLS) {
+    for (const tool of definedTools) {
       const path = `refs/tools/${tool.name}.md`;
       const doc = files[path]?.content ?? "";
       expect(doc).toContain(`# ${tool.name}`);

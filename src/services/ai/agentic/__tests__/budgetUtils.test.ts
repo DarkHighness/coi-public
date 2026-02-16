@@ -52,12 +52,12 @@ describe("budgetUtils", () => {
         loopIterationsUsed: 19,
         loopIterationsMax: 20,
       },
-      "vfs_commit_turn",
+      "vfs_finish_turn",
     );
 
     expect(prompt).toContain('level="LAST_CHANCE"');
     expect(prompt).toContain("Your ONLY allowed tool call is");
-    expect(prompt).toContain("`vfs_commit_turn`");
+    expect(prompt).toContain("`vfs_finish_turn`");
     expect(prompt).toContain("as the LAST tool call");
   });
 

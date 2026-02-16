@@ -15,12 +15,12 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
     "vfs_search",
   ]).has(call.name);
 
-  const isOutlineCommit = /^vfs_commit_outline_phase_[0-9]+$/.test(call.name);
+  const isOutlineCommit = call.name === "vfs_finish_outline";
 
   const isFinish =
-    call.name === "vfs_commit_turn" ||
-    call.name === "vfs_commit_soul" ||
-    call.name === "vfs_commit_summary" ||
+    call.name === "vfs_finish_turn" ||
+    call.name === "vfs_finish_soul" ||
+    call.name === "vfs_finish_summary" ||
     isOutlineCommit;
   const isSuccess = !isError;
 

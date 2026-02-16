@@ -8,7 +8,7 @@ describe("extractOpenRouterToolCalls", () => {
         {
           id: "call_1",
           function: {
-            name: "vfs_write",
+            name: "vfs_mutate",
             arguments: JSON.stringify({
               files: [
                 {
@@ -26,7 +26,7 @@ describe("extractOpenRouterToolCalls", () => {
     const calls = extractOpenRouterToolCalls(message);
 
     expect(calls).toHaveLength(1);
-    expect(calls[0].name).toBe("vfs_write");
+    expect(calls[0].name).toBe("vfs_mutate");
     expect(calls[0].args).toEqual({
       files: [
         {

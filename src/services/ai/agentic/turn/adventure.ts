@@ -167,8 +167,8 @@ export const generateAdventureTurn = async (
   const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
   const isPlayerRateMode = context.userAction.startsWith("[Player Rate]");
   const finishToolName = isPlayerRateMode
-    ? "vfs_commit_soul"
-    : "vfs_commit_turn";
+    ? "vfs_finish_soul"
+    : "vfs_finish_turn";
 
   // ===== Build system instruction using Skills System =====
   const baseSystemInstruction = buildCoreSystemInstructionWithSkills({

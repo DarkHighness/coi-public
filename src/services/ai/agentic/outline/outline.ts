@@ -37,13 +37,7 @@ import {
 
 import { THEMES } from "../../../../utils/constants";
 
-import {
-  VFS_LS_TOOL,
-  VFS_SCHEMA_TOOL,
-  VFS_READ_TOOL,
-  VFS_SEARCH_TOOL,
-  VFS_COMMIT_OUTLINE_PHASE_TOOLS,
-} from "../../../tools";
+import { vfsToolRegistry } from "../../../vfs/tools";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { normalizeVfsPath } from "../../../vfs/utils";
 import { vfsElevationTokenManager } from "../../../vfs/core/elevation";
@@ -168,10 +162,10 @@ export interface PhasedOutlineOptions {
 }
 
 const READ_ONLY_VFS_TOOL_DEFS: ZodToolDefinition[] = [
-  VFS_LS_TOOL,
-  VFS_SCHEMA_TOOL,
-  VFS_READ_TOOL,
-  VFS_SEARCH_TOOL,
+  vfsToolRegistry.getDefinition("vfs_ls"),
+  vfsToolRegistry.getDefinition("vfs_schema"),
+  vfsToolRegistry.getDefinition("vfs_read"),
+  vfsToolRegistry.getDefinition("vfs_search"),
 ];
 
 const READ_ONLY_VFS_TOOL_NAMES = new Set(
@@ -183,17 +177,16 @@ const OUTLINE_PHASE_READ_ROOTS = [
   "shared/narrative/outline/phases",
 ];
 
-const OUTLINE_SUBMIT_TOOL_DEFS = [...VFS_COMMIT_OUTLINE_PHASE_TOOLS];
-const OUTLINE_SUBMIT_TOOL_NAMES = new Set(
-  OUTLINE_SUBMIT_TOOL_DEFS.map((t) => t.name),
+const OUTLINE_SUBMIT_TOOL_DEF = vfsToolRegistry.getDefinition(
+  "vfs_finish_outline",
 );
+const OUTLINE_SUBMIT_TOOL_NAMES = new Set([OUTLINE_SUBMIT_TOOL_DEF.name]);
 
 const getOutlineSubmitToolByPhase = (phase: number): ZodToolDefinition => {
-  const tool = OUTLINE_SUBMIT_TOOL_DEFS[phase];
-  if (!tool) {
+  if (!Number.isInteger(phase) || phase < 0 || phase > 9) {
     throw new Error(`Outline phase commit tool is missing for phase ${phase}`);
   }
-  return tool;
+  return OUTLINE_SUBMIT_TOOL_DEF;
 };
 
 const submitToolNameByPhase = (phase: number): string =>
@@ -279,7 +272,7 @@ const buildOutlineResumeAnchor = (
   partial: PartialStoryOutline,
 ): string => {
   const safeCurrentPhase = Math.max(0, Math.min(9, Math.floor(currentPhase)));
-  const currentSubmitTool = `vfs_commit_outline_phase_${safeCurrentPhase}`;
+  const currentSubmitTool = "vfs_finish_outline";
   const currentArtifactPaths = getOutlinePhaseArtifactPaths(safeCurrentPhase);
 
   const completedPhaseNumbers = Array.from(
@@ -313,6 +306,7 @@ You are RESUMING an interrupted outline generation session.
 
 Current phase: ${safeCurrentPhase}
 Current submit tool: ${currentSubmitTool}
+Current submit payload shape: \`{ phase: ${safeCurrentPhase}, data: { ...phase schema... } }\`
 Completed phases: ${completedPhaseNumbers.length > 0 ? completedPhaseNumbers.join(", ") : "none"}
 Missing completed artifacts (should re-read/repair before submit): ${
     missingCompletedPhases.length > 0
@@ -1253,6 +1247,19 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
             }
 
             const submitArgs = submitArgsParsed.data;
+            if (submitArgs.phase !== phaseNum) {
+              toolResponses.push({
+                toolCallId: tc.id!,
+                name: tc.name,
+                content: {
+                  success: false,
+                  error:
+                    `Phase ${phaseNum}: submit payload must set phase=${phaseNum}, got phase=${submitArgs.phase}.`,
+                  code: "INVALID_DATA",
+                },
+              });
+              continue;
+            }
 
             const validatedDataParsed = phaseSchema.safeParse(submitArgs.data);
             if (!validatedDataParsed.success) {

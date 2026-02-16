@@ -21,7 +21,7 @@ import {
 import { narrativeCausality } from "../../../prompts/atoms/narrative";
 import { languageEnforcement } from "../../../prompts/atoms/cultural";
 import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
-import { VFS_TOOLSETS, formatVfsToolsForPrompt } from "../../../vfsToolsets";
+import { vfsToolRegistry } from "../../../vfs/tools";
 import { canonicalizeLanguage } from "../../../prompts/languageCanonical";
 import { formatLoopSkillBaseline } from "../../../prompts/skills/loopSkillBaseline";
 
@@ -66,11 +66,16 @@ const summaryToolsAtom = defineAtom(
     source: "ai/agentic/summary/summaryContext.ts",
     exportName: "summaryToolsAtom",
   },
-  () => `<tools>
+  () => {
+    const summaryToolset = vfsToolRegistry.getToolset("summary");
+    const toolList = summaryToolset.tools
+      .map((toolName) => `- \`${toolName}\``)
+      .join("\n");
+    return `<tools>
 You have these tools available:
 
 Tool allowlist for this loop:
-${formatVfsToolsForPrompt(VFS_TOOLSETS.summary.tools)}
+${toolList}
 
 Read-only tools:
 1. \`vfs_ls\` - Locate files, pattern-match with \`patterns\`, and optionally inspect metadata via \`stat=true\`
@@ -79,15 +84,15 @@ Read-only tools:
 4. \`vfs_search\` - Find details in the VFS (read-only)
 
 Finish tool:
-5. \`vfs_commit_summary\` - Finish by appending a summary to \`current/summary/state.json\`
+5. \`vfs_finish_summary\` - Finish by appending a summary to \`current/summary/state.json\`
 
 Loop quick-start (recommended):
 ${summaryBaselineLines.join("\n")}
 5) Read fork anchors (\`current/conversation/index.json\`, turn files, summary state).
 6) Session preflight: read soul anchors once per read-epoch (\`current/world/soul.md\`, \`current/world/global/soul.md\`) for player-preference alignment.
-7) Draft summary fields, then finish once with \`vfs_commit_summary\` as the LAST tool call.
+7) Draft summary fields, then finish once with \`vfs_finish_summary\` as the LAST tool call.
 
-When you have enough information, call \`vfs_commit_summary\`.
+When you have enough information, call \`vfs_finish_summary\`.
 It MUST be your LAST tool call.
 
 Before any summary mutation, read command protocol (hub first):
@@ -133,13 +138,14 @@ Structured error recovery flow (if a tool returns \`{ success:false, code, error
   - lineCount: \`40\`
 
 - Example (finish):
-  Call \`vfs_commit_summary\` with:
+  Call \`vfs_finish_summary\` with:
   - displayText: "..."
   - visible: { narrative, majorEvents, characterDevelopment, worldState }
   - hidden: { truthNarrative, hiddenPlots, npcActions, worldTruth, unrevealed }
   - (Do NOT provide nodeRange/lastSummarizedIndex; runtime injects these)
 </examples>
-</tools>`,
+</tools>`;
+  },
 );
 
 const summaryCriticalRulesAtom = defineAtom(
@@ -361,7 +367,7 @@ ${pendingPlayerAction.text}
   }
 
   parts.push(`<finish_rule>
-When ready, call vfs_commit_summary(...).
+When ready, call vfs_finish_summary(...).
 It MUST be your LAST tool call.
 </finish_rule>`);
 

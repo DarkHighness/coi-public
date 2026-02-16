@@ -75,7 +75,7 @@ const errorRecovery = `
   - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, \`vfs_read({ path: "current/refs/tools/<tool>.md" })\` and (for JSON targets) \`vfs_schema({ paths: ["<targetPath>"] })\`
   - If a read hit char-cap/size limits, retry with \`mode: "json"\` + \`pointers\` or \`mode: "lines"\` with a narrow range
   - If patch reports path/add/schema mismatch, stop repeating the same payload; inspect parent pointers/path first and switch strategy
-  - If \`ALREADY_EXISTS\`, \`vfs_read({ path: "<targetPath>" })\` then update via \`vfs_write\` (\`patch_json\` / \`merge_json\`)
+  - If \`ALREADY_EXISTS\`, \`vfs_read({ path: "<targetPath>" })\` then update via \`vfs_mutate\` (\`patch_json\` / \`merge_json\`)
   - If \`FINISH_GUARD_REQUIRED\`, use the loop's finish tool (never generic mutation tools on guarded paths)
   - After writable write failure, enter repair mode: next calls target only failed writes (inspect+retry) until resolved
   - Do NOT call finish repeatedly while writable failed targets remain
@@ -91,7 +91,7 @@ const toolMandate = `
   Reasoning alone produces nothing. Tools produce results.
 
   **Minimum Requirement**:
-  At least call the loop finish tool (\`vfs_commit_turn\` for normal/\`[SUDO]\`, \`vfs_commit_soul\` for \`[Player Rate]\`). Ideally: inspect → update → finish.
+  At least call the loop finish tool (\`vfs_finish_turn\` for normal/\`[SUDO]\`, \`vfs_finish_soul\` for \`[Player Rate]\`). Ideally: inspect → update → finish.
 
   **Banned Patterns**:
   - ❌ Response with only text (no tool calls)
@@ -232,7 +232,7 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
 3. In normal [PLAYER_ACTION] turns, proactively refine soul files when strong evidence emerges
 4. Route [SUDO] to elevated update workflow
 5. Handle [ERROR] by retrying with corrected arguments
-6. Finish with the marker-appropriate finish tool (Player Rate => \`vfs_commit_soul\`)
+6. Finish with the marker-appropriate finish tool (Player Rate => \`vfs_finish_soul\`)
 7. Search before creating entities
 8. "You" in rules = AI, "You" in narrative = protagonist
 `.trim(),

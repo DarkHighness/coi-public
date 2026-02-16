@@ -41,7 +41,7 @@ describe("errorPolicy", () => {
   it("builds minimal malformed feedback with raw provider error", () => {
     const feedback = buildMalformedToolCallFeedback({
       rawMessage: "invalid tool payload: expected object",
-      finishToolName: "vfs_commit_turn",
+      finishToolName: "vfs_finish_turn",
     });
 
     expect(feedback).toContain("MALFORMED_TOOL_CALL");
@@ -49,7 +49,7 @@ describe("errorPolicy", () => {
       "Raw provider error: invalid tool payload: expected object",
     );
     expect(feedback).toContain(
-      'If you call "vfs_commit_turn", it must be the LAST tool call.',
+      'If you call "vfs_finish_turn", it must be the LAST tool call.',
     );
   });
 

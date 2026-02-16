@@ -40,7 +40,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -58,12 +58,12 @@ describe("VFS handlers mutations", () => {
     expect(stored?.contentType).toBe("application/json");
   });
 
-  it("writes and reads a JSON file via vfs_write ops", () => {
+  it("writes and reads a JSON file via vfs_mutate ops", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const writeResult = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -100,7 +100,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -116,18 +116,18 @@ describe("VFS handlers mutations", () => {
 
     expect(blocked.success).toBe(false);
     expect(blocked.code).toBe("INVALID_ACTION");
-    expect(blocked.details?.tool).toBe("vfs_write");
+    expect(blocked.details?.tool).toBe("vfs_mutate");
     expect(blocked.details?.batch).toMatchObject({
       index: 1,
       total: 1,
       operation: "write_file",
     });
-    expect(blocked.details?.refs).toContain("current/refs/tools/vfs_write.md");
+    expect(blocked.details?.refs).toContain("current/refs/tools/vfs_mutate.md");
 
     dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
 
     const ok = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -149,17 +149,21 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const moveFail = dispatchToolCall(
-      "vfs_move",
+      "vfs_mutate",
       {
-        moves: [
-          { from: "current/world/missing.json", to: "current/world/new.json" },
+        ops: [
+          {
+            op: "move",
+            from: "current/world/missing.json",
+            to: "current/world/new.json",
+          },
         ],
       },
       ctx,
     ) as any;
 
     expect(moveFail.success).toBe(false);
-    expect(moveFail.details?.tool).toBe("vfs_move");
+    expect(moveFail.details?.tool).toBe("vfs_mutate");
     expect(moveFail.details?.batch).toMatchObject({
       index: 1,
       total: 1,
@@ -167,13 +171,15 @@ describe("VFS handlers mutations", () => {
     });
 
     const deleteFail = dispatchToolCall(
-      "vfs_delete",
-      { paths: ["current/world/missing.md"] },
+      "vfs_mutate",
+      {
+        ops: [{ op: "delete", path: "current/world/missing.md" }],
+      },
       ctx,
     ) as any;
 
     expect(deleteFail.success).toBe(false);
-    expect(deleteFail.details?.tool).toBe("vfs_delete");
+    expect(deleteFail.details?.tool).toBe("vfs_mutate");
     expect(deleteFail.details?.batch).toMatchObject({
       index: 1,
       total: 1,
@@ -191,7 +197,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -210,7 +216,7 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
 
     const ok = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -237,7 +243,7 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -270,7 +276,7 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -291,7 +297,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -329,7 +335,7 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/quests/quest:test.json" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -367,7 +373,7 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/quests/quest:test.json" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -398,7 +404,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -438,7 +444,7 @@ describe("VFS handlers mutations", () => {
     );
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -461,7 +467,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const create = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -479,7 +485,7 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const append = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -497,7 +503,7 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const edit = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -534,7 +540,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -559,7 +565,7 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -583,8 +589,8 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const blocked = dispatchToolCall(
-      "vfs_delete",
-      { paths: ["current/world/notes.md"] },
+      "vfs_mutate",
+      { ops: [{ op: "delete", path: "current/world/notes.md" }] },
       ctx,
     ) as any;
 
@@ -594,8 +600,8 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
 
     const ok = dispatchToolCall(
-      "vfs_delete",
-      { paths: ["current/world/notes.md"] },
+      "vfs_mutate",
+      { ops: [{ op: "delete", path: "current/world/notes.md" }] },
       ctx,
     ) as any;
 
@@ -611,7 +617,7 @@ describe("VFS handlers mutations", () => {
     };
 
     const writeResult = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -634,12 +640,12 @@ describe("VFS handlers mutations", () => {
     );
   });
 
-  it("requires reading destination before vfs_move overwrites it", () => {
+  it("requires reading destination before vfs_mutate overwrites it", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const seed = dispatchToolCall(
-      "vfs_write",
+      "vfs_mutate",
       {
         ops: [
           {
@@ -662,20 +668,28 @@ describe("VFS handlers mutations", () => {
     expect(seed.success).toBe(true);
 
     const blocked = dispatchToolCall(
-      "vfs_move",
-      { moves: [{ from: "current/world/a.txt", to: "current/world/b.txt" }] },
+      "vfs_mutate",
+      {
+        ops: [
+          { op: "move", from: "current/world/a.txt", to: "current/world/b.txt" },
+        ],
+      },
       ctx,
     ) as any;
 
     expect(blocked.success).toBe(false);
     expect(blocked.code).toBe("INVALID_ACTION");
-    expect(blocked.details?.tool).toBe("vfs_move");
+    expect(blocked.details?.tool).toBe("vfs_mutate");
 
     dispatchToolCall("vfs_read", { path: "current/world/b.txt" }, ctx);
 
     const ok = dispatchToolCall(
-      "vfs_move",
-      { moves: [{ from: "current/world/a.txt", to: "current/world/b.txt" }] },
+      "vfs_mutate",
+      {
+        ops: [
+          { op: "move", from: "current/world/a.txt", to: "current/world/b.txt" },
+        ],
+      },
       ctx,
     ) as any;
 

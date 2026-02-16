@@ -346,7 +346,7 @@ describe("openaiProvider helper conversions", () => {
           type: "tool_use",
           toolUse: {
             id: "call-3",
-            name: "vfs_write",
+            name: "vfs_mutate",
             args: { path: "current/world/story.json" },
             thoughtSignature: "sig-3",
           },
@@ -362,7 +362,7 @@ describe("openaiProvider helper conversions", () => {
           id: "call-3",
           type: "function",
           function: {
-            name: "vfs_write",
+            name: "vfs_mutate",
             arguments: JSON.stringify({ path: "current/world/story.json" }),
           },
           extra_content: {

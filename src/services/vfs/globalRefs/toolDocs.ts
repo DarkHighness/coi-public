@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { ALL_DEFINED_TOOLS } from "../../tools";
 import { getToolSchemaHint } from "../../providers/utils";
+import { vfsToolRegistry } from "../tools";
 import type { VfsFile, VfsFileMap, VfsContentType } from "../types";
 import { hashContent } from "../utils";
 
@@ -61,7 +61,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
     { query: "dragon", path: "current/world", limit: 20 },
     { query: "dragn", path: "current/world", fuzzy: true },
   ],
-  vfs_write: [
+  vfs_mutate: [
     {
       ops: [
         {
@@ -85,33 +85,31 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
           path: "current/world/global.json",
           content: { turnNumber: 2 },
         },
-      ],
-    },
-  ],
-  vfs_move: [
-    {
-      moves: [
         {
+          op: "move",
           from: "current/world/tmp.md",
           to: "current/world/archive/tmp.md",
+        },
+        {
+          op: "delete",
+          path: "current/world/archive/old.tmp",
         },
       ],
     },
   ],
-  vfs_delete: [{ paths: ["current/world/tmp.md"] }],
-  vfs_commit_turn: [
+  vfs_finish_turn: [
     {
       userAction: "Inspect the ruined gate",
       assistant: {
         narrative: "You brush moss aside and find fresh claw marks.",
         choices: [
-          { text: "Follow the tracks", consequence: null },
-          { text: "Set up camp nearby", consequence: null },
+          { text: "Follow the tracks" },
+          { text: "Set up camp nearby" },
         ],
       },
     },
   ],
-  vfs_commit_soul: [
+  vfs_finish_soul: [
     {
       currentSoul:
         "# Player Soul (This Save)\\n\\n## Guidance For AI\\n- Keep prose tighter when player asks for concise style.\\n",
@@ -127,7 +125,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
         "# Player Soul (Global)\\n\\n## Style Preferences\\n- Prefer direct, concrete wording.\\n",
     },
   ],
-  vfs_commit_summary: [
+  vfs_finish_summary: [
     {
       displayText: "The party reached the ruins and uncovered recent activity.",
       visible: {
@@ -144,6 +142,12 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
         worldTruth: "The ambush route is prepared.",
         unrevealed: ["Faction leader identity"],
       },
+    },
+  ],
+  vfs_finish_outline: [
+    {
+      phase: 0,
+      data: "<See SCHEMA section for phase payload fields>",
     },
   ],
 };
@@ -244,22 +248,22 @@ const buildExampleFromObject = (
 
 const buildExamplesForTool = (
   toolName: string,
-  schema: z.ZodObject<any>,
+  schema: z.ZodTypeAny,
 ): JsonValue[] => {
-  if (toolName.startsWith("vfs_commit_outline_phase_")) {
-    return [{ data: "<See SCHEMA section for phase payload fields>" }];
-  }
   const override = TOOL_EXAMPLE_OVERRIDES[toolName];
   if (override && override.length > 0) {
     return override;
   }
-  return [buildExampleFromObject(schema)];
+  if (schema instanceof z.ZodObject) {
+    return [buildExampleFromObject(schema)];
+  }
+  return [sampleValueForSchema(schema)];
 };
 
 const buildToolDocMarkdown = (
   toolName: string,
   description: string,
-  schema: z.ZodObject<any>,
+  schema: z.ZodTypeAny,
 ): string => {
   const schemaHint = getToolSchemaHint(schema, "", { toolName });
   const examples = buildExamplesForTool(toolName, schema);
@@ -277,7 +281,7 @@ const buildToolDocMarkdown = (
   return [
     "---",
     `tool: ${toolName}`,
-    "generatedFrom: ALL_DEFINED_TOOLS",
+    "generatedFrom: vfsToolRegistry",
     "---",
     "",
     `# ${toolName}`,
@@ -297,13 +301,14 @@ const buildToolDocMarkdown = (
 };
 
 const buildToolsReadme = (): string => {
-  const toolLines = ALL_DEFINED_TOOLS.map(
+  const allTools = vfsToolRegistry.getDefinitions();
+  const toolLines = allTools.map(
     (tool) => `- \`${tool.name}\` -> \`refs/tools/${tool.name}.md\``,
   );
   return [
     "# Tool Docs Reference (VFS)",
     "",
-    "Generated from `ALL_DEFINED_TOOLS`.",
+    "Generated from `vfsToolRegistry.getDefinitions()`.",
     "",
     "## Usage",
     '- List docs: `vfs_ls({ path: "current/refs/tools" })`',
@@ -319,14 +324,15 @@ const buildToolsReadme = (): string => {
 };
 
 const buildToolsIndex = (): string => {
-  const entries = ALL_DEFINED_TOOLS.map((tool) => ({
+  const allTools = vfsToolRegistry.getDefinitions();
+  const entries = allTools.map((tool) => ({
     name: tool.name,
     path: `current/refs/tools/${tool.name}.md`,
     description: tool.description,
   }));
   return JSON.stringify(
     {
-      generatedFrom: "ALL_DEFINED_TOOLS",
+      generatedFrom: "vfsToolRegistry",
       count: entries.length,
       tools: entries,
     },
@@ -337,11 +343,12 @@ const buildToolsIndex = (): string => {
 
 export const buildGlobalVfsToolDocs = (): VfsFileMap => {
   const files: VfsFileMap = {};
+  const allTools = vfsToolRegistry.getDefinitions();
 
   addText(files, "refs/tools/README.md", buildToolsReadme());
   addText(files, "refs/tools/index.json", buildToolsIndex());
 
-  for (const tool of ALL_DEFINED_TOOLS) {
+  for (const tool of allTools) {
     const doc = buildToolDocMarkdown(
       tool.name,
       tool.description,

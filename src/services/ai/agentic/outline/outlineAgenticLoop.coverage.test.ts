@@ -238,24 +238,29 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       },
     };
 
-    const dataByToolName: Record<string, unknown> = {
-      vfs_commit_outline_phase_1: phase1,
-      vfs_commit_outline_phase_2: phase2,
-      vfs_commit_outline_phase_3: phase3,
-      vfs_commit_outline_phase_4: phase4,
-      vfs_commit_outline_phase_5: phase5,
-      vfs_commit_outline_phase_6: phase6,
-      vfs_commit_outline_phase_7: phase7,
-      vfs_commit_outline_phase_8: phase8,
-      vfs_commit_outline_phase_9: phase9,
-    };
+    const phasePayloads = [
+      phase1,
+      phase2,
+      phase3,
+      phase4,
+      phase5,
+      phase6,
+      phase7,
+      phase8,
+      phase9,
+    ];
+    let submitCount = 0;
 
     mockCallWithAgenticRetry.mockImplementation(
       async (_provider: any, _request: any, _history: any, opts: any) => {
         const toolName = String(opts?.finishToolName ?? "");
-        const data = dataByToolName[toolName];
-        if (!toolName || !data) {
-          throw new Error(`Unexpected finishToolName in test: "${toolName}"`);
+        const data = phasePayloads[submitCount];
+        const phase = submitCount + 1;
+        submitCount += 1;
+        if (!toolName || !data || toolName !== "vfs_finish_outline") {
+          throw new Error(
+            `Unexpected finishToolName in test: "${toolName}" (${submitCount})`,
+          );
         }
         return {
           result: {
@@ -263,7 +268,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
               {
                 id: `call_${toolName}`,
                 name: toolName,
-                args: { data },
+                args: { phase, data },
               },
             ],
           },

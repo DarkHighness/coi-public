@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ALL_DEFINED_TOOLS } from "../../tools";
+import { vfsToolRegistry } from "../../vfs/tools";
 import { getToolInfo, getToolSchemaHint } from "../utils";
+
+const ALL_DEFINED_TOOLS = vfsToolRegistry.getDefinitions();
 
 describe("all tool schema hints", () => {
   it("do not expose unhelpful any/unknown types", () => {

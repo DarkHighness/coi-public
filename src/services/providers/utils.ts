@@ -29,7 +29,7 @@ import { AIProviderError } from "./types";
 export interface ZodToolDefinition {
   name: string;
   description: string;
-  parameters: ZodObject<any>;
+  parameters: ZodTypeAny;
 }
 
 /**
@@ -211,7 +211,7 @@ const VFS_INTERNAL_FIELDS = new Set([
 export const RUNTIME_INJECTED_FIELD_MARKER = "@runtimeInjected";
 
 const RUNTIME_INJECTED_FIELDS_BY_TOOL: Record<string, readonly string[]> = {
-  vfs_commit_summary: ["nodeRange", "lastSummarizedIndex", "id", "createdAt"],
+  vfs_finish_summary: ["nodeRange", "lastSummarizedIndex", "id", "createdAt"],
 };
 
 type ToolHintOptions = {

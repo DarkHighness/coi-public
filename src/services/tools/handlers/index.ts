@@ -1,18 +1,30 @@
 /**
- * Tool Handler Registry Index
+ * V2 Tool Handler Entry
  *
- * Importing this file registers all tool handlers.
- * Import this once in your application entry point or in the agentic loop.
+ * Dispatches VFS tools through the centralized vfsToolDispatcher.
  */
 
-// Import only VFS handlers to trigger registration
-import "./vfsHandlers";
+import { vfsToolDispatcher } from "../../vfs/tools";
+import type { ToolContext } from "../toolHandlerRegistry";
 
-// Re-export registry functions for convenience
-export {
-  dispatchToolCall,
-  dispatchToolCallAsync,
-  hasHandler,
-} from "../toolHandlerRegistry";
+export function hasHandler(name: string): boolean {
+  return vfsToolDispatcher.has(name);
+}
 
-export type { ToolContext } from "../toolHandlerRegistry";
+export function dispatchToolCall(
+  name: string,
+  args: Record<string, unknown>,
+  context: ToolContext,
+): unknown | Promise<unknown> {
+  return vfsToolDispatcher.dispatch(name, args, context);
+}
+
+export async function dispatchToolCallAsync(
+  name: string,
+  args: Record<string, unknown>,
+  context: ToolContext,
+): Promise<unknown> {
+  return vfsToolDispatcher.dispatchAsync(name, args, context);
+}
+
+export type { ToolContext };

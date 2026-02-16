@@ -56,7 +56,7 @@ describe("VFS handlers search/commit", () => {
     const ctx = { vfsSession: session };
 
     const commit = dispatchToolCall(
-      "vfs_commit_turn",
+      "vfs_finish_turn",
       {
         userAction: "look around",
         assistant: {
@@ -80,12 +80,12 @@ describe("VFS handlers search/commit", () => {
     expect(JSON.parse(index.data.content).activeTurnId).toBe("fork-0/turn-1");
   });
 
-  it("validates and commits summary via finish tool", () => {
+  it("requires runtime-injected fields for summary finish tool", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const invalid = dispatchToolCall(
-      "vfs_commit_summary",
+      "vfs_finish_summary",
       {
         ...createSummaryPayload(),
       },
@@ -94,44 +94,17 @@ describe("VFS handlers search/commit", () => {
 
     expect(invalid.success).toBe(false);
     expect(invalid.code).toBe("INVALID_DATA");
-
-    const commit = dispatchToolCall(
-      "vfs_commit_summary",
-      {
-        ...createSummaryPayload(),
-        nodeRange: { fromIndex: 0, toIndex: 0 },
-        lastSummarizedIndex: 1,
-      },
-      ctx,
-    ) as any;
-
-    expect(commit.success).toBe(true);
-    expect(commit.data.path).toBe("current/summary/state.json");
-
-    const summaryState = dispatchToolCall(
-      "vfs_read",
-      {
-        path: "current/summary/state.json",
-        mode: "json",
-        pointers: ["/lastSummarizedIndex", "/summaries/0/displayText"],
-      },
-      ctx,
-    ) as any;
-
-    expect(summaryState.success).toBe(true);
-    expect(summaryState.data.extracts[0].json).toBe("1");
-    expect(summaryState.data.extracts[1].json).toBe('"A short recap."');
   });
 
   it("commits soul markdown with dedicated finish tool", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
-    const invalid = dispatchToolCall("vfs_commit_soul", {}, ctx) as any;
+    const invalid = dispatchToolCall("vfs_finish_soul", {}, ctx) as any;
     expect(invalid.success).toBe(false);
 
     const commit = dispatchToolCall(
-      "vfs_commit_soul",
+      "vfs_finish_soul",
       {
         currentSoul: "# Player Soul (This Save)\n\n## Guidance For AI\n- Keep concise.\n",
         globalSoul: "# Player Soul (Global)\n\n## Guidance For AI\n- Reduce AI flavor.\n",

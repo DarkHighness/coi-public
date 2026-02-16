@@ -6,12 +6,8 @@
  * Messages injected into the conversation history by contextInjector.
  */
 import type { Atom } from "../types";
-import {
-  VFS_TOOLSETS,
-  formatVfsToolCapabilitiesForPrompt,
-  formatVfsToolsForPrompt,
-} from "../../../vfsToolsets";
-import type { VfsToolsetId } from "../../../vfsToolsets";
+import { vfsToolRegistry } from "../../../vfs/tools";
+import type { VfsToolsetId } from "../../../vfs/tools";
 import { defineAtom } from "../../trace/runtime";
 
 export interface SystemMessageInput {
@@ -56,6 +52,12 @@ const gateSemanticCapabilityText = (
     .replaceAll("semantic, when available", "");
 };
 
+const formatToolListForPrompt = (toolsetId: VfsToolsetId): string =>
+  vfsToolRegistry
+    .getToolset(toolsetId)
+    .tools.map((name) => `- \`${name}\``)
+    .join("\n");
+
 /**
  * SUDO Mode Instruction
  */
@@ -68,7 +70,7 @@ export const sudoModeInstruction: Atom<SystemMessageInput> = defineAtom(
   (input) => {
     const { toolsetId = "turn", ragEnabled = true } = input || {};
     const capabilityText = gateSemanticCapabilityText(
-      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[toolsetId].tools),
+      vfsToolRegistry.formatCapabilitiesForPrompt(toolsetId),
       ragEnabled,
     );
 
@@ -76,7 +78,7 @@ export const sudoModeInstruction: Atom<SystemMessageInput> = defineAtom(
 This is a **GM COMMAND**. You must:
 1. The user action is already prefixed with **[SUDO]**. Treat it as a forced elevated update payload, while still respecting immutable/finish policy constraints.
 2. Use **VFS-only tools** (this loop's allowlist):
-   ${formatVfsToolsForPrompt(VFS_TOOLSETS[toolsetId].tools)}
+   ${formatToolListForPrompt(toolsetId)}
 3. Respect this **TOOL CAPABILITY CONTRACT** (runtime source of truth):
    ${capabilityText}
 4. **PATH MODEL**:
@@ -87,7 +89,7 @@ This is a **GM COMMAND**. You must:
 7. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
 8. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
 9. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
-10. **FINISH RULE**: Your LAST tool call must be \`vfs_commit_turn\`.
+10. **FINISH RULE**: Your LAST tool call must be \`vfs_finish_turn\`.
 11. ${CONVERSATION_GUARD_LINE}
 `;
   },
@@ -104,12 +106,12 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
   },
   ({ finishToolName, toolsetId, ragEnabled = true }) => {
     const resolvedToolsetId =
-      toolsetId ?? (finishToolName === "vfs_commit_soul" ? "playerRate" : "turn");
+      toolsetId ?? (finishToolName === "vfs_finish_soul" ? "playerRate" : "turn");
     const isPlayerRateToolset = resolvedToolsetId === "playerRate";
     const resolvedFinishToolName =
-      finishToolName || VFS_TOOLSETS[resolvedToolsetId].finishToolName;
+      finishToolName || vfsToolRegistry.getToolset(resolvedToolsetId).finishToolName;
     const capabilityText = gateSemanticCapabilityText(
-      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS[resolvedToolsetId].tools),
+      vfsToolRegistry.formatCapabilitiesForPrompt(resolvedToolsetId),
       ragEnabled,
     );
 
@@ -117,7 +119,7 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
 You are in AGENTIC MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
    AVAILABLE TOOLS in this loop:
-   ${formatVfsToolsForPrompt(VFS_TOOLSETS[resolvedToolsetId].tools)}
+   ${formatToolListForPrompt(resolvedToolsetId)}
 2. Respect this **TOOL CAPABILITY CONTRACT**:
    ${capabilityText}
 3. **PATH MODEL**:
@@ -133,11 +135,11 @@ You are in AGENTIC MODE (VFS-only).
    - In \`vfs_read\` \`mode: "json"\`, \`pointers\` is REQUIRED; do not call json mode without pointers.
 8. ${
       isPlayerRateToolset
-        ? "**SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` by calling `vfs_commit_soul`."
-        : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with `vfs_write` using `write_file` / `patch_json` / `merge_json`. Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are writable and may be proactively refined via `vfs_write` when evidence is strong."
+        ? "**SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` by calling `vfs_finish_soul`."
+        : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with `vfs_mutate` using `write_file` / `patch_json` / `merge_json`. Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are writable and may be proactively refined via `vfs_mutate` when evidence is strong."
     }
 9. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
-   - For \`vfs_commit_turn\`, use exact args shape: \`{ userAction: "<string>", assistant: { narrative: "<string>", choices: [...] } }\`.
+   - For \`vfs_finish_turn\`, use exact args shape: \`{ userAction: "<string>", assistant: { narrative: "<string>", choices: [...] } }\`.
    - \`userAction\` MUST be top-level; never nest \`userAction\` inside \`assistant\`.
 10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, your next calls must repair those failed targets (inspect+retry same targets). Do NOT call \`${resolvedFinishToolName}\` until they succeed.
@@ -155,8 +157,8 @@ You are in AGENTIC MODE (VFS-only).
 - Example (${isPlayerRateToolset ? "inspect → soul commit" : "inspect → edit → finish"}):
   ${
     isPlayerRateToolset
-      ? "1) `vfs_read` `current/world/soul.md` and `current/world/global/soul.md`\n  2) `vfs_commit_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
-      : "1) `vfs_search` within `current/world/` (or canonical fork world path) for a name/ID\n  2) `vfs_write` to patch the exact JSON pointer(s)\n  3) `" +
+      ? "1) `vfs_read` `current/world/soul.md` and `current/world/global/soul.md`\n  2) `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
+      : "1) `vfs_search` within `current/world/` (or canonical fork world path) for a name/ID\n  2) `vfs_mutate` to patch the exact JSON pointer(s)\n  3) `" +
         resolvedFinishToolName +
         "` with `{ userAction: \"...\", assistant: { narrative: \"...\", choices: [...] } }` as the LAST call (never `assistant.userAction`)"
   }
@@ -176,7 +178,7 @@ export const cleanupTurnInstruction: Atom<SystemMessageInput> = defineAtom(
   },
   ({ finishToolName, ragEnabled = true }) => {
     const capabilityText = gateSemanticCapabilityText(
-      formatVfsToolCapabilitiesForPrompt(VFS_TOOLSETS.cleanup.tools),
+      vfsToolRegistry.formatCapabilitiesForPrompt("cleanup"),
       ragEnabled,
     );
 
@@ -184,7 +186,7 @@ export const cleanupTurnInstruction: Atom<SystemMessageInput> = defineAtom(
 You are in CLEANUP MODE (VFS-only).
 1. You may ONLY use \`vfs_*\` tools. No other tools exist.
    AVAILABLE TOOLS in this loop:
-   ${formatVfsToolsForPrompt(VFS_TOOLSETS.cleanup.tools)}
+   ${formatToolListForPrompt("cleanup")}
 2. Respect this **TOOL CAPABILITY CONTRACT**:
    ${capabilityText}
 3. **PATH MODEL**:
@@ -195,8 +197,8 @@ You are in CLEANUP MODE (VFS-only).
 6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
 7. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read\` to locate and verify duplicate candidates.
    - For large JSON, prefer pointer/line scoped reads instead of broad full-file char reads.
-8. **APPLY FIXES**: Use \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` as needed.
-9. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_commit_turn"}\`.
+8. **APPLY FIXES**: Use \`vfs_mutate\` (\`patch_json\` / \`merge_json\` / \`move\` / \`delete\`) as needed.
+9. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_finish_turn"}\`.
 10. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, next calls must repair those failed targets first; do not finish until resolved.
 12. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
@@ -205,8 +207,8 @@ You are in CLEANUP MODE (VFS-only).
 - Example (find duplicates → fix → finish):
   1) \`vfs_ls\`/ \`vfs_search\` to gather candidate files
   2) \`vfs_read\` each candidate to verify duplicates
-  3) \`vfs_write\` (\`patch_json\` / \`merge_json\`) / \`vfs_move\` / \`vfs_delete\` to resolve
-  4) \`${finishToolName || "vfs_commit_turn"}\` as the LAST call
+  3) \`vfs_mutate\` (\`patch_json\` / \`merge_json\` / \`move\` / \`delete\`) to resolve
+  4) \`${finishToolName || "vfs_finish_turn"}\` as the LAST call
 </examples>
 `;
   },
@@ -251,7 +253,7 @@ export const retconAckRequiredMessage: Atom<RetconAckSystemMessageInput> =
       exportName: "retconAckRequiredMessage",
     },
     ({ pendingHash, pendingReason }) =>
-      `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- hash: "${pendingHash}"\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.\nUse \`vfs_commit_turn\` with matching \`retconAck.hash\`.`,
+      `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- hash: "${pendingHash}"\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.\nUse \`vfs_finish_turn\` with matching \`retconAck.hash\`.`,
   );
 
 /**
@@ -264,5 +266,5 @@ export const noToolCallError: Atom<SystemMessageInput> = defineAtom(
     exportName: "noToolCallError",
   },
   ({ finishToolName }) =>
-    `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`${finishToolName || "vfs_commit_turn"}\` as the LAST tool call. Bare text is not allowed.`,
+    `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read\`, then end the turn with \`${finishToolName || "vfs_finish_turn"}\` as the LAST tool call. Bare text is not allowed.`,
 );

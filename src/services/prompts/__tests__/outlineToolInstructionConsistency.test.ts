@@ -10,7 +10,7 @@ describe("outline tool instruction consistency", () => {
     const systemPrompt = getOutlineSystemInstruction({ language: "en" });
     const phasePrelude = getOutlinePhasePreludePrompt(
       1,
-      "vfs_commit_outline_phase_1",
+      "vfs_finish_outline",
       {
         theme: "fantasy",
         language: "en",
@@ -26,7 +26,7 @@ describe("outline tool instruction consistency", () => {
     expect(phasePrelude).toContain("[PHASE 1 PRELUDE: ROUND CONTRACT]");
     expect(phasePrelude).toContain("Use native function/tool calling");
     expect(phasePrelude).toContain("Tool names are exact and unprefixed");
-    expect(phasePrelude).toContain("vfs_commit_outline_phase_1");
+    expect(phasePrelude).toContain("vfs_finish_outline");
   });
 
   it("phase 1 prompt enforces master plan markdown and governance metadata", () => {

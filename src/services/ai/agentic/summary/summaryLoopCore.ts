@@ -23,7 +23,7 @@ import {
 } from "../budgetUtils";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { readConversationIndex } from "../../../vfs/conversation";
-import { VFS_TOOLSETS } from "../../../vfsToolsets";
+import { vfsToolRegistry } from "../../../vfs/tools";
 import {
   CURRENT_SOUL_LOGICAL_PATH,
   GLOBAL_SOUL_LOGICAL_PATH,
@@ -171,7 +171,7 @@ const validateCommitSummaryArgs = (
     return {
       ok: false,
       code: "INVALID_DATA",
-      error: `[ERROR: ${runtimeFieldErrorCodePrefix}_RUNTIME_FIELDS_FORBIDDEN] vfs_commit_summary runtime fields (nodeRange/lastSummarizedIndex/id/createdAt) are system-managed. Provide only summary content fields.`,
+      error: `[ERROR: ${runtimeFieldErrorCodePrefix}_RUNTIME_FIELDS_FORBIDDEN] vfs_finish_summary runtime fields (nodeRange/lastSummarizedIndex/id/createdAt) are system-managed. Provide only summary content fields.`,
     };
   }
 
@@ -269,7 +269,7 @@ export async function runSummaryLoopCore(options: {
   } = options;
 
   const { settings } = input;
-  const finishToolName = VFS_TOOLSETS.summary.finishToolName;
+  const finishToolName = vfsToolRegistry.getToolset("summary").finishToolName;
 
   const loopState = createSummaryLoopState(input);
 

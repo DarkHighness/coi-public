@@ -7,8 +7,7 @@
 import type { AISettings, TokenUsage } from "../../../../types";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
-import { ALL_DEFINED_TOOLS } from "../../../tools";
-import { VFS_TOOLSETS } from "../../../vfsToolsets";
+import { vfsToolRegistry } from "../../../vfs/tools";
 import type { SummaryLoopInput } from "./summary";
 
 // ============================================================================
@@ -29,13 +28,14 @@ export function createSummaryLoopState(
   input: SummaryLoopInput,
 ): SummaryLoopState {
   const { settings } = input;
-
-  const allowed = new Set<string>(VFS_TOOLSETS.summary.tools);
+  const ragEnabled = settings.embedding?.enabled ?? false;
 
   return {
     budgetState: createBudgetState(settings, { loopType: "summary" }),
     totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    activeTools: ALL_DEFINED_TOOLS.filter((tool) => allowed.has(tool.name)),
+    activeTools: vfsToolRegistry.getDefinitionsForToolset("summary", {
+      ragEnabled,
+    }),
   };
 }
 

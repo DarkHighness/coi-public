@@ -8,11 +8,7 @@ export const READ_ONLY_INSPECTION_TOOL_NAMES = new Set([
   "vfs_search",
 ]);
 
-export const WRITE_MUTATION_TOOL_NAMES = new Set([
-  "vfs_write",
-  "vfs_move",
-  "vfs_delete",
-]);
+export const WRITE_MUTATION_TOOL_NAMES = new Set(["vfs_mutate"]);
 
 export const UNRECOVERABLE_WRITE_ERROR_CODES = new Set([
   "IMMUTABLE_READONLY",
@@ -57,35 +53,16 @@ export const collectWriteTargetsFromToolCall = (
     if (normalized) targets.add(normalized);
   };
 
-  if (call.name === "vfs_write") {
+  if (call.name === "vfs_mutate") {
     const ops = (args as any)?.ops;
     if (Array.isArray(ops)) {
       for (const op of ops) {
         pushTarget((op as any)?.path);
+        pushTarget((op as any)?.from);
+        pushTarget((op as any)?.to);
       }
     }
 
-    return Array.from(targets.values());
-  }
-
-  if (call.name === "vfs_move") {
-    const moves = (args as any)?.moves;
-    if (Array.isArray(moves)) {
-      for (const move of moves) {
-        pushTarget((move as any)?.from);
-        pushTarget((move as any)?.to);
-      }
-    }
-    return Array.from(targets.values());
-  }
-
-  if (call.name === "vfs_delete") {
-    const paths = (args as any)?.paths;
-    if (Array.isArray(paths)) {
-      for (const path of paths) {
-        pushTarget(path);
-      }
-    }
     return Array.from(targets.values());
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ALL_DEFINED_TOOLS } from "../../tools";
+import { vfsToolRegistry } from "../../vfs/tools";
 import {
   zodToGemini,
   zodToOpenAISchema,
@@ -12,6 +12,8 @@ const serialize = (value: unknown): string => JSON.stringify(value);
 
 const forbiddenOutputPattern =
   /"type"\s*:\s*"any"|"type"\s*:\s*"unknown"|Record<string,\s*any>|Array<\s*any\s*>|Array<\s*unknown\s*>/i;
+
+const ALL_DEFINED_TOOLS = vfsToolRegistry.getDefinitions();
 
 describe("provider schema guardrails", () => {
   it("keeps OpenAI/Gemini/Claude compatible tool schemas free of any/unknown textual types", () => {
@@ -74,9 +76,9 @@ describe("provider schema guardrails", () => {
     }
   });
 
-  it("keeps vfs_commit_summary schema and schemaHint free of runtime-only fields", () => {
+  it("keeps vfs_finish_summary schema and schemaHint free of runtime-only fields", () => {
     const tool = ALL_DEFINED_TOOLS.find(
-      (item) => item.name === "vfs_commit_summary",
+      (item) => item.name === "vfs_finish_summary",
     );
     expect(tool).toBeDefined();
     if (!tool) return;

@@ -134,9 +134,11 @@ const resolveRegisteredToolName = (name: string): string | null => {
  *
  * @example
  * ```ts
- * registerToolHandler(VFS_WRITE_TOOL, (args, ctx) => {
- *   const typedArgs = getTypedArgs("vfs_write", args);
- *   ctx.vfsSession.writeFile(typedArgs.files[0].path, typedArgs.files[0].content, typedArgs.files[0].contentType);
+ * registerToolHandler(VFS_MUTATE_TOOL, (args, ctx) => {
+ *   const first = (args.ops ?? [])[0] as any;
+ *   if (first?.op === "write_file") {
+ *     ctx.vfsSession.writeFile(first.path, first.content, first.contentType);
+ *   }
  *   return { success: true };
  * });
  * ```

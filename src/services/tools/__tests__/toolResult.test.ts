@@ -63,10 +63,10 @@ describe("toolResult helpers", () => {
 
   it("merges details while preserving deduped refs and inferred category", () => {
     const base = createError("blocked", "INVALID_ACTION", {
-      refs: ["current/refs/tools/vfs_write.md"],
+      refs: ["current/refs/tools/vfs_mutate.md"],
     });
     const merged = mergeToolErrorDetails(base, {
-      refs: ["current/refs/tools/vfs_write.md", "current/refs/tools/README.md"],
+      refs: ["current/refs/tools/vfs_mutate.md", "current/refs/tools/README.md"],
       recovery: ["Read file before write."],
     });
 
@@ -74,7 +74,7 @@ describe("toolResult helpers", () => {
       inferErrorCategoryFromCode("INVALID_ACTION"),
     );
     expect(merged.details?.refs).toEqual([
-      "current/refs/tools/vfs_write.md",
+      "current/refs/tools/vfs_mutate.md",
       "current/refs/tools/README.md",
     ]);
     expect(merged.details?.recovery).toEqual(["Read file before write."]);

@@ -815,7 +815,7 @@ async function processToolCalls(
   const getConversationTouchedPaths = (call: ToolCallResult): string[] => {
     const touched: string[] = [];
 
-    if (call.name === "vfs_write") {
+    if (call.name === "vfs_mutate") {
       const ops = (call.args as any)?.ops;
       if (Array.isArray(ops)) {
         for (const op of ops) {
@@ -824,32 +824,13 @@ async function processToolCalls(
           if (typeof path === "string" && isConversationPath(path)) {
             touched.push(path);
           }
-        }
-      }
-      return touched;
-    }
-
-    if (call.name === "vfs_move") {
-      const moves = (call.args as any)?.moves;
-      if (Array.isArray(moves)) {
-        for (const move of moves) {
-          if (typeof move?.from === "string" && isConversationPath(move.from)) {
-            touched.push(move.from);
+          const from = (op as any).from;
+          if (typeof from === "string" && isConversationPath(from)) {
+            touched.push(from);
           }
-          if (typeof move?.to === "string" && isConversationPath(move.to)) {
-            touched.push(move.to);
-          }
-        }
-      }
-      return touched;
-    }
-
-    if (call.name === "vfs_delete") {
-      const paths = (call.args as any)?.paths;
-      if (Array.isArray(paths)) {
-        for (const path of paths) {
-          if (typeof path === "string" && isConversationPath(path)) {
-            touched.push(path);
+          const to = (op as any).to;
+          if (typeof to === "string" && isConversationPath(to)) {
+            touched.push(to);
           }
         }
       }

@@ -28,7 +28,7 @@ describe("choice tradeoff policy", () => {
   it("enforces non-dominant options in turn output and outline prompts", () => {
     const turnPrompt = outputFormat({
       language: "en",
-      finishToolName: "vfs_commit_turn",
+      finishToolName: "vfs_finish_turn",
     });
     const outlinePrompt = getOutlinePhase9Prompt(false, "submit_phase_9");
 
@@ -40,7 +40,7 @@ describe("choice tradeoff policy", () => {
   it("keeps player-rate loop free from normal-turn choice constraints", () => {
     const playerRatePrompt = outputFormat({
       language: "en",
-      finishToolName: "vfs_commit_soul",
+      finishToolName: "vfs_finish_soul",
     });
 
     expect(playerRatePrompt).toContain(

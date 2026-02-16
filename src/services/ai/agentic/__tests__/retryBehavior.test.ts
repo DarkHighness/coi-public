@@ -143,7 +143,7 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_write",
-              name: "vfs_write",
+              name: "vfs_mutate",
               args: {
                 ops: [
                   {
@@ -155,7 +155,7 @@ describe("callWithAgenticRetry behavior", () => {
             },
             {
               id: "call_commit",
-              name: "vfs_commit_turn",
+              name: "vfs_finish_turn",
               args: {
                 assistant: {
                   userAction: "black out the cameras",
@@ -183,7 +183,7 @@ describe("callWithAgenticRetry behavior", () => {
       ...makeRequest(),
       tools: [
         {
-          name: "vfs_write",
+          name: "vfs_mutate",
           description: "write",
           parameters: z
             .object({
@@ -199,7 +199,7 @@ describe("callWithAgenticRetry behavior", () => {
             .strict(),
         },
         {
-          name: "vfs_commit_turn",
+          name: "vfs_finish_turn",
           description: "commit turn",
           parameters: z
             .object({
@@ -252,14 +252,14 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_write",
-              name: "vfs_write",
+              name: "vfs_mutate",
               args: {
                 invalid: true,
               },
             },
             {
               id: "call_commit_invalid",
-              name: "vfs_commit_turn",
+              name: "vfs_finish_turn",
               args: {
                 assistant: {
                   userAction: "nested-legacy-shape",
@@ -278,7 +278,7 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_ok",
-              name: "vfs_write",
+              name: "vfs_mutate",
               args: {
                 ops: [
                   {
@@ -299,7 +299,7 @@ describe("callWithAgenticRetry behavior", () => {
       ...makeRequest(),
       tools: [
         {
-          name: "vfs_write",
+          name: "vfs_mutate",
           description: "write",
           parameters: z
             .object({
@@ -315,7 +315,7 @@ describe("callWithAgenticRetry behavior", () => {
             .strict(),
         },
         {
-          name: "vfs_commit_turn",
+          name: "vfs_finish_turn",
           description: "commit turn",
           parameters: z
             .object({
@@ -362,20 +362,20 @@ describe("callWithAgenticRetry behavior", () => {
     expect(toolParts).toHaveLength(2);
 
     const writeResult = toolParts.find(
-      (part: any) => part.toolResult.name === "vfs_write",
+      (part: any) => part.toolResult.name === "vfs_mutate",
     )?.toolResult?.content as any;
     const commitResult = toolParts.find(
-      (part: any) => part.toolResult.name === "vfs_commit_turn",
+      (part: any) => part.toolResult.name === "vfs_finish_turn",
     )?.toolResult?.content as any;
 
     expect(writeResult?.code).toBe("INVALID_PARAMETERS");
     expect(writeResult?.error).toContain(
-      'arguments you provided to "vfs_write" were invalid',
+      'arguments you provided to "vfs_mutate" were invalid',
     );
 
     expect(commitResult?.code).toBe("INVALID_PARAMETERS");
     expect(commitResult?.error).toContain(
-      'arguments you provided to "vfs_commit_turn" were invalid',
+      'arguments you provided to "vfs_finish_turn" were invalid',
     );
   });
 
@@ -480,7 +480,7 @@ describe("callWithAgenticRetry behavior", () => {
       {
         requiredToolName: toolName,
         maxRetries: 1,
-        finishToolName: "vfs_commit_turn",
+        finishToolName: "vfs_finish_turn",
       },
     );
 
@@ -495,7 +495,7 @@ describe("callWithAgenticRetry behavior", () => {
       "Raw provider error: MALFORMED_TOOL_CALL: invalid JSON payload",
     );
     expect(feedbackText).toContain(
-      'If you call "vfs_commit_turn", it must be the LAST tool call.',
+      'If you call "vfs_finish_turn", it must be the LAST tool call.',
     );
   });
 

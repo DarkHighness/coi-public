@@ -38,7 +38,7 @@ const globalNotes = `
 
       ❌ DO NOT LEAVE CANONICAL FACTS ONLY IN NOTES:
       - If a fact is stable and can be expressed structurally, write it back into the appropriate entity JSON using
-        \`vfs_write\` (\`write_file\` / \`patch_json\` / \`merge_json\`).
+        \`vfs_mutate\` (\`write_file\` / \`patch_json\` / \`merge_json\`).
       - Notes are not the canonical world state; they are a scratch pad.
       - Do not quote raw notes content to the player as direct narration.
     </when_to_use>
@@ -46,14 +46,14 @@ const globalNotes = `
     <read_write_protocol>
       **IMPORTANT (tool-seen constraints):**
       - Existing files must be read before mutation in the current session epoch.
-      - Prefer \`vfs_write\` + \`append_text\` for additive updates (fast + safe, no full rewrite):
-        - \`vfs_write({ ops: [{ op: "append_text", path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
+      - Prefer \`vfs_mutate\` + \`append_text\` for additive updates (fast + safe, no full rewrite):
+        - \`vfs_mutate({ ops: [{ op: "append_text", path: "current/world/notes.md", content: "...", ensureNewline: true }] })\`
         - If the file already exists, you MUST \`vfs_read\` it first (read-before-mutate).
         - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
       - For non-additive changes, use read → modify → write:
         1) \`vfs_read\` the notes file
-        2) Then \`vfs_write\` with \`edit_lines\` or \`write_file\` for the updated markdown content
-      - If it does not exist, you may \`vfs_write\` (\`write_file\`) to create it.
+        2) Then \`vfs_mutate\` with \`edit_lines\` or \`write_file\` for the updated markdown content
+      - If it does not exist, you may \`vfs_mutate\` (\`write_file\`) to create it.
     </read_write_protocol>
 
     <compact_bootstrap>
@@ -156,7 +156,7 @@ const memoryQuery = `
       - **Internal Check**: Quietly verify against entity files when details are crucial.
       - **Conflict**: If files differ from summary, **TRUST FILES** and narrate the correction subtly.
       - **Ambiguity**: If unsure, search the story directly rather than guessing.
-      - **Sync**: If narrative changes a key fact (e.g. injury), update the relevant file via \`vfs_write\`.
+      - **Sync**: If narrative changes a key fact (e.g. injury), update the relevant file via \`vfs_mutate\`.
     </consistency_hierarchy>
   </rule>
 `;

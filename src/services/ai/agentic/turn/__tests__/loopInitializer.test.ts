@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { VfsSession } from "@/services/vfs/vfsSession";
-import { VFS_TOOLSETS } from "@/services/vfsToolsets";
+import { vfsToolRegistry } from "@/services/vfs/tools";
 import {
   accumulateUsage,
   addToolIfNew,
@@ -10,6 +10,10 @@ import {
 } from "../loopInitializer";
 
 describe("loopInitializer", () => {
+  const turnToolset = vfsToolRegistry.getToolset("turn");
+  const cleanupToolset = vfsToolRegistry.getToolset("cleanup");
+  const turnToolNames = new Set<string>(turnToolset.tools);
+  const cleanupToolNames = new Set<string>(cleanupToolset.tools);
   it("creates empty response with expected action arrays", () => {
     const response = createEmptyResponse();
 
@@ -33,17 +37,17 @@ describe("loopInitializer", () => {
       isCleanupMode: false,
     });
 
-    expect(turnTools.length).toBe(VFS_TOOLSETS.turn.tools.length);
+    expect(turnTools.length).toBe(turnToolset.tools.length);
     expect(
-      turnTools.every((tool) => VFS_TOOLSETS.turn.tools.includes(tool.name)),
+      turnTools.every((tool) => turnToolNames.has(tool.name)),
     ).toBe(true);
-    expect(turnTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(
+    expect(turnTools.some((tool) => tool.name === "vfs_finish_turn")).toBe(
       true,
     );
-    expect(turnTools.some((tool) => tool.name === "vfs_commit_soul")).toBe(
+    expect(turnTools.some((tool) => tool.name === "vfs_finish_soul")).toBe(
       false,
     );
-    expect(turnTools.some((tool) => tool.name === "vfs_commit_summary")).toBe(
+    expect(turnTools.some((tool) => tool.name === "vfs_finish_summary")).toBe(
       false,
     );
 
@@ -69,7 +73,7 @@ describe("loopInitializer", () => {
     });
     expect(
       cleanupTools.every((tool) =>
-        VFS_TOOLSETS.cleanup.tools.includes(tool.name),
+        cleanupToolNames.has(tool.name),
       ),
     ).toBe(true);
   });
@@ -114,7 +118,7 @@ describe("loopInitializer", () => {
     );
 
     expect(state.conversationMarker).toBeNull();
-    expect(state.finishToolName).toBe("vfs_commit_turn");
+    expect(state.finishToolName).toBe("vfs_finish_turn");
     expect(state.isRAGEnabled).toBe(true);
     expect(state.budgetState).toMatchObject({
       toolCallsMax: 50,
@@ -191,17 +195,17 @@ describe("loopInitializer", () => {
     );
 
     expect(state.isPlayerRateMode).toBe(true);
-    expect(state.finishToolName).toBe("vfs_commit_soul");
+    expect(state.finishToolName).toBe("vfs_finish_soul");
     expect(state.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/player-rate/SKILL.md",
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
     ]);
-    expect(state.activeTools.some((tool) => tool.name === "vfs_commit_soul")).toBe(
+    expect(state.activeTools.some((tool) => tool.name === "vfs_finish_soul")).toBe(
       true,
     );
-    expect(state.activeTools.some((tool) => tool.name === "vfs_commit_turn")).toBe(
+    expect(state.activeTools.some((tool) => tool.name === "vfs_finish_turn")).toBe(
       false,
     );
   });

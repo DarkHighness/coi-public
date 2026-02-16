@@ -56,7 +56,7 @@ export const stateManagement: Atom<void> = defineAtom(
         - NPC inventory: \`current/world/characters/<npcId>/inventory/<itemId>.json\`
       * Dropped/placed items belong to a location:
         - \`current/world/locations/<locId>/items/<itemId>.json\`
-      * Transfer an item by moving the file (\`vfs_move\`), not by duplicating.
+      * Transfer an item by moving the file (\`vfs_mutate\`), not by duplicating.
       * Use \`visible.sensory\` (texture/weight/smell) and \`condition\` for physical depth. Put secrets in \`hidden.truth\` and gate revelation via \`unlocked\`.
 
     - **Canonical vs Actor Views (MANDATORY BOUNDARY)**:
@@ -115,23 +115,23 @@ export const stateManagement: Atom<void> = defineAtom(
     - **NARRATIVE-STATE BINDING (MANDATORY)**:
       * **Rule**: "If you write it, you MUST track it. If you track it, it MUST have happened."
       * ❌ Narrative: "He hands you the key." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_key.json", content: "{...}" }] })\`
+      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_mutate({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_key.json", content: "{...}" }] })\`
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_write({ ops: [{ op: "patch_json", path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
+      * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_mutate({ ops: [{ op: "patch_json", path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
 
     - **VFS STATE AUTHORITY (MANDATORY)**:
       * The VFS is the ONLY source of truth for game state. All state changes MUST be performed via VFS tools.
-      * Use \`vfs_write\` with \`write_file\` to create/replace files.
-      * Use \`vfs_write\` with \`patch_json\` (RFC 6902) to patch existing JSON.
-      * Use \`vfs_write\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
-      * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
+      * Use \`vfs_mutate\` with \`write_file\` to create/replace files.
+      * Use \`vfs_mutate\` with \`patch_json\` (RFC 6902) to patch existing JSON.
+      * Use \`vfs_mutate\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
+      * Use \`vfs_mutate\` to rename paths, \`vfs_mutate\` to remove files. No hidden updates outside the VFS.
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
       * For large JSON files, inspect with \`vfs_read\` pointers/lines first; avoid broad char-range reads by default.
       * If a patch path may not exist, verify with pointer reads first; otherwise prefer \`merge_json\` or correct file placement.
       * Inspect before you change: \`vfs_ls\`, \`vfs_schema\`, \`vfs_read\`, \`vfs_search\`.
       * Always reference explicit VFS paths (canonical preferred: \`forks/{activeFork}/story/world/**\`; alias \`current/world/**\` is also accepted).
-      * After each turn, finish with \`vfs_commit_turn\` as the LAST tool call.
+      * After each turn, finish with \`vfs_finish_turn\` as the LAST tool call.
       * Once you are finishing in this response, avoid read-only tools immediately before finish unless they are directly required for writes in the same response.
       * Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
 
@@ -195,7 +195,7 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
         wrong: `Narrative: "She gives you the key."
 (No tool call - state not updated.)`,
         right: `Narrative: "She gives you the key."
-+ Tool: vfs_write({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/key.json", content: "{...}" }] })
++ Tool: vfs_mutate({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/key.json", content: "{...}" }] })
 (State updated in same turn.)`,
       },
       {

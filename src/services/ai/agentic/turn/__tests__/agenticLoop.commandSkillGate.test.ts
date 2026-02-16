@@ -179,7 +179,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: { ops: [] },
         },
       ],
@@ -223,7 +223,7 @@ describe("agenticLoop command skill gate", () => {
         functionCalls: [
           {
             id: "call-2-edit",
-            name: "vfs_write",
+            name: "vfs_mutate",
             args: { ops: [] },
           },
         ],
@@ -265,7 +265,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: { ops: [] },
         },
       ],
@@ -352,7 +352,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: { ops: [] },
         },
       ],
@@ -388,7 +388,7 @@ describe("agenticLoop command skill gate", () => {
     );
   });
 
-  it("finishes player-rate loop via vfs_commit_soul without creating conversation turn", async () => {
+  it("finishes player-rate loop via vfs_finish_soul without creating conversation turn", async () => {
     const vfsSession = createVfsSession(true);
 
     aiHandlerMock.handleAICall.mockResolvedValue({
@@ -401,7 +401,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-rate-finish",
-          name: "vfs_commit_soul",
+          name: "vfs_finish_soul",
           args: {
             currentSoul:
               "# Player Soul (This Save)\n\n## Guidance For AI\n- keep concise.\n",
@@ -441,7 +441,7 @@ describe("agenticLoop command skill gate", () => {
 
     expect(result.response.narrative).toBe("");
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledWith(
-      "vfs_commit_soul",
+      "vfs_finish_soul",
       expect.anything(),
       expect.anything(),
     );
@@ -465,7 +465,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: { ops: [] },
         },
       ],
@@ -507,12 +507,12 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: { ops: [] },
         },
         {
           id: "call-2",
-          name: "vfs_commit_turn",
+          name: "vfs_finish_turn",
           args: {
             userAction: "next",
             assistant: {
@@ -525,7 +525,7 @@ describe("agenticLoop command skill gate", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_commit_turn") {
+      if (name === "vfs_finish_turn") {
         vfsSession.markConversationTouched();
       }
       return { success: true };
@@ -598,7 +598,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_write",
+          name: "vfs_mutate",
           args: { ops: [] },
         },
       ],
