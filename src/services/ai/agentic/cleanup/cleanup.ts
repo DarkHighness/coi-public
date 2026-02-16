@@ -98,7 +98,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="inventory">
     <duplicates>Two inventory item files represent the same item</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/characters/char:player/inventory", stat: true })
+      1. vfs_ls({ path: "current/world/characters/char:player/inventory" })
       2. vfs_search({ query: "iron key|rusty key", path: "current/world/characters/char:player/inventory", regex: true })
       3. vfs_read_json({ path: "current/world/characters/char:player/inventory/<id>.json", pointers: ["/visible", "/hidden", "/unlocked"]  })
       4. vfs_merge_json({ path: "current/world/characters/char:player/inventory/<kept>.json", content: { ... } })
@@ -109,7 +109,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="npc">
     <duplicates>Two NPC files represent the same person under different aliases</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/characters", patterns: ["current/world/characters/**/profile.json"], stat: true })
+      1. vfs_ls({ path: "current/world/characters", patterns: ["current/world/characters/**/profile.json"] })
       2. vfs_search({ query: "Harlen|Captain Harlen", path: "current/world/characters", regex: true })
       3. vfs_read_json({ path: "current/world/characters/<candidate>/profile.json", pointers: ["/visible", "/hidden", "/relations", "/unlocked"]  })
       4. vfs_merge_json({ path: "current/world/characters/<kept>/profile.json", content: { ... } })
@@ -120,7 +120,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="location">
     <duplicates>Two location files refer to the same place</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/locations", stat: true })
+      1. vfs_ls({ path: "current/world/locations" })
       2. vfs_search({ query: "abandoned chapel|old chapel", path: "current/world/locations", regex: true })
       3. vfs_read_json({ path: "current/world/locations/<id>.json", pointers: ["/id", "/name", "/visible", "/hidden"]  })
       4. vfs_read_json({ path: "current/world/characters/char:player/views/locations/<id>.json", pointers: ["/entityId", "/unlocked", "/unlockReason"]  })
@@ -132,7 +132,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="quest">
     <duplicates>Two quest files represent the same quest thread</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/quests", stat: true })
+      1. vfs_ls({ path: "current/world/quests" })
       2. vfs_search({ query: "missing caravan|lost caravan", path: "current/world/quests", regex: true })
       3. vfs_read_json({ path: "current/world/quests/<id>.json", pointers: ["/id", "/title", "/visible", "/hidden"]  })
       4. vfs_read_json({ path: "current/world/characters/char:player/views/quests/<id>.json", pointers: ["/entityId", "/status", "/unlocked", "/unlockReason"]  })
@@ -144,7 +144,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="knowledge">
     <duplicates>Two knowledge entries represent the same fact</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/knowledge", stat: true })
+      1. vfs_ls({ path: "current/world/knowledge" })
       2. vfs_search({ query: "sigil|glyph", path: "current/world/knowledge", regex: true })
       3. vfs_read_json({ path: "current/world/knowledge/<id>.json", pointers: ["/id", "/title", "/visible", "/hidden"]  })
       4. vfs_read_json({ path: "current/world/characters/char:player/views/knowledge/<id>.json", pointers: ["/entityId", "/unlocked", "/unlockReason"]  })
@@ -156,7 +156,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="character_skills">
     <duplicates>Two skill files represent the same player skill</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/characters/char:player/skills", stat: true })
+      1. vfs_ls({ path: "current/world/characters/char:player/skills" })
       2. vfs_search({ query: "shadow step|shadow-step", path: "current/world/characters/char:player/skills", regex: true })
       3. vfs_read_json({ path: "current/world/characters/char:player/skills/<id>.json", pointers: ["/visible", "/hidden", "/level", "/unlocked"]  })
       4. vfs_merge_json({ path: "current/world/characters/char:player/skills/<kept>.json", content: { ... } })
@@ -167,7 +167,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="faction">
     <duplicates>Two faction files represent the same faction</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/factions", stat: true })
+      1. vfs_ls({ path: "current/world/factions" })
       2. vfs_search({ query: "Order of Ash|Ash Order", path: "current/world/factions", regex: true })
       3. vfs_read_json({ path: "current/world/factions/<id>.json", pointers: ["/id", "/name", "/visible", "/hidden"]  })
       4. vfs_read_json({ path: "current/world/characters/char:player/views/factions/<id>.json", pointers: ["/entityId", "/standing", "/unlocked", "/unlockReason"]  })
@@ -179,7 +179,7 @@ Identify and merge duplicate or redundant entities. Prefer keeping the most comp
   <example type="timeline">
     <duplicates>Two timeline events represent the same incident</duplicates>
     <action>
-      1. vfs_ls({ path: "current/world/timeline", stat: true })
+      1. vfs_ls({ path: "current/world/timeline" })
       2. vfs_search({ query: "eclipse|black sun", path: "current/world/timeline", regex: true })
       3. vfs_read_json({ path: "current/world/timeline/<id>.json", pointers: ["/id", "/name", "/gameTime", "/visible", "/hidden"]  })
       4. vfs_read_json({ path: "current/world/characters/char:player/views/timeline/<id>.json", pointers: ["/entityId", "/unlocked", "/unlockReason"]  })

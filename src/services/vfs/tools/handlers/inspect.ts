@@ -39,7 +39,6 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
     session.noteToolAccessScope(baseResolved.path ?? "");
 
     const patterns = typedArgs.patterns ?? null;
-    const stat = Boolean(typedArgs.stat);
     const limit = typedArgs.limit ?? 200;
     const ignoreCase = Boolean(typedArgs.ignoreCase);
     const includeExpected = Boolean(typedArgs.includeExpected);
@@ -145,24 +144,25 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
 
     if (!patterns || patterns.length === 0) {
       const entries = session.list(baseResolved.path);
-      if (!stat && !includeExpected && !includeAccess) {
-        return createSuccess({ entries }, "VFS entries listed");
-      }
+      const snapshot = session.snapshotAll();
+      const snapshotPaths = Object.keys(snapshot);
+      const resolveEntryPath = (entryPath: string): string => {
+        const normalizedEntry = normalizeVfsPath(entryPath);
+        if (!baseResolved.path) {
+          return normalizedEntry;
+        }
+        return normalizeVfsPath(`${baseResolved.path}/${normalizedEntry}`);
+      };
+      const stats = entries.map((entryPath) => {
+        const resolvedEntryPath = resolveEntryPath(entryPath);
+        const file = session.readFile(resolvedEntryPath);
+        if (file) {
+          return toLsStatEntryForFile(file);
+        }
+        return toLsStatEntryForDir(resolvedEntryPath, snapshotPaths);
+      });
 
-      const payload: Record<string, unknown> = { entries };
-      if (stat) {
-        const snapshot = session.snapshotAll();
-        const snapshotPaths = Object.keys(snapshot);
-        const meta = entries.map((entryPath) => {
-          const normalized = normalizeVfsPath(entryPath);
-          const file = session.readFile(normalized);
-          if (file) {
-            return toLsStatEntryForFile(file);
-          }
-          return toLsStatEntryForDir(normalized, snapshotPaths);
-        });
-        payload.stats = meta;
-      }
+      const payload: Record<string, unknown> = { entries, stats };
 
       if (includeExpected || includeAccess) {
         const layoutPayload = buildLayoutPayload(baseResolved.path);
@@ -180,10 +180,7 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
         payload.layoutTruncated = layoutPayload.layoutTruncated;
       }
 
-      return createSuccess(
-        payload,
-        stat ? "VFS entries listed with metadata" : "VFS entries listed",
-      );
+      return createSuccess(payload, "VFS entries listed with metadata");
     }
 
     if (includeExpected) {
@@ -244,18 +241,6 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
     }
     const matches = selectedMatches.map((p) => toCurrentPath(p));
 
-    if (!stat) {
-      const payload: Record<string, unknown> = {
-        entries: matches,
-        truncated,
-        totalMatches: allMatches.length,
-      };
-      if (includeAccess) {
-        payload.access = selectedMatches.map(toAccessMeta);
-      }
-      return createSuccess(payload, "VFS glob listing complete");
-    }
-
     const stats = selectedMatches.flatMap((path) => {
       const file = session.readFile(path);
       if (!file) return [];
@@ -272,7 +257,7 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
       payload.access = selectedMatches.map(toAccessMeta);
     }
 
-    return createSuccess(payload, "VFS glob listing complete");
+    return createSuccess(payload, "VFS glob listing complete with metadata");
   });
 
 export const handleInspectSchema: VfsToolHandler = (args, ctx) =>

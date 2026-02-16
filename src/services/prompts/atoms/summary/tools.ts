@@ -32,7 +32,7 @@ ${toolList}
 Tool capability contract:
 ${capabilityText}
 
-1. \`vfs_ls\` - Locate files (optionally with \`patterns\` and \`stat=true\`)
+1. \`vfs_ls\` - Locate files (optional \`patterns\`; stats metadata is always included)
 2. \`vfs_schema\` - Inspect expected JSON fields for a path (read-only)
 3. \`vfs_read_chars/vfs_read_lines/vfs_read_json\` - Read specific VFS files/fields for details (chars/lines/json mode)
 4. \`vfs_search\` - Find details in the VFS (read-only)

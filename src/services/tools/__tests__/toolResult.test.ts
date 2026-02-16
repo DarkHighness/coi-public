@@ -44,6 +44,14 @@ describe("toolResult helpers", () => {
       recovery: ["Provide a valid path."],
       refs: ["current/refs/tools/vfs_read_chars/README.md"],
       batch: { index: 1, total: 2, operation: "read" },
+      hint: {
+        code: "READ_LIMIT_HINT",
+        summary: "Use bounded reads.",
+        avoid: "vfs_read_chars({ path: 'current/world/huge.txt' })",
+        nextCalls: [
+          "vfs_read_lines({ path: 'current/world/huge.txt', startLine: 1, lineCount: 200 })",
+        ],
+      },
     });
 
     expect(result).toMatchObject({
@@ -57,8 +65,13 @@ describe("toolResult helpers", () => {
         recovery: ["Provide a valid path."],
         refs: ["current/refs/tools/vfs_read_chars/README.md"],
         batch: { index: 1, total: 2, operation: "read" },
+        hint: {
+          code: "READ_LIMIT_HINT",
+          summary: "Use bounded reads.",
+        },
       },
     });
+    expect(result.details?.hint?.nextCalls?.length).toBe(1);
   });
 
   it("merges details while preserving deduped refs and inferred category", () => {

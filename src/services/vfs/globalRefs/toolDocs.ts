@@ -37,7 +37,7 @@ const addText = (files: VfsFileMap, path: string, content: string): void => {
 
 const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
   vfs_ls: [
-    { path: "current/world", stat: true },
+    { path: "current/world" },
     {
       path: "current/world",
       patterns: ["**/*.json"],

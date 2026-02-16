@@ -41,7 +41,7 @@ You MUST follow these runtime protocol constraints:
   2) Fix the cause by \`code\` with the smallest helpful lookup:
      - \`NOT_FOUND\`: \`vfs_ls\` the parent dir, or \`vfs_search\` for the filename.
      - \`INVALID_PARAMS\`: read split docs (\`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, \`current/refs/tool-schemas/<tool>/README.md\`) and retry with schema-valid args.
-     - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, switch to bounded \`vfs_read_lines\` or \`vfs_read_json\` with narrow \`pointers\`; do not repeat broad chars reads.
+     - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, use \`details.hint.nextCalls\` for bounded retry; do not repeat broad path-only chars reads.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
   3) Re-read the minimum anchor files, then retry one corrected tool call.
@@ -75,7 +75,7 @@ You MUST follow these outline protocol constraints:
   1) Keep phase/tool unchanged.
   2) Correct payload by error code:
      - \`INVALID_PARAMS\`: open split tool docs (overview/examples/schema summary), then fix argument types/fields exactly per schema.
-     - \`INVALID_DATA\` with \`READ_LIMIT_EXCEEDED\`: do NOT retry \`vfs_read_chars({ path })\`; use bounded \`vfs_read_lines\` or smaller \`vfs_read_chars\` windows.
+     - \`INVALID_DATA\` with \`READ_LIMIT_EXCEEDED\`: use \`details.hint.nextCalls\`; do NOT retry \`vfs_read_chars({ path })\`.
   3) Retry the same phase submit tool after correction.
 </runtime_floor>`;
 

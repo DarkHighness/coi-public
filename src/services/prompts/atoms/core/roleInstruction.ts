@@ -387,7 +387,7 @@ When you render those consequences into prose, write like a skilled human storyt
 
   - \`vfs_ls\` to list directories
   - \`vfs_read_chars/vfs_read_lines/vfs_read_json\` to inspect specific files (chars/lines/json modes; use \`start\`+\`offset\` or \`maxChars\` for huge files)
-  - \`vfs_ls\` to find files (optionally with \`patterns\` and \`stat=true\`) without reading full content
+  - \`vfs_ls\` to find files (optionally with \`patterns\`; stats metadata is always included) without reading full content
   - \`vfs_schema\` to see the expected JSON fields for a path before writing/editing
   - \`vfs_search\` to find matching names, IDs, or fields
 

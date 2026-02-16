@@ -77,11 +77,16 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.error).toContain("requested char range");
     expect(result.details?.tool).toBe("vfs_read_chars");
     expect(result.details?.issues?.[0]?.code).toBe("READ_LIMIT_EXCEEDED");
-    expect(result.details?.recovery?.[0]).toContain("Do NOT retry");
-    expect(result.details?.recovery?.[1]).toContain(
+    expect(result.details?.recovery?.[0]).toContain("details.hint.nextCalls");
+    expect(result.details?.hint?.code).toBe("READ_LIMIT_HINT");
+    expect(result.details?.hint?.summary).toContain("Do not retry path-only");
+    expect(result.details?.hint?.avoid).toContain(
+      'vfs_read_chars({ path: "current/world/huge.txt" })',
+    );
+    expect(result.details?.hint?.nextCalls?.[0]).toContain(
       'vfs_read_lines({ path: "current/world/huge.txt", startLine: 1, lineCount: 200 })',
     );
-    expect(result.details?.recovery?.[1]).toContain("current/world/huge.txt");
+    expect(result.details?.hint?.metadata?.path).toBe("current/world/huge.txt");
     expect(result.details?.refs).toContain(
       "current/refs/tools/vfs_read_chars/README.md",
     );
@@ -251,6 +256,7 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(true);
     expect(Array.isArray(result.data.layout)).toBe(true);
+    expect(Array.isArray(result.data.stats)).toBe(true);
 
     const scaffold = result.data.layout.find(
       (entry: any) => entry.path === "current/world/characters/README.md",
@@ -281,6 +287,7 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(true);
     expect(result.data.entries).toContain("current/world/global.json");
+    expect(Array.isArray(result.data.stats)).toBe(true);
     expect(result.data.access[0].templateId).toBe("template.story.world");
   });
 

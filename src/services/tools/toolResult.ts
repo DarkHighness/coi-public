@@ -36,6 +36,14 @@ export interface ToolErrorBatch {
   path?: string;
 }
 
+export interface ToolErrorHint {
+  code: string;
+  summary: string;
+  avoid?: string;
+  nextCalls?: string[];
+  metadata?: Record<string, unknown>;
+}
+
 export interface ToolErrorDetails {
   category?: ToolErrorCategory;
   tool?: string;
@@ -43,6 +51,7 @@ export interface ToolErrorDetails {
   recovery?: string[];
   refs?: string[];
   batch?: ToolErrorBatch;
+  hint?: ToolErrorHint;
 }
 
 export interface ToolCallError {
@@ -173,6 +182,41 @@ const normalizeDetails = (
     }
     if (Object.keys(batch).length > 0) normalized.batch = batch;
   }
+  if (details.hint) {
+    const code =
+      typeof details.hint.code === "string" ? details.hint.code.trim() : "";
+    const summary =
+      typeof details.hint.summary === "string"
+        ? details.hint.summary.trim()
+        : "";
+    if (code && summary) {
+      const nextCalls = Array.isArray(details.hint.nextCalls)
+        ? uniqueStrings(details.hint.nextCalls)
+        : undefined;
+      const hint: ToolErrorHint = {
+        code,
+        summary,
+      };
+      if (
+        typeof details.hint.avoid === "string" &&
+        details.hint.avoid.trim().length > 0
+      ) {
+        hint.avoid = details.hint.avoid.trim();
+      }
+      if (nextCalls && nextCalls.length > 0) {
+        hint.nextCalls = nextCalls;
+      }
+      if (
+        details.hint.metadata &&
+        typeof details.hint.metadata === "object" &&
+        !Array.isArray(details.hint.metadata) &&
+        Object.keys(details.hint.metadata).length > 0
+      ) {
+        hint.metadata = details.hint.metadata;
+      }
+      normalized.hint = hint;
+    }
+  }
 
   if (Object.keys(normalized).length === 0) {
     return undefined;
@@ -220,6 +264,7 @@ export const mergeToolErrorDetails = (
     recovery: [...(error.details?.recovery ?? []), ...(details.recovery ?? [])],
     refs: [...(error.details?.refs ?? []), ...(details.refs ?? [])],
     batch: details.batch ?? error.details?.batch,
+    hint: details.hint ?? error.details?.hint,
   });
 
   if (!merged) {

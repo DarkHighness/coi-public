@@ -17,6 +17,8 @@ describe("vfs_ls v5", () => {
 
     expect(result.success).toBe(true);
     expect(result.data.entries).toContain("notes.md");
+    expect(Array.isArray(result.data.stats)).toBe(true);
+    expect(result.data.stats[0]?.kind).toBe("file");
   });
 
   it("supports pattern matching with patterns[]", () => {
@@ -35,9 +37,11 @@ describe("vfs_ls v5", () => {
 
     expect(result.success).toBe(true);
     expect(result.data.entries).toEqual(["current/world/notes.md"]);
+    expect(Array.isArray(result.data.stats)).toBe(true);
+    expect(result.data.stats[0]?.path).toBe("current/world/notes.md");
   });
 
-  it("returns lines/mimeType/category when stat=true", () => {
+  it("returns lines/mimeType/category metadata by default", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "x", "text/markdown");
     session.restore({
@@ -65,7 +69,6 @@ describe("vfs_ls v5", () => {
       {
         path: "skills",
         patterns: ["**/SKILL.md"],
-        stat: true,
       },
       { vfsSession: session },
     ) as any;
@@ -83,7 +86,6 @@ describe("vfs_ls v5", () => {
       {
         path: "refs",
         patterns: ["**/*.md"],
-        stat: true,
       },
       { vfsSession: session },
     ) as any;
@@ -99,7 +101,6 @@ describe("vfs_ls v5", () => {
       {
         path: "current/world",
         patterns: ["**/*.md"],
-        stat: true,
       },
       { vfsSession: session },
     ) as any;

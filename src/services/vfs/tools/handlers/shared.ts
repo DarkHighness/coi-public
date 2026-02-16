@@ -463,13 +463,12 @@ export const createReadLimitError = (
     const linesWindowCall = `vfs_read_lines({ path: "${qualifiedPath}", startLine: 1, lineCount: 200 })`;
     const charsWindowCall = `vfs_read_chars({ path: "${qualifiedPath}", start: 0, offset: ${suggestedChunkChars} })`;
     const recovery = [
-      `Do NOT retry with unbounded char reads; use explicit windowed read tools.`,
-      `Try: ${linesWindowCall}`,
-      `Or: ${charsWindowCall}`,
+      "Read payload exceeded budget. Use details.hint.nextCalls for bounded retry.",
     ];
+    const nextCalls = [linesWindowCall, charsWindowCall];
     if (mode === "json") {
-      recovery.push(
-        `For JSON, narrow pointers and cap payload (example: vfs_read_json({ path: "${qualifiedPath}", pointers: ["/..."], maxChars: ${suggestedChunkChars} })).`,
+      nextCalls.push(
+        `vfs_read_json({ path: "${qualifiedPath}", pointers: ["/..."], maxChars: ${suggestedChunkChars} })`,
       );
     }
 
@@ -496,6 +495,22 @@ export const createReadLimitError = (
           },
         ],
         recovery,
+        hint: {
+          code: "READ_LIMIT_HINT",
+          summary:
+            "Do not retry path-only broad reads. Switch to bounded lines/chars windows (or narrowed JSON pointers).",
+          avoid: `${resolvedToolName}({ path: "${qualifiedPath}" })`,
+          nextCalls,
+          metadata: {
+            mode,
+            path: qualifiedPath,
+            tokenBudget: normalizedTokenBudget,
+            ...(normalizedEstimatedTokens !== null
+              ? { estimatedTokens: normalizedEstimatedTokens }
+              : {}),
+            suggestedChunkChars,
+          },
+        },
         refs: [
           getToolDocRef(resolvedToolName),
           getToolSchemaRef(resolvedToolName),

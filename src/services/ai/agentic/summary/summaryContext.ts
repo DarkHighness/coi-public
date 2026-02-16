@@ -78,7 +78,7 @@ Tool allowlist for this loop:
 ${toolList}
 
 Read-only tools:
-1. \`vfs_ls\` - Locate files, pattern-match with \`patterns\`, and optionally inspect metadata via \`stat=true\`
+1. \`vfs_ls\` - Locate files and pattern-match with \`patterns\` (stats metadata is always included)
 2. \`vfs_schema\` - Inspect expected JSON fields for a path (read-only)
 3. \`vfs_read_chars/vfs_read_lines/vfs_read_json\` - Read VFS files by chars, lines, or JSON pointers for exact details
 4. \`vfs_search\` - Find details in the VFS (read-only)

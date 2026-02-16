@@ -348,7 +348,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .boolean()
           .optional()
           .describe(
-            "When true, include compact ls -l style metadata (kind/size/lines/mimeType/category/updatedAt).",
+            "Deprecated no-op for backward prompt examples. vfs_ls always returns stats metadata.",
           ),
         includeExpected: z
           .boolean()
@@ -368,7 +368,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     capability: {
       ...CAPABILITY_READ_ALL,
       summary:
-        "List VFS entries (plain list, glob pattern matching, optional stat metadata).",
+        "List VFS entries (plain list or glob pattern matching) with stats metadata.",
     },
     toolsetOrder: ordered({
       turn: 10,

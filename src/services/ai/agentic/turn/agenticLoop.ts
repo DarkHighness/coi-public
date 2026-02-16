@@ -815,16 +815,34 @@ async function processToolCalls(
   } = params;
 
   const finishToolName = loopState.finishToolName;
+  const buildBatchBlockedResponses = (
+    content: Record<string, unknown>,
+    reason: string,
+  ): ProcessToolCallsResult["responses"] =>
+    functionCalls.map((call, index) => ({
+      toolCallId: call.id,
+      name: call.name,
+      content:
+        index === 0
+          ? content
+          : {
+              success: false,
+              code:
+                typeof content.code === "string"
+                  ? content.code
+                  : "INVALID_ACTION",
+              error: `[SKIP: BATCH_BLOCKED] ${reason}. Follow the first error and retry.`,
+            },
+    }));
 
   const skillGate = checkCommandSkillReadGate(functionCalls, loopState);
   if ("error" in skillGate) {
     const gateError = skillGate.error;
     return {
-      responses: functionCalls.map((call) => ({
-        toolCallId: call.id,
-        name: call.name,
-        content: gateError,
-      })),
+      responses: buildBatchBlockedResponses(
+        gateError as Record<string, unknown>,
+        "command skill gate blocked this batch",
+      ),
       turnFinished: false,
     };
   }
@@ -833,11 +851,10 @@ async function processToolCalls(
   if ("error" in soulGate) {
     const gateError = soulGate.error;
     return {
-      responses: functionCalls.map((call) => ({
-        toolCallId: call.id,
-        name: call.name,
-        content: gateError,
-      })),
+      responses: buildBatchBlockedResponses(
+        gateError as Record<string, unknown>,
+        "soul read gate blocked this batch",
+      ),
       turnFinished: false,
     };
   }
@@ -846,11 +863,10 @@ async function processToolCalls(
   if ("error" in presetSkillGate) {
     const gateError = presetSkillGate.error;
     return {
-      responses: functionCalls.map((call) => ({
-        toolCallId: call.id,
-        name: call.name,
-        content: gateError,
-      })),
+      responses: buildBatchBlockedResponses(
+        gateError as Record<string, unknown>,
+        "preset skill read gate blocked this batch",
+      ),
       turnFinished: false,
     };
   }
@@ -907,11 +923,10 @@ async function processToolCalls(
         code: "INVALID_ACTION",
       };
       return {
-        responses: functionCalls.map((call) => ({
-          toolCallId: call.id,
-          name: call.name,
-          content: error,
-        })),
+        responses: buildBatchBlockedResponses(
+          error,
+          "only the finish tool is allowed in this round",
+        ),
         turnFinished: false,
       };
     }
@@ -929,11 +944,10 @@ async function processToolCalls(
       code: "INVALID_ACTION",
     };
     return {
-      responses: functionCalls.map((call) => ({
-        toolCallId: call.id,
-        name: call.name,
-        content: error,
-      })),
+      responses: buildBatchBlockedResponses(
+        error,
+        "multiple finish calls were submitted",
+      ),
       turnFinished: false,
     };
   }
@@ -948,11 +962,10 @@ async function processToolCalls(
       code: "INVALID_ACTION",
     };
     return {
-      responses: functionCalls.map((call) => ({
-        toolCallId: call.id,
-        name: call.name,
-        content: error,
-      })),
+      responses: buildBatchBlockedResponses(
+        error,
+        "finish tool must be the last call in this batch",
+      ),
       turnFinished: false,
     };
   }
@@ -968,11 +981,10 @@ async function processToolCalls(
       warning: true,
     };
     return {
-      responses: functionCalls.map((call) => ({
-        toolCallId: call.id,
-        name: call.name,
-        content: warning,
-      })),
+      responses: buildBatchBlockedResponses(
+        warning,
+        "read-only calls before finish were blocked as no-op waste",
+      ),
       turnFinished: false,
     };
   }
@@ -1004,11 +1016,10 @@ async function processToolCalls(
       };
 
       return {
-        responses: functionCalls.map((toolCall) => ({
-          toolCallId: toolCall.id,
-          name: toolCall.name,
-          content: error,
-        })),
+        responses: buildBatchBlockedResponses(
+          error,
+          "cross-fork path access is blocked in this turn",
+        ),
         turnFinished: false,
       };
     }
@@ -1027,11 +1038,10 @@ async function processToolCalls(
       code: "INVALID_ACTION",
     };
     return {
-      responses: functionCalls.map((call) => ({
-        toolCallId: call.id,
-        name: call.name,
-        content: error,
-      })),
+      responses: buildBatchBlockedResponses(
+        error,
+        "conversation writes must go through finish tool only",
+      ),
       turnFinished: false,
     };
   }
