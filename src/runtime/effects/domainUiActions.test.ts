@@ -78,8 +78,15 @@ describe("createDomainUiActions", () => {
       { id: "item:1", highlight: false },
       { id: "item:2", highlight: true },
     ]);
+    const item1Presentation =
+      harness.getState().uiState.entityPresentation?.["inventory:item:1"] ?? {};
+    expect(item1Presentation.highlight).toBe(false);
+    expect(item1Presentation.lastAccess).toMatchObject({
+      forkId: 0,
+      turnNumber: 0,
+      timestamp: expect.any(Number),
+    });
     expect(harness.getState().uiState.entityPresentation).toMatchObject({
-      "inventory:item:1": { highlight: false },
       "inventory:item:2": { highlight: true },
     });
     expect(harness.triggerSave).toHaveBeenCalledTimes(1);
@@ -95,7 +102,14 @@ describe("createDomainUiActions", () => {
 
     expect(harness.getState().knowledge[0].highlight).toBe(false);
     expect(harness.getState().uiState.entityPresentation).toMatchObject({
-      "knowledge:know:1": { highlight: false },
+      "knowledge:know:1": {
+        highlight: false,
+        lastAccess: {
+          forkId: 0,
+          turnNumber: 0,
+          timestamp: expect.any(Number),
+        },
+      },
     });
     expect(harness.triggerSave).toHaveBeenCalledTimes(1);
   });
@@ -118,8 +132,17 @@ describe("createDomainUiActions", () => {
 
     expect(harness.getState().character.skills[0].highlight).toBe(false);
     expect(harness.getState().character.skills[1].highlight).toBe(true);
-    expect(harness.getState().uiState.entityPresentation).toMatchObject({
-      "characterSkills:skill:stealth": { highlight: false },
+    expect(
+      harness.getState().uiState.entityPresentation?.[
+        "characterSkills:skill:stealth"
+      ],
+    ).toMatchObject({
+      highlight: false,
+      lastAccess: {
+        forkId: 0,
+        turnNumber: 0,
+        timestamp: expect.any(Number),
+      },
     });
     expect(harness.triggerSave).toHaveBeenCalledTimes(1);
   });

@@ -89,19 +89,31 @@ describe("useVfsPersistence slot naming", () => {
       knowledge: { pinnedIds: [], customOrder: [] },
       quests: { pinnedIds: [], customOrder: [] },
       entityPresentation: {
-        "inventory:item:1": { highlight: false },
+        "inventory:item:1": {
+          highlight: false,
+          lastAccess: { forkId: 0, turnNumber: 1, timestamp: 1000 },
+        },
       },
     } as any;
 
     const merged = mergeStoredUiState(base, {
       entityPresentation: {
-        "inventory:item:2": { highlight: true },
+        "inventory:item:2": {
+          highlight: true,
+          lastAccess: { forkId: 0, turnNumber: 2, timestamp: 2000 },
+        },
       },
     });
 
     expect(merged.entityPresentation).toMatchObject({
-      "inventory:item:1": { highlight: false },
-      "inventory:item:2": { highlight: true },
+      "inventory:item:1": {
+        highlight: false,
+        lastAccess: { forkId: 0, turnNumber: 1, timestamp: 1000 },
+      },
+      "inventory:item:2": {
+        highlight: true,
+        lastAccess: { forkId: 0, turnNumber: 2, timestamp: 2000 },
+      },
     });
   });
 });

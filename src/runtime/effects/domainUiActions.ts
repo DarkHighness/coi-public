@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { GameState } from "../../types";
+import type { AccessTimestamp, GameState } from "../../types";
 
 type HighlightTarget =
   | {
@@ -40,6 +40,14 @@ const makeEntityPresentationKey = (
   kind: EntityPresentationKind,
   id: string,
 ): string => `${kind}:${id}`;
+
+const createLastAccessStamp = (
+  state: Pick<GameState, "forkId" | "turnNumber">,
+): AccessTimestamp => ({
+  forkId: typeof state.forkId === "number" ? state.forkId : 0,
+  turnNumber: typeof state.turnNumber === "number" ? state.turnNumber : 0,
+  timestamp: Date.now(),
+});
 
 const topLevelKindMap: Record<
   Exclude<HighlightTarget["kind"], "characterSkills" | "characterConditions" | "characterTraits">,
@@ -104,6 +112,7 @@ export function createDomainUiActions({
         const nextEntityPresentation = {
           ...(prev.uiState.entityPresentation ?? {}),
         };
+        const lastAccess = createLastAccessStamp(prev);
         let changedList = false;
         let changedPresentation = false;
 
@@ -119,6 +128,7 @@ export function createDomainUiActions({
           nextEntityPresentation[key] = {
             ...prevState,
             highlight: false,
+            lastAccess,
           };
           changedPresentation = true;
         };
@@ -174,6 +184,7 @@ export function createDomainUiActions({
         const nextEntityPresentation = {
           ...(prev.uiState.entityPresentation ?? {}),
         };
+        const lastAccess = createLastAccessStamp(prev);
         const key = makeEntityPresentationKey(
           topLevelKindMap[target.kind],
           target.id,
@@ -182,6 +193,7 @@ export function createDomainUiActions({
         nextEntityPresentation[key] = {
           ...prevState,
           highlight: false,
+          lastAccess,
         };
 
         const updated = list.map((entry) =>

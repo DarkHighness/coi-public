@@ -664,6 +664,7 @@ export interface ListState {
 
 export interface EntityPresentationState {
   highlight?: boolean;
+  lastAccess?: AccessTimestamp;
 }
 
 export type EntityPresentationMap = Record<string, EntityPresentationState>;

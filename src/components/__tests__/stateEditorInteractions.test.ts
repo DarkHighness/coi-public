@@ -132,6 +132,23 @@ const checkboxForFile = (fileName: string): HTMLElement => {
   return matched as HTMLElement;
 };
 
+const destinationButtonForFolder = (folderName: string): HTMLButtonElement => {
+  const lower = folderName.toLowerCase();
+  const folderButton = screen.getAllByRole("button").find((button) => {
+    const text = button.textContent?.toLowerCase() ?? "";
+    if (!text.includes(lower)) {
+      return false;
+    }
+    return Boolean(
+      button.parentElement?.querySelector("button[title='Select destination']"),
+    );
+  });
+  expect(folderButton).toBeTruthy();
+  return within(folderButton!.parentElement as HTMLElement).getByTitle(
+    "Select destination",
+  ) as HTMLButtonElement;
+};
+
 beforeEach(() => {
   setViewportWidth(1280);
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
@@ -381,15 +398,7 @@ describe("StateEditor interactions", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Move Selected" }));
 
-    const targetFolderButton = screen
-      .getAllByRole("button", { name: /target/i })
-      .find((button) => button.textContent?.toLowerCase().includes("target"));
-    expect(targetFolderButton).toBeTruthy();
-    const targetRow = targetFolderButton?.parentElement as HTMLElement;
-
-    const destinationButton =
-      within(targetRow).getByTitle("Select destination");
-    fireEvent.click(destinationButton);
+    fireEvent.click(destinationButtonForFolder("target"));
 
     await waitFor(() => {
       expect(applyVfsMutation).toHaveBeenCalledTimes(1);
@@ -436,15 +445,7 @@ describe("StateEditor interactions", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Move Selected" }));
 
-    const targetFolderButton = screen
-      .getAllByRole("button", { name: /target/i })
-      .find((button) => button.textContent?.toLowerCase().includes("target"));
-    expect(targetFolderButton).toBeTruthy();
-    const targetRow = targetFolderButton?.parentElement as HTMLElement;
-
-    const destinationButton =
-      within(targetRow).getByTitle("Select destination");
-    fireEvent.click(destinationButton);
+    fireEvent.click(destinationButtonForFolder("target"));
 
     await waitFor(() => {
       expect(onShowToast).toHaveBeenCalledWith(

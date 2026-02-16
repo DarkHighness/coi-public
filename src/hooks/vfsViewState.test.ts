@@ -178,6 +178,7 @@ describe("mergeDerivedViewState", () => {
     const merged = mergeDerivedViewState(base, derived);
 
     expect((merged.inventory[0] as any).highlight).toBe(false);
+    expect((merged.inventory[0] as any).lastAccess).toBeUndefined();
     expect(merged.uiState.entityPresentation?.["inventory:item:1"]).toEqual({
       highlight: false,
     });
@@ -202,6 +203,67 @@ describe("mergeDerivedViewState", () => {
     });
   });
 
+  it("overlays UI presentation lastAccess metadata onto derived entities", () => {
+    const base = makeState({
+      inventory: [{ id: "item:1", name: "Key" }] as any,
+      uiState: {
+        inventory: { pinnedIds: [], customOrder: [] },
+        locations: { pinnedIds: [], customOrder: [] },
+        npcs: { pinnedIds: [], customOrder: [] },
+        knowledge: { pinnedIds: [], customOrder: [] },
+        quests: { pinnedIds: [], customOrder: [] },
+        entityPresentation: {
+          "inventory:item:1": {
+            highlight: false,
+            lastAccess: { forkId: 2, turnNumber: 8, timestamp: 1234 },
+          },
+        },
+      } as any,
+    });
+    const derived = makeState({
+      inventory: [{ id: "item:1", name: "Key" }] as any,
+    });
+
+    const merged = mergeDerivedViewState(base, derived);
+
+    expect((merged.inventory[0] as any).highlight).toBe(false);
+    expect((merged.inventory[0] as any).lastAccess).toEqual({
+      forkId: 2,
+      turnNumber: 8,
+      timestamp: 1234,
+    });
+  });
+
+  it("resets lastAccess when entity changes and is auto-highlighted again", () => {
+    const base = makeState({
+      inventory: [{ id: "item:1", name: "Key" }] as any,
+      uiState: {
+        inventory: { pinnedIds: [], customOrder: [] },
+        locations: { pinnedIds: [], customOrder: [] },
+        npcs: { pinnedIds: [], customOrder: [] },
+        knowledge: { pinnedIds: [], customOrder: [] },
+        quests: { pinnedIds: [], customOrder: [] },
+        entityPresentation: {
+          "inventory:item:1": {
+            highlight: false,
+            lastAccess: { forkId: 0, turnNumber: 1, timestamp: 1000 },
+          },
+        },
+      } as any,
+    });
+    const derived = makeState({
+      inventory: [{ id: "item:1", name: "Key+", quality: "new" }] as any,
+    });
+
+    const merged = mergeDerivedViewState(base, derived);
+
+    expect((merged.inventory[0] as any).highlight).toBe(true);
+    expect((merged.inventory[0] as any).lastAccess).toBeUndefined();
+    expect(merged.uiState.entityPresentation?.["inventory:item:1"]).toEqual({
+      highlight: true,
+    });
+  });
+
   it("does not auto-highlight on restore merges", () => {
     const base = makeState({
       inventory: [{ id: "item:1", name: "Key" }] as any,
@@ -217,5 +279,24 @@ describe("mergeDerivedViewState", () => {
 
     expect((merged.inventory[1] as any).highlight).toBeUndefined();
     expect(merged.uiState.entityPresentation?.["inventory:item:2"]).toBeUndefined();
+  });
+
+  it("handles base state without uiState by falling back to defaults", () => {
+    const base = {
+      ...makeState(),
+      uiState: undefined,
+      inventory: [{ id: "item:1", name: "Key" }],
+    } as any;
+    const derived = makeState({
+      inventory: [{ id: "item:1", name: "Key+" }] as any,
+    });
+
+    const merged = mergeDerivedViewState(base, derived);
+
+    expect(merged.uiState).toBeTruthy();
+    expect(merged.uiState.inventory).toBeTruthy();
+    expect(merged.uiState.entityPresentation?.["inventory:item:1"]).toEqual({
+      highlight: true,
+    });
   });
 });

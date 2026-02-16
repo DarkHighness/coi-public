@@ -93,6 +93,20 @@ const mergeNodes = (
   return merged;
 };
 
+const createDefaultUiListState = () => ({
+  pinnedIds: [],
+  customOrder: [],
+});
+
+const createDefaultUiState = (): GameState["uiState"] => ({
+  inventory: createDefaultUiListState(),
+  locations: createDefaultUiListState(),
+  npcs: createDefaultUiListState(),
+  knowledge: createDefaultUiListState(),
+  quests: createDefaultUiListState(),
+  entityPresentation: {},
+});
+
 type EntityPresentationKind =
   | "inventory"
   | "npcs"
@@ -188,15 +202,31 @@ const applyEntityPresentationToList = <T>(
 
     if (autoHighlight && changed) {
       const previousPresentation = nextPresentation[key] ?? {};
-      nextPresentation[key] = {
+      const nextEntry = {
         ...previousPresentation,
         highlight: true,
+      } as EntityPresentationMap[string];
+      if ("lastAccess" in nextEntry) {
+        delete nextEntry.lastAccess;
+      }
+      nextPresentation[key] = {
+        ...nextEntry,
       };
     }
 
+    const presentation = nextPresentation[key];
     const highlight = nextPresentation[key]?.highlight;
-    if (typeof highlight === "boolean" && isRecord(entry)) {
-      return { ...(entry as Record<string, unknown>), highlight } as T;
+    if (isRecord(entry)) {
+      const withPresentation = { ...(entry as Record<string, unknown>) };
+      if (typeof highlight === "boolean") {
+        withPresentation.highlight = highlight;
+      }
+      if (presentation?.lastAccess) {
+        withPresentation.lastAccess = presentation.lastAccess as unknown;
+      } else if ("lastAccess" in withPresentation) {
+        delete withPresentation.lastAccess;
+      }
+      return withPresentation as T;
     }
 
     return entry;
@@ -211,9 +241,13 @@ export const mergeDerivedViewState = (
   const mergedNodes = mergeNodes(base.nodes, derived.nodes);
   const activeNodeId = derived.activeNodeId;
   const resetRuntime = options?.resetRuntime === true;
+  const baseUiState: GameState["uiState"] = {
+    ...createDefaultUiState(),
+    ...(base.uiState ?? {}),
+  };
   const autoHighlight = !resetRuntime;
   const nextPresentation: EntityPresentationMap = {
-    ...(base.uiState.entityPresentation ?? {}),
+    ...(baseUiState.entityPresentation ?? {}),
   };
   const existingPresentationKeys = new Set<string>();
 
@@ -326,7 +360,7 @@ export const mergeDerivedViewState = (
     timeline: timeline as any,
     character: nextCharacter,
     uiState: {
-      ...base.uiState,
+      ...baseUiState,
       entityPresentation: nextPresentation,
     },
     summaries: derived.summaries,

@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import type { EmbeddingIndex, ForkTree, GameState, SaveSlot } from "../types";
+import type {
+  AccessTimestamp,
+  EmbeddingIndex,
+  ForkTree,
+  GameState,
+  SaveSlot,
+} from "../types";
 import {
   saveMetadata,
   loadMetadata,
@@ -98,16 +104,30 @@ const isListState = (
 
 const isEntityPresentationState = (
   value: unknown,
-): value is { highlight?: boolean } => {
+): value is { highlight?: boolean; lastAccess?: AccessTimestamp } => {
   if (!isRecord(value)) return false;
+  const lastAccess = value.lastAccess;
+  const validLastAccess =
+    lastAccess === undefined ||
+    (isRecord(lastAccess) &&
+      typeof lastAccess.forkId === "number" &&
+      Number.isFinite(lastAccess.forkId) &&
+      typeof lastAccess.turnNumber === "number" &&
+      Number.isFinite(lastAccess.turnNumber) &&
+      typeof lastAccess.timestamp === "number" &&
+      Number.isFinite(lastAccess.timestamp));
   return (
-    value.highlight === undefined || typeof value.highlight === "boolean"
+    (value.highlight === undefined || typeof value.highlight === "boolean") &&
+    validLastAccess
   );
 };
 
 const isEntityPresentationMap = (
   value: unknown,
-): value is Record<string, { highlight?: boolean }> => {
+): value is Record<
+  string,
+  { highlight?: boolean; lastAccess?: AccessTimestamp }
+> => {
   if (!isRecord(value)) return false;
   return Object.values(value).every((entry) =>
     isEntityPresentationState(entry),
