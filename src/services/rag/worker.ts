@@ -1030,6 +1030,16 @@ async function handleClearSave(saveId?: string): Promise<{ deleted: number }> {
 
   const deleted = await database!.deleteDocumentsBySave(targetSaveId);
 
+  if (deleted > 0) {
+    broadcastEvent({
+      type: "indexUpdated",
+      data: {
+        count: -deleted,
+        saveId: targetSaveId,
+      },
+    });
+  }
+
   if (targetSaveId === currentSaveId) {
     currentSaveId = null;
   }

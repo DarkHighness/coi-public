@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { VfsFileMap } from "../../services/vfs/types";
 import {
+  invalidateRAGSnapshotCache,
   indexInitialEntities,
   updateRAGDocumentsBackground,
 } from "./ragDocuments";
@@ -141,5 +142,43 @@ describe("runtime/effects/ragDocuments", () => {
     expect(payload.turnNumber).toBe(5);
     expect(Array.isArray(payload.documents)).toBe(true);
     expect(payload.documents.length).toBeGreaterThan(0);
+  });
+
+  it("invalidates snapshot cache to force a fresh reindex", async () => {
+    const ragService = {
+      initialized: true,
+      reindexAll: vi.fn().mockResolvedValue({ deleted: 0, count: 1 }),
+      deleteByPaths: vi.fn().mockResolvedValue({ deleted: 0 }),
+      upsertFileChunks: vi.fn().mockResolvedValue({ count: 1 }),
+    };
+
+    getRAGServiceMock.mockReturnValue(ragService);
+
+    const snapshot: VfsFileMap = {
+      "current/world/a.txt": createFile("current/world/a.txt", "alpha", "ha-1"),
+    };
+
+    const vfsSession = {
+      snapshotAllCanonical: vi.fn(() => snapshot),
+    } as any;
+
+    await updateRAGDocumentsBackground(
+      [],
+      { saveId: "save-cache-1", forkId: 0, turnNumber: 1 } as any,
+      vfsSession,
+    );
+
+    expect(ragService.reindexAll).toHaveBeenCalledTimes(1);
+
+    invalidateRAGSnapshotCache("save-cache-1", 0);
+
+    await updateRAGDocumentsBackground(
+      [],
+      { saveId: "save-cache-1", forkId: 0, turnNumber: 2 } as any,
+      vfsSession,
+    );
+
+    expect(ragService.reindexAll).toHaveBeenCalledTimes(2);
+    expect(ragService.deleteByPaths).not.toHaveBeenCalled();
   });
 });

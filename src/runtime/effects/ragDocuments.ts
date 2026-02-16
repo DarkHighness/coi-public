@@ -16,6 +16,28 @@ const snapshotCache = new Map<string, VfsFileMap>();
 const buildCacheKey = (saveId: string, forkId: number): string =>
   `${saveId}::${forkId}`;
 
+export const invalidateRAGSnapshotCache = (
+  saveId?: string,
+  forkId?: number,
+): void => {
+  if (!saveId) {
+    snapshotCache.clear();
+    return;
+  }
+
+  if (typeof forkId === "number") {
+    snapshotCache.delete(buildCacheKey(saveId, forkId));
+    return;
+  }
+
+  const prefix = `${saveId}::`;
+  for (const key of Array.from(snapshotCache.keys())) {
+    if (key.startsWith(prefix)) {
+      snapshotCache.delete(key);
+    }
+  }
+};
+
 const cloneSnapshot = (snapshot: VfsFileMap): VfsFileMap => {
   const next: VfsFileMap = {};
   for (const [path, file] of Object.entries(snapshot)) {

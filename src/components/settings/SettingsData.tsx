@@ -6,6 +6,7 @@ import { useOptionalRuntimeContext } from "../../runtime/context";
 import { GlobalStorageStats } from "../../services/rag";
 import { getImageStorageStats } from "../../utils/imageStorage";
 import { sessionManager } from "../../services/ai/sessionManager";
+import { invalidateRAGSnapshotCache } from "../../runtime/effects/ragDocuments";
 
 export const SettingsData: React.FC<SettingsDataProps> = ({
   saveCount = 0,
@@ -438,9 +439,44 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                   showToast(t("data.ragUnavailable"), "info");
                   return;
                 }
-                await ragActions.cleanup();
-                showToast(t("data.clearRagSuccess"), "info");
-                fetchRagStats();
+
+                const ragService = ragActions.getService?.();
+                if (!ragService) {
+                  showToast(t("data.ragUnavailable"), "info");
+                  return;
+                }
+
+                const saveIdToClear =
+                  ragState?.currentSaveId ||
+                  runtimeContext?.state.currentSlotId ||
+                  undefined;
+                const clearResult = await ragService.clearSave(saveIdToClear);
+
+                invalidateRAGSnapshotCache(saveIdToClear);
+
+                const gameState = runtimeContext?.state.gameState;
+                if (saveIdToClear && gameState?.forkTree) {
+                  await ragActions.switchSave(
+                    saveIdToClear,
+                    gameState.forkId || 0,
+                    gameState.forkTree,
+                  );
+                }
+
+                await ragActions.refreshStatus?.();
+                await fetchRagStats();
+                showToast(
+                  clearResult.deleted > 0
+                    ? t("data.clearRagSuccessWithCount", {
+                        count: clearResult.deleted,
+                        defaultValue: `Cleared ${clearResult.deleted} RAG documents`,
+                      })
+                    : t(
+                        "data.clearRagSuccess",
+                        "RAG knowledge base cleared",
+                      ),
+                  "info",
+                );
               } catch (error) {
                 console.error("Failed to clear RAG:", error);
                 showToast(
