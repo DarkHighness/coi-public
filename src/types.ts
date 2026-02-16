@@ -68,6 +68,7 @@ import type {
   ActorProfile as ZodActorProfile,
   ActorBundle as ZodActorBundle,
   Placeholder as ZodPlaceholder,
+  PlaceholderDraftFile as ZodPlaceholderDraftFile,
   RelationEdge as ZodRelationEdge,
   StoryOutline as ZodStoryOutline,
   StorySummary as ZodStorySummary,
@@ -151,6 +152,7 @@ export type ActorProfile = ZodActorProfile;
 export type RelationEdge = ZodRelationEdge;
 export type ActorBundle = ZodActorBundle;
 export type Placeholder = ZodPlaceholder;
+export type PlaceholderDraftFile = ZodPlaceholderDraftFile;
 // Back-compat alias: UI and logs still use the name "NPC" for sidebar panels.
 export type NPC = ActorProfile;
 

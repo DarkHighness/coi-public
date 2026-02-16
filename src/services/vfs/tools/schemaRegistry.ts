@@ -21,7 +21,6 @@ import {
   atmosphereSchema,
   actorProfileSchema,
   strictPlayerProfileSchema,
-  placeholderSchema,
   storyOutlineSchema,
   storySummarySchema,
 } from "../../zodSchemas";
@@ -168,11 +167,6 @@ const RULES: VfsSchemaRule[] = [
     templateId: "template.story.world",
     logicalPathPattern: /^world\/causal_chains\/[^/]+\.json$/,
     schema: causalChainSchema,
-  },
-  {
-    templateId: "template.story.world",
-    logicalPathPattern: /^world\/placeholders\/[^/]+\.json$/,
-    schema: placeholderSchema,
   },
   {
     templateId: "template.story.world",

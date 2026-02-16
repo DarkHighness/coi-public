@@ -420,7 +420,8 @@ When you render those consequences into prose, write like a skilled human storyt
   - Placeholder \`[Display Name]\` in reference fields is temporary:
     - When identity becomes explicit, resolve to canonical ID in the same turn whenever possible.
     - Reuse existing entity ID if found; otherwise create a stable entity ID and replace touched placeholder references.
-    - Keep unresolved notes under \`current/world/placeholder/**/*.md\`; delete the corresponding draft note after successful promotion.
+    - Keep unresolved notes under \`current/world/placeholders/**/*.md\`; delete draft only after canonical write succeeds.
+    - If canonical write fails, keep draft and retry with corrected payload; never delete draft on failed promotion.
   - After any schema error, retry with minimal valid payload (required fields + changed fields), not a larger speculative payload.
 </JSON_WRITE_DISCIPLINE>
 `,

@@ -68,12 +68,10 @@ describe("VfsSession", () => {
   it("blocks top-level unlocked regression from true to false", () => {
     const session = new VfsSession();
     session.writeFile(
-      "world/placeholders/ph:test.json",
+      "world/characters/char:player/views/quests/quest:test.json",
       JSON.stringify({
-        id: "ph:test",
-        label: "Mysterious Figure",
-        knownBy: ["char:player"],
-        visible: { description: "A cloaked silhouette." },
+        entityId: "quest:test",
+        status: "active",
         unlocked: true,
         unlockReason: "face revealed",
       }),
@@ -82,12 +80,10 @@ describe("VfsSession", () => {
 
     expect(() =>
       session.writeFile(
-        "world/placeholders/ph:test.json",
+        "world/characters/char:player/views/quests/quest:test.json",
         JSON.stringify({
-          id: "ph:test",
-          label: "Mysterious Figure",
-          knownBy: ["char:player"],
-          visible: { description: "A cloaked silhouette." },
+          entityId: "quest:test",
+          status: "active",
           unlocked: false,
         }),
         "application/json",
@@ -141,7 +137,7 @@ describe("VfsSession", () => {
     const session = new VfsSession();
 
     session.writeFile(
-      "world/placeholder/char:npc_guard.md",
+      "world/placeholders/char:npc_guard.md",
       "# Placeholder Draft\n\n- id: char:npc_guard\n",
       "text/markdown",
     );
@@ -160,19 +156,19 @@ describe("VfsSession", () => {
       "application/json",
     );
 
-    expect(session.readFile("world/placeholder/char:npc_guard.md")).toBeNull();
+    expect(session.readFile("world/placeholders/char:npc_guard.md")).toBeNull();
   });
 
   it("removes world placeholder draft markdown after non-character entity promotion write", () => {
     const session = new VfsSession();
 
     session.writeFile(
-      "world/placeholder/quest:signal.md",
+      "world/placeholders/quest:signal.md",
       "# Placeholder Draft\n\n- id: quest:signal\n",
       "text/markdown",
     );
     session.writeFile(
-      "world/placeholder/quest:untouched.md",
+      "world/placeholders/quest:untouched.md",
       "# Placeholder Draft\n\n- id: quest:untouched\n",
       "text/markdown",
     );
@@ -198,8 +194,8 @@ describe("VfsSession", () => {
       "application/json",
     );
 
-    expect(session.readFile("world/placeholder/quest:signal.md")).toBeNull();
-    expect(session.readFile("world/placeholder/quest:untouched.md")).toBeTruthy();
+    expect(session.readFile("world/placeholders/quest:signal.md")).toBeNull();
+    expect(session.readFile("world/placeholders/quest:untouched.md")).toBeTruthy();
   });
 
   it("lists directories", () => {

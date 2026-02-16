@@ -31,7 +31,8 @@ const idUsage = `
       * If entity identity becomes explicit in-story (named mention, encounter, concrete interaction), resolve \`[Display Name]\` to canonical ID in the same turn whenever possible.
       * If canonical ID already exists, patch touched references to that ID immediately.
       * If canonical ID does not exist and the entity is now mechanically significant, create the entity with a stable ID and replace \`[Display Name]\`.
-      * Keep unresolved notes in \`current/world/placeholder/**/*.md\` and delete the matching draft after successful promotion to canonical JSON.
+      * Keep unresolved notes in \`current/world/placeholders/**/*.md\`; delete the matching draft only after canonical write succeeds.
+      * If canonical write fails, keep draft file, fix the write, and retry promotion.
       * Do not persist placeholder aliases across later turns after canonical identity is available.
     - Never return plain display names (without brackets) in reference fields.
     - Never return mixed forms such as:

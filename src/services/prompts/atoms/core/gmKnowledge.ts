@@ -103,6 +103,7 @@ const unlockProtocol = `
       - Placeholder-to-canonical promotion:
         - If a reference still uses \`[Display Name]\` and identity is now explicit, resolve to canonical ID in the same turn.
         - Reuse existing canonical ID when found; otherwise create a stable ID entity and replace touched placeholder references.
+        - Draft lifecycle: unresolved notes stay in \`current/world/placeholders/**/*.md\`; delete draft only after canonical write succeeds. If write fails, keep draft and retry.
       - If the proof should change what the protagonist can reasonably describe, update \`visible\` fields in the same turn.
     </how_to_unlock>
 

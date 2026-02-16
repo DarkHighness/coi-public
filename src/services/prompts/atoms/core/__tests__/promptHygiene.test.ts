@@ -102,7 +102,9 @@ describe("core prompt hygiene", () => {
     expect(content).toContain(
       "hidden-truth proof, not about first-time appearance",
     );
-    expect(content).toContain("current/world/placeholder/**/*.md");
+    expect(content).toContain("current/world/placeholders/**/*.md");
+    expect(content).toContain("delete draft only after canonical write succeeds");
+    expect(content).toContain("If canonical write fails, keep draft");
 
     // SUDO semantics must remain controlled (not hard bypass)
     expect(content).toContain("elevated update");

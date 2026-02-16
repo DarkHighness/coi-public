@@ -50,14 +50,15 @@ export const stateManagement: Atom<void> = defineAtom(
       * **Special unresolved reference protocol**: if canonical ID is not available yet, you may use a bracket alias \`[Display Name]\` in the reference field.
       * **Placeholder promotion (MANDATORY)**:
         - \`[Display Name]\` is temporary only; do not keep it once canonical identity is known.
-        - Unresolved draft notes belong in \`current/world/placeholder/**/*.md\` (markdown, free-form notes).
+        - Unresolved draft notes belong in \`current/world/placeholders/**/*.md\` (markdown, free-form notes).
         - Promotion triggers: explicit named mention, direct encounter, or any mechanical consequence tied to that entity.
         - Promotion workflow:
           1) Search existing canonical IDs first (\`vfs_search\` + \`vfs_ls\`).
           2) If a matching entity exists, rewrite touched references to that canonical ID in the same response.
           3) If no match exists and the entity is now mechanically significant, create a canonical entity file with a stable ID, then replace \`[Display Name]\` references with that ID.
           4) If the protagonist now confirms the entity exists, update canonical \`knownBy\` (add \`char:player\`) and create the corresponding player view file for world entities.
-          5) Delete the corresponding placeholder draft markdown in \`current/world/placeholder/**\` after successful promotion.
+          5) Delete the corresponding placeholder draft markdown in \`current/world/placeholders/**\` only after canonical write succeeds.
+          6) If canonical write fails, keep draft file, fix the error, and retry promotion (do not delete draft on failed write).
       * **Never mix ID+name in one field** (e.g., \`"loc_tavern (Silver Inn)"\`, \`"loc_tavern [Silver Inn]"\` are forbidden).
       * **Player psychology ban**: NEVER write player hidden monologue or inner motives. Do not invent player thoughts.
 

@@ -182,12 +182,31 @@ const writePlaceholderArtifacts = (
     return;
   }
   const placeholderId = id.trim();
-  writeJson(session, `world/placeholders/${placeholderId}.json`, placeholder);
   session.writeFile(
-    `world/placeholder/${placeholderId}.md`,
+    `world/placeholders/${placeholderId}.md`,
     buildPlaceholderDraftMarkdown(placeholder),
     "text/markdown",
   );
+};
+
+const writePlaceholderDraftFile = (
+  session: VfsSession,
+  draftFile: Record<string, unknown>,
+): void => {
+  const rawPath =
+    typeof draftFile.path === "string" ? draftFile.path.trim() : "";
+  const rawMarkdown =
+    typeof draftFile.markdown === "string" ? draftFile.markdown.trim() : "";
+
+  if (!/^world\/placeholders\/[^/]+\.md$/.test(rawPath)) {
+    return;
+  }
+
+  if (rawMarkdown.length === 0) {
+    return;
+  }
+
+  session.writeFile(rawPath, rawMarkdown, "text/markdown");
 };
 
 const writeWorldInfoAndView = (
@@ -638,12 +657,9 @@ export const seedVfsSessionFromOutline = (
     }
   }
   if (Array.isArray((outline as any).placeholders)) {
-    for (const placeholder of (outline as any).placeholders as any[]) {
-      if (!placeholder || typeof placeholder !== "object") continue;
-      writePlaceholderArtifacts(
-        session,
-        stripUiOnlyFields(placeholder as Record<string, unknown>),
-      );
+    for (const draftFile of (outline as any).placeholders as any[]) {
+      if (!draftFile || typeof draftFile !== "object") continue;
+      writePlaceholderDraftFile(session, draftFile as Record<string, unknown>);
     }
   }
 

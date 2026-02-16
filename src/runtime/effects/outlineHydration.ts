@@ -57,6 +57,84 @@ interface PersistOutlineCheckpointOptions {
   seedImageId?: string;
 }
 
+function parseOutlinePlaceholderDraft(draft: unknown): any | null {
+  if (!draft || typeof draft !== "object") {
+    return null;
+  }
+
+  const path =
+    typeof (draft as any).path === "string" ? (draft as any).path.trim() : "";
+  const markdown =
+    typeof (draft as any).markdown === "string"
+      ? (draft as any).markdown
+      : "";
+
+  if (!/^world\/placeholders\/[^/]+\.md$/.test(path)) {
+    return null;
+  }
+
+  const lines = markdown.split(/\r?\n/);
+  const idFromPath = path.split("/").pop()?.replace(/\.md$/i, "") ?? "";
+  let id = idFromPath;
+  let label = "";
+  let knownBy: string[] = [];
+  let notes = "";
+  let inNotes = false;
+  const notesLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) {
+      if (inNotes) notesLines.push("");
+      continue;
+    }
+
+    if (/^##\s+/i.test(trimmed)) {
+      inNotes = /^##\s+Notes$/i.test(trimmed);
+      continue;
+    }
+
+    const idMatch = /^-\s*id:\s*(.+)$/i.exec(trimmed);
+    if (idMatch?.[1]) {
+      id = idMatch[1].trim();
+      continue;
+    }
+
+    const labelMatch = /^-\s*label:\s*(.+)$/i.exec(trimmed);
+    if (labelMatch?.[1]) {
+      label = labelMatch[1].trim();
+      continue;
+    }
+
+    const knownByMatch = /^-\s*knownBy:\s*(.+)$/i.exec(trimmed);
+    if (knownByMatch?.[1]) {
+      knownBy = knownByMatch[1]
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+      continue;
+    }
+
+    if (inNotes) {
+      notesLines.push(trimmed);
+    }
+  }
+
+  notes = notesLines.join(" ").replace(/\s+/g, " ").trim();
+  if (!id || id.length === 0) {
+    return null;
+  }
+
+  return {
+    id,
+    label: label || `[${id}]`,
+    knownBy,
+    visible: {
+      description: notes || "Pending concretization.",
+    },
+  };
+}
+
 export function calculateAccumulatedTokens(logs: any[]): TokenUsageAccumulator {
   return logs.reduce(
     (acc, log) => ({
@@ -94,8 +172,10 @@ export function buildOutlineHydratedState({
   const npcBundles: any[] = Array.isArray((outline as any).npcs)
     ? ((outline as any).npcs as any[])
     : [];
-  const placeholders: any[] = Array.isArray((outline as any).placeholders)
+  const placeholders = Array.isArray((outline as any).placeholders)
     ? ((outline as any).placeholders as any[])
+        .map((draft) => parseOutlinePlaceholderDraft(draft))
+        .filter(Boolean)
     : [];
   const visible = (player?.profile as any)?.visible ?? {};
 

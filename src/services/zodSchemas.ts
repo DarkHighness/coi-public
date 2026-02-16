@@ -1447,6 +1447,21 @@ export const placeholderSchema = z.object({
   unlockReason: z.string().nullish().describe("REQUIRED when unlocked=true."),
 });
 
+export const placeholderDraftFileSchema = z.object({
+  path: z
+    .string()
+    .regex(/^world\/placeholders\/[^/]+\.md$/)
+    .describe(
+      "REQUIRED. VFS markdown draft path under world/placeholders (for example `world/placeholders/ph:clockmaker.md`).",
+    ),
+  markdown: z
+    .string()
+    .min(1)
+    .describe(
+      "REQUIRED. Placeholder draft markdown content. Include at minimum `- id:` and a Notes section.",
+    ),
+});
+
 /** 角色档案（不包含 skills/conditions/hiddenTraits；它们以分文件形式存储） */
 export const characterProfileSchema = z.object({
   name: z.string().describe("Name of the protagonist."),
@@ -1746,9 +1761,9 @@ export const storyOutlineSchema = z.object({
   player: strictPlayerBundleSchema.describe("The player actor bundle."),
   npcs: z.array(actorBundleSchema).describe("Initial NPC actor bundles (1-2)."),
   placeholders: z
-    .array(placeholderSchema)
+    .array(placeholderDraftFileSchema)
     .default([])
-    .describe("Unspawned referenced entities (placeholders)."),
+    .describe("Unresolved placeholder draft markdown files."),
 
   // World entities
   quests: z
@@ -1985,10 +2000,10 @@ export const outlinePhase6Schema = z.object({
       "1-2 initial NPC actor bundles. Each profile.kind MUST be 'npc'. Each profile MUST include relations (NPC->player attitude, and optionally NPC<->NPC).",
     ),
   placeholders: z
-    .array(placeholderSchema)
+    .array(placeholderDraftFileSchema)
     .default([])
     .describe(
-      "Optional placeholders referenced by relations (unspawned entities).",
+      "Optional placeholder draft markdown files referenced by relations (unspawned entities).",
     ),
   playerPerceptions: z
     .array(relationPerceptionSchema)
@@ -2744,6 +2759,7 @@ export type ActorProfile = z.infer<typeof actorProfileSchema>;
 // Back-compat alias: "NPC" is now an ActorProfile with kind="npc"
 export type NPC = ActorProfile;
 export type Placeholder = z.infer<typeof placeholderSchema>;
+export type PlaceholderDraftFile = z.infer<typeof placeholderDraftFileSchema>;
 export type RelationEdge = z.infer<typeof relationEdgeSchema>;
 export type ActorBundle = z.infer<typeof actorBundleSchema>;
 export type Location = z.infer<typeof locationSchema>;

@@ -31,6 +31,12 @@ describe("stateManagement atom", () => {
     expect(content).toContain("from only for move/copy");
     expect(content).toContain("Placeholder promotion (MANDATORY)");
     expect(content).toContain("knownBy vs unlocked decision protocol (STRICT)");
-    expect(content).toContain("current/world/placeholder/**/*.md");
+    expect(content).toContain("current/world/placeholders/**/*.md");
+    expect(content).toContain(
+      "Delete the corresponding placeholder draft markdown",
+    );
+    expect(content).toContain(
+      "If canonical write fails, keep draft file, fix the error, and retry promotion",
+    );
   });
 });

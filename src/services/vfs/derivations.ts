@@ -286,6 +286,90 @@ const parseJsonFile = (file: VfsFile): unknown | null => {
   }
 };
 
+const parsePlaceholderDraftMarkdown = (
+  pathWithoutCurrent: string,
+  content: string,
+): Placeholder | null => {
+  if (!pathWithoutCurrent.startsWith("world/placeholders/")) {
+    return null;
+  }
+  if (!pathWithoutCurrent.endsWith(".md")) {
+    return null;
+  }
+  if (pathWithoutCurrent.endsWith("/README.md")) {
+    return null;
+  }
+
+  const filename = pathWithoutCurrent.split("/").pop() ?? "";
+  const idFromPath = filename.endsWith(".md")
+    ? filename.slice(0, -".md".length).trim()
+    : "";
+
+  const lines = content.split(/\r?\n/);
+  let id = idFromPath;
+  let label = "";
+  let knownBy: string[] = [];
+  let inNotesSection = false;
+  const notesLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) {
+      if (inNotesSection) {
+        notesLines.push("");
+      }
+      continue;
+    }
+
+    if (/^##\s+/i.test(trimmed)) {
+      inNotesSection = /^##\s+Notes$/i.test(trimmed);
+      continue;
+    }
+
+    const idMatch = /^-\s*id:\s*(.+)$/i.exec(trimmed);
+    if (idMatch?.[1]) {
+      id = idMatch[1].trim();
+      continue;
+    }
+
+    const labelMatch = /^-\s*label:\s*(.+)$/i.exec(trimmed);
+    if (labelMatch?.[1]) {
+      label = labelMatch[1].trim();
+      continue;
+    }
+
+    const knownByMatch = /^-\s*knownBy:\s*(.+)$/i.exec(trimmed);
+    if (knownByMatch?.[1]) {
+      knownBy = knownByMatch[1]
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+      continue;
+    }
+
+    if (inNotesSection) {
+      notesLines.push(trimmed);
+    }
+  }
+
+  if (!id || id.length === 0) {
+    return null;
+  }
+
+  const description =
+    notesLines.join(" ").replace(/\s+/g, " ").trim() ||
+    "Pending concretization.";
+
+  return {
+    id,
+    label: label || `[${id}]`,
+    knownBy,
+    visible: {
+      description,
+    },
+  };
+};
+
 const stripCurrentPrefix = (path: string): string => {
   const normalized = normalizeVfsPath(path);
   if (normalized.startsWith("current/")) {
@@ -461,6 +545,21 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       continue;
     }
 
+    if (
+      pathWithoutCurrent.startsWith("world/placeholders/") &&
+      (file.contentType === "text/markdown" ||
+        file.contentType === "text/plain")
+    ) {
+      const parsedPlaceholder = parsePlaceholderDraftMarkdown(
+        pathWithoutCurrent,
+        file.content,
+      );
+      if (parsedPlaceholder) {
+        placeholders.push(parsedPlaceholder);
+      }
+      continue;
+    }
+
     const data = parseJsonFile(file);
     if (data === null) continue;
 
@@ -571,17 +670,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       pathWithoutCurrent.startsWith("world/character/") ||
       pathWithoutCurrent.startsWith("world/inventory/") ||
       pathWithoutCurrent.startsWith("world/npcs/") ||
-      pathWithoutCurrent === "world/player_profile.json"
+      pathWithoutCurrent === "world/player_profile.json" ||
+      pathWithoutCurrent.startsWith("world/placeholders/")
     ) {
       throw new Error(
         `SAVE_INCOMPATIBLE_LAYOUT: Found legacy path "${pathWithoutCurrent}". This build requires Actor-first VFS layout under world/characters/.`,
       );
-    }
-
-    // Placeholders
-    if (pathWithoutCurrent.startsWith("world/placeholders/")) {
-      placeholders.push(data as Placeholder);
-      continue;
     }
 
     // Actor-first layout: world/characters/<id>/(profile.json|skills/*|conditions/*|traits/*|inventory/*)

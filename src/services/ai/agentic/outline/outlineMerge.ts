@@ -24,6 +24,55 @@ interface PrepareEntitiesOptions {
   defaultUnlocked?: boolean;
 }
 
+const normalizePlaceholderDraftPath = (
+  value: unknown,
+  fallbackIndex: number,
+): string => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^world\/placeholders\/[^/]+\.md$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    if (trimmed.length > 0) {
+      const normalized = trimmed.replace(/^\/+/, "").replace(/\.md$/i, "");
+      if (normalized.length > 0) {
+        const filename = normalized.split("/").filter(Boolean).pop();
+        if (filename && filename.length > 0) {
+          return `world/placeholders/${filename}.md`;
+        }
+      }
+    }
+  }
+
+  return `world/placeholders/ph:${fallbackIndex}.md`;
+};
+
+const normalizePlaceholderDraftMarkdown = (
+  value: unknown,
+  path: string,
+  fallbackIndex: number,
+): string => {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  const idFromPath = path.split("/").pop()?.replace(/\.md$/i, "")?.trim();
+  const id = idFromPath && idFromPath.length > 0
+    ? idFromPath
+    : `ph:${fallbackIndex}`;
+
+  return [
+    "# Placeholder Draft",
+    "",
+    `- id: ${id}`,
+    "",
+    "## Notes",
+    "- Pending concretization.",
+    "",
+  ].join("\n");
+};
+
 /**
  * Helper to ensure all entities have IDs.
  * For actor-owned entities, unlocked can be defaulted when requested.
@@ -223,13 +272,20 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
         )
       : ([] as any),
     placeholders: Array.isArray((p6 as any).placeholders)
-      ? ((p6 as any).placeholders as any[]).map((ph, idx) => ({
-          ...ph,
-          id:
-            typeof ph?.id === "string" && ph.id.trim()
-              ? ph.id.trim()
-              : `ph:${idx + 1}`,
-        }))
+      ? ((p6 as any).placeholders as any[]).map((draft, idx) => {
+          const path = normalizePlaceholderDraftPath(
+            (draft as any)?.path,
+            idx + 1,
+          );
+          return {
+            path,
+            markdown: normalizePlaceholderDraftMarkdown(
+              (draft as any)?.markdown,
+              path,
+              idx + 1,
+            ),
+          };
+        })
       : [],
 
     // Phase 9: Opening Narrative

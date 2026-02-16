@@ -17,13 +17,34 @@ describe("directory scaffolds", () => {
     expect(session.readFile("world/characters/README.md")).toBeTruthy();
     expect(session.readFile("world/locations/README.md")).toBeTruthy();
     expect(session.readFile("world/causal_chains/README.md")).toBeTruthy();
-    expect(session.readFile("world/placeholder/README.md")).toBeTruthy();
+    expect(session.readFile("world/placeholders/README.md")).toBeTruthy();
     expect(session.readFile("custom_rules/README.md")).toBeTruthy();
     expect(
       session.readFile("custom_rules/00-system-core/README.md"),
     ).toBeTruthy();
     expect(session.readFile("custom_rules/12-custom/README.md")).toBeTruthy();
     expect(session.readFile("custom_rules/00-system-core/RULES.md")).toBeNull();
+
+    const charactersReadme =
+      session.readFile("world/characters/README.md")?.content ?? "";
+    expect(charactersReadme).toContain("## Audience");
+    expect(charactersReadme).toContain("## Write Protocol");
+    expect(charactersReadme).toContain("AI Runtime");
+
+    const placeholderReadme =
+      session.readFile("world/placeholders/README.md")?.content ?? "";
+    expect(placeholderReadme).toContain("markdown-only");
+    expect(placeholderReadme).toContain(
+      "After successful canonical write, delete the corresponding draft markdown",
+    );
+    expect(placeholderReadme).toContain(
+      "do not delete draft on failed promotion",
+    );
+
+    const systemCoreReadme =
+      session.readFile("custom_rules/00-system-core/README.md")?.content ?? "";
+    expect(systemCoreReadme).toContain("When to apply:");
+    expect(systemCoreReadme).toContain("## Guardrails");
   });
 
   it("is idempotent when called repeatedly", () => {

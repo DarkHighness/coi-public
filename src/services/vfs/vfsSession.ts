@@ -133,7 +133,6 @@ const TOP_LEVEL_UNLOCK_PATH_PATTERNS: RegExp[] = [
   /^world\/characters\/[^/]+\/skills\/[^/]+\.json$/,
   /^world\/characters\/[^/]+\/conditions\/[^/]+\.json$/,
   /^world\/characters\/[^/]+\/traits\/[^/]+\.json$/,
-  /^world\/placeholders\/[^/]+\.json$/,
   /^world\/characters\/[^/]+\/views\/(quests|knowledge|timeline|locations|factions|causal_chains)\/[^/]+\.json$/,
 ];
 const WORLD_INFO_VIEW_PATH_PATTERN =
@@ -162,7 +161,6 @@ const toPlaceholderDraftLogicalCandidates = (
   }
 
   if (
-    normalized.startsWith("world/placeholder/") ||
     normalized.startsWith("world/placeholders/")
   ) {
     return [];
@@ -173,7 +171,7 @@ const toPlaceholderDraftLogicalCandidates = (
   }
 
   const rest = normalized.slice("world/".length, -".json".length);
-  const candidates = new Set<string>([`world/placeholder/${rest}.md`]);
+  const candidates = new Set<string>([`world/placeholders/${rest}.md`]);
   const segments = rest.split("/").filter(Boolean);
   if (segments.length === 0) {
     return Array.from(candidates);
@@ -182,7 +180,7 @@ const toPlaceholderDraftLogicalCandidates = (
   if (rest.endsWith("/profile")) {
     const withoutProfile = rest.slice(0, -"/profile".length);
     if (withoutProfile.length > 0) {
-      candidates.add(`world/placeholder/${withoutProfile}.md`);
+      candidates.add(`world/placeholders/${withoutProfile}.md`);
     }
   }
 
@@ -192,9 +190,9 @@ const toPlaceholderDraftLogicalCandidates = (
   }
 
   if (entityId.length > 0) {
-    candidates.add(`world/placeholder/${entityId}.md`);
+    candidates.add(`world/placeholders/${entityId}.md`);
     if (segments.length >= 2) {
-      candidates.add(`world/placeholder/${segments[0]}/${entityId}.md`);
+      candidates.add(`world/placeholders/${segments[0]}/${entityId}.md`);
     }
   }
 

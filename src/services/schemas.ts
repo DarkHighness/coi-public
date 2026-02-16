@@ -25,6 +25,7 @@ export {
   // Actor/relationship schemas
   actorProfileSchema,
   placeholderSchema,
+  placeholderDraftFileSchema,
   relationEdgeSchema,
   actorBundleSchema,
   // Schema builders
@@ -52,6 +53,7 @@ export type {
   NPC,
   ActorProfile,
   Placeholder,
+  PlaceholderDraftFile,
   RelationEdge,
   ActorBundle,
   Location,

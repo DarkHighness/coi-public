@@ -206,55 +206,192 @@ export const CUSTOM_RULE_CATEGORY_PRESETS: readonly CustomRuleCategoryPreset[] =
     },
   ] as const;
 
-const ROOT_CATEGORY_DIRECTORIES = [
+interface RootCategoryDirectoryDefinition {
+  path: string;
+  title: string;
+  purpose: string;
+  whatBelongs: string[];
+  writeProtocol: string[];
+  guardrails: string[];
+}
+
+const ROOT_CATEGORY_DIRECTORIES: readonly RootCategoryDirectoryDefinition[] = [
   {
     path: "world/characters",
     title: "Characters",
     purpose:
-      "Actor profiles and per-actor assets. Keep IDs stable and explicit.",
+      "Actor profiles and actor-owned entities (skills/conditions/traits/inventory/views).",
+    whatBelongs: [
+      "Per-actor profile files: `world/characters/<actorId>/profile.json`.",
+      "Actor-owned collections: `skills/`, `conditions/`, `traits/`, `inventory/`.",
+      "Per-actor perspective files under `views/` for world entities.",
+    ],
+    writeProtocol: [
+      "Patch `profile.json` for scalar actor state (for example `/currentLocation`, `/visible/status`).",
+      "Write actor-owned entities as separate JSON files under their subfolders.",
+      "Use stable IDs (`char:*`, `skill:*`, `cond:*`, `trait:*`, `inv:*`).",
+    ],
+    guardrails: [
+      "`profile.json` is not a container for skills/conditions/traits/inventory arrays.",
+      "Do not write UI-only fields (`highlight`, `lastAccess`) into files here.",
+      "For world-entity unlocks, use `views/**`; do not back-write unlock fields into canonical world files.",
+    ],
   },
   {
     path: "world/locations",
     title: "Locations",
-    purpose: "Place definitions and location-level state for the active world.",
+    purpose: "Canonical location definitions and location-anchored dropped items.",
+    whatBelongs: [
+      "Location definitions: `world/locations/<locId>.json`.",
+      "Dropped/placed items: `world/locations/<locId>/items/<itemId>.json`.",
+    ],
+    writeProtocol: [
+      "Write world truth to canonical location files.",
+      "Write actor discovery/progress (`unlocked`, `isVisited`) to actor views, not canonical locations.",
+      "Move items between actor inventory and location items via file move semantics.",
+    ],
+    guardrails: [
+      "Canonical location files must not contain root `unlocked`/`unlockReason`.",
+      "Canonical location files must not contain UI/view fields (`highlight`, `lastAccess`, `isVisited`, `visitedCount`).",
+      "Keep `knownBy` canonical and evidence-driven.",
+    ],
   },
   {
     path: "world/quests",
     title: "Quests",
-    purpose:
-      "Quest definitions, progression metadata, and objective structure.",
+    purpose: "Canonical quest definitions, objective truth, and quest-level hidden data.",
+    whatBelongs: [
+      "Quest definitions at `world/quests/<questId>.json`.",
+      "Canonical objective structure and hidden quest truth.",
+    ],
+    writeProtocol: [
+      "Write world truth and canonical objective design in quest files.",
+      "Write player progress/status/unlock to `world/characters/<actorId>/views/quests/*.json`.",
+      "Keep IDs stable (`quest:*`) and relation references canonical.",
+    ],
+    guardrails: [
+      "Do not write root `unlocked`/`unlockReason` in canonical quest files.",
+      "Do not write UI-only fields (`highlight`, `lastAccess`) here.",
+      "Avoid speculative objective rewrites without narrative cause.",
+    ],
   },
   {
     path: "world/knowledge",
     title: "Knowledge",
-    purpose: "Lore, discovered facts, and knowledge graph style entries.",
+    purpose: "Canonical lore/fact entries and hidden truth anchors.",
+    whatBelongs: [
+      "Knowledge definitions at `world/knowledge/<knowledgeId>.json`.",
+      "Player-facing summaries and hidden canonical truth for knowledge entries.",
+    ],
+    writeProtocol: [
+      "Persist durable facts and world truth canonically.",
+      "Track player-side discovery/unlock only in actor views.",
+      "Use canonical IDs (`know:*`) and actor IDs in `knownBy`.",
+    ],
+    guardrails: [
+      "No root `unlocked`/`unlockReason` in canonical knowledge files.",
+      "No UI-only fields (`highlight`, `lastAccess`) in canonical knowledge files.",
+      "Do not delete established durable facts without explicit retcon handling.",
+    ],
   },
   {
     path: "world/factions",
     title: "Factions",
-    purpose: "Faction identity, relationships, and standing-related entities.",
+    purpose: "Canonical faction identity, agenda, and relation truth.",
+    whatBelongs: [
+      "Faction definitions at `world/factions/<factionId>.json`.",
+      "Canonical relation structures and hidden strategic intent.",
+    ],
+    writeProtocol: [
+      "Write faction truth canonically (identity, doctrine, hidden agenda).",
+      "Write actor-specific standing/unlock in actor views.",
+      "Use stable faction IDs (`fac:*`) in relation targets.",
+    ],
+    guardrails: [
+      "No root `unlocked`/`unlockReason` in canonical faction files.",
+      "No UI-only fields (`highlight`, `lastAccess`) in canonical faction files.",
+      "Do not mix display names in ID fields.",
+    ],
   },
   {
     path: "world/timeline",
     title: "Timeline",
-    purpose: "Chronological events and temporal anchors for continuity.",
+    purpose: "Canonical chronological events and causality anchors.",
+    whatBelongs: [
+      "Timeline events at `world/timeline/<eventId>.json`.",
+      "Canonical event ordering and durable cause/effect anchors.",
+    ],
+    writeProtocol: [
+      "Append/patch canonical events with explicit IDs (`evt:*`).",
+      "Write player memory/unlock in actor views.",
+      "Keep `involvedEntities` as canonical IDs only.",
+    ],
+    guardrails: [
+      "No root `unlocked`/`unlockReason` in canonical timeline files.",
+      "No UI-only fields (`highlight`, `lastAccess`) in canonical timeline files.",
+      "Do not retroactively reorder major events without explicit retcon intent.",
+    ],
   },
   {
     path: "world/causal_chains",
     title: "Causal Chains",
-    purpose: "Cause-effect traces for investigations and consequence modeling.",
+    purpose: "Canonical long-range consequence graphs and investigation links.",
+    whatBelongs: [
+      "Causal chain files at `world/causal_chains/<chainId>.json`.",
+      "Canonical cause-effect relations across events/entities.",
+    ],
+    writeProtocol: [
+      "Write durable cause/effect truth canonically.",
+      "Write actor-facing unlock/investigation notes in actor views.",
+      "Use stable IDs and canonical entity references in links.",
+    ],
+    guardrails: [
+      "No root `unlocked`/`unlockReason` in canonical causal chain files.",
+      "No UI-only fields (`highlight`, `lastAccess`) in canonical causal chain files.",
+      "Avoid speculative links without narrative evidence.",
+    ],
   },
   {
-    path: "world/placeholder",
+    path: "world/placeholders",
     title: "Placeholder Drafts",
     purpose:
-      "Markdown drafts for unresolved entities across all domains (characters, locations, items, skills, quests, knowledge, factions, timeline, causal chains). When an entity is promoted to structured JSON, remove its draft note.",
+      "Markdown draft notes for unresolved entities across all domains before canonical promotion.",
+    whatBelongs: [
+      "Draft notes only: `world/placeholders/<entityId>.md`.",
+      "Each draft should include at minimum `- id:` and a `## Notes` section.",
+      "Cross-domain unresolved entities are all valid here (character/location/item/skill/quest/knowledge/faction/timeline/causal chain).",
+    ],
+    writeProtocol: [
+      "Keep drafts concise, evidence-based, and mechanically useful.",
+      "When identity is explicit, create canonical JSON entity/entities and replace touched references in the same response.",
+      "After successful canonical write, delete the corresponding draft markdown in the same response.",
+    ],
+    guardrails: [
+      "This folder is markdown-only; do not store JSON entities here.",
+      "If canonical write fails, keep draft and retry write; do not delete draft on failed promotion.",
+      "Do not keep stale placeholder aliases once canonical IDs exist.",
+    ],
   },
   {
     path: "custom_rules",
     title: "Custom Rules",
     purpose:
-      "Rule pack categories. Each category may contain RULES.md when active rules are needed.",
+      "Rule-pack root. Category folders hold optional `RULES.md` files with active constraints.",
+    whatBelongs: [
+      "Category directories `custom_rules/<priority>-<slug>/`.",
+      "`README.md` markers for folder intent and structure preservation.",
+      "Optional `RULES.md` inside category folders when active rules are required.",
+    ],
+    writeProtocol: [
+      "Create or update category `RULES.md` only when constraints are intentionally active.",
+      "Keep rules concrete, testable, and non-overlapping.",
+      "Prefer existing category folders over creating new ad-hoc structures.",
+    ],
+    guardrails: [
+      "Do not write unrelated world state in this tree.",
+      "Avoid duplicate/conflicting rules across categories.",
+      "Keep category scope narrow and explicit.",
+    ],
   },
 ] as const;
 
@@ -288,19 +425,75 @@ const toTitleCase = (value: string): string =>
 const buildReadme = ({
   title,
   purpose,
+  whatBelongs = [],
+  writeProtocol = [],
+  guardrails = [],
+  maintenance = [],
 }: {
   title: string;
   purpose: string;
+  whatBelongs?: string[];
+  writeProtocol?: string[];
+  guardrails?: string[];
+  maintenance?: string[];
 }): string =>
   [
     `# ${title}`,
     "",
+    "## Purpose",
     purpose,
     "",
-    "This README is used by StateEditor as a persistent directory marker.",
-    "Keep this file in place to preserve folder structure and intent.",
+    "## Audience",
+    "- StateEditor: keep this README as a persistent directory marker.",
+    "- AI Runtime: treat this document as the folder write contract.",
+    "",
+    "## What Belongs Here",
+    ...(whatBelongs.length > 0
+      ? whatBelongs.map((entry) => `- ${entry}`)
+      : ["- Folder-specific artifacts for this path scope."]),
+    "",
+    "## Write Protocol",
+    ...(writeProtocol.length > 0
+      ? writeProtocol.map((entry) => `- ${entry}`)
+      : ["- Keep writes minimal and schema-valid."]),
+    "",
+    "## Guardrails",
+    ...(guardrails.length > 0
+      ? guardrails.map((entry) => `- ${entry}`)
+      : ["- Avoid unrelated writes outside this folder purpose."]),
+    "",
+    "## Maintenance",
+    ...(maintenance.length > 0
+      ? maintenance.map((entry) => `- ${entry}`)
+      : [
+          "- Keep this README in place to preserve folder structure and intent.",
+          "- If folder scope changes, update this README before changing file layout.",
+        ]),
     "",
   ].join("\n");
+
+const buildCustomRuleCategoryReadme = (
+  preset: CustomRuleCategoryPreset,
+): string =>
+  buildReadme({
+    title: `${preset.title} Rules`,
+    purpose: preset.directoryPurpose,
+    whatBelongs: [
+      "Optional `RULES.md` with active constraints for this category.",
+      "Category-local notes that explain why rules here are needed.",
+    ],
+    writeProtocol: [
+      `When to apply: ${preset.whenToApply}`,
+      "Add actionable constraints in bullet form under `## Specific Rules`.",
+      "Prefer explicit trigger conditions and verifiable outcomes per rule.",
+      ...preset.starterRules.map((rule) => `Starter baseline: ${rule}`),
+    ],
+    guardrails: [
+      "Do not duplicate constraints that already exist in another category.",
+      "Avoid vague style-only guidance with no operational effect.",
+      "If a rule no longer applies, remove or revise it rather than leaving stale text.",
+    ],
+  });
 
 const SCAFFOLD_DEFINITIONS: readonly DirectoryScaffoldDefinition[] = [
   ...ROOT_CATEGORY_DIRECTORIES.map((item) => ({
@@ -315,10 +508,7 @@ const SCAFFOLD_DEFINITIONS: readonly DirectoryScaffoldDefinition[] = [
       path,
       title: `${preset.title} Rules`,
       purpose: `${preset.directoryPurpose} Add a RULES.md file here only when this category needs active constraints.`,
-      readme: buildReadme({
-        title: `${preset.title} Rules`,
-        purpose: preset.directoryPurpose,
-      }),
+      readme: buildCustomRuleCategoryReadme(preset),
     } satisfies DirectoryScaffoldDefinition;
   }),
 ] as const;

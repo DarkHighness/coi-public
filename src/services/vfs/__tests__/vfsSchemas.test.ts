@@ -210,6 +210,10 @@ describe("vfs schemas", () => {
     expect(() => getSchemaForPath("world/inventory/inv:1.json")).toThrow();
   });
 
+  it("rejects legacy world/placeholders paths", () => {
+    expect(() => getSchemaForPath("world/placeholders/ph:1.json")).toThrow();
+  });
+
   it("rejects legacy world/character/* paths", () => {
     expect(() => getSchemaForPath("world/character/profile.json")).toThrow();
   });

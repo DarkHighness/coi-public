@@ -208,6 +208,52 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
   ],
+  vfs_finish_outline_phase_6: [
+    {
+      npcs: [
+        {
+          profile: {
+            id: "char:npc_gatekeeper",
+            kind: "npc",
+            currentLocation: "loc:gate",
+            knownBy: ["char:npc_gatekeeper", "char:player"],
+            visible: {
+              name: "Gatekeeper",
+              description: "A watchful guard with a measured tone.",
+            },
+            relations: [],
+          },
+          skills: [],
+          conditions: [],
+          traits: [],
+          inventory: [],
+        },
+      ],
+      placeholders: [
+        {
+          path: "world/placeholders/ph:mysterious_informant.md",
+          markdown:
+            "# Placeholder Draft\\n\\n- id: ph:mysterious_informant\\n- label: [Mysterious Informant]\\n\\n## Notes\\nSeen near the old gate at dusk.",
+        },
+      ],
+      playerPerceptions: [
+        {
+          id: "rel:player_to_gatekeeper",
+          kind: "perception",
+          to: {
+            kind: "character",
+            id: "char:npc_gatekeeper",
+          },
+          knownBy: ["char:player"],
+          visible: {
+            description:
+              "The gatekeeper checks every response before speaking.",
+            evidence: ["Hesitated before answering", "Keeps one hand on spear"],
+          },
+        },
+      ],
+    },
+  ],
 };
 
 const unwrapSchema = (

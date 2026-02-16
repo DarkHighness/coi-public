@@ -209,16 +209,10 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(locationView.isVisited).toBe(true);
     expect(locationView.highlight).toBeUndefined();
 
-    const placeholderJson = JSON.parse(
-      session.readFile("world/placeholders/ph:clockmaker.json")?.content ?? "{}",
-    ) as Record<string, unknown>;
-    expect(placeholderJson.highlight).toBeUndefined();
-    expect(placeholderJson.lastAccess).toBeUndefined();
-    expect(placeholderJson.unlocked).toBe(true);
-    expect(placeholderJson.unlockReason).toBe("ui-only");
+    expect(session.readFile("world/placeholders/ph:clockmaker.json")).toBeNull();
 
     const placeholderDraft =
-      session.readFile("world/placeholder/ph:clockmaker.md")?.content ?? "";
+      session.readFile("world/placeholders/ph:clockmaker.md")?.content ?? "";
     expect(placeholderDraft).toContain("# Placeholder Draft");
     expect(placeholderDraft).toContain("- id: ph:clockmaker");
   });
@@ -256,12 +250,17 @@ describe("seedVfsSessionFromDefaults", () => {
         npcs: [],
         placeholders: [
           {
-            id: "ph:buried_archive",
-            label: "[Buried Archive]",
-            knownBy: ["char:player"],
-            visible: { description: "A rumor about hidden records." },
-            highlight: true,
-            lastAccess: { forkId: 0, turnNumber: 0, timestamp: 1 },
+            path: "world/placeholders/ph:buried_archive.md",
+            markdown: [
+              "# Placeholder Draft",
+              "",
+              "- id: ph:buried_archive",
+              "- label: [Buried Archive]",
+              "- knownBy: char:player",
+              "",
+              "## Notes",
+              "A rumor about hidden records.",
+            ].join("\n"),
           },
         ],
         locations: [
@@ -306,15 +305,10 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(location.highlight).toBeUndefined();
     expect(location.lastAccess).toBeUndefined();
 
-    const placeholderJson = JSON.parse(
-      session.readFile("world/placeholders/ph:buried_archive.json")?.content ??
-        "{}",
-    ) as Record<string, unknown>;
-    expect(placeholderJson.highlight).toBeUndefined();
-    expect(placeholderJson.lastAccess).toBeUndefined();
+    expect(session.readFile("world/placeholders/ph:buried_archive.json")).toBeNull();
 
     const placeholderDraft =
-      session.readFile("world/placeholder/ph:buried_archive.md")?.content ??
+      session.readFile("world/placeholders/ph:buried_archive.md")?.content ??
       "";
     expect(placeholderDraft).toContain("# Placeholder Draft");
     expect(placeholderDraft).toContain("- id: ph:buried_archive");

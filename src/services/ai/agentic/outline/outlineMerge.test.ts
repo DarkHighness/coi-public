@@ -66,7 +66,20 @@ describe("outlineMerge", () => {
             inventory: [],
           },
         ],
-        placeholders: [{ name: "Mysterious Stranger" }],
+        placeholders: [
+          {
+            path: "world/placeholders/ph:mysterious_stranger.md",
+            markdown: [
+              "# Placeholder Draft",
+              "",
+              "- id: ph:mysterious_stranger",
+              "- label: [Mysterious Stranger]",
+              "",
+              "## Notes",
+              "Seen near the abandoned gate.",
+            ].join("\n"),
+          },
+        ],
       },
       phase7: {
         quests: [{ name: "Find Map" }],
@@ -118,8 +131,12 @@ describe("outlineMerge", () => {
     expect(merged.npcs[0]?.skills?.[0]?.id).toBe("skill:1");
     expect(merged.npcs[0]?.skills?.[0]?.unlocked).toBe(false);
 
-    expect(merged.placeholders[0]?.id).toBe("ph:1");
-    expect((merged.placeholders[0] as any)?.unlocked).toBeUndefined();
+    expect((merged.placeholders[0] as any)?.path).toBe(
+      "world/placeholders/ph:mysterious_stranger.md",
+    );
+    expect((merged.placeholders[0] as any)?.markdown).toContain(
+      "- id: ph:mysterious_stranger",
+    );
     expect((merged.openingNarrative as any)?.narrative).toBe(
       "The story begins.",
     );

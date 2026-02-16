@@ -218,6 +218,60 @@ describe("deriveGameStateFromVfs", () => {
     );
   });
 
+  it("throws on legacy world/placeholders saves", () => {
+    const files: VfsFileMap = {
+      "world/placeholders/ph:legacy.json": makeJsonFile(
+        "world/placeholders/ph:legacy.json",
+        {
+          id: "ph:legacy",
+          label: "Legacy Placeholder",
+          knownBy: ["char:player"],
+          visible: { description: "legacy" },
+        },
+      ),
+    };
+
+    expect(() => deriveGameStateFromVfs(files)).toThrow(
+      /SAVE_INCOMPATIBLE_LAYOUT/,
+    );
+  });
+
+  it("derives placeholder drafts from markdown files under world/placeholders", () => {
+    const files: VfsFileMap = {
+      "world/placeholders/ph:clockmaker.md": makeMarkdownFile(
+        "world/placeholders/ph:clockmaker.md",
+        [
+          "# Placeholder Draft",
+          "",
+          "- id: ph:clockmaker",
+          "- label: [Clockmaker]",
+          "- knownBy: char:player, char:npc_guard",
+          "",
+          "## Notes",
+          "An artisan rumored to keep illegal ledgers.",
+          "",
+        ].join("\n"),
+      ),
+      "world/placeholders/README.md": makeMarkdownFile(
+        "world/placeholders/README.md",
+        "# Placeholder Drafts",
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+
+    expect(state.placeholders).toEqual([
+      {
+        id: "ph:clockmaker",
+        label: "[Clockmaker]",
+        knownBy: ["char:player", "char:npc_guard"],
+        visible: {
+          description: "An artisan rumored to keep illegal ledgers.",
+        },
+      },
+    ]);
+  });
+
   it("derives summary state and restores summary markers", () => {
     const summary = {
       id: 0,

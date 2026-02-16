@@ -121,7 +121,21 @@ describe("outlineHydration builders", () => {
         traits: [{ id: "trait-1", name: "Cautious" }],
       },
       npcs: [{ profile: { id: "npc-1", name: "Guide" } }],
-      placeholders: [{ id: "ph-1" }],
+      placeholders: [
+        {
+          path: "world/placeholders/ph-1.md",
+          markdown: [
+            "# Placeholder Draft",
+            "",
+            "- id: ph-1",
+            "- label: [Mysterious Stranger]",
+            "- knownBy: char:player",
+            "",
+            "## Notes",
+            "Only seen in silhouette near the gate.",
+          ].join("\n"),
+        },
+      ],
       quests: [{ id: "quest-1", title: "Find relic" }],
       locations: [
         { id: "loc:start", name: "Town" },
@@ -178,6 +192,11 @@ describe("outlineHydration builders", () => {
     });
     expect(nextState.locations[0].isVisited).toBe(true);
     expect(nextState.locations[1].isVisited).toBe(false);
+    expect(nextState.placeholders[0]).toMatchObject({
+      id: "ph-1",
+      label: "[Mysterious Stranger]",
+      knownBy: ["char:player"],
+    });
     expect(nextState.logs.map((log: any) => log.id)).toEqual([
       "new-log",
       "old-log",
