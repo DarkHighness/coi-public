@@ -79,6 +79,7 @@ Hard constraints:
 - Keep continuity with existing summaries and established story facts.
 - If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
 - If uncertain, use read-only VFS tools first (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search).
+- Session read-cache rule: avoid re-reading the same file/path windows across this conversation session unless the file changed, previous read scope was insufficient, or recovery explicitly requires re-read.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
 - In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
 - Output summary content only. Never mention tools/retries/errors/budgets.`;
@@ -124,6 +125,7 @@ Hard constraints:
 - Keep compaction scoped to target fork ${runtime.targetForkId}; NEVER cross forks.
 - Do NOT summarize outside the specified summary range.
 - Preserve continuity with previous summaries and in-session events.
+- Session read-cache rule: avoid re-reading the same file/path windows across this conversation session unless the file changed, previous read scope was insufficient, or recovery explicitly requires re-read.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
 - In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
 - Output summary content only. Never mention tools/retries/errors/budgets.
@@ -164,6 +166,7 @@ export const buildCompactModeTriggerMessage = (input: {
     `- Keep handoff narrow: avoid broad catalog-only references such as \`current/skills/index.json\` unless no specific skill can be named.\n` +
     `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
     `If compact skill files are unavailable, continue with protocol-safe tool usage and keep finish last.\n` +
-    `If you need to verify details, use read-only VFS tools (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search/etc.) and stay on target fork only.`
+    `If you need to verify details, use read-only VFS tools (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search/etc.) and stay on target fork only.\n` +
+    `Across this conversation session, reuse already-read anchors instead of repeatedly reading the same files/windows unless changes or recovery make re-read necessary.`
   );
 };

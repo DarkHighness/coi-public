@@ -129,6 +129,7 @@ export function injectNormalTurnInstruction(
           "- Do NOT fabricate new lore/conflicts unrelated to deduplication/consolidation.",
           "- Verify entities via read-only VFS tools before mutation (vfs_ls / vfs_search / vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json).",
           "- Keep player-visible log narrative generic; do not leak hidden truths.",
+          "- Session efficiency: do not repeatedly read the same files across turns; reuse already-read context unless file content changed or recovery requires a targeted re-read.",
           "- Structured error recovery (when tool returns { success:false, code, error }):",
           "  1) Do NOT finish while the error is unresolved.",
           "  2) Map code to action:",
@@ -191,6 +192,7 @@ export function injectNormalTurnInstruction(
     '- `vfs_read_json({ path: "current/skills/index.json", pointers: ["/skills"] })`',
     "- At session cold start/rebuild, select and read 1-3 additional skill files aligned with active domain/theme/mechanics.",
     "- Reuse those skill docs across later turns; re-read only when requirements change or files are updated.",
+    "- Session read-cache rule: do not re-read files already read in this conversation session unless they changed, prior read scope was insufficient, or error recovery explicitly requires re-read.",
   );
   if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
     modeSkillLines.push(
@@ -273,7 +275,7 @@ export function injectColdStartRequiredReads(
     ),
     'For `current/conversation/session.jsonl`, keep reads line-windowed; do not use unbounded chars mode.',
     "For long skill manuals under `current/skills/**`, prefer bounded line windows first, then expand only if needed.",
-    "Run this preload at cold start to avoid avoidable gate/retry token waste.",
+    "Run this preload once at session cold start to avoid avoidable gate/retry token waste; do not replay the same reads every turn unless invalidated by file changes.",
   ];
 
   history.push(createUserMessage(lines.join("\n")));
