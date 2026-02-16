@@ -1,5 +1,8 @@
 import { createError, createSuccess } from "../../../tools/toolResult";
-import { resolveVfsReadHardCapChars } from "../../../ai/contextUsage";
+import {
+  estimateTokensForMixedText,
+  resolveVfsReadTokenBudget,
+} from "../../../ai/contextUsage";
 import { getVfsSchemaHint } from "../../../providers/utils";
 import { toCurrentPath } from "../../currentAlias";
 import { normalizeVfsPath } from "../../utils";
@@ -331,8 +334,9 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
     }
     session.noteToolSeen(resolved.path);
     session.noteToolAccessFile(resolved.path);
-    const readCapResolution = resolveVfsReadHardCapChars(ctx.settings);
-    const readHardCapChars = readCapResolution.hardCapChars;
+    const readBudgetResolution = resolveVfsReadTokenBudget(ctx.settings);
+    const readTokenBudget = readBudgetResolution.tokenBudget;
+    const readSafeCharsHint = readBudgetResolution.projectedSafeChars;
 
     const mode =
       typedArgs.mode ??
@@ -363,18 +367,8 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         );
       }
 
-      if (
-        typeof typedArgs.maxChars === "number" &&
-        typedArgs.maxChars > readHardCapChars
-      ) {
-        return createReadLimitError(
-          "json",
-          `maxChars=${typedArgs.maxChars} exceeds allowed per-pointer read size`,
-          typedArgs.path,
-          readHardCapChars,
-        );
-      }
-      const maxChars = typedArgs.maxChars ?? readHardCapChars;
+      const maxChars =
+        typeof typedArgs.maxChars === "number" ? typedArgs.maxChars : null;
       const extracts: Array<{
         pointer: string;
         type: string;
@@ -383,7 +377,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         jsonChars: number;
       }> = [];
       const missing: Array<{ pointer: string; error: string }> = [];
-      let totalJsonChars = 0;
+      let totalJsonTokens = 0;
 
       for (const pointer of pointers) {
         const resolvedPointer = resolveJsonPointer(document, pointer);
@@ -395,21 +389,42 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         const valueType = describeJsonValueType(resolvedPointer.value);
         const jsonString = JSON.stringify(resolvedPointer.value);
         const fullJson = typeof jsonString === "string" ? jsonString : "null";
-        if (fullJson.length > maxChars) {
+        const pointerTokens = estimateTokensForMixedText(fullJson);
+        if (typeof maxChars === "number" && fullJson.length > maxChars) {
           return createReadLimitError(
             "json",
-            `pointer "${pointer}" yields ${fullJson.length} chars, exceeding limit ${maxChars}`,
+            `pointer "${pointer}" yields ${fullJson.length} chars, exceeding maxChars=${maxChars}`,
             typedArgs.path,
-            readHardCapChars,
+            {
+              tokenBudget: readTokenBudget,
+              estimatedTokens: pointerTokens,
+              suggestedChunkChars: readSafeCharsHint,
+            },
           );
         }
-        totalJsonChars += fullJson.length;
-        if (totalJsonChars > readHardCapChars) {
+        if (pointerTokens > readTokenBudget) {
           return createReadLimitError(
             "json",
-            `combined pointer payload exceeds ${readHardCapChars} chars`,
+            `pointer "${pointer}" estimates ${pointerTokens} tokens, exceeding budget ${readTokenBudget}`,
             typedArgs.path,
-            readHardCapChars,
+            {
+              tokenBudget: readTokenBudget,
+              estimatedTokens: pointerTokens,
+              suggestedChunkChars: readSafeCharsHint,
+            },
+          );
+        }
+        totalJsonTokens += pointerTokens;
+        if (totalJsonTokens > readTokenBudget) {
+          return createReadLimitError(
+            "json",
+            `combined pointer payload estimates ${totalJsonTokens} tokens, exceeding budget ${readTokenBudget}`,
+            typedArgs.path,
+            {
+              tokenBudget: readTokenBudget,
+              estimatedTokens: totalJsonTokens,
+              suggestedChunkChars: readSafeCharsHint,
+            },
           );
         }
         const json = fullJson;
@@ -476,12 +491,17 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
       const startIndex = startLine - 1;
       const endIndexExclusive = endLine;
       const content = lines.slice(startIndex, endIndexExclusive).join("\n");
-      if (content.length > readHardCapChars) {
+      const contentTokens = estimateTokensForMixedText(content);
+      if (contentTokens > readTokenBudget) {
         return createReadLimitError(
           "lines",
-          `requested line range returns ${content.length} chars`,
+          `requested line range estimates ${contentTokens} tokens, exceeding budget ${readTokenBudget}`,
           typedArgs.path,
-          readHardCapChars,
+          {
+            tokenBudget: readTokenBudget,
+            estimatedTokens: contentTokens,
+            suggestedChunkChars: readSafeCharsHint,
+          },
         );
       }
 
@@ -518,23 +538,6 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
       );
     }
 
-    if (hasOffset && offsetRaw > readHardCapChars) {
-      return createReadLimitError(
-        "chars",
-        `offset=${offsetRaw} exceeds allowed chunk size`,
-        typedArgs.path,
-        readHardCapChars,
-      );
-    }
-    if (hasMaxChars && maxChars > readHardCapChars) {
-      return createReadLimitError(
-        "chars",
-        `maxChars=${maxChars} exceeds allowed chunk size`,
-        typedArgs.path,
-        readHardCapChars,
-      );
-    }
-
     const length = hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
     const totalChars = file.content.length;
     const sliceStart = Math.min(Math.max(start, 0), totalChars);
@@ -544,12 +547,17 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         : totalChars;
 
     const content = file.content.slice(sliceStart, sliceEndExclusive);
-    if (content.length > readHardCapChars) {
+    const contentTokens = estimateTokensForMixedText(content);
+    if (contentTokens > readTokenBudget) {
       return createReadLimitError(
         "chars",
-        `requested char range returns ${content.length} chars`,
+        `requested char range estimates ${contentTokens} tokens, exceeding budget ${readTokenBudget}`,
         typedArgs.path,
-        readHardCapChars,
+        {
+          tokenBudget: readTokenBudget,
+          estimatedTokens: contentTokens,
+          suggestedChunkChars: readSafeCharsHint,
+        },
       );
     }
     const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;

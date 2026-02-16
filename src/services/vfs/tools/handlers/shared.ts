@@ -60,7 +60,7 @@ export type VfsToolHandler = (
 const TOOL_DOCS_README_REF = "current/refs/tools/README.md";
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
 
-export const VFS_READ_HARD_CHAR_CAP = 16_384;
+export const VFS_READ_HARD_TOKEN_BUDGET = 320;
 
 export const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase0Schema,
@@ -422,13 +422,22 @@ export const createReadLimitError = (
   mode: "chars" | "lines" | "json",
   details: string,
   inputPath?: string,
-  hardCapChars: number = VFS_READ_HARD_CHAR_CAP,
+  limits?: {
+    tokenBudget?: number;
+    estimatedTokens?: number;
+    suggestedChunkChars?: number;
+  },
 ): ToolCallResult<never> =>
   (() => {
-    const normalizedHardCapChars = Number.isFinite(hardCapChars)
-      ? Math.max(1, Math.floor(hardCapChars))
-      : VFS_READ_HARD_CHAR_CAP;
-    const suggestedChunkChars = Math.max(1, Math.min(2000, normalizedHardCapChars));
+    const normalizedTokenBudget = Number.isFinite(limits?.tokenBudget)
+      ? Math.max(1, Math.floor(limits?.tokenBudget ?? 0))
+      : VFS_READ_HARD_TOKEN_BUDGET;
+    const normalizedEstimatedTokens = Number.isFinite(limits?.estimatedTokens)
+      ? Math.max(0, Math.floor(limits?.estimatedTokens ?? 0))
+      : null;
+    const suggestedChunkChars = Number.isFinite(limits?.suggestedChunkChars)
+      ? Math.max(1, Math.floor(limits?.suggestedChunkChars ?? 1))
+      : Math.min(2000, normalizedTokenBudget * 2);
     const qualifiedPath =
       typeof inputPath === "string" && inputPath.trim().length > 0
         ? qualifyPathForRecovery(inputPath).qualifiedPath
@@ -446,8 +455,13 @@ export const createReadLimitError = (
       );
     }
 
+    const budgetText =
+      normalizedEstimatedTokens !== null
+        ? `Token budget is ${normalizedTokenBudget} (estimated payload ${normalizedEstimatedTokens}).`
+        : `Token budget is ${normalizedTokenBudget}.`;
+
     return createError(
-      `vfs_read(${mode}): ${details}. Hard cap is ${normalizedHardCapChars} chars. Use lines/chars(start+offset) or narrower JSON pointers.`,
+      `vfs_read(${mode}): ${details}. ${budgetText} Use lines/chars(start+offset) or narrower JSON pointers.`,
       "INVALID_DATA",
       {
         category: "validation",
@@ -457,7 +471,10 @@ export const createReadLimitError = (
             path: mode,
             code: "READ_LIMIT_EXCEEDED",
             message: details,
-            expected: `<= ${normalizedHardCapChars}`,
+            expected: `<= ${normalizedTokenBudget} tokens`,
+            ...(normalizedEstimatedTokens !== null
+              ? { received: `${normalizedEstimatedTokens} tokens (estimated)` }
+              : {}),
           },
         ],
         recovery,

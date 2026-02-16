@@ -476,7 +476,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .positive()
           .optional()
           .describe(
-            "Chars/JSON mode: optional max characters (must be <= dynamic read hard cap computed from current model context window: floor(window_tokens * 1% * 4)).",
+            "Chars/JSON mode: optional max characters. Effective payload is still bounded by dynamic read token budget (1% of current model context window, script-aware token estimation).",
           ),
         startLine: z
           .number()

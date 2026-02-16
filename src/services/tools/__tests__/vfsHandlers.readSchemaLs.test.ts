@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
-import { resolveVfsReadHardCapChars } from "../../ai/contextUsage";
+import { resolveVfsReadTokenBudget } from "../../ai/contextUsage";
 import { dispatchToolCall } from "../handlers";
 import { createValidGlobal } from "./vfsHandlers.helpers";
 
-const DEFAULT_READ_CAP_CHARS = resolveVfsReadHardCapChars(undefined).hardCapChars;
+const DEFAULT_READ_TOKEN_BUDGET =
+  resolveVfsReadTokenBudget(undefined).tokenBudget;
 
 describe("VFS handlers read/schema/ls", () => {
   it("supports char slicing and guards invalid start-only char reads", () => {
@@ -74,7 +75,9 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.error).toContain(`Hard cap is ${DEFAULT_READ_CAP_CHARS} chars`);
+    expect(result.error).toContain(
+      `Token budget is ${DEFAULT_READ_TOKEN_BUDGET}`,
+    );
     expect(result.error).toContain("chars(start+offset)");
     expect(result.details?.tool).toBe("vfs_read");
     expect(result.details?.issues?.[0]?.code).toBe("READ_LIMIT_EXCEEDED");
@@ -106,7 +109,9 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.error).toContain(`Hard cap is ${DEFAULT_READ_CAP_CHARS} chars`);
+    expect(result.error).toContain(
+      `Token budget is ${DEFAULT_READ_TOKEN_BUDGET}`,
+    );
     expect(result.error).toContain("lines/chars(start+offset)");
   });
 
@@ -127,19 +132,22 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.error).toContain(`Hard cap is ${DEFAULT_READ_CAP_CHARS} chars`);
+    expect(result.error).toContain(
+      `Token budget is ${DEFAULT_READ_TOKEN_BUDGET}`,
+    );
     expect(result.error).toContain("JSON pointers");
   });
 
-  it("derives dynamic read cap from model context window and enforces it consistently", () => {
+  it("derives dynamic read token budget from model context window and enforces it consistently", () => {
     const session = new VfsSession();
     const dynamicContextTokens = 100_000;
-    const dynamicCapChars = Math.floor(dynamicContextTokens * 0.01 * 4);
+    const dynamicTokenBudget = Math.floor(dynamicContextTokens * 0.01);
+    const oversizedText = "x".repeat(dynamicTokenBudget * 5);
 
-    session.writeFile("world/large.txt", "x".repeat(dynamicCapChars + 500), "text/plain");
+    session.writeFile("world/large.txt", oversizedText, "text/plain");
     session.writeFile(
       "world/large.json",
-      JSON.stringify({ big: "x".repeat(dynamicCapChars + 500) }),
+      JSON.stringify({ big: oversizedText }),
       "application/json",
     );
 
@@ -158,7 +166,9 @@ describe("VFS handlers read/schema/ls", () => {
       ctx as any,
     ) as any;
     expect(charsDefaultRead.success).toBe(false);
-    expect(charsDefaultRead.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
+    expect(charsDefaultRead.error).toContain(
+      `Token budget is ${dynamicTokenBudget}`,
+    );
 
     const charsOffsetTooLarge = dispatchToolCall(
       "vfs_read",
@@ -166,12 +176,14 @@ describe("VFS handlers read/schema/ls", () => {
         path: "current/world/large.txt",
         mode: "chars",
         start: 0,
-        offset: dynamicCapChars + 1,
+        offset: oversizedText.length + 1,
       },
       ctx as any,
     ) as any;
     expect(charsOffsetTooLarge.success).toBe(false);
-    expect(charsOffsetTooLarge.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
+    expect(charsOffsetTooLarge.error).toContain(
+      `Token budget is ${dynamicTokenBudget}`,
+    );
 
     const linesTooLarge = dispatchToolCall(
       "vfs_read",
@@ -184,7 +196,9 @@ describe("VFS handlers read/schema/ls", () => {
       ctx as any,
     ) as any;
     expect(linesTooLarge.success).toBe(false);
-    expect(linesTooLarge.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
+    expect(linesTooLarge.error).toContain(
+      `Token budget is ${dynamicTokenBudget}`,
+    );
 
     const jsonTooLarge = dispatchToolCall(
       "vfs_read",
@@ -196,7 +210,9 @@ describe("VFS handlers read/schema/ls", () => {
       ctx as any,
     ) as any;
     expect(jsonTooLarge.success).toBe(false);
-    expect(jsonTooLarge.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
+    expect(jsonTooLarge.error).toContain(
+      `Token budget is ${dynamicTokenBudget}`,
+    );
   });
 
   it("returns schema metadata for known paths", () => {
