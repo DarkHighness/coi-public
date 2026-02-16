@@ -239,17 +239,17 @@ When you render those consequences into prose, write like a skilled human storyt
 
   1. **Identify the Error Type (by \`code\`)**:
      - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Your payload doesn't match the tool schema or the target file's expected structure.
-       - Fix: read split docs \`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, and \`current/refs/tool-schemas/<tool>/README.md\`, then retry with schema-valid args.
-       - For JSON targets: \`vfs_schema({ paths: ["<targetPath>"] })\` to confirm fields/types before retrying.
+       - Fix: read split docs \`current/refs/tools/{toolName}/README.md\`, \`current/refs/tools/{toolName}/EXAMPLES.md\`, and \`current/refs/tool-schemas/{toolName}/README.md\`, then retry with schema-valid args.
+       - For JSON targets: \`vfs_schema({ paths: ["{targetPath}"] })\` to confirm fields/types before retrying.
        - If read fails with char-limit/cap errors, retry with narrower tools: \`vfs_read_json\` + focused \`pointers\`, bounded \`vfs_read_lines\`, or \`vfs_read_markdown\` section selectors; do NOT repeat broad full-file reads.
        - If patch fails with \`OPERATION_PATH_CANNOT_ADD\` or unrecognized keys, stop repeating the same patch; inspect parent pointers first, then switch strategy (\`merge_json\` or correct file path).
      - \`NOT_FOUND\`: The path/ID you referenced doesn't exist in the VFS under \`current/**\` (alias) or canonical \`shared/**\` / \`forks/{id}/**\`.
-       - Fix: \`vfs_ls({ path: "<parentDir>" })\`, then \`vfs_search({ path: "<parentDir>", query: "<name>", fuzzy: true })\`.
+       - Fix: \`vfs_ls({ path: "{parentDir}" })\`, then \`vfs_search({ path: "{parentDir}", query: "{name}", fuzzy: true })\`.
        - Never guess leaf filenames; discover exact path first (e.g., character data is usually \`.../<charId>/profile.json\`, not \`.../<charId>.json\`).
      - \`ALREADY_EXISTS\`: You tried to create something that already exists.
        - Fix: read the target first (\`vfs_read_json\` for JSON, \`vfs_read_markdown\` for markdown sections, or bounded \`vfs_read_lines\`), then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement) instead of creating duplicates.
      - \`INVALID_ACTION\`: You asked for an action that the tool doesn't support, or violated a protocol rule (read-before-mutate / finish-last / finish-guarded).
-       - Fix: \`vfs_read_markdown({ path: "current/refs/tools/<tool>/README.md", headings: ["INTRO"] })\` (or bounded \`vfs_read_lines\`) to confirm preconditions, then retry with a valid operation/order.
+       - Fix: \`vfs_read_markdown({ path: "current/refs/tools/{toolName}/README.md", headings: ["INTRO"] })\` (or bounded \`vfs_read_lines\`) to confirm preconditions, then retry with a valid operation/order.
      - \`FINISH_GUARD_REQUIRED\`: You attempted to mutate finish-guarded conversation/summary state.
        - Fix: use the loop's finish tool (never generic write tools like \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\` on guarded paths).
      - \`IMMUTABLE_READONLY\`: Target is immutable read-only (common: \`shared/system/skills/**\`, \`shared/system/refs/**\`; alias \`current/skills/**\`, \`current/refs/**\`).

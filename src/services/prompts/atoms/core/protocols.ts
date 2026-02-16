@@ -72,7 +72,7 @@ const errorRecovery = `
 
   **Self-Correction**:
   - If \`NOT_FOUND\`, use \`vfs_ls\` on the parent dir, then \`vfs_search\` with \`fuzzy: true\` to locate the correct path/ID
-  - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, read split docs (\`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, \`current/refs/tool-schemas/<tool>/README.md\`) and (for JSON targets) \`vfs_schema({ paths: ["<targetPath>"] })\`
+  - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, read split docs (\`current/refs/tools/{toolName}/README.md\`, \`current/refs/tools/{toolName}/EXAMPLES.md\`, \`current/refs/tool-schemas/{toolName}/README.md\`) and (for JSON targets) \`vfs_schema({ paths: ["{targetPath}"] })\`
   - If a read hit char-cap/size limits, retry with narrower tools: \`vfs_read_json\` + \`pointers\`, bounded \`vfs_read_lines\`, or \`vfs_read_markdown\` section selectors
   - If patch reports path/add/schema mismatch, stop repeating the same payload; inspect parent pointers/path first and switch strategy
   - If \`ALREADY_EXISTS\`, read target content first (\`vfs_read_json\`/\`vfs_read_markdown\`/\`vfs_read_lines\` as appropriate), then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement)

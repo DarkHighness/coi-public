@@ -18,8 +18,8 @@ You MUST follow these runtime protocol constraints:
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - Write tools are split: \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_write_markdown\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic write tools).
   - Tool docs are split:
-    - Tool overview/examples: \`current/refs/tools/<tool>/README.md\` + \`current/refs/tools/<tool>/EXAMPLES.md\`
-    - Schema summary/parts: \`current/refs/tool-schemas/<tool>/README.md\` + \`current/refs/tool-schemas/<tool>/PART-xx.md\`
+    - Tool overview/examples: \`current/refs/tools/{toolName}/README.md\` + \`current/refs/tools/{toolName}/EXAMPLES.md\`
+    - Schema summary/parts: \`current/refs/tool-schemas/{toolName}/README.md\` + \`current/refs/tool-schemas/{toolName}/PART-xx.md\`
     - Indexes: \`current/refs/tools/index.json\` + \`current/refs/tool-schemas/index.json\`
   - Marker routing: \`[PLAYER_ACTION]\` => simulate world turn, \`[Player Rate]\` => update soul files only, \`[SUDO]\` => elevated update loop.
   - Soul docs (\`current/world/soul.md\`, \`current/world/global/soul.md\`) are writable default-editable files, not read-only references.
@@ -41,7 +41,7 @@ You MUST follow these runtime protocol constraints:
   1) Do NOT finish yet.
   2) Fix the cause by \`code\` with the smallest helpful lookup:
      - \`NOT_FOUND\`: \`vfs_ls\` the parent dir, or \`vfs_search\` for the filename.
-     - \`INVALID_PARAMS\`: read split docs (\`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, \`current/refs/tool-schemas/<tool>/README.md\`) and retry with schema-valid args.
+     - \`INVALID_PARAMS\`: read split docs (\`current/refs/tools/{toolName}/README.md\`, \`current/refs/tools/{toolName}/EXAMPLES.md\`, \`current/refs/tool-schemas/{toolName}/README.md\`) and retry with schema-valid args.
      - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, use \`details.hint.nextCalls\` for bounded retry; do not repeat broad path-only reads.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
@@ -61,8 +61,8 @@ You MUST follow these outline protocol constraints:
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - In other modes, writes use the split write tools. In OUTLINE MODE, never call write/move/delete tools; submit with the current phase submit tool only.
   - Tool docs are split:
-    - Tool overview/examples: \`current/refs/tools/<tool>/README.md\` + \`current/refs/tools/<tool>/EXAMPLES.md\`
-    - Schema summary/parts: \`current/refs/tool-schemas/<tool>/README.md\` + \`current/refs/tool-schemas/<tool>/PART-xx.md\`
+    - Tool overview/examples: \`current/refs/tools/{toolName}/README.md\` + \`current/refs/tools/{toolName}/EXAMPLES.md\`
+    - Schema summary/parts: \`current/refs/tool-schemas/{toolName}/README.md\` + \`current/refs/tool-schemas/{toolName}/PART-xx.md\`
     - Indexes: \`current/refs/tools/index.json\` + \`current/refs/tool-schemas/index.json\`
 - In each phase, submit ONLY with the phase-specific submit tool provided this round.
 - Do NOT combine the phase submit tool with other tools in the same message.

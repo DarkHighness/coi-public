@@ -124,7 +124,7 @@ const defaultRecoveryByCode = (
   if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
     return withSoulToolLearningRecovery([
       `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for tool overview, ${buildToolDocRecoveryReadCall(toolExamplesRef)} for examples, and ${buildToolDocRecoveryReadCall(toolSchemaRef)} for schema summary. Then retry with schema-valid arguments.`,
-      `If schema summary points to PART files, read only the needed part from current/refs/tool-schemas/<tool>/PART-xx.md.`,
+      `If schema summary points to PART files, read only the needed part from current/refs/tool-schemas/{toolName}/PART-xx.md.`,
       "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
       "If you're modifying an existing file, read it first (read-before-mutate), then retry.",
     ]);

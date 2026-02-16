@@ -718,7 +718,7 @@ export const validateWritePayload = (
                 ],
           recovery: [
             "Align payload fields/types with schema constraints and retry.",
-            "Reference current/refs/tools/README.md plus current/refs/tools/<tool>/README.md and current/refs/tool-schemas/<tool>/README.md for write patterns.",
+            "Reference current/refs/tools/README.md plus current/refs/tools/{toolName}/README.md and current/refs/tool-schemas/{toolName}/README.md for write patterns.",
           ],
         },
       ),
