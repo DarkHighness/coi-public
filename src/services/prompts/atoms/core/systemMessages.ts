@@ -86,7 +86,7 @@ This is a **GM COMMAND**. You must:
 5. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 6. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-7. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
+7. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; do not re-read by default. Re-read only when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates, prior read scope is insufficient, or recovery explicitly requires re-read. Your own successful writes do not require automatic re-read.
 8. **BATCH TOOL CALLS**: You can and SHOULD call multiple tools in a single turn.
 9. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
 10. **FINISH RULE**: Your LAST tool call must be \`vfs_finish_turn\`.
@@ -128,7 +128,7 @@ You are in AGENTIC MODE (VFS-only).
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, the active command protocol skill ("turn" or "player-rate"), current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
+6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; do not re-read by default. Re-read only when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates, prior read scope is insufficient, or recovery explicitly requires re-read. Your own successful writes do not require automatic re-read.
 7. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`, and \`vfs_search\` before changing files.
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
    - For markdown docs/notes, prefer \`vfs_read_markdown\` with section selectors (\`headings\`/\`indices\`); use bounded \`vfs_read_lines\` when selectors are unknown.
@@ -198,7 +198,7 @@ You are in CLEANUP MODE (VFS-only).
 4. **PERMISSION MODEL**:
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
-6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
+6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; do not re-read by default. Re-read only when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates, prior read scope is insufficient, or recovery explicitly requires re-read. Your own successful writes do not require automatic re-read.
 7. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` to locate and verify duplicate candidates.
    - For large JSON, prefer pointer/line scoped reads instead of broad full-file char reads.
 8. **APPLY FIXES**: Use split write tools (\`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_write_markdown\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\`) as needed.
