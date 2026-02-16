@@ -8,6 +8,8 @@ import {
 
 export const TURN_RECOVERY_MAX_DURATION_MS = 12_000;
 export const TURN_RECOVERY_TRANSIENT_DELAYS_MS = [300, 1200] as const;
+export const TURN_RECOVERY_AUTO_APPROVE_SESSION_REBUILD_KINDS: TurnRecoveryKind[] =
+  ["context"];
 
 const TRANSIENT_TURN_ERROR_PATTERN =
   /timeout|timed out|network|econnreset|connection reset|ehostunreach|enotfound|socket hang up|429|rate limit|overloaded|temporarily unavailable|service unavailable|502|503|504|gateway timeout|aborted/i;

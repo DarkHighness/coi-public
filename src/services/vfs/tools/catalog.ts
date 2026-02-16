@@ -474,10 +474,9 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .number()
           .int()
           .positive()
-          .max(16_384)
           .optional()
           .describe(
-            "Chars/JSON mode: optional max characters (must be <= 16384 hard read cap).",
+            "Chars/JSON mode: optional max characters (must be <= dynamic read hard cap computed from current model context window: floor(window_tokens * 1% * 4)).",
           ),
         startLine: z
           .number()

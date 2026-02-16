@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { ToolCallRecord } from "../../types";
+import { pickLatestToolCallContextUsage } from "../../services/ai/contextUsage";
 
 interface ToolCallCarouselProps {
   calls: ToolCallRecord[];
@@ -18,6 +19,8 @@ interface CarouselItem {
 }
 
 const LINE_STEP_PX = 24;
+
+const formatTokenCount = (value: number): string => value.toLocaleString();
 
 const formatCall = (call: ToolCallRecord): string => {
   // Hide detailed params to avoid leaking story details
@@ -94,6 +97,19 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
     () => (items.length > 0 ? items : [emptyItem]),
     [items, emptyItem],
   );
+  const latestContextUsage = useMemo(
+    () => pickLatestToolCallContextUsage(calls),
+    [calls],
+  );
+  const usageRatioPercent = latestContextUsage
+    ? Math.max(0, Math.min(100, Math.round(latestContextUsage.usageRatio * 100)))
+    : null;
+  const thresholdPercent = latestContextUsage
+    ? Math.max(
+        0,
+        Math.min(100, Math.round(latestContextUsage.autoCompactThreshold * 100)),
+      )
+    : null;
 
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -133,6 +149,23 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
           {label || "Agent Tool Calls"}
         </span>
       </div>
+      {latestContextUsage && usageRatioPercent !== null && (
+        <div className="mb-2 px-1">
+          <div className="text-center text-[10px] font-mono text-theme-muted">
+            {`Context ${usageRatioPercent}% • ${formatTokenCount(latestContextUsage.promptTokens)}/${formatTokenCount(latestContextUsage.contextWindowTokens)} • auto ${thresholdPercent}%`}
+          </div>
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-theme-divider/50">
+            <div
+              className={
+                usageRatioPercent >= (thresholdPercent ?? 100)
+                  ? "h-full bg-theme-warning transition-all duration-300"
+                  : "h-full bg-theme-primary/80 transition-all duration-300"
+              }
+              style={{ width: `${usageRatioPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="relative h-20 overflow-hidden">
         {visibleLines.map(({ offset, item, index }) => {

@@ -15,6 +15,7 @@ import type {
   ProviderProtocol,
   ProviderInstance,
   ToolCallRecord,
+  ToolCallContextUsageSnapshot,
   CustomRulesAckPendingReason,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
@@ -52,6 +53,8 @@ import {
 } from "./resultAccumulator";
 import { normalizeVfsPath } from "../../../vfs/utils";
 import { rollbackVfsSessionToCheckpoint } from "../../../vfs/runtimeCheckpoints";
+import { buildToolCallContextUsageSnapshot } from "../../contextUsage";
+import { ContextOverflowError } from "../../contextCompressor";
 import {
   collectWriteTargetsFromToolCall,
   formatPendingWriteFailurePaths,
@@ -312,6 +315,7 @@ export async function runAgenticLoopRefactored(
   let conversationHistory: UnifiedMessage[] = [...initialContents];
   const allLogs: LogEntry[] = [];
   let didFinishTurn = false;
+  let autoCompactTriggeredByContextPressure = false;
 
   try {
     // Inject ready consequences
@@ -419,6 +423,32 @@ export async function runAgenticLoopRefactored(
 
       // Accumulate usage
       accumulateUsage(loopState.totalUsage, aiResult.usage);
+      const contextUsageSnapshot = buildToolCallContextUsageSnapshot({
+        settings,
+        promptTokens: aiResult.usage?.promptTokens ?? 0,
+        autoCompactThreshold: settings.extra?.autoCompactThreshold,
+      });
+      const autoCompactEnabled = settings.extra?.autoCompactEnabled ?? true;
+      const hasFinishCall = (aiResult.functionCalls || []).some(
+        (call) => call.name === loopState.finishToolName,
+      );
+      if (
+        autoCompactEnabled &&
+        !autoCompactTriggeredByContextPressure &&
+        !hasFinishCall &&
+        contextUsageSnapshot.usageRatio >= contextUsageSnapshot.autoCompactThreshold
+      ) {
+        autoCompactTriggeredByContextPressure = true;
+        const ratioPercent = Math.round(contextUsageSnapshot.usageRatio * 100);
+        const thresholdPercent = Math.round(
+          contextUsageSnapshot.autoCompactThreshold * 100,
+        );
+        throw new ContextOverflowError(
+          new Error(
+            `AUTO_COMPACT_THRESHOLD_REACHED: promptTokens=${contextUsageSnapshot.promptTokens}, contextWindow=${contextUsageSnapshot.contextWindowTokens}, ratio=${ratioPercent}% >= ${thresholdPercent}%`,
+          ),
+        );
+      }
 
       // Record assistant message
       if (aiResult.functionCalls && aiResult.functionCalls.length > 0) {
@@ -462,6 +492,7 @@ export async function runAgenticLoopRefactored(
         turnId,
         allLogs,
         onToolCallsUpdate,
+        contextUsageSnapshot,
       });
 
       // Add tool responses to history
@@ -536,6 +567,7 @@ interface ProcessToolCallsParams {
   turnId: string;
   allLogs: LogEntry[];
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
+  contextUsageSnapshot?: ToolCallContextUsageSnapshot | null;
   retconAckPending?: { hash: string; reason?: CustomRulesAckPendingReason };
   vfsMode?: "normal" | "god" | "sudo";
   vfsElevationToken?: string | null;
@@ -754,6 +786,7 @@ async function processToolCalls(
     turnId,
     allLogs,
     onToolCallsUpdate,
+    contextUsageSnapshot,
   } = params;
 
   const finishToolName = loopState.finishToolName;
@@ -998,6 +1031,7 @@ async function processToolCalls(
     input: (call.args || {}) as Record<string, unknown>,
     output: null,
     timestamp: Date.now(),
+    contextUsage: contextUsageSnapshot || undefined,
   }));
   onToolCallsUpdate?.([...liveToolCalls]);
 

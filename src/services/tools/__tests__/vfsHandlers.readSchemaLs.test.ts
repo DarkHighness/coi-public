@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
+import { resolveVfsReadHardCapChars } from "../../ai/contextUsage";
 import { dispatchToolCall } from "../handlers";
 import { createValidGlobal } from "./vfsHandlers.helpers";
+
+const DEFAULT_READ_CAP_CHARS = resolveVfsReadHardCapChars(undefined).hardCapChars;
 
 describe("VFS handlers read/schema/ls", () => {
   it("supports char slicing and guards invalid start-only char reads", () => {
@@ -71,7 +74,7 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.error).toContain("Hard cap is 16384 chars");
+    expect(result.error).toContain(`Hard cap is ${DEFAULT_READ_CAP_CHARS} chars`);
     expect(result.error).toContain("chars(start+offset)");
     expect(result.details?.tool).toBe("vfs_read");
     expect(result.details?.issues?.[0]?.code).toBe("READ_LIMIT_EXCEEDED");
@@ -103,7 +106,7 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.error).toContain("Hard cap is 16384 chars");
+    expect(result.error).toContain(`Hard cap is ${DEFAULT_READ_CAP_CHARS} chars`);
     expect(result.error).toContain("lines/chars(start+offset)");
   });
 
@@ -124,8 +127,76 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.error).toContain("Hard cap is 16384 chars");
+    expect(result.error).toContain(`Hard cap is ${DEFAULT_READ_CAP_CHARS} chars`);
     expect(result.error).toContain("JSON pointers");
+  });
+
+  it("derives dynamic read cap from model context window and enforces it consistently", () => {
+    const session = new VfsSession();
+    const dynamicContextTokens = 100_000;
+    const dynamicCapChars = Math.floor(dynamicContextTokens * 0.01 * 4);
+
+    session.writeFile("world/large.txt", "x".repeat(dynamicCapChars + 500), "text/plain");
+    session.writeFile(
+      "world/large.json",
+      JSON.stringify({ big: "x".repeat(dynamicCapChars + 500) }),
+      "application/json",
+    );
+
+    const ctx = {
+      vfsSession: session,
+      settings: {
+        story: { providerId: "provider-1", modelId: "model-1" },
+        providers: { instances: [{ id: "provider-1", protocol: "openai" }] },
+        modelContextWindows: { "provider-1::model-1": dynamicContextTokens },
+      },
+    };
+
+    const charsDefaultRead = dispatchToolCall(
+      "vfs_read",
+      { path: "current/world/large.txt" },
+      ctx as any,
+    ) as any;
+    expect(charsDefaultRead.success).toBe(false);
+    expect(charsDefaultRead.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
+
+    const charsOffsetTooLarge = dispatchToolCall(
+      "vfs_read",
+      {
+        path: "current/world/large.txt",
+        mode: "chars",
+        start: 0,
+        offset: dynamicCapChars + 1,
+      },
+      ctx as any,
+    ) as any;
+    expect(charsOffsetTooLarge.success).toBe(false);
+    expect(charsOffsetTooLarge.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
+
+    const linesTooLarge = dispatchToolCall(
+      "vfs_read",
+      {
+        path: "current/world/large.txt",
+        mode: "lines",
+        startLine: 1,
+        endLine: 1,
+      },
+      ctx as any,
+    ) as any;
+    expect(linesTooLarge.success).toBe(false);
+    expect(linesTooLarge.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
+
+    const jsonTooLarge = dispatchToolCall(
+      "vfs_read",
+      {
+        path: "current/world/large.json",
+        mode: "json",
+        pointers: ["/big"],
+      },
+      ctx as any,
+    ) as any;
+    expect(jsonTooLarge.success).toBe(false);
+    expect(jsonTooLarge.error).toContain(`Hard cap is ${dynamicCapChars} chars`);
   });
 
   it("returns schema metadata for known paths", () => {

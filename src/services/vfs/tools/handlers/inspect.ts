@@ -1,4 +1,5 @@
 import { createError, createSuccess } from "../../../tools/toolResult";
+import { resolveVfsReadHardCapChars } from "../../../ai/contextUsage";
 import { getVfsSchemaHint } from "../../../providers/utils";
 import { toCurrentPath } from "../../currentAlias";
 import { normalizeVfsPath } from "../../utils";
@@ -31,7 +32,6 @@ import {
   toLsStatEntryForDir,
   toLsStatEntryForFile,
   type VfsToolHandler,
-  VFS_READ_HARD_CHAR_CAP,
 } from "./shared";
 
 export const handleInspectLs: VfsToolHandler = (args, ctx) =>
@@ -331,6 +331,8 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
     }
     session.noteToolSeen(resolved.path);
     session.noteToolAccessFile(resolved.path);
+    const readCapResolution = resolveVfsReadHardCapChars(ctx.settings);
+    const readHardCapChars = readCapResolution.hardCapChars;
 
     const mode =
       typedArgs.mode ??
@@ -363,15 +365,16 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
 
       if (
         typeof typedArgs.maxChars === "number" &&
-        typedArgs.maxChars > VFS_READ_HARD_CHAR_CAP
+        typedArgs.maxChars > readHardCapChars
       ) {
         return createReadLimitError(
           "json",
           `maxChars=${typedArgs.maxChars} exceeds allowed per-pointer read size`,
           typedArgs.path,
+          readHardCapChars,
         );
       }
-      const maxChars = typedArgs.maxChars ?? VFS_READ_HARD_CHAR_CAP;
+      const maxChars = typedArgs.maxChars ?? readHardCapChars;
       const extracts: Array<{
         pointer: string;
         type: string;
@@ -397,14 +400,16 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
             "json",
             `pointer "${pointer}" yields ${fullJson.length} chars, exceeding limit ${maxChars}`,
             typedArgs.path,
+            readHardCapChars,
           );
         }
         totalJsonChars += fullJson.length;
-        if (totalJsonChars > VFS_READ_HARD_CHAR_CAP) {
+        if (totalJsonChars > readHardCapChars) {
           return createReadLimitError(
             "json",
-            `combined pointer payload exceeds ${VFS_READ_HARD_CHAR_CAP} chars`,
+            `combined pointer payload exceeds ${readHardCapChars} chars`,
             typedArgs.path,
+            readHardCapChars,
           );
         }
         const json = fullJson;
@@ -471,11 +476,12 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
       const startIndex = startLine - 1;
       const endIndexExclusive = endLine;
       const content = lines.slice(startIndex, endIndexExclusive).join("\n");
-      if (content.length > VFS_READ_HARD_CHAR_CAP) {
+      if (content.length > readHardCapChars) {
         return createReadLimitError(
           "lines",
           `requested line range returns ${content.length} chars`,
           typedArgs.path,
+          readHardCapChars,
         );
       }
 
@@ -512,18 +518,20 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
       );
     }
 
-    if (hasOffset && offsetRaw > VFS_READ_HARD_CHAR_CAP) {
+    if (hasOffset && offsetRaw > readHardCapChars) {
       return createReadLimitError(
         "chars",
         `offset=${offsetRaw} exceeds allowed chunk size`,
         typedArgs.path,
+        readHardCapChars,
       );
     }
-    if (hasMaxChars && maxChars > VFS_READ_HARD_CHAR_CAP) {
+    if (hasMaxChars && maxChars > readHardCapChars) {
       return createReadLimitError(
         "chars",
         `maxChars=${maxChars} exceeds allowed chunk size`,
         typedArgs.path,
+        readHardCapChars,
       );
     }
 
@@ -536,11 +544,12 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         : totalChars;
 
     const content = file.content.slice(sliceStart, sliceEndExclusive);
-    if (content.length > VFS_READ_HARD_CHAR_CAP) {
+    if (content.length > readHardCapChars) {
       return createReadLimitError(
         "chars",
         `requested char range returns ${content.length} chars`,
         typedArgs.path,
+        readHardCapChars,
       );
     }
     const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;

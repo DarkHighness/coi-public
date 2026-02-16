@@ -504,12 +504,28 @@ export interface TokenUsage {
   reported?: boolean;
 }
 
+export interface ToolCallContextUsageSnapshot {
+  promptTokens: number;
+  contextWindowTokens: number;
+  usageRatio: number;
+  autoCompactThreshold: number;
+  thresholdTokens: number;
+  tokensToThreshold: number;
+  source:
+    | "settings.modelContextWindows"
+    | "settings.learnedModelContextWindows"
+    | "provider.modelMetadata"
+    | "defaults.modelMap"
+    | "fallback.default";
+}
+
 // Individual tool call record
 export interface ToolCallRecord {
   name: string;
   input: Record<string, any>;
   output: any;
   timestamp: number;
+  contextUsage?: ToolCallContextUsageSnapshot;
 }
 
 /** Log entry types for display categorization */

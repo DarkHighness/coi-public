@@ -4,6 +4,7 @@ import type {
   TurnRecoveryTrace,
 } from "@/types";
 import {
+  TURN_RECOVERY_AUTO_APPROVE_SESSION_REBUILD_KINDS,
   TURN_RECOVERY_MAX_DURATION_MS,
   classifyTurnError,
   getTurnRecoveryPlan,
@@ -23,6 +24,7 @@ export interface TurnRecoveryRunnerParams<Result> {
     turnRetryBoost?: string;
     sessionRebuild?: string;
   };
+  autoApproveSessionRebuildKinds?: TurnRecoveryKind[];
   maxDurationMs?: number;
   sleep?: (ms: number) => Promise<void>;
   onLog?: (payload: Record<string, unknown>) => void;
@@ -95,6 +97,7 @@ export async function executeTurnWithRecovery<Result>({
   resetSession,
   confirmRecoveryAction,
   messages,
+  autoApproveSessionRebuildKinds = TURN_RECOVERY_AUTO_APPROVE_SESSION_REBUILD_KINDS,
   maxDurationMs = TURN_RECOVERY_MAX_DURATION_MS,
   sleep = defaultSleep,
   onLog,
@@ -103,6 +106,9 @@ export async function executeTurnWithRecovery<Result>({
 > {
   const startedAt = Date.now();
   const attempts: TurnRecoveryAttempt[] = [];
+  const autoApproveSessionRebuildKindSet = new Set<TurnRecoveryKind>(
+    autoApproveSessionRebuildKinds,
+  );
 
   const withinTimeBudget = () => Date.now() - startedAt < maxDurationMs;
 
@@ -313,10 +319,13 @@ export async function executeTurnWithRecovery<Result>({
   ) {
     if (!withinTimeBudget()) break;
 
-    const approved = await confirmAction(
-      "session_rebuild",
-      messages?.sessionRebuild ?? DEFAULT_SESSION_REBUILD_MESSAGE,
-    );
+    const autoApproved = autoApproveSessionRebuildKindSet.has(errorKind);
+    const approved = autoApproved
+      ? true
+      : await confirmAction(
+          "session_rebuild",
+          messages?.sessionRebuild ?? DEFAULT_SESSION_REBUILD_MESSAGE,
+        );
 
     onLog?.({
       phase: "session_rebuild_confirmation",
@@ -324,6 +333,7 @@ export async function executeTurnWithRecovery<Result>({
       kind: errorKind,
       attempt: resetAttempt + 1,
       approved,
+      autoApproved,
       elapsedMs: Date.now() - startedAt,
     });
 

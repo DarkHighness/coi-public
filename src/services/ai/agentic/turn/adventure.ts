@@ -476,21 +476,21 @@ export const generateAdventureTurn = async (
         language: context.language,
         settings: context.settings,
         pendingPlayerAction,
-        mode: "query_summary",
+        mode: "auto",
       });
 
       if (sumResult.summary) {
         console.log(
-          `[TurnRecovery] Auto query summary on context overflow succeeded (range ${nodeRange.fromIndex}-${nodeRange.toIndex}).`,
+          `[TurnRecovery] Auto compact/query summary on context pressure succeeded (range ${nodeRange.fromIndex}-${nodeRange.toIndex}).`,
         );
       } else if (sumResult.error) {
         console.warn(
-          `[TurnRecovery] Auto query summary on context overflow failed: ${sumResult.error}`,
+          `[TurnRecovery] Auto compact/query summary on context pressure failed: ${sumResult.error}`,
         );
       }
     } catch (error) {
       console.warn(
-        "[TurnRecovery] Auto query summary on context overflow threw error.",
+        "[TurnRecovery] Auto compact/query summary on context pressure threw error.",
         error,
       );
     }
@@ -498,9 +498,9 @@ export const generateAdventureTurn = async (
 
   const resetSessionForRecovery = async (kind: TurnRecoveryKind) => {
     if (kind === "context") {
+      await maybeAutoCompactOnContextOverflow();
       await sessionManager.onContextOverflow(sessionId);
       context.vfsSession.beginReadEpoch("context_overflow");
-      await maybeAutoCompactOnContextOverflow();
     } else {
       await sessionManager.invalidate(sessionId, "manual_clear");
       context.vfsSession.beginReadEpoch("manual_invalidate");
@@ -538,6 +538,7 @@ export const generateAdventureTurn = async (
       },
       resetSession: resetSessionForRecovery,
       confirmRecoveryAction: context.confirmRecoveryAction,
+      autoApproveSessionRebuildKinds: ["context"],
       messages: {
         turnRetryBoost: turnRetryBoostMessage,
         sessionRebuild: sessionRebuildMessage,

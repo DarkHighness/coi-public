@@ -92,6 +92,33 @@ describe("executeTurnWithRecovery", () => {
     );
   });
 
+  it("auto-approves context session rebuild without prompting user", async () => {
+    const execute = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(createError("CONTEXT_LENGTH_EXCEEDED: too long"))
+      .mockRejectedValueOnce(createError("CONTEXT_LENGTH_EXCEEDED: too long"))
+      .mockResolvedValueOnce("ok-after-context-reset");
+
+    const rollbackToAnchor = vi.fn().mockReturnValue(true);
+    const resetSession = vi.fn().mockResolvedValue(undefined);
+    const confirmRecoveryAction = vi.fn().mockResolvedValue(false);
+
+    const result = await executeTurnWithRecovery({
+      execute,
+      rollbackToAnchor,
+      resetSession,
+      confirmRecoveryAction,
+      sleep: async () => {},
+    });
+
+    expect(result.result).toBe("ok-after-context-reset");
+    expect(result.recovery.recovered).toBe(true);
+    expect(result.recovery.kind).toBe("context");
+    expect(result.recovery.finalLevel).toBe(2);
+    expect(confirmRecoveryAction).not.toHaveBeenCalled();
+    expect(resetSession).toHaveBeenCalledWith("context");
+  });
+
   it("applies transient backoff retries", async () => {
     const execute = vi
       .fn<() => Promise<string>>()

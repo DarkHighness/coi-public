@@ -422,14 +422,19 @@ export const createReadLimitError = (
   mode: "chars" | "lines" | "json",
   details: string,
   inputPath?: string,
+  hardCapChars: number = VFS_READ_HARD_CHAR_CAP,
 ): ToolCallResult<never> =>
   (() => {
+    const normalizedHardCapChars = Number.isFinite(hardCapChars)
+      ? Math.max(1, Math.floor(hardCapChars))
+      : VFS_READ_HARD_CHAR_CAP;
+    const suggestedChunkChars = Math.max(1, Math.min(2000, normalizedHardCapChars));
     const qualifiedPath =
       typeof inputPath === "string" && inputPath.trim().length > 0
         ? qualifyPathForRecovery(inputPath).qualifiedPath
         : "current";
     const linesWindowCall = `vfs_read({ path: "${qualifiedPath}", mode: "lines", startLine: 1, lineCount: 200 })`;
-    const charsWindowCall = `vfs_read({ path: "${qualifiedPath}", mode: "chars", start: 0, offset: 2000 })`;
+    const charsWindowCall = `vfs_read({ path: "${qualifiedPath}", mode: "chars", start: 0, offset: ${suggestedChunkChars} })`;
     const recovery = [
       `Do NOT retry with \`vfs_read({ path: "${qualifiedPath}" })\` alone; that repeats an unbounded chars read.`,
       `Try: ${linesWindowCall}`,
@@ -437,12 +442,12 @@ export const createReadLimitError = (
     ];
     if (mode === "json") {
       recovery.push(
-        `For JSON, narrow pointers and cap payload (example: vfs_read({ path: "${qualifiedPath}", mode: "json", pointers: ["/..."], maxChars: 2000 })).`,
+        `For JSON, narrow pointers and cap payload (example: vfs_read({ path: "${qualifiedPath}", mode: "json", pointers: ["/..."], maxChars: ${suggestedChunkChars} })).`,
       );
     }
 
     return createError(
-      `vfs_read(${mode}): ${details}. Hard cap is ${VFS_READ_HARD_CHAR_CAP} chars. Use lines/chars(start+offset) or narrower JSON pointers.`,
+      `vfs_read(${mode}): ${details}. Hard cap is ${normalizedHardCapChars} chars. Use lines/chars(start+offset) or narrower JSON pointers.`,
       "INVALID_DATA",
       {
         category: "validation",
@@ -452,7 +457,7 @@ export const createReadLimitError = (
             path: mode,
             code: "READ_LIMIT_EXCEEDED",
             message: details,
-            expected: `<= ${VFS_READ_HARD_CHAR_CAP}`,
+            expected: `<= ${normalizedHardCapChars}`,
           },
         ],
         recovery,

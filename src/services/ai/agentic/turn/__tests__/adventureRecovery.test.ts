@@ -215,6 +215,7 @@ describe("generateAdventureTurn recovery wiring", () => {
 
     expect(callArgs?.confirmRecoveryAction).toBe(confirmRecoveryAction);
     expect(typeof callArgs?.executeWithRetryBoost).toBe("function");
+    expect(callArgs?.autoApproveSessionRebuildKinds).toEqual(["context"]);
     expect(callArgs?.messages).toEqual(
       expect.objectContaining({
         turnRetryBoost: "game.recovery.turnRetryBoostConfirm",
@@ -346,7 +347,7 @@ describe("generateAdventureTurn recovery wiring", () => {
     );
   });
 
-  it("runs auto query-summary during context reset before rebuilding session", async () => {
+  it("runs auto compact/query summary during context reset before rebuilding session", async () => {
     summarizeContextMock.mockResolvedValueOnce({
       summary: { id: "sum-1" },
       logs: [],
@@ -389,7 +390,7 @@ describe("generateAdventureTurn recovery wiring", () => {
     expect(summarizeContextMock).toHaveBeenCalledTimes(1);
     expect(summarizeContextMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        mode: "query_summary",
+        mode: "auto",
         nodeRange: { fromIndex: 0, toIndex: 0 },
       }),
     );

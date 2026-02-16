@@ -10,6 +10,7 @@
     "format": "pnpm exec prettier --write .",
     "lint:i18n": "node scripts/lint-i18n.js",
     "lint": "pnpm lint:i18n",
+    "typecheck": "pnpm exec tsc --noEmit",
     "test": "vitest run",
     "test:ui": "vitest run 'src/**/*.test.tsx'",
     "test:stable": "vitest run --exclude src/services/ai/agentic/__tests__/budgetUtils.test.ts --exclude src/services/ai/agentic/summary/summaryInitializer.test.ts",
