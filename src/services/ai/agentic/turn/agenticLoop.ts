@@ -53,8 +53,12 @@ import {
 } from "./resultAccumulator";
 import { normalizeVfsPath } from "../../../vfs/utils";
 import { rollbackVfsSessionToCheckpoint } from "../../../vfs/runtimeCheckpoints";
-import { buildToolCallContextUsageSnapshot } from "../../contextUsage";
+import {
+  buildToolCallContextUsageSnapshot,
+  recordPromptTokenCalibrationSample,
+} from "../../contextUsage";
 import { ContextOverflowError } from "../../contextCompressor";
+import { estimatePromptTokens } from "../retry";
 import {
   collectWriteTargetsFromToolCall,
   formatPendingWriteFailurePaths,
@@ -419,6 +423,27 @@ export async function runAgenticLoopRefactored(
         settings,
         sessionId,
         requiredToolName: undefined,
+      });
+
+      const estimatedPromptTokensForCalibration = estimatePromptTokens(
+        {
+          modelId,
+          systemInstruction,
+          messages: [],
+          tools: loopState.activeTools.map((tool) => ({
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters,
+          })),
+        },
+        conversationHistory,
+      );
+      recordPromptTokenCalibrationSample({
+        providerProtocol: protocol,
+        modelId,
+        reportedPromptTokens: aiResult.usage?.promptTokens ?? 0,
+        estimatedPromptTokens: estimatedPromptTokensForCalibration,
+        usageReported: aiResult.usage?.reported,
       });
 
       // Accumulate usage

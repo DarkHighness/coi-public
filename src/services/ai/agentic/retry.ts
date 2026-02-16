@@ -141,7 +141,7 @@ const stringifyForEstimation = (value: unknown): string => {
   }
 };
 
-const estimatePromptTokens = (
+export const estimatePromptTokens = (
   request: ChatGenerateRequest,
   history: UnifiedMessage[],
 ): number => {

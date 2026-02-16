@@ -11,6 +11,12 @@ import {
 export const DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS = 32_000;
 export const CONTEXT_WINDOW_READ_CAP_PERCENT = 0.01;
 export const READ_CAP_SAFE_CHARS_PER_TOKEN_HINT = 2;
+const MIN_CALIBRATION_PROMPT_TOKENS = 32;
+const CALIBRATION_EMA_ALPHA = 0.2;
+const CALIBRATION_RATIO_MIN = 0.85;
+const CALIBRATION_RATIO_MAX = 1.15;
+const CALIBRATION_MIN_SAMPLES_TO_APPLY = 8;
+const CALIBRATION_WARMUP_SAMPLES = 6;
 
 const ASCII_ALNUM_TOKEN_WEIGHT = 0.28;
 const ASCII_PUNCT_TOKEN_WEIGHT = 0.2;
@@ -46,6 +52,49 @@ export interface ResolvedStoryContextWindow {
   contextWindowTokens: number;
   source: ContextWindowSource;
 }
+
+interface PromptTokenCalibrationRecord {
+  sampleCount: number;
+  emaRatio: number;
+  reportedPromptTokensSum: number;
+  estimatedPromptTokensSum: number;
+  updatedAt: number;
+}
+
+const promptTokenCalibrationByModel = new Map<string, PromptTokenCalibrationRecord>();
+
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
+
+const toCalibrationKey = (
+  providerProtocol: string | null | undefined,
+  modelId: string | null | undefined,
+): string | null => {
+  const protocol = typeof providerProtocol === "string" ? providerProtocol.trim() : "";
+  const model = typeof modelId === "string" ? modelId.trim() : "";
+  if (!protocol || !model) {
+    return null;
+  }
+  return `${protocol}::${model}`;
+};
+
+const getCalibrationFactor = (
+  providerProtocol: string | null | undefined,
+  modelId: string | null | undefined,
+): number => {
+  const key = toCalibrationKey(providerProtocol, modelId);
+  if (!key) return 1;
+  const record = promptTokenCalibrationByModel.get(key);
+  if (!record) return 1;
+  if (record.sampleCount < CALIBRATION_MIN_SAMPLES_TO_APPLY) return 1;
+  const warmup = clamp(
+    (record.sampleCount - CALIBRATION_MIN_SAMPLES_TO_APPLY + 1) /
+      CALIBRATION_WARMUP_SAMPLES,
+    0,
+    1,
+  );
+  return 1 + (record.emaRatio - 1) * warmup;
+};
 
 const isAsciiAlnum = (codePoint: number): boolean =>
   (codePoint >= 0x30 && codePoint <= 0x39) ||
@@ -162,7 +211,17 @@ export const estimateSafeCharsFromTokenBudget = (tokenBudget: number): number =>
     Math.floor(Math.max(1, tokenBudget) * READ_CAP_SAFE_CHARS_PER_TOKEN_HINT),
   );
 
-export const estimateTokensForMixedText = (content: string): number => {
+const normalizeCalibrationFactor = (factor: number | undefined): number => {
+  if (typeof factor !== "number" || !Number.isFinite(factor)) {
+    return 1;
+  }
+  return clamp(factor, CALIBRATION_RATIO_MIN, CALIBRATION_RATIO_MAX);
+};
+
+export const estimateTokensForMixedText = (
+  content: string,
+  options?: { calibrationFactor?: number },
+): number => {
   if (!content) {
     return 0;
   }
@@ -179,9 +238,16 @@ export const estimateTokensForMixedText = (content: string): number => {
     i += codePoint > 0xffff ? 2 : 1;
   }
 
+  const calibrationFactor = normalizeCalibrationFactor(
+    options?.calibrationFactor,
+  );
+
   return Math.max(
     1,
-    Math.ceil(weightedTokens + ESTIMATOR_NON_EMPTY_OVERHEAD_TOKENS),
+    Math.ceil(
+      (weightedTokens + ESTIMATOR_NON_EMPTY_OVERHEAD_TOKENS) *
+        calibrationFactor,
+    ),
   );
 };
 
@@ -195,6 +261,7 @@ export const computeReadCapCharsFromContextWindow = (
 export interface ResolvedVfsReadHardCap {
   hardCapChars: number;
   tokenBudget: number;
+  calibrationFactor: number;
   contextWindowTokens: number;
   source: ContextWindowSource;
 }
@@ -202,6 +269,7 @@ export interface ResolvedVfsReadHardCap {
 export interface ResolvedVfsReadTokenBudget {
   tokenBudget: number;
   projectedSafeChars: number;
+  calibrationFactor: number;
   contextWindowTokens: number;
   source: ContextWindowSource;
 }
@@ -210,12 +278,27 @@ export function resolveVfsReadTokenBudget(
   settings: AISettings | undefined,
 ): ResolvedVfsReadTokenBudget {
   const resolution = resolveStoryContextWindow(settings);
+  const providerId = settings?.story?.providerId;
+  const modelId = settings?.story?.modelId;
+  const providerProtocol =
+    settings && providerId
+      ? resolveProviderProtocol(settings, providerId)
+      : undefined;
+  const calibrationFactor = getCalibrationFactor(providerProtocol, modelId);
   const tokenBudget = computeReadTokenBudgetFromContextWindow(
     resolution.contextWindowTokens,
   );
+  const projectedSafeChars = Math.max(
+    1,
+    Math.floor(
+      estimateSafeCharsFromTokenBudget(tokenBudget) /
+        normalizeCalibrationFactor(calibrationFactor),
+    ),
+  );
   return {
     tokenBudget,
-    projectedSafeChars: estimateSafeCharsFromTokenBudget(tokenBudget),
+    projectedSafeChars,
+    calibrationFactor,
     contextWindowTokens: resolution.contextWindowTokens,
     source: resolution.source,
   };
@@ -228,9 +311,72 @@ export function resolveVfsReadHardCapChars(
   return {
     hardCapChars: resolution.projectedSafeChars,
     tokenBudget: resolution.tokenBudget,
+    calibrationFactor: resolution.calibrationFactor,
     contextWindowTokens: resolution.contextWindowTokens,
     source: resolution.source,
   };
+}
+
+export function recordPromptTokenCalibrationSample(params: {
+  providerProtocol: string | null | undefined;
+  modelId: string | null | undefined;
+  reportedPromptTokens: number;
+  estimatedPromptTokens: number;
+  usageReported?: boolean;
+}): void {
+  if (params.usageReported === false) {
+    return;
+  }
+
+  const reportedPromptTokens = toNonNegativeInt(params.reportedPromptTokens);
+  const estimatedPromptTokens = toNonNegativeInt(params.estimatedPromptTokens);
+  if (
+    reportedPromptTokens < MIN_CALIBRATION_PROMPT_TOKENS ||
+    estimatedPromptTokens < MIN_CALIBRATION_PROMPT_TOKENS
+  ) {
+    return;
+  }
+
+  const key = toCalibrationKey(params.providerProtocol, params.modelId);
+  if (!key) {
+    return;
+  }
+
+  const ratio = clamp(
+    reportedPromptTokens / Math.max(1, estimatedPromptTokens),
+    CALIBRATION_RATIO_MIN,
+    CALIBRATION_RATIO_MAX,
+  );
+
+  const current = promptTokenCalibrationByModel.get(key);
+  const nextSampleCount = (current?.sampleCount ?? 0) + 1;
+  const nextEmaRatio = current
+    ? current.emaRatio * (1 - CALIBRATION_EMA_ALPHA) +
+      ratio * CALIBRATION_EMA_ALPHA
+    : ratio;
+
+  promptTokenCalibrationByModel.set(key, {
+    sampleCount: nextSampleCount,
+    emaRatio: nextEmaRatio,
+    reportedPromptTokensSum:
+      (current?.reportedPromptTokensSum ?? 0) + reportedPromptTokens,
+    estimatedPromptTokensSum:
+      (current?.estimatedPromptTokensSum ?? 0) + estimatedPromptTokens,
+    updatedAt: Date.now(),
+  });
+}
+
+export function getPromptTokenCalibrationSnapshot(params: {
+  providerProtocol: string | null | undefined;
+  modelId: string | null | undefined;
+}): PromptTokenCalibrationRecord | null {
+  const key = toCalibrationKey(params.providerProtocol, params.modelId);
+  if (!key) return null;
+  return promptTokenCalibrationByModel.get(key) ?? null;
+}
+
+export function resetPromptTokenCalibrationForTests(): void {
+  promptTokenCalibrationByModel.clear();
 }
 
 export function buildToolCallContextUsageSnapshot(params: {

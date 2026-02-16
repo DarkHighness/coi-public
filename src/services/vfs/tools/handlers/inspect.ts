@@ -337,6 +337,11 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
     const readBudgetResolution = resolveVfsReadTokenBudget(ctx.settings);
     const readTokenBudget = readBudgetResolution.tokenBudget;
     const readSafeCharsHint = readBudgetResolution.projectedSafeChars;
+    const readCalibrationFactor = readBudgetResolution.calibrationFactor;
+    const estimateReadTokens = (content: string): number =>
+      estimateTokensForMixedText(content, {
+        calibrationFactor: readCalibrationFactor,
+      });
 
     const mode =
       typedArgs.mode ??
@@ -389,7 +394,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         const valueType = describeJsonValueType(resolvedPointer.value);
         const jsonString = JSON.stringify(resolvedPointer.value);
         const fullJson = typeof jsonString === "string" ? jsonString : "null";
-        const pointerTokens = estimateTokensForMixedText(fullJson);
+        const pointerTokens = estimateReadTokens(fullJson);
         if (typeof maxChars === "number" && fullJson.length > maxChars) {
           return createReadLimitError(
             "json",
@@ -491,7 +496,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
       const startIndex = startLine - 1;
       const endIndexExclusive = endLine;
       const content = lines.slice(startIndex, endIndexExclusive).join("\n");
-      const contentTokens = estimateTokensForMixedText(content);
+      const contentTokens = estimateReadTokens(content);
       if (contentTokens > readTokenBudget) {
         return createReadLimitError(
           "lines",
@@ -547,7 +552,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         : totalChars;
 
     const content = file.content.slice(sliceStart, sliceEndExclusive);
-    const contentTokens = estimateTokensForMixedText(content);
+    const contentTokens = estimateReadTokens(content);
     if (contentTokens > readTokenBudget) {
       return createReadLimitError(
         "chars",
