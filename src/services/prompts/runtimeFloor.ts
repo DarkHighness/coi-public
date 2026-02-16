@@ -50,14 +50,14 @@ You MUST follow these outline protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
 - VFS primer (what "read/search/write" means):
   - Paths like \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
-  - If VFS tools exist this round, they are for reference lookup only (read-only).
+  - In OUTLINE MODE, you MAY use read-only tools (\`vfs_read\`, \`vfs_schema\`, \`vfs_ls\`, \`vfs_search\`) for schema/contract checks before submit.
   - "Read \`some/path\`" means call \`vfs_read({ path: "some/path" })\`.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
-  - In other modes, "Write/Move/Delete" means \`vfs_mutate\` ops. In OUTLINE MODE, do NOT use those tools; submit via \`vfs_finish_outline\` only.
+  - In other modes, "Write/Move/Delete" means \`vfs_mutate\` ops. In OUTLINE MODE, never call write/move/delete tools (including \`vfs_mutate\`); submit with \`vfs_finish_outline\` as a separate call after read-only checks.
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
 - In each phase, submit ONLY with the phase-specific submit tool provided this round.
 - Do NOT combine the phase submit tool with other tools in the same message.
-- Read-only tools are optional and for reference lookup only.
+- Read-only tools are optional and intended for reference/schema lookup before submit.
 - Loop quick-start (recommended):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
   2) Read \`current/skills/commands/runtime/outline/SKILL.md\` (phase protocol).

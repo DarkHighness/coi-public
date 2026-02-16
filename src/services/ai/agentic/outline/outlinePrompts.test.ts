@@ -82,6 +82,14 @@ describe("outlinePrompts", () => {
       true,
       "feat",
       "vfs_finish_outline",
+      {
+        culturePreference: undefined,
+        culturePreferenceSource: undefined,
+        cultureEffectiveCircle: undefined,
+        cultureSkillPath: undefined,
+        cultureHubSkillPath: undefined,
+        cultureNamingPolicy: undefined,
+      },
     );
 
     expect(
