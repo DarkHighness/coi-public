@@ -42,6 +42,13 @@ const DEFAULT_SAVE_PRESET_PROFILE: SavePresetProfile = {
   locked: true,
 };
 
+const DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS = {
+  age: "Unspecified",
+  profession: "Unspecified",
+  background: "Unspecified",
+  race: "Unspecified",
+} as const;
+
 const normalizePresetProfile = (
   profile: Partial<SavePresetProfile> | undefined | null,
 ): SavePresetProfile => ({
@@ -443,6 +450,10 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
         status: DEFAULT_CHARACTER.status,
         appearance: DEFAULT_CHARACTER.appearance,
         attributes: DEFAULT_CHARACTER.attributes,
+        age: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.age,
+        profession: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.profession,
+        background: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.background,
+        race: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.race,
       },
       relations: [],
     },

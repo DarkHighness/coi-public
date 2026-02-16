@@ -19,9 +19,24 @@ describe("seedVfsSessionFromDefaults", () => {
     const notes = session.readFile("world/notes.md")?.content ?? "";
     const currentSoul = session.readFile("world/soul.md")?.content ?? "";
     const globalSoul = session.readFile("world/global/soul.md")?.content ?? "";
+    const playerProfile = JSON.parse(
+      session.readFile("world/characters/char:player/profile.json")?.content ??
+        "{}",
+    ) as {
+      visible?: {
+        age?: string;
+        profession?: string;
+        background?: string;
+        race?: string;
+      };
+    };
     expect(notes).toContain("Story Teller AI");
     expect(currentSoul).toContain("Story Teller AI");
     expect(globalSoul).toContain("Story Teller AI");
+    expect(playerProfile.visible?.age).toBe("Unspecified");
+    expect(playerProfile.visible?.profession).toBe("Unspecified");
+    expect(playerProfile.visible?.background).toBe("Unspecified");
+    expect(playerProfile.visible?.race).toBe("Unspecified");
   });
 
   it("keeps scaffold folders and README markers on repeated seed", () => {
