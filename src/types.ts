@@ -49,13 +49,19 @@ export interface AccessTimestamp {
 
 import type {
   InventoryItem as ZodInventoryItem,
-  LocationViewModel as ZodLocation,
-  QuestViewModel as ZodQuest,
-  KnowledgeEntryViewModel as ZodKnowledgeEntry,
-  TimelineEventViewModel as ZodTimelineEvent,
+  Location as ZodLocationDefinition,
+  LocationViewModel as ZodLocationViewModel,
+  Quest as ZodQuestDefinition,
+  QuestViewModel as ZodQuestViewModel,
+  KnowledgeEntry as ZodKnowledgeEntryDefinition,
+  KnowledgeEntryViewModel as ZodKnowledgeEntryViewModel,
+  TimelineEvent as ZodTimelineEventDefinition,
+  TimelineEventViewModel as ZodTimelineEventViewModel,
   CausalChain as ZodCausalChain,
-  FactionViewModel as ZodFaction,
-  WorldInfo as ZodWorldInfo,
+  Faction as ZodFactionDefinition,
+  FactionViewModel as ZodFactionViewModel,
+  WorldInfo as ZodWorldInfoDefinition,
+  WorldInfoView as ZodWorldInfoView,
   CharacterAttribute as ZodCharacterAttribute,
   HiddenTrait as ZodHiddenTrait,
   CharacterStatus as ZodCharacterStatus,
@@ -103,19 +109,38 @@ type WithVersionedTimestamps<T> = T & {
 export type InventoryItem = WithRequiredId<
   WithVersionedTimestamps<ZodInventoryItem>
 >;
-export type Location = WithRequiredId<ZodLocation> & {
+export type LocationDefinition = WithRequiredId<ZodLocationDefinition>;
+export type LocationViewModel = WithRequiredId<ZodLocationViewModel> & {
   isVisited: boolean;
   createdAt: number;
   modifiedAt?: VersionedTimestamp;
 };
-export type Quest = WithRequiredId<WithVersionedTimestamps<ZodQuest>>;
-export type KnowledgeEntry = WithRequiredId<
-  WithVersionedTimestamps<ZodKnowledgeEntry>
+export type Location = LocationViewModel;
+export type QuestDefinition = WithRequiredId<
+  WithVersionedTimestamps<ZodQuestDefinition>
 >;
-export type TimelineEvent = WithRequiredId<ZodTimelineEvent>;
+export type QuestViewModel = WithRequiredId<
+  WithVersionedTimestamps<ZodQuestViewModel>
+>;
+export type Quest = QuestViewModel;
+export type KnowledgeEntryDefinition = WithRequiredId<
+  WithVersionedTimestamps<ZodKnowledgeEntryDefinition>
+>;
+export type KnowledgeEntryViewModel = WithRequiredId<
+  WithVersionedTimestamps<ZodKnowledgeEntryViewModel>
+>;
+export type KnowledgeEntry = KnowledgeEntryViewModel;
+export type TimelineEventDefinition = WithRequiredId<ZodTimelineEventDefinition>;
+export type TimelineEventViewModel = WithRequiredId<ZodTimelineEventViewModel>;
+export type TimelineEvent = TimelineEventViewModel;
 export type CausalChain = ZodCausalChain; // chainId 是必需的，已在 schema 中定义
-export type Faction = WithRequiredId<ZodFaction>;
-export type WorldInfo = ZodWorldInfo & {
+export type FactionDefinition = WithRequiredId<ZodFactionDefinition>;
+export type FactionViewModel = WithRequiredId<ZodFactionViewModel>;
+export type Faction = FactionViewModel;
+export type WorldInfoDefinition = ZodWorldInfoDefinition;
+type WorldInfoViewUnlock = Omit<ZodWorldInfoView, "highlight" | "lastAccess">;
+export type WorldInfoViewModel = WorldInfoDefinition & Partial<WorldInfoViewUnlock>;
+export type WorldInfo = WorldInfoViewModel & {
   // Derived per-actor unlock fields merged in derivation for UI convenience.
   worldSettingUnlocked?: boolean;
   worldSettingUnlockReason?: string;
@@ -158,12 +183,18 @@ export type {
 // 导出 Zod 原始类型（用于 AI 生成验证，字段可选）
 export type {
   ZodInventoryItem,
-  ZodLocation,
-  ZodQuest,
-  ZodKnowledgeEntry,
-  ZodTimelineEvent,
-  ZodFaction,
-  ZodWorldInfo,
+  ZodLocationDefinition as ZodLocation,
+  ZodLocationViewModel,
+  ZodQuestDefinition as ZodQuest,
+  ZodQuestViewModel,
+  ZodKnowledgeEntryDefinition as ZodKnowledgeEntry,
+  ZodKnowledgeEntryViewModel,
+  ZodTimelineEventDefinition as ZodTimelineEvent,
+  ZodTimelineEventViewModel,
+  ZodFactionDefinition as ZodFaction,
+  ZodFactionViewModel,
+  ZodWorldInfoDefinition as ZodWorldInfo,
+  ZodWorldInfoView,
 };
 
 /**
@@ -175,7 +206,6 @@ export type {
  * - id: Generate by AI
  * - createdAt: Set when entity is created (Date.now())
  * - lastModified: Updated on any modification (Date.now())
- * - lastAccess: Updated when AI queries entity (turn number)
  * - isVisited: Set when player visits location
  * - discoveredAt: Set when location is first discovered
  *
@@ -185,7 +215,7 @@ export type {
  * - unlocked: AI decides when hidden info is revealed (narrative judgment)
  * - knownBy: Existence visibility: which actors know this entity exists
  * - observation: NPC observations of player behavior
- * - highlight: Set true by AI when entity changes (cleared by UI after render)
+ * - highlight state is UI-managed in uiState.entityPresentation (not VFS)
 
  *
  * MIXED FIELDS (AI sets initial, system may override):
@@ -632,12 +662,20 @@ export interface ListState {
   hiddenIds?: string[]; // Items hidden from sidebar (user-controlled)
 }
 
+export interface EntityPresentationState {
+  highlight?: boolean;
+}
+
+export type EntityPresentationMap = Record<string, EntityPresentationState>;
+
 export interface UIState {
   inventory: ListState;
   locations: ListState;
   npcs: ListState;
   knowledge: ListState; // UI state for knowledge panel
   quests: ListState; // UI state for quests panel
+  // UI-only per-entity presentation state keyed by `<kind>:<id>`
+  entityPresentation?: EntityPresentationMap;
   showSystemFooter?: boolean; // Persisted state for system footer
   sidebarCollapsed?: boolean; // Persisted state for left sidebar collapse
   sidebarWidth?: number; // Persisted width for left sidebar

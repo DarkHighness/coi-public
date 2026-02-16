@@ -6,6 +6,11 @@ import { canonicalToLogicalVfsPath } from "../../vfs/core/pathResolver";
 import { vfsPathRegistry } from "../../vfs/core/pathRegistry";
 import { vfsResourceRegistry } from "../../vfs/core/resourceRegistry";
 import {
+  filterCanonicalWorldPatchOpsByPath,
+  isCanonicalWorldPath,
+  sanitizeCanonicalWorldRecordByPath,
+} from "../../vfs/stateLayering";
+import {
   formatJsonValidationSummary,
   summarizeJsonValidationError,
 } from "../../vfs/jsonValidationSummary";
@@ -122,18 +127,6 @@ const SUPPORTED_CONTENT_TYPES: readonly VfsContentType[] = [
   "text/markdown",
 ];
 
-const CANONICAL_UNLOCK_POINTERS = new Set(["/unlocked", "/unlockReason"]);
-
-const CANONICAL_WORLD_ENTITY_PATTERNS: RegExp[] = [
-  /^world\/world_info\.json$/,
-  /^world\/quests\/[^/]+\.json$/,
-  /^world\/knowledge\/[^/]+\.json$/,
-  /^world\/timeline\/[^/]+\.json$/,
-  /^world\/locations\/[^/]+\.json$/,
-  /^world\/factions\/[^/]+\.json$/,
-  /^world\/causal_chains\/[^/]+\.json$/,
-];
-
 const VIEW_ENTITY_ID_PATH_PATTERN =
   /^world\/characters\/[^/]+\/views\/(quests|knowledge|timeline|locations|factions|causal_chains)\/([^/]+)\.json$/;
 
@@ -159,12 +152,6 @@ const isSupportedVfsContentType = (
 ): value is VfsContentType =>
   (SUPPORTED_CONTENT_TYPES as readonly string[]).includes(value);
 
-const canonicalUnlockWarning = (
-  normalizedPath: string,
-  keys: string[],
-): string =>
-  `Ignored canonical unlock field(s) ${keys.join(", ")} at ${toCurrentPath(normalizedPath)}. Use actor views for world-entity unlock state.`;
-
 const toPlainRecord = (
   value: unknown,
 ): Record<string, unknown> | null => {
@@ -188,11 +175,6 @@ const toPatchPointer = (pointer: unknown): string | null => {
   if (typeof pointer !== "string") return null;
   const trimmed = pointer.trim();
   return trimmed.length > 0 ? trimmed : null;
-};
-
-const pointsToCanonicalUnlockField = (pointer: string | null): boolean => {
-  if (!pointer) return false;
-  return CANONICAL_UNLOCK_POINTERS.has(pointer);
 };
 
 export const requireReadBeforeMutateForExistingFile = (
@@ -314,13 +296,7 @@ export const resolveTextContentType = (
 };
 
 export const isCanonicalWorldEntityPath = (path: string): boolean => {
-  const normalized = normalizeVfsPath(path);
-  const logical = normalizeVfsPath(
-    canonicalToLogicalVfsPath(normalized, { looseFork: true }) || normalized,
-  );
-  return CANONICAL_WORLD_ENTITY_PATTERNS.some((pattern) =>
-    pattern.test(logical),
-  );
+  return isCanonicalWorldPath(path);
 };
 
 export const stripCanonicalWorldEntityUnlockFields = (
@@ -331,31 +307,7 @@ export const stripCanonicalWorldEntityUnlockFields = (
   strippedKeys: string[];
   warnings: string[];
 } => {
-  if (!isCanonicalWorldEntityPath(normalizedPath)) {
-    return { sanitized: value, strippedKeys: [], warnings: [] };
-  }
-
-  const record = toPlainRecord(value);
-  if (!record) {
-    return { sanitized: value, strippedKeys: [], warnings: [] };
-  }
-
-  const strippedKeys = ["unlocked", "unlockReason"].filter((key) =>
-    Object.prototype.hasOwnProperty.call(record, key),
-  );
-  if (strippedKeys.length === 0) {
-    return { sanitized: value, strippedKeys: [], warnings: [] };
-  }
-
-  const sanitizedRecord: Record<string, unknown> = { ...record };
-  delete sanitizedRecord.unlocked;
-  delete sanitizedRecord.unlockReason;
-
-  return {
-    sanitized: sanitizedRecord,
-    strippedKeys,
-    warnings: [canonicalUnlockWarning(normalizedPath, strippedKeys)],
-  };
+  return sanitizeCanonicalWorldRecordByPath(normalizedPath, value);
 };
 
 export const filterCanonicalWorldEntityUnlockPatchOps = (
@@ -365,36 +317,10 @@ export const filterCanonicalWorldEntityUnlockPatchOps = (
   patch: Operation[];
   warnings: string[];
 } => {
-  if (!isCanonicalWorldEntityPath(normalizedPath) || patchOps.length === 0) {
-    return { patch: patchOps, warnings: [] };
-  }
-
-  const kept: Operation[] = [];
-  let strippedCount = 0;
-
-  for (const op of patchOps) {
-    const opRecord = op as unknown as Record<string, unknown>;
-    const pathPointer = toPatchPointer(opRecord.path);
-    const fromPointer = toPatchPointer(opRecord.from);
-    if (
-      pointsToCanonicalUnlockField(pathPointer) ||
-      pointsToCanonicalUnlockField(fromPointer)
-    ) {
-      strippedCount += 1;
-      continue;
-    }
-    kept.push(op);
-  }
-
-  if (strippedCount === 0) {
-    return { patch: patchOps, warnings: [] };
-  }
-
+  const filtered = filterCanonicalWorldPatchOpsByPath(normalizedPath, patchOps);
   return {
-    patch: kept,
-    warnings: [
-      `Ignored ${strippedCount} patch operation(s) targeting canonical /unlocked or /unlockReason at ${toCurrentPath(normalizedPath)}. Use actor views for world-entity unlock state.`,
-    ],
+    patch: filtered.patch,
+    warnings: filtered.warnings,
   };
 };
 

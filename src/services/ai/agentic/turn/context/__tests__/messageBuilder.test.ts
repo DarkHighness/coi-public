@@ -94,6 +94,7 @@ describe("messageBuilder", () => {
       texts.some((text) => text.includes("[Story summary acknowledged.]")),
     ).toBe(true);
     expect(texts.join("\n")).toContain("&lt;unsafe&gt;");
+    expect(texts.join("\n")).not.toContain("read-model");
     expect(texts.join("\n")).not.toContain("[CONTEXT: Current Entities]");
   });
 

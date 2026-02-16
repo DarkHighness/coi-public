@@ -108,7 +108,12 @@ export function buildInitialContext(
 
   if (staticContext) {
     messages.push(
-      createUserMessage(`[CONTEXT: World Foundation]\n${staticContext}`),
+      createUserMessage(
+        [
+          "[CONTEXT: World Foundation]",
+          staticContext,
+        ].join("\n"),
+      ),
     );
     messages.push({
       role: "assistant",

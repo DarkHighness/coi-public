@@ -20,12 +20,18 @@ import type {
 // Merge Phases
 // ============================================================================
 
+interface PrepareEntitiesOptions {
+  defaultUnlocked?: boolean;
+}
+
 /**
- * Helper to ensure all entities have IDs and set unlocked: false
+ * Helper to ensure all entities have IDs.
+ * For actor-owned entities, unlocked can be defaulted when requested.
  */
 function prepareEntities<T extends { id?: string; unlocked?: boolean }>(
   items: T[] | undefined | null,
   prefix: string,
+  options: PrepareEntitiesOptions = {},
 ): T[] {
   if (!items || !Array.isArray(items) || items.length === 0) {
     if (items && !Array.isArray(items)) {
@@ -57,7 +63,15 @@ function prepareEntities<T extends { id?: string; unlocked?: boolean }>(
     }
 
     counter = idNumber + 1;
-    return { ...item, id: newId, unlocked: false };
+    if (options.defaultUnlocked) {
+      return {
+        ...item,
+        id: newId,
+        unlocked:
+          typeof item.unlocked === "boolean" ? item.unlocked : false,
+      };
+    }
+    return { ...item, id: newId };
   });
 
   return result;
@@ -96,10 +110,18 @@ const prepareActorBundle = (
       kind,
       relations: Array.isArray(profile.relations) ? profile.relations : [],
     },
-    skills: prepareEntities(input.skills as any, "skill") as any,
-    conditions: prepareEntities(input.conditions as any, "cond") as any,
-    traits: prepareEntities(input.traits as any, "trait") as any,
-    inventory: prepareEntities(input.inventory as any, "inv") as any,
+    skills: prepareEntities(input.skills as any, "skill", {
+      defaultUnlocked: true,
+    }) as any,
+    conditions: prepareEntities(input.conditions as any, "cond", {
+      defaultUnlocked: true,
+    }) as any,
+    traits: prepareEntities(input.traits as any, "trait", {
+      defaultUnlocked: true,
+    }) as any,
+    inventory: prepareEntities(input.inventory as any, "inv", {
+      defaultUnlocked: true,
+    }) as any,
   };
 };
 
@@ -207,7 +229,6 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
             typeof ph?.id === "string" && ph.id.trim()
               ? ph.id.trim()
               : `ph:${idx + 1}`,
-          unlocked: false,
         }))
       : [],
 

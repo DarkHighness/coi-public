@@ -246,22 +246,25 @@ describe("contextInjector", () => {
     const text = getText(history[0]);
     expect(text).toContain("COLD START REQUIRED READS");
     expect(text).toContain(
-      'vfs_read_lines({ path: "current/skills/commands/runtime/SKILL.md", startLine: 1, lineCount: 220',
+      'vfs_read_lines({ path: "current/skills/commands/runtime/SKILL.md", startLine: 1, lineCount: 120',
     );
     expect(text).toContain(
-      'vfs_read_lines({ path: "current/world/soul.md", startLine: 1, lineCount: 180',
+      'vfs_read_lines({ path: "current/world/soul.md", startLine: 1, lineCount: 90',
     );
     expect(text).toContain(
-      'vfs_read_lines({ path: "current/world/global/soul.md", startLine: 1, lineCount: 180',
+      'vfs_read_lines({ path: "current/world/global/soul.md", startLine: 1, lineCount: 90',
     );
     expect(text).toContain(
-      'vfs_read_lines({ path: "current/conversation/session.jsonl", startLine: 1, lineCount: 200',
+      'vfs_read_lines({ path: "current/conversation/session.jsonl", startLine: 1, lineCount: 80',
     );
     expect(text).toContain(
       "keep reads line-windowed; do not use unbounded chars mode",
     );
     expect(text).toContain(
       "For long skill manuals under `current/skills/**`, prefer bounded line windows first",
+    );
+    expect(text).toContain(
+      "If a read returns READ_LIMIT_EXCEEDED/READ_LIMIT_HINT, shrink window size first",
     );
   });
 });

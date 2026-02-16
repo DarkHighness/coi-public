@@ -6,6 +6,11 @@ import {
   toCustomRulePackPath,
 } from "./customRules";
 import { ensureDirectoryScaffolds } from "./directoryScaffolds";
+import {
+  type CanonicalWorldEntityCategory,
+  sanitizeCanonicalWorldRecord,
+  sanitizeOutlineWorldCollections,
+} from "./stateLayering";
 
 type SectionName =
   | "global"
@@ -122,6 +127,15 @@ const listSections: Record<
   causalChains: { prefix: "world/causal_chains", idField: "chainId" },
 };
 
+const WORLD_SECTION_TO_CATEGORY = {
+  locations: "locations",
+  quests: "quests",
+  knowledge: "knowledge",
+  factions: "factions",
+  timeline: "timeline",
+  causalChains: "causal_chains",
+} as const;
+
 export const applySectionEdit = (
   session: VfsSession,
   section: SectionName,
@@ -196,7 +210,11 @@ export const applySectionEdit = (
     if (!options.allowOutlineEdit) {
       throw new Error("Outline edits are not allowed.");
     }
-    writeJson(session, "outline/outline.json", data);
+    const sanitized = sanitizeOutlineWorldCollections(data);
+    for (const warning of sanitized.warnings) {
+      console.warn(`[VFS Editor] ${warning}`);
+    }
+    writeJson(session, "outline/outline.json", sanitized.sanitized);
     return;
   }
 
@@ -265,6 +283,23 @@ export const applySectionEdit = (
     if (typeof id !== "string" || id.trim().length === 0) {
       throw new Error(`Missing ${config.idField} for ${section} entry.`);
     }
+    const category = (WORLD_SECTION_TO_CATEGORY as Record<
+      string,
+      CanonicalWorldEntityCategory | undefined
+    >)[
+      section
+    ];
+    if (category) {
+      const sanitized = sanitizeCanonicalWorldRecord(category, item);
+      if (sanitized.strippedKeys.length > 0) {
+        console.warn(
+          `[VFS Editor] Ignored view/UI fields for ${section}/${id}: ${sanitized.strippedKeys.join(", ")}`,
+        );
+      }
+      writeJson(session, `${config.prefix}/${id}.json`, sanitized.sanitized);
+      continue;
+    }
+
     writeJson(session, `${config.prefix}/${id}.json`, item);
   }
 };

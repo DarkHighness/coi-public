@@ -417,13 +417,15 @@ describe("vfsMutationGuard", () => {
     });
   });
 
-  describe("canonical unlocked patch/merge helpers", () => {
-    it("strips unlocked fields from canonical merge objects", () => {
+  describe("canonical world patch/merge helpers", () => {
+    it("strips canonical view/UI fields from canonical merge objects", () => {
       const result = stripCanonicalWorldEntityUnlockFields(
         "world/quests/quest:1.json",
         {
           unlocked: true,
           unlockReason: "proof",
+          status: "active",
+          highlight: true,
           visible: { description: "x", objectives: ["a"] },
         },
       );
@@ -434,11 +436,13 @@ describe("vfsMutationGuard", () => {
       });
     });
 
-    it("filters patch operations that target canonical unlock fields", () => {
+    it("filters patch operations that target canonical view/UI fields", () => {
       const result = filterCanonicalWorldEntityUnlockPatchOps(
         "world/quests/quest:1.json",
         [
           { op: "replace", path: "/unlocked", value: true } as any,
+          { op: "replace", path: "/status", value: "complete" } as any,
+          { op: "replace", path: "/highlight", value: false } as any,
           { op: "replace", path: "/visible/description", value: "updated" } as any,
           { op: "remove", path: "/unlockReason" } as any,
         ],
@@ -447,6 +451,27 @@ describe("vfsMutationGuard", () => {
       expect(result.patch).toHaveLength(1);
       expect((result.patch[0] as any).path).toBe("/visible/description");
       expect(result.warnings.length).toBeGreaterThan(0);
+    });
+
+    it("strips location-only view fields from canonical location merge objects", () => {
+      const result = stripCanonicalWorldEntityUnlockFields(
+        "world/locations/loc:1.json",
+        {
+          id: "loc:1",
+          isVisited: true,
+          visitedCount: 4,
+          discoveredAtGameTime: "Day 2",
+          visible: { description: "Gate", knownFeatures: [] },
+          hidden: { fullDescription: "Hidden gate" },
+        },
+      );
+
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.sanitized).toEqual({
+        id: "loc:1",
+        visible: { description: "Gate", knownFeatures: [] },
+        hidden: { fullDescription: "Hidden gate" },
+      });
     });
   });
 });

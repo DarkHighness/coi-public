@@ -316,7 +316,7 @@ describe("VFS handlers mutations", () => {
     expect(result.success).toBe(true);
   });
 
-  it("warns and strips canonical unlocked fields on write_file", () => {
+  it("warns and strips canonical view/UI fields on write_file", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
@@ -328,6 +328,8 @@ describe("VFS handlers mutations", () => {
               ...createValidQuest("quest:test"),
               unlocked: true,
               unlockReason: "should be ignored",
+              status: "active",
+              highlight: true,
             }),
           },
         ]) as any;
@@ -340,9 +342,11 @@ describe("VFS handlers mutations", () => {
     ) as Record<string, unknown>;
     expect(quest.unlocked).toBeUndefined();
     expect(quest.unlockReason).toBeUndefined();
+    expect(quest.status).toBeUndefined();
+    expect(quest.highlight).toBeUndefined();
   });
 
-  it("warns and strips canonical unlocked fields on merge_json", () => {
+  it("warns and strips canonical view/UI fields on merge_json", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/quests/quest:test.json",
@@ -360,6 +364,7 @@ describe("VFS handlers mutations", () => {
               title: "Updated title",
               unlocked: true,
               unlockReason: "ignored",
+              status: "complete",
             },
           },
         ]) as any;
@@ -372,9 +377,10 @@ describe("VFS handlers mutations", () => {
     ) as Record<string, unknown>;
     expect(quest.title).toBe("Updated title");
     expect(quest.unlocked).toBeUndefined();
+    expect(quest.status).toBeUndefined();
   });
 
-  it("warns and ignores canonical unlocked patch ops", () => {
+  it("warns and ignores canonical view/UI patch ops", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/quests/quest:test.json",
@@ -390,6 +396,8 @@ describe("VFS handlers mutations", () => {
             path: "current/world/quests/quest:test.json",
             patch: [
               { op: "replace", path: "/unlocked", value: true },
+              { op: "replace", path: "/status", value: "complete" },
+              { op: "replace", path: "/highlight", value: false },
               { op: "replace", path: "/title", value: "Patched title" },
             ],
           },
@@ -403,6 +411,8 @@ describe("VFS handlers mutations", () => {
     ) as Record<string, unknown>;
     expect(quest.title).toBe("Patched title");
     expect(quest.unlocked).toBeUndefined();
+    expect(quest.status).toBeUndefined();
+    expect(quest.highlight).toBeUndefined();
   });
 
   it("injects missing entityId for actor views", () => {

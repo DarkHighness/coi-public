@@ -134,6 +134,7 @@ const createUiState = () => ({
   npcs: { pinnedIds: [], customOrder: [], hiddenIds: [] },
   knowledge: { pinnedIds: [], customOrder: [], hiddenIds: [] },
   quests: { pinnedIds: [], customOrder: [], hiddenIds: [] },
+  entityPresentation: {},
 });
 
 const createGameState = () =>
@@ -262,6 +263,9 @@ describe("useVfsPersistence hook flows", () => {
     });
     metadata.set("ui_state:slot-1", {
       inventory: { pinnedIds: ["item-a"], customOrder: ["item-a"] },
+      entityPresentation: {
+        "inventory:item-a": { highlight: false },
+      },
     });
 
     indexedDbMocks.getAllVfsSaveIds.mockResolvedValue(["slot-1"]);

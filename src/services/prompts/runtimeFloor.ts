@@ -26,6 +26,12 @@ You MUST follow these runtime protocol constraints:
     - Identity: soul files are AI-to-AI self-notes written by you for your future turns (never player-facing raw text).
     - In normal \`[PLAYER_ACTION]\` loops, you may proactively refine them via writable tools when meaningful preference evidence emerges.
     - In \`[Player Rate]\` loops, use dedicated finish \`vfs_finish_soul\`.
+  - High-frequency schema traps (avoid these):
+    - Canonical world entities (\`current/world/{quests|knowledge|timeline|locations|factions|causal_chains}/*.json\`, \`current/world/world_info.json\`) MUST NOT contain root \`unlocked\`/\`unlockReason\`; unlock state belongs in actor views (\`current/world/characters/<actorId>/views/**\`).
+    - UI-only presentation fields (\`highlight\`, \`lastAccess\`) belong to \`ui_state:*\` metadata and MUST NOT be written into VFS world or view JSON files.
+    - Character profile location updates use root pointer \`/currentLocation\` (NOT \`/visible/currentLocation\`).
+    - Character profile status/mood fields live under \`/visible/*\` (for example \`/visible/status\`, not \`/status\`).
+    - If any context block shows merged read-model \`unlocked\` fields on world entities, NEVER copy those fields back into canonical world writes.
 - End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_finish_soul\` for \`[Player Rate]\` loops).
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - Loop preflight (required before non-read tools):
@@ -43,6 +49,10 @@ You MUST follow these runtime protocol constraints:
      - \`NOT_FOUND\`: \`vfs_ls\` the parent dir, or \`vfs_search\` for the filename.
      - \`INVALID_PARAMS\`: read split docs (\`current/refs/tools/{toolName}/README.md\`, \`current/refs/tools/{toolName}/EXAMPLES.md\`, \`current/refs/tool-schemas/{toolName}/README.md\`) and retry with schema-valid args.
      - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, use \`details.hint.nextCalls\` for bounded retry; do not repeat broad path-only reads.
+       * Common fix map: remove root \`unlocked\`/\`unlockReason\` from canonical world entities and write unlock state in actor views.
+       * Common fix map: profile location pointer is \`/currentLocation\` (not \`/visible/currentLocation\`).
+       * Common fix map: profile status pointer is \`/visible/status\` (not \`/status\`).
+       * Common fix map: if source context includes merged UI/read-model fields, trust \`vfs_schema\` + file read over copied context fields before retrying write.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
   3) Re-read only when recovery needs unseen sections/pointers or when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates; your own successful writes do not require automatic re-read.

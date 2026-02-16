@@ -27,6 +27,7 @@ const makeState = (overrides: Partial<GameState> = {}): GameState =>
       npcs: { pinnedIds: [], customOrder: [] },
       knowledge: { pinnedIds: [], customOrder: [] },
       quests: { pinnedIds: [], customOrder: [] },
+      entityPresentation: {},
       feedLayout: "scroll",
     },
     outline: null,
@@ -66,6 +67,7 @@ describe("mergeDerivedViewState", () => {
         npcs: { pinnedIds: [], customOrder: [] },
         knowledge: { pinnedIds: [], customOrder: [] },
         quests: { pinnedIds: [], customOrder: [] },
+        entityPresentation: {},
         feedLayout: "scroll",
       },
       language: "en",
@@ -153,5 +155,67 @@ describe("mergeDerivedViewState", () => {
       createdAt: 100,
       processedAt: 200,
     });
+  });
+
+  it("overlays UI presentation highlight state onto derived entity lists", () => {
+    const base = makeState({
+      inventory: [{ id: "item:1", name: "Key", highlight: false }] as any,
+      uiState: {
+        inventory: { pinnedIds: [], customOrder: [] },
+        locations: { pinnedIds: [], customOrder: [] },
+        npcs: { pinnedIds: [], customOrder: [] },
+        knowledge: { pinnedIds: [], customOrder: [] },
+        quests: { pinnedIds: [], customOrder: [] },
+        entityPresentation: {
+          "inventory:item:1": { highlight: false },
+        },
+      } as any,
+    });
+    const derived = makeState({
+      inventory: [{ id: "item:1", name: "Key" }] as any,
+    });
+
+    const merged = mergeDerivedViewState(base, derived);
+
+    expect((merged.inventory[0] as any).highlight).toBe(false);
+    expect(merged.uiState.entityPresentation?.["inventory:item:1"]).toEqual({
+      highlight: false,
+    });
+  });
+
+  it("auto-highlights newly added entities and records ui presentation state", () => {
+    const base = makeState({
+      inventory: [{ id: "item:1", name: "Key" }] as any,
+    });
+    const derived = makeState({
+      inventory: [
+        { id: "item:1", name: "Key" },
+        { id: "item:2", name: "Lantern" },
+      ] as any,
+    });
+
+    const merged = mergeDerivedViewState(base, derived);
+
+    expect((merged.inventory[1] as any).highlight).toBe(true);
+    expect(merged.uiState.entityPresentation?.["inventory:item:2"]).toEqual({
+      highlight: true,
+    });
+  });
+
+  it("does not auto-highlight on restore merges", () => {
+    const base = makeState({
+      inventory: [{ id: "item:1", name: "Key" }] as any,
+    });
+    const derived = makeState({
+      inventory: [
+        { id: "item:1", name: "Key" },
+        { id: "item:2", name: "Lantern" },
+      ] as any,
+    });
+
+    const merged = mergeDerivedViewState(base, derived, { resetRuntime: true });
+
+    expect((merged.inventory[1] as any).highlight).toBeUndefined();
+    expect(merged.uiState.entityPresentation?.["inventory:item:2"]).toBeUndefined();
   });
 });

@@ -1,4 +1,4 @@
-import type { GameState, StorySegment } from "../types";
+import type { EntityPresentationMap, GameState, StorySegment } from "../types";
 import { deriveHistory } from "../utils/storyUtils";
 
 const PLACEHOLDER_CHARACTER_VALUES = new Set([
@@ -93,6 +93,116 @@ const mergeNodes = (
   return merged;
 };
 
+type EntityPresentationKind =
+  | "inventory"
+  | "npcs"
+  | "locations"
+  | "knowledge"
+  | "quests"
+  | "factions"
+  | "timeline"
+  | "characterSkills"
+  | "characterConditions"
+  | "characterTraits";
+
+const PRESENTATION_IGNORED_FIELDS = new Set(["highlight", "lastAccess"]);
+
+const makeEntityPresentationKey = (
+  kind: EntityPresentationKind,
+  id: string,
+): string => `${kind}:${id}`;
+
+const normalizeEntityId = (entry: unknown): string | null => {
+  const maybeId = (entry as { id?: unknown } | null | undefined)?.id;
+  if (typeof maybeId !== "string") {
+    return null;
+  }
+  const trimmed = maybeId.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const stableSerializeWithoutPresentation = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => stableSerializeWithoutPresentation(entry)).join(",")}]`;
+  }
+
+  if (isRecord(value)) {
+    const entries = Object.entries(value)
+      .filter(([key]) => !PRESENTATION_IGNORED_FIELDS.has(key))
+      .sort(([left], [right]) => left.localeCompare(right));
+
+    const serializedEntries = entries.map(
+      ([key, entryValue]) =>
+        `${JSON.stringify(key)}:${stableSerializeWithoutPresentation(entryValue)}`,
+    );
+    return `{${serializedEntries.join(",")}}`;
+  }
+
+  if (value === undefined) {
+    return "undefined";
+  }
+
+  const serialized = JSON.stringify(value);
+  return typeof serialized === "string" ? serialized : String(value);
+};
+
+const applyEntityPresentationToList = <T>(
+  kind: EntityPresentationKind,
+  baseListInput: T[] | undefined,
+  derivedListInput: T[] | undefined,
+  nextPresentation: EntityPresentationMap,
+  existingKeys: Set<string>,
+  autoHighlight: boolean,
+): T[] => {
+  const baseList = Array.isArray(baseListInput) ? baseListInput : [];
+  const derivedList = Array.isArray(derivedListInput) ? derivedListInput : [];
+  if (derivedList.length === 0) {
+    return derivedList;
+  }
+
+  const previousById = new Map<string, unknown>();
+  for (const entry of baseList) {
+    const id = normalizeEntityId(entry);
+    if (id) {
+      previousById.set(id, entry);
+    }
+  }
+
+  return derivedList.map((entry) => {
+    const id = normalizeEntityId(entry);
+    if (!id) {
+      return entry;
+    }
+
+    const key = makeEntityPresentationKey(kind, id);
+    existingKeys.add(key);
+
+    const previous = previousById.get(id);
+    const changed =
+      previous === undefined ||
+      stableSerializeWithoutPresentation(previous) !==
+        stableSerializeWithoutPresentation(entry);
+
+    if (autoHighlight && changed) {
+      const previousPresentation = nextPresentation[key] ?? {};
+      nextPresentation[key] = {
+        ...previousPresentation,
+        highlight: true,
+      };
+    }
+
+    const highlight = nextPresentation[key]?.highlight;
+    if (typeof highlight === "boolean" && isRecord(entry)) {
+      return { ...(entry as Record<string, unknown>), highlight } as T;
+    }
+
+    return entry;
+  });
+};
+
 export const mergeDerivedViewState = (
   base: GameState,
   derived: GameState,
@@ -101,13 +211,124 @@ export const mergeDerivedViewState = (
   const mergedNodes = mergeNodes(base.nodes, derived.nodes);
   const activeNodeId = derived.activeNodeId;
   const resetRuntime = options?.resetRuntime === true;
+  const autoHighlight = !resetRuntime;
+  const nextPresentation: EntityPresentationMap = {
+    ...(base.uiState.entityPresentation ?? {}),
+  };
+  const existingPresentationKeys = new Set<string>();
+
+  const mergedCharacter = mergeCharacterWithFallback(
+    base.character,
+    derived.character,
+  );
+
+  const inventory = applyEntityPresentationToList(
+    "inventory",
+    base.inventory as any[],
+    derived.inventory as any[],
+    nextPresentation,
+    existingPresentationKeys,
+    autoHighlight,
+  );
+  const npcs = applyEntityPresentationToList(
+    "npcs",
+    base.npcs as any[],
+    derived.npcs as any[],
+    nextPresentation,
+    existingPresentationKeys,
+    autoHighlight,
+  );
+  const locations = applyEntityPresentationToList(
+    "locations",
+    base.locations as any[],
+    derived.locations as any[],
+    nextPresentation,
+    existingPresentationKeys,
+    autoHighlight,
+  );
+  const knowledge = applyEntityPresentationToList(
+    "knowledge",
+    base.knowledge as any[],
+    derived.knowledge as any[],
+    nextPresentation,
+    existingPresentationKeys,
+    autoHighlight,
+  );
+  const quests = applyEntityPresentationToList(
+    "quests",
+    base.quests as any[],
+    derived.quests as any[],
+    nextPresentation,
+    existingPresentationKeys,
+    autoHighlight,
+  );
+  const factions = applyEntityPresentationToList(
+    "factions",
+    base.factions as any[],
+    derived.factions as any[],
+    nextPresentation,
+    existingPresentationKeys,
+    autoHighlight,
+  );
+  const timeline = applyEntityPresentationToList(
+    "timeline",
+    base.timeline as any[],
+    derived.timeline as any[],
+    nextPresentation,
+    existingPresentationKeys,
+    autoHighlight,
+  );
+
+  const nextCharacter = {
+    ...mergedCharacter,
+    skills: applyEntityPresentationToList(
+      "characterSkills",
+      (base.character as any)?.skills as any[] | undefined,
+      (mergedCharacter as any)?.skills as any[] | undefined,
+      nextPresentation,
+      existingPresentationKeys,
+      autoHighlight,
+    ),
+    conditions: applyEntityPresentationToList(
+      "characterConditions",
+      (base.character as any)?.conditions as any[] | undefined,
+      (mergedCharacter as any)?.conditions as any[] | undefined,
+      nextPresentation,
+      existingPresentationKeys,
+      autoHighlight,
+    ),
+    hiddenTraits: applyEntityPresentationToList(
+      "characterTraits",
+      (base.character as any)?.hiddenTraits as any[] | undefined,
+      (mergedCharacter as any)?.hiddenTraits as any[] | undefined,
+      nextPresentation,
+      existingPresentationKeys,
+      autoHighlight,
+    ),
+  } as GameState["character"];
+
+  for (const key of Object.keys(nextPresentation)) {
+    if (!existingPresentationKeys.has(key)) {
+      delete nextPresentation[key];
+    }
+  }
 
   return {
     ...derived,
     nodes: mergedNodes,
     currentFork: activeNodeId ? deriveHistory(mergedNodes, activeNodeId) : [],
-    character: mergeCharacterWithFallback(base.character, derived.character),
-    uiState: base.uiState,
+    inventory: inventory as any,
+    npcs: npcs as any,
+    locations: locations as any,
+    knowledge: knowledge as any,
+    quests: quests as any,
+    factions: factions as any,
+    timeline: timeline as any,
+    character: nextCharacter,
+    uiState: {
+      ...base.uiState,
+      entityPresentation: nextPresentation,
+    },
     summaries: derived.summaries,
     lastSummarizedIndex: derived.lastSummarizedIndex,
     outline: derived.outline ?? base.outline,

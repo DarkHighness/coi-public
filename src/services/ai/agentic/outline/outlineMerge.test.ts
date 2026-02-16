@@ -10,7 +10,7 @@ describe("outlineMerge", () => {
     ).toThrow("Cannot merge incomplete outline phases");
   });
 
-  it("merges reordered phases with ids/unlocked defaults and relation hydration", () => {
+  it("merges reordered phases with ids and relation hydration", () => {
     const partial = {
       phase1: {
         storyPlanMarkdown: "# Plan",
@@ -106,7 +106,7 @@ describe("outlineMerge", () => {
 
     expect(merged.locations[0]?.id).toBe("loc:5");
     expect(merged.locations[1]?.id).toBe("loc:6");
-    expect((merged.locations[1] as any)?.unlocked).toBe(false);
+    expect((merged.locations[1] as any)?.unlocked).toBeUndefined();
 
     expect(merged.factions[0]?.id).toBe("fac:1");
     expect(merged.quests[0]?.id).toBe("quest:1");
@@ -119,7 +119,7 @@ describe("outlineMerge", () => {
     expect(merged.npcs[0]?.skills?.[0]?.unlocked).toBe(false);
 
     expect(merged.placeholders[0]?.id).toBe("ph:1");
-    expect(merged.placeholders[0]?.unlocked).toBe(false);
+    expect((merged.placeholders[0] as any)?.unlocked).toBeUndefined();
     expect((merged.openingNarrative as any)?.narrative).toBe(
       "The story begins.",
     );

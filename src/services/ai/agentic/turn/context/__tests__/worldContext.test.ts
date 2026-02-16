@@ -22,6 +22,47 @@ describe("worldContext", () => {
     expect(value).toContain('"title":"Demo"');
   });
 
+  it("strips view-only unlock fields from world entity collections in foundation block", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/outline.json",
+      JSON.stringify({
+        title: "Demo",
+        quests: [
+          {
+            id: "q:1",
+            title: "Quest",
+            unlocked: true,
+            unlockReason: "proof",
+            status: "active",
+            visible: { description: "x", objectives: [] },
+            hidden: { trueDescription: "h", trueObjectives: [] },
+          },
+        ],
+        locations: [
+          {
+            id: "loc:1",
+            name: "Loc",
+            unlocked: true,
+            isVisited: true,
+            visible: { description: "d", knownFeatures: [] },
+            hidden: { fullDescription: "h" },
+          },
+        ],
+      }),
+      "application/json",
+    );
+
+    const value = buildWorldFoundation(session);
+
+    expect(value).toContain('"id":"q:1"');
+    expect(value).toContain('"id":"loc:1"');
+    expect(value).not.toContain('"unlockReason"');
+    expect(value).not.toContain('"unlocked":');
+    expect(value).not.toContain('"status":"active"');
+    expect(value).not.toContain('"isVisited":true');
+  });
+
   it("builds protagonist block only when profile exists", () => {
     const withProfile = new VfsSession();
     withProfile.writeFile(

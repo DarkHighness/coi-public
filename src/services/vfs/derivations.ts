@@ -28,6 +28,7 @@ import { readConversationIndex, readTurnFile } from "./conversation";
 import { readOutlineFile, readOutlineProgress } from "./outline";
 import { deriveCustomRulesFromVfs } from "./customRules";
 import { normalizeSoulMarkdown } from "./soulTemplates";
+import { sanitizeCanonicalWorldRecord } from "./stateLayering";
 
 const DEFAULT_FORK_TREE = {
   nodes: {
@@ -176,6 +177,7 @@ const createBaseGameState = (): GameState => ({
     npcs: { pinnedIds: [], customOrder: [] },
     knowledge: { pinnedIds: [], customOrder: [] },
     quests: { pinnedIds: [], customOrder: [] },
+    entityPresentation: {},
     sidebarCollapsed: false,
     timelineCollapsed: false,
     feedLayout: "scroll",
@@ -530,7 +532,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent === "world/world_info.json") {
-      state.worldInfo = data as any;
+      state.worldInfo = sanitizeCanonicalWorldRecord(
+        "world_info",
+        data,
+      ).sanitized as any;
       continue;
     }
 
@@ -691,32 +696,47 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent.startsWith("world/quests/")) {
-      questDefinitions.push(data as Quest);
+      questDefinitions.push(
+        sanitizeCanonicalWorldRecord("quests", data).sanitized as Quest,
+      );
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/locations/")) {
-      locationDefinitions.push(data as Location);
+      locationDefinitions.push(
+        sanitizeCanonicalWorldRecord("locations", data).sanitized as Location,
+      );
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/knowledge/")) {
-      knowledgeDefinitions.push(data as KnowledgeEntry);
+      knowledgeDefinitions.push(
+        sanitizeCanonicalWorldRecord("knowledge", data)
+          .sanitized as KnowledgeEntry,
+      );
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/factions/")) {
-      factionDefinitions.push(data as Faction);
+      factionDefinitions.push(
+        sanitizeCanonicalWorldRecord("factions", data).sanitized as Faction,
+      );
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/timeline/")) {
-      timelineDefinitions.push(data as TimelineEvent);
+      timelineDefinitions.push(
+        sanitizeCanonicalWorldRecord("timeline", data)
+          .sanitized as TimelineEvent,
+      );
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/causal_chains/")) {
-      causalChainDefinitions.push(data as CausalChain);
+      causalChainDefinitions.push(
+        sanitizeCanonicalWorldRecord("causal_chains", data)
+          .sanitized as CausalChain,
+      );
     }
   }
 
@@ -755,8 +775,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       status,
       unlocked: view?.unlocked ?? false,
       unlockReason: view?.unlockReason,
-      highlight: view?.highlight,
-      lastAccess: view?.lastAccess,
     };
   };
 
@@ -773,8 +791,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       discoveredAt: view?.discoveredAtGameTime,
       unlocked: view?.unlocked ?? false,
       unlockReason: view?.unlockReason,
-      highlight: view?.highlight,
-      lastAccess: view?.lastAccess,
     };
   };
 
@@ -790,8 +806,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       ...eWithKnown,
       unlocked: view?.unlocked ?? false,
       unlockReason: view?.unlockReason,
-      highlight: view?.highlight,
-      lastAccess: view?.lastAccess,
     };
   };
 
@@ -809,8 +823,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       unlocked: view?.unlocked ?? false,
       unlockReason: view?.unlockReason,
       discoveredAt: view?.discoveredAtGameTime,
-      highlight: view?.highlight,
-      lastAccess: view?.lastAccess,
     };
   };
 
@@ -826,8 +838,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       ...fWithKnown,
       unlocked: view?.unlocked ?? false,
       unlockReason: view?.unlockReason,
-      highlight: view?.highlight,
-      lastAccess: view?.lastAccess,
       standing: view?.standing,
       standingTag: view?.standingTag,
     };
@@ -845,8 +855,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       ...cWithKnown,
       unlocked: view?.unlocked ?? false,
       unlockReason: view?.unlockReason,
-      highlight: view?.highlight,
-      lastAccess: view?.lastAccess,
       investigationNotes: view?.investigationNotes,
       linkedEventIds: view?.linkedEventIds,
     };

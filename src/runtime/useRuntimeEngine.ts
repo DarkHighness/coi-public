@@ -295,12 +295,10 @@ export const useRuntimeEngine = () => {
   const domainUiActions = useMemo(
     () =>
       createDomainUiActions({
-        gameStateRef,
         setGameState,
         triggerSave,
-        vfsSession,
       }),
-    [setGameState, triggerSave, vfsSession],
+    [setGameState, triggerSave],
   );
 
   const updateNodeAudio = useCallback(

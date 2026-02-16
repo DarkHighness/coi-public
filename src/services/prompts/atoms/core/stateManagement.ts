@@ -44,6 +44,7 @@ export const stateManagement: Atom<void> = defineAtom(
         - \`inventory/\`, \`skills/\`, \`conditions/\`, \`traits/\`
       * \`profile.json\` is NOT a container for those collections. Do not patch \`/inventory\`, \`/skills\`, \`/conditions\`, or \`/traits\` inside profile.
       * Write sub-entities to dedicated files under their folders (e.g., \`.../conditions/<id>.json\`), then patch profile only for scalar fields like status/location/mood.
+      * JSON pointer map (profile): \`/currentLocation\` is root (NOT \`/visible/currentLocation\`); status/mood are under \`/visible/*\` (e.g., \`/visible/status\`, \`/visible/mood\`).
       * **currentLocation MUST be a location.id** and updated immediately when an actor moves.
       * **Reference fields are ID-first**: \`currentLocation\`, \`knownBy[]\`, \`relations[].to.id\`, \`timeline[].involvedEntities[]\`, \`faction.visible.relations[].target\`, \`faction.hidden.relations[].target\`.
       * **Special unresolved reference protocol**: if canonical ID is not available yet, you may use a bracket alias \`[Display Name]\` in the reference field.
@@ -77,8 +78,11 @@ export const stateManagement: Atom<void> = defineAtom(
         - \`current/world/characters/<actorId>/views/factions/<factionId>.json\`
         - \`current/world/characters/<actorId>/views/causal_chains/<chainId>.json\`
       * **Write rule**:
-        - Discovery/progress/unlock/highlight/lastAccess/visited/status/standing → write the ACTOR VIEW (usually \`char:player\`).
+        - Discovery/progress/unlock/visited/status/standing → write the ACTOR VIEW (usually \`char:player\`).
+        - \`highlight\` / \`lastAccess\` are UI-only metadata in \`ui_state:*\`; do NOT write them into VFS files.
         - World changes / new facts / real truth updates → write the CANONICAL file.
+        - For existing canonical records, prefer \`vfs_patch_json\`/\`vfs_merge_json\` on targeted fields; avoid full \`vfs_write_file\` rewrites that may carry stale/forbidden keys.
+        - If read context shows merged UI fields (for example world-entity \`unlocked\`), treat them as read-model only and strip them from canonical writes.
       * **knownBy is canonical**:
         - When the protagonist first CONFIRMS an entity exists, add \`char:player\` to canonical \`knownBy\` AND create the corresponding player view file.
       * **Unlock is view-only (non-actor entities)**:

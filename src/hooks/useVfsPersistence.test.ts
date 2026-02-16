@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   deriveSlotNameFromState,
   isPlaceholderSlotName,
+  mergeStoredUiState,
   normalizeSlotName,
   shouldReplaceGeneratedSlotName,
 } from "./useVfsPersistence";
@@ -78,5 +79,29 @@ describe("useVfsPersistence slot naming", () => {
     expect(isPlaceholderSlotName("未知")).toBe(true);
     expect(isPlaceholderSlotName("untitled")).toBe(true);
     expect(isPlaceholderSlotName("Moon Harbor")).toBe(false);
+  });
+
+  it("merges entityPresentation map without dropping existing keys", () => {
+    const base = {
+      inventory: { pinnedIds: [], customOrder: [] },
+      locations: { pinnedIds: [], customOrder: [] },
+      npcs: { pinnedIds: [], customOrder: [] },
+      knowledge: { pinnedIds: [], customOrder: [] },
+      quests: { pinnedIds: [], customOrder: [] },
+      entityPresentation: {
+        "inventory:item:1": { highlight: false },
+      },
+    } as any;
+
+    const merged = mergeStoredUiState(base, {
+      entityPresentation: {
+        "inventory:item:2": { highlight: true },
+      },
+    });
+
+    expect(merged.entityPresentation).toMatchObject({
+      "inventory:item:1": { highlight: false },
+      "inventory:item:2": { highlight: true },
+    });
   });
 });

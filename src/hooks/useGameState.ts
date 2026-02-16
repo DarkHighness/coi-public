@@ -44,6 +44,7 @@ const INITIAL_STATE: GameState = {
     npcs: { pinnedIds: [], customOrder: [] },
     knowledge: { pinnedIds: [], customOrder: [] },
     quests: { pinnedIds: [], customOrder: [] },
+    entityPresentation: {},
     sidebarCollapsed: false,
     timelineCollapsed: false,
     feedLayout: "scroll", // Default layout mode

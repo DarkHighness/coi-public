@@ -210,4 +210,79 @@ describe("vfs editor helper", () => {
       ] as any),
     ).toThrow("Missing id for custom rule entry.");
   });
+
+  it("sanitizes world section payloads before canonical writes", () => {
+    const session = new VfsSession();
+
+    applySectionEdit(session, "locations", [
+      {
+        id: "loc:1",
+        name: "Gate",
+        visible: { description: "Gate", knownFeatures: [] },
+        hidden: { fullDescription: "Hidden gate" },
+        unlocked: true,
+        unlockReason: "view-only",
+        isVisited: true,
+        visitedCount: 2,
+        highlight: true,
+        lastAccess: { forkId: 0, turnNumber: 1, timestamp: 1 },
+      },
+    ] as any);
+
+    const canonical = JSON.parse(
+      session.readFile("world/locations/loc:1.json")?.content ?? "{}",
+    ) as Record<string, unknown>;
+    expect(canonical.unlocked).toBeUndefined();
+    expect(canonical.unlockReason).toBeUndefined();
+    expect(canonical.isVisited).toBeUndefined();
+    expect(canonical.visitedCount).toBeUndefined();
+    expect(canonical.highlight).toBeUndefined();
+    expect(canonical.lastAccess).toBeUndefined();
+  });
+
+  it("sanitizes outline world collections on outline section edits", () => {
+    const session = new VfsSession();
+
+    applySectionEdit(
+      session,
+      "outline",
+      {
+        title: "Outline",
+        worldSettingUnlocked: true,
+        worldSettingUnlockReason: "view-only",
+        locations: [
+          {
+            id: "loc:1",
+            name: "Gate",
+            visible: { description: "Gate", knownFeatures: [] },
+            hidden: { fullDescription: "Hidden gate" },
+            unlocked: true,
+            unlockReason: "view-only",
+            isVisited: true,
+            visitedCount: 3,
+            highlight: true,
+            lastAccess: { forkId: 0, turnNumber: 1, timestamp: 1 },
+          },
+        ],
+      },
+      { allowOutlineEdit: true },
+    );
+
+    const outline = JSON.parse(
+      session.readFile("outline/outline.json")?.content ?? "{}",
+    ) as Record<string, unknown>;
+    expect(outline.worldSettingUnlocked).toBeUndefined();
+    expect(outline.worldSettingUnlockReason).toBeUndefined();
+
+    const locations = Array.isArray(outline.locations)
+      ? (outline.locations as Array<Record<string, unknown>>)
+      : [];
+    expect(locations).toHaveLength(1);
+    expect(locations[0]?.unlocked).toBeUndefined();
+    expect(locations[0]?.unlockReason).toBeUndefined();
+    expect(locations[0]?.isVisited).toBeUndefined();
+    expect(locations[0]?.visitedCount).toBeUndefined();
+    expect(locations[0]?.highlight).toBeUndefined();
+    expect(locations[0]?.lastAccess).toBeUndefined();
+  });
 });

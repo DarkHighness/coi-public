@@ -260,13 +260,13 @@ export function injectColdStartRequiredReads(
 
   const formatPreloadCall = (path: string): string => {
     if (path === "current/conversation/session.jsonl") {
-      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 200  })`;
+      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 80  })`;
     }
     if (path.startsWith("current/skills/")) {
-      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 220  })`;
+      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 120  })`;
     }
     if (path.endsWith(".md")) {
-      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 180  })`;
+      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 90  })`;
     }
     return `vfs_read_chars({ path: "${path}" })`;
   };
@@ -279,6 +279,7 @@ export function injectColdStartRequiredReads(
     ),
     'For `current/conversation/session.jsonl`, keep reads line-windowed; do not use unbounded chars mode.',
     "For long skill manuals under `current/skills/**`, prefer bounded line windows first, then expand only if needed.",
+    "If a read returns READ_LIMIT_EXCEEDED/READ_LIMIT_HINT, shrink window size first (for example 80 -> 40 lines) before widening scope.",
     "Run this preload once at session cold start to avoid avoidable gate/retry token waste; do not replay the same reads every turn.",
     "Repeat a preload read only when `[SYSTEM: EXTERNAL_FILE_CHANGES]` indicates external updates or when you need additional sections/pointers that were not read.",
   ];

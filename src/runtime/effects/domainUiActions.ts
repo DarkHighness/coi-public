@@ -1,6 +1,5 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import type { GameState } from "../../types";
-import type { VfsSession } from "../../services/vfs/vfsSession";
 
 type HighlightTarget =
   | {
@@ -21,17 +20,52 @@ type HighlightTarget =
     };
 
 interface DomainUiActionsDeps {
-  gameStateRef: MutableRefObject<GameState>;
   setGameState: Dispatch<SetStateAction<GameState>>;
   triggerSave: () => void;
-  vfsSession: VfsSession;
 }
 
+type EntityPresentationKind =
+  | "inventory"
+  | "npcs"
+  | "locations"
+  | "knowledge"
+  | "quests"
+  | "factions"
+  | "timeline"
+  | "characterSkills"
+  | "characterConditions"
+  | "characterTraits";
+
+const makeEntityPresentationKey = (
+  kind: EntityPresentationKind,
+  id: string,
+): string => `${kind}:${id}`;
+
+const topLevelKindMap: Record<
+  Exclude<HighlightTarget["kind"], "characterSkills" | "characterConditions" | "characterTraits">,
+  EntityPresentationKind
+> = {
+  inventory: "inventory",
+  npcs: "npcs",
+  locations: "locations",
+  knowledge: "knowledge",
+  quests: "quests",
+  factions: "factions",
+  timeline: "timeline",
+};
+
+const characterSectionKindMap: Record<
+  "skills" | "conditions" | "hiddenTraits",
+  EntityPresentationKind
+> = {
+  skills: "characterSkills",
+  conditions: "characterConditions",
+  hiddenTraits: "characterTraits",
+};
+
 export function createDomainUiActions({
-  gameStateRef,
   setGameState,
   triggerSave,
-  vfsSession,
 }: DomainUiActionsDeps) {
   const updateNodeAudio = (nodeId: string, audioKey: string) => {
     setGameState((prev) => ({
@@ -44,83 +78,79 @@ export function createDomainUiActions({
   };
 
   const clearHighlight = (target: HighlightTarget) => {
-    const applyEntityHighlightClear = (filePath: string) => {
-      try {
-        if (!vfsSession.readFile(filePath)) {
-          return;
-        }
-        vfsSession.mergeJson(filePath, { highlight: false });
-      } catch (error) {
-        console.warn("[UI] Failed to clear highlight in VFS:", filePath, error);
-      }
-    };
-
     const applyCharacterHighlightClear = (
       section: "skills" | "conditions" | "hiddenTraits",
       match: { id?: string; name?: string },
     ) => {
-      const current = gameStateRef.current.character;
-      if (!current) {
-        return;
-      }
-
-      const list = (current as any)[section] as Array<any> | undefined;
-      if (!Array.isArray(list) || list.length === 0) {
-        return;
-      }
-
-      const sectionDir: Record<string, string> = {
-        skills: `world/characters/${gameStateRef.current.playerActorId || "char:player"}/skills`,
-        conditions: `world/characters/${gameStateRef.current.playerActorId || "char:player"}/conditions`,
-        hiddenTraits: `world/characters/${gameStateRef.current.playerActorId || "char:player"}/traits`,
-      };
-      const dir = sectionDir[section];
-
-      const matches = (entry: any): boolean => {
-        if (match.id && entry?.id && entry.id === match.id) return true;
-        if (match.name && entry?.name && entry.name === match.name) return true;
-        return false;
-      };
-
-      for (const entry of list) {
-        if (!matches(entry)) continue;
-        const id = entry?.id;
-        if (typeof id !== "string" || id.trim().length === 0) {
-          continue;
-        }
-        const filePath = `${dir}/${id}.json`;
-        try {
-          if (!vfsSession.readFile(filePath)) {
-            continue;
-          }
-          vfsSession.mergeJson(filePath, { highlight: false });
-        } catch (error) {
-          console.warn(
-            "[UI] Failed to clear highlight in VFS:",
-            filePath,
-            error,
-          );
-        }
-      }
-
       setGameState((prev) => {
         if (!prev.character) {
           return prev;
         }
+
         const prevList = (prev.character as any)[section] as
           | Array<any>
           | undefined;
         if (!Array.isArray(prevList) || prevList.length === 0) {
           return prev;
         }
-        const nextList = prevList.map((entry) =>
-          matches(entry) ? { ...entry, highlight: false } : entry,
-        );
+
+        const matches = (entry: any): boolean => {
+          if (!entry || typeof entry !== "object") return false;
+          if (match.id && entry?.id && entry.id === match.id) return true;
+          if (match.name && entry?.name && entry.name === match.name) return true;
+          return false;
+        };
+
+        const nextEntityPresentation = {
+          ...(prev.uiState.entityPresentation ?? {}),
+        };
+        let changedList = false;
+        let changedPresentation = false;
+
+        const markPresentationCleared = (id: string) => {
+          const key = makeEntityPresentationKey(
+            characterSectionKindMap[section],
+            id,
+          );
+          const prevState = nextEntityPresentation[key] ?? {};
+          if (prevState.highlight === false) {
+            return;
+          }
+          nextEntityPresentation[key] = {
+            ...prevState,
+            highlight: false,
+          };
+          changedPresentation = true;
+        };
+
+        if (match.id && match.id.trim().length > 0) {
+          markPresentationCleared(match.id.trim());
+        }
+
+        const nextList = prevList.map((entry) => {
+          if (!matches(entry)) {
+            return entry;
+          }
+          changedList = true;
+          if (typeof entry?.id === "string" && entry.id.trim().length > 0) {
+            markPresentationCleared(entry.id.trim());
+          }
+          return { ...entry, highlight: false };
+        });
+
+        if (!changedList && !changedPresentation) {
+          return prev;
+        }
+
         return {
           ...prev,
           character: {
             ...prev.character,
             [section]: nextList,
+          },
+          uiState: {
+            ...prev.uiState,
+            entityPresentation: nextEntityPresentation,
           },
         };
       });
@@ -135,33 +165,36 @@ export function createDomainUiActions({
       target.kind === "factions" ||
       target.kind === "timeline"
     ) {
-      const playerId = gameStateRef.current.playerActorId || "char:player";
-      const filePathByKind: Record<string, string> = {
-        inventory: `world/characters/${playerId}/inventory/${target.id}.json`,
-        npcs: `world/characters/${target.id}/profile.json`,
-        locations: `world/characters/${playerId}/views/locations/${target.id}.json`,
-        knowledge: `world/characters/${playerId}/views/knowledge/${target.id}.json`,
-        quests: `world/characters/${playerId}/views/quests/${target.id}.json`,
-        factions: `world/characters/${playerId}/views/factions/${target.id}.json`,
-        timeline: `world/characters/${playerId}/views/timeline/${target.id}.json`,
-      };
-
-      const filePath = filePathByKind[target.kind];
-      if (filePath) {
-        applyEntityHighlightClear(filePath);
-      }
-
       setGameState((prev) => {
         const list = (prev as any)[target.kind] as Array<any> | undefined;
         if (!Array.isArray(list) || list.length === 0) {
           return prev;
         }
+
+        const nextEntityPresentation = {
+          ...(prev.uiState.entityPresentation ?? {}),
+        };
+        const key = makeEntityPresentationKey(
+          topLevelKindMap[target.kind],
+          target.id,
+        );
+        const prevState = nextEntityPresentation[key] ?? {};
+        nextEntityPresentation[key] = {
+          ...prevState,
+          highlight: false,
+        };
+
         const updated = list.map((entry) =>
           entry?.id === target.id ? { ...entry, highlight: false } : entry,
         );
+
         return {
           ...prev,
           [target.kind]: updated,
+          uiState: {
+            ...prev.uiState,
+            entityPresentation: nextEntityPresentation,
+          },
         };
       });
 

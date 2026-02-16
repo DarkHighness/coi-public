@@ -74,6 +74,97 @@ export const deriveSlotNameFromState = (
   return null;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) &&
+  value.every((entry) => typeof entry === "string");
+
+const isListState = (
+  value: unknown,
+): value is {
+  pinnedIds: string[];
+  customOrder: string[];
+  hiddenIds?: string[];
+} => {
+  if (!isRecord(value)) return false;
+  if (!isStringArray(value.pinnedIds)) return false;
+  if (!isStringArray(value.customOrder)) return false;
+  if (value.hiddenIds !== undefined && !isStringArray(value.hiddenIds))
+    return false;
+  return true;
+};
+
+const isEntityPresentationState = (
+  value: unknown,
+): value is { highlight?: boolean } => {
+  if (!isRecord(value)) return false;
+  return (
+    value.highlight === undefined || typeof value.highlight === "boolean"
+  );
+};
+
+const isEntityPresentationMap = (
+  value: unknown,
+): value is Record<string, { highlight?: boolean }> => {
+  if (!isRecord(value)) return false;
+  return Object.values(value).every((entry) =>
+    isEntityPresentationState(entry),
+  );
+};
+
+export const mergeStoredUiState = (
+  base: GameState["uiState"],
+  stored: unknown,
+): GameState["uiState"] => {
+  if (!isRecord(stored)) {
+    return base;
+  }
+
+  const sections = [
+    "inventory",
+    "locations",
+    "npcs",
+    "knowledge",
+    "quests",
+  ] as const;
+  const merged: GameState["uiState"] = { ...base };
+
+  for (const section of sections) {
+    const incoming = (stored as Record<string, unknown>)[section];
+    if (!isListState(incoming)) {
+      continue;
+    }
+    merged[section] = {
+      ...base[section],
+      ...incoming,
+    };
+  }
+
+  const incomingEntityPresentation = (stored as Record<string, unknown>)[
+    "entityPresentation"
+  ];
+  if (isEntityPresentationMap(incomingEntityPresentation)) {
+    merged.entityPresentation = {
+      ...(base.entityPresentation ?? {}),
+      ...incomingEntityPresentation,
+    };
+  }
+
+  for (const key of Object.keys(stored)) {
+    if (sections.includes(key as (typeof sections)[number])) {
+      continue;
+    }
+    if (key === "entityPresentation") {
+      continue;
+    }
+    (merged as any)[key] = (stored as any)[key];
+  }
+
+  return merged;
+};
+
 export const useVfsPersistence = (
   gameState: GameState,
   setGameState: React.Dispatch<React.SetStateAction<GameState>>,
@@ -166,62 +257,8 @@ export const useVfsPersistence = (
   }, [saveSlots]);
 
   const mergeUiState = useCallback(
-    (base: GameState["uiState"], stored: unknown): GameState["uiState"] => {
-      const isRecord = (value: unknown): value is Record<string, unknown> =>
-        typeof value === "object" && value !== null;
-
-      const isStringArray = (value: unknown): value is string[] =>
-        Array.isArray(value) &&
-        value.every((entry) => typeof entry === "string");
-
-      const isListState = (
-        value: unknown,
-      ): value is {
-        pinnedIds: string[];
-        customOrder: string[];
-        hiddenIds?: string[];
-      } => {
-        if (!isRecord(value)) return false;
-        if (!isStringArray(value.pinnedIds)) return false;
-        if (!isStringArray(value.customOrder)) return false;
-        if (value.hiddenIds !== undefined && !isStringArray(value.hiddenIds))
-          return false;
-        return true;
-      };
-
-      if (!isRecord(stored)) {
-        return base;
-      }
-
-      const sections = [
-        "inventory",
-        "locations",
-        "npcs",
-        "knowledge",
-        "quests",
-      ] as const;
-      const merged: GameState["uiState"] = { ...base };
-
-      for (const section of sections) {
-        const incoming = (stored as Record<string, unknown>)[section];
-        if (!isListState(incoming)) {
-          continue;
-        }
-        merged[section] = {
-          ...base[section],
-          ...incoming,
-        };
-      }
-
-      for (const key of Object.keys(stored)) {
-        if (sections.includes(key as (typeof sections)[number])) {
-          continue;
-        }
-        (merged as any)[key] = (stored as any)[key];
-      }
-
-      return merged;
-    },
+    (base: GameState["uiState"], stored: unknown): GameState["uiState"] =>
+      mergeStoredUiState(base, stored),
     [],
   );
 
