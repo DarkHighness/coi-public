@@ -316,10 +316,6 @@ const buildToolDocMarkdown = (
 };
 
 const buildToolsReadme = (): string => {
-  const allTools = vfsToolRegistry.getDefinitions();
-  const toolLines = allTools.map(
-    (tool) => `- \`${tool.name}\` -> \`refs/tools/${tool.name}.md\``,
-  );
   return [
     "# Tool Docs Reference (VFS)",
     "",
@@ -327,13 +323,13 @@ const buildToolsReadme = (): string => {
     "",
     "## Usage",
     '- List docs: `vfs_ls({ path: "current/refs/tools" })`',
+    '- Read index: `vfs_read_json({ path: "current/refs/tools/index.json" })`',
     '- Read one doc (bounded): `vfs_read_lines({ path: "current/refs/tools/vfs_read_lines.md", startLine: 1, lineCount: 200 })`',
     '- Search docs: `vfs_search({ path: "current/refs/tools", query: "commit" })`',
     "",
-    "## Contents",
-    ...toolLines,
-    "",
-    "Each tool document includes `INTRO`, `SCHEMA`, and `EXAMPLES`.",
+    "Keep this README lightweight. Full content lives in one-tool-per-file docs:",
+    "- `current/refs/tools/<tool>.md`",
+    "- `current/refs/tools/index.json`",
     "",
   ].join("\n");
 };

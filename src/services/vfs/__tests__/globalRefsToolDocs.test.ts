@@ -16,6 +16,11 @@ describe("VFS global refs tool docs", () => {
 
     expect(readme).toContain("Generated from `vfsToolRegistry.getDefinitions()`.");
     expect(readme).toContain('vfs_ls({ path: "current/refs/tools" })');
+    expect(readme).toContain(
+      'vfs_read_json({ path: "current/refs/tools/index.json" })',
+    );
+    expect(readme).not.toContain("## SCHEMA");
+    expect(readme).not.toContain("## EXAMPLES");
     expect(index.count).toBe(definedTools.length);
     expect(index.tools?.length).toBe(definedTools.length);
   });
