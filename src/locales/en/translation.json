@@ -152,74 +152,74 @@
     },
     "phaseDescriptions": {
       "0": [
-        "Reading visual clues from the seed image...",
-        "Extracting atmosphere, motifs, and world texture...",
-        "Translating composition into narrative signals...",
-        "Converting imagery into playable story seeds...",
-        "Preparing image-based continuity anchors..."
+        "Init[0]: Loading seed image...",
+        "Init[0]: Detecting key entities...",
+        "Init[0]: Parsing scene mood and light...",
+        "Init[0]: Locking visual continuity markers...",
+        "Init[0]: Saving image analysis..."
       ],
       "1": [
-        "Drafting the master story plan...",
-        "Designing branch corridors and ending lanes...",
-        "Setting continuity anchors for long-form play...",
-        "Balancing structure with player freedom...",
-        "Building the campaign-level plot backbone..."
+        "Init[1]: Building main plot skeleton...",
+        "Init[1]: Placing branch checkpoints...",
+        "Init[1]: Registering ending routes...",
+        "Init[1]: Verifying route pacing...",
+        "Init[1]: Saving outline core..."
       ],
       "2": [
-        "Locking in world foundation and premise...",
-        "Defining timeline start and core objective...",
-        "Aligning baseline truth with the story plan...",
-        "Establishing the world’s hidden fault lines...",
-        "Turning concept into playable world rules..."
+        "Init[2]: Loading world baseline...",
+        "Init[2]: Setting start time and objective...",
+        "Init[2]: Validating world rules...",
+        "Init[2]: Seeding hidden world conflicts...",
+        "Init[2]: Saving world setup..."
       ],
       "3": [
-        "Shaping the player actor bundle...",
-        "Finalizing profile, skills, and initial state...",
-        "Grounding identity in world constraints...",
-        "Preparing first-turn playable agency...",
-        "Linking character setup to long-term arcs..."
+        "Init[3]: Creating player profile...",
+        "Init[3]: Assigning starting skills and traits...",
+        "Init[3]: Setting status and location...",
+        "Init[3]: Verifying turn-1 playability...",
+        "Init[3]: Saving player setup..."
       ],
       "4": [
-        "Building the location network...",
-        "Placing traversal routes and constraints...",
-        "Seeding visible and hidden spatial truths...",
-        "Defining where conflicts can unfold...",
-        "Connecting geography to mission flow..."
+        "Init[4]: Generating location graph...",
+        "Init[4]: Linking movement routes...",
+        "Init[4]: Writing visible location data...",
+        "Init[4]: Writing hidden location data...",
+        "Init[4]: Saving location network..."
       ],
       "5": [
-        "Establishing factions and power structures...",
-        "Mapping public goals and hidden agendas...",
-        "Planting future alliance and conflict pressure...",
-        "Balancing institutions against player intent...",
-        "Linking faction motives to world stakes..."
+        "Init[5]: Creating faction set...",
+        "Init[5]: Setting public faction goals...",
+        "Init[5]: Setting hidden faction motives...",
+        "Init[5]: Linking factions to world state...",
+        "Init[5]: Saving faction setup..."
       ],
       "6": [
-        "Introducing key NPCs and tensions...",
-        "Binding relational signals and hidden affinity...",
-        "Preparing social friction for branching play...",
-        "Encoding trust, suspicion, and leverage...",
-        "Grounding personalities in systemic pressure..."
+        "Init[6]: Creating key NPCs...",
+        "Init[6]: Writing first-contact profiles...",
+        "Init[6]: Building relationship graph...",
+        "Init[6]: Injecting hidden NPC stances...",
+        "Init[6]: Saving NPC setup..."
       ],
       "7": [
-        "Composing quests and knowledge graph...",
-        "Pairing objectives with reveal ladders...",
-        "Aligning missions with plan branch corridors...",
-        "Setting discovery paths and uncertainty...",
-        "Preparing actionable hooks for early turns..."
+        "Init[7]: Creating starter quests...",
+        "Init[7]: Adding clues and knowledge nodes...",
+        "Init[7]: Linking quests to NPCs and locations...",
+        "Init[7]: Ordering reveal sequence...",
+        "Init[7]: Saving quest/knowledge data..."
       ],
       "8": [
-        "Assembling timeline and atmosphere baseline...",
-        "Pinning historical anchors and urgency pressure...",
-        "Defining sensory tone for scene continuity...",
-        "Linking past events to present momentum...",
-        "Preparing emotional cadence for opening..."
+        "Init[8]: Building timeline baseline...",
+        "Init[8]: Registering key past events...",
+        "Init[8]: Setting current pressure and mood...",
+        "Init[8]: Validating scene tone consistency...",
+        "Init[8]: Saving timeline/atmosphere..."
       ],
       "9": [
-        "Writing the opening narrative scene...",
-        "Presenting meaningful first-turn choices...",
-        "Aligning launch tone with world and plan...",
-        "Ensuring immediate agency and momentum...",
-        "Preparing the player to shape the story..."
+        "Init[9]: Writing opening scene...",
+        "Init[9]: Generating first-turn options...",
+        "Init[9]: Checking tone against outline...",
+        "Init[9]: Validating option trade-offs...",
+        "Init[9]: Finalizing start state..."
       ]
     },
     "errors": {
