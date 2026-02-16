@@ -153,7 +153,7 @@ export const stateManagement: Atom<void> = defineAtom(
       * **Consequences**: Do not BEND RULES to protect the player. If they insult a King, they get arrested. The SYSTEM is fair but unforgiving.
       * **State Truth**: The State is the physics of the world. It does not bend for "coolness".
 
-    - **ATOMICITY**: Treat each turn's updates as a transaction. Either ALL updates succeed, or explain why some failed and proceed with valid ones.
+    - **TOOL INDEPENDENCE**: Treat each tool call independently. Successful calls stand even if other calls fail. Block finish only for gate/required-retry failures (for example \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`); otherwise report failures and continue with valid updates.
   </rule>
 `,
 );

@@ -127,7 +127,8 @@ export const playerProfile: Atom<PlayerProfileInput> = defineAtom(
     **Read Protocol**:
     - Do NOT rely on host-injected soul text.
     - Read both soul files yourself via \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` once per session read-epoch before first non-read tool call.
-    - Re-read only when the epoch is invalidated or files are changed externally.
+    - Re-read only when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates, previous read scope was insufficient, or recovery explicitly requires re-read.
+    - If you updated these files yourself in this session, do not re-read by default unless you need unseen sections/pointers.
   </two_layer_system>
 
 ${observationProtocol}
@@ -152,7 +153,7 @@ export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom(
     **Cross-Save Source**: \`current/world/global/soul.md\`
     **This Story Source**: \`current/world/soul.md\`
   </two_layer_system>
-  <read_protocol>Read both soul files yourself via \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` once per session read-epoch before first non-read tool call. Do not rely on host-injected soul text.</read_protocol>
+  <read_protocol>Read both soul files yourself via \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` once per session read-epoch before first non-read tool call. Do not rely on host-injected soul text. Re-read only when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates, previous read scope was insufficient, or recovery explicitly requires re-read. Your own successful writes do not require automatic re-read.</read_protocol>
   <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge. Treat both as Story Teller AI internal self-notes written by you for your future self.</protocol>
   <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>

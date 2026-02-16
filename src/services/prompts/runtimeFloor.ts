@@ -38,16 +38,17 @@ You MUST follow these runtime protocol constraints:
 - \`current/world/notes.md\` and other \`**/notes.md\` are AI-to-AI self-notes written by you for future turns; they are optional references, not mandatory pre-read anchors.
 - Hard gate (enforced): before first non-read tool call in this epoch, you MUST read \`current/skills/commands/runtime/SKILL.md\`, the active command protocol skill for this loop, and both soul anchors (\`current/world/soul.md\`, \`current/world/global/soul.md\`).
 - Structured error recovery flow (when a tool returns \`{ success:false, code, error }\`):
-  1) Do NOT finish yet.
+  1) Do NOT finish while blocking errors remain unresolved (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
   2) Fix the cause by \`code\` with the smallest helpful lookup:
      - \`NOT_FOUND\`: \`vfs_ls\` the parent dir, or \`vfs_search\` for the filename.
      - \`INVALID_PARAMS\`: read split docs (\`current/refs/tools/{toolName}/README.md\`, \`current/refs/tools/{toolName}/EXAMPLES.md\`, \`current/refs/tool-schemas/{toolName}/README.md\`) and retry with schema-valid args.
      - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, use \`details.hint.nextCalls\` for bounded retry; do not repeat broad path-only reads.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
-  3) Re-read the minimum anchor files, then retry one corrected tool call.
-  4) If the same \`code\` repeats twice, narrow scope and report the blocker instead of forcing finish.
-  5) If retry succeeds after a previous failure, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\` via writable tools (or \`vfs_finish_soul\` in \`[Player Rate]\`).
+  3) Re-read only when recovery needs unseen sections/pointers or when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates; your own successful writes do not require automatic re-read.
+  4) Retry one corrected tool call.
+  5) If the same \`code\` repeats twice, narrow scope and report the blocker instead of forcing finish.
+  6) If retry succeeds after a previous failure, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\` via writable tools (or \`vfs_finish_soul\` in \`[Player Rate]\`).
 </runtime_floor>`;
 
 const OUTLINE_RUNTIME_FLOOR = `<runtime_floor>

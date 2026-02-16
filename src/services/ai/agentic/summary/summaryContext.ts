@@ -115,13 +115,13 @@ Next-session handoff (\`nextSessionReferencesMarkdown\`):
 - Free-form markdown is allowed, but keep explicit path references early and clear.
 
 Structured error recovery flow (if a tool returns \`{ success:false, code, error }\`):
-1. Do NOT finish while error is unresolved.
+1. Do NOT finish while a blocking error code is unresolved.
 2. Use \`code\` to choose fix path:
    - \`INVALID_ACTION\` / \`FINISH_NOT_LAST\` / \`MULTIPLE_FINISH_CALLS\`: reorder tool calls; keep exactly one finish call and make it last.
    - \`*_CROSS_FORK_BLOCKED\`: re-anchor to target fork and retry with target-fork paths only.
    - \`*_RUNTIME_FIELDS_FORBIDDEN\`: remove runtime-managed fields (\`nodeRange\`, \`lastSummarizedIndex\`, \`id\`, \`createdAt\`) from tool args.
    - \`SUMMARY_FORBIDDEN_TOKENS\`: rewrite to story facts only (no tools/retries/errors/budgets), then retry finish.
-3. If the same \`code\` repeats twice, reduce scope and re-read anchor files before retrying.
+3. If the same \`code\` repeats twice, reduce scope and re-read only missing sections/anchors (or when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` is present) before retrying.
 
 <examples>
 - Example (read just fields, cheaper than full file):
