@@ -871,6 +871,10 @@ async function processToolCalls(
   };
 
   const getConversationTouchedPaths = (call: ToolCallResult): string[] => {
+    if (!isWriteMutationToolName(call.name)) {
+      return [];
+    }
+
     const touched: string[] = [];
 
     const args = (call.args ?? {}) as Record<string, unknown>;

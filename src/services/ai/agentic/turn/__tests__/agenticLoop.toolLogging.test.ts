@@ -171,6 +171,82 @@ describe("agenticLoop tool logging", () => {
     vi.clearAllMocks();
   });
 
+  it("allows conversation reads while still forbidding conversation writes via generic tools", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall.mockResolvedValueOnce({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-read-session",
+          name: "vfs_read_lines",
+          args: {
+            path: "current/conversation/session.jsonl",
+            startLine: 1,
+            lineCount: 50,
+          },
+        },
+        {
+          id: "call-write-world",
+          name: "vfs_write_file",
+          args: {
+            path: "current/world/notes.md",
+            content: "updated",
+            contentType: "text/markdown",
+          },
+        },
+        {
+          id: "call-finish",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_read_lines", "vfs_write_file", "vfs_finish_turn"]);
+
+    const conversationWriteForbiddenLog = result.logs.find((log) =>
+      String((log as any).toolOutput?.error || "").includes(
+        "CONVERSATION_WRITE_FORBIDDEN",
+      ),
+    );
+    expect(conversationWriteForbiddenLog).toBeUndefined();
+  });
+
   it("allows finish execution when only non-write tools failed earlier in batch", async () => {
     const vfsSession = createVfsSession();
 

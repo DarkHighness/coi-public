@@ -256,6 +256,9 @@ export function injectColdStartRequiredReads(
     if (path === "current/conversation/session.jsonl") {
       return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 200  })`;
     }
+    if (path.startsWith("current/skills/")) {
+      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 220  })`;
+    }
     return `vfs_read_chars({ path: "${path}" })`;
   };
 
@@ -266,6 +269,7 @@ export function injectColdStartRequiredReads(
       (path, index) => `${index + 1}. \`${formatPreloadCall(path)}\``,
     ),
     'For `current/conversation/session.jsonl`, keep reads line-windowed; do not use unbounded chars mode.',
+    "For long skill manuals under `current/skills/**`, prefer bounded line windows first, then expand only if needed.",
     "Run this preload at cold start to avoid avoidable gate/retry token waste.",
   ];
 

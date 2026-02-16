@@ -246,7 +246,7 @@ describe("contextInjector", () => {
     const text = getText(history[0]);
     expect(text).toContain("COLD START REQUIRED READS");
     expect(text).toContain(
-      'vfs_read_chars({ path: "current/skills/commands/runtime/SKILL.md" })',
+      'vfs_read_lines({ path: "current/skills/commands/runtime/SKILL.md", startLine: 1, lineCount: 220',
     );
     expect(text).toContain(
       'vfs_read_chars({ path: "current/world/soul.md" })',
@@ -259,6 +259,9 @@ describe("contextInjector", () => {
     );
     expect(text).toContain(
       "keep reads line-windowed; do not use unbounded chars mode",
+    );
+    expect(text).toContain(
+      "For long skill manuals under `current/skills/**`, prefer bounded line windows first",
     );
   });
 });
