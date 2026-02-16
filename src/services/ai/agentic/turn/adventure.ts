@@ -64,6 +64,7 @@ import {
   getRecoveryKind,
   getRecoveryTrace,
 } from "./turnRecoveryRunner";
+import { summarizeContext } from "../summary/summaryAdapter";
 
 // ============================================================================
 // Turn Context and Agentic Loop
@@ -427,10 +428,79 @@ export const generateAdventureTurn = async (
     return executeSingleAttempt(boostedSettings);
   };
 
+  let autoCompactAttemptedForContextOverflow = false;
+  const maybeAutoCompactOnContextOverflow = async (): Promise<void> => {
+    if (autoCompactAttemptedForContextOverflow) {
+      return;
+    }
+    autoCompactAttemptedForContextOverflow = true;
+
+    const autoCompactEnabled = context.settings.extra?.autoCompactEnabled ?? true;
+    if (!autoCompactEnabled) {
+      return;
+    }
+
+    const committedLength = Array.isArray(gameState.currentFork)
+      ? gameState.currentFork.length
+      : 0;
+    const baseIndexRaw =
+      typeof gameState.lastSummarizedIndex === "number"
+        ? gameState.lastSummarizedIndex
+        : 0;
+    const baseIndex = Math.max(0, Math.floor(baseIndexRaw));
+    if (committedLength <= baseIndex) {
+      return;
+    }
+
+    const nodeRange = {
+      fromIndex: baseIndex,
+      toIndex: committedLength - 1,
+    };
+    const pendingPlayerAction =
+      !context.isInit &&
+      typeof context.userAction === "string" &&
+      context.userAction.trim().length > 0
+        ? { segmentIdx: committedLength, text: context.userAction }
+        : null;
+
+    try {
+      const sumResult = await summarizeContext({
+        vfsSession: context.vfsSession,
+        slotId: context.slotId,
+        forkId: gameState.forkId ?? 0,
+        baseSummaries: Array.isArray(gameState.summaries)
+          ? gameState.summaries
+          : [],
+        baseIndex,
+        nodeRange,
+        language: context.language,
+        settings: context.settings,
+        pendingPlayerAction,
+        mode: "query_summary",
+      });
+
+      if (sumResult.summary) {
+        console.log(
+          `[TurnRecovery] Auto query summary on context overflow succeeded (range ${nodeRange.fromIndex}-${nodeRange.toIndex}).`,
+        );
+      } else if (sumResult.error) {
+        console.warn(
+          `[TurnRecovery] Auto query summary on context overflow failed: ${sumResult.error}`,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "[TurnRecovery] Auto query summary on context overflow threw error.",
+        error,
+      );
+    }
+  };
+
   const resetSessionForRecovery = async (kind: TurnRecoveryKind) => {
     if (kind === "context") {
       await sessionManager.onContextOverflow(sessionId);
       context.vfsSession.beginReadEpoch("context_overflow");
+      await maybeAutoCompactOnContextOverflow();
     } else {
       await sessionManager.invalidate(sessionId, "manual_clear");
       context.vfsSession.beginReadEpoch("manual_invalidate");
@@ -497,6 +567,7 @@ export const generateAdventureTurn = async (
     if (recoveryKind === "context" || isContextLengthError(error)) {
       await sessionManager.onContextOverflow(sessionId);
       context.vfsSession.beginReadEpoch("context_overflow");
+      await maybeAutoCompactOnContextOverflow();
       const contextError = new Error(
         `CONTEXT_LENGTH_EXCEEDED: ${error instanceof Error ? error.message : String(error)}`,
       );

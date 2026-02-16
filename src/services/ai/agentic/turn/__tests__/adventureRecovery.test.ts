@@ -11,6 +11,7 @@ const runAgenticLoopRefactoredMock = vi.hoisted(() => vi.fn());
 const executeTurnWithRecoveryMock = vi.hoisted(() => vi.fn());
 const getRecoveryKindMock = vi.hoisted(() => vi.fn());
 const getRecoveryTraceMock = vi.hoisted(() => vi.fn());
+const summarizeContextMock = vi.hoisted(() => vi.fn());
 
 const sessionManagerMock = vi.hoisted(() => ({
   invalidate: vi.fn(),
@@ -45,6 +46,10 @@ vi.mock("../turnRecoveryRunner", () => ({
 
 vi.mock("@/services/ai/sessionManager", () => ({
   sessionManager: sessionManagerMock,
+}));
+
+vi.mock("@/services/ai/agentic/summary/summaryAdapter", () => ({
+  summarizeContext: summarizeContextMock,
 }));
 
 vi.mock("@/services/prompts/skills", () => ({
@@ -188,6 +193,10 @@ describe("generateAdventureTurn recovery wiring", () => {
     sessionManagerMock.invalidate.mockResolvedValue(undefined);
     sessionManagerMock.onContextOverflow.mockResolvedValue({
       needsSummary: true,
+    });
+    summarizeContextMock.mockResolvedValue({
+      summary: null,
+      logs: [],
     });
     getRecoveryKindMock.mockReturnValue(undefined);
     getRecoveryTraceMock.mockReturnValue(undefined);
@@ -334,6 +343,55 @@ describe("generateAdventureTurn recovery wiring", () => {
     expect(sessionManagerMock.onContextOverflow).not.toHaveBeenCalled();
     expect(context.vfsSession.beginReadEpoch).toHaveBeenCalledWith(
       "manual_invalidate",
+    );
+  });
+
+  it("runs auto query-summary during context reset before rebuilding session", async () => {
+    summarizeContextMock.mockResolvedValueOnce({
+      summary: { id: "sum-1" },
+      logs: [],
+    });
+    executeTurnWithRecoveryMock.mockImplementationOnce(
+      async ({
+        execute,
+        resetSession,
+      }: {
+        execute: () => Promise<unknown>;
+        resetSession: (kind: string) => Promise<void>;
+      }) => {
+        await resetSession("context");
+        const result = await execute();
+        return {
+          result,
+          recovery: {
+            attempts: [
+              { level: 2, kind: "context", attempt: 3, timestamp: Date.now() },
+            ],
+            finalLevel: 2,
+            kind: "context",
+            recovered: true,
+            durationMs: 88,
+          },
+        };
+      },
+    );
+
+    const gameStateWithPendingRange = {
+      ...baseGameState,
+      currentFork: [{ id: "node-0" }],
+      lastSummarizedIndex: 0,
+      summaries: [],
+    } as any;
+
+    await generateAdventureTurn(gameStateWithPendingRange, makeContext());
+
+    expect(sessionManagerMock.onContextOverflow).toHaveBeenCalledTimes(1);
+    expect(summarizeContextMock).toHaveBeenCalledTimes(1);
+    expect(summarizeContextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: "query_summary",
+        nodeRange: { fromIndex: 0, toIndex: 0 },
+      }),
     );
   });
 });
