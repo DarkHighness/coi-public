@@ -262,9 +262,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     : "hover:bg-slate-900/5";
   const iconToneClass = isNightMode ? "text-white/65" : "text-slate-500";
   const softSurfaceClass = isNightMode ? "bg-white/5" : "bg-slate-900/[0.03]";
-  const heroPrimaryTextClass = "text-white";
-  const heroSecondaryTextClass = "text-white/78";
-  const heroQuoteTextClass = "text-white/68";
+  const heroPrimaryTextClass = isNightMode ? "text-white" : "text-slate-900";
+  const heroSecondaryTextClass = isNightMode
+    ? "text-white/78"
+    : "text-slate-700";
+  const heroQuoteTextClass = isNightMode ? "text-white/70" : "text-slate-600";
   const isShortMobileViewport = !isDesktop && isShortViewport;
   const heroLayoutClass =
     mode === "theme_select"
@@ -282,38 +284,44 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     ? "px-5 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-5"
     : "px-6 pb-4 pt-6 sm:px-8 sm:pb-5 sm:pt-7";
   const heroLogoSizeClass = isShortMobileViewport
-    ? "max-w-[196px] sm:max-w-[228px] md:max-w-[254px] lg:max-w-[420px]"
-    : "max-w-[248px] sm:max-w-[278px] md:max-w-[308px] lg:max-w-[430px]";
+    ? "max-w-[200px] sm:max-w-[236px] md:max-w-[280px] lg:max-w-[430px]"
+    : "max-w-[238px] sm:max-w-[286px] md:max-w-[332px] lg:max-w-[470px]";
   const heroTitleSizeClass = isShortMobileViewport
-    ? "text-[1.7rem] sm:text-[1.9rem] lg:text-5xl xl:text-6xl"
+    ? "text-[1.65rem] sm:text-[1.9rem] lg:text-5xl xl:text-6xl"
     : "text-2xl sm:text-3xl lg:text-5xl xl:text-6xl";
   const heroSubtitleSizeClass = isShortMobileViewport
     ? "text-sm tracking-[0.16em] sm:text-base lg:text-2xl"
     : "text-base tracking-[0.2em] sm:text-lg lg:text-2xl";
   const heroTextContainerClass = isShortMobileViewport
-    ? "mt-2 space-y-1 text-center lg:mt-6 lg:space-y-3 lg:text-left animate-fade-in-up"
-    : "mt-3 space-y-2 text-center lg:mt-6 lg:space-y-3 lg:text-left animate-fade-in-up";
-  const heroOverlayBaseClass = isNightMode
-    ? "bg-black/78 backdrop-blur-[1.5px]"
-    : "bg-black/42 backdrop-blur-[0.5px]";
+    ? "space-y-1 text-center animate-fade-in-up"
+    : "space-y-2 text-center animate-fade-in-up";
+  const heroShellClass = isNightMode
+    ? "bg-[linear-gradient(140deg,#181816_0%,#131311_58%,#0f0f0d_100%)]"
+    : "bg-[linear-gradient(140deg,#f7f8f2_0%,#f3f4ec_58%,#ecefe5_100%)]";
   const heroOverlayAccentClass = isNightMode
-    ? "bg-[radial-gradient(circle_at_26%_22%,rgba(255,255,255,0.10),transparent_36%),radial-gradient(circle_at_74%_24%,rgba(255,255,255,0.16),transparent_46%),radial-gradient(circle_at_50%_72%,rgba(15,23,42,0.34),transparent_72%)]"
-    : "bg-[radial-gradient(circle_at_24%_22%,rgba(255,255,255,0.20),transparent_35%),radial-gradient(circle_at_74%_22%,rgba(255,255,255,0.22),transparent_48%),radial-gradient(circle_at_50%_76%,rgba(15,23,42,0.24),transparent_74%)]";
+    ? "bg-[radial-gradient(circle_at_20%_18%,rgba(240,224,192,0.12),transparent_34%),radial-gradient(circle_at_80%_24%,rgba(210,194,167,0.09),transparent_44%),radial-gradient(circle_at_50%_82%,rgba(0,0,0,0.44),transparent_70%)]"
+    : "bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.46),transparent_34%),radial-gradient(circle_at_80%_22%,rgba(224,229,214,0.52),transparent_46%),radial-gradient(circle_at_50%_82%,rgba(212,218,202,0.42),transparent_72%)]";
   const heroOverlayDustClass = isNightMode
-    ? "opacity-32 mix-blend-screen"
-    : "opacity-62 mix-blend-screen";
+    ? "opacity-[0.16] mix-blend-screen"
+    : "opacity-[0.08] mix-blend-multiply";
   const heroOverlayDepthClass = isNightMode
-    ? "bg-[radial-gradient(circle_at_50%_38%,rgba(0,0,0,0.05),rgba(0,0,0,0.22)_56%,rgba(0,0,0,0.45)_100%)]"
-    : "bg-[radial-gradient(circle_at_50%_40%,rgba(0,0,0,0.01),rgba(0,0,0,0.10)_56%,rgba(0,0,0,0.22)_100%)]";
-  const heroOverlayVignetteClass = isNightMode
-    ? "bg-gradient-to-b from-black/24 via-black/40 to-black/84"
-    : "bg-gradient-to-b from-black/8 via-black/20 to-black/48";
-  const logoFinalMaskStyle: React.CSSProperties = {
-    WebkitMaskImage:
-      "radial-gradient(ellipse 62% 56% at 50% 36%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.94) 57%, rgba(0,0,0,0.28) 72%, rgba(0,0,0,0) 90%)",
-    maskImage:
-      "radial-gradient(ellipse 62% 56% at 50% 36%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.94) 57%, rgba(0,0,0,0.28) 72%, rgba(0,0,0,0) 90%)",
-  };
+    ? "bg-gradient-to-b from-transparent via-black/14 to-black/38"
+    : "bg-gradient-to-b from-transparent via-[#f7f8f2]/20 to-[#dfe5d4]/36";
+  const heroLogoStageClass = isNightMode
+    ? "drop-shadow-[0_16px_40px_rgba(0,0,0,0.42)]"
+    : "drop-shadow-[0_12px_24px_rgba(15,23,42,0.12)]";
+  const heroLogoGlowClass = isNightMode
+    ? "bg-[radial-gradient(circle_at_50%_52%,rgba(240,224,192,0.18),rgba(240,224,192,0)_56%)]"
+    : "bg-[radial-gradient(circle_at_50%_52%,rgba(206,214,197,0.34),rgba(206,214,197,0)_58%)]";
+  const heroPanelEdgeClass = isNightMode
+    ? "border-[#3b352e]/60"
+    : "border-[#d7dccd]/85";
+  const heroLogoSrc = isNightMode
+    ? "/logo_dark_symbol.png"
+    : "/logo_light_symbol.png";
+  const heroLogoBlendClass = isNightMode
+    ? "opacity-[0.98]"
+    : "opacity-[0.99]";
 
   return (
     <div
@@ -358,28 +366,28 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         <div
           className={`relative overflow-hidden flex items-center justify-center ${heroPaddingClass} lg:w-7/12 lg:px-16 lg:py-12 ${heroLayoutClass}`}
         >
-          <div className={`absolute inset-0 ${heroOverlayBaseClass}`}></div>
+          <div className={`absolute inset-0 ${heroShellClass}`}></div>
           <div className={`absolute inset-0 ${heroOverlayAccentClass}`}></div>
           <div
             className={`absolute inset-0 bg-[url('/img/stardust.png')] ${heroOverlayDustClass}`}
           ></div>
           <div className={`absolute inset-0 ${heroOverlayDepthClass}`}></div>
-          <div className={`absolute inset-0 ${heroOverlayVignetteClass}`}></div>
+          <div
+            className={`absolute inset-0 border-b lg:border-b-0 lg:border-r ${heroPanelEdgeClass}`}
+          ></div>
 
-          <div className="pointer-events-none relative z-10 w-full max-w-2xl">
+          <div className="pointer-events-none relative z-10 flex w-full max-w-3xl flex-col items-center justify-center gap-3 lg:gap-5">
             <div
               className={`relative mx-auto w-full ${heroLogoSizeClass} animate-fade-in`}
             >
-              <div className="absolute -inset-2 rounded-[50%] bg-[radial-gradient(circle,rgba(255,255,255,0.12),rgba(255,255,255,0.03)_52%,transparent_74%)] blur-xl"></div>
-              <div className="relative z-10 isolate overflow-visible">
-                <div className="absolute inset-[9%] rounded-[48%] bg-[radial-gradient(ellipse_at_50%_64%,rgba(0,0,0,0.32),rgba(0,0,0,0.08)_42%,transparent_68%)] blur-lg"></div>
+              <div className={`absolute inset-[30%] ${heroLogoGlowClass} blur-xl`}></div>
+              <div className={`relative z-10 ${heroLogoStageClass}`}>
                 <img
-                  src="/app-448-alpha-glow.png"
+                  src={heroLogoSrc}
                   alt={t("title")}
-                  width={448}
-                  height={448}
-                  style={logoFinalMaskStyle}
-                  className="relative z-10 w-full select-none pointer-events-none opacity-[0.93] drop-shadow-[0_0_20px_rgba(255,255,255,0.22)]"
+                  width={1024}
+                  height={1024}
+                  className={`relative z-10 w-full select-none pointer-events-none ${heroLogoBlendClass}`}
                 />
               </div>
             </div>
@@ -397,7 +405,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               </h2>
               {!isShortMobileViewport && (
                 <p
-                  className={`mx-auto mt-2 max-w-xl text-xs sm:text-sm lg:mx-0 lg:mt-4 lg:text-base ${heroQuoteTextClass}`}
+                  className={`mx-auto mt-2 max-w-xl text-xs sm:text-sm lg:mt-4 lg:max-w-lg lg:text-base ${heroQuoteTextClass}`}
                 >
                   "{t("startQuote")}"
                 </p>
