@@ -206,16 +206,17 @@ const createReadHandler = (
             "INVALID_DATA",
           );
         }
-
-        if (endLine > totalLines) {
-          return createError(
-            `${toolName}: endLine out of range (${endLine})`,
-            "INVALID_DATA",
+        const requestedEndLine = endLine;
+        const clampedEndLine = Math.min(endLine, totalLines);
+        const warnings: string[] = [];
+        if (requestedEndLine > totalLines) {
+          warnings.push(
+            `${toolName}: requested endLine=${requestedEndLine} exceeds max endLine=${totalLines}; clamped to ${clampedEndLine}.`,
           );
         }
 
         const startIndex = startLine - 1;
-        const endIndexExclusive = endLine;
+        const endIndexExclusive = clampedEndLine;
         const content = lines.slice(startIndex, endIndexExclusive).join("\n");
         const contentTokens = estimateReadTokens(content);
         if (contentTokens > readTokenBudget) {
@@ -239,9 +240,11 @@ const createReadHandler = (
             contentType: file.contentType,
             content,
             lineStart: startLine,
-            lineEnd: endLine,
+            lineEnd: clampedEndLine,
+            requestedLineEnd: requestedEndLine,
             totalLines,
-            truncated: startLine !== 1 || endLine !== totalLines,
+            truncated: startLine !== 1 || clampedEndLine !== totalLines,
+            ...(warnings.length > 0 ? { warnings } : {}),
             size: file.size,
             hash: file.hash,
             updatedAt: file.updatedAt,
@@ -268,10 +271,20 @@ const createReadHandler = (
       const length = hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
       const totalChars = file.content.length;
       const sliceStart = Math.min(Math.max(start, 0), totalChars);
+      const requestedEndExclusive =
+        typeof length === "number"
+          ? sliceStart + Math.max(length, 0)
+          : totalChars;
       const sliceEndExclusive =
         typeof length === "number"
-          ? Math.min(sliceStart + Math.max(length, 0), totalChars)
+          ? Math.min(requestedEndExclusive, totalChars)
           : totalChars;
+      const warnings: string[] = [];
+      if (requestedEndExclusive > totalChars) {
+        warnings.push(
+          `${toolName}: requested end=${requestedEndExclusive} exceeds max end=${totalChars}; clamped to ${sliceEndExclusive}.`,
+        );
+      }
 
       const content = file.content.slice(sliceStart, sliceEndExclusive);
       const contentTokens = estimateReadTokens(content);
@@ -299,7 +312,9 @@ const createReadHandler = (
           truncated,
           sliceStart,
           sliceEndExclusive,
+          requestedEndExclusive,
           totalChars,
+          ...(warnings.length > 0 ? { warnings } : {}),
           size: file.size,
           hash: file.hash,
           updatedAt: file.updatedAt,

@@ -26,6 +26,21 @@ describe("VFS handlers read/schema/ls", () => {
     expect(ok.success).toBe(true);
     expect(ok.data.content).toBe("fgh");
     expect(ok.data.truncated).toBe(true);
+    expect(ok.data.warnings).toBeUndefined();
+
+    const clamped = dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/slice.txt", start: 24, offset: 99 },
+      ctx,
+    ) as any;
+    expect(clamped.success).toBe(true);
+    expect(clamped.data.content).toBe("yz");
+    expect(clamped.data.sliceStart).toBe(24);
+    expect(clamped.data.requestedEndExclusive).toBe(123);
+    expect(clamped.data.sliceEndExclusive).toBe(26);
+    expect(clamped.data.warnings?.[0]).toContain("requested end=123");
+    expect(clamped.data.warnings?.[0]).toContain("max end=26");
+    expect(clamped.data.warnings?.[0]).toContain("clamped to 26");
 
     const invalid = dispatchToolCall(
       "vfs_read_chars",
@@ -35,6 +50,28 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(invalid.success).toBe(false);
     expect(invalid.code).toBe("INVALID_DATA");
+  });
+
+  it("clamps line ranges whose end exceeds file lines and returns warning", () => {
+    const session = new VfsSession();
+    session.writeFile("world/lines.txt", "a\nb\nc", "text/plain");
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_read_lines",
+      { path: "current/world/lines.txt", startLine: 2, endLine: 99 },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(result.data.content).toBe("b\nc");
+    expect(result.data.lineStart).toBe(2);
+    expect(result.data.requestedLineEnd).toBe(99);
+    expect(result.data.lineEnd).toBe(3);
+    expect(result.data.totalLines).toBe(3);
+    expect(result.data.warnings?.[0]).toContain("requested endLine=99");
+    expect(result.data.warnings?.[0]).toContain("max endLine=3");
+    expect(result.data.warnings?.[0]).toContain("clamped to 3");
   });
 
   it("supports JSON pointer extraction in vfs_read_json", () => {
