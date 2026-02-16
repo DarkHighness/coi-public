@@ -134,7 +134,7 @@ export function injectNormalTurnInstruction(
           "  2) Map code to action:",
           "     - INVALID_PARAMS / INVALID_DATA: read docs/schema, then correct payload.",
           "     - INVALID_ACTION / FORCED_FINISH / MULTIPLE_FINISH_CALLS / FINISH_NOT_LAST: fix call order, keep one finish last.",
-          "     - WRITE_EXISTING_TARGET_RETRY_REQUIRED / FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE: repair mode (retry failed existing-target writes first).",
+          "     - WRITE_EXISTING_TARGET_RETRY_REQUIRED / FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE: repair mode (retry failed required writes first).",
           "     - CROSS_FORK_ACCESS_BLOCKED: remove non-target fork paths.",
           "  3) Re-read minimum anchors: `current/conversation/index.json` + files named in the error/retry targets, then retry one corrected call.",
           "  4) If the same code repeats twice, narrow scope and report blocker instead of forcing progress.",

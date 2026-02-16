@@ -131,7 +131,7 @@ Hard constraints:
 Structured error recovery (when tool response is \`{ success:false, code, error }\`):
 - Do NOT finish until the active error is resolved.
 - \`INVALID_ACTION\` / \`FORCED_FINISH\` / \`MULTIPLE_FINISH_CALLS\` / \`FINISH_NOT_LAST\`: reorder to one valid tool-call set with finish last.
-- \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`: retry failed existing-target writes first; finish remains blocked until they succeed.
+- \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`: retry failed required writes first; finish remains blocked until they succeed.
 - \`COMPACT_SUMMARY_CROSS_FORK_BLOCKED\`: remove cross-fork paths and retry target-fork reads only.
 - \`COMPACT_SUMMARY_RUNTIME_FIELDS_FORBIDDEN\`: remove runtime-managed fields from \`vfs_finish_summary\` args.
 - \`SUMMARY_FORBIDDEN_TOKENS\`: rewrite summary fields to story facts only, then retry finish.

@@ -161,6 +161,11 @@ type WriteFailureDisposition =
   | "warn_missing_target_non_blocking"
   | "error_unrecoverable_non_blocking";
 
+const BLOCKING_NEW_TARGET_WRITE_ERROR_CODES = new Set([
+  "INVALID_DATA",
+  "SCHEMA_VALIDATION_FAILED",
+]);
+
 interface WriteFailureClassification {
   disposition: WriteFailureDisposition;
   retryTargets: string[];
@@ -200,9 +205,11 @@ const classifyWriteFailure = (params: {
   const allTargetList = formatPathPreview(allTargets, {
     prefixCurrent: false,
   });
-  const existingTargetList = formatPathPreview(existingTargets, {
-    prefixCurrent: false,
-  });
+  const isBlockingNewTargetFailure =
+    writeTargets.length > 0 &&
+    existingWriteTargets.length === 0 &&
+    !!errorCode &&
+    BLOCKING_NEW_TARGET_WRITE_ERROR_CODES.has(errorCode);
 
   if (errorCode && UNRECOVERABLE_WRITE_ERROR_CODES.has(errorCode)) {
     return {
@@ -214,13 +221,22 @@ const classifyWriteFailure = (params: {
     };
   }
 
-  if (existingWriteTargets.length > 0 || writeTargets.length === 0) {
+  if (
+    existingWriteTargets.length > 0 ||
+    writeTargets.length === 0 ||
+    isBlockingNewTargetFailure
+  ) {
+    const retryTargets =
+      existingWriteTargets.length > 0 ? existingTargets : allTargets;
+    const retryTargetList = formatPathPreview(retryTargets, {
+      prefixCurrent: false,
+    });
     return {
       disposition: "retry_required_existing_target",
-      retryTargets: existingTargets,
+      retryTargets,
       guidance:
-        `[ERROR: WRITE_EXISTING_TARGET_RETRY_REQUIRED] Write to existing target failed and must be retried before finish. ` +
-        `Retry targets: ${existingTargetList}.`,
+        `[ERROR: WRITE_EXISTING_TARGET_RETRY_REQUIRED] Write failed and must be retried before finish. ` +
+        `Retry targets: ${retryTargetList}.`,
     };
   }
 
@@ -1030,7 +1046,7 @@ async function processToolCalls(
           output = {
             success: false,
             error:
-              `[ERROR: FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE] Existing-file write targets failed earlier and must succeed before finish. ` +
+              `[ERROR: FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE] Required write targets failed earlier and must succeed before finish. ` +
               `Retry writes for: ${pendingList}.`,
             code: "INVALID_ACTION",
           };
