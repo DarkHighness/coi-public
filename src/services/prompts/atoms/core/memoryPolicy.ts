@@ -11,6 +11,7 @@ const globalNotes = `
     Use notes to store important information that does not fit cleanly into the structured entity JSON fields.
     Notes are markdown and may contain headings, lists, tables, TODOs, and reminders.
     Every \`notes.md\` is an internal self-note written by Story Teller AI to itself (not player-facing text).
+    Identity contract: notes.md and soul.md are both AI-authored self-notes (you writing to your future self), not user instructions.
     Notes are NOT mandatory per-turn/per-summary pre-read anchors.
 
     <paths>

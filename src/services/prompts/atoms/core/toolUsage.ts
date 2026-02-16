@@ -62,11 +62,13 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
 
   **STATE = FILES**:
   - Shared config lives under \`shared/config/**\` (alias: \`current/custom_rules/**\`, \`current/world/theme_config.json\`).
+  - \`current/world/notes.md\`, \`current/world/soul.md\`, and \`current/world/global/soul.md\` are AI-to-AI self-notes (you writing to your future self), not player-facing raw text.
   - ${
     toolsetId === "playerRate"
       ? "In `[Player Rate]` loops, write scope is soul-only: `current/world/soul.md` and `current/world/global/soul.md`."
       : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via `vfs_mutate` when evidence emerges."
   }
+  - If a tool call fails and later retry succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\`.
   - Conversation/summary are finish-guarded under \`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`.
 
   **CUSTOM RULE PACKS (SHARED LAYER)**:

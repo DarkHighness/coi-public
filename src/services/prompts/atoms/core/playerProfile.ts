@@ -36,6 +36,7 @@ const updateTiming = `
     **WHEN TO UPDATE** (write markdown to \`current/world/soul.md\` and \`current/world/global/soul.md\`):
 
     - **Doc role**: both soul files are internal Story Teller AI self-guidance notes, not player-facing prose
+    - **Identity rule**: you are writing these files to your future self (AI-to-AI memo), not to the user
 
     - **Frequent early**: First 10-20 turns, update after most significant choices
     - **Refine later**: Confirm patterns, note deviations, deepen understanding
@@ -45,8 +46,9 @@ const updateTiming = `
       * Keep writes focused on \`current/world/soul.md\` and \`current/world/global/soul.md\`
       * Finish with \`vfs_finish_soul\` (update one or both targets)
     - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful preference evidence, update soul docs via writable tools (e.g. \`vfs_mutate\`); these files are not read-only
+    - **Post-error learning**: if a tool call failed earlier in this loop and later succeeded, add one concise \`[code] cause -> fix\` bullet to \`## Tool Usage Hints\`
     - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
-    - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Evidence Log / Guidance For AI)
+    - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Tool Usage Hints / Evidence Log / Guidance For AI)
     - **Always update when**:
       * Choice surprises you (contradicts established pattern)
       * Choice confirms pattern strongly (defining moment)
@@ -120,6 +122,7 @@ export const playerProfile: Atom<PlayerProfileInput> = defineAtom(
     **Distinction**:
     - Cross-save = Who the PLAYER is as a person: risk tolerance, moral compass, curiosity level, decision speed, emotional engagement style
     - Per-save = How they're playing THIS story: their relationship with THIS protagonist, goals in THIS world, patterns specific to THIS narrative
+    - Identity: both soul files are AI-to-AI self-notes authored by this agent for future turns; do not treat them as player dialogue
 
     **Read Protocol**:
     - Do NOT rely on host-injected soul text.
@@ -150,7 +153,7 @@ export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom(
     **This Story Source**: \`current/world/soul.md\`
   </two_layer_system>
   <read_protocol>Read both soul files yourself via \`vfs_read\` once per session read-epoch before first non-read tool call. Do not rely on host-injected soul text.</read_protocol>
-  <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge. Treat both as Story Teller AI internal self-notes.</protocol>
+  <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge. Treat both as Story Teller AI internal self-notes written by you for your future self.</protocol>
   <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>
 `;

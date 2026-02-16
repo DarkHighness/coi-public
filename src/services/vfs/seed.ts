@@ -64,7 +64,8 @@ const buildGlobalNotesMarkdown = (): string =>
   [
     "# World Notes (Story Teller AI)",
     "",
-    "- Owner: Story Teller AI (self-guidance only)",
+    "- Author: Story Teller AI (this AI instance writing to its future self)",
+    "- Audience: Story Teller AI only (not player-facing raw content)",
     "- Purpose: Internal notes/prompts written by Story Teller AI for continuity and planning.",
     "- Visibility: Internal only. Do not surface raw notes content to player-facing narrative.",
     "",

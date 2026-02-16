@@ -18,6 +18,7 @@ You MUST follow these runtime protocol constraints:
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` => simulate world turn, \`[Player Rate]\` => update soul files only, \`[SUDO]\` => elevated update loop.
   - Soul docs (\`current/world/soul.md\`, \`current/world/global/soul.md\`) are writable default-editable files, not read-only references.
+    - Identity: soul files are AI-to-AI self-notes written by you for your future turns (never player-facing raw text).
     - In normal \`[PLAYER_ACTION]\` loops, you may proactively refine them via \`vfs_mutate\` when meaningful preference evidence emerges.
     - In \`[Player Rate]\` loops, use dedicated finish \`vfs_finish_soul\`.
 - End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_finish_soul\` for \`[Player Rate]\` loops).
@@ -29,7 +30,7 @@ You MUST follow these runtime protocol constraints:
   4) Build a short tool plan: read anchors -> mutate -> verify -> finish.
   5) Keep one finish call, and make it last.
   6) Cold start optimization: first tool-call response should preload required files with \`vfs_read\` in one batch, instead of triggering gate errors first.
-- \`current/world/notes.md\` and other \`**/notes.md\` are optional references, not mandatory pre-read anchors.
+- \`current/world/notes.md\` and other \`**/notes.md\` are AI-to-AI self-notes written by you for future turns; they are optional references, not mandatory pre-read anchors.
 - Hard gate (enforced): before first non-read tool call in this epoch, you MUST read \`current/skills/commands/runtime/SKILL.md\`, the active command protocol skill for this loop, and both soul anchors (\`current/world/soul.md\`, \`current/world/global/soul.md\`).
 - Structured error recovery flow (when a tool returns \`{ success:false, code, error }\`):
   1) Do NOT finish yet.
@@ -41,6 +42,7 @@ You MUST follow these runtime protocol constraints:
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
   3) Re-read the minimum anchor files, then retry one corrected tool call.
   4) If the same \`code\` repeats twice, narrow scope and report the blocker instead of forcing finish.
+  5) If retry succeeds after a previous failure, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\` via \`vfs_mutate\` (or \`vfs_finish_soul\` in \`[Player Rate]\`).
 </runtime_floor>`;
 
 const OUTLINE_RUNTIME_FLOOR = `<runtime_floor>

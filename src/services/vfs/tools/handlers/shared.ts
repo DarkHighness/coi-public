@@ -94,6 +94,14 @@ const uniqueStrings = (items: Array<string | undefined>): string[] => {
   return next;
 };
 
+const SOUL_TOOL_LEARNING_RECOVERY =
+  'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via `vfs_mutate` (or `vfs_finish_soul` in `[Player Rate]`).';
+
+const withSoulToolLearningRecovery = (steps: string[]): string[] => {
+  const exists = steps.includes(SOUL_TOOL_LEARNING_RECOVERY);
+  return exists ? steps : [...steps, SOUL_TOOL_LEARNING_RECOVERY];
+};
+
 const defaultRecoveryByCode = (
   code: ToolCallError["code"],
   toolName: string,
@@ -101,54 +109,56 @@ const defaultRecoveryByCode = (
   const toolDocRef = getToolDocRef(toolName);
 
   if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
-    return [
+    return withSoulToolLearningRecovery([
       `Use vfs_read on ${toolDocRef} (INTRO/SCHEMA/EXAMPLES), then retry with schema-valid arguments.`,
       "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
       "If you're modifying an existing file, vfs_read it first (read-before-mutate), then retry.",
-    ];
+    ]);
   }
   if (code === "INVALID_ACTION") {
-    return [
+    return withSoulToolLearningRecovery([
       `Use vfs_read on ${toolDocRef} to confirm tool preconditions, then retry.`,
       "If the error mentions read-before-mutate, vfs_read the target file in this epoch and retry the same operation.",
       "If the error mentions finish ordering, ensure the commit tool is the last call and there is only one finish.",
-    ];
+    ]);
   }
   if (code === "IMMUTABLE_READONLY") {
-    return [
+    return withSoulToolLearningRecovery([
       "Target path is immutable read-only (common: skills/refs or unregistered paths). Choose a writable path and retry.",
       `Use vfs_read on ${toolDocRef} for constraints/examples.`,
-    ];
+    ]);
   }
   if (code === "ELEVATION_REQUIRED") {
-    return [
+    return withSoulToolLearningRecovery([
       "Write requires elevation. Do not brute-force retries; use the designated elevation flow or report the blocker.",
       `Use vfs_read on ${toolDocRef} for constraints/examples.`,
-    ];
+    ]);
   }
   if (code === "FINISH_GUARD_REQUIRED") {
-    return [
+    return withSoulToolLearningRecovery([
       "Conversation/summary paths are finish-guarded: use vfs_finish_turn or vfs_finish_summary (not vfs_mutate).",
       `Use vfs_read on ${toolDocRef} for the correct commit schema/examples.`,
-    ];
+    ]);
   }
   if (code === "EDITOR_CONFIRM_REQUIRED") {
-    return [
+    return withSoulToolLearningRecovery([
       "Write requires editor confirmation. Stop and report blocker instead of retrying.",
-    ];
+    ]);
   }
   if (code === "NOT_FOUND") {
-    return [
+    return withSoulToolLearningRecovery([
       "Confirm the parent directory with vfs_ls (or use vfs_search with fuzzy=true if unsure), then retry with the corrected path.",
       "If the missing path is a JSON resource, vfs_schema can still describe expected fields/template even before the file exists.",
-    ];
+    ]);
   }
   if (code === "RAG_DISABLED") {
-    return [
+    return withSoulToolLearningRecovery([
       "Retry with semantic=false (or omit semantic), or enable the embedding runtime before retrying.",
-    ];
+    ]);
   }
-  return [`Use vfs_read on ${toolDocRef}, then retry.`];
+  return withSoulToolLearningRecovery([
+    `Use vfs_read on ${toolDocRef}, then retry.`,
+  ]);
 };
 
 const qualifyPathForRecovery = (
@@ -180,27 +190,27 @@ const qualifyPathForRecovery = (
 export const buildNotFoundRecovery = (inputPath: string): string[] => {
   const { qualifiedPath, parentDir, fileName } =
     qualifyPathForRecovery(inputPath);
-  return [
+  return withSoulToolLearningRecovery([
     `Try: vfs_ls({ path: "${parentDir}" })`,
     `Then: vfs_search({ path: "${parentDir}", query: "${fileName}", fuzzy: true })`,
     `If you need expected JSON fields: vfs_schema({ paths: ["${qualifiedPath}"] })`,
-  ];
+  ]);
 };
 
 export const buildReadLinesRecovery = (inputPath: string): string[] => {
   const { qualifiedPath } = qualifyPathForRecovery(inputPath);
-  return [
+  return withSoulToolLearningRecovery([
     `Try: vfs_read({ path: "${qualifiedPath}", mode: "lines", startLine: 1, lineCount: 200 })`,
     "Then adjust line numbers/ranges and retry.",
-  ];
+  ]);
 };
 
 const buildSchemaAndReadRecovery = (inputPath: string): string[] => {
   const { qualifiedPath } = qualifyPathForRecovery(inputPath);
-  return [
+  return withSoulToolLearningRecovery([
     `Try: vfs_schema({ paths: ["${qualifiedPath}"] })`,
     `Then: vfs_read({ path: "${qualifiedPath}" }) to inspect current content before retrying.`,
-  ];
+  ]);
 };
 
 const rewriteResolvedPathInMessage = (

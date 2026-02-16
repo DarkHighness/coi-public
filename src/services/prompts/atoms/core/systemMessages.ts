@@ -91,6 +91,7 @@ This is a **GM COMMAND**. You must:
 9. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
 10. **FINISH RULE**: Your LAST tool call must be \`vfs_finish_turn\`.
 11. ${CONVERSATION_GUARD_LINE}
+12. When tool recovery succeeds after a prior failure, add one concise \`[code] cause -> fix\` memo to \`current/world/soul.md\` under \`## Tool Usage Hints\` (AI self-note).
 `;
   },
 );
@@ -138,11 +139,13 @@ You are in AGENTIC MODE (VFS-only).
         ? "**SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` by calling `vfs_finish_soul`."
         : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with `vfs_mutate` using `write_file` / `patch_json` / `merge_json`. Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are writable and may be proactively refined via `vfs_mutate` when evidence is strong."
     }
+   - Identity contract: \`notes.md\` + \`soul.md\` files are AI-to-AI self-notes (you writing to your future self), not player-facing raw text.
 9. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
    - For \`vfs_finish_turn\`, use exact args shape: \`{ userAction: "<string>", assistant: { narrative: "<string>", choices: [...] } }\`.
    - \`userAction\` MUST be top-level; never nest \`userAction\` inside \`assistant\`.
 10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, your next calls must repair those failed targets (inspect+retry same targets). Do NOT call \`${resolvedFinishToolName}\` until they succeed.
+    - After repair succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\` (\`vfs_mutate\` in normal turns, \`vfs_finish_soul\` in \`[Player Rate]\`).
 12. **NO COMMIT SPAM**: Repeating \`${resolvedFinishToolName}\` while failed writable targets remain unresolved is invalid.
 13. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 14. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
@@ -201,6 +204,7 @@ You are in CLEANUP MODE (VFS-only).
 9. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_finish_turn"}\`.
 10. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, next calls must repair those failed targets first; do not finish until resolved.
+    - After repair succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\`.
 12. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 
 <examples>

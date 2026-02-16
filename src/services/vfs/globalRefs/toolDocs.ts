@@ -112,11 +112,11 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
   vfs_finish_soul: [
     {
       currentSoul:
-        "# Player Soul (This Save)\\n\\n## Guidance For AI\\n- Keep prose tighter when player asks for concise style.\\n",
+        "# Player Soul (This Save)\\n\\n## Tool Usage Hints\\n- [INVALID_PARAMS] Missing required field -> re-read tool doc and send schema-valid args.\\n\\n## Guidance For AI\\n- Keep prose tighter when player asks for concise style.\\n",
     },
     {
       globalSoul:
-        "# Player Soul (Global)\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
+        "# Player Soul (Global)\\n\\n## Tool Usage Hints\\n- [INVALID_ACTION] Read-before-mutate failed -> always vfs_read target before edit.\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
     },
     {
       currentSoul:
