@@ -286,7 +286,7 @@ export const applyCustomRulesRetconAck = (
       code: "INVALID_DATA",
       message:
         `[ERROR: RETCON_ACK_REQUIRED] Custom rules changed and require acknowledgement. ` +
-        `Include retconAck: { hash: "${state.pendingHash}", summary: "..." } in commit_turn.`,
+        `Include retconAck: { hash: "${state.pendingHash}", summary: "..." } in vfs_finish_turn.`,
     };
   }
 

@@ -74,7 +74,7 @@ You MUST follow these outline protocol constraints:
 - Structured error recovery flow (when the submit tool returns \`{ success:false, code, error }\`):
   1) Keep phase/tool unchanged.
   2) Correct payload by error code:
-     - \`INVALID_PARAMETERS\`: open split tool docs (overview/examples/schema summary), then fix argument types/fields exactly per schema.
+     - \`INVALID_PARAMS\`: open split tool docs (overview/examples/schema summary), then fix argument types/fields exactly per schema.
      - \`INVALID_DATA\` with \`READ_LIMIT_EXCEEDED\`: do NOT retry \`vfs_read_chars({ path })\`; use bounded \`vfs_read_lines\` or smaller \`vfs_read_chars\` windows.
   3) Retry the same phase submit tool after correction.
 </runtime_floor>`;

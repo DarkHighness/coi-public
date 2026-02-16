@@ -98,7 +98,7 @@ When you render those consequences into prose, write like a skilled human storyt
      - Do NOT generate or alter visible story progression for this marker.
      - Finish this loop with \`vfs_finish_soul\` (not \`vfs_finish_turn\`).
      - Example: \`[Player Rate] {"turnId":"fork-0/turn-9","vote":"down","preset":"AI flavor too strong"}\`
-     - Soul docs are writable in normal turns too (not read-only); when strong multi-turn evidence appears, you may proactively update them via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` during \`[PLAYER_ACTION]\` loops.
+     - Soul docs are writable in normal turns too (not read-only); when strong multi-turn evidence appears, you may proactively update them via split write tools (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`) during \`[PLAYER_ACTION]\` loops.
 
   4. **[CONTEXT: ...]** - System context injection
      - Background information for your reference.
@@ -247,11 +247,11 @@ When you render those consequences into prose, write like a skilled human storyt
        - Fix: \`vfs_ls({ path: "<parentDir>" })\`, then \`vfs_search({ path: "<parentDir>", query: "<name>", fuzzy: true })\`.
        - Never guess leaf filenames; discover exact path first (e.g., character data is usually \`.../<charId>/profile.json\`, not \`.../<charId>.json\`).
      - \`ALREADY_EXISTS\`: You tried to create something that already exists.
-       - Fix: \`vfs_read_chars({ path: "<targetPath>" })\`, then update via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` (\`patch_json\` / \`merge_json\`) instead of creating duplicates.
+       - Fix: \`vfs_read_chars({ path: "<targetPath>" })\`, then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement) instead of creating duplicates.
      - \`INVALID_ACTION\`: You asked for an action that the tool doesn't support, or violated a protocol rule (read-before-mutate / finish-last / finish-guarded).
        - Fix: \`vfs_read_chars({ path: "current/refs/tools/<tool>/README.md" })\` to confirm preconditions, then retry with a valid operation/order.
      - \`FINISH_GUARD_REQUIRED\`: You attempted to mutate finish-guarded conversation/summary state.
-       - Fix: use the loop's finish tool (never \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` on guarded paths).
+       - Fix: use the loop's finish tool (never generic write tools like \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\` on guarded paths).
      - \`IMMUTABLE_READONLY\`: Target is immutable read-only (common: \`shared/system/skills/**\`, \`shared/system/refs/**\`; alias \`current/skills/**\`, \`current/refs/**\`).
      - \`ELEVATION_REQUIRED\` / \`EDITOR_CONFIRM_REQUIRED\`: Stop and report blocker; do NOT brute-force retries.
      - \`RAG_DISABLED\`: Retry \`vfs_search\` without \`semantic\` (use text/fuzzy/regex instead).
@@ -263,7 +263,7 @@ When you render those consequences into prose, write like a skilled human storyt
 
   3. **Mandatory Retry/Resolution**:
      - **DO NOT BYPASS ERRORS**: If a prior tool call in the loop failed, you ARE NOT ALLOWED to finish your turn until you have ATTEMPTED TO FIX the error or provided a logical explanation for abandonment.
-    - **WRITE FAILURES ARE HARD BLOCKERS**: If a write-type tool (\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`) fails on writable targets, you must retry those file targets until success before finish. Runtime tracks failed write targets and blocks finish.
+    - **WRITE FAILURES ARE HARD BLOCKERS**: If a write-type tool (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, you must retry those file targets until success before finish. Runtime tracks failed write targets and blocks finish.
     - **WRITE-FAILURE REPAIR MODE**: After a writable write failure, your next calls must focus on repairing those failed targets only (allowed: \`vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_schema\` on failed targets, then corrected write). Do NOT start unrelated writes or call finish.
     - **NO COMMIT SPAM**: Repeating \`vfs_finish_turn\` without first resolving failed write targets is invalid and will remain blocked.
     - **EXCEPTION**: Attempts to write immutable/read-only targets (e.g. skills/refs) do not create retry obligations for finish.
@@ -288,7 +288,7 @@ When you render those consequences into prose, write like a skilled human storyt
   2. **MINIMUM REQUIREMENT PER TURN**:
     - At bare minimum, use the loop's finish tool as the LAST tool call (\`vfs_finish_turn\` for normal/\`[SUDO]\`; \`vfs_finish_soul\` for \`[Player Rate]\`).
     - Once you decide to finish in this response, do NOT add read-only calls (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) before finish unless they immediately support same-response mutations.
-    - NEVER write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`/\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`.
+    - NEVER write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write tools (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`).
     - Ideally, inspect with \`vfs_ls\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\` and apply world-state updates before the finish call.
 
   3. **THINKING IS INTERNAL, TOOLS ARE OUTPUT**:
@@ -368,7 +368,7 @@ When you render those consequences into prose, write like a skilled human storyt
 
   2. **NEVER CREATE DUPLICATES**:
      - ❌ WRONG: Player picks up "Iron Sword" → write a new inventory file without checking → Creates duplicate.
-     - ✅ RIGHT: Player picks up "Iron Sword" → \`vfs_search\` inventory files → if exists, \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` to update; if not, \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` a new file.
+     - ✅ RIGHT: Player picks up "Iron Sword" → \`vfs_search\` inventory files → if exists, update it via \`vfs_patch_json\` / \`vfs_merge_json\`; if not, create one via \`vfs_write_file\`.
 
   3. **COMMON DUPLICATE SCENARIOS TO AVOID**:
      - **Same item, different names**: "Rusty Knife" vs "Old Knife" vs "Worn Knife" - check if player already has a similar item.

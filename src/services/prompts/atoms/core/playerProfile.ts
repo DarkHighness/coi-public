@@ -45,7 +45,7 @@ const updateTiming = `
       * Apply feedback to \`Style Preferences\` and \`Guidance For AI\` first; avoid overfitting personality from one signal
       * Keep writes focused on \`current/world/soul.md\` and \`current/world/global/soul.md\`
       * Finish with \`vfs_finish_soul\` (update one or both targets)
-    - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful preference evidence, update soul docs via writable tools (e.g. \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`); these files are not read-only
+    - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful preference evidence, update soul docs via writable tools (e.g. \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\`); these files are not read-only
     - **Post-error learning**: if a tool call failed earlier in this loop and later succeeded, add one concise \`[code] cause -> fix\` bullet to \`## Tool Usage Hints\`
     - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
     - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Tool Usage Hints / Evidence Log / Guidance For AI)

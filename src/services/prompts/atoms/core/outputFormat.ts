@@ -60,14 +60,14 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     <rule>${
       isPlayerRateLoop
         ? "In `[Player Rate]` loops, only mutate soul markdown (`current/world/soul.md`, `current/world/global/soul.md`) and do not advance visible plot."
-        : "Use `vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete` for world state updates under `forks/{activeFork}/story/world/**` (alias: `current/world/**`): `write_file` / `patch_json` / `merge_json`."
+        : "Use split write tools for world state updates under `forks/{activeFork}/story/world/**` (alias: `current/world/**`): `vfs_write_file` / `vfs_patch_json` / `vfs_merge_json` / `vfs_move` / `vfs_delete` as needed."
     }</rule>
     <rule>${
       isPlayerRateLoop
         ? "Skip choice generation in `[Player Rate]` loops."
         : "For `assistant.choices`, avoid strictly dominant all-upside options. If player input attempts a best-of-both-worlds move, allow the attempt but render proportional cost or degraded outcomes."
     }</rule>
-    <rule>Field deletions use JSON Patch \`remove\` via \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` + \`patch_json\`.</rule>
+    <rule>Field deletions use JSON Patch \`remove\` via \`vfs_patch_json\`.</rule>
     <rule>\`${resolvedFinishToolName}\` MUST be your LAST tool call.</rule>
     <rule>Double-check JSON syntax before calling any tool.</rule>
   </rules>

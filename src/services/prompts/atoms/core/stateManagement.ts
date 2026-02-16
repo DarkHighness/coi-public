@@ -56,7 +56,7 @@ export const stateManagement: Atom<void> = defineAtom(
         - NPC inventory: \`current/world/characters/<npcId>/inventory/<itemId>.json\`
       * Dropped/placed items belong to a location:
         - \`current/world/locations/<locId>/items/<itemId>.json\`
-      * Transfer an item by moving the file (\`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\`), not by duplicating.
+      * Transfer an item by moving the file (\`vfs_move\`), not by duplicating.
       * Use \`visible.sensory\` (texture/weight/smell) and \`condition\` for physical depth. Put secrets in \`hidden.truth\` and gate revelation via \`unlocked\`.
 
     - **Canonical vs Actor Views (MANDATORY BOUNDARY)**:
@@ -115,16 +115,16 @@ export const stateManagement: Atom<void> = defineAtom(
     - **NARRATIVE-STATE BINDING (MANDATORY)**:
       * **Rule**: "If you write it, you MUST track it. If you track it, it MUST have happened."
       * ❌ Narrative: "He hands you the key." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/inv_key.json", content: "{...}" }] })\`
+      * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write_file(...)\` for \`current/world/characters/char:player/inventory/inv_key.json\`
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
-      * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "patch_json", path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubbles..." }] }] })\`
+      * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_patch_json({ path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubble..." }] })\`
 
     - **VFS STATE AUTHORITY (MANDATORY)**:
       * The VFS is the ONLY source of truth for game state. All state changes MUST be performed via VFS tools.
-      * Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`write_file\` to create/replace files.
-      * Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`patch_json\` (RFC 6902) to patch existing JSON.
-      * Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
-      * Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` to rename paths, \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` to remove files. No hidden updates outside the VFS.
+      * Use \`vfs_write_file\` to create/replace files.
+      * Use \`vfs_patch_json\` (RFC 6902) to patch existing JSON.
+      * Use \`vfs_merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
+      * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
       * For large JSON files, inspect with \`vfs_read_chars/vfs_read_lines/vfs_read_json\` pointers/lines first; avoid broad char-range reads by default.
@@ -176,7 +176,7 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
 2. Update state IMMEDIATELY when events occur (same turn)
 3. Consider CASCADE effects (death → update all related entities)
 4. VFS is the ONLY source of truth - all changes via VFS tools
-5. Finish every response with commit_turn protocol
+5. Finish every normal/cleanup response with vfs_finish_turn as the LAST tool call
 `.trim(),
 
     checklist: [
@@ -184,7 +184,7 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
       "Updating state in the SAME turn as events?",
       "Considering cascade effects (death → related updates)?",
       "Using VFS tools for ALL state changes?",
-      "Finishing each turn with commit_turn protocol?",
+      "Finishing each normal/cleanup response with vfs_finish_turn last?",
       "Checking entity existence before updates?",
       "Respecting trait continuity (mute NPC can't shout)?",
     ],
@@ -195,7 +195,7 @@ export const stateManagementSkill: SkillAtom<void> = defineSkillAtom(
         wrong: `Narrative: "She gives you the key."
 (No tool call - state not updated.)`,
         right: `Narrative: "She gives you the key."
-+ Tool: vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete({ ops: [{ op: "write_file", path: "current/world/characters/char:player/inventory/key.json", content: "{...}" }] })
++ Tool: vfs_write_file(...) for current/world/characters/char:player/inventory/key.json
 (State updated in same turn.)`,
       },
       {

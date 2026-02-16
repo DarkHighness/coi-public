@@ -53,11 +53,12 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - Immutable zones are always blocked: \`shared/system/skills/**\`, \`shared/system/refs/**\` (plus alias views \`skills/**\`, \`refs/**\`).
   - Resource templates enforce operation-level contracts (e.g. conversation expects \`finish_commit\`, summary expects \`finish_summary\`, rewrite flows use \`history_rewrite\`).
   - Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, \`vfs_search\` (${searchModes}) to inspect.
-  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`write_file\` to create/replace files.
-  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`patch_json\` (RFC 6902) to update JSON.
-  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
-  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with \`move\` to rename paths, \`delete\` to remove files.
-  - Use \`vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete\` with multiple \`ops\` to batch related state updates.
+  - Use \`vfs_write_file\` to create/replace files.
+  - Use \`vfs_append_text\` for append-only text/markdown updates.
+  - Use \`vfs_edit_lines\` for bounded line edits in text files.
+  - Use \`vfs_patch_json\` (RFC 6902) to update JSON.
+  - Use \`vfs_merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
+  - Use \`vfs_move\` to rename paths and \`vfs_delete\` to remove files.
   - Prefer omitting optional fields; use \`null\` only if you must, and treat it as “use defaults”.
 
   **STATE = FILES**:
@@ -66,7 +67,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - ${
     toolsetId === "playerRate"
       ? "In `[Player Rate]` loops, write scope is soul-only: `current/world/soul.md` and `current/world/global/soul.md`."
-      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via `vfs_write_file/vfs_append_text/vfs_edit_lines/vfs_patch_json/vfs_merge_json/vfs_move/vfs_delete` when evidence emerges."
+      : "Fork world state lives under `forks/{activeFork}/story/world/**` (alias: `current/world/**`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are `default_editable` and may be proactively updated via split write tools (`vfs_write_file` / `vfs_append_text` / `vfs_edit_lines`) when evidence emerges."
   }
   - If a tool call fails and later retry succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\`.
   - Conversation/summary are finish-guarded under \`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`.
