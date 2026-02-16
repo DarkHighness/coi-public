@@ -130,7 +130,7 @@ export function injectNormalTurnInstruction(
           "- Verify entities via read-only VFS tools before mutation (vfs_ls / vfs_search / vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json).",
           "- Keep player-visible log narrative generic; do not leak hidden truths.",
           "- Session efficiency: do not repeatedly read the same files across turns; reuse already-read context.",
-          "- Re-read only when external changes occurred (for example via State Editor), recovery explicitly requires it, or you now need a file section/pointer you have not read yet.",
+          "- Re-read only when the system explicitly provides `[SYSTEM: EXTERNAL_FILE_CHANGES]`, recovery explicitly requires it, or you now need a file section/pointer you have not read yet.",
           "- If the file was edited by your own successful write in this session, do not re-read it by default.",
           "- Structured error recovery (when tool returns { success:false, code, error }):",
           "  1) Do NOT finish while the error is unresolved.",
@@ -194,7 +194,7 @@ export function injectNormalTurnInstruction(
     '- `vfs_read_json({ path: "current/skills/index.json", pointers: ["/skills"] })`',
     "- At session cold start/rebuild, select and read 1-3 additional skill files aligned with active domain/theme/mechanics.",
     "- Reuse those skill docs across later turns; do not re-read by default.",
-    "- Session read-cache rule: re-read only on external file changes (for example State Editor), insufficient prior read scope, or explicit recovery needs.",
+    "- Session read-cache rule: re-read only when `[SYSTEM: EXTERNAL_FILE_CHANGES]` is present, prior read scope is insufficient, or recovery explicitly requires it.",
     "- If you wrote the file yourself in this session, keep moving without re-read unless you need new sections/pointers.",
   );
   if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
@@ -279,7 +279,7 @@ export function injectColdStartRequiredReads(
     'For `current/conversation/session.jsonl`, keep reads line-windowed; do not use unbounded chars mode.',
     "For long skill manuals under `current/skills/**`, prefer bounded line windows first, then expand only if needed.",
     "Run this preload once at session cold start to avoid avoidable gate/retry token waste; do not replay the same reads every turn.",
-    "Repeat a preload read only when content changed externally (for example State Editor) or when you need additional sections/pointers that were not read.",
+    "Repeat a preload read only when `[SYSTEM: EXTERNAL_FILE_CHANGES]` indicates external updates or when you need additional sections/pointers that were not read.",
   ];
 
   history.push(createUserMessage(lines.join("\n")));
@@ -345,10 +345,10 @@ export function injectOutOfBandReadInvalidations(
     createUserMessage(
       [
         "[SYSTEM: EXTERNAL_FILE_CHANGES]",
-        "Files you already read in this epoch were changed externally (for example State Editor):",
+        "Files you already read in this epoch were changed externally:",
         ...lines,
         "If you need to edit any listed file again, re-read it first via vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json.",
-        "This re-read requirement is for external changes; your own successful writes do not require automatic re-read.",
+        "This re-read requirement is triggered by this explicit external-change signal; your own successful writes do not require automatic re-read.",
         "If a file is not needed for this turn, you do not need to re-read it.",
       ].join("\n"),
     ),

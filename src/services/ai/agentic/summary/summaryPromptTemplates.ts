@@ -80,7 +80,7 @@ Hard constraints:
 - If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
 - If uncertain, use read-only VFS tools first (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search).
 - Session read-cache rule: avoid re-reading the same file/path windows across this conversation session.
-- Re-read only when content changed externally (for example State Editor), previous read scope was insufficient, or recovery explicitly requires re-read.
+- Re-read only when the system explicitly provides an external-change signal (\`[SYSTEM: EXTERNAL_FILE_CHANGES]\`), previous read scope was insufficient, or recovery explicitly requires re-read.
 - If you updated a file yourself in this session, do not re-read by default unless you need additional sections/pointers.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
 - In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
@@ -128,7 +128,7 @@ Hard constraints:
 - Do NOT summarize outside the specified summary range.
 - Preserve continuity with previous summaries and in-session events.
 - Session read-cache rule: avoid re-reading the same file/path windows across this conversation session.
-- Re-read only when content changed externally (for example State Editor), previous read scope was insufficient, or recovery explicitly requires re-read.
+- Re-read only when the system explicitly provides an external-change signal (\`[SYSTEM: EXTERNAL_FILE_CHANGES]\`), previous read scope was insufficient, or recovery explicitly requires re-read.
 - If you updated a file yourself in this session, do not re-read by default unless you need additional sections/pointers.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
 - In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
@@ -172,6 +172,6 @@ export const buildCompactModeTriggerMessage = (input: {
     `If compact skill files are unavailable, continue with protocol-safe tool usage and keep finish last.\n` +
     `If you need to verify details, use read-only VFS tools (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search/etc.) and stay on target fork only.\n` +
     `Across this conversation session, reuse already-read anchors instead of repeatedly reading the same files/windows.\n` +
-    `Re-read only for external changes (for example State Editor), recovery needs, or when you need unseen sections/pointers; your own writes do not require automatic re-read.`
+    `Re-read only when an explicit external-change signal (\`[SYSTEM: EXTERNAL_FILE_CHANGES]\`) is present, recovery requires it, or you need unseen sections/pointers; your own writes do not require automatic re-read.`
   );
 };
