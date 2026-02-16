@@ -1,4 +1,4 @@
-import { applyPatch as applyJsonPatch } from "fast-json-patch";
+import { applyPatch as applyJsonPatch } from "fast-json-patch/module/core.mjs";
 import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
 import {

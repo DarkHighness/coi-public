@@ -418,6 +418,61 @@ describe("callWithAgenticRetry behavior", () => {
     ).rejects.toThrow("and 3 more issue(s)");
   });
 
+  it("adds numeric discriminator type hint for outline phase parameter errors", async () => {
+    const provider = createProvider([
+      {
+        result: {
+          functionCalls: [
+            {
+              id: "call_outline_invalid",
+              name: "vfs_finish_outline",
+              args: {
+                phase: "1",
+                data: { storyPlanMarkdown: "# x" },
+              },
+            },
+          ],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    const request = {
+      modelId: "model-1",
+      systemInstruction: "system",
+      messages: [],
+      tools: [
+        {
+          name: "vfs_finish_outline",
+          description: "outline submit",
+          parameters: z.discriminatedUnion("phase", [
+            z
+              .object({
+                phase: z.literal(0),
+                data: z.object({ title: z.string() }).strict(),
+              })
+              .strict(),
+            z
+              .object({
+                phase: z.literal(1),
+                data: z
+                  .object({
+                    storyPlanMarkdown: z.string(),
+                  })
+                  .strict(),
+              })
+              .strict(),
+          ]),
+        },
+      ],
+    };
+
+    await expect(
+      callWithAgenticRetry(provider, request as any, [], { maxRetries: 0 }),
+    ).rejects.toThrow('phase must be integer literal, e.g. `phase: 1`');
+  });
+
   it("appends assistant+user feedback on missing required tool and calls onRetry", async () => {
     const provider = createProvider([
       {

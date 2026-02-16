@@ -60,6 +60,22 @@ const summarizeZodIssues = (
   return lines.join("\n");
 };
 
+const buildDiscriminatorTypeHint = (error: ZodError): string | null => {
+  for (const issue of error.issues) {
+    if (issue.code !== "invalid_union_discriminator") continue;
+    const path = issue.path.length > 0 ? issue.path.join(".") : "";
+    if (path !== "phase") continue;
+    const options = Array.isArray((issue as any).options)
+      ? ((issue as any).options as unknown[])
+      : [];
+    if (options.length === 0) continue;
+    if (options.every((value) => typeof value === "number")) {
+      return 'Hint: phase must be integer literal, e.g. `phase: 1` (not `"1"`).';
+    }
+  }
+  return null;
+};
+
 const buildInvalidParametersMessage = (params: {
   toolName: string;
   validationError: ZodError;
@@ -79,6 +95,10 @@ const buildInvalidParametersMessage = (params: {
     `Docs: \`${toolDocRef}\``,
     "Docs index: `current/refs/tools/README.md`",
   ];
+  const discriminatorTypeHint = buildDiscriminatorTypeHint(validationError);
+  if (discriminatorTypeHint) {
+    hints.push(discriminatorTypeHint);
+  }
   if (includeReadHint) {
     hints.push(`Use \`vfs_read\` on \`${toolDocRef}\` before retrying.`);
   }

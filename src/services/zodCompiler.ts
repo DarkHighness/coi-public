@@ -47,7 +47,7 @@ export interface OpenAISchema {
   properties?: Record<string, OpenAISchema>;
   required?: string[];
   items?: OpenAISchema;
-  enum?: string[];
+  enum?: Array<string | number | boolean | null>;
   additionalProperties?: boolean | OpenAISchema;
   anyOf?: OpenAISchema[];
   // Index signature to satisfy Record<string, unknown> constraint
@@ -94,6 +94,66 @@ function dedupeSchemas(schemas: OpenAISchema[]): OpenAISchema[] {
   return deduped;
 }
 
+const expandOpenAIAnyOf = (schema: OpenAISchema): OpenAISchema[] =>
+  Array.isArray(schema.anyOf) && schema.anyOf.length > 0
+    ? schema.anyOf
+    : [schema];
+
+function mergeOpenAISchemas(
+  existing: OpenAISchema,
+  incoming: OpenAISchema,
+): OpenAISchema {
+  const variants = dedupeSchemas([
+    ...expandOpenAIAnyOf(existing),
+    ...expandOpenAIAnyOf(incoming),
+  ]);
+  if (variants.length === 1) return variants[0];
+
+  const uniqueTypes = Array.from(
+    new Set(
+      variants.flatMap((variant) => {
+        const variantType = variant.type;
+        return Array.isArray(variantType) ? variantType : [variantType];
+      }),
+    ),
+  );
+
+  return {
+    type: uniqueTypes.length === 1 ? uniqueTypes[0] : uniqueTypes,
+    anyOf: variants,
+  };
+}
+
+function dedupeGeminiSchemas(schemas: Schema[]): Schema[] {
+  const seen = new Set<string>();
+  const deduped: Schema[] = [];
+
+  for (const schema of schemas) {
+    const key = JSON.stringify(schema);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(schema);
+  }
+
+  return deduped;
+}
+
+const expandGeminiAnyOf = (schema: Schema): Schema[] =>
+  Array.isArray(schema.anyOf) && schema.anyOf.length > 0
+    ? (schema.anyOf as Schema[])
+    : [schema];
+
+function mergeGeminiSchemas(existing: Schema, incoming: Schema): Schema {
+  const variants = dedupeGeminiSchemas([
+    ...expandGeminiAnyOf(existing),
+    ...expandGeminiAnyOf(incoming),
+  ]);
+  if (variants.length === 1) return variants[0];
+  return {
+    anyOf: variants,
+  };
+}
+
 function buildAnyOfSchema(
   options: ZodTypeAny[],
   compiler: (schema: ZodTypeAny, isOptionalField?: boolean) => OpenAISchema,
@@ -133,6 +193,95 @@ function createGeminiJsonValueSchema(description?: string): Schema {
   if (description) result.description = description;
   return result;
 }
+
+type LiteralValue = string | number | boolean | null;
+
+const isLiteralValue = (value: unknown): value is LiteralValue =>
+  typeof value === "string" ||
+  typeof value === "number" ||
+  typeof value === "boolean" ||
+  value === null;
+
+const toOpenAILiteralType = (value: LiteralValue): string => {
+  if (value === null) return "null";
+  if (typeof value === "string") return "string";
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? "integer" : "number";
+  }
+  return "boolean";
+};
+
+const toGeminiLiteralType = (value: LiteralValue): Type => {
+  if (value === null) return Type.NULL;
+  if (typeof value === "string") return Type.STRING;
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? Type.INTEGER : Type.NUMBER;
+  }
+  return Type.BOOLEAN;
+};
+
+const getLiteralValue = (schema: ZodLiteral<any>): LiteralValue =>
+  (schema as ZodLiteral<any>)._def.value as LiteralValue;
+
+const stripOptionalDefaultWrappers = (schema: ZodTypeAny): ZodTypeAny => {
+  let current = schema;
+  while (
+    current instanceof ZodOptional ||
+    current instanceof ZodDefault ||
+    current._def.typeName === "ZodOptional" ||
+    current._def.typeName === "ZodDefault"
+  ) {
+    current = (current as ZodOptional<any> | ZodDefault<any>)._def.innerType;
+  }
+  return current;
+};
+
+const buildOpenAILiteralSchema = (value: LiteralValue): OpenAISchema => {
+  const type = toOpenAILiteralType(value);
+  if (value === null) {
+    return { type };
+  }
+  return {
+    type,
+    enum: [value],
+  };
+};
+
+const buildOpenAIDiscriminatorSchema = (
+  values: LiteralValue[],
+  description: string,
+): OpenAISchema => {
+  if (values.length === 0) {
+    return { type: "string", description };
+  }
+
+  const uniqueTypes = Array.from(new Set(values.map(toOpenAILiteralType)));
+  const type: OpenAISchema["type"] =
+    uniqueTypes.length === 1 ? uniqueTypes[0] : uniqueTypes;
+
+  return {
+    type,
+    enum: values,
+    description,
+  };
+};
+
+const buildGeminiDiscriminatorSchema = (
+  values: LiteralValue[],
+  description: string,
+): Schema => {
+  if (values.length === 0) {
+    return { type: Type.STRING, description };
+  }
+
+  const uniqueTypes = Array.from(new Set(values.map(toGeminiLiteralType)));
+  const type: Type = uniqueTypes.length === 1 ? uniqueTypes[0] : Type.STRING;
+  const result: Schema = { type, description };
+  if (uniqueTypes.length === 1) {
+    (result as any).enum = values;
+  }
+  return result;
+};
 
 // ============================================================================
 // Zod to Gemini Compiler
@@ -209,13 +358,15 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     return result;
   }
 
-  // Handle literal (convert to enum)
+  // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = (schema as ZodLiteral<any>)._def.value;
+    const value = getLiteralValue(schema as ZodLiteral<any>);
     const result: Schema = {
-      type: Type.STRING,
-      enum: [String(value)],
+      type: toGeminiLiteralType(value),
     };
+    if (value !== null) {
+      (result as any).enum = [value];
+    }
     if (schema.description) result.description = schema.description;
     return result;
   }
@@ -250,8 +401,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
     // Collect all possible properties from all variants
     const allProperties: Record<string, Schema> = {};
-    const propertyTypes: Record<string, Set<string>> = {}; // Track types for each property
-    const discriminatorValues: string[] = [];
+    const discriminatorValues: LiteralValue[] = [];
     const requiredByAll = new Set<string>();
     let firstVariant = true;
 
@@ -264,9 +414,10 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        discriminatorValues.push(
-          String((discriminatorField as ZodLiteral<any>)._def.value),
-        );
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        if (isLiteralValue(literalValue)) {
+          discriminatorValues.push(literalValue);
+        }
       }
 
       // Collect properties
@@ -283,35 +434,14 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
         // Process the schema for this property
         const processedSchema = processZodToGemini(value as ZodTypeAny);
 
-        // Track the type for this property
-        if (!propertyTypes[key]) {
-          propertyTypes[key] = new Set();
-        }
-        if (processedSchema.type) {
-          propertyTypes[key].add(String(processedSchema.type));
-        }
-
-        // Store the first occurrence or merge if types differ
+        // Store first occurrence, otherwise merge schema variants.
         if (!allProperties[key]) {
           allProperties[key] = processedSchema;
         } else {
-          // If types differ across variants, make it nullable to be more permissive
-          const existingType = allProperties[key].type;
-          const newType = processedSchema.type;
-          if (existingType !== newType) {
-            // For Gemini, we can't use union types, so we make it a string type
-            // which is the most permissive for discriminated unions
-            const mergedSchema: Schema = {
-              type: Type.STRING,
-              description:
-                allProperties[key].description || processedSchema.description,
-            };
-            // Preserve nullable flag if either schema has it
-            if (allProperties[key].nullable || processedSchema.nullable) {
-              mergedSchema.nullable = true;
-            }
-            allProperties[key] = mergedSchema;
-          }
+          allProperties[key] = mergeGeminiSchemas(
+            allProperties[key],
+            processedSchema,
+          );
         }
       }
 
@@ -329,11 +459,10 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     }
 
     // Add discriminator field as enum
-    allProperties[discriminator] = {
-      type: Type.STRING,
-      enum: discriminatorValues,
-      description: `Discriminator field. Allowed values: ${discriminatorValues.join(", ")}`,
-    };
+    allProperties[discriminator] = buildGeminiDiscriminatorSchema(
+      discriminatorValues,
+      `Discriminator field. Allowed values: ${discriminatorValues.join(", ")}`,
+    );
 
     // Build required array - only discriminator is always required
     const required = [discriminator, ...Array.from(requiredByAll)];
@@ -516,9 +645,6 @@ function processZodToOpenAI(
   if (schema instanceof ZodString || typeName === "ZodString") {
     const result: OpenAISchema = { type: "string" };
     if (schema.description) result.description = schema.description;
-    if (strict && isOptionalField) {
-      result.type = ["string", "null"];
-    }
     return result;
   }
 
@@ -529,9 +655,6 @@ function processZodToOpenAI(
     const baseType = isInt ? "integer" : "number";
     const result: OpenAISchema = { type: baseType };
     if (schema.description) result.description = schema.description;
-    if (strict && isOptionalField) {
-      result.type = [baseType, "null"];
-    }
     return result;
   }
 
@@ -539,23 +662,14 @@ function processZodToOpenAI(
   if (schema instanceof ZodBoolean || typeName === "ZodBoolean") {
     const result: OpenAISchema = { type: "boolean" };
     if (schema.description) result.description = schema.description;
-    if (strict && isOptionalField) {
-      result.type = ["boolean", "null"];
-    }
     return result;
   }
 
   // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = (schema as ZodLiteral<any>)._def.value;
-    const result: OpenAISchema = {
-      type: "string",
-      enum: [String(value)],
-    };
+    const value = getLiteralValue(schema as ZodLiteral<any>);
+    const result: OpenAISchema = buildOpenAILiteralSchema(value);
     if (schema.description) result.description = schema.description;
-    if (strict && isOptionalField) {
-      result.type = ["string", "null"];
-    }
     return result;
   }
 
@@ -567,9 +681,6 @@ function processZodToOpenAI(
       enum: values,
     };
     if (schema.description) result.description = schema.description;
-    if (strict && isOptionalField) {
-      result.type = ["string", "null"];
-    }
     return result;
   }
 
@@ -592,8 +703,7 @@ function processZodToOpenAI(
 
     // Collect all possible properties from all variants
     const allProperties: Record<string, OpenAISchema> = {};
-    const discriminatorValues: string[] = [];
-    const allKeys = new Set<string>();
+    const discriminatorValues: LiteralValue[] = [];
     const requiredInAllVariants = new Set<string>();
     let firstVariant = true;
 
@@ -606,9 +716,10 @@ function processZodToOpenAI(
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        discriminatorValues.push(
-          String((discriminatorField as ZodLiteral<any>)._def.value),
-        );
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        if (isLiteralValue(literalValue)) {
+          discriminatorValues.push(literalValue);
+        }
       }
 
       // Collect properties
@@ -616,19 +727,24 @@ function processZodToOpenAI(
       for (const [key, value] of Object.entries(shape)) {
         if (key === discriminator) continue; // Handle discriminator separately
 
-        allKeys.add(key);
         const fieldTypeName = (value as ZodTypeAny)._def.typeName;
         const isRequired =
           fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault";
 
         if (isRequired) currentRequired.add(key);
 
+        const compiledFieldSchema = processZodToOpenAI(
+          stripOptionalDefaultWrappers(value as ZodTypeAny),
+          strict,
+          false,
+        );
+
         if (!allProperties[key]) {
-          // Process as optional since not all variants may have it
-          allProperties[key] = processZodToOpenAI(
-            value as ZodTypeAny,
-            strict,
-            true,
+          allProperties[key] = compiledFieldSchema;
+        } else {
+          allProperties[key] = mergeOpenAISchemas(
+            allProperties[key],
+            compiledFieldSchema,
           );
         }
       }
@@ -647,28 +763,20 @@ function processZodToOpenAI(
     }
 
     // Add discriminator field as enum
-    allProperties[discriminator] = {
-      type: "string",
-      enum: discriminatorValues,
-      description: `Discriminator field. Allowed values: ${discriminatorValues.join(", ")}`,
-    };
-    allKeys.add(discriminator);
+    allProperties[discriminator] = buildOpenAIDiscriminatorSchema(
+      discriminatorValues,
+      `Discriminator field. Allowed values: ${discriminatorValues.join(", ")}`,
+    );
 
-    // In strict mode, all keys are required (with nullable types for optional fields)
+    // Keep required fields aligned with discriminated union semantics.
     const result: OpenAISchema = {
       type: "object",
       properties: allProperties,
-      required: strict
-        ? Array.from(allKeys)
-        : [discriminator, ...Array.from(requiredInAllVariants)],
+      required: [discriminator, ...Array.from(requiredInAllVariants)],
       additionalProperties: false,
     };
 
     if (schema.description) result.description = schema.description;
-
-    if (strict && isOptionalField) {
-      result.type = ["object", "null"];
-    }
 
     return result;
   }
@@ -685,9 +793,6 @@ function processZodToOpenAI(
       items: itemSchema,
     };
     if (schema.description) result.description = schema.description;
-    if (strict && isOptionalField) {
-      result.type = ["array", "null"];
-    }
     return result;
   }
 
@@ -696,11 +801,7 @@ function processZodToOpenAI(
     const shape = (schema as ZodObject<any>).shape;
     const properties: Record<string, OpenAISchema> = {};
     const originalRequired: string[] = [];
-    const allKeys: string[] = [];
-
     for (const [key, value] of Object.entries(shape)) {
-      allKeys.push(key);
-
       // Check if originally required
       const fieldTypeName = (value as ZodTypeAny)._def.typeName;
       const isFieldOptional =
@@ -722,28 +823,17 @@ function processZodToOpenAI(
         }
       }
 
-      // Process field - pass isOptionalField based on strict mode
-      const isOptional = strict && !originalRequired.includes(key);
-      properties[key] = processZodToOpenAI(
-        value as ZodTypeAny,
-        strict,
-        isOptional,
-      );
+      properties[key] = processZodToOpenAI(value as ZodTypeAny, strict, false);
     }
 
     const result: OpenAISchema = {
       type: "object",
       properties,
-      // In strict mode, all keys are required (optional ones become nullable)
-      required: strict ? allKeys : originalRequired,
+      required: originalRequired,
       additionalProperties: false,
     };
 
     if (schema.description) result.description = schema.description;
-
-    if (strict && isOptionalField) {
-      result.type = ["object", "null"];
-    }
 
     return result;
   }
@@ -756,9 +846,6 @@ function processZodToOpenAI(
       additionalProperties: processZodToOpenAI(valueSchema, strict, false),
     };
     if (schema.description) result.description = schema.description;
-    if (strict && isOptionalField) {
-      result.type = ["object", "null"];
-    }
     return result;
   }
 
@@ -868,11 +955,8 @@ function processZodToGeminiCompatible(
 
   // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = (schema as ZodLiteral<any>)._def.value;
-    const result: OpenAISchema = {
-      type: "string",
-      enum: [String(value)],
-    };
+    const value = getLiteralValue(schema as ZodLiteral<any>);
+    const result: OpenAISchema = buildOpenAILiteralSchema(value);
     if (schema.description) result.description = schema.description;
     return result;
   }
@@ -1001,7 +1085,7 @@ function processZodToGeminiCompatible(
       .options as ZodObject<any>[];
 
     const allProperties: Record<string, OpenAISchema> = {};
-    const discriminatorValues: string[] = [];
+    const discriminatorValues: LiteralValue[] = [];
     const requiredByAll = new Set<string>();
     let firstVariant = true;
 
@@ -1014,9 +1098,10 @@ function processZodToGeminiCompatible(
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        discriminatorValues.push(
-          String((discriminatorField as ZodLiteral<any>)._def.value),
-        );
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        if (isLiteralValue(literalValue)) {
+          discriminatorValues.push(literalValue);
+        }
       }
 
       // Collect properties
@@ -1029,12 +1114,15 @@ function processZodToGeminiCompatible(
           fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault";
         if (isRequired) currentRequired.add(key);
 
-        // Merge property schema using a permissive strategy
-        // For simplicity in this compatible mode, we just take the first seen or overwrite
-        // A robust implementation would check for type conflicts, but here we assume consistency
+        const compiledFieldSchema = processZodToGeminiCompatible(
+          value as ZodTypeAny,
+        );
         if (!allProperties[key]) {
-          allProperties[key] = processZodToGeminiCompatible(
-            value as ZodTypeAny,
+          allProperties[key] = compiledFieldSchema;
+        } else {
+          allProperties[key] = mergeOpenAISchemas(
+            allProperties[key],
+            compiledFieldSchema,
           );
         }
       }
@@ -1053,11 +1141,10 @@ function processZodToGeminiCompatible(
     }
 
     // Add discriminator
-    allProperties[discriminator] = {
-      type: "string",
-      enum: discriminatorValues,
-      description: `Discriminator: ${discriminatorValues.join(", ")}`,
-    };
+    allProperties[discriminator] = buildOpenAIDiscriminatorSchema(
+      discriminatorValues,
+      `Discriminator: ${discriminatorValues.join(", ")}`,
+    );
 
     const required = [discriminator, ...Array.from(requiredByAll)];
 
@@ -1308,11 +1395,8 @@ function processZodToClaudeCompatible(
 
   // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = (schema as ZodLiteral<any>)._def.value;
-    const result: OpenAISchema = {
-      type: "string",
-      enum: [String(value)],
-    };
+    const value = getLiteralValue(schema as ZodLiteral<any>);
+    const result: OpenAISchema = buildOpenAILiteralSchema(value);
     if (schema.description) result.description = schema.description;
     return result;
   }
@@ -1441,7 +1525,7 @@ function processZodToClaudeCompatible(
       .options as ZodObject<any>[];
 
     const allProperties: Record<string, OpenAISchema> = {};
-    const discriminatorValues: string[] = [];
+    const discriminatorValues: LiteralValue[] = [];
     const requiredByAll = new Set<string>();
     let firstVariant = true;
 
@@ -1454,9 +1538,10 @@ function processZodToClaudeCompatible(
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        discriminatorValues.push(
-          String((discriminatorField as ZodLiteral<any>)._def.value),
-        );
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        if (isLiteralValue(literalValue)) {
+          discriminatorValues.push(literalValue);
+        }
       }
 
       // Collect properties
@@ -1469,9 +1554,15 @@ function processZodToClaudeCompatible(
           fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault";
         if (isRequired) currentRequired.add(key);
 
+        const compiledFieldSchema = processZodToClaudeCompatible(
+          value as ZodTypeAny,
+        );
         if (!allProperties[key]) {
-          allProperties[key] = processZodToClaudeCompatible(
-            value as ZodTypeAny,
+          allProperties[key] = compiledFieldSchema;
+        } else {
+          allProperties[key] = mergeOpenAISchemas(
+            allProperties[key],
+            compiledFieldSchema,
           );
         }
       }
@@ -1490,11 +1581,10 @@ function processZodToClaudeCompatible(
     }
 
     // Add discriminator
-    allProperties[discriminator] = {
-      type: "string",
-      enum: discriminatorValues,
-      description: `Discriminator: ${discriminatorValues.join(", ")}`,
-    };
+    allProperties[discriminator] = buildOpenAIDiscriminatorSchema(
+      discriminatorValues,
+      `Discriminator: ${discriminatorValues.join(", ")}`,
+    );
 
     const required = [discriminator, ...Array.from(requiredByAll)];
 
