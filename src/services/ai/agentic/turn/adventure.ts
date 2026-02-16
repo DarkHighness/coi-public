@@ -27,6 +27,7 @@ import {
   resolvePlayerMaliceProfile,
   resolveEffectivePresetProfile,
   resolveActivePresetSkillRequirements,
+  resolveCulturePreferenceContext,
   type ActivePresetSkillRequirement,
   pickModelMatchedPrompt,
 } from "../../utils";
@@ -160,6 +161,11 @@ export const generateAdventureTurn = async (
     resolvedThemeConfig?.worldSetting || fallbackThemeConfig.worldSetting;
   const isRestricted =
     resolvedThemeConfig?.isRestricted ?? fallbackThemeConfig.isRestricted;
+  const culturePreferenceContext = resolveCulturePreferenceContext({
+    preference: settings.extra?.culturePreference,
+    themeKey: context.themeKey,
+    worldSetting,
+  });
 
   // Check if RAG is enabled
   const isRAGEnabled = settings.embedding?.enabled ?? false;
@@ -196,6 +202,12 @@ export const generateAdventureTurn = async (
     maxToolCalls: settings.extra?.maxToolCalls,
     finishToolName,
     themeKey: context.themeKey, // Theme-based atom specialization
+    culturePreference: culturePreferenceContext.preference,
+    culturePreferenceSource: culturePreferenceContext.source,
+    cultureEffectiveCircle: culturePreferenceContext.effectiveCircle,
+    cultureSkillPath: culturePreferenceContext.skillPath,
+    cultureHubSkillPath: culturePreferenceContext.hubSkillPath,
+    cultureNamingPolicy: culturePreferenceContext.namingPolicy,
   });
 
   console.log(
@@ -342,6 +354,9 @@ export const generateAdventureTurn = async (
     settings,
     presetProfile: gameState.presetProfile,
     customContext: gameState.customContext,
+    culturePreference: culturePreferenceContext.preference,
+    themeKey: context.themeKey,
+    worldSetting,
   });
   const requiredPresetSkillPaths = requiredPresetSkillRequirements.map(
     (entry) => entry.path,

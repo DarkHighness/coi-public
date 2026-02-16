@@ -624,4 +624,110 @@ describe("agenticLoop command skill gate", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
     expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
   });
+
+  it("blocks non-read tools when culture preset skill is required but unread", async () => {
+    const vfsSession = createVfsSession(true);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-culture-blocked",
+          name: "vfs_mutate",
+          args: { ops: [] },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-culture-preset-gate",
+        vfsSession,
+        requiredPresetSkillPaths: [
+          "skills/presets/runtime/culture/SKILL.md",
+          "skills/presets/runtime/culture-japanese/SKILL.md",
+        ],
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+  });
+
+  it("allows non-read tools after required culture preset skills are read", async () => {
+    const vfsSession = createVfsSession(true, [
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
+      "world/soul.md",
+      "world/global/soul.md",
+      "skills/presets/runtime/culture/SKILL.md",
+      "skills/presets/runtime/culture-japanese/SKILL.md",
+    ]);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-1",
+          name: "vfs_mutate",
+          args: { ops: [] },
+        },
+        {
+          id: "call-2",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-culture-preset-pass",
+      vfsSession,
+      requiredPresetSkillPaths: [
+        "skills/presets/runtime/culture/SKILL.md",
+        "skills/presets/runtime/culture-japanese/SKILL.md",
+      ],
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalled();
+  });
 });

@@ -75,10 +75,33 @@ describe("SettingsContext", () => {
       "legacy instruction",
     );
     expect(captured.settings.extra.customInstructionEnabled).toBe(true);
+    expect(captured.settings.extra.culturePreference).toBe(
+      "follow_story_setting",
+    );
     expect(
       (captured.settings.extra as Record<string, unknown>).clearerSearchTool,
     ).toBeUndefined();
     expect(changeLanguage).toHaveBeenCalledWith("zh");
+  });
+
+  it("uses default culture preference when settings are fresh", () => {
+    let captured: any = null;
+    const Consumer = () => {
+      captured = useSettingsContext();
+      return React.createElement("div");
+    };
+
+    render(
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
+    );
+
+    expect(captured.settings.extra.culturePreference).toBe(
+      "follow_story_setting",
+    );
   });
 
   it("supports partial updateSettings and persists merged settings", async () => {

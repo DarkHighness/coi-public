@@ -63,6 +63,7 @@ import {
   resolveWorldDisposition,
   resolvePlayerMaliceProfile,
   resolveEffectivePresetProfile,
+  resolveCulturePreferenceContext,
   pickModelMatchedPrompt,
 } from "../../utils";
 
@@ -552,10 +553,10 @@ export const generateStoryOutlinePhased = async (
     : THEMES[theme] || THEMES["fantasy"];
   const isRestricted = themeConfig?.restricted || false;
 
-  let themeDataWorldSetting: string | undefined;
-  let themeDataBackgroundTemplate: string | undefined;
-  let themeDataExample: string | undefined;
-  let themeDataNarrativeStyle: string | undefined;
+  let themeDataWorldSetting = "";
+  let themeDataBackgroundTemplate = "";
+  let themeDataExample = "";
+  let themeDataNarrativeStyle = "";
 
   // Only load theme data if not image-based flow
   if (!isImageBasedFlow) {
@@ -570,8 +571,10 @@ export const generateStoryOutlinePhased = async (
       });
     } else {
       const themeData = THEMES[theme] || THEMES["fantasy"];
-      themeDataBackgroundTemplate = themeData.backgroundTemplate;
-      themeDataExample = themeData.example;
+      themeDataBackgroundTemplate = themeData.backgroundTemplate ?? "";
+      themeDataExample = themeData.example ?? "";
+      themeDataWorldSetting = themeData.worldSetting ?? "";
+      themeDataNarrativeStyle = themeData.narrativeStyle ?? "";
     }
   }
 
@@ -619,6 +622,11 @@ export const generateStoryOutlinePhased = async (
     language,
     customContext,
   });
+  const culturePreferenceContext = resolveCulturePreferenceContext({
+    preference: settings.extra?.culturePreference,
+    themeKey: theme,
+    worldSetting: themeDataWorldSetting,
+  });
 
   const baseSystemInstruction = getOutlineSystemInstruction({
     language,
@@ -641,6 +649,12 @@ export const generateStoryOutlinePhased = async (
     vfsReadOnly: readOnlyVfsEnabled
       ? { enabled: true, allowedRoots: readOnlyVfsAllowPrefixes }
       : undefined,
+    culturePreference: culturePreferenceContext.preference,
+    culturePreferenceSource: culturePreferenceContext.source,
+    cultureEffectiveCircle: culturePreferenceContext.effectiveCircle,
+    cultureSkillPath: culturePreferenceContext.skillPath,
+    cultureHubSkillPath: culturePreferenceContext.hubSkillPath,
+    cultureNamingPolicy: culturePreferenceContext.namingPolicy,
   });
 
   const outlinePhaseSharedContext: OutlinePhaseSharedContext = {
@@ -667,6 +681,12 @@ export const generateStoryOutlinePhased = async (
     vfsReadOnly: readOnlyVfsEnabled
       ? { enabled: true, allowedRoots: readOnlyVfsAllowPrefixes }
       : undefined,
+    culturePreference: culturePreferenceContext.preference,
+    culturePreferenceSource: culturePreferenceContext.source,
+    cultureEffectiveCircle: culturePreferenceContext.effectiveCircle,
+    cultureSkillPath: culturePreferenceContext.skillPath,
+    cultureHubSkillPath: culturePreferenceContext.hubSkillPath,
+    cultureNamingPolicy: culturePreferenceContext.namingPolicy,
   };
 
   const runtimeFloor = getOutlineRuntimeFloor();

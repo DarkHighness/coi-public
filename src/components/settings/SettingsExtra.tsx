@@ -321,6 +321,66 @@ export const SettingsExtra: React.FC = () => {
           </div>
         </div>
 
+        {/* Culture Preference */}
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.culturePreference") || "Culture Preference"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.culturePreferenceHelp") ||
+                "Control cultural-circle defaults used in story generation and naming."}
+            </div>
+          </div>
+          <div className="w-56">
+            <select
+              value={extra.culturePreference || "follow_story_setting"}
+              onChange={(e) => updateExtra("culturePreference", e.target.value)}
+              className="w-full p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
+            >
+              <option value="follow_story_setting">
+                {t("settings.extra.culturePreferences.follow_story_setting") ||
+                  "Follow Story Setting"}
+              </option>
+              <option value="none">
+                {t("settings.extra.culturePreferences.none") ||
+                  "Neutral / No Specific Circle"}
+              </option>
+              <option value="sinosphere">
+                {t("settings.extra.culturePreferences.sinosphere") ||
+                  "Sinosphere"}
+              </option>
+              <option value="japanese">
+                {t("settings.extra.culturePreferences.japanese") || "Japanese"}
+              </option>
+              <option value="korean">
+                {t("settings.extra.culturePreferences.korean") || "Korean"}
+              </option>
+              <option value="western_euro_american">
+                {t(
+                  "settings.extra.culturePreferences.western_euro_american",
+                ) || "Western Europe / North America"}
+              </option>
+              <option value="arab_islamic">
+                {t("settings.extra.culturePreferences.arab_islamic") ||
+                  "Arab-Islamic"}
+              </option>
+              <option value="south_asian">
+                {t("settings.extra.culturePreferences.south_asian") ||
+                  "South Asian"}
+              </option>
+              <option value="latin_american">
+                {t("settings.extra.culturePreferences.latin_american") ||
+                  "Latin American"}
+              </option>
+              <option value="sub_saharan_african">
+                {t("settings.extra.culturePreferences.sub_saharan_african") ||
+                  "Sub-Saharan African"}
+              </option>
+            </select>
+          </div>
+        </div>
+
         {/* Gender Preference */}
         <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>

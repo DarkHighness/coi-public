@@ -50,6 +50,14 @@ export function getPhasePrompt(
         Boolean(hasImageContext),
         protagonistFeature,
         submitToolName,
+        {
+          culturePreference: sharedContext.culturePreference,
+          culturePreferenceSource: sharedContext.culturePreferenceSource,
+          cultureEffectiveCircle: sharedContext.cultureEffectiveCircle,
+          cultureSkillPath: sharedContext.cultureSkillPath,
+          cultureHubSkillPath: sharedContext.cultureHubSkillPath,
+          cultureNamingPolicy: sharedContext.cultureNamingPolicy,
+        },
       );
       break;
     case 2:

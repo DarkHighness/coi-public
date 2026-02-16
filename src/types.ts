@@ -1089,6 +1089,16 @@ export interface StoryThemeConfig {
   icon?: string;
   categories?: string[];
   restricted?: boolean;
+  /**
+   * Localized narrative style text.
+   * In normal runtime this comes from i18n theme resources.
+   */
+  narrativeStyle: string;
+  /**
+   * Localized world setting text.
+   * In normal runtime this comes from i18n theme resources.
+   */
+  worldSetting: string;
   backgroundTemplate?: string;
   example?: string;
   /** Theme-specific prompt configuration (complex structure). */
@@ -1098,6 +1108,18 @@ export interface StoryThemeConfig {
 }
 
 export type LanguageCode = "en" | "zh";
+
+export type CulturePreference =
+  | "follow_story_setting"
+  | "none"
+  | "sinosphere"
+  | "japanese"
+  | "korean"
+  | "western_euro_american"
+  | "arab_islamic"
+  | "south_asian"
+  | "latin_american"
+  | "sub_saharan_african";
 
 // ============================================================================
 // Multi-Provider System Types
@@ -1237,6 +1259,12 @@ export interface AISettings {
     detailedDescription?: boolean;
     nsfw?: boolean; // Enable NSFW/adult content generation
     genderPreference?: "male" | "female" | "none"; // Force protagonist gender in story generation
+    /**
+     * Cultural preference for naming/cultural mechanics.
+     * - follow_story_setting: infer from theme/world setting
+     * - none: keep neutral baseline (no specific culture circle binding)
+     */
+    culturePreference?: CulturePreference;
     customInstructionEnabled?: boolean;
     customInstruction?: string; // Player instruction block (style + plot direction + setting bias), injected before base system instruction
     /**

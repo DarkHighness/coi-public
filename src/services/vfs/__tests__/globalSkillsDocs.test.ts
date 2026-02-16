@@ -70,12 +70,30 @@ describe("VFS global skills docs", () => {
     const maliceIntensity =
       files["skills/presets/runtime/player-malice-intensity/SKILL.md"]
         ?.content ?? "";
+    const cultureHub =
+      files["skills/presets/runtime/culture/SKILL.md"]?.content ?? "";
+    const cultureSinosphere =
+      files["skills/presets/runtime/culture-sinosphere/SKILL.md"]?.content ??
+      "";
+    const cultureJapanese =
+      files["skills/presets/runtime/culture-japanese/SKILL.md"]?.content ?? "";
 
     expect(narrativeStyle).toContain("# Preset Narrative Style Runtime");
     expect(worldDisposition).toContain("# Preset World Disposition Runtime");
     expect(maliceProfile).toContain("# Preset Player Malice Profile Runtime");
     expect(maliceIntensity).toContain(
       "# Preset Player Malice Intensity Runtime",
+    );
+    expect(cultureHub).toContain("# Runtime Culture Preference Hub");
+    expect(cultureHub).toContain(
+      "current/skills/presets/runtime/culture-japanese/SKILL.md",
+    );
+    expect(cultureSinosphere).toContain("# Preset Culture - Sinosphere");
+    expect(cultureSinosphere).toContain("人名必须自然");
+    expect(cultureSinosphere).toContain("## Anti-AI Name Checklist (Hard Gate)");
+    expect(cultureJapanese).toContain("# Preset Culture - Japanese");
+    expect(cultureJapanese).toContain(
+      "single-script output (no dual-script pairing)",
     );
   });
 });

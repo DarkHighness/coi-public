@@ -658,6 +658,20 @@
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
       "toolCallCarousel": "Tool Call Carousel",
       "toolCallCarouselHelp": "Show a rotating tool-call style loading animation (e.g., vfs_read({...})) while AI is generating.",
+      "culturePreference": "Culture Preference",
+      "culturePreferenceHelp": "Choose how cultural-circle skills are selected for names, social norms, religion, history, and expression style.",
+      "culturePreferences": {
+        "follow_story_setting": "Follow Story Setting",
+        "none": "Neutral / No Specific Circle",
+        "sinosphere": "Sinosphere",
+        "japanese": "Japanese",
+        "korean": "Korean",
+        "western_euro_american": "Western Europe / North America",
+        "arab_islamic": "Arab-Islamic",
+        "south_asian": "South Asian",
+        "latin_american": "Latin American",
+        "sub_saharan_african": "Sub-Saharan African"
+      },
       "genderPreference": "Gender Preference",
       "genderPreferenceHelp": "Force the protagonist's gender when generating stories.",
       "genderPreferences": {

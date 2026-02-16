@@ -1,5 +1,10 @@
 import { StoryThemeConfig } from "../../types";
 
+type StoryThemeRegistryEntry = Omit<
+  StoryThemeConfig,
+  "narrativeStyle" | "worldSetting"
+>;
+
 // Visual/Atmospheric Themes (Dynamic)
 export const CATEGORY_KEYS = [
   "all",
@@ -17,7 +22,7 @@ export const CATEGORY_KEYS = [
 export type CategoryKey = (typeof CATEGORY_KEYS)[number];
 
 // Story Themes (Static Genres)
-export const THEMES: Record<string, StoryThemeConfig> = {
+const THEME_REGISTRY: Record<string, StoryThemeRegistryEntry> = {
   white_snake_legend: {
     themeParams: {
       physicsHarshness: "standard",
@@ -9260,3 +9265,14 @@ export const THEMES: Record<string, StoryThemeConfig> = {
     categories: ["game", "fantasy", "suspense"],
   },
 };
+
+export const THEMES: Record<string, StoryThemeConfig> = Object.fromEntries(
+  Object.entries(THEME_REGISTRY).map(([themeKey, config]) => [
+    themeKey,
+    {
+      ...config,
+      narrativeStyle: "",
+      worldSetting: "",
+    },
+  ]),
+) as Record<string, StoryThemeConfig>;

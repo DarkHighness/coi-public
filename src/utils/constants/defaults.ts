@@ -157,6 +157,7 @@ export const DEFAULTS: AISettings = {
     autoCompactThreshold: 0.7,
     forceAutoToolChoice: false,
     toolCallCarousel: true,
+    culturePreference: "follow_story_setting",
     customInstructionEnabled: false,
     customInstruction: "",
     systemDefaultInjectionEnabled: true,

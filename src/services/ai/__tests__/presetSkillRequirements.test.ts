@@ -20,7 +20,14 @@ describe("resolveActivePresetSkillRequirements", () => {
       customContext: "",
     });
 
-    expect(requirements).toEqual([]);
+    expect(requirements).toEqual([
+      {
+        path: "skills/presets/runtime/culture/SKILL.md",
+        tag: "culture_preference",
+        profile: "follow_story_setting",
+        source: "story_setting",
+      },
+    ]);
   });
 
   it("activates all preset skill paths for configured non-theme save presets", () => {
@@ -58,6 +65,12 @@ describe("resolveActivePresetSkillRequirements", () => {
         tag: "player_malice_intensity",
         profile: "heavy",
         source: "save_profile",
+      },
+      {
+        path: "skills/presets/runtime/culture/SKILL.md",
+        tag: "culture_preference",
+        profile: "follow_story_setting",
+        source: "story_setting",
       },
     ]);
   });
@@ -101,6 +114,12 @@ describe("resolveActivePresetSkillRequirements", () => {
         profile: "light",
         source: "custom_context",
       },
+      {
+        path: "skills/presets/runtime/culture/SKILL.md",
+        tag: "culture_preference",
+        profile: "follow_story_setting",
+        source: "story_setting",
+      },
     ]);
   });
 
@@ -116,5 +135,78 @@ describe("resolveActivePresetSkillRequirements", () => {
     expect(requirements.map((entry) => entry.path)).toContain(
       "skills/presets/runtime/player-malice-intensity/SKILL.md",
     );
+  });
+
+  it("returns culture hub + explicit circle when culture preference is explicitly set", () => {
+    const requirements = resolveActivePresetSkillRequirements({
+      presetProfile: createPresetProfile(),
+      customContext: "",
+      culturePreference: "japanese",
+    });
+
+    expect(requirements).toEqual(
+      expect.arrayContaining([
+        {
+          path: "skills/presets/runtime/culture/SKILL.md",
+          tag: "culture_preference",
+          profile: "japanese",
+          source: "save_profile",
+        },
+        {
+          path: "skills/presets/runtime/culture-japanese/SKILL.md",
+          tag: "culture_preference",
+          profile: "japanese",
+          source: "save_profile",
+        },
+      ]),
+    );
+  });
+
+  it("returns culture hub + inferred circle for follow_story_setting", () => {
+    const requirements = resolveActivePresetSkillRequirements({
+      presetProfile: createPresetProfile(),
+      customContext: "",
+      culturePreference: "follow_story_setting",
+      themeKey: "xianxia",
+    });
+
+    expect(requirements).toEqual(
+      expect.arrayContaining([
+        {
+          path: "skills/presets/runtime/culture/SKILL.md",
+          tag: "culture_preference",
+          profile: "follow_story_setting",
+          source: "story_setting",
+        },
+        {
+          path: "skills/presets/runtime/culture-sinosphere/SKILL.md",
+          tag: "culture_preference",
+          profile: "sinosphere",
+          source: "story_setting",
+        },
+      ]),
+    );
+  });
+
+  it("returns hub-only neutral requirement for explicit none", () => {
+    const requirements = resolveActivePresetSkillRequirements({
+      presetProfile: createPresetProfile(),
+      customContext: "",
+      culturePreference: "none",
+    });
+
+    expect(requirements).toEqual(
+      expect.arrayContaining([
+        {
+          path: "skills/presets/runtime/culture/SKILL.md",
+          tag: "culture_preference",
+          profile: "none",
+          source: "save_profile",
+        },
+      ]),
+    );
+    expect(
+      requirements.some((entry) => entry.path.includes("culture-")),
+    ).toBe(false);
   });
 });

@@ -686,6 +686,20 @@
       "nsfwHelp": "启用NSFW内容生成。",
       "toolCallCarousel": "工具调用轮播",
       "toolCallCarouselHelp": "在 AI 生成时显示类似工具调用的轮播加载动画（例如 vfs_read({...})）。",
+      "culturePreference": "文化圈偏好",
+      "culturePreferenceHelp": "选择文化圈技能选择方式，用于命名、社会规范、宗教历史与情感表达风格。",
+      "culturePreferences": {
+        "follow_story_setting": "跟随故事背景设定",
+        "none": "中性 / 不指定文化圈",
+        "sinosphere": "中华文化圈",
+        "japanese": "日式文化圈",
+        "korean": "韩式文化圈",
+        "western_euro_american": "西欧北美文化圈",
+        "arab_islamic": "阿拉伯-伊斯兰文化圈",
+        "south_asian": "南亚文化圈",
+        "latin_american": "拉美文化圈",
+        "sub_saharan_african": "撒哈拉以南非洲文化圈"
+      },
       "genderPreference": "性别偏好",
       "genderPreferenceHelp": "在生成故事时强制要求主角的性别。",
       "genderPreferences": {

@@ -1,5 +1,6 @@
 import {
   AISettings,
+  CulturePreference,
   SavePresetProfile,
   NarrativeStylePreset,
   WorldDispositionPreset,
@@ -613,7 +614,8 @@ export const DEFAULT_SAVE_PRESET_PROFILE: SavePresetProfile = {
 export type PresetProfileSource =
   | "custom_context"
   | "save_profile"
-  | "theme_default";
+  | "theme_default"
+  | "story_setting";
 
 export type EffectivePresetProfile = {
   narrativeStylePreset: {
@@ -633,6 +635,276 @@ export type EffectivePresetProfile = {
     source: PresetProfileSource;
   };
 };
+
+export type CultureCircle = Exclude<
+  CulturePreference,
+  "follow_story_setting" | "none"
+>;
+
+export type CulturePreferenceResolutionSource =
+  | "explicit"
+  | "story_setting"
+  | "fallback_none";
+
+export type CultureNamingPolicy =
+  "transliterate_to_output_language_single_script";
+
+export type CulturePreferenceContext = {
+  preference: CulturePreference;
+  effectiveCircle: CultureCircle | "none";
+  source: CulturePreferenceResolutionSource;
+  hubSkillPath: string;
+  skillPath?: string;
+  namingPolicy: CultureNamingPolicy;
+  inferredFrom: "theme_key" | "world_setting" | "none";
+};
+
+const CULTURE_CIRCLE_SKILL_PATHS: Record<CultureCircle, string> = {
+  sinosphere: "skills/presets/runtime/culture-sinosphere/SKILL.md",
+  japanese: "skills/presets/runtime/culture-japanese/SKILL.md",
+  korean: "skills/presets/runtime/culture-korean/SKILL.md",
+  western_euro_american:
+    "skills/presets/runtime/culture-western-euro-american/SKILL.md",
+  arab_islamic: "skills/presets/runtime/culture-arab-islamic/SKILL.md",
+  south_asian: "skills/presets/runtime/culture-south-asian/SKILL.md",
+  latin_american: "skills/presets/runtime/culture-latin-american/SKILL.md",
+  sub_saharan_african:
+    "skills/presets/runtime/culture-sub-saharan-african/SKILL.md",
+};
+
+export const CULTURE_PRESET_SKILL_PATHS = {
+  hub: "skills/presets/runtime/culture/SKILL.md",
+  circles: CULTURE_CIRCLE_SKILL_PATHS,
+} as const;
+
+const STORY_SETTING_THEME_HINTS: Array<{
+  circle: CultureCircle;
+  hints: string[];
+}> = [
+  {
+    circle: "sinosphere",
+    hints: [
+      "xianxia",
+      "wuxia",
+      "jianghu",
+      "cultivation",
+      "c_drama",
+      "chinese",
+      "ancient_china",
+      "republic_of_china",
+      "three_kingdoms",
+      "long_aotian",
+    ],
+  },
+  {
+    circle: "japanese",
+    hints: [
+      "japan",
+      "samurai",
+      "sengoku",
+      "heian",
+      "onmyoji",
+      "yokai",
+      "anime",
+    ],
+  },
+  {
+    circle: "korean",
+    hints: ["korean", "joseon", "goryeo", "chaebol"],
+  },
+  {
+    circle: "western_euro_american",
+    hints: [
+      "medieval_europe",
+      "western",
+      "victorian",
+      "wild_west",
+      "american",
+      "europe",
+    ],
+  },
+  {
+    circle: "arab_islamic",
+    hints: ["arab", "islamic", "caliphate", "ottoman", "persia", "middle_east"],
+  },
+  {
+    circle: "south_asian",
+    hints: ["india", "indian", "south_asia", "mughal", "bharat"],
+  },
+  {
+    circle: "latin_american",
+    hints: ["latin", "latam", "mexico", "aztec", "maya", "inca", "andes"],
+  },
+  {
+    circle: "sub_saharan_african",
+    hints: ["sub_saharan", "africa", "yoruba", "swahili", "zulu", "sahel"],
+  },
+];
+
+const STORY_SETTING_TEXT_HINTS: Array<{
+  circle: CultureCircle;
+  pattern: RegExp;
+}> = [
+  {
+    circle: "sinosphere",
+    pattern:
+      /(xianxia|wuxia|jianghu|cultivation|menpai|sect|dynasty|hanfu|qin|han|tang|song|ming|qing|华夏|中原|江湖|修仙|武侠|门派|宗门|朝代|大唐|大明|民国)/i,
+  },
+  {
+    circle: "japanese",
+    pattern:
+      /(japan|edo|samurai|shogun|heian|sengoku|onmyoji|yokai|tokyo|kyoto|japanese|日本|幕府|武士|阴阳师|妖怪|江户|战国|和风)/i,
+  },
+  {
+    circle: "korean",
+    pattern:
+      /(korea|korean|joseon|goryeo|hanbok|chaebol|seoul|韩国|朝鲜王朝|高丽|韩服|财阀|首尔)/i,
+  },
+  {
+    circle: "arab_islamic",
+    pattern:
+      /(arab|islam|caliph|sultan|ottoman|persia|mesopotamia|baghdad|mecca|medina|middle east|阿拉伯|伊斯兰|哈里发|苏丹|奥斯曼|波斯|巴格达)/i,
+  },
+  {
+    circle: "south_asian",
+    pattern:
+      /(south asia|india|indian|bharat|mughal|hindu|sikh|tamil|bengal|delhi|mumbai|南亚|印度|莫卧儿|恒河|德里|孟买)/i,
+  },
+  {
+    circle: "latin_american",
+    pattern:
+      /(latin america|latino|mexico|aztec|maya|inca|andes|brazil|argentina|peru|chile|拉美|墨西哥|阿兹特克|玛雅|印加|安第斯|巴西)/i,
+  },
+  {
+    circle: "sub_saharan_african",
+    pattern:
+      /(sub-saharan|sub saharan|africa|african|sahel|yoruba|swahili|zulu|ethiopia|ghana|mali|刚果|撒哈拉以南|非洲|约鲁巴|斯瓦希里|祖鲁)/i,
+  },
+  {
+    circle: "western_euro_american",
+    pattern:
+      /(western europe|north america|european|american|victorian|british|french|german|italian|roman|london|paris|new york|wild west|westerns?|西欧|北美|维多利亚|英伦|法兰西|罗马)/i,
+  },
+];
+
+function sanitizeCulturePreference(
+  value: unknown,
+): CulturePreference | undefined {
+  switch (value) {
+    case "follow_story_setting":
+    case "none":
+    case "sinosphere":
+    case "japanese":
+    case "korean":
+    case "western_euro_american":
+    case "arab_islamic":
+    case "south_asian":
+    case "latin_american":
+    case "sub_saharan_african":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function inferCultureCircleFromThemeKey(
+  themeKey?: string | null,
+): CultureCircle | undefined {
+  const normalized = (themeKey || "").toLowerCase();
+  if (!normalized) return undefined;
+
+  for (const rule of STORY_SETTING_THEME_HINTS) {
+    if (rule.hints.some((hint) => normalized.includes(hint))) {
+      return rule.circle;
+    }
+  }
+
+  return undefined;
+}
+
+function inferCultureCircleFromStoryText(
+  text: string,
+): CultureCircle | undefined {
+  for (const rule of STORY_SETTING_TEXT_HINTS) {
+    if (rule.pattern.test(text)) {
+      return rule.circle;
+    }
+  }
+  return undefined;
+}
+
+export function resolveCulturePreferenceContext(input: {
+  preference?: CulturePreference | null;
+  themeKey?: string | null;
+  worldSetting: string;
+}): CulturePreferenceContext {
+  const preference =
+    sanitizeCulturePreference(input.preference) ?? "follow_story_setting";
+  const namingPolicy: CultureNamingPolicy =
+    "transliterate_to_output_language_single_script";
+
+  if (preference === "none") {
+    return {
+      preference,
+      effectiveCircle: "none",
+      source: "explicit",
+      hubSkillPath: CULTURE_PRESET_SKILL_PATHS.hub,
+      namingPolicy,
+      inferredFrom: "none",
+    };
+  }
+
+  if (preference !== "follow_story_setting") {
+    return {
+      preference,
+      effectiveCircle: preference,
+      source: "explicit",
+      hubSkillPath: CULTURE_PRESET_SKILL_PATHS.hub,
+      skillPath: CULTURE_PRESET_SKILL_PATHS.circles[preference],
+      namingPolicy,
+      inferredFrom: "none",
+    };
+  }
+
+  const themeCircle = inferCultureCircleFromThemeKey(input.themeKey);
+  if (themeCircle) {
+    return {
+      preference,
+      effectiveCircle: themeCircle,
+      source: "story_setting",
+      hubSkillPath: CULTURE_PRESET_SKILL_PATHS.hub,
+      skillPath: CULTURE_PRESET_SKILL_PATHS.circles[themeCircle],
+      namingPolicy,
+      inferredFrom: "theme_key",
+    };
+  }
+
+  const combinedText = input.worldSetting.trim();
+  const worldCircle = combinedText
+    ? inferCultureCircleFromStoryText(combinedText)
+    : undefined;
+
+  if (worldCircle) {
+    return {
+      preference,
+      effectiveCircle: worldCircle,
+      source: "story_setting",
+      hubSkillPath: CULTURE_PRESET_SKILL_PATHS.hub,
+      skillPath: CULTURE_PRESET_SKILL_PATHS.circles[worldCircle],
+      namingPolicy,
+      inferredFrom: "world_setting",
+    };
+  }
+
+  return {
+    preference,
+    effectiveCircle: "none",
+    source: "fallback_none",
+    hubSkillPath: CULTURE_PRESET_SKILL_PATHS.hub,
+    namingPolicy,
+    inferredFrom: "none",
+  };
+}
 
 function sanitizeNarrativeStylePreset(
   value: unknown,
@@ -815,13 +1087,15 @@ export const PRESET_SKILL_PATHS = {
   playerMaliceProfile: "skills/presets/runtime/player-malice-profile/SKILL.md",
   playerMaliceIntensity:
     "skills/presets/runtime/player-malice-intensity/SKILL.md",
+  cultureHub: CULTURE_PRESET_SKILL_PATHS.hub,
 } as const;
 
 export type PresetSkillTag =
   | "narrative_style"
   | "world_disposition"
   | "player_malice_profile"
-  | "player_malice_intensity";
+  | "player_malice_intensity"
+  | "culture_preference";
 
 export type ActivePresetSkillRequirement = {
   path: string;
@@ -838,6 +1112,9 @@ type ResolveActivePresetSkillsInput = {
   settings?: AISettings;
   presetProfile?: SavePresetProfile | null;
   customContext?: string;
+  culturePreference?: CulturePreference;
+  themeKey?: string;
+  worldSetting?: string;
 };
 
 function pushPresetSkillRequirement(
@@ -939,6 +1216,48 @@ function resolvePlayerMaliceIntensitySkillRequirement(
   };
 }
 
+function resolveCulturePreferenceSkillRequirements(
+  input: ResolveActivePresetSkillsInput,
+): ActivePresetSkillRequirement[] {
+  const fromCustomContext = sanitizeCulturePreference(
+    extractXmlTagValue(input.customContext, "culture_preference")?.toLowerCase(),
+  );
+  const resolved = resolveCulturePreferenceContext({
+    preference:
+      fromCustomContext ??
+      input.culturePreference ??
+      input.settings?.extra?.culturePreference,
+    themeKey: input.themeKey,
+    worldSetting: input.worldSetting ?? "",
+  });
+
+  const source: PresetProfileSource = fromCustomContext
+    ? "custom_context"
+    : resolved.source === "story_setting" || resolved.source === "fallback_none"
+      ? "story_setting"
+      : "save_profile";
+
+  const requirements: ActivePresetSkillRequirement[] = [
+    {
+      path: PRESET_SKILL_PATHS.cultureHub,
+      tag: "culture_preference",
+      profile: resolved.preference,
+      source,
+    },
+  ];
+
+  if (resolved.skillPath && resolved.effectiveCircle !== "none") {
+    requirements.push({
+      path: resolved.skillPath,
+      tag: "culture_preference",
+      profile: resolved.effectiveCircle,
+      source,
+    });
+  }
+
+  return requirements;
+}
+
 export function resolveActivePresetSkillRequirements(
   input: ResolveActivePresetSkillsInput,
 ): ActivePresetSkillRequirement[] {
@@ -963,6 +1282,10 @@ export function resolveActivePresetSkillRequirements(
     resolvePlayerMaliceIntensitySkillRequirement(input);
   if (playerMaliceIntensity) {
     pushPresetSkillRequirement(requirements, playerMaliceIntensity);
+  }
+
+  for (const cultureReq of resolveCulturePreferenceSkillRequirements(input)) {
+    pushPresetSkillRequirement(requirements, cultureReq);
   }
 
   return requirements.map((entry) => ({

@@ -307,6 +307,60 @@ describe("VFS global skills generator", () => {
           "skills/presets/runtime/player-malice-intensity/SKILL.md",
       ),
     ).toBe(true);
+    expect(
+      seeds.some((seed) => seed.path === "skills/presets/runtime/culture/SKILL.md"),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path === "skills/presets/runtime/culture-sinosphere/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path === "skills/presets/runtime/culture-japanese/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) => seed.path === "skills/presets/runtime/culture-korean/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path ===
+          "skills/presets/runtime/culture-western-euro-american/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path ===
+          "skills/presets/runtime/culture-arab-islamic/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path === "skills/presets/runtime/culture-south-asian/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path ===
+          "skills/presets/runtime/culture-latin-american/SKILL.md",
+      ),
+    ).toBe(true);
+    expect(
+      seeds.some(
+        (seed) =>
+          seed.path ===
+          "skills/presets/runtime/culture-sub-saharan-african/SKILL.md",
+      ),
+    ).toBe(true);
 
     expect(
       entries.some(
@@ -318,6 +372,12 @@ describe("VFS global skills generator", () => {
         (entry) =>
           entry.path ===
           "current/skills/presets/runtime/narrative-style/SKILL.md",
+      ),
+    ).toBe(false);
+    expect(
+      entries.some(
+        (entry) =>
+          entry.path === "current/skills/presets/runtime/culture/SKILL.md",
       ),
     ).toBe(false);
   });
