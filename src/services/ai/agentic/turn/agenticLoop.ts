@@ -815,61 +815,6 @@ async function processToolCalls(
   } = params;
 
   const finishToolName = loopState.finishToolName;
-  const buildBatchBlockedResponses = (
-    content: Record<string, unknown>,
-    reason: string,
-  ): ProcessToolCallsResult["responses"] =>
-    functionCalls.map((call, index) => ({
-      toolCallId: call.id,
-      name: call.name,
-      content:
-        index === 0
-          ? content
-          : {
-              success: false,
-              code:
-                typeof content.code === "string"
-                  ? content.code
-                  : "INVALID_ACTION",
-              error: `[SKIP: BATCH_BLOCKED] ${reason}. Follow the first error and retry.`,
-            },
-    }));
-
-  const skillGate = checkCommandSkillReadGate(functionCalls, loopState);
-  if ("error" in skillGate) {
-    const gateError = skillGate.error;
-    return {
-      responses: buildBatchBlockedResponses(
-        gateError as Record<string, unknown>,
-        "command skill gate blocked this batch",
-      ),
-      turnFinished: false,
-    };
-  }
-
-  const soulGate = checkSoulReadGate(functionCalls, loopState);
-  if ("error" in soulGate) {
-    const gateError = soulGate.error;
-    return {
-      responses: buildBatchBlockedResponses(
-        gateError as Record<string, unknown>,
-        "soul read gate blocked this batch",
-      ),
-      turnFinished: false,
-    };
-  }
-
-  const presetSkillGate = checkPresetSkillReadGate(functionCalls, loopState);
-  if ("error" in presetSkillGate) {
-    const gateError = presetSkillGate.error;
-    return {
-      responses: buildBatchBlockedResponses(
-        gateError as Record<string, unknown>,
-        "preset skill read gate blocked this batch",
-      ),
-      turnFinished: false,
-    };
-  }
 
   const isFinishToolCall = (call: ToolCallResult): boolean => {
     return call.name === finishToolName;
@@ -911,140 +856,46 @@ async function processToolCalls(
     return touched;
   };
 
+  const getGateErrorForCall = (
+    call: ToolCallResult,
+  ): { success: false; error: string; code: string } | null => {
+    const commandGate = checkCommandSkillReadGate([call], loopState);
+    if ("error" in commandGate) {
+      return commandGate.error;
+    }
+
+    const soulGate = checkSoulReadGate([call], loopState);
+    if ("error" in soulGate) {
+      return soulGate.error;
+    }
+
+    const presetSkillGate = checkPresetSkillReadGate([call], loopState);
+    if ("error" in presetSkillGate) {
+      return presetSkillGate.error;
+    }
+
+    return null;
+  };
+
   const mustOnlyFinish =
     loopState.activeTools.length > 0 &&
     loopState.activeTools.every((tool) => tool.name === finishToolName);
-
-  if (mustOnlyFinish) {
-    if (functionCalls.length !== 1 || !isFinishToolCall(functionCalls[0]!)) {
-      const error = {
-        success: false,
-        error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
-        code: "INVALID_ACTION",
-      };
-      return {
-        responses: buildBatchBlockedResponses(
-          error,
-          "only the finish tool is allowed in this round",
-        ),
-        turnFinished: false,
-      };
-    }
-  }
 
   const finishCallIndices = functionCalls
     .map((call, index) => ({ call, index }))
     .filter(({ call }) => isFinishToolCall(call))
     .map(({ index }) => index);
-
-  if (finishCallIndices.length > 1) {
-    const error = {
-      success: false,
-      error: `[ERROR: MULTIPLE_FINISH_CALLS] You invoked the finish operation more than once. Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
-      code: "INVALID_ACTION",
-    };
-    return {
-      responses: buildBatchBlockedResponses(
-        error,
-        "multiple finish calls were submitted",
-      ),
-      turnFinished: false,
-    };
-  }
-
-  if (
+  const hasMultipleFinishCalls = finishCallIndices.length > 1;
+  const hasFinishNotLast =
     finishCallIndices.length === 1 &&
-    finishCallIndices[0] !== functionCalls.length - 1
-  ) {
-    const error = {
-      success: false,
-      error: `[ERROR: FINISH_NOT_LAST] The finish tool must be your LAST tool call. Reorder so all state edits happen before "${finishToolName}".`,
-      code: "INVALID_ACTION",
-    };
-    return {
-      responses: buildBatchBlockedResponses(
-        error,
-        "finish tool must be the last call in this batch",
-      ),
-      turnFinished: false,
-    };
-  }
-
-  if (isLikelyNoOpReadBeforeFinishBatch(functionCalls, finishToolName)) {
-    const warning = {
-      success: false,
-      error:
-        `[WARNING: PRE_FINISH_READ_ONLY_SEQUENCE] You are calling "${finishToolName}" in this batch, ` +
-        "but all prior calls are read-only and produce no state changes. " +
-        "Avoid token-waste reads right before finish. Either finish directly, or perform required mutations before finish.",
-      code: "WARNING",
-      warning: true,
-    };
-    return {
-      responses: buildBatchBlockedResponses(
-        warning,
-        "read-only calls before finish were blocked as no-op waste",
-      ),
-      turnFinished: false,
-    };
-  }
-
-  const conversationTouched = functionCalls.flatMap((call) =>
-    getConversationTouchedPaths(call),
+    finishCallIndices[0] !== functionCalls.length - 1;
+  const hasNoOpReadBeforeFinishSequence = isLikelyNoOpReadBeforeFinishBatch(
+    functionCalls,
+    finishToolName,
   );
 
   const targetForkId =
     typeof gameState.forkId === "number" ? gameState.forkId : 0;
-
-  for (const call of functionCalls) {
-    const crossForkViolations = findTurnCrossForkViolations(
-      call.args,
-      targetForkId,
-    );
-    if (crossForkViolations.length > 0) {
-      const details = crossForkViolations
-        .slice(0, 3)
-        .map((item) => `fork=${item.forkId} path="${item.path}"`)
-        .join("; ");
-
-      const error = {
-        success: false,
-        error:
-          `[ERROR: CROSS_FORK_ACCESS_BLOCKED] Current turn is scoped to fork ${targetForkId}. ` +
-          `Cross-fork path references are not allowed (${details}). Read/write only current fork paths.`,
-        code: "INVALID_ACTION",
-      };
-
-      return {
-        responses: buildBatchBlockedResponses(
-          error,
-          "cross-fork path access is blocked in this turn",
-        ),
-        turnFinished: false,
-      };
-    }
-  }
-
-  if (conversationTouched.length > 0) {
-    const unique = Array.from(new Set(conversationTouched));
-    const preview = formatPathPreview(unique, {
-      prefixCurrent: false,
-    });
-    const error = {
-      success: false,
-      error:
-        `[ERROR: CONVERSATION_WRITE_FORBIDDEN] Do not mutate current/conversation/* via generic write/move/delete tools. ` +
-        `Use "${finishToolName}" as the ONLY commit path at turn end. Forbidden: ${preview}.`,
-      code: "INVALID_ACTION",
-    };
-    return {
-      responses: buildBatchBlockedResponses(
-        error,
-        "conversation writes must go through finish tool only",
-      ),
-      turnFinished: false,
-    };
-  }
 
   incrementToolCalls(loopState.budgetState, functionCalls.length);
   console.log(
@@ -1073,9 +924,11 @@ async function processToolCalls(
     settings,
   };
 
-  for (const call of functionCalls) {
+  for (let callIndex = 0; callIndex < functionCalls.length; callIndex += 1) {
+    const call = functionCalls[callIndex]!;
     let output: unknown;
     let isError = false;
+    let blockedByGuardian = false;
     const isWriteTool = isWriteMutationToolName(call.name);
     const writeTargets = isWriteTool
       ? collectWriteTargetsFromToolCall(call)
@@ -1084,47 +937,129 @@ async function processToolCalls(
       ? writeTargets.filter((target) => loopState.vfsSession.readFile(target))
       : [];
 
-    if (
-      isFinishToolCall(call) &&
-      loopState.pendingWriteFailurePaths.size > 0
-    ) {
-      const pendingList = formatPendingWriteFailurePaths(
-        loopState.pendingWriteFailurePaths,
-      );
+    const gateError = getGateErrorForCall(call);
+    if (gateError) {
+      output = gateError;
+      isError = true;
+      blockedByGuardian = true;
+    } else if (mustOnlyFinish && !isFinishToolCall(call)) {
       output = {
         success: false,
-        error:
-          `[ERROR: FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE] Existing-file write targets failed earlier and must succeed before finish. ` +
-          `Retry writes for: ${pendingList}.`,
+        error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}" in this round.`,
         code: "INVALID_ACTION",
       };
       isError = true;
+      blockedByGuardian = true;
+    } else if (hasMultipleFinishCalls && isFinishToolCall(call)) {
+      output = {
+        success: false,
+        error: `[ERROR: MULTIPLE_FINISH_CALLS] You invoked the finish operation more than once. Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
+        code: "INVALID_ACTION",
+      };
+      isError = true;
+      blockedByGuardian = true;
+    } else if (hasFinishNotLast && isFinishToolCall(call)) {
+      output = {
+        success: false,
+        error: `[ERROR: FINISH_NOT_LAST] The finish tool must be your LAST tool call. Reorder so all state edits happen before "${finishToolName}".`,
+        code: "INVALID_ACTION",
+      };
+      isError = true;
+      blockedByGuardian = true;
+    } else if (
+      hasNoOpReadBeforeFinishSequence &&
+      isFinishToolCall(call) &&
+      finishCallIndices[0] === callIndex
+    ) {
+      output = {
+        success: false,
+        error:
+          `[WARNING: PRE_FINISH_READ_ONLY_SEQUENCE] You are calling "${finishToolName}" in this batch, ` +
+          "but all prior calls are read-only and produce no state changes. " +
+          "Avoid token-waste reads right before finish. Either finish directly, or perform required mutations before finish.",
+        code: "WARNING",
+        warning: true,
+      };
+      isError = true;
+      blockedByGuardian = true;
     } else {
-      try {
-        output = await Promise.resolve(
-          executeGenericTool(call.name, call.args, toolCtx),
-        );
-
-        // Check for errors
-        if (
-          output &&
-          typeof output === "object" &&
-          "success" in output &&
-          (output as any).success === false
-        ) {
-          isError = true;
-        }
-      } catch (err: any) {
+      const crossForkViolations = findTurnCrossForkViolations(
+        call.args,
+        targetForkId,
+      );
+      if (crossForkViolations.length > 0) {
+        const details = crossForkViolations
+          .slice(0, 3)
+          .map((item) => `fork=${item.forkId} path="${item.path}"`)
+          .join("; ");
         output = {
           success: false,
-          error: `Tool execution failed: ${err.message}`,
-          code: "EXECUTION_ERROR",
+          error:
+            `[ERROR: CROSS_FORK_ACCESS_BLOCKED] Current turn is scoped to fork ${targetForkId}. ` +
+            `Cross-fork path references are not allowed (${details}). Read/write only current fork paths.`,
+          code: "INVALID_ACTION",
         };
         isError = true;
+        blockedByGuardian = true;
+      } else {
+        const conversationTouched = getConversationTouchedPaths(call);
+        if (conversationTouched.length > 0) {
+          const preview = formatPathPreview(
+            Array.from(new Set(conversationTouched)),
+            { prefixCurrent: false },
+          );
+          output = {
+            success: false,
+            error:
+              `[ERROR: CONVERSATION_WRITE_FORBIDDEN] Do not mutate current/conversation/* via generic write/move/delete tools. ` +
+              `Use "${finishToolName}" as the ONLY commit path at turn end. Forbidden: ${preview}.`,
+            code: "INVALID_ACTION",
+          };
+          isError = true;
+          blockedByGuardian = true;
+        } else if (
+          isFinishToolCall(call) &&
+          loopState.pendingWriteFailurePaths.size > 0
+        ) {
+          const pendingList = formatPendingWriteFailurePaths(
+            loopState.pendingWriteFailurePaths,
+          );
+          output = {
+            success: false,
+            error:
+              `[ERROR: FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE] Existing-file write targets failed earlier and must succeed before finish. ` +
+              `Retry writes for: ${pendingList}.`,
+            code: "INVALID_ACTION",
+          };
+          isError = true;
+        } else {
+          try {
+            output = await Promise.resolve(
+              executeGenericTool(call.name, call.args, toolCtx),
+            );
+
+            // Check for errors
+            if (
+              output &&
+              typeof output === "object" &&
+              "success" in output &&
+              (output as any).success === false
+            ) {
+              isError = true;
+            }
+          } catch (err: any) {
+            output = {
+              success: false,
+              error: `Tool execution failed: ${err.message}`,
+              code: "EXECUTION_ERROR",
+            };
+            isError = true;
+          }
+        }
       }
     }
 
-    if (isWriteTool) {
+    if (isWriteTool && !blockedByGuardian) {
       if (isError) {
         const classification = classifyWriteFailure({
           errorCode: getToolErrorCode(output),
@@ -1156,16 +1091,11 @@ async function processToolCalls(
       content: output,
     });
 
-    const callIndex = functionCalls.findIndex(
-      (toolCall) => toolCall.id === call.id,
-    );
-    if (callIndex >= 0) {
-      liveToolCalls[callIndex] = {
-        ...liveToolCalls[callIndex],
-        output,
-      };
-      onToolCallsUpdate?.([...liveToolCalls]);
-    }
+    liveToolCalls[callIndex] = {
+      ...liveToolCalls[callIndex],
+      output,
+    };
+    onToolCallsUpdate?.([...liveToolCalls]);
 
     // Log tool usage before checking finish state so the final commit tool
     // is also recorded in the persisted log list.

@@ -484,6 +484,142 @@ describe("agenticLoop tool logging", () => {
     );
   });
 
+  it("executes later write calls even if an earlier write fails in the same batch", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-write-fail-global",
+            name: "vfs_write_file",
+            args: {
+              path: "current/world/global.json",
+              content: "{}",
+              contentType: "application/json",
+            },
+          },
+          {
+            id: "call-write-pass-notes",
+            name: "vfs_write_file",
+            args: {
+              path: "current/world/notes.md",
+              content: "ok",
+              contentType: "text/markdown",
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 4,
+          completionTokens: 2,
+          totalTokens: 6,
+        },
+        functionCalls: [
+          {
+            id: "call-write-retry-global",
+            name: "vfs_write_file",
+            args: {
+              path: "current/world/global.json",
+              content: "{}",
+              contentType: "application/json",
+            },
+          },
+          {
+            id: "call-finish",
+            name: "vfs_finish_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    let globalWriteAttempts = 0;
+    toolProcessorMock.executeGenericTool.mockImplementation(
+      (name: string, args: Record<string, unknown>) => {
+        if (name === "vfs_write_file") {
+          const path = String(args.path ?? "");
+          if (path === "current/world/global.json") {
+            globalWriteAttempts += 1;
+            if (globalWriteAttempts === 1) {
+              return {
+                success: false,
+                error: "must read file before overwrite",
+                code: "INVALID_ACTION",
+              };
+            }
+          }
+          return { success: true };
+        }
+
+        if (name === "vfs_finish_turn") {
+          vfsSession.markConversationTouched();
+          return { success: true };
+        }
+
+        return { success: true };
+      },
+    );
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-write-independence",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(2);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual([
+      "vfs_write_file",
+      "vfs_write_file",
+      "vfs_write_file",
+      "vfs_finish_turn",
+    ]);
+
+    const writeLogs = result.logs.filter(
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
+    );
+    expect(writeLogs.length).toBeGreaterThanOrEqual(3);
+    expect(
+      writeLogs.some(
+        (log) =>
+          String((log as any).toolInput?.path || "") ===
+            "current/world/notes.md" && (log as any).toolOutput?.success === true,
+      ),
+    ).toBe(true);
+    expect(
+      writeLogs.some(
+        (log) =>
+          String((log as any).toolInput?.path || "") ===
+            "current/world/global.json" &&
+          String((log as any).toolOutput?.error || "").includes(
+            "WRITE_EXISTING_TARGET_RETRY_REQUIRED",
+          ),
+      ),
+    ).toBe(true);
+  });
+
   it("does not block finish for unrecoverable write failures and emits guidance", async () => {
     const vfsSession = createVfsSession();
 
@@ -734,7 +870,7 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(2);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_finish_turn"]);
+    ).toEqual(["vfs_read_chars", "vfs_finish_turn"]);
 
     const historyText = JSON.stringify(result._conversationHistory);
     expect(historyText).toContain("PRE_FINISH_READ_ONLY_SEQUENCE");

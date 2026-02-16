@@ -494,6 +494,134 @@ describe("agenticLoop command skill gate", () => {
     );
   });
 
+  it("keeps mixed batches partially executable when soul gate blocks only some calls", async () => {
+    const seenPaths = [
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
+    ];
+    const vfsSession = createVfsSession(true, seenPaths);
+
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-write-before-soul",
+            name: "vfs_write_file",
+            args: { ops: [] },
+          },
+          {
+            id: "call-read-soul",
+            name: "vfs_read_lines",
+            args: { path: "current/world/soul.md", startLine: 1, lineCount: 20 },
+          },
+          {
+            id: "call-read-global-soul",
+            name: "vfs_read_lines",
+            args: {
+              path: "current/world/global/soul.md",
+              startLine: 1,
+              lineCount: 20,
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 4,
+          completionTokens: 2,
+          totalTokens: 6,
+        },
+        functionCalls: [
+          {
+            id: "call-write-after-soul",
+            name: "vfs_write_file",
+            args: { ops: [] },
+          },
+          {
+            id: "call-finish",
+            name: "vfs_finish_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockImplementation(
+      (name: string, args: Record<string, unknown>) => {
+        if (name === "vfs_read_lines") {
+          const path = String(args.path ?? "");
+          if (path === "current/world/soul.md") {
+            seenPaths.push("world/soul.md");
+          } else if (path === "current/world/global/soul.md") {
+            seenPaths.push("world/global/soul.md");
+          }
+          return { success: true, path };
+        }
+
+        if (name === "vfs_finish_turn") {
+          vfsSession.markConversationTouched();
+          return { success: true };
+        }
+
+        return { success: true };
+      },
+    );
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-soul-mixed-batch",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(2);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual([
+      "vfs_read_lines",
+      "vfs_read_lines",
+      "vfs_write_file",
+      "vfs_finish_turn",
+    ]);
+
+    const blockedWriteLog = result.logs.find(
+      (log) =>
+        log.endpoint === "tool_execution" &&
+        log.toolName === "vfs_write_file" &&
+        String((log as any).toolOutput?.error || "").includes("SOUL_NOT_READ"),
+    );
+    expect(blockedWriteLog).toBeDefined();
+
+    const soulReadLogs = result.logs.filter(
+      (log) =>
+        log.endpoint === "tool_execution" && log.toolName === "vfs_read_lines",
+    );
+    expect(soulReadLogs).toHaveLength(2);
+    expect(
+      soulReadLogs.every((log) => (log as any).toolOutput?.success === true),
+    ).toBe(true);
+  });
+
   it("allows non-read tools in sudo mode after skill is read", async () => {
     const vfsSession = createVfsSession(true);
 

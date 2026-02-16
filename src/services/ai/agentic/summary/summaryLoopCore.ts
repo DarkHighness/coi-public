@@ -440,94 +440,14 @@ export async function runSummaryLoopCore(options: {
         ),
       );
 
-      const soulGateError = checkSummarySoulReadGate(
-        functionCalls,
-        input.vfsSession,
-      );
-      if (soulGateError) {
-        conversationHistory.push(
-          createToolResponseMessage(
-            functionCalls.map((call) => ({
-              toolCallId: call.id,
-              name: call.name,
-              content: soulGateError,
-            })),
-          ),
-        );
-        incrementIterations(loopState.budgetState);
-        continue;
-      }
-
       const mustOnlyFinish =
         loopState.activeTools.length === 1 &&
         loopState.activeTools[0]?.name === finishToolName;
-
-      if (mustOnlyFinish) {
-        if (
-          functionCalls.length !== 1 ||
-          functionCalls[0]?.name !== finishToolName
-        ) {
-          const error = {
-            success: false,
-            error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}", and it must be the ONLY tool call in this response.`,
-            code: "INVALID_ACTION",
-          };
-          conversationHistory.push(
-            createToolResponseMessage(
-              functionCalls.map((call) => ({
-                toolCallId: call.id,
-                name: call.name,
-                content: error,
-              })),
-            ),
-          );
-          incrementIterations(loopState.budgetState);
-          continue;
-        }
-      }
 
       const finishIndices = functionCalls
         .map((call, index) => ({ call, index }))
         .filter(({ call }) => call.name === finishToolName)
         .map(({ index }) => index);
-
-      if (finishIndices.length > 1) {
-        const error = {
-          success: false,
-          error: `[ERROR: MULTIPLE_FINISH_CALLS] Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
-          code: "INVALID_ACTION",
-        };
-        conversationHistory.push(
-          createToolResponseMessage(
-            functionCalls.map((call) => ({
-              toolCallId: call.id,
-              name: call.name,
-              content: error,
-            })),
-          ),
-        );
-        incrementIterations(loopState.budgetState);
-        continue;
-      }
-
-      if (finishIndices.length === 1 && finishIndices[0] !== functionCalls.length - 1) {
-        const error = {
-          success: false,
-          error: `[ERROR: FINISH_NOT_LAST] "${finishToolName}" must be your LAST tool call. Reorder your tool calls and try again.`,
-          code: "INVALID_ACTION",
-        };
-        conversationHistory.push(
-          createToolResponseMessage(
-            functionCalls.map((call) => ({
-              toolCallId: call.id,
-              name: call.name,
-              content: error,
-            })),
-          ),
-        );
-        incrementIterations(loopState.budgetState);
-        continue;
-      }
 
       incrementToolCalls(loopState.budgetState, functionCalls.length);
 
@@ -572,6 +492,59 @@ export async function runSummaryLoopCore(options: {
       };
 
       for (const call of functionCalls) {
+        const soulGateError = checkSummarySoulReadGate([call], input.vfsSession);
+        if (soulGateError) {
+          toolResponses.push({
+            toolCallId: call.id,
+            name: call.name,
+            content: soulGateError,
+          });
+          continue;
+        }
+
+        if (mustOnlyFinish && call.name !== finishToolName) {
+          toolResponses.push({
+            toolCallId: call.id,
+            name: call.name,
+            content: {
+              success: false,
+              error: `[ERROR: FORCED_FINISH] Budget is critically low. Your ONLY allowed tool call is "${finishToolName}" in this response.`,
+              code: "INVALID_ACTION",
+            },
+          });
+          continue;
+        }
+
+        if (finishIndices.length > 1 && call.name === finishToolName) {
+          toolResponses.push({
+            toolCallId: call.id,
+            name: call.name,
+            content: {
+              success: false,
+              error: `[ERROR: MULTIPLE_FINISH_CALLS] Provide exactly one "${finishToolName}", and it must be the LAST tool call.`,
+              code: "INVALID_ACTION",
+            },
+          });
+          continue;
+        }
+
+        if (
+          finishIndices.length === 1 &&
+          finishIndices[0] !== functionCalls.length - 1 &&
+          call.name === finishToolName
+        ) {
+          toolResponses.push({
+            toolCallId: call.id,
+            name: call.name,
+            content: {
+              success: false,
+              error: `[ERROR: FINISH_NOT_LAST] "${finishToolName}" must be your LAST tool call. Reorder your tool calls and try again.`,
+              code: "INVALID_ACTION",
+            },
+          });
+          continue;
+        }
+
         const crossForkViolations = findSummaryCrossForkViolations(
           call.args,
           forkId,

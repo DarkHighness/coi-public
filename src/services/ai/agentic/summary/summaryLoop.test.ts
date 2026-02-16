@@ -586,7 +586,12 @@ describe("runSummaryLoop", () => {
 
     expect(result.summary?.id).toBe("s1");
     expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(2);
-    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(2);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
+      "vfs_read_chars",
+      {},
+      expect.any(Object),
+    );
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
       {
