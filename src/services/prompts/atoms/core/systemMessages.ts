@@ -145,9 +145,10 @@ You are in AGENTIC MODE (VFS-only).
    - For \`vfs_finish_turn\`, use exact args shape: \`{ userAction: "<string>", assistant: { narrative: "<string>", choices: [...] } }\`.
    - \`userAction\` MUST be top-level; never nest \`userAction\` inside \`assistant\`.
 10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
-11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, your next calls must repair those failed targets (inspect+retry same targets). Do NOT call \`${resolvedFinishToolName}\` until they succeed.
+11. **WRITE FAILURE REPAIR MODE (TARGETED)**: If a writable write fails, prioritize repairing failed targets (inspect+retry same targets), but block finish ONLY for blocking errors (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
+    - Non-blocking failures may be reported while preserving successful tool-call results.
     - After repair succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\` (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\` in normal turns, \`vfs_finish_soul\` in \`[Player Rate]\`).
-12. **NO COMMIT SPAM**: Repeating \`${resolvedFinishToolName}\` while failed writable targets remain unresolved is invalid.
+12. **NO COMMIT SPAM**: Repeating \`${resolvedFinishToolName}\` while blocking failed targets remain unresolved is invalid.
 13. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 14. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
 15. **NO DUPLICATES**: Check existing files before adding new entities.
@@ -204,7 +205,7 @@ You are in CLEANUP MODE (VFS-only).
 8. **APPLY FIXES**: Use split write tools (\`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_write_markdown\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\`) as needed.
 9. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_finish_turn"}\`.
 10. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
-11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, next calls must repair those failed targets first; do not finish until resolved.
+11. **WRITE FAILURE REPAIR MODE (TARGETED)**: If a writable write fails, next calls should repair failed targets first, but finish is blocked only by blocking errors (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
     - After repair succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\`.
 12. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 

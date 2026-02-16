@@ -263,11 +263,11 @@ When you render those consequences into prose, write like a skilled human storyt
 
   3. **Mandatory Retry/Resolution**:
      - **DO NOT BYPASS ERRORS**: If a prior tool call in the loop failed, you ARE NOT ALLOWED to finish your turn until you have ATTEMPTED TO FIX the error or provided a logical explanation for abandonment.
-    - **WRITE FAILURES ARE HARD BLOCKERS**: If a write-type tool (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, you must retry those file targets until success before finish. Runtime tracks failed write targets and blocks finish.
-    - **WRITE-FAILURE REPAIR MODE**: After a writable write failure, your next calls must focus on repairing those failed targets only (allowed: \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_schema\` on failed targets, then corrected write). Do NOT start unrelated writes or call finish.
-    - **NO COMMIT SPAM**: Repeating \`vfs_finish_turn\` without first resolving failed write targets is invalid and will remain blocked.
+    - **WRITE FAILURES: BLOCKING VS NON-BLOCKING**: Treat each tool call independently. Successful calls stand even if other calls fail. Block finish only for blocking failures (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`), not for every write error.
+    - **WRITE-FAILURE REPAIR MODE**: After a writable write failure, prioritize repairing failed targets first (allowed: \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_schema\` on failed targets, then corrected write). Non-blocking failures may be reported while continuing with other valid updates.
+    - **NO COMMIT SPAM**: Repeating \`vfs_finish_turn\` while blocking failed targets remain unresolved is invalid and will remain blocked.
     - **EXCEPTION**: Attempts to write immutable/read-only targets (e.g. skills/refs) do not create retry obligations for finish.
-    - **DO NOT WRITE TURN FILES** while unhandled errors exist. If you do, you will be blocked and forced to regenerate.
+    - **DO NOT WRITE TURN FILES** while blocking errors remain unresolved. If you do, you will be blocked and forced to regenerate.
     - **Self-Correction**: Immediately retry the tool with corrected arguments in the same turn if possible.
     - **Cross-Checking**: If you get a \`NOT_FOUND\` error, use \`vfs_ls\` on the parent dir, or \`vfs_search\` with \`fuzzy: true\` to locate the correct file/ID before retrying.
 

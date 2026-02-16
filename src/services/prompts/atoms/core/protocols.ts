@@ -68,7 +68,7 @@ const errorRecovery = `
   2. If present, follow \`details.recovery\` and open \`details.refs\`
   3. Look for "Did you mean: ...?" suggestions
   4. Retry with corrected arguments OR search files to find correct IDs
-  5. Do NOT finish the turn while errors remain unhandled
+  5. Do NOT finish while blocking errors remain unresolved (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`)
 
   **Self-Correction**:
   - If \`NOT_FOUND\`, use \`vfs_ls\` on the parent dir, then \`vfs_search\` with \`fuzzy: true\` to locate the correct path/ID
@@ -77,8 +77,8 @@ const errorRecovery = `
   - If patch reports path/add/schema mismatch, stop repeating the same payload; inspect parent pointers/path first and switch strategy
   - If \`ALREADY_EXISTS\`, read target content first (\`vfs_read_json\`/\`vfs_read_markdown\`/\`vfs_read_lines\` as appropriate), then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement)
   - If \`FINISH_GUARD_REQUIRED\`, use the loop's finish tool (never generic mutation tools on guarded paths)
-  - After writable write failure, enter repair mode: next calls target only failed writes (inspect+retry) until resolved
-  - Do NOT call finish repeatedly while writable failed targets remain
+  - After writable write failure, enter repair mode for failed targets first; block finish only when the failure is blocking (hard gate / required-write-retry)
+  - Do NOT call finish repeatedly while blocking failed targets remain unresolved
   - If you cannot fix, explain in narrative why
 </error_recovery_protocol>
 `;

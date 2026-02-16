@@ -81,10 +81,11 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
 
   **TURN COMPLETION**:
   - Your LAST tool call must be \`${finishToolName}\`.
-  - If a write to existing writable target(s) fails, enter repair mode: next calls must inspect/retry those failed targets until they succeed.
+  - If a write to existing writable target(s) fails, enter repair mode: next calls should inspect/retry those failed targets first.
+  - Finish is blocked only for blocking failures (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
   - Missing-target write failures are non-blocking: finish may proceed, but retry if creating that target is still required.
   - Policy/permission-denied write failures are non-blocking for finish: switch to an allowed path/operation or report blocker.
-  - Do not spam \`${finishToolName}\` while failed writable targets remain unresolved.
+  - Do not spam \`${finishToolName}\` while blocking failed writable targets remain unresolved.
   - If the same write error repeats, change strategy first (inspect schema/pointers/path), then retry.
   - Immutable/read-only write failures (skills/refs etc.) are exempt from the retry-before-finish requirement.
   - For large JSON files, prefer \`vfs_read_json\` with narrow \`pointers\` (or bounded \`vfs_read_lines\`), and avoid full-file \`vfs_read_chars\` by default.
