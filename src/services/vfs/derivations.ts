@@ -904,42 +904,61 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       pickMeaningfulCharacterText(
         visible.title,
         visible.roleTag,
+        profile.title,
+        profile.roleTag,
         outlineVisible.title,
         outlineVisible.roleTag,
+        outlinePlayer.title,
+        outlinePlayer.roleTag,
         base.title,
       ) ?? "";
 
     const age =
-      pickMeaningfulCharacterText(visible.age, outlineVisible.age, base.age) ??
-      "";
+      pickMeaningfulCharacterText(
+        visible.age,
+        profile.age,
+        outlineVisible.age,
+        outlinePlayer.age,
+        base.age,
+      ) ?? "";
 
     const profession =
       pickMeaningfulCharacterText(
         visible.profession,
         visible.roleTag,
+        profile.profession,
+        profile.roleTag,
         outlineVisible.profession,
         outlineVisible.roleTag,
+        outlinePlayer.profession,
+        outlinePlayer.roleTag,
         base.profession,
       ) ?? "";
 
     const race =
       pickMeaningfulCharacterText(
         visible.race,
+        profile.race,
         outlineVisible.race,
+        outlinePlayer.race,
         base.race,
       ) ?? "";
 
     const background =
       pickMeaningfulCharacterText(
         visible.background,
+        profile.background,
         outlineVisible.background,
+        outlinePlayer.background,
         base.background,
       ) ?? "";
 
     const status =
       pickMeaningfulCharacterText(
         visible.status,
+        profile.status,
         outlineVisible.status,
+        outlinePlayer.status,
         base.status,
       ) ?? "";
 
@@ -947,8 +966,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       pickMeaningfulCharacterText(
         visible.appearance,
         visible.description,
+        profile.appearance,
+        profile.description,
         outlineVisible.appearance,
         outlineVisible.description,
+        outlinePlayer.appearance,
+        outlinePlayer.description,
         base.appearance,
       ) ??
       (base.appearance || "");
@@ -966,7 +989,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       name:
         pickMeaningfulCharacterText(
           visible.name,
+          profile.name,
           outlineVisible.name,
+          outlinePlayer.name,
           base.name,
         ) ?? base.name,
       title,
@@ -998,13 +1023,17 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       source: "playerBundle",
       playerActorId: state.playerActorId,
       visibleAge: visible.age,
+      profileAge: profile.age,
       outlineAge: outlineVisible.age,
+      outlineProfileAge: outlinePlayer.age,
     });
     warnMissingPlayerRequiredField("race", state.character.race, {
       source: "playerBundle",
       playerActorId: state.playerActorId,
       visibleRace: visible.race,
+      profileRace: profile.race,
       outlineRace: outlineVisible.race,
+      outlineProfileRace: outlinePlayer.race,
     });
   }
 
@@ -1102,23 +1131,30 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
           outlineVisible.roleTag,
         ) ?? "",
       age:
-        pickMeaningfulCharacterText(currentCharacter.age, outlineVisible.age) ??
-        "",
+        pickMeaningfulCharacterText(
+          currentCharacter.age,
+          outlineVisible.age,
+          outlineProfile.age,
+        ) ?? "",
       profession:
         pickMeaningfulCharacterText(
           currentCharacter.profession,
           outlineVisible.profession,
           outlineVisible.roleTag,
+          outlineProfile.profession,
+          outlineProfile.roleTag,
         ) ?? "",
       race:
         pickMeaningfulCharacterText(
           currentCharacter.race,
           outlineVisible.race,
+          outlineProfile.race,
         ) ?? "",
       background:
         pickMeaningfulCharacterText(
           currentCharacter.background,
           outlineVisible.background,
+          outlineProfile.background,
         ) ?? "",
       currentLocation:
         pickMeaningfulCharacterText(
@@ -1139,11 +1175,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       source: "outlineFallback",
       playerActorId: state.playerActorId,
       outlineAge: outlineVisible.age,
+      outlineProfileAge: outlineProfile.age,
     });
     warnMissingPlayerRequiredField("race", state.character.race, {
       source: "outlineFallback",
       playerActorId: state.playerActorId,
       outlineRace: outlineVisible.race,
+      outlineProfileRace: outlineProfile.race,
     });
   }
 

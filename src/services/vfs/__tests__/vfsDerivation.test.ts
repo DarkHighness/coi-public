@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { VfsFileMap } from "../types";
 import { hashContent } from "../utils";
 import { deriveGameStateFromVfs } from "../derivations";
@@ -157,6 +157,53 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.character.race).toBe("");
     expect(state.character.age).not.toBe("Unknown");
     expect(state.character.race).not.toBe("Unknown");
+  });
+
+  it("falls back to root-level player profile fields when visible fields are missing", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const files: VfsFileMap = {
+        "world/characters/char:player/profile.json": makeJsonFile(
+          "world/characters/char:player/profile.json",
+          {
+            id: "char:player",
+            kind: "player",
+            currentLocation: "loc:inn",
+            knownBy: ["char:player"],
+            age: "26",
+            race: "Elf Female",
+            profession: "Ranger",
+            background: "Raised by forest wardens.",
+            title: "Scout Captain",
+            visible: {
+              name: "Arin",
+              status: "Healthy",
+              attributes: [],
+              appearance: "Travel-worn",
+            },
+            relations: [],
+          },
+        ),
+      };
+
+      const state = deriveGameStateFromVfs(files);
+
+      expect(state.character.age).toBe("26");
+      expect(state.character.race).toBe("Elf Female");
+      expect(state.character.profession).toBe("Ranger");
+      expect(state.character.background).toBe("Raised by forest wardens.");
+      expect(state.character.title).toBe("Scout Captain");
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        "[VFS] Player required field missing: age",
+        expect.anything(),
+      );
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        "[VFS] Player required field missing: race",
+        expect.anything(),
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it("throws on legacy world/character.json saves", () => {
