@@ -10,7 +10,7 @@ describe("ToolCallCarousel", () => {
       <ToolCallCarousel
         calls={[
           {
-            name: "vfs_read",
+            name: "vfs_read_lines",
             input: { path: "current/world/global.json" },
             output: null,
             timestamp: Date.now(),
@@ -37,8 +37,8 @@ describe("ToolCallCarousel", () => {
       <ToolCallCarousel
         calls={[
           {
-            name: "vfs_mutate",
-            input: { ops: [] },
+            name: "vfs_write_file",
+            input: { path: "current/world/notes.md", content: "hello" },
             output: { success: true },
             timestamp: Date.now(),
           },
@@ -47,6 +47,6 @@ describe("ToolCallCarousel", () => {
     );
 
     expect(screen.queryByText(/Context \d+%/i)).toBeNull();
-    expect(screen.getByText(/vfs_mutate\(\.\.\.\)/i)).toBeTruthy();
+    expect(screen.getByText(/vfs_write_file\(\.\.\.\)/i)).toBeTruthy();
   });
 });

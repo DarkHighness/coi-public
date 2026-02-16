@@ -143,7 +143,7 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_write",
-              name: "vfs_mutate",
+              name: "vfs_write_file",
               args: {
                 ops: [
                   {
@@ -183,7 +183,7 @@ describe("callWithAgenticRetry behavior", () => {
       ...makeRequest(),
       tools: [
         {
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           description: "write",
           parameters: z
             .object({
@@ -252,7 +252,7 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_write",
-              name: "vfs_mutate",
+              name: "vfs_write_file",
               args: {
                 invalid: true,
               },
@@ -278,7 +278,7 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_ok",
-              name: "vfs_mutate",
+              name: "vfs_write_file",
               args: {
                 ops: [
                   {
@@ -299,7 +299,7 @@ describe("callWithAgenticRetry behavior", () => {
       ...makeRequest(),
       tools: [
         {
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           description: "write",
           parameters: z
             .object({
@@ -362,7 +362,7 @@ describe("callWithAgenticRetry behavior", () => {
     expect(toolParts).toHaveLength(2);
 
     const writeResult = toolParts.find(
-      (part: any) => part.toolResult.name === "vfs_mutate",
+      (part: any) => part.toolResult.name === "vfs_write_file",
     )?.toolResult?.content as any;
     const commitResult = toolParts.find(
       (part: any) => part.toolResult.name === "vfs_finish_turn",
@@ -370,7 +370,7 @@ describe("callWithAgenticRetry behavior", () => {
 
     expect(writeResult?.code).toBe("INVALID_PARAMETERS");
     expect(writeResult?.error).toContain(
-      'arguments you provided to "vfs_mutate" were invalid',
+      'arguments you provided to "vfs_write_file" were invalid',
     );
 
     expect(commitResult?.code).toBe("INVALID_PARAMETERS");
@@ -425,7 +425,7 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_outline_invalid",
-              name: "vfs_finish_outline",
+              name: "vfs_finish_outline_phase_0",
               args: {
                 phase: "1",
                 data: { storyPlanMarkdown: "# x" },
@@ -444,7 +444,7 @@ describe("callWithAgenticRetry behavior", () => {
       messages: [],
       tools: [
         {
-          name: "vfs_finish_outline",
+          name: "vfs_finish_outline_phase_0",
           description: "outline submit",
           parameters: z.discriminatedUnion("phase", [
             z

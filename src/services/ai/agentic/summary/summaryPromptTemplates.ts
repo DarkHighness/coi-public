@@ -71,14 +71,14 @@ Required read sequence:
 2) \`current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json\`
 3) \`forks/${runtime.targetForkId}/story/summary/state.json\`
 4) \`current/summary/state.json\` (ONLY safe when active fork == target fork)
-5) Optional context recall: \`current/conversation/session.jsonl\` via query-style reads only (vfs_read lines window or vfs_search)
+5) Optional context recall: \`current/conversation/session.jsonl\` via query-style reads only (vfs_read_chars/vfs_read_lines/vfs_read_json lines window or vfs_search)
 
 Hard constraints:
 - ONLY summarize target fork ${runtime.targetForkId}; NEVER cross forks.
 - Do NOT summarize outside the specified summary range.
 - Keep continuity with existing summaries and established story facts.
 - If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
-- If uncertain, use read-only VFS tools first (vfs_read/vfs_search).
+- If uncertain, use read-only VFS tools first (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search).
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
 - In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
 - Output summary content only. Never mention tools/retries/errors/budgets.`;
@@ -164,6 +164,6 @@ export const buildCompactModeTriggerMessage = (input: {
     `- Keep handoff narrow: avoid broad catalog-only references such as \`current/skills/index.json\` unless no specific skill can be named.\n` +
     `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
     `If compact skill files are unavailable, continue with protocol-safe tool usage and keep finish last.\n` +
-    `If you need to verify details, use read-only VFS tools (vfs_read/vfs_search/etc.) and stay on target fork only.`
+    `If you need to verify details, use read-only VFS tools (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search/etc.) and stay on target fork only.`
   );
 };

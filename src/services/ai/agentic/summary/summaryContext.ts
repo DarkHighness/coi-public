@@ -80,7 +80,7 @@ ${toolList}
 Read-only tools:
 1. \`vfs_ls\` - Locate files, pattern-match with \`patterns\`, and optionally inspect metadata via \`stat=true\`
 2. \`vfs_schema\` - Inspect expected JSON fields for a path (read-only)
-3. \`vfs_read\` - Read VFS files by chars, lines, or JSON pointers for exact details
+3. \`vfs_read_chars/vfs_read_lines/vfs_read_json\` - Read VFS files by chars, lines, or JSON pointers for exact details
 4. \`vfs_search\` - Find details in the VFS (read-only)
 
 Finish tool:
@@ -104,7 +104,7 @@ Notes policy:
 - Soul files are mandatory memory anchors for summary alignment.
 
 When historical continuity is unclear, query \`current/conversation/session.jsonl\` in windows:
-- Use \`vfs_read\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.
+- Use \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.
 - Do NOT full-read large session.jsonl files in one call.
 
 Next-session handoff (\`nextSessionReferencesMarkdown\`):
@@ -125,13 +125,13 @@ Structured error recovery flow (if a tool returns \`{ success:false, code, error
 
 <examples>
 - Example (read just fields, cheaper than full file):
-  Call \`vfs_read\` with:
+  Call \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with:
   - path: \`current/summary/state.json\`
   - mode: \`"json"\`
   - pointers: \`["/lastSummarizedIndex", "/summaries/-1/displayText"]\`
 
 - Example (query session history safely):
-  Call \`vfs_read\` with:
+  Call \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with:
   - path: \`current/conversation/session.jsonl\`
   - mode: \`"lines"\`
   - startLine: \`1\`

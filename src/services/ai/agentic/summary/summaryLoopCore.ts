@@ -33,6 +33,7 @@ import {
   createSummaryLoopState,
 } from "./summaryInitializer";
 import type { SummaryAgenticLoopResult, SummaryLoopInput } from "./summary";
+import { isReadOnlyInspectionToolName } from "../common/toolCallPolicies";
 
 const SUMMARY_PATH_ARG_KEYS = new Set([
   "path",
@@ -203,7 +204,9 @@ const checkSummarySoulReadGate = (
       error: string;
       code: "SOUL_NOT_READ";
     } => {
-  const hasNonReadCall = functionCalls.some((call) => call.name !== "vfs_read");
+  const hasNonReadCall = functionCalls.some(
+    (call) => !isReadOnlyInspectionToolName(call.name),
+  );
   if (!hasNonReadCall) {
     return null;
   }
@@ -232,7 +235,7 @@ const checkSummarySoulReadGate = (
     success: false,
     error:
       `[ERROR: SOUL_NOT_READ] Read required soul anchors before non-read tools: ${shown}. ` +
-      "Action: call vfs_read on each missing anchor once, then continue.",
+      "Action: call vfs_read_chars/vfs_read_lines/vfs_read_json on each missing anchor once, then continue.",
     code: "SOUL_NOT_READ",
   };
 };

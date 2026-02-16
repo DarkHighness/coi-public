@@ -77,7 +77,7 @@ const buildDiscriminatorTypeHint = (error: ZodError): string | null => {
 };
 
 const buildToolDocBoundedReadHint = (toolDocRef: string): string =>
-  `Use \`vfs_read({ path: "${toolDocRef}", mode: "lines", startLine: 1, lineCount: 200 })\` before retrying (avoid unbounded \`vfs_read({ path: "${toolDocRef}" })\`).`;
+  `Use \`vfs_read_lines({ path: "${toolDocRef}", startLine: 1, lineCount: 200  })\` before retrying (avoid unbounded \`vfs_read_chars({ path: "${toolDocRef}" })\`).`;
 
 const buildInvalidParametersMessage = (params: {
   toolName: string;

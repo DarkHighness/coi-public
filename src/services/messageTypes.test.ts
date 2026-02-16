@@ -45,7 +45,7 @@ describe("messageTypes", () => {
             type: "tool_use",
             toolUse: {
               id: "call_2",
-              name: "vfs_read",
+              name: "vfs_read_chars",
               args: { path: "a" },
               thoughtSignature: "sig-1",
             },
@@ -53,7 +53,7 @@ describe("messageTypes", () => {
         ],
       },
       createToolResponseMessage([
-        { toolCallId: "call_2", name: "vfs_read", content: { ok: true } },
+        { toolCallId: "call_2", name: "vfs_read_chars", content: { ok: true } },
       ]),
       {
         role: "user",
@@ -74,7 +74,7 @@ describe("messageTypes", () => {
         {
           functionCall: {
             id: "call_2",
-            name: "vfs_read",
+            name: "vfs_read_chars",
             args: { path: "a" },
           },
           thoughtSignature: "sig-1",
@@ -88,7 +88,7 @@ describe("messageTypes", () => {
         {
           functionResponse: {
             id: "call_2",
-            name: "vfs_read",
+            name: "vfs_read_chars",
             response: { content: { ok: true } },
           },
         },
@@ -150,7 +150,7 @@ describe("messageTypes", () => {
 
   it("preserves tool result id in Gemini round-trip", () => {
     const source = createToolResponseMessage([
-      { toolCallId: "call_123", name: "vfs_read", content: { ok: true } },
+      { toolCallId: "call_123", name: "vfs_read_chars", content: { ok: true } },
     ]);
 
     const gemini = toGeminiFormat([source]);
@@ -164,7 +164,7 @@ describe("messageTypes", () => {
             type: "tool_result",
             toolResult: {
               id: "call_123",
-              name: "vfs_read",
+              name: "vfs_read_chars",
               content: { ok: true },
             },
           },
@@ -192,7 +192,7 @@ describe("messageTypes", () => {
       },
       createToolResponseMessage([
         { toolCallId: "call_3", name: "vfs_search", content: { results: [1] } },
-        { toolCallId: "call_4", name: "vfs_read", content: "raw" },
+        { toolCallId: "call_4", name: "vfs_read_chars", content: "raw" },
       ]),
       {
         role: "user",

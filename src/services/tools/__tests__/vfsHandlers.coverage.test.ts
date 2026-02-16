@@ -18,7 +18,7 @@ describe("VFS handlers additional coverage", () => {
     expect(result.error).toContain("includeExpected");
   });
 
-  it("requires pointers for vfs_read(json)", () => {
+  it("requires pointers for vfs_read_json", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/test.json",
@@ -28,17 +28,17 @@ describe("VFS handlers additional coverage", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_read",
-      { path: "current/world/test.json", mode: "json" },
+      "vfs_read_json",
+      { path: "current/world/test.json" },
       ctx,
     ) as any;
 
     expect(result.success).toBe(false);
-    expect(result.code).toBe("INVALID_DATA");
+    expect(result.code).toBe("INVALID_PARAMS");
     expect(result.error).toContain("pointers");
   });
 
-  it("rejects vfs_read(json) when file contents are invalid JSON", () => {
+  it("rejects vfs_read_json when file contents are invalid JSON", () => {
     const session = new VfsSession();
     session.restore({
       "world/bad.json": {
@@ -53,8 +53,8 @@ describe("VFS handlers additional coverage", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_read",
-      { path: "current/world/bad.json", mode: "json", pointers: ["/"] },
+      "vfs_read_json",
+      { path: "current/world/bad.json", pointers: ["/"] },
       ctx,
     ) as any;
 
@@ -63,7 +63,7 @@ describe("VFS handlers additional coverage", () => {
     expect(result.error).toContain("Invalid JSON");
   });
 
-  it("supports successful line-window reads in vfs_read(lines)", () => {
+  it("supports successful line-window reads in vfs_read_lines", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/lines.txt",
@@ -73,13 +73,8 @@ describe("VFS handlers additional coverage", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_read",
-      {
-        path: "current/world/lines.txt",
-        mode: "lines",
-        startLine: 2,
-        lineCount: 2,
-      },
+      "vfs_read_lines",
+      { path: "current/world/lines.txt", startLine: 2, lineCount: 2 },
       ctx,
     ) as any;
 
@@ -91,28 +86,23 @@ describe("VFS handlers additional coverage", () => {
     expect(result.data.truncated).toBe(true);
   });
 
-  it("rejects vfs_mutate to JSON paths with non-JSON contentType", () => {
+  it("rejects vfs_write_file to JSON paths with non-JSON contentType", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_mutate",
+      "vfs_write_file",
       {
-        ops: [
-          {
-            op: "write_file",
-            path: "current/world/global.json",
-            content: JSON.stringify({ ok: true }),
-            contentType: "text/plain",
-          },
-        ],
+        path: "current/world/global.json",
+        content: JSON.stringify({ ok: true }),
+        contentType: "text/plain",
       },
       ctx,
     ) as any;
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.details?.tool).toBe("vfs_mutate");
+    expect(result.details?.tool).toBe("vfs_write_file");
     expect(result.error).toContain("application/json");
   });
 
@@ -121,15 +111,10 @@ describe("VFS handlers additional coverage", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_mutate",
+      "vfs_write_file",
       {
-        ops: [
-          {
-            op: "write_file",
-            path: "current/world/mystery_blob",
-            content: "opaque",
-          },
-        ],
+        path: "current/world/mystery_blob",
+        content: "opaque",
       },
       ctx,
     ) as any;
@@ -144,23 +129,18 @@ describe("VFS handlers additional coverage", () => {
     const ctx = { vfsSession: session };
 
     const result = (await dispatchToolCallAsync(
-      "vfs_mutate",
+      "vfs_append_text",
       {
-        ops: [
-          {
-            op: "append_text",
-            path: "current/world/notes.md",
-            content: "abcdefghij",
-            maxTotalChars: 5,
-          },
-        ],
+        path: "current/world/notes.md",
+        content: "abcdefghij",
+        maxTotalChars: 5,
       },
       ctx,
     )) as any;
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
-    expect(result.details?.tool).toBe("vfs_mutate");
+    expect(result.details?.tool).toBe("vfs_append_text");
     expect(result.error).toContain("maxTotalChars");
   });
 
@@ -183,22 +163,17 @@ describe("VFS handlers additional coverage", () => {
       "application/json",
     );
     const ctx = { vfsSession: session };
-    dispatchToolCall("vfs_read", { path: "current/world/global.json" }, ctx);
+    dispatchToolCall("vfs_read_chars", { path: "current/world/global.json" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_mutate",
+      "vfs_patch_json",
       {
-        ops: [
+        path: "current/world/global.json",
+        patch: [
           {
-            op: "patch_json",
-            path: "current/world/global.json",
-            patch: [
-              {
-                op: "replace",
-                path: "/atmosphere/weather",
-                value: "INVALID_WEATHER",
-              },
-            ],
+            op: "replace",
+            path: "/atmosphere/weather",
+            value: "INVALID_WEATHER",
           },
         ],
       },
@@ -217,19 +192,14 @@ describe("VFS handlers additional coverage", () => {
     session.writeFile("world/notes.md", "hello", "text/markdown");
     const ctx = { vfsSession: session };
 
-    dispatchToolCall("vfs_read", { path: "current/world/notes.md" }, ctx);
+    dispatchToolCall("vfs_read_chars", { path: "current/world/notes.md" }, ctx);
 
     const result = dispatchToolCall(
-      "vfs_mutate",
+      "vfs_append_text",
       {
-        ops: [
-          {
-            op: "append_text",
-            path: "current/world/notes.md",
-            content: "world",
-            expectedHash: "deadbeef",
-          },
-        ],
+        path: "current/world/notes.md",
+        content: "world",
+        expectedHash: "deadbeef",
       },
       ctx,
     ) as any;

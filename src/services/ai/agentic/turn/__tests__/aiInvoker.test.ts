@@ -200,7 +200,7 @@ describe("aiInvoker", () => {
 
     const functionCalls = [
       { name: "vfs_ls", args: { path: "a" } },
-      { id: "keep-id", name: "vfs_read", args: { path: "b" } },
+      { id: "keep-id", name: "vfs_read_chars", args: { path: "b" } },
     ] as any;
 
     ensureToolCallIds(functionCalls);

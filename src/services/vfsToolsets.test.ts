@@ -26,10 +26,10 @@ describe("vfsToolsets", () => {
     expect(toolsets.turn.tools).not.toContain("vfs_finish_soul");
     expect(toolsets.playerRate.tools).toContain("vfs_finish_soul");
     expect(toolsets.playerRate.tools).not.toContain("vfs_finish_turn");
-    expect(toolsets.playerRate.tools).not.toContain("vfs_mutate");
+    expect(toolsets.playerRate.tools).not.toContain("vfs_write_file");
     expect(toolsets.cleanup.tools).not.toContain("vfs_finish_summary");
     expect(toolsets.summary.tools).toContain("vfs_finish_summary");
-    expect(toolsets.outline.tools).toContain("vfs_finish_outline");
+    expect(toolsets.outline.tools).toContain("vfs_finish_outline_phase_0");
     expect(toolsets.outline.tools).not.toContain("vfs_finish_turn");
     expect(toolsets.outline.tools).not.toContain("vfs_finish_summary");
   });
@@ -37,14 +37,14 @@ describe("vfsToolsets", () => {
   it("formats tool list for prompts with markdown bullets", () => {
     const output = formatVfsToolsForPrompt([
       "vfs_ls",
-      "vfs_read",
+      "vfs_read_chars",
       "vfs_finish_turn",
     ]);
-    expect(output).toBe("- `vfs_ls`\n- `vfs_read`\n- `vfs_finish_turn`");
+    expect(output).toBe("- `vfs_ls`\n- `vfs_read_chars`\n- `vfs_finish_turn`");
   });
 
   it("formats capability contract with one line per tool", () => {
-    const tools = ["vfs_ls", "vfs_mutate", "vfs_finish_turn"];
+    const tools = ["vfs_ls", "vfs_write_file", "vfs_finish_turn"];
     const output = formatVfsToolCapabilitiesForPrompt(tools);
     const lines = output.split("\n");
 
@@ -55,7 +55,7 @@ describe("vfsToolsets", () => {
   });
 
   it("includes elevation and immutable notes in capability contract", () => {
-    const output = formatVfsToolCapabilitiesForPrompt(["vfs_mutate"]);
+    const output = formatVfsToolCapabilitiesForPrompt(["vfs_write_file"]);
 
     expect(output).toContain(
       "elevated_editable requires one-time user-confirmed token",

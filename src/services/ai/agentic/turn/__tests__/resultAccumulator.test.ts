@@ -89,11 +89,11 @@ describe("resultAccumulator", () => {
       "openai",
       "m1",
       2,
-      [{ name: "vfs_read", input: { path: "x" }, output: { ok: true } }],
+      [{ name: "vfs_read_chars", input: { path: "x" }, output: { ok: true } }],
       usage,
     );
     expect(iterationLog.endpoint).toBe("adventure-iteration-2");
-    expect(iterationLog.toolCalls?.[0]?.name).toBe("vfs_read");
+    expect(iterationLog.toolCalls?.[0]?.name).toBe("vfs_read_chars");
     expect(iterationLog.usage).toEqual(usage);
 
     const finalLog = createFinalLog(

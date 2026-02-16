@@ -179,7 +179,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
       ],
@@ -188,7 +188,7 @@ describe("agenticLoop command skill gate", () => {
     const onToolCallsUpdate = vi.fn();
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_read") {
+      if (name === "vfs_read_chars") {
         return {
           success: true,
           path: "current/skills/commands/runtime/sudo/SKILL.md",
@@ -208,7 +208,7 @@ describe("agenticLoop command skill gate", () => {
         functionCalls: [
           {
             id: "call-1-read",
-            name: "vfs_read",
+            name: "vfs_read_chars",
             args: { path: "current/skills/commands/runtime/sudo/SKILL.md" },
           },
         ],
@@ -223,7 +223,7 @@ describe("agenticLoop command skill gate", () => {
         functionCalls: [
           {
             id: "call-2-edit",
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             args: { ops: [] },
           },
         ],
@@ -247,7 +247,7 @@ describe("agenticLoop command skill gate", () => {
 
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
     const onlyReadCalls = toolProcessorMock.executeGenericTool.mock.calls.every(
-      (call) => call[0] === "vfs_read",
+      (call) => call[0] === "vfs_read_chars",
     );
     expect(onlyReadCalls).toBe(true);
   });
@@ -265,7 +265,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
       ],
@@ -352,7 +352,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
       ],
@@ -465,7 +465,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
       ],
@@ -507,7 +507,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
         {
@@ -561,7 +561,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-cross-fork-read",
-          name: "vfs_read",
+          name: "vfs_read_chars",
           args: { path: "conversation/turns/fork-3/turn-1.json" },
         },
       ],
@@ -598,7 +598,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
       ],
@@ -638,7 +638,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-culture-blocked",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
       ],
@@ -687,7 +687,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
         {

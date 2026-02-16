@@ -71,7 +71,7 @@ describe("VFS handlers search/commit", () => {
     expect(commit.data.turnId).toBe("fork-0/turn-1");
 
     const index = dispatchToolCall(
-      "vfs_read",
+      "vfs_read_chars",
       { path: "current/conversation/index.json" },
       ctx,
     ) as any;
@@ -117,7 +117,7 @@ describe("VFS handlers search/commit", () => {
     expect(commit.data.updated).toContain("current/world/global/soul.md");
 
     const currentSoul = dispatchToolCall(
-      "vfs_read",
+      "vfs_read_chars",
       { path: "current/world/soul.md" },
       ctx,
     ) as any;
@@ -125,7 +125,7 @@ describe("VFS handlers search/commit", () => {
     expect(currentSoul.data.content).toContain("Player Soul (This Save)");
 
     const globalSoul = dispatchToolCall(
-      "vfs_read",
+      "vfs_read_chars",
       { path: "current/world/global/soul.md" },
       ctx,
     ) as any;

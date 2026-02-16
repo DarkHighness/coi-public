@@ -35,7 +35,7 @@ describe("geminiProvider helpers", () => {
           type: "tool_use",
           toolUse: {
             id: "call-1",
-            name: "vfs_read",
+            name: "vfs_read_chars",
             args: { path: "current/world/README.md" },
             thoughtSignature: "sig-1",
           },
@@ -47,7 +47,7 @@ describe("geminiProvider helpers", () => {
     expect(content.parts[0]).toMatchObject({ text: "I will read state" });
     expect(content.parts[1]).toMatchObject({
       functionCall: {
-        name: "vfs_read",
+        name: "vfs_read_chars",
         args: { path: "current/world/README.md" },
       },
       thoughtSignature: "sig-1",
@@ -56,7 +56,7 @@ describe("geminiProvider helpers", () => {
 
   it("builds function response payload with content envelope", () => {
     const content = buildFunctionResponseMessage([
-      { name: "vfs_read", response: { ok: true, text: "body" } },
+      { name: "vfs_read_chars", response: { ok: true, text: "body" } },
     ]);
 
     expect(content).toEqual({
@@ -64,7 +64,7 @@ describe("geminiProvider helpers", () => {
       parts: [
         {
           functionResponse: {
-            name: "vfs_read",
+            name: "vfs_read_chars",
             response: { content: { ok: true, text: "body" } },
           },
         },
@@ -94,7 +94,7 @@ describe("geminiProvider helpers", () => {
           type: "tool_result",
           toolResult: {
             id: "call-1",
-            name: "vfs_read",
+            name: "vfs_read_chars",
             content: { lines: ["a", "b"] },
           },
         },
@@ -104,7 +104,7 @@ describe("geminiProvider helpers", () => {
     expect(converted.role).toBe("user");
     expect(converted.parts[0]).toMatchObject({
       functionResponse: {
-        name: "vfs_read",
+        name: "vfs_read_chars",
         response: { content: { lines: ["a", "b"] } },
       },
     });
@@ -211,7 +211,7 @@ describe("geminiProvider helpers", () => {
           type: "tool_use",
           toolUse: {
             id: "x",
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             args: { path: "current/world/story.json" },
             thoughtSignature: "sig-x",
           },
@@ -225,7 +225,7 @@ describe("geminiProvider helpers", () => {
         { text: "prep" },
         {
           functionCall: {
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             args: { path: "current/world/story.json" },
           },
           thoughtSignature: "sig-x",

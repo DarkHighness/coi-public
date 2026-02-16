@@ -56,21 +56,21 @@ describe("outlinePrompts", () => {
   });
 
   it("routes each phase to corresponding prompt builder", () => {
-    expect(getPhasePrompt(0, "vfs_finish_outline", sharedContext)).toBe(
+    expect(getPhasePrompt(0, "vfs_finish_outline_phase_0", sharedContext)).toBe(
       "prelude\n\np0",
     );
     expect(promptsMock.getOutlinePhase0Prompt).toHaveBeenCalledWith(
       "en",
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
     );
     expect(promptsMock.getOutlinePhasePreludePrompt).toHaveBeenCalledWith(
       0,
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
       sharedContext,
     );
 
     expect(
-      getPhasePrompt(1, "vfs_finish_outline", {
+      getPhasePrompt(1, "vfs_finish_outline_phase_0", {
         ...sharedContext,
         language: "zh",
       }),
@@ -81,7 +81,7 @@ describe("outlinePrompts", () => {
       "ctx",
       true,
       "feat",
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
       {
         culturePreference: undefined,
         culturePreferenceSource: undefined,
@@ -93,7 +93,7 @@ describe("outlinePrompts", () => {
     );
 
     expect(
-      getPhasePrompt(2, "vfs_finish_outline", {
+      getPhasePrompt(2, "vfs_finish_outline_phase_0", {
         ...sharedContext,
         customContext: "ctx2",
         hasImageContext: false,
@@ -108,11 +108,11 @@ describe("outlinePrompts", () => {
       "ctx2",
       false,
       "hero",
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
     );
 
     expect(
-      getPhasePrompt(3, "vfs_finish_outline", {
+      getPhasePrompt(3, "vfs_finish_outline_phase_0", {
         ...sharedContext,
         customContext: undefined,
         hasImageContext: false,
@@ -121,50 +121,50 @@ describe("outlinePrompts", () => {
     ).toBe("prelude\n\np3");
     expect(promptsMock.getOutlinePhase2Prompt).toHaveBeenCalledWith(
       "hero",
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
     );
 
-    expect(getPhasePrompt(4, "vfs_finish_outline", sharedContext)).toBe(
+    expect(getPhasePrompt(4, "vfs_finish_outline_phase_0", sharedContext)).toBe(
       "prelude\n\np4",
     );
     expect(promptsMock.getOutlinePhase3Prompt).toHaveBeenCalledWith(
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
     );
 
-    expect(getPhasePrompt(5, "vfs_finish_outline", sharedContext)).toBe(
+    expect(getPhasePrompt(5, "vfs_finish_outline_phase_0", sharedContext)).toBe(
       "prelude\n\np5",
     );
-    expect(getPhasePrompt(6, "vfs_finish_outline", sharedContext)).toBe(
+    expect(getPhasePrompt(6, "vfs_finish_outline_phase_0", sharedContext)).toBe(
       "prelude\n\np6",
     );
-    expect(getPhasePrompt(7, "vfs_finish_outline", sharedContext)).toBe(
+    expect(getPhasePrompt(7, "vfs_finish_outline_phase_0", sharedContext)).toBe(
       "prelude\n\np7",
     );
-    expect(getPhasePrompt(8, "vfs_finish_outline", sharedContext)).toBe(
+    expect(getPhasePrompt(8, "vfs_finish_outline_phase_0", sharedContext)).toBe(
       "prelude\n\np8",
     );
 
     expect(
-      getPhasePrompt(9, "vfs_finish_outline", {
+      getPhasePrompt(9, "vfs_finish_outline_phase_0", {
         ...sharedContext,
         customContext: undefined,
       }),
     ).toBe("prelude\n\np9");
     expect(promptsMock.getOutlinePhase9Prompt).toHaveBeenCalledWith(
       true,
-      "vfs_finish_outline",
+      "vfs_finish_outline_phase_0",
     );
   });
 
   it("returns null for unknown phases", () => {
     expect(
-      getPhasePrompt(99, "vfs_finish_outline", sharedContext),
+      getPhasePrompt(99, "vfs_finish_outline_phase_0", sharedContext),
     ).toBeNull();
     expect(promptsMock.getOutlinePhasePreludePrompt).not.toHaveBeenCalled();
   });
 
   it("returns null when shared context is missing", () => {
-    expect(getPhasePrompt(0, "vfs_finish_outline")).toBeNull();
+    expect(getPhasePrompt(0, "vfs_finish_outline_phase_0")).toBeNull();
     expect(promptsMock.getOutlinePhasePreludePrompt).not.toHaveBeenCalled();
   });
 });

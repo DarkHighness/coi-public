@@ -5,26 +5,60 @@ import { vfsToolRegistry } from "./registry";
 import type { VfsToolHandlerKey, VfsToolName } from "./types";
 import {
   handleInspectLs,
-  handleInspectRead,
   handleInspectSchema,
   handleInspectSearch,
 } from "./handlers/inspect";
-import { handleMutate } from "./handlers/mutate";
 import { handleFinishTurn } from "./handlers/finishTurn";
 import { handleFinishSoul } from "./handlers/finishSoul";
 import { handleFinishSummary } from "./handlers/finishSummary";
-import { handleFinishOutline } from "./handlers/finishOutline";
+import { handleReadChars } from "./handlers/readChars";
+import { handleReadLines } from "./handlers/readLines";
+import { handleReadJson } from "./handlers/readJson";
+import { handleWriteFile } from "./handlers/writeFile";
+import { handleAppendText } from "./handlers/appendText";
+import { handleEditLines } from "./handlers/editLines";
+import { handlePatchJson } from "./handlers/patchJson";
+import { handleMergeJson } from "./handlers/mergeJson";
+import { handleMove } from "./handlers/move";
+import { handleDelete } from "./handlers/delete";
+import { handleFinishOutlinePhase0 } from "./handlers/finishOutlinePhase0";
+import { handleFinishOutlinePhase1 } from "./handlers/finishOutlinePhase1";
+import { handleFinishOutlinePhase2 } from "./handlers/finishOutlinePhase2";
+import { handleFinishOutlinePhase3 } from "./handlers/finishOutlinePhase3";
+import { handleFinishOutlinePhase4 } from "./handlers/finishOutlinePhase4";
+import { handleFinishOutlinePhase5 } from "./handlers/finishOutlinePhase5";
+import { handleFinishOutlinePhase6 } from "./handlers/finishOutlinePhase6";
+import { handleFinishOutlinePhase7 } from "./handlers/finishOutlinePhase7";
+import { handleFinishOutlinePhase8 } from "./handlers/finishOutlinePhase8";
+import { handleFinishOutlinePhase9 } from "./handlers/finishOutlinePhase9";
 
 const HANDLERS: Record<VfsToolHandlerKey, (args: Record<string, unknown>, ctx: ToolContext) => unknown | Promise<unknown>> = {
   inspect_ls: handleInspectLs,
   inspect_schema: handleInspectSchema,
-  inspect_read: handleInspectRead,
+  read_chars: handleReadChars,
+  read_lines: handleReadLines,
+  read_json: handleReadJson,
   inspect_search: handleInspectSearch,
-  mutate: handleMutate,
+  write_file: handleWriteFile,
+  append_text: handleAppendText,
+  edit_lines: handleEditLines,
+  patch_json: handlePatchJson,
+  merge_json: handleMergeJson,
+  move: handleMove,
+  delete: handleDelete,
   finish_turn: handleFinishTurn,
   finish_soul: handleFinishSoul,
   finish_summary: handleFinishSummary,
-  finish_outline: handleFinishOutline,
+  finish_outline_phase_0: handleFinishOutlinePhase0,
+  finish_outline_phase_1: handleFinishOutlinePhase1,
+  finish_outline_phase_2: handleFinishOutlinePhase2,
+  finish_outline_phase_3: handleFinishOutlinePhase3,
+  finish_outline_phase_4: handleFinishOutlinePhase4,
+  finish_outline_phase_5: handleFinishOutlinePhase5,
+  finish_outline_phase_6: handleFinishOutlinePhase6,
+  finish_outline_phase_7: handleFinishOutlinePhase7,
+  finish_outline_phase_8: handleFinishOutlinePhase8,
+  finish_outline_phase_9: handleFinishOutlinePhase9,
 };
 
 const MAX_VALIDATION_ISSUES = 8;

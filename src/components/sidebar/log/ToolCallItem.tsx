@@ -11,11 +11,13 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
   const isQuery = new Set([
     "vfs_ls",
     "vfs_schema",
-    "vfs_read",
+    "vfs_read_chars",
+    "vfs_read_lines",
+    "vfs_read_json",
     "vfs_search",
   ]).has(call.name);
 
-  const isOutlineCommit = call.name === "vfs_finish_outline";
+  const isOutlineCommit = call.name.startsWith("vfs_finish_outline_phase_");
 
   const isFinish =
     call.name === "vfs_finish_turn" ||

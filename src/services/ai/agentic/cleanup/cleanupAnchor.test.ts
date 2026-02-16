@@ -44,7 +44,7 @@ describe("generateEntityCleanup anchor and context forwarding", () => {
       "<target_turn_number>42</target_turn_number>",
     );
     expect(calledContext.userAction).toContain(
-      "use `vfs_read` to load command protocol (hub first)",
+      "use `vfs_read_chars/vfs_read_lines/vfs_read_json` to load command protocol (hub first)",
     );
     expect(calledContext.userAction).toContain(
       "current/skills/commands/runtime/SKILL.md",

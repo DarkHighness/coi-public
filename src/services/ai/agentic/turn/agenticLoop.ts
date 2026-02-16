@@ -712,7 +712,7 @@ function checkCommandSkillReadGate(
       error: `[ERROR: COMMAND_SKILL_NOT_READ] You must read required command skill file(s) in current epoch before non-read tools: ${missing
         .length > 0
         ? formatPathPreview(missing)
-        : "(none)"}.\nAction: call vfs_read on each missing file first.`,
+        : "(none)"}.\nAction: call vfs_read_chars/vfs_read_lines/vfs_read_json on each missing file first.`,
       code: "SKILL_NOT_READ",
     },
   };
@@ -751,7 +751,7 @@ function checkSoulReadGate(
       error: `[ERROR: SOUL_NOT_READ] Session preflight requires reading soul memory anchors before non-read tools: ${missing
         .length > 0
         ? formatPathPreview(missing)
-        : "(none)"}.\nAction: call vfs_read on each anchor once, then continue.`,
+        : "(none)"}.\nAction: call vfs_read_chars/vfs_read_lines/vfs_read_json on each anchor once, then continue.`,
       code: "SOUL_NOT_READ",
     },
   };
@@ -790,7 +790,7 @@ function checkPresetSkillReadGate(
       error: `[ERROR: PRESET_SKILL_NOT_READ] Active preset skill file(s) must be read in current epoch before non-read tools: ${missing
         .length > 0
         ? formatPathPreview(missing)
-        : "(none)"}.\nAction: call vfs_read on each missing file first.`,
+        : "(none)"}.\nAction: call vfs_read_chars/vfs_read_lines/vfs_read_json on each missing file first.`,
       code: "PRESET_SKILL_NOT_READ",
     },
   };
@@ -873,26 +873,19 @@ async function processToolCalls(
   const getConversationTouchedPaths = (call: ToolCallResult): string[] => {
     const touched: string[] = [];
 
-    if (call.name === "vfs_mutate") {
-      const ops = (call.args as any)?.ops;
-      if (Array.isArray(ops)) {
-        for (const op of ops) {
-          if (!op || typeof op !== "object") continue;
-          const path = (op as any).path;
-          if (typeof path === "string" && isConversationPath(path)) {
-            touched.push(path);
-          }
-          const from = (op as any).from;
-          if (typeof from === "string" && isConversationPath(from)) {
-            touched.push(from);
-          }
-          const to = (op as any).to;
-          if (typeof to === "string" && isConversationPath(to)) {
-            touched.push(to);
-          }
-        }
-      }
-      return touched;
+    const args = (call.args ?? {}) as Record<string, unknown>;
+    const maybePath = args.path;
+    const maybeFrom = args.from;
+    const maybeTo = args.to;
+
+    if (typeof maybePath === "string" && isConversationPath(maybePath)) {
+      touched.push(maybePath);
+    }
+    if (typeof maybeFrom === "string" && isConversationPath(maybeFrom)) {
+      touched.push(maybeFrom);
+    }
+    if (typeof maybeTo === "string" && isConversationPath(maybeTo)) {
+      touched.push(maybeTo);
     }
 
     return touched;

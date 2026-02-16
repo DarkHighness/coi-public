@@ -105,7 +105,7 @@ describe("openaiProvider streaming usage", () => {
               type: "tool_use",
               toolUse: {
                 id: "call_1",
-                name: "vfs_read",
+                name: "vfs_read_chars",
                 args: { path: "a" },
               },
             },
@@ -118,7 +118,7 @@ describe("openaiProvider streaming usage", () => {
               type: "tool_result",
               toolResult: {
                 id: "call_1",
-                name: "vfs_read",
+                name: "vfs_read_chars",
                 content: { ok: true },
               },
             },
@@ -139,7 +139,7 @@ describe("openaiProvider streaming usage", () => {
             id: "call_1",
             type: "function",
             function: {
-              name: "vfs_read",
+              name: "vfs_read_chars",
               arguments: JSON.stringify({ path: "a" }),
             },
           },
@@ -149,7 +149,7 @@ describe("openaiProvider streaming usage", () => {
         role: "user",
         content: JSON.stringify({
           type: "function_response",
-          name: "vfs_read",
+          name: "vfs_read_chars",
           response: { content: { ok: true } },
         }),
       },
@@ -269,7 +269,7 @@ describe("openaiProvider helper conversions", () => {
       [
         {
           id: "call-1",
-          name: "vfs_read",
+          name: "vfs_read_chars",
           args: { path: "current/world/story.json" },
           thoughtSignature: "sig-1",
         },
@@ -285,7 +285,7 @@ describe("openaiProvider helper conversions", () => {
           id: "call-1",
           type: "function",
           function: {
-            name: "vfs_read",
+            name: "vfs_read_chars",
             arguments: JSON.stringify({ path: "current/world/story.json" }),
           },
           extra_content: {
@@ -346,7 +346,7 @@ describe("openaiProvider helper conversions", () => {
           type: "tool_use",
           toolUse: {
             id: "call-3",
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             args: { path: "current/world/story.json" },
             thoughtSignature: "sig-3",
           },
@@ -362,7 +362,7 @@ describe("openaiProvider helper conversions", () => {
           id: "call-3",
           type: "function",
           function: {
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             arguments: JSON.stringify({ path: "current/world/story.json" }),
           },
           extra_content: {

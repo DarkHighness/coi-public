@@ -95,10 +95,10 @@ const uniqueStrings = (items: Array<string | undefined>): string[] => {
 };
 
 const buildToolDocRecoveryReadCall = (toolDocRef: string): string =>
-  `vfs_read({ path: "${toolDocRef}", mode: "lines", startLine: 1, lineCount: 200 })`;
+  `vfs_read_lines({ path: "${toolDocRef}", startLine: 1, lineCount: 200 })`;
 
 const SOUL_TOOL_LEARNING_RECOVERY =
-  'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via `vfs_mutate` (or `vfs_finish_soul` in `[Player Rate]`).';
+  'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via one writable tool (`vfs_write_file`/`vfs_append_text`/`vfs_edit_lines`/`vfs_patch_json`/`vfs_merge_json`) or `vfs_finish_soul` in `[Player Rate]`.';
 
 const withSoulToolLearningRecovery = (steps: string[]): string[] => {
   const exists = steps.includes(SOUL_TOOL_LEARNING_RECOVERY);
@@ -115,13 +115,13 @@ const defaultRecoveryByCode = (
     return withSoulToolLearningRecovery([
       `Use ${buildToolDocRecoveryReadCall(toolDocRef)} (INTRO/SCHEMA/EXAMPLES), then retry with schema-valid arguments.`,
       "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
-      "If you're modifying an existing file, vfs_read it first (read-before-mutate), then retry.",
+      "If you're modifying an existing file, read it first (read-before-mutate), then retry.",
     ]);
   }
   if (code === "INVALID_ACTION") {
     return withSoulToolLearningRecovery([
       `Use ${buildToolDocRecoveryReadCall(toolDocRef)} to confirm tool preconditions, then retry.`,
-      "If the error mentions read-before-mutate, vfs_read the target file in this epoch and retry the same operation.",
+      "If the error mentions read-before-mutate, read the target file in this epoch and retry the same operation.",
       "If the error mentions finish ordering, ensure the commit tool is the last call and there is only one finish.",
     ]);
   }
@@ -139,7 +139,7 @@ const defaultRecoveryByCode = (
   }
   if (code === "FINISH_GUARD_REQUIRED") {
     return withSoulToolLearningRecovery([
-      "Conversation/summary paths are finish-guarded: use vfs_finish_turn or vfs_finish_summary (not vfs_mutate).",
+      "Conversation/summary paths are finish-guarded: use vfs_finish_turn or vfs_finish_summary (not generic write tools).",
       `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for the correct commit schema/examples.`,
     ]);
   }
@@ -203,7 +203,7 @@ export const buildNotFoundRecovery = (inputPath: string): string[] => {
 export const buildReadLinesRecovery = (inputPath: string): string[] => {
   const { qualifiedPath } = qualifyPathForRecovery(inputPath);
   return withSoulToolLearningRecovery([
-    `Try: vfs_read({ path: "${qualifiedPath}", mode: "lines", startLine: 1, lineCount: 200 })`,
+    `Try: vfs_read_lines({ path: "${qualifiedPath}", startLine: 1, lineCount: 200 })`,
     "Then adjust line numbers/ranges and retry.",
   ]);
 };
@@ -212,7 +212,7 @@ const buildSchemaAndReadRecovery = (inputPath: string): string[] => {
   const { qualifiedPath } = qualifyPathForRecovery(inputPath);
   return withSoulToolLearningRecovery([
     `Try: vfs_schema({ paths: ["${qualifiedPath}"] })`,
-    `Then: vfs_read({ path: "${qualifiedPath}" }) to inspect current content before retrying.`,
+    `Then: vfs_read_chars({ path: "${qualifiedPath}", start: 0, offset: 2000 }) to inspect current content before retrying.`,
   ]);
 };
 
@@ -427,8 +427,15 @@ export const createReadLimitError = (
     estimatedTokens?: number;
     suggestedChunkChars?: number;
   },
+  toolName?: "vfs_read_chars" | "vfs_read_lines" | "vfs_read_json",
 ): ToolCallResult<never> =>
   (() => {
+    const resolvedToolName =
+      toolName ?? (mode === "json"
+        ? "vfs_read_json"
+        : mode === "lines"
+          ? "vfs_read_lines"
+          : "vfs_read_chars");
     const normalizedTokenBudget = Number.isFinite(limits?.tokenBudget)
       ? Math.max(1, Math.floor(limits?.tokenBudget ?? 0))
       : VFS_READ_HARD_TOKEN_BUDGET;
@@ -442,16 +449,16 @@ export const createReadLimitError = (
       typeof inputPath === "string" && inputPath.trim().length > 0
         ? qualifyPathForRecovery(inputPath).qualifiedPath
         : "current";
-    const linesWindowCall = `vfs_read({ path: "${qualifiedPath}", mode: "lines", startLine: 1, lineCount: 200 })`;
-    const charsWindowCall = `vfs_read({ path: "${qualifiedPath}", mode: "chars", start: 0, offset: ${suggestedChunkChars} })`;
+    const linesWindowCall = `vfs_read_lines({ path: "${qualifiedPath}", startLine: 1, lineCount: 200 })`;
+    const charsWindowCall = `vfs_read_chars({ path: "${qualifiedPath}", start: 0, offset: ${suggestedChunkChars} })`;
     const recovery = [
-      `Do NOT retry with \`vfs_read({ path: "${qualifiedPath}" })\` alone; that repeats an unbounded chars read.`,
+      `Do NOT retry with unbounded char reads; use explicit windowed read tools.`,
       `Try: ${linesWindowCall}`,
       `Or: ${charsWindowCall}`,
     ];
     if (mode === "json") {
       recovery.push(
-        `For JSON, narrow pointers and cap payload (example: vfs_read({ path: "${qualifiedPath}", mode: "json", pointers: ["/..."], maxChars: ${suggestedChunkChars} })).`,
+        `For JSON, narrow pointers and cap payload (example: vfs_read_json({ path: "${qualifiedPath}", pointers: ["/..."], maxChars: ${suggestedChunkChars} })).`,
       );
     }
 
@@ -461,11 +468,11 @@ export const createReadLimitError = (
         : `Token budget is ${normalizedTokenBudget}.`;
 
     return createError(
-      `vfs_read(${mode}): ${details}. ${budgetText} Use lines/chars(start+offset) or narrower JSON pointers.`,
+      `${resolvedToolName}: ${details}. ${budgetText} Use bounded line/char windows or narrower JSON pointers.`,
       "INVALID_DATA",
       {
         category: "validation",
-        tool: "vfs_read",
+        tool: resolvedToolName,
         issues: [
           {
             path: mode,
@@ -478,7 +485,7 @@ export const createReadLimitError = (
           },
         ],
         recovery,
-        refs: [getToolDocRef("vfs_read"), TOOL_DOCS_README_REF],
+        refs: [getToolDocRef(resolvedToolName), TOOL_DOCS_README_REF],
       },
     );
   })();

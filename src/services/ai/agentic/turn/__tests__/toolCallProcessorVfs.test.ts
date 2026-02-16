@@ -44,16 +44,11 @@ describe("toolCallProcessor VFS integration", () => {
     );
 
     const output = executeGenericTool(
-      "vfs_mutate",
+      "vfs_write_file",
       {
-        ops: [
-          {
-            op: "write_file",
-            path: "current/world/global.json",
-            content: JSON.stringify(createValidGlobal()),
-            contentType: "application/json",
-          },
-        ],
+        path: "current/world/global.json",
+        content: JSON.stringify(createValidGlobal()),
+        contentType: "application/json",
       },
       {
         loopState,

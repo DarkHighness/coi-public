@@ -165,7 +165,9 @@ export interface PhasedOutlineOptions {
 const READ_ONLY_VFS_TOOL_DEFS: ZodToolDefinition[] = [
   vfsToolRegistry.getDefinition("vfs_ls"),
   vfsToolRegistry.getDefinition("vfs_schema"),
-  vfsToolRegistry.getDefinition("vfs_read"),
+  vfsToolRegistry.getDefinition("vfs_read_chars"),
+  vfsToolRegistry.getDefinition("vfs_read_lines"),
+  vfsToolRegistry.getDefinition("vfs_read_json"),
   vfsToolRegistry.getDefinition("vfs_search"),
 ];
 
@@ -178,16 +180,14 @@ const OUTLINE_PHASE_READ_ROOTS = [
   "shared/narrative/outline/phases",
 ];
 
-const OUTLINE_SUBMIT_TOOL_DEF = vfsToolRegistry.getDefinition(
-  "vfs_finish_outline",
+const OUTLINE_SUBMIT_TOOL_NAMES: Set<string> = new Set(
+  Array.from({ length: 10 }, (_, phase) =>
+    vfsToolRegistry.getOutlineSubmitToolName(phase),
+  ),
 );
-const OUTLINE_SUBMIT_TOOL_NAMES = new Set([OUTLINE_SUBMIT_TOOL_DEF.name]);
 
 const getOutlineSubmitToolByPhase = (phase: number): ZodToolDefinition => {
-  if (!Number.isInteger(phase) || phase < 0 || phase > 9) {
-    throw new Error(`Outline phase commit tool is missing for phase ${phase}`);
-  }
-  return OUTLINE_SUBMIT_TOOL_DEF;
+  return vfsToolRegistry.getOutlineSubmitTool(phase);
 };
 
 const submitToolNameByPhase = (phase: number): string =>
@@ -273,7 +273,7 @@ const buildOutlineResumeAnchor = (
   partial: PartialStoryOutline,
 ): string => {
   const safeCurrentPhase = Math.max(0, Math.min(9, Math.floor(currentPhase)));
-  const currentSubmitTool = "vfs_finish_outline";
+  const currentSubmitTool = submitToolNameByPhase(safeCurrentPhase);
   const currentArtifactPaths = getOutlinePhaseArtifactPaths(safeCurrentPhase);
 
   const completedPhaseNumbers = Array.from(
@@ -307,7 +307,7 @@ You are RESUMING an interrupted outline generation session.
 
 Current phase: ${safeCurrentPhase}
 Current submit tool: ${currentSubmitTool}
-Current submit payload shape: \`{ phase: ${safeCurrentPhase}, data: { ...phase schema... } }\`
+Current submit payload shape: \`{ ...phase ${safeCurrentPhase} schema fields... }\`
 Completed phases: ${completedPhaseNumbers.length > 0 ? completedPhaseNumbers.join(", ") : "none"}
 Missing completed artifacts (should re-read/repair before submit): ${
     missingCompletedPhases.length > 0
@@ -430,12 +430,16 @@ const validateOutlineReadOnlyVfsArgs = (
     return null;
   }
 
-  if (toolName === "vfs_read") {
+  if (
+    toolName === "vfs_read_chars" ||
+    toolName === "vfs_read_lines" ||
+    toolName === "vfs_read_json"
+  ) {
     const path =
       typeof (args as any)?.path === "string" ? (args as any).path : "";
-    if (!path) return reject("vfs_read requires a path");
+    if (!path) return reject(`${toolName} requires a path`);
     if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
-      return reject(`vfs_read path="${path}"`);
+      return reject(`${toolName} path="${path}"`);
     }
     return null;
   }
@@ -771,7 +775,7 @@ export const generateStoryOutlinePhased = async (
       .join("\n");
 
     const vfsReadOnlyHint = readOnlyVfsEnabled
-      ? `- OPTIONAL: You may use read-only VFS tools (e.g. \`vfs_ls\`, \`vfs_read\`) to inspect reference files.\n- Allowed roots:\n${allowedRootsForPrompt}\n- Do NOT combine the current phase submit tool with other tools in the same message. Use separate rounds: read first, then submit.\n`
+      ? `- OPTIONAL: You may use read-only VFS tools (e.g. \`vfs_ls\`, \`vfs_read_lines\`, \`vfs_read_json\`) to inspect reference files.\n- Allowed roots:\n${allowedRootsForPrompt}\n- Do NOT combine the current phase submit tool with other tools in the same message. Use separate rounds: read first, then submit.\n`
       : "";
 
     // Create the initial task instruction
@@ -1252,43 +1256,14 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               continue;
             }
 
-            const submitArgsParsed = submitTool.parameters.safeParse(tc.args);
-            if (!submitArgsParsed.success) {
-              toolResponses.push({
-                toolCallId: tc.id!,
-                name: tc.name,
-                content: {
-                  success: false,
-                  error: `${submitTool.name}: invalid arguments: ${formatOutlineSubmitValidationError(submitArgsParsed.error)}`,
-                  code: "INVALID_DATA",
-                },
-              });
-              continue;
-            }
-
-            const submitArgs = submitArgsParsed.data;
-            if (submitArgs.phase !== phaseNum) {
-              toolResponses.push({
-                toolCallId: tc.id!,
-                name: tc.name,
-                content: {
-                  success: false,
-                  error:
-                    `Phase ${phaseNum}: submit payload must set phase=${phaseNum}, got phase=${submitArgs.phase}.`,
-                  code: "INVALID_DATA",
-                },
-              });
-              continue;
-            }
-
-            const validatedDataParsed = phaseSchema.safeParse(submitArgs.data);
+            const validatedDataParsed = phaseSchema.safeParse(tc.args);
             if (!validatedDataParsed.success) {
               toolResponses.push({
                 toolCallId: tc.id!,
                 name: tc.name,
                 content: {
                   success: false,
-                  error: `Phase ${phaseNum}: schema validation failed: ${formatOutlineSubmitValidationError(validatedDataParsed.error)}`,
+                  error: `${submitTool.name}: invalid arguments: ${formatOutlineSubmitValidationError(validatedDataParsed.error)}`,
                   code: "INVALID_DATA",
                 },
               });

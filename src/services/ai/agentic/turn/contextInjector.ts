@@ -127,7 +127,7 @@ export function injectNormalTurnInstruction(
           "- NEVER read from or mutate other forks while cleaning this fork.",
           "- Preserve narrative continuity with existing world state and conversation files.",
           "- Do NOT fabricate new lore/conflicts unrelated to deduplication/consolidation.",
-          "- Verify entities via read-only VFS tools before mutation (vfs_ls / vfs_search / vfs_read).",
+          "- Verify entities via read-only VFS tools before mutation (vfs_ls / vfs_search / vfs_read_chars/vfs_read_lines/vfs_read_json).",
           "- Keep player-visible log narrative generic; do not leak hidden truths.",
           "- Structured error recovery (when tool returns { success:false, code, error }):",
           "  1) Do NOT finish while the error is unresolved.",
@@ -188,7 +188,7 @@ export function injectNormalTurnInstruction(
   modeSkillLines.push(
     "Do not skip required skill preflight above. Non-read tools are hard-blocked until those reads are done.",
     "Strongly recommended per session (not every turn):",
-    '- `vfs_read({ path: "current/skills/index.json" })`',
+    '- `vfs_read_chars({ path: "current/skills/index.json" })`',
     "- At session cold start/rebuild, select and read 1-3 additional skill files aligned with active domain/theme/mechanics.",
     "- Reuse those skill docs across later turns; re-read only when requirements change or files are updated.",
   );
@@ -254,14 +254,14 @@ export function injectColdStartRequiredReads(
 
   const formatPreloadCall = (path: string): string => {
     if (path === "current/conversation/session.jsonl") {
-      return `vfs_read({ path: "${path}", mode: "lines", startLine: 1, lineCount: 200 })`;
+      return `vfs_read_lines({ path: "${path}", startLine: 1, lineCount: 200  })`;
     }
-    return `vfs_read({ path: "${path}" })`;
+    return `vfs_read_chars({ path: "${path}" })`;
   };
 
   const lines = [
     "[SYSTEM: COLD START REQUIRED READS]",
-    "Before any non-read tool call in this loop, perform these vfs_read calls once in current read-epoch (in order):",
+    "Before any non-read tool call in this loop, perform these vfs_read_chars/vfs_read_lines/vfs_read_json calls once in current read-epoch (in order):",
     ...uniquePaths.map(
       (path, index) => `${index + 1}. \`${formatPreloadCall(path)}\``,
     ),
@@ -334,7 +334,7 @@ export function injectOutOfBandReadInvalidations(
         "[SYSTEM: EXTERNAL_FILE_CHANGES]",
         "Files you already read in this epoch were changed externally:",
         ...lines,
-        "If you need to edit any listed file again, re-read it first via vfs_read/vfs_read.",
+        "If you need to edit any listed file again, re-read it first via vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_read_chars/vfs_read_lines/vfs_read_json.",
         "If a file is not needed for this turn, you do not need to re-read it.",
       ].join("\n"),
     ),

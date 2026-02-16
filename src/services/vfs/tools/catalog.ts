@@ -28,7 +28,13 @@ const IMMUTABLE_ZONES = [
 ];
 
 const OPERATION_HINTS_BY_TOOL: Partial<Record<VfsToolName, string>> = {
-  vfs_mutate: "write|json_patch|json_merge|move|delete",
+  vfs_write_file: "write",
+  vfs_append_text: "write",
+  vfs_edit_lines: "write",
+  vfs_patch_json: "json_patch",
+  vfs_merge_json: "json_merge",
+  vfs_move: "move",
+  vfs_delete: "delete",
   vfs_finish_turn: "finish_commit",
   vfs_finish_summary: "finish_summary",
 };
@@ -156,113 +162,27 @@ const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
     .strict(),
 ]);
 
-const vfsMutateOpSchema = z.discriminatedUnion("op", [
+const vfsLineEditSchema = z.discriminatedUnion("kind", [
   z
     .object({
-      op: z.literal("write_file"),
-      path: vfsFilePathSchema.describe("File path."),
-      content: z.string().describe("File contents."),
-      contentType: vfsContentTypeSchema
-        .optional()
-        .describe(
-          "Optional content type. Prefer omitting; system infers from existing file/path/template when possible.",
-        ),
+      kind: z.literal("insert_before"),
+      line: z.number().int().positive(),
+      content: z.string(),
     })
     .strict(),
   z
     .object({
-      op: z.literal("append_text"),
-      path: vfsFilePathSchema.describe("File path (text/markdown)."),
-      content: z.string().describe("Text to append."),
-      expectedHash: z
-        .string()
-        .optional()
-        .describe("Optional optimistic concurrency guard."),
-      ensureNewline: z
-        .boolean()
-        .optional()
-        .describe("If true, insert newline when needed. Default true."),
-      maxTotalChars: z
-        .number()
-        .int()
-        .positive()
-        .optional()
-        .describe("Optional total char cap after append."),
+      kind: z.literal("insert_after"),
+      line: z.number().int().positive(),
+      content: z.string(),
     })
     .strict(),
   z
     .object({
-      op: z.literal("edit_lines"),
-      path: vfsFilePathSchema.describe("File path (text/markdown)."),
-      edits: z
-        .array(
-          z.discriminatedUnion("kind", [
-            z
-              .object({
-                kind: z.literal("insert_before"),
-                line: z.number().int().positive(),
-                content: z.string(),
-              })
-              .strict(),
-            z
-              .object({
-                kind: z.literal("insert_after"),
-                line: z.number().int().positive(),
-                content: z.string(),
-              })
-              .strict(),
-            z
-              .object({
-                kind: z.literal("replace_range"),
-                startLine: z.number().int().positive(),
-                endLine: z.number().int().positive(),
-                content: z.string(),
-              })
-              .strict(),
-          ]),
-        )
-        .min(1),
-      createIfMissing: z
-        .boolean()
-        .optional()
-        .describe("Create file if missing. Default true."),
-      expectedHash: z
-        .string()
-        .optional()
-        .describe("Optional optimistic concurrency guard."),
-      maxTotalChars: z
-        .number()
-        .int()
-        .positive()
-        .optional()
-        .describe("Optional total char cap after edits."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("patch_json"),
-      path: vfsFilePathSchema.describe("JSON file path."),
-      patch: z.array(vfsJsonPatchOpSchema).min(1).describe("JSON Patch operations."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("merge_json"),
-      path: vfsFilePathSchema.describe("JSON file path."),
-      content: z.record(jsonValueSchema).describe("JSON object to merge."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("move"),
-      from: vfsFilePathSchema.describe("Source path."),
-      to: vfsFilePathSchema.describe("Destination path."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("delete"),
-      path: vfsFilePathSchema.describe("Path to delete."),
+      kind: z.literal("replace_range"),
+      startLine: z.number().int().positive(),
+      endLine: z.number().int().positive(),
+      content: z.string(),
     })
     .strict(),
 ]);
@@ -296,39 +216,6 @@ const summaryHiddenToolSchema = z
   })
   .strict();
 
-const outlinePhaseEntries = [
-  { phase: 0 as const, schema: outlinePhase0Schema },
-  { phase: 1 as const, schema: outlinePhase1Schema },
-  { phase: 2 as const, schema: outlinePhase2Schema },
-  { phase: 3 as const, schema: outlinePhase3Schema },
-  { phase: 4 as const, schema: outlinePhase4Schema },
-  { phase: 5 as const, schema: outlinePhase5Schema },
-  { phase: 6 as const, schema: outlinePhase6Schema },
-  { phase: 7 as const, schema: outlinePhase7Schema },
-  { phase: 8 as const, schema: outlinePhase8Schema },
-  { phase: 9 as const, schema: outlinePhase9Schema },
-] as const;
-
-const outlineFinishSchema = z
-  .discriminatedUnion(
-    "phase",
-    outlinePhaseEntries.map((entry) =>
-      z
-        .object({
-          phase: z.literal(entry.phase),
-          data: entry.schema.describe(
-            `Outline phase ${entry.phase} payload JSON object.`,
-          ),
-        })
-        .strict(),
-    ) as [
-      z.ZodObject<any>,
-      z.ZodObject<any>,
-      ...z.ZodObject<any>[],
-    ],
-  )
-  .describe("Outline phase discriminator + phase-specific payload.");
-
 const CAPABILITY_READ_ALL: VfsToolCapabilityV2 = {
   summary: "Read-only inspection tool.",
   readOnly: true,
@@ -336,6 +223,15 @@ const CAPABILITY_READ_ALL: VfsToolCapabilityV2 = {
   needsElevationFor: [],
   immutableZones: IMMUTABLE_ZONES,
   toolsets: ["turn", "playerRate", "cleanup", "summary", "outline"],
+};
+
+const CAPABILITY_WRITE_MUTATION: VfsToolCapabilityV2 = {
+  summary: "Write/edit mutable world resources in default/elevated zones.",
+  readOnly: false,
+  mayWriteClasses: ["default_editable", "elevated_editable"],
+  needsElevationFor: ["elevated_editable"],
+  immutableZones: IMMUTABLE_ZONES,
+  toolsets: ["turn", "cleanup"],
 };
 
 const TOOLSET_NONE = {
@@ -352,6 +248,69 @@ const ordered = (
   ...TOOLSET_NONE,
   ...input,
 });
+
+const OUTLINE_PHASE_TOOLS = [
+  {
+    phase: 0 as const,
+    name: "vfs_finish_outline_phase_0" as const,
+    handlerKey: "finish_outline_phase_0" as const,
+    schema: outlinePhase0Schema,
+  },
+  {
+    phase: 1 as const,
+    name: "vfs_finish_outline_phase_1" as const,
+    handlerKey: "finish_outline_phase_1" as const,
+    schema: outlinePhase1Schema,
+  },
+  {
+    phase: 2 as const,
+    name: "vfs_finish_outline_phase_2" as const,
+    handlerKey: "finish_outline_phase_2" as const,
+    schema: outlinePhase2Schema,
+  },
+  {
+    phase: 3 as const,
+    name: "vfs_finish_outline_phase_3" as const,
+    handlerKey: "finish_outline_phase_3" as const,
+    schema: outlinePhase3Schema,
+  },
+  {
+    phase: 4 as const,
+    name: "vfs_finish_outline_phase_4" as const,
+    handlerKey: "finish_outline_phase_4" as const,
+    schema: outlinePhase4Schema,
+  },
+  {
+    phase: 5 as const,
+    name: "vfs_finish_outline_phase_5" as const,
+    handlerKey: "finish_outline_phase_5" as const,
+    schema: outlinePhase5Schema,
+  },
+  {
+    phase: 6 as const,
+    name: "vfs_finish_outline_phase_6" as const,
+    handlerKey: "finish_outline_phase_6" as const,
+    schema: outlinePhase6Schema,
+  },
+  {
+    phase: 7 as const,
+    name: "vfs_finish_outline_phase_7" as const,
+    handlerKey: "finish_outline_phase_7" as const,
+    schema: outlinePhase7Schema,
+  },
+  {
+    phase: 8 as const,
+    name: "vfs_finish_outline_phase_8" as const,
+    handlerKey: "finish_outline_phase_8" as const,
+    schema: outlinePhase8Schema,
+  },
+  {
+    phase: 9 as const,
+    name: "vfs_finish_outline_phase_9" as const,
+    handlerKey: "finish_outline_phase_9" as const,
+    schema: outlinePhase9Schema,
+  },
+] as const;
 
 export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
@@ -447,68 +406,37 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     }),
   }),
   defineCatalogTool({
-    name: "vfs_read",
-    description: "Read VFS files by chars, lines, or JSON pointers.",
+    name: "vfs_read_chars",
+    description: "Read VFS file content by a character window.",
     parameters: z
       .object({
-        mode: z
-          .enum(["chars", "lines", "json"])
-          .optional()
-          .describe("Read mode. Default: chars."),
         path: vfsFilePathSchema.describe("File path."),
         start: z
           .number()
           .int()
           .min(0)
           .optional()
-          .describe("Chars mode: optional start character index (0-based)."),
+          .describe("Optional start character index (0-based)."),
         offset: z
           .number()
           .int()
           .positive()
           .optional()
-          .describe(
-            "Chars mode: optional number of characters to read from start.",
-          ),
+          .describe("Optional number of characters to read from start."),
         maxChars: z
           .number()
           .int()
           .positive()
           .optional()
           .describe(
-            "Chars/JSON mode: optional max characters. Effective payload is still bounded by dynamic read token budget (1% of current model context window, script-aware token estimation).",
-          ),
-        startLine: z
-          .number()
-          .int()
-          .positive()
-          .optional()
-          .describe("Lines mode: optional 1-based start line."),
-        endLine: z
-          .number()
-          .int()
-          .positive()
-          .optional()
-          .describe("Lines mode: optional 1-based end line (inclusive)."),
-        lineCount: z
-          .number()
-          .int()
-          .positive()
-          .optional()
-          .describe("Lines mode: optional number of lines from startLine."),
-        pointers: z
-          .array(z.string())
-          .min(1)
-          .optional()
-          .describe(
-            "JSON mode: JSON Pointer paths to extract (e.g. '/visible/name'). Use '' or '/' for root document.",
+            "Optional max characters. Effective payload is still bounded by dynamic read token budget (1% of current model context window, script-aware token estimation).",
           ),
       })
       .strict(),
-    handlerKey: "inspect_read",
+    handlerKey: "read_chars",
     capability: {
       ...CAPABILITY_READ_ALL,
-      summary: "Read one file by chars, lines, or JSON pointers.",
+      summary: "Read one file by characters.",
     },
     toolsetOrder: ordered({
       turn: 30,
@@ -516,6 +444,80 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
       cleanup: 30,
       summary: 30,
       outline: 30,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_read_lines",
+    description: "Read VFS file content by line range.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("File path."),
+        startLine: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Optional 1-based start line."),
+        endLine: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Optional 1-based end line (inclusive)."),
+        lineCount: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Optional number of lines from startLine."),
+      })
+      .strict(),
+    handlerKey: "read_lines",
+    capability: {
+      ...CAPABILITY_READ_ALL,
+      summary: "Read one file by lines.",
+    },
+    toolsetOrder: ordered({
+      turn: 31,
+      playerRate: 31,
+      cleanup: 31,
+      summary: 31,
+      outline: 31,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_read_json",
+    description: "Read JSON file values by JSON pointers.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("JSON file path."),
+        pointers: z
+          .array(z.string())
+          .min(1)
+          .describe(
+            "JSON Pointer paths to extract (e.g. '/visible/name'). Use '' or '/' for root document.",
+          ),
+        maxChars: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Optional max chars per pointer payload. Effective payload is still bounded by dynamic read token budget.",
+          ),
+      })
+      .strict(),
+    handlerKey: "read_json",
+    capability: {
+      ...CAPABILITY_READ_ALL,
+      summary: "Read JSON subpaths by pointers.",
+    },
+    toolsetOrder: ordered({
+      turn: 32,
+      playerRate: 32,
+      cleanup: 32,
+      summary: 32,
+      outline: 32,
     }),
   }),
   defineCatalogTool({
@@ -560,27 +562,168 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     }),
   }),
   defineCatalogTool({
-    name: "vfs_mutate",
-    description:
-      "Apply mutable VFS operations atomically by ordered ops (write/update/move/delete).",
+    name: "vfs_write_file",
+    description: "Create or overwrite a file.",
     parameters: z
       .object({
-        ops: z.array(vfsMutateOpSchema).min(1).describe("Ordered mutation operations."),
+        path: vfsFilePathSchema.describe("File path."),
+        content: z.string().describe("File contents."),
+        contentType: vfsContentTypeSchema
+          .optional()
+          .describe(
+            "Optional content type. Prefer omitting; system infers from existing file/path/template when possible.",
+          ),
       })
       .strict(),
-    handlerKey: "mutate",
+    handlerKey: "write_file",
     capability: {
-      summary:
-        "Apply mutable operations (write_file/append_text/edit_lines/patch_json/merge_json/move/delete).",
-      readOnly: false,
-      mayWriteClasses: ["default_editable", "elevated_editable"],
-      needsElevationFor: ["elevated_editable"],
-      immutableZones: IMMUTABLE_ZONES,
-      toolsets: ["turn", "cleanup"],
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Create or overwrite one file.",
     },
     toolsetOrder: ordered({
       turn: 50,
       cleanup: 50,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_append_text",
+    description: "Append text to an existing text/markdown file.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("File path (text/markdown)."),
+        content: z.string().describe("Text to append."),
+        expectedHash: z
+          .string()
+          .optional()
+          .describe("Optional optimistic concurrency guard."),
+        ensureNewline: z
+          .boolean()
+          .optional()
+          .describe("If true, insert newline when needed. Default true."),
+        maxTotalChars: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Optional total char cap after append."),
+      })
+      .strict(),
+    handlerKey: "append_text",
+    capability: {
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Append text to one file.",
+    },
+    toolsetOrder: ordered({
+      turn: 51,
+      cleanup: 51,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_edit_lines",
+    description: "Apply line-based edits to a text/markdown file.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("File path (text/markdown)."),
+        edits: z.array(vfsLineEditSchema).min(1),
+        createIfMissing: z
+          .boolean()
+          .optional()
+          .describe("Create file if missing. Default true."),
+        expectedHash: z
+          .string()
+          .optional()
+          .describe("Optional optimistic concurrency guard."),
+        maxTotalChars: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Optional total char cap after edits."),
+      })
+      .strict(),
+    handlerKey: "edit_lines",
+    capability: {
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Apply line-based text edits.",
+    },
+    toolsetOrder: ordered({
+      turn: 52,
+      cleanup: 52,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_patch_json",
+    description: "Apply RFC 6902 JSON patch operations to one JSON file.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("JSON file path."),
+        patch: z.array(vfsJsonPatchOpSchema).min(1).describe("JSON Patch operations."),
+      })
+      .strict(),
+    handlerKey: "patch_json",
+    capability: {
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Patch one JSON file (RFC 6902).",
+    },
+    toolsetOrder: ordered({
+      turn: 53,
+      cleanup: 53,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_merge_json",
+    description: "Deep-merge one JSON object into an existing JSON file.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("JSON file path."),
+        content: z.record(jsonValueSchema).describe("JSON object to merge."),
+      })
+      .strict(),
+    handlerKey: "merge_json",
+    capability: {
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Deep-merge JSON into one file.",
+    },
+    toolsetOrder: ordered({
+      turn: 54,
+      cleanup: 54,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_move",
+    description: "Move or rename a file path.",
+    parameters: z
+      .object({
+        from: vfsFilePathSchema.describe("Source path."),
+        to: vfsFilePathSchema.describe("Destination path."),
+      })
+      .strict(),
+    handlerKey: "move",
+    capability: {
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Move/rename one file.",
+    },
+    toolsetOrder: ordered({
+      turn: 55,
+      cleanup: 55,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_delete",
+    description: "Delete one file path.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("Path to delete."),
+      })
+      .strict(),
+    handlerKey: "delete",
+    capability: {
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Delete one file.",
+    },
+    toolsetOrder: ordered({
+      turn: 56,
+      cleanup: 56,
     }),
   }),
   defineCatalogTool({
@@ -726,25 +869,29 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
       summary: 90,
     }),
   }),
-  defineCatalogTool({
-    name: "vfs_finish_outline",
-    description:
-      "Commit an outline phase payload by phase index (0-9), validate it, and write to shared/narrative/outline/phases/.",
-    parameters: outlineFinishSchema,
-    handlerKey: "finish_outline",
-    capability: {
-      summary: "Validate and write one outline phase payload.",
-      readOnly: false,
-      mayWriteClasses: ["elevated_editable"],
-      needsElevationFor: ["elevated_editable"],
-      immutableZones: IMMUTABLE_ZONES,
-      toolsets: ["outline"],
-      isFinishTool: true,
-    },
-    toolsetOrder: ordered({
-      outline: 90,
+  ...OUTLINE_PHASE_TOOLS.map((entry) =>
+    defineCatalogTool({
+      name: entry.name,
+      description:
+        `Commit outline phase ${entry.phase} payload and write to shared/narrative/outline/phases/phase${entry.phase}.json.`,
+      parameters: entry.schema.describe(
+        `Outline phase ${entry.phase} payload JSON object.`,
+      ),
+      handlerKey: entry.handlerKey,
+      capability: {
+        summary: `Validate and write outline phase ${entry.phase}.`,
+        readOnly: false,
+        mayWriteClasses: ["elevated_editable"],
+        needsElevationFor: ["elevated_editable"],
+        immutableZones: IMMUTABLE_ZONES,
+        toolsets: ["outline"],
+        isFinishTool: true,
+      },
+      toolsetOrder: ordered({
+        outline: 90 + entry.phase,
+      }),
     }),
-  }),
+  ),
 ];
 
 export const VFS_SEARCH_TOOL_NO_SEMANTIC = (() => {
@@ -760,7 +907,10 @@ export const VFS_SEARCH_TOOL_NO_SEMANTIC = (() => {
 
   return {
     name: searchTool.name,
-    description: searchTool.description.replace("(optionally semantic, when available)", ""),
+    description: searchTool.description.replace(
+      "(optionally semantic, when available)",
+      "",
+    ),
     parameters: parametersNoSemantic,
   } satisfies TypedToolDefinition<ZodTypeAny>;
 })();

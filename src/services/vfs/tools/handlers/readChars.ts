@@ -1,0 +1,1 @@
+export { handleReadChars } from "./readCore";

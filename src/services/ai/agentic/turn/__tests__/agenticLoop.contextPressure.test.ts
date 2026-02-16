@@ -165,7 +165,7 @@ describe("agenticLoop context pressure recovery", () => {
       functionCalls: [
         {
           id: "call-1",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: { ops: [] },
         },
       ],

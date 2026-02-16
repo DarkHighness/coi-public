@@ -95,77 +95,69 @@ const validateAgainstOpenAISchema = (
 };
 
 describe("tool schema parity guardrails", () => {
-  it("keeps outline phase discriminator numeric across compiled schemas", () => {
-    const outlineTool = getToolByName("vfs_finish_outline");
-    const expectedEnum = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  it("keeps outline phase tools as direct-object schemas across compiled schemas", () => {
+    const outlineTool = getToolByName("vfs_finish_outline_phase_1");
 
     const openaiSchema = zodToOpenAISchema(outlineTool.parameters, true);
     const geminiCompatSchema = zodToGeminiCompatibleSchema(outlineTool.parameters);
     const claudeCompatSchema = zodToClaudeCompatibleSchema(outlineTool.parameters);
     const geminiSchema = zodToGemini(outlineTool.parameters) as any;
 
-    expect((openaiSchema.properties?.phase as any)?.type).toBe("integer");
-    expect((openaiSchema.properties?.phase as any)?.enum).toEqual(expectedEnum);
-
-    expect((geminiCompatSchema.properties?.phase as any)?.type).toBe("integer");
-    expect((geminiCompatSchema.properties?.phase as any)?.enum).toEqual(
-      expectedEnum,
+    expect(openaiSchema.properties?.phase).toBeUndefined();
+    expect(openaiSchema.properties?.data).toBeUndefined();
+    expect(openaiSchema.properties?.storyPlanMarkdown).toBeDefined();
+    expect((openaiSchema.properties?.storyPlanMarkdown as any)?.type).toBe(
+      "string",
     );
 
-    expect((claudeCompatSchema.properties?.phase as any)?.type).toBe("integer");
-    expect((claudeCompatSchema.properties?.phase as any)?.enum).toEqual(
-      expectedEnum,
-    );
+    expect(geminiCompatSchema.properties?.phase).toBeUndefined();
+    expect(geminiCompatSchema.properties?.data).toBeUndefined();
+    expect(geminiCompatSchema.properties?.storyPlanMarkdown).toBeDefined();
 
-    expect(geminiSchema?.properties?.phase?.type).toBe(Type.INTEGER);
-    expect(geminiSchema?.properties?.phase?.enum).toEqual(expectedEnum);
+    expect(claudeCompatSchema.properties?.phase).toBeUndefined();
+    expect(claudeCompatSchema.properties?.data).toBeUndefined();
+    expect(claudeCompatSchema.properties?.storyPlanMarkdown).toBeDefined();
+
+    expect(geminiSchema?.properties?.phase).toBeUndefined();
+    expect(geminiSchema?.properties?.data).toBeUndefined();
+    expect(geminiSchema?.properties?.storyPlanMarkdown?.type).toBe(Type.STRING);
   });
 
   it("keeps pass/fail parity with zod for targeted outline + mutate payloads", () => {
-    const outlineTool = getToolByName("vfs_finish_outline");
-    const mutateTool = getToolByName("vfs_mutate");
+    const outlineTool = getToolByName("vfs_finish_outline_phase_1");
+    const mutateTool = getToolByName("vfs_append_text");
 
     const outlineValid = {
-      phase: 1,
-      data: {
-        storyPlanMarkdown: "# Plan",
-        planningMetadata: {
-          structureVersion: "v2",
-          branchStrategy: "guided",
-          endingFlexibility: "high",
-          recoveryPolicy: {
-            allowNaturalRecovery: true,
-            allowOutlineRevision: true,
-            forbidDeusExMachina: true,
-          },
+      storyPlanMarkdown: "# Plan",
+      planningMetadata: {
+        structureVersion: "v2",
+        branchStrategy: "guided",
+        endingFlexibility: "high",
+        recoveryPolicy: {
+          allowNaturalRecovery: true,
+          allowOutlineRevision: true,
+          forbidDeusExMachina: true,
         },
       },
     };
 
-    const outlineInvalidPhaseString = {
+    const outlineInvalidSchema = {
       ...outlineValid,
-      phase: "1",
+      planningMetadata: {
+        ...outlineValid.planningMetadata,
+        structureVersion: "v3",
+      },
     };
 
     const mutateValid = {
-      ops: [
-        {
-          op: "append_text",
-          path: "current/world/notes.md",
-          content: "- learning",
-        },
-      ],
+      path: "current/world/notes.md",
+      content: "- learning",
     };
 
     const mutateInvalidNullOptional = {
-      ops: [
-        {
-          op: "append_text",
-          path: "current/world/notes.md",
-          content: "- learning",
-          expectedHash: null,
-        },
-      ],
+      path: "current/world/notes.md",
+      content: "- learning",
+      expectedHash: null,
     };
 
     const compilers = [
@@ -185,7 +177,7 @@ describe("tool schema parity guardrails", () => {
 
     const cases = [
       { tool: outlineTool, payload: outlineValid },
-      { tool: outlineTool, payload: outlineInvalidPhaseString },
+      { tool: outlineTool, payload: outlineInvalidSchema },
       { tool: mutateTool, payload: mutateValid },
       { tool: mutateTool, payload: mutateInvalidNullOptional },
     ];

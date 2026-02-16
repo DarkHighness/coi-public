@@ -4,6 +4,7 @@ import {
   type ToolCallError,
 } from "../../../tools/toolResult";
 import type { Operation } from "../../jsonPatchTypes";
+import type { VfsContentType } from "../../types";
 import { normalizeVfsPath } from "../../utils";
 import { toCurrentPath } from "../../currentAlias";
 import { VfsWriteAccessError } from "../../vfsSession";
@@ -28,16 +29,94 @@ import {
   runWithStructuredErrors,
   withAtomicSession,
   withToolErrorDetails,
-  type VfsToolHandler,
 } from "./shared";
+import type { ToolContext } from "../../../tools/toolHandlerRegistry";
 
-export const handleMutate: VfsToolHandler = (args, ctx) =>
+interface WriteFileOp {
+  op: "write_file";
+  path: string;
+  content: string;
+  contentType?: VfsContentType;
+}
+
+interface AppendTextOp {
+  op: "append_text";
+  path: string;
+  content: string;
+  expectedHash?: string;
+  ensureNewline?: boolean;
+  maxTotalChars?: number;
+}
+
+type LineEdit =
+  | {
+      kind: "insert_before";
+      line: number;
+      content: string;
+    }
+  | {
+      kind: "insert_after";
+      line: number;
+      content: string;
+    }
+  | {
+      kind: "replace_range";
+      startLine: number;
+      endLine: number;
+      content: string;
+    };
+
+interface EditLinesOp {
+  op: "edit_lines";
+  path: string;
+  edits: LineEdit[];
+  createIfMissing?: boolean;
+  expectedHash?: string;
+  maxTotalChars?: number;
+}
+
+interface PatchJsonOp {
+  op: "patch_json";
+  path: string;
+  patch: Operation[];
+}
+
+interface MergeJsonOp {
+  op: "merge_json";
+  path: string;
+  content: Record<string, unknown>;
+}
+
+interface MoveOp {
+  op: "move";
+  from: string;
+  to: string;
+}
+
+interface DeleteOp {
+  op: "delete";
+  path: string;
+}
+
+export type MutateOp =
+  | WriteFileOp
+  | AppendTextOp
+  | EditLinesOp
+  | PatchJsonOp
+  | MergeJsonOp
+  | MoveOp
+  | DeleteOp;
+
+export const executeMutateOps = (
+  toolName: string,
+  args: Record<string, unknown>,
+  ops: MutateOp[],
+  ctx: ToolContext,
+) =>
   runWithStructuredErrors(
-    "vfs_mutate",
+    toolName,
     args,
     () => {
-      const typedArgs = args as any;
-
       return withAtomicSession(ctx, (draft) => {
         const written: string[] = [];
         const moved: Array<{ from: string; to: string }> = [];
@@ -53,16 +132,16 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
           operation: string,
           path?: string,
         ): ToolCallError =>
-          withToolErrorDetails(error, "vfs_mutate", {
+          withToolErrorDetails(error, toolName, {
             batch: {
               index: opIndex + 1,
-              total: typedArgs.ops.length,
+              total: ops.length,
               operation,
               path,
             },
           });
 
-        for (const [opIndex, op] of typedArgs.ops.entries()) {
+        for (const [opIndex, op] of ops.entries()) {
           if (op.op === "write_file") {
             const resolved = resolveCurrentPath(ctx, op.path);
             if (isPathResolveError(resolved)) {
@@ -70,7 +149,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
             }
             const finishGuardError = ensureNotFinishGuardedMutation(
               resolved.path,
-              "vfs_mutate(write_file)",
+              `${toolName}(write_file)`,
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
@@ -126,7 +205,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
             }
             const finishGuardError = ensureNotFinishGuardedMutation(
               resolved.path,
-              "vfs_mutate(append_text)",
+              `${toolName}(append_text)`,
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
@@ -190,7 +269,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
             }
             const finishGuardError = ensureNotFinishGuardedMutation(
               resolved.path,
-              "vfs_mutate(edit_lines)",
+              `${toolName}(edit_lines)`,
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
@@ -347,7 +426,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
             }
             const finishGuardError = ensureNotFinishGuardedMutation(
               resolved.path,
-              "vfs_mutate(patch_json)",
+              `${toolName}(patch_json)`,
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
@@ -375,7 +454,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
 
             const filteredPatch = filterCanonicalWorldEntityUnlockPatchOps(
               resolved.path,
-              op.patch as Operation[],
+              op.patch,
             );
             warnings.push(...filteredPatch.warnings);
             if (filteredPatch.patch.length === 0) {
@@ -419,7 +498,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
             }
             const finishGuardError = ensureNotFinishGuardedMutation(
               resolved.path,
-              "vfs_mutate(merge_json)",
+              `${toolName}(merge_json)`,
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
@@ -517,7 +596,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
 
             const finishGuardFrom = ensureNotFinishGuardedMutation(
               resolvedFrom.path,
-              "vfs_mutate(move)",
+              `${toolName}(move)`,
             );
             if (finishGuardFrom) {
               return withBatchError(
@@ -529,7 +608,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
             }
             const finishGuardTo = ensureNotFinishGuardedMutation(
               resolvedTo.path,
-              "vfs_mutate(move)",
+              `${toolName}(move)`,
             );
             if (finishGuardTo) {
               return withBatchError(
@@ -589,7 +668,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
 
             const finishGuard = ensureNotFinishGuardedMutation(
               resolved.path,
-              "vfs_mutate(delete)",
+              `${toolName}(delete)`,
             );
             if (finishGuard) {
               return withBatchError(finishGuard, opIndex, op.op, targetPath);
@@ -633,13 +712,14 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
             continue;
           }
 
+          const unsupported: never = op;
           return withBatchError(
             createError(
-              `Unsupported mutate operation: ${(op as { op: unknown }).op}`,
+              `Unsupported mutate operation: ${String((unsupported as { op?: unknown }).op ?? "unknown")}`,
               "INVALID_PARAMS",
             ),
             opIndex,
-            String((op as { op: unknown }).op ?? "unknown"),
+            String((unsupported as { op?: unknown }).op ?? "unknown"),
           );
         }
 
@@ -660,10 +740,7 @@ export const handleMutate: VfsToolHandler = (args, ctx) =>
       });
     },
     {
-      batchFromArgs: (rawArgs) => {
-        const rawOps = (rawArgs as { ops?: unknown[] }).ops;
-        const total = Array.isArray(rawOps) ? rawOps.length : undefined;
-        return typeof total === "number" ? { total } : undefined;
-      },
+      batchFromArgs: () =>
+        ops.length > 0 ? { total: ops.length } : undefined,
     },
   );

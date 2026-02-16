@@ -8,7 +8,7 @@ describe("extractOpenRouterToolCalls", () => {
         {
           id: "call_1",
           function: {
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             arguments: JSON.stringify({
               files: [
                 {
@@ -26,7 +26,7 @@ describe("extractOpenRouterToolCalls", () => {
     const calls = extractOpenRouterToolCalls(message);
 
     expect(calls).toHaveLength(1);
-    expect(calls[0].name).toBe("vfs_mutate");
+    expect(calls[0].name).toBe("vfs_write_file");
     expect(calls[0].args).toEqual({
       files: [
         {
@@ -44,7 +44,7 @@ describe("extractOpenRouterToolCalls", () => {
         {
           id: "call_2",
           function: {
-            name: "vfs_read",
+            name: "vfs_read_chars",
             arguments: JSON.stringify({ path: "current/world/global.json" }),
           },
         },
@@ -54,7 +54,7 @@ describe("extractOpenRouterToolCalls", () => {
     const calls = extractOpenRouterToolCalls(message);
 
     expect(calls).toHaveLength(1);
-    expect(calls[0].name).toBe("vfs_read");
+    expect(calls[0].name).toBe("vfs_read_chars");
     expect(calls[0].args).toEqual({ path: "current/world/global.json" });
   });
 });

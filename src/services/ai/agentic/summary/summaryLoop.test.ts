@@ -315,7 +315,7 @@ describe("runSummaryLoop", () => {
           functionCalls: [
             {
               id: "call-cross-fork",
-              name: "vfs_read",
+              name: "vfs_read_chars",
               args: { path: "forks/1/story/summary/state.json" },
             },
           ],
@@ -455,7 +455,7 @@ describe("runSummaryLoop", () => {
           data: {
             summary: {
               id: "s_forbidden",
-              displayText: "includes vfs_read (forbidden)",
+              displayText: "includes vfs_read_chars (forbidden)",
               visible: {
                 narrative: "ok",
                 majorEvents: [],
@@ -521,7 +521,7 @@ describe("runSummaryLoop", () => {
         data: {
           summary: {
             id: "s_forbidden",
-            displayText: "includes vfs_mutate (forbidden)",
+            displayText: "includes vfs_write_file (forbidden)",
             visible: {
               narrative: "ok",
               majorEvents: [],
@@ -561,7 +561,7 @@ describe("runSummaryLoop", () => {
               name: finishTool,
               args: makeCommitSummaryArgs(),
             },
-            { id: "call_read", name: "vfs_read", args: {} },
+            { id: "call_read", name: "vfs_read_chars", args: {} },
           ],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
@@ -649,7 +649,7 @@ describe("runSummaryLoop", () => {
       .mockResolvedValueOnce({
         result: {
           functionCalls: [
-            { id: "call_read", name: "vfs_read", args: {} },
+            { id: "call_read", name: "vfs_read_chars", args: {} },
             {
               id: "call_finish_blocked",
               name: finishTool,
@@ -675,7 +675,7 @@ describe("runSummaryLoop", () => {
       });
 
     mockDispatchToolCallAsync.mockImplementation(async (name: string) => {
-      if (name === "vfs_read") {
+      if (name === "vfs_read_chars") {
         return {
           success: false,
           error: "read failed",
@@ -719,7 +719,7 @@ describe("runSummaryLoop", () => {
     expect(result.summary?.id).toBe("s1");
     expect(mockCallWithAgenticRetry).toHaveBeenCalledTimes(1);
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(2);
-    expect(mockDispatchToolCallAsync.mock.calls[0]?.[0]).toBe("vfs_read");
+    expect(mockDispatchToolCallAsync.mock.calls[0]?.[0]).toBe("vfs_read_chars");
     expect(mockDispatchToolCallAsync.mock.calls[1]?.[0]).toBe(finishTool);
   });
 
@@ -729,7 +729,7 @@ describe("runSummaryLoop", () => {
     mockCallWithAgenticRetry
       .mockResolvedValueOnce({
         result: {
-          functionCalls: [{ id: "call_read", name: "vfs_read", args: {} }],
+          functionCalls: [{ id: "call_read", name: "vfs_read_chars", args: {} }],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
         raw: {},

@@ -39,10 +39,10 @@ describe("toolResult helpers", () => {
 
   it("supports structured error details without breaking base fields", () => {
     const result = createError("invalid args", "INVALID_PARAMS", {
-      tool: "vfs_read",
+      tool: "vfs_read_chars",
       issues: [{ path: "path", code: "missing", message: "Required" }],
       recovery: ["Provide a valid path."],
-      refs: ["current/refs/tools/vfs_read.md"],
+      refs: ["current/refs/tools/vfs_read_chars.md"],
       batch: { index: 1, total: 2, operation: "read" },
     });
 
@@ -52,10 +52,10 @@ describe("toolResult helpers", () => {
       code: "INVALID_PARAMS",
       details: {
         category: "validation",
-        tool: "vfs_read",
+        tool: "vfs_read_chars",
         issues: [{ path: "path", code: "missing", message: "Required" }],
         recovery: ["Provide a valid path."],
-        refs: ["current/refs/tools/vfs_read.md"],
+        refs: ["current/refs/tools/vfs_read_chars.md"],
         batch: { index: 1, total: 2, operation: "read" },
       },
     });
@@ -63,10 +63,10 @@ describe("toolResult helpers", () => {
 
   it("merges details while preserving deduped refs and inferred category", () => {
     const base = createError("blocked", "INVALID_ACTION", {
-      refs: ["current/refs/tools/vfs_mutate.md"],
+      refs: ["current/refs/tools/vfs_write_file.md"],
     });
     const merged = mergeToolErrorDetails(base, {
-      refs: ["current/refs/tools/vfs_mutate.md", "current/refs/tools/README.md"],
+      refs: ["current/refs/tools/vfs_write_file.md", "current/refs/tools/README.md"],
       recovery: ["Read file before write."],
     });
 
@@ -74,7 +74,7 @@ describe("toolResult helpers", () => {
       inferErrorCategoryFromCode("INVALID_ACTION"),
     );
     expect(merged.details?.refs).toEqual([
-      "current/refs/tools/vfs_mutate.md",
+      "current/refs/tools/vfs_write_file.md",
       "current/refs/tools/README.md",
     ]);
     expect(merged.details?.recovery).toEqual(["Read file before write."]);

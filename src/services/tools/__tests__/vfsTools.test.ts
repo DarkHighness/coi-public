@@ -7,17 +7,22 @@ const byName = new Map(definitions.map((tool) => [tool.name, tool]));
 
 describe("VFS tools", () => {
   it("defines v2 tool names", () => {
-    expect(definitions.map((tool) => tool.name)).toEqual([
-      "vfs_ls",
-      "vfs_schema",
-      "vfs_read",
-      "vfs_search",
-      "vfs_mutate",
-      "vfs_finish_turn",
-      "vfs_finish_soul",
-      "vfs_finish_summary",
-      "vfs_finish_outline",
-    ]);
+    const names = definitions.map((tool) => tool.name);
+    expect(names).toContain("vfs_read_chars");
+    expect(names).toContain("vfs_read_lines");
+    expect(names).toContain("vfs_read_json");
+    expect(names).toContain("vfs_write_file");
+    expect(names).toContain("vfs_append_text");
+    expect(names).toContain("vfs_edit_lines");
+    expect(names).toContain("vfs_patch_json");
+    expect(names).toContain("vfs_merge_json");
+    expect(names).toContain("vfs_move");
+    expect(names).toContain("vfs_delete");
+    expect(names).toContain("vfs_finish_outline_phase_0");
+    expect(names).toContain("vfs_finish_outline_phase_9");
+    expect(names).not.toContain("vfs_read");
+    expect(names).not.toContain("vfs_mutate");
+    expect(names).not.toContain("vfs_finish_outline");
   });
 
   it("only exposes vfs tools", () => {
@@ -47,23 +52,18 @@ describe("VFS tools", () => {
   });
 
   it("allows redundant from fields on non-move/copy patch ops", () => {
-    const mutate = byName.get("vfs_mutate");
-    expect(mutate).toBeDefined();
-    if (!mutate) return;
+    const patch = byName.get("vfs_patch_json");
+    expect(patch).toBeDefined();
+    if (!patch) return;
 
-    const result = mutate.parameters.safeParse({
-      ops: [
+    const result = patch.parameters.safeParse({
+      path: "current/world/global.json",
+      patch: [
         {
-          op: "patch_json",
-          path: "current/world/global.json",
-          patch: [
-            {
-              op: "replace",
-              path: "/time",
-              value: "noon",
-              from: "/unused",
-            },
-          ],
+          op: "replace",
+          path: "/time",
+          value: "noon",
+          from: "/unused",
         },
       ],
     });

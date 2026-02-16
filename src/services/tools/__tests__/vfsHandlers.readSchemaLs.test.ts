@@ -18,7 +18,7 @@ describe("VFS handlers read/schema/ls", () => {
     const ctx = { vfsSession: session };
 
     const ok = dispatchToolCall(
-      "vfs_read",
+      "vfs_read_chars",
       { path: "current/world/slice.txt", start: 5, offset: 3 },
       ctx,
     ) as any;
@@ -28,7 +28,7 @@ describe("VFS handlers read/schema/ls", () => {
     expect(ok.data.truncated).toBe(true);
 
     const invalid = dispatchToolCall(
-      "vfs_read",
+      "vfs_read_chars",
       { path: "current/world/slice.txt", start: 1 },
       ctx,
     ) as any;
@@ -37,7 +37,7 @@ describe("VFS handlers read/schema/ls", () => {
     expect(invalid.code).toBe("INVALID_DATA");
   });
 
-  it("supports JSON pointer extraction in vfs_read", () => {
+  it("supports JSON pointer extraction in vfs_read_json", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/global.json",
@@ -47,12 +47,8 @@ describe("VFS handlers read/schema/ls", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_read",
-      {
-        path: "current/world/global.json",
-        mode: "json",
-        pointers: ["/theme", "/missing"],
-      },
+      "vfs_read_json",
+      { path: "current/world/global.json", pointers: ["/theme", "/missing"] },
       ctx,
     ) as any;
 
@@ -68,7 +64,7 @@ describe("VFS handlers read/schema/ls", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_read",
+      "vfs_read_chars",
       { path: "current/world/huge.txt" },
       ctx,
     ) as any;
@@ -78,15 +74,15 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.error).toContain(
       `Token budget is ${DEFAULT_READ_TOKEN_BUDGET}`,
     );
-    expect(result.error).toContain("chars(start+offset)");
-    expect(result.details?.tool).toBe("vfs_read");
+    expect(result.error).toContain("requested char range");
+    expect(result.details?.tool).toBe("vfs_read_chars");
     expect(result.details?.issues?.[0]?.code).toBe("READ_LIMIT_EXCEEDED");
     expect(result.details?.recovery?.[0]).toContain("Do NOT retry");
     expect(result.details?.recovery?.[1]).toContain(
-      'mode: "lines", startLine: 1, lineCount: 200',
+      'vfs_read_lines({ path: "current/world/huge.txt", startLine: 1, lineCount: 200 })',
     );
     expect(result.details?.recovery?.[1]).toContain("current/world/huge.txt");
-    expect(result.details?.refs).toContain("current/refs/tools/vfs_read.md");
+    expect(result.details?.refs).toContain("current/refs/tools/vfs_read_chars.md");
   });
 
   it("rejects oversized line-window reads and guides chunked strategies", () => {
@@ -97,13 +93,8 @@ describe("VFS handlers read/schema/ls", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_read",
-      {
-        path: "current/world/huge-lines.txt",
-        mode: "lines",
-        startLine: 1,
-        endLine: 12,
-      },
+      "vfs_read_lines",
+      { path: "current/world/huge-lines.txt", startLine: 1, endLine: 12 },
       ctx,
     ) as any;
 
@@ -112,7 +103,7 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.error).toContain(
       `Token budget is ${DEFAULT_READ_TOKEN_BUDGET}`,
     );
-    expect(result.error).toContain("lines/chars(start+offset)");
+    expect(result.error).toContain("requested line range");
   });
 
   it("rejects oversized json pointer reads without truncation", () => {
@@ -125,8 +116,8 @@ describe("VFS handlers read/schema/ls", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
-      "vfs_read",
-      { path: "current/world/big.json", mode: "json", pointers: ["/big"] },
+      "vfs_read_json",
+      { path: "current/world/big.json", pointers: ["/big"] },
       ctx,
     ) as any;
 
@@ -161,7 +152,7 @@ describe("VFS handlers read/schema/ls", () => {
     };
 
     const charsDefaultRead = dispatchToolCall(
-      "vfs_read",
+      "vfs_read_chars",
       { path: "current/world/large.txt" },
       ctx as any,
     ) as any;
@@ -171,13 +162,8 @@ describe("VFS handlers read/schema/ls", () => {
     );
 
     const charsOffsetTooLarge = dispatchToolCall(
-      "vfs_read",
-      {
-        path: "current/world/large.txt",
-        mode: "chars",
-        start: 0,
-        offset: oversizedText.length + 1,
-      },
+      "vfs_read_chars",
+      { path: "current/world/large.txt", start: 0, offset: oversizedText.length + 1 },
       ctx as any,
     ) as any;
     expect(charsOffsetTooLarge.success).toBe(false);
@@ -186,13 +172,8 @@ describe("VFS handlers read/schema/ls", () => {
     );
 
     const linesTooLarge = dispatchToolCall(
-      "vfs_read",
-      {
-        path: "current/world/large.txt",
-        mode: "lines",
-        startLine: 1,
-        endLine: 1,
-      },
+      "vfs_read_lines",
+      { path: "current/world/large.txt", startLine: 1, endLine: 1 },
       ctx as any,
     ) as any;
     expect(linesTooLarge.success).toBe(false);
@@ -201,12 +182,8 @@ describe("VFS handlers read/schema/ls", () => {
     );
 
     const jsonTooLarge = dispatchToolCall(
-      "vfs_read",
-      {
-        path: "current/world/large.json",
-        mode: "json",
-        pointers: ["/big"],
-      },
+      "vfs_read_json",
+      { path: "current/world/large.json", pointers: ["/big"] },
       ctx as any,
     ) as any;
     expect(jsonTooLarge.success).toBe(false);

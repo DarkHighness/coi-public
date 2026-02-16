@@ -4,11 +4,21 @@ import { normalizeVfsPath } from "../../../vfs/utils";
 export const READ_ONLY_INSPECTION_TOOL_NAMES = new Set([
   "vfs_ls",
   "vfs_schema",
-  "vfs_read",
+  "vfs_read_chars",
+  "vfs_read_lines",
+  "vfs_read_json",
   "vfs_search",
 ]);
 
-export const WRITE_MUTATION_TOOL_NAMES = new Set(["vfs_mutate"]);
+export const WRITE_MUTATION_TOOL_NAMES = new Set([
+  "vfs_write_file",
+  "vfs_append_text",
+  "vfs_edit_lines",
+  "vfs_patch_json",
+  "vfs_merge_json",
+  "vfs_move",
+  "vfs_delete",
+]);
 
 export const UNRECOVERABLE_WRITE_ERROR_CODES = new Set([
   "IMMUTABLE_READONLY",
@@ -53,16 +63,21 @@ export const collectWriteTargetsFromToolCall = (
     if (normalized) targets.add(normalized);
   };
 
-  if (call.name === "vfs_mutate") {
-    const ops = (args as any)?.ops;
-    if (Array.isArray(ops)) {
-      for (const op of ops) {
-        pushTarget((op as any)?.path);
-        pushTarget((op as any)?.from);
-        pushTarget((op as any)?.to);
-      }
-    }
+  if (call.name === "vfs_move") {
+    pushTarget((args as any)?.from);
+    pushTarget((args as any)?.to);
+    return Array.from(targets.values());
+  }
 
+  if (
+    call.name === "vfs_write_file" ||
+    call.name === "vfs_append_text" ||
+    call.name === "vfs_edit_lines" ||
+    call.name === "vfs_patch_json" ||
+    call.name === "vfs_merge_json" ||
+    call.name === "vfs_delete"
+  ) {
+    pushTarget((args as any)?.path);
     return Array.from(targets.values());
   }
 

@@ -5,28 +5,28 @@ describe("resolveOutlineToolNameAlias", () => {
   const allowed = [
     "vfs_ls",
     "vfs_schema",
-    "vfs_read",
+    "vfs_read_chars",
     "vfs_search",
-    "vfs_finish_outline",
+    "vfs_finish_outline_phase_0",
   ];
 
   it("keeps exact tool name unchanged", () => {
-    expect(resolveOutlineToolNameAlias("vfs_read", allowed)).toBe("vfs_read");
+    expect(resolveOutlineToolNameAlias("vfs_read_chars", allowed)).toBe("vfs_read_chars");
   });
 
   it("strips common prefixes and resolves to allowed tool name", () => {
-    expect(resolveOutlineToolNameAlias("default_api:vfs_read", allowed)).toBe(
-      "vfs_read",
+    expect(resolveOutlineToolNameAlias("default_api:vfs_read_chars", allowed)).toBe(
+      "vfs_read_chars",
     );
-    expect(resolveOutlineToolNameAlias("functions.vfs_read", allowed)).toBe(
-      "vfs_read",
+    expect(resolveOutlineToolNameAlias("functions.vfs_read_chars", allowed)).toBe(
+      "vfs_read_chars",
     );
     expect(
       resolveOutlineToolNameAlias(
-        "default_api:functions.vfs_finish_outline",
+        "default_api:functions.vfs_finish_outline_phase_0",
         allowed,
       ),
-    ).toBe("vfs_finish_outline");
+    ).toBe("vfs_finish_outline_phase_0");
   });
 
   it("strips generic namespace prefixes when they wrap an allowed name", () => {

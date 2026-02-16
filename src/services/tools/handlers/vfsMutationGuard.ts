@@ -29,7 +29,6 @@ export type MutationOperation =
   | "delete";
 
 const VFS_WRITE_DOC_REFS = [
-  "current/refs/tools/vfs_mutate.md",
   "current/refs/tools/README.md",
 ];
 
@@ -51,10 +50,15 @@ const createVfsWriteGuardError = (
   code: ToolCallError["code"],
   details?: ToolErrorDetails,
 ): ToolCallError => {
-  const refs = uniqueStrings([...(details?.refs ?? []), ...VFS_WRITE_DOC_REFS]);
+  const toolName = details?.tool ?? "vfs_write_file";
+  const refs = uniqueStrings([
+    ...(details?.refs ?? []),
+    `current/refs/tools/${toolName}.md`,
+    ...VFS_WRITE_DOC_REFS,
+  ]);
   return createError(error, code, {
     category: details?.category ?? inferErrorCategoryFromCode(code),
-    tool: details?.tool ?? "vfs_mutate",
+    tool: toolName,
     issues: details?.issues,
     recovery: details?.recovery,
     refs,
@@ -208,7 +212,7 @@ export const requireReadBeforeMutateForExistingFile = (
   }
 
   return createVfsWriteGuardError(
-    `Blocked: must read file before ${operation} in this session: ${toCurrentPath(normalized)} (use vfs_read first).`,
+    `Blocked: must read file before ${operation} in this session: ${toCurrentPath(normalized)} (use vfs_read_chars/vfs_read_lines/vfs_read_json first).`,
     "INVALID_ACTION",
     {
       category: "policy",
@@ -220,7 +224,7 @@ export const requireReadBeforeMutateForExistingFile = (
         },
       ],
       recovery: [
-        `Call vfs_read on ${toCurrentPath(normalized)} before retrying ${operation}.`,
+        `Call vfs_read_chars on ${toCurrentPath(normalized)} before retrying ${operation} (or vfs_read_lines/vfs_read_json when more suitable).`,
       ],
     },
   );
@@ -702,7 +706,7 @@ export const validateWritePayload = (
                 ],
           recovery: [
             "Align payload fields/types with schema constraints and retry.",
-            `Reference current/refs/tools/vfs_mutate.md for write patterns.`,
+            "Reference current/refs/tools/README.md plus the active write tool doc for write patterns.",
           ],
         },
       ),

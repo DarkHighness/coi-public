@@ -246,16 +246,16 @@ describe("contextInjector", () => {
     const text = getText(history[0]);
     expect(text).toContain("COLD START REQUIRED READS");
     expect(text).toContain(
-      'vfs_read({ path: "current/skills/commands/runtime/SKILL.md" })',
+      'vfs_read_chars({ path: "current/skills/commands/runtime/SKILL.md" })',
     );
     expect(text).toContain(
-      'vfs_read({ path: "current/world/soul.md" })',
+      'vfs_read_chars({ path: "current/world/soul.md" })',
     );
     expect(text).toContain(
-      'vfs_read({ path: "current/world/global/soul.md" })',
+      'vfs_read_chars({ path: "current/world/global/soul.md" })',
     );
     expect(text).toContain(
-      'vfs_read({ path: "current/conversation/session.jsonl", mode: "lines", startLine: 1, lineCount: 200 })',
+      'vfs_read_lines({ path: "current/conversation/session.jsonl", startLine: 1, lineCount: 200',
     );
     expect(text).toContain(
       "keep reads line-windowed; do not use unbounded chars mode",

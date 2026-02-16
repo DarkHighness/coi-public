@@ -185,12 +185,12 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-read-fail",
-            name: "vfs_read",
+            name: "vfs_read_chars",
             args: { path: "current/world/global.json" },
           },
           {
             id: "call-write-pass",
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             args: {
               ops: [
                 {
@@ -217,11 +217,11 @@ describe("agenticLoop tool logging", () => {
       });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_read") {
+      if (name === "vfs_read_chars") {
         return { success: false, error: "read failed", code: "READ_FAILED" };
       }
 
-      if (name === "vfs_mutate") {
+      if (name === "vfs_write_file") {
         return { success: true };
       }
 
@@ -250,7 +250,7 @@ describe("agenticLoop tool logging", () => {
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(3);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_read", "vfs_mutate", "vfs_finish_turn"]);
+    ).toEqual(["vfs_read_chars", "vfs_write_file", "vfs_finish_turn"]);
 
     const blockedFinishLog = result.logs.find(
       (log) =>
@@ -277,7 +277,7 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-write-fail",
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             args: {
               ops: [
                 {
@@ -333,16 +333,11 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-write-ok",
-            name: "vfs_mutate",
+            name: "vfs_write_file",
             args: {
-              ops: [
-                {
-                  op: "write_file",
-                  path: "current/world/global.json",
-                  content: "{}",
-                  contentType: "application/json",
-                },
-              ],
+              path: "current/world/global.json",
+              content: "{}",
+              contentType: "application/json",
             },
           },
           {
@@ -361,7 +356,7 @@ describe("agenticLoop tool logging", () => {
 
     let writeAttempt = 0;
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_mutate") {
+      if (name === "vfs_write_file") {
         writeAttempt += 1;
         if (writeAttempt === 1) {
           return {
@@ -397,7 +392,7 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(3);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_mutate", "vfs_mutate", "vfs_finish_turn"]);
+    ).toEqual(["vfs_write_file", "vfs_write_file", "vfs_finish_turn"]);
 
     const writeBlockedLog = result.logs.find(
       (log) =>
@@ -409,7 +404,7 @@ describe("agenticLoop tool logging", () => {
     );
     expect(writeBlockedLog).toBeDefined();
     expect(String((writeBlockedLog as any)?.toolOutput?.error || "")).toContain(
-      "current/world/global.json",
+      "unknown-write-target",
     );
   });
 
@@ -424,20 +419,15 @@ describe("agenticLoop tool logging", () => {
         totalTokens: 8,
       },
       functionCalls: [
-        {
-          id: "call-write-immutable",
-          name: "vfs_mutate",
-          args: {
-            ops: [
-              {
-                op: "write_file",
-                path: "current/skills/commands/runtime/SKILL.md",
-                content: "x",
-                contentType: "text/markdown",
-              },
-            ],
+          {
+            id: "call-write-immutable",
+            name: "vfs_write_file",
+            args: {
+              path: "current/skills/commands/runtime/SKILL.md",
+              content: "x",
+              contentType: "text/markdown",
+            },
           },
-        },
         {
           id: "call-finish-ok",
           name: "vfs_finish_turn",
@@ -453,7 +443,7 @@ describe("agenticLoop tool logging", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_mutate") {
+      if (name === "vfs_write_file") {
         return {
           success: false,
           error: "read-only path",
@@ -483,7 +473,7 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_mutate", "vfs_finish_turn"]);
+    ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
 
     const blockedFinishLog = result.logs.find(
       (log) =>
@@ -496,7 +486,7 @@ describe("agenticLoop tool logging", () => {
     expect(blockedFinishLog).toBeUndefined();
 
     const writeLog = result.logs.find(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_mutate",
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
     );
     expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
       "WRITE_UNRECOVERABLE_NON_BLOCKING",
@@ -517,19 +507,14 @@ describe("agenticLoop tool logging", () => {
         totalTokens: 8,
       },
       functionCalls: [
-        {
-          id: "call-write-missing-target",
-          name: "vfs_mutate",
-          args: {
-            ops: [
-              {
-                op: "patch_json",
-                path: "current/world/newly-created/profile.json",
-                patches: [{ op: "replace", path: "/foo", value: "bar" }],
-              },
-            ],
+          {
+            id: "call-write-missing-target",
+            name: "vfs_patch_json",
+            args: {
+              path: "current/world/newly-created/profile.json",
+              patch: [{ op: "replace", path: "/foo", value: "bar" }],
+            },
           },
-        },
         {
           id: "call-finish-ok",
           name: "vfs_finish_turn",
@@ -545,7 +530,7 @@ describe("agenticLoop tool logging", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_mutate") {
+      if (name === "vfs_patch_json") {
         return {
           success: false,
           error: "file not found",
@@ -575,7 +560,7 @@ describe("agenticLoop tool logging", () => {
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
-    ).toEqual(["vfs_mutate", "vfs_finish_turn"]);
+    ).toEqual(["vfs_patch_json", "vfs_finish_turn"]);
 
     const blockedFinishLog = result.logs.find(
       (log) =>
@@ -588,7 +573,7 @@ describe("agenticLoop tool logging", () => {
     expect(blockedFinishLog).toBeUndefined();
 
     const writeLog = result.logs.find(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_mutate",
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_patch_json",
     );
     expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
       "WRITE_NON_EXISTENT_TARGET_NON_BLOCKING",
@@ -612,7 +597,7 @@ describe("agenticLoop tool logging", () => {
         functionCalls: [
           {
             id: "call-read",
-            name: "vfs_read",
+            name: "vfs_read_chars",
             args: { path: "current/world/global.json" },
           },
           {
@@ -692,7 +677,7 @@ describe("agenticLoop tool logging", () => {
       functionCalls: [
         {
           id: "call-1-write",
-          name: "vfs_mutate",
+          name: "vfs_write_file",
           args: {
             ops: [
               {
@@ -719,7 +704,7 @@ describe("agenticLoop tool logging", () => {
     });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
-      if (name === "vfs_mutate") {
+      if (name === "vfs_write_file") {
         return { success: true };
       }
       if (name === "vfs_finish_turn") {
@@ -745,7 +730,7 @@ describe("agenticLoop tool logging", () => {
     );
     expect(toolLogs).toHaveLength(2);
     expect(toolLogs.map((log) => log.toolName)).toEqual([
-      "vfs_mutate",
+      "vfs_write_file",
       "vfs_finish_turn",
     ]);
   });

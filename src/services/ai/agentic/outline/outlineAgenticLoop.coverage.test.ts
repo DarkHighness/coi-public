@@ -256,8 +256,9 @@ describe("generateStoryOutlinePhased (coverage)", () => {
         const toolName = String(opts?.finishToolName ?? "");
         const data = phasePayloads[submitCount];
         const phase = submitCount + 1;
+        const expectedToolName = `vfs_finish_outline_phase_${phase}`;
         submitCount += 1;
-        if (!toolName || !data || toolName !== "vfs_finish_outline") {
+        if (!toolName || !data || toolName !== expectedToolName) {
           throw new Error(
             `Unexpected finishToolName in test: "${toolName}" (${submitCount})`,
           );
@@ -268,7 +269,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
               {
                 id: `call_${toolName}`,
                 name: toolName,
-                args: { phase, data },
+                args: data,
               },
             ],
           },
