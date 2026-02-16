@@ -228,8 +228,11 @@ const classifyWriteFailure = (params: {
     disposition: "warn_missing_target_non_blocking",
     retryTargets: [],
     guidance:
-      `[WARNING: WRITE_NON_EXISTENT_TARGET_NON_BLOCKING] Write failed on non-existent target path(s). ` +
-      `This does NOT block finish. If creation is still required, fix path/operation and retry. Targets: ${allTargetList}.`,
+      errorCode === "NOT_FOUND"
+        ? `[WARNING: WRITE_NON_EXISTENT_TARGET_NON_BLOCKING] Write failed because target path(s) do not exist. ` +
+          `This does NOT block finish. If creation is still required, fix path/operation and retry. Targets: ${allTargetList}.`
+        : `[WARNING: WRITE_NON_BLOCKING_FAILURE] Write failed on non-blocking target path(s). ` +
+          `This does NOT block finish. New-file creation may still be intended; fix the actual error above (e.g. schema/arguments/content) and retry only if needed. Targets: ${allTargetList}.`,
   };
 };
 

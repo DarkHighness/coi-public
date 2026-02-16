@@ -795,6 +795,94 @@ describe("agenticLoop tool logging", () => {
     );
   });
 
+  it("uses non-blocking failure guidance for new-target write errors that are not NOT_FOUND", async () => {
+    const vfsSession = createVfsSession();
+
+    aiHandlerMock.handleAICall.mockResolvedValueOnce({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-write-invalid-data",
+          name: "vfs_write_file",
+          args: {
+            path: "current/world/newly-created/kno_phantom_sniper.json",
+            content: "{}",
+            contentType: "application/json",
+          },
+        },
+        {
+          id: "call-finish-ok",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_write_file") {
+        return {
+          success: false,
+          error: "schema validation failed",
+          code: "INVALID_DATA",
+        };
+      }
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+        return { success: true };
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(1);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
+
+    const blockedFinishLog = result.logs.find(
+      (log) =>
+        log.endpoint === "tool_execution" &&
+        log.toolName === "vfs_finish_turn" &&
+        String((log as any).toolOutput?.error || "").includes(
+          "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
+        ),
+    );
+    expect(blockedFinishLog).toBeUndefined();
+
+    const writeLog = result.logs.find(
+      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
+    );
+    const writeError = String((writeLog as any)?.toolOutput?.error || "");
+    expect(writeError).toContain("WRITE_NON_BLOCKING_FAILURE");
+    expect(writeError).toContain(
+      "current/world/newly-created/kno_phantom_sniper.json",
+    );
+    expect(writeError).not.toContain("WRITE_NON_EXISTENT_TARGET_NON_BLOCKING");
+  });
+
   it("soft-blocks read-only batches before finish to avoid token waste", async () => {
     const vfsSession = createVfsSession();
 
