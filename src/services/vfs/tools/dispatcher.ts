@@ -14,9 +14,11 @@ import { handleFinishSummary } from "./handlers/finishSummary";
 import { handleReadChars } from "./handlers/readChars";
 import { handleReadLines } from "./handlers/readLines";
 import { handleReadJson } from "./handlers/readJson";
+import { handleReadMarkdown } from "./handlers/readMarkdown";
 import { handleWriteFile } from "./handlers/writeFile";
 import { handleAppendText } from "./handlers/appendText";
 import { handleEditLines } from "./handlers/editLines";
+import { handleWriteMarkdown } from "./handlers/writeMarkdown";
 import { handlePatchJson } from "./handlers/patchJson";
 import { handleMergeJson } from "./handlers/mergeJson";
 import { handleMove } from "./handlers/move";
@@ -38,10 +40,12 @@ const HANDLERS: Record<VfsToolHandlerKey, (args: Record<string, unknown>, ctx: T
   read_chars: handleReadChars,
   read_lines: handleReadLines,
   read_json: handleReadJson,
+  read_markdown: handleReadMarkdown,
   inspect_search: handleInspectSearch,
   write_file: handleWriteFile,
   append_text: handleAppendText,
   edit_lines: handleEditLines,
+  write_markdown: handleWriteMarkdown,
   patch_json: handlePatchJson,
   merge_json: handleMergeJson,
   move: handleMove,

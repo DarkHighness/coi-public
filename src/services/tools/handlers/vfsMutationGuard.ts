@@ -214,8 +214,17 @@ export const requireReadBeforeMutateForExistingFile = (
     return null;
   }
 
+  const readHint =
+    existing.contentType === "text/markdown"
+      ? "vfs_read_markdown/vfs_read_lines/vfs_read_chars"
+      : "vfs_read_chars/vfs_read_lines/vfs_read_json";
+  const readRetryExample =
+    existing.contentType === "text/markdown"
+      ? `Call vfs_read_markdown on ${toCurrentPath(normalized)} before retrying ${operation} (or vfs_read_lines/vfs_read_chars when more suitable).`
+      : `Call vfs_read_chars on ${toCurrentPath(normalized)} before retrying ${operation} (or vfs_read_lines/vfs_read_json when more suitable).`;
+
   return createVfsWriteGuardError(
-    `Blocked: must read file before ${operation} in this session: ${toCurrentPath(normalized)} (use vfs_read_chars/vfs_read_lines/vfs_read_json first).`,
+    `Blocked: must read file before ${operation} in this session: ${toCurrentPath(normalized)} (use ${readHint} first).`,
     "INVALID_ACTION",
     {
       category: "policy",
@@ -227,7 +236,7 @@ export const requireReadBeforeMutateForExistingFile = (
         },
       ],
       recovery: [
-        `Call vfs_read_chars on ${toCurrentPath(normalized)} before retrying ${operation} (or vfs_read_lines/vfs_read_json when more suitable).`,
+        readRetryExample,
       ],
     },
   );

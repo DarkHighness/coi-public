@@ -7,6 +7,7 @@ export const READ_ONLY_INSPECTION_TOOL_NAMES = new Set([
   "vfs_read_chars",
   "vfs_read_lines",
   "vfs_read_json",
+  "vfs_read_markdown",
   "vfs_search",
 ]);
 
@@ -14,6 +15,7 @@ export const WRITE_MUTATION_TOOL_NAMES = new Set([
   "vfs_write_file",
   "vfs_append_text",
   "vfs_edit_lines",
+  "vfs_write_markdown",
   "vfs_patch_json",
   "vfs_merge_json",
   "vfs_move",
@@ -73,6 +75,7 @@ export const collectWriteTargetsFromToolCall = (
     call.name === "vfs_write_file" ||
     call.name === "vfs_append_text" ||
     call.name === "vfs_edit_lines" ||
+    call.name === "vfs_write_markdown" ||
     call.name === "vfs_patch_json" ||
     call.name === "vfs_merge_json" ||
     call.name === "vfs_delete"

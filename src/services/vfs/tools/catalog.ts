@@ -187,6 +187,38 @@ const vfsLineEditSchema = z.discriminatedUnion("kind", [
     .strict(),
 ]);
 
+const markdownSelectorSchema = z
+  .object({
+    heading: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Markdown heading text (exact match after trim)."),
+    index: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Markdown section index such as `1`, `1.2`, `2.3.1`."),
+  })
+  .strict();
+
+const markdownSectionInputSchema = z
+  .object({
+    title: z.string().min(1).describe("Section heading title."),
+    level: z
+      .number()
+      .int()
+      .min(1)
+      .max(6)
+      .optional()
+      .describe("Markdown heading level (1..6). Optional for add_section."),
+    content: z
+      .string()
+      .optional()
+      .describe("Section body text without heading line."),
+  })
+  .strict();
+
 const summaryVisibleToolSchema = z
   .object({
     narrative: z
@@ -316,7 +348,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_ls",
     description:
-      "List VFS entries. Supports plain listing, glob filtering via patterns, and optional ls -l style metadata.",
+      "List VFS entries. Supports plain listing, glob filtering via patterns, always returns stats (including chars/lines), and includes read-strategy hints for likely-over-limit files.",
     parameters: z
       .object({
         path: vfsOptionalPathSchema.describe(
@@ -368,7 +400,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     capability: {
       ...CAPABILITY_READ_ALL,
       summary:
-        "List VFS entries (plain list or glob pattern matching) with stats metadata.",
+        "List VFS entries (plain list or glob pattern matching) with stats metadata and read hints.",
     },
     toolsetOrder: ordered({
       turn: 10,
@@ -521,6 +553,46 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     }),
   }),
   defineCatalogTool({
+    name: "vfs_read_markdown",
+    description:
+      "Read markdown file content by section selectors (heading or hierarchical index).",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("Markdown file path."),
+        headings: z
+          .array(z.string().min(1))
+          .min(1)
+          .optional()
+          .describe("Optional heading selectors (exact match after trim)."),
+        indices: z
+          .array(z.string().min(1))
+          .min(1)
+          .optional()
+          .describe("Optional hierarchical section indices (`1`, `1.2`, ...)."),
+        maxChars: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Optional max chars per selected section. Effective payload is still bounded by dynamic read token budget.",
+          ),
+      })
+      .strict(),
+    handlerKey: "read_markdown",
+    capability: {
+      ...CAPABILITY_READ_ALL,
+      summary: "Read markdown by section selectors.",
+    },
+    toolsetOrder: ordered({
+      turn: 33,
+      playerRate: 33,
+      cleanup: 33,
+      summary: 33,
+      outline: 33,
+    }),
+  }),
+  defineCatalogTool({
     name: "vfs_search",
     description:
       "Search VFS files by text/regex/fuzzy (optionally semantic, when available).",
@@ -649,6 +721,45 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     toolsetOrder: ordered({
       turn: 52,
       cleanup: 52,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_write_markdown",
+    description:
+      "Add/replace/delete markdown sections using heading/index selectors.",
+    parameters: z
+      .object({
+        path: vfsFilePathSchema.describe("Markdown file path."),
+        action: z.enum(["add_section", "replace_section", "delete_section"]),
+        target: markdownSelectorSchema
+          .optional()
+          .describe("Target selector for replace_section/delete_section."),
+        parent: markdownSelectorSchema
+          .optional()
+          .describe(
+            "Optional parent selector for add_section insertion anchor. If parent is missing/unmatched, append at end.",
+          ),
+        section: markdownSectionInputSchema
+          .optional()
+          .describe("Section payload for add_section."),
+        content: z
+          .string()
+          .optional()
+          .describe("Replacement section body for replace_section."),
+        expectedHash: z
+          .string()
+          .optional()
+          .describe("Optional optimistic concurrency guard."),
+      })
+      .strict(),
+    handlerKey: "write_markdown",
+    capability: {
+      ...CAPABILITY_WRITE_MUTATION,
+      summary: "Mutate markdown sections by selector.",
+    },
+    toolsetOrder: ordered({
+      turn: 52.5,
+      cleanup: 52.5,
     }),
   }),
   defineCatalogTool({

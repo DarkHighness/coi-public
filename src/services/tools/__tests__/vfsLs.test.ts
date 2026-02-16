@@ -18,7 +18,9 @@ describe("vfs_ls v5", () => {
     expect(result.success).toBe(true);
     expect(result.data.entries).toContain("notes.md");
     expect(Array.isArray(result.data.stats)).toBe(true);
+    expect(Array.isArray(result.data.hints)).toBe(true);
     expect(result.data.stats[0]?.kind).toBe("file");
+    expect(typeof result.data.stats[0]?.chars).toBe("number");
   });
 
   it("supports pattern matching with patterns[]", () => {
@@ -38,6 +40,7 @@ describe("vfs_ls v5", () => {
     expect(result.success).toBe(true);
     expect(result.data.entries).toEqual(["current/world/notes.md"]);
     expect(Array.isArray(result.data.stats)).toBe(true);
+    expect(Array.isArray(result.data.hints)).toBe(true);
     expect(result.data.stats[0]?.path).toBe("current/world/notes.md");
   });
 
@@ -79,6 +82,7 @@ describe("vfs_ls v5", () => {
     );
     expect(skillEntry).toBeDefined();
     expect(skillEntry.lines).toBeGreaterThan(0);
+    expect(skillEntry.chars).toBeGreaterThan(0);
     expect(skillEntry.mimeType).toBe("text/markdown");
 
     const refResult = dispatchToolCall(
@@ -124,6 +128,7 @@ describe("vfs_ls v5", () => {
 
     expect(result.success).toBe(true);
     expect(Array.isArray(result.data.layout)).toBe(true);
+    expect(Array.isArray(result.data.hints)).toBe(true);
 
     const scaffold = (result.data.layout as any[]).find(
       (entry) => entry.path === "current/world/characters/README.md",
@@ -168,6 +173,7 @@ describe("vfs_ls v5", () => {
 
     expect(result.success).toBe(true);
     expect(Array.isArray(result.data.access)).toBe(true);
+    expect(Array.isArray(result.data.hints)).toBe(true);
     expect(result.data.access[0].templateId).toBe("template.story.world");
     expect(result.data.access[0].readability).toBe("read_write");
   });

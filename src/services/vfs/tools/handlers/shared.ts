@@ -106,7 +106,7 @@ const buildToolDocRecoveryReadCall = (toolDocRef: string): string =>
   `vfs_read_chars({ path: "${toolDocRef}" })`;
 
 const SOUL_TOOL_LEARNING_RECOVERY =
-  'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via one writable tool (`vfs_write_file`/`vfs_append_text`/`vfs_edit_lines`/`vfs_patch_json`/`vfs_merge_json`) or `vfs_finish_soul` in `[Player Rate]`.';
+  'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via one writable tool (`vfs_write_file`/`vfs_append_text`/`vfs_edit_lines`/`vfs_write_markdown`/`vfs_patch_json`/`vfs_merge_json`) or `vfs_finish_soul` in `[Player Rate]`.';
 
 const withSoulToolLearningRecovery = (steps: string[]): string[] => {
   const exists = steps.includes(SOUL_TOOL_LEARNING_RECOVERY);
@@ -430,7 +430,7 @@ export const ensureNotFinishGuardedMutation = (
 };
 
 export const createReadLimitError = (
-  mode: "chars" | "lines" | "json",
+  mode: "chars" | "lines" | "json" | "markdown",
   details: string,
   inputPath?: string,
   limits?: {
@@ -438,15 +438,22 @@ export const createReadLimitError = (
     estimatedTokens?: number;
     suggestedChunkChars?: number;
   },
-  toolName?: "vfs_read_chars" | "vfs_read_lines" | "vfs_read_json",
+  toolName?:
+    | "vfs_read_chars"
+    | "vfs_read_lines"
+    | "vfs_read_json"
+    | "vfs_read_markdown",
 ): ToolCallResult<never> =>
   (() => {
     const resolvedToolName =
-      toolName ?? (mode === "json"
+      toolName ??
+      (mode === "json"
         ? "vfs_read_json"
         : mode === "lines"
           ? "vfs_read_lines"
-          : "vfs_read_chars");
+          : mode === "markdown"
+            ? "vfs_read_markdown"
+            : "vfs_read_chars");
     const normalizedTokenBudget = Number.isFinite(limits?.tokenBudget)
       ? Math.max(1, Math.floor(limits?.tokenBudget ?? 0))
       : VFS_READ_HARD_TOKEN_BUDGET;
@@ -470,6 +477,10 @@ export const createReadLimitError = (
       nextCalls.push(
         `vfs_read_json({ path: "${qualifiedPath}", pointers: ["/..."], maxChars: ${suggestedChunkChars} })`,
       );
+    } else if (mode === "markdown") {
+      nextCalls.unshift(
+        `vfs_read_markdown({ path: "${qualifiedPath}", indices: ["1"] })`,
+      );
     }
 
     const budgetText =
@@ -477,8 +488,15 @@ export const createReadLimitError = (
         ? `Token budget is ${normalizedTokenBudget} (estimated payload ${normalizedEstimatedTokens}).`
         : `Token budget is ${normalizedTokenBudget}.`;
 
+    const followupGuidance =
+      mode === "json"
+        ? "Use bounded line/char windows or narrower JSON pointers."
+        : mode === "markdown"
+          ? "Use markdown section selectors (`indices`/`headings`) or narrower windows."
+          : "Use bounded line/char windows.";
+
     return createError(
-      `${resolvedToolName}: ${details}. ${budgetText} Use bounded line/char windows or narrower JSON pointers.`,
+      `${resolvedToolName}: ${details}. ${budgetText} ${followupGuidance}`,
       "INVALID_DATA",
       {
         category: "validation",
@@ -498,7 +516,9 @@ export const createReadLimitError = (
         hint: {
           code: "READ_LIMIT_HINT",
           summary:
-            "Do not retry path-only broad reads. Switch to bounded lines/chars windows (or narrowed JSON pointers).",
+            mode === "markdown"
+              ? "Do not retry broad markdown reads. Switch to section selectors (`indices`/`headings`) or bounded lines/chars windows."
+              : "Do not retry path-only broad reads. Switch to bounded lines/chars windows (or narrowed JSON pointers).",
           avoid: `${resolvedToolName}({ path: "${qualifiedPath}" })`,
           nextCalls,
           metadata: {
@@ -799,6 +819,7 @@ export const toLsStatEntryForFile = (file: {
 }) => ({
   kind: "file" as const,
   path: toCurrentPath(file.path),
+  chars: file.content.length,
   size: file.size,
   lines: countLines(file.content),
   mimeType: getMimeType(file.contentType),
@@ -812,6 +833,7 @@ export const toLsStatEntryForDir = (
 ): {
   kind: "dir";
   path: string;
+  chars: null;
   size: number;
   lines: null;
   mimeType: null;
@@ -828,6 +850,7 @@ export const toLsStatEntryForDir = (
   return {
     kind: "dir",
     path: toCurrentPath(prefix),
+    chars: null,
     size: 0,
     lines: null,
     mimeType: null,

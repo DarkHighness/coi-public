@@ -244,6 +244,38 @@ describe("VFS handlers read/schema/ls", () => {
     );
   });
 
+  it("returns markdown section tree in vfs_schema for markdown paths", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/notes.md",
+      ["# Root", "", "text", "", "## Child", "", "more"].join("\n"),
+      "text/markdown",
+    );
+    const ctx = { vfsSession: session };
+
+    const result = dispatchToolCall(
+      "vfs_schema",
+      { paths: ["current/world/notes.md"] },
+      ctx,
+    ) as any;
+
+    expect(result.success).toBe(true);
+    expect(result.data.schemas[0].markdownSections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          index: "1",
+          title: "Root",
+          children: expect.arrayContaining([
+            expect.objectContaining({
+              index: "1.1",
+              title: "Child",
+            }),
+          ]),
+        }),
+      ]),
+    );
+  });
+
   it("supports vfs_ls includeExpected/includeAccess in plain mode", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
@@ -257,6 +289,7 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.success).toBe(true);
     expect(Array.isArray(result.data.layout)).toBe(true);
     expect(Array.isArray(result.data.stats)).toBe(true);
+    expect(Array.isArray(result.data.hints)).toBe(true);
 
     const scaffold = result.data.layout.find(
       (entry: any) => entry.path === "current/world/characters/README.md",
@@ -288,6 +321,7 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.success).toBe(true);
     expect(result.data.entries).toContain("current/world/global.json");
     expect(Array.isArray(result.data.stats)).toBe(true);
+    expect(Array.isArray(result.data.hints)).toBe(true);
     expect(result.data.access[0].templateId).toBe("template.story.world");
   });
 
@@ -313,5 +347,6 @@ describe("VFS handlers read/schema/ls", () => {
     expect(sessionJsonl.exists).toBe(false);
     expect(sessionJsonl.expected).toBe(true);
     expect(sessionJsonl.permissionClass).toBe("finish_guarded");
+    expect(Array.isArray(result.data.hints)).toBe(true);
   });
 });

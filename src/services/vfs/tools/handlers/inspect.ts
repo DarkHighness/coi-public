@@ -1,11 +1,16 @@
 import { createError, createSuccess } from "../../../tools/toolResult";
 import { getVfsSchemaHint } from "../../../providers/utils";
+import {
+  estimateTokensForMixedText,
+  resolveVfsReadTokenBudget,
+} from "../../../ai/contextUsage";
 import { toCurrentPath } from "../../currentAlias";
 import { normalizeVfsPath } from "../../utils";
 import { getSchemaForPath } from "../../schemas";
 import { vfsPathRegistry } from "../../core/pathRegistry";
 import { vfsResourceRegistry } from "../../core/resourceRegistry";
 import { buildVfsLayoutReport } from "../../layoutReport";
+import { parseMarkdownSections } from "./markdownSections";
 import {
   collectFuzzyMatches,
   collectMatches,
@@ -47,6 +52,51 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
       typeof ctx.gameState?.forkId === "number"
         ? ctx.gameState.forkId
         : session.getActiveForkId();
+    const readBudgetResolution = resolveVfsReadTokenBudget(ctx.settings);
+    const readTokenBudget = readBudgetResolution.tokenBudget;
+    const readCalibrationFactor = readBudgetResolution.calibrationFactor;
+    const lsHintThresholdTokens = Math.max(1, Math.floor(readTokenBudget * 0.9));
+    const lsHintLimit = 8;
+
+    const recommendReadTool = (
+      contentType: string,
+      path: string,
+    ): string => {
+      if (contentType === "application/json") {
+        return "vfs_read_json with narrow pointers";
+      }
+      if (contentType === "text/markdown" || path.toLowerCase().endsWith(".md")) {
+        return "vfs_read_markdown by headings/indices (or vfs_read_lines windows)";
+      }
+      if (contentType === "text/plain" || contentType === "application/jsonl") {
+        return "vfs_read_lines with bounded ranges";
+      }
+      return "bounded vfs_read_lines / vfs_read_chars windows";
+    };
+
+    const buildLsHints = (
+      files: Array<{ path: string; contentType: string; content: string }>,
+    ): string[] => {
+      if (files.length === 0) {
+        return [];
+      }
+
+      const candidates = files
+        .map((file) => ({
+          ...file,
+          estimatedTokens: estimateTokensForMixedText(file.content, {
+            calibrationFactor: readCalibrationFactor,
+          }),
+        }))
+        .filter((file) => file.estimatedTokens >= lsHintThresholdTokens)
+        .sort((a, b) => b.estimatedTokens - a.estimatedTokens)
+        .slice(0, lsHintLimit);
+
+      return candidates.map((file) => {
+        const recommended = recommendReadTool(file.contentType, file.path);
+        return `${toCurrentPath(file.path)} may exceed single-read budget (${file.estimatedTokens} tokens est / ${readTokenBudget} budget). Prefer ${recommended}.`;
+      });
+    };
 
     const buildLayoutPayload = (
       rootPath: string | undefined,
@@ -146,6 +196,11 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
       const entries = session.list(baseResolved.path);
       const snapshot = session.snapshotAll();
       const snapshotPaths = Object.keys(snapshot);
+      const filesForHints: Array<{
+        path: string;
+        contentType: string;
+        content: string;
+      }> = [];
       const resolveEntryPath = (entryPath: string): string => {
         const normalizedEntry = normalizeVfsPath(entryPath);
         if (!baseResolved.path) {
@@ -157,12 +212,21 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
         const resolvedEntryPath = resolveEntryPath(entryPath);
         const file = session.readFile(resolvedEntryPath);
         if (file) {
+          filesForHints.push({
+            path: file.path,
+            contentType: file.contentType,
+            content: file.content,
+          });
           return toLsStatEntryForFile(file);
         }
         return toLsStatEntryForDir(resolvedEntryPath, snapshotPaths);
       });
 
-      const payload: Record<string, unknown> = { entries, stats };
+      const payload: Record<string, unknown> = {
+        entries,
+        stats,
+        hints: buildLsHints(filesForHints),
+      };
 
       if (includeExpected || includeAccess) {
         const layoutPayload = buildLayoutPayload(baseResolved.path);
@@ -240,16 +304,27 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
       session.noteToolAccessFile(path);
     }
     const matches = selectedMatches.map((p) => toCurrentPath(p));
+    const filesForHints: Array<{
+      path: string;
+      contentType: string;
+      content: string;
+    }> = [];
 
     const stats = selectedMatches.flatMap((path) => {
       const file = session.readFile(path);
       if (!file) return [];
+      filesForHints.push({
+        path: file.path,
+        contentType: file.contentType,
+        content: file.content,
+      });
       return [toLsStatEntryForFile(file)];
     });
 
     const payload: Record<string, unknown> = {
       entries: matches,
       stats,
+      hints: buildLsHints(filesForHints),
       truncated,
       totalMatches: allMatches.length,
     };
@@ -264,6 +339,12 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_schema", args, () => {
     const session = getSession(ctx);
     const typedArgs = args as any;
+    const isMarkdownContentType = (value: string | null | undefined): boolean =>
+      value === "text/markdown";
+    const toMarkdownSections = (content: string | null): ReturnType<
+      typeof parseMarkdownSections
+    >["tree"] =>
+      typeof content === "string" ? parseMarkdownSections(content).tree : [];
 
     const schemas: Array<{
       path: string;
@@ -279,6 +360,8 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
         retention: string;
         allowedWriteOps: string[];
       };
+      markdownSections?: ReturnType<typeof parseMarkdownSections>["tree"];
+      markdownSectionsNote?: string;
     }> = [];
     const missing: Array<{ path: string; error: string }> = [];
 
@@ -299,26 +382,74 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
         activeForkId,
       });
       const existingFile = session.readFile(resolved.path);
+      const templateContentTypes = resourceMatch.descriptor.contentTypes ?? [];
+      const inferredContentType =
+        existingFile?.contentType ??
+        inferContentTypeFromPath(resolved.path) ??
+        (templateContentTypes.length === 1 ? templateContentTypes[0] : null);
+      const looksLikePlainOrMarkdown =
+        inferredContentType !== null
+          ? isPlainOrMarkdownContentType(inferredContentType)
+          : templateContentTypes.length > 0 &&
+            templateContentTypes.every(isPlainOrMarkdownContentType);
+      const markdownPath =
+        isMarkdownContentType(existingFile?.contentType) ||
+        isMarkdownContentType(inferredContentType) ||
+        templateContentTypes.some((contentType) =>
+          isMarkdownContentType(contentType),
+        );
+      const classificationPayload = {
+        canonicalPath: classification.canonicalPath,
+        templateId: classification.templateId,
+        permissionClass: classification.permissionClass,
+        scope: classification.scope,
+        domain: classification.domain,
+        resourceShape: classification.resourceShape,
+        criticality: classification.criticality,
+        retention: classification.retention,
+        allowedWriteOps: [...classification.allowedWriteOps],
+      };
 
       try {
         const schema = getSchemaForPath(resolved.path);
+        const markdownSections = markdownPath
+          ? toMarkdownSections(existingFile?.content ?? null)
+          : undefined;
         schemas.push({
           path: toCurrentPath(resolved.path),
           hint: getVfsSchemaHint(schema),
-          classification: {
-            canonicalPath: classification.canonicalPath,
-            templateId: classification.templateId,
-            permissionClass: classification.permissionClass,
-            scope: classification.scope,
-            domain: classification.domain,
-            resourceShape: classification.resourceShape,
-            criticality: classification.criticality,
-            retention: classification.retention,
-            allowedWriteOps: [...classification.allowedWriteOps],
-          },
+          classification: classificationPayload,
+          ...(markdownPath ? { markdownSections } : {}),
+          ...(markdownPath && !existingFile
+            ? {
+                markdownSectionsNote:
+                  "Markdown file not found. Section tree is empty until the file exists.",
+              }
+            : {}),
         });
       } catch (schemaError) {
         if (!hasSpecificTemplateDefinition(classification.templateId)) {
+          if (markdownPath) {
+            schemas.push({
+              path: toCurrentPath(resolved.path),
+              hint: formatTemplateDefinitionHint({
+                templateId: classification.templateId,
+                description: classification.description,
+                shape: classification.resourceShape,
+                scope: classification.scope,
+                domain: classification.domain,
+                permissionClass: classification.permissionClass,
+                contentTypes: templateContentTypes,
+                resolvedContentType: inferredContentType,
+              }),
+              classification: classificationPayload,
+              markdownSections: toMarkdownSections(existingFile?.content ?? null),
+              markdownSectionsNote: existingFile
+                ? undefined
+                : "Markdown file not found. Section tree is empty until the file exists.",
+            });
+            continue;
+          }
           const message =
             schemaError instanceof Error
               ? schemaError.message
@@ -327,18 +458,7 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
           continue;
         }
 
-        const templateContentTypes = resourceMatch.descriptor.contentTypes ?? [];
-        const inferredContentType =
-          existingFile?.contentType ??
-          inferContentTypeFromPath(resolved.path) ??
-          (templateContentTypes.length === 1 ? templateContentTypes[0] : null);
-        const looksLikePlainOrMarkdown =
-          inferredContentType !== null
-            ? isPlainOrMarkdownContentType(inferredContentType)
-            : templateContentTypes.length > 0 &&
-              templateContentTypes.every(isPlainOrMarkdownContentType);
-
-        if (!existingFile && looksLikePlainOrMarkdown) {
+        if (!existingFile && looksLikePlainOrMarkdown && !markdownPath) {
           missing.push({
             path: inputPath,
             error: `File not found for plain/markdown path: ${toCurrentPath(resolved.path)}`,
@@ -358,17 +478,15 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
             contentTypes: templateContentTypes,
             resolvedContentType: inferredContentType,
           }),
-          classification: {
-            canonicalPath: classification.canonicalPath,
-            templateId: classification.templateId,
-            permissionClass: classification.permissionClass,
-            scope: classification.scope,
-            domain: classification.domain,
-            resourceShape: classification.resourceShape,
-            criticality: classification.criticality,
-            retention: classification.retention,
-            allowedWriteOps: [...classification.allowedWriteOps],
-          },
+          classification: classificationPayload,
+          ...(markdownPath
+            ? {
+                markdownSections: toMarkdownSections(existingFile?.content ?? null),
+                markdownSectionsNote: existingFile
+                  ? undefined
+                  : "Markdown file not found. Section tree is empty until the file exists.",
+              }
+            : {}),
         });
       }
     }

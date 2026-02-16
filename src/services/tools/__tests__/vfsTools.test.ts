@@ -11,9 +11,11 @@ describe("VFS tools", () => {
     expect(names).toContain("vfs_read_chars");
     expect(names).toContain("vfs_read_lines");
     expect(names).toContain("vfs_read_json");
+    expect(names).toContain("vfs_read_markdown");
     expect(names).toContain("vfs_write_file");
     expect(names).toContain("vfs_append_text");
     expect(names).toContain("vfs_edit_lines");
+    expect(names).toContain("vfs_write_markdown");
     expect(names).toContain("vfs_patch_json");
     expect(names).toContain("vfs_merge_json");
     expect(names).toContain("vfs_move");
