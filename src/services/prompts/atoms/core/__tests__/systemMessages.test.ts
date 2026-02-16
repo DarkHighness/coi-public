@@ -22,7 +22,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)");
     expect(content).toContain("current/skills/index.json");
     expect(content).toContain("Once per session");
-    expect(content).toContain("broad full-file char reads");
+    expect(content).toContain("avoid broad full-file");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).not.toContain(legacySearchTool);

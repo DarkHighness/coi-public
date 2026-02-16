@@ -241,17 +241,17 @@ When you render those consequences into prose, write like a skilled human storyt
      - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Your payload doesn't match the tool schema or the target file's expected structure.
        - Fix: read split docs \`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, and \`current/refs/tool-schemas/<tool>/README.md\`, then retry with schema-valid args.
        - For JSON targets: \`vfs_schema({ paths: ["<targetPath>"] })\` to confirm fields/types before retrying.
-       - If read fails with char-limit/cap errors, retry using \`mode: "json"\` + narrow \`pointers\` or \`mode: "lines"\` with explicit range; do NOT repeat full-file char reads.
+       - If read fails with char-limit/cap errors, retry with narrower tools: \`vfs_read_json\` + focused \`pointers\`, bounded \`vfs_read_lines\`, or \`vfs_read_markdown\` section selectors; do NOT repeat broad full-file reads.
        - If patch fails with \`OPERATION_PATH_CANNOT_ADD\` or unrecognized keys, stop repeating the same patch; inspect parent pointers first, then switch strategy (\`merge_json\` or correct file path).
      - \`NOT_FOUND\`: The path/ID you referenced doesn't exist in the VFS under \`current/**\` (alias) or canonical \`shared/**\` / \`forks/{id}/**\`.
        - Fix: \`vfs_ls({ path: "<parentDir>" })\`, then \`vfs_search({ path: "<parentDir>", query: "<name>", fuzzy: true })\`.
        - Never guess leaf filenames; discover exact path first (e.g., character data is usually \`.../<charId>/profile.json\`, not \`.../<charId>.json\`).
      - \`ALREADY_EXISTS\`: You tried to create something that already exists.
-       - Fix: \`vfs_read_chars({ path: "<targetPath>" })\`, then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement) instead of creating duplicates.
+       - Fix: read the target first (\`vfs_read_json\` for JSON, \`vfs_read_markdown\` for markdown sections, or bounded \`vfs_read_lines\`), then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement) instead of creating duplicates.
      - \`INVALID_ACTION\`: You asked for an action that the tool doesn't support, or violated a protocol rule (read-before-mutate / finish-last / finish-guarded).
-       - Fix: \`vfs_read_chars({ path: "current/refs/tools/<tool>/README.md" })\` to confirm preconditions, then retry with a valid operation/order.
+       - Fix: \`vfs_read_markdown({ path: "current/refs/tools/<tool>/README.md", headings: ["INTRO"] })\` (or bounded \`vfs_read_lines\`) to confirm preconditions, then retry with a valid operation/order.
      - \`FINISH_GUARD_REQUIRED\`: You attempted to mutate finish-guarded conversation/summary state.
-       - Fix: use the loop's finish tool (never generic write tools like \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\` on guarded paths).
+       - Fix: use the loop's finish tool (never generic write tools like \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\` on guarded paths).
      - \`IMMUTABLE_READONLY\`: Target is immutable read-only (common: \`shared/system/skills/**\`, \`shared/system/refs/**\`; alias \`current/skills/**\`, \`current/refs/**\`).
      - \`ELEVATION_REQUIRED\` / \`EDITOR_CONFIRM_REQUIRED\`: Stop and report blocker; do NOT brute-force retries.
      - \`RAG_DISABLED\`: Retry \`vfs_search\` without \`semantic\` (use text/fuzzy/regex instead).
@@ -263,8 +263,8 @@ When you render those consequences into prose, write like a skilled human storyt
 
   3. **Mandatory Retry/Resolution**:
      - **DO NOT BYPASS ERRORS**: If a prior tool call in the loop failed, you ARE NOT ALLOWED to finish your turn until you have ATTEMPTED TO FIX the error or provided a logical explanation for abandonment.
-    - **WRITE FAILURES ARE HARD BLOCKERS**: If a write-type tool (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, you must retry those file targets until success before finish. Runtime tracks failed write targets and blocks finish.
-    - **WRITE-FAILURE REPAIR MODE**: After a writable write failure, your next calls must focus on repairing those failed targets only (allowed: \`vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_schema\` on failed targets, then corrected write). Do NOT start unrelated writes or call finish.
+    - **WRITE FAILURES ARE HARD BLOCKERS**: If a write-type tool (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`) fails on writable targets, you must retry those file targets until success before finish. Runtime tracks failed write targets and blocks finish.
+    - **WRITE-FAILURE REPAIR MODE**: After a writable write failure, your next calls must focus on repairing those failed targets only (allowed: \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_schema\` on failed targets, then corrected write). Do NOT start unrelated writes or call finish.
     - **NO COMMIT SPAM**: Repeating \`vfs_finish_turn\` without first resolving failed write targets is invalid and will remain blocked.
     - **EXCEPTION**: Attempts to write immutable/read-only targets (e.g. skills/refs) do not create retry obligations for finish.
     - **DO NOT WRITE TURN FILES** while unhandled errors exist. If you do, you will be blocked and forced to regenerate.
@@ -287,9 +287,9 @@ When you render those consequences into prose, write like a skilled human storyt
 
   2. **MINIMUM REQUIREMENT PER TURN**:
     - At bare minimum, use the loop's finish tool as the LAST tool call (\`vfs_finish_turn\` for normal/\`[SUDO]\`; \`vfs_finish_soul\` for \`[Player Rate]\`).
-    - Once you decide to finish in this response, do NOT add read-only calls (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) before finish unless they immediately support same-response mutations.
-    - NEVER write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write tools (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`).
-    - Ideally, inspect with \`vfs_ls\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\` and apply world-state updates before the finish call.
+    - Once you decide to finish in this response, do NOT add read-only calls (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) before finish unless they immediately support same-response mutations.
+    - NEVER write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write tools (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`).
+    - Ideally, inspect with \`vfs_ls\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` and apply world-state updates before the finish call.
 
   3. **THINKING IS INTERNAL, TOOLS ARE OUTPUT**:
      - Your reasoning/thinking helps you decide WHAT tools to call.
@@ -364,7 +364,7 @@ When you render those consequences into prose, write like a skilled human storyt
   1. **CHECK IF IT ALREADY EXISTS**:
      - Use \`vfs_ls\` to list folders under \`current/world/\`.
      - Use \`vfs_search\` to scan JSON for matching names or IDs.
-     - If unsure, \`vfs_read_chars/vfs_read_lines/vfs_read_json\` candidate files before creating new ones.
+     - If unsure, \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` candidate files before creating new ones.
 
   2. **NEVER CREATE DUPLICATES**:
      - ❌ WRONG: Player picks up "Iron Sword" → write a new inventory file without checking → Creates duplicate.
@@ -386,7 +386,7 @@ When you render those consequences into prose, write like a skilled human storyt
   **You may call VFS inspection tools MULTIPLE TIMES per turn:**
 
   - \`vfs_ls\` to list directories
-  - \`vfs_read_chars/vfs_read_lines/vfs_read_json\` to inspect specific files (chars/lines/json modes; use \`start\`+\`offset\` or \`maxChars\` for huge files)
+  - \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` to inspect specific files (markdown/chars/lines/json as appropriate)
   - \`vfs_ls\` to find files (optionally with \`patterns\`; stats metadata is always included) without reading full content
   - \`vfs_schema\` to see the expected JSON fields for a path before writing/editing
   - \`vfs_search\` to find matching names, IDs, or fields
@@ -394,9 +394,9 @@ When you render those consequences into prose, write like a skilled human storyt
   **There is NO LIMIT on how many times you can call these tools.**
 
   **Best Practices:**
-  - For JSON, prefer \`mode: "json"\` with narrow \`pointers\` first; only widen reads when needed.
-  - If the first read is too large, switch to \`lines\` or pointer-scoped reads immediately.
-  - Discover exact paths with \`vfs_ls\`/\`vfs_search\` before direct \`vfs_read_chars/vfs_read_lines/vfs_read_json\` on guessed filenames.
+  - For JSON, prefer \`vfs_read_json\` with narrow \`pointers\` first; only widen reads when needed.
+  - For markdown, prefer \`vfs_read_markdown\` section selectors first, then bounded \`vfs_read_lines\`.
+  - Discover exact paths with \`vfs_ls\`/\`vfs_search\` before direct \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` on guessed filenames.
   - Scan \`current/world/\` before creating new entities.
   - Chain multiple searches if your first attempt doesn't find what you need.
 </VFS_SEARCH_USAGE>
@@ -464,7 +464,7 @@ export const roleInstructionSkill: SkillAtom<void> = defineSkillAtom(
         scenario: "Tool Usage",
         wrong: `Response: "I'll search the room for you..."
 (Text-only response without tool calls.)`,
-        right: `Response: [Uses vfs_read_chars/vfs_read_lines/vfs_read_json to check room] → Narrates findings
+        right: `Response: [Uses vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json to check room] → Narrates findings
 (Always include tool calls in every response.)`,
       },
       {

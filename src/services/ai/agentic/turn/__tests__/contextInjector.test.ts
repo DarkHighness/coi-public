@@ -249,10 +249,10 @@ describe("contextInjector", () => {
       'vfs_read_lines({ path: "current/skills/commands/runtime/SKILL.md", startLine: 1, lineCount: 220',
     );
     expect(text).toContain(
-      'vfs_read_chars({ path: "current/world/soul.md" })',
+      'vfs_read_lines({ path: "current/world/soul.md", startLine: 1, lineCount: 180',
     );
     expect(text).toContain(
-      'vfs_read_chars({ path: "current/world/global/soul.md" })',
+      'vfs_read_lines({ path: "current/world/global/soul.md", startLine: 1, lineCount: 180',
     );
     expect(text).toContain(
       'vfs_read_lines({ path: "current/conversation/session.jsonl", startLine: 1, lineCount: 200',

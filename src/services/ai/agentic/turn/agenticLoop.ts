@@ -712,7 +712,7 @@ function checkCommandSkillReadGate(
       error: `[ERROR: COMMAND_SKILL_NOT_READ] You must read required command skill file(s) in current epoch before non-read tools: ${missing
         .length > 0
         ? formatPathPreview(missing)
-        : "(none)"}.\nAction: call vfs_read_chars/vfs_read_lines/vfs_read_json on each missing file first.`,
+        : "(none)"}.\nAction: call a read tool on each missing file first (prefer vfs_read_markdown for markdown sections; otherwise vfs_read_lines/vfs_read_json/vfs_read_chars).`,
       code: "SKILL_NOT_READ",
     },
   };
@@ -751,7 +751,7 @@ function checkSoulReadGate(
       error: `[ERROR: SOUL_NOT_READ] Session preflight requires reading soul memory anchors before non-read tools: ${missing
         .length > 0
         ? formatPathPreview(missing)
-        : "(none)"}.\nAction: call vfs_read_chars/vfs_read_lines/vfs_read_json on each anchor once, then continue.`,
+        : "(none)"}.\nAction: call a read tool on each anchor once (prefer vfs_read_markdown when section selectors are known), then continue.`,
       code: "SOUL_NOT_READ",
     },
   };
@@ -790,7 +790,7 @@ function checkPresetSkillReadGate(
       error: `[ERROR: PRESET_SKILL_NOT_READ] Active preset skill file(s) must be read in current epoch before non-read tools: ${missing
         .length > 0
         ? formatPathPreview(missing)
-        : "(none)"}.\nAction: call vfs_read_chars/vfs_read_lines/vfs_read_json on each missing file first.`,
+        : "(none)"}.\nAction: call a read tool on each missing file first (prefer vfs_read_markdown for markdown sections; otherwise vfs_read_lines/vfs_read_json/vfs_read_chars).`,
       code: "PRESET_SKILL_NOT_READ",
     },
   };

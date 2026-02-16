@@ -73,9 +73,9 @@ const errorRecovery = `
   **Self-Correction**:
   - If \`NOT_FOUND\`, use \`vfs_ls\` on the parent dir, then \`vfs_search\` with \`fuzzy: true\` to locate the correct path/ID
   - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, read split docs (\`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, \`current/refs/tool-schemas/<tool>/README.md\`) and (for JSON targets) \`vfs_schema({ paths: ["<targetPath>"] })\`
-  - If a read hit char-cap/size limits, retry with \`mode: "json"\` + \`pointers\` or \`mode: "lines"\` with a narrow range
+  - If a read hit char-cap/size limits, retry with narrower tools: \`vfs_read_json\` + \`pointers\`, bounded \`vfs_read_lines\`, or \`vfs_read_markdown\` section selectors
   - If patch reports path/add/schema mismatch, stop repeating the same payload; inspect parent pointers/path first and switch strategy
-  - If \`ALREADY_EXISTS\`, \`vfs_read_chars({ path: "<targetPath>" })\` then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement)
+  - If \`ALREADY_EXISTS\`, read target content first (\`vfs_read_json\`/\`vfs_read_markdown\`/\`vfs_read_lines\` as appropriate), then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement)
   - If \`FINISH_GUARD_REQUIRED\`, use the loop's finish tool (never generic mutation tools on guarded paths)
   - After writable write failure, enter repair mode: next calls target only failed writes (inspect+retry) until resolved
   - Do NOT call finish repeatedly while writable failed targets remain
@@ -99,7 +99,7 @@ const toolMandate = `
   - ❌ Empty response
 
   **Inspection Tools Are Free**:
-  Call \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, \`vfs_search\` as many times as needed.
+  Call \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`, \`vfs_search\` as many times as needed.
   Before writing new entity files, always search first to prevent duplicates.
 </tool_protocol>
 `;

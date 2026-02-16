@@ -65,6 +65,16 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       pointers: ["/time", "/theme", "/currentLocation"],
     },
   ],
+  vfs_read_markdown: [
+    {
+      path: "current/world/soul.md",
+      headings: ["Tool Usage Hints", "Guidance For AI"],
+    },
+    {
+      path: "current/refs/tools/vfs_write_markdown/README.md",
+      indices: ["1", "2"],
+    },
+  ],
   vfs_schema: [{ paths: ["current/world/global.json"] }],
   vfs_search: [
     { query: "dragon", path: "current/world", limit: 20 },
@@ -94,6 +104,30 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
           content: "- New clue",
         },
       ],
+    },
+  ],
+  vfs_write_markdown: [
+    {
+      path: "current/world/soul.md",
+      action: "add_section",
+      parent: { heading: "Tool Usage Hints" },
+      section: {
+        title: "Failure Memo 2026-02-16",
+        level: 3,
+        content: "- [INVALID_PARAMS] phase was sent as string. Fixed with integer literal.",
+      },
+    },
+    {
+      path: "current/world/soul.md",
+      action: "replace_section",
+      target: { heading: "Tool Usage Hints" },
+      content:
+        "- [INVALID_ACTION] skipped read-before-write. Fix: read target first, then write.\n- [INVALID_PARAMS] missing required field. Fix: re-check schema and retry once.",
+    },
+    {
+      path: "current/world/soul.md",
+      action: "delete_section",
+      target: { index: "4.2" },
     },
   ],
   vfs_patch_json: [
@@ -135,7 +169,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
     },
     {
       globalSoul:
-        "# Player Soul (Global)\\n\\n## Tool Usage Hints\\n- [INVALID_ACTION] Read-before-write failed -> always read target via vfs_read_chars/vfs_read_lines/vfs_read_json before edit.\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
+        "# Player Soul (Global)\\n\\n## Tool Usage Hints\\n- [INVALID_ACTION] Read-before-write failed -> always read target via vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json before edit.\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
     },
     {
       currentSoul:
@@ -295,10 +329,10 @@ const buildToolsReadme = (): string =>
     "## Usage",
     '- List tools: `vfs_ls({ path: "current/refs/tools" })`',
     '- Read tool index: `vfs_read_json({ path: "current/refs/tools/index.json" })`',
-    '- Read one tool overview: `vfs_read_chars({ path: "current/refs/tools/vfs_read_lines/README.md" })`',
-    '- Read one tool examples: `vfs_read_chars({ path: "current/refs/tools/vfs_read_lines/EXAMPLES.md" })`',
+    '- Read one tool overview (markdown section): `vfs_read_markdown({ path: "current/refs/tools/vfs_read_markdown/README.md", headings: ["INTRO"] })`',
+    '- Read one tool examples (bounded lines): `vfs_read_lines({ path: "current/refs/tools/vfs_read_markdown/EXAMPLES.md", startLine: 1, lineCount: 120 })`',
     '- Read schema index: `vfs_read_json({ path: "current/refs/tool-schemas/index.json" })`',
-    '- Read schema summary: `vfs_read_chars({ path: "current/refs/tool-schemas/vfs_read_lines/README.md" })`',
+    '- Read schema summary (markdown section): `vfs_read_markdown({ path: "current/refs/tool-schemas/vfs_read_markdown/README.md", headings: ["Parts"] })`',
     '- Read a schema part: `vfs_read_lines({ path: "current/refs/tool-schemas/vfs_finish_outline_phase_6/PART-01.md", startLine: 1, lineCount: 120 })`',
     "",
     "## Layout",

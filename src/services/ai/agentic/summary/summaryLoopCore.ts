@@ -235,7 +235,7 @@ const checkSummarySoulReadGate = (
     success: false,
     error:
       `[ERROR: SOUL_NOT_READ] Read required soul anchors before non-read tools: ${shown}. ` +
-      "Action: call vfs_read_chars/vfs_read_lines/vfs_read_json on each missing anchor once, then continue.",
+      "Action: call a read tool on each missing anchor once (prefer vfs_read_markdown when section selectors are known), then continue.",
     code: "SOUL_NOT_READ",
   };
 };

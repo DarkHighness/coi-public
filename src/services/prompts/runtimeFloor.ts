@@ -10,12 +10,13 @@ You MUST follow these runtime protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
 - VFS primer (what "read/search/write" means):
   - Paths like \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
-  - Read tools are split: \`vfs_read_chars\` / \`vfs_read_lines\` / \`vfs_read_json\`.
-  - "Read \`some/path\`" usually means \`vfs_read_chars({ path: "some/path" })\`.
+  - Read tools are split: \`vfs_read_markdown\` / \`vfs_read_chars\` / \`vfs_read_lines\` / \`vfs_read_json\`.
+  - For markdown section reads, prefer \`vfs_read_markdown\` with \`headings\` and/or \`indices\`.
   - For large files (especially \`current/conversation/session.jsonl\`), prefer \`vfs_read_lines\` with bounded \`startLine/lineCount\`.
   - \`vfs_read_json\` requires \`pointers\`.
+  - \`vfs_ls\` returns \`stats\` (\`chars\`/\`lines\`) and \`hints[]\` for likely-over-budget files.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
-  - Write tools are split: \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic write tools).
+  - Write tools are split: \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_write_markdown\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic write tools).
   - Tool docs are split:
     - Tool overview/examples: \`current/refs/tools/<tool>/README.md\` + \`current/refs/tools/<tool>/EXAMPLES.md\`
     - Schema summary/parts: \`current/refs/tool-schemas/<tool>/README.md\` + \`current/refs/tool-schemas/<tool>/PART-xx.md\`
@@ -41,7 +42,7 @@ You MUST follow these runtime protocol constraints:
   2) Fix the cause by \`code\` with the smallest helpful lookup:
      - \`NOT_FOUND\`: \`vfs_ls\` the parent dir, or \`vfs_search\` for the filename.
      - \`INVALID_PARAMS\`: read split docs (\`current/refs/tools/<tool>/README.md\`, \`current/refs/tools/<tool>/EXAMPLES.md\`, \`current/refs/tool-schemas/<tool>/README.md\`) and retry with schema-valid args.
-     - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, use \`details.hint.nextCalls\` for bounded retry; do not repeat broad path-only chars reads.
+     - \`INVALID_DATA\`: for JSON targets, run \`vfs_schema\` on the path and align fields/types; read existing files before non-additive edits. If read-limit exceeds, use \`details.hint.nextCalls\` for bounded retry; do not repeat broad path-only reads.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last policy, then retry.
      - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead of generic mutation tools.
   3) Re-read the minimum anchor files, then retry one corrected tool call.
@@ -54,9 +55,9 @@ You MUST follow these outline protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
 - VFS primer (what "read/search/write" means):
   - Paths like \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
-  - In OUTLINE MODE, you MAY use read-only tools (\`vfs_read_chars\`/\`vfs_read_lines\`/\`vfs_read_json\`, \`vfs_schema\`, \`vfs_ls\`, \`vfs_search\`) for schema/contract checks before submit.
-  - "Read \`some/path\`" means call \`vfs_read_chars({ path: "some/path" })\`.
-  - For large files/docs, prefer bounded \`vfs_read_lines\`; after \`READ_LIMIT_EXCEEDED\`, do NOT repeat path-only \`vfs_read_chars({ path })\`.
+  - In OUTLINE MODE, you MAY use read-only tools (\`vfs_read_markdown\`/\`vfs_read_chars\`/\`vfs_read_lines\`/\`vfs_read_json\`, \`vfs_schema\`, \`vfs_ls\`, \`vfs_search\`) for schema/contract checks before submit.
+  - For markdown docs, prefer \`vfs_read_markdown\` with section selectors (\`headings\`/\`indices\`).
+  - For large files/docs, prefer bounded \`vfs_read_lines\`; after \`READ_LIMIT_EXCEEDED\`, do NOT repeat broad path-only reads.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - In other modes, writes use the split write tools. In OUTLINE MODE, never call write/move/delete tools; submit with the current phase submit tool only.
   - Tool docs are split:
@@ -75,7 +76,7 @@ You MUST follow these outline protocol constraints:
   1) Keep phase/tool unchanged.
   2) Correct payload by error code:
      - \`INVALID_PARAMS\`: open split tool docs (overview/examples/schema summary), then fix argument types/fields exactly per schema.
-     - \`INVALID_DATA\` with \`READ_LIMIT_EXCEEDED\`: use \`details.hint.nextCalls\`; do NOT retry \`vfs_read_chars({ path })\`.
+     - \`INVALID_DATA\` with \`READ_LIMIT_EXCEEDED\`: use \`details.hint.nextCalls\`; do NOT retry broad path-only reads.
   3) Retry the same phase submit tool after correction.
 </runtime_floor>`;
 

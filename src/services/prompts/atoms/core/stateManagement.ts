@@ -127,9 +127,9 @@ export const stateManagement: Atom<void> = defineAtom(
       * Use \`vfs_move\` to rename paths, \`vfs_delete\` to remove files. No hidden updates outside the VFS.
       * Optional inputs: omit optional fields instead of sending null (e.g., omit \`path\` when searching root).
       * JSON Patch rules: from only for move/copy. Deletions MUST use \`{ op: "remove", path: "/field" }\`.
-      * For large JSON files, inspect with \`vfs_read_chars/vfs_read_lines/vfs_read_json\` pointers/lines first; avoid broad char-range reads by default.
+      * For large JSON files, inspect with \`vfs_read_json\` pointers first (or bounded \`vfs_read_lines\`); avoid broad \`vfs_read_chars\` reads by default.
       * If a patch path may not exist, verify with pointer reads first; otherwise prefer \`merge_json\` or correct file placement.
-      * Inspect before you change: \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, \`vfs_search\`.
+      * Inspect before you change: \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`, \`vfs_search\`.
       * Always reference explicit VFS paths (canonical preferred: \`forks/{activeFork}/story/world/**\`; alias \`current/world/**\` is also accepted).
       * After each turn, finish with \`vfs_finish_turn\` as the LAST tool call.
       * Once you are finishing in this response, avoid read-only tools immediately before finish unless they are directly required for writes in the same response.

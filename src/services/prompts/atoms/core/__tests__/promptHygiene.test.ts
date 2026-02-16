@@ -63,8 +63,9 @@ describe("core prompt hygiene", () => {
     expect(content).not.toContain("vfs_read_chars path=");
     expect(content).not.toContain("vfs_ls patterns=");
     expect(content).not.toContain("vfs_write_file({ path:");
-    expect(content).toContain("mode: \"json\"");
-    expect(content).toContain("avoid full-file char reads by default");
+    expect(content).toContain("vfs_read_json");
+    expect(content).toContain("pointers first");
+    expect(content).toContain("avoid broad `vfs_read_chars` reads by default");
 
     // Turn finish protocol should avoid generic conversation writes
     expect(content).toContain("vfs_finish_turn");

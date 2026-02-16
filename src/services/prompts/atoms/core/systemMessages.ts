@@ -129,23 +129,24 @@ You are in AGENTIC MODE (VFS-only).
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, the active command protocol skill ("turn" or "player-rate"), current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
 6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
-7. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_chars/vfs_read_lines/vfs_read_json\` (chars/lines/json), and \`vfs_search\` before changing files.
+7. **INSPECT FIRST**: Use \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`, and \`vfs_search\` before changing files.
    - Atmosphere reference data is available under \`shared/system/refs/atmosphere/\` (alias: \`current/refs/atmosphere/\`).
-   - For large JSON, prefer \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with \`mode: "json"\` + narrow \`pointers\` or \`mode: "lines"\`; avoid broad full-file char reads.
-   - For large text files (especially \`current/conversation/session.jsonl\`), do NOT issue unbounded chars reads; start with \`mode: "lines"\` + bounded \`startLine/lineCount\`.
-   - In \`vfs_read_chars/vfs_read_lines/vfs_read_json\` \`mode: "json"\`, \`pointers\` is REQUIRED; do not call json mode without pointers.
+   - For markdown docs/notes, prefer \`vfs_read_markdown\` with section selectors (\`headings\`/\`indices\`); use bounded \`vfs_read_lines\` when selectors are unknown.
+   - For large JSON, prefer \`vfs_read_json\` with narrow \`pointers\` or bounded \`vfs_read_lines\`; avoid broad full-file \`vfs_read_chars\`.
+   - For large text files (especially \`current/conversation/session.jsonl\`), do NOT issue unbounded char reads; start with bounded \`vfs_read_lines\` (\`startLine\`/\`lineCount\`).
+   - In \`vfs_read_json\`, \`pointers\` is REQUIRED.
 8. ${
       isPlayerRateToolset
         ? "**SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` by calling `vfs_finish_soul`."
-        : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with split write tools (`vfs_write_file` / `vfs_patch_json` / `vfs_merge_json` / `vfs_move` / `vfs_delete`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are writable and may be proactively refined via these write tools when evidence is strong."
+        : "**STATE CHANGES = FILE CHANGES**: Update world JSON under `forks/{activeFork}/story/world/**` (alias: `current/world/**`) with split write tools (`vfs_write_file` / `vfs_append_text` / `vfs_edit_lines` / `vfs_write_markdown` / `vfs_patch_json` / `vfs_merge_json` / `vfs_move` / `vfs_delete`). Soul docs (`current/world/soul.md`, `current/world/global/soul.md`) are writable and may be proactively refined via these write tools when evidence is strong."
     }
    - Identity contract: \`notes.md\` + \`soul.md\` files are AI-to-AI self-notes (you writing to your future self), not player-facing raw text.
 9. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
    - For \`vfs_finish_turn\`, use exact args shape: \`{ userAction: "<string>", assistant: { narrative: "<string>", choices: [...] } }\`.
    - \`userAction\` MUST be top-level; never nest \`userAction\` inside \`assistant\`.
-10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
+10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, your next calls must repair those failed targets (inspect+retry same targets). Do NOT call \`${resolvedFinishToolName}\` until they succeed.
-    - After repair succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\` (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\` in normal turns, \`vfs_finish_soul\` in \`[Player Rate]\`).
+    - After repair succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\` (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\` in normal turns, \`vfs_finish_soul\` in \`[Player Rate]\`).
 12. **NO COMMIT SPAM**: Repeating \`${resolvedFinishToolName}\` while failed writable targets remain unresolved is invalid.
 13. **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_LINE}
 14. **BATCH TOOL CALLS**: Combine related writes in one call when possible.
@@ -160,7 +161,7 @@ You are in AGENTIC MODE (VFS-only).
 - Example (${isPlayerRateToolset ? "inspect → soul commit" : "inspect → edit → finish"}):
   ${
     isPlayerRateToolset
-      ? "1) `vfs_read_chars/vfs_read_lines/vfs_read_json` `current/world/soul.md` and `current/world/global/soul.md`\n  2) `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
+      ? "1) `vfs_read_markdown` on `current/world/soul.md` and `current/world/global/soul.md` (prefer `headings`/`indices`)\n  2) `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
       : "1) `vfs_search` within `current/world/` (or canonical fork world path) for a name/ID\n  2) `vfs_patch_json` / `vfs_merge_json` (or `vfs_write_file` when creating) to update the exact JSON field(s)\n  3) `" +
         resolvedFinishToolName +
         "` with `{ userAction: \"...\", assistant: { narrative: \"...\", choices: [...] } }` as the LAST call (never `assistant.userAction`)"
@@ -198,9 +199,9 @@ You are in CLEANUP MODE (VFS-only).
    ${PERMISSION_MODEL_BLOCK}
 5. **SKILL PREFLIGHT (ENFORCED)**: Before first non-read mutation, read current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, and current/skills/craft/writing/SKILL.md.
 6. **SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)**: Once per session (cold start/rebuild), read current/skills/index.json and load additional relevant skill docs (1-3). Reuse them across turns; re-read only when requirements change.
-7. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read_chars/vfs_read_lines/vfs_read_json\` to locate and verify duplicate candidates.
+7. **READ-ONLY FIRST**: Use \`vfs_ls\` / \`vfs_search\` / \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` to locate and verify duplicate candidates.
    - For large JSON, prefer pointer/line scoped reads instead of broad full-file char reads.
-8. **APPLY FIXES**: Use split write tools (\`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\`, or \`vfs_write_file\` when creating/replacing) as needed.
+8. **APPLY FIXES**: Use split write tools (\`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_write_markdown\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\`) as needed.
 9. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_finish_turn"}\`.
 10. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE**: If a writable write fails, next calls must repair those failed targets first; do not finish until resolved.
@@ -210,8 +211,8 @@ You are in CLEANUP MODE (VFS-only).
 <examples>
 - Example (find duplicates → fix → finish):
   1) \`vfs_ls\`/ \`vfs_search\` to gather candidate files
-  2) \`vfs_read_chars/vfs_read_lines/vfs_read_json\` each candidate to verify duplicates
-  3) \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\` (or \`vfs_write_file\` when creating/replacing) to resolve
+  2) \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` each candidate to verify duplicates
+  3) \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_write_markdown\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\` to resolve
   4) \`${finishToolName || "vfs_finish_turn"}\` as the LAST call
 </examples>
 `;
@@ -270,5 +271,5 @@ export const noToolCallError: Atom<SystemMessageInput> = defineAtom(
     exportName: "noToolCallError",
   },
   ({ finishToolName }) =>
-    `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\`, then end the turn with \`${finishToolName || "vfs_finish_turn"}\` as the LAST tool call. Bare text is not allowed.`,
+    `[ERROR: NO_TOOL_CALL] You provided text but failed to invoke any tools. In this agentic loop, you MUST call at least one \`vfs_*\` tool to progress. Inspect with \`vfs_ls\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`, then end the turn with \`${finishToolName || "vfs_finish_turn"}\` as the LAST tool call. Bare text is not allowed.`,
 );

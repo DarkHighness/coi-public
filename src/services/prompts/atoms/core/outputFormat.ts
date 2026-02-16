@@ -37,7 +37,7 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
   <vfs_turn_files>
     **TURN COMPLETION RULE**:
     - Every loop MUST end with \`${resolvedFinishToolName}\`, and it must be the LAST tool call.
-    - If you already decided to finish in this response, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) before finish unless they are directly needed for same-response writes.
+    - If you already decided to finish in this response, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) before finish unless they are directly needed for same-response writes.
     - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
     - This finish call MUST be your LAST tool call of the turn.
   </vfs_turn_files>
@@ -56,11 +56,11 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
 
   <rules>
     <rule>Do NOT output markdown text outside of tool arguments.</rule>
-    <rule>Inspect with \`vfs_ls\`/\`vfs_read_chars/vfs_read_lines/vfs_read_json\` before edits.</rule>
+    <rule>Inspect with \`vfs_ls\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` before edits.</rule>
     <rule>${
       isPlayerRateLoop
         ? "In `[Player Rate]` loops, only mutate soul markdown (`current/world/soul.md`, `current/world/global/soul.md`) and do not advance visible plot."
-        : "Use split write tools for world state updates under `forks/{activeFork}/story/world/**` (alias: `current/world/**`): `vfs_write_file` / `vfs_patch_json` / `vfs_merge_json` / `vfs_move` / `vfs_delete` as needed."
+        : "Use split write tools for world state updates under `forks/{activeFork}/story/world/**` (alias: `current/world/**`): `vfs_write_file` / `vfs_append_text` / `vfs_edit_lines` / `vfs_write_markdown` / `vfs_patch_json` / `vfs_merge_json` / `vfs_move` / `vfs_delete` as needed."
     }</rule>
     <rule>${
       isPlayerRateLoop

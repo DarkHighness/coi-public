@@ -101,13 +101,13 @@ const minimalEntity = `
 
     - **Canonization**: If an existing entity is "close enough" (80% match), USE IT. Update it to fit your needs. Do NOT create a new one.
     - **One Object, One ID**: A "Rusty Sword" polished by a blacksmith is still \`inv_rusty_sword\` (just updated name/desc), NOT a new \`inv_polished_sword\`.
-    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Read both \`current/outline/outline.json\` and \`current/outline/story_outline/plan.md\` via \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, then check existing files under \`current/world/\`.
+    - **Outline Continuity**: Do not re-create entities that were part of your character creation or world foundation. If the Outline made it, YOU usually made it. Read \`current/outline/outline.json\` via \`vfs_read_json\` and \`current/outline/story_outline/plan.md\` via \`vfs_read_markdown\` (or bounded \`vfs_read_lines\`), then check existing files under \`current/world/\`.
 
     **MANDATORY "INVESTIGATIVE SEARCH" WORKFLOW**:
     1. **STRICT CHECK-FIRST**: Never assume a clean state. Always assume entities might already exist.
     2. **BROWSE (Directory Scan)**: Use \`vfs_ls\` on \`current/world/<type>/\` to see the full landscape.
     3. **SEARCH (Text Scan)**: Use \`vfs_search\` or \`vfs_search\` on \`current/world/<type>/\`, \`current/outline/outline.json\`, and \`current/outline/story_outline/plan.md\`.
-    4. **READ (Deep Details)**: Use \`vfs_read_chars/vfs_read_lines/vfs_read_json\` on candidate files to confirm identity and details.
+    4. **READ (Deep Details)**: Use \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` on candidate files to confirm identity and details.
     5. **EVALUATE**:
        - Found "Old Knife" but want "Dagger"? -> **USE "Old Knife"** and update the file via split write tools (\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_write_file\`).
        - Found "Guard A" but want "Guard Captain"? -> **USE "Guard A"** and update the file via split write tools (\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_write_file\`).

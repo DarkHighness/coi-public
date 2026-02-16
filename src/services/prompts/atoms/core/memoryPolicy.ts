@@ -49,19 +49,19 @@ const globalNotes = `
       - Existing files must be read before mutation in the current session epoch.
       - Prefer \`vfs_append_text\` for additive updates (fast + safe, no full rewrite):
         - \`vfs_append_text({ path: "current/world/notes.md", content: "...", ensureNewline: true })\`
-        - If the file already exists, you MUST \`vfs_read_chars/vfs_read_lines/vfs_read_json\` it first (read-before-mutate).
+        - If the file already exists, you MUST \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` it first (read-before-mutate).
         - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
       - For non-additive changes, use read → modify → write:
-        1) \`vfs_read_chars/vfs_read_lines/vfs_read_json\` the notes file
+        1) \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` the notes file
         2) Then use \`vfs_edit_lines\` or \`vfs_write_file\` for the updated markdown content
       - If it does not exist, you may use \`vfs_write_file\` to create it.
     </read_write_protocol>
 
     <compact_bootstrap>
       **AFTER COMPACT/SUMMARY OR ANY HISTORY REBUILD, RE-BOOTSTRAP MEMORY CONTEXT**:
-      1. \`vfs_read_chars({ path: "forks/{activeFork}/story/summary/state.json" })\` (or alias \`current/summary/state.json\`)
-      2. \`vfs_read_chars({ path: "forks/{activeFork}/story/world/global.json" })\` (or alias \`current/world/global.json\`)
-      3. \`vfs_read_chars({ path: "current/world/notes.md" })\` (if present)
+      1. \`vfs_read_json({ path: "forks/{activeFork}/story/summary/state.json", pointers: ["/lastSummarizedIndex", "/summaries"] })\` (or alias \`current/summary/state.json\`)
+      2. \`vfs_read_json({ path: "forks/{activeFork}/story/world/global.json", pointers: ["/time", "/currentLocation", "/theme"] })\` (or alias \`current/world/global.json\`)
+      3. \`vfs_read_lines({ path: "current/world/notes.md", startLine: 1, lineCount: 160 })\` (if present)
       4. If more notes are needed, \`vfs_ls({ patterns: ["current/**/notes.md"] })\`, then read only relevant files.
 
       **CANONICAL VS NOTES**:
@@ -71,10 +71,10 @@ const globalNotes = `
 
     <search_strategy>
       **AVOID FULL SCANS**:
-      - Start with \`vfs_read_chars({ path: "current/world/notes.md" })\` (if present).
+      - Start with \`vfs_read_lines({ path: "current/world/notes.md", startLine: 1, lineCount: 160 })\` (if present).
       - When you need related entity notes, use:
         - \`vfs_ls({ patterns: ["current/**/notes.md"] })\`
-      - Then \`vfs_read_chars({ path: "..." })\` only the relevant notes files.
+      - Then \`vfs_read_markdown({ path: "...", headings: ["..."] })\` (or bounded \`vfs_read_lines\`) only on relevant notes files.
     </search_strategy>
 
     <hygiene>
@@ -108,7 +108,7 @@ const memoryQuery = `
     **AVAILABLE VFS TOOLS** (use in the SEARCH stage):
     - \`vfs_search\`: Search across \`forks/{activeFork}/story/conversation/turns/\` (alias: \`current/conversation/turns/\`) for keywords.
     - \`vfs_search\`: Regex search for precise phrases or names.
-    - \`vfs_read_chars/vfs_read_lines/vfs_read_json\`: Read specific turn files or \`shared/narrative/conversation/index.json\` (alias: \`current/conversation/index.json\`) to confirm ordering.
+    - \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`: Read specific turn files or \`shared/narrative/conversation/index.json\` (alias: \`current/conversation/index.json\`) to confirm ordering.
 
     <continuity_awareness>
       ⚠️ **CRITICAL: DO NOT DRAW HASTY CONCLUSIONS FROM FRAGMENTARY RESULTS**
