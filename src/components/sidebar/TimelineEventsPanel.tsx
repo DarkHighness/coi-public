@@ -49,6 +49,13 @@ const TimelineEventCard: React.FC<{
     }
   };
 
+  const resolvedCausedBy = event.visible.causedBy
+    ? resolveEntityDisplayName(event.visible.causedBy, gameState)
+    : null;
+  const resolvedTrueCausedBy = event.hidden?.trueCausedBy
+    ? resolveEntityDisplayName(event.hidden.trueCausedBy, gameState)
+    : null;
+
   return (
     <div
       className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2
@@ -130,14 +137,14 @@ const TimelineEventCard: React.FC<{
           />
         </div>
 
-        {event.visible.causedBy && (
+        {resolvedCausedBy && (
           <div className="mt-2 pt-2 border-t border-theme-divider/60 flex items-center gap-1.5">
             <span className="text-[9px] uppercase tracking-wider text-theme-text-secondary">
               {t("worldInfo.causedBy")}:
             </span>
             <span className="text-[10px] text-theme-text/80 italic">
               <MarkdownText
-                content={event.visible.causedBy}
+                content={resolvedCausedBy}
                 inline
                 className="inline"
               />
@@ -209,14 +216,14 @@ const TimelineEventCard: React.FC<{
                 </div>
               )}
 
-              {event.hidden?.trueCausedBy && (
+              {resolvedTrueCausedBy && (
                 <div className="text-[10px]">
                   <span className="text-theme-primary/80 font-medium mr-1">
                     {t("hidden.cause")}:
                   </span>
                   <span className="text-theme-text/80 italic">
                     <MarkdownText
-                      content={event.hidden.trueCausedBy}
+                      content={resolvedTrueCausedBy}
                       inline
                       className="inline"
                     />

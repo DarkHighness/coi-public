@@ -69,4 +69,19 @@ describe("entity display resolver", () => {
       "char:missing",
     );
   });
+
+  it("resolves player and faction-style IDs for fallback fields", () => {
+    const state = buildState();
+    state.factions = [
+      {
+        id: "faction:surface_alliance",
+        name: "Surface Alliance",
+      },
+    ];
+
+    expect(resolveEntityDisplayName("char:player", state)).toBe("Arin");
+    expect(resolveEntityDisplayName("faction_surface_alliance", state)).toBe(
+      "Surface Alliance",
+    );
+  });
 });
