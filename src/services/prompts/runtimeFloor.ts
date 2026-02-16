@@ -52,6 +52,7 @@ You MUST follow these outline protocol constraints:
   - Paths like \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
   - In OUTLINE MODE, you MAY use read-only tools (\`vfs_read\`, \`vfs_schema\`, \`vfs_ls\`, \`vfs_search\`) for schema/contract checks before submit.
   - "Read \`some/path\`" means call \`vfs_read({ path: "some/path" })\`.
+  - For large files/docs, prefer bounded reads (e.g. \`mode: "lines"\` + \`startLine/lineCount\`); after \`READ_LIMIT_EXCEEDED\`, do NOT repeat path-only \`vfs_read({ path })\`.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - In other modes, "Write/Move/Delete" means \`vfs_mutate\` ops. In OUTLINE MODE, never call write/move/delete tools (including \`vfs_mutate\`); submit with \`vfs_finish_outline\` as a separate call after read-only checks.
   - Tool docs: \`current/refs/tools/README.md\` + \`current/refs/tools/<tool>.md\`.
@@ -63,7 +64,12 @@ You MUST follow these outline protocol constraints:
   2) Read \`current/skills/commands/runtime/outline/SKILL.md\` (phase protocol).
   3) Use read-only lookup if needed, then submit exactly one phase tool.
 - Soft gate (advisory, not blocking): before first phase submit, prefer reading \`current/skills/commands/runtime/SKILL.md\` and \`current/skills/commands/runtime/outline/SKILL.md\` when available.
-- Structured error recovery flow (when the submit tool returns \`{ success:false, code, error }\`): keep phase/tool unchanged, correct payload by error code, and retry the same phase submit tool.
+- Structured error recovery flow (when the submit tool returns \`{ success:false, code, error }\`):
+  1) Keep phase/tool unchanged.
+  2) Correct payload by error code:
+     - \`INVALID_PARAMETERS\`: \`phase\` must be unquoted integer literal (example: \`phase: 1\`, not \`"1"\`).
+     - \`INVALID_DATA\` with \`READ_LIMIT_EXCEEDED\`: do NOT retry \`vfs_read({ path })\`; use bounded \`mode: "lines"\` or \`mode: "chars"\` windowed reads.
+  3) Retry the same phase submit tool after correction.
 </runtime_floor>`;
 
 interface ComposeSystemInstructionOptions {

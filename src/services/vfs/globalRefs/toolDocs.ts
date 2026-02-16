@@ -312,7 +312,7 @@ const buildToolsReadme = (): string => {
     "",
     "## Usage",
     '- List docs: `vfs_ls({ path: "current/refs/tools" })`',
-    '- Read one doc: `vfs_read({ path: "current/refs/tools/vfs_read.md" })`',
+    '- Read one doc (bounded): `vfs_read({ path: "current/refs/tools/vfs_read.md", mode: "lines", startLine: 1, lineCount: 200 })`',
     '- Search docs: `vfs_search({ path: "current/refs/tools", query: "commit" })`',
     "",
     "## Contents",

@@ -368,6 +368,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         return createReadLimitError(
           "json",
           `maxChars=${typedArgs.maxChars} exceeds allowed per-pointer read size`,
+          typedArgs.path,
         );
       }
       const maxChars = typedArgs.maxChars ?? VFS_READ_HARD_CHAR_CAP;
@@ -395,6 +396,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
           return createReadLimitError(
             "json",
             `pointer "${pointer}" yields ${fullJson.length} chars, exceeding limit ${maxChars}`,
+            typedArgs.path,
           );
         }
         totalJsonChars += fullJson.length;
@@ -402,6 +404,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
           return createReadLimitError(
             "json",
             `combined pointer payload exceeds ${VFS_READ_HARD_CHAR_CAP} chars`,
+            typedArgs.path,
           );
         }
         const json = fullJson;
@@ -472,6 +475,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
         return createReadLimitError(
           "lines",
           `requested line range returns ${content.length} chars`,
+          typedArgs.path,
         );
       }
 
@@ -512,12 +516,14 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
       return createReadLimitError(
         "chars",
         `offset=${offsetRaw} exceeds allowed chunk size`,
+        typedArgs.path,
       );
     }
     if (hasMaxChars && maxChars > VFS_READ_HARD_CHAR_CAP) {
       return createReadLimitError(
         "chars",
         `maxChars=${maxChars} exceeds allowed chunk size`,
+        typedArgs.path,
       );
     }
 
@@ -534,6 +540,7 @@ export const handleInspectRead: VfsToolHandler = (args, ctx) =>
       return createReadLimitError(
         "chars",
         `requested char range returns ${content.length} chars`,
+        typedArgs.path,
       );
     }
     const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;

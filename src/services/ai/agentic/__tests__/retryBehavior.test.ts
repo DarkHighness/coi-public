@@ -470,7 +470,9 @@ describe("callWithAgenticRetry behavior", () => {
 
     await expect(
       callWithAgenticRetry(provider, request as any, [], { maxRetries: 0 }),
-    ).rejects.toThrow('phase must be integer literal, e.g. `phase: 1`');
+    ).rejects.toThrow(
+      'phase must be integer literal, e.g. `phase: 1` (not `"1"`). If your previous call used `"phase":"1"`, resend with `"phase":1`',
+    );
   });
 
   it("appends assistant+user feedback on missing required tool and calls onRetry", async () => {

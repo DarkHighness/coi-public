@@ -70,11 +70,14 @@ const buildDiscriminatorTypeHint = (error: ZodError): string | null => {
       : [];
     if (options.length === 0) continue;
     if (options.every((value) => typeof value === "number")) {
-      return 'Hint: phase must be integer literal, e.g. `phase: 1` (not `"1"`).';
+      return 'Hint: phase must be integer literal, e.g. `phase: 1` (not `"1"`). If your previous call used `"phase":"1"`, resend with `"phase":1` and keep `data` unchanged.';
     }
   }
   return null;
 };
+
+const buildToolDocBoundedReadHint = (toolDocRef: string): string =>
+  `Use \`vfs_read({ path: "${toolDocRef}", mode: "lines", startLine: 1, lineCount: 200 })\` before retrying (avoid unbounded \`vfs_read({ path: "${toolDocRef}" })\`).`;
 
 const buildInvalidParametersMessage = (params: {
   toolName: string;
@@ -100,7 +103,7 @@ const buildInvalidParametersMessage = (params: {
     hints.push(discriminatorTypeHint);
   }
   if (includeReadHint) {
-    hints.push(`Use \`vfs_read\` on \`${toolDocRef}\` before retrying.`);
+    hints.push(buildToolDocBoundedReadHint(toolDocRef));
   }
   if (repeatedGuidance) {
     hints.push("Schema guidance was already provided earlier in this retry chain.");

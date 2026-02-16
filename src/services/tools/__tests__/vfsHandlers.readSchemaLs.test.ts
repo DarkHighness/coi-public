@@ -75,6 +75,11 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.error).toContain("chars(start+offset)");
     expect(result.details?.tool).toBe("vfs_read");
     expect(result.details?.issues?.[0]?.code).toBe("READ_LIMIT_EXCEEDED");
+    expect(result.details?.recovery?.[0]).toContain("Do NOT retry");
+    expect(result.details?.recovery?.[1]).toContain(
+      'mode: "lines", startLine: 1, lineCount: 200',
+    );
+    expect(result.details?.recovery?.[1]).toContain("current/world/huge.txt");
     expect(result.details?.refs).toContain("current/refs/tools/vfs_read.md");
   });
 

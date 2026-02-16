@@ -94,6 +94,9 @@ const uniqueStrings = (items: Array<string | undefined>): string[] => {
   return next;
 };
 
+const buildToolDocRecoveryReadCall = (toolDocRef: string): string =>
+  `vfs_read({ path: "${toolDocRef}", mode: "lines", startLine: 1, lineCount: 200 })`;
+
 const SOUL_TOOL_LEARNING_RECOVERY =
   'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via `vfs_mutate` (or `vfs_finish_soul` in `[Player Rate]`).';
 
@@ -110,14 +113,14 @@ const defaultRecoveryByCode = (
 
   if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
     return withSoulToolLearningRecovery([
-      `Use vfs_read on ${toolDocRef} (INTRO/SCHEMA/EXAMPLES), then retry with schema-valid arguments.`,
+      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} (INTRO/SCHEMA/EXAMPLES), then retry with schema-valid arguments.`,
       "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
       "If you're modifying an existing file, vfs_read it first (read-before-mutate), then retry.",
     ]);
   }
   if (code === "INVALID_ACTION") {
     return withSoulToolLearningRecovery([
-      `Use vfs_read on ${toolDocRef} to confirm tool preconditions, then retry.`,
+      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} to confirm tool preconditions, then retry.`,
       "If the error mentions read-before-mutate, vfs_read the target file in this epoch and retry the same operation.",
       "If the error mentions finish ordering, ensure the commit tool is the last call and there is only one finish.",
     ]);
@@ -125,19 +128,19 @@ const defaultRecoveryByCode = (
   if (code === "IMMUTABLE_READONLY") {
     return withSoulToolLearningRecovery([
       "Target path is immutable read-only (common: skills/refs or unregistered paths). Choose a writable path and retry.",
-      `Use vfs_read on ${toolDocRef} for constraints/examples.`,
+      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for constraints/examples.`,
     ]);
   }
   if (code === "ELEVATION_REQUIRED") {
     return withSoulToolLearningRecovery([
       "Write requires elevation. Do not brute-force retries; use the designated elevation flow or report the blocker.",
-      `Use vfs_read on ${toolDocRef} for constraints/examples.`,
+      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for constraints/examples.`,
     ]);
   }
   if (code === "FINISH_GUARD_REQUIRED") {
     return withSoulToolLearningRecovery([
       "Conversation/summary paths are finish-guarded: use vfs_finish_turn or vfs_finish_summary (not vfs_mutate).",
-      `Use vfs_read on ${toolDocRef} for the correct commit schema/examples.`,
+      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for the correct commit schema/examples.`,
     ]);
   }
   if (code === "EDITOR_CONFIRM_REQUIRED") {
@@ -157,7 +160,7 @@ const defaultRecoveryByCode = (
     ]);
   }
   return withSoulToolLearningRecovery([
-    `Use vfs_read on ${toolDocRef}, then retry.`,
+    `Use ${buildToolDocRecoveryReadCall(toolDocRef)}, then retry.`,
   ]);
 };
 
@@ -418,28 +421,45 @@ export const ensureNotFinishGuardedMutation = (
 export const createReadLimitError = (
   mode: "chars" | "lines" | "json",
   details: string,
+  inputPath?: string,
 ): ToolCallResult<never> =>
-  createError(
-    `vfs_read(${mode}): ${details}. Hard cap is ${VFS_READ_HARD_CHAR_CAP} chars. Use lines/chars(start+offset) or narrower JSON pointers.`,
-    "INVALID_DATA",
-    {
-      category: "validation",
-      tool: "vfs_read",
-      issues: [
-        {
-          path: mode,
-          code: "READ_LIMIT_EXCEEDED",
-          message: details,
-          expected: `<= ${VFS_READ_HARD_CHAR_CAP}`,
-        },
-      ],
-      recovery: [
-        "Reduce requested window size (chars/lines/json pointers).",
-        "Use paged reads with start+offset for large files.",
-      ],
-      refs: [getToolDocRef("vfs_read"), TOOL_DOCS_README_REF],
-    },
-  );
+  (() => {
+    const qualifiedPath =
+      typeof inputPath === "string" && inputPath.trim().length > 0
+        ? qualifyPathForRecovery(inputPath).qualifiedPath
+        : "current";
+    const linesWindowCall = `vfs_read({ path: "${qualifiedPath}", mode: "lines", startLine: 1, lineCount: 200 })`;
+    const charsWindowCall = `vfs_read({ path: "${qualifiedPath}", mode: "chars", start: 0, offset: 2000 })`;
+    const recovery = [
+      `Do NOT retry with \`vfs_read({ path: "${qualifiedPath}" })\` alone; that repeats an unbounded chars read.`,
+      `Try: ${linesWindowCall}`,
+      `Or: ${charsWindowCall}`,
+    ];
+    if (mode === "json") {
+      recovery.push(
+        `For JSON, narrow pointers and cap payload (example: vfs_read({ path: "${qualifiedPath}", mode: "json", pointers: ["/..."], maxChars: 2000 })).`,
+      );
+    }
+
+    return createError(
+      `vfs_read(${mode}): ${details}. Hard cap is ${VFS_READ_HARD_CHAR_CAP} chars. Use lines/chars(start+offset) or narrower JSON pointers.`,
+      "INVALID_DATA",
+      {
+        category: "validation",
+        tool: "vfs_read",
+        issues: [
+          {
+            path: mode,
+            code: "READ_LIMIT_EXCEEDED",
+            message: details,
+            expected: `<= ${VFS_READ_HARD_CHAR_CAP}`,
+          },
+        ],
+        recovery,
+        refs: [getToolDocRef("vfs_read"), TOOL_DOCS_README_REF],
+      },
+    );
+  })();
 
 const decodeJsonPointerToken = (token: string): string =>
   token.replace(/~1/g, "/").replace(/~0/g, "~");

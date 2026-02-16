@@ -25,7 +25,9 @@ describe("outline tool instruction consistency", () => {
 
     expect(phasePrelude).toContain("[PHASE 1 PRELUDE: ROUND CONTRACT]");
     expect(phasePrelude).toContain("Use native function/tool calling");
+    expect(phasePrelude).toContain("`phase` must be an integer literal");
     expect(phasePrelude).toContain("Tool names are exact and unprefixed");
+    expect(phasePrelude).toContain('mode: "lines"');
     expect(phasePrelude).toContain("vfs_finish_outline");
   });
 
