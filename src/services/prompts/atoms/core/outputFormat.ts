@@ -34,13 +34,13 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     **Simply invoke the tool.** The system handles the JSON formatting.
   </native_tool_calling>
 
-  <vfs_turn_files>
+  <turn_files>
     **TURN COMPLETION RULE**:
     - Every loop MUST end with \`${resolvedFinishToolName}\`, and it must be the LAST tool call.
     - If you already decided to finish in this response, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) before finish unless they are directly needed for same-response writes.
     - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
     - This finish call MUST be your LAST tool call of the turn.
-  </vfs_turn_files>
+  </turn_files>
 
   <turn_file_schema>
     **Finish Payload**:
