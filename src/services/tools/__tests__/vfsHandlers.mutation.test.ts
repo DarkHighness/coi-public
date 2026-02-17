@@ -521,6 +521,56 @@ describe("VFS handlers mutations", () => {
     expect(readBack.data.content).toBe("alpha\ngamma");
   });
 
+  it("allows outline story plan overwrite via vfs_write_file after read-before-mutate", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/story_outline/plan.md",
+      "# Plan\n\n## Phase 1\n\n- [ ] Reach the gate",
+      "text/markdown",
+    );
+    const ctx = { vfsSession: session };
+
+    const blocked = dispatchOps(ctx, [
+      {
+        op: "write_file",
+        path: "current/outline/story_outline/plan.md",
+        content:
+          "# Plan\n\n## Phase 1\n\n- [x] Reach the gate\n\n## Phase 2\n\n- [ ] Enter the archive",
+        contentType: "text/markdown",
+      },
+    ]) as any;
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.code).toBe("INVALID_ACTION");
+
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/outline/story_outline/plan.md" },
+      ctx,
+    );
+
+    const ok = dispatchOps(ctx, [
+      {
+        op: "write_file",
+        path: "current/outline/story_outline/plan.md",
+        content:
+          "# Plan\n\n## Phase 1\n\n- [x] Reach the gate\n\n## Phase 2\n\n- [ ] Enter the archive",
+        contentType: "text/markdown",
+      },
+    ]) as any;
+
+    expect(ok.success).toBe(true);
+    expect(ok.data.written).toContain("current/outline/story_outline/plan.md");
+
+    const readBack = dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/outline/story_outline/plan.md" },
+      ctx,
+    ) as any;
+    expect(readBack.success).toBe(true);
+    expect(readBack.data.content).toContain("## Phase 2");
+  });
+
   it("blocks writes to immutable skill paths", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };

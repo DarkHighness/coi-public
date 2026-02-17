@@ -36,14 +36,15 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
 
   <turn_files>
     **TURN COMPLETION RULE**:
-    - Every loop MUST end with \`${resolvedFinishToolName}\`, and it must be the LAST tool call.
-    - If you choose \`vfs_vm\`, it must be your ONLY top-level tool call in that response.
-    - Inside \`vfs_vm\`, you may call only current-loop allowlisted tools; \`vfs_vm\` recursion is forbidden.
-    - \`vfs_vm\` scripts must be JavaScript (no pseudo-tool JSON text), and must not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`.
-    - Inside \`vfs_vm\`, finish is optional but at most once and must be the last inner tool call.
-    - If you already decided to finish in this response, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) before finish unless they are directly needed for same-response writes.
-    - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic mutation tools.
-    - This finish call MUST be your LAST tool call of the turn.
+    - Every loop MUST end with \`${resolvedFinishToolName}\` as the LAST tool call.
+    - \`vfs_vm\`: if used, it must be the ONLY top-level tool call. Inside: only allowlisted tools, no recursion, JavaScript only (no \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`), finish at most once and last.
+    - Do NOT place read-only tools before finish unless they directly support same-response writes.
+    - Do NOT write finish-guarded paths (\`current/conversation/**\`, \`current/summary/state.json\`) via generic write tools.
+    - ${
+      isPlayerRateLoop
+        ? "In `[Player Rate]` loops, do not mutate `current/outline/story_outline/plan.md`."
+        : "In normal turns, `current/outline/story_outline/plan.md` is writable for continuity maintenance. Read before edit; use incremental updates for minor drift, and full rewrite when branch fracture is major."
+    }
   </turn_files>
 
   <turn_file_schema>
@@ -60,20 +61,19 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
 
   <rules>
     <rule>Do NOT output markdown text outside of tool arguments.</rule>
-    <rule>Inspect with \`vfs_ls\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` before edits.</rule>
+    <rule>Inspect with read tools before edits.</rule>
     <rule>${
       isPlayerRateLoop
-        ? "In `[Player Rate]` loops, only mutate soul markdown (`current/world/soul.md`, `current/world/global/soul.md`) and do not advance visible plot."
-        : "Use split write tools for world state updates under `forks/{activeFork}/story/world/**` (alias: `current/world/**`): `vfs_write_file` / `vfs_append_text` / `vfs_edit_lines` / `vfs_write_markdown` / `vfs_patch_json` / `vfs_merge_json` / `vfs_move` / `vfs_delete` as needed."
+        ? "In `[Player Rate]` loops, only mutate soul markdown and do not advance visible plot."
+        : "Use appropriate write tools for world updates under `current/world/**`, and maintain `current/outline/story_outline/plan.md` continuity (minor drift: incremental update; major fracture: full rewrite allowed)."
     }</rule>
     <rule>${
       isPlayerRateLoop
         ? "Skip choice generation in `[Player Rate]` loops."
-        : "For `assistant.choices`, avoid strictly dominant all-upside options. If player input attempts a best-of-both-worlds move, allow the attempt but render proportional cost or degraded outcomes."
+        : "For `assistant.choices`, avoid strictly dominant all-upside options. Render proportional cost for best-of-both-worlds attempts."
     }</rule>
     <rule>Field deletions use JSON Patch \`remove\` via \`vfs_patch_json\`.</rule>
     <rule>\`${resolvedFinishToolName}\` MUST be your LAST tool call.</rule>
-    <rule>If using \`vfs_vm\`, keep it as the only top-level call; scripts must be JavaScript, must not touch \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`, and finish (if any) must be last and called at most once.</rule>
     <rule>Double-check JSON syntax before calling any tool.</rule>
   </rules>
 </output_format>

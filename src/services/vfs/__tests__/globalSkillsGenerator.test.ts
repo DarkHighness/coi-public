@@ -117,7 +117,7 @@ describe("VFS global skills generator", () => {
     expect(commandSudo).toContain("name: commands-sudo");
     expect(commandSudo).toContain("domain: commands");
     expect(commandSudo).toContain("vfs_search");
-    expect(commandSudoChecklist).toContain("residual verification");
+    expect(commandSudoChecklist).toContain("leftover with explicit reason");
     expect(commandSudoExamples).toContain(
       "Protagonist rename across world files",
     );
@@ -130,7 +130,7 @@ describe("VFS global skills generator", () => {
     expect(commandSudoExamples).toContain(
       "Reach this minimum correction pattern:",
     );
-    expect(commandSudoRef).toContain("Coverage Audit for /sudo");
+    expect(commandSudoRef).toContain("Coverage Audit Template");
     expect(commandRuntimeHub).toContain(
       "current/skills/commands/runtime/turn/SKILL.md",
     );
@@ -143,6 +143,9 @@ describe("VFS global skills generator", () => {
     expect(commandRuntimeHub).toContain("vfs_vm");
     expect(commandRuntimeHub).toContain("JavaScript");
     expect(commandRuntimeHub).toContain("globalThis");
+    expect(commandRuntimeHub).toContain(
+      "maintain `current/outline/story_outline/plan.md` continuity",
+    );
     expect(commandTurn).toContain("name: commands-turn");
     expect(commandTurn).toContain("vfs_finish_turn");
     expect(commandTurn).toContain("retconAck?: { summary }");
@@ -151,6 +154,9 @@ describe("VFS global skills generator", () => {
     expect(commandTurn).toContain("vfs_vm");
     expect(commandTurn).toContain("JavaScript");
     expect(commandTurn).toContain("globalThis");
+    expect(commandTurn).toContain("current/outline/story_outline/plan.md");
+    expect(commandTurn).toContain("full `plan.md` rewrite is allowed");
+    expect(commandTurn).toContain("Major branch fracture (new dominant trajectory)");
     expect(commandPlayerRate).toContain("name: commands-player-rate");
     expect(commandPlayerRate).toContain("[Player Rate]");
     expect(commandPlayerRate).toContain("current/world/soul.md");
@@ -158,7 +164,7 @@ describe("VFS global skills generator", () => {
     expect(commandPlayerRate).toContain("vfs_vm");
     expect(commandPlayerRate).toContain("JavaScript");
     expect(commandPlayerRate).toContain("globalThis");
-    expect(commandPlayerRate).toContain("internal self-guidance notes");
+    expect(commandPlayerRate).toContain("AI-to-AI self-notes");
     expect(commandCleanup).toContain("vfs_vm");
     expect(commandCleanup).toContain("retconAck?: { summary }");
     expect(commandCleanup).toContain("JavaScript");
@@ -168,13 +174,13 @@ describe("VFS global skills generator", () => {
     expect(commandSudo).toContain("JavaScript");
     expect(commandSudo).toContain("globalThis");
     expect(commandSummary).toContain("name: commands-summary");
-    expect(commandSummary).toContain("query_summary");
-    expect(commandSummary).toContain("Structured Error Recovery Flow");
+    expect(commandSummary).toContain("query mode");
+    expect(commandSummary).toContain("## Error Recovery");
     expect(commandSummary).toContain("vfs_finish_summary");
     expect(commandCompact).toContain("name: commands-compact");
     expect(commandCompact).toContain("session_compact");
     expect(commandCompact).toContain("current session history in context");
-    expect(commandCompact).toContain("Structured Error Recovery Flow");
+    expect(commandCompact).toContain("## Error Recovery");
     expect(commandOutline).toContain("name: commands-outline");
     expect(commandOutline).toContain("vfs_finish_outline_phase_4");
   });
@@ -203,7 +209,7 @@ describe("VFS global skills generator", () => {
       "Summarize only the target fork turn range.",
     );
     expect(compactExamples).toContain(
-      "Any verification read must stay within target-fork paths.",
+      "Verification reads must stay within target-fork paths.",
     );
     expect(maliceIntensityExamples).toContain(
       "Tune only risk curve dimensions (Trace/Heat, thresholds, latency), not profile identity.",

@@ -159,12 +159,20 @@ export const stateManagement: Atom<void> = defineAtom(
       * Treat outline artifacts as two layers:
         - **World baseline**: \`current/outline/outline.json\` (structured canonical setup)
         - **Story plan guidance**: \`current/outline/story_outline/plan.md\` (evolving narrative guidance)
+      * In normal turns, \`current/outline/story_outline/plan.md\` is writable (\`default_editable\`), not read-only.
       * **plan.md is guidance, not a hard rail**. Player experience comes first.
       * When player behavior diverges from plan.md, choose one path:
         1) **Natural recovery** to existing arcs (no forced miracles), OR
         2) **Revise \`plan.md\`** to reflect the player's chosen trajectory.
+      * Before revising plan.md, read relevant sections from:
+        - \`current/outline/story_outline/plan.md\` (current strategic plan)
+        - \`current/outline/outline.json\` (stable world baseline)
+      * Plan update mode:
+        - Minor drift (pace/checklist/milestone changes): apply incremental updates.
+        - Major branch fracture (new main trajectory): full rewrite of \`plan.md\` is allowed.
       * **No deus-ex-machina corrections**. Never force impossible coincidences just to restore a preset path.
       * Keep causality coherent when revising plan.md and keep \`outline.json\` as stable world baseline unless world facts truly change.
+      * In \`[Player Rate]\` loops, keep soul-only scope; do NOT mutate \`current/outline/story_outline/plan.md\`.
       * During outline generation, save progress to \`shared/narrative/outline/progress.json\` (alias: \`current/outline/progress.json\`).
 
     - **WORLD INDIFFERENCE (MECHANICAL - NOT NPC BEHAVIOR)**:

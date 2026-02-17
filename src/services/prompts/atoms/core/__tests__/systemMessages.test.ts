@@ -13,20 +13,21 @@ describe("systemMessages atoms", () => {
     const legacySearchTool = "search_tool";
     expect(content).toContain("vfs_write_file");
     expect(content).toContain("current/conversation/");
-    expect(content).toContain("shared/**");
-    expect(content).toContain("forks/{forkId}/**");
-    expect(content).toContain("shared/system/skills/**");
-    expect(content).toContain("shared/system/refs/**");
+    // Path model details (shared/**/forks/{forkId}/**) live in system prompt toolUsage atom
+    expect(content).toContain("shared/system/skills");
+    expect(content).toContain("shared/system/refs");
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
     expect(content).toContain("NO COMMIT SPAM");
     expect(content).toContain("SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)");
     expect(content).toContain("current/skills/index.json");
     expect(content).toContain("Once per session");
-    expect(content).toContain("avoid broad full-file");
+    expect(content).toContain("broad full-file");
     expect(content).toContain("vfs_vm");
     expect(content).toContain("top-level tool call");
     expect(content).toContain("JavaScript");
     expect(content).toContain("globalThis");
+    expect(content).toContain("current/outline/story_outline/plan.md");
+    expect(content).toContain("major branch fracture");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).not.toContain(legacySearchTool);

@@ -132,6 +132,68 @@ describe("vfs_write_markdown", () => {
     expect(result.error).toContain("ambiguous");
   });
 
+  it("updates outline story plan markdown when read-before-mutate is satisfied", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/story_outline/plan.md",
+      ["# Plan", "", "## Phase 1", "", "- [ ] Reach the gate"].join("\n"),
+      "text/markdown",
+    );
+    readForMutation(session, "outline/story_outline/plan.md");
+
+    const writeResult = dispatchToolCall(
+      "vfs_write_markdown",
+      {
+        path: "current/outline/story_outline/plan.md",
+        action: "add_section",
+        parent: { heading: "Plan" },
+        section: {
+          title: "Branch Update",
+          content: "Major divergence confirmed. Rewrite arc priorities.",
+        },
+      },
+      { vfsSession: session },
+    ) as any;
+
+    expect(writeResult.success).toBe(true);
+
+    const readResult = dispatchToolCall(
+      "vfs_read_markdown",
+      {
+        path: "current/outline/story_outline/plan.md",
+        headings: ["Branch Update"],
+      },
+      { vfsSession: session },
+    ) as any;
+    expect(readResult.success).toBe(true);
+    expect(readResult.data.sections[0].content).toContain(
+      "Major divergence confirmed",
+    );
+  });
+
+  it("enforces read-before-mutate for existing outline story plan markdown", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "outline/story_outline/plan.md",
+      "# Plan\n\n## Phase 1\n\n- [ ] Reach the gate",
+      "text/markdown",
+    );
+
+    const result = dispatchToolCall(
+      "vfs_write_markdown",
+      {
+        path: "current/outline/story_outline/plan.md",
+        action: "add_section",
+        section: { title: "Next", content: "x" },
+      },
+      { vfsSession: session },
+    ) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_ACTION");
+    expect(result.error).toContain("must read file");
+  });
+
   it("enforces read-before-mutate for existing markdown files", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "# R\n\nbody", "text/markdown");

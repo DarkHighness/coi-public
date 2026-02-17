@@ -99,11 +99,13 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("plan.md is guidance");
     expect(content).toContain("Natural recovery");
     expect(content).toContain("No deus-ex-machina corrections");
+    expect(content).toContain("writable in normal turns");
+    expect(content).toContain("full rewrite when branch fracture is major");
     expect(content).toContain("worldSettingUnlocked");
     expect(content).toContain("mainGoalUnlocked");
     expect(content).toContain("is NOT a container for those collections");
     expect(content).toContain("JSON pointer `/unlocked` or `/unlockReason`");
-    expect(content).toContain("Never guess leaf filenames");
+    expect(content).toContain("Never guess filenames");
     expect(content).toContain("Placeholder promotion (MANDATORY)");
     expect(content).toContain("knownBy vs unlocked decision protocol (STRICT)");
     expect(content).toContain(
