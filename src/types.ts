@@ -1409,6 +1409,11 @@ export interface AISettings {
      * selected model's context length.
      */
     autoCompactThreshold?: number;
+    /**
+     * Dynamic VFS read budget ratio against effective context window.
+     * Example: `0.1` means single-read payload budget targets ~10% of context.
+     */
+    vfsReadTokenBudgetPercent?: number;
   };
 
   // Player Psychology System - cross-save global soul content

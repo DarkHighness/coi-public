@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
-import { resolveVfsReadTokenBudget } from "../../ai/contextUsage";
+import {
+  CONTEXT_WINDOW_READ_CAP_PERCENT,
+  resolveVfsReadTokenBudget,
+} from "../../ai/contextUsage";
 import { dispatchToolCall } from "../handlers";
 import { createValidGlobal } from "./vfsHandlers.helpers";
 
@@ -97,7 +100,7 @@ describe("VFS handlers read/schema/ls", () => {
 
   it("rejects oversized char reads and guides chunked strategies", () => {
     const session = new VfsSession();
-    session.writeFile("world/huge.txt", "x".repeat(17_000), "text/plain");
+    session.writeFile("world/huge.txt", "x".repeat(60_000), "text/plain");
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
@@ -131,7 +134,7 @@ describe("VFS handlers read/schema/ls", () => {
 
   it("rejects oversized line-window reads and guides chunked strategies", () => {
     const session = new VfsSession();
-    const longLine = "1234567890".repeat(200);
+    const longLine = "1234567890".repeat(500);
     const content = Array.from({ length: 12 }, () => longLine).join("\n");
     session.writeFile("world/huge-lines.txt", content, "text/plain");
     const ctx = { vfsSession: session };
@@ -154,7 +157,7 @@ describe("VFS handlers read/schema/ls", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/big.json",
-      JSON.stringify({ big: "x".repeat(17_000) }),
+      JSON.stringify({ big: "x".repeat(60_000) }),
       "application/json",
     );
     const ctx = { vfsSession: session };
@@ -176,7 +179,9 @@ describe("VFS handlers read/schema/ls", () => {
   it("derives dynamic read token budget from model context window and enforces it consistently", () => {
     const session = new VfsSession();
     const dynamicContextTokens = 100_000;
-    const dynamicTokenBudget = Math.floor(dynamicContextTokens * 0.01);
+    const dynamicTokenBudget = Math.floor(
+      dynamicContextTokens * CONTEXT_WINDOW_READ_CAP_PERCENT,
+    );
     const oversizedText = "x".repeat(dynamicTokenBudget * 5);
 
     session.writeFile("world/large.txt", oversizedText, "text/plain");

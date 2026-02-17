@@ -4,12 +4,15 @@ import type {
   ToolCallRecord,
 } from "../../types";
 import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   resolveModelContextWindowTokens,
   type ContextWindowSource,
 } from "../modelContextWindows";
 
-export const DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS = 32_000;
-export const CONTEXT_WINDOW_READ_CAP_PERCENT = 0.01;
+export { DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS };
+export const CONTEXT_WINDOW_READ_CAP_PERCENT = 0.1;
+export const CONTEXT_WINDOW_READ_CAP_PERCENT_MIN = 0.01;
+export const CONTEXT_WINDOW_READ_CAP_PERCENT_MAX = 0.5;
 export const READ_CAP_SAFE_CHARS_PER_TOKEN_HINT = 2;
 const MIN_CALIBRATION_PROMPT_TOKENS = 32;
 const CALIBRATION_EMA_ALPHA = 0.2;
@@ -68,6 +71,17 @@ const promptTokenCalibrationByModel = new Map<
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
+
+const normalizeReadCapPercent = (value: number | undefined): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return CONTEXT_WINDOW_READ_CAP_PERCENT;
+  }
+  return clamp(
+    value,
+    CONTEXT_WINDOW_READ_CAP_PERCENT_MIN,
+    CONTEXT_WINDOW_READ_CAP_PERCENT_MAX,
+  );
+};
 
 const toCalibrationKey = (
   providerProtocol: string | null | undefined,
@@ -207,10 +221,13 @@ export function resolveStoryContextWindow(
 
 export const computeReadTokenBudgetFromContextWindow = (
   contextWindowTokens: number,
+  readCapPercent: number = CONTEXT_WINDOW_READ_CAP_PERCENT,
 ): number =>
   Math.max(
     1,
-    Math.floor(contextWindowTokens * CONTEXT_WINDOW_READ_CAP_PERCENT),
+    Math.floor(
+      contextWindowTokens * normalizeReadCapPercent(readCapPercent),
+    ),
   );
 
 export const estimateSafeCharsFromTokenBudget = (tokenBudget: number): number =>
@@ -293,8 +310,12 @@ export function resolveVfsReadTokenBudget(
       ? resolveProviderProtocol(settings, providerId)
       : undefined;
   const calibrationFactor = getCalibrationFactor(providerProtocol, modelId);
+  const normalizedReadCapPercent = normalizeReadCapPercent(
+    settings?.extra?.vfsReadTokenBudgetPercent,
+  );
   const tokenBudget = computeReadTokenBudgetFromContextWindow(
     resolution.contextWindowTokens,
+    normalizedReadCapPercent,
   );
   const projectedSafeChars = Math.max(
     1,

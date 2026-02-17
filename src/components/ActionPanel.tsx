@@ -16,7 +16,10 @@ import {
 } from "../utils/commands";
 import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
-import { resolveModelContextWindowTokens } from "../services/modelContextWindows";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextWindowTokens,
+} from "../services/modelContextWindows";
 import { pickLatestToolCallContextUsage } from "../services/ai/contextUsage";
 
 interface ActionPanelProps {
@@ -129,7 +132,6 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   const showCommandHints = customInput.startsWith("/");
   const commandHints = COMMAND_DEFINITIONS;
 
-  const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
   const contextWindowResolution = (() => {
     const provider = aiSettings.providers.instances.find(
       (p) => p.id === aiSettings.story.providerId,
@@ -144,7 +146,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       providerProtocol: provider?.protocol,
       modelId: aiSettings.story.modelId,
       providerReportedContextLength: ctx,
-      fallback: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
   })();
   const contextWindowTokens = contextWindowResolution.value;

@@ -498,7 +498,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .positive()
           .optional()
           .describe(
-            "Optional max characters. Effective payload is still bounded by dynamic read token budget (1% of current model context window, script-aware token estimation).",
+            "Optional max characters. Effective payload is still bounded by dynamic read token budget (default 10% of current model context window, configurable in Settings, script-aware token estimation).",
           ),
       })
       .strict(),

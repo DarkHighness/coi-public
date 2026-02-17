@@ -35,6 +35,7 @@ import {
 import { mergeDerivedViewState } from "./vfsViewState";
 import { sessionManager } from "../services/ai/sessionManager";
 import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   buildModelContextWindowKey,
   deriveLearnedContextWindowFromOverflow,
   parseContextOverflowDiagnostics,
@@ -195,7 +196,7 @@ export const useGameAction = ({
       successStreak: currentStreak,
       providerProtocol: provider?.protocol,
       modelId,
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     const shouldPersist =
@@ -256,7 +257,7 @@ export const useGameAction = ({
         providerId,
         providerProtocol: provider?.protocol,
         modelId,
-        fallback: 32000,
+        fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
       });
 
       const prevLearned = aiSettings.learnedModelContextWindows?.[key];

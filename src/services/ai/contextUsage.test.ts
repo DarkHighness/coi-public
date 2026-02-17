@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   buildToolCallContextUsageSnapshot,
   estimateTokensForMixedText,
   getPromptTokenCalibrationSnapshot,
@@ -14,11 +15,13 @@ describe("contextUsage", () => {
     resetPromptTokenCalibrationForTests();
   });
 
-  it("computes vfs read token budget from 1% context window", () => {
+  it("computes vfs read token budget from 10% context window by default", () => {
     const fallbackBudget = resolveVfsReadTokenBudget(undefined);
-    expect(fallbackBudget.contextWindowTokens).toBe(32000);
-    expect(fallbackBudget.tokenBudget).toBe(320);
-    expect(fallbackBudget.projectedSafeChars).toBe(640);
+    expect(fallbackBudget.contextWindowTokens).toBe(
+      DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    );
+    expect(fallbackBudget.tokenBudget).toBe(12800);
+    expect(fallbackBudget.projectedSafeChars).toBe(25600);
     expect(fallbackBudget.calibrationFactor).toBe(1);
 
     const overriddenBudget = resolveVfsReadTokenBudget({
@@ -27,16 +30,53 @@ describe("contextUsage", () => {
       modelContextWindows: { "provider-1::model-1": 100000 },
     } as any);
     expect(overriddenBudget.contextWindowTokens).toBe(100000);
-    expect(overriddenBudget.tokenBudget).toBe(1000);
-    expect(overriddenBudget.projectedSafeChars).toBe(2000);
+    expect(overriddenBudget.tokenBudget).toBe(10000);
+    expect(overriddenBudget.projectedSafeChars).toBe(20000);
     expect(overriddenBudget.calibrationFactor).toBe(1);
+  });
+
+  it("supports configurable vfs read budget percent from settings.extra", () => {
+    const configuredBudget = resolveVfsReadTokenBudget({
+      story: { providerId: "provider-1", modelId: "model-1" },
+      providers: { instances: [{ id: "provider-1", protocol: "openai" }] },
+      modelContextWindows: { "provider-1::model-1": 100000 },
+      extra: { vfsReadTokenBudgetPercent: 0.2 },
+    } as any);
+    expect(configuredBudget.tokenBudget).toBe(20000);
+    expect(configuredBudget.projectedSafeChars).toBe(40000);
+
+    const clampedLow = resolveVfsReadTokenBudget({
+      story: { providerId: "provider-1", modelId: "model-1" },
+      providers: { instances: [{ id: "provider-1", protocol: "openai" }] },
+      modelContextWindows: { "provider-1::model-1": 100000 },
+      extra: { vfsReadTokenBudgetPercent: 0.001 },
+    } as any);
+    expect(clampedLow.tokenBudget).toBe(1000);
+
+    const clampedHigh = resolveVfsReadTokenBudget({
+      story: { providerId: "provider-1", modelId: "model-1" },
+      providers: { instances: [{ id: "provider-1", protocol: "openai" }] },
+      modelContextWindows: { "provider-1::model-1": 100000 },
+      extra: { vfsReadTokenBudgetPercent: 0.9 },
+    } as any);
+    expect(clampedHigh.tokenBudget).toBe(50000);
+
+    const invalidNaN = resolveVfsReadTokenBudget({
+      story: { providerId: "provider-1", modelId: "model-1" },
+      providers: { instances: [{ id: "provider-1", protocol: "openai" }] },
+      modelContextWindows: { "provider-1::model-1": 100000 },
+      extra: { vfsReadTokenBudgetPercent: Number.NaN },
+    } as any);
+    expect(invalidNaN.tokenBudget).toBe(10000);
   });
 
   it("keeps backwards-compatible hardCapChars as conservative safe-char projection", () => {
     const fallbackCap = resolveVfsReadHardCapChars(undefined);
-    expect(fallbackCap.contextWindowTokens).toBe(32000);
-    expect(fallbackCap.tokenBudget).toBe(320);
-    expect(fallbackCap.hardCapChars).toBe(640);
+    expect(fallbackCap.contextWindowTokens).toBe(
+      DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    );
+    expect(fallbackCap.tokenBudget).toBe(12800);
+    expect(fallbackCap.hardCapChars).toBe(25600);
 
     const overriddenCap = resolveVfsReadHardCapChars({
       story: { providerId: "provider-1", modelId: "model-1" },
@@ -44,8 +84,8 @@ describe("contextUsage", () => {
       modelContextWindows: { "provider-1::model-1": 100000 },
     } as any);
     expect(overriddenCap.contextWindowTokens).toBe(100000);
-    expect(overriddenCap.tokenBudget).toBe(1000);
-    expect(overriddenCap.hardCapChars).toBe(2000);
+    expect(overriddenCap.tokenBudget).toBe(10000);
+    expect(overriddenCap.hardCapChars).toBe(20000);
     expect(overriddenCap.calibrationFactor).toBe(1);
   });
 

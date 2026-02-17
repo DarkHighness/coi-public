@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AISettings, ModelInfo } from "../types";
 import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   applyDefaultContextWindowsToModels,
   buildModelContextWindowKey,
   deriveLearnedContextWindowFromOverflow,
@@ -34,7 +35,7 @@ describe("modelContextWindows", () => {
       providerProtocol: "openai",
       modelId: "gpt-4.1",
       providerReportedContextLength: 777777,
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(resolvedWithProviderCap).toEqual({
@@ -54,7 +55,7 @@ describe("modelContextWindows", () => {
       providerProtocol: "openai",
       modelId: "gpt-4.1",
       providerReportedContextLength: 777777,
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(resolvedWithOverride).toEqual({
@@ -68,7 +69,7 @@ describe("modelContextWindows", () => {
       providerProtocol: "openai",
       modelId: "gpt-4.1",
       providerReportedContextLength: 777777,
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(resolvedWithLearned).toEqual({
@@ -82,7 +83,7 @@ describe("modelContextWindows", () => {
       providerProtocol: "openai",
       modelId: "gpt-4.1",
       providerReportedContextLength: 777777,
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(resolvedWithMetadata).toEqual({
@@ -95,7 +96,7 @@ describe("modelContextWindows", () => {
       providerId: "provider-1",
       providerProtocol: "openai",
       modelId: "gpt-4.1",
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(resolvedWithDefaults).toEqual({
@@ -108,11 +109,11 @@ describe("modelContextWindows", () => {
       providerId: "provider-1",
       providerProtocol: "openrouter",
       modelId: "unknown-model",
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(resolvedFallback).toEqual({
-      value: 32000,
+      value: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
       source: "fallback.default",
     });
   });
@@ -191,7 +192,7 @@ describe("modelContextWindows", () => {
       successStreak: 1,
       providerProtocol: "openai",
       modelId: "gpt-4.1",
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(notYet).toEqual({
@@ -205,7 +206,7 @@ describe("modelContextWindows", () => {
       successStreak: 2,
       providerProtocol: "openai",
       modelId: "gpt-4.1",
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     expect(relaxed.nextLearned).toBe(102000);
@@ -219,7 +220,7 @@ describe("modelContextWindows", () => {
       successStreak: 0,
       providerProtocol: "openai",
       modelId: "gpt-4.1",
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     // floor(1,047,576 * 0.95) = 995,197
@@ -234,7 +235,7 @@ describe("modelContextWindows", () => {
       successStreak: 2,
       providerProtocol: "openai",
       modelId: "gpt-4.1",
-      fallback: 32000,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
     });
 
     // floor(1,047,576 * 0.95) = 995,197

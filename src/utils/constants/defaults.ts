@@ -155,6 +155,7 @@ export const DEFAULTS: AISettings = {
   extra: {
     autoCompactEnabled: true,
     autoCompactThreshold: 0.7,
+    vfsReadTokenBudgetPercent: 0.1,
     forceAutoToolChoice: false,
     toolCallCarousel: true,
     culturePreference: "follow_story_setting",

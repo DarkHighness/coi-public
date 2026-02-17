@@ -1,5 +1,7 @@
 import type { AISettings, ModelInfo, ProviderProtocol } from "../types";
 
+export const DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS = 128_000;
+
 interface ModelContextWindowDefaultEntry {
   providerProtocol: ProviderProtocol;
   modelId: string;
@@ -679,7 +681,10 @@ export function resolveModelContextWindowUpperBound(
     return mappedDefault;
   }
 
-  return sanitizePositiveContextWindow(fallback) || 32000;
+  return (
+    sanitizePositiveContextWindow(fallback) ||
+    DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS
+  );
 }
 
 export function resolveModelContextWindowTokens(params: {

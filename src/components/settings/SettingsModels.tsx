@@ -5,6 +5,12 @@ import { FunctionKey } from "./types";
 import { FunctionConfig } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
 import {
+  CONTEXT_WINDOW_READ_CAP_PERCENT,
+  CONTEXT_WINDOW_READ_CAP_PERCENT_MAX,
+  CONTEXT_WINDOW_READ_CAP_PERCENT_MIN,
+} from "../../services/ai/contextUsage";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   buildModelContextWindowKey,
   getCopyableModelContextWindowDefaults,
   getLearnedModelContextWindow,
@@ -164,7 +170,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     providerProtocol: storyProvider?.protocol,
     modelId: storyModelId,
     providerReportedContextLength: storyProviderModelMetadata,
-    fallback: 32000,
+    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   });
   const contextSourceLabel = (() => {
     switch (contextResolution.source) {
@@ -180,6 +186,19 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         return t("models.contextSourceFallback") || "Fallback";
     }
   })();
+  const rawReadBudgetPercent = currentSettings.extra?.vfsReadTokenBudgetPercent;
+  const readBudgetPercent =
+    typeof rawReadBudgetPercent === "number" &&
+    Number.isFinite(rawReadBudgetPercent)
+      ? Math.min(
+          CONTEXT_WINDOW_READ_CAP_PERCENT_MAX,
+          Math.max(
+            CONTEXT_WINDOW_READ_CAP_PERCENT_MIN,
+            rawReadBudgetPercent,
+          ),
+        )
+      : CONTEXT_WINDOW_READ_CAP_PERCENT;
+  const readBudgetPercentDisplay = Math.round(readBudgetPercent * 100);
 
   const compactActionButtonClass =
     "px-1 py-1 text-xs font-bold uppercase tracking-widest border-b border-transparent transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
@@ -479,6 +498,50 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           />
           <p className="text-xs text-theme-muted italic">
             {t("models.autoCompactThresholdHelp")}
+          </p>
+        </div>
+
+        {/* VFS Read Budget Ratio */}
+        <div className="space-y-2 pt-3 border-t border-theme-border/20">
+          <div className="flex justify-between">
+            <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+              {t("models.vfsReadTokenBudgetPercent") ||
+                "VFS Read Budget Ratio"}
+            </label>
+            <span className="text-theme-text font-mono">
+              {readBudgetPercentDisplay}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={Math.round(CONTEXT_WINDOW_READ_CAP_PERCENT_MIN * 100)}
+            max={Math.round(CONTEXT_WINDOW_READ_CAP_PERCENT_MAX * 100)}
+            step="1"
+            value={readBudgetPercentDisplay}
+            onChange={(e) => {
+              const pct = parseInt(e.target.value, 10);
+              const normalizedPct = Number.isFinite(pct)
+                ? Math.min(
+                    Math.round(CONTEXT_WINDOW_READ_CAP_PERCENT_MAX * 100),
+                    Math.max(
+                      Math.round(CONTEXT_WINDOW_READ_CAP_PERCENT_MIN * 100),
+                      pct,
+                    ),
+                  )
+                : Math.round(CONTEXT_WINDOW_READ_CAP_PERCENT * 100);
+              onUpdateSettings({
+                ...currentSettings,
+                extra: {
+                  ...currentSettings.extra,
+                  vfsReadTokenBudgetPercent: normalizedPct / 100,
+                },
+              });
+            }}
+            className="w-full accent-theme-primary"
+          />
+          <p className="text-xs text-theme-muted italic">
+            {t("models.vfsReadTokenBudgetPercentHelp") ||
+              "Controls single-read payload budget for vfs_read_* tools as a percentage of context window."}
           </p>
         </div>
 
