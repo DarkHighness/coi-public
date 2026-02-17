@@ -35,7 +35,7 @@ You MUST follow these runtime protocol constraints:
 - Error recovery (when tool returns \`{ success:false, code, error }\`):
   1) Do NOT finish while blocking errors remain (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\`, \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
   2) Fix by \`code\`:
-     - \`NOT_FOUND\`: \`vfs_ls\` parent or \`vfs_search\` for the filename.
+     - \`NOT_FOUND\`: start from guaranteed root (\`current\`/\`shared\`/\`forks\`) with \`vfs_ls\`, then \`vfs_search\`, then walk parents segment-by-segment (do not assume immediate parent exists).
      - \`INVALID_PARAMS\`: read split tool docs and retry with schema-valid args.
      - \`INVALID_DATA\`: run \`vfs_schema\`, align fields/types. Common fixes: remove root \`unlocked\`/\`unlockReason\` from world entities; location → \`/currentLocation\`; status → \`/visible/status\`; trust schema over merged context fields.
      - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last, then retry.

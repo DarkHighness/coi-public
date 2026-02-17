@@ -228,21 +228,23 @@ export const validateExpectedHash = (
     return null;
   }
 
+  const displayPath = toCurrentPath(normalizeVfsPath(path));
+
   return createVfsWriteGuardError(
-    `Hash mismatch for ${path} (expected ${expectedHash}, got ${existing.hash}). Re-read the file and retry.`,
+    `Hash mismatch for ${displayPath} (expected ${expectedHash}, got ${existing.hash}). Re-read the file and retry.`,
     "INVALID_ACTION",
     {
       category: "conflict",
       issues: [
         {
-          path,
+          path: displayPath,
           code: "HASH_MISMATCH",
           message: "Optimistic concurrency guard failed.",
           expected: expectedHash,
           received: existing.hash,
         },
       ],
-      recovery: [`Re-read ${path} and retry with the latest hash.`],
+      recovery: [`Re-read ${displayPath} and retry with the latest hash.`],
     },
   );
 };
@@ -257,14 +259,15 @@ export const ensureTextFile = (
   if (isTextType(existing.contentType)) {
     return null;
   }
+  const displayPath = toCurrentPath(normalizeVfsPath(path));
   return createVfsWriteGuardError(
-    `File is not a text file: ${path}`,
+    `File is not a text file: ${displayPath}`,
     "INVALID_DATA",
     {
       category: "validation",
       issues: [
         {
-          path,
+          path: displayPath,
           code: "INVALID_CONTENT_TYPE",
           message: `Expected text/plain or text/markdown, got ${existing.contentType}.`,
         },
@@ -375,7 +378,7 @@ export const resolveWriteContentType = (
   return {
     ok: false,
     error: createVfsWriteGuardError(
-      `Unable to infer contentType for ${toCurrentPath(normalizedPath)}. Please provide write_file.contentType explicitly.`,
+      `Unable to infer contentType for ${toCurrentPath(normalizedPath)}. Please provide contentType explicitly in the tool arguments.`,
       "INVALID_DATA",
       {
         issues: [
@@ -387,7 +390,7 @@ export const resolveWriteContentType = (
           },
         ],
         recovery: [
-          "Set write_file.contentType explicitly when path extension/template cannot determine it.",
+          "Set contentType explicitly in vfs_write_file args (or write_file op) when path extension/template cannot determine it.",
         ],
       },
     ),
@@ -635,7 +638,7 @@ export const validateWritePayload = (
                 ],
           recovery: [
             "Align payload fields/types with schema constraints and retry.",
-            "Reference current/refs/tools/README.md plus current/refs/tools/{toolName}/README.md and current/refs/tool-schemas/{toolName}/README.md for write patterns.",
+            "Reference current/refs/tools/README.md plus the tool-specific README/EXAMPLES and tool-schemas README listed in details.refs.",
           ],
         },
       ),

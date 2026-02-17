@@ -47,9 +47,11 @@ describe("vfs_read_markdown", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
     expect(result.error).toContain("ambiguous");
+    expect(result.details?.recovery?.[0]).toContain("vfs_read_lines");
+    expect(result.details?.recovery?.[1]).toContain("explicit indices");
   });
 
-  it("returns NOT_FOUND when no section selector matches", () => {
+  it("returns INVALID_DATA when no section selector matches", () => {
     const session = new VfsSession();
     session.writeFile("world/notes.md", "# One\n\nbody", "text/markdown");
 
@@ -63,7 +65,9 @@ describe("vfs_read_markdown", () => {
     ) as any;
 
     expect(result.success).toBe(false);
-    expect(result.code).toBe("NOT_FOUND");
+    expect(result.code).toBe("INVALID_DATA");
+    expect(result.details?.recovery?.[0]).toContain("vfs_read_lines");
+    expect(result.details?.recovery?.[0]).not.toContain("vfs_ls");
   });
 
   it("emits structured read-limit hint when markdown section exceeds maxChars", () => {
@@ -88,6 +92,6 @@ describe("vfs_read_markdown", () => {
     expect(result.code).toBe("INVALID_DATA");
     expect(result.details?.issues?.[0]?.code).toBe("READ_LIMIT_EXCEEDED");
     expect(result.details?.hint?.code).toBe("READ_LIMIT_HINT");
-    expect(result.details?.hint?.nextCalls?.[0]).toContain("vfs_read_markdown");
+    expect(result.details?.hint?.nextCalls?.[0]).toContain("vfs_read_lines");
   });
 });

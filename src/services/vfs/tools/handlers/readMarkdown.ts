@@ -92,9 +92,20 @@ export const handleReadMarkdown: VfsToolHandler = (args, ctx) =>
             `heading "${entry.heading}" matched multiple sections: ${entry.indices.join(", ")}`,
         )
         .join("; ");
+      const ambiguityHints = headingSelection.ambiguous
+        .slice(0, 6)
+        .map((entry) => `"${entry.heading}" -> [${entry.indices.join(", ")}]`)
+        .join("; ");
       return createError(
         `vfs_read_markdown heading selector is ambiguous. ${ambiguityLines}. Use indices instead.`,
         "INVALID_DATA",
+        {
+          recovery: [
+            `Try: vfs_read_lines({ path: "${toCurrentPath(file.path)}", startLine: 1, lineCount: 200 })`,
+            `Then retry with explicit indices from the ambiguous heading map: ${ambiguityHints}`,
+          ],
+          refs: [getToolDocRef("vfs_read_markdown")],
+        },
       );
     }
 
@@ -105,6 +116,27 @@ export const handleReadMarkdown: VfsToolHandler = (args, ctx) =>
     ]);
 
     if (selectedSections.length === 0) {
+      const recoveryPath = toCurrentPath(file.path);
+      const dedupedHeadings = Array.from(
+        new Set(parsed.flat.map((section) => section.title.trim()).filter(Boolean)),
+      );
+      const availableHeadings =
+        dedupedHeadings.length > 0
+          ? dedupedHeadings.slice(0, 8).map((title) => `"${title}"`).join(", ")
+          : "(none)";
+      const availableIndices =
+        parsed.flat.length > 0
+          ? parsed.flat
+              .slice(0, 12)
+              .map((section) => section.index)
+              .join(", ")
+          : "(none)";
+      const headingOverflow =
+        dedupedHeadings.length > 8
+          ? ` (+${dedupedHeadings.length - 8} more)`
+          : "";
+      const indexOverflow =
+        parsed.flat.length > 12 ? ` (+${parsed.flat.length - 12} more)` : "";
       const missingReasons: string[] = [];
       if (headingSelection.missing.length > 0) {
         missingReasons.push(
@@ -120,7 +152,16 @@ export const handleReadMarkdown: VfsToolHandler = (args, ctx) =>
         missingReasons.length > 0 ? ` (${missingReasons.join("; ")})` : "";
       return createError(
         `No markdown sections matched selectors for ${typedArgs.path}${details}`,
-        "NOT_FOUND",
+        "INVALID_DATA",
+        {
+          recovery: [
+            `Try: vfs_read_lines({ path: "${recoveryPath}", startLine: 1, lineCount: 200 })`,
+            "Then retry with exact selectors: headings are trim-sensitive strings; indices must match section indices exactly.",
+            `Available headings (sample): ${availableHeadings}${headingOverflow}`,
+            `Available section indices (sample): ${availableIndices}${indexOverflow}`,
+          ],
+          refs: [getToolDocRef("vfs_read_markdown")],
+        },
       );
     }
 

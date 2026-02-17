@@ -84,8 +84,26 @@ export const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase9Schema,
 ] as const;
 
-export const normalizeToolDocName = (toolName: string): string =>
-  toolName.includes("(") ? toolName.slice(0, toolName.indexOf("(")) : toolName;
+export const normalizeToolDocName = (toolName: string): string => {
+  const trimmed = toolName.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const withoutArgs = trimmed.includes("(")
+    ? trimmed.slice(0, trimmed.indexOf("("))
+    : trimmed;
+  const segments = withoutArgs.split(/[:/.]/).filter(Boolean);
+  if (segments.length === 0) {
+    return withoutArgs;
+  }
+  for (let index = segments.length - 1; index >= 0; index -= 1) {
+    const segment = segments[index];
+    if (segment?.startsWith("vfs_")) {
+      return segment;
+    }
+  }
+  return segments[segments.length - 1] || withoutArgs;
+};
 
 export const getToolDocRef = (toolName: string): string =>
   `current/refs/tools/${normalizeToolDocName(toolName)}/README.md`;
@@ -131,7 +149,7 @@ const defaultRecoveryByCode = (
   if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
     return withSoulToolLearningRecovery([
       `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for tool overview, ${buildToolDocRecoveryReadCall(toolExamplesRef)} for examples, and ${buildToolDocRecoveryReadCall(toolSchemaRef)} for schema summary. Then retry with schema-valid arguments.`,
-      `If schema summary points to PART files, read only the needed part from current/refs/tool-schemas/{toolName}/PART-xx.md.`,
+      `If schema summary points to PART files, read only the needed part from current/refs/tool-schemas/${toolName}/PART-xx.md.`,
       "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
       "If you're modifying an existing file, read it first (read-before-mutate), then retry.",
     ]);
@@ -168,7 +186,8 @@ const defaultRecoveryByCode = (
   }
   if (code === "NOT_FOUND") {
     return withSoulToolLearningRecovery([
-      "Confirm the parent directory with vfs_ls (or use vfs_search with fuzzy=true if unsure), then retry with the corrected path.",
+      "Start from a guaranteed root (current/shared/forks) with vfs_ls, then walk path segments; do not assume the immediate parent exists.",
+      "Use vfs_search with fuzzy=true from that root to locate moved/renamed files before retrying.",
       "If the missing path is a JSON resource, vfs_schema can still describe expected fields/template even before the file exists.",
     ]);
   }
@@ -208,12 +227,55 @@ const qualifyPathForRecovery = (
   return { qualifiedPath, parentDir, fileName };
 };
 
+const resolveRecoveryRootDir = (qualifiedPath: string): string => {
+  const normalized = qualifiedPath.replace(/\/$/, "");
+  if (normalized === "shared" || normalized.startsWith("shared/")) {
+    return "shared";
+  }
+  if (normalized === "forks" || normalized.startsWith("forks/")) {
+    return "forks";
+  }
+  return "current";
+};
+
+const buildRecoveryParentWalkCalls = (
+  rootDir: string,
+  parentDir: string,
+): string[] => {
+  const normalizedParent = parentDir.replace(/\/$/, "");
+  if (
+    normalizedParent === "" ||
+    normalizedParent === rootDir ||
+    !normalizedParent.startsWith(`${rootDir}/`)
+  ) {
+    return [];
+  }
+
+  const relative = normalizedParent.slice(rootDir.length + 1);
+  const segments = relative.split("/").filter(Boolean);
+  const calls: string[] = [];
+  let cursor = rootDir;
+  for (const segment of segments) {
+    cursor = `${cursor}/${segment}`;
+    calls.push(`vfs_ls({ path: "${cursor}" })`);
+  }
+  return calls;
+};
+
 export const buildNotFoundRecovery = (inputPath: string): string[] => {
   const { qualifiedPath, parentDir, fileName } =
     qualifyPathForRecovery(inputPath);
+  const rootDir = resolveRecoveryRootDir(qualifiedPath);
+  const parentWalkCalls = buildRecoveryParentWalkCalls(rootDir, parentDir);
+  const parentWalkHint =
+    parentWalkCalls.length > 0
+      ? `Then walk parents and stop at first missing: ${parentWalkCalls.join(" -> ")}`
+      : `Then verify the corrected path under "${rootDir}" and retry.`;
+
   return withSoulToolLearningRecovery([
-    `Try: vfs_ls({ path: "${parentDir}" })`,
-    `Then: vfs_search({ path: "${parentDir}", query: "${fileName}", fuzzy: true })`,
+    `Try: vfs_ls({ path: "${rootDir}" })`,
+    `Then: vfs_search({ path: "${rootDir}", query: "${fileName}", fuzzy: true })`,
+    parentWalkHint,
     `If you need expected JSON fields: vfs_schema({ paths: ["${qualifiedPath}"] })`,
   ]);
 };
@@ -484,14 +546,21 @@ export const createReadLimitError = (
     ];
     const nextCalls = [linesWindowCall, charsWindowCall];
     if (mode === "json") {
-      nextCalls.push(
-        `vfs_read_json({ path: "${qualifiedPath}", pointers: ["/..."], maxChars: ${suggestedChunkChars} })`,
+      recovery.push(
+        "After bounded inspection, retry vfs_read_json with specific pointers (avoid broad root pointer '/').",
       );
     } else if (mode === "markdown") {
-      nextCalls.unshift(
-        `vfs_read_markdown({ path: "${qualifiedPath}", indices: ["1"] })`,
+      recovery.push(
+        "After bounded inspection, retry vfs_read_markdown with exact selectors (`headings`/`indices`).",
       );
     }
+
+    const avoidHint =
+      mode === "json"
+        ? `vfs_read_json({ path: "${qualifiedPath}", pointers: ["/"] })`
+        : mode === "markdown"
+          ? `broad markdown selector retries on "${qualifiedPath}" without narrowing`
+          : `${resolvedToolName}({ path: "${qualifiedPath}" })`;
 
     const budgetText =
       normalizedEstimatedTokens !== null
@@ -529,7 +598,7 @@ export const createReadLimitError = (
             mode === "markdown"
               ? "Do not retry broad markdown reads. Switch to section selectors (`indices`/`headings`) or bounded lines/chars windows."
               : "Do not retry path-only broad reads. Switch to bounded lines/chars windows (or narrowed JSON pointers).",
-          avoid: `${resolvedToolName}({ path: "${qualifiedPath}" })`,
+          avoid: avoidHint,
           nextCalls,
           metadata: {
             mode,

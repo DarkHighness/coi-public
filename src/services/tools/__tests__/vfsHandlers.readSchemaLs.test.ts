@@ -174,6 +174,12 @@ describe("VFS handlers read/schema/ls", () => {
       `Token budget is ${DEFAULT_READ_TOKEN_BUDGET}`,
     );
     expect(result.error).toContain("JSON pointers");
+    expect(result.details?.hint?.nextCalls?.[0]).toContain("vfs_read_lines");
+    expect(
+      result.details?.hint?.nextCalls?.some((call: string) =>
+        call.includes('/..."'),
+      ),
+    ).toBe(false);
   });
 
   it("derives dynamic read token budget from model context window and enforces it consistently", () => {
