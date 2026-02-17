@@ -146,7 +146,9 @@ const getGeminiUsageMetadata = (
 
 const getThoughtSignature = (value: unknown): string | undefined => {
   if (!isRecord(value)) return undefined;
-  return readString(value.thoughtSignature) || readString(value.thought_signature);
+  return (
+    readString(value.thoughtSignature) || readString(value.thought_signature)
+  );
 };
 
 const parseToolArguments = (
@@ -636,7 +638,10 @@ export async function generateContent(
             functionCalls = fcParts.map((p, index) => ({
               id: `gemini_call_${p.functionCall.name}_${index}`,
               name: p.functionCall.name || "",
-              args: parseToolArguments(p.functionCall.args, p.functionCall.name),
+              args: parseToolArguments(
+                p.functionCall.args,
+                p.functionCall.name,
+              ),
               // Extract thoughtSignature if present
               thoughtSignature: getThoughtSignature(p),
             }));
@@ -1149,9 +1154,7 @@ export async function generateSpeech(
     throw new AIProviderError("No audio content generated", "gemini");
   }
 
-  const usage = parseGeminiUsageMetadata(
-    getGeminiUsageMetadata(response),
-  );
+  const usage = parseGeminiUsageMetadata(getGeminiUsageMetadata(response));
 
   // 将 base64 转换为 ArrayBuffer
   const audioBuffer = decodeBase64ToBuffer(base64Audio);

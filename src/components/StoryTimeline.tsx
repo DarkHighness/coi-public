@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { AnimatePresence } from "framer-motion";
 import { StorySegment } from "../types";
 import { THEMES, ENV_THEMES } from "../utils/constants";

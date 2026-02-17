@@ -102,7 +102,11 @@ describe("VFS handlers search/commit", () => {
 
     expect(commit.success).toBe(true);
     const turnPath = `current/conversation/turns/${commit.data.turnId}.json`;
-    const turnFile = dispatchToolCall("vfs_read_chars", { path: turnPath }, ctx) as any;
+    const turnFile = dispatchToolCall(
+      "vfs_read_chars",
+      { path: turnPath },
+      ctx,
+    ) as any;
     expect(turnFile.success).toBe(true);
     const parsedTurn = JSON.parse(turnFile.data.content);
     expect(parsedTurn.userAction).toBe("system action");
@@ -112,9 +116,17 @@ describe("VFS handlers search/commit", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session, vfsTurnUserAction: "advance timeline" };
 
-    session.writeFile("custom_rules/12-custom/rule.md", "rule v1", "text/markdown");
+    session.writeFile(
+      "custom_rules/12-custom/rule.md",
+      "rule v1",
+      "text/markdown",
+    );
     syncCustomRulesAckState(session);
-    session.writeFile("custom_rules/12-custom/rule.md", "rule v2", "text/markdown");
+    session.writeFile(
+      "custom_rules/12-custom/rule.md",
+      "rule v2",
+      "text/markdown",
+    );
     syncCustomRulesAckState(session);
 
     const commit = dispatchToolCall(
@@ -163,8 +175,10 @@ describe("VFS handlers search/commit", () => {
     const commit = dispatchToolCall(
       "vfs_finish_soul",
       {
-        currentSoul: "# Player Soul (This Save)\n\n## Guidance For AI\n- Keep concise.\n",
-        globalSoul: "# Player Soul (Global)\n\n## Guidance For AI\n- Reduce AI flavor.\n",
+        currentSoul:
+          "# Player Soul (This Save)\n\n## Guidance For AI\n- Keep concise.\n",
+        globalSoul:
+          "# Player Soul (Global)\n\n## Guidance For AI\n- Reduce AI flavor.\n",
       },
       ctx,
     ) as any;

@@ -177,21 +177,17 @@ describe("vfs editor helper", () => {
     ).toThrow("NPC entries must use actor bundle shape");
 
     expect(() =>
-      applySectionEdit(
-        session,
-        "npcs",
-        [
-          {
-            profile: {
-              kind: "npc",
-              knownBy: ["char:player"],
-              currentLocation: "loc:test",
-              visible: { name: "Missing ID" },
-              relations: [],
-            },
+      applySectionEdit(session, "npcs", [
+        {
+          profile: {
+            kind: "npc",
+            knownBy: ["char:player"],
+            currentLocation: "loc:test",
+            visible: { name: "Missing ID" },
+            relations: [],
           },
-        ] as any,
-      ),
+        },
+      ] as any),
     ).toThrow("Missing profile.id for npc entry.");
   });
 

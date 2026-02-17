@@ -165,7 +165,9 @@ const getV3SnapshotFromZip = async (
   turn: number,
 ): Promise<ExportSnapshotV3> =>
   JSON.parse(
-    await zip.file(`vfs/snapshots/fork-${forkId}/turn-${turn}.json`)!.async("text"),
+    await zip
+      .file(`vfs/snapshots/fork-${forkId}/turn-${turn}.json`)!
+      .async("text"),
   ) as ExportSnapshotV3;
 
 const getBlobPayloadFromZip = async (
@@ -192,7 +194,10 @@ const appendV3VfsBundleToZip = (
   snapshots: SnapshotRecord[],
   latest: { forkId: number; turn: number } | null,
 ) => {
-  const blobByContent = new Map<string, { blobId: string; content: string; contentType: string; size: number }>();
+  const blobByContent = new Map<
+    string,
+    { blobId: string; content: string; contentType: string; size: number }
+  >();
   let blobCounter = 0;
 
   const snapshotEntries = snapshots.map((snapshot) => {
@@ -471,7 +476,10 @@ const createValidManifest = () => ({
 const createImportArchive = async () => {
   const zip = new JSZip();
   zip.file("manifest.json", JSON.stringify(createValidManifest(), null, 2));
-  appendV3VfsBundleToZip(zip, [makeSnapshot("slot-old")], { forkId: 0, turn: 0 });
+  appendV3VfsBundleToZip(zip, [makeSnapshot("slot-old")], {
+    forkId: 0,
+    turn: 0,
+  });
 
   zip.file("images/old-image-id.png", new Uint8Array([1, 2, 3, 4]));
 
@@ -765,7 +773,9 @@ describe("saveExportService", () => {
     expect(zip.file("vfs/README.md")).toBeNull();
     expect(zip.file("vfs/history/fork-0/turn-0/world/global.json")).toBeNull();
     expect(zip.file("vfs/current/world/global.json")).toBeNull();
-    expect(zip.file("vfs/current/conversation/turns/fork-0/turn-2.json")).toBeNull();
+    expect(
+      zip.file("vfs/current/conversation/turns/fork-0/turn-2.json"),
+    ).toBeNull();
 
     const vfsIndex = JSON.parse(
       await zip.file("vfs/index.json")!.async("text"),
@@ -1038,11 +1048,13 @@ describe("saveExportService", () => {
     const exportedSnapshot = await getV3SnapshotFromZip(zip, 0, 0);
     const snapshotPaths = Object.keys(exportedSnapshot.fileRefs);
     expect(
-      snapshotPaths.some((path) => path.endsWith("/conversation/session.jsonl")),
+      snapshotPaths.some((path) =>
+        path.endsWith("/conversation/session.jsonl"),
+      ),
     ).toBe(false);
-    expect(
-      snapshotPaths.some((path) => path.includes("/runtime/")),
-    ).toBe(false);
+    expect(snapshotPaths.some((path) => path.includes("/runtime/"))).toBe(
+      false,
+    );
 
     expect(
       snapshotPaths.includes("turns/fork-0/turn-0/world/global.json"),
@@ -1053,9 +1065,13 @@ describe("saveExportService", () => {
       ),
     ).toBe(true);
 
-    expect(zip.file("vfs/history/fork-0/turn-0/conversation/session.jsonl")).toBeNull();
+    expect(
+      zip.file("vfs/history/fork-0/turn-0/conversation/session.jsonl"),
+    ).toBeNull();
     expect(zip.file("vfs/current/conversation/session.jsonl")).toBeNull();
-    expect(zip.file("vfs/history/fork-0/turn-0/runtime/transient.json")).toBeNull();
+    expect(
+      zip.file("vfs/history/fork-0/turn-0/runtime/transient.json"),
+    ).toBeNull();
     expect(zip.file("vfs/current/runtime/transient.json")).toBeNull();
   });
 });
@@ -1097,7 +1113,9 @@ describe("saveExportService validation edge cases", () => {
     const result = await validateImport(file);
 
     expect(result.valid).toBe(false);
-    expect(result.errorsI18n?.[0]?.key).toBe("import.errors.unreadableVfsIndex");
+    expect(result.errorsI18n?.[0]?.key).toBe(
+      "import.errors.unreadableVfsIndex",
+    );
   });
 
   it("validateImport warns when export version is newer than supported", async () => {
@@ -1382,7 +1400,10 @@ describe("saveExportService import/export additional branches", () => {
       forkId: 0,
       turn: 0,
     });
-    zip.file("meta/ui_state.json", JSON.stringify({ panel: "rag", width: 300 }));
+    zip.file(
+      "meta/ui_state.json",
+      JSON.stringify({ panel: "rag", width: 300 }),
+    );
     zip.file(
       "meta/runtime_stats.json",
       JSON.stringify({

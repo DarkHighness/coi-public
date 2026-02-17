@@ -119,14 +119,16 @@ const resolveUniqueSectionBySelector = (
   content: string,
   selector: ParsedSelector,
   fieldName: string,
-): { ok: true; section: ReturnType<typeof parseMarkdownSections>["flat"][number] } | { ok: false; error: string } => {
+):
+  | {
+      ok: true;
+      section: ReturnType<typeof parseMarkdownSections>["flat"][number];
+    }
+  | { ok: false; error: string } => {
   const selected = resolveSectionsBySelector(content, selector);
   if (selected.ambiguous.length > 0) {
     const details = selected.ambiguous
-      .map(
-        (entry) =>
-          `${entry.heading}: ${entry.indices.join(", ")}`,
-      )
+      .map((entry) => `${entry.heading}: ${entry.indices.join(", ")}`)
       .join("; ");
     return {
       ok: false,
@@ -269,7 +271,10 @@ export const handleWriteMarkdown: VfsToolHandler = (args, ctx) =>
             : 1;
 
         if (typedArgs.parent) {
-          const parentSelector = ensureSingleSelector(typedArgs.parent, "parent");
+          const parentSelector = ensureSingleSelector(
+            typedArgs.parent,
+            "parent",
+          );
           if (parentSelector.ok === false) {
             return createError(parentSelector.error, "INVALID_PARAMS");
           }
@@ -292,7 +297,11 @@ export const handleWriteMarkdown: VfsToolHandler = (args, ctx) =>
           sectionInput.title,
           typeof sectionInput.content === "string" ? sectionInput.content : "",
         );
-        nextContent = insertSection(currentContent, insertionOffset, sectionMarkdown);
+        nextContent = insertSection(
+          currentContent,
+          insertionOffset,
+          sectionMarkdown,
+        );
       } else if (action === "replace_section") {
         const targetSelector = ensureSingleSelector(typedArgs.target, "target");
         if (targetSelector.ok === false) {

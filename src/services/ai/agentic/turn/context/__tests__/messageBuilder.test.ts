@@ -151,11 +151,9 @@ describe("messageBuilder", () => {
 
     const rate = buildTurnMessages(
       createGameState(),
-      "[Player Rate] {\"vote\":\"down\"}",
+      '[Player Rate] {"vote":"down"}',
       createSession(),
     );
-    expect(getText(rate.userMessage)).toBe(
-      "[Player Rate] {\"vote\":\"down\"}",
-    );
+    expect(getText(rate.userMessage)).toBe('[Player Rate] {"vote":"down"}');
   });
 });

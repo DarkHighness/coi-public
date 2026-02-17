@@ -272,7 +272,9 @@ export const classifyJsonMutationError = (params: {
 const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-export const isToolCallErrorResult = (value: unknown): value is ToolCallError => {
+export const isToolCallErrorResult = (
+  value: unknown,
+): value is ToolCallError => {
   if (!isRecordObject(value)) {
     return false;
   }
@@ -319,9 +321,7 @@ export const runWithStructuredErrors = (
   args: JsonObject,
   runner: () => unknown | Promise<unknown>,
   options?: {
-    batchFromArgs?: (
-      args: JsonObject,
-    ) => ToolErrorBatch | undefined;
+    batchFromArgs?: (args: JsonObject) => ToolErrorBatch | undefined;
   },
 ): unknown | Promise<unknown> => {
   const finalize = (result: unknown): unknown => {
@@ -863,7 +863,10 @@ export const toLsStatEntryForDir = (
   };
 };
 
-export const normalizeGlobInput = (pattern: string, basePath?: string): string => {
+export const normalizeGlobInput = (
+  pattern: string,
+  basePath?: string,
+): string => {
   const normalized = normalizeVfsPath(pattern);
   if (
     normalized.startsWith("current/") ||
@@ -1178,9 +1181,7 @@ export const ensureSeparatorNewline = (left: string, right: string): string => {
 
 export const formatOutlineCommitValidationError = (error: unknown): string => {
   const errRecord =
-    error && typeof error === "object"
-      ? (error as JsonObject)
-      : null;
+    error && typeof error === "object" ? (error as JsonObject) : null;
   const issues = errRecord?.issues;
   if (!Array.isArray(issues)) {
     return String(errRecord?.message ?? error);
@@ -1189,9 +1190,7 @@ export const formatOutlineCommitValidationError = (error: unknown): string => {
     .slice(0, 12)
     .map((issue) => {
       const issueRecord =
-        issue && typeof issue === "object"
-          ? (issue as JsonObject)
-          : null;
+        issue && typeof issue === "object" ? (issue as JsonObject) : null;
       const path = Array.isArray(issueRecord?.path)
         ? issueRecord.path
             .map((part: unknown) =>
@@ -1201,7 +1200,9 @@ export const formatOutlineCommitValidationError = (error: unknown): string => {
             .replace(/\.\[/g, "[")
         : "";
       const message =
-        typeof issueRecord?.message === "string" ? issueRecord.message : "Invalid";
+        typeof issueRecord?.message === "string"
+          ? issueRecord.message
+          : "Invalid";
       return path ? `${path}: ${message}` : message;
     })
     .join("; ");

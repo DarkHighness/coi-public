@@ -950,9 +950,7 @@ function convertToolsForClaude(
 /**
  * 递归移除 schema 中的 additionalProperties 字段
  */
-function removeAdditionalProperties(
-  schema: JsonObject,
-): JsonObject {
+function removeAdditionalProperties(schema: JsonObject): JsonObject {
   const result: JsonObject = {};
   for (const [key, value] of Object.entries(schema)) {
     if (key === "additionalProperties") {

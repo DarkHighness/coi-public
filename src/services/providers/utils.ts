@@ -338,7 +338,9 @@ function getGenericTypeHintVfs(
       .join(" | ");
   }
   if (schema instanceof ZodEnum) {
-    return readEnumValues(schema).map((v) => `"${v}"`).join(" | ");
+    return readEnumValues(schema)
+      .map((v) => `"${v}"`)
+      .join(" | ");
   }
   if (schema instanceof ZodArray) {
     const inner = schema._def.type;
@@ -511,7 +513,9 @@ function getGenericTypeHint(
       .join(" | ");
   }
   if (schema instanceof ZodEnum) {
-    return readEnumValues(schema).map((v) => `"${v}"`).join(" | ");
+    return readEnumValues(schema)
+      .map((v) => `"${v}"`)
+      .join(" | ");
   }
   if (schema instanceof ZodArray) {
     const inner = schema._def.type;

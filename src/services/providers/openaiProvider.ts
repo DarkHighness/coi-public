@@ -92,12 +92,7 @@ interface OpenAINarrativePayload {
   _reasoning?: string;
 }
 
-type OpenAIReasoningEffort =
-  | "minimal"
-  | "low"
-  | "medium"
-  | "high"
-  | "xhigh";
+type OpenAIReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh";
 
 type OpenAIReasoningRequestParams =
   OpenAI.Chat.Completions.ChatCompletionCreateParams & {
@@ -133,10 +128,9 @@ const getToolCallThoughtSignature = (value: unknown): string | undefined => {
   if (!isJsonObject(value)) return undefined;
   const record = value;
 
-  const extraContent =
-    isJsonObject(record.extra_content)
-      ? record.extra_content
-      : null;
+  const extraContent = isJsonObject(record.extra_content)
+    ? record.extra_content
+    : null;
   const googleContent =
     extraContent && isJsonObject(extraContent.google)
       ? extraContent.google
@@ -146,10 +140,7 @@ const getToolCallThoughtSignature = (value: unknown): string | undefined => {
     return googleThought;
   }
 
-  const toolFunction =
-    isJsonObject(record.function)
-      ? record.function
-      : null;
+  const toolFunction = isJsonObject(record.function) ? record.function : null;
   const functionThought = toolFunction?.thought_signature;
   return typeof functionThought === "string" ? functionThought : undefined;
 };
@@ -359,10 +350,7 @@ export async function getModels(config: OpenAIConfig): Promise<ModelInfo[]> {
 
     return list.data.map((m) => {
       const id = m.id.toLowerCase();
-      const capabilities = inferModelCapabilities(
-        id,
-        { ...m },
-      );
+      const capabilities = inferModelCapabilities(id, { ...m });
 
       return {
         id: m.id,

@@ -8,7 +8,7 @@ import {
   runWithStructuredErrors,
   withAtomicSession,
   type VfsToolHandler,
-  } from "./shared";
+} from "./shared";
 
 const toObjectRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -36,7 +36,11 @@ export const createFinishOutlinePhaseHandler = (
         ctx,
         (draft) => {
           const path = `outline/phases/phase${phase}.json`;
-          draft.writeFile(path, JSON.stringify(parsedData.data), "application/json");
+          draft.writeFile(
+            path,
+            JSON.stringify(parsedData.data),
+            "application/json",
+          );
 
           let planPath: string | undefined;
           if (phase === 1) {

@@ -319,9 +319,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const heroLogoSrc = isNightMode
     ? "/logo_dark_symbol.png"
     : "/logo_light_symbol.png";
-  const heroLogoBlendClass = isNightMode
-    ? "opacity-[0.98]"
-    : "opacity-[0.99]";
+  const heroLogoBlendClass = isNightMode ? "opacity-[0.98]" : "opacity-[0.99]";
 
   return (
     <div
@@ -380,7 +378,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             <div
               className={`relative mx-auto w-full ${heroLogoSizeClass} animate-fade-in`}
             >
-              <div className={`absolute inset-[30%] ${heroLogoGlowClass} blur-xl`}></div>
+              <div
+                className={`absolute inset-[30%] ${heroLogoGlowClass} blur-xl`}
+              ></div>
               <div className={`relative z-10 ${heroLogoStageClass}`}>
                 <img
                   src={heroLogoSrc}

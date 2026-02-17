@@ -64,16 +64,17 @@ const isStoredSnapshotV2 = (
 ): snapshot is VfsStoredSnapshotV2 =>
   Boolean(
     snapshot &&
-      typeof snapshot === "object" &&
-      (snapshot as VfsStoredSnapshotV2).version === 2 &&
-      (snapshot as VfsStoredSnapshotV2).fileRefs &&
-      typeof (snapshot as VfsStoredSnapshotV2).fileRefs === "object",
+    typeof snapshot === "object" &&
+    (snapshot as VfsStoredSnapshotV2).version === 2 &&
+    (snapshot as VfsStoredSnapshotV2).fileRefs &&
+    typeof (snapshot as VfsStoredSnapshotV2).fileRefs === "object",
   );
 
 const snapshotKey = (saveId: string, forkId: number, turn: number): string =>
   `${saveId}:${forkId}:${turn}`;
 
-const blobKey = (saveId: string, blobId: string): string => `${saveId}:${blobId}`;
+const blobKey = (saveId: string, blobId: string): string =>
+  `${saveId}:${blobId}`;
 
 const requestToPromise = <T>(request: IDBRequest<T>): Promise<T> =>
   new Promise((resolve, reject) => {
@@ -81,7 +82,9 @@ const requestToPromise = <T>(request: IDBRequest<T>): Promise<T> =>
     request.onerror = () => reject(request.error);
   });
 
-const countFileRefs = (fileRefs: VfsSnapshotFileRefMap): Map<string, number> => {
+const countFileRefs = (
+  fileRefs: VfsSnapshotFileRefMap,
+): Map<string, number> => {
   const counts = new Map<string, number>();
 
   for (const fileRef of Object.values(fileRefs)) {
@@ -221,9 +224,9 @@ class IndexedDbVfsAdapterImpl implements IndexedDbVfsAdapter {
 
       (async () => {
         const existingRequest = snapshotStore.get(id);
-        const existingRecord = (await requestToPromise(
-          existingRequest,
-        )) as VfsSnapshotRecord | undefined;
+        const existingRecord = (await requestToPromise(existingRequest)) as
+          | VfsSnapshotRecord
+          | undefined;
 
         const nextRefCounts = countFileRefs(stored.fileRefs);
         const previousRefCounts = isStoredSnapshotV2(existingRecord)
@@ -246,9 +249,9 @@ class IndexedDbVfsAdapterImpl implements IndexedDbVfsAdapter {
 
           const blobIdKey = blobKey(snapshot.saveId, blobId);
           const blobRecordRequest = blobStore.get(blobIdKey);
-          const current = (await requestToPromise(
-            blobRecordRequest,
-          )) as VfsBlobRecord | undefined;
+          const current = (await requestToPromise(blobRecordRequest)) as
+            | VfsBlobRecord
+            | undefined;
           const currentRefCount =
             typeof current?.refCount === "number" ? current.refCount : 0;
           const nextRefCount = currentRefCount + delta;
@@ -303,15 +306,17 @@ class IndexedDbVfsAdapterImpl implements IndexedDbVfsAdapter {
     const db = await openVfsDB();
     const id = snapshotKey(saveId, forkId, turn);
 
-    const record = await new Promise<VfsSnapshotRecord | null>((resolve, reject) => {
-      const transaction = db.transaction([VFS_SNAPSHOTS_STORE], "readonly");
-      const store = transaction.objectStore(VFS_SNAPSHOTS_STORE);
-      const request = store.get(id);
+    const record = await new Promise<VfsSnapshotRecord | null>(
+      (resolve, reject) => {
+        const transaction = db.transaction([VFS_SNAPSHOTS_STORE], "readonly");
+        const store = transaction.objectStore(VFS_SNAPSHOTS_STORE);
+        const request = store.get(id);
 
-      request.onsuccess = () =>
-        resolve((request.result as VfsSnapshotRecord | undefined) ?? null);
-      request.onerror = () => reject(request.error);
-    });
+        request.onsuccess = () =>
+          resolve((request.result as VfsSnapshotRecord | undefined) ?? null);
+        request.onerror = () => reject(request.error);
+      },
+    );
 
     if (!record) {
       return null;
@@ -359,7 +364,9 @@ class IndexedDbVfsAdapterImpl implements IndexedDbVfsAdapter {
     );
 
     const { id: _, ...storedSnapshot } = record;
-    return cloneSnapshot(restoreSnapshotFromStoredV2(storedSnapshot, blobsById));
+    return cloneSnapshot(
+      restoreSnapshotFromStoredV2(storedSnapshot, blobsById),
+    );
   }
 
   async listSnapshots(saveId: string, forkId: number): Promise<VfsIndex[]> {
@@ -383,7 +390,6 @@ class IndexedDbVfsAdapterImpl implements IndexedDbVfsAdapter {
       request.onerror = () => reject(request.error);
     });
   }
-
 }
 
 export class InMemoryVfsStore implements VfsStore {
@@ -398,7 +404,8 @@ export class InMemoryVfsStore implements VfsStore {
       snapshot.turn,
     );
     const storedSnapshot = cloneSnapshot(snapshot);
-    const { stored, blobCandidates } = await buildStoredSnapshotV2(storedSnapshot);
+    const { stored, blobCandidates } =
+      await buildStoredSnapshotV2(storedSnapshot);
 
     const existing = this.snapshots.get(key);
     const previousRefCounts = existing
@@ -413,8 +420,7 @@ export class InMemoryVfsStore implements VfsStore {
 
     for (const blobId of blobIds) {
       const delta =
-        (nextRefCounts.get(blobId) ?? 0) -
-        (previousRefCounts.get(blobId) ?? 0);
+        (nextRefCounts.get(blobId) ?? 0) - (previousRefCounts.get(blobId) ?? 0);
       if (delta === 0) {
         continue;
       }

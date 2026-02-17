@@ -25,7 +25,10 @@ import {
   storySummarySchema,
 } from "../../zodSchemas";
 import { normalizeVfsPath } from "../utils";
-import { canonicalToLogicalVfsPath, resolveVfsPath } from "../core/pathResolver";
+import {
+  canonicalToLogicalVfsPath,
+  resolveVfsPath,
+} from "../core/pathResolver";
 import { vfsPathRegistry } from "../core/pathRegistry";
 
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
@@ -185,32 +188,38 @@ const RULES: VfsSchemaRule[] = [
   },
   {
     templateId: "template.story.world",
-    logicalPathPattern: /^world\/characters\/[^/]+\/views\/quests\/[^/]+\.json$/,
+    logicalPathPattern:
+      /^world\/characters\/[^/]+\/views\/quests\/[^/]+\.json$/,
     schema: questViewSchema,
   },
   {
     templateId: "template.story.world",
-    logicalPathPattern: /^world\/characters\/[^/]+\/views\/knowledge\/[^/]+\.json$/,
+    logicalPathPattern:
+      /^world\/characters\/[^/]+\/views\/knowledge\/[^/]+\.json$/,
     schema: knowledgeEntryViewSchema,
   },
   {
     templateId: "template.story.world",
-    logicalPathPattern: /^world\/characters\/[^/]+\/views\/timeline\/[^/]+\.json$/,
+    logicalPathPattern:
+      /^world\/characters\/[^/]+\/views\/timeline\/[^/]+\.json$/,
     schema: timelineEventViewSchema,
   },
   {
     templateId: "template.story.world",
-    logicalPathPattern: /^world\/characters\/[^/]+\/views\/locations\/[^/]+\.json$/,
+    logicalPathPattern:
+      /^world\/characters\/[^/]+\/views\/locations\/[^/]+\.json$/,
     schema: locationViewSchema,
   },
   {
     templateId: "template.story.world",
-    logicalPathPattern: /^world\/characters\/[^/]+\/views\/factions\/[^/]+\.json$/,
+    logicalPathPattern:
+      /^world\/characters\/[^/]+\/views\/factions\/[^/]+\.json$/,
     schema: factionViewSchema,
   },
   {
     templateId: "template.story.world",
-    logicalPathPattern: /^world\/characters\/[^/]+\/views\/causal_chains\/[^/]+\.json$/,
+    logicalPathPattern:
+      /^world\/characters\/[^/]+\/views\/causal_chains\/[^/]+\.json$/,
     schema: causalChainViewSchema,
   },
   {
@@ -284,7 +293,9 @@ export class VfsSchemaRegistry {
     path: string,
     options?: { activeForkId?: number },
   ): VfsSchemaMatch {
-    const resolved = resolveVfsPath(path, { activeForkId: options?.activeForkId });
+    const resolved = resolveVfsPath(path, {
+      activeForkId: options?.activeForkId,
+    });
     const logicalPath = normalizeVfsPath(
       canonicalToLogicalVfsPath(resolved.canonicalPath, {
         activeForkId: resolved.activeForkId,

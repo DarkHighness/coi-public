@@ -36,7 +36,9 @@ describe("RAGDatabase schema compatibility", () => {
       .mockRejectedValueOnce(new Error('column "source_path" does not exist'))
       .mockResolvedValue(undefined);
     const query = vi.fn(async () => ({ rows: [], affectedRows: 0 }));
-    const rebuildSchema = vi.spyOn(db, "rebuildSchema").mockResolvedValue(undefined);
+    const rebuildSchema = vi
+      .spyOn(db, "rebuildSchema")
+      .mockResolvedValue(undefined);
 
     db.db = { exec, query };
 

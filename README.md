@@ -16,6 +16,7 @@
 </div>
 
 <a id="document-metadata"></a>
+
 ## Document Metadata
 
 - **Status**: Active
@@ -26,6 +27,7 @@
 - **Primary Promise**: Coherent, traceable, long-form interactive storytelling
 
 <a id="table-of-contents"></a>
+
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
@@ -49,6 +51,7 @@
 19. [License](#license)
 
 <a id="executive-summary"></a>
+
 ## Executive Summary
 
 Chronicles of Infinity is a narrative-first AI adventure platform designed for campaign-length interactive fiction.
@@ -58,6 +61,7 @@ Its core thesis is straightforward: long-form narrative quality is a systems dis
 This repository addresses that challenge through canonical state management (VFS), actor-first reasoning, dual-layer truth modeling (Visible/Hidden), and explicit theme governance.
 
 <a id="reader-paths"></a>
+
 ## Reader Paths
 
 - If you need architecture intent and trust posture: read `Design Objectives`, `Architecture Principles at a Glance`, and `Governance and Trust Framework`.
@@ -66,16 +70,18 @@ This repository addresses that challenge through canonical state management (VFS
 - If you need immediate setup: read `Quick Start` and `Deployment and Documentation`.
 
 <a id="why-it-feels-different"></a>
+
 ## Why It Feels Different
 
-| Product Pillar | System Commitment | Player-Facing Effect |
-| --- | --- | --- |
-| World keeps a ledger | Canonical VFS state is the source of truth | Choices leave durable traces and can be revisited later |
-| Surface story + hidden progression | Visible and Hidden layers evolve in parallel | The world can surprise the player without breaking logic |
-| Long-horizon continuity controls | Compact + Query Summary fallback + Cleanup workflows | Multi-session campaigns stay coherent instead of drifting |
-| Genre as behavioral contract | Theme governance constrains tone, pacing, risk, and consequence grammar | Different themes behave differently, not just sound different |
+| Product Pillar                     | System Commitment                                                       | Player-Facing Effect                                          |
+| ---------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- |
+| World keeps a ledger               | Canonical VFS state is the source of truth                              | Choices leave durable traces and can be revisited later       |
+| Surface story + hidden progression | Visible and Hidden layers evolve in parallel                            | The world can surprise the player without breaking logic      |
+| Long-horizon continuity controls   | Compact + Query Summary fallback + Cleanup workflows                    | Multi-session campaigns stay coherent instead of drifting     |
+| Genre as behavioral contract       | Theme governance constrains tone, pacing, risk, and consequence grammar | Different themes behave differently, not just sound different |
 
 <a id="scope-and-non-goals"></a>
+
 ## Scope and Non-Goals
 
 ### In Scope
@@ -93,6 +99,7 @@ This repository addresses that challenge through canonical state management (VFS
 - Replacing human-authored novels with fully deterministic scripted output.
 
 <a id="design-objectives"></a>
+
 ## Design Objectives
 
 - **Continuity over isolated brilliance**: prioritize stable multi-turn coherence over one-turn stylistic spikes.
@@ -102,19 +109,21 @@ This repository addresses that challenge through canonical state management (VFS
 - **Operational transparency**: expose runtime structures so creators can inspect, debug, and extend behavior.
 
 <a id="architecture-principles-at-a-glance"></a>
+
 ## Architecture Principles at a Glance
 
-| Principle | Primary Mechanism | Operational Result |
-| --- | --- | --- |
-| Canonical state first | VFS-backed world and campaign files | Story facts remain inspectable and durable |
-| Perspective before prose | Actor-first reasoning model | Responses follow role position and information limits |
-| Dual-layer truth | Visible/Hidden narrative layers | Discovery and revelation remain structurally valid |
-| Continuity under pressure | Compact + Query Summary fallback + Cleanup | Long sessions degrade gracefully instead of collapsing |
-| Genre as contract | Theme governance constraints | Tone and consequence grammar remain consistent |
-| Branch-aware memory | Fork-sensitive historical records | Divergent lines preserve local causality |
-| Trust through observability | Schema contracts + file-based state surfaces | Runtime behavior can be audited and evolved |
+| Principle                   | Primary Mechanism                            | Operational Result                                     |
+| --------------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| Canonical state first       | VFS-backed world and campaign files          | Story facts remain inspectable and durable             |
+| Perspective before prose    | Actor-first reasoning model                  | Responses follow role position and information limits  |
+| Dual-layer truth            | Visible/Hidden narrative layers              | Discovery and revelation remain structurally valid     |
+| Continuity under pressure   | Compact + Query Summary fallback + Cleanup   | Long sessions degrade gracefully instead of collapsing |
+| Genre as contract           | Theme governance constraints                 | Tone and consequence grammar remain consistent         |
+| Branch-aware memory         | Fork-sensitive historical records            | Divergent lines preserve local causality               |
+| Trust through observability | Schema contracts + file-based state surfaces | Runtime behavior can be audited and evolved            |
 
 <a id="methodological-framework"></a>
+
 ## Methodological Framework
 
 - **Canonical State Substrate (VFS)**
@@ -136,6 +145,7 @@ This repository addresses that challenge through canonical state management (VFS
   Divergent lines evolve independently while preserving local causality and recoverable history.
 
 <a id="distinctive-capabilities"></a>
+
 ## Distinctive Capabilities
 
 - **Structured world entities**
@@ -157,50 +167,55 @@ This repository addresses that challenge through canonical state management (VFS
   Through VFS tooling and schema contracts, advanced users can inspect and evolve narrative behavior.
 
 <a id="governance-and-trust-framework"></a>
+
 ## Governance and Trust Framework
 
-| Layer | Core Question | Control Mechanisms | Platform Outcome |
-| --- | --- | --- | --- |
-| Design governance | How are narrative rules defined and constrained? | Theme authoring protocol, schema contracts, documented extension workflow | Themes operate as contracts, not decoration |
-| Runtime governance | How is coherence preserved while the campaign runs? | Actor-first reasoning, dual-layer truth, continuity stack | Story evolution remains causally and perspectivally stable |
-| Audit governance | How can teams verify behavior after the fact? | VFS state surfaces, branch-aware history, tooling docs | Decisions and outcomes remain inspectable and explainable |
+| Layer              | Core Question                                       | Control Mechanisms                                                        | Platform Outcome                                           |
+| ------------------ | --------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Design governance  | How are narrative rules defined and constrained?    | Theme authoring protocol, schema contracts, documented extension workflow | Themes operate as contracts, not decoration                |
+| Runtime governance | How is coherence preserved while the campaign runs? | Actor-first reasoning, dual-layer truth, continuity stack                 | Story evolution remains causally and perspectivally stable |
+| Audit governance   | How can teams verify behavior after the fact?       | VFS state surfaces, branch-aware history, tooling docs                    | Decisions and outcomes remain inspectable and explainable  |
 
 <a id="reliability-and-trust-model"></a>
+
 ## Reliability and Trust Model
 
-| Trust Claim | Operational Anchor | Verification Surface |
-| --- | --- | --- |
-| State traceability | Persistent VFS world and campaign files | State artifacts, history snapshots, and world records |
-| Causal consistency | Actor memory + stored world facts | Outcome justification against recorded transitions |
-| Layer integrity | Visible/Hidden separation and reveal logic | Consistency between hidden progression and later revelation |
-| Controlled degradation | Summary fallback and Cleanup workflows | Coherence recovery behavior under context pressure |
-| Governed extensibility | Theme protocols + schema + docs | Safe extension without breaking platform contracts |
+| Trust Claim            | Operational Anchor                         | Verification Surface                                        |
+| ---------------------- | ------------------------------------------ | ----------------------------------------------------------- |
+| State traceability     | Persistent VFS world and campaign files    | State artifacts, history snapshots, and world records       |
+| Causal consistency     | Actor memory + stored world facts          | Outcome justification against recorded transitions          |
+| Layer integrity        | Visible/Hidden separation and reveal logic | Consistency between hidden progression and later revelation |
+| Controlled degradation | Summary fallback and Cleanup workflows     | Coherence recovery behavior under context pressure          |
+| Governed extensibility | Theme protocols + schema + docs            | Safe extension without breaking platform contracts          |
 
 <a id="operational-evaluation-criteria"></a>
+
 ## Operational Evaluation Criteria
 
 Use this gate before major release or narrative policy changes:
 
-| Evaluation Gate | Key Question | Passing Signal |
-| --- | --- | --- |
-| Continuity gate | Can current state be explained by prior turns without contradiction? | No unresolved continuity breaks in sampled campaigns |
-| Causality gate | Are major outcomes justified by persisted world facts? | Outcome paths match recorded state transitions |
-| Perspective gate | Does player-facing knowledge stay inside role visibility boundaries? | No unauthorized information leakage in validation runs |
-| Theme gate | Does pacing and consequence grammar remain genre-consistent over long sessions? | Theme-specific behavior remains stable across branches |
-| Recovery gate | Under context stress, can fallback workflows restore coherence without flattening identity? | Post-recovery narrative keeps both logic and genre character |
+| Evaluation Gate  | Key Question                                                                                | Passing Signal                                               |
+| ---------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Continuity gate  | Can current state be explained by prior turns without contradiction?                        | No unresolved continuity breaks in sampled campaigns         |
+| Causality gate   | Are major outcomes justified by persisted world facts?                                      | Outcome paths match recorded state transitions               |
+| Perspective gate | Does player-facing knowledge stay inside role visibility boundaries?                        | No unauthorized information leakage in validation runs       |
+| Theme gate       | Does pacing and consequence grammar remain genre-consistent over long sessions?             | Theme-specific behavior remains stable across branches       |
+| Recovery gate    | Under context stress, can fallback workflows restore coherence without flattening identity? | Post-recovery narrative keeps both logic and genre character |
 
 <a id="core-narrative-domains"></a>
+
 ## Core Narrative Domains
 
-| Domain | Narrative Pressure Model | Representative Lanes |
-| --- | --- | --- |
-| Power-Reversal Fantasy | Status asymmetry, public conflict, reversal economics | Long Aotian power fantasies, War God Returns, urban hierarchy reversal |
-| Tragedy and Regret | Delayed truth, emotional debt, irreversible outcomes | Wife-chasing crematorium arcs, substitute first-love tragedy, regret routes |
-| Healing and Growth | Relational repair through constrained repeated choices | Sweet-healing romance, mutual redemption, everyday growth campaigns |
-| Mystery and Horror | Information asymmetry, rule pressure, epistemic risk | Classical deduction, rule-horror loops, cosmic dread |
-| Epic Worldbuilding | Individual agency under factional and civilizational systems | Western fantasy epics, cultivation sagas, cyber-scale civilization conflict |
+| Domain                 | Narrative Pressure Model                                     | Representative Lanes                                                        |
+| ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Power-Reversal Fantasy | Status asymmetry, public conflict, reversal economics        | Long Aotian power fantasies, War God Returns, urban hierarchy reversal      |
+| Tragedy and Regret     | Delayed truth, emotional debt, irreversible outcomes         | Wife-chasing crematorium arcs, substitute first-love tragedy, regret routes |
+| Healing and Growth     | Relational repair through constrained repeated choices       | Sweet-healing romance, mutual redemption, everyday growth campaigns         |
+| Mystery and Horror     | Information asymmetry, rule pressure, epistemic risk         | Classical deduction, rule-horror loops, cosmic dread                        |
+| Epic Worldbuilding     | Individual agency under factional and civilizational systems | Western fantasy epics, cultivation sagas, cyber-scale civilization conflict |
 
 <a id="one-session-experience-loop"></a>
+
 ## One-Session Experience Loop
 
 1. **Choose a narrative domain**
@@ -217,6 +232,7 @@ Use this gate before major release or narrative policy changes:
    Branch history, theme discipline, and causal legibility remain intact for the next session.
 
 <a id="evidence-map"></a>
+
 ## Evidence Map
 
 - **Architecture and policy**:
@@ -238,6 +254,7 @@ Use this gate before major release or narrative policy changes:
   [`docs/ui_vn_style.md`](docs/ui_vn_style.md)
 
 <a id="for-creators-and-extenders"></a>
+
 ## For Creators and Extenders
 
 Recommended order for extension and governance work:
@@ -256,6 +273,7 @@ Primary references:
 - [`docs/SCHEMA_DOCS.md`](docs/SCHEMA_DOCS.md)
 
 <a id="glossary"></a>
+
 ## Glossary
 
 - **Canonical State**: persistent source of truth used for narrative computation.
@@ -268,6 +286,7 @@ Primary references:
 - **Causal Legibility**: ability to explain outcomes through inspectable prior state.
 
 <a id="quick-start"></a>
+
 ## Quick Start
 
 1. Install dependencies.
@@ -289,6 +308,7 @@ Primary references:
 If you prefer npm, use `npm install` and `npm run dev`.
 
 <a id="deployment-and-documentation"></a>
+
 ## Deployment and Documentation
 
 - Build command: `pnpm build`
@@ -301,6 +321,7 @@ If you prefer npm, use `npm install` and `npm run dev`.
   [`docs/ui_vn_style.md`](docs/ui_vn_style.md)
 
 <a id="license"></a>
+
 ## License
 
 MIT License.

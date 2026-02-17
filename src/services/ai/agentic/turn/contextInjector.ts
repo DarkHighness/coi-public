@@ -83,12 +83,11 @@ export function injectNormalTurnInstruction(
     createUserMessage(
       (isCleanupMode ? cleanupTurnInstruction : normalTurnInstruction)({
         finishToolName,
-        toolsetId:
-          isCleanupMode
-            ? "cleanup"
-            : normalCommandProtocol === "player-rate"
-              ? "playerRate"
-              : "turn",
+        toolsetId: isCleanupMode
+          ? "cleanup"
+          : normalCommandProtocol === "player-rate"
+            ? "playerRate"
+            : "turn",
         ragEnabled,
       }),
     ),
@@ -277,7 +276,7 @@ export function injectColdStartRequiredReads(
     ...uniquePaths.map(
       (path, index) => `${index + 1}. \`${formatPreloadCall(path)}\``,
     ),
-    'For `current/conversation/session.jsonl`, keep reads line-windowed; do not use unbounded chars mode.',
+    "For `current/conversation/session.jsonl`, keep reads line-windowed; do not use unbounded chars mode.",
     "For long skill manuals under `current/skills/**`, prefer bounded line windows first, then expand only if needed.",
     "If a read returns READ_LIMIT_EXCEEDED/READ_LIMIT_HINT, shrink window size first (for example 80 -> 40 lines) before widening scope.",
     "Run this preload once at session cold start to avoid avoidable gate/retry token waste; do not replay the same reads every turn.",

@@ -209,7 +209,9 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(locationView.isVisited).toBe(true);
     expect(locationView.highlight).toBeUndefined();
 
-    expect(session.readFile("world/placeholders/ph:clockmaker.json")).toBeNull();
+    expect(
+      session.readFile("world/placeholders/ph:clockmaker.json"),
+    ).toBeNull();
 
     const placeholderDraft =
       session.readFile("world/placeholders/ph:clockmaker.md")?.content ?? "";
@@ -305,7 +307,9 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(location.highlight).toBeUndefined();
     expect(location.lastAccess).toBeUndefined();
 
-    expect(session.readFile("world/placeholders/ph:buried_archive.json")).toBeNull();
+    expect(
+      session.readFile("world/placeholders/ph:buried_archive.json"),
+    ).toBeNull();
 
     const placeholderDraft =
       session.readFile("world/placeholders/ph:buried_archive.md")?.content ??

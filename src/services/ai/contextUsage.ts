@@ -61,7 +61,10 @@ interface PromptTokenCalibrationRecord {
   updatedAt: number;
 }
 
-const promptTokenCalibrationByModel = new Map<string, PromptTokenCalibrationRecord>();
+const promptTokenCalibrationByModel = new Map<
+  string,
+  PromptTokenCalibrationRecord
+>();
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
@@ -70,7 +73,8 @@ const toCalibrationKey = (
   providerProtocol: string | null | undefined,
   modelId: string | null | undefined,
 ): string | null => {
-  const protocol = typeof providerProtocol === "string" ? providerProtocol.trim() : "";
+  const protocol =
+    typeof providerProtocol === "string" ? providerProtocol.trim() : "";
   const model = typeof modelId === "string" ? modelId.trim() : "";
   if (!protocol || !model) {
     return null;
@@ -145,7 +149,11 @@ const isEmojiCodePoint = (codePoint: number): boolean =>
   (codePoint >= 0x2600 && codePoint <= 0x27bf);
 
 const estimateCodePointTokens = (codePoint: number): number => {
-  if (isCombiningMark(codePoint) || isVariationSelector(codePoint) || codePoint === 0x200d) {
+  if (
+    isCombiningMark(codePoint) ||
+    isVariationSelector(codePoint) ||
+    codePoint === 0x200d
+  ) {
     return 0;
   }
   if (codePoint <= 0x7f) {

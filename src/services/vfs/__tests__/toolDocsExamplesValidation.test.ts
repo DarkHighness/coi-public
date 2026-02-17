@@ -30,9 +30,9 @@ describe("tool docs examples validation", () => {
       const content = docs[examplesPath]?.content;
       expect(content).toBeTruthy();
 
-      const blocks = [...(content as string).matchAll(/```json\n([\s\S]*?)\n```/g)].map(
-        (m) => m[1],
-      );
+      const blocks = [
+        ...(content as string).matchAll(/```json\n([\s\S]*?)\n```/g),
+      ].map((m) => m[1]);
       expect(blocks.length).toBeGreaterThan(0);
 
       blocks.forEach((block, index) => {
@@ -44,7 +44,10 @@ describe("tool docs examples validation", () => {
             parsed.success
               ? "ok"
               : parsed.error.issues
-                  .map((issue: any) => `${issue.path.join(".") || "<root>"}: ${issue.message}`)
+                  .map(
+                    (issue: any) =>
+                      `${issue.path.join(".") || "<root>"}: ${issue.message}`,
+                  )
                   .join("; ")
           }`,
         ).toBe(true);

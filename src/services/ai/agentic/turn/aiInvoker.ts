@@ -116,9 +116,7 @@ export async function invokeAI(
 
     const result = resp.result;
     const resultRecord =
-      result && typeof result === "object"
-        ? (result as JsonObject)
-        : null;
+      result && typeof result === "object" ? (result as JsonObject) : null;
     const functionCalls = extractFunctionCalls(result);
     const text =
       typeof result === "string"

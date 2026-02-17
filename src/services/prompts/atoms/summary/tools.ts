@@ -22,7 +22,8 @@ export const summaryTools: Atom<void> = defineAtom(
   () => {
     const toolset = vfsToolRegistry.getToolset("summary");
     const toolList = toolset.tools.map((name) => `- \`${name}\``).join("\n");
-    const capabilityText = vfsToolRegistry.formatCapabilitiesForPrompt("summary");
+    const capabilityText =
+      vfsToolRegistry.formatCapabilitiesForPrompt("summary");
     return `<tools>
 You have these tools available:
 

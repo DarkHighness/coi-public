@@ -251,7 +251,11 @@ export function createCommandActions({
         baselineFile.content !== file.content ||
         baselineFile.contentType !== file.contentType
       ) {
-        vfsSession.writeFile(path, baselineFile.content, baselineFile.contentType);
+        vfsSession.writeFile(
+          path,
+          baselineFile.content,
+          baselineFile.contentType,
+        );
       }
     }
 
@@ -266,7 +270,9 @@ export function createCommandActions({
     }
   };
 
-  const readGlobalSoulFromSnapshot = (snapshot: ReturnType<VfsSession["snapshot"]>) => {
+  const readGlobalSoulFromSnapshot = (
+    snapshot: ReturnType<VfsSession["snapshot"]>,
+  ) => {
     for (const path of snapshotCandidatesForGlobalSoul) {
       const file = snapshot[path];
       if (!file) continue;
@@ -897,9 +903,7 @@ export function createCommandActions({
     const playerRate: PlayerRate = {
       vote: rateInput.vote,
       createdAt,
-      ...(rateInput.preset?.trim()
-        ? { preset: rateInput.preset.trim() }
-        : {}),
+      ...(rateInput.preset?.trim() ? { preset: rateInput.preset.trim() } : {}),
       ...(rateInput.comment?.trim()
         ? { comment: rateInput.comment.trim() }
         : {}),
@@ -959,7 +963,10 @@ export function createCommandActions({
         confirmRecoveryAction,
       };
 
-      const { recovery } = await generateAdventureTurn(gameStateRef.current, context);
+      const { recovery } = await generateAdventureTurn(
+        gameStateRef.current,
+        context,
+      );
 
       // Restore all non-soul writes from the isolated rate-processing turn.
       restoreSnapshotExceptSoul(baselineSnapshot);
@@ -974,9 +981,13 @@ export function createCommandActions({
 
       const vfsSnapshot = requireNonEmptyVfsSnapshot("player rate");
       const derivedState = deriveGameStateFromVfs(vfsSnapshot);
-      const nextState = mergeDerivedViewState(gameStateRef.current, derivedState, {
-        resetRuntime: true,
-      });
+      const nextState = mergeDerivedViewState(
+        gameStateRef.current,
+        derivedState,
+        {
+          resetRuntime: true,
+        },
+      );
 
       gameStateRef.current = {
         ...nextState,
@@ -994,11 +1005,16 @@ export function createCommandActions({
       try {
         restoreSnapshotExceptSoul(baselineSnapshot);
       } catch (rollbackError) {
-        console.warn("[PlayerRate] Failed to rollback isolated rate turn", rollbackError);
+        console.warn(
+          "[PlayerRate] Failed to rollback isolated rate turn",
+          rollbackError,
+        );
       }
 
       const errorMsg =
-        error instanceof Error ? error.message : "Failed to process player rating";
+        error instanceof Error
+          ? error.message
+          : "Failed to process player rating";
 
       setGameState((prev) => ({
         ...prev,

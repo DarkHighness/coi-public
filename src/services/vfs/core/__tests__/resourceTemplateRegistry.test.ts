@@ -63,7 +63,9 @@ describe("vfsResourceTemplateRegistry", () => {
   });
 
   it("matches editable global soul runtime template", () => {
-    const soul = vfsResourceTemplateRegistry.match("shared/config/runtime/soul.md");
+    const soul = vfsResourceTemplateRegistry.match(
+      "shared/config/runtime/soul.md",
+    );
 
     expect(soul.id).toBe("template.config.runtime_soul");
     expect(soul.permissionClass).toBe("default_editable");

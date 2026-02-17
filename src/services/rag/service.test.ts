@@ -362,7 +362,11 @@ describe("RAGService", () => {
       }
       initCalls += 1;
       if (initCalls === 1) {
-        return { id: request.id, success: false, error: "singleton init failed" };
+        return {
+          id: request.id,
+          success: false,
+          error: "singleton init failed",
+        };
       }
       return { id: request.id, success: true, data: {} };
     };

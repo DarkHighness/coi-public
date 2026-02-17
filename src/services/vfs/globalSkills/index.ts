@@ -108,7 +108,9 @@ function buildThemeExampleConstraints(
 ): string[] {
   const constraints = [
     `Preserve core constraints from the \`${def.slug}\` theme during adaptation.`,
-    ...def.coreConstraints.slice(0, 3).map((constraint) => `Core: ${constraint}`),
+    ...def.coreConstraints
+      .slice(0, 3)
+      .map((constraint) => `Core: ${constraint}`),
     `Reject this failure pattern in implementation: ${summarizeThemeExampleText(example.wrong, 140)}`,
     `Reach this minimum correction pattern: ${summarizeThemeExampleText(example.right, 140)}`,
   ];
@@ -275,7 +277,8 @@ function buildThemeLevelSection(
       const actionFocus = item.trim();
       const pressureAnchor =
         def.pressureMechanisms[index % def.pressureMechanisms.length];
-      const coreConstraint = def.coreConstraints[index % def.coreConstraints.length];
+      const coreConstraint =
+        def.coreConstraints[index % def.coreConstraints.length];
 
       return `### Step ${index + 1}
 
@@ -348,7 +351,8 @@ function buildThemeOperationalSection(
   const guide = THEME_OPERATIONAL_GUIDANCE[stage];
   const cards = items
     .map((item, index) => {
-      const coreConstraint = def.coreConstraints[index % def.coreConstraints.length];
+      const coreConstraint =
+        def.coreConstraints[index % def.coreConstraints.length];
       const pressureAnchor =
         def.pressureMechanisms[index % def.pressureMechanisms.length];
 
@@ -1466,7 +1470,12 @@ function buildThemeSkillMarkdown(def: ThemeSkillResolvedDef): string {
     def.scenePatterns,
   );
 
-  const clocksMd = buildThemeOperationalSection(def, "Clocks", "clock", def.clocks);
+  const clocksMd = buildThemeOperationalSection(
+    def,
+    "Clocks",
+    "clock",
+    def.clocks,
+  );
 
   const checklistMd = buildThemeOperationalSection(
     def,

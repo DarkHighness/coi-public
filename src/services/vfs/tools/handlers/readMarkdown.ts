@@ -119,9 +119,7 @@ export const handleReadMarkdown: VfsToolHandler = (args, ctx) =>
         );
       }
       const details =
-        missingReasons.length > 0
-          ? ` (${missingReasons.join("; ")})`
-          : "";
+        missingReasons.length > 0 ? ` (${missingReasons.join("; ")})` : "";
       return createError(
         `No markdown sections matched selectors for ${typedArgs.path}${details}`,
         "NOT_FOUND",
@@ -160,7 +158,9 @@ export const handleReadMarkdown: VfsToolHandler = (args, ctx) =>
       return { section, content, sectionEstimatedTokens, error: null };
     });
 
-    const maxCharsFailure = sections.find((entry) => entry.error === "MAX_CHARS_EXCEEDED");
+    const maxCharsFailure = sections.find(
+      (entry) => entry.error === "MAX_CHARS_EXCEEDED",
+    );
     if (maxCharsFailure) {
       return createReadLimitError(
         "markdown",

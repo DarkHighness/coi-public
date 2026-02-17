@@ -607,7 +607,10 @@ export class RAGDatabase {
     }
 
     const where: string[] = ["d.save_id = $2", "d.is_latest = TRUE"];
-    const params: unknown[] = [`[${Array.from(queryEmbedding).join(",")}]`, saveId];
+    const params: unknown[] = [
+      `[${Array.from(queryEmbedding).join(",")}]`,
+      saveId,
+    ];
     let index = 3;
 
     if (forkIds && forkIds.length > 0) {
@@ -907,7 +910,9 @@ export class RAGDatabase {
     );
 
     return {
-      documents: dataResult.rows.map((row: SqlRow) => this.rowToDocumentMeta(row)),
+      documents: dataResult.rows.map((row: SqlRow) =>
+        this.rowToDocumentMeta(row),
+      ),
       total,
     };
   }
@@ -1430,9 +1435,7 @@ export class RAGDatabase {
       createdAt: Number(row.created_at ?? Date.now()),
       lastAccess: Number(row.last_access ?? Date.now()),
       estimatedBytes: Number(row.estimated_bytes ?? 0),
-      tags: this.parseTags(
-        typeof row.tags === "string" ? row.tags : undefined,
-      ),
+      tags: this.parseTags(typeof row.tags === "string" ? row.tags : undefined),
     };
   }
 
@@ -1461,9 +1464,7 @@ export class RAGDatabase {
       createdAt: Number(row.created_at ?? Date.now()),
       lastAccess: Number(row.last_access ?? Date.now()),
       estimatedBytes: Number(row.estimated_bytes ?? 0),
-      tags: this.parseTags(
-        typeof row.tags === "string" ? row.tags : undefined,
-      ),
+      tags: this.parseTags(typeof row.tags === "string" ? row.tags : undefined),
     };
   }
 

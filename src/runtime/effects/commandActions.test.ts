@@ -321,7 +321,7 @@ describe("commandActions", () => {
         contentType: "application/json",
       },
       "world/global.json": {
-        content: "{\"time\":\"Day 1\"}",
+        content: '{"time":"Day 1"}',
         contentType: "application/json",
       },
       "world/soul.md": {
@@ -337,7 +337,7 @@ describe("commandActions", () => {
     const afterRateSnapshot = {
       ...baselineSnapshot,
       "world/global.json": {
-        content: "{\"time\":\"Day 2\"}",
+        content: '{"time":"Day 2"}',
         contentType: "application/json",
       },
       "world/soul.md": {
@@ -393,7 +393,9 @@ describe("commandActions", () => {
 
     const afterNodeCount = Object.keys(deps.gameStateRef.current.nodes).length;
     expect(afterNodeCount).toBe(beforeNodeCount);
-    expect(deps.gameStateRef.current.nodes["model-fork-0/turn-2"]?.playerRate).toMatchObject({
+    expect(
+      deps.gameStateRef.current.nodes["model-fork-0/turn-2"]?.playerRate,
+    ).toMatchObject({
       vote: "down",
       preset: "AI flavor too strong",
       comment: "trim adjectives",
@@ -402,7 +404,7 @@ describe("commandActions", () => {
     expect(deps.vfsSession.deleteFile).not.toHaveBeenCalled();
     expect(deps.vfsSession.writeFile).toHaveBeenCalledWith(
       "world/global.json",
-      "{\"time\":\"Day 1\"}",
+      '{"time":"Day 1"}',
       "application/json",
     );
     expect(deps.handleSaveSettings).toHaveBeenCalledTimes(1);

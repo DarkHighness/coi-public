@@ -20,8 +20,10 @@ const getToolByName = (name: string) => {
 const matchesType = (value: unknown, type: string): boolean => {
   if (type === "null") return value === null;
   if (type === "string") return typeof value === "string";
-  if (type === "integer") return typeof value === "number" && Number.isInteger(value);
-  if (type === "number") return typeof value === "number" && Number.isFinite(value);
+  if (type === "integer")
+    return typeof value === "number" && Number.isInteger(value);
+  if (type === "number")
+    return typeof value === "number" && Number.isFinite(value);
   if (type === "boolean") return typeof value === "boolean";
   if (type === "array") return Array.isArray(value);
   if (type === "object") {
@@ -45,7 +47,9 @@ const validateAgainstOpenAISchema = (
   }
 
   if (Array.isArray(schema.enum)) {
-    const isEnumMatch = schema.enum.some((candidate) => Object.is(candidate, value));
+    const isEnumMatch = schema.enum.some((candidate) =>
+      Object.is(candidate, value),
+    );
     if (!isEnumMatch) return false;
   }
 
@@ -61,7 +65,9 @@ const validateAgainstOpenAISchema = (
 
   if (Array.isArray(value)) {
     if (!schema.items) return true;
-    return value.every((item) => validateAgainstOpenAISchema(schema.items!, item));
+    return value.every((item) =>
+      validateAgainstOpenAISchema(schema.items!, item),
+    );
   }
 
   if (typeof value === "object") {
@@ -81,7 +87,12 @@ const validateAgainstOpenAISchema = (
           schema.additionalProperties &&
           typeof schema.additionalProperties === "object"
         ) {
-          if (!validateAgainstOpenAISchema(schema.additionalProperties, fieldValue)) {
+          if (
+            !validateAgainstOpenAISchema(
+              schema.additionalProperties,
+              fieldValue,
+            )
+          ) {
             return false;
           }
         }
@@ -99,8 +110,12 @@ describe("tool schema parity guardrails", () => {
     const outlineTool = getToolByName("vfs_finish_outline_phase_1");
 
     const openaiSchema = zodToOpenAISchema(outlineTool.parameters, true);
-    const geminiCompatSchema = zodToGeminiCompatibleSchema(outlineTool.parameters);
-    const claudeCompatSchema = zodToClaudeCompatibleSchema(outlineTool.parameters);
+    const geminiCompatSchema = zodToGeminiCompatibleSchema(
+      outlineTool.parameters,
+    );
+    const claudeCompatSchema = zodToClaudeCompatibleSchema(
+      outlineTool.parameters,
+    );
     const geminiSchema = zodToGemini(outlineTool.parameters) as any;
 
     expect(openaiSchema.properties?.phase).toBeUndefined();
@@ -184,7 +199,9 @@ describe("tool schema parity guardrails", () => {
 
     for (const compiler of compilers) {
       for (const item of cases) {
-        const zodAccepted = item.tool.parameters.safeParse(item.payload).success;
+        const zodAccepted = item.tool.parameters.safeParse(
+          item.payload,
+        ).success;
         const compiledAccepted = validateAgainstOpenAISchema(
           compiler.compile(item.tool.parameters),
           item.payload,

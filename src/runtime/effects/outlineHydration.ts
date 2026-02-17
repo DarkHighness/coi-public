@@ -152,7 +152,9 @@ const toNpcProfiles = (bundles: ActorBundle[]): GameState["npcs"] =>
 const toPlayerActorId = (
   player: StoryOutline["player"] | null | undefined,
 ): string =>
-  isNonEmptyString(player?.profile?.id) ? player.profile.id.trim() : "char:player";
+  isNonEmptyString(player?.profile?.id)
+    ? player.profile.id.trim()
+    : "char:player";
 
 const toCharacterAttributes = (
   value: unknown,
@@ -165,9 +167,7 @@ const ensureEntityId = (
   index: number,
 ): string => (isNonEmptyString(value) ? value.trim() : `${prefix}:${index}`);
 
-const hasTimestampVersion = (
-  value: unknown,
-): value is VersionedTimestamp =>
+const hasTimestampVersion = (value: unknown): value is VersionedTimestamp =>
   isRecord(value) &&
   typeof value.forkId === "number" &&
   typeof value.turnNumber === "number" &&
@@ -249,7 +249,9 @@ const toTimelineEvent = (
   category: event.category || "world_event",
 });
 
-const normalizeUsage = (usage: OutlineHydrationLog["usage"]): TokenUsage | undefined => {
+const normalizeUsage = (
+  usage: OutlineHydrationLog["usage"],
+): TokenUsage | undefined => {
   if (!usage) return undefined;
   return {
     promptTokens:
@@ -411,8 +413,8 @@ export function buildOutlineHydratedState({
   const knowledge: GameState["knowledge"] = outline.knowledge.map(
     (entry, index) => toKnowledgeEntry(entry, now, index),
   );
-  const factions: GameState["factions"] = outline.factions.map((faction, index) =>
-    toFaction(faction, index),
+  const factions: GameState["factions"] = outline.factions.map(
+    (faction, index) => toFaction(faction, index),
   );
   const timeline: GameState["timeline"] = outline.timeline.map((event, index) =>
     toTimelineEvent(event, index),
@@ -457,7 +459,8 @@ export function buildOutlineHydratedState({
     inventory,
     npcs: toNpcProfiles(npcBundles),
     quests,
-    currentLocation: playerCurrentLocation || outline.locations?.[0]?.id || "Unknown",
+    currentLocation:
+      playerCurrentLocation || outline.locations?.[0]?.id || "Unknown",
     locations,
     knowledge,
     factions,

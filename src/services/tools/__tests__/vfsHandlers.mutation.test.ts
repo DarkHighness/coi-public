@@ -92,7 +92,11 @@ const dispatchOps = (
   for (const op of ops) {
     const { op: opName, ...args } = op;
     const toolName = mapOpToToolName(opName);
-    const result = dispatchToolCall(toolName, args as Record<string, unknown>, ctx);
+    const result = dispatchToolCall(
+      toolName,
+      args as Record<string, unknown>,
+      ctx,
+    );
     if ((result as any)?.success === false) {
       return result;
     }
@@ -122,12 +126,12 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/world/global.json",
-            content: JSON.stringify(createValidGlobal()),
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/world/global.json",
+        content: JSON.stringify(createValidGlobal()),
+      },
+    ]) as any;
 
     expect(result.success).toBe(true);
     const stored = session.readFile("world/global.json");
@@ -139,13 +143,13 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const writeResult = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/world/global.json",
-            content: JSON.stringify(createValidGlobal()),
-            contentType: "application/json",
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/world/global.json",
+        content: JSON.stringify(createValidGlobal()),
+        contentType: "application/json",
+      },
+    ]) as any;
 
     expect(writeResult.success).toBe(true);
     expect(writeResult.data.written).toContain("current/world/global.json");
@@ -170,13 +174,13 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const blocked = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/world/global.json",
-            content: JSON.stringify({ ...createValidGlobal(), time: "Day 2" }),
-            contentType: "application/json",
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/world/global.json",
+        content: JSON.stringify({ ...createValidGlobal(), time: "Day 2" }),
+        contentType: "application/json",
+      },
+    ]) as any;
 
     expect(blocked.success).toBe(false);
     expect(blocked.code).toBe("INVALID_ACTION");
@@ -190,16 +194,20 @@ describe("VFS handlers mutations", () => {
       "current/refs/tools/vfs_write_file/README.md",
     );
 
-    dispatchToolCall("vfs_read_chars", { path: "current/world/global.json" }, ctx);
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/global.json" },
+      ctx,
+    );
 
     const ok = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/world/global.json",
-            content: JSON.stringify({ ...createValidGlobal(), time: "Day 2" }),
-            contentType: "application/json",
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/world/global.json",
+        content: JSON.stringify({ ...createValidGlobal(), time: "Day 2" }),
+        contentType: "application/json",
+      },
+    ]) as any;
 
     expect(ok.success).toBe(true);
   });
@@ -209,12 +217,12 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const moveFail = dispatchOps(ctx, [
-          {
-            op: "move",
-            from: "current/world/missing.json",
-            to: "current/world/new.json",
-          },
-        ]) as any;
+      {
+        op: "move",
+        from: "current/world/missing.json",
+        to: "current/world/new.json",
+      },
+    ]) as any;
 
     expect(moveFail.success).toBe(false);
     expect(moveFail.details?.tool).toBe("vfs_move");
@@ -224,7 +232,9 @@ describe("VFS handlers mutations", () => {
       operation: "move",
     });
 
-    const deleteFail = dispatchOps(ctx, [{ op: "delete", path: "current/world/missing.md" }]) as any;
+    const deleteFail = dispatchOps(ctx, [
+      { op: "delete", path: "current/world/missing.md" },
+    ]) as any;
 
     expect(deleteFail.success).toBe(false);
     expect(deleteFail.details?.tool).toBe("vfs_delete");
@@ -245,25 +255,29 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const blocked = dispatchOps(ctx, [
-          {
-            op: "patch_json",
-            path: "current/world/global.json",
-            patch: [{ op: "replace", path: "/time", value: "Day 9" }],
-          },
-        ]) as any;
+      {
+        op: "patch_json",
+        path: "current/world/global.json",
+        patch: [{ op: "replace", path: "/time", value: "Day 9" }],
+      },
+    ]) as any;
 
     expect(blocked.success).toBe(false);
     expect(blocked.code).toBe("INVALID_ACTION");
 
-    dispatchToolCall("vfs_read_chars", { path: "current/world/global.json" }, ctx);
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/global.json" },
+      ctx,
+    );
 
     const ok = dispatchOps(ctx, [
-          {
-            op: "patch_json",
-            path: "current/world/global.json",
-            patch: [{ op: "replace", path: "/time", value: "Day 9" }],
-          },
-        ]) as any;
+      {
+        op: "patch_json",
+        path: "current/world/global.json",
+        patch: [{ op: "replace", path: "/time", value: "Day 9" }],
+      },
+    ]) as any;
 
     expect(ok.success).toBe(true);
   });
@@ -276,15 +290,19 @@ describe("VFS handlers mutations", () => {
       "application/json",
     );
     const ctx = { vfsSession: session };
-    dispatchToolCall("vfs_read_chars", { path: "current/world/global.json" }, ctx);
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/global.json" },
+      ctx,
+    );
 
     const result = dispatchOps(ctx, [
-          {
-            op: "patch_json",
-            path: "current/world/global.json",
-            patch: [{ op: "replace", path: "/missing/path", value: "x" }],
-          },
-        ]) as any;
+      {
+        op: "patch_json",
+        path: "current/world/global.json",
+        patch: [{ op: "replace", path: "/missing/path", value: "x" }],
+      },
+    ]) as any;
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
@@ -303,15 +321,19 @@ describe("VFS handlers mutations", () => {
     );
     const ctx = { vfsSession: session };
 
-    dispatchToolCall("vfs_read_chars", { path: "current/world/global.json" }, ctx);
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/global.json" },
+      ctx,
+    );
 
     const result = dispatchOps(ctx, [
-          {
-            op: "merge_json",
-            path: "current/world/global.json",
-            content: { customContext: "merged" },
-          },
-        ]) as any;
+      {
+        op: "merge_json",
+        path: "current/world/global.json",
+        content: { customContext: "merged" },
+      },
+    ]) as any;
 
     expect(result.success).toBe(true);
   });
@@ -321,18 +343,18 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/world/quests/quest:test.json",
-            content: JSON.stringify({
-              ...createValidQuest("quest:test"),
-              unlocked: true,
-              unlockReason: "should be ignored",
-              status: "active",
-              highlight: true,
-            }),
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/world/quests/quest:test.json",
+        content: JSON.stringify({
+          ...createValidQuest("quest:test"),
+          unlocked: true,
+          unlockReason: "should be ignored",
+          status: "active",
+          highlight: true,
+        }),
+      },
+    ]) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.warnings?.length ?? 0).toBeGreaterThan(0);
@@ -354,20 +376,24 @@ describe("VFS handlers mutations", () => {
       "application/json",
     );
     const ctx = { vfsSession: session };
-    dispatchToolCall("vfs_read_chars", { path: "current/world/quests/quest:test.json" }, ctx);
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/quests/quest:test.json" },
+      ctx,
+    );
 
     const result = dispatchOps(ctx, [
-          {
-            op: "merge_json",
-            path: "current/world/quests/quest:test.json",
-            content: {
-              title: "Updated title",
-              unlocked: true,
-              unlockReason: "ignored",
-              status: "complete",
-            },
-          },
-        ]) as any;
+      {
+        op: "merge_json",
+        path: "current/world/quests/quest:test.json",
+        content: {
+          title: "Updated title",
+          unlocked: true,
+          unlockReason: "ignored",
+          status: "complete",
+        },
+      },
+    ]) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.warnings?.length ?? 0).toBeGreaterThan(0);
@@ -388,20 +414,24 @@ describe("VFS handlers mutations", () => {
       "application/json",
     );
     const ctx = { vfsSession: session };
-    dispatchToolCall("vfs_read_chars", { path: "current/world/quests/quest:test.json" }, ctx);
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/quests/quest:test.json" },
+      ctx,
+    );
 
     const result = dispatchOps(ctx, [
-          {
-            op: "patch_json",
-            path: "current/world/quests/quest:test.json",
-            patch: [
-              { op: "replace", path: "/unlocked", value: true },
-              { op: "replace", path: "/status", value: "complete" },
-              { op: "replace", path: "/highlight", value: false },
-              { op: "replace", path: "/title", value: "Patched title" },
-            ],
-          },
-        ]) as any;
+      {
+        op: "patch_json",
+        path: "current/world/quests/quest:test.json",
+        patch: [
+          { op: "replace", path: "/unlocked", value: true },
+          { op: "replace", path: "/status", value: "complete" },
+          { op: "replace", path: "/highlight", value: false },
+          { op: "replace", path: "/title", value: "Patched title" },
+        ],
+      },
+    ]) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.warnings?.length ?? 0).toBeGreaterThan(0);
@@ -420,14 +450,14 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/world/characters/char:player/views/quests/quest:player-track.json",
-            content: JSON.stringify({
-              status: "active",
-            }),
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/world/characters/char:player/views/quests/quest:player-track.json",
+        content: JSON.stringify({
+          status: "active",
+        }),
+      },
+    ]) as any;
 
     expect(result.success).toBe(true);
     const view = JSON.parse(
@@ -454,12 +484,12 @@ describe("VFS handlers mutations", () => {
     );
 
     const result = dispatchOps(ctx, [
-          {
-            op: "patch_json",
-            path: "current/world/characters/char:player/inventory/item:key.json",
-            patch: [{ op: "replace", path: "/unlocked", value: false }],
-          },
-        ]) as any;
+      {
+        op: "patch_json",
+        path: "current/world/characters/char:player/inventory/item:key.json",
+        patch: [{ op: "replace", path: "/unlocked", value: false }],
+      },
+    ]) as any;
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_DATA");
@@ -471,43 +501,43 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const create = dispatchOps(ctx, [
-          {
-            op: "append_text",
-            path: "current/world/notes.md",
-            content: "alpha",
-          },
-        ]) as any;
+      {
+        op: "append_text",
+        path: "current/world/notes.md",
+        content: "alpha",
+      },
+    ]) as any;
 
     expect(create.success).toBe(true);
 
     dispatchToolCall("vfs_read_chars", { path: "current/world/notes.md" }, ctx);
 
     const append = dispatchOps(ctx, [
-          {
-            op: "append_text",
-            path: "current/world/notes.md",
-            content: "beta",
-          },
-        ]) as any;
+      {
+        op: "append_text",
+        path: "current/world/notes.md",
+        content: "beta",
+      },
+    ]) as any;
 
     expect(append.success).toBe(true);
 
     dispatchToolCall("vfs_read_chars", { path: "current/world/notes.md" }, ctx);
 
     const edit = dispatchOps(ctx, [
+      {
+        op: "edit_lines",
+        path: "current/world/notes.md",
+        edits: [
           {
-            op: "edit_lines",
-            path: "current/world/notes.md",
-            edits: [
-              {
-                kind: "replace_range",
-                startLine: 2,
-                endLine: 2,
-                content: "gamma",
-              },
-            ],
+            kind: "replace_range",
+            startLine: 2,
+            endLine: 2,
+            content: "gamma",
           },
-        ]) as any;
+        ],
+      },
+    ]) as any;
 
     expect(edit.success).toBe(true);
 
@@ -576,13 +606,13 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/skills/local-test.md",
-            content: "x",
-            contentType: "text/markdown",
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/skills/local-test.md",
+        content: "x",
+        contentType: "text/markdown",
+      },
+    ]) as any;
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("IMMUTABLE_READONLY");
@@ -595,13 +625,13 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const result = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/summary/state.json",
-            content: JSON.stringify({ summaries: [], lastSummarizedIndex: 0 }),
-            contentType: "application/json",
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/summary/state.json",
+        content: JSON.stringify({ summaries: [], lastSummarizedIndex: 0 }),
+        contentType: "application/json",
+      },
+    ]) as any;
 
     expect(result.success).toBe(false);
     expect(result.code).toBe("FINISH_GUARD_REQUIRED");
@@ -621,7 +651,9 @@ describe("VFS handlers mutations", () => {
 
     dispatchToolCall("vfs_read_chars", { path: "current/world/notes.md" }, ctx);
 
-    const ok = dispatchOps(ctx, [{ op: "delete", path: "current/world/notes.md" }]) as any;
+    const ok = dispatchOps(ctx, [
+      { op: "delete", path: "current/world/notes.md" },
+    ]) as any;
 
     expect(ok.success).toBe(true);
     expect(ok.data.deleted).toContain("current/world/notes.md");
@@ -635,13 +667,13 @@ describe("VFS handlers mutations", () => {
     };
 
     const writeResult = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "forks/0/story/world/global.json",
-            content: JSON.stringify(createValidGlobal()),
-            contentType: "application/json",
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "forks/0/story/world/global.json",
+        content: JSON.stringify(createValidGlobal()),
+        contentType: "application/json",
+      },
+    ]) as any;
 
     expect(writeResult.success).toBe(true);
 
@@ -657,25 +689,25 @@ describe("VFS handlers mutations", () => {
     const ctx = { vfsSession: session };
 
     const seed = dispatchOps(ctx, [
-          {
-            op: "write_file",
-            path: "current/world/a.txt",
-            content: "A",
-            contentType: "text/plain",
-          },
-          {
-            op: "write_file",
-            path: "current/world/b.txt",
-            content: "B",
-            contentType: "text/plain",
-          },
-        ]) as any;
+      {
+        op: "write_file",
+        path: "current/world/a.txt",
+        content: "A",
+        contentType: "text/plain",
+      },
+      {
+        op: "write_file",
+        path: "current/world/b.txt",
+        content: "B",
+        contentType: "text/plain",
+      },
+    ]) as any;
 
     expect(seed.success).toBe(true);
 
     const blocked = dispatchOps(ctx, [
-          { op: "move", from: "current/world/a.txt", to: "current/world/b.txt" },
-        ]) as any;
+      { op: "move", from: "current/world/a.txt", to: "current/world/b.txt" },
+    ]) as any;
 
     expect(blocked.success).toBe(false);
     expect(blocked.code).toBe("INVALID_ACTION");
@@ -684,8 +716,8 @@ describe("VFS handlers mutations", () => {
     dispatchToolCall("vfs_read_chars", { path: "current/world/b.txt" }, ctx);
 
     const ok = dispatchOps(ctx, [
-          { op: "move", from: "current/world/a.txt", to: "current/world/b.txt" },
-        ]) as any;
+      { op: "move", from: "current/world/a.txt", to: "current/world/b.txt" },
+    ]) as any;
 
     expect(ok.success).toBe(true);
   });

@@ -240,7 +240,8 @@ const ROOT_CATEGORY_DIRECTORIES: readonly RootCategoryDirectoryDefinition[] = [
   {
     path: "world/locations",
     title: "Locations",
-    purpose: "Canonical location definitions and location-anchored dropped items.",
+    purpose:
+      "Canonical location definitions and location-anchored dropped items.",
     whatBelongs: [
       "Location definitions: `world/locations/<locId>.json`.",
       "Dropped/placed items: `world/locations/<locId>/items/<itemId>.json`.",
@@ -259,7 +260,8 @@ const ROOT_CATEGORY_DIRECTORIES: readonly RootCategoryDirectoryDefinition[] = [
   {
     path: "world/quests",
     title: "Quests",
-    purpose: "Canonical quest definitions, objective truth, and quest-level hidden data.",
+    purpose:
+      "Canonical quest definitions, objective truth, and quest-level hidden data.",
     whatBelongs: [
       "Quest definitions at `world/quests/<questId>.json`.",
       "Canonical objective structure and hidden quest truth.",

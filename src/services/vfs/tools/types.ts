@@ -84,9 +84,7 @@ export interface VfsToolCapabilityV2 {
   isFinishTool?: boolean;
 }
 
-export interface VfsToolCatalogEntry<
-  TParams extends ZodTypeAny = ZodTypeAny,
-> {
+export interface VfsToolCatalogEntry<TParams extends ZodTypeAny = ZodTypeAny> {
   name: VfsToolName;
   description: string;
   parameters: TParams;
@@ -100,7 +98,8 @@ export interface VfsToolset {
   finishToolName: VfsToolName;
 }
 
-export type VfsTypedToolDefinition<T extends ZodTypeAny> = TypedToolDefinition<T>;
+export type VfsTypedToolDefinition<T extends ZodTypeAny> =
+  TypedToolDefinition<T>;
 
 export type AnyVfsToolDefinition = TypedToolDefinition<ZodTypeAny>;
 

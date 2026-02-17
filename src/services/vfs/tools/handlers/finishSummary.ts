@@ -68,7 +68,9 @@ export const handleFinishSummary: VfsToolHandler = (args, ctx) =>
       ctx,
       (draft) => {
         const existingFile = draft.readFile("summary/state.json");
-        const parsed = existingFile ? safeParseJson(existingFile.content) : null;
+        const parsed = existingFile
+          ? safeParseJson(existingFile.content)
+          : null;
         const existingState = toObjectRecord(parsed);
         const existingSummaries = Array.isArray(existingState?.summaries)
           ? existingState.summaries.filter(

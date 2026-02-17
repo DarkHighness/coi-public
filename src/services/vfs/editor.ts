@@ -280,10 +280,7 @@ export const applySectionEdit = (
       const id = toTrimmedId(rule.id);
       const title = typeof rule.title === "string" ? rule.title : null;
       const content = typeof rule.content === "string" ? rule.content : null;
-      const priority =
-        typeof rule.priority === "number"
-          ? rule.priority
-          : 99;
+      const priority = typeof rule.priority === "number" ? rule.priority : 99;
       if (!id) {
         throw new Error("Missing id for custom rule entry.");
       }
@@ -324,12 +321,12 @@ export const applySectionEdit = (
     if (typeof id !== "string" || id.trim().length === 0) {
       throw new Error(`Missing ${config.idField} for ${section} entry.`);
     }
-    const category = (WORLD_SECTION_TO_CATEGORY as Record<
-      string,
-      CanonicalWorldEntityCategory | undefined
-    >)[
-      section
-    ];
+    const category = (
+      WORLD_SECTION_TO_CATEGORY as Record<
+        string,
+        CanonicalWorldEntityCategory | undefined
+      >
+    )[section];
     if (category) {
       const sanitized = sanitizeCanonicalWorldRecord(category, item);
       if (sanitized.strippedKeys.length > 0) {

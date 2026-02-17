@@ -21,7 +21,9 @@ describe("sessionStartupProfile", () => {
     expect(profile.recommendedReadPaths).toContain(
       "current/conversation/session.jsonl",
     );
-    expect(profile.recommendedReadPaths).not.toContain("current/skills/index.json");
+    expect(profile.recommendedReadPaths).not.toContain(
+      "current/skills/index.json",
+    );
     expect(profile.preloadReadPaths[0]).toBe(
       "current/skills/commands/runtime/SKILL.md",
     );

@@ -79,7 +79,11 @@ const buildGlobalNotesMarkdown = (): string =>
 const ensureGlobalNotes = (session: VfsSession): void => {
   // Notes are Story Teller AI internal markdown self-notes.
   if (!session.readFile("world/notes.md")) {
-    session.writeFile("world/notes.md", buildGlobalNotesMarkdown(), "text/markdown");
+    session.writeFile(
+      "world/notes.md",
+      buildGlobalNotesMarkdown(),
+      "text/markdown",
+    );
   }
 };
 
@@ -145,33 +149,23 @@ const getKnownByList = (value: unknown): string[] => {
 const asArray = (value: unknown): unknown[] =>
   Array.isArray(value) ? value : [];
 
-const stripUiOnlyFields = <T extends object>(
-  value: T,
-): T => {
+const stripUiOnlyFields = <T extends object>(value: T): T => {
   const next = { ...(value as JsonObject) };
   delete next.highlight;
   delete next.lastAccess;
   return next as T;
 };
 
-const buildPlaceholderDraftMarkdown = (
-  placeholder: JsonObject,
-): string => {
+const buildPlaceholderDraftMarkdown = (placeholder: JsonObject): string => {
   const id = asTrimmedString(placeholder.id) ?? "unknown";
   const label =
     typeof placeholder.label === "string" ? placeholder.label.trim() : "";
   const visible = asRecord(placeholder.visible);
   const description =
-    typeof visible?.description === "string"
-      ? visible.description.trim()
-      : "";
+    typeof visible?.description === "string" ? visible.description.trim() : "";
   const knownBy = getKnownByList(placeholder);
 
-  const lines: string[] = [
-    "# Placeholder Draft",
-    "",
-    `- id: ${id}`,
-  ];
+  const lines: string[] = ["# Placeholder Draft", "", `- id: ${id}`];
   if (label.length > 0) {
     lines.push(`- label: ${label}`);
   }
@@ -529,10 +523,7 @@ export const seedVfsSessionFromGameState = (
     for (const placeholder of state.placeholders) {
       const placeholderRecord = asRecord(placeholder);
       if (!placeholderRecord) continue;
-      writePlaceholderArtifacts(
-        session,
-        stripUiOnlyFields(placeholderRecord),
-      );
+      writePlaceholderArtifacts(session, stripUiOnlyFields(placeholderRecord));
     }
   }
 };

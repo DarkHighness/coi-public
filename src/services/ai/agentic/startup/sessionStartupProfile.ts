@@ -37,7 +37,9 @@ const normalizeInputPath = (path: string): string | null => {
   const trimmed = path.trim();
   if (!trimmed) return null;
 
-  const normalized = normalizeVfsPath(trimmed.replace(/^\/+/, "").replace(/\\+/g, "/"));
+  const normalized = normalizeVfsPath(
+    trimmed.replace(/^\/+/, "").replace(/\\+/g, "/"),
+  );
   if (!normalized) return null;
 
   if (
@@ -80,12 +82,12 @@ const pickOptionalRefs = (
   const specificSkillRefs = parsed.skillRefs.filter(
     (path) => !isBroadReferencePath(path),
   );
-  const broadRefs = parsed.validRefs.filter((path) => isBroadReferencePath(path));
+  const broadRefs = parsed.validRefs.filter((path) =>
+    isBroadReferencePath(path),
+  );
 
   const anchors = parsed.anchorRefs.filter(
-    (path) =>
-      !parsed.skillRefs.includes(path) &&
-      !isBroadReferencePath(path),
+    (path) => !parsed.skillRefs.includes(path) && !isBroadReferencePath(path),
   );
 
   const others = parsed.validRefs.filter(

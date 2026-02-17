@@ -21,6 +21,9 @@ export const computeBlobId = async (
   if (!cryptoApi?.subtle) {
     throw new Error("crypto.subtle is unavailable for blob hashing");
   }
-  const digest = await cryptoApi.subtle.digest("SHA-256", encoder.encode(payload));
+  const digest = await cryptoApi.subtle.digest(
+    "SHA-256",
+    encoder.encode(payload),
+  );
   return toHex(new Uint8Array(digest));
 };

@@ -471,10 +471,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
                         count: clearResult.deleted,
                         defaultValue: `Cleared ${clearResult.deleted} RAG documents`,
                       })
-                    : t(
-                        "data.clearRagSuccess",
-                        "RAG knowledge base cleared",
-                      ),
+                    : t("data.clearRagSuccess", "RAG knowledge base cleared"),
                   "info",
                 );
               } catch (error) {

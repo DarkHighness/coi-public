@@ -163,9 +163,10 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
                     content={t(`${themeKey}.example`, { ns: "themes" })}
                     disableIndent
                     components={{
-                      p: ({ node: _node, ...props }: MarkdownParagraphProps) => (
-                        <span {...props} />
-                      ),
+                      p: ({
+                        node: _node,
+                        ...props
+                      }: MarkdownParagraphProps) => <span {...props} />,
                     }}
                   />
                 </div>

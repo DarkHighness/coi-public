@@ -170,8 +170,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       geminiMessageFormat: instance.geminiMessageFormat || false,
       claudeCompatibility: instance.claudeCompatibility || false,
       claudeMessageFormat: instance.claudeMessageFormat || false,
-      compatibleImageGeneration:
-        instance.compatibleImageGeneration || false,
+      compatibleImageGeneration: instance.compatibleImageGeneration || false,
     });
     setModalMode("edit");
   };

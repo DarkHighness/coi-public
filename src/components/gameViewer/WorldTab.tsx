@@ -215,8 +215,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               value={t(
                                 `ambienceNames.${loc.visible.atmosphere.ambience}`,
                                 {
-                                  defaultValue:
-                                    loc.visible.atmosphere.ambience,
+                                  defaultValue: loc.visible.atmosphere.ambience,
                                 },
                               )}
                             />
@@ -225,94 +224,96 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       </div>
                     )}
 
-                  {/* Sensory Details */}
-                  {loc.visible?.sensory && (
-                    <div className="mt-2">
-                      <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                        {t("gameViewer.sensory") || "Sensory Details"}
-                      </span>
-                      <div className="pl-2 border-l-2 border-theme-border/30 space-y-1">
-                        {loc.visible.sensory.smell && (
-                          <InfoRow
-                            label={t("gameViewer.smell") || "Smell"}
-                            value={loc.visible.sensory.smell}
-                          />
-                        )}
-                        {loc.visible.sensory.sound && (
-                          <InfoRow
-                            label={t("gameViewer.sound") || "Sound"}
-                            value={loc.visible.sensory.sound}
-                          />
-                        )}
-                        {loc.visible.sensory.lighting && (
-                          <InfoRow
-                            label={t("gameViewer.lighting") || "Lighting"}
-                            value={loc.visible.sensory.lighting}
-                          />
-                        )}
-                        {loc.visible.sensory.temperature && (
-                          <InfoRow
-                            label={t("gameViewer.temperature") || "Temperature"}
-                            value={loc.visible.sensory.temperature}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Interactables */}
-                  {loc.visible?.interactables &&
-                    loc.visible.interactables.length > 0 && (
+                    {/* Sensory Details */}
+                    {loc.visible?.sensory && (
                       <div className="mt-2">
                         <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.interactables") || "Interactables"}
+                          {t("gameViewer.sensory") || "Sensory Details"}
                         </span>
-                        <div className="pl-2 text-theme-muted text-sm">
-                          <ul className="list-disc list-inside">
-                            {loc.visible.interactables.map((item, i) => (
-                              <li key={i}>{item}</li>
-                            ))}
-                          </ul>
+                        <div className="pl-2 border-l-2 border-theme-border/30 space-y-1">
+                          {loc.visible.sensory.smell && (
+                            <InfoRow
+                              label={t("gameViewer.smell") || "Smell"}
+                              value={loc.visible.sensory.smell}
+                            />
+                          )}
+                          {loc.visible.sensory.sound && (
+                            <InfoRow
+                              label={t("gameViewer.sound") || "Sound"}
+                              value={loc.visible.sensory.sound}
+                            />
+                          )}
+                          {loc.visible.sensory.lighting && (
+                            <InfoRow
+                              label={t("gameViewer.lighting") || "Lighting"}
+                              value={loc.visible.sensory.lighting}
+                            />
+                          )}
+                          {loc.visible.sensory.temperature && (
+                            <InfoRow
+                              label={
+                                t("gameViewer.temperature") || "Temperature"
+                              }
+                              value={loc.visible.sensory.temperature}
+                            />
+                          )}
                         </div>
                       </div>
                     )}
 
-                  {loc.visible.knownFeatures &&
-                    loc.visible.knownFeatures.length > 0 && (
-                      <div className="text-xs">
+                    {/* Interactables */}
+                    {loc.visible?.interactables &&
+                      loc.visible.interactables.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.interactables") || "Interactables"}
+                          </span>
+                          <div className="pl-2 text-theme-muted text-sm">
+                            <ul className="list-disc list-inside">
+                              {loc.visible.interactables.map((item, i) => (
+                                <li key={i}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+
+                    {loc.visible.knownFeatures &&
+                      loc.visible.knownFeatures.length > 0 && (
+                        <div className="text-xs">
+                          <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.knownFeatures") || "Known Features"}:
+                          </span>
+                          <ul className="list-disc list-inside pl-2 text-theme-muted">
+                            {loc.visible.knownFeatures.map((feature, i) => (
+                              <li key={i}>{feature}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    {loc.visible.resources &&
+                      loc.visible.resources.length > 0 && (
+                        <div className="text-xs">
+                          <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.resources") || "Resources"}:
+                          </span>
+                          <ul className="list-disc list-inside pl-2 text-theme-muted">
+                            {loc.visible.resources.map((resource, i) => (
+                              <li key={i}>{resource}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    {loc.lore && (
+                      <div className="text-xs border-t border-theme-border/30 pt-2">
                         <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.knownFeatures") || "Known Features"}:
+                          {t("gameViewer.lore") || "Lore"}:
                         </span>
-                        <ul className="list-disc list-inside pl-2 text-theme-muted">
-                          {loc.visible.knownFeatures.map((feature, i) => (
-                            <li key={i}>{feature}</li>
-                          ))}
-                        </ul>
+                        <div className="text-theme-muted italic pl-1">
+                          <MarkdownText content={loc.lore} />
+                        </div>
                       </div>
                     )}
-                  {loc.visible.resources &&
-                    loc.visible.resources.length > 0 && (
-                      <div className="text-xs">
-                        <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("gameViewer.resources") || "Resources"}:
-                        </span>
-                        <ul className="list-disc list-inside pl-2 text-theme-muted">
-                          {loc.visible.resources.map((resource, i) => (
-                            <li key={i}>{resource}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  {loc.lore && (
-                    <div className="text-xs border-t border-theme-border/30 pt-2">
-                      <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                        {t("gameViewer.lore") || "Lore"}:
-                      </span>
-                      <div className="text-theme-muted italic pl-1">
-                        <MarkdownText content={loc.lore} />
-                      </div>
-                    </div>
-                  )}
                   </div>
                   {(loc.unlocked || gameState.unlockMode) && loc.hidden && (
                     <HiddenContent
@@ -320,7 +321,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       content={
                         <div className="space-y-2">
                           {loc.hidden.fullDescription && (
-                            <MarkdownText content={loc.hidden.fullDescription} />
+                            <MarkdownText
+                              content={loc.hidden.fullDescription}
+                            />
                           )}
                           {loc.hidden.dangers &&
                             loc.hidden.dangers.length > 0 && (

@@ -54,7 +54,9 @@ export const ExportOptionsModal: React.FC<ExportOptionsModalProps> = ({
       } catch (err) {
         console.error("Failed to load export stats:", err);
         if (!cancelled) {
-          setError(t("export.statsError") || "Failed to load export statistics");
+          setError(
+            t("export.statsError") || "Failed to load export statistics",
+          );
         }
       } finally {
         if (!cancelled) {

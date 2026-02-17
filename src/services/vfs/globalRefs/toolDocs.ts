@@ -12,7 +12,9 @@ type JsonValue =
   | JsonValue[]
   | { [k: string]: JsonValue };
 
-const isJsonScalar = (value: unknown): value is string | number | boolean | null =>
+const isJsonScalar = (
+  value: unknown,
+): value is string | number | boolean | null =>
   typeof value === "string" ||
   typeof value === "number" ||
   typeof value === "boolean" ||
@@ -28,10 +30,8 @@ const getSchemaDef = (schema: z.ZodTypeAny): JsonObject | null => {
   return isRecordObject(candidate) ? candidate : null;
 };
 
-const getSchemaDefField = (
-  schema: z.ZodTypeAny,
-  field: string,
-): unknown => getSchemaDef(schema)?.[field];
+const getSchemaDefField = (schema: z.ZodTypeAny, field: string): unknown =>
+  getSchemaDef(schema)?.[field];
 
 const asZodType = (value: unknown): z.ZodTypeAny | null =>
   value instanceof z.ZodType ? (value as z.ZodTypeAny) : null;
@@ -173,7 +173,8 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       section: {
         title: "Failure Memo 2026-02-16",
         level: 3,
-        content: "- [INVALID_PARAMS] phase was sent as string. Fixed with integer literal.",
+        content:
+          "- [INVALID_PARAMS] phase was sent as string. Fixed with integer literal.",
       },
     },
     {
@@ -216,7 +217,10 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
     {
       assistant: {
         narrative: "You brush moss aside and find fresh claw marks.",
-        choices: [{ text: "Follow the tracks" }, { text: "Set up camp nearby" }],
+        choices: [
+          { text: "Follow the tracks" },
+          { text: "Set up camp nearby" },
+        ],
       },
     },
   ],
@@ -405,7 +409,9 @@ const sampleValueForSchema = (
       options.find((option): option is z.ZodObject<z.ZodRawShape> => {
         return option instanceof z.ZodObject;
       });
-    return first ? buildExampleFromObject(first, depth + 1) : { value: "<union>" };
+    return first
+      ? buildExampleFromObject(first, depth + 1)
+      : { value: "<union>" };
   }
   if (kind === "ZodUnion") {
     const options = getSchemaDefField(inner, "options");
@@ -719,7 +725,11 @@ export const buildGlobalVfsToolDocs = (): VfsFileMap => {
       "",
     ].join("\n"),
   );
-  addText(files, "refs/tool-schemas/index.json", buildSchemaIndex(indexEntries));
+  addText(
+    files,
+    "refs/tool-schemas/index.json",
+    buildSchemaIndex(indexEntries),
+  );
 
   return files;
 };

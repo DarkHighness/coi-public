@@ -22,14 +22,16 @@ describe("skills prompt builder hygiene", () => {
 
     expect(prompt).toContain("<theme_key>long_aotian</theme_key>");
     expect(prompt).toContain("<theme_skill_selection_protocol>");
-    expect(prompt).toContain('vfs_read_chars({ path: "current/skills/index.json" })');
+    expect(prompt).toContain(
+      'vfs_read_chars({ path: "current/skills/index.json" })',
+    );
     expect(prompt).toContain(
       'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
     );
+    expect(prompt).toContain("optional accelerators, not hard gates");
     expect(prompt).toContain(
-      "optional accelerators, not hard gates",
+      "Theme skills live under `current/skills/theme/**`",
     );
-    expect(prompt).toContain("Theme skills live under `current/skills/theme/**`");
   });
 
   it("includes culture skill protocol and resolved circle path", () => {
@@ -44,7 +46,9 @@ describe("skills prompt builder hygiene", () => {
     });
 
     expect(prompt).toContain("<culture_skill_protocol>");
-    expect(prompt).toContain("Do NOT bind cultural circle by output language alone");
+    expect(prompt).toContain(
+      "Do NOT bind cultural circle by output language alone",
+    );
     expect(prompt).toContain("Runtime preference: `japanese`");
     expect(prompt).toContain("source: `explicit`");
     expect(prompt).toContain("effective circle: `japanese`");
@@ -54,16 +58,22 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain(
       'vfs_read_chars({ path: "current/skills/presets/runtime/culture-japanese/SKILL.md" })',
     );
-    expect(prompt).toContain("single-script output, transliterated to output language");
+    expect(prompt).toContain(
+      "single-script output, transliterated to output language",
+    );
   });
 
   it("does not hard-bind cultural circle from output language", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "zh" });
 
     expect(prompt).toContain("<culture_skill_protocol>");
-    expect(prompt).toContain("Do NOT bind cultural circle by output language alone");
+    expect(prompt).toContain(
+      "Do NOT bind cultural circle by output language alone",
+    );
     expect(prompt).not.toContain("Chinese-style backgrounds");
-    expect(prompt).not.toContain("ALL characters MUST have authentic Chinese names");
+    expect(prompt).not.toContain(
+      "ALL characters MUST have authentic Chinese names",
+    );
   });
 
   it("renders a compact hierarchical skills navigation map", () => {

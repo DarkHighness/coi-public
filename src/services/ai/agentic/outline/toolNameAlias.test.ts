@@ -11,16 +11,18 @@ describe("resolveOutlineToolNameAlias", () => {
   ];
 
   it("keeps exact tool name unchanged", () => {
-    expect(resolveOutlineToolNameAlias("vfs_read_chars", allowed)).toBe("vfs_read_chars");
+    expect(resolveOutlineToolNameAlias("vfs_read_chars", allowed)).toBe(
+      "vfs_read_chars",
+    );
   });
 
   it("strips common prefixes and resolves to allowed tool name", () => {
-    expect(resolveOutlineToolNameAlias("default_api:vfs_read_chars", allowed)).toBe(
-      "vfs_read_chars",
-    );
-    expect(resolveOutlineToolNameAlias("functions.vfs_read_chars", allowed)).toBe(
-      "vfs_read_chars",
-    );
+    expect(
+      resolveOutlineToolNameAlias("default_api:vfs_read_chars", allowed),
+    ).toBe("vfs_read_chars");
+    expect(
+      resolveOutlineToolNameAlias("functions.vfs_read_chars", allowed),
+    ).toBe("vfs_read_chars");
     expect(
       resolveOutlineToolNameAlias(
         "default_api:functions.vfs_finish_outline_phase_0",

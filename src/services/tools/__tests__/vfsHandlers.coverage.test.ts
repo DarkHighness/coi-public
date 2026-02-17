@@ -163,7 +163,11 @@ describe("VFS handlers additional coverage", () => {
       "application/json",
     );
     const ctx = { vfsSession: session };
-    dispatchToolCall("vfs_read_chars", { path: "current/world/global.json" }, ctx);
+    dispatchToolCall(
+      "vfs_read_chars",
+      { path: "current/world/global.json" },
+      ctx,
+    );
 
     const result = dispatchToolCall(
       "vfs_patch_json",

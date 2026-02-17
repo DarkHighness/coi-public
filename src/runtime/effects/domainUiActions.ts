@@ -130,7 +130,8 @@ export function createDomainUiActions({
         const matches = (entry: HighlightableEntry): boolean => {
           if (!entry || typeof entry !== "object") return false;
           if (match.id && entry?.id && entry.id === match.id) return true;
-          if (match.name && entry?.name && entry.name === match.name) return true;
+          if (match.name && entry?.name && entry.name === match.name)
+            return true;
           return false;
         };
 

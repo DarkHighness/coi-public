@@ -115,8 +115,8 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - Do not spam finish while blocking errors remain. Change strategy if same error repeats.
   - Do NOT write finish-guarded paths via generic write tools.
   - ${
-      toolsetId === "playerRate"
-        ? "Do not advance visible story in `[Player Rate]` loops."
+    toolsetId === "playerRate"
+      ? "Do not advance visible story in `[Player Rate]` loops."
       : "Normal turns must produce coherent narrative + choices in finish payload."
   }
 </tool_usage>

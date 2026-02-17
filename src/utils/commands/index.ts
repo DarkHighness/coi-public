@@ -118,9 +118,7 @@ function handleUnlockMode(
 ): CommandResult {
   const { t, gameState } = context;
 
-  const isUnlockModeArg = (
-    value: string,
-  ): value is "on" | "off" | "toggle" =>
+  const isUnlockModeArg = (value: string): value is "on" | "off" | "toggle" =>
     value === "on" || value === "off" || value === "toggle";
 
   const modeArg = (args[0] || "toggle").toLowerCase();

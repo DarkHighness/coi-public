@@ -7,7 +7,7 @@ describe("VFS blob pool behavior", () => {
 
     const sharedFile = {
       path: "world/global.json",
-      content: "{\"clock\":\"day-1\"}",
+      content: '{"clock":"day-1"}',
       contentType: "application/json" as const,
       hash: "legacy-hash",
       size: 17,
@@ -48,7 +48,7 @@ describe("VFS blob pool behavior", () => {
       files: {
         "world/global.json": {
           path: "world/global.json",
-          content: "{\"clock\":\"day-1\"}",
+          content: '{"clock":"day-1"}',
           contentType: "application/json",
           hash: "legacy-global",
           size: 17,
@@ -56,7 +56,7 @@ describe("VFS blob pool behavior", () => {
         },
         "world/story.json": {
           path: "world/story.json",
-          content: "{\"title\":\"x\"}",
+          content: '{"title":"x"}',
           contentType: "application/json",
           hash: "legacy-story",
           size: 13,
@@ -66,7 +66,9 @@ describe("VFS blob pool behavior", () => {
     });
 
     const snapshotRecord = store.snapshots.get("save-a:0:1");
-    const anyRef = Object.values(snapshotRecord.fileRefs)[0] as { blobId: string };
+    const anyRef = Object.values(snapshotRecord.fileRefs)[0] as {
+      blobId: string;
+    };
     store.blobs.delete(`save-a:${anyRef.blobId}`);
 
     const restored = await store.loadSnapshot("save-a", 0, 1);

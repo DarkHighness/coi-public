@@ -46,9 +46,7 @@ const toRecord = (value: unknown): JsonObject | null =>
     ? (value as JsonObject)
     : null;
 
-const normalizeFinishTurnArgsForValidation = (
-  args: JsonObject,
-): JsonObject => {
+const normalizeFinishTurnArgsForValidation = (args: JsonObject): JsonObject => {
   const normalized: JsonObject = { ...args };
 
   if ("userAction" in normalized) {
@@ -86,12 +84,10 @@ const summarizeZodIssues = (
   maxIssues: number = MAX_VALIDATION_ISSUES_IN_ERROR,
 ): string => {
   const issues = error.issues || [];
-  const lines = issues
-    .slice(0, maxIssues)
-    .map((issue) => {
-      const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
-      return `- ${path}: ${issue.message}`;
-    });
+  const lines = issues.slice(0, maxIssues).map((issue) => {
+    const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
+    return `- ${path}: ${issue.message}`;
+  });
 
   if (issues.length > maxIssues) {
     lines.push(`- ...and ${issues.length - maxIssues} more issue(s)`);
@@ -162,7 +158,9 @@ const buildInvalidParametersMessage = (params: {
     );
   }
   if (repeatedGuidance) {
-    hints.push("Schema guidance was already provided earlier in this retry chain.");
+    hints.push(
+      "Schema guidance was already provided earlier in this retry chain.",
+    );
   }
 
   return (
@@ -635,10 +633,7 @@ export async function callWithAgenticRetry(
               : primaryValidation;
 
           if (validationResult.success) {
-            if (
-              primaryValidation.success &&
-              normalizedArgs !== toolCall.args
-            ) {
+            if (primaryValidation.success && normalizedArgs !== toolCall.args) {
               toolCall.args = normalizedArgs;
             }
             continue;
@@ -685,7 +680,8 @@ export async function callWithAgenticRetry(
         );
       } else {
         // All calls are invalid: keep retry behavior but preserve per-tool error mapping.
-        errorMessage = Array.from(invalidToolCallErrors.values())[0]?.error || null;
+        errorMessage =
+          Array.from(invalidToolCallErrors.values())[0]?.error || null;
       }
     }
 
@@ -736,16 +732,16 @@ export async function callWithAgenticRetry(
         createToolResponseMessage(
           functionCalls.map((fc) => {
             if (invalidToolCallErrors.size === 0) {
-                return {
-                  toolCallId: fc.id,
-                  name: fc.name,
-                  content: {
-                    success: false,
-                    code: "EXECUTION_ERROR",
-                    error: errorMessage,
-                  },
-                };
-              }
+              return {
+                toolCallId: fc.id,
+                name: fc.name,
+                content: {
+                  success: false,
+                  code: "EXECUTION_ERROR",
+                  error: errorMessage,
+                },
+              };
+            }
 
             const invalidDetail = invalidToolCallErrors.get(fc.id);
             if (invalidDetail) {

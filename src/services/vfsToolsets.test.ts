@@ -12,15 +12,9 @@ describe("vfsToolsets", () => {
     expect(toolsets.playerRate.tools).toContain(
       toolsets.playerRate.finishToolName,
     );
-    expect(toolsets.cleanup.tools).toContain(
-      toolsets.cleanup.finishToolName,
-    );
-    expect(toolsets.summary.tools).toContain(
-      toolsets.summary.finishToolName,
-    );
-    expect(toolsets.outline.tools).toContain(
-      toolsets.outline.finishToolName,
-    );
+    expect(toolsets.cleanup.tools).toContain(toolsets.cleanup.finishToolName);
+    expect(toolsets.summary.tools).toContain(toolsets.summary.finishToolName);
+    expect(toolsets.outline.tools).toContain(toolsets.outline.finishToolName);
 
     expect(toolsets.turn.tools).not.toContain("vfs_finish_summary");
     expect(toolsets.turn.tools).not.toContain("vfs_finish_soul");

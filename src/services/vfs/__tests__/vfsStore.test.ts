@@ -127,7 +127,7 @@ describe("VFS store", () => {
 
     const sharedFile = {
       path: "world/global.json",
-      content: "{\"time\":\"Day 1\"}",
+      content: '{"time":"Day 1"}',
       contentType: "application/json" as const,
       hash: "legacy",
       size: 16,
@@ -170,7 +170,7 @@ describe("VFS store", () => {
       files: {
         "world/global.json": {
           path: "world/global.json",
-          content: "{\"state\":\"a\"}",
+          content: '{"state":"a"}',
           contentType: "application/json",
           hash: "ha",
           size: 12,
@@ -187,7 +187,7 @@ describe("VFS store", () => {
       files: {
         "world/global.json": {
           path: "world/global.json",
-          content: "{\"state\":\"b\"}",
+          content: '{"state":"b"}',
           contentType: "application/json",
           hash: "hb",
           size: 12,
@@ -198,7 +198,7 @@ describe("VFS store", () => {
 
     expect(store.blobs.size).toBe(1);
     const blob = Array.from(store.blobs.values())[0] as any;
-    expect(blob.content).toContain("\"b\"");
+    expect(blob.content).toContain('"b"');
     expect(blob.refCount).toBe(1);
   });
 
@@ -213,7 +213,7 @@ describe("VFS store", () => {
       files: {
         "world/global.json": {
           path: "world/global.json",
-          content: "{\"state\":\"same\"}",
+          content: '{"state":"same"}',
           contentType: "application/json",
           hash: "h1",
           size: 16,
@@ -221,7 +221,7 @@ describe("VFS store", () => {
         },
         "world/story.json": {
           path: "world/story.json",
-          content: "{\"state\":\"same\"}",
+          content: '{"state":"same"}',
           contentType: "application/json",
           hash: "h2",
           size: 16,
@@ -235,8 +235,10 @@ describe("VFS store", () => {
     expect(blob.refCount).toBe(2);
 
     const loaded = await store.loadSnapshot("s1", 0, 1);
-    expect(loaded?.files["world/global.json"]?.content).toBe("{\"state\":\"same\"}");
-    expect(loaded?.files["world/story.json"]?.content).toBe("{\"state\":\"same\"}");
+    expect(loaded?.files["world/global.json"]?.content).toBe(
+      '{"state":"same"}',
+    );
+    expect(loaded?.files["world/story.json"]?.content).toBe('{"state":"same"}');
   });
 
   it("delegates through IndexedDbVfsStore adapter and clones returned values", async () => {

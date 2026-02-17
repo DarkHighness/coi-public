@@ -77,9 +77,7 @@ describe("contextInjector", () => {
       "Do not skip required skill preflight",
     );
     expect(getText(history[4])).toContain("current/skills/index.json");
-    expect(getText(history[4])).toContain(
-      "Strongly recommended per session",
-    );
+    expect(getText(history[4])).toContain("Strongly recommended per session");
     expect(getText(history[4])).toContain(
       "Reuse those skill docs across later turns",
     );
@@ -97,9 +95,7 @@ describe("contextInjector", () => {
     expect(getText(history[7])).toContain(
       "[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]",
     );
-    expect(getText(history[7])).toContain(
-      "vfs_finish_turn",
-    );
+    expect(getText(history[7])).toContain("vfs_finish_turn");
     expect(getText(history[8])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[8])).toContain("commands/runtime/SKILL.md");
     expect(getText(history[8])).toContain("commands/runtime/cleanup/SKILL.md");
@@ -109,7 +105,9 @@ describe("contextInjector", () => {
     expect(getText(history[9])).toContain("Target forkId: 3");
     expect(getText(history[9])).toContain("Target turnNumber: 27");
     expect(getText(history[9])).toContain("Structured error recovery");
-    expect(getText(history[9])).toContain("FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE");
+    expect(getText(history[9])).toContain(
+      "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
+    );
     expect(getText(history[9])).toContain("current/conversation/index.json");
     expect(getText(history[10])).toContain("MODE SKILL GUIDANCE");
     expect(getText(history[10])).toContain(

@@ -195,7 +195,9 @@ describe("VfsSession", () => {
     );
 
     expect(session.readFile("world/placeholders/quest:signal.md")).toBeNull();
-    expect(session.readFile("world/placeholders/quest:untouched.md")).toBeTruthy();
+    expect(
+      session.readFile("world/placeholders/quest:untouched.md"),
+    ).toBeTruthy();
   });
 
   it("removes categorized placeholder draft markdown after entity promotion write", () => {
@@ -228,7 +230,9 @@ describe("VfsSession", () => {
       "application/json",
     );
 
-    expect(session.readFile("world/placeholders/quests/quest:signal.md")).toBeNull();
+    expect(
+      session.readFile("world/placeholders/quests/quest:signal.md"),
+    ).toBeNull();
   });
 
   it("removes placeholder drafts for promoted entity when canonical file is renamed", () => {
@@ -272,7 +276,9 @@ describe("VfsSession", () => {
     );
 
     expect(session.readFile("world/placeholders/quest:signal.md")).toBeNull();
-    expect(session.readFile("world/placeholders/quests/quest:signal.md")).toBeNull();
+    expect(
+      session.readFile("world/placeholders/quests/quest:signal.md"),
+    ).toBeNull();
   });
 
   it("keeps placeholder draft when canonical promotion write fails due to invalid JSON", () => {
@@ -323,7 +329,9 @@ describe("VfsSession", () => {
       ),
     ).toThrow("Unlock regression is not allowed");
 
-    expect(session.readFile("world/placeholders/char:npc_guard.md")).toBeTruthy();
+    expect(
+      session.readFile("world/placeholders/char:npc_guard.md"),
+    ).toBeTruthy();
   });
 
   it("lists directories", () => {

@@ -120,8 +120,7 @@ const getErrorMessage = (error: unknown): string =>
     : "Unknown IndexedDB error";
 
 const isStringArray = (value: unknown): value is string[] =>
-  Array.isArray(value) &&
-  value.every((entry) => typeof entry === "string");
+  Array.isArray(value) && value.every((entry) => typeof entry === "string");
 
 const isListState = (
   value: unknown,
@@ -468,10 +467,7 @@ export const useVfsPersistence = (
               const snapshot = await loadLatestSnapshotForSaveId(saveId);
 
               if (snapshot) {
-                const shared = await ensureSharedLayerForSave(
-                  saveId,
-                  snapshot,
-                );
+                const shared = await ensureSharedLayerForSave(saveId, snapshot);
                 if (shared) {
                   const session = new VfsSession();
                   restoreVfsSessionFromSnapshot(session, snapshot);
@@ -659,10 +655,7 @@ export const useVfsPersistence = (
                 snapshot,
               );
               if (shared) {
-                applySharedMutableStateToSession(
-                  vfsSessionRef.current,
-                  shared,
-                );
+                applySharedMutableStateToSession(vfsSessionRef.current, shared);
               }
               const derived = deriveGameStateFromVfs(
                 vfsSessionRef.current.snapshot(),

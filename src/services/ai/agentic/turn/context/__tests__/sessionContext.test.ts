@@ -107,7 +107,7 @@ describe("sessionContext", () => {
     const contextMessages = [createTextMessage("system", "seed")];
     const recentHistory = [
       { role: "user", text: "look around" },
-      { role: "user", text: "[Player Rate] {\"vote\":\"up\"}" },
+      { role: "user", text: '[Player Rate] {"vote":"up"}' },
       { role: "command", text: "grant access" },
       { role: "model", text: "response" },
     ] as any[];
@@ -172,18 +172,10 @@ describe("sessionContext", () => {
     expect(coldStartText?.text).toContain(
       "current/skills/craft/writing/SKILL.md",
     );
-    expect(coldStartText?.text).toContain(
-      "[SECTION: RECOMMENDED_SKILL_READS]",
-    );
-    expect(coldStartText?.text).toContain(
-      "[SECTION: TARGETED_HISTORY_LOOKUP]",
-    );
-    expect(coldStartText?.text).toContain(
-      "Read 1-3 additional skill files",
-    );
-    expect(coldStartText?.text).toContain(
-      "prioritize those first",
-    );
+    expect(coldStartText?.text).toContain("[SECTION: RECOMMENDED_SKILL_READS]");
+    expect(coldStartText?.text).toContain("[SECTION: TARGETED_HISTORY_LOOKUP]");
+    expect(coldStartText?.text).toContain("Read 1-3 additional skill files");
+    expect(coldStartText?.text).toContain("prioritize those first");
     expect(coldStartText?.text).toContain(
       "Reuse those skill docs across turns",
     );
@@ -192,7 +184,7 @@ describe("sessionContext", () => {
     expect(initializedHistory).toEqual(
       expect.arrayContaining([
         createTextMessage("user", "[PLAYER_ACTION] look around"),
-        createTextMessage("user", "[Player Rate] {\"vote\":\"up\"}"),
+        createTextMessage("user", '[Player Rate] {"vote":"up"}'),
         createTextMessage("user", "[SUDO] grant access"),
         createTextMessage("assistant", "response"),
       ]),
@@ -392,16 +384,20 @@ describe("sessionContext", () => {
       {} as any,
     );
 
-    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(1);
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(
+      1,
+    );
 
     handleRetryDetection(
       "session-1",
-      [createTextMessage("user", "[Player Rate] {\"vote\":\"down\"}")],
-      "[Player Rate] {\"vote\":\"down\"}",
+      [createTextMessage("user", '[Player Rate] {"vote":"down"}')],
+      '[Player Rate] {"vote":"down"}',
       "openai",
       {} as any,
     );
-    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(2);
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(
+      2,
+    );
 
     const unmatchedHistory = [
       createTextMessage("user", "[PLAYER_ACTION] inspect"),
@@ -414,7 +410,9 @@ describe("sessionContext", () => {
       {} as any,
     );
 
-    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(2);
+    expect(sessionManagerMock.rollbackToLastCheckpoint).toHaveBeenCalledTimes(
+      2,
+    );
     expect(untouched).toBe(unmatchedHistory);
   });
 

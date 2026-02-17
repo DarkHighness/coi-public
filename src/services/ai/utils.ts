@@ -1260,7 +1260,10 @@ function resolveCulturePreferenceSkillRequirements(
   input: ResolveActivePresetSkillsInput,
 ): ActivePresetSkillRequirement[] {
   const fromCustomContext = sanitizeCulturePreference(
-    extractXmlTagValue(input.customContext, "culture_preference")?.toLowerCase(),
+    extractXmlTagValue(
+      input.customContext,
+      "culture_preference",
+    )?.toLowerCase(),
   );
   const resolved = resolveCulturePreferenceContext({
     preference:

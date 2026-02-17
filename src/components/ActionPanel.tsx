@@ -278,12 +278,12 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       const text =
         typeof choiceRecord.text === "string" ? choiceRecord.text : undefined;
       const label =
-        typeof choiceRecord.label === "string"
-          ? choiceRecord.label
-          : undefined;
+        typeof choiceRecord.label === "string" ? choiceRecord.label : undefined;
       // Handle cases where AI returns { choice: "...", effect: "..." }
       // Also handle new schema { description: "...", consequence: "..." }
-      return description || legacyChoice || text || label || JSON.stringify(choice);
+      return (
+        description || legacyChoice || text || label || JSON.stringify(choice)
+      );
     }
     return String(choice);
   };
@@ -931,9 +931,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 .join("\n")}
             >
               {/* Mobile: short + glanceable */}
-                <span className="sm:hidden">
-                  {t("contextUsage") || "Context"}:{" "}
-                  {usageRatio === null
+              <span className="sm:hidden">
+                {t("contextUsage") || "Context"}:{" "}
+                {usageRatio === null
                   ? `—/${formatTokens(displayContextWindowTokens, "compact")}`
                   : [
                       `${Math.round(usageRatio * 100)}%`,
@@ -1222,10 +1222,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                                 </span>
                               </div>
                               {consequence && gameState.unlockMode && (
-                                  <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
-                                    {consequence}
-                                  </div>
-                                )}
+                                <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
+                                  {consequence}
+                                </div>
+                              )}
                             </div>
                           </button>
 

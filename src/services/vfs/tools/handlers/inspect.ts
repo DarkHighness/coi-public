@@ -65,17 +65,20 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
     const readBudgetResolution = resolveVfsReadTokenBudget(ctx.settings);
     const readTokenBudget = readBudgetResolution.tokenBudget;
     const readCalibrationFactor = readBudgetResolution.calibrationFactor;
-    const lsHintThresholdTokens = Math.max(1, Math.floor(readTokenBudget * 0.9));
+    const lsHintThresholdTokens = Math.max(
+      1,
+      Math.floor(readTokenBudget * 0.9),
+    );
     const lsHintLimit = 8;
 
-    const recommendReadTool = (
-      contentType: string,
-      path: string,
-    ): string => {
+    const recommendReadTool = (contentType: string, path: string): string => {
       if (contentType === "application/json") {
         return "vfs_read_json with narrow pointers";
       }
-      if (contentType === "text/markdown" || path.toLowerCase().endsWith(".md")) {
+      if (
+        contentType === "text/markdown" ||
+        path.toLowerCase().endsWith(".md")
+      ) {
         return "vfs_read_markdown by headings/indices (or vfs_read_lines windows)";
       }
       if (contentType === "text/plain" || contentType === "application/jsonl") {
@@ -164,7 +167,8 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
         | "finish_guarded",
     ): string[] => {
       const triggers: string[] = [];
-      if (allowedWriteOps.includes("finish_commit")) triggers.push("turn_commit");
+      if (allowedWriteOps.includes("finish_commit"))
+        triggers.push("turn_commit");
       if (allowedWriteOps.includes("finish_summary"))
         triggers.push("summary_commit");
       if (allowedWriteOps.includes("history_rewrite"))
@@ -282,8 +286,12 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
         try {
           excludeRegexes.push(globToRegExp(resolvedPattern, { ignoreCase }));
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          return createError(`Invalid exclude glob: ${message}`, "INVALID_DATA");
+          const message =
+            error instanceof Error ? error.message : String(error);
+          return createError(
+            `Invalid exclude glob: ${message}`,
+            "INVALID_DATA",
+          );
         }
       }
     }
@@ -351,13 +359,16 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
     const runtime = args as JsonObject;
     const paths = asStringArray(runtime.paths) ?? [];
     if (paths.length === 0) {
-      return createError("vfs_schema: paths must include at least one path", "INVALID_DATA");
+      return createError(
+        "vfs_schema: paths must include at least one path",
+        "INVALID_DATA",
+      );
     }
     const isMarkdownContentType = (value: string | null | undefined): boolean =>
       value === "text/markdown";
-    const toMarkdownSections = (content: string | null): ReturnType<
-      typeof parseMarkdownSections
-    >["tree"] =>
+    const toMarkdownSections = (
+      content: string | null,
+    ): ReturnType<typeof parseMarkdownSections>["tree"] =>
       typeof content === "string" ? parseMarkdownSections(content).tree : [];
 
     const schemas: Array<{
@@ -457,7 +468,9 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
                 resolvedContentType: inferredContentType,
               }),
               classification: classificationPayload,
-              markdownSections: toMarkdownSections(existingFile?.content ?? null),
+              markdownSections: toMarkdownSections(
+                existingFile?.content ?? null,
+              ),
               markdownSectionsNote: existingFile
                 ? undefined
                 : "Markdown file not found. Section tree is empty until the file exists.",
@@ -495,7 +508,9 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
           classification: classificationPayload,
           ...(markdownPath
             ? {
-                markdownSections: toMarkdownSections(existingFile?.content ?? null),
+                markdownSections: toMarkdownSections(
+                  existingFile?.content ?? null,
+                ),
                 markdownSectionsNote: existingFile
                   ? undefined
                   : "Markdown file not found. Section tree is empty until the file exists.",
@@ -514,7 +529,10 @@ export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
     const runtime = args as JsonObject;
     const query = typeof runtime.query === "string" ? runtime.query : null;
     if (!query) {
-      return createError("vfs_search: query must be a non-empty string", "INVALID_DATA");
+      return createError(
+        "vfs_search: query must be a non-empty string",
+        "INVALID_DATA",
+      );
     }
     const limit = typeof runtime.limit === "number" ? runtime.limit : 20;
     if (limit <= 0) {
@@ -522,9 +540,7 @@ export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
     }
 
     const pathArg = typeof runtime.path === "string" ? runtime.path : undefined;
-    const resolvedPath = pathArg
-      ? resolveCurrentPath(ctx, pathArg)
-      : null;
+    const resolvedPath = pathArg ? resolveCurrentPath(ctx, pathArg) : null;
     if (resolvedPath && isPathResolveError(resolvedPath)) {
       return resolvedPath.error;
     }
@@ -607,12 +623,7 @@ export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
 
     const rawResults = fuzzy
       ? collectFuzzyMatches(files, rootPath, query, limit)
-      : collectMatches(
-          files,
-          rootPath,
-          (line) => line.includes(query),
-          limit,
-        );
+      : collectMatches(files, rootPath, (line) => line.includes(query), limit);
 
     const results = rawResults.map((match) => ({
       ...match,

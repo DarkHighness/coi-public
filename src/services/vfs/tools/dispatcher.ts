@@ -39,7 +39,10 @@ const handleVm = createVmHandler((name, args, context) =>
   vfsToolDispatcher.dispatchAsync(name, args, context),
 );
 
-const HANDLERS: Record<VfsToolHandlerKey, (args: JsonObject, ctx: ToolContext) => unknown | Promise<unknown>> = {
+const HANDLERS: Record<
+  VfsToolHandlerKey,
+  (args: JsonObject, ctx: ToolContext) => unknown | Promise<unknown>
+> = {
   inspect_ls: handleInspectLs,
   inspect_schema: handleInspectSchema,
   read_chars: handleReadChars,
@@ -76,13 +79,17 @@ const MAX_VALIDATION_ISSUES = 8;
 const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const formatValidationIssues = (issues: Array<{ path: Array<string | number>; message: string }>): string => {
+const formatValidationIssues = (
+  issues: Array<{ path: Array<string | number>; message: string }>,
+): string => {
   const lines = issues.slice(0, MAX_VALIDATION_ISSUES).map((issue) => {
     const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
     return `- ${path}: ${issue.message}`;
   });
   if (issues.length > MAX_VALIDATION_ISSUES) {
-    lines.push(`- ...and ${issues.length - MAX_VALIDATION_ISSUES} more issue(s)`);
+    lines.push(
+      `- ...and ${issues.length - MAX_VALIDATION_ISSUES} more issue(s)`,
+    );
   }
   return lines.join("\n");
 };
@@ -100,7 +107,7 @@ const extraValidation = (
       typeof globalSoul === "string" && globalSoul.trim().length > 0;
     if (!hasCurrent && !hasGlobal) {
       return createError(
-        '[VALIDATION_ERROR] vfs_finish_soul: at least one of currentSoul/globalSoul must be a non-empty string.',
+        "[VALIDATION_ERROR] vfs_finish_soul: at least one of currentSoul/globalSoul must be a non-empty string.",
         "INVALID_PARAMS",
       );
     }
@@ -109,9 +116,7 @@ const extraValidation = (
   return null;
 };
 
-const normalizeFinishTurnArgsForValidation = (
-  args: JsonObject,
-): JsonObject => {
+const normalizeFinishTurnArgsForValidation = (args: JsonObject): JsonObject => {
   const normalized: JsonObject = { ...args };
 
   if ("userAction" in normalized) {

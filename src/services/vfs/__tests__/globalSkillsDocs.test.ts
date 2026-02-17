@@ -17,7 +17,7 @@ describe("VFS global skills docs", () => {
       'vfs_read_markdown({ path: "current/skills/<domain>/<skill>/SKILL.md", headings: ["Quick Start"] })',
     );
     expect(readme).not.toContain('vfs_read_chars path="');
-    expect(readme).not.toContain('vfs_ls patterns=');
+    expect(readme).not.toContain("vfs_ls patterns=");
 
     expect(style).toContain("current/skills/<domain>/<skill>/SKILL.md");
     expect(style).toContain("current/skills/**");
@@ -95,7 +95,9 @@ describe("VFS global skills docs", () => {
     );
     expect(cultureSinosphere).toContain("# Preset Culture - Sinosphere");
     expect(cultureSinosphere).toContain("人名必须自然");
-    expect(cultureSinosphere).toContain("## Anti-AI Name Checklist (Hard Gate)");
+    expect(cultureSinosphere).toContain(
+      "## Anti-AI Name Checklist (Hard Gate)",
+    );
     expect(cultureJapanese).toContain("# Preset Culture - Japanese");
     expect(cultureJapanese).toContain(
       "single-script output (no dual-script pairing)",

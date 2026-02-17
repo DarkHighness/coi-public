@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  consequences,
-  narrativePolicy,
-  outputFormat,
-} from "../index";
+import { consequences, narrativePolicy, outputFormat } from "../index";
 import { getOutlinePhase9Prompt } from "../../../storyOutline";
 
 describe("choice tradeoff policy", () => {

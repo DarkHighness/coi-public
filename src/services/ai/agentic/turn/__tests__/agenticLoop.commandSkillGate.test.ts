@@ -54,10 +54,7 @@ interface MockVfsSnapshotFile {
 
 type MockVfsSnapshot = Record<string, MockVfsSnapshotFile>;
 
-const createVfsSession = (
-  hasSeenSkill: boolean,
-  seenSkillPaths?: string[],
-) => {
+const createVfsSession = (hasSeenSkill: boolean, seenSkillPaths?: string[]) => {
   const snapshots: MockVfsSnapshot[] = [
     {
       "conversation/index.json": {
@@ -633,7 +630,11 @@ describe("agenticLoop command skill gate", () => {
           {
             id: "call-read-soul",
             name: "vfs_read_lines",
-            args: { path: "current/world/soul.md", startLine: 1, lineCount: 20 },
+            args: {
+              path: "current/world/soul.md",
+              startLine: 1,
+              lineCount: 20,
+            },
           },
           {
             id: "call-read-global-soul",

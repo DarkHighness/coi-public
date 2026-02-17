@@ -103,7 +103,9 @@ const mergeNodes = (
   return merged;
 };
 
-const getValidatedUiState = (uiState: GameState["uiState"]): GameState["uiState"] => {
+const getValidatedUiState = (
+  uiState: GameState["uiState"],
+): GameState["uiState"] => {
   if (!uiState || typeof uiState !== "object") {
     throw new Error("mergeDerivedViewState requires a valid uiState");
   }

@@ -11,9 +11,7 @@ const normalizeBoolean = (value: unknown): boolean => value === true;
 
 export const normalizeTokenUsage = (value: unknown): TokenUsage => {
   const source =
-    value && typeof value === "object"
-      ? (value as JsonObject)
-      : {};
+    value && typeof value === "object" ? (value as JsonObject) : {};
 
   const read = (key: keyof TokenUsage): number => {
     const next = source[key];
@@ -46,9 +44,7 @@ export const normalizeLogs = (value: unknown): LogEntry[] => {
 
 export const parseRuntimeStats = (value: unknown): RuntimeStatsSnapshot => {
   const source =
-    value && typeof value === "object"
-      ? (value as JsonObject)
-      : {};
+    value && typeof value === "object" ? (value as JsonObject) : {};
 
   return {
     tokenUsage: normalizeTokenUsage(source.tokenUsage),

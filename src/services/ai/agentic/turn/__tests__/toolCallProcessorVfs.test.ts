@@ -24,10 +24,7 @@ const createValidGlobal = () => ({
 
 const createAssistantPayload = (narrative: string) => ({
   narrative,
-  choices: [
-    { text: "Continue" },
-    { text: "Wait" },
-  ],
+  choices: [{ text: "Continue" }, { text: "Wait" }],
 });
 
 describe("toolCallProcessor VFS integration", () => {

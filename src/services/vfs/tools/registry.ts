@@ -17,7 +17,11 @@ const NON_OUTLINE_TOOLSETS: Exclude<VfsToolsetId, "outline">[] = [
   "summary",
 ];
 
-const byOrder = (a: AnyVfsCatalogEntry, b: AnyVfsCatalogEntry, toolset: VfsToolsetId): number => {
+const byOrder = (
+  a: AnyVfsCatalogEntry,
+  b: AnyVfsCatalogEntry,
+  toolset: VfsToolsetId,
+): number => {
   const aOrder = a.toolsetOrder[toolset] ?? Number.POSITIVE_INFINITY;
   const bOrder = b.toolsetOrder[toolset] ?? Number.POSITIVE_INFINITY;
   return aOrder - bOrder;
@@ -95,7 +99,9 @@ export class VfsToolRegistry {
     return toDefinition(this.getCatalogEntry(name));
   }
 
-  public getDefinitions(options?: { ragEnabled?: boolean }): ZodToolDefinition[] {
+  public getDefinitions(options?: {
+    ragEnabled?: boolean;
+  }): ZodToolDefinition[] {
     return this.catalog.map((entry) => this.getDefinition(entry.name, options));
   }
 
@@ -178,7 +184,9 @@ export class VfsToolRegistry {
   }
 
   public formatToolsForPrompt(toolset: VfsToolsetId): string {
-    return this.getToolset(toolset).tools.map((name) => `- \`${name}\``).join("\n");
+    return this.getToolset(toolset)
+      .tools.map((name) => `- \`${name}\``)
+      .join("\n");
   }
 
   public describeForPrompt(name: VfsToolName): string {
@@ -212,7 +220,9 @@ export class VfsToolRegistry {
   }
 
   public formatCapabilitiesForPrompt(toolset: VfsToolsetId): string {
-    return this.getToolset(toolset).tools.map((name) => this.describeForPrompt(name)).join("\n");
+    return this.getToolset(toolset)
+      .tools.map((name) => this.describeForPrompt(name))
+      .join("\n");
   }
 }
 

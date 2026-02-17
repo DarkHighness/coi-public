@@ -224,8 +224,7 @@ export function createInitialTools(options: {
   isCleanupMode: boolean;
   isPlayerRateMode?: boolean;
 }): ZodToolDefinition[] {
-  const { isSudoMode, isRAGEnabled, isCleanupMode, isPlayerRateMode } =
-    options;
+  const { isSudoMode, isRAGEnabled, isCleanupMode, isPlayerRateMode } = options;
   void isSudoMode;
 
   const toolsetId = isCleanupMode

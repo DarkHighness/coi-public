@@ -191,7 +191,9 @@ describe("SettingsExtra", () => {
           element instanceof HTMLTextAreaElement,
       );
     expect(
-      textareas.some((textarea) => textarea.value.includes("Mirror Global Soul")),
+      textareas.some((textarea) =>
+        textarea.value.includes("Mirror Global Soul"),
+      ),
     ).toBe(true);
     expect(
       textareas.some((textarea) =>

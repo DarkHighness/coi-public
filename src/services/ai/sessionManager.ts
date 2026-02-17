@@ -88,9 +88,7 @@ type NativeHistoryMessage = {
   tool_calls?: unknown;
 };
 
-const toNativeHistoryMessage = (
-  value: unknown,
-): NativeHistoryMessage | null =>
+const toNativeHistoryMessage = (value: unknown): NativeHistoryMessage | null =>
   value && typeof value === "object" ? (value as NativeHistoryMessage) : null;
 
 // =============================================================================
@@ -199,10 +197,7 @@ class HistorySessionManager {
         // 2. Remove empty/invalid model messages (API error or empty partial)
         if (last?.role === "model" || last?.role === "assistant") {
           // Gemini: Check for empty parts
-          if (
-            Array.isArray(last.parts) &&
-            last.parts.length === 0
-          ) {
+          if (Array.isArray(last.parts) && last.parts.length === 0) {
             console.warn(
               `[SessionManager] Found empty model message in loaded session ${newSessionId}, removing.`,
             );

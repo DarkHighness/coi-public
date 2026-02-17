@@ -68,10 +68,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
   const ragStatus = runtimeContext?.state.rag.status ?? null;
   const localRuntimeEngine =
     ragStatus?.localRuntime?.engine ||
-    (t("embedding.runtimeUnknown") || "Unknown");
+    t("embedding.runtimeUnknown") ||
+    "Unknown";
   const localRuntimeBackend =
     ragStatus?.localRuntime?.backend ||
-    (t("embedding.runtimeUnknown") || "Unknown");
+    t("embedding.runtimeUnknown") ||
+    "Unknown";
 
   // Track previous model ID for model change detection
   const previousModelIdRef = useRef<string | null>(config?.modelId || null);

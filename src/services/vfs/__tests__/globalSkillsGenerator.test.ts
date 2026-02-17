@@ -156,7 +156,9 @@ describe("VFS global skills generator", () => {
     expect(commandTurn).toContain("globalThis");
     expect(commandTurn).toContain("current/outline/story_outline/plan.md");
     expect(commandTurn).toContain("full `plan.md` rewrite is allowed");
-    expect(commandTurn).toContain("Major branch fracture (new dominant trajectory)");
+    expect(commandTurn).toContain(
+      "Major branch fracture (new dominant trajectory)",
+    );
     expect(commandPlayerRate).toContain("name: commands-player-rate");
     expect(commandPlayerRate).toContain("[Player Rate]");
     expect(commandPlayerRate).toContain("current/world/soul.md");
@@ -218,7 +220,9 @@ describe("VFS global skills generator", () => {
 
   it("expands all examples files with per-scenario context details", () => {
     const seeds = generateVfsSkillSeeds();
-    const exampleSeeds = seeds.filter((seed) => seed.path.endsWith("/EXAMPLES.md"));
+    const exampleSeeds = seeds.filter((seed) =>
+      seed.path.endsWith("/EXAMPLES.md"),
+    );
 
     expect(exampleSeeds.length).toBeGreaterThan(0);
 
@@ -337,7 +341,9 @@ describe("VFS global skills generator", () => {
       ),
     ).toBe(true);
     expect(
-      seeds.some((seed) => seed.path === "skills/presets/runtime/culture/SKILL.md"),
+      seeds.some(
+        (seed) => seed.path === "skills/presets/runtime/culture/SKILL.md",
+      ),
     ).toBe(true);
     expect(
       seeds.some(
@@ -353,7 +359,8 @@ describe("VFS global skills generator", () => {
     ).toBe(true);
     expect(
       seeds.some(
-        (seed) => seed.path === "skills/presets/runtime/culture-korean/SKILL.md",
+        (seed) =>
+          seed.path === "skills/presets/runtime/culture-korean/SKILL.md",
       ),
     ).toBe(true);
     expect(
@@ -366,8 +373,7 @@ describe("VFS global skills generator", () => {
     expect(
       seeds.some(
         (seed) =>
-          seed.path ===
-          "skills/presets/runtime/culture-arab-islamic/SKILL.md",
+          seed.path === "skills/presets/runtime/culture-arab-islamic/SKILL.md",
       ),
     ).toBe(true);
     expect(

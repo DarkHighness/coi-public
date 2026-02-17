@@ -36,7 +36,9 @@ const toTurnAssistant = (value: unknown): TurnFile["assistant"] | null => {
     ...(typeof record.narrativeTone === "string"
       ? { narrativeTone: record.narrativeTone }
       : {}),
-    ...(record.atmosphere !== undefined ? { atmosphere: record.atmosphere } : {}),
+    ...(record.atmosphere !== undefined
+      ? { atmosphere: record.atmosphere }
+      : {}),
     ...(typeof record.ending === "string" ? { ending: record.ending } : {}),
     ...(typeof record.forceEnd === "boolean"
       ? { forceEnd: record.forceEnd }
@@ -97,7 +99,9 @@ export const handleFinishTurn: VfsToolHandler = (args, ctx) =>
           return Number.isFinite(turn) ? Math.max(max, turn) : max;
         }, -1);
         const latest =
-          typeof latestFromIndex === "number" ? latestFromIndex : latestFromOrder;
+          typeof latestFromIndex === "number"
+            ? latestFromIndex
+            : latestFromOrder;
 
         const turnNumber = latest + 1;
         const turnId = buildTurnId(forkId, turnNumber);

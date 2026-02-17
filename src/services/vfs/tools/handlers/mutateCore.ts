@@ -221,7 +221,11 @@ export const executeMutateOps = (
               return withBatchError(seenError, opIndex, op.op, op.path);
             }
 
-            const hashError = validateExpectedHash(existing, op.expectedHash, op.path);
+            const hashError = validateExpectedHash(
+              existing,
+              op.expectedHash,
+              op.path,
+            );
             if (hashError) {
               return withBatchError(hashError, opIndex, op.op, op.path);
             }
@@ -623,12 +627,7 @@ export const executeMutateOps = (
               `${toolName}(move)`,
             );
             if (finishGuardTo) {
-              return withBatchError(
-                finishGuardTo,
-                opIndex,
-                op.op,
-                movePair.to,
-              );
+              return withBatchError(finishGuardTo, opIndex, op.op, movePair.to);
             }
 
             const from = normalizeVfsPath(resolvedFrom.path);
@@ -653,7 +652,8 @@ export const executeMutateOps = (
                   `${movePair.from} -> ${movePair.to}`,
                 );
               }
-              const message = error instanceof Error ? error.message : String(error);
+              const message =
+                error instanceof Error ? error.message : String(error);
               return withBatchError(
                 createError(message, "NOT_FOUND", {
                   recovery: buildNotFoundRecovery(movePair.from),
@@ -707,7 +707,8 @@ export const executeMutateOps = (
                   targetPath,
                 );
               }
-              const message = error instanceof Error ? error.message : String(error);
+              const message =
+                error instanceof Error ? error.message : String(error);
               return withBatchError(
                 createError(message, "NOT_FOUND", {
                   recovery: buildNotFoundRecovery(targetPath),
@@ -752,7 +753,6 @@ export const executeMutateOps = (
       });
     },
     {
-      batchFromArgs: () =>
-        ops.length > 0 ? { total: ops.length } : undefined,
+      batchFromArgs: () => (ops.length > 0 ? { total: ops.length } : undefined),
     },
   );

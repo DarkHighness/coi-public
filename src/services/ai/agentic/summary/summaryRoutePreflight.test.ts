@@ -27,7 +27,8 @@ vi.mock("../../../vfs/conversation", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    readConversationIndex: (...args: any[]) => readConversationIndexMock(...args),
+    readConversationIndex: (...args: any[]) =>
+      readConversationIndexMock(...args),
   };
 });
 
@@ -163,7 +164,9 @@ describe("preflightSummaryRoute", () => {
       },
       modelId: "m1",
     });
-    getHistoryMock.mockReturnValue([{ role: "model", parts: [{ text: "raw" }] }]);
+    getHistoryMock.mockReturnValue([
+      { role: "model", parts: [{ text: "raw" }] },
+    ]);
     fromGeminiFormatMock.mockReturnValue([
       {
         role: "assistant",

@@ -87,11 +87,7 @@ describe("VFS handlers vm", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
-      allowedToolNames: [
-        "vfs_vm",
-        "vfs_finish_turn",
-        "vfs_read_chars",
-      ],
+      allowedToolNames: ["vfs_vm", "vfs_finish_turn", "vfs_read_chars"],
       vfsTurnUserAction: "Check the checkpoint",
     };
 
@@ -148,11 +144,7 @@ describe("VFS handlers vm", () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
-      allowedToolNames: [
-        "vfs_vm",
-        "vfs_write_file",
-        "vfs_read_json",
-      ],
+      allowedToolNames: ["vfs_vm", "vfs_write_file", "vfs_read_json"],
     };
 
     const result = (await dispatchToolCallAsync(

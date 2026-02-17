@@ -47,9 +47,9 @@ import {
 } from "./types";
 
 interface SharedWorkerGlobalScope {
-  onconnect: (
-    (this: SharedWorkerGlobalScope, ev: MessageEvent) => unknown
-  ) | null;
+  onconnect:
+    | ((this: SharedWorkerGlobalScope, ev: MessageEvent) => unknown)
+    | null;
 }
 
 declare const self: SharedWorkerGlobalScope & typeof globalThis;
@@ -197,7 +197,9 @@ async function handleRequest(request: RAGWorkerRequest): Promise<unknown> {
       return handleClearSave(readStringField(request.payload, "saveId"));
 
     case "checkModelMismatch":
-      return handleCheckModelMismatch(readStringField(request.payload, "saveId"));
+      return handleCheckModelMismatch(
+        readStringField(request.payload, "saveId"),
+      );
 
     case "rebuildForModel":
       return handleRebuildForModel(readStringField(request.payload, "saveId"));
@@ -268,11 +270,17 @@ const hasLocalRuntimeConfigChanged = (
     return true;
   }
 
-  if (!isLocalRuntimeProvider(previous.provider) && !isLocalRuntimeProvider(next.provider)) {
+  if (
+    !isLocalRuntimeProvider(previous.provider) &&
+    !isLocalRuntimeProvider(next.provider)
+  ) {
     return false;
   }
 
-  return JSON.stringify(previous.local || null) !== JSON.stringify(next.local || null);
+  return (
+    JSON.stringify(previous.local || null) !==
+    JSON.stringify(next.local || null)
+  );
 };
 
 const resetLocalRuntimeState = async (): Promise<void> => {
@@ -544,12 +552,18 @@ async function handleUpsertFileChunks(
   const total = inputDocuments.length;
 
   try {
-    const embeddings = await resolveDocumentEmbeddings(inputDocuments, onProgress);
+    const embeddings = await resolveDocumentEmbeddings(
+      inputDocuments,
+      onProgress,
+    );
     const ragDocuments: RAGDocument[] = [];
     const shouldEmitIndexingProgress = createProgressThrottler(total);
 
     for (let index = 0; index < inputDocuments.length; index += 1) {
-      const normalized = normalizeFileChunk(inputDocuments[index], embeddings[index]);
+      const normalized = normalizeFileChunk(
+        inputDocuments[index],
+        embeddings[index],
+      );
       ragDocuments.push(normalized);
 
       const current = index + 1;
@@ -593,10 +607,7 @@ async function handleUpsertFileChunks(
 
     return { count: ragDocuments.length };
   } finally {
-    pendingDocuments = Math.max(
-      0,
-      pendingDocuments - inputDocuments.length,
-    );
+    pendingDocuments = Math.max(0, pendingDocuments - inputDocuments.length);
   }
 }
 
@@ -742,7 +753,8 @@ async function handleReindexAll(
     });
 
     const upserted = await handleUpsertFileChunks({ documents }, (progress) => {
-      const base = progress.phase === "embedding" ? embeddingBase : indexingBase;
+      const base =
+        progress.phase === "embedding" ? embeddingBase : indexingBase;
       broadcastEvent({
         type: "progress",
         data: {

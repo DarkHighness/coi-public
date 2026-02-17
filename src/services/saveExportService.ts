@@ -151,7 +151,8 @@ const isVfsFileLike = (value: unknown): value is VfsFileMap[string] => {
 };
 
 const isVfsFileMap = (value: unknown): value is VfsFileMap =>
-  isRecord(value) && Object.values(value).every((entry) => isVfsFileLike(entry));
+  isRecord(value) &&
+  Object.values(value).every((entry) => isVfsFileLike(entry));
 
 type SnapshotIndexRow = {
   saveId: string;
@@ -197,10 +198,13 @@ const parseImportedImageMetadata = (value: unknown): ImportedImageMetadata => {
   return {
     forkId,
     turnIdx,
-    imagePrompt: typeof value.imagePrompt === "string" ? value.imagePrompt : undefined,
-    storyTitle: typeof value.storyTitle === "string" ? value.storyTitle : undefined,
+    imagePrompt:
+      typeof value.imagePrompt === "string" ? value.imagePrompt : undefined,
+    storyTitle:
+      typeof value.storyTitle === "string" ? value.storyTitle : undefined,
     location: typeof value.location === "string" ? value.location : undefined,
-    storyTime: typeof value.storyTime === "string" ? value.storyTime : undefined,
+    storyTime:
+      typeof value.storyTime === "string" ? value.storyTime : undefined,
   };
 };
 
@@ -224,9 +228,7 @@ const transformJsonValueForImageReferences = (
   }
 
   const nextObject: JsonObject = {};
-  for (const [key, rawChild] of Object.entries(
-    value as JsonObject,
-  )) {
+  for (const [key, rawChild] of Object.entries(value as JsonObject)) {
     if (options.stripImageReferences && IMAGE_REFERENCE_KEYS.has(key)) {
       continue;
     }
@@ -627,7 +629,7 @@ const buildConversationIndexFromSnapshot = (
       : null;
   const activeForkId =
     hintedForkId ??
-    (turnsByFork.has(snapshot.forkId) ? snapshot.forkId : forkIds[0] ?? 0);
+    (turnsByFork.has(snapshot.forkId) ? snapshot.forkId : (forkIds[0] ?? 0));
 
   const rootTurnIdByFork: Record<string, string> = {};
   const latestTurnNumberByFork: Record<string, number> = {};
@@ -748,7 +750,10 @@ const repairSharedConversationIndex = (
     return sharedFiles;
   }
 
-  const rebuilt = buildConversationIndexFromSnapshot(latestSnapshot, activeForkHint);
+  const rebuilt = buildConversationIndexFromSnapshot(
+    latestSnapshot,
+    activeForkHint,
+  );
   if (!rebuilt) {
     return sharedFiles;
   }
@@ -798,7 +803,10 @@ const loadSharedMutableStateForSave = async (
     }
   }
 
-  const repaired = repairSharedConversationIndex(shared, latestSnapshot ?? null);
+  const repaired = repairSharedConversationIndex(
+    shared,
+    latestSnapshot ?? null,
+  );
   if (repaired && Object.keys(repaired).length > 0) {
     return repaired;
   }
@@ -931,7 +939,9 @@ const writeStructuredVfsLayoutToZip = (
   }
 
   const sharedStateEditorFiles = collectStateEditorSharedFiles(sharedFiles);
-  for (const [relativePath, content] of Object.entries(sharedStateEditorFiles)) {
+  for (const [relativePath, content] of Object.entries(
+    sharedStateEditorFiles,
+  )) {
     zip.file(`vfs/shared/${relativePath}`, content);
   }
 
@@ -997,7 +1007,10 @@ const writeVfsSnapshotsToZip = async (
       const snapshotV3 = await toExportSnapshotV3(snapshotForExport, blobPool);
 
       const forkFolder = snapshotsRoot.folder(`fork-${entry.forkId}`);
-      forkFolder?.file(`turn-${entry.turn}.json`, JSON.stringify(snapshotV3, null, 2));
+      forkFolder?.file(
+        `turn-${entry.turn}.json`,
+        JSON.stringify(snapshotV3, null, 2),
+      );
       written += 1;
     } catch (error) {
       console.warn(
@@ -1030,7 +1043,9 @@ const writeVfsSnapshotsToZip = async (
     ),
   );
 
-  const blobPoolEntries: VfsExportBlobPoolEntry[] = Array.from(blobPool.entries())
+  const blobPoolEntries: VfsExportBlobPoolEntry[] = Array.from(
+    blobPool.entries(),
+  )
     .map(([blobId, blob]) => ({
       blobId,
       contentType: blob.contentType,
@@ -1256,10 +1271,7 @@ const createVfsSnapshotsFromLegacyState = async (
         writeOutlineFile(session, state.outline);
       }
       if (state.outlineConversation) {
-        writeOutlineProgress(
-          session,
-          state.outlineConversation ?? null,
-        );
+        writeOutlineProgress(session, state.outlineConversation ?? null);
       }
 
       writeForkTree(session, state.forkTree);
@@ -1380,7 +1392,10 @@ export async function getExportStats(
       );
       estimatedSize = estimateBlob?.size;
     } catch (error) {
-      console.warn("[SaveExport] Failed to generate accurate size estimate:", error);
+      console.warn(
+        "[SaveExport] Failed to generate accurate size estimate:",
+        error,
+      );
     }
 
     if (typeof estimatedSize !== "number") {
@@ -1395,7 +1410,7 @@ export async function getExportStats(
         estimatedSize += embeddingCount * 1024;
       }
       if (!effectiveOptions.includeLogs) {
-        estimatedSize = Math.max(estimatedSize - (logCount * 5 * 1024), 0);
+        estimatedSize = Math.max(estimatedSize - logCount * 5 * 1024, 0);
       }
     }
 
@@ -1785,7 +1800,7 @@ export async function validateImport(file: File): Promise<ImportValidation> {
         pushError(
           "import.errors.emptyVfsIndex",
           undefined,
-        "VFS snapshot index is empty (vfs/index.json).",
+          "VFS snapshot index is empty (vfs/index.json).",
         );
         return { valid: false, errors, warnings, errorsI18n, warningsI18n };
       }
@@ -1806,7 +1821,10 @@ export async function validateImport(file: File): Promise<ImportValidation> {
           await blobIndexFile.async("text"),
         ) as VfsExportBlobPoolIndex;
       } catch (error) {
-        console.warn("[SaveImport] Failed to parse VFS blob pool index:", error);
+        console.warn(
+          "[SaveImport] Failed to parse VFS blob pool index:",
+          error,
+        );
       }
       if (
         !blobIndex ||
@@ -2118,7 +2136,8 @@ export async function importSave(
       ) {
         return {
           success: false,
-          error: "Unsupported VFS index encoding. This build only supports blob_ref_v1.",
+          error:
+            "Unsupported VFS index encoding. This build only supports blob_ref_v1.",
           errorI18n: { key: "import.errors.unreadableVfsIndex" },
           warnings,
           warningsI18n,
@@ -2262,7 +2281,9 @@ export async function importSave(
             forkId: entry.forkId,
             turn: entry.turn,
             createdAt:
-              typeof entry.createdAt === "number" ? entry.createdAt : Date.now(),
+              typeof entry.createdAt === "number"
+                ? entry.createdAt
+                : Date.now(),
           };
         } else if (!declaredLatest) {
           const candidateCreatedAt =
@@ -2344,13 +2365,10 @@ export async function importSave(
             );
 
             if (!sharedForSave) {
-              const inferred = extractSharedMutableStateFromSnapshot(
-                latestSnapshot,
-              );
+              const inferred =
+                extractSharedMutableStateFromSnapshot(latestSnapshot);
               sharedForSave =
-                Object.keys(inferred).length > 0
-                  ? inferred
-                  : null;
+                Object.keys(inferred).length > 0 ? inferred : null;
               sharedForSave = repairSharedConversationIndex(
                 sharedForSave,
                 latestSnapshot,

@@ -120,8 +120,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                 gameState.unlockMode || attitude?.unlocked === true,
               );
               const affinity =
-                showTrueAttitude &&
-                typeof attitudeHidden?.affinity === "number"
+                showTrueAttitude && typeof attitudeHidden?.affinity === "number"
                   ? attitudeHidden.affinity
                   : null;
 
@@ -230,22 +229,26 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 :
                               </span>{" "}
                               <MarkdownText
-                                content={readString(attitudeVisible?.claimedIntent) || ""}
+                                content={
+                                  readString(attitudeVisible?.claimedIntent) ||
+                                  ""
+                                }
                                 inline
                               />
                             </div>
                           )}
-                          {readStringArray(attitudeVisible?.signals).length > 0 && (
-                              <ul className="list-disc list-inside">
-                                {readStringArray(attitudeVisible?.signals).map(
-                                  (s: string, i: number) => (
-                                    <li key={i}>
-                                      <MarkdownText content={s} inline />
-                                    </li>
-                                  ),
-                                )}
-                              </ul>
-                            )}
+                          {readStringArray(attitudeVisible?.signals).length >
+                            0 && (
+                            <ul className="list-disc list-inside">
+                              {readStringArray(attitudeVisible?.signals).map(
+                                (s: string, i: number) => (
+                                  <li key={i}>
+                                    <MarkdownText content={s} inline />
+                                  </li>
+                                ),
+                              )}
+                            </ul>
+                          )}
                         </div>
                       </div>
                     )}
@@ -260,7 +263,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                         </span>
                         <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
                           <MarkdownText
-                            content={readString(perceptionVisible?.description) || ""}
+                            content={
+                              readString(perceptionVisible?.description) || ""
+                            }
                           />
                         </div>
                       </div>

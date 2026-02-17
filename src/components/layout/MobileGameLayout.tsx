@@ -1,5 +1,10 @@
 import React, { useRef } from "react";
-import { FeedLayout, UIState, StorySegment, PlayerRateInput } from "../../types";
+import {
+  FeedLayout,
+  UIState,
+  StorySegment,
+  PlayerRateInput,
+} from "../../types";
 import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { StoryTimeline } from "../StoryTimeline";
 import { ActionPanel } from "../ActionPanel";

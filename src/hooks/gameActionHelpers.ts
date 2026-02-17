@@ -483,7 +483,9 @@ export const createModelNode = (
   }
 
   // Sanitize choices to ensure valid structure
-  const normalizedChoices = Array.isArray(response.choices) ? response.choices : [];
+  const normalizedChoices = Array.isArray(response.choices)
+    ? response.choices
+    : [];
   const sanitizedChoices: StorySegment["choices"] = normalizedChoices.map(
     (choice) => {
       if (typeof choice === "string") {

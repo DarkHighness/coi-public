@@ -55,7 +55,8 @@ const parseVmArgs = (args: JsonObject): VmArgs => {
       ? args.maxToolCalls
       : undefined;
   const maxScriptChars =
-    typeof args.maxScriptChars === "number" && Number.isFinite(args.maxScriptChars)
+    typeof args.maxScriptChars === "number" &&
+    Number.isFinite(args.maxScriptChars)
       ? args.maxScriptChars
       : undefined;
   return {
@@ -150,10 +151,7 @@ const normalizeWriteTargetPath = (rawPath: string): string | null => {
   return `current/${normalized}`;
 };
 
-const collectWriteTargets = (
-  toolName: string,
-  args: JsonObject,
-): string[] => {
+const collectWriteTargets = (toolName: string, args: JsonObject): string[] => {
   const targets = new Set<string>();
   const pushTarget = (candidate: unknown): void => {
     if (typeof candidate !== "string") return;
@@ -219,10 +217,11 @@ const wrapInnerToolError = (params: {
 const attachVmMeta = <T extends object>(
   result: T,
   vmMeta: VmExecutionMeta,
-): T & { vmMeta: VmExecutionMeta } => ({
-  ...(result as object),
-  vmMeta,
-}) as T & { vmMeta: VmExecutionMeta };
+): T & { vmMeta: VmExecutionMeta } =>
+  ({
+    ...(result as object),
+    vmMeta,
+  }) as T & { vmMeta: VmExecutionMeta };
 
 export const createVmHandler = (
   dispatchInner: VmInnerDispatcher,
@@ -273,8 +272,8 @@ export const createVmHandler = (
       state: { ...state },
       callTrace: [...callTrace],
       writes: {
-        successfulTargets: Array.from(successfulWriteTargets.values()).sort((a, b) =>
-          a.localeCompare(b),
+        successfulTargets: Array.from(successfulWriteTargets.values()).sort(
+          (a, b) => a.localeCompare(b),
         ),
         failedTargets: Array.from(failedWriteTargets.values()).sort((a, b) =>
           a.localeCompare(b),
@@ -297,7 +296,10 @@ export const createVmHandler = (
       return new VmAbortError(error);
     };
 
-    const call = async (toolName: string, rawArgs?: unknown): Promise<unknown> => {
+    const call = async (
+      toolName: string,
+      rawArgs?: unknown,
+    ): Promise<unknown> => {
       if (firstFailure) {
         throw fail(
           createError(
@@ -373,7 +375,11 @@ export const createVmHandler = (
 
       let output: unknown;
       try {
-        output = await dispatchInner(normalizedToolName, normalizedArgs.args, ctx);
+        output = await dispatchInner(
+          normalizedToolName,
+          normalizedArgs.args,
+          ctx,
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         output = createError(
@@ -382,7 +388,10 @@ export const createVmHandler = (
         );
       }
 
-      const writeTargets = collectWriteTargets(normalizedToolName, normalizedArgs.args);
+      const writeTargets = collectWriteTargets(
+        normalizedToolName,
+        normalizedArgs.args,
+      );
       const outputError = isToolError(output) ? output : null;
       const outputIsError = outputError !== null;
 
@@ -438,7 +447,10 @@ export const createVmHandler = (
       return output;
     };
 
-    const totalScriptChars = scripts.reduce((sum, script) => sum + script.length, 0);
+    const totalScriptChars = scripts.reduce(
+      (sum, script) => sum + script.length,
+      0,
+    );
     if (totalScriptChars > TOTAL_SCRIPT_CHARS_CAP) {
       const error = createError(
         `[VFS_VM_TOTAL_SCRIPT_CHARS_EXCEEDED] Total scripts length (${totalScriptChars}) exceeds ${TOTAL_SCRIPT_CHARS_CAP}.`,
@@ -481,7 +493,7 @@ export const createVmHandler = (
       if (dangerousToken) {
         firstFailure = createError(
           `[VFS_VM_SCRIPT_FORBIDDEN_TOKEN] scripts[${scriptIndex}] contains forbidden token "${dangerousToken}". ` +
-            'Allowed language is JavaScript only. Forbidden tokens include: import, eval, Function, globalThis, window.',
+            "Allowed language is JavaScript only. Forbidden tokens include: import, eval, Function, globalThis, window.",
           "INVALID_ACTION",
         );
         break;
@@ -518,7 +530,8 @@ export const createVmHandler = (
         if (error instanceof VmAbortError) {
           firstFailure = firstFailure ?? error.toolError;
         } else {
-          const message = error instanceof Error ? error.message : String(error);
+          const message =
+            error instanceof Error ? error.message : String(error);
           firstFailure = createError(
             `[VFS_VM_SCRIPT_RUNTIME_ERROR] scripts[${scriptIndex}] failed: ${message}`,
             "UNKNOWN",

@@ -147,7 +147,8 @@ export type KnowledgeEntryViewModel = WithRequiredId<
   WithVersionedTimestamps<ZodKnowledgeEntryViewModel>
 >;
 export type KnowledgeEntry = KnowledgeEntryViewModel;
-export type TimelineEventDefinition = WithRequiredId<ZodTimelineEventDefinition>;
+export type TimelineEventDefinition =
+  WithRequiredId<ZodTimelineEventDefinition>;
 export type TimelineEventViewModel = WithRequiredId<ZodTimelineEventViewModel>;
 export type TimelineEvent = TimelineEventViewModel;
 export type CausalChain = ZodCausalChain; // chainId 是必需的，已在 schema 中定义
@@ -156,7 +157,8 @@ export type FactionViewModel = WithRequiredId<ZodFactionViewModel>;
 export type Faction = FactionViewModel;
 export type WorldInfoDefinition = ZodWorldInfoDefinition;
 type WorldInfoViewUnlock = Omit<ZodWorldInfoView, "highlight" | "lastAccess">;
-export type WorldInfoViewModel = WorldInfoDefinition & Partial<WorldInfoViewUnlock>;
+export type WorldInfoViewModel = WorldInfoDefinition &
+  Partial<WorldInfoViewUnlock>;
 export type WorldInfo = WorldInfoViewModel & {
   // Derived per-actor unlock fields merged in derivation for UI convenience.
   worldSettingUnlocked?: boolean;

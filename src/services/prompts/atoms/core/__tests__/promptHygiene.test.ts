@@ -114,7 +114,9 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("current/world/placeholders/**/*.md");
     expect(content).not.toContain("current/world/placeholder/");
     expect(content).not.toContain("world/placeholder/");
-    expect(content).toContain("delete draft only after canonical write succeeds");
+    expect(content).toContain(
+      "delete draft only after canonical write succeeds",
+    );
     expect(content).toContain("If canonical write fails, keep draft");
 
     // SUDO semantics must remain controlled (not hard bypass)

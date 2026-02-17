@@ -278,7 +278,9 @@ describe("mergeDerivedViewState", () => {
     const merged = mergeDerivedViewState(base, derived, { resetRuntime: true });
 
     expect((merged.inventory[1] as any).highlight).toBeUndefined();
-    expect(merged.uiState.entityPresentation?.["inventory:item:2"]).toBeUndefined();
+    expect(
+      merged.uiState.entityPresentation?.["inventory:item:2"],
+    ).toBeUndefined();
   });
 
   it("throws when base state uiState is missing", () => {

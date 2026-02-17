@@ -91,11 +91,7 @@ export function buildWorldFoundation(vfsSession: VfsSession): string {
   try {
     const parsed = JSON.parse(outline.content) as unknown;
     const sanitized = sanitizeOutlineForRuntimeContext(parsed);
-    return toBlock(
-      "world_foundation",
-      OUTLINE_PATH,
-      JSON.stringify(sanitized),
-    );
+    return toBlock("world_foundation", OUTLINE_PATH, JSON.stringify(sanitized));
   } catch {
     return toBlock("world_foundation", OUTLINE_PATH, outline.content);
   }

@@ -83,7 +83,9 @@ export interface AgenticLoopResult {
 const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
-const readModelPromptEntries = (value: unknown): ModelPromptEntry[] | undefined => {
+const readModelPromptEntries = (
+  value: unknown,
+): ModelPromptEntry[] | undefined => {
   if (!Array.isArray(value)) return undefined;
   const entries = value
     .map((entry) => {
@@ -336,7 +338,7 @@ export const generateAdventureTurn = async (
       ? "current/skills/commands/runtime/sudo/SKILL.md"
       : isPlayerRateMode
         ? "current/skills/commands/runtime/player-rate/SKILL.md"
-      : "current/skills/commands/runtime/turn/SKILL.md";
+        : "current/skills/commands/runtime/turn/SKILL.md";
   const startupMode: SessionStartupMode = isCleanupMode
     ? "cleanup"
     : isSudoMode
@@ -467,7 +469,8 @@ export const generateAdventureTurn = async (
     }
     autoCompactAttemptedForContextOverflow = true;
 
-    const autoCompactEnabled = context.settings.extra?.autoCompactEnabled ?? true;
+    const autoCompactEnabled =
+      context.settings.extra?.autoCompactEnabled ?? true;
     if (!autoCompactEnabled) {
       return;
     }

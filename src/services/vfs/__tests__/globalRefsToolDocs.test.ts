@@ -9,7 +9,8 @@ describe("VFS global refs tool docs", () => {
     const files = buildGlobalVfsRefs();
     const readme = files["refs/tools/README.md"]?.content ?? "";
     const toolsIndexRaw = files["refs/tools/index.json"]?.content ?? "{}";
-    const schemaIndexRaw = files["refs/tool-schemas/index.json"]?.content ?? "{}";
+    const schemaIndexRaw =
+      files["refs/tool-schemas/index.json"]?.content ?? "{}";
     const toolsIndex = JSON.parse(toolsIndexRaw) as {
       count?: number;
       tools?: Array<{
@@ -22,11 +23,19 @@ describe("VFS global refs tool docs", () => {
     };
     const schemaIndex = JSON.parse(schemaIndexRaw) as {
       count?: number;
-      schemas?: Array<{ name: string; summaryPath: string; partPaths: string[] }>;
+      schemas?: Array<{
+        name: string;
+        summaryPath: string;
+        partPaths: string[];
+      }>;
     };
 
-    expect(readme).toContain("Generated from `vfsToolRegistry.getDefinitions()`.");
-    expect(readme).toContain('vfs_read_json({ path: "current/refs/tools/index.json" })');
+    expect(readme).toContain(
+      "Generated from `vfsToolRegistry.getDefinitions()`.",
+    );
+    expect(readme).toContain(
+      'vfs_read_json({ path: "current/refs/tools/index.json" })',
+    );
     expect(readme).toContain(
       'vfs_read_json({ path: "current/refs/tool-schemas/index.json" })',
     );

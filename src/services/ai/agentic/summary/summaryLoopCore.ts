@@ -1,8 +1,4 @@
-import type {
-  LogEntry,
-  StorySummary,
-  UnifiedMessage,
-} from "../../../../types";
+import type { LogEntry, StorySummary, UnifiedMessage } from "../../../../types";
 import type { ToolCallResult } from "../../../providers/types";
 
 import { sessionManager } from "../../sessionManager";
@@ -94,9 +90,7 @@ const containsForbiddenSummaryTokens = (summary: StorySummary): boolean => {
       return value.some((v) => hasForbidden(v));
     }
     if (value && typeof value === "object") {
-      return Object.values(value as JsonObject).some((v) =>
-        hasForbidden(v),
-      );
+      return Object.values(value as JsonObject).some((v) => hasForbidden(v));
     }
     return false;
   };
@@ -212,13 +206,11 @@ const injectSummaryRuntimeArgs = (
 const checkSummarySoulReadGate = (
   functionCalls: ToolCallResult[],
   vfsSession: SummaryLoopInput["vfsSession"],
-):
-  | null
-  | {
-      success: false;
-      error: string;
-      code: "SOUL_NOT_READ";
-    } => {
+): null | {
+  success: false;
+  error: string;
+  code: "SOUL_NOT_READ";
+} => {
   const hasNonReadCall = functionCalls.some(
     (call) => !isReadOnlyInspectionToolName(call.name),
   );
@@ -503,7 +495,10 @@ export async function runSummaryLoopCore(options: {
       };
 
       for (const call of functionCalls) {
-        const soulGateError = checkSummarySoulReadGate([call], input.vfsSession);
+        const soulGateError = checkSummarySoulReadGate(
+          [call],
+          input.vfsSession,
+        );
         if (soulGateError) {
           toolResponses.push({
             toolCallId: call.id,
@@ -620,7 +615,8 @@ export async function runSummaryLoopCore(options: {
                 lastSummarizedIndex: input.baseIndex,
               });
             } catch (error) {
-              const msg = error instanceof Error ? error.message : String(error);
+              const msg =
+                error instanceof Error ? error.message : String(error);
               throw new Error(
                 `[SummaryLoop] Failed to rollback summary/state.json after forbidden token check: ${msg}`,
               );

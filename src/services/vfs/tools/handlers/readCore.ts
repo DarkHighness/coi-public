@@ -31,7 +31,10 @@ const createReadHandler = (
       const runtime = args as JsonObject;
       const inputPath = typeof runtime.path === "string" ? runtime.path : null;
       if (typeof inputPath !== "string" || inputPath.trim().length === 0) {
-        return createError(`${toolName}: path must be a non-empty string`, "INVALID_DATA");
+        return createError(
+          `${toolName}: path must be a non-empty string`,
+          "INVALID_DATA",
+        );
       }
 
       const resolved = resolveCurrentPath(ctx, inputPath);
@@ -84,12 +87,15 @@ const createReadHandler = (
         try {
           document = JSON.parse(file.content);
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message =
+            error instanceof Error ? error.message : String(error);
           return createError(`Invalid JSON: ${message}`, "INVALID_DATA");
         }
 
         const pointers = Array.isArray(runtime.pointers)
-          ? runtime.pointers.filter((pointer): pointer is string => typeof pointer === "string")
+          ? runtime.pointers.filter(
+              (pointer): pointer is string => typeof pointer === "string",
+            )
           : [];
         if (pointers.length === 0) {
           return createError(

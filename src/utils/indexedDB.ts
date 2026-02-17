@@ -241,7 +241,9 @@ export const deleteVfsSave = async (saveId: string): Promise<void> => {
         // 2) Delete blobs for this save.
         if (blobsStore.indexNames.contains("saveId")) {
           const blobIndex = blobsStore.index("saveId");
-          const blobCursorReq = blobIndex.openKeyCursor(IDBKeyRange.only(saveId));
+          const blobCursorReq = blobIndex.openKeyCursor(
+            IDBKeyRange.only(saveId),
+          );
           blobCursorReq.onsuccess = () => {
             const blobCursor = blobCursorReq.result as IDBCursor | null;
             if (!blobCursor) {

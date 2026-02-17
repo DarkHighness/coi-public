@@ -49,7 +49,9 @@ export async function runCompactSummaryLoop(
     protocol: instance.protocol,
   });
 
-  const systemInstruction = sessionManager.getSystemInstruction(storySession.id);
+  const systemInstruction = sessionManager.getSystemInstruction(
+    storySession.id,
+  );
   if (!systemInstruction) {
     throw new Error(
       "[SummaryLoop] Missing story system instruction for session-native compaction.",

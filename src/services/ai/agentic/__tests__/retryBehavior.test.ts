@@ -238,9 +238,9 @@ describe("callWithAgenticRetry behavior", () => {
     expect(result.retries).toBe(0);
     expect(history).toHaveLength(0);
     expect(
-      ((result.result as { functionCalls?: Array<any> }).functionCalls ?? []).map(
-        (call) => call.id,
-      ),
+      (
+        (result.result as { functionCalls?: Array<any> }).functionCalls ?? []
+      ).map((call) => call.id),
     ).toEqual(["call_write", "call_commit"]);
     expect(provider.generateChat).toHaveBeenCalledTimes(1);
   });

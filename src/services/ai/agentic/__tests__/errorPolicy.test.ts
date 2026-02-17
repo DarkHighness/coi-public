@@ -59,7 +59,9 @@ describe("errorPolicy", () => {
       rawMessage: raw,
     });
 
-    expect(feedback).toContain(`Raw provider error: bad payload: ${"x".repeat(400)} next line`);
+    expect(feedback).toContain(
+      `Raw provider error: bad payload: ${"x".repeat(400)} next line`,
+    );
     expect(feedback).not.toContain("[truncated]");
   });
 });

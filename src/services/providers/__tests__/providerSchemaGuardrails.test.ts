@@ -105,7 +105,9 @@ describe("provider schema guardrails", () => {
   });
 
   it("keeps vfs_finish_turn schema and schemaHint free of runtime-only fields", () => {
-    const tool = ALL_DEFINED_TOOLS.find((item) => item.name === "vfs_finish_turn");
+    const tool = ALL_DEFINED_TOOLS.find(
+      (item) => item.name === "vfs_finish_turn",
+    );
     expect(tool).toBeDefined();
     if (!tool) return;
 

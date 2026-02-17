@@ -275,9 +275,13 @@ export class RAGService {
   ): Promise<{ count: number }> {
     this.ensureInitialized();
     const preparedDocuments = await this.attachReusableEmbeddings(documents);
-    return this.sendRequest("upsertFileChunks", {
-      documents: preparedDocuments,
-    }, this.LONG_RUNNING_REQUEST_TIMEOUT);
+    return this.sendRequest(
+      "upsertFileChunks",
+      {
+        documents: preparedDocuments,
+      },
+      this.LONG_RUNNING_REQUEST_TIMEOUT,
+    );
   }
 
   async deleteByPaths(
@@ -298,11 +302,17 @@ export class RAGService {
     params: ReindexAllPayload,
   ): Promise<{ deleted: number; count: number }> {
     this.ensureInitialized();
-    const preparedDocuments = await this.attachReusableEmbeddings(params.documents);
-    return this.sendRequest("reindexAll", {
-      ...params,
-      documents: preparedDocuments,
-    }, this.LONG_RUNNING_REQUEST_TIMEOUT);
+    const preparedDocuments = await this.attachReusableEmbeddings(
+      params.documents,
+    );
+    return this.sendRequest(
+      "reindexAll",
+      {
+        ...params,
+        documents: preparedDocuments,
+      },
+      this.LONG_RUNNING_REQUEST_TIMEOUT,
+    );
   }
 
   // ======================================================================
@@ -629,11 +639,7 @@ export class RAGService {
     return new Promise<T>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(id);
-        reject(
-          new Error(
-            `Request ${type} timed out after ${timeoutMs}ms`,
-          ),
-        );
+        reject(new Error(`Request ${type} timed out after ${timeoutMs}ms`));
       }, timeoutMs);
 
       this.pendingRequests.set(id, {
@@ -680,9 +686,7 @@ export class RAGService {
       case "searchComplete":
         this.emit(
           "searchComplete",
-          Array.isArray(event.data)
-            ? (event.data as SearchResult[])
-            : [],
+          Array.isArray(event.data) ? (event.data as SearchResult[]) : [],
         );
         break;
       case "cleanupComplete":
@@ -709,7 +713,9 @@ export class RAGService {
               typeof event.data.message === "string"
                 ? event.data.message
                 : undefined,
-            runtime: event.data.runtime as LocalEmbeddingRuntimeInfo | undefined,
+            runtime: event.data.runtime as
+              | LocalEmbeddingRuntimeInfo
+              | undefined,
             messageKey:
               typeof event.data.messageKey === "string"
                 ? event.data.messageKey
@@ -736,13 +742,11 @@ export class RAGService {
           this.emit("storageOverflow", {
             currentTotal: Number(event.data.currentTotal ?? 0),
             maxTotal: Number(event.data.maxTotal ?? 0),
-            saveStats: event.data.saveStats
-              .filter(isObject)
-              .map((row) => ({
-                saveId: String(row.saveId ?? ""),
-                documentCount: Number(row.documentCount ?? 0),
-                lastAccessed: Number(row.lastAccessed ?? 0),
-              })),
+            saveStats: event.data.saveStats.filter(isObject).map((row) => ({
+              saveId: String(row.saveId ?? ""),
+              documentCount: Number(row.documentCount ?? 0),
+              lastAccessed: Number(row.lastAccessed ?? 0),
+            })),
             suggestedDeletions: Array.isArray(event.data.suggestedDeletions)
               ? event.data.suggestedDeletions.map((entry) => String(entry))
               : [],

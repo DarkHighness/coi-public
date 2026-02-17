@@ -79,7 +79,8 @@ describe("sessionReferencesMarkdown", () => {
     const markdown = getLatestSummaryReferencesMarkdown({
       summaries: [
         {
-          nextSessionReferencesMarkdown: "- current/skills/commands/runtime/SKILL.md",
+          nextSessionReferencesMarkdown:
+            "- current/skills/commands/runtime/SKILL.md",
         },
         {
           nextSessionReferencesMarkdown:
@@ -92,7 +93,9 @@ describe("sessionReferencesMarkdown", () => {
   });
 
   it("returns null for missing or blank handoff markdown", () => {
-    expect(getLatestSummaryReferencesMarkdown({ summaries: [] } as any)).toBeNull();
+    expect(
+      getLatestSummaryReferencesMarkdown({ summaries: [] } as any),
+    ).toBeNull();
     expect(
       getLatestSummaryReferencesMarkdown({
         summaries: [{ nextSessionReferencesMarkdown: "   " }],

@@ -133,9 +133,9 @@ describe("vfsExtraction", () => {
     expect(
       chunks.every((chunk) => chunk.chunkMeta?.strategy === "text_window"),
     ).toBe(true);
-    expect(chunks.some((chunk) => chunk.content.includes("## Scene Alpha"))).toBe(
-      true,
-    );
+    expect(
+      chunks.some((chunk) => chunk.content.includes("## Scene Alpha")),
+    ).toBe(true);
   });
 
   it("applies adaptive overlap for text chunks", () => {

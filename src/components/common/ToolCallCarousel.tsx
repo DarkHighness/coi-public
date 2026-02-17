@@ -102,12 +102,18 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
     [calls],
   );
   const usageRatioPercent = latestContextUsage
-    ? Math.max(0, Math.min(100, Math.round(latestContextUsage.usageRatio * 100)))
+    ? Math.max(
+        0,
+        Math.min(100, Math.round(latestContextUsage.usageRatio * 100)),
+      )
     : null;
   const thresholdPercent = latestContextUsage
     ? Math.max(
         0,
-        Math.min(100, Math.round(latestContextUsage.autoCompactThreshold * 100)),
+        Math.min(
+          100,
+          Math.round(latestContextUsage.autoCompactThreshold * 100),
+        ),
       )
     : null;
 

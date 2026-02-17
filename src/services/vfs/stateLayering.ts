@@ -50,11 +50,7 @@ const WORLD_ENTITY_VIEW_ONLY_KEYS: Record<
     "discoveredAtGameTime",
     "beliefSummary",
   ],
-  timeline: [
-    ...BASE_WORLD_VIEW_ONLY_KEYS,
-    "rememberedAs",
-    "suspicions",
-  ],
+  timeline: [...BASE_WORLD_VIEW_ONLY_KEYS, "rememberedAs", "suspicions"],
   locations: [
     ...BASE_WORLD_VIEW_ONLY_KEYS,
     "isVisited",
@@ -62,11 +58,7 @@ const WORLD_ENTITY_VIEW_ONLY_KEYS: Record<
     "discoveredAt",
     "discoveredAtGameTime",
   ],
-  factions: [
-    ...BASE_WORLD_VIEW_ONLY_KEYS,
-    "standing",
-    "standingTag",
-  ],
+  factions: [...BASE_WORLD_VIEW_ONLY_KEYS, "standing", "standingTag"],
   causal_chains: [
     ...BASE_WORLD_VIEW_ONLY_KEYS,
     "investigationNotes",
@@ -84,9 +76,7 @@ const normalizeLogicalPath = (path: string): string => {
   );
 };
 
-const toObjectRecord = (
-  value: unknown,
-): JsonObject | null => {
+const toObjectRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
@@ -281,7 +271,9 @@ export const sanitizeOutlineWorldCollections = (
     }
   }
 
-  for (const [key, category] of Object.entries(OUTLINE_COLLECTION_TO_CATEGORY)) {
+  for (const [key, category] of Object.entries(
+    OUTLINE_COLLECTION_TO_CATEGORY,
+  )) {
     const collection = nextRoot[key];
     if (!Array.isArray(collection)) {
       continue;

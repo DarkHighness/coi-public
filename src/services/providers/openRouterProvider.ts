@@ -87,10 +87,7 @@ function createRequestOptions(): OpenRouterRequestOptions {
 // ============================================================================
 /** Content Generation Response */
 export interface OpenRouterContentGenerationResponse {
-  result:
-    | { functionCalls?: ToolCallResult[] }
-    | JsonObject
-    | string;
+  result: { functionCalls?: ToolCallResult[] } | JsonObject | string;
   usage: TokenUsage;
   raw: unknown;
 }
@@ -168,7 +165,8 @@ interface OpenRouterCompatToolCall extends models.ChatMessageToolCall {
   };
 }
 
-interface OpenRouterStreamingDeltaCompat extends models.ChatStreamingMessageChunk {
+interface OpenRouterStreamingDeltaCompat
+  extends models.ChatStreamingMessageChunk {
   reasoning_content?: string;
   tool_calls?: models.ChatStreamingMessageToolCall[];
 }
@@ -263,9 +261,10 @@ const getThoughtSignature = (value: unknown): string | undefined => {
   const extraContent = isRecord(value.extra_content)
     ? value.extra_content
     : undefined;
-  const google = extraContent && isRecord(extraContent.google)
-    ? extraContent.google
-    : undefined;
+  const google =
+    extraContent && isRecord(extraContent.google)
+      ? extraContent.google
+      : undefined;
   const googleSignature = readString(google?.thought_signature);
   if (googleSignature) return googleSignature;
 
@@ -519,10 +518,7 @@ export async function getModels(
       return {
         id,
         name,
-        contextLength:
-          m.contextLength ??
-          m.context_length ??
-          undefined,
+        contextLength: m.contextLength ?? m.context_length ?? undefined,
         capabilities,
       };
     });
@@ -727,8 +723,7 @@ async function handleNonStreamingResponse(
   )) as models.ChatResponse;
   const choice = response.choices?.[0];
   const message = choice?.message;
-  const content =
-    typeof message?.content === "string" ? message.content : "";
+  const content = typeof message?.content === "string" ? message.content : "";
   let toolCalls: ToolCallResult[] = [];
   try {
     toolCalls = extractOpenRouterToolCalls(message);
@@ -945,9 +940,9 @@ function convertToOpenAIMessages(
       continue;
     }
     if (msg.role === "assistant") {
-        const toolCallParts = msg.content.filter(
-          (p): p is ToolCallContentPart => p.type === "tool_use",
-        );
+      const toolCallParts = msg.content.filter(
+        (p): p is ToolCallContentPart => p.type === "tool_use",
+      );
       if (toolCallParts.length > 0) {
         const textContent = msg.content
           .filter((p): p is TextContentPart => p.type === "text")
@@ -1032,12 +1027,13 @@ function convertToOpenAIMessages(
 function convertToOpenRouterTools(
   tools: GenerateContentOptions["tools"],
 ): models.ToolDefinitionJson[] {
-  return (tools || []).map((tool) =>
-    createOpenRouterTool(
-      tool.name,
-      tool.description,
-      tool.parameters,
-    ) as models.ToolDefinitionJson,
+  return (tools || []).map(
+    (tool) =>
+      createOpenRouterTool(
+        tool.name,
+        tool.description,
+        tool.parameters,
+      ) as models.ToolDefinitionJson,
   );
 }
 // ============================================================================
@@ -1184,7 +1180,9 @@ async function generateImageLegacy(
   }
   const result = (await response.json()) as unknown;
   const resultRecord = requireRecord(result, "legacy image generation");
-  const choices = Array.isArray(resultRecord.choices) ? resultRecord.choices : [];
+  const choices = Array.isArray(resultRecord.choices)
+    ? resultRecord.choices
+    : [];
   const firstChoice = isRecord(choices[0]) ? choices[0] : null;
   if (!firstChoice) {
     throw new AIProviderError(
@@ -1304,23 +1302,19 @@ export async function getEmbeddingModels(
 
       // They are all embedding models in this file
       // Thus, we can directly map them
-      const models = dataModels
-        .filter(isRecord)
-        .map((m) => {
-          const id = readString(m.id) || readString(m.slug) || "";
-          const name = readString(m.name) || id;
-          const contextLength =
-            readNumber(m.context_length) ??
-            readNumber(m.contextLength) ??
-            8192;
+      const models = dataModels.filter(isRecord).map((m) => {
+        const id = readString(m.id) || readString(m.slug) || "";
+        const name = readString(m.name) || id;
+        const contextLength =
+          readNumber(m.context_length) ?? readNumber(m.contextLength) ?? 8192;
 
-          return {
-            id,
-            name,
-            dimensions: guessEmbeddingDimensions(id.toLowerCase()),
-            contextLength,
-          };
-        });
+        return {
+          id,
+          name,
+          dimensions: guessEmbeddingDimensions(id.toLowerCase()),
+          contextLength,
+        };
+      });
 
       console.log(
         `[OpenRouter] Loaded ${models.length} embedding models from local JSON file`,
@@ -1342,8 +1336,11 @@ function processEmbeddingModels(modelsData: unknown[]): EmbeddingModelInfo[] {
 
   for (const model of modelsData) {
     if (!isRecord(model)) continue;
-    const id =
-      (readString(model.id) || readString(model.slug) || "").toLowerCase();
+    const id = (
+      readString(model.id) ||
+      readString(model.slug) ||
+      ""
+    ).toLowerCase();
     const outputModalities = readStringArray(model.output_modalities);
     const modality = readStringArray(model.modality);
 

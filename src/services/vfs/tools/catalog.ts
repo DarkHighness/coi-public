@@ -62,7 +62,9 @@ const buildPermissionContract = (capability: VfsToolCapabilityV2): string => {
   }
 
   if (capability.immutableZones.length > 0) {
-    clauses.push(`immutable zones blocked: ${capability.immutableZones.join(", ")}`);
+    clauses.push(
+      `immutable zones blocked: ${capability.immutableZones.join(", ")}`,
+    );
   }
 
   return `Permission contract: ${clauses.join("; ")}.`;
@@ -301,8 +303,16 @@ const TOOLSET_NONE = {
 } as const;
 
 const ordered = (
-  input: Partial<Record<"turn" | "playerRate" | "cleanup" | "summary" | "outline", number | null>>,
-): Record<"turn" | "playerRate" | "cleanup" | "summary" | "outline", number | null> => ({
+  input: Partial<
+    Record<
+      "turn" | "playerRate" | "cleanup" | "summary" | "outline",
+      number | null
+    >
+  >,
+): Record<
+  "turn" | "playerRate" | "cleanup" | "summary" | "outline",
+  number | null
+> => ({
   ...TOOLSET_NONE,
   ...input,
 });
@@ -465,7 +475,8 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_read_chars",
-    description: "Read file content by character range (start offset + length).",
+    description:
+      "Read file content by character range (start offset + length).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path."),
@@ -506,7 +517,8 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_read_lines",
-    description: "Read file content by line range (1-based startLine + endLine or lineCount).",
+    description:
+      "Read file content by line range (1-based startLine + endLine or lineCount).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path."),
@@ -545,7 +557,8 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_read_json",
-    description: "Read JSON file values by JSON Pointer paths (e.g. '/visible/name', '' for root).",
+    description:
+      "Read JSON file values by JSON Pointer paths (e.g. '/visible/name', '' for root).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
@@ -626,10 +639,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
       .object({
         query: z.string().describe("Search query (text or regex)."),
         path: vfsOptionalPathSchema.describe("Root path to search within."),
-        regex: z
-          .boolean()
-          .optional()
-          .describe("Treat query as regex."),
+        regex: z.boolean().optional().describe("Treat query as regex."),
         fuzzy: z
           .boolean()
           .optional()
@@ -767,7 +777,8 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_edit_lines",
-    description: "Apply line-based insert/replace edits to a text or markdown file.",
+    description:
+      "Apply line-based insert/replace edits to a text or markdown file.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path (text/markdown)."),
@@ -839,11 +850,15 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_patch_json",
-    description: "Apply RFC 6902 JSON Patch operations (add/replace/remove/move/copy/test) to a JSON file.",
+    description:
+      "Apply RFC 6902 JSON Patch operations (add/replace/remove/move/copy/test) to a JSON file.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
-        patch: z.array(vfsJsonPatchOpSchema).min(1).describe("JSON Patch operations."),
+        patch: z
+          .array(vfsJsonPatchOpSchema)
+          .min(1)
+          .describe("JSON Patch operations."),
       })
       .strict(),
     handlerKey: "patch_json",
@@ -858,7 +873,8 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_merge_json",
-    description: "Deep-merge a JSON object into an existing JSON file (arrays are replaced, not appended; deletions require vfs_patch_json).",
+    description:
+      "Deep-merge a JSON object into an existing JSON file (arrays are replaced, not appended; deletions require vfs_patch_json).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
@@ -922,7 +938,9 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .object({
             narrative: z
               .string()
-              .describe("The assistant narrative (Markdown text for the player)."),
+              .describe(
+                "The assistant narrative (Markdown text for the player).",
+              ),
             choices: z
               .array(
                 z
@@ -1050,8 +1068,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   ...OUTLINE_PHASE_TOOLS.map((entry) =>
     defineCatalogTool({
       name: entry.name,
-      description:
-        `Commit outline phase ${entry.phase} payload. Validates and writes to shared/narrative/outline/phases/phase${entry.phase}.json. MUST be the LAST tool call for this phase.`,
+      description: `Commit outline phase ${entry.phase} payload. Validates and writes to shared/narrative/outline/phases/phase${entry.phase}.json. MUST be the LAST tool call for this phase.`,
       parameters: entry.schema.describe(
         `Outline phase ${entry.phase} payload JSON object.`,
       ),
@@ -1073,7 +1090,9 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
 ];
 
 export const VFS_SEARCH_TOOL_NO_SEMANTIC = (() => {
-  const searchTool = VFS_TOOL_CATALOG.find((item) => item.name === "vfs_search");
+  const searchTool = VFS_TOOL_CATALOG.find(
+    (item) => item.name === "vfs_search",
+  );
   if (!searchTool) {
     throw new Error("vfs_search is not registered in VFS_TOOL_CATALOG");
   }

@@ -443,7 +443,11 @@ describe("vfsMutationGuard", () => {
           { op: "replace", path: "/unlocked", value: true } as any,
           { op: "replace", path: "/status", value: "complete" } as any,
           { op: "replace", path: "/highlight", value: false } as any,
-          { op: "replace", path: "/visible/description", value: "updated" } as any,
+          {
+            op: "replace",
+            path: "/visible/description",
+            value: "updated",
+          } as any,
           { op: "remove", path: "/unlockReason" } as any,
         ],
       );

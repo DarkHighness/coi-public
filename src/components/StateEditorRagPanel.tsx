@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useOptionalRuntimeContext } from "../runtime/context";
 import type { GameState } from "../types";
@@ -141,7 +147,9 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
         }
         return result.documents;
       });
-      setDocumentsTotal((prev) => (prev === result.total ? prev : result.total));
+      setDocumentsTotal((prev) =>
+        prev === result.total ? prev : result.total,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setDocumentsError(message);
@@ -510,10 +518,14 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
                   )}
                 {rebuildProgress?.runtime && (
                   <div className="mt-2 font-mono text-[11px] text-theme-text">
-                    {t("ragDebugger.runtimeUsing", "Runtime: {{engine}} / {{backend}}", {
-                      engine: rebuildProgress.runtime.engine,
-                      backend: rebuildProgress.runtime.backend,
-                    })}
+                    {t(
+                      "ragDebugger.runtimeUsing",
+                      "Runtime: {{engine}} / {{backend}}",
+                      {
+                        engine: rebuildProgress.runtime.engine,
+                        backend: rebuildProgress.runtime.backend,
+                      },
+                    )}
                   </div>
                 )}
               </div>

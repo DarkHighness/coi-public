@@ -205,8 +205,8 @@ describe("resolveActivePresetSkillRequirements", () => {
         },
       ]),
     );
-    expect(
-      requirements.some((entry) => entry.path.includes("culture-")),
-    ).toBe(false);
+    expect(requirements.some((entry) => entry.path.includes("culture-"))).toBe(
+      false,
+    );
   });
 });

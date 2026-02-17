@@ -311,7 +311,10 @@ const createEngine = async (
               ? (() => {
                   const nextDims = (result as { dims?: unknown }).dims;
                   if (!Array.isArray(nextDims)) {
-                    return [batch.length, tensorData.length / Math.max(batch.length, 1)];
+                    return [
+                      batch.length,
+                      tensorData.length / Math.max(batch.length, 1),
+                    ];
                   }
                   return nextDims.map((dim) => Number(dim));
                 })()

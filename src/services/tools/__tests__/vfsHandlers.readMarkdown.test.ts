@@ -7,15 +7,7 @@ describe("vfs_read_markdown", () => {
     const session = new VfsSession();
     session.writeFile(
       "world/notes.md",
-      [
-        "# Alpha",
-        "",
-        "alpha body",
-        "",
-        "# Beta",
-        "",
-        "beta body",
-      ].join("\n"),
+      ["# Alpha", "", "alpha body", "", "# Beta", "", "beta body"].join("\n"),
       "text/markdown",
     );
 

@@ -21,18 +21,18 @@ function asText(value: unknown, fallback: string): string {
   return String(value);
 }
 
-const translate = (
-  t: TranslateFn,
-  key: string,
-  options?: unknown,
-): unknown => (t as (k: string, o?: unknown) => unknown)(key, options);
+const translate = (t: TranslateFn, key: string, options?: unknown): unknown =>
+  (t as (k: string, o?: unknown) => unknown)(key, options);
 
 function resolveFeatureLabel(
   t: ValidationUiPresenterOptions["t"],
   feature: RuntimeValidationIssue["feature"],
 ): string {
   const fallback = getValidationFeatureFallbackLabel(feature);
-  return asText(translate(t, `providers.features.${feature}`, fallback), fallback);
+  return asText(
+    translate(t, `providers.features.${feature}`, fallback),
+    fallback,
+  );
 }
 
 export function presentProviderValidationResult(
@@ -48,7 +48,10 @@ export function presentProviderValidationResult(
       blockingIssue.type === "missing_required_api_key" ||
       blockingIssue.type === "missing_optional_api_key"
     ) {
-      showToast(asText(translate(t, "missingApiKey"), "Missing API Key"), "error");
+      showToast(
+        asText(translate(t, "missingApiKey"), "Missing API Key"),
+        "error",
+      );
     } else {
       const featureLabel = resolveFeatureLabel(t, blockingIssue.feature);
       const errorText =
@@ -75,7 +78,8 @@ export function presentProviderValidationResult(
   for (const issue of getOptionalConnectionWarnings(validation.issues)) {
     const featureLabel = resolveFeatureLabel(t, issue.feature);
     const errorText =
-      issue.error || asText(translate(t, "connectionFailed"), "Connection failed");
+      issue.error ||
+      asText(translate(t, "connectionFailed"), "Connection failed");
 
     showToast(
       asText(

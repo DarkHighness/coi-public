@@ -95,10 +95,12 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
   },
   ({ finishToolName, toolsetId, ragEnabled = true }) => {
     const resolvedToolsetId =
-      toolsetId ?? (finishToolName === "vfs_finish_soul" ? "playerRate" : "turn");
+      toolsetId ??
+      (finishToolName === "vfs_finish_soul" ? "playerRate" : "turn");
     const isPlayerRateToolset = resolvedToolsetId === "playerRate";
     const resolvedFinishToolName =
-      finishToolName || vfsToolRegistry.getToolset(resolvedToolsetId).finishToolName;
+      finishToolName ||
+      vfsToolRegistry.getToolset(resolvedToolsetId).finishToolName;
     const capabilityText = gateSemanticCapabilityText(
       vfsToolRegistry.formatCapabilitiesForPrompt(resolvedToolsetId),
       ragEnabled,
@@ -145,7 +147,7 @@ ${
       ? "1) `vfs_read_markdown` on `current/world/soul.md` and `current/world/global/soul.md` (prefer `headings`/`indices`)\n  2) `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
       : "1) `vfs_search` within `current/world/` and/or `current/outline/story_outline/plan.md` for target anchors\n  2) Use `vfs_patch_json` / `vfs_merge_json` (or `vfs_write_file` when creating) for world updates; use `vfs_write_markdown` for incremental `plan.md` updates or `vfs_write_file` for full `plan.md` rewrite when fracture is major\n  3) `" +
         resolvedFinishToolName +
-        "` with `{ assistant: { narrative: \"...\", choices: [...] }, retconAck?: { summary: \"...\" } }` as the LAST call"
+        '` with `{ assistant: { narrative: "...", choices: [...] }, retconAck?: { summary: "..." } }` as the LAST call'
   }
 </examples>
 `;

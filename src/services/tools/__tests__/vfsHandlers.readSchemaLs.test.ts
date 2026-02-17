@@ -207,7 +207,11 @@ describe("VFS handlers read/schema/ls", () => {
 
     const charsOffsetTooLarge = dispatchToolCall(
       "vfs_read_chars",
-      { path: "current/world/large.txt", start: 0, offset: oversizedText.length + 1 },
+      {
+        path: "current/world/large.txt",
+        start: 0,
+        offset: oversizedText.length + 1,
+      },
       ctx as any,
     ) as any;
     expect(charsOffsetTooLarge.success).toBe(false);

@@ -50,10 +50,7 @@ const collectDirectSubfields = (value: unknown): string[] => {
   if (!value || typeof value !== "object") {
     return [];
   }
-  return Object.keys(value as JsonObject).slice(
-    0,
-    MAX_DIRECT_SUBFIELDS,
-  );
+  return Object.keys(value as JsonObject).slice(0, MAX_DIRECT_SUBFIELDS);
 };
 
 export const summarizeJsonValidationError = (

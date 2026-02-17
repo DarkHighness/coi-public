@@ -33,7 +33,9 @@ export const StoryTextHeader: React.FC<StoryTextHeaderProps> = ({
   const [draftVote, setDraftVote] = React.useState<PlayerRateInput["vote"]>(
     playerRate?.vote ?? "up",
   );
-  const [draftPreset, setDraftPreset] = React.useState(playerRate?.preset || "");
+  const [draftPreset, setDraftPreset] = React.useState(
+    playerRate?.preset || "",
+  );
   const [draftComment, setDraftComment] = React.useState(
     playerRate?.comment || "",
   );

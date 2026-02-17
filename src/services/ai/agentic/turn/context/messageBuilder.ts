@@ -87,10 +87,7 @@ export function buildInitialContext(
   if (staticContext) {
     messages.push(
       createUserMessage(
-        [
-          "[CONTEXT: World Foundation]",
-          staticContext,
-        ].join("\n"),
+        ["[CONTEXT: World Foundation]", staticContext].join("\n"),
       ),
     );
     messages.push({

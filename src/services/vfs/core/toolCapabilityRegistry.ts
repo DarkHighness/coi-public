@@ -48,7 +48,9 @@ export class VfsToolCapabilityRegistry {
   public listToolNamesForToolset(
     toolset: "turn" | "playerRate" | "cleanup" | "summary" | "outline",
   ): string[] {
-    return this.listForToolset(toolset).map((capability) => capability.toolName);
+    return this.listForToolset(toolset).map(
+      (capability) => capability.toolName,
+    );
   }
 
   public describeForPrompt(toolName: string): string {

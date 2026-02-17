@@ -265,15 +265,14 @@ const getStringArg = (args: JsonObject, key: string): string => {
   return typeof value === "string" ? value : "";
 };
 
-const getArrayArg = (
-  args: JsonObject,
-  key: string,
-): unknown[] | null => {
+const getArrayArg = (args: JsonObject, key: string): unknown[] | null => {
   const value = args[key];
   return Array.isArray(value) ? value : null;
 };
 
-const readModelPromptEntries = (value: unknown): ModelPromptEntry[] | undefined => {
+const readModelPromptEntries = (
+  value: unknown,
+): ModelPromptEntry[] | undefined => {
   if (!Array.isArray(value)) return undefined;
   const parsed = value
     .map((entry) => {
@@ -623,9 +622,7 @@ export const generateStoryOutlinePhased = async (
     if (!resume) return false;
     if (theme === IMAGE_BASED_THEME) return true;
     if (theme) return false;
-    return (
-      resume.currentPhase === 0 || Boolean(resume.partial.phase0)
-    );
+    return resume.currentPhase === 0 || Boolean(resume.partial.phase0);
   })();
 
   const readOnlyVfsAllowPrefixes =
@@ -1539,10 +1536,9 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         );
         liveToolCalls = liveToolCalls.map((call, index) => ({
           ...call,
-          output:
-            toJsonValue(
-              responseMapById.get(toolCalls[index]?.id || "") ?? call.output,
-            ),
+          output: toJsonValue(
+            responseMapById.get(toolCalls[index]?.id || "") ?? call.output,
+          ),
         }));
         options.onToolCallsUpdate?.([...liveToolCalls]);
 

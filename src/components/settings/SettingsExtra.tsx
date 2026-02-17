@@ -313,8 +313,7 @@ export const SettingsExtra: React.FC = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-                  {t("settings.extra.soul.currentTitle") ||
-                    "Current Save Soul"}
+                  {t("settings.extra.soul.currentTitle") || "Current Save Soul"}
                 </div>
                 <div className="text-[10px] text-theme-muted mt-1">
                   {t("settings.extra.soul.currentHelp") ||
@@ -390,9 +389,8 @@ export const SettingsExtra: React.FC = () => {
                 {t("settings.extra.culturePreferences.korean") || "Korean"}
               </option>
               <option value="western_euro_american">
-                {t(
-                  "settings.extra.culturePreferences.western_euro_american",
-                ) || "Western Europe / North America"}
+                {t("settings.extra.culturePreferences.western_euro_american") ||
+                  "Western Europe / North America"}
               </option>
               <option value="arab_islamic">
                 {t("settings.extra.culturePreferences.arab_islamic") ||

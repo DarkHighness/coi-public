@@ -250,9 +250,10 @@ export const TimelineExport = forwardRef<
                   <MarkdownText
                     content={choiceText}
                     components={{
-                      p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
-                        <span {...props} />
-                      ),
+                      p: ({
+                        node: _node,
+                        ...props
+                      }: MarkdownElementProps<"p">) => <span {...props} />,
                     }}
                   />
                   {consequence && (
@@ -303,9 +304,10 @@ export const TimelineExport = forwardRef<
                     "Chronicles of Infinity"
                   }
                   components={{
-                    p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
-                      <span {...props} />
-                    ),
+                    p: ({
+                      node: _node,
+                      ...props
+                    }: MarkdownElementProps<"p">) => <span {...props} />,
                   }}
                 />
               </div>
@@ -320,9 +322,10 @@ export const TimelineExport = forwardRef<
                     "Timeline Export"
                   }
                   components={{
-                    p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
-                      <span {...props} />
-                    ),
+                    p: ({
+                      node: _node,
+                      ...props
+                    }: MarkdownElementProps<"p">) => <span {...props} />,
                   }}
                 />
               </div>
@@ -407,7 +410,10 @@ export const TimelineExport = forwardRef<
                         <MarkdownText
                           content={seg.text}
                           components={{
-                            p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
+                            p: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"p">) => (
                               <p className="mb-2 last:mb-0" {...props} />
                             ),
                           }}
@@ -495,7 +501,10 @@ export const TimelineExport = forwardRef<
                           <MarkdownText
                             content={seg.text}
                             components={{
-                              p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
+                              p: ({
+                                node: _node,
+                                ...props
+                              }: MarkdownElementProps<"p">) => (
                                 <p className="mb-3 last:mb-0" {...props} />
                               ),
                               strong: ({
@@ -508,7 +517,10 @@ export const TimelineExport = forwardRef<
                                   {...props}
                                 />
                               ),
-                              em: ({ node: _node, ...props }: MarkdownElementProps<"em">) => (
+                              em: ({
+                                node: _node,
+                                ...props
+                              }: MarkdownElementProps<"em">) => (
                                 <em
                                   className="italic"
                                   style={{ color: "rgba(148, 163, 184, 0.9)" }}
@@ -585,173 +597,212 @@ export const TimelineExport = forwardRef<
                       style={{ color: "#e2e8f0" }} // slate-200
                     >
                       <MarkdownText
-                      content={seg.text}
-                      components={{
-                          p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
-                            <p className="mb-4 last:mb-0 indent-8" {...props} />
-                          ),
-                          strong: ({
-                            node: _node,
-                            ...props
-                          }: MarkdownElementProps<"strong">) => (
-                            <strong
-                              className="font-bold"
-                              style={{ color: "#fbbf24" }}
-                              {...props}
-                            />
-                          ),
-                          em: ({ node: _node, ...props }: MarkdownElementProps<"em">) => (
-                            <em
-                              className="italic"
-                              style={{ color: "rgba(226, 232, 240, 0.9)" }}
-                              {...props}
-                            />
-                          ),
-                          code: ({
-                            node: _node,
-                            inline,
-                            className,
-                            children,
-                            ...props
-                          }: MarkdownCodeProps) => {
-                            const match = /language-(\w+)/.exec(
-                              className || "",
-                            );
-                            const isInline = inline || !match;
-
-                            if (isInline) {
-                              return (
-                                <code
-                                  className="px-1 py-0.5 rounded text-sm font-mono"
-                                  style={{
-                                    backgroundColor: "rgba(51, 65, 85, 0.6)",
-                                    color: "#fde68a",
-                                  }}
-                                  {...props}
-                                >
-                                  {children}
-                                </code>
+                        content={seg.text}
+                        components={
+                          {
+                            p: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"p">) => (
+                              <p
+                                className="mb-4 last:mb-0 indent-8"
+                                {...props}
+                              />
+                            ),
+                            strong: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"strong">) => (
+                              <strong
+                                className="font-bold"
+                                style={{ color: "#fbbf24" }}
+                                {...props}
+                              />
+                            ),
+                            em: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"em">) => (
+                              <em
+                                className="italic"
+                                style={{ color: "rgba(226, 232, 240, 0.9)" }}
+                                {...props}
+                              />
+                            ),
+                            code: ({
+                              node: _node,
+                              inline,
+                              className,
+                              children,
+                              ...props
+                            }: MarkdownCodeProps) => {
+                              const match = /language-(\w+)/.exec(
+                                className || "",
                               );
-                            }
+                              const isInline = inline || !match;
 
-                            return (
-                              <div
-                                style={{
-                                  margin: "16px 0",
-                                  borderRadius: "6px",
-                                  overflow: "hidden",
-                                  border: "1px solid rgba(148, 163, 184, 0.5)",
-                                  backgroundColor: "rgba(51, 65, 85, 0.4)",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    padding: "4px 12px",
-                                    fontSize: "12px",
-                                    color: "#94a3b8",
-                                    backgroundColor: "rgba(51, 65, 85, 0.6)",
-                                    borderBottom:
-                                      "1px solid rgba(148, 163, 184, 0.3)",
-                                    fontFamily: "monospace",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.05em",
-                                  }}
-                                >
-                                  {match ? match[1] : "code"}
-                                </div>
-                                <div
-                                  style={{ padding: "12px", overflowX: "auto" }}
-                                >
+                              if (isInline) {
+                                return (
                                   <code
+                                    className="px-1 py-0.5 rounded text-sm font-mono"
                                     style={{
-                                      fontSize: "14px",
-                                      fontFamily: "monospace",
-                                      color: "rgba(226, 232, 240, 0.9)",
+                                      backgroundColor: "rgba(51, 65, 85, 0.6)",
+                                      color: "#fde68a",
                                     }}
                                     {...props}
                                   >
                                     {children}
                                   </code>
+                                );
+                              }
+
+                              return (
+                                <div
+                                  style={{
+                                    margin: "16px 0",
+                                    borderRadius: "6px",
+                                    overflow: "hidden",
+                                    border:
+                                      "1px solid rgba(148, 163, 184, 0.5)",
+                                    backgroundColor: "rgba(51, 65, 85, 0.4)",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      padding: "4px 12px",
+                                      fontSize: "12px",
+                                      color: "#94a3b8",
+                                      backgroundColor: "rgba(51, 65, 85, 0.6)",
+                                      borderBottom:
+                                        "1px solid rgba(148, 163, 184, 0.3)",
+                                      fontFamily: "monospace",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.05em",
+                                    }}
+                                  >
+                                    {match ? match[1] : "code"}
+                                  </div>
+                                  <div
+                                    style={{
+                                      padding: "12px",
+                                      overflowX: "auto",
+                                    }}
+                                  >
+                                    <code
+                                      style={{
+                                        fontSize: "14px",
+                                        fontFamily: "monospace",
+                                        color: "rgba(226, 232, 240, 0.9)",
+                                      }}
+                                      {...props}
+                                    >
+                                      {children}
+                                    </code>
+                                  </div>
                                 </div>
+                              );
+                            },
+                            math: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownMathProps) => (
+                              <div
+                                style={{
+                                  margin: "16px 0",
+                                  textAlign: "center",
+                                  fontFamily: "serif",
+                                  fontSize: "18px",
+                                  color: "#fbbf24",
+                                  overflowX: "auto",
+                                  padding: "8px 0",
+                                }}
+                              >
+                                {props.children}
                               </div>
-                            );
-                          },
-                          math: ({ node: _node, ...props }: MarkdownMathProps) => (
-                            <div
-                              style={{
-                                margin: "16px 0",
-                                textAlign: "center",
-                                fontFamily: "serif",
-                                fontSize: "18px",
-                                color: "#fbbf24",
-                                overflowX: "auto",
-                                padding: "8px 0",
-                              }}
-                            >
-                              {props.children}
-                            </div>
-                          ),
-                          inlineMath: ({ node: _node, ...props }: MarkdownMathProps) => (
-                            <span
-                              style={{
-                                fontFamily: "serif",
-                                color: "#fbbf24",
-                                padding: "0 4px",
-                              }}
-                            >
-                              {props.children}
-                            </span>
-                          ),
-                          blockquote: ({
-                            node: _node,
-                            ...props
-                          }: MarkdownElementProps<"blockquote">) => (
-                            <blockquote
-                              className="border-l-4 pl-4 my-4 italic"
-                              style={{
-                                borderColor: "rgba(251, 191, 36, 0.5)",
-                                color: "rgba(226, 232, 240, 0.8)",
-                              }}
-                              {...props}
-                            />
-                          ),
-                          ul: ({ node: _node, ...props }: MarkdownElementProps<"ul">) => (
-                            <ul
-                              className="list-disc list-inside my-2 space-y-1"
-                              {...props}
-                            />
-                          ),
-                          ol: ({ node: _node, ...props }: MarkdownElementProps<"ol">) => (
-                            <ol
-                              className="list-decimal list-inside my-2 space-y-1"
-                              {...props}
-                            />
-                          ),
-                          li: ({ node: _node, ...props }: MarkdownElementProps<"li">) => (
-                            <li className="ml-2" {...props} />
-                          ),
-                          h1: ({ node: _node, ...props }: MarkdownElementProps<"h1">) => (
-                            <h1
-                              className="text-2xl font-bold my-4"
-                              style={{ color: "#fbbf24" }}
-                              {...props}
-                            />
-                          ),
-                          h2: ({ node: _node, ...props }: MarkdownElementProps<"h2">) => (
-                            <h2
-                              className="text-xl font-semibold my-3"
-                              style={{ color: "rgba(251, 191, 36, 0.9)" }}
-                              {...props}
-                            />
-                          ),
-                          h3: ({ node: _node, ...props }: MarkdownElementProps<"h3">) => (
-                            <h3
-                              className="text-lg font-semibold my-2"
-                              style={{ color: "rgba(251, 191, 36, 0.8)" }}
-                              {...props}
-                            />
-                          ),
-                        } as Components}
+                            ),
+                            inlineMath: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownMathProps) => (
+                              <span
+                                style={{
+                                  fontFamily: "serif",
+                                  color: "#fbbf24",
+                                  padding: "0 4px",
+                                }}
+                              >
+                                {props.children}
+                              </span>
+                            ),
+                            blockquote: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"blockquote">) => (
+                              <blockquote
+                                className="border-l-4 pl-4 my-4 italic"
+                                style={{
+                                  borderColor: "rgba(251, 191, 36, 0.5)",
+                                  color: "rgba(226, 232, 240, 0.8)",
+                                }}
+                                {...props}
+                              />
+                            ),
+                            ul: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"ul">) => (
+                              <ul
+                                className="list-disc list-inside my-2 space-y-1"
+                                {...props}
+                              />
+                            ),
+                            ol: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"ol">) => (
+                              <ol
+                                className="list-decimal list-inside my-2 space-y-1"
+                                {...props}
+                              />
+                            ),
+                            li: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"li">) => (
+                              <li className="ml-2" {...props} />
+                            ),
+                            h1: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"h1">) => (
+                              <h1
+                                className="text-2xl font-bold my-4"
+                                style={{ color: "#fbbf24" }}
+                                {...props}
+                              />
+                            ),
+                            h2: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"h2">) => (
+                              <h2
+                                className="text-xl font-semibold my-3"
+                                style={{ color: "rgba(251, 191, 36, 0.9)" }}
+                                {...props}
+                              />
+                            ),
+                            h3: ({
+                              node: _node,
+                              ...props
+                            }: MarkdownElementProps<"h3">) => (
+                              <h3
+                                className="text-lg font-semibold my-2"
+                                style={{ color: "rgba(251, 191, 36, 0.8)" }}
+                                {...props}
+                              />
+                            ),
+                          } as Components
+                        }
                       />
                       {/* {renderChoices(seg.choices)} */}
                     </div>

@@ -26,7 +26,9 @@ describe("summaryInitializer", () => {
       loopIterationsMax: 9,
     });
 
-    const allowed = new Set<string>(vfsToolRegistry.getToolset("summary").tools);
+    const allowed = new Set<string>(
+      vfsToolRegistry.getToolset("summary").tools,
+    );
     expect(state.activeTools.length).toBeGreaterThan(0);
     expect(state.activeTools.every((tool) => allowed.has(tool.name))).toBe(
       true,

@@ -173,7 +173,9 @@ const toTree = (flat: MarkdownSectionFlatNode[]): MarkdownSectionNode[] => {
   return roots;
 };
 
-export const parseMarkdownSections = (content: string): ParsedMarkdownSections => {
+export const parseMarkdownSections = (
+  content: string,
+): ParsedMarkdownSections => {
   const { lines, lineStartOffsets } = splitLinesWithOffsets(content);
   const headings = collectHeadingCandidates(lines);
 
@@ -287,7 +289,9 @@ export const selectMarkdownByIndex = (
   parsed: ParsedMarkdownSections,
   indices: string[],
 ): { matches: MarkdownSectionFlatNode[]; missing: string[] } => {
-  const byIndex = new Map(parsed.flat.map((section) => [section.index, section]));
+  const byIndex = new Map(
+    parsed.flat.map((section) => [section.index, section]),
+  );
   const matches: MarkdownSectionFlatNode[] = [];
   const missing: string[] = [];
 

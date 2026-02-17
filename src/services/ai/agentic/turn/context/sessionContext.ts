@@ -59,13 +59,11 @@ export interface SessionSetupResult {
 const DEFAULT_COMMAND_PROTOCOL_SKILL_PATH =
   "current/skills/commands/runtime/turn/SKILL.md";
 
-const buildColdStartSkillHintMessage = (
-  options?: {
-    commandProtocolSkillPath?: string;
-    hotStartReferencesMarkdown?: string | null;
-    startupMode?: SessionStartupMode;
-  },
-): UnifiedMessage => {
+const buildColdStartSkillHintMessage = (options?: {
+  commandProtocolSkillPath?: string;
+  hotStartReferencesMarkdown?: string | null;
+  startupMode?: SessionStartupMode;
+}): UnifiedMessage => {
   const commandProtocolSkillPath =
     options?.commandProtocolSkillPath ?? DEFAULT_COMMAND_PROTOCOL_SKILL_PATH;
 

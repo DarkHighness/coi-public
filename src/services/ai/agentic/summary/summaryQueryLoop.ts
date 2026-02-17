@@ -12,7 +12,10 @@ import { createUserMessage } from "../../../messageTypes";
 import { canonicalizeLanguage } from "../../../prompts/languageCanonical";
 
 import type { SummaryAgenticLoopResult, SummaryLoopInput } from "./summary";
-import { buildSummaryInitialContext, getSummarySystemInstruction } from "./summaryContext";
+import {
+  buildSummaryInitialContext,
+  getSummarySystemInstruction,
+} from "./summaryContext";
 import { runSummaryLoopCore } from "./summaryLoopCore";
 export { buildQuerySummaryConsistencyAnchor } from "./summaryPromptTemplates";
 import { buildQuerySummaryConsistencyAnchor } from "./summaryPromptTemplates";

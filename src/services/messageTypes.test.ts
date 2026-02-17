@@ -408,7 +408,9 @@ describe("messageTypes", () => {
                 success: true,
                 data: {
                   content: "yz",
-                  warnings: ["requested end=123 exceeds max end=26; clamped to 26."],
+                  warnings: [
+                    "requested end=123 exceeds max end=26; clamped to 26.",
+                  ],
                 },
                 message: "VFS file read",
               },

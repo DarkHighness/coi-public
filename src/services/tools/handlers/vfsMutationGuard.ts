@@ -105,10 +105,7 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
     }
 
     if (
-      hasUnknownKeys(
-        (input as JsonObject)[key],
-        (parsed as JsonObject)[key],
-      )
+      hasUnknownKeys((input as JsonObject)[key], (parsed as JsonObject)[key])
     ) {
       return true;
     }
@@ -147,14 +144,10 @@ const inferContentTypeFromExtension = (
   return null;
 };
 
-const isSupportedVfsContentType = (
-  value: string,
-): value is VfsContentType =>
+const isSupportedVfsContentType = (value: string): value is VfsContentType =>
   (SUPPORTED_CONTENT_TYPES as readonly string[]).includes(value);
 
-const toPlainRecord = (
-  value: unknown,
-): JsonObject | null => {
+const toPlainRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
@@ -217,9 +210,7 @@ export const requireReadBeforeMutateForExistingFile = (
           message: `File must be read before ${operation}.`,
         },
       ],
-      recovery: [
-        readRetryExample,
-      ],
+      recovery: [readRetryExample],
     },
   );
 };

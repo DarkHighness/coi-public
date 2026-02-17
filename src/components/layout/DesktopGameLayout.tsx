@@ -1,5 +1,10 @@
 import React, { Suspense, useRef, useCallback } from "react";
-import { FeedLayout, UIState, StorySegment, PlayerRateInput } from "../../types";
+import {
+  FeedLayout,
+  UIState,
+  StorySegment,
+  PlayerRateInput,
+} from "../../types";
 import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { ActionPanel } from "../ActionPanel";
 import { Sidebar } from "../Sidebar";
@@ -123,7 +128,10 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
         setSidebarWidth((prev) => (prev === newWidth ? prev : newWidth));
       } else {
         // Timeline resizes from right
-        const newWidth = Math.max(250, Math.min(window.innerWidth - clientX, 800));
+        const newWidth = Math.max(
+          250,
+          Math.min(window.innerWidth - clientX, 800),
+        );
         timelineWidthRef.current = newWidth;
         setTimelineWidth((prev) => (prev === newWidth ? prev : newWidth));
       }

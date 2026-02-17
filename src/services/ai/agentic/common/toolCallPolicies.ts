@@ -98,9 +98,7 @@ export const getToolErrorCode = (output: unknown): string | null => {
 export const formatPendingWriteFailurePaths = (
   pending: Set<string>,
 ): string => {
-  const items = Array.from(pending.values()).sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const items = Array.from(pending.values()).sort((a, b) => a.localeCompare(b));
   if (items.length === 0) return "";
   return items.join(", ");
 };

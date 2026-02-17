@@ -26,11 +26,7 @@ export type LocalEmbeddingEngine = "transformers_js" | "tfjs";
 
 export type LocalTransformersDevice = "webgpu" | "wasm" | "cpu";
 
-export type LocalEmbeddingRuntimeBackend =
-  | "webgpu"
-  | "webgl"
-  | "wasm"
-  | "cpu";
+export type LocalEmbeddingRuntimeBackend = "webgpu" | "webgl" | "wasm" | "cpu";
 
 export interface LocalEmbeddingRuntimeInfo {
   engine: LocalEmbeddingEngine;

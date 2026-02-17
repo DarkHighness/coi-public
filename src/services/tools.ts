@@ -5,10 +5,7 @@
  */
 
 import { z, type ZodTypeAny } from "zod";
-import type {
-  TypedToolDefinition,
-  ZodToolDefinition,
-} from "./providers/types";
+import type { TypedToolDefinition, ZodToolDefinition } from "./providers/types";
 import { vfsToolRegistry, type VfsToolName } from "./vfs/tools";
 
 const getTool = (

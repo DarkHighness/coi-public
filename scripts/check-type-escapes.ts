@@ -108,7 +108,9 @@ function isUnknownAllowedForFile(relativePath: string): boolean {
   if (UNKNOWN_ALLOWED_FILES.has(relativePath)) {
     return true;
   }
-  return UNKNOWN_ALLOWED_PREFIXES.some((prefix) => relativePath.startsWith(prefix));
+  return UNKNOWN_ALLOWED_PREFIXES.some((prefix) =>
+    relativePath.startsWith(prefix),
+  );
 }
 
 function unwrapParentheses(expression: ts.Expression): ts.Expression {
@@ -204,7 +206,12 @@ function collectViolationsInFile(filePath: string): Violation[] {
         const isStringKey = keyType.kind === ts.SyntaxKind.StringKeyword;
         if (isStringKey && valueType.kind === ts.SyntaxKind.AnyKeyword) {
           violations.push(
-            makeViolation(sourceFile, sourceText, node, "record-any-disallowed"),
+            makeViolation(
+              sourceFile,
+              sourceText,
+              node,
+              "record-any-disallowed",
+            ),
           );
         }
         if (isStringKey && valueType.kind === ts.SyntaxKind.UnknownKeyword) {

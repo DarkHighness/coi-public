@@ -734,7 +734,9 @@ describe("runSummaryLoop", () => {
     mockCallWithAgenticRetry
       .mockResolvedValueOnce({
         result: {
-          functionCalls: [{ id: "call_read", name: "vfs_read_chars", args: {} }],
+          functionCalls: [
+            { id: "call_read", name: "vfs_read_chars", args: {} },
+          ],
         },
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
         raw: {},
@@ -851,11 +853,11 @@ describe("runSummaryLoop", () => {
 
     expect(result.summary).toBeNull();
     expect(mockDispatchToolCallAsync).not.toHaveBeenCalled();
-    expect((input.vfsSession as any).hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
-      "world/soul.md",
-    );
-    expect((input.vfsSession as any).hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
-      "world/global/soul.md",
-    );
+    expect(
+      (input.vfsSession as any).hasToolSeenInCurrentEpoch,
+    ).toHaveBeenCalledWith("world/soul.md");
+    expect(
+      (input.vfsSession as any).hasToolSeenInCurrentEpoch,
+    ).toHaveBeenCalledWith("world/global/soul.md");
   });
 });

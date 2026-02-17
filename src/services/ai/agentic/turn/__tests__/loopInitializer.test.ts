@@ -38,9 +38,7 @@ describe("loopInitializer", () => {
     });
 
     expect(turnTools.length).toBe(turnToolset.tools.length);
-    expect(
-      turnTools.every((tool) => turnToolNames.has(tool.name)),
-    ).toBe(true);
+    expect(turnTools.every((tool) => turnToolNames.has(tool.name))).toBe(true);
     expect(turnTools.some((tool) => tool.name === "vfs_finish_turn")).toBe(
       true,
     );
@@ -71,11 +69,9 @@ describe("loopInitializer", () => {
       isRAGEnabled: true,
       isCleanupMode: true,
     });
-    expect(
-      cleanupTools.every((tool) =>
-        cleanupToolNames.has(tool.name),
-      ),
-    ).toBe(true);
+    expect(cleanupTools.every((tool) => cleanupToolNames.has(tool.name))).toBe(
+      true,
+    );
   });
 
   it("deduplicates added tools and accumulates usage", () => {
@@ -202,12 +198,12 @@ describe("loopInitializer", () => {
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
     ]);
-    expect(state.activeTools.some((tool) => tool.name === "vfs_finish_soul")).toBe(
-      true,
-    );
-    expect(state.activeTools.some((tool) => tool.name === "vfs_finish_turn")).toBe(
-      false,
-    );
+    expect(
+      state.activeTools.some((tool) => tool.name === "vfs_finish_soul"),
+    ).toBe(true);
+    expect(
+      state.activeTools.some((tool) => tool.name === "vfs_finish_turn"),
+    ).toBe(false);
   });
 
   it("adds mode-specific runtime skill paths when god/unlock are active", () => {

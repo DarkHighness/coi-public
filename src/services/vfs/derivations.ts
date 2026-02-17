@@ -171,9 +171,7 @@ const toStringArrayOrUndefined = (value: unknown): string[] | undefined =>
     ? value
     : undefined;
 
-const normalizeAtmosphere = (
-  value: unknown,
-): AtmosphereObject | undefined => {
+const normalizeAtmosphere = (value: unknown): AtmosphereObject | undefined => {
   if (!isRecord(value)) return undefined;
   if (typeof value.envTheme !== "string") return undefined;
   if (typeof value.ambience !== "string") return undefined;
@@ -193,7 +191,8 @@ const STORY_ENDING_VALUES = new Set<StorySegment["ending"]>([
 ]);
 
 const normalizeEnding = (value: unknown): StorySegment["ending"] =>
-  typeof value === "string" && STORY_ENDING_VALUES.has(value as StorySegment["ending"])
+  typeof value === "string" &&
+  STORY_ENDING_VALUES.has(value as StorySegment["ending"])
     ? (value as StorySegment["ending"])
     : "continue";
 
@@ -251,9 +250,7 @@ const isActorTraitData = (
   value: unknown,
 ): value is ActorBundle["traits"][number] => isRecord(value);
 
-const isActorInventoryItemData = (
-  value: unknown,
-): value is InventoryItem => {
+const isActorInventoryItemData = (value: unknown): value is InventoryItem => {
   if (!isRecord(value)) return false;
   return typeof value.id === "string" && typeof value.name === "string";
 };
@@ -314,13 +311,20 @@ type ViewCategory =
 type ActorDataPath =
   | { kind: "profile"; actorId: string }
   | { kind: "viewWorldInfo"; actorId: string }
-  | { kind: "viewEntity"; actorId: string; category: ViewCategory; entityId: string }
+  | {
+      kind: "viewEntity";
+      actorId: string;
+      category: ViewCategory;
+      entityId: string;
+    }
   | { kind: "skills"; actorId: string }
   | { kind: "conditions"; actorId: string }
   | { kind: "traits"; actorId: string }
   | { kind: "inventory"; actorId: string };
 
-const parseActorDataPath = (pathWithoutCurrent: string): ActorDataPath | null => {
+const parseActorDataPath = (
+  pathWithoutCurrent: string,
+): ActorDataPath | null => {
   if (!pathWithoutCurrent.startsWith("world/characters/")) {
     return null;
   }
@@ -451,7 +455,10 @@ const parseWorldInfoViewData = (value: unknown): WorldInfoViewData | null => {
 
 const isForkTree = (value: unknown): value is GameState["forkTree"] => {
   if (!isRecord(value)) return false;
-  if (typeof value.nextForkId !== "number" || !Number.isFinite(value.nextForkId)) {
+  if (
+    typeof value.nextForkId !== "number" ||
+    !Number.isFinite(value.nextForkId)
+  ) {
     return false;
   }
   if (!isRecord(value.nodes)) return false;
@@ -975,7 +982,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent === "world/world_info.json") {
-      const sanitized = sanitizeCanonicalWorldRecord("world_info", data).sanitized;
+      const sanitized = sanitizeCanonicalWorldRecord(
+        "world_info",
+        data,
+      ).sanitized;
       if (isRecord(sanitized)) {
         state.worldInfo = sanitized as GameState["worldInfo"];
       }
@@ -1195,7 +1205,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent.startsWith("world/factions/")) {
-      const sanitized = sanitizeCanonicalWorldRecord("factions", data).sanitized;
+      const sanitized = sanitizeCanonicalWorldRecord(
+        "factions",
+        data,
+      ).sanitized;
       if (isRecord(sanitized)) {
         factionDefinitions.push(sanitized as Faction);
       }
@@ -1203,7 +1216,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent.startsWith("world/timeline/")) {
-      const sanitized = sanitizeCanonicalWorldRecord("timeline", data).sanitized;
+      const sanitized = sanitizeCanonicalWorldRecord(
+        "timeline",
+        data,
+      ).sanitized;
       if (isRecord(sanitized)) {
         timelineDefinitions.push(sanitized as TimelineEvent);
       }
@@ -1401,9 +1417,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     const profileLegacy = profile as JsonObject;
     const outlinePlayer = state.outline?.player?.profile;
     const outlineVisible = outlinePlayer?.visible ?? {};
-    const outlineProfileLegacy: JsonObject | null = isRecord(
-      outlinePlayer,
-    )
+    const outlineProfileLegacy: JsonObject | null = isRecord(outlinePlayer)
       ? outlinePlayer
       : null;
     const base: CharacterStatus = state.character ?? DEFAULT_CHARACTER;
@@ -1485,12 +1499,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       (base.appearance || "");
 
     const currentLocation =
-        pickMeaningfulCharacterText(
-          profile.currentLocation ?? undefined,
-          outlinePlayer?.currentLocation,
-          state.currentLocation,
-          base.currentLocation,
-        ) ?? "";
+      pickMeaningfulCharacterText(
+        profile.currentLocation ?? undefined,
+        outlinePlayer?.currentLocation,
+        state.currentLocation,
+        base.currentLocation,
+      ) ?? "";
 
     state.character = {
       ...base,
@@ -1628,12 +1642,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
     const outlineVisible = outline.player?.profile?.visible ?? {};
     const outlineProfile = outline.player?.profile;
-    const outlineProfileLegacy: JsonObject | null = isRecord(
-      outlineProfile,
-    )
+    const outlineProfileLegacy: JsonObject | null = isRecord(outlineProfile)
       ? outlineProfile
       : null;
-    const currentCharacter: CharacterStatus = state.character ?? DEFAULT_CHARACTER;
+    const currentCharacter: CharacterStatus =
+      state.character ?? DEFAULT_CHARACTER;
 
     state.character = {
       ...currentCharacter,

@@ -78,4 +78,3 @@ describe("ActionPanel", () => {
     expect(onAction).toHaveBeenCalledWith("Go left");
   });
 });
-

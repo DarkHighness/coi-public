@@ -64,7 +64,9 @@ describe("EmbeddingProvider", () => {
     );
 
     const firstCall = (
-      fetchMock.mock.calls as unknown as Array<[unknown, RequestInit | undefined]>
+      fetchMock.mock.calls as unknown as Array<
+        [unknown, RequestInit | undefined]
+      >
     )[0];
     expect(firstCall).toBeDefined();
     const requestInit = firstCall?.[1] ?? {};
@@ -133,7 +135,9 @@ describe("EmbeddingProvider", () => {
     expect(result.embeddings).toHaveLength(1);
 
     const firstCall = (
-      fetchMock.mock.calls as unknown as Array<[unknown, RequestInit | undefined]>
+      fetchMock.mock.calls as unknown as Array<
+        [unknown, RequestInit | undefined]
+      >
     )[0];
     expect(firstCall).toBeDefined();
     const requestInit = firstCall?.[1] ?? {};
@@ -223,7 +227,9 @@ describe("EmbeddingProvider", () => {
 
     expect(normalizeVec(vec)).toEqual([0.2, 0.4, 0.6]);
     const firstCall = (
-      fetchMock.mock.calls as unknown as Array<[unknown, RequestInit | undefined]>
+      fetchMock.mock.calls as unknown as Array<
+        [unknown, RequestInit | undefined]
+      >
     )[0];
     expect(firstCall).toBeDefined();
     const requestInit = firstCall?.[1] ?? {};

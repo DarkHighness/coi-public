@@ -258,47 +258,46 @@ describe("agenticLoop tool logging", () => {
   it("allows finish execution when only non-write tools failed earlier in batch", async () => {
     const vfsSession = createVfsSession();
 
-    aiHandlerMock.handleAICall
-      .mockResolvedValueOnce({
-        text: "",
-        usage: {
-          promptTokens: 5,
-          completionTokens: 3,
-          totalTokens: 8,
+    aiHandlerMock.handleAICall.mockResolvedValueOnce({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-read-fail",
+          name: "vfs_read_chars",
+          args: { path: "current/world/global.json" },
         },
-        functionCalls: [
-          {
-            id: "call-read-fail",
-            name: "vfs_read_chars",
-            args: { path: "current/world/global.json" },
-          },
-          {
-            id: "call-write-pass",
-            name: "vfs_write_file",
-            args: {
-              ops: [
-                {
-                  op: "write_file",
-                  path: "current/world/notes.md",
-                  content: "ok",
-                  contentType: "text/markdown",
-                },
-              ],
-            },
-          },
-          {
-            id: "call-finish-blocked",
-            name: "vfs_finish_turn",
-            args: {
-              userAction: "next",
-              assistant: {
-                narrative: "new narrative",
-                choices: [{ text: "A" }],
+        {
+          id: "call-write-pass",
+          name: "vfs_write_file",
+          args: {
+            ops: [
+              {
+                op: "write_file",
+                path: "current/world/notes.md",
+                content: "ok",
+                contentType: "text/markdown",
               },
+            ],
+          },
+        },
+        {
+          id: "call-finish-blocked",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
             },
           },
-        ],
-      });
+        },
+      ],
+    });
 
     toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
       if (name === "vfs_read_chars") {
@@ -606,14 +605,16 @@ describe("agenticLoop tool logging", () => {
     ]);
 
     const writeLogs = result.logs.filter(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
+      (log) =>
+        log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
     );
     expect(writeLogs.length).toBeGreaterThanOrEqual(3);
     expect(
       writeLogs.some(
         (log) =>
           String((log as any).toolInput?.path || "") ===
-            "current/world/notes.md" && (log as any).toolOutput?.success === true,
+            "current/world/notes.md" &&
+          (log as any).toolOutput?.success === true,
       ),
     ).toBe(true);
     expect(
@@ -639,15 +640,15 @@ describe("agenticLoop tool logging", () => {
         totalTokens: 8,
       },
       functionCalls: [
-          {
-            id: "call-write-immutable",
-            name: "vfs_write_file",
-            args: {
-              path: "current/skills/commands/runtime/SKILL.md",
-              content: "x",
-              contentType: "text/markdown",
-            },
+        {
+          id: "call-write-immutable",
+          name: "vfs_write_file",
+          args: {
+            path: "current/skills/commands/runtime/SKILL.md",
+            content: "x",
+            contentType: "text/markdown",
           },
+        },
         {
           id: "call-finish-ok",
           name: "vfs_finish_turn",
@@ -706,7 +707,8 @@ describe("agenticLoop tool logging", () => {
     expect(blockedFinishLog).toBeUndefined();
 
     const writeLog = result.logs.find(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
+      (log) =>
+        log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
     );
     expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
       "WRITE_UNRECOVERABLE_NON_BLOCKING",
@@ -727,14 +729,14 @@ describe("agenticLoop tool logging", () => {
         totalTokens: 8,
       },
       functionCalls: [
-          {
-            id: "call-write-missing-target",
-            name: "vfs_patch_json",
-            args: {
-              path: "current/world/newly-created/profile.json",
-              patch: [{ op: "replace", path: "/foo", value: "bar" }],
-            },
+        {
+          id: "call-write-missing-target",
+          name: "vfs_patch_json",
+          args: {
+            path: "current/world/newly-created/profile.json",
+            patch: [{ op: "replace", path: "/foo", value: "bar" }],
           },
+        },
         {
           id: "call-finish-ok",
           name: "vfs_finish_turn",
@@ -793,7 +795,8 @@ describe("agenticLoop tool logging", () => {
     expect(blockedFinishLog).toBeUndefined();
 
     const writeLog = result.logs.find(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_patch_json",
+      (log) =>
+        log.endpoint === "tool_execution" && log.toolName === "vfs_patch_json",
     );
     expect(String((writeLog as any)?.toolOutput?.error || "")).toContain(
       "WRITE_NON_EXISTENT_TARGET_NON_BLOCKING",
@@ -948,7 +951,8 @@ describe("agenticLoop tool logging", () => {
     ).toContain("current/world/newly-created/kno_phantom_sniper.json");
 
     const writeLog = result.logs.find(
-      (log) => log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
+      (log) =>
+        log.endpoint === "tool_execution" && log.toolName === "vfs_write_file",
     );
     const writeError = String((writeLog as any)?.toolOutput?.error || "");
     expect(writeError).toContain("WRITE_EXISTING_TARGET_RETRY_REQUIRED");

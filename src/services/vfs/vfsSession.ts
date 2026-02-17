@@ -111,10 +111,7 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
       return true;
     }
     if (
-      hasUnknownKeys(
-        (input as JsonObject)[key],
-        (parsed as JsonObject)[key],
-      )
+      hasUnknownKeys((input as JsonObject)[key], (parsed as JsonObject)[key])
     ) {
       return true;
     }
@@ -160,9 +157,7 @@ const toPlaceholderDraftLogicalCandidates = (
     return [];
   }
 
-  if (
-    normalized.startsWith("world/placeholders/")
-  ) {
+  if (normalized.startsWith("world/placeholders/")) {
     return [];
   }
 
@@ -908,7 +903,9 @@ export class VfsSession {
         violations.push("worldSettingUnlocked");
       }
 
-      const previousMainGoalUnlocked = readBoolean(previousRecord.mainGoalUnlocked);
+      const previousMainGoalUnlocked = readBoolean(
+        previousRecord.mainGoalUnlocked,
+      );
       const nextMainGoalUnlocked = readBoolean(nextRecord.mainGoalUnlocked);
       if (previousMainGoalUnlocked === true && nextMainGoalUnlocked === false) {
         violations.push("mainGoalUnlocked");
@@ -922,7 +919,9 @@ export class VfsSession {
     }
   }
 
-  private removePlaceholderDraftsForPromotedEntity(canonicalPath: string): void {
+  private removePlaceholderDraftsForPromotedEntity(
+    canonicalPath: string,
+  ): void {
     const candidates = toPlaceholderDraftCanonicalCandidates(canonicalPath);
     for (const draftCanonicalPath of candidates) {
       if (!this.files[draftCanonicalPath]) {

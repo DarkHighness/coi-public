@@ -66,13 +66,12 @@ const parseGeminiEmbeddings = (payload: unknown): Float32Array[] => {
     return [];
   }
 
-  return payload.embeddings
-    .map((entry) => {
-      if (!isObject(entry)) {
-        return new Float32Array();
-      }
-      return new Float32Array(toNumberArray(entry.values));
-    });
+  return payload.embeddings.map((entry) => {
+    if (!isObject(entry)) {
+      return new Float32Array();
+    }
+    return new Float32Array(toNumberArray(entry.values));
+  });
 };
 
 const parseIndexedEmbeddings = (payload: unknown): Float32Array[] => {

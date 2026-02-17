@@ -267,7 +267,9 @@ const parseToolArgumentsText = (
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown parse error";
-    throw new Error(`[messageTypes] Failed to parse tool args from ${source}: ${message}`);
+    throw new Error(
+      `[messageTypes] Failed to parse tool args from ${source}: ${message}`,
+    );
   }
 };
 
@@ -295,7 +297,7 @@ export const toGeminiFormat = (
                 response: { content: p.toolResult.content },
               },
             })),
-          };
+        };
       }
 
       // Handle assistant messages with tool calls
@@ -377,7 +379,9 @@ export const toGeminiFormat = (
 /**
  * Convert UnifiedMessage array to OpenAI format
  */
-export const toOpenAIFormat = (messages: UnifiedMessage[]): OpenAIMessageDto[] => {
+export const toOpenAIFormat = (
+  messages: UnifiedMessage[],
+): OpenAIMessageDto[] => {
   const result: OpenAIMessageDto[] = [];
 
   for (const msg of messages) {
@@ -555,7 +559,9 @@ export const fromGeminiFormat = (
 /**
  * Convert OpenAI format to UnifiedMessage array
  */
-export const fromOpenAIFormat = (openaiMessages: unknown[]): UnifiedMessage[] => {
+export const fromOpenAIFormat = (
+  openaiMessages: unknown[],
+): UnifiedMessage[] => {
   const parseMaybeJson = (value: unknown): unknown => {
     if (typeof value !== "string") return value;
 

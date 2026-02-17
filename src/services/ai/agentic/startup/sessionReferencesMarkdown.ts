@@ -52,7 +52,11 @@ const toCurrentPath = (candidate: string): string | null => {
     return null;
   }
 
-  if (normalizedRaw.includes("*") || normalizedRaw.includes("<") || normalizedRaw.includes(">")) {
+  if (
+    normalizedRaw.includes("*") ||
+    normalizedRaw.includes("<") ||
+    normalizedRaw.includes(">")
+  ) {
     return null;
   }
 

@@ -61,9 +61,8 @@ const normalizePlaceholderDraftMarkdown = (
   }
 
   const idFromPath = path.split("/").pop()?.replace(/\.md$/i, "")?.trim();
-  const id = idFromPath && idFromPath.length > 0
-    ? idFromPath
-    : `ph:${fallbackIndex}`;
+  const id =
+    idFromPath && idFromPath.length > 0 ? idFromPath : `ph:${fallbackIndex}`;
 
   return [
     "# Placeholder Draft",
@@ -119,8 +118,7 @@ function prepareEntities<T extends { id?: string; unlocked?: boolean }>(
       return {
         ...item,
         id: newId,
-        unlocked:
-          typeof item.unlocked === "boolean" ? item.unlocked : false,
+        unlocked: typeof item.unlocked === "boolean" ? item.unlocked : false,
       };
     }
     return { ...item, id: newId };
@@ -134,7 +132,9 @@ type StoryActorProfile = StoryActorBundle["profile"];
 type StoryActorSkill = NonNullable<StoryActorBundle["skills"]>[number];
 type StoryActorCondition = NonNullable<StoryActorBundle["conditions"]>[number];
 type StoryActorTrait = NonNullable<StoryActorBundle["traits"]>[number];
-type StoryActorInventoryItem = NonNullable<StoryActorBundle["inventory"]>[number];
+type StoryActorInventoryItem = NonNullable<
+  StoryActorBundle["inventory"]
+>[number];
 type StoryActorRelation = NonNullable<StoryActorProfile["relations"]>[number];
 
 type DraftActorBundle = Partial<{
@@ -163,7 +163,9 @@ const getProfileFromBundle = (
   return bundle.profile as Partial<StoryActorProfile>;
 };
 
-const getRelations = (profile: Partial<StoryActorProfile>): StoryActorRelation[] =>
+const getRelations = (
+  profile: Partial<StoryActorProfile>,
+): StoryActorRelation[] =>
   Array.isArray(profile.relations)
     ? (profile.relations as StoryActorRelation[])
     : [];
@@ -215,9 +217,13 @@ const prepareActorBundle = (
         defaultUnlocked: true,
       },
     ),
-    traits: prepareEntities(getEntityArray<StoryActorTrait>(bundle.traits), "trait", {
-      defaultUnlocked: true,
-    }),
+    traits: prepareEntities(
+      getEntityArray<StoryActorTrait>(bundle.traits),
+      "trait",
+      {
+        defaultUnlocked: true,
+      },
+    ),
     inventory: prepareEntities(
       getEntityArray<StoryActorInventoryItem>(bundle.inventory),
       "inv",
