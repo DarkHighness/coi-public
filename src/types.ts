@@ -508,7 +508,7 @@ export interface VisibleInfo {
   description: string;
   appearance?: string;
   notes?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface HiddenInfo {
@@ -516,8 +516,8 @@ export interface HiddenInfo {
   realPersonality?: string;
   secrets?: string[];
   realMotives?: string;
-  hiddenAttributes?: Record<string, any>;
-  [key: string]: any;
+  hiddenAttributes?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 // TimelineEvent, CausalChain 从 zodSchemas.ts 导入
@@ -554,8 +554,8 @@ export interface ToolCallContextUsageSnapshot {
 // Individual tool call record
 export interface ToolCallRecord {
   name: string;
-  input: Record<string, any>;
-  output: any;
+  input: unknown;
+  output: unknown;
   timestamp: number;
   contextUsage?: ToolCallContextUsageSnapshot;
 }
@@ -585,9 +585,13 @@ export interface LogEntry {
   /** Tool name (for type="tool") */
   toolName?: string;
   /** Tool input arguments (for type="tool") */
-  toolInput?: Record<string, any>;
+  toolInput?: Record<string, unknown>;
   /** Tool output (for type="tool") */
-  toolOutput?: any;
+  toolOutput?: {
+    success?: boolean;
+    error?: unknown;
+    [key: string]: unknown;
+  };
 
   /** Outline phase number 1-9 (for type="outline") */
   phase?: number;
@@ -614,10 +618,16 @@ export interface LogEntry {
   // For agentic mode: array of tool calls in this turn
   toolCalls?: ToolCallRecord[];
   // Legacy fields for non-agentic mode
-  request?: any;
-  response?: any;
+  request?: {
+    error?: unknown;
+    [key: string]: unknown;
+  };
+  response?: {
+    error?: unknown;
+    [key: string]: unknown;
+  };
   // Parsed/structured result (for schema-based generation)
-  parsedResult?: any;
+  parsedResult?: unknown;
   usage?: TokenUsage;
   generationDetails?: {
     dynamicContext?: string;
@@ -625,7 +635,7 @@ export interface LogEntry {
 
     systemPrompt?: string;
     userPrompt?: string;
-    modelConfig?: any;
+    modelConfig?: unknown;
     injectedRules?: string[]; // Custom rules injected into prompt
     nsfwEnabled?: boolean; // NSFW mode enabled
   };

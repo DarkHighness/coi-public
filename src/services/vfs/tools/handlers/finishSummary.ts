@@ -7,9 +7,15 @@ import {
   type VfsToolHandler,
 } from "./shared";
 
+const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+};
+
 export const handleFinishSummary: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_finish_summary", args, () => {
-    const typedArgs = args as any;
     const runtime = args as Record<string, unknown>;
 
     if ("id" in runtime || "createdAt" in runtime) {
@@ -63,12 +69,17 @@ export const handleFinishSummary: VfsToolHandler = (args, ctx) =>
       (draft) => {
         const existingFile = draft.readFile("summary/state.json");
         const parsed = existingFile ? safeParseJson(existingFile.content) : null;
-        const existingState = parsed as any;
+        const existingState = toObjectRecord(parsed);
         const existingSummaries = Array.isArray(existingState?.summaries)
-          ? existingState.summaries
+          ? existingState.summaries.filter(
+              (summary): summary is Record<string, unknown> =>
+                !!summary &&
+                typeof summary === "object" &&
+                !Array.isArray(summary),
+            )
           : [];
 
-        const maxId = existingSummaries.reduce((max: number, summary: any) => {
+        const maxId = existingSummaries.reduce((max: number, summary) => {
           const id = summary?.id;
           return typeof id === "number" && Number.isFinite(id)
             ? Math.max(max, id)
@@ -79,16 +90,16 @@ export const handleFinishSummary: VfsToolHandler = (args, ctx) =>
         const summary = {
           id: nextId,
           createdAt: Date.now(),
-          displayText: typedArgs.displayText,
-          visible: typedArgs.visible,
-          hidden: typedArgs.hidden,
-          timeRange: typedArgs.timeRange ?? null,
+          displayText: runtime.displayText,
+          visible: runtime.visible,
+          hidden: runtime.hidden,
+          timeRange: runtime.timeRange ?? null,
           nodeRange: {
             fromIndex,
             toIndex,
           },
           nextSessionReferencesMarkdown:
-            typedArgs.nextSessionReferencesMarkdown ?? null,
+            runtime.nextSessionReferencesMarkdown ?? null,
         };
 
         const nextSummaries = [...existingSummaries, summary];

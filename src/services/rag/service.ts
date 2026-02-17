@@ -15,7 +15,6 @@ import {
   type InitPayload,
   type LocalEmbeddingRuntimeInfo,
   type LookupReusableEmbeddingsResult,
-  type ModelMismatchEvent,
   type ModelMismatchInfo,
   type RAGConfig,
   type RAGDocumentMeta,
@@ -30,7 +29,6 @@ import {
   type SearchOptions,
   type SearchPayload,
   type SearchResult,
-  type StorageOverflowEvent,
   type StorageOverflowInfo,
   type SwitchSavePayload,
   type UpdateDocumentPayload,
@@ -65,6 +63,20 @@ export interface RAGServiceEvents {
   storageOverflow: (data: StorageOverflowInfo) => void;
 }
 
+interface WindowWithRagService extends Window {
+  ragServiceInstance?: RAGService | null;
+}
+
+const getBrowserWindow = (): WindowWithRagService | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window as WindowWithRagService;
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object";
+
 export class RAGService {
   private worker: SharedWorker | null = null;
   private port: MessagePort | null = null;
@@ -72,12 +84,13 @@ export class RAGService {
   private pendingRequests: Map<
     string,
     {
-      resolve: (value: any) => void;
+      resolve: (value: unknown) => void;
       reject: (error: Error) => void;
       timeout: ReturnType<typeof setTimeout>;
     }
   > = new Map();
-  private eventListeners: Map<string, Set<Function>> = new Map();
+  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> =
+    new Map();
   private isInitialized = false;
   private initPromise: Promise<void> | null = null;
   private config: RAGConfig = { ...DEFAULT_RAG_CONFIG };
@@ -121,13 +134,16 @@ export class RAGService {
 
     this.port = this.worker.port;
     this.port.onmessage = (
-      event: MessageEvent<RAGWorkerResponse | RAGEvent>,
+      event: MessageEvent<RAGWorkerResponse | RAGEvent | unknown>,
     ) => {
       const data = event.data;
-      if ("id" in data && "success" in data) {
-        this.handleResponse(data as RAGWorkerResponse);
-      } else {
-        this.handleEvent(data as RAGEvent);
+      if (this.isWorkerResponse(data)) {
+        this.handleResponse(data);
+        return;
+      }
+
+      if (this.isRagEvent(data)) {
+        this.handleEvent(data);
       }
     };
 
@@ -516,10 +532,12 @@ export class RAGService {
     callback: RAGServiceEvents[K],
   ): () => void {
     const eventName = event as string;
-    if (!this.eventListeners.has(eventName)) {
-      this.eventListeners.set(eventName, new Set());
+    let listeners = this.eventListeners.get(eventName);
+    if (!listeners) {
+      listeners = new Set();
+      this.eventListeners.set(eventName, listeners);
     }
-    this.eventListeners.get(eventName)!.add(callback as Function);
+    listeners.add(callback as (...args: unknown[]) => void);
 
     return () => {
       this.off(event, callback);
@@ -532,7 +550,7 @@ export class RAGService {
   ): void {
     const listeners = this.eventListeners.get(event as string);
     if (listeners) {
-      listeners.delete(callback as Function);
+      listeners.delete(callback as (...args: unknown[]) => void);
     }
   }
 
@@ -540,20 +558,31 @@ export class RAGService {
     event: K,
     callback: RAGServiceEvents[K],
   ): void {
-    const onceCallback = ((data: any) => {
-      callback(data);
-      this.off(event, onceCallback as any);
+    const onceCallback = ((...args: Parameters<RAGServiceEvents[K]>) => {
+      const listener = callback as (
+        ...callbackArgs: Parameters<RAGServiceEvents[K]>
+      ) => void;
+      listener(...args);
+      this.off(event, onceCallback as RAGServiceEvents[K]);
     }) as RAGServiceEvents[K];
 
     this.on(event, onceCallback);
   }
 
-  private emit(event: string, data?: any): void {
-    const listeners = this.eventListeners.get(event);
+  private emit<K extends keyof RAGServiceEvents>(
+    event: K,
+    ...args: Parameters<RAGServiceEvents[K]>
+  ): void {
+    const listeners = this.eventListeners.get(event as string) as
+      | Set<RAGServiceEvents[K]>
+      | undefined;
     if (listeners) {
       for (const callback of listeners) {
         try {
-          callback(data);
+          const listener = callback as (
+            ...callbackArgs: Parameters<RAGServiceEvents[K]>
+          ) => void;
+          listener(...args);
         } catch (error) {
           console.error(`[RAGService] Error in ${event} listener:`, error);
         }
@@ -587,8 +616,8 @@ export class RAGService {
   }
 
   private async sendRequest<T>(
-    type: string,
-    payload: any,
+    type: RAGWorkerRequest["type"],
+    payload: unknown,
     timeoutMs: number = this.REQUEST_TIMEOUT,
   ): Promise<T> {
     if (!this.port) {
@@ -607,9 +636,13 @@ export class RAGService {
         );
       }, timeoutMs);
 
-      this.pendingRequests.set(id, { resolve, reject, timeout });
+      this.pendingRequests.set(id, {
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        timeout,
+      });
 
-      const request: RAGWorkerRequest = { id, type: type as any, payload };
+      const request: RAGWorkerRequest = { id, type, payload };
       this.port!.postMessage(request);
     });
   }
@@ -634,41 +667,136 @@ export class RAGService {
         this.emit("ready");
         break;
       case "error":
-        this.emit("error", event.data);
+        this.emit("error", typeof event.data === "string" ? event.data : "");
         break;
       case "indexUpdated":
-        this.emit("indexUpdated", event.data);
+        if (isObject(event.data)) {
+          this.emit("indexUpdated", {
+            count: Number(event.data.count ?? 0),
+            saveId: String(event.data.saveId ?? ""),
+          });
+        }
         break;
       case "searchComplete":
-        this.emit("searchComplete", event.data);
+        this.emit(
+          "searchComplete",
+          Array.isArray(event.data)
+            ? (event.data as SearchResult[])
+            : [],
+        );
         break;
       case "cleanupComplete":
-        this.emit("cleanupComplete", event.data);
+        if (isObject(event.data)) {
+          this.emit("cleanupComplete", {
+            deletedVersions: Number(event.data.deletedVersions ?? 0),
+            deletedStorage: Number(event.data.deletedStorage ?? 0),
+          });
+        }
         break;
       case "progress":
-        this.emit("progress", event.data);
+        if (isObject(event.data)) {
+          this.emit("progress", {
+            phase:
+              event.data.phase === "embedding" ||
+              event.data.phase === "indexing" ||
+              event.data.phase === "searching" ||
+              event.data.phase === "cleanup"
+                ? event.data.phase
+                : "embedding",
+            current: Number(event.data.current ?? 0),
+            total: Number(event.data.total ?? 0),
+            message:
+              typeof event.data.message === "string"
+                ? event.data.message
+                : undefined,
+            runtime: event.data.runtime as LocalEmbeddingRuntimeInfo | undefined,
+            messageKey:
+              typeof event.data.messageKey === "string"
+                ? event.data.messageKey
+                : undefined,
+            messageParams: isObject(event.data.messageParams)
+              ? (event.data.messageParams as Record<string, string | number>)
+              : undefined,
+          });
+        }
         break;
       case "modelMismatch":
-        this.emit("modelMismatch", (event as ModelMismatchEvent).data);
+        if (isObject(event.data)) {
+          this.emit("modelMismatch", {
+            currentModel: String(event.data.currentModel ?? ""),
+            currentProvider: String(event.data.currentProvider ?? ""),
+            storedModel: String(event.data.storedModel ?? ""),
+            storedProvider: String(event.data.storedProvider ?? ""),
+            documentCount: Number(event.data.documentCount ?? 0),
+          });
+        }
         break;
       case "storageOverflow":
-        this.emit("storageOverflow", (event as StorageOverflowEvent).data);
+        if (isObject(event.data) && Array.isArray(event.data.saveStats)) {
+          this.emit("storageOverflow", {
+            currentTotal: Number(event.data.currentTotal ?? 0),
+            maxTotal: Number(event.data.maxTotal ?? 0),
+            saveStats: event.data.saveStats
+              .filter(isObject)
+              .map((row) => ({
+                saveId: String(row.saveId ?? ""),
+                documentCount: Number(row.documentCount ?? 0),
+                lastAccessed: Number(row.lastAccessed ?? 0),
+              })),
+            suggestedDeletions: Array.isArray(event.data.suggestedDeletions)
+              ? event.data.suggestedDeletions.map((entry) => String(entry))
+              : [],
+            protectedBytes: Number(event.data.protectedBytes ?? 0),
+            currentForkHistoryBytes: Number(
+              event.data.currentForkHistoryBytes ?? 0,
+            ),
+            activeOtherForkBytes: Number(event.data.activeOtherForkBytes ?? 0),
+            inactiveGameBytes: Number(event.data.inactiveGameBytes ?? 0),
+            storageLimitBytes: Number(event.data.storageLimitBytes ?? 0),
+            protectedOverflow: Boolean(event.data.protectedOverflow),
+          });
+        }
         break;
       default:
         console.warn("[RAGService] Unknown event type:", event.type);
     }
   }
-}
 
-if (typeof window !== "undefined") {
-  if (!(window as any).ragServiceInstance) {
-    (window as any).ragServiceInstance = null;
+  private isWorkerResponse(data: unknown): data is RAGWorkerResponse {
+    return (
+      isObject(data) &&
+      typeof data.id === "string" &&
+      typeof data.success === "boolean"
+    );
+  }
+
+  private isRagEvent(data: unknown): data is RAGEvent {
+    return (
+      isObject(data) &&
+      typeof data.type === "string" &&
+      [
+        "ready",
+        "error",
+        "indexUpdated",
+        "searchComplete",
+        "cleanupComplete",
+        "progress",
+        "modelMismatch",
+        "storageOverflow",
+      ].includes(data.type)
+    );
   }
 }
 
+const globalWindow = getBrowserWindow();
+if (globalWindow && typeof globalWindow.ragServiceInstance === "undefined") {
+  globalWindow.ragServiceInstance = null;
+}
+
 export function getRAGService(): RAGService | null {
-  if (typeof window !== "undefined") {
-    return (window as any).ragServiceInstance;
+  const browserWindow = getBrowserWindow();
+  if (browserWindow) {
+    return browserWindow.ragServiceInstance ?? null;
   }
   return null;
 }
@@ -689,14 +817,17 @@ export async function initializeRAGService(
   }
 
   ragServiceInstance = new RAGService();
-  (window as any).ragServiceInstance = ragServiceInstance;
+  const browserWindow = getBrowserWindow();
+  if (browserWindow) {
+    browserWindow.ragServiceInstance = ragServiceInstance;
+  }
 
   try {
     await ragServiceInstance.initialize(config, credentials);
   } catch (error) {
     ragServiceInstance.terminate();
-    if ((window as any).ragServiceInstance === ragServiceInstance) {
-      (window as any).ragServiceInstance = null;
+    if (browserWindow?.ragServiceInstance === ragServiceInstance) {
+      browserWindow.ragServiceInstance = null;
     }
     throw error;
   }
@@ -708,6 +839,9 @@ export function terminateRAGService(): void {
   const ragServiceInstance = getRAGService();
   if (ragServiceInstance) {
     ragServiceInstance.terminate();
-    (window as any).ragServiceInstance = null;
+    const browserWindow = getBrowserWindow();
+    if (browserWindow) {
+      browserWindow.ragServiceInstance = null;
+    }
   }
 }

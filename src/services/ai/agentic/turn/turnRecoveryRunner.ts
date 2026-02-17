@@ -35,6 +35,16 @@ export interface TurnRecoveryRunnerResult<Result> {
   recovery: TurnRecoveryTrace;
 }
 
+type RecoveryAnnotatedError = Error & {
+  recovery?: TurnRecoveryTrace;
+  recoveryKind?: TurnRecoveryKind;
+};
+
+const toRecoveryAnnotatedError = (
+  value: unknown,
+): RecoveryAnnotatedError | null =>
+  value instanceof Error ? (value as RecoveryAnnotatedError) : null;
+
 const defaultSleep = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
@@ -70,13 +80,11 @@ const createAttemptRecord = (
 export function getRecoveryTrace(
   error: unknown,
 ): TurnRecoveryTrace | undefined {
-  if (!error || typeof error !== "object") return undefined;
-  return (error as any).recovery;
+  return toRecoveryAnnotatedError(error)?.recovery;
 }
 
 export function getRecoveryKind(error: unknown): TurnRecoveryKind | undefined {
-  if (!error || typeof error !== "object") return undefined;
-  return (error as any).recoveryKind;
+  return toRecoveryAnnotatedError(error)?.recoveryKind;
 }
 
 export function annotateRecoveryError(
@@ -84,9 +92,9 @@ export function annotateRecoveryError(
   recovery: TurnRecoveryTrace,
   recoveryKind: TurnRecoveryKind,
 ): Error {
-  const normalized = toError(error);
-  (normalized as any).recovery = recovery;
-  (normalized as any).recoveryKind = recoveryKind;
+  const normalized = toError(error) as RecoveryAnnotatedError;
+  normalized.recovery = recovery;
+  normalized.recoveryKind = recoveryKind;
   return normalized;
 }
 

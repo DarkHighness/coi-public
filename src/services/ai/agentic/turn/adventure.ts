@@ -30,6 +30,7 @@ import {
   resolveCulturePreferenceContext,
   type ActivePresetSkillRequirement,
   pickModelMatchedPrompt,
+  type ModelPromptEntry,
 } from "../../utils";
 
 import { sessionManager } from "../../sessionManager";
@@ -79,6 +80,29 @@ export interface AgenticLoopResult {
   recovery?: TurnRecoveryTrace;
 }
 
+const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readModelPromptEntries = (value: unknown): ModelPromptEntry[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const entries = value
+    .map((entry) => {
+      if (!isRecordObject(entry)) return null;
+      const keywords = Array.isArray(entry.keywords)
+        ? entry.keywords.filter((keyword): keyword is string => {
+            return typeof keyword === "string";
+          })
+        : [];
+      const prompt = typeof entry.prompt === "string" ? entry.prompt : "";
+      return {
+        keywords,
+        prompt,
+      } satisfies ModelPromptEntry;
+    })
+    .filter((entry): entry is ModelPromptEntry => entry !== null);
+  return entries.length > 0 ? entries : undefined;
+};
+
 /**
  * 生成冒险回合
  */
@@ -102,7 +126,10 @@ export const generateAdventureTurn = async (
   );
   const resolvedThemeConfig = gameState.themeConfig;
 
-  const narrativeStyleOverride = (gameState.outline as any)?.narrativeStyle;
+  const narrativeStyleOverride =
+    gameState.outline && typeof gameState.outline === "object"
+      ? (gameState.outline as Record<string, unknown>).narrativeStyle
+      : undefined;
   const baseNarrativeStyle =
     typeof narrativeStyleOverride === "string" && narrativeStyleOverride.trim()
       ? narrativeStyleOverride.trim()
@@ -219,8 +246,12 @@ export const generateAdventureTurn = async (
 
   const systemDefaultInjectionEnabled =
     settings.extra?.systemDefaultInjectionEnabled ?? true;
+  const systemPromptEntries =
+    isRecordObject(promptToml) && "system_prompts" in promptToml
+      ? readModelPromptEntries(promptToml.system_prompts)
+      : undefined;
   const systemDefaultInjection = systemDefaultInjectionEnabled
-    ? pickModelMatchedPrompt((promptToml as any)?.system_prompts, modelId)
+    ? pickModelMatchedPrompt(systemPromptEntries, modelId)
     : undefined;
 
   const customInstructionRaw = settings.extra?.customInstruction;
@@ -571,9 +602,12 @@ export const generateAdventureTurn = async (
       await maybeAutoCompactOnContextOverflow();
       const contextError = new Error(
         `CONTEXT_LENGTH_EXCEEDED: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      (contextError as any).recovery = recoveryTrace;
-      (contextError as any).recoveryKind = recoveryKind || "context";
+      ) as Error & {
+        recovery?: TurnRecoveryTrace;
+        recoveryKind?: TurnRecoveryKind;
+      };
+      contextError.recovery = recoveryTrace;
+      contextError.recoveryKind = recoveryKind || "context";
       throw contextError;
     }
 

@@ -18,8 +18,11 @@ import type { OutlinePhaseProgress } from "../../services/aiService";
 import type {
   AISettings,
   GameState,
+  LogEntry,
   OutlineConversationState,
+  ResolvedThemeConfig,
   SavePresetProfile,
+  StoryOutline,
   UnifiedMessage,
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
@@ -69,9 +72,9 @@ interface LifecycleActionsDeps {
 }
 
 interface BuildOpeningStateParams {
-  outline: any;
-  logs: any[];
-  themeConfig: any;
+  outline: StoryOutline;
+  logs: LogEntry[];
+  themeConfig: ResolvedThemeConfig;
   theme: string;
   language: string;
   customContext?: string;
@@ -83,8 +86,8 @@ interface BuildOpeningStateParams {
 
 interface CommitOutlineStateParams {
   saveId: string;
-  outline: any;
-  themeConfig: any;
+  outline: StoryOutline;
+  themeConfig: ResolvedThemeConfig;
   theme: string;
   language: string;
   customContext?: string;

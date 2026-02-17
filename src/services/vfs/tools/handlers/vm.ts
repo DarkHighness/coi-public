@@ -46,6 +46,25 @@ interface VmArgs {
   maxScriptChars?: number;
 }
 
+const parseVmArgs = (args: Record<string, unknown>): VmArgs => {
+  const scripts = Array.isArray(args.scripts)
+    ? args.scripts.filter((item): item is string => typeof item === "string")
+    : [];
+  const maxToolCalls =
+    typeof args.maxToolCalls === "number" && Number.isFinite(args.maxToolCalls)
+      ? args.maxToolCalls
+      : undefined;
+  const maxScriptChars =
+    typeof args.maxScriptChars === "number" && Number.isFinite(args.maxScriptChars)
+      ? args.maxScriptChars
+      : undefined;
+  return {
+    scripts,
+    maxToolCalls,
+    maxScriptChars,
+  };
+};
+
 interface VmCallTraceItem {
   index: number;
   scriptIndex: number;
@@ -198,19 +217,19 @@ const wrapInnerToolError = (params: {
     `tool="${params.toolName}": ${params.error.error}`,
 });
 
-const attachVmMeta = <T extends Record<string, unknown>>(
+const attachVmMeta = <T extends object>(
   result: T,
   vmMeta: VmExecutionMeta,
 ): T & { vmMeta: VmExecutionMeta } => ({
-  ...result,
+  ...(result as object),
   vmMeta,
-});
+}) as T & { vmMeta: VmExecutionMeta };
 
 export const createVmHandler = (
   dispatchInner: VmInnerDispatcher,
 ): VfsToolHandler => {
   return async (args, ctx) => {
-    const typedArgs = args as VmArgs;
+    const typedArgs = parseVmArgs(args);
     const scripts = Array.isArray(typedArgs.scripts) ? typedArgs.scripts : [];
     const maxToolCalls =
       typeof typedArgs.maxToolCalls === "number"
@@ -347,7 +366,7 @@ export const createVmHandler = (
       }
 
       const normalizedArgs = normalizeCallArgs(rawArgs);
-      if (!normalizedArgs.ok) {
+      if (normalizedArgs.ok === false) {
         throw fail(normalizedArgs.error);
       }
 
@@ -365,7 +384,8 @@ export const createVmHandler = (
       }
 
       const writeTargets = collectWriteTargets(normalizedToolName, normalizedArgs.args);
-      const outputIsError = isToolError(output);
+      const outputError = isToolError(output) ? output : null;
+      const outputIsError = outputError !== null;
 
       callTrace.push({
         index: callTrace.length,
@@ -373,8 +393,8 @@ export const createVmHandler = (
         toolName: normalizedToolName,
         args: normalizedArgs.args,
         success: !outputIsError,
-        code: outputIsError ? output.code : undefined,
-        error: outputIsError ? output.error : undefined,
+        code: outputError?.code,
+        error: outputError?.error,
         writeTargets,
       });
 
@@ -405,13 +425,13 @@ export const createVmHandler = (
         }
       }
 
-      if (outputIsError) {
+      if (outputError) {
         throw fail(
           wrapInnerToolError({
             scriptIndex: activeScriptIndex,
             callIndex: toolCallsUsed,
             toolName: normalizedToolName,
-            error: output,
+            error: outputError,
           }),
         );
       }

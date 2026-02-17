@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { filterModels } from "../../services/aiService";
 import { FunctionKey } from "./types";
-import { AISettings } from "../../types";
+import { FunctionConfig } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
 import {
   buildModelContextWindowKey,
@@ -64,7 +64,11 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     return currentSettings.providers.instances.find((p) => p.id === providerId);
   };
 
-  const updateFunction = (func: FunctionKey, field: string, value: any) => {
+  const updateFunction = <K extends keyof FunctionConfig>(
+    func: FunctionKey,
+    field: K,
+    value: FunctionConfig[K],
+  ) => {
     // Special handling for model selection on text-related functions
     const textFunctions: FunctionKey[] = ["story", "lore", "script"];
 

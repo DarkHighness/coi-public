@@ -12,9 +12,14 @@
 /**
  * Checks if an error is a context length/token limit error.
  */
-export function isContextLengthError(error: any): boolean {
+const getErrorMessage = (error: unknown): string =>
+  error && typeof error === "object" && "message" in error
+    ? String((error as { message?: unknown }).message ?? "")
+    : "";
+
+export function isContextLengthError(error: unknown): boolean {
   if (!error) return false;
-  const msg = (error.message || "").toLowerCase();
+  const msg = getErrorMessage(error).toLowerCase();
 
   // Common patterns for different providers
   return (
@@ -35,9 +40,9 @@ export function isContextLengthError(error: any): boolean {
  * This typically happens when the conversation history becomes corrupted or
  * incompatible (e.g., after schema changes, tool definition changes, etc.)
  */
-export function isInvalidArgumentError(error: any): boolean {
+export function isInvalidArgumentError(error: unknown): boolean {
   if (!error) return false;
-  const msg = (error.message || "").toLowerCase();
+  const msg = getErrorMessage(error).toLowerCase();
 
   // Common patterns for INVALID_ARGUMENT errors
   return (
@@ -58,7 +63,7 @@ export function isInvalidArgumentError(error: any): boolean {
 /**
  * Checks if an error requires History rebuild (context overflow OR invalid argument)
  */
-export function requiresHistoryRebuild(error: any): boolean {
+export function requiresHistoryRebuild(error: unknown): boolean {
   return isContextLengthError(error) || isInvalidArgumentError(error);
 }
 

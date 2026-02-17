@@ -81,6 +81,18 @@ interface Session {
   checkpoints: number[];
 }
 
+type NativeHistoryMessage = {
+  role?: unknown;
+  parts?: unknown;
+  content?: unknown;
+  tool_calls?: unknown;
+};
+
+const toNativeHistoryMessage = (
+  value: unknown,
+): NativeHistoryMessage | null =>
+  value && typeof value === "object" ? (value as NativeHistoryMessage) : null;
+
 // =============================================================================
 // Session Manager
 // =============================================================================
@@ -166,14 +178,16 @@ class HistorySessionManager {
       let wasSanitized = false;
 
       while (sanitizedHistory.length > 0) {
-        const last = sanitizedHistory[sanitizedHistory.length - 1] as any;
+        const last = toNativeHistoryMessage(
+          sanitizedHistory[sanitizedHistory.length - 1],
+        );
 
         // 1. Remove dangling user messages (Interrupted request)
         // NOTE: We only remove "user" role messages here.
         // "function" and "tool" messages are valid tool call responses and should NOT be removed.
         // If a tool message is at the end, the AI was processing the tool result when interrupted.
         // This is a valid state that can be resumed.
-        if (last && last.role === "user") {
+        if (last?.role === "user") {
           console.warn(
             `[SessionManager] Found dangling user message in loaded session ${newSessionId}, removing.`,
           );
@@ -183,10 +197,9 @@ class HistorySessionManager {
         }
 
         // 2. Remove empty/invalid model messages (API error or empty partial)
-        if (last && (last.role === "model" || last.role === "assistant")) {
+        if (last?.role === "model" || last?.role === "assistant") {
           // Gemini: Check for empty parts
           if (
-            last.parts &&
             Array.isArray(last.parts) &&
             last.parts.length === 0
           ) {
@@ -200,7 +213,7 @@ class HistorySessionManager {
           // OpenAI/Generic: Check for empty content (if no tool calls)
           if (
             (!last.content || last.content === "") &&
-            (!last.tool_calls || last.tool_calls.length === 0)
+            (!Array.isArray(last.tool_calls) || last.tool_calls.length === 0)
           ) {
             // Note: Some models return empty content with tool calls, which IS valid.
             // So we only remove if NO content AND NO tool calls.
@@ -218,11 +231,16 @@ class HistorySessionManager {
         dirty: wasSanitized, // Mark dirty if changed so we save the clean version later
         cacheHint: stored.cacheHint ?? null,
         systemInstruction:
-          typeof (stored as any).systemInstruction === "string"
-            ? (stored as any).systemInstruction
+          typeof stored.systemInstruction === "string"
+            ? stored.systemInstruction
             : null,
         // Upgrade legacy session: init checkpoints
-        checkpoints: (stored as any).checkpoints || [],
+        checkpoints: Array.isArray(stored.checkpoints)
+          ? stored.checkpoints.filter(
+              (checkpoint): checkpoint is number =>
+                typeof checkpoint === "number" && Number.isFinite(checkpoint),
+            )
+          : [],
       };
 
       // SANITIZATION: Deduplicate history

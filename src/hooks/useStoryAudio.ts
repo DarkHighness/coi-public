@@ -3,6 +3,10 @@ import { generateSpeech } from "../services/aiService";
 import { loadAudio, saveAudio } from "../utils/indexedDB";
 import type { AISettings } from "../types";
 
+interface WindowWithWebkitAudioContext extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 export const useStoryAudio = (
   text: string,
   settings: AISettings,
@@ -59,9 +63,13 @@ export const useStoryAudio = (
 
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new (
-          window.AudioContext || (window as any).webkitAudioContext
-        )({ sampleRate: 24000 });
+        const AudioContextCtor =
+          window.AudioContext ||
+          (window as WindowWithWebkitAudioContext).webkitAudioContext;
+        if (!AudioContextCtor) {
+          throw new Error("AudioContext is not supported in this environment");
+        }
+        audioContextRef.current = new AudioContextCtor({ sampleRate: 24000 });
         gainNodeRef.current = audioContextRef.current.createGain();
         gainNodeRef.current.connect(audioContextRef.current.destination);
       }

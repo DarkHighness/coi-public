@@ -4,7 +4,7 @@ import {
   getEmbeddingModels,
   EmbeddingModelInfo,
 } from "../../services/aiService";
-import type { LocalTransformersDevice } from "../../types";
+import type { EmbeddingConfig, LocalTransformersDevice } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import {
@@ -204,7 +204,17 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     }
   }, [config.providerId, isEnabled, isLocalRuntime]);
 
-  const updateEmbedding = (field: string, value: any) => {
+  const isEmbeddingRuntime = (
+    value: string,
+  ): value is NonNullable<EmbeddingConfig["runtime"]> =>
+    value === "local_transformers" ||
+    value === "local_tfjs" ||
+    value === "remote";
+
+  const updateEmbedding = <K extends keyof EmbeddingConfig>(
+    field: K,
+    value: EmbeddingConfig[K],
+  ) => {
     const newSettings = {
       ...currentSettings,
       embedding: {
@@ -214,7 +224,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     };
 
     // Auto-update dimensions when model changes
-    if (field === "modelId") {
+    if (field === "modelId" && typeof value === "string") {
       const runtimeMode = newSettings.embedding.runtime ?? runtime;
 
       if (runtimeMode === "local_transformers") {
@@ -262,7 +272,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
       previousModelIdRef.current = nextModelId;
     }
 
-    if (field === "runtime") {
+    if (field === "runtime" && typeof value === "string") {
       if (value === "local_transformers") {
         const localConfig = newSettings.embedding.local || {};
         const transformersModel =
@@ -305,7 +315,7 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
     }
 
     // Reset model when provider changes
-    if (field === "providerId") {
+    if (field === "providerId" && typeof value === "string") {
       newSettings.embedding.modelId = "";
       // Trigger fetch for new provider
       fetchModelsForProvider(value);
@@ -771,7 +781,12 @@ export const SettingsEmbedding: React.FC<SettingsEmbeddingProps> = ({
           </label>
           <select
             value={runtime}
-            onChange={(e) => updateEmbedding("runtime", e.target.value)}
+            onChange={(e) => {
+              const nextRuntime = e.target.value;
+              if (isEmbeddingRuntime(nextRuntime)) {
+                updateEmbedding("runtime", nextRuntime);
+              }
+            }}
             className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none [&>option]:bg-theme-bg [&>option]:text-theme-text"
           >
             <option value="local_transformers">

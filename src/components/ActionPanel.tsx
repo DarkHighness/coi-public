@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { GameState, StorySegment } from "../types";
+import { GameState, StorySegment, StorySummary } from "../types";
 import {
   parseCommand,
   executeCommandAction,
@@ -211,7 +211,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       ? Math.max(0, thresholdTokens - displayPromptTokens)
       : null);
 
-  const latestSummary: any =
+  const latestSummary: StorySummary | null =
     Array.isArray(gameState.summaries) && gameState.summaries.length > 0
       ? gameState.summaries[gameState.summaries.length - 1]
       : null;
@@ -263,20 +263,35 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   };
 
   // Helper to handle potential malformed choice objects (fixing React Error #31)
-  const getChoiceLabel = (choice: any): string => {
+  const getChoiceLabel = (choice: unknown): string => {
     if (typeof choice === "string") return choice;
     if (typeof choice === "object" && choice !== null) {
+      const choiceRecord = choice as Record<string, unknown>;
+      const description =
+        typeof choiceRecord.description === "string"
+          ? choiceRecord.description
+          : undefined;
+      const legacyChoice =
+        typeof choiceRecord.choice === "string"
+          ? choiceRecord.choice
+          : undefined;
+      const text =
+        typeof choiceRecord.text === "string" ? choiceRecord.text : undefined;
+      const label =
+        typeof choiceRecord.label === "string"
+          ? choiceRecord.label
+          : undefined;
       // Handle cases where AI returns { choice: "...", effect: "..." }
       // Also handle new schema { description: "...", consequence: "..." }
-      return (
-        choice.description ||
-        choice.choice ||
-        choice.text ||
-        choice.label ||
-        JSON.stringify(choice)
-      );
+      return description || legacyChoice || text || label || JSON.stringify(choice);
     }
     return String(choice);
+  };
+
+  const getChoiceConsequence = (choice: unknown): string | null => {
+    if (!choice || typeof choice !== "object") return null;
+    const consequence = (choice as { consequence?: unknown }).consequence;
+    return typeof consequence === "string" ? consequence : null;
   };
 
   // Keyboard shortcuts for choices (1-4)
@@ -1184,6 +1199,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   <div className="mx-auto max-w-[72ch]">
                     {availableChoices.map((rawChoice, idx) => {
                       const label = getChoiceLabel(rawChoice);
+                      const consequence = getChoiceConsequence(rawChoice);
                       return (
                         <div
                           key={idx}
@@ -1205,10 +1221,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                                   {label}
                                 </span>
                               </div>
-                              {(rawChoice as any).consequence &&
-                                gameState.unlockMode && (
+                              {consequence && gameState.unlockMode && (
                                   <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
-                                    {(rawChoice as any).consequence}
+                                    {consequence}
                                   </div>
                                 )}
                             </div>

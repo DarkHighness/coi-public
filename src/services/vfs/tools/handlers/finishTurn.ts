@@ -1,6 +1,11 @@
 import { createError, createSuccess } from "../../../tools/toolResult";
 import { applyCustomRulesRetconAck } from "../../../customRulesAckState";
-import { buildTurnId, writeConversationIndex, writeTurnFile } from "../../conversation";
+import {
+  buildTurnId,
+  writeConversationIndex,
+  writeTurnFile,
+  type TurnFile,
+} from "../../conversation";
 import {
   ensureConversationIndex,
   resolveAiWriteContext,
@@ -9,26 +14,67 @@ import {
   type VfsToolHandler,
 } from "./shared";
 
+const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+};
+
+const toTurnAssistant = (value: unknown): TurnFile["assistant"] | null => {
+  const record = toObjectRecord(value);
+  if (!record) {
+    return null;
+  }
+  if (typeof record.narrative !== "string" || !Array.isArray(record.choices)) {
+    return null;
+  }
+
+  return {
+    narrative: record.narrative,
+    choices: record.choices,
+    ...(typeof record.narrativeTone === "string"
+      ? { narrativeTone: record.narrativeTone }
+      : {}),
+    ...(record.atmosphere !== undefined ? { atmosphere: record.atmosphere } : {}),
+    ...(typeof record.ending === "string" ? { ending: record.ending } : {}),
+    ...(typeof record.forceEnd === "boolean"
+      ? { forceEnd: record.forceEnd }
+      : {}),
+  };
+};
+
 export const handleFinishTurn: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_finish_turn", args, () => {
-    const typedArgs = args as any;
+    const runtime = args as Record<string, unknown>;
+    const userAction =
+      typeof runtime.userAction === "string" ? runtime.userAction : null;
+    const assistant = toTurnAssistant(runtime.assistant);
+
+    if (typeof userAction !== "string" || !assistant) {
+      return createError(
+        "vfs_finish_turn: userAction (string) and assistant payload are required.",
+        "INVALID_DATA",
+      );
+    }
 
     return withAtomicSession(
       ctx,
       (draft) => {
+        const retconAck = toObjectRecord(runtime.retconAck);
         const normalizedRetconAck =
-          typedArgs.retconAck && typeof typedArgs.retconAck.hash === "string"
+          retconAck && typeof retconAck.hash === "string"
             ? {
-                hash: typedArgs.retconAck.hash,
+                hash: retconAck.hash,
                 summary:
-                  typeof typedArgs.retconAck.summary === "string" &&
-                  typedArgs.retconAck.summary.trim().length > 0
-                    ? typedArgs.retconAck.summary
+                  typeof retconAck.summary === "string" &&
+                  retconAck.summary.trim().length > 0
+                    ? retconAck.summary
                     : "Retcon acknowledgement applied.",
               }
             : undefined;
 
-        if (typedArgs.retconAck && !normalizedRetconAck) {
+        if (runtime.retconAck !== undefined && !normalizedRetconAck) {
           return createError(
             "vfs_finish_turn: retconAck must include a hash string",
             "INVALID_DATA",
@@ -81,15 +127,8 @@ export const handleFinishTurn: VfsToolHandler = (args, ctx) =>
             turnNumber,
             parentTurnId,
             createdAt: Date.now(),
-            userAction: typedArgs.userAction,
-            assistant: typedArgs.assistant as {
-              narrative: string;
-              choices: unknown[];
-              narrativeTone?: string;
-              atmosphere?: unknown;
-              ending?: string;
-              forceEnd?: boolean;
-            },
+            userAction,
+            assistant,
           },
           { operation: "finish_commit" },
         );

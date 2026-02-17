@@ -15,8 +15,8 @@ import {
   Part,
   FunctionCall,
   GenerateContentConfig,
-  Schema,
-  Type,
+  FunctionCallingConfigMode,
+  ThinkingConfig,
   HarmCategory,
   HarmBlockThreshold,
 } from "@google/genai";
@@ -60,6 +60,92 @@ export interface GeminiContentGenerationResponse {
   usage: TokenUsage;
   raw: unknown;
 }
+
+interface GeminiModelWithLegacyInputLimit {
+  input_token_limit?: number;
+}
+
+interface GeminiRestModelDto {
+  name?: string;
+  displayName?: string;
+  inputTokenLimit?: number;
+  input_token_limit?: number;
+}
+
+interface GeminiUsageMetadataDto {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  totalTokenCount?: number;
+  [key: string]: unknown;
+}
+
+interface GeminiFunctionCallPartWithSignature extends Part {
+  functionCall: FunctionCall;
+  thought_signature?: string;
+  thoughtSignature?: string;
+}
+
+type GeminiThinkingConfigCompat = ThinkingConfig & {
+  includeThoughtsTokenLimit?: number;
+};
+
+interface GeminiLegacyImagePart {
+  type: "image";
+  image?: { url: string };
+  mimeType?: string;
+  data?: string;
+}
+
+interface GeminiFunctionCallPartDto extends Part {
+  functionCall: {
+    name: string;
+    args: Record<string, unknown>;
+  };
+  thoughtSignature?: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const readNumber = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
+
+const getGeminiUsageMetadata = (
+  value: unknown,
+): GeminiUsageMetadataDto | null => {
+  if (!isRecord(value)) return null;
+  if (isRecord(value.usageMetadata)) {
+    return value.usageMetadata as GeminiUsageMetadataDto;
+  }
+  if (isRecord(value.usage_metadata)) {
+    return value.usage_metadata as GeminiUsageMetadataDto;
+  }
+  if (isRecord(value.usage)) {
+    return value.usage as GeminiUsageMetadataDto;
+  }
+  return null;
+};
+
+const getThoughtSignature = (value: unknown): string | undefined => {
+  if (!isRecord(value)) return undefined;
+  return readString(value.thoughtSignature) || readString(value.thought_signature);
+};
+
+const isGeminiContent = (value: UnifiedMessage | Content): value is Content =>
+  isRecord(value) && Array.isArray((value as { parts?: unknown }).parts);
 
 // ============================================================================
 // Client Factory
@@ -235,13 +321,15 @@ export async function getModels(config: GeminiConfig): Promise<ModelInfo[]> {
     const models: ModelInfo[] = [];
 
     for await (const model of response) {
+      const modelWithLegacy = model as typeof model &
+        GeminiModelWithLegacyInputLimit;
       const capabilities = inferModelCapabilities(model.name);
       models.push({
         id: model.name.replace("models/", ""),
         name: model.displayName || model.name,
         // Best-effort: Gemini model metadata sometimes includes input token limit.
         contextLength:
-          (model as any).inputTokenLimit || (model as any).input_token_limit,
+          model.inputTokenLimit || modelWithLegacy.input_token_limit,
         capabilities,
       });
     }
@@ -296,26 +384,33 @@ async function fetchModelsViaRestApi(
     );
   }
 
-  const data = await response.json();
-
-  if (!data.models || !Array.isArray(data.models)) {
+  const data = (await response.json()) as unknown;
+  if (!isRecord(data) || !Array.isArray(data.models)) {
     throw new Error("Invalid response format from v1beta/models");
   }
 
   const models: ModelInfo[] = data.models
-    .filter(
-      (model: any) =>
-        model.name &&
-        (model.name.includes("gemini") ||
-          model.name.includes("imagen") ||
-          model.name.includes("veo")),
-    )
-    .map((model: any) => ({
-      id: model.name.replace("models/", ""),
-      name: model.displayName || model.name,
-      contextLength: model.inputTokenLimit || model.input_token_limit,
-      capabilities: inferModelCapabilities(model.name),
-    }));
+    .filter((model): model is GeminiRestModelDto => isRecord(model))
+    .filter((model) => {
+      const name = readString(model.name) || "";
+      return (
+        name.length > 0 &&
+        (name.includes("gemini") ||
+          name.includes("imagen") ||
+          name.includes("veo"))
+      );
+    })
+    .map((model) => {
+      const name = readString(model.name) || "";
+      return {
+        id: name.replace("models/", ""),
+        name: readString(model.displayName) || name,
+        contextLength:
+          readNumber(model.inputTokenLimit) ??
+          readNumber(model.input_token_limit),
+        capabilities: inferModelCapabilities(name),
+      };
+    });
 
   return models;
 }
@@ -502,11 +597,7 @@ export async function generateContent(
         });
 
         rawResponse = response;
-        usageMetadata =
-          response.usageMetadata ||
-          (response as any).usage_metadata ||
-          (response as any).usage ||
-          null;
+        usageMetadata = getGeminiUsageMetadata(response);
 
         // 处理响应
         const candidate = response.candidates?.[0];
@@ -528,8 +619,7 @@ export async function generateContent(
               name: p.functionCall.name || "",
               args: (p.functionCall.args as Record<string, unknown>) || {},
               // Extract thoughtSignature if present
-              thoughtSignature:
-                (p as any).thoughtSignature || (p as any).thought_signature,
+              thoughtSignature: getThoughtSignature(p),
             }));
           }
         }
@@ -641,23 +731,20 @@ async function streamGeneration(
     if (candidate?.content?.parts) {
       for (const part of candidate.content.parts) {
         if (part.functionCall) {
+          const functionCallPart = part as GeminiFunctionCallPartWithSignature;
           functionCalls.push({
             id: `gemini_call_${part.functionCall.name}_${functionCalls.length}`,
             name: part.functionCall.name || "",
             args: (part.functionCall.args as Record<string, unknown>) || {},
             // Extract thoughtSignature if present
-            thoughtSignature:
-              (part as any).thoughtSignature || (part as any).thought_signature,
+            thoughtSignature: getThoughtSignature(functionCallPart),
           });
         }
       }
     }
 
     // 捕获使用量
-    const chunkUsage =
-      chunk.usageMetadata ||
-      (chunk as any).usage_metadata ||
-      (chunk as any).usage;
+    const chunkUsage = getGeminiUsageMetadata(chunk);
     if (chunkUsage) {
       usage = chunkUsage;
     }
@@ -750,19 +837,19 @@ function buildGenerationConfig(
     if (options?.toolChoice === "required") {
       config.toolConfig = {
         functionCallingConfig: {
-          mode: "ANY" as any, // Force calling at least one tool
+          mode: FunctionCallingConfigMode.ANY, // Force calling at least one tool
         },
       };
     } else if (options?.toolChoice === "none") {
       config.toolConfig = {
         functionCallingConfig: {
-          mode: "NONE" as any,
+          mode: FunctionCallingConfigMode.NONE,
         },
       };
     } else if (options?.toolChoice && typeof options.toolChoice === "object") {
       config.toolConfig = {
         functionCallingConfig: {
-          mode: "ANY" as any,
+          mode: FunctionCallingConfigMode.ANY,
           allowedFunctionNames: [options.toolChoice.name],
         },
       };
@@ -781,17 +868,18 @@ function buildGenerationConfig(
   // 思考模式配置
   const effort = options?.thinkingEffort;
   if (effort && effort !== "none") {
-    const budgetMap = {
+    const budgetMap: Record<string, number> = {
       minimal: 1024,
       low: 2048,
       medium: 4096,
       high: 8192,
       xhigh: 16384,
     };
-    (config as any).thinkingConfig = {
+    const thinkingConfig: GeminiThinkingConfigCompat = {
       includeThoughts: true,
-      includeThoughtsTokenLimit: (budgetMap as any)[effort] || 2048,
+      includeThoughtsTokenLimit: budgetMap[effort] || 2048,
     };
+    config.thinkingConfig = thinkingConfig;
   }
 
   // 温度等参数 (非 thinking 模式)
@@ -886,11 +974,7 @@ export async function generateImage(
         const url = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
         return {
           url,
-          usage: parseGeminiUsageMetadata(
-            response.usageMetadata ||
-              (response as any).usage_metadata ||
-              (response as any).usage,
-          ),
+          usage: parseGeminiUsageMetadata(getGeminiUsageMetadata(response)),
           raw: response,
         };
       }
@@ -911,7 +995,7 @@ export async function generateImage(
         numberOfImages: 1,
         aspectRatio,
         outputMimeType: "image/jpeg",
-        personGeneration: "allow_adult" as unknown as undefined,
+        personGeneration: "allow_adult" as never,
       },
     });
 
@@ -1037,9 +1121,7 @@ export async function generateSpeech(
   }
 
   const usage = parseGeminiUsageMetadata(
-    response.usageMetadata ||
-      (response as any).usage_metadata ||
-      (response as any).usage,
+    getGeminiUsageMetadata(response),
   );
 
   // 将 base64 转换为 ArrayBuffer
@@ -1293,24 +1375,31 @@ export function fromUnifiedMessage(message: UnifiedMessage): Content {
     } else if (part.type === "image") {
       // Handle image content - convert to Gemini inlineData format
       // The ImageContentPart type uses mimeType/data, but outline.ts uses legacy { image: { url } } format
-      const legacyPart = part as unknown as {
-        type: "image";
-        image?: { url: string };
-        mimeType?: string;
-        data?: string;
-      };
+      const legacyImageUrl = (() => {
+        if (!("image" in part)) {
+          return undefined;
+        }
+        const legacyImage = part.image;
+        if (!legacyImage || typeof legacyImage !== "object") {
+          return undefined;
+        }
+        const legacyImageUrlField = (legacyImage as { url?: unknown }).url;
+        return typeof legacyImageUrlField === "string"
+          ? legacyImageUrlField
+          : undefined;
+      })();
 
       // Try new format first (mimeType/data directly on part)
-      if (legacyPart.mimeType && legacyPart.data) {
+      if (part.mimeType && part.data) {
         parts.push({
           inlineData: {
-            mimeType: legacyPart.mimeType,
-            data: legacyPart.data,
+            mimeType: part.mimeType,
+            data: part.data,
           },
         } as Part);
-      } else if (legacyPart.image?.url) {
+      } else if (legacyImageUrl) {
         // Legacy format: data URL in image.url (used by outline.ts)
-        const imageUrl = legacyPart.image.url;
+        const imageUrl = legacyImageUrl;
         if (imageUrl.startsWith("data:")) {
           // Parse data URL: data:image/jpeg;base64,/9j/4AAQ...
           const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -1343,7 +1432,7 @@ export function fromUnifiedMessage(message: UnifiedMessage): Content {
       }
     } else if (part.type === "tool_use") {
       const toolCall = part as ToolCallContentPart;
-      const functionCallPart: any = {
+      const functionCallPart: GeminiFunctionCallPartDto = {
         functionCall: {
           name: toolCall.toolUse.name,
           args: toolCall.toolUse.args,
@@ -1380,12 +1469,12 @@ export function fromUnifiedMessages(
   messages: (UnifiedMessage | Content)[],
 ): Content[] {
   return messages
-    .filter((m) => (m as any).role !== "system") // System 在 Gemini 中单独处理
+    .filter((m) => m.role !== "system") // System 在 Gemini 中单独处理
     .map((m) => {
       // Check if it's already a Gemini Content object (has parts)
       // UnifiedMessage has 'content', Content has 'parts'
-      if ((m as any).parts && !(m as any).content) {
-        return m as Content;
+      if (isGeminiContent(m) && !("content" in m)) {
+        return m;
       }
       return fromUnifiedMessage(m as UnifiedMessage);
     });

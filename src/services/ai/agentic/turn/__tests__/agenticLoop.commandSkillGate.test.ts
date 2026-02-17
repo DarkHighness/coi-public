@@ -46,11 +46,19 @@ const createGameState = () =>
     unlockMode: false,
   }) as any;
 
+interface MockVfsSnapshotFile {
+  path: string;
+  contentType: string;
+  content: string;
+}
+
+type MockVfsSnapshot = Record<string, MockVfsSnapshotFile>;
+
 const createVfsSession = (
   hasSeenSkill: boolean,
   seenSkillPaths?: string[],
 ) => {
-  const snapshots: Record<string, any>[] = [
+  const snapshots: MockVfsSnapshot[] = [
     {
       "conversation/index.json": {
         path: "conversation/index.json",

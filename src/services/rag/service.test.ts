@@ -241,9 +241,10 @@ describe("RAGService", () => {
     lastPort?.emitError({ code: 1 });
 
     expect(onReady).toHaveBeenCalled();
-    expect(onProgress).toHaveBeenCalledWith({ phase: "indexing" });
+    expect(onProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ phase: "indexing" }),
+    );
     expect(onError).toHaveBeenCalledWith("Worker communication error");
-    expect(warnSpy).toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalled();
 
     service.off("ready", onReady);

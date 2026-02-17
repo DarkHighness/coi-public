@@ -166,12 +166,12 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       apiKey: "", // Clear API key - leave empty to keep current
       enabled: instance.enabled,
       isRestrictedChannel: instance.isRestrictedChannel || false,
-      geminiCompatibility: (instance as any).geminiCompatibility || false,
-      geminiMessageFormat: (instance as any).geminiMessageFormat || false,
-      claudeCompatibility: (instance as any).claudeCompatibility || false,
-      claudeMessageFormat: (instance as any).claudeMessageFormat || false,
+      geminiCompatibility: instance.geminiCompatibility || false,
+      geminiMessageFormat: instance.geminiMessageFormat || false,
+      claudeCompatibility: instance.claudeCompatibility || false,
+      claudeMessageFormat: instance.claudeMessageFormat || false,
       compatibleImageGeneration:
-        (instance as any).compatibleImageGeneration || false,
+        instance.compatibleImageGeneration || false,
     });
     setModalMode("edit");
   };

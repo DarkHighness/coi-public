@@ -28,6 +28,112 @@ export type EmbeddingTaskType =
   | "classification"
   | "clustering";
 
+interface IndexedEmbeddingRecord {
+  index: number;
+  embedding: number[];
+}
+
+interface EmbeddingUsage {
+  promptTokens: number;
+  totalTokens: number;
+}
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object";
+
+const toNumberArray = (value: unknown): number[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isFinite(entry));
+};
+
+const extractErrorMessage = (payload: unknown): string | null => {
+  if (!isObject(payload)) {
+    return null;
+  }
+  const nested = payload.error;
+  if (isObject(nested) && typeof nested.message === "string") {
+    return nested.message;
+  }
+  return null;
+};
+
+const parseGeminiEmbeddings = (payload: unknown): Float32Array[] => {
+  if (!isObject(payload) || !Array.isArray(payload.embeddings)) {
+    return [];
+  }
+
+  return payload.embeddings
+    .map((entry) => {
+      if (!isObject(entry)) {
+        return new Float32Array();
+      }
+      return new Float32Array(toNumberArray(entry.values));
+    });
+};
+
+const parseIndexedEmbeddings = (payload: unknown): Float32Array[] => {
+  if (!isObject(payload) || !Array.isArray(payload.data)) {
+    return [];
+  }
+
+  const records: IndexedEmbeddingRecord[] = payload.data
+    .map((entry): IndexedEmbeddingRecord | null => {
+      if (!isObject(entry)) {
+        return null;
+      }
+
+      const index = Number(entry.index);
+      if (!Number.isFinite(index)) {
+        return null;
+      }
+
+      return {
+        index,
+        embedding: toNumberArray(entry.embedding),
+      };
+    })
+    .filter((entry): entry is IndexedEmbeddingRecord => entry !== null);
+
+  return records
+    .sort((a, b) => a.index - b.index)
+    .map((entry) => new Float32Array(entry.embedding));
+};
+
+const parseUsage = (payload: unknown): EmbeddingUsage | undefined => {
+  if (!isObject(payload) || !isObject(payload.usage)) {
+    return undefined;
+  }
+
+  const promptTokens = Number(payload.usage.prompt_tokens);
+  const totalTokens = Number(payload.usage.total_tokens);
+  if (!Number.isFinite(promptTokens) || !Number.isFinite(totalTokens)) {
+    return undefined;
+  }
+
+  return { promptTokens, totalTokens };
+};
+
+const isRateLimitError = (error: unknown): boolean => {
+  if (!isObject(error)) {
+    return false;
+  }
+
+  const status = Number(error.status);
+  const message =
+    typeof error.message === "string" ? error.message.toLowerCase() : "";
+
+  return (
+    status === 429 ||
+    message.includes("429") ||
+    message.includes("too many requests") ||
+    message.includes("rate limit")
+  );
+};
+
 // ============================================================================
 // Embedding Provider Class
 // ============================================================================
@@ -124,16 +230,14 @@ export class EmbeddingProvider {
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = await response.json().catch(() => null);
       throw new Error(
-        `Gemini embedding failed: ${error.error?.message || response.statusText}`,
+        `Gemini embedding failed: ${extractErrorMessage(error) || response.statusText}`,
       );
     }
 
-    const data = await response.json();
-    const embeddings = data.embeddings.map(
-      (e: any) => new Float32Array(e.values),
-    );
+    const data: unknown = await response.json();
+    const embeddings = parseGeminiEmbeddings(data);
 
     return { embeddings };
   }
@@ -165,25 +269,19 @@ export class EmbeddingProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = await response.json().catch(() => null);
       throw new Error(
-        `OpenAI embedding failed: ${error.error?.message || response.statusText}`,
+        `OpenAI embedding failed: ${extractErrorMessage(error) || response.statusText}`,
       );
     }
 
-    const data = await response.json();
-    const embeddings = data.data
-      .sort((a: any, b: any) => a.index - b.index)
-      .map((e: any) => new Float32Array(e.embedding));
+    const data: unknown = await response.json();
+    const embeddings = parseIndexedEmbeddings(data);
+    const usage = parseUsage(data);
 
     return {
       embeddings,
-      usage: data.usage
-        ? {
-            promptTokens: data.usage.prompt_tokens,
-            totalTokens: data.usage.total_tokens,
-          }
-        : undefined,
+      usage,
     };
   }
 
@@ -218,25 +316,19 @@ export class EmbeddingProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = await response.json().catch(() => null);
       throw new Error(
-        `OpenRouter embedding failed: ${error.error?.message || response.statusText}`,
+        `OpenRouter embedding failed: ${extractErrorMessage(error) || response.statusText}`,
       );
     }
 
-    const data = await response.json();
-    const embeddings = data.data
-      .sort((a: any, b: any) => a.index - b.index)
-      .map((e: any) => new Float32Array(e.embedding));
+    const data: unknown = await response.json();
+    const embeddings = parseIndexedEmbeddings(data);
+    const usage = parseUsage(data);
 
     return {
       embeddings,
-      usage: data.usage
-        ? {
-            promptTokens: data.usage.prompt_tokens,
-            totalTokens: data.usage.total_tokens,
-          }
-        : undefined,
+      usage,
     };
   }
 
@@ -262,12 +354,8 @@ export class EmbeddingProvider {
   ): Promise<T> {
     try {
       return await fn();
-    } catch (error: any) {
-      const isRateLimited =
-        error?.status === 429 ||
-        error?.message?.includes("429") ||
-        error?.message?.includes("Too Many Requests") ||
-        error?.message?.includes("rate limit");
+    } catch (error: unknown) {
+      const isRateLimited = isRateLimitError(error);
 
       if (retries > 0 && isRateLimited) {
         const delay = baseDelay * Math.pow(2, 3 - retries);

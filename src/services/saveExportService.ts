@@ -33,6 +33,7 @@ import type { RAGExportData } from "./rag/types";
 import { IndexedDbVfsStore } from "./vfs/store";
 import type {
   VfsContentType,
+  VfsFileMap,
   VfsSnapshot,
   VfsSnapshotFileRefMap,
 } from "./vfs/types";
@@ -53,6 +54,7 @@ import { vfsResourceTemplateRegistry } from "./vfs/core/resourceTemplateRegistry
 import {
   buildTurnId,
   type ConversationIndex,
+  type TurnFile,
   writeConversationIndex,
   writeForkTree,
   writeTurnFile,
@@ -120,6 +122,87 @@ const IMAGE_REFERENCE_KEYS = new Set([
   "seedImageId",
   "previewImage",
 ]);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const VFS_CONTENT_TYPES: ReadonlySet<VfsContentType> = new Set([
+  "application/json",
+  "application/jsonl",
+  "text/plain",
+  "text/markdown",
+]);
+
+const isVfsContentType = (value: unknown): value is VfsContentType =>
+  typeof value === "string" && VFS_CONTENT_TYPES.has(value as VfsContentType);
+
+const isVfsFileLike = (value: unknown): value is VfsFileMap[string] => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.path === "string" &&
+    typeof value.content === "string" &&
+    isVfsContentType(value.contentType) &&
+    typeof value.hash === "string" &&
+    typeof value.size === "number" &&
+    Number.isFinite(value.size) &&
+    typeof value.updatedAt === "number" &&
+    Number.isFinite(value.updatedAt)
+  );
+};
+
+const isVfsFileMap = (value: unknown): value is VfsFileMap =>
+  isRecord(value) && Object.values(value).every((entry) => isVfsFileLike(entry));
+
+type SnapshotIndexRow = {
+  saveId: string;
+  forkId: number;
+  turn: number;
+  createdAt?: number;
+};
+
+const isSnapshotIndexRow = (value: unknown): value is SnapshotIndexRow => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.saveId === "string" &&
+    typeof value.forkId === "number" &&
+    Number.isFinite(value.forkId) &&
+    typeof value.turn === "number" &&
+    Number.isFinite(value.turn)
+  );
+};
+
+type ImportedImageMetadata = {
+  forkId: number;
+  turnIdx: number;
+  imagePrompt?: string;
+  storyTitle?: string;
+  location?: string;
+  storyTime?: string;
+};
+
+const parseImportedImageMetadata = (value: unknown): ImportedImageMetadata => {
+  if (!isRecord(value)) {
+    return { forkId: 0, turnIdx: 0 };
+  }
+
+  const forkId =
+    typeof value.forkId === "number" && Number.isFinite(value.forkId)
+      ? value.forkId
+      : 0;
+  const turnIdx =
+    typeof value.turnIdx === "number" && Number.isFinite(value.turnIdx)
+      ? value.turnIdx
+      : 0;
+
+  return {
+    forkId,
+    turnIdx,
+    imagePrompt: typeof value.imagePrompt === "string" ? value.imagePrompt : undefined,
+    storyTitle: typeof value.storyTitle === "string" ? value.storyTitle : undefined,
+    location: typeof value.location === "string" ? value.location : undefined,
+    storyTime: typeof value.storyTime === "string" ? value.storyTime : undefined,
+  };
+};
 
 const transformJsonValueForImageReferences = (
   value: unknown,
@@ -227,7 +310,7 @@ const shouldDropRebuildableSessionFile = (
 const pruneRebuildableSessionFilesFromSnapshot = (
   snapshot: VfsSnapshot,
 ): VfsSnapshot => {
-  const nextFiles: Record<string, any> = {};
+  const nextFiles: VfsFileMap = {};
   let changed = false;
 
   for (const [path, file] of Object.entries(snapshot.files ?? {})) {
@@ -294,7 +377,7 @@ const restoreSnapshotFromExportV3 = (
   snapshot: VfsExportSnapshotV3,
   blobPool: Map<string, VfsExportBlobContent>,
 ): VfsSnapshot => {
-  const files: Record<string, any> = {};
+  const files: VfsFileMap = {};
   const updatedAtFallback = Date.now();
 
   for (const fileRef of Object.values(snapshot.fileRefs ?? {})) {
@@ -325,24 +408,24 @@ const restoreSnapshotFromExportV3 = (
 };
 
 const isValidExportManifest = (value: unknown): value is ExportManifest => {
-  if (!value || typeof value !== "object") return false;
-  const manifest = value as any;
+  if (!isRecord(value)) return false;
+  const manifest = value;
 
   if (typeof manifest.version !== "number") return false;
   if (typeof manifest.exportDate !== "string") return false;
   if (typeof manifest.appVersion !== "string") return false;
   if (typeof manifest.saveVersion !== "number") return false;
 
-  if (!manifest.slot || typeof manifest.slot !== "object") return false;
+  if (!isRecord(manifest.slot)) return false;
   if (typeof manifest.slot.name !== "string") return false;
   if (typeof manifest.slot.theme !== "string") return false;
 
-  if (!manifest.includes || typeof manifest.includes !== "object") return false;
+  if (!isRecord(manifest.includes)) return false;
   if (typeof manifest.includes.images !== "boolean") return false;
   if (typeof manifest.includes.embeddings !== "boolean") return false;
   if (typeof manifest.includes.logs !== "boolean") return false;
 
-  if (!manifest.stats || typeof manifest.stats !== "object") return false;
+  if (!isRecord(manifest.stats)) return false;
   if (typeof manifest.stats.nodeCount !== "number") return false;
   if (typeof manifest.stats.imageCount !== "number") return false;
   if (typeof manifest.stats.embeddingCount !== "number") return false;
@@ -351,9 +434,9 @@ const isValidExportManifest = (value: unknown): value is ExportManifest => {
 };
 
 const isValidLatestMeta = (value: unknown): value is VfsLatestMeta => {
-  if (!value || typeof value !== "object") return false;
-  const forkId = (value as any).forkId;
-  const turn = (value as any).turn;
+  if (!isRecord(value)) return false;
+  const forkId = value.forkId;
+  const turn = value.turn;
   return typeof forkId === "number" && typeof turn === "number";
 };
 
@@ -392,12 +475,13 @@ const listVfsSnapshotIndexEntries = async (
 ): Promise<VfsExportIndexEntry[]> => {
   const db = await openVfsDB();
 
-  const getAllRows = (storeName: string): Promise<any[]> =>
+  const getAllRows = (storeName: string): Promise<unknown[]> =>
     new Promise((resolve, reject) => {
       const transaction = db.transaction([storeName], "readonly");
       const store = transaction.objectStore(storeName);
       const request = store.getAll();
-      request.onsuccess = () => resolve((request.result as any[] | undefined) ?? []);
+      request.onsuccess = () =>
+        resolve(Array.isArray(request.result) ? request.result : []);
       request.onerror = () => reject(request.error);
     });
 
@@ -409,13 +493,7 @@ const listVfsSnapshotIndexEntries = async (
   const merged = new Map<string, VfsExportIndexEntry>();
 
   for (const row of metaRows) {
-    if (
-      !row ||
-      typeof row.saveId !== "string" ||
-      row.saveId !== saveId ||
-      typeof row.forkId !== "number" ||
-      typeof row.turn !== "number"
-    ) {
+    if (!isSnapshotIndexRow(row) || row.saveId !== saveId) {
       continue;
     }
     const key = `${row.forkId}:${row.turn}`;
@@ -427,13 +505,7 @@ const listVfsSnapshotIndexEntries = async (
   }
 
   for (const row of snapshotRows) {
-    if (
-      !row ||
-      typeof row.saveId !== "string" ||
-      row.saveId !== saveId ||
-      typeof row.forkId !== "number" ||
-      typeof row.turn !== "number"
-    ) {
+    if (!isSnapshotIndexRow(row) || row.saveId !== saveId) {
       continue;
     }
     const key = `${row.forkId}:${row.turn}`;
@@ -608,7 +680,7 @@ const isConversationIndexShape = (
 };
 
 const readConversationIndexFromSharedFiles = (
-  sharedFiles: Record<string, any> | null,
+  sharedFiles: VfsFileMap | null,
 ): { path: string; index: ConversationIndex } | null => {
   if (!sharedFiles || typeof sharedFiles !== "object") return null;
 
@@ -668,10 +740,10 @@ const conversationIndexNeedsRepair = (
 };
 
 const repairSharedConversationIndex = (
-  sharedFiles: Record<string, any> | null,
+  sharedFiles: VfsFileMap | null,
   latestSnapshot: VfsSnapshot | null,
   activeForkHint?: number | null,
-): Record<string, any> | null => {
+): VfsFileMap | null => {
   if (!latestSnapshot) {
     return sharedFiles;
   }
@@ -705,26 +777,24 @@ const repairSharedConversationIndex = (
 const loadSharedMutableStateForSave = async (
   saveId: string,
   latestSnapshot?: VfsSnapshot | null,
-): Promise<Record<string, any> | null> => {
-  let shared: Record<string, any> | null = null;
+): Promise<VfsFileMap | null> => {
+  let shared: VfsFileMap | null = null;
 
   try {
     const stored = await loadMetadata<{ files?: unknown }>(
       `vfs_shared:${saveId}`,
     );
-    if (stored?.files && typeof stored.files === "object") {
-      shared = stored.files as Record<string, any>;
+    if (isVfsFileMap(stored?.files)) {
+      shared = stored.files;
     }
   } catch (error) {
     console.warn("[SaveExport] Failed to load vfs_shared metadata:", error);
   }
 
   if (!shared && latestSnapshot) {
-    const inferred = extractSharedMutableStateFromSnapshot(
-      latestSnapshot as any,
-    );
+    const inferred = extractSharedMutableStateFromSnapshot(latestSnapshot);
     if (Object.keys(inferred).length > 0) {
-      shared = inferred as Record<string, any>;
+      shared = inferred;
     }
   }
 
@@ -753,7 +823,7 @@ const loadDerivedStateFromLatestVfsSnapshot = async (
 
   const shared = await loadSharedMutableStateForSave(saveId, snapshot);
   if (shared) {
-    applySharedMutableStateToSession(session, shared as any);
+    applySharedMutableStateToSession(session, shared);
   }
 
   const derived = deriveGameStateFromVfs(
@@ -814,20 +884,18 @@ const collectStateEditorFilesFromSnapshot = (
 };
 
 const collectStateEditorSharedFiles = (
-  sharedFiles: Record<string, any> | null,
+  sharedFiles: VfsFileMap | null,
 ): Record<string, string> => {
   const files: Record<string, string> = {};
   if (!sharedFiles || typeof sharedFiles !== "object") return files;
 
   for (const entry of Object.values(sharedFiles)) {
-    if (!entry || typeof entry !== "object") continue;
-    if (typeof (entry as any).path !== "string") continue;
-    if (typeof (entry as any).content !== "string") continue;
+    if (!isVfsFileLike(entry)) continue;
 
-    const normalizedPath = normalizeVfsPath((entry as any).path);
+    const normalizedPath = normalizeVfsPath(entry.path);
     if (!normalizedPath) continue;
 
-    files[normalizedPath] = (entry as any).content;
+    files[normalizedPath] = entry.content;
   }
 
   return files;
@@ -837,7 +905,7 @@ const writeStructuredVfsLayoutToZip = (
   zip: JSZip,
   snapshots: VfsSnapshot[],
   latestSnapshot: VfsSnapshot | null,
-  sharedFiles: Record<string, any> | null,
+  sharedFiles: VfsFileMap | null,
 ): void => {
   if (snapshots.length === 0 && !latestSnapshot && !sharedFiles) {
     return;
@@ -1065,7 +1133,7 @@ const createVfsSnapshotsFromLegacyState = async (
   newSaveId: string,
   state: VersionedGameState,
 ): Promise<{ snapshotCount: number; latest: VfsLatestMeta | null }> => {
-  const turnsIndex = buildLegacyTurnsIndex(state.nodes as any);
+  const turnsIndex = buildLegacyTurnsIndex(state.nodes);
   if (turnsIndex.size === 0) {
     console.warn("[SaveImport] No legacy nodes found to seed VFS");
     return { snapshotCount: 0, latest: null };
@@ -1086,7 +1154,7 @@ const createVfsSnapshotsFromLegacyState = async (
   }
 
   // Build a stable view of turn files for all forks (final state).
-  const turnFiles: Array<{ forkId: number; turn: number; file: any }> = [];
+  const turnFiles: Array<{ forkId: number; turn: number; file: TurnFile }> = [];
   for (const forkId of forkIds) {
     const maxTurn = latestTurnByFork.get(forkId) ?? -1;
     for (let turn = 0; turn <= maxTurn; turn += 1) {
@@ -1170,31 +1238,31 @@ const createVfsSnapshotsFromLegacyState = async (
       const snapshotState =
         (model.stateSnapshot as GameStateSnapshot | undefined) ?? null;
       const worldState: GameState = {
-        ...(state as any),
-        ...(snapshotState ? (snapshotState as any) : {}),
+        ...state,
+        ...(snapshotState ?? {}),
         theme: state.theme,
-        playerProfile: (state as any).playerProfile,
-        customContext: (state as any).customContext,
-        language: (state as any).language,
-        narrativeScale: (state as any).narrativeScale,
-        seedImageId: (state as any).seedImageId,
+        playerProfile: state.playerProfile,
+        customContext: state.customContext,
+        language: state.language,
+        narrativeScale: state.narrativeScale,
+        seedImageId: state.seedImageId,
         forkId,
         turnNumber: turn,
       };
 
       seedVfsSessionFromGameState(session, worldState);
 
-      if ((state as any).outline) {
-        writeOutlineFile(session, (state as any).outline);
+      if (state.outline) {
+        writeOutlineFile(session, state.outline);
       }
-      if ((state as any).outlineConversation) {
+      if (state.outlineConversation) {
         writeOutlineProgress(
           session,
-          (state as any).outlineConversation ?? null,
+          state.outlineConversation ?? null,
         );
       }
 
-      writeForkTree(session, (state as any).forkTree);
+      writeForkTree(session, state.forkTree);
 
       const latestForSnapshot: Record<string, number> = {};
       const orderForSnapshot: Record<string, string[]> = {};
@@ -1840,10 +1908,10 @@ export async function validateImport(file: File): Promise<ImportValidation> {
         : snapshots[snapshots.length - 1];
       if (
         latestEntry &&
-        typeof (latestEntry as any).forkId === "number" &&
-        typeof (latestEntry as any).turn === "number"
+        typeof latestEntry.forkId === "number" &&
+        typeof latestEntry.turn === "number"
       ) {
-        const snapshotPath = `vfs/snapshots/fork-${(latestEntry as any).forkId}/turn-${(latestEntry as any).turn}.json`;
+        const snapshotPath = `vfs/snapshots/fork-${latestEntry.forkId}/turn-${latestEntry.turn}.json`;
         if (!zip.file(snapshotPath)) {
           pushError(
             "import.errors.missingSnapshotFile",
@@ -2112,7 +2180,7 @@ export async function importSave(
         });
       }
 
-      let importedSharedFiles: Record<string, any> | null = null;
+      let importedSharedFiles: VfsFileMap | null = null;
       const sharedFile = zip.file("vfs/shared.json");
       if (sharedFile) {
         try {
@@ -2120,8 +2188,8 @@ export async function importSave(
           const sharedPayload = JSON.parse(sharedJson) as {
             files?: unknown;
           };
-          if (sharedPayload?.files && typeof sharedPayload.files === "object") {
-            importedSharedFiles = sharedPayload.files as Record<string, any>;
+          if (isVfsFileMap(sharedPayload?.files)) {
+            importedSharedFiles = sharedPayload.files;
           }
         } catch (error) {
           console.warn("[SaveImport] Failed to parse vfs/shared.json:", error);
@@ -2251,7 +2319,7 @@ export async function importSave(
         }
       }
 
-      let sharedForSave: Record<string, any> | null = importedSharedFiles;
+      let sharedForSave: VfsFileMap | null = importedSharedFiles;
 
       if (latestForkId !== null && latestTurn !== null) {
         await saveMetadata(`vfs_latest:${newSlotId}`, {
@@ -2277,11 +2345,11 @@ export async function importSave(
 
             if (!sharedForSave) {
               const inferred = extractSharedMutableStateFromSnapshot(
-                latestSnapshot as any,
+                latestSnapshot,
               );
               sharedForSave =
                 Object.keys(inferred).length > 0
-                  ? (inferred as Record<string, any>)
+                  ? inferred
                   : null;
               sharedForSave = repairSharedConversationIndex(
                 sharedForSave,
@@ -2293,10 +2361,10 @@ export async function importSave(
             const session = new VfsSession();
             restoreVfsSessionFromSnapshot(session, latestSnapshot);
             if (sharedForSave) {
-              applySharedMutableStateToSession(session, sharedForSave as any);
+              applySharedMutableStateToSession(session, sharedForSave);
             }
 
-            const derived = deriveGameStateFromVfs(session.snapshot()) as any;
+            const derived = deriveGameStateFromVfs(session.snapshot());
             derivedTheme =
               typeof derived?.theme === "string" ? derived.theme : undefined;
             derivedName =
@@ -2465,10 +2533,12 @@ async function importImages(
         .pop()!;
 
       const metaFile = findMetaFile(filename, oldId);
-      let metadata: any = {};
+      let metadata: ImportedImageMetadata = { forkId: 0, turnIdx: 0 };
       if (metaFile) {
         try {
-          metadata = JSON.parse(await metaFile.async("text"));
+          metadata = parseImportedImageMetadata(
+            JSON.parse(await metaFile.async("text")) as unknown,
+          );
         } catch {
           // Ignore metadata parse errors
         }

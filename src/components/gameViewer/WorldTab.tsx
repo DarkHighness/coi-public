@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import type { TFunction } from "i18next";
 import { GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
@@ -21,7 +22,7 @@ interface WorldTabProps {
   gameState: GameState;
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
-  t: (key: string, options?: any) => string;
+  t: TFunction;
 }
 
 export const WorldTab: React.FC<WorldTabProps> = ({

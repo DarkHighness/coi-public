@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { TFunction } from "i18next";
 import { InventoryItem, Location, ListState } from "../../types";
 import { useListManagement } from "../../hooks/useListManagement";
 import { getValidIcon } from "../../utils/emojiValidator";
@@ -36,7 +37,7 @@ interface LocationItemProps {
   onDragEnd: () => void;
   onTogglePin?: (id: string) => void;
   isPinned?: (id: string) => boolean;
-  t: any;
+  t: TFunction;
 }
 
 const LocationItem: React.FC<LocationItemProps> = ({

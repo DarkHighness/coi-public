@@ -27,7 +27,7 @@ const buildPreviousSummaryLabel = (input: SummaryLoopInput): string => {
     return "none";
   }
 
-  return `id=${String((previousSummary as any).id ?? "unknown")}, createdAt=${String((previousSummary as any).createdAt ?? "unknown")}, nodeRange=${previousSummary.nodeRange ? `${previousSummary.nodeRange.fromIndex}-${previousSummary.nodeRange.toIndex}` : "unknown"}`;
+  return `id=${String(previousSummary.id ?? "unknown")}, createdAt=${String(previousSummary.createdAt ?? "unknown")}, nodeRange=${previousSummary.nodeRange ? `${previousSummary.nodeRange.fromIndex}-${previousSummary.nodeRange.toIndex}` : "unknown"}`;
 };
 
 const buildLatestTurnPath = (runtime: SummaryConsistencyRuntime): string => {

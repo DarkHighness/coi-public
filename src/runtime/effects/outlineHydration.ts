@@ -2,7 +2,23 @@ import type { TFunction } from "i18next";
 import { createStateSnapshot } from "../../utils/snapshotManager";
 import { normalizeAtmosphere } from "../../utils/constants/atmosphere";
 import { getThemeName } from "../../services/ai/utils";
-import type { GameState, ResolvedThemeConfig, StorySegment } from "../../types";
+import type {
+  ActorBundle,
+  Faction,
+  GameState,
+  InventoryItem,
+  KnowledgeEntry,
+  Location,
+  LogEntry,
+  Placeholder,
+  Quest,
+  TokenUsage,
+  TimelineEvent,
+  VersionedTimestamp,
+  ResolvedThemeConfig,
+  StoryOutline,
+  StorySegment,
+} from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
 import { seedVfsSessionFromOutline } from "../../services/vfs/seed";
 import {
@@ -24,8 +40,8 @@ interface TokenUsageAccumulator {
 
 interface BuildOutlineStateOptions {
   baseState: GameState;
-  outline: any;
-  logs: any[];
+  outline: StoryOutline;
+  logs: readonly OutlineHydrationLog[];
   themeConfig: ResolvedThemeConfig;
   language: string;
   customContext?: string;
@@ -35,7 +51,7 @@ interface BuildOutlineStateOptions {
 }
 
 interface BuildOpeningNodeOptions {
-  outline: any;
+  outline: StoryOutline;
   baseState: GameState;
   theme: string;
   t: TFunction;
@@ -45,7 +61,7 @@ interface BuildOpeningNodeOptions {
 }
 
 interface PersistOutlineCheckpointOptions {
-  outline: any;
+  outline: StoryOutline;
   themeConfig: ResolvedThemeConfig;
   theme: string;
   language: string;
@@ -57,17 +73,215 @@ interface PersistOutlineCheckpointOptions {
   seedImageId?: string;
 }
 
-function parseOutlinePlaceholderDraft(draft: unknown): any | null {
-  if (!draft || typeof draft !== "object") {
+type OutlineHydrationLog = Omit<Partial<LogEntry>, "usage"> & {
+  usage?: Partial<TokenUsage>;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+
+const isDefined = <T>(value: T | null | undefined): value is T =>
+  value !== null && value !== undefined;
+
+const withCreatedAndModified = <T extends object>(
+  entity: T,
+  now: number,
+): Omit<T, "modifiedAt"> & { createdAt: number; lastModified: number } => {
+  const record = entity as Record<string, unknown>;
+  const { modifiedAt: _ignored, ...rest } = entity as T & {
+    modifiedAt?: unknown;
+  };
+  return {
+    ...rest,
+    createdAt: typeof record.createdAt === "number" ? record.createdAt : now,
+    lastModified:
+      typeof record.lastModified === "number" ? record.lastModified : now,
+  };
+};
+
+const withCreatedAt = <T extends object>(
+  entity: T,
+  now: number,
+): Omit<T, "modifiedAt"> & { createdAt: number } => {
+  const record = entity as Record<string, unknown>;
+  const { modifiedAt: _ignored, ...rest } = entity as T & {
+    modifiedAt?: unknown;
+  };
+  return {
+    ...rest,
+    createdAt: typeof record.createdAt === "number" ? record.createdAt : now,
+  };
+};
+
+const readUsageValue = (
+  log: OutlineHydrationLog,
+  key: keyof TokenUsageAccumulator,
+): number => {
+  if (!log.usage || !isRecord(log.usage)) {
+    return 0;
+  }
+  const value = log.usage[key];
+  return typeof value === "number" ? value : 0;
+};
+
+const getCharacterVisible = (
+  player: StoryOutline["player"] | null | undefined,
+): Partial<GameState["character"]> & { attributes?: unknown } => {
+  if (!isRecord(player?.profile?.visible)) {
+    return {};
+  }
+  return player.profile.visible as Partial<GameState["character"]> & {
+    attributes?: unknown;
+  };
+};
+
+const getPlayerCurrentLocation = (
+  player: StoryOutline["player"] | null | undefined,
+  fallback: string,
+): string =>
+  isNonEmptyString(player?.profile?.currentLocation)
+    ? player.profile.currentLocation.trim()
+    : fallback;
+
+const toNpcProfiles = (bundles: ActorBundle[]): GameState["npcs"] =>
+  bundles.map((bundle) => bundle.profile).filter(isDefined);
+
+const toPlayerActorId = (
+  player: StoryOutline["player"] | null | undefined,
+): string =>
+  isNonEmptyString(player?.profile?.id) ? player.profile.id.trim() : "char:player";
+
+const toCharacterAttributes = (
+  value: unknown,
+): GameState["character"]["attributes"] =>
+  Array.isArray(value) ? (value as GameState["character"]["attributes"]) : [];
+
+const ensureEntityId = (
+  value: unknown,
+  prefix: string,
+  index: number,
+): string => (isNonEmptyString(value) ? value.trim() : `${prefix}:${index}`);
+
+const hasTimestampVersion = (
+  value: unknown,
+): value is VersionedTimestamp =>
+  isRecord(value) &&
+  typeof value.forkId === "number" &&
+  typeof value.turnNumber === "number" &&
+  typeof value.timestamp === "number";
+
+const toInventoryItem = (
+  item: StoryOutline["player"]["inventory"][number],
+  now: number,
+  index: number,
+): InventoryItem => {
+  const normalized = withCreatedAndModified(item, now);
+  return {
+    ...normalized,
+    id: ensureEntityId(item.id, "inv", index + 1),
+    modifiedAt: hasTimestampVersion(item.modifiedAt)
+      ? item.modifiedAt
+      : undefined,
+  };
+};
+
+const toQuest = (
+  quest: StoryOutline["quests"][number],
+  now: number,
+  index: number,
+): Quest => {
+  const normalized = withCreatedAndModified(quest, now);
+  return {
+    ...normalized,
+    id: ensureEntityId(quest.id, "quest", index + 1),
+    modifiedAt: hasTimestampVersion(quest.modifiedAt)
+      ? quest.modifiedAt
+      : undefined,
+    status: "active",
+  };
+};
+
+const toKnowledgeEntry = (
+  entry: StoryOutline["knowledge"][number],
+  now: number,
+  index: number,
+): KnowledgeEntry => {
+  const normalized = withCreatedAndModified(entry, now);
+  return {
+    ...normalized,
+    id: ensureEntityId(entry.id, "know", index + 1),
+    modifiedAt: hasTimestampVersion(entry.modifiedAt)
+      ? entry.modifiedAt
+      : undefined,
+  };
+};
+
+const toLocation = (
+  location: StoryOutline["locations"][number],
+  now: number,
+  index: number,
+): Location => {
+  const normalized = withCreatedAt(location, now);
+  return {
+    ...normalized,
+    id: ensureEntityId(location.id, "loc", index + 1),
+    isVisited: index === 0,
+  };
+};
+
+const toFaction = (
+  faction: StoryOutline["factions"][number],
+  index: number,
+): Faction => ({
+  ...faction,
+  id: ensureEntityId(faction.id, "fac", index + 1),
+});
+
+const toTimelineEvent = (
+  event: StoryOutline["timeline"][number],
+  index: number,
+): TimelineEvent => ({
+  ...event,
+  id: ensureEntityId(event.id, "evt", index + 1),
+  category: event.category || "world_event",
+});
+
+const normalizeUsage = (usage: OutlineHydrationLog["usage"]): TokenUsage | undefined => {
+  if (!usage) return undefined;
+  return {
+    promptTokens:
+      typeof usage.promptTokens === "number" ? usage.promptTokens : 0,
+    completionTokens:
+      typeof usage.completionTokens === "number" ? usage.completionTokens : 0,
+    totalTokens: typeof usage.totalTokens === "number" ? usage.totalTokens : 0,
+    cacheRead: typeof usage.cacheRead === "number" ? usage.cacheRead : 0,
+    cacheWrite: typeof usage.cacheWrite === "number" ? usage.cacheWrite : 0,
+    reported: usage.reported,
+  };
+};
+
+const toLogEntry = (log: OutlineHydrationLog, index: number): LogEntry => ({
+  ...log,
+  id: isNonEmptyString(log.id) ? log.id.trim() : `outline-log-${index + 1}`,
+  timestamp: typeof log.timestamp === "number" ? log.timestamp : Date.now(),
+  provider: isNonEmptyString(log.provider) ? log.provider.trim() : "outline",
+  model: isNonEmptyString(log.model) ? log.model.trim() : "outline",
+  endpoint: isNonEmptyString(log.endpoint)
+    ? log.endpoint.trim()
+    : "outline-hydration",
+  usage: normalizeUsage(log.usage),
+});
+
+function parseOutlinePlaceholderDraft(draft: unknown): Placeholder | null {
+  if (!isRecord(draft)) {
     return null;
   }
 
-  const path =
-    typeof (draft as any).path === "string" ? (draft as any).path.trim() : "";
-  const markdown =
-    typeof (draft as any).markdown === "string"
-      ? (draft as any).markdown
-      : "";
+  const path = isNonEmptyString(draft.path) ? draft.path.trim() : "";
+  const markdown = typeof draft.markdown === "string" ? draft.markdown : "";
 
   if (!/^world\/placeholders\/[^/]+\.md$/.test(path)) {
     return null;
@@ -135,16 +349,20 @@ function parseOutlinePlaceholderDraft(draft: unknown): any | null {
   };
 }
 
-export function calculateAccumulatedTokens(logs: any[]): TokenUsageAccumulator {
-  return logs.reduce(
-    (acc, log) => ({
-      promptTokens: acc.promptTokens + (log.usage?.promptTokens || 0),
-      completionTokens:
-        acc.completionTokens + (log.usage?.completionTokens || 0),
-      totalTokens: acc.totalTokens + (log.usage?.totalTokens || 0),
-      cacheRead: acc.cacheRead + (log.usage?.cacheRead || 0),
-      cacheWrite: acc.cacheWrite + (log.usage?.cacheWrite || 0),
-    }),
+export function calculateAccumulatedTokens(
+  logs: readonly OutlineHydrationLog[],
+): TokenUsageAccumulator {
+  return logs.reduce<TokenUsageAccumulator>(
+    (acc, log) => {
+      return {
+        promptTokens: acc.promptTokens + readUsageValue(log, "promptTokens"),
+        completionTokens:
+          acc.completionTokens + readUsageValue(log, "completionTokens"),
+        totalTokens: acc.totalTokens + readUsageValue(log, "totalTokens"),
+        cacheRead: acc.cacheRead + readUsageValue(log, "cacheRead"),
+        cacheWrite: acc.cacheWrite + readUsageValue(log, "cacheWrite"),
+      };
+    },
     {
       promptTokens: 0,
       completionTokens: 0,
@@ -168,16 +386,38 @@ export function buildOutlineHydratedState({
 }: BuildOutlineStateOptions): GameState {
   const accumulatedTokens = calculateAccumulatedTokens(logs);
   const now = Date.now();
-  const player = (outline as any).player;
-  const npcBundles: any[] = Array.isArray((outline as any).npcs)
-    ? ((outline as any).npcs as any[])
-    : [];
-  const placeholders = Array.isArray((outline as any).placeholders)
-    ? ((outline as any).placeholders as any[])
+  const player = outline.player;
+  const npcBundles = Array.isArray(outline.npcs) ? outline.npcs : [];
+  const placeholders = Array.isArray(outline.placeholders)
+    ? outline.placeholders
         .map((draft) => parseOutlinePlaceholderDraft(draft))
-        .filter(Boolean)
+        .filter(isDefined)
     : [];
-  const visible = (player?.profile as any)?.visible ?? {};
+  const normalizedLogs = logs.map((log, index) => toLogEntry(log, index));
+  const visible = getCharacterVisible(player);
+  const playerCurrentLocation = getPlayerCurrentLocation(
+    player,
+    baseState.currentLocation,
+  );
+  const inventory: GameState["inventory"] = Array.isArray(player.inventory)
+    ? player.inventory.map((item, index) => toInventoryItem(item, now, index))
+    : [];
+  const quests: GameState["quests"] = outline.quests.map((quest, index) =>
+    toQuest(quest, now, index),
+  );
+  const locations: GameState["locations"] = outline.locations.map(
+    (loc, index) => toLocation(loc, now, index),
+  );
+  const knowledge: GameState["knowledge"] = outline.knowledge.map(
+    (entry, index) => toKnowledgeEntry(entry, now, index),
+  );
+  const factions: GameState["factions"] = outline.factions.map((faction, index) =>
+    toFaction(faction, index),
+  );
+  const timeline: GameState["timeline"] = outline.timeline.map((event, index) =>
+    toTimelineEvent(event, index),
+  );
+  const actors: GameState["actors"] = [player, ...npcBundles].filter(isDefined);
 
   const nextState: GameState = {
     ...baseState,
@@ -193,8 +433,8 @@ export function buildOutlineHydratedState({
     },
     themeConfig,
     outlineConversation: undefined,
-    actors: [player, ...npcBundles].filter(Boolean),
-    playerActorId: (player?.profile as any)?.id ?? "char:player",
+    actors,
+    playerActorId: toPlayerActorId(player),
     placeholders,
     locationItemsByLocationId: {},
     character: {
@@ -202,56 +442,28 @@ export function buildOutlineHydratedState({
       name: visible.name ?? baseState.character.name,
       title: visible.title ?? baseState.character.title,
       status: visible.status ?? baseState.character.status,
-      attributes: Array.isArray(visible.attributes) ? visible.attributes : [],
+      attributes: toCharacterAttributes(visible.attributes),
       appearance: visible.appearance ?? baseState.character.appearance,
       age: visible.age ?? baseState.character.age ?? "Unknown",
       profession:
         visible.profession ?? baseState.character.profession ?? "Unknown",
       background: visible.background ?? baseState.character.background ?? "",
       race: visible.race ?? baseState.character.race ?? "Unknown",
-      currentLocation:
-        (player?.profile as any)?.currentLocation ?? baseState.currentLocation,
+      currentLocation: playerCurrentLocation,
       skills: Array.isArray(player?.skills) ? player.skills : [],
       conditions: Array.isArray(player?.conditions) ? player.conditions : [],
       hiddenTraits: Array.isArray(player?.traits) ? player.traits : [],
     },
-    inventory: Array.isArray(player?.inventory)
-      ? player.inventory.map((item: any) => ({
-          ...item,
-          createdAt: item.createdAt ?? now,
-          lastModified: item.lastModified ?? now,
-        }))
-      : [],
-    npcs: npcBundles.map((bundle) => bundle?.profile).filter(Boolean),
-    quests: (outline.quests || []).map((quest: any) => ({
-      ...quest,
-      status: "active",
-      createdAt: quest.createdAt ?? now,
-      lastModified: quest.lastModified ?? now,
-    })),
-    currentLocation:
-      (player?.profile as any)?.currentLocation ||
-      outline.locations?.[0]?.id ||
-      "Unknown",
-    locations: (outline.locations || []).map((loc: any, index: number) => ({
-      ...loc,
-      isVisited: index === 0,
-      createdAt: loc.createdAt ?? now,
-    })),
-    knowledge: (outline.knowledge || []).map((entry: any) => ({
-      ...entry,
-      createdAt: entry.createdAt ?? now,
-      lastModified: entry.lastModified ?? now,
-    })),
-    factions: (outline.factions || []).map((faction: any) => ({
-      ...faction,
-    })),
-    timeline: (outline.timeline || []).map((event: any) => ({
-      ...event,
-      category: event.category || "world_event",
-    })),
+    inventory,
+    npcs: toNpcProfiles(npcBundles),
+    quests,
+    currentLocation: playerCurrentLocation || outline.locations?.[0]?.id || "Unknown",
+    locations,
+    knowledge,
+    factions,
+    timeline,
     isProcessing: true,
-    logs: [...logs, ...(baseState.logs || [])],
+    logs: [...normalizedLogs, ...(baseState.logs || [])],
     tokenUsage: {
       promptTokens:
         (baseState.tokenUsage?.promptTokens || 0) +
@@ -327,7 +539,7 @@ export function buildOpeningNarrativeSegment({
     id: firstNodeId,
     parentId: null,
     text: openingNarrative.narrative,
-    choices: (openingNarrative.choices || []).map((choice: any) => ({
+    choices: (openingNarrative.choices || []).map((choice) => ({
       text: choice.text,
       consequence: choice.consequence || undefined,
     })),

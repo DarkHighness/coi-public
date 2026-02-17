@@ -11,11 +11,12 @@ import {
 } from "../../../tools/handlers";
 import { createError } from "../../../tools/toolResult";
 import type { LoopState } from "./loopInitializer";
+import type { GameState, AISettings } from "../../../../types";
 
 export interface ToolCallContext {
   loopState: LoopState;
-  gameState: any;
-  settings: any;
+  gameState: GameState;
+  settings: AISettings;
 }
 
 export function executeGenericTool(
@@ -38,7 +39,9 @@ export function executeGenericTool(
     vfsSession: loopState.vfsSession,
     requiredCommandSkillPaths: loopState.requiredCommandSkillPaths,
     requiredPresetSkillPaths: loopState.requiredPresetSkillPaths,
-    allowedToolNames: loopState.activeTools.map((tool) => tool.name),
+    allowedToolNames: Array.isArray(loopState.activeTools)
+      ? loopState.activeTools.map((tool) => tool.name)
+      : [],
     vfsActor: "ai",
     vfsMode: loopState.vfsMode,
     vfsElevationToken: loopState.vfsElevationToken ?? null,

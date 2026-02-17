@@ -36,22 +36,32 @@ const mergeCharacterWithFallback = (
   baseCharacter: GameState["character"],
   derivedCharacter: GameState["character"],
 ): GameState["character"] => {
-  const nextCharacter = {
-    ...derivedCharacter,
-  } as GameState["character"];
+  type CharacterFallbackField =
+    | "title"
+    | "profession"
+    | "race"
+    | "age"
+    | "status"
+    | "currentLocation";
+  const nextCharacter: GameState["character"] = { ...derivedCharacter };
 
-  const fallbackFields: Array<
-    "title" | "profession" | "race" | "age" | "status" | "currentLocation"
-  > = ["title", "profession", "race", "age", "status", "currentLocation"];
+  const fallbackFields: CharacterFallbackField[] = [
+    "title",
+    "profession",
+    "race",
+    "age",
+    "status",
+    "currentLocation",
+  ];
 
   for (const field of fallbackFields) {
-    const derivedValue = (derivedCharacter as any)?.[field];
-    const baseValue = (baseCharacter as any)?.[field];
+    const derivedValue = derivedCharacter[field];
+    const baseValue = baseCharacter[field];
     if (
       isPlaceholderCharacterValue(derivedValue) &&
       !isPlaceholderCharacterValue(baseValue)
     ) {
-      (nextCharacter as any)[field] = baseValue;
+      nextCharacter[field] = baseValue;
     }
   }
 
@@ -93,19 +103,12 @@ const mergeNodes = (
   return merged;
 };
 
-const createDefaultUiListState = () => ({
-  pinnedIds: [],
-  customOrder: [],
-});
-
-const createDefaultUiState = (): GameState["uiState"] => ({
-  inventory: createDefaultUiListState(),
-  locations: createDefaultUiListState(),
-  npcs: createDefaultUiListState(),
-  knowledge: createDefaultUiListState(),
-  quests: createDefaultUiListState(),
-  entityPresentation: {},
-});
+const getValidatedUiState = (uiState: GameState["uiState"]): GameState["uiState"] => {
+  if (!uiState || typeof uiState !== "object") {
+    throw new Error("mergeDerivedViewState requires a valid uiState");
+  }
+  return uiState;
+};
 
 type EntityPresentationKind =
   | "inventory"
@@ -222,7 +225,7 @@ const applyEntityPresentationToList = <T>(
         withPresentation.highlight = highlight;
       }
       if (presentation?.lastAccess) {
-        withPresentation.lastAccess = presentation.lastAccess as unknown;
+        withPresentation.lastAccess = presentation.lastAccess;
       } else if ("lastAccess" in withPresentation) {
         delete withPresentation.lastAccess;
       }
@@ -241,10 +244,7 @@ export const mergeDerivedViewState = (
   const mergedNodes = mergeNodes(base.nodes, derived.nodes);
   const activeNodeId = derived.activeNodeId;
   const resetRuntime = options?.resetRuntime === true;
-  const baseUiState: GameState["uiState"] = {
-    ...createDefaultUiState(),
-    ...(base.uiState ?? {}),
-  };
+  const baseUiState = getValidatedUiState(base.uiState);
   const autoHighlight = !resetRuntime;
   const nextPresentation: EntityPresentationMap = {
     ...(baseUiState.entityPresentation ?? {}),
@@ -258,88 +258,95 @@ export const mergeDerivedViewState = (
 
   const inventory = applyEntityPresentationToList(
     "inventory",
-    base.inventory as any[],
-    derived.inventory as any[],
+    base.inventory,
+    derived.inventory,
     nextPresentation,
     existingPresentationKeys,
     autoHighlight,
   );
   const npcs = applyEntityPresentationToList(
     "npcs",
-    base.npcs as any[],
-    derived.npcs as any[],
+    base.npcs,
+    derived.npcs,
     nextPresentation,
     existingPresentationKeys,
     autoHighlight,
   );
   const locations = applyEntityPresentationToList(
     "locations",
-    base.locations as any[],
-    derived.locations as any[],
+    base.locations,
+    derived.locations,
     nextPresentation,
     existingPresentationKeys,
     autoHighlight,
   );
   const knowledge = applyEntityPresentationToList(
     "knowledge",
-    base.knowledge as any[],
-    derived.knowledge as any[],
+    base.knowledge,
+    derived.knowledge,
     nextPresentation,
     existingPresentationKeys,
     autoHighlight,
   );
   const quests = applyEntityPresentationToList(
     "quests",
-    base.quests as any[],
-    derived.quests as any[],
+    base.quests,
+    derived.quests,
     nextPresentation,
     existingPresentationKeys,
     autoHighlight,
   );
   const factions = applyEntityPresentationToList(
     "factions",
-    base.factions as any[],
-    derived.factions as any[],
+    base.factions,
+    derived.factions,
     nextPresentation,
     existingPresentationKeys,
     autoHighlight,
   );
   const timeline = applyEntityPresentationToList(
     "timeline",
-    base.timeline as any[],
-    derived.timeline as any[],
+    base.timeline,
+    derived.timeline,
     nextPresentation,
     existingPresentationKeys,
     autoHighlight,
   );
 
-  const nextCharacter = {
+  const baseHiddenTraits = Array.isArray(base.character.hiddenTraits)
+    ? base.character.hiddenTraits
+    : undefined;
+  const mergedHiddenTraits = Array.isArray(mergedCharacter.hiddenTraits)
+    ? mergedCharacter.hiddenTraits
+    : undefined;
+
+  const nextCharacter: GameState["character"] = {
     ...mergedCharacter,
     skills: applyEntityPresentationToList(
       "characterSkills",
-      (base.character as any)?.skills as any[] | undefined,
-      (mergedCharacter as any)?.skills as any[] | undefined,
+      base.character.skills,
+      mergedCharacter.skills,
       nextPresentation,
       existingPresentationKeys,
       autoHighlight,
     ),
     conditions: applyEntityPresentationToList(
       "characterConditions",
-      (base.character as any)?.conditions as any[] | undefined,
-      (mergedCharacter as any)?.conditions as any[] | undefined,
+      base.character.conditions,
+      mergedCharacter.conditions,
       nextPresentation,
       existingPresentationKeys,
       autoHighlight,
     ),
     hiddenTraits: applyEntityPresentationToList(
       "characterTraits",
-      (base.character as any)?.hiddenTraits as any[] | undefined,
-      (mergedCharacter as any)?.hiddenTraits as any[] | undefined,
+      baseHiddenTraits,
+      mergedHiddenTraits,
       nextPresentation,
       existingPresentationKeys,
       autoHighlight,
     ),
-  } as GameState["character"];
+  };
 
   for (const key of Object.keys(nextPresentation)) {
     if (!existingPresentationKeys.has(key)) {
@@ -351,13 +358,13 @@ export const mergeDerivedViewState = (
     ...derived,
     nodes: mergedNodes,
     currentFork: activeNodeId ? deriveHistory(mergedNodes, activeNodeId) : [],
-    inventory: inventory as any,
-    npcs: npcs as any,
-    locations: locations as any,
-    knowledge: knowledge as any,
-    quests: quests as any,
-    factions: factions as any,
-    timeline: timeline as any,
+    inventory,
+    npcs,
+    locations,
+    knowledge,
+    quests,
+    factions,
+    timeline,
     character: nextCharacter,
     uiState: {
       ...baseUiState,

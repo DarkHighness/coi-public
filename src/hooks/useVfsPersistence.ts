@@ -20,6 +20,7 @@ import { sessionManager } from "../services/ai/sessionManager";
 import { VfsSession } from "../services/vfs/vfsSession";
 import { IndexedDbVfsStore } from "../services/vfs/store";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
+import type { VfsFile, VfsFileMap, VfsSnapshot } from "../services/vfs/types";
 import {
   applySharedMutableStateToSession,
   buildSharedMutableStateFromSession,
@@ -82,6 +83,41 @@ export const deriveSlotNameFromState = (
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
+
+const isVfsFile = (value: unknown): value is VfsFile => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.path === "string" &&
+    typeof value.content === "string" &&
+    typeof value.contentType === "string" &&
+    typeof value.hash === "string" &&
+    typeof value.size === "number" &&
+    Number.isFinite(value.size) &&
+    typeof value.updatedAt === "number" &&
+    Number.isFinite(value.updatedAt)
+  );
+};
+
+const isVfsFileMap = (value: unknown): value is VfsFileMap =>
+  isRecord(value) && Object.values(value).every((entry) => isVfsFile(entry));
+
+const isSaveSlot = (value: unknown): value is SaveSlot => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.timestamp === "number" &&
+    Number.isFinite(value.timestamp) &&
+    typeof value.theme === "string" &&
+    typeof value.summary === "string" &&
+    (value.previewImage === undefined || typeof value.previewImage === "string")
+  );
+};
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Unknown IndexedDB error";
 
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) &&
@@ -149,7 +185,7 @@ export const mergeStoredUiState = (
     "knowledge",
     "quests",
   ] as const;
-  const merged: GameState["uiState"] = { ...base };
+  const merged: GameState["uiState"] & Record<string, unknown> = { ...base };
 
   for (const section of sections) {
     const incoming = (stored as Record<string, unknown>)[section];
@@ -172,6 +208,7 @@ export const mergeStoredUiState = (
     };
   }
 
+  const storedRecord = stored as Record<string, unknown>;
   for (const key of Object.keys(stored)) {
     if (sections.includes(key as (typeof sections)[number])) {
       continue;
@@ -179,7 +216,7 @@ export const mergeStoredUiState = (
     if (key === "entityPresentation") {
       continue;
     }
-    (merged as any)[key] = (stored as any)[key];
+    merged[key] = storedRecord[key];
   }
 
   return merged;
@@ -216,20 +253,20 @@ export const useVfsPersistence = (
       files?: unknown;
     }>(`vfs_shared:${saveId}`);
     const files = data?.files;
-    if (!files || typeof files !== "object") {
+    if (!isVfsFileMap(files)) {
       return null;
     }
-    return files as Record<string, any>;
+    return files;
   }, []);
 
   const ensureSharedLayerForSave = useCallback(
-    async (saveId: string, snapshot: { files: Record<string, any> }) => {
+    async (saveId: string, snapshot: VfsSnapshot) => {
       const existing = await loadSharedMutableState(saveId);
       if (existing) {
         return existing;
       }
 
-      const inferred = extractSharedMutableStateFromSnapshot(snapshot as any);
+      const inferred = extractSharedMutableStateFromSnapshot(snapshot);
       await saveMetadata(`vfs_shared:${saveId}`, {
         files: inferred,
         updatedAt: Date.now(),
@@ -397,12 +434,9 @@ export const useVfsPersistence = (
         }
         restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
 
-        const shared = await ensureSharedLayerForSave(saveId, snapshot as any);
+        const shared = await ensureSharedLayerForSave(saveId, snapshot);
         if (shared) {
-          applySharedMutableStateToSession(
-            vfsSessionRef.current,
-            shared as any,
-          );
+          applySharedMutableStateToSession(vfsSessionRef.current, shared);
         }
 
         return true;
@@ -436,12 +470,12 @@ export const useVfsPersistence = (
               if (snapshot) {
                 const shared = await ensureSharedLayerForSave(
                   saveId,
-                  snapshot as any,
+                  snapshot,
                 );
                 if (shared) {
                   const session = new VfsSession();
-                  restoreVfsSessionFromSnapshot(session, snapshot as any);
-                  applySharedMutableStateToSession(session, shared as any);
+                  restoreVfsSessionFromSnapshot(session, snapshot);
+                  applySharedMutableStateToSession(session, shared);
                   const derived = deriveGameStateFromVfs(session.snapshot());
                   const theme = derived?.theme || "fantasy";
                   const title =
@@ -457,7 +491,7 @@ export const useVfsPersistence = (
                   inferred.push({
                     id: saveId,
                     name: title,
-                    timestamp: (snapshot as any)?.createdAt || Date.now(),
+                    timestamp: snapshot.createdAt || Date.now(),
                     theme,
                     summary,
                     previewImage: derived?.seedImageId,
@@ -469,7 +503,7 @@ export const useVfsPersistence = (
               const derived = snapshot
                 ? (() => {
                     const session = new VfsSession();
-                    restoreVfsSessionFromSnapshot(session, snapshot as any);
+                    restoreVfsSessionFromSnapshot(session, snapshot);
                     return deriveGameStateFromVfs(session.snapshot());
                   })()
                 : null;
@@ -532,12 +566,12 @@ export const useVfsPersistence = (
 
                 const shared = await ensureSharedLayerForSave(
                   slot.id,
-                  snapshot as any,
+                  snapshot,
                 );
                 const session = new VfsSession();
-                restoreVfsSessionFromSnapshot(session, snapshot as any);
+                restoreVfsSessionFromSnapshot(session, snapshot);
                 if (shared) {
-                  applySharedMutableStateToSession(session, shared as any);
+                  applySharedMutableStateToSession(session, shared);
                 }
                 const derived = deriveGameStateFromVfs(session.snapshot());
                 const derivedName = deriveSlotNameFromState(derived);
@@ -588,8 +622,8 @@ export const useVfsPersistence = (
           try {
             const existingIds = new Set<string>(await getAllVfsSaveIds());
             const validSlots = slots.filter(
-              (slot: any) =>
-                slot && typeof slot.id === "string" && existingIds.has(slot.id),
+              (slot): slot is SaveSlot =>
+                isSaveSlot(slot) && existingIds.has(slot.id),
             );
             if (validSlots.length !== slots.length) {
               console.log(
@@ -622,12 +656,12 @@ export const useVfsPersistence = (
               restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
               const shared = await ensureSharedLayerForSave(
                 lastSlotId,
-                snapshot as any,
+                snapshot,
               );
               if (shared) {
                 applySharedMutableStateToSession(
                   vfsSessionRef.current,
-                  shared as any,
+                  shared,
                 );
               }
               const derived = deriveGameStateFromVfs(
@@ -723,9 +757,9 @@ export const useVfsPersistence = (
           const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
           console.log(`Storage: ${usageMB} MB / ${quotaMB} MB`);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to load saves from IndexedDB", error);
-        setPersistenceError(error?.message || "Unknown IndexedDB error");
+        setPersistenceError(getErrorMessage(error));
       } finally {
         isRestoringRef.current = false;
       }
@@ -901,9 +935,9 @@ export const useVfsPersistence = (
       }
 
       restoreVfsSessionFromSnapshot(vfsSessionRef.current, snapshot);
-      const shared = await ensureSharedLayerForSave(id, snapshot as any);
+      const shared = await ensureSharedLayerForSave(id, snapshot);
       if (shared) {
-        applySharedMutableStateToSession(vfsSessionRef.current, shared as any);
+        applySharedMutableStateToSession(vfsSessionRef.current, shared);
       }
       const derived = deriveGameStateFromVfs(vfsSessionRef.current.snapshot());
       const storedUiState = await loadMetadata(`ui_state:${id}`);

@@ -118,8 +118,13 @@ function handleUnlockMode(
 ): CommandResult {
   const { t, gameState } = context;
 
+  const isUnlockModeArg = (
+    value: string,
+  ): value is "on" | "off" | "toggle" =>
+    value === "on" || value === "off" || value === "toggle";
+
   const modeArg = (args[0] || "toggle").toLowerCase();
-  if (!(["on", "off", "toggle"] as const).includes(modeArg as any)) {
+  if (!isUnlockModeArg(modeArg)) {
     return {
       handled: true,
       preventAction: true,
@@ -128,7 +133,7 @@ function handleUnlockMode(
     };
   }
 
-  const mode = modeArg as "on" | "off" | "toggle";
+  const mode = modeArg;
   const currentUnlockMode = gameState.unlockMode ?? false;
   const enable =
     mode === "on" ? true : mode === "off" ? false : !currentUnlockMode;

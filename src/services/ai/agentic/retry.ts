@@ -41,6 +41,11 @@ export interface RetryResult extends ChatGenerateResponse {
 
 const MAX_VALIDATION_ISSUES_IN_ERROR = 4;
 
+const toRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
 const summarizeZodIssues = (
   error: ZodError,
   maxIssues: number = MAX_VALIDATION_ISSUES_IN_ERROR,
@@ -65,8 +70,8 @@ const buildDiscriminatorTypeHint = (error: ZodError): string | null => {
     if (issue.code !== "invalid_union_discriminator") continue;
     const path = issue.path.length > 0 ? issue.path.join(".") : "";
     if (path !== "phase") continue;
-    const options = Array.isArray((issue as any).options)
-      ? ((issue as any).options as unknown[])
+    const options = Array.isArray((issue as { options?: unknown }).options)
+      ? ((issue as { options?: unknown[] }).options ?? [])
       : [];
     if (options.length === 0) continue;
     if (options.every((value) => typeof value === "number")) {
@@ -477,50 +482,58 @@ export async function callWithAgenticRetry(
       textContent &&
       typeof textContent === "string"
     ) {
-      const potentialJson = extractJson(textContent) as any;
+      const potentialJson = extractJson(textContent);
       if (potentialJson) {
         // Find which tool this JSON might belong to
         let matchedToolName: string | null = null;
-        let matchedArgs: any = null;
+        let matchedArgs: Record<string, unknown> | null = null;
+        const potentialRecord = toRecord(potentialJson);
 
         // Pattern A: Virtual tool call object { name, args } or { name, arguments }
         if (
-          potentialJson.name &&
-          (potentialJson.args || potentialJson.arguments)
+          potentialRecord &&
+          typeof potentialRecord.name === "string" &&
+          (potentialRecord.args || potentialRecord.arguments)
         ) {
-          const toolName = potentialJson.name;
-          const args = potentialJson.args || potentialJson.arguments;
+          const toolName = potentialRecord.name;
+          const argsRecord = toRecord(
+            potentialRecord.args ?? potentialRecord.arguments,
+          );
           const toolDef = request.tools?.find((t) => t.name === toolName);
-          if (toolDef && toolDef.parameters.safeParse(args).success) {
+          if (
+            toolDef &&
+            argsRecord &&
+            toolDef.parameters.safeParse(argsRecord).success
+          ) {
             matchedToolName = toolName;
-            matchedArgs = args;
+            matchedArgs = argsRecord;
           }
         }
 
         // Pattern B: Raw arguments matching a specific tool
-        if (!matchedToolName) {
+        if (!matchedToolName && potentialRecord) {
           if (requiredToolName) {
             const schema =
               rootSchema ||
               request.tools?.find((t) => t.name === requiredToolName)
                 ?.parameters;
-            if (schema && schema.safeParse(potentialJson).success) {
+            if (schema && schema.safeParse(potentialRecord).success) {
               matchedToolName = requiredToolName;
-              matchedArgs = potentialJson;
+              matchedArgs = potentialRecord;
             }
           } else if (request.tools && request.tools.length > 0) {
             // Try to match against any available tool
             for (const tool of request.tools) {
-              if (tool.parameters.safeParse(potentialJson).success) {
+              if (tool.parameters.safeParse(potentialRecord).success) {
                 matchedToolName = tool.name;
-                matchedArgs = potentialJson;
+                matchedArgs = potentialRecord;
                 break;
               }
             }
           }
         }
 
-        if (matchedToolName) {
+        if (matchedToolName && matchedArgs) {
           console.log(
             `[AgenticRetry] FALLBACK: Successfully extracted JSON for tool "${matchedToolName}"`,
           );
@@ -532,7 +545,11 @@ export async function callWithAgenticRetry(
             },
           ];
           // Update result to include virtual function calls for downstream logic
-          (result as any).functionCalls = functionCalls;
+          if (result && typeof result === "object") {
+            (result as Record<string, unknown>).functionCalls = functionCalls;
+          } else {
+            result = { functionCalls };
+          }
         }
       }
     }

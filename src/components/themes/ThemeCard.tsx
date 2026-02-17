@@ -12,6 +12,10 @@ interface ThemeCardProps {
   isDesktop: boolean;
 }
 
+type MarkdownParagraphProps = React.ComponentPropsWithoutRef<"p"> & {
+  node?: unknown;
+};
+
 export const ThemeCard: React.FC<ThemeCardProps> = ({
   themeKey,
   themeConfig,
@@ -61,7 +65,9 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
                 content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
                 disableIndent
                 components={{
-                  p: ({ node, ...props }: any) => <span {...props} />,
+                  p: ({ node: _node, ...props }: MarkdownParagraphProps) => (
+                    <span {...props} />
+                  ),
                 }}
               />
             </div>

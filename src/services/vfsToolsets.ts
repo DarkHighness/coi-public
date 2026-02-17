@@ -3,6 +3,7 @@
  */
 
 import { vfsToolRegistry } from "./vfs/tools/registry";
+import type { VfsToolName } from "./vfs/tools/types";
 
 export type VfsToolsetId =
   | "turn"
@@ -42,7 +43,8 @@ export function formatVfsToolCapabilitiesForPrompt(tools: string[]): string {
       if (!vfsToolRegistry.has(toolName)) {
         return `- \`${toolName}\`: capability metadata missing.`;
       }
-      return vfsToolRegistry.describeForPrompt(toolName as any);
+      const normalizedToolName: VfsToolName = toolName;
+      return vfsToolRegistry.describeForPrompt(normalizedToolName);
     })
     .join("\n");
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import type { AISettings } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { deriveGameStateFromVfs } from "../../services/vfs/derivations";
@@ -40,7 +41,31 @@ export const SettingsExtra: React.FC = () => {
   const { settings: currentSettings, updateSettings: onUpdateSettings } =
     useSettings();
   const runtimeContext = useOptionalRuntimeContext();
-  const extra = currentSettings.extra || {};
+  type ExtraSettings = NonNullable<AISettings["extra"]>;
+  const extra: ExtraSettings = currentSettings.extra || {};
+  const isCulturePreference = (
+    value: string,
+  ): value is NonNullable<ExtraSettings["culturePreference"]> => {
+    switch (value) {
+      case "follow_story_setting":
+      case "none":
+      case "sinosphere":
+      case "japanese":
+      case "korean":
+      case "western_euro_american":
+      case "arab_islamic":
+      case "south_asian":
+      case "latin_american":
+      case "sub_saharan_african":
+        return true;
+      default:
+        return false;
+    }
+  };
+  const isGenderPreference = (
+    value: string,
+  ): value is NonNullable<ExtraSettings["genderPreference"]> =>
+    value === "none" || value === "male" || value === "female";
   const customInstructionRaw = extra.customInstruction || "";
   const customInstructionTrimmed =
     typeof customInstructionRaw === "string" ? customInstructionRaw.trim() : "";
@@ -75,7 +100,10 @@ export const SettingsExtra: React.FC = () => {
     return normalizeSoulMarkdown("current", runtimeGameState?.playerProfile);
   }, [hasActiveSave, runtimeGameState?.playerProfile]);
 
-  const updateExtra = (field: string, value: any) => {
+  const updateExtra = <K extends keyof ExtraSettings>(
+    field: K,
+    value: ExtraSettings[K],
+  ) => {
     onUpdateSettings({
       ...currentSettings,
       extra: {
@@ -335,7 +363,12 @@ export const SettingsExtra: React.FC = () => {
           <div className="w-56">
             <select
               value={extra.culturePreference || "follow_story_setting"}
-              onChange={(e) => updateExtra("culturePreference", e.target.value)}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                if (isCulturePreference(nextValue)) {
+                  updateExtra("culturePreference", nextValue);
+                }
+              }}
               className="w-full p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
             >
               <option value="follow_story_setting">
@@ -395,7 +428,12 @@ export const SettingsExtra: React.FC = () => {
           <div className="w-44">
             <select
               value={extra.genderPreference || "none"}
-              onChange={(e) => updateExtra("genderPreference", e.target.value)}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                if (isGenderPreference(nextValue)) {
+                  updateExtra("genderPreference", nextValue);
+                }
+              }}
               className="w-full p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text"
             >
               <option value="none">

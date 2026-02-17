@@ -4,6 +4,7 @@ import type {
   UnifiedMessage,
   LogEntry,
   AISettings,
+  TokenUsage,
 } from "../../../../types";
 import { sessionManager } from "../../sessionManager";
 import { getProviderConfig, createLogEntry } from "../../utils";
@@ -17,6 +18,7 @@ import {
   getVisualSystemInstruction,
 } from "./visualContext";
 import { visualTools } from "./visualToolHandler";
+import type { ToolCallResult } from "../../../providers/types";
 
 export interface VisualProgress {
   status: string;
@@ -39,8 +41,19 @@ export interface VisualLoopResult {
   imagePrompt?: string;
   veoScript?: string;
   logs: LogEntry[];
-  usage?: any;
+  usage?: TokenUsage;
 }
+
+const isToolCallResult = (value: unknown): value is ToolCallResult => {
+  if (!value || typeof value !== "object") return false;
+  const call = value as Record<string, unknown>;
+  return (
+    typeof call.name === "string" &&
+    (typeof call.id === "string" || typeof call.id === "undefined") &&
+    typeof call.args === "object" &&
+    call.args !== null
+  );
+};
 
 export async function runVisualLoop(
   input: VisualLoopInput,
@@ -113,16 +126,38 @@ export async function runVisualLoop(
       }),
     );
 
-    const functionCalls = (result as any).functionCalls;
-    if (functionCalls) {
-      conversationHistory.push(createToolCallMessage(functionCalls));
+    const functionCalls =
+      result && typeof result === "object"
+        ? (result as { functionCalls?: unknown }).functionCalls
+        : undefined;
+    const parsedCalls = Array.isArray(functionCalls)
+      ? functionCalls.filter(isToolCallResult)
+      : [];
+
+    if (parsedCalls.length > 0) {
+      conversationHistory.push(
+        createToolCallMessage(
+          parsedCalls.map((call) => ({
+            id: call.id,
+            name: call.name,
+            arguments: call.args,
+            thoughtSignature: call.thoughtSignature,
+          })),
+        ),
+      );
       const toolResponses = [];
       let finished = false;
 
-      for (const call of functionCalls) {
+      for (const call of parsedCalls) {
         if (call.name === "submit_visual_result") {
-          imagePrompt = call.args.imagePrompt as string | undefined;
-          veoScript = call.args.veoScript as string | undefined;
+          imagePrompt =
+            typeof call.args.imagePrompt === "string"
+              ? call.args.imagePrompt
+              : undefined;
+          veoScript =
+            typeof call.args.veoScript === "string"
+              ? call.args.veoScript
+              : undefined;
           toolResponses.push({
             toolCallId: call.id,
             name: call.name,

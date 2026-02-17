@@ -22,36 +22,14 @@ const hasKnownUserMarker = (text: string): boolean =>
   text.startsWith("[Player Rate]");
 
 function buildLatestSummaryContext(gameState: GameState): string {
-  const summaries = (gameState as any).summaries as
-    | Array<{
-        id?: number | null;
-        createdAt?: number | null;
-        displayText?: string;
-        visible?: {
-          narrative?: string;
-          majorEvents?: string[];
-          characterDevelopment?: string;
-          worldState?: string;
-        };
-        hidden?: {
-          truthNarrative?: string;
-          hiddenPlots?: string[];
-          npcActions?: string[];
-          worldTruth?: string;
-          unrevealed?: string[];
-        };
-        nodeRange?: { fromIndex: number; toIndex: number };
-        nextSessionReferencesMarkdown?: string | null;
-      }>
-    | undefined;
-
+  const summaries = gameState.summaries;
   if (!summaries || summaries.length === 0) return "";
   const latest = summaries[summaries.length - 1];
   if (!latest) return "";
 
   const lastSummarizedIndex =
-    typeof (gameState as any).lastSummarizedIndex === "number"
-      ? ((gameState as any).lastSummarizedIndex as number)
+    typeof gameState.lastSummarizedIndex === "number"
+      ? gameState.lastSummarizedIndex
       : null;
 
   const escape = (value: unknown): string =>

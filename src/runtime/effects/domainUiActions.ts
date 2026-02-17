@@ -36,6 +36,18 @@ type EntityPresentationKind =
   | "characterConditions"
   | "characterTraits";
 
+type TopLevelHighlightKind = Exclude<
+  HighlightTarget["kind"],
+  "characterSkills" | "characterConditions" | "characterTraits"
+>;
+
+type HighlightableEntry = {
+  id?: string;
+  name?: string;
+  highlight?: boolean;
+  [key: string]: unknown;
+};
+
 const makeEntityPresentationKey = (
   kind: EntityPresentationKind,
   id: string,
@@ -49,10 +61,7 @@ const createLastAccessStamp = (
   timestamp: Date.now(),
 });
 
-const topLevelKindMap: Record<
-  Exclude<HighlightTarget["kind"], "characterSkills" | "characterConditions" | "characterTraits">,
-  EntityPresentationKind
-> = {
+const topLevelKindMap: Record<TopLevelHighlightKind, EntityPresentationKind> = {
   inventory: "inventory",
   npcs: "npcs",
   locations: "locations",
@@ -69,6 +78,22 @@ const characterSectionKindMap: Record<
   skills: "characterSkills",
   conditions: "characterConditions",
   hiddenTraits: "characterTraits",
+};
+
+const getTopLevelEntries = (
+  state: GameState,
+  kind: TopLevelHighlightKind,
+): HighlightableEntry[] => {
+  const listByKind: Record<TopLevelHighlightKind, HighlightableEntry[]> = {
+    inventory: state.inventory,
+    npcs: state.npcs,
+    locations: state.locations,
+    knowledge: state.knowledge,
+    quests: state.quests,
+    factions: state.factions,
+    timeline: state.timeline,
+  };
+  return listByKind[kind];
 };
 
 export function createDomainUiActions({
@@ -95,14 +120,14 @@ export function createDomainUiActions({
           return prev;
         }
 
-        const prevList = (prev.character as any)[section] as
-          | Array<any>
+        const prevList = prev.character[section] as
+          | HighlightableEntry[]
           | undefined;
         if (!Array.isArray(prevList) || prevList.length === 0) {
           return prev;
         }
 
-        const matches = (entry: any): boolean => {
+        const matches = (entry: HighlightableEntry): boolean => {
           if (!entry || typeof entry !== "object") return false;
           if (match.id && entry?.id && entry.id === match.id) return true;
           if (match.name && entry?.name && entry.name === match.name) return true;
@@ -176,7 +201,7 @@ export function createDomainUiActions({
       target.kind === "timeline"
     ) {
       setGameState((prev) => {
-        const list = (prev as any)[target.kind] as Array<any> | undefined;
+        const list = getTopLevelEntries(prev, target.kind);
         if (!Array.isArray(list) || list.length === 0) {
           return prev;
         }

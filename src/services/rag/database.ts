@@ -97,6 +97,11 @@ interface StorageTierBytes {
   reclaimableBytes: number;
 }
 
+type SqlRow = Record<string, unknown>;
+
+const readOptionalString = (value: unknown): string | undefined =>
+  typeof value === "string" && value.length > 0 ? value : undefined;
+
 const PROTECTED_CONDITION =
   "COALESCE(sm.is_active, FALSE) = TRUE AND d.fork_id = COALESCE(sm.current_fork_id, 0) AND d.is_latest = TRUE";
 const TIER_A_CONDITION =
@@ -204,7 +209,7 @@ export class RAGDatabase {
   private async ensureSchemaVersion(): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT value FROM rag_meta WHERE key = 'schema_version' LIMIT 1`,
     );
 
@@ -383,14 +388,14 @@ export class RAGDatabase {
   async deleteDocument(docId: string): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const row = await this.db.query<any>(
+    const row = await this.db.query<SqlRow>(
       `SELECT save_id, fork_id FROM documents WHERE id = $1 LIMIT 1`,
       [docId],
     );
 
     await this.db.query(`DELETE FROM documents WHERE id = $1`, [docId]);
 
-    const saveId = row.rows[0]?.save_id;
+    const saveId = readOptionalString(row.rows[0]?.save_id);
     if (saveId) {
       await this.refreshSaveMetadata(saveId, Number(row.rows[0]?.fork_id ?? 0));
     }
@@ -399,7 +404,7 @@ export class RAGDatabase {
   async deleteDocumentsBySave(saveId: string): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `DELETE FROM documents WHERE save_id = $1`,
       [saveId],
     );
@@ -421,7 +426,7 @@ export class RAGDatabase {
 
     const normalized = Array.from(new Set(paths));
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       forkId === undefined
         ? `DELETE FROM documents WHERE save_id = $1 AND canonical_path = ANY($2)`
         : `DELETE FROM documents WHERE save_id = $1 AND fork_id = $2 AND canonical_path = ANY($3)`,
@@ -446,7 +451,7 @@ export class RAGDatabase {
 
     const normalized = Array.from(new Set(paths));
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `UPDATE documents
        SET is_latest = FALSE,
            superseded_at_turn = CASE
@@ -495,7 +500,7 @@ export class RAGDatabase {
     const providerParamIndex = params.length + 2;
     params.push(modelId, provider);
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `WITH req(idx, save_id, source_path, file_hash, chunk_index) AS (
          VALUES ${tupleSql}
        )
@@ -552,7 +557,7 @@ export class RAGDatabase {
   ): Promise<RAGDocument[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT d.*, e.embedding
        FROM documents d
        LEFT JOIN embeddings e ON d.id = e.doc_id
@@ -561,7 +566,7 @@ export class RAGDatabase {
       [saveId, sourcePath],
     );
 
-    return result.rows.map((row: any) => this.rowToDocument(row));
+    return result.rows.map((row: SqlRow) => this.rowToDocument(row));
   }
 
   async searchSimilar(
@@ -602,7 +607,7 @@ export class RAGDatabase {
     }
 
     const where: string[] = ["d.save_id = $2", "d.is_latest = TRUE"];
-    const params: any[] = [`[${Array.from(queryEmbedding).join(",")}]`, saveId];
+    const params: unknown[] = [`[${Array.from(queryEmbedding).join(",")}]`, saveId];
     let index = 3;
 
     if (forkIds && forkIds.length > 0) {
@@ -656,7 +661,7 @@ export class RAGDatabase {
 
     const whereClause = where.join(" AND ");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT d.*, 1 - (e.embedding <=> $1::vector) AS similarity
        FROM documents d
        JOIN embeddings e ON d.id = e.doc_id
@@ -667,7 +672,7 @@ export class RAGDatabase {
       [...params, threshold, topK],
     );
 
-    const ids = result.rows.map((row: any) => row.id as string);
+    const ids = result.rows.map((row: SqlRow) => row.id as string);
     if (ids.length > 0) {
       await this.db.query(
         `UPDATE documents SET last_access = $1 WHERE id = ANY($2)`,
@@ -675,7 +680,7 @@ export class RAGDatabase {
       );
     }
 
-    return result.rows.map((row: any) => ({
+    return result.rows.map((row: SqlRow) => ({
       document: this.rowToDocumentMeta(row),
       score: Number(row.similarity ?? 0),
       adjustedScore: Number(row.similarity ?? 0),
@@ -685,7 +690,7 @@ export class RAGDatabase {
   async getSaveStats(saveId: string): Promise<SaveStats | null> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const countResult = await this.db.query<any>(
+    const countResult = await this.db.query<SqlRow>(
       `SELECT COUNT(*)::int AS count, COALESCE(SUM(estimated_bytes), 0)::bigint AS bytes
        FROM documents
        WHERE save_id = $1`,
@@ -697,7 +702,7 @@ export class RAGDatabase {
       return null;
     }
 
-    const byTypeResult = await this.db.query<any>(
+    const byTypeResult = await this.db.query<SqlRow>(
       `SELECT doc_type, COUNT(*)::int AS count
        FROM documents
        WHERE save_id = $1
@@ -717,7 +722,7 @@ export class RAGDatabase {
       }
     }
 
-    const metaResult = await this.db.query<any>(
+    const metaResult = await this.db.query<SqlRow>(
       `SELECT * FROM save_metadata WHERE save_id = $1 LIMIT 1`,
       [saveId],
     );
@@ -730,19 +735,19 @@ export class RAGDatabase {
       documentsByType,
       memoryUsage: Number(countResult.rows[0]?.bytes ?? 0),
       lastUpdated: Number(meta.last_updated ?? Date.now()),
-      embeddingModel: meta.embedding_model || undefined,
-      embeddingProvider: meta.embedding_provider || undefined,
+      embeddingModel: readOptionalString(meta.embedding_model),
+      embeddingProvider: readOptionalString(meta.embedding_provider),
     };
   }
 
   async getAllSaveIds(): Promise<string[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT save_id FROM save_metadata ORDER BY is_active DESC, last_accessed DESC`,
     );
 
-    return result.rows.map((row: any) => row.save_id as string);
+    return result.rows.map((row: SqlRow) => row.save_id as string);
   }
 
   async getDocumentsForSave(
@@ -751,14 +756,14 @@ export class RAGDatabase {
   ): Promise<RAGDocumentMeta[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       limit
         ? `SELECT * FROM documents WHERE save_id = $1 ORDER BY last_access DESC LIMIT $2`
         : `SELECT * FROM documents WHERE save_id = $1 ORDER BY last_access DESC`,
       limit ? [saveId, limit] : [saveId],
     );
 
-    return result.rows.map((row: any) => this.rowToDocumentMeta(row));
+    return result.rows.map((row: SqlRow) => this.rowToDocumentMeta(row));
   }
 
   async getDocumentsWithEmbeddingsForSave(
@@ -766,7 +771,7 @@ export class RAGDatabase {
   ): Promise<RAGDocument[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT d.*, e.embedding
        FROM documents d
        LEFT JOIN embeddings e ON d.id = e.doc_id
@@ -775,7 +780,7 @@ export class RAGDatabase {
       [saveId],
     );
 
-    return result.rows.map((row: any) => this.rowToDocument(row));
+    return result.rows.map((row: SqlRow) => this.rowToDocument(row));
   }
 
   async importDocuments(
@@ -853,7 +858,7 @@ export class RAGDatabase {
   ): Promise<RAGDocumentMeta[]> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       types && types.length > 0
         ? `SELECT * FROM documents
            WHERE save_id = $1 AND doc_type = ANY($2)
@@ -866,7 +871,7 @@ export class RAGDatabase {
       types && types.length > 0 ? [saveId, types, limit] : [saveId, limit],
     );
 
-    return result.rows.map((row: any) => this.rowToDocumentMeta(row));
+    return result.rows.map((row: SqlRow) => this.rowToDocumentMeta(row));
   }
 
   async getDocumentsPaginated(
@@ -877,7 +882,7 @@ export class RAGDatabase {
   ): Promise<{ documents: RAGDocumentMeta[]; total: number }> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const countResult = await this.db.query<any>(
+    const countResult = await this.db.query<SqlRow>(
       types && types.length > 0
         ? `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1 AND doc_type = ANY($2)`
         : `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1`,
@@ -886,7 +891,7 @@ export class RAGDatabase {
 
     const total = Number(countResult.rows[0]?.count ?? 0);
 
-    const dataResult = await this.db.query<any>(
+    const dataResult = await this.db.query<SqlRow>(
       types && types.length > 0
         ? `SELECT * FROM documents
            WHERE save_id = $1 AND doc_type = ANY($2)
@@ -902,7 +907,7 @@ export class RAGDatabase {
     );
 
     return {
-      documents: dataResult.rows.map((row: any) => this.rowToDocumentMeta(row)),
+      documents: dataResult.rows.map((row: SqlRow) => this.rowToDocumentMeta(row)),
       total,
     };
   }
@@ -910,7 +915,7 @@ export class RAGDatabase {
   async enforceSaveLimit(saveId: string): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1`,
       [saveId],
     );
@@ -921,7 +926,7 @@ export class RAGDatabase {
       return 0;
     }
 
-    const candidates = await this.db.query<any>(
+    const candidates = await this.db.query<SqlRow>(
       `SELECT d.id
        FROM documents d
        LEFT JOIN save_metadata sm ON sm.save_id = d.save_id
@@ -932,12 +937,12 @@ export class RAGDatabase {
       [saveId, overflow],
     );
 
-    const ids = candidates.rows.map((row: any) => row.id as string);
+    const ids = candidates.rows.map((row: SqlRow) => row.id as string);
     if (ids.length === 0) {
       return 0;
     }
 
-    const deleted = await this.db.query<any>(
+    const deleted = await this.db.query<SqlRow>(
       `DELETE FROM documents WHERE id = ANY($1)`,
       [ids],
     );
@@ -953,7 +958,7 @@ export class RAGDatabase {
   private async getStorageTierBytes(): Promise<StorageTierBytes> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const rowResult = await this.db.query<any>(
+    const rowResult = await this.db.query<SqlRow>(
       `SELECT
          COALESCE(SUM(CASE WHEN ${PROTECTED_CONDITION} THEN d.estimated_bytes ELSE 0 END), 0)::bigint AS protected_bytes,
          COALESCE(SUM(CASE WHEN ${TIER_A_CONDITION} THEN d.estimated_bytes ELSE 0 END), 0)::bigint AS tier_a_bytes,
@@ -990,7 +995,7 @@ export class RAGDatabase {
       return { ids: [], bytesFreed: 0 };
     }
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT d.id, COALESCE(d.estimated_bytes, 0)::bigint AS estimated_bytes
        FROM documents d
        LEFT JOIN save_metadata sm ON sm.save_id = d.save_id
@@ -1032,7 +1037,7 @@ export class RAGDatabase {
       );
       if (ids.length === 0) continue;
 
-      const deletion = await this.db.query<any>(
+      const deletion = await this.db.query<SqlRow>(
         `DELETE FROM documents WHERE id = ANY($1)`,
         [ids],
       );
@@ -1082,7 +1087,7 @@ export class RAGDatabase {
       return null;
     }
 
-    const saveRows = await this.db.query<any>(
+    const saveRows = await this.db.query<SqlRow>(
       `SELECT
          sm.save_id,
          COALESCE(sm.document_count, 0)::int AS document_count,
@@ -1092,7 +1097,7 @@ export class RAGDatabase {
        ORDER BY sm.is_active DESC, sm.last_accessed ASC`,
     );
 
-    const saveStats = saveRows.rows.map((row: any) => ({
+    const saveStats = saveRows.rows.map((row: SqlRow) => ({
       saveId: row.save_id as string,
       documentCount: Number(row.document_count ?? 0),
       lastAccessed: Number(row.last_accessed ?? 0),
@@ -1100,9 +1105,9 @@ export class RAGDatabase {
 
     const suggestedDeletions = saveRows.rows
       .filter(
-        (row: any) => !row.is_active && Number(row.document_count ?? 0) > 0,
+        (row: SqlRow) => !row.is_active && Number(row.document_count ?? 0) > 0,
       )
-      .map((row: any) => String(row.save_id));
+      .map((row: SqlRow) => String(row.save_id));
 
     return {
       currentTotal: storage.totalBytes,
@@ -1124,7 +1129,7 @@ export class RAGDatabase {
 
     const uniqueIds = Array.from(new Set(saveIds));
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `DELETE FROM documents WHERE save_id = ANY($1)`,
       [uniqueIds],
     );
@@ -1139,7 +1144,7 @@ export class RAGDatabase {
   async getGlobalStats(): Promise<GlobalStorageStats> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const totalResult = await this.db.query<any>(
+    const totalResult = await this.db.query<SqlRow>(
       `SELECT
          COUNT(*)::int AS count,
          COALESCE(SUM(estimated_bytes), 0)::bigint AS estimated_storage
@@ -1174,7 +1179,7 @@ export class RAGDatabase {
   ): Promise<ModelMismatchInfo | null> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT embedding_model, embedding_provider, COUNT(*)::int AS count
        FROM documents
        WHERE save_id = $1
@@ -1206,7 +1211,7 @@ export class RAGDatabase {
   ): Promise<{ model: string; provider: string } | null> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const result = await this.db.query<any>(
+    const result = await this.db.query<SqlRow>(
       `SELECT embedding_model, embedding_provider
        FROM save_metadata
        WHERE save_id = $1
@@ -1219,15 +1224,19 @@ export class RAGDatabase {
     }
 
     return {
-      model: result.rows[0].embedding_model || this.config.modelId,
-      provider: result.rows[0].embedding_provider || this.config.provider,
+      model:
+        readOptionalString(result.rows[0]?.embedding_model) ??
+        this.config.modelId,
+      provider:
+        readOptionalString(result.rows[0]?.embedding_provider) ??
+        this.config.provider,
     };
   }
 
   async clearSaveForRebuild(saveId: string, forkId?: number): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const deletion = await this.db.query<any>(
+    const deletion = await this.db.query<SqlRow>(
       forkId === undefined
         ? `DELETE FROM documents
            WHERE save_id = $1
@@ -1298,12 +1307,12 @@ export class RAGDatabase {
   ): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const countResult = await this.db.query<any>(
+    const countResult = await this.db.query<SqlRow>(
       `SELECT COUNT(*)::int AS count FROM documents WHERE save_id = $1`,
       [saveId],
     );
 
-    const modelResult = await this.db.query<any>(
+    const modelResult = await this.db.query<SqlRow>(
       `SELECT embedding_model, embedding_provider
        FROM documents
        WHERE save_id = $1
@@ -1312,7 +1321,7 @@ export class RAGDatabase {
       [saveId],
     );
 
-    const existingMeta = await this.db.query<any>(
+    const existingMeta = await this.db.query<SqlRow>(
       `SELECT is_active, current_fork_id FROM save_metadata WHERE save_id = $1 LIMIT 1`,
       [saveId],
     );
@@ -1366,7 +1375,7 @@ export class RAGDatabase {
   private async refreshAllSaveMetadata(): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const saveIdRows = await this.db.query<any>(
+    const saveIdRows = await this.db.query<SqlRow>(
       `SELECT save_id FROM save_metadata
        UNION
        SELECT DISTINCT save_id FROM documents`,
@@ -1374,7 +1383,7 @@ export class RAGDatabase {
 
     for (const row of saveIdRows.rows) {
       const saveId = String(row.save_id);
-      const meta = await this.db.query<any>(
+      const meta = await this.db.query<SqlRow>(
         `SELECT current_fork_id FROM save_metadata WHERE save_id = $1 LIMIT 1`,
         [saveId],
       );
@@ -1395,7 +1404,7 @@ export class RAGDatabase {
     }
   }
 
-  private rowToDocument(row: any): RAGDocument {
+  private rowToDocument(row: SqlRow): RAGDocument {
     return {
       id: String(row.id),
       sourcePath: String(row.source_path),
@@ -1421,11 +1430,13 @@ export class RAGDatabase {
       createdAt: Number(row.created_at ?? Date.now()),
       lastAccess: Number(row.last_access ?? Date.now()),
       estimatedBytes: Number(row.estimated_bytes ?? 0),
-      tags: this.parseTags(row.tags),
+      tags: this.parseTags(
+        typeof row.tags === "string" ? row.tags : undefined,
+      ),
     };
   }
 
-  private rowToDocumentMeta(row: any): RAGDocumentMeta {
+  private rowToDocumentMeta(row: SqlRow): RAGDocumentMeta {
     return {
       id: String(row.id),
       sourcePath: String(row.source_path),
@@ -1450,7 +1461,9 @@ export class RAGDatabase {
       createdAt: Number(row.created_at ?? Date.now()),
       lastAccess: Number(row.last_access ?? Date.now()),
       estimatedBytes: Number(row.estimated_bytes ?? 0),
-      tags: this.parseTags(row.tags),
+      tags: this.parseTags(
+        typeof row.tags === "string" ? row.tags : undefined,
+      ),
     };
   }
 

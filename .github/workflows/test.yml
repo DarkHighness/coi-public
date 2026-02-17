@@ -30,6 +30,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check type escapes
+        run: pnpm run type-escapes:check
+
+      - name: Type check
+        run: pnpm typecheck
+
       - name: Run stable tests
         run: pnpm run test:stable
 

@@ -15,6 +15,10 @@ interface ThemePreviewModalProps {
   onSelect: (key: string, protagonistFeature?: string) => void;
 }
 
+type MarkdownParagraphProps = React.ComponentPropsWithoutRef<"p"> & {
+  node?: unknown;
+};
+
 export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
   themeKey,
   themeConfig,
@@ -115,7 +119,9 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
                   content={t(`${themeKey}.narrativeStyle`, { ns: "themes" })}
                   disableIndent
                   components={{
-                    p: ({ node, ...props }: any) => <span {...props} />,
+                    p: ({ node: _node, ...props }: MarkdownParagraphProps) => (
+                      <span {...props} />
+                    ),
                   }}
                 />
               </div>
@@ -130,7 +136,9 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
                   content={t(`${themeKey}.worldSetting`, { ns: "themes" })}
                   disableIndent
                   components={{
-                    p: ({ node, ...props }: any) => <span {...props} />,
+                    p: ({ node: _node, ...props }: MarkdownParagraphProps) => (
+                      <span {...props} />
+                    ),
                   }}
                 />
               </div>
@@ -155,7 +163,9 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
                     content={t(`${themeKey}.example`, { ns: "themes" })}
                     disableIndent
                     components={{
-                      p: ({ node, ...props }: any) => <span {...props} />,
+                      p: ({ node: _node, ...props }: MarkdownParagraphProps) => (
+                        <span {...props} />
+                      ),
                     }}
                   />
                 </div>

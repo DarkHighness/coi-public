@@ -65,6 +65,7 @@ import {
   resolveEffectivePresetProfile,
   resolveCulturePreferenceContext,
   pickModelMatchedPrompt,
+  type ModelPromptEntry,
 } from "../../utils";
 
 import promptToml from "@/prompt/prompt.toml";
@@ -237,6 +238,81 @@ const getOutlineDefaultReadOnlyAllowPrefixes = (
 
 const OUTLINE_RESUME_ANCHOR_MARKER = "[OUTLINE RESUME ANCHOR]";
 
+type PartialPhaseKey = keyof PartialStoryOutline;
+
+const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getPartialPhaseKey = (phaseNum: number): PartialPhaseKey =>
+  `phase${Math.max(0, Math.min(9, Math.floor(phaseNum)))}` as PartialPhaseKey;
+
+const getPartialPhase = (
+  partial: PartialStoryOutline,
+  phaseNum: number,
+): object | undefined => partial[getPartialPhaseKey(phaseNum)];
+
+const setPartialPhase = (
+  partial: PartialStoryOutline,
+  phaseNum: number,
+  value: object,
+): void => {
+  partial[getPartialPhaseKey(phaseNum)] = value;
+};
+
+const getStringArg = (args: Record<string, unknown>, key: string): string => {
+  const value = args[key];
+  return typeof value === "string" ? value : "";
+};
+
+const getArrayArg = (
+  args: Record<string, unknown>,
+  key: string,
+): unknown[] | null => {
+  const value = args[key];
+  return Array.isArray(value) ? value : null;
+};
+
+const readModelPromptEntries = (value: unknown): ModelPromptEntry[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const parsed = value
+    .map((entry) => {
+      if (!isRecordObject(entry)) return null;
+      const keywords = Array.isArray(entry.keywords)
+        ? entry.keywords.filter((k): k is string => typeof k === "string")
+        : [];
+      const prompt = typeof entry.prompt === "string" ? entry.prompt : "";
+      return {
+        keywords,
+        prompt,
+      } satisfies ModelPromptEntry;
+    })
+    .filter((entry): entry is ModelPromptEntry => entry !== null);
+  return parsed.length > 0 ? parsed : undefined;
+};
+
+const extractFunctionCalls = (result: unknown): ToolCallResult[] => {
+  if (!isRecordObject(result)) return [];
+  const functionCalls = result.functionCalls;
+  if (!Array.isArray(functionCalls)) return [];
+  return functionCalls.filter((call): call is ToolCallResult => {
+    if (!isRecordObject(call)) return false;
+    if (typeof call.name !== "string") return false;
+    if (typeof call.id !== "string" && typeof call.id !== "undefined")
+      return false;
+    if (!isRecordObject(call.args)) return false;
+    if (
+      typeof call.thoughtSignature !== "undefined" &&
+      typeof call.thoughtSignature !== "string"
+    ) {
+      return false;
+    }
+    return true;
+  });
+};
+
+const isToolSuccessResult = (value: unknown): value is { success: true } =>
+  isRecordObject(value) && value.success === true;
+
 const safeJsonStringify = (value: unknown): string => {
   try {
     return JSON.stringify(value);
@@ -282,13 +358,13 @@ const buildOutlineResumeAnchor = (
   ).filter(
     (phaseNum) =>
       phaseNum < safeCurrentPhase &&
-      (partial as any)?.[`phase${phaseNum}`] !== undefined,
+      getPartialPhase(partial, phaseNum) !== undefined,
   );
 
   const missingCompletedPhases = Array.from(
     { length: safeCurrentPhase },
     (_, idx) => idx,
-  ).filter((phaseNum) => (partial as any)?.[`phase${phaseNum}`] === undefined);
+  ).filter((phaseNum) => getPartialPhase(partial, phaseNum) === undefined);
 
   const remainingPhases = Array.from(
     { length: Math.max(0, 10 - safeCurrentPhase) },
@@ -297,7 +373,7 @@ const buildOutlineResumeAnchor = (
 
   const completedPhasePreview = completedPhaseNumbers
     .map((phaseNum) => {
-      const raw = safeJsonStringify((partial as any)?.[`phase${phaseNum}`]);
+      const raw = safeJsonStringify(getPartialPhase(partial, phaseNum));
       return `<phase_${phaseNum}>${truncateText(raw, 1400)}</phase_${phaseNum}>`;
     })
     .join("\n");
@@ -364,11 +440,8 @@ const validateOutlineReadOnlyVfsArgs = (
       .join(", ")}`;
 
   if (toolName === "vfs_ls") {
-    const path =
-      typeof (args as any)?.path === "string" ? (args as any).path : "";
-    const patterns = Array.isArray((args as any)?.patterns)
-      ? (args as any).patterns
-      : null;
+    const path = getStringArg(args, "path");
+    const patterns = getArrayArg(args, "patterns");
     if (!path && (!patterns || patterns.length === 0)) {
       return reject(
         "vfs_ls requires path or patterns (root listing is disabled)",
@@ -393,9 +466,7 @@ const validateOutlineReadOnlyVfsArgs = (
       }
     }
 
-    const excludePatterns = Array.isArray((args as any)?.excludePatterns)
-      ? (args as any).excludePatterns
-      : null;
+    const excludePatterns = getArrayArg(args, "excludePatterns");
     if (excludePatterns) {
       for (const pattern of excludePatterns) {
         if (typeof pattern !== "string") {
@@ -415,9 +486,7 @@ const validateOutlineReadOnlyVfsArgs = (
   }
 
   if (toolName === "vfs_schema") {
-    const paths = Array.isArray((args as any)?.paths)
-      ? (args as any).paths
-      : [];
+    const paths = getArrayArg(args, "paths") ?? [];
     if (paths.length === 0) return reject("vfs_schema requires paths[]");
     const bad = paths.find(
       (p: unknown) =>
@@ -435,8 +504,7 @@ const validateOutlineReadOnlyVfsArgs = (
     toolName === "vfs_read_lines" ||
     toolName === "vfs_read_json"
   ) {
-    const path =
-      typeof (args as any)?.path === "string" ? (args as any).path : "";
+    const path = getStringArg(args, "path");
     if (!path) return reject(`${toolName} requires a path`);
     if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
       return reject(`${toolName} path="${path}"`);
@@ -445,8 +513,7 @@ const validateOutlineReadOnlyVfsArgs = (
   }
 
   if (toolName === "vfs_search") {
-    const path =
-      typeof (args as any)?.path === "string" ? (args as any).path : "";
+    const path = getStringArg(args, "path");
     if (!path)
       return reject(`${toolName} requires a path (root search disabled)`);
     if (!isAllowedOutlineReadOnlyPath(path, allowPrefixes)) {
@@ -460,17 +527,30 @@ const validateOutlineReadOnlyVfsArgs = (
 };
 
 const formatOutlineSubmitValidationError = (error: unknown): string => {
-  const err = error as any;
-  const issues = err?.issues;
+  if (!isRecordObject(error)) return String(error);
+  const issues = error.issues;
   if (!Array.isArray(issues)) {
-    return String(err?.message ?? error);
+    return String(error.message ?? error);
   }
   return issues
     .slice(0, 8)
-    .map((issue: any) => {
-      const path = Array.isArray(issue?.path) ? issue.path.join(".") : "";
+    .map((issue) => {
+      const issueRecord = isRecordObject(issue) ? issue : null;
+      const path =
+        issueRecord && Array.isArray(issueRecord.path)
+          ? issueRecord.path
+              .map((segment) =>
+                typeof segment === "string" || typeof segment === "number"
+                  ? String(segment)
+                  : "",
+              )
+              .filter(Boolean)
+              .join(".")
+          : "";
       const message =
-        typeof issue?.message === "string" ? issue.message : "Invalid";
+        issueRecord && typeof issueRecord.message === "string"
+          ? issueRecord.message
+          : "Invalid";
       return path ? `${path}: ${message}` : message;
     })
     .join("; ");
@@ -481,7 +561,7 @@ const userMessageContainsText = (
   text: string,
 ): boolean => {
   if (message.role !== "user") return false;
-  const content = (message as any).content;
+  const content = (message as { content?: unknown }).content;
   if (typeof content === "string") return content.includes(text);
   if (!Array.isArray(content)) return false;
   return content.some(
@@ -543,7 +623,7 @@ export const generateStoryOutlinePhased = async (
     if (theme === IMAGE_BASED_THEME) return true;
     if (theme) return false;
     return (
-      resume.currentPhase === 0 || Boolean((resume.partial as any)?.phase0)
+      resume.currentPhase === 0 || Boolean(resume.partial.phase0)
     );
   })();
 
@@ -697,8 +777,12 @@ export const generateStoryOutlinePhased = async (
 
   const systemDefaultInjectionEnabled =
     settings.extra?.systemDefaultInjectionEnabled ?? true;
+  const systemPromptEntries =
+    isRecordObject(promptToml) && "system_prompts" in promptToml
+      ? readModelPromptEntries(promptToml.system_prompts)
+      : undefined;
   const systemDefaultInjection = systemDefaultInjectionEnabled
-    ? pickModelMatchedPrompt((promptToml as any)?.system_prompts, modelId)
+    ? pickModelMatchedPrompt(systemPromptEntries, modelId)
     : undefined;
 
   const customInstructionRaw = settings.extra?.customInstruction;
@@ -1143,13 +1227,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
         if (log) logs.push(log);
 
-        const toolCalls =
-          result &&
-          typeof result === "object" &&
-          "functionCalls" in result &&
-          Array.isArray((result as any).functionCalls)
-            ? ((result as any).functionCalls as ToolCallResult[])
-            : [];
+        const toolCalls = extractFunctionCalls(result);
 
         const textContent = (result as { content?: string }).content;
 
@@ -1371,7 +1449,6 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               {
                 vfsSession,
                 settings,
-                gameState: { forkId: -1, turnNumber: 0 } as any,
                 vfsActor: "ai",
                 vfsMode: "sudo",
                 vfsElevationIntent: "outline_submit",
@@ -1386,9 +1463,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               },
             );
 
-            if ((output as any)?.success === true) {
-              const phaseKey = `phase${phaseNum}` as keyof PartialStoryOutline;
-              (partial as any)[phaseKey] = validatedData;
+            if (isToolSuccessResult(output)) {
+              setPartialPhase(partial, phaseNum, validatedData);
               phaseSubmitted = true;
             }
             toolResponses.push({
@@ -1405,7 +1481,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
           ) {
             const violation = validateOutlineReadOnlyVfsArgs(
               normalizedName,
-              tc.args as any,
+              tc.args,
               readOnlyVfsAllowPrefixes,
             );
             if (violation) {
@@ -1426,7 +1502,6 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               {
                 vfsSession,
                 settings,
-                gameState: { forkId: -1, turnNumber: 0 } as any,
                 vfsActor: "ai",
                 vfsMode: "normal",
               },

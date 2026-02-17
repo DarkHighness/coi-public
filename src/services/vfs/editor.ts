@@ -30,7 +30,50 @@ interface SectionEditOptions {
   allowOutlineEdit?: boolean;
 }
 
+type JsonRecord = Record<string, unknown>;
+
+interface ActorBundle {
+  profile: JsonRecord;
+  skills?: unknown;
+  conditions?: unknown;
+  traits?: unknown;
+  inventory?: unknown;
+}
+
 const json = (value: unknown) => JSON.stringify(value);
+
+const toObjectRecord = (value: unknown): JsonRecord | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as JsonRecord;
+};
+
+const toTrimmedId = (value: unknown): string | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const toActorBundle = (value: unknown): ActorBundle | null => {
+  const record = toObjectRecord(value);
+  if (!record) {
+    return null;
+  }
+  const profile = toObjectRecord(record.profile);
+  if (!profile) {
+    return null;
+  }
+  return {
+    profile,
+    skills: record.skills,
+    conditions: record.conditions,
+    traits: record.traits,
+    inventory: record.inventory,
+  };
+};
 
 const readJson = (session: VfsSession, path: string): unknown | null => {
   const file = session.readFile(path);
@@ -66,26 +109,24 @@ const clearDir = (session: VfsSession, prefix: string): void => {
 
 const PLAYER_ID = "char:player";
 
-const writeActorBundle = (session: VfsSession, bundle: any): void => {
-  const profile = bundle?.profile;
-  if (!profile || typeof profile !== "object") return;
-  const actorId = (profile as any).id;
-  if (typeof actorId !== "string" || actorId.trim().length === 0) return;
-
-  const id = actorId.trim();
+const writeActorBundle = (session: VfsSession, bundle: ActorBundle): void => {
+  const profile = bundle.profile;
+  const id = toTrimmedId(profile.id);
+  if (!id) return;
   writeJson(session, `world/characters/${id}/profile.json`, profile);
 
-  const writeSub = (subPath: string, items: any[] | undefined) => {
+  const writeSub = (subPath: string, items: unknown): void => {
     if (!Array.isArray(items)) return;
     clearDir(session, `world/characters/${id}/${subPath}`);
     for (const item of items) {
-      if (!item || typeof item !== "object") continue;
-      const itemId = (item as any).id;
-      if (typeof itemId !== "string" || itemId.trim().length === 0) continue;
+      const itemRecord = toObjectRecord(item);
+      if (!itemRecord) continue;
+      const itemId = toTrimmedId(itemRecord.id);
+      if (!itemId) continue;
       writeJson(
         session,
-        `world/characters/${id}/${subPath}/${itemId.trim()}.json`,
-        item,
+        `world/characters/${id}/${subPath}/${itemId}.json`,
+        itemRecord,
       );
     }
   };
@@ -160,8 +201,8 @@ export const applySectionEdit = (
       throw new Error("Character edits must be an object.");
     }
 
-    const maybeBundle = data as any;
-    if (maybeBundle.profile && typeof maybeBundle.profile === "object") {
+    const maybeBundle = toActorBundle(data);
+    if (maybeBundle) {
       writeActorBundle(session, maybeBundle);
       return;
     }
@@ -180,28 +221,27 @@ export const applySectionEdit = (
     const actorIds = session.list("world/characters");
     for (const actorId of actorIds) {
       if (actorId === PLAYER_ID) continue;
-      const profile = readJson(
-        session,
-        `world/characters/${actorId}/profile.json`,
-      ) as any;
-      if (profile && typeof profile === "object" && profile.kind === "npc") {
+      const profile = toObjectRecord(
+        readJson(session, `world/characters/${actorId}/profile.json`),
+      );
+      if (profile && profile.kind === "npc") {
         deleteActorBundle(session, actorId);
       }
     }
 
     // Write new NPCs from actor bundles.
-    for (const entry of data as any[]) {
-      if (!entry || typeof entry !== "object") continue;
-      if (!entry.profile || typeof entry.profile !== "object") {
+    for (const entry of data) {
+      const bundle = toActorBundle(entry);
+      if (!bundle) {
         throw new Error(
           "NPC entries must use actor bundle shape: { profile, skills?, conditions?, traits?, inventory? }.",
         );
       }
-      const profileId = (entry.profile as any).id;
-      if (typeof profileId !== "string" || profileId.trim().length === 0) {
+      const profileId = toTrimmedId(bundle.profile.id);
+      if (!profileId) {
         throw new Error("Missing profile.id for npc entry.");
       }
-      writeActorBundle(session, entry);
+      writeActorBundle(session, bundle);
     }
     return;
   }
@@ -234,16 +274,17 @@ export const applySectionEdit = (
       );
     }
 
-    for (const rule of data as any[]) {
-      if (!rule || typeof rule !== "object") continue;
-      const id = (rule as any).id;
-      const title = (rule as any).title;
-      const content = (rule as any).content;
+    for (const ruleValue of data) {
+      const rule = toObjectRecord(ruleValue);
+      if (!rule) continue;
+      const id = toTrimmedId(rule.id);
+      const title = typeof rule.title === "string" ? rule.title : null;
+      const content = typeof rule.content === "string" ? rule.content : null;
       const priority =
-        typeof (rule as any).priority === "number"
-          ? (rule as any).priority
+        typeof rule.priority === "number"
+          ? rule.priority
           : 99;
-      if (typeof id !== "string" || id.trim().length === 0) {
+      if (!id) {
         throw new Error("Missing id for custom rule entry.");
       }
 

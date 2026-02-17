@@ -17,6 +17,10 @@ interface AudioTrack {
   isPlaying: boolean;
 }
 
+interface WindowWithWebkitAudioContext extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 class WebAudioManager {
   private context: AudioContext | null = null;
   private audioTracks: Map<string, AudioTrack> = new Map();
@@ -40,9 +44,13 @@ class WebAudioManager {
    */
   private getContext(): AudioContext {
     if (!this.context) {
-      this.context = new (
-        window.AudioContext || (window as any).webkitAudioContext
-      )();
+      const AudioContextCtor =
+        window.AudioContext ||
+        (window as WindowWithWebkitAudioContext).webkitAudioContext;
+      if (!AudioContextCtor) {
+        throw new Error("AudioContext is not supported in this environment");
+      }
+      this.context = new AudioContextCtor();
       this.masterGain = this.context.createGain();
       this.masterGain.connect(this.context.destination);
     }

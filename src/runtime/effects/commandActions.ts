@@ -103,20 +103,33 @@ export function createCommandActions({
     return { baseSummaries, baseIndex, nextSegmentIdx };
   };
 
-  const sanitizeNodeChoices = (choices: any, fallbackChoice: string) => {
+  const sanitizeNodeChoices = (
+    choices: unknown,
+    fallbackChoice: string,
+  ): StorySegment["choices"] => {
     if (!Array.isArray(choices) || choices.length === 0) {
       return [fallbackChoice];
     }
 
-    const normalized = choices.map((choice: any) => {
+    const normalized = choices.map((choice) => {
       if (typeof choice === "string") {
         return choice;
       }
 
       if (typeof choice === "object" && choice !== null) {
+        const record = choice as Record<string, unknown>;
+        const text =
+          (typeof record.text === "string" && record.text) ||
+          (typeof record.choice === "string" && record.choice) ||
+          (typeof record.label === "string" && record.label) ||
+          "Continue";
+        const consequence =
+          typeof record.consequence === "string"
+            ? record.consequence
+            : undefined;
         return {
-          text: choice.text || choice.choice || choice.label || "Continue",
-          consequence: choice.consequence,
+          text,
+          consequence,
         };
       }
 
@@ -365,11 +378,11 @@ export function createCommandActions({
     id: string;
     parentId: string | null;
     text: string;
-    choices: any[];
+    choices: StorySegment["choices"];
     atmosphere: AtmosphereObject;
     narrativeTone?: string;
     segmentIdx: number;
-    baseSummaries: any[];
+    baseSummaries: GameState["summaries"];
     baseIndex: number;
     derivedState: GameState;
     viewState: GameState;

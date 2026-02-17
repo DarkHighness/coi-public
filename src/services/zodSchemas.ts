@@ -1018,16 +1018,22 @@ export const actorEntityViewBaseSchema = z
   })
   .strict();
 
-const withUnlockReasonRequirement = <T extends z.ZodTypeAny>(schema: T): T =>
-  schema.superRefine((value: any, ctx: z.RefinementCtx) => {
-    if (value?.unlocked && !value?.unlockReason) {
+const withUnlockReasonRequirement = <T extends z.ZodTypeAny>(
+  schema: T,
+): z.ZodEffects<T> =>
+  schema.superRefine((value: unknown, ctx: z.RefinementCtx) => {
+    if (typeof value !== "object" || value === null) {
+      return;
+    }
+    const candidate = value as { unlocked?: unknown; unlockReason?: unknown };
+    if (candidate.unlocked === true && !candidate.unlockReason) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "unlockReason is required when unlocked=true",
         path: ["unlockReason"],
       });
     }
-  }) as unknown as T;
+  });
 
 export const questObjectiveStateSchema = z
   .object({

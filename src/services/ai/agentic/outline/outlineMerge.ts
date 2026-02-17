@@ -24,6 +24,9 @@ interface PrepareEntitiesOptions {
   defaultUnlocked?: boolean;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
 const normalizePlaceholderDraftPath = (
   value: unknown,
   fallbackIndex: number,
@@ -126,23 +129,62 @@ function prepareEntities<T extends { id?: string; unlocked?: boolean }>(
   return result;
 }
 
-type ActorBundleShape = {
-  profile: { id?: string; kind?: string; relations?: unknown[] };
-  skills?: Array<{ id?: string; unlocked?: boolean }>;
-  conditions?: Array<{ id?: string; unlocked?: boolean }>;
-  traits?: Array<{ id?: string; unlocked?: boolean }>;
-  inventory?: Array<{ id?: string; unlocked?: boolean }>;
+type StoryActorBundle = StoryOutline["player"] | StoryOutline["npcs"][number];
+type StoryActorProfile = StoryActorBundle["profile"];
+type StoryActorSkill = NonNullable<StoryActorBundle["skills"]>[number];
+type StoryActorCondition = NonNullable<StoryActorBundle["conditions"]>[number];
+type StoryActorTrait = NonNullable<StoryActorBundle["traits"]>[number];
+type StoryActorInventoryItem = NonNullable<StoryActorBundle["inventory"]>[number];
+type StoryActorRelation = NonNullable<StoryActorProfile["relations"]>[number];
+
+type DraftActorBundle = Partial<{
+  profile: Partial<StoryActorProfile>;
+  skills: StoryActorSkill[];
+  conditions: StoryActorCondition[];
+  traits: StoryActorTrait[];
+  inventory: StoryActorInventoryItem[];
+}>;
+
+const getEntityArray = <T extends { id?: string; unlocked?: boolean }>(
+  value: unknown,
+): T[] | undefined => {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  return value as T[];
+};
+
+const getProfileFromBundle = (
+  bundle: DraftActorBundle,
+): Partial<StoryActorProfile> => {
+  if (!isRecord(bundle.profile)) {
+    return {};
+  }
+  return bundle.profile as Partial<StoryActorProfile>;
+};
+
+const getRelations = (profile: Partial<StoryActorProfile>): StoryActorRelation[] =>
+  Array.isArray(profile.relations)
+    ? (profile.relations as StoryActorRelation[])
+    : [];
+
+const toDraftActorBundle = (value: unknown): DraftActorBundle => {
+  if (!isRecord(value)) {
+    return {};
+  }
+  return value as DraftActorBundle;
 };
 
 const prepareActorBundle = (
-  input: ActorBundleShape,
+  input: unknown,
   options: {
     requiredKind: "player" | "npc";
     requiredId?: string;
     idPrefix: string;
   },
-): ActorBundleShape => {
-  const profile = input.profile ?? ({} as any);
+): StoryActorBundle => {
+  const bundle = toDraftActorBundle(input);
+  const profile = getProfileFromBundle(bundle);
   const id =
     options.requiredId ??
     (typeof profile.id === "string" && profile.id.trim()
@@ -152,27 +194,118 @@ const prepareActorBundle = (
   const kind = options.requiredKind;
 
   return {
-    ...input,
+    ...bundle,
     profile: {
       ...profile,
       id,
       kind,
-      relations: Array.isArray(profile.relations) ? profile.relations : [],
+      relations: getRelations(profile),
     },
-    skills: prepareEntities(input.skills as any, "skill", {
+    skills: prepareEntities(
+      getEntityArray<StoryActorSkill>(bundle.skills),
+      "skill",
+      {
+        defaultUnlocked: true,
+      },
+    ),
+    conditions: prepareEntities(
+      getEntityArray<StoryActorCondition>(bundle.conditions),
+      "cond",
+      {
+        defaultUnlocked: true,
+      },
+    ),
+    traits: prepareEntities(getEntityArray<StoryActorTrait>(bundle.traits), "trait", {
       defaultUnlocked: true,
-    }) as any,
-    conditions: prepareEntities(input.conditions as any, "cond", {
-      defaultUnlocked: true,
-    }) as any,
-    traits: prepareEntities(input.traits as any, "trait", {
-      defaultUnlocked: true,
-    }) as any,
-    inventory: prepareEntities(input.inventory as any, "inv", {
-      defaultUnlocked: true,
-    }) as any,
+    }),
+    inventory: prepareEntities(
+      getEntityArray<StoryActorInventoryItem>(bundle.inventory),
+      "inv",
+      {
+        defaultUnlocked: true,
+      },
+    ),
   };
 };
+
+const asArray = <T>(value: unknown): T[] =>
+  Array.isArray(value) ? (value as T[]) : [];
+
+const getPlaceholderPath = (draft: unknown, index: number): string => {
+  if (!isRecord(draft)) {
+    return normalizePlaceholderDraftPath(undefined, index);
+  }
+  return normalizePlaceholderDraftPath(draft.path, index);
+};
+
+const getPlaceholderMarkdown = (
+  draft: unknown,
+  path: string,
+  index: number,
+): string => {
+  if (!isRecord(draft)) {
+    return normalizePlaceholderDraftMarkdown(undefined, path, index);
+  }
+  return normalizePlaceholderDraftMarkdown(draft.markdown, path, index);
+};
+
+const getBundleProfileId = (bundle: unknown): string | undefined => {
+  if (!isRecord(bundle)) {
+    return undefined;
+  }
+  const profile = bundle.profile;
+  if (!isRecord(profile)) {
+    return undefined;
+  }
+  if (typeof profile.id !== "string") {
+    return undefined;
+  }
+  const trimmed = profile.id.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const getPlayerPerceptions = (phase6: OutlinePhase6): StoryActorRelation[] =>
+  asArray<StoryActorRelation>(phase6.playerPerceptions);
+
+const mergeProfileRelations = (
+  bundle: StoryOutline["player"],
+  perceptions: StoryActorRelation[],
+): StoryOutline["player"] => {
+  if (perceptions.length === 0) {
+    return bundle;
+  }
+  const existing = getRelations(bundle.profile);
+  return {
+    ...bundle,
+    profile: {
+      ...bundle.profile,
+      relations: [...existing, ...perceptions],
+    },
+  };
+};
+
+const toNpcs = (phase6: OutlinePhase6): StoryOutline["npcs"] =>
+  asArray<unknown>(phase6.npcs).map((bundle, idx) =>
+    prepareActorBundle(bundle, {
+      requiredKind: "npc",
+      requiredId: getBundleProfileId(bundle) ?? `npc:${idx + 1}`,
+      idPrefix: "npc",
+    }),
+  );
+
+const toPlaceholders = (phase6: OutlinePhase6): StoryOutline["placeholders"] =>
+  asArray<unknown>(phase6.placeholders).map((draft, idx) => {
+    const path = getPlaceholderPath(draft, idx + 1);
+    return {
+      path,
+      markdown: getPlaceholderMarkdown(draft, path, idx + 1),
+    };
+  });
+
+const toPreparedEntities = <T extends { id?: string }>(
+  items: T[] | undefined,
+  prefix: string,
+): T[] => prepareEntities(items, prefix);
 
 /**
  * Merge partial outline phases into a complete StoryOutline
@@ -201,25 +334,15 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   const p8 = partial.phase8 as OutlinePhase8;
   const p9 = partial.phase9 as OutlinePhase9;
 
-  const preparedPlayer = prepareActorBundle((p3 as any).player as any, {
+  const preparedPlayer = prepareActorBundle(p3.player, {
     requiredKind: "player",
     requiredId: "char:player",
     idPrefix: "char:player",
-  }) as any;
-
-  const playerPerceptions = Array.isArray((p6 as any).playerPerceptions)
-    ? ((p6 as any).playerPerceptions as any[])
-    : [];
-
-  if (playerPerceptions.length > 0) {
-    const existing = Array.isArray((preparedPlayer as any).profile?.relations)
-      ? (preparedPlayer as any).profile.relations
-      : [];
-    (preparedPlayer as any).profile = {
-      ...(preparedPlayer as any).profile,
-      relations: [...existing, ...playerPerceptions],
-    };
-  }
+  }) as StoryOutline["player"];
+  const hydratedPlayer = mergeProfileRelations(
+    preparedPlayer,
+    getPlayerPerceptions(p6),
+  );
 
   const outline: StoryOutline = {
     // Phase 2: World foundation
@@ -227,70 +350,26 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     initialTime: p2.initialTime,
     premise: p2.premise,
     narrativeScale: p2.narrativeScale,
-    worldSetting: p2.worldSetting as StoryOutline["worldSetting"],
-    mainGoal: p2.mainGoal as StoryOutline["mainGoal"],
+    worldSetting: p2.worldSetting,
+    mainGoal: p2.mainGoal,
 
     // Phase 3: Player actor bundle
-    player: preparedPlayer as any,
+    player: hydratedPlayer,
 
     // Phase 4-8: Entities
-    locations: prepareEntities(
-      p4.locations as StoryOutline["locations"],
-      "loc",
-    ) as StoryOutline["locations"],
-    factions: prepareEntities(
-      p5.factions as StoryOutline["factions"],
-      "fac",
-    ) as StoryOutline["factions"],
-    quests: prepareEntities(
-      (p7 as any).quests as StoryOutline["quests"],
-      "quest",
-    ) as StoryOutline["quests"],
-    knowledge: prepareEntities(
-      (p7 as any).knowledge as StoryOutline["knowledge"],
-      "know",
-    ) as StoryOutline["knowledge"],
-    timeline: prepareEntities(
-      (p8 as any).timeline as StoryOutline["timeline"],
-      "evt",
-    ) as StoryOutline["timeline"],
-    initialAtmosphere: (p8 as any)
-      .initialAtmosphere as StoryOutline["initialAtmosphere"],
+    locations: toPreparedEntities(p4.locations, "loc"),
+    factions: toPreparedEntities(p5.factions, "fac"),
+    quests: toPreparedEntities(p7.quests, "quest"),
+    knowledge: toPreparedEntities(p7.knowledge, "know"),
+    timeline: toPreparedEntities(p8.timeline, "evt"),
+    initialAtmosphere: p8.initialAtmosphere,
 
     // Phase 6: NPCs + placeholders
-    npcs: Array.isArray((p6 as any).npcs)
-      ? ((p6 as any).npcs as any[]).map((bundle, idx) =>
-          prepareActorBundle(bundle as any, {
-            requiredKind: "npc",
-            requiredId:
-              typeof bundle?.profile?.id === "string" &&
-              bundle.profile.id.trim()
-                ? bundle.profile.id.trim()
-                : `npc:${idx + 1}`,
-            idPrefix: "npc",
-          }),
-        )
-      : ([] as any),
-    placeholders: Array.isArray((p6 as any).placeholders)
-      ? ((p6 as any).placeholders as any[]).map((draft, idx) => {
-          const path = normalizePlaceholderDraftPath(
-            (draft as any)?.path,
-            idx + 1,
-          );
-          return {
-            path,
-            markdown: normalizePlaceholderDraftMarkdown(
-              (draft as any)?.markdown,
-              path,
-              idx + 1,
-            ),
-          };
-        })
-      : [],
+    npcs: toNpcs(p6),
+    placeholders: toPlaceholders(p6),
 
     // Phase 9: Opening Narrative
-    openingNarrative: (p9 as any)
-      .openingNarrative as StoryOutline["openingNarrative"],
+    openingNarrative: p9.openingNarrative,
   };
 
   return outline;

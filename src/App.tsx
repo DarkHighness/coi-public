@@ -24,7 +24,7 @@ import {
 } from "./components/common/ErrorBoundary";
 import { RuntimeProvider, useRuntimeContext } from "./runtime/context";
 import type { RuntimeValidationMode } from "./runtime/state";
-import type { SavePresetProfile } from "./types";
+import type { SavePresetProfile, StorySegment } from "./types";
 import { presentProviderValidationResult } from "./runtime/effects/providerValidationUi";
 import {
   ConnectedToastContainer,
@@ -116,11 +116,13 @@ function AppContent() {
   const { showToast } = useToast();
 
   // Track currently viewed segment for dynamic theme/background
-  const [viewedSegment, setViewedSegmentLocal] = useState<any | null>(null);
+  const [viewedSegment, setViewedSegmentLocal] = useState<StorySegment | null>(
+    null,
+  );
 
   // Wrapper to also persist viewedSegmentId to UIState
   const setViewedSegment = React.useCallback(
-    (segment: any | null) => {
+    (segment: StorySegment | null) => {
       setViewedSegmentLocal(segment);
       setViewedSegmentId(segment?.id, {
         reason: "app.viewedSegment",
@@ -222,7 +224,7 @@ function AppContent() {
 
   // Expose debug tools to window
   useEffect(() => {
-    const w = window as any;
+    const w = window as Window & { toggleThemeDebugger?: () => void };
 
     // Unified debug toggle
     w.toggleThemeDebugger = () => {

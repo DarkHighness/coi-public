@@ -144,9 +144,7 @@ export const isBroadReferencePath = (path: string): boolean =>
 export function getLatestSummaryReferencesMarkdown(
   gameState: GameState,
 ): string | null {
-  const summaries = (gameState as any).summaries as
-    | Array<{ nextSessionReferencesMarkdown?: string | null }>
-    | undefined;
+  const summaries = gameState.summaries;
 
   if (!Array.isArray(summaries) || summaries.length === 0) {
     return null;

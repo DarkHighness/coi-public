@@ -5,7 +5,7 @@ export const handleMove: VfsToolHandler = (args, ctx) => {
   const typedArgs = args as Omit<Extract<MutateOp, { op: "move" }>, "op">;
   return executeMutateOps(
     "vfs_move",
-    typedArgs as unknown as Record<string, unknown>,
+    typedArgs as Record<string, unknown>,
     [{ op: "move", ...typedArgs }],
     ctx,
   );

@@ -281,7 +281,7 @@ describe("mergeDerivedViewState", () => {
     expect(merged.uiState.entityPresentation?.["inventory:item:2"]).toBeUndefined();
   });
 
-  it("handles base state without uiState by falling back to defaults", () => {
+  it("throws when base state uiState is missing", () => {
     const base = {
       ...makeState(),
       uiState: undefined,
@@ -291,12 +291,8 @@ describe("mergeDerivedViewState", () => {
       inventory: [{ id: "item:1", name: "Key+" }] as any,
     });
 
-    const merged = mergeDerivedViewState(base, derived);
-
-    expect(merged.uiState).toBeTruthy();
-    expect(merged.uiState.inventory).toBeTruthy();
-    expect(merged.uiState.entityPresentation?.["inventory:item:1"]).toEqual({
-      highlight: true,
-    });
+    expect(() => mergeDerivedViewState(base, derived)).toThrow(
+      "mergeDerivedViewState requires a valid uiState",
+    );
   });
 });

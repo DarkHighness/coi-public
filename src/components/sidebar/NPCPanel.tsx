@@ -36,13 +36,37 @@ export const buildNpcList = (
     .filter(
       (npc) =>
         unlockMode ||
-        !Array.isArray((npc as any).knownBy) ||
-        (npc as any).knownBy.includes(playerActorId),
+        !Array.isArray(npc.knownBy) ||
+        npc.knownBy.includes(playerActorId),
     )
     .map((npc, idx) => ({
       ...npc,
       id: npc.id || npc.visible?.name || `unknown-${idx}`,
     }));
+};
+
+type NpcAttitudeRelation = RelationEdge & {
+  kind: "attitude";
+  to: { kind: "character"; id: string };
+  visible: {
+    signals?: string[];
+    reputationTag?: string;
+    claimedIntent?: string;
+  };
+  hidden?: {
+    affinity?: number;
+    impression?: string;
+  };
+  unlocked?: boolean;
+};
+
+type NpcPerceptionRelation = RelationEdge & {
+  kind: "perception";
+  to: { kind: "character"; id: string };
+  visible: {
+    description: string;
+    evidence?: string[];
+  };
 };
 
 interface NpcItemProps {
@@ -117,25 +141,20 @@ const NpcItem: React.FC<NpcItemProps> = ({
     );
   };
 
-  const attitude = (
-    Array.isArray((rel as any).relations)
-      ? ((rel as any).relations as any[])
-      : []
-  ).find(
-    (r) =>
-      r?.kind === "attitude" &&
-      r?.to?.kind === "character" &&
-      r?.to?.id === playerActorId,
-  ) as any | undefined;
+  const npcRelations = Array.isArray(rel.relations) ? rel.relations : [];
+  const attitude = npcRelations.find(
+    (r): r is NpcAttitudeRelation =>
+      r.kind === "attitude" &&
+      r.to.kind === "character" &&
+      r.to.id === playerActorId,
+  );
 
-  const perception = (
-    Array.isArray(playerRelations) ? playerRelations : []
-  ).find(
-    (r: any) =>
-      r?.kind === "perception" &&
-      r?.to?.kind === "character" &&
-      r?.to?.id === rel.id,
-  ) as any | undefined;
+  const perception = playerRelations.find(
+    (r): r is NpcPerceptionRelation =>
+      r.kind === "perception" &&
+      r.to.kind === "character" &&
+      r.to.id === String(rel.id),
+  );
 
   const showTrueAttitude = Boolean(unlockMode || attitude?.unlocked === true);
   const trueAffinity =
@@ -593,8 +612,8 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
     const bundle = (actors || []).find(
       (b) => b?.profile?.id === resolvedPlayerActorId,
     );
-    const rels = (bundle?.profile as any)?.relations;
-    return Array.isArray(rels) ? (rels as RelationEdge[]) : [];
+    const rels = bundle?.profile?.relations;
+    return Array.isArray(rels) ? rels : [];
   }, [actors, resolvedPlayerActorId]);
   const [isOpen, setIsOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);

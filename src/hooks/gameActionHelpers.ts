@@ -4,6 +4,10 @@ import {
   StorySegment,
   StorySummary,
   LanguageCode,
+  ForkTree,
+  LogEntry,
+  GameResponse,
+  TokenUsage,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { createFork, createStateSnapshot } from "../utils/snapshotManager";
@@ -190,7 +194,7 @@ export const handleForking = (
   isInit: boolean,
   aiSettings: AISettings,
   currentSlotId: string | null,
-): { currentForkId: number; currentForkTree: any } => {
+): { currentForkId: number; currentForkTree: ForkTree } => {
   console.log("[gameActionHelpers] handleForking called", {
     parentId,
     preventFork,
@@ -253,7 +257,7 @@ export const handleSummarization = async (
   lastIndex: number;
   summarySnapshot: StorySummary | undefined;
   contextNodes: StorySegment[];
-  logs?: any[];
+  logs?: LogEntry[];
   error?: string;
 }> => {
   const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
@@ -287,7 +291,7 @@ export const handleSummarization = async (
   let effectiveSummaries = [...baseSummaries];
   let lastIndex = baseIndex;
   let summarySnapshot: StorySummary | undefined;
-  let logs: any[] = [];
+  let logs: LogEntry[] = [];
 
   const committedLength = committedContextNodes.length;
 
@@ -450,14 +454,17 @@ export const handleSummarization = async (
  * Creates the model node and resolves the atmosphere.
  */
 export const createModelNode = (
-  response: any,
+  response: Omit<GameResponse, "choices"> & {
+    choices?: unknown[];
+    imagePrompt?: string;
+  },
   gameState: GameState,
   effectiveUserNodeId: string,
   isInit: boolean,
   effectiveSummaries: StorySummary[],
   lastIndex: number,
   summarySnapshot: StorySummary | undefined,
-  usage: any,
+  usage: TokenUsage,
   newSegmentId: string,
   forceTheme?: string,
   options?: {
@@ -476,18 +483,33 @@ export const createModelNode = (
   }
 
   // Sanitize choices to ensure valid structure
-  const sanitizedChoices = Array.isArray(response.choices)
-    ? response.choices.map((c: any) => {
-        if (typeof c === "object" && c !== null) {
-          const obj = c as any;
-          return {
-            text: obj.text || obj.choice || obj.label || "Continue",
-            consequence: obj.consequence,
-          };
-        }
-        return String(c);
-      })
-    : [];
+  const normalizedChoices = Array.isArray(response.choices) ? response.choices : [];
+  const sanitizedChoices: StorySegment["choices"] = normalizedChoices.map(
+    (choice) => {
+      if (typeof choice === "string") {
+        return choice;
+      }
+      if (typeof choice === "object" && choice !== null) {
+        const choiceRecord = choice as Record<string, unknown>;
+        const text =
+          typeof choiceRecord.text === "string"
+            ? choiceRecord.text
+            : typeof choiceRecord.choice === "string"
+              ? choiceRecord.choice
+              : typeof choiceRecord.label === "string"
+                ? choiceRecord.label
+                : "Continue";
+        return {
+          text,
+          consequence:
+            typeof choiceRecord.consequence === "string"
+              ? choiceRecord.consequence
+              : undefined,
+        };
+      }
+      return choice == null ? "Continue" : String(choice);
+    },
+  );
 
   // Resolve atmosphere from response
   let responseAtmosphere: AtmosphereObject = normalizeAtmosphere(
@@ -496,10 +518,10 @@ export const createModelNode = (
 
   // Force Theme Logic: Override envTheme if forceTheme is provided
   if (forceTheme) {
-    responseAtmosphere = {
+    responseAtmosphere = normalizeAtmosphere({
       ...responseAtmosphere,
-      envTheme: forceTheme as any,
-    };
+      envTheme: forceTheme as AtmosphereObject["envTheme"],
+    });
   }
 
   const modelNode: StorySegment = {

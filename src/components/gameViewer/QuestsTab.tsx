@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import type { TFunction } from "i18next";
 import { GameState, Quest } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
@@ -13,14 +14,14 @@ interface QuestsTabProps {
   gameState: GameState;
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
-  t: (key: string, options?: any) => string;
+  t: TFunction;
 }
 
 // Quest card component for active quests
 const QuestCard: React.FC<{
   quest: Quest;
   gameState: GameState;
-  t: (key: string, options?: any) => string;
+  t: TFunction;
 }> = ({ quest, gameState, t }) => (
   <div className="p-4 bg-theme-bg rounded-none border border-theme-border/40">
     <div className="font-bold text-theme-primary text-sm flex items-center gap-2 mb-2">

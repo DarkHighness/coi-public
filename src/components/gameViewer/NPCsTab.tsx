@@ -6,6 +6,7 @@
  */
 
 import React from "react";
+import type { TFunction } from "i18next";
 import { GameState, RelationEdge } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
@@ -16,8 +17,52 @@ interface NpcsTabProps {
   gameState: GameState;
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
-  t: (key: string, options?: any) => string;
+  t: TFunction;
 }
+
+const isRelationEdge = (value: unknown): value is RelationEdge =>
+  typeof value === "object" && value !== null;
+
+const toRelationEdges = (value: unknown): RelationEdge[] =>
+  Array.isArray(value) ? value.filter(isRelationEdge) : [];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const readStringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+
+type AttitudeRelation = RelationEdge & {
+  kind: "attitude";
+  hidden?: unknown;
+  visible?: unknown;
+};
+
+type PerceptionRelation = RelationEdge & {
+  kind: "perception";
+  visible?: unknown;
+};
+
+const isAttitudeRelationTo = (
+  edge: RelationEdge,
+  targetId: string,
+): edge is AttitudeRelation =>
+  edge.kind === "attitude" &&
+  edge.to?.kind === "character" &&
+  edge.to?.id === targetId;
+
+const isPerceptionRelationTo = (
+  edge: RelationEdge,
+  targetId: string,
+): edge is PerceptionRelation =>
+  edge.kind === "perception" &&
+  edge.to?.kind === "character" &&
+  edge.to?.id === targetId;
 
 const getAffinityBadgeClass = (val: number): string => {
   if (val >= 80) return "bg-green-500/20 text-green-400";
@@ -36,13 +81,11 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
   const playerId = gameState.playerActorId || "char:player";
   const playerProfile = gameState.actors.find(
     (b) => b?.profile?.id === playerId,
-  )?.profile as any;
-  const playerRelations = (
-    Array.isArray(playerProfile?.relations) ? playerProfile.relations : []
-  ) as RelationEdge[];
+  )?.profile;
+  const playerRelations = toRelationEdges(playerProfile?.relations);
 
   const visibleNpcs = (gameState.npcs || []).filter(
-    (npc: any) =>
+    (npc) =>
       gameState.unlockMode ||
       !Array.isArray(npc.knownBy) ||
       npc.knownBy.includes(playerId),
@@ -61,30 +104,34 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
           <EmptyState message={t("gameViewer.noNpcs")} />
         ) : (
           <div className="space-y-3">
-            {visibleNpcs.map((npc: any) => {
-              const attitude = (
-                Array.isArray(npc.relations) ? npc.relations : []
-              ).find(
-                (r: any) =>
-                  r?.kind === "attitude" &&
-                  r?.to?.kind === "character" &&
-                  r?.to?.id === playerId,
+            {visibleNpcs.map((npc) => {
+              const npcRelations = toRelationEdges(npc.relations);
+              const attitude = npcRelations.find(
+                (edge): edge is AttitudeRelation =>
+                  isAttitudeRelationTo(edge, playerId),
               );
+              const attitudeVisible = isRecord(attitude?.visible)
+                ? attitude.visible
+                : null;
+              const attitudeHidden = isRecord(attitude?.hidden)
+                ? attitude.hidden
+                : null;
               const showTrueAttitude = Boolean(
                 gameState.unlockMode || attitude?.unlocked === true,
               );
               const affinity =
                 showTrueAttitude &&
-                typeof attitude?.hidden?.affinity === "number"
-                  ? attitude.hidden.affinity
+                typeof attitudeHidden?.affinity === "number"
+                  ? attitudeHidden.affinity
                   : null;
 
               const perception = playerRelations.find(
-                (r: any) =>
-                  r?.kind === "perception" &&
-                  r?.to?.kind === "character" &&
-                  r?.to?.id === npc.id,
-              ) as any;
+                (edge): edge is PerceptionRelation =>
+                  isPerceptionRelationTo(edge, npc.id),
+              );
+              const perceptionVisible = isRecord(perception?.visible)
+                ? perception.visible
+                : null;
               const npcCurrentLocationDisplay = npc.currentLocation
                 ? resolveLocationDisplayName(npc.currentLocation, gameState)
                 : "";
@@ -152,10 +199,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                       />
                     )}
 
-                    {(attitude?.visible?.reputationTag ||
-                      attitude?.visible?.claimedIntent ||
-                      (Array.isArray(attitude?.visible?.signals) &&
-                        attitude.visible.signals.length > 0)) && (
+                    {(readString(attitudeVisible?.reputationTag) ||
+                      readString(attitudeVisible?.claimedIntent) ||
+                      readStringArray(attitudeVisible?.signals).length > 0) && (
                       <div>
                         <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
                           {t("gameViewer.attitudeSignals", {
@@ -164,7 +210,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                           :
                         </span>
                         <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30 space-y-1">
-                          {attitude?.visible?.reputationTag && (
+                          {readString(attitudeVisible?.reputationTag) && (
                             <div>
                               <span className="opacity-70">
                                 {t("gameViewer.reputationTag", {
@@ -172,10 +218,10 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 })}
                                 :
                               </span>{" "}
-                              {attitude.visible.reputationTag}
+                              {readString(attitudeVisible?.reputationTag)}
                             </div>
                           )}
-                          {attitude?.visible?.claimedIntent && (
+                          {readString(attitudeVisible?.claimedIntent) && (
                             <div>
                               <span className="opacity-70">
                                 {t("gameViewer.claimedIntent", {
@@ -184,15 +230,14 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 :
                               </span>{" "}
                               <MarkdownText
-                                content={attitude.visible.claimedIntent}
+                                content={readString(attitudeVisible?.claimedIntent) || ""}
                                 inline
                               />
                             </div>
                           )}
-                          {Array.isArray(attitude?.visible?.signals) &&
-                            attitude.visible.signals.length > 0 && (
+                          {readStringArray(attitudeVisible?.signals).length > 0 && (
                               <ul className="list-disc list-inside">
-                                {attitude.visible.signals.map(
+                                {readStringArray(attitudeVisible?.signals).map(
                                   (s: string, i: number) => (
                                     <li key={i}>
                                       <MarkdownText content={s} inline />
@@ -205,7 +250,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                       </div>
                     )}
 
-                    {perception?.visible?.description && (
+                    {readString(perceptionVisible?.description) && (
                       <div>
                         <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
                           {t("gameViewer.myPerception", {
@@ -215,7 +260,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                         </span>
                         <div className="text-theme-text/80 pl-2 border-l-2 border-theme-border/30">
                           <MarkdownText
-                            content={perception.visible.description}
+                            content={readString(perceptionVisible?.description) || ""}
                           />
                         </div>
                       </div>

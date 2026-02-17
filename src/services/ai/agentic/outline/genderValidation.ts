@@ -95,6 +95,9 @@ const RELATIONSHIP_IDENTITY_KEYWORDS = [
   "spouse",
 ];
 
+const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
 const normalizeText = (value: unknown): string =>
   String(value ?? "")
     .trim()
@@ -139,7 +142,15 @@ export const validateGenderPreferencePhase3 = (
   phase3Data: unknown,
   expectedGender: Gender,
 ): string | null => {
-  const playerVisible = (phase3Data as any)?.player?.profile?.visible ?? {};
+  const playerVisible = (() => {
+    if (!isRecordObject(phase3Data)) return {};
+    const player = phase3Data.player;
+    if (!isRecordObject(player)) return {};
+    const profile = player.profile;
+    if (!isRecordObject(profile)) return {};
+    const visible = profile.visible;
+    return isRecordObject(visible) ? visible : {};
+  })();
 
   const genderedFields: Array<{ path: string; value: unknown }> = [
     { path: "visible.race", value: playerVisible?.race },

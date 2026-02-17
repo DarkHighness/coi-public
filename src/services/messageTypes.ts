@@ -153,19 +153,111 @@ export interface AIGenerationResult {
   raw: unknown;
 }
 
+// --- Provider DTO Types ---
+
+type GeminiMessageRole = "user" | "model" | "function";
+
+interface GeminiFunctionResponseDto {
+  id?: string;
+  name?: string;
+  response?: { content?: unknown };
+}
+
+interface GeminiFunctionCallDto {
+  id?: string;
+  name: string;
+  args?: Record<string, unknown>;
+}
+
+interface GeminiTextPartDto {
+  text: string;
+}
+
+interface GeminiInlineDataPartDto {
+  inlineData: {
+    mimeType: string;
+    data: string;
+  };
+}
+
+interface GeminiFunctionCallPartDto {
+  functionCall: GeminiFunctionCallDto;
+  thoughtSignature?: string;
+}
+
+interface GeminiFunctionResponsePartDto {
+  functionResponse: GeminiFunctionResponseDto;
+}
+
+type GeminiPartDto =
+  | GeminiTextPartDto
+  | GeminiInlineDataPartDto
+  | GeminiFunctionCallPartDto
+  | GeminiFunctionResponsePartDto;
+
+interface GeminiMessageDto {
+  role: GeminiMessageRole;
+  parts: GeminiPartDto[];
+}
+
+interface OpenAIVisionTextPartDto {
+  type: "text";
+  text: string;
+}
+
+interface OpenAIVisionImagePartDto {
+  type: "image_url";
+  image_url: { url: string };
+}
+
+type OpenAIVisionPartDto = OpenAIVisionTextPartDto | OpenAIVisionImagePartDto;
+
+interface OpenAIToolCallDto {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+    thought_signature?: string;
+  };
+  extra_content?: {
+    google?: {
+      thought_signature?: string;
+    };
+  };
+}
+
+interface OpenAIBaseMessageDto {
+  role: MessageRole;
+  content?: string | null | OpenAIVisionPartDto[];
+  tool_call_id?: string;
+  tool_calls?: OpenAIToolCallDto[];
+  name?: string;
+}
+
+type OpenAIMessageDto = OpenAIBaseMessageDto;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
 // --- Conversion Functions ---
 
 /**
  * Convert UnifiedMessage array to Gemini format
  */
-export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
+export const toGeminiFormat = (
+  messages: UnifiedMessage[],
+): GeminiMessageDto[] => {
   return messages
     .filter((m) => m.role !== "system") // System is handled separately in Gemini
-    .map((msg) => {
+    .map((msg): GeminiMessageDto => {
       // Handle tool response messages - each response becomes a separate message part
       if (msg.role === "tool") {
         return {
-          role: "function",
+          role: "function" as const,
           parts: msg.content
             .filter((p): p is ToolResponsePart => p.type === "tool_result")
             .map((p) => ({
@@ -175,7 +267,7 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
                 response: { content: p.toolResult.content },
               },
             })),
-        };
+          };
       }
 
       // Handle assistant messages with tool calls
@@ -183,7 +275,7 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
         msg.role === "assistant" &&
         msg.content.some((p) => p.type === "tool_use")
       ) {
-        const parts: any[] = [];
+        const parts: GeminiPartDto[] = [];
 
         // Include text content if present (some models return text with tool calls)
         const textParts = msg.content
@@ -195,7 +287,7 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
         const toolParts = msg.content
           .filter((p): p is ToolCallPart => p.type === "tool_use")
           .map((p) => {
-            const part: any = {
+            const part: GeminiFunctionCallPartDto = {
               functionCall: {
                 id: p.toolUse.id,
                 name: p.toolUse.name,
@@ -243,9 +335,12 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
         allParts.push({ text: "" });
       }
 
+      const mappedRole: GeminiMessageRole =
+        msg.role === "assistant" ? "model" : "user";
+
       return {
-        role: msg.role === "assistant" ? "model" : msg.role,
-        parts: allParts,
+        role: mappedRole,
+        parts: allParts as GeminiPartDto[],
       };
     })
     .filter((msg) => msg.parts && msg.parts.length > 0); // Filter out messages with empty parts
@@ -254,8 +349,8 @@ export const toGeminiFormat = (messages: UnifiedMessage[]): any[] => {
 /**
  * Convert UnifiedMessage array to OpenAI format
  */
-export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
-  const result: any[] = [];
+export const toOpenAIFormat = (messages: UnifiedMessage[]): OpenAIMessageDto[] => {
+  const result: OpenAIMessageDto[] = [];
 
   for (const msg of messages) {
     // Handle tool response messages - each response is a separate message in OpenAI
@@ -283,7 +378,7 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
       const toolCalls = msg.content
         .filter((p): p is ToolCallPart => p.type === "tool_use")
         .map((p) => {
-          const toolCall: any = {
+          const toolCall: OpenAIToolCallDto = {
             id: p.toolUse.id,
             type: "function",
             function: {
@@ -327,7 +422,7 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
 
     // If we have images, use vision content format (array)
     if (imageParts.length > 0) {
-      const contentArray: any[] = [];
+      const contentArray: OpenAIVisionPartDto[] = [];
 
       // Add text content first
       for (const tp of textParts) {
@@ -363,46 +458,64 @@ export const toOpenAIFormat = (messages: UnifiedMessage[]): any[] => {
 /**
  * Convert Gemini format to UnifiedMessage array
  */
-export const fromGeminiFormat = (geminiMessages: any[]): UnifiedMessage[] => {
-  return geminiMessages.map((msg) => {
+export const fromGeminiFormat = (
+  geminiMessages: unknown[],
+): UnifiedMessage[] => {
+  return geminiMessages.map((rawMsg) => {
+    const msg = isRecord(rawMsg) ? rawMsg : {};
+    const rawRole = readString(msg.role);
     const role =
-      msg.role === "model"
+      rawRole === "model"
         ? "assistant"
-        : msg.role === "function"
+        : rawRole === "function"
           ? "tool"
-          : (msg.role as MessageRole);
+          : ((rawRole || "user") as MessageRole);
 
     const content: MessagePart[] = [];
+    const parts = Array.isArray(msg.parts) ? msg.parts : [];
 
-    if (msg.parts) {
-      for (const part of msg.parts) {
-        if (part.text) {
-          content.push({ type: "text", text: part.text });
-        }
-        if (part.functionCall) {
-          content.push({
-            type: "tool_use",
-            toolUse: {
-              id: part.functionCall.id || `call_${part.functionCall.name}`,
-              name: part.functionCall.name,
-              args: part.functionCall.args || {},
-              // Extract thoughtSignature if present
-              thoughtSignature: part.thoughtSignature,
-            },
-          });
-        }
-        if (part.functionResponse) {
-          content.push({
-            type: "tool_result",
-            toolResult: {
-              id:
-                part.functionResponse.id ||
-                `call_${part.functionResponse.name}`,
-              name: part.functionResponse.name || "unknown",
-              content: part.functionResponse.response?.content,
-            },
-          });
-        }
+    for (const rawPart of parts) {
+      if (!isRecord(rawPart)) continue;
+
+      const text = readString(rawPart.text);
+      if (text) {
+        content.push({ type: "text", text });
+      }
+
+      const functionCall = isRecord(rawPart.functionCall)
+        ? rawPart.functionCall
+        : null;
+      if (functionCall) {
+        const functionName = readString(functionCall.name) || "";
+        content.push({
+          type: "tool_use",
+          toolUse: {
+            id: readString(functionCall.id) || `call_${functionName}`,
+            name: functionName,
+            args: isRecord(functionCall.args)
+              ? (functionCall.args as Record<string, unknown>)
+              : {},
+            thoughtSignature: readString(rawPart.thoughtSignature),
+          },
+        });
+      }
+
+      const functionResponse = isRecord(rawPart.functionResponse)
+        ? rawPart.functionResponse
+        : null;
+      if (functionResponse) {
+        const functionName = readString(functionResponse.name) || "unknown";
+        const response = isRecord(functionResponse.response)
+          ? functionResponse.response
+          : null;
+        content.push({
+          type: "tool_result",
+          toolResult: {
+            id: readString(functionResponse.id) || `call_${functionName}`,
+            name: functionName,
+            content: response?.content,
+          },
+        });
       }
     }
 
@@ -413,7 +526,7 @@ export const fromGeminiFormat = (geminiMessages: any[]): UnifiedMessage[] => {
 /**
  * Convert OpenAI format to UnifiedMessage array
  */
-export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
+export const fromOpenAIFormat = (openaiMessages: unknown[]): UnifiedMessage[] => {
   const parseMaybeJson = (value: unknown): unknown => {
     if (typeof value !== "string") return value;
 
@@ -432,16 +545,18 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
     }
   };
 
-  return openaiMessages.map((msg) => {
+  return openaiMessages.map((rawMsg) => {
+    const msg = isRecord(rawMsg) ? rawMsg : {};
+    const roleValue = readString(msg.role) || "user";
     const content: MessagePart[] = [];
 
     // Handle tool messages
-    if (msg.role === "tool") {
+    if (roleValue === "tool") {
       content.push({
         type: "tool_result",
         toolResult: {
-          id: msg.tool_call_id,
-          name: msg.name || "unknown", // OpenAI tool messages don't always have name
+          id: readString(msg.tool_call_id) || "",
+          name: readString(msg.name) || "unknown", // OpenAI tool messages don't always have name
           content: parseMaybeJson(msg.content),
         },
       });
@@ -449,23 +564,53 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
     }
 
     // Handle assistant messages with tool calls
-    if (msg.role === "assistant") {
-      if (msg.content) {
-        content.push({ type: "text", text: msg.content });
+    if (roleValue === "assistant") {
+      const assistantText = readString(msg.content);
+      if (assistantText) {
+        content.push({ type: "text", text: assistantText });
       }
-      if (msg.tool_calls) {
-        for (const tc of msg.tool_calls) {
+      const toolCalls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+      for (const rawToolCall of toolCalls) {
+        if (!isRecord(rawToolCall)) continue;
+        const functionData = isRecord(rawToolCall.function)
+          ? rawToolCall.function
+          : null;
+        if (!functionData) continue;
+
+        const functionName = readString(functionData.name) || "";
+        const argsText = readString(functionData.arguments) || "{}";
+        const extraContent = isRecord(rawToolCall.extra_content)
+          ? rawToolCall.extra_content
+          : null;
+        const googleExtra =
+          extraContent && isRecord(extraContent.google)
+            ? extraContent.google
+            : null;
+
+        try {
           content.push({
             type: "tool_use",
             toolUse: {
-              id: tc.id,
-              name: tc.function.name,
-              args: JSON.parse(tc.function.arguments || "{}"),
+              id: readString(rawToolCall.id) || `call_${functionName}`,
+              name: functionName,
+              args: JSON.parse(argsText),
               // Extract thought_signature if present (Gemini via OpenAI proxy)
               // Gemini 3 uses extra_content.google.thought_signature format
               thoughtSignature:
-                tc.extra_content?.google?.thought_signature ||
-                tc.function?.thought_signature,
+                readString(googleExtra?.thought_signature) ||
+                readString(functionData.thought_signature),
+            },
+          });
+        } catch {
+          content.push({
+            type: "tool_use",
+            toolUse: {
+              id: readString(rawToolCall.id) || `call_${functionName}`,
+              name: functionName,
+              args: {},
+              thoughtSignature:
+                readString(googleExtra?.thought_signature) ||
+                readString(functionData.thought_signature),
             },
           });
         }
@@ -474,11 +619,12 @@ export const fromOpenAIFormat = (openaiMessages: any[]): UnifiedMessage[] => {
     }
 
     // Handle regular messages
-    if (msg.content) {
-      content.push({ type: "text", text: msg.content });
+    const textContent = readString(msg.content);
+    if (textContent) {
+      content.push({ type: "text", text: textContent });
     }
 
-    return { role: msg.role as MessageRole, content };
+    return { role: roleValue as MessageRole, content };
   });
 };
 

@@ -22,6 +22,12 @@ import {
   buildCompactSummaryConsistencyAnchor,
 } from "./summaryPromptTemplates";
 
+const isUnifiedMessage = (value: unknown): value is UnifiedMessage =>
+  !!value &&
+  typeof value === "object" &&
+  typeof (value as { role?: unknown }).role === "string" &&
+  Array.isArray((value as { content?: unknown }).content);
+
 export async function runCompactSummaryLoop(
   input: SummaryLoopInput,
 ): Promise<SummaryAgenticLoopResult> {
@@ -53,8 +59,8 @@ export async function runCompactSummaryLoop(
   const nativeHistory = sessionManager.getHistory(storySession.id);
   const initialHistory: UnifiedMessage[] =
     instance.protocol === "gemini"
-      ? fromGeminiFormat(nativeHistory as any[])
-      : (nativeHistory as UnifiedMessage[]);
+      ? fromGeminiFormat(nativeHistory)
+      : nativeHistory.filter(isUnifiedMessage);
 
   const targetLastSummarizedIndex = input.nodeRange.toIndex + 1;
 

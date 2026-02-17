@@ -8,7 +8,14 @@ import {
   runWithStructuredErrors,
   withAtomicSession,
   type VfsToolHandler,
-} from "./shared";
+  } from "./shared";
+
+const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+};
 
 export const createFinishOutlinePhaseHandler = (
   phase: number,
@@ -33,7 +40,8 @@ export const createFinishOutlinePhaseHandler = (
 
           let planPath: string | undefined;
           if (phase === 1) {
-            const storyPlanMarkdown = (parsedData.data as any)?.storyPlanMarkdown;
+            const payload = toObjectRecord(parsedData.data);
+            const storyPlanMarkdown = payload?.storyPlanMarkdown;
             if (typeof storyPlanMarkdown === "string") {
               writeOutlineStoryPlan(draft, storyPlanMarkdown);
               planPath = toCurrentPath("outline/story_outline/plan.md");

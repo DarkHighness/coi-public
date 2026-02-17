@@ -5,7 +5,7 @@ export const handlePatchJson: VfsToolHandler = (args, ctx) => {
   const typedArgs = args as Omit<Extract<MutateOp, { op: "patch_json" }>, "op">;
   return executeMutateOps(
     "vfs_patch_json",
-    typedArgs as unknown as Record<string, unknown>,
+    typedArgs as Record<string, unknown>,
     [{ op: "patch_json", ...typedArgs }],
     ctx,
   );

@@ -87,8 +87,8 @@ export async function preflightSummaryRoute(
   const nativeHistory = sessionManager.getHistory(storySessionId);
   const history =
     instance.protocol === "gemini"
-      ? fromGeminiFormat(nativeHistory as any[])
-      : (nativeHistory as any[]);
+      ? fromGeminiFormat(nativeHistory)
+      : nativeHistory;
 
   diagnostics.historyLength = Array.isArray(history) ? history.length : 0;
   diagnostics.estimatedChars = Array.isArray(history)

@@ -209,7 +209,7 @@ export const filterCanonicalWorldPatchOpsByPath = (
   let strippedCount = 0;
 
   for (const op of patchOps) {
-    const opRecord = op as unknown as Record<string, unknown>;
+    const opRecord = op as Record<string, unknown>;
     const pathKey = decodeJsonPointerRootKey(opRecord.path);
     const fromKey = decodeJsonPointerRootKey(opRecord.from);
     if (

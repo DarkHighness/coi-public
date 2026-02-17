@@ -37,13 +37,9 @@ const cleanupPromptAtom = defineAtom(
   },
   ({ state }: CleanupPromptInput) => {
     const targetForkId =
-      typeof (state as any)?.forkId === "number"
-        ? (state as any).forkId
-        : "unknown";
+      typeof state.forkId === "number" ? state.forkId : "unknown";
     const targetTurnNumber =
-      typeof (state as any)?.turnNumber === "number"
-        ? (state as any).turnNumber
-        : "unknown";
+      typeof state.turnNumber === "number" ? state.turnNumber : "unknown";
 
     return `[CLEANUP] Analyze the current VFS state and perform entity cleanup (deduplication + consolidation).
 

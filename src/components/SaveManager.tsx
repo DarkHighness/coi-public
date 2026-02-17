@@ -11,7 +11,7 @@ import { useToast } from "./Toast";
 interface SaveManagerProps {
   slots: SaveSlot[];
   currentSlotId: string | null;
-  onSwitch: (id: string) => void | Promise<void> | Promise<any>;
+  onSwitch: (id: string) => void | Promise<void>;
   onDelete: (id: string) => void;
   onRename?: (id: string, name: string) => Promise<boolean>;
   onClose: () => void;

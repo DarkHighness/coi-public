@@ -7,6 +7,10 @@
 import type { AISettings, TokenUsage } from "../../../../types";
 import type { ToolCallResult } from "../../../providers/types";
 import type { UnifiedMessage } from "../../../messageTypes";
+import type {
+  ProviderBase,
+  ChatGenerateResponse,
+} from "../../provider/interfaces";
 import type { LoopState } from "./loopInitializer";
 
 import { callWithAgenticRetry } from "../retry";
@@ -25,7 +29,7 @@ import { sessionManager } from "../../sessionManager";
 // ============================================================================
 
 export interface AICallParams {
-  provider: any;
+  provider: ProviderBase;
   modelId: string;
   systemInstruction: string;
   conversationHistory: UnifiedMessage[];
@@ -62,7 +66,7 @@ export async function handleAICall(
   const toolConfig = loopState.activeTools.map((t) => ({
     name: t.name,
     description: t.description,
-    parameters: t.parameters as any,
+    parameters: t.parameters,
   }));
 
   const effectiveToolChoice = sessionManager.getEffectiveToolChoice(
@@ -113,8 +117,8 @@ export async function handleAICall(
       },
     );
 
-    const result = resp.result as any;
-    const functionCalls = result.functionCalls as ToolCallResult[] | undefined;
+    const result = resp.result;
+    const functionCalls = extractFunctionCalls(result);
 
     // Ensure all tool calls have IDs
     if (functionCalls) {
@@ -126,7 +130,7 @@ export async function handleAICall(
     }
 
     return {
-      text: result.text || result.content || "",
+      text: extractTextContent(result),
       functionCalls,
       usage: resp.usage,
     };
@@ -146,3 +150,30 @@ export async function handleAICall(
     throw error;
   }
 }
+
+const extractFunctionCalls = (
+  result: ChatGenerateResponse["result"],
+): ToolCallResult[] | undefined => {
+  if (!result || typeof result !== "object") return undefined;
+  const raw = (result as { functionCalls?: unknown }).functionCalls;
+  if (!Array.isArray(raw)) return undefined;
+  return raw.filter((call): call is ToolCallResult => {
+    if (!call || typeof call !== "object") return false;
+    const record = call as Record<string, unknown>;
+    return (
+      typeof record.name === "string" &&
+      (typeof record.id === "string" || typeof record.id === "undefined") &&
+      typeof record.args === "object" &&
+      record.args !== null
+    );
+  });
+};
+
+const extractTextContent = (result: ChatGenerateResponse["result"]): string => {
+  if (typeof result === "string") return result;
+  if (!result || typeof result !== "object") return "";
+  const record = result as Record<string, unknown>;
+  if (typeof record.text === "string") return record.text;
+  if (typeof record.content === "string") return record.content;
+  return "";
+};

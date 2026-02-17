@@ -12,14 +12,38 @@ type JsonValue =
   | JsonValue[]
   | { [k: string]: JsonValue };
 
+const isJsonScalar = (value: unknown): value is string | number | boolean | null =>
+  typeof value === "string" ||
+  typeof value === "number" ||
+  typeof value === "boolean" ||
+  value === null;
+
 const TOOL_SCHEMA_PART_MAX_LINES = 140;
 
+const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getSchemaDef = (schema: z.ZodTypeAny): Record<string, unknown> | null => {
+  const candidate = (schema as { _def?: unknown })._def;
+  return isRecordObject(candidate) ? candidate : null;
+};
+
+const getSchemaDefField = (
+  schema: z.ZodTypeAny,
+  field: string,
+): unknown => getSchemaDef(schema)?.[field];
+
+const asZodType = (value: unknown): z.ZodTypeAny | null =>
+  value instanceof z.ZodType ? (value as z.ZodTypeAny) : null;
+
 const getSchemaKind = (schema: z.ZodTypeAny): string | undefined => {
-  const defTypeName = (schema as any)?._def?.typeName;
+  const defTypeName = getSchemaDefField(schema, "typeName");
   if (typeof defTypeName === "string" && defTypeName.length > 0) {
     return defTypeName;
   }
-  const ctorName = (schema as any)?.constructor?.name;
+  const ctorName = isRecordObject(schema.constructor)
+    ? schema.constructor.name
+    : undefined;
   return typeof ctorName === "string" && ctorName.length > 0
     ? ctorName
     : undefined;
@@ -290,15 +314,21 @@ const unwrapSchema = (
     const kind = getSchemaKind(current);
     if (kind === "ZodOptional" || kind === "ZodDefault") {
       optional = true;
-      current = (current as any)._def.innerType;
+      const innerType = asZodType(getSchemaDefField(current, "innerType"));
+      if (!innerType) break;
+      current = innerType;
       continue;
     }
     if (kind === "ZodNullable") {
-      current = (current as any)._def.innerType;
+      const innerType = asZodType(getSchemaDefField(current, "innerType"));
+      if (!innerType) break;
+      current = innerType;
       continue;
     }
     if (kind === "ZodEffects") {
-      current = (current as any)._def.schema;
+      const effectSchema = asZodType(getSchemaDefField(current, "schema"));
+      if (!effectSchema) break;
+      current = effectSchema;
       continue;
     }
     break;
@@ -318,9 +348,24 @@ const sampleValueForSchema = (
   if (kind === "ZodNumber") return 0;
   if (kind === "ZodBoolean") return false;
   if (kind === "ZodNull") return null;
-  if (kind === "ZodLiteral") return (inner as any)._def.value as JsonValue;
+  if (kind === "ZodLiteral") {
+    const value = getSchemaDefField(inner, "value");
+    return isJsonScalar(value) ? value : "<literal>";
+  }
   if (kind === "ZodEnum") {
-    return ((inner as any)._def.values[0] ?? "<enum>") as JsonValue;
+    const values = getSchemaDefField(inner, "values");
+    if (Array.isArray(values) && values.length > 0) {
+      const first = values[0];
+      if (
+        typeof first === "string" ||
+        typeof first === "number" ||
+        typeof first === "boolean" ||
+        first === null
+      ) {
+        return first;
+      }
+    }
+    return "<enum>";
   }
   if (depth > 8) {
     if (kind === "ZodObject" || kind === "ZodRecord") {
@@ -332,32 +377,50 @@ const sampleValueForSchema = (
     return "<value>";
   }
   if (kind === "ZodArray") {
+    const def = getSchemaDef(inner);
+    const minLengthCandidate =
+      def && isRecordObject(def.minLength)
+        ? def.minLength.value
+        : def?.minLength;
     const minLengthRaw =
-      (inner as any)?._def?.minLength?.value ??
-      (inner as any)?._def?.minLength ??
-      1;
+      typeof minLengthCandidate === "number" ? minLengthCandidate : 1;
     const minLength =
       typeof minLengthRaw === "number" && Number.isFinite(minLengthRaw)
         ? Math.max(1, Math.floor(minLengthRaw))
         : 1;
-    const item = sampleValueForSchema((inner as any)._def.type, depth + 1);
+    const arrayItemSchema = asZodType(def?.type);
+    const item = arrayItemSchema
+      ? sampleValueForSchema(arrayItemSchema, depth + 1)
+      : "<value>";
     return Array.from({ length: minLength }, () => item);
   }
   if (kind === "ZodObject") {
-    return buildExampleFromObject(inner as z.ZodObject<any>, depth + 1);
+    return inner instanceof z.ZodObject
+      ? buildExampleFromObject(inner as z.ZodObject<z.ZodRawShape>, depth + 1)
+      : {};
   }
   if (kind === "ZodDiscriminatedUnion") {
-    const first = ((inner as any)._def.options as z.ZodObject<any>[])[0];
+    const options = getSchemaDefField(inner, "options");
+    const first =
+      Array.isArray(options) &&
+      options.find((option): option is z.ZodObject<z.ZodRawShape> => {
+        return option instanceof z.ZodObject;
+      });
     return first ? buildExampleFromObject(first, depth + 1) : { value: "<union>" };
   }
   if (kind === "ZodUnion") {
-    const options = (inner as any)._def.options as z.ZodTypeAny[];
-    return options.length > 0
-      ? sampleValueForSchema(options[0], depth + 1)
+    const options = getSchemaDefField(inner, "options");
+    const parsedOptions = Array.isArray(options)
+      ? options
+          .map((option) => asZodType(option))
+          .filter((option): option is z.ZodTypeAny => option !== null)
+      : [];
+    return parsedOptions.length > 0
+      ? sampleValueForSchema(parsedOptions[0], depth + 1)
       : "<union>";
   }
   if (kind === "ZodRecord") {
-    const valueSchema = (inner as any)?._def?.valueType as z.ZodTypeAny | undefined;
+    const valueSchema = asZodType(getSchemaDefField(inner, "valueType"));
     return {
       "<key>": valueSchema
         ? sampleValueForSchema(valueSchema, depth + 1)
@@ -372,7 +435,7 @@ const sampleValueForSchema = (
 };
 
 const buildExampleFromObject = (
-  schema: z.ZodObject<any>,
+  schema: z.ZodObject<z.ZodRawShape>,
   depth: number = 0,
 ): Record<string, JsonValue> => {
   const shape = schema.shape;

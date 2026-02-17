@@ -47,7 +47,9 @@ import {
 } from "./types";
 
 interface SharedWorkerGlobalScope {
-  onconnect: ((this: SharedWorkerGlobalScope, ev: MessageEvent) => any) | null;
+  onconnect: (
+    (this: SharedWorkerGlobalScope, ev: MessageEvent) => unknown
+  ) | null;
 }
 
 declare const self: SharedWorkerGlobalScope & typeof globalThis;
@@ -65,6 +67,26 @@ let isReindexing = false;
 let localRuntimeInfo: LocalEmbeddingRuntimeInfo | null = null;
 
 const ports: Set<MessagePort> = new Set();
+
+const toRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const readStringField = (value: unknown, key: string): string | undefined => {
+  const record = toRecord(value);
+  return typeof record[key] === "string" ? (record[key] as string) : undefined;
+};
+
+const readStringArrayField = (
+  value: unknown,
+  key: string,
+): string[] | undefined => {
+  const record = toRecord(value);
+  const candidate = record[key];
+  if (!Array.isArray(candidate)) return undefined;
+  return candidate.filter((item): item is string => typeof item === "string");
+};
 
 self.onconnect = (event: MessageEvent) => {
   const port = event.ports[0];
@@ -109,7 +131,7 @@ self.onconnect = (event: MessageEvent) => {
   port.start();
 };
 
-async function handleRequest(request: RAGWorkerRequest): Promise<any> {
+async function handleRequest(request: RAGWorkerRequest): Promise<unknown> {
   switch (request.type) {
     case "init":
       return handleInit(request.payload as InitPayload);
@@ -160,7 +182,7 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
       return handleSwitchSave(request.payload as SwitchSavePayload);
 
     case "getSaveStats":
-      return handleGetSaveStats(request.payload?.saveId);
+      return handleGetSaveStats(readStringField(request.payload, "saveId"));
 
     case "cleanup":
       return handleCleanup();
@@ -172,19 +194,21 @@ async function handleRequest(request: RAGWorkerRequest): Promise<any> {
       return handleGetStatus();
 
     case "clearSave":
-      return handleClearSave(request.payload?.saveId);
+      return handleClearSave(readStringField(request.payload, "saveId"));
 
     case "checkModelMismatch":
-      return handleCheckModelMismatch(request.payload?.saveId);
+      return handleCheckModelMismatch(readStringField(request.payload, "saveId"));
 
     case "rebuildForModel":
-      return handleRebuildForModel(request.payload?.saveId);
+      return handleRebuildForModel(readStringField(request.payload, "saveId"));
 
     case "checkStorageOverflow":
       return handleCheckStorageOverflow();
 
     case "deleteOldestSaves":
-      return handleDeleteOldestSaves(request.payload?.saveIds);
+      return handleDeleteOldestSaves(
+        readStringArrayField(request.payload, "saveIds"),
+      );
 
     case "getAllSaveStats":
       return handleGetAllSaveStats();

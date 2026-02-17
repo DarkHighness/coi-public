@@ -7,6 +7,8 @@ import type {
   OpenAIConfig,
   OpenRouterConfig,
   ClaudeConfig,
+  GenerateContentOptions,
+  UnifiedMessage as ProviderUnifiedMessage,
 } from "../../providers/types";
 
 import {
@@ -16,6 +18,7 @@ import {
   generateSpeech as generateGeminiSpeech,
   generateEmbedding as generateGeminiEmbedding,
   fromUnifiedMessages as fromUnifiedToGemini,
+  type Content as GeminiContent,
 } from "../../providers/geminiProvider";
 
 import {
@@ -72,9 +75,9 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
         | OpenRouterConfig
         | ClaudeConfig;
 
-      const options = {
+      const options: GenerateContentOptions = {
         tools: request.tools,
-        toolChoice: request.toolChoice as any,
+        toolChoice: request.toolChoice,
         temperature: request.temperature,
         topP: request.topP,
         topK: request.topK,
@@ -85,48 +88,54 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
       };
 
       if (instance.protocol === "gemini") {
+        const providerMessages = request.messages as Array<
+          ProviderUnifiedMessage | GeminiContent
+        >;
         // Convert UnifiedMessage[] to Gemini's native Content[] format
-        const geminiMessages = fromUnifiedToGemini(request.messages as any);
+        const geminiMessages = fromUnifiedToGemini(providerMessages);
         const { result, usage, raw } = await generateGeminiContent(
           cfg as GeminiConfig,
           request.modelId,
           request.systemInstruction,
           geminiMessages,
           ensureSchema(request.schema),
-          options as any,
+          options,
         );
         return { result, usage, raw };
       }
       if (instance.protocol === "openai") {
+        const providerMessages = request.messages as ProviderUnifiedMessage[];
         const { result, usage, raw } = await generateOpenAIContent(
           cfg as OpenAIConfig,
           request.modelId,
           request.systemInstruction,
-          request.messages as any,
+          providerMessages,
           ensureSchema(request.schema),
-          options as any,
+          options,
         );
         return { result, usage, raw };
       }
       if (instance.protocol === "openrouter") {
+        const providerMessages = request.messages as ProviderUnifiedMessage[];
         const { result, usage, raw } = await generateOpenRouterContent(
           cfg as OpenRouterConfig,
           request.modelId,
           request.systemInstruction,
-          request.messages as any,
+          providerMessages,
           ensureSchema(request.schema),
-          options as any,
+          options,
         );
         return { result, usage, raw };
       }
       if (instance.protocol === "claude") {
+        const providerMessages = request.messages as ProviderUnifiedMessage[];
         const { result, usage, raw } = await generateClaudeContent(
           cfg as ClaudeConfig,
           request.modelId,
           request.systemInstruction,
-          request.messages as any,
+          providerMessages,
           ensureSchema(request.schema),
-          options as any,
+          options,
         );
         return { result, usage, raw };
       }

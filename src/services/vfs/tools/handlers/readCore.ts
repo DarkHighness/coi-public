@@ -28,15 +28,20 @@ const createReadHandler = (
   return (args, ctx) =>
     runWithStructuredErrors(toolName, args, () => {
       const session = getSession(ctx);
-      const typedArgs = args as any;
-      const resolved = resolveCurrentPath(ctx, typedArgs.path);
+      const runtime = args as Record<string, unknown>;
+      const inputPath = typeof runtime.path === "string" ? runtime.path : null;
+      if (typeof inputPath !== "string" || inputPath.trim().length === 0) {
+        return createError(`${toolName}: path must be a non-empty string`, "INVALID_DATA");
+      }
+
+      const resolved = resolveCurrentPath(ctx, inputPath);
       if (isPathResolveError(resolved)) {
         return resolved.error;
       }
 
       const file = session.readFile(resolved.path);
       if (!file) {
-        const normalizedInput = normalizeVfsPath(typedArgs.path);
+        const normalizedInput = normalizeVfsPath(inputPath);
         const qualifiedPath =
           normalizedInput === "" ||
           normalizedInput === "current" ||
@@ -45,7 +50,7 @@ const createReadHandler = (
           normalizedInput.startsWith("forks/")
             ? normalizedInput || "current"
             : `current/${normalizedInput}`;
-        return createError(`File not found: ${typedArgs.path}`, "NOT_FOUND", {
+        return createError(`File not found: ${inputPath}`, "NOT_FOUND", {
           tool: toolName,
           issues: [
             {
@@ -54,7 +59,7 @@ const createReadHandler = (
               message: "File does not exist in the VFS snapshot.",
             },
           ],
-          recovery: buildNotFoundRecovery(typedArgs.path),
+          recovery: buildNotFoundRecovery(inputPath),
           refs: [getToolDocRef(toolName)],
         });
       }
@@ -72,7 +77,7 @@ const createReadHandler = (
 
       if (mode === "json") {
         if (file.contentType !== "application/json") {
-          return createError(`File is not JSON: ${typedArgs.path}`, "INVALID_DATA");
+          return createError(`File is not JSON: ${inputPath}`, "INVALID_DATA");
         }
 
         let document: unknown;
@@ -83,7 +88,9 @@ const createReadHandler = (
           return createError(`Invalid JSON: ${message}`, "INVALID_DATA");
         }
 
-        const pointers = typedArgs.pointers ?? [];
+        const pointers = Array.isArray(runtime.pointers)
+          ? runtime.pointers.filter((pointer): pointer is string => typeof pointer === "string")
+          : [];
         if (pointers.length === 0) {
           return createError(
             `${toolName}: pointers must be provided`,
@@ -92,7 +99,7 @@ const createReadHandler = (
         }
 
         const maxChars =
-          typeof typedArgs.maxChars === "number" ? typedArgs.maxChars : null;
+          typeof runtime.maxChars === "number" ? runtime.maxChars : null;
         const extracts: Array<{
           pointer: string;
           type: string;
@@ -118,7 +125,7 @@ const createReadHandler = (
             return createReadLimitError(
               mode,
               `pointer "${pointer}" yields ${fullJson.length} chars, exceeding maxChars=${maxChars}`,
-              typedArgs.path,
+              inputPath,
               {
                 tokenBudget: readTokenBudget,
                 estimatedTokens: pointerTokens,
@@ -131,7 +138,7 @@ const createReadHandler = (
             return createReadLimitError(
               mode,
               `pointer "${pointer}" estimates ${pointerTokens} tokens, exceeding budget ${readTokenBudget}`,
-              typedArgs.path,
+              inputPath,
               {
                 tokenBudget: readTokenBudget,
                 estimatedTokens: pointerTokens,
@@ -145,7 +152,7 @@ const createReadHandler = (
             return createReadLimitError(
               mode,
               `combined pointer payload estimates ${totalJsonTokens} tokens, exceeding budget ${readTokenBudget}`,
-              typedArgs.path,
+              inputPath,
               {
                 tokenBudget: readTokenBudget,
                 estimatedTokens: totalJsonTokens,
@@ -182,7 +189,8 @@ const createReadHandler = (
       if (mode === "lines") {
         const lines = file.content.split(/\r?\n/);
         const totalLines = lines.length;
-        const startLine = typedArgs.startLine ?? 1;
+        const startLine =
+          typeof runtime.startLine === "number" ? runtime.startLine : 1;
 
         if (startLine < 1 || startLine > Math.max(totalLines, 1)) {
           return createError(
@@ -192,10 +200,10 @@ const createReadHandler = (
         }
 
         let endLine: number;
-        if (typeof typedArgs.endLine === "number") {
-          endLine = typedArgs.endLine;
-        } else if (typeof typedArgs.lineCount === "number") {
-          endLine = startLine + typedArgs.lineCount - 1;
+        if (typeof runtime.endLine === "number") {
+          endLine = runtime.endLine;
+        } else if (typeof runtime.lineCount === "number") {
+          endLine = startLine + runtime.lineCount - 1;
         } else {
           endLine = totalLines;
         }
@@ -223,7 +231,7 @@ const createReadHandler = (
           return createReadLimitError(
             mode,
             `requested line range estimates ${contentTokens} tokens, exceeding budget ${readTokenBudget}`,
-            typedArgs.path,
+            inputPath,
             {
               tokenBudget: readTokenBudget,
               estimatedTokens: contentTokens,
@@ -253,9 +261,9 @@ const createReadHandler = (
         );
       }
 
-      const startRaw = typedArgs.start;
-      const offsetRaw = typedArgs.offset;
-      const maxChars = typedArgs.maxChars;
+      const startRaw = runtime.start;
+      const offsetRaw = runtime.offset;
+      const maxChars = runtime.maxChars;
 
       const start = typeof startRaw === "number" ? startRaw : 0;
       const hasOffset = typeof offsetRaw === "number";
@@ -292,7 +300,7 @@ const createReadHandler = (
         return createReadLimitError(
           mode,
           `requested char range estimates ${contentTokens} tokens, exceeding budget ${readTokenBudget}`,
-          typedArgs.path,
+          inputPath,
           {
             tokenBudget: readTokenBudget,
             estimatedTokens: contentTokens,

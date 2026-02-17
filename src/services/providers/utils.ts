@@ -136,8 +136,10 @@ export function validateSchema(
     console.error(`[${provider}] Schema validation failed:`, error);
     // Create a detailed error message from Zod error
     let details = "Validation failed";
-    if (error && typeof error === "object" && "issues" in error) {
-      details = JSON.stringify((error as any).issues);
+    if (error instanceof ZodError) {
+      details = JSON.stringify(error.issues);
+    } else if (error && typeof error === "object" && "issues" in error) {
+      details = JSON.stringify((error as { issues?: unknown }).issues);
     }
     throw new SchemaValidationError(provider, details, error);
   }
@@ -280,6 +282,38 @@ function unwrapHintSchema(schema: ZodTypeAny): {
   return { schema: current, isOptional };
 }
 
+type ZodObjectShape = ZodObject<Record<string, ZodTypeAny>>;
+
+const isZodType = (value: unknown): value is ZodTypeAny =>
+  typeof value === "object" && value !== null && "_def" in value;
+
+const readSchemaOptions = (schema: unknown): unknown[] => {
+  const options = (schema as { _def?: { options?: unknown } } | null)?._def
+    ?.options;
+  return Array.isArray(options) ? options : [];
+};
+
+const readDiscriminatedUnionOptions = (schema: unknown): ZodObjectShape[] =>
+  readSchemaOptions(schema).filter(
+    (option): option is ZodObjectShape => option instanceof ZodObject,
+  );
+
+const readUnionOptions = (schema: unknown): ZodTypeAny[] =>
+  readSchemaOptions(schema).filter(isZodType);
+
+const readEnumValues = (schema: unknown): string[] => {
+  const values = (schema as { _def?: { values?: unknown } } | null)?._def
+    ?.values;
+  if (!Array.isArray(values)) return [];
+  return values.filter((value): value is string => typeof value === "string");
+};
+
+const readRecordValueSchema = (schema: unknown): ZodTypeAny | undefined => {
+  const valueType = (schema as { _def?: { valueType?: unknown } } | null)?._def
+    ?.valueType;
+  return isZodType(valueType) ? valueType : undefined;
+};
+
 function getGenericTypeHintVfs(
   schema: ZodTypeAny,
   indent: string = "",
@@ -298,16 +332,13 @@ function getGenericTypeHintVfs(
     return typeof value === "string" ? `"${value}"` : String(value);
   }
   if (schema instanceof ZodDiscriminatedUnion) {
-    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
-      .options as ZodObject<any>[];
+    const options = readDiscriminatedUnionOptions(schema);
     return options
       .map((opt) => getVfsSchemaHint(opt, indent + "  "))
       .join(" | ");
   }
   if (schema instanceof ZodEnum) {
-    return (schema as ZodEnum<any>)._def.values
-      .map((v) => `"${v}"`)
-      .join(" | ");
+    return readEnumValues(schema).map((v) => `"${v}"`).join(" | ");
   }
   if (schema instanceof ZodArray) {
     const inner = schema._def.type;
@@ -320,7 +351,7 @@ function getGenericTypeHintVfs(
     return getVfsSchemaHint(schema, indent);
   }
   if (schema instanceof ZodUnion) {
-    return (schema as ZodUnion<any>)._def.options
+    return readUnionOptions(schema)
       .map((opt: ZodTypeAny) => getGenericTypeHintVfs(opt, indent))
       .join(" | ");
   }
@@ -331,9 +362,9 @@ function getGenericTypeHintVfs(
     )}`;
   }
   if (schema instanceof ZodRecord) {
-    const valueSchema = (schema as any)?._def?.valueType;
+    const valueSchema = readRecordValueSchema(schema);
     const valueHint = valueSchema
-      ? getGenericTypeHintVfs(valueSchema as ZodTypeAny, indent)
+      ? getGenericTypeHintVfs(valueSchema, indent)
       : "JsonValue";
     return `Record<string, ${valueHint}>`;
   }
@@ -474,16 +505,13 @@ function getGenericTypeHint(
     return typeof value === "string" ? `"${value}"` : String(value);
   }
   if (schema instanceof ZodDiscriminatedUnion) {
-    const unionOptions = (schema as ZodDiscriminatedUnion<any, any>)._def
-      .options as ZodObject<any>[];
+    const unionOptions = readDiscriminatedUnionOptions(schema);
     return unionOptions
       .map((opt) => getToolSchemaHint(opt, indent + "  ", options))
       .join(" | ");
   }
   if (schema instanceof ZodEnum) {
-    return (schema as ZodEnum<any>)._def.values
-      .map((v) => `"${v}"`)
-      .join(" | ");
+    return readEnumValues(schema).map((v) => `"${v}"`).join(" | ");
   }
   if (schema instanceof ZodArray) {
     const inner = schema._def.type;
@@ -496,7 +524,7 @@ function getGenericTypeHint(
     return getToolSchemaHint(schema, indent, options);
   }
   if (schema instanceof ZodUnion) {
-    return (schema as ZodUnion<any>)._def.options
+    return readUnionOptions(schema)
       .map((opt: ZodTypeAny) => getGenericTypeHint(opt, indent, options))
       .join(" | ");
   }
@@ -508,9 +536,9 @@ function getGenericTypeHint(
     )}`;
   }
   if (schema instanceof ZodRecord) {
-    const valueSchema = (schema as any)?._def?.valueType;
+    const valueSchema = readRecordValueSchema(schema);
     const valueHint = valueSchema
-      ? getGenericTypeHint(valueSchema as ZodTypeAny, indent, options)
+      ? getGenericTypeHint(valueSchema, indent, options)
       : "JsonValue";
     return `Record<string, ${valueHint}>`;
   }

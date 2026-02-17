@@ -6,6 +6,7 @@ import type { VfsSession } from "../services/vfs/vfsSession";
 import type {
   DocumentType,
   LocalEmbeddingRuntimeInfo,
+  RAGDocumentMeta,
   SearchResult,
 } from "../services/rag";
 import { extractFileChunksFromSnapshot } from "../services/rag/vfsExtraction";
@@ -52,7 +53,7 @@ export const StateEditorRagPanel: React.FC<StateEditorRagPanelProps> = ({
     DocumentType | "all"
   >("all");
 
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<RAGDocumentMeta[]>([]);
   const [documentsTotal, setDocumentsTotal] = useState(0);
   const [documentsPage, setDocumentsPage] = useState(1);
   const [documentsPageSize] = useState(20);

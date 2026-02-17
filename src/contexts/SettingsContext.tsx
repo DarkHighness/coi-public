@@ -51,7 +51,9 @@ export const useSettingsContext = () => {
  */
 function mergeSettings(parsed: Partial<AISettings>): AISettings {
   // Remove deprecated fields (kept for backward compatibility in saved JSON).
-  const sanitized = { ...(parsed as any) } as any;
+  const sanitized: Partial<AISettings> & Record<string, unknown> = {
+    ...parsed,
+  };
   delete sanitized.freshSegmentCount;
   delete sanitized.contextLen;
 
@@ -71,8 +73,13 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
   }
   delete sanitized.maxContextTokens;
 
-  const legacyExtra = (parsed.extra || {}) as Record<string, unknown>;
-  const migratedExtra: Record<string, unknown> = {
+  const legacyExtra = parsed.extra || {};
+  type LegacyExtraCompat = {
+    clearerSearchTool?: unknown;
+    customPromptInjection?: unknown;
+    promptInjectionEnabled?: unknown;
+  };
+  const migratedExtra: AISettings["extra"] & LegacyExtraCompat = {
     ...DEFAULTS.extra,
     ...legacyExtra,
   };
@@ -138,7 +145,7 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
         ...(sanitized.embedding?.lru || {}),
       },
     },
-    extra: migratedExtra as any,
+    extra: migratedExtra,
   };
 }
 

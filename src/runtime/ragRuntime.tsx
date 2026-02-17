@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import type { AISettings, GameState, ForkTree } from "../types";
+import type { AISettings, GameState, ForkTree, ModelInfo } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import {
   initializeRAGService,
@@ -209,7 +209,7 @@ export function useRagRuntime(): RagRuntimeValue {
           dimensions = embeddingConfig.dimensions;
 
           try {
-            let models: any[] = [];
+            let models: ModelInfo[] = [];
             switch (provider) {
               case "gemini":
                 models = await getGeminiEmbeddingModels({

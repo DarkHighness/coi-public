@@ -1174,16 +1174,23 @@ export const ensureSeparatorNewline = (left: string, right: string): string => {
 };
 
 export const formatOutlineCommitValidationError = (error: unknown): string => {
-  const err = error as any;
-  const issues = err?.issues;
+  const errRecord =
+    error && typeof error === "object"
+      ? (error as Record<string, unknown>)
+      : null;
+  const issues = errRecord?.issues;
   if (!Array.isArray(issues)) {
-    return String(err?.message ?? error);
+    return String(errRecord?.message ?? error);
   }
   return issues
     .slice(0, 12)
-    .map((issue: any) => {
-      const path = Array.isArray(issue?.path)
-        ? issue.path
+    .map((issue) => {
+      const issueRecord =
+        issue && typeof issue === "object"
+          ? (issue as Record<string, unknown>)
+          : null;
+      const path = Array.isArray(issueRecord?.path)
+        ? issueRecord.path
             .map((part: unknown) =>
               typeof part === "number" ? `[${part}]` : String(part),
             )
@@ -1191,7 +1198,7 @@ export const formatOutlineCommitValidationError = (error: unknown): string => {
             .replace(/\.\[/g, "[")
         : "";
       const message =
-        typeof issue?.message === "string" ? issue.message : "Invalid";
+        typeof issueRecord?.message === "string" ? issueRecord.message : "Invalid";
       return path ? `${path}: ${message}` : message;
     })
     .join("; ");

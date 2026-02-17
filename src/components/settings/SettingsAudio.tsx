@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { FunctionKey } from "./types";
+import type { FunctionConfig } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
 
 export const SettingsAudio: React.FC = () => {
@@ -8,7 +9,11 @@ export const SettingsAudio: React.FC = () => {
   const { settings: currentSettings, updateSettings: onUpdateSettings } =
     useSettings();
 
-  const updateFunction = (func: FunctionKey, field: string, value: any) => {
+  const updateFunction = <K extends keyof FunctionConfig>(
+    func: FunctionKey,
+    field: K,
+    value: FunctionConfig[K],
+  ) => {
     const newSettings = {
       ...currentSettings,
       [func]: { ...currentSettings[func], [field]: value },
@@ -209,9 +214,19 @@ export const SettingsAudio: React.FC = () => {
             </label>
             <select
               value={currentSettings.audio.format || "mp3"}
-              onChange={(e) =>
-                updateFunction("audio", "format", e.target.value)
-              }
+              onChange={(e) => {
+                const nextFormat = e.target.value;
+                if (
+                  nextFormat === "mp3" ||
+                  nextFormat === "opus" ||
+                  nextFormat === "aac" ||
+                  nextFormat === "flac" ||
+                  nextFormat === "wav" ||
+                  nextFormat === "pcm"
+                ) {
+                  updateFunction("audio", "format", nextFormat);
+                }
+              }}
               className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none"
             >
               <option value="mp3">{t("audio.formats.mp3")}</option>

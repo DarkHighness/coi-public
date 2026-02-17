@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import type { TFunction } from "i18next";
 import { GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
@@ -13,7 +14,7 @@ interface CharacterTabProps {
   gameState: GameState;
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
-  t: (key: string, options?: any) => string;
+  t: TFunction;
 }
 
 export const CharacterTab: React.FC<CharacterTabProps> = ({

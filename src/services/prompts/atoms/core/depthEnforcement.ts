@@ -24,7 +24,7 @@ export const depthEnforcement: Atom<void> = defineAtom(
   <instruction>**STATE MUST MOVE**: every turn changes something concrete (gained/lost/learned/moved/broken).</instruction>
   <instruction>**PRESSURE NOW**: include at least one immediate constraint (time, eyes, pain, scarcity, law, leverage).</instruction>
   <instruction>**COST**: success and failure both cost something (time/money/blood/reputation/position/relationship).</instruction>
-  <instruction>**ROOTED DETAIL**: any claim must be anchored by an observable detail (who/what/where/how).</instruction>
+  <instruction>**ROOTED DETAIL**: each claim must be anchored by an observable detail (who/what/where/how).</instruction>
   <instruction>Every entity needs a reason to exist: desire + leverage + vulnerability. And a past—everything "became".</instruction>
 </depth_enforcement>
 `,

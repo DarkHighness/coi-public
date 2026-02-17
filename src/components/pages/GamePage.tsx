@@ -19,6 +19,7 @@ import {
   SaveSlot,
   LanguageCode,
   PlayerRateInput,
+  ThemeConfig,
 } from "../../types";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
@@ -84,7 +85,7 @@ interface GamePageProps {
   /** Callback to open saves modal */
   onOpenSaves: () => void;
   /** Optional theme override from App (for debug/preview) */
-  overrideThemeConfig?: any;
+  overrideThemeConfig?: Partial<ThemeConfig>;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({
@@ -320,11 +321,11 @@ export const GamePage: React.FC<GamePageProps> = ({
     }
   };
 
-  const handleUpdateUIState = (
-    section: keyof UIState,
-    newState: UIState[keyof UIState],
+  const handleUpdateUIState = <K extends keyof UIState>(
+    section: K,
+    newState: UIState[K],
   ) => {
-    updateUiState(section as keyof UIState, newState as any, {
+    updateUiState(section, newState, {
       reason: `gamePage.uiState.${String(section)}`,
       persist: false,
     });

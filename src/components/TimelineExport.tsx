@@ -5,6 +5,7 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { createPortal } from "react-dom";
+import type { Components } from "react-markdown";
 import { StorySegment } from "../types";
 import { THEMES, ENV_THEMES } from "../utils/constants";
 import { MarkdownText } from "./render/MarkdownText";
@@ -31,6 +32,24 @@ interface TimelineExportProps {
   onExportStart?: () => void;
   onExportEnd?: () => void;
 }
+
+type MarkdownElementProps<Tag extends keyof React.JSX.IntrinsicElements> =
+  React.ComponentPropsWithoutRef<Tag> & {
+    node?: unknown;
+  };
+
+type MarkdownCodeProps = React.ComponentPropsWithoutRef<"code"> & {
+  node?: unknown;
+  inline?: boolean;
+  className?: string;
+};
+
+type MarkdownMathProps = {
+  node?: unknown;
+  children?: React.ReactNode;
+};
+
+type ExportChunkSegment = StorySegment & { _tempUrl?: boolean };
 
 export const TimelineExport = forwardRef<
   TimelineExportRef,
@@ -96,7 +115,7 @@ export const TimelineExport = forwardRef<
             );
 
             // Resolve image IDs to URLs
-            const chunkWithImages = await Promise.all(
+            const chunkWithImages: ExportChunkSegment[] = await Promise.all(
               chunk.map(async (seg) => {
                 if (seg.imageId && !seg.imageUrl) {
                   try {
@@ -177,7 +196,7 @@ export const TimelineExport = forwardRef<
               }, "image/png");
 
               // Cleanup temp URLs
-              chunkWithImages.forEach((seg: any) => {
+              chunkWithImages.forEach((seg) => {
                 if (seg._tempUrl && seg.imageUrl) {
                   URL.revokeObjectURL(seg.imageUrl);
                 }
@@ -231,7 +250,9 @@ export const TimelineExport = forwardRef<
                   <MarkdownText
                     content={choiceText}
                     components={{
-                      p: ({ node, ...props }: any) => <span {...props} />,
+                      p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
+                        <span {...props} />
+                      ),
                     }}
                   />
                   {consequence && (
@@ -282,7 +303,9 @@ export const TimelineExport = forwardRef<
                     "Chronicles of Infinity"
                   }
                   components={{
-                    p: ({ node, ...props }: any) => <span {...props} />,
+                    p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
+                      <span {...props} />
+                    ),
                   }}
                 />
               </div>
@@ -297,7 +320,9 @@ export const TimelineExport = forwardRef<
                     "Timeline Export"
                   }
                   components={{
-                    p: ({ node, ...props }: any) => <span {...props} />,
+                    p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
+                      <span {...props} />
+                    ),
                   }}
                 />
               </div>
@@ -382,7 +407,7 @@ export const TimelineExport = forwardRef<
                         <MarkdownText
                           content={seg.text}
                           components={{
-                            p: ({ node, ...props }: any) => (
+                            p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
                               <p className="mb-2 last:mb-0" {...props} />
                             ),
                           }}
@@ -470,17 +495,20 @@ export const TimelineExport = forwardRef<
                           <MarkdownText
                             content={seg.text}
                             components={{
-                              p: ({ node, ...props }: any) => (
+                              p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
                                 <p className="mb-3 last:mb-0" {...props} />
                               ),
-                              strong: ({ node, ...props }: any) => (
+                              strong: ({
+                                node: _node,
+                                ...props
+                              }: MarkdownElementProps<"strong">) => (
                                 <strong
                                   className="font-bold"
                                   style={{ color: "#cbd5e1" }}
                                   {...props}
                                 />
                               ),
-                              em: ({ node, ...props }: any) => (
+                              em: ({ node: _node, ...props }: MarkdownElementProps<"em">) => (
                                 <em
                                   className="italic"
                                   style={{ color: "rgba(148, 163, 184, 0.9)" }}
@@ -557,19 +585,22 @@ export const TimelineExport = forwardRef<
                       style={{ color: "#e2e8f0" }} // slate-200
                     >
                       <MarkdownText
-                        content={seg.text}
-                        components={{
-                          p: ({ node, ...props }: any) => (
+                      content={seg.text}
+                      components={{
+                          p: ({ node: _node, ...props }: MarkdownElementProps<"p">) => (
                             <p className="mb-4 last:mb-0 indent-8" {...props} />
                           ),
-                          strong: ({ node, ...props }: any) => (
+                          strong: ({
+                            node: _node,
+                            ...props
+                          }: MarkdownElementProps<"strong">) => (
                             <strong
                               className="font-bold"
                               style={{ color: "#fbbf24" }}
                               {...props}
                             />
                           ),
-                          em: ({ node, ...props }: any) => (
+                          em: ({ node: _node, ...props }: MarkdownElementProps<"em">) => (
                             <em
                               className="italic"
                               style={{ color: "rgba(226, 232, 240, 0.9)" }}
@@ -577,12 +608,12 @@ export const TimelineExport = forwardRef<
                             />
                           ),
                           code: ({
-                            node,
+                            node: _node,
                             inline,
                             className,
                             children,
                             ...props
-                          }: any) => {
+                          }: MarkdownCodeProps) => {
                             const match = /language-(\w+)/.exec(
                               className || "",
                             );
@@ -645,7 +676,7 @@ export const TimelineExport = forwardRef<
                               </div>
                             );
                           },
-                          math: ({ node, ...props }: any) => (
+                          math: ({ node: _node, ...props }: MarkdownMathProps) => (
                             <div
                               style={{
                                 margin: "16px 0",
@@ -660,7 +691,7 @@ export const TimelineExport = forwardRef<
                               {props.children}
                             </div>
                           ),
-                          inlineMath: ({ node, ...props }: any) => (
+                          inlineMath: ({ node: _node, ...props }: MarkdownMathProps) => (
                             <span
                               style={{
                                 fontFamily: "serif",
@@ -671,7 +702,10 @@ export const TimelineExport = forwardRef<
                               {props.children}
                             </span>
                           ),
-                          blockquote: ({ node, ...props }: any) => (
+                          blockquote: ({
+                            node: _node,
+                            ...props
+                          }: MarkdownElementProps<"blockquote">) => (
                             <blockquote
                               className="border-l-4 pl-4 my-4 italic"
                               style={{
@@ -681,43 +715,43 @@ export const TimelineExport = forwardRef<
                               {...props}
                             />
                           ),
-                          ul: ({ node, ...props }: any) => (
+                          ul: ({ node: _node, ...props }: MarkdownElementProps<"ul">) => (
                             <ul
                               className="list-disc list-inside my-2 space-y-1"
                               {...props}
                             />
                           ),
-                          ol: ({ node, ...props }: any) => (
+                          ol: ({ node: _node, ...props }: MarkdownElementProps<"ol">) => (
                             <ol
                               className="list-decimal list-inside my-2 space-y-1"
                               {...props}
                             />
                           ),
-                          li: ({ node, ...props }: any) => (
+                          li: ({ node: _node, ...props }: MarkdownElementProps<"li">) => (
                             <li className="ml-2" {...props} />
                           ),
-                          h1: ({ node, ...props }: any) => (
+                          h1: ({ node: _node, ...props }: MarkdownElementProps<"h1">) => (
                             <h1
                               className="text-2xl font-bold my-4"
                               style={{ color: "#fbbf24" }}
                               {...props}
                             />
                           ),
-                          h2: ({ node, ...props }: any) => (
+                          h2: ({ node: _node, ...props }: MarkdownElementProps<"h2">) => (
                             <h2
                               className="text-xl font-semibold my-3"
                               style={{ color: "rgba(251, 191, 36, 0.9)" }}
                               {...props}
                             />
                           ),
-                          h3: ({ node, ...props }: any) => (
+                          h3: ({ node: _node, ...props }: MarkdownElementProps<"h3">) => (
                             <h3
                               className="text-lg font-semibold my-2"
                               style={{ color: "rgba(251, 191, 36, 0.8)" }}
                               {...props}
                             />
                           ),
-                        }}
+                        } as Components}
                       />
                       {/* {renderChoices(seg.choices)} */}
                     </div>

@@ -258,13 +258,13 @@ export type RAGWorkerMessageType =
 export interface RAGWorkerRequest {
   id: string;
   type: RAGWorkerMessageType;
-  payload: any;
+  payload: unknown;
 }
 
 export interface RAGWorkerResponse {
   id: string;
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 
@@ -439,7 +439,7 @@ export type RAGEventType =
 
 export interface RAGEvent {
   type: RAGEventType;
-  data?: any;
+  data?: unknown;
 }
 
 export interface ProgressEvent extends RAGEvent {

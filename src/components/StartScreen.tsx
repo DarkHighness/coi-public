@@ -14,7 +14,7 @@ import { ThemeSelector } from "./ThemeSelector";
 import { CustomGameModal } from "./CustomGameModal";
 import { CustomContextModal } from "./CustomContextModal";
 import { ImageUploadModal } from "./ImageUploadModal";
-import { SaveSlot, ImportResult } from "../types";
+import { SaveSlot, ImportResult, LanguageCode } from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
@@ -94,7 +94,7 @@ interface StartScreenProps {
   onSettings: () => void;
   latestSave?: SaveSlot;
   onThemePreview?: (theme: string | null) => void;
-  setLanguage: (lang: any) => void;
+  setLanguage: (lang: LanguageCode) => void;
   saveSlots?: SaveSlot[];
   onSwitchSlot?: (id: string) => void;
   onDeleteSlot?: (id: string) => void;

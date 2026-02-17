@@ -2,9 +2,17 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ToolCallItemProps } from "./types";
 
+const isToolErrorOutput = (value: unknown): value is { success: false } => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const record = value as { success?: unknown };
+  return record.success === false;
+};
+
 /** Component to render a single tool call with expandable input/output */
 export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
-  const isError = call.output?.success === false;
+  const isError = isToolErrorOutput(call.output);
   const [isExpanded, setIsExpanded] = useState(isError); // Auto-expand errors
   const { t } = useTranslation();
 

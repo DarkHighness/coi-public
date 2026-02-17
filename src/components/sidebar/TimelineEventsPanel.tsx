@@ -272,7 +272,8 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
   const recentEvents = events
     ? [...events]
         .filter(
-          (e: any) => !Array.isArray(e.knownBy) || e.knownBy.includes(playerId),
+          (event) =>
+            !Array.isArray(event.knownBy) || event.knownBy.includes(playerId),
         )
         .reverse()
         .slice(0, 5)

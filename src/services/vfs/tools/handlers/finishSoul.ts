@@ -13,13 +13,15 @@ import {
 
 export const handleFinishSoul: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_finish_soul", args, () => {
-    const typedArgs = args as any;
+    const runtime = args as Record<string, unknown>;
+    const currentSoul =
+      typeof runtime.currentSoul === "string" ? runtime.currentSoul : null;
+    const globalSoul =
+      typeof runtime.globalSoul === "string" ? runtime.globalSoul : null;
     const hasCurrentSoul =
-      typeof typedArgs.currentSoul === "string" &&
-      typedArgs.currentSoul.trim().length > 0;
+      typeof currentSoul === "string" && currentSoul.trim().length > 0;
     const hasGlobalSoul =
-      typeof typedArgs.globalSoul === "string" &&
-      typedArgs.globalSoul.trim().length > 0;
+      typeof globalSoul === "string" && globalSoul.trim().length > 0;
 
     if (!hasCurrentSoul && !hasGlobalSoul) {
       return createError(
@@ -44,7 +46,7 @@ export const handleFinishSoul: VfsToolHandler = (args, ctx) =>
           );
           draft.writeFile(
             normalizedCurrentSoulPath,
-            normalizeSoulMarkdown("current", typedArgs.currentSoul),
+            normalizeSoulMarkdown("current", currentSoul ?? ""),
             "text/markdown",
           );
           draft.noteToolAccessFile(normalizedCurrentSoulPath);
@@ -65,7 +67,7 @@ export const handleFinishSoul: VfsToolHandler = (args, ctx) =>
           );
           draft.writeFile(
             normalizedGlobalSoulPath,
-            normalizeSoulMarkdown("global", typedArgs.globalSoul),
+            normalizeSoulMarkdown("global", globalSoul ?? ""),
             "text/markdown",
           );
           draft.noteToolAccessFile(normalizedGlobalSoulPath);

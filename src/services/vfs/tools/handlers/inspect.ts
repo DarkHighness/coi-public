@@ -33,21 +33,31 @@ import {
   type VfsToolHandler,
 } from "./shared";
 
+const isString = (value: unknown): value is string => typeof value === "string";
+
+const asStringArray = (value: unknown): string[] | null => {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  return value.filter(isString);
+};
+
 export const handleInspectLs: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_ls", args, () => {
     const session = getSession(ctx);
-    const typedArgs = args as any;
-    const baseResolved = resolveCurrentPathLoose(ctx, typedArgs.path);
+    const runtime = args as Record<string, unknown>;
+    const pathArg = typeof runtime.path === "string" ? runtime.path : undefined;
+    const patterns = asStringArray(runtime.patterns);
+    const excludePatterns = asStringArray(runtime.excludePatterns);
+    const limit = typeof runtime.limit === "number" ? runtime.limit : 200;
+    const ignoreCase = Boolean(runtime.ignoreCase);
+    const includeExpected = Boolean(runtime.includeExpected);
+    const includeAccess = Boolean(runtime.includeAccess);
+    const baseResolved = resolveCurrentPathLoose(ctx, pathArg);
     if (isPathResolveError(baseResolved)) {
       return baseResolved.error;
     }
     session.noteToolAccessScope(baseResolved.path ?? "");
-
-    const patterns = typedArgs.patterns ?? null;
-    const limit = typedArgs.limit ?? 200;
-    const ignoreCase = Boolean(typedArgs.ignoreCase);
-    const includeExpected = Boolean(typedArgs.includeExpected);
-    const includeAccess = Boolean(typedArgs.includeAccess);
     const activeForkId =
       typeof ctx.gameState?.forkId === "number"
         ? ctx.gameState.forkId
@@ -266,8 +276,8 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
     }
 
     const excludeRegexes: RegExp[] = [];
-    if (typedArgs.excludePatterns) {
-      for (const raw of typedArgs.excludePatterns) {
+    if (excludePatterns) {
+      for (const raw of excludePatterns) {
         const resolvedPattern = normalizeGlobInput(raw, baseResolved.path);
         try {
           excludeRegexes.push(globToRegExp(resolvedPattern, { ignoreCase }));
@@ -338,7 +348,11 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
 export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_schema", args, () => {
     const session = getSession(ctx);
-    const typedArgs = args as any;
+    const runtime = args as Record<string, unknown>;
+    const paths = asStringArray(runtime.paths) ?? [];
+    if (paths.length === 0) {
+      return createError("vfs_schema: paths must include at least one path", "INVALID_DATA");
+    }
     const isMarkdownContentType = (value: string | null | undefined): boolean =>
       value === "text/markdown";
     const toMarkdownSections = (content: string | null): ReturnType<
@@ -365,7 +379,7 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
     }> = [];
     const missing: Array<{ path: string; error: string }> = [];
 
-    for (const inputPath of typedArgs.paths as string[]) {
+    for (const inputPath of paths) {
       const resolved = resolveCurrentPathLoose(ctx, inputPath);
       if (isPathResolveError(resolved)) {
         return resolved.error;
@@ -497,28 +511,33 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
 export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_search", args, async () => {
     const session = getSession(ctx);
-    const typedArgs = args as any;
-    const limit = typedArgs.limit ?? 20;
+    const runtime = args as Record<string, unknown>;
+    const query = typeof runtime.query === "string" ? runtime.query : null;
+    if (!query) {
+      return createError("vfs_search: query must be a non-empty string", "INVALID_DATA");
+    }
+    const limit = typeof runtime.limit === "number" ? runtime.limit : 20;
     if (limit <= 0) {
       return createSuccess({ results: [] }, "VFS search complete");
     }
 
-    const resolvedPath = typedArgs.path
-      ? resolveCurrentPath(ctx, typedArgs.path)
+    const pathArg = typeof runtime.path === "string" ? runtime.path : undefined;
+    const resolvedPath = pathArg
+      ? resolveCurrentPath(ctx, pathArg)
       : null;
     if (resolvedPath && isPathResolveError(resolvedPath)) {
       return resolvedPath.error;
     }
     const rootPath = resolvedPath?.ok ? resolvedPath.path : undefined;
     const files = session.snapshotAll();
-    const regex = Boolean(typedArgs.regex);
-    const fuzzy = Boolean(typedArgs.fuzzy);
-    const semantic = Boolean(typedArgs.semantic);
+    const regex = Boolean(runtime.regex);
+    const fuzzy = Boolean(runtime.fuzzy);
+    const semantic = Boolean(runtime.semantic);
 
     if (regex) {
       let regexObj: RegExp;
       try {
-        regexObj = new RegExp(typedArgs.query);
+        regexObj = new RegExp(query);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return createError(`Invalid regex: ${message}`, "INVALID_DATA", {
@@ -559,7 +578,7 @@ export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
           ? ctx.gameState.turnNumber
           : undefined;
 
-      const ragMatches = await searchSemanticWithRag(session, typedArgs.query, {
+      const ragMatches = await searchSemanticWithRag(session, query, {
         rootPath,
         limit,
         forkId,
@@ -574,7 +593,7 @@ export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
         return createSuccess({ results }, "VFS search complete");
       }
 
-      const semanticMatches = session.searchSemantic(typedArgs.query, {
+      const semanticMatches = session.searchSemantic(query, {
         path: rootPath,
         limit,
       });
@@ -587,11 +606,11 @@ export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
     }
 
     const rawResults = fuzzy
-      ? collectFuzzyMatches(files, rootPath, typedArgs.query, limit)
+      ? collectFuzzyMatches(files, rootPath, query, limit)
       : collectMatches(
           files,
           rootPath,
-          (line) => line.includes(typedArgs.query),
+          (line) => line.includes(query),
           limit,
         );
 

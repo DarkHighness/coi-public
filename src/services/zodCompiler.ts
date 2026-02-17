@@ -195,6 +195,9 @@ function createGeminiJsonValueSchema(description?: string): Schema {
 }
 
 type LiteralValue = string | number | boolean | null;
+type GeminiSchemaWithLiteralEnum = Omit<Schema, "enum"> & {
+  enum?: LiteralValue[];
+};
 
 const isLiteralValue = (value: unknown): value is LiteralValue =>
   typeof value === "string" ||
@@ -220,8 +223,8 @@ const toGeminiLiteralType = (value: LiteralValue): Type => {
   return Type.BOOLEAN;
 };
 
-const getLiteralValue = (schema: ZodLiteral<any>): LiteralValue =>
-  (schema as ZodLiteral<any>)._def.value as LiteralValue;
+const getLiteralValue = (schema: ZodLiteral<LiteralValue>): LiteralValue =>
+  (schema as ZodLiteral<LiteralValue>)._def.value as LiteralValue;
 
 const stripOptionalDefaultWrappers = (schema: ZodTypeAny): ZodTypeAny => {
   let current = schema;
@@ -231,7 +234,7 @@ const stripOptionalDefaultWrappers = (schema: ZodTypeAny): ZodTypeAny => {
     current._def.typeName === "ZodOptional" ||
     current._def.typeName === "ZodDefault"
   ) {
-    current = (current as ZodOptional<any> | ZodDefault<any>)._def.innerType;
+    current = (current as ZodOptional<ZodTypeAny> | ZodDefault<ZodTypeAny>)._def.innerType;
   }
   return current;
 };
@@ -278,7 +281,7 @@ const buildGeminiDiscriminatorSchema = (
   const type: Type = uniqueTypes.length === 1 ? uniqueTypes[0] : Type.STRING;
   const result: Schema = { type, description };
   if (uniqueTypes.length === 1) {
-    (result as any).enum = values;
+    (result as GeminiSchemaWithLiteralEnum).enum = values;
   }
   return result;
 };
@@ -299,18 +302,18 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle effects (refinements, transforms, etc.)
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
-    return processZodToGemini((schema as ZodEffects<any>)._def.schema);
+    return processZodToGemini((schema as ZodEffects<ZodTypeAny>)._def.schema);
   }
 
   // Handle optional - Gemini doesn't have optional, we handle via required array
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
-    return processZodToGemini((schema as ZodOptional<any>)._def.innerType);
+    return processZodToGemini((schema as ZodOptional<ZodTypeAny>)._def.innerType);
   }
 
   // Handle nullable
   if (schema instanceof ZodNullable || typeName === "ZodNullable") {
     const innerSchema = processZodToGemini(
-      (schema as ZodNullable<any>)._def.innerType,
+      (schema as ZodNullable<ZodTypeAny>)._def.innerType,
     );
     // Create a clean copy to avoid polluting with extra properties
     const result: Schema = {
@@ -327,7 +330,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
-    return processZodToGemini((schema as ZodDefault<any>)._def.innerType);
+    return processZodToGemini((schema as ZodDefault<ZodTypeAny>)._def.innerType);
   }
 
   // Handle lazy
@@ -360,12 +363,12 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = getLiteralValue(schema as ZodLiteral<any>);
+    const value = getLiteralValue(schema as ZodLiteral<LiteralValue>);
     const result: Schema = {
       type: toGeminiLiteralType(value),
     };
     if (value !== null) {
-      (result as any).enum = [value];
+      (result as GeminiSchemaWithLiteralEnum).enum = [value];
     }
     if (schema.description) result.description = schema.description;
     return result;
@@ -373,7 +376,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle enum
   if (schema instanceof ZodEnum || typeName === "ZodEnum") {
-    const values = (schema as ZodEnum<any>)._def.values as string[];
+    const values = (schema as ZodEnum<[string, ...string[]]>)._def.values as string[];
     const result: Schema = {
       type: Type.STRING,
       enum: values,
@@ -394,10 +397,10 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     schema instanceof ZodDiscriminatedUnion ||
     typeName === "ZodDiscriminatedUnion"
   ) {
-    const discriminator = (schema as ZodDiscriminatedUnion<any, any>)._def
+    const discriminator = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
       .discriminator;
-    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
-      .options as ZodObject<any>[];
+    const options = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
+      .options as ZodObject<Record<string, ZodTypeAny>>[];
 
     // Collect all possible properties from all variants
     const allProperties: Record<string, Schema> = {};
@@ -414,7 +417,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<LiteralValue>);
         if (isLiteralValue(literalValue)) {
           discriminatorValues.push(literalValue);
         }
@@ -480,7 +483,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle array
   if (schema instanceof ZodArray || typeName === "ZodArray") {
-    const itemSchema = processZodToGemini((schema as ZodArray<any>)._def.type);
+    const itemSchema = processZodToGemini((schema as ZodArray<ZodTypeAny>)._def.type);
     const result: Schema = {
       type: Type.ARRAY,
       items: itemSchema,
@@ -491,7 +494,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle object
   if (schema instanceof ZodObject || typeName === "ZodObject") {
-    const shape = (schema as ZodObject<any>).shape;
+    const shape = (schema as ZodObject<Record<string, ZodTypeAny>>).shape;
     const properties: Record<string, Schema> = {};
     const required: string[] = [];
 
@@ -503,7 +506,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
       if (fieldTypeName !== "ZodOptional" && fieldTypeName !== "ZodDefault") {
         if (fieldTypeName === "ZodNullable") {
           const innerTypeName = (
-            (value as ZodNullable<any>)._def.innerType as ZodTypeAny
+            (value as ZodNullable<ZodTypeAny>)._def.innerType as ZodTypeAny
           )._def.typeName;
           if (
             innerTypeName !== "ZodOptional" &&
@@ -594,7 +597,7 @@ function processZodToOpenAI(
   // Handle effects
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
     return processZodToOpenAI(
-      (schema as ZodEffects<any>)._def.schema,
+      (schema as ZodEffects<ZodTypeAny>)._def.schema,
       strict,
       isOptionalField,
     );
@@ -603,7 +606,7 @@ function processZodToOpenAI(
   // Handle optional
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
     return processZodToOpenAI(
-      (schema as ZodOptional<any>)._def.innerType,
+      (schema as ZodOptional<ZodTypeAny>)._def.innerType,
       strict,
       true,
     );
@@ -612,7 +615,7 @@ function processZodToOpenAI(
   // Handle nullable
   if (schema instanceof ZodNullable || typeName === "ZodNullable") {
     const innerSchema = processZodToOpenAI(
-      (schema as ZodNullable<any>)._def.innerType,
+      (schema as ZodNullable<ZodTypeAny>)._def.innerType,
       strict,
       isOptionalField,
     );
@@ -630,7 +633,7 @@ function processZodToOpenAI(
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
     return processZodToOpenAI(
-      (schema as ZodDefault<any>)._def.innerType,
+      (schema as ZodDefault<ZodTypeAny>)._def.innerType,
       strict,
       true,
     );
@@ -667,7 +670,7 @@ function processZodToOpenAI(
 
   // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = getLiteralValue(schema as ZodLiteral<any>);
+    const value = getLiteralValue(schema as ZodLiteral<LiteralValue>);
     const result: OpenAISchema = buildOpenAILiteralSchema(value);
     if (schema.description) result.description = schema.description;
     return result;
@@ -675,7 +678,7 @@ function processZodToOpenAI(
 
   // Handle enum
   if (schema instanceof ZodEnum || typeName === "ZodEnum") {
-    const values = (schema as ZodEnum<any>)._def.values as string[];
+    const values = (schema as ZodEnum<[string, ...string[]]>)._def.values as string[];
     const result: OpenAISchema = {
       type: "string",
       enum: values,
@@ -696,10 +699,10 @@ function processZodToOpenAI(
     schema instanceof ZodDiscriminatedUnion ||
     typeName === "ZodDiscriminatedUnion"
   ) {
-    const discriminator = (schema as ZodDiscriminatedUnion<any, any>)._def
+    const discriminator = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
       .discriminator;
-    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
-      .options as ZodObject<any>[];
+    const options = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
+      .options as ZodObject<Record<string, ZodTypeAny>>[];
 
     // Collect all possible properties from all variants
     const allProperties: Record<string, OpenAISchema> = {};
@@ -716,7 +719,7 @@ function processZodToOpenAI(
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<LiteralValue>);
         if (isLiteralValue(literalValue)) {
           discriminatorValues.push(literalValue);
         }
@@ -784,7 +787,7 @@ function processZodToOpenAI(
   // Handle array
   if (schema instanceof ZodArray || typeName === "ZodArray") {
     const itemSchema = processZodToOpenAI(
-      (schema as ZodArray<any>)._def.type,
+      (schema as ZodArray<ZodTypeAny>)._def.type,
       strict,
       false,
     );
@@ -798,7 +801,7 @@ function processZodToOpenAI(
 
   // Handle object
   if (schema instanceof ZodObject || typeName === "ZodObject") {
-    const shape = (schema as ZodObject<any>).shape;
+    const shape = (schema as ZodObject<Record<string, ZodTypeAny>>).shape;
     const properties: Record<string, OpenAISchema> = {};
     const originalRequired: string[] = [];
     for (const [key, value] of Object.entries(shape)) {
@@ -810,7 +813,7 @@ function processZodToOpenAI(
       if (!isFieldOptional) {
         if (fieldTypeName === "ZodNullable") {
           const innerTypeName = (
-            (value as ZodNullable<any>)._def.innerType as ZodTypeAny
+            (value as ZodNullable<ZodTypeAny>)._def.innerType as ZodTypeAny
           )._def.typeName;
           if (
             innerTypeName !== "ZodOptional" &&
@@ -840,7 +843,7 @@ function processZodToOpenAI(
 
   // Handle record
   if (schema instanceof ZodRecord || typeName === "ZodRecord") {
-    const valueSchema = (schema as ZodRecord<any>)._def.valueType;
+    const valueSchema = (schema as ZodRecord<ZodString, ZodTypeAny>)._def.valueType;
     const result: OpenAISchema = {
       type: "object",
       additionalProperties: processZodToOpenAI(valueSchema, strict, false),
@@ -891,7 +894,7 @@ function processZodToGeminiCompatible(
   // Handle effects
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
     return processZodToGeminiCompatible(
-      (schema as ZodEffects<any>)._def.schema,
+      (schema as ZodEffects<ZodTypeAny>)._def.schema,
       isOptionalField,
     );
   }
@@ -899,7 +902,7 @@ function processZodToGeminiCompatible(
   // Handle optional
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
     return processZodToGeminiCompatible(
-      (schema as ZodOptional<any>)._def.innerType,
+      (schema as ZodOptional<ZodTypeAny>)._def.innerType,
       true,
     );
   }
@@ -907,7 +910,7 @@ function processZodToGeminiCompatible(
   // Handle nullable
   if (schema instanceof ZodNullable || typeName === "ZodNullable") {
     const innerSchema = processZodToGeminiCompatible(
-      (schema as ZodNullable<any>)._def.innerType,
+      (schema as ZodNullable<ZodTypeAny>)._def.innerType,
       isOptionalField,
     );
     // Use nullable: true property
@@ -920,7 +923,7 @@ function processZodToGeminiCompatible(
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
     return processZodToGeminiCompatible(
-      (schema as ZodDefault<any>)._def.innerType,
+      (schema as ZodDefault<ZodTypeAny>)._def.innerType,
       true,
     );
   }
@@ -939,8 +942,10 @@ function processZodToGeminiCompatible(
 
   // Handle number
   if (schema instanceof ZodNumber || typeName === "ZodNumber") {
-    const checks = (schema as ZodNumber)._def.checks || [];
-    const isInt = checks.some((c: any) => c.kind === "int");
+    const checks = ((schema as ZodNumber)._def.checks || []) as Array<{
+      kind?: string;
+    }>;
+    const isInt = checks.some((c) => c.kind === "int");
     const result: OpenAISchema = { type: isInt ? "integer" : "number" };
     if (schema.description) result.description = schema.description;
     return result;
@@ -955,7 +960,7 @@ function processZodToGeminiCompatible(
 
   // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = getLiteralValue(schema as ZodLiteral<any>);
+    const value = getLiteralValue(schema as ZodLiteral<LiteralValue>);
     const result: OpenAISchema = buildOpenAILiteralSchema(value);
     if (schema.description) result.description = schema.description;
     return result;
@@ -963,7 +968,7 @@ function processZodToGeminiCompatible(
 
   // Handle enum
   if (schema instanceof ZodEnum || typeName === "ZodEnum") {
-    const values = (schema as ZodEnum<any>)._def.values as string[];
+    const values = (schema as ZodEnum<[string, ...string[]]>)._def.values as string[];
     const result: OpenAISchema = {
       type: "string",
       enum: values,
@@ -974,11 +979,11 @@ function processZodToGeminiCompatible(
 
   // Handle union - Gemini doesn't support generic unions well
   if (schema instanceof ZodUnion || typeName === "ZodUnion") {
-    const options = (schema as ZodUnion<any>)._def.options;
+    const options = (schema as ZodUnion<[ZodTypeAny, ...ZodTypeAny[]]>)._def.options;
 
     // Try to merge if all options are objects
     const allObjects = options.every(
-      (opt: any) =>
+      (opt) =>
         opt instanceof ZodObject || opt._def.typeName === "ZodObject",
     );
 
@@ -988,7 +993,7 @@ function processZodToGeminiCompatible(
       let first = true;
 
       for (const opt of options) {
-        const shape = (opt as ZodObject<any>).shape;
+        const shape = (opt as ZodObject<Record<string, ZodTypeAny>>).shape;
         const currentRequired = new Set<string>();
 
         for (const [key, value] of Object.entries(shape)) {
@@ -1039,10 +1044,10 @@ function processZodToGeminiCompatible(
   // Handle intersection
   if (schema instanceof ZodIntersection || typeName === "ZodIntersection") {
     const left = processZodToGeminiCompatible(
-      (schema as ZodIntersection<any, any>)._def.left,
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.left,
     );
     const right = processZodToGeminiCompatible(
-      (schema as ZodIntersection<any, any>)._def.right,
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.right,
     );
 
     if (left.type === "object" && right.type === "object") {
@@ -1079,10 +1084,10 @@ function processZodToGeminiCompatible(
     schema instanceof ZodDiscriminatedUnion ||
     typeName === "ZodDiscriminatedUnion"
   ) {
-    const discriminator = (schema as ZodDiscriminatedUnion<any, any>)._def
+    const discriminator = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
       .discriminator;
-    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
-      .options as ZodObject<any>[];
+    const options = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
+      .options as ZodObject<Record<string, ZodTypeAny>>[];
 
     const allProperties: Record<string, OpenAISchema> = {};
     const discriminatorValues: LiteralValue[] = [];
@@ -1098,7 +1103,7 @@ function processZodToGeminiCompatible(
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<LiteralValue>);
         if (isLiteralValue(literalValue)) {
           discriminatorValues.push(literalValue);
         }
@@ -1162,7 +1167,7 @@ function processZodToGeminiCompatible(
   // Handle array
   if (schema instanceof ZodArray || typeName === "ZodArray") {
     const itemSchema = processZodToGeminiCompatible(
-      (schema as ZodArray<any>)._def.type,
+      (schema as ZodArray<ZodTypeAny>)._def.type,
     );
     const result: OpenAISchema = {
       type: "array",
@@ -1174,7 +1179,7 @@ function processZodToGeminiCompatible(
 
   // Handle object
   if (schema instanceof ZodObject || typeName === "ZodObject") {
-    const shape = (schema as ZodObject<any>).shape;
+    const shape = (schema as ZodObject<Record<string, ZodTypeAny>>).shape;
     const properties: Record<string, OpenAISchema> = {};
     const required: string[] = [];
 
@@ -1188,7 +1193,7 @@ function processZodToGeminiCompatible(
       // Check for nullable wrapped optional
       let isNullable = fieldTypeName === "ZodNullable";
       if (isNullable) {
-        const innerType = (value as ZodNullable<any>)._def.innerType;
+        const innerType = (value as ZodNullable<ZodTypeAny>)._def.innerType;
         const innerTypeName = innerType._def.typeName;
         if (innerTypeName === "ZodOptional" || innerTypeName === "ZodDefault") {
           // It's optional if it's explicitly optional/default, even if nullable
@@ -1219,7 +1224,7 @@ function processZodToGeminiCompatible(
 
   // Handle record
   if (schema instanceof ZodRecord || typeName === "ZodRecord") {
-    const valueSchema = (schema as ZodRecord<any>)._def.valueType;
+    const valueSchema = (schema as ZodRecord<ZodString, ZodTypeAny>)._def.valueType;
     const result: OpenAISchema = {
       type: "object",
       additionalProperties: processZodToGeminiCompatible(valueSchema, false),
@@ -1333,7 +1338,7 @@ function processZodToClaudeCompatible(
   // Handle effects
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
     return processZodToClaudeCompatible(
-      (schema as ZodEffects<any>)._def.schema,
+      (schema as ZodEffects<ZodTypeAny>)._def.schema,
       isOptionalField,
     );
   }
@@ -1341,7 +1346,7 @@ function processZodToClaudeCompatible(
   // Handle optional
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
     return processZodToClaudeCompatible(
-      (schema as ZodOptional<any>)._def.innerType,
+      (schema as ZodOptional<ZodTypeAny>)._def.innerType,
       true,
     );
   }
@@ -1349,7 +1354,7 @@ function processZodToClaudeCompatible(
   // Handle nullable
   if (schema instanceof ZodNullable || typeName === "ZodNullable") {
     const innerSchema = processZodToClaudeCompatible(
-      (schema as ZodNullable<any>)._def.innerType,
+      (schema as ZodNullable<ZodTypeAny>)._def.innerType,
       isOptionalField,
     );
     // Use nullable: true property
@@ -1360,7 +1365,7 @@ function processZodToClaudeCompatible(
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
     return processZodToClaudeCompatible(
-      (schema as ZodDefault<any>)._def.innerType,
+      (schema as ZodDefault<ZodTypeAny>)._def.innerType,
       true,
     );
   }
@@ -1379,8 +1384,10 @@ function processZodToClaudeCompatible(
 
   // Handle number
   if (schema instanceof ZodNumber || typeName === "ZodNumber") {
-    const checks = (schema as ZodNumber)._def.checks || [];
-    const isInt = checks.some((c: any) => c.kind === "int");
+    const checks = ((schema as ZodNumber)._def.checks || []) as Array<{
+      kind?: string;
+    }>;
+    const isInt = checks.some((c) => c.kind === "int");
     const result: OpenAISchema = { type: isInt ? "integer" : "number" };
     if (schema.description) result.description = schema.description;
     return result;
@@ -1395,7 +1402,7 @@ function processZodToClaudeCompatible(
 
   // Handle literal
   if (schema instanceof ZodLiteral || typeName === "ZodLiteral") {
-    const value = getLiteralValue(schema as ZodLiteral<any>);
+    const value = getLiteralValue(schema as ZodLiteral<LiteralValue>);
     const result: OpenAISchema = buildOpenAILiteralSchema(value);
     if (schema.description) result.description = schema.description;
     return result;
@@ -1403,7 +1410,7 @@ function processZodToClaudeCompatible(
 
   // Handle enum
   if (schema instanceof ZodEnum || typeName === "ZodEnum") {
-    const values = (schema as ZodEnum<any>)._def.values as string[];
+    const values = (schema as ZodEnum<[string, ...string[]]>)._def.values as string[];
     const result: OpenAISchema = {
       type: "string",
       enum: values,
@@ -1414,11 +1421,11 @@ function processZodToClaudeCompatible(
 
   // Handle union - Claude doesn't support generic unions well
   if (schema instanceof ZodUnion || typeName === "ZodUnion") {
-    const options = (schema as ZodUnion<any>)._def.options;
+    const options = (schema as ZodUnion<[ZodTypeAny, ...ZodTypeAny[]]>)._def.options;
 
     // Try to merge if all options are objects
     const allObjects = options.every(
-      (opt: any) =>
+      (opt) =>
         opt instanceof ZodObject || opt._def.typeName === "ZodObject",
     );
 
@@ -1428,7 +1435,7 @@ function processZodToClaudeCompatible(
       let first = true;
 
       for (const opt of options) {
-        const shape = (opt as ZodObject<any>).shape;
+        const shape = (opt as ZodObject<Record<string, ZodTypeAny>>).shape;
         const currentRequired = new Set<string>();
 
         for (const [key, value] of Object.entries(shape)) {
@@ -1479,10 +1486,10 @@ function processZodToClaudeCompatible(
   // Handle intersection
   if (schema instanceof ZodIntersection || typeName === "ZodIntersection") {
     const left = processZodToClaudeCompatible(
-      (schema as ZodIntersection<any, any>)._def.left,
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.left,
     );
     const right = processZodToClaudeCompatible(
-      (schema as ZodIntersection<any, any>)._def.right,
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.right,
     );
 
     if (left.type === "object" && right.type === "object") {
@@ -1519,10 +1526,10 @@ function processZodToClaudeCompatible(
     schema instanceof ZodDiscriminatedUnion ||
     typeName === "ZodDiscriminatedUnion"
   ) {
-    const discriminator = (schema as ZodDiscriminatedUnion<any, any>)._def
+    const discriminator = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
       .discriminator;
-    const options = (schema as ZodDiscriminatedUnion<any, any>)._def
-      .options as ZodObject<any>[];
+    const options = (schema as ZodDiscriminatedUnion<string, ZodObject<Record<string, ZodTypeAny>>[]>)._def
+      .options as ZodObject<Record<string, ZodTypeAny>>[];
 
     const allProperties: Record<string, OpenAISchema> = {};
     const discriminatorValues: LiteralValue[] = [];
@@ -1538,7 +1545,7 @@ function processZodToClaudeCompatible(
         discriminatorField instanceof ZodLiteral ||
         discriminatorField?._def?.typeName === "ZodLiteral"
       ) {
-        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<any>);
+        const literalValue = getLiteralValue(discriminatorField as ZodLiteral<LiteralValue>);
         if (isLiteralValue(literalValue)) {
           discriminatorValues.push(literalValue);
         }
@@ -1602,7 +1609,7 @@ function processZodToClaudeCompatible(
   // Handle array
   if (schema instanceof ZodArray || typeName === "ZodArray") {
     const itemSchema = processZodToClaudeCompatible(
-      (schema as ZodArray<any>)._def.type,
+      (schema as ZodArray<ZodTypeAny>)._def.type,
     );
     const result: OpenAISchema = {
       type: "array",
@@ -1614,7 +1621,7 @@ function processZodToClaudeCompatible(
 
   // Handle object
   if (schema instanceof ZodObject || typeName === "ZodObject") {
-    const shape = (schema as ZodObject<any>).shape;
+    const shape = (schema as ZodObject<Record<string, ZodTypeAny>>).shape;
     const properties: Record<string, OpenAISchema> = {};
     const required: string[] = [];
 
@@ -1628,7 +1635,7 @@ function processZodToClaudeCompatible(
       // Check for nullable wrapped optional
       let isNullable = fieldTypeName === "ZodNullable";
       if (isNullable) {
-        const innerType = (value as ZodNullable<any>)._def.innerType;
+        const innerType = (value as ZodNullable<ZodTypeAny>)._def.innerType;
         const innerTypeName = innerType._def.typeName;
         if (innerTypeName === "ZodOptional" || innerTypeName === "ZodDefault") {
           // It's optional if it's explicitly optional/default
@@ -1656,7 +1663,7 @@ function processZodToClaudeCompatible(
 
   // Handle record
   if (schema instanceof ZodRecord || typeName === "ZodRecord") {
-    const valueSchema = (schema as ZodRecord<any>)._def.valueType;
+    const valueSchema = (schema as ZodRecord<ZodString, ZodTypeAny>)._def.valueType;
     const result: OpenAISchema = {
       type: "object",
       additionalProperties: processZodToClaudeCompatible(valueSchema, false),

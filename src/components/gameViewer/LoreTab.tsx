@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import type { TFunction } from "i18next";
 import { GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
@@ -13,7 +14,7 @@ interface LoreTabProps {
   gameState: GameState;
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
-  t: (key: string, options?: any) => string;
+  t: TFunction;
 }
 
 export const LoreTab: React.FC<LoreTabProps> = ({
@@ -95,7 +96,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
         onToggle={toggleSection}
       >
         {gameState.timeline.filter(
-          (e: any) =>
+          (e) =>
             gameState.unlockMode ||
             !Array.isArray(e.knownBy) ||
             e.knownBy.includes(gameState.playerActorId || "char:player"),
@@ -105,7 +106,7 @@ export const LoreTab: React.FC<LoreTabProps> = ({
           <div className="space-y-3">
             {gameState.timeline
               .filter(
-                (e: any) =>
+                (e) =>
                   gameState.unlockMode ||
                   !Array.isArray(e.knownBy) ||
                   e.knownBy.includes(gameState.playerActorId || "char:player"),

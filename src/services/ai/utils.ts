@@ -196,8 +196,8 @@ export interface CreateLogEntryParams {
   // Semantic fields
   type?: LogEntry["type"];
   toolName?: string;
-  toolInput?: Record<string, any>;
-  toolOutput?: any;
+  toolInput?: Record<string, unknown>;
+  toolOutput?: unknown;
   phase?: number;
   turnId?: string;
   forkId?: number;
@@ -215,8 +215,8 @@ export interface CreateLogEntryParams {
   parsedResult?: unknown;
 
   // Legacy fields
-  request?: any;
-  response?: any;
+  request?: unknown;
+  response?: unknown;
 }
 
 /** Infer log type from endpoint string */
@@ -242,6 +242,46 @@ function extractStage(endpoint: string): string | undefined {
   const match = endpoint.match(/summary-(.+)/);
   return match ? match[1] : undefined;
 }
+
+type LogPayload = {
+  error?: unknown;
+  [key: string]: unknown;
+};
+
+const toLogPayload = (value: unknown): LogPayload | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value && typeof value === "object") {
+    return value as LogPayload;
+  }
+  return { value };
+};
+
+const createDefaultUsage = (): TokenUsage => ({
+  promptTokens: 0,
+  completionTokens: 0,
+  totalTokens: 0,
+});
+
+const isFiniteTokenValue = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const resolveLogUsage = (usage: TokenUsage | undefined): TokenUsage => {
+  if (!usage) {
+    return createDefaultUsage();
+  }
+
+  if (
+    !isFiniteTokenValue(usage.promptTokens) ||
+    !isFiniteTokenValue(usage.completionTokens) ||
+    !isFiniteTokenValue(usage.totalTokens)
+  ) {
+    throw new Error("Invalid token usage payload for createLogEntry");
+  }
+
+  return usage;
+};
 
 export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
   const {
@@ -280,7 +320,7 @@ export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
     type: inferredType,
     toolName,
     toolInput,
-    toolOutput,
+    toolOutput: toLogPayload(toolOutput),
     phase: inferredPhase,
     turnId: params.turnId,
     forkId: params.forkId,
@@ -288,14 +328,14 @@ export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
     stage: inferredStage,
     imagePrompt,
     imageResolution,
-    usage: usage || { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    usage: resolveLogUsage(usage),
     toolCalls,
     generationDetails,
     stageInput,
     rawResponse,
-    parsedResult: parsedResult as Record<string, unknown>,
-    request,
-    response,
+    parsedResult,
+    request: toLogPayload(request),
+    response: toLogPayload(response),
   };
 
   // Enhanced console logging

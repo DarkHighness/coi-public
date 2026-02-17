@@ -12,6 +12,7 @@ import {
 } from "@testing-library/react";
 import { StateEditor } from "../StateEditor";
 import { VfsSession } from "../../services/vfs/vfsSession";
+import { deriveGameStateFromVfs } from "../../services/vfs/derivations";
 import { vfsElevationTokenManager } from "../../services/vfs/core/elevation";
 
 vi.mock("react-i18next", () => ({
@@ -55,6 +56,7 @@ const renderStateEditor = (
   for (const file of files) {
     session.writeFile(file.path, file.content, file.contentType);
   }
+  const gameState = deriveGameStateFromVfs(session.snapshot());
 
   const applyVfsMutation = vi.fn();
   const onShowToast = vi.fn();
@@ -63,7 +65,7 @@ const renderStateEditor = (
     React.createElement(StateEditor, {
       isOpen: true,
       onClose: vi.fn(),
-      gameState: { forkId: 0 } as any,
+      gameState,
       vfsSession: session,
       editorSessionToken: vfsElevationTokenManager.issueEditorSessionToken(),
       applyVfsMutation,
@@ -349,6 +351,10 @@ describe("StateEditor interactions", () => {
     ]);
 
     fireEvent.click(await screen.findByRole("button", { name: "Batch" }));
+    const modeToggle = screen.getByTitle(/Read Only|Editable/i);
+    if (modeToggle.textContent?.includes("Read Only")) {
+      fireEvent.click(modeToggle);
+    }
     await ensureFileVisible(/a\.md/i, ["world", "knowledge", "source"]);
 
     const sourceFolderButton = await screen.findByRole("button", {
@@ -391,6 +397,10 @@ describe("StateEditor interactions", () => {
     ]);
 
     fireEvent.click(await screen.findByRole("button", { name: "Batch" }));
+    const modeToggle = screen.getByTitle(/Read Only|Editable/i);
+    if (modeToggle.textContent?.includes("Read Only")) {
+      fireEvent.click(modeToggle);
+    }
     await ensureFileVisible(/a\.md/i, ["world", "knowledge", "source"]);
 
     fireEvent.click(checkboxForFile("a.md"));

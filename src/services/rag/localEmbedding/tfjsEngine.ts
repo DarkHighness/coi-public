@@ -127,7 +127,7 @@ const createEngine = async (
   };
 
   const dispose = () => {
-    const disposable = model as unknown as { dispose?: () => void };
+    const disposable = model as { dispose?: () => void };
     if (typeof disposable.dispose === "function") {
       disposable.dispose();
     }

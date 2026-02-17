@@ -230,7 +230,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
         isPinned={isPinned}
         onToggleHide={toggleHide}
         isHidden={isHidden}
-        searchFilter={(item: any, query) =>
+        searchFilter={(item: InventoryItemType, query) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
           (item.visible?.description || "")
             .toLowerCase()

@@ -8,15 +8,18 @@ export interface ModelCapabilities {
 }
 
 export const parseModelCapabilities = (
-  info: any,
+  info: Record<string, unknown>,
 ): Partial<ModelCapabilities> => {
   const capabilities: Partial<ModelCapabilities> = {};
-  const architecture = info.architecture || {};
+  const architecture =
+    info.architecture && typeof info.architecture === "object"
+      ? (info.architecture as Record<string, unknown>)
+      : {};
   const supportedParameters =
     info.supported_parameters || info.supportedParameters || [];
 
   // Check modalities
-  if (architecture.modality) {
+  if (typeof architecture.modality === "string") {
     if (architecture.modality.includes("->text")) capabilities.text = true;
     if (architecture.modality.includes("->image")) capabilities.image = true;
     if (architecture.modality.includes("->audio")) capabilities.audio = true;
@@ -24,7 +27,7 @@ export const parseModelCapabilities = (
   } else {
     const outputModalities =
       architecture.output_modalities || architecture.outputModalities;
-    if (outputModalities) {
+    if (Array.isArray(outputModalities)) {
       if (outputModalities.includes("text")) capabilities.text = true;
       if (outputModalities.includes("image")) capabilities.image = true;
       if (outputModalities.includes("audio")) capabilities.audio = true;
@@ -33,14 +36,21 @@ export const parseModelCapabilities = (
   }
 
   // Check description or tags for tool support (heuristic)
-  const description = (info.description || "").toLowerCase();
-  const name = (info.name || "").toLowerCase();
+  const description =
+    typeof info.description === "string" ? info.description.toLowerCase() : "";
+  const name = typeof info.name === "string" ? info.name.toLowerCase() : "";
+  const contextLength =
+    typeof info.context_length === "number"
+      ? info.context_length
+      : typeof info.contextLength === "number"
+        ? info.contextLength
+        : 0;
 
   if (
     description.includes("tool") ||
     description.includes("function calling") ||
     name.includes("tool") ||
-    (info.context_length || info.contextLength) > 4000 // Basic heuristic
+    contextLength > 4000 // Basic heuristic
   ) {
     capabilities.tools = true;
   }
@@ -50,8 +60,8 @@ export const parseModelCapabilities = (
   }
 
   // Explicit check if available in data
-  if (info.supports_tools) capabilities.tools = true;
-  if (info.supports_parallel_function_calling)
+  if (info.supports_tools === true) capabilities.tools = true;
+  if (info.supports_parallel_function_calling === true)
     capabilities.parallelTools = true;
 
   // Check supported_parameters (OpenRouter/v1 standard)

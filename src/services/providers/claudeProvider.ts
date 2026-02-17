@@ -68,6 +68,44 @@ export interface ClaudeContentGenerationResponse {
   raw: Message | AsyncIterable<MessageStreamEvent>;
 }
 
+interface ClaudeModelWithLegacyLimits {
+  context_window?: number;
+  contextWindow?: number;
+  input_token_limit?: number;
+  inputTokenLimit?: number;
+}
+
+interface ClaudeToolResultPayload {
+  functionCalls: ToolCallResult[];
+  content?: string;
+  _thinking?: string;
+}
+
+interface ClaudeNarrativePayload {
+  narrative: string;
+  _thinking?: string;
+}
+
+interface ClaudeThinkingBlockLike {
+  thinking?: string;
+}
+
+type ClaudeAssistantContentPart =
+  | { type: "text"; text: string }
+  | { type: "thinking"; thinking: string }
+  | {
+      type: "tool_use";
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    };
+
+const getThinkingText = (value: unknown): string => {
+  if (!value || typeof value !== "object") return "";
+  const thinking = (value as ClaudeThinkingBlockLike).thinking;
+  return typeof thinking === "string" ? thinking : "";
+};
+
 // ============================================================================
 // Client Factory
 // ============================================================================
@@ -231,11 +269,15 @@ export async function getModels(config: ClaudeConfig): Promise<ModelInfo[]> {
     return response.data.map((model) => ({
       id: model.id,
       name: model.display_name,
-      contextLength:
-        (model as any).context_window ||
-        (model as any).contextWindow ||
-        (model as any).input_token_limit ||
-        (model as any).inputTokenLimit,
+      contextLength: (() => {
+        const typedModel = model as typeof model & ClaudeModelWithLegacyLimits;
+        return (
+          typedModel.context_window ||
+          typedModel.contextWindow ||
+          typedModel.input_token_limit ||
+          typedModel.inputTokenLimit
+        );
+      })(),
       capabilities: {
         text: true,
         image: false, // Claude API currently doesn't support image generation
@@ -411,17 +453,16 @@ export async function generateContent(
       // Enable thinking if specified and not "none"
       const effort = options?.thinkingEffort;
       if (effort && effort !== "none") {
-        const budgetMap = {
+        const budgetMap: Record<string, number> = {
           minimal: 1024,
           low: 2048,
           medium: 4096,
           high: 8192,
           xhigh: 16384,
         };
-        // @ts-ignore
         thinking = {
           type: "enabled",
-          budget_tokens: (budgetMap as any)[effort] || 2048,
+          budget_tokens: budgetMap[effort] || 2048,
         };
       }
 
@@ -531,7 +572,7 @@ Answer the user's request using relevant tools (if they are available). Before c
               options.onChunk(delta.text);
             } else if (delta.type === "thinking_delta") {
               // Thinking content (Claude Extended Thinking)
-              thinkingContent += (delta as any).thinking || "";
+              thinkingContent += getThinkingText(delta);
             } else if (delta.type === "input_json_delta") {
               // 工具调用参数（增量）
               const existing = accumulatedToolCalls.get(currentToolIndex);
@@ -617,7 +658,7 @@ Answer the user's request using relevant tools (if they are available). Before c
             content += (block as TextBlock).text;
           } else if (block.type === "thinking") {
             // 提取 thinking content (Claude Extended Thinking)
-            thinkingContent += (block as any).thinking || "";
+            thinkingContent += getThinkingText(block);
           } else if (block.type === "tool_use") {
             const toolBlock = block as ToolUseBlock;
             toolCalls.push({
@@ -644,7 +685,7 @@ Answer the user's request using relevant tools (if they are available). Before c
 
       // 如果有工具调用，返回工具调用结果（同时保留 content 和 thinking）
       if (toolCalls.length > 0) {
-        const toolResult: any = {
+        const toolResult: ClaudeToolResultPayload = {
           functionCalls: toolCalls,
           // 保留 content 以便在下次请求时包含
           content: content || undefined,
@@ -690,7 +731,7 @@ Answer the user's request using relevant tools (if they are available). Before c
       }
 
       // 返回纯文本
-      const narrative: any = { narrative: content };
+      const narrative: ClaudeNarrativePayload = { narrative: content };
       if (thinkingContent) {
         narrative._thinking = thinkingContent;
       }
@@ -788,15 +829,15 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
         //   | { type: "thinking"; thinking: string }
         //   | { type: "tool_use"; id: string; name: string; input: unknown }
         // > = [];
-        // 使用 any[] 以支持 thinking blocks（SDK 类型定义可能不完整）
-        const content: any[] = [];
+        const content: ClaudeAssistantContentPart[] = [];
 
         // Claude 要求在多轮对话中保留 thinking blocks
         // 如果有 thinking content，首先添加它
         for (const rp of reasoningParts) {
+          const reasoningPart = rp as { type: "reasoning"; reasoning: string };
           content.push({
             type: "thinking",
-            thinking: (rp as any).reasoning,
+            thinking: reasoningPart.reasoning,
           });
         }
 
@@ -817,7 +858,7 @@ function convertToClaudeMessages(messages: UnifiedMessage[]): MessageParam[] {
 
         result.push({
           role: "assistant",
-          content,
+          content: content as MessageParam["content"],
         });
         continue;
       }

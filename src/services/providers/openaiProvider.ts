@@ -16,6 +16,9 @@ import type {
   ChatCompletionTool,
   ChatCompletionToolMessageParam,
   ChatCompletionAssistantMessageParam,
+  ChatCompletionDeveloperMessageParam,
+  ChatCompletionMessageFunctionToolCall,
+  ChatCompletionContentPart,
 } from "openai/resources/chat/completions";
 import type { ImagesResponse } from "openai/resources/images";
 
@@ -72,6 +75,76 @@ export interface OpenAIContentGenerationResponse {
     | ChatCompletionChunk
     | AsyncIterable<ChatCompletionChunk>;
 }
+
+interface OpenAIToolResultPayload {
+  functionCalls: ToolCallResult[];
+  content?: string;
+  _reasoning?: string;
+}
+
+interface OpenAINarrativePayload {
+  narrative: string;
+  _reasoning?: string;
+}
+
+type OpenAIReasoningEffort =
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh";
+
+type OpenAIReasoningRequestParams =
+  OpenAI.Chat.Completions.ChatCompletionCreateParams & {
+    reasoning_effort?: OpenAIReasoningEffort;
+  };
+
+type OpenAIStreamRequestParams = OpenAIReasoningRequestParams & {
+  stream: true;
+  stream_options?: OpenAI.Chat.Completions.ChatCompletionStreamOptions;
+};
+
+type OpenAICompatibleToolCall = ChatCompletionMessageFunctionToolCall & {
+  function: ChatCompletionMessageFunctionToolCall["function"] & {
+    thought_signature?: string;
+  };
+  extra_content?: {
+    google?: {
+      thought_signature?: string;
+    };
+  };
+};
+
+const getReasoningContent = (value: unknown): string | undefined => {
+  if (!value || typeof value !== "object") return undefined;
+  const reasoning = (value as Record<string, unknown>).reasoning_content;
+  return typeof reasoning === "string" ? reasoning : undefined;
+};
+
+const getToolCallThoughtSignature = (value: unknown): string | undefined => {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+
+  const extraContent =
+    record.extra_content && typeof record.extra_content === "object"
+      ? (record.extra_content as Record<string, unknown>)
+      : null;
+  const googleContent =
+    extraContent?.google && typeof extraContent.google === "object"
+      ? (extraContent.google as Record<string, unknown>)
+      : null;
+  const googleThought = googleContent?.thought_signature;
+  if (typeof googleThought === "string") {
+    return googleThought;
+  }
+
+  const toolFunction =
+    record.function && typeof record.function === "object"
+      ? (record.function as Record<string, unknown>)
+      : null;
+  const functionThought = toolFunction?.thought_signature;
+  return typeof functionThought === "string" ? functionThought : undefined;
+};
 
 // ============================================================================
 // Client Factory
@@ -263,7 +336,7 @@ export async function getModels(config: OpenAIConfig): Promise<ModelInfo[]> {
       const id = m.id.toLowerCase();
       const capabilities = inferModelCapabilities(
         id,
-        m as unknown as { id: string; [key: string]: unknown },
+        { ...m },
       );
 
       return {
@@ -481,7 +554,7 @@ export async function generateContent(
               totalTokens: 0,
               reported: false,
             },
-            raw: imageRes.raw as any,
+            raw: imageRes.raw as ChatCompletion,
           };
         }
       }
@@ -546,47 +619,45 @@ export async function generateContent(
         }
       }
 
-      const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParams =
-        {
-          model,
-          messages,
-          temperature: options?.temperature ?? 1.0,
-          top_p: options?.topP,
-          stream: !!options?.onChunk,
-          // @ts-ignore
-          tools,
-          tool_choice: toolChoice,
+      const requestParams: OpenAIReasoningRequestParams = {
+        model,
+        messages,
+        temperature: options?.temperature ?? 1.0,
+        top_p: options?.topP,
+        stream: !!options?.onChunk,
+        tools,
+        tool_choice: toolChoice,
 
-          // CONFLICT FIX: OpenAI throws 400 if response_format is used while Tools are active.
-          // This applies to both standard OpenAI models and Gemini compatibility mode.
-          // If we have tools, we generally want the model to call tools, not output JSON content via response_format.
-          response_format:
-            schema && !tools
-              ? (() => {
-                  if (isGemini) {
-                    return {
-                      type: "json_schema",
-                      json_schema: {
-                        name: "response",
-                        schema: zodToGeminiCompatibleSchema(schema),
-                        strict: false,
-                      },
-                    };
-                  } else if (isClaude) {
-                    return {
-                      type: "json_schema",
-                      json_schema: {
-                        name: "response",
-                        schema: zodToClaudeCompatibleSchema(schema),
-                        strict: false,
-                      },
-                    };
-                  } else {
-                    return zodToOpenAIResponseFormat(schema);
-                  }
-                })()
-              : undefined,
-        };
+        // CONFLICT FIX: OpenAI throws 400 if response_format is used while Tools are active.
+        // This applies to both standard OpenAI models and Gemini compatibility mode.
+        // If we have tools, we generally want the model to call tools, not output JSON content via response_format.
+        response_format:
+          schema && !tools
+            ? (() => {
+                if (isGemini) {
+                  return {
+                    type: "json_schema",
+                    json_schema: {
+                      name: "response",
+                      schema: zodToGeminiCompatibleSchema(schema),
+                      strict: false,
+                    },
+                  };
+                } else if (isClaude) {
+                  return {
+                    type: "json_schema",
+                    json_schema: {
+                      name: "response",
+                      schema: zodToClaudeCompatibleSchema(schema),
+                      strict: false,
+                    },
+                  };
+                } else {
+                  return zodToOpenAIResponseFormat(schema);
+                }
+              })()
+            : undefined,
+      };
 
       // 添加 reasoning_effort 参数 (OpenAI reasoning 模型)
       const effort = options?.thinkingEffort;
@@ -594,17 +665,17 @@ export async function generateContent(
       if (isReasoning && effort && effort !== "none") {
         // OpenAI only supports "low", "medium", "high"
         const openAIEffort = ["low", "medium", "high"].includes(effort)
-          ? effort
+          ? (effort as OpenAIReasoningEffort)
           : effort === "xhigh"
             ? "high"
             : "low"; // Map minimal to low, xhigh to high
-        (requestParams as any).reasoning_effort = openAIEffort;
+        requestParams.reasoning_effort = openAIEffort;
       }
 
       // 兼容模式下的 thinking 参数 (通过 OpenAI 接口调用 Claude/Gemini)
       // 代理服务会将这些参数转换为原生格式
       if (useCompat && effort && effort !== "none") {
-        (requestParams as any).reasoning_effort = effort;
+        requestParams.reasoning_effort = effort as OpenAIReasoningEffort;
       }
 
       let content = "";
@@ -635,7 +706,7 @@ export async function generateContent(
       if (options?.onChunk) {
         // 流式生成
         const createStream = async (includeUsage: boolean) => {
-          const params: any = {
+          const params: OpenAIStreamRequestParams = {
             ...requestParams,
             stream: true,
           };
@@ -644,12 +715,13 @@ export async function generateContent(
             // Some OpenAI-compatible proxies may not support this param.
             params.stream_options = { include_usage: true };
           }
-          return client.chat.completions.create(params);
+          const streamResponse = await client.chat.completions.create(params);
+          return streamResponse as AsyncIterable<ChatCompletionChunk>;
         };
 
         let response: AsyncIterable<ChatCompletionChunk>;
         try {
-          response = (await createStream(true)) as any;
+          response = await createStream(true);
         } catch (error) {
           const message =
             error instanceof Error ? error.message : String(error);
@@ -668,7 +740,7 @@ export async function generateContent(
           console.warn(
             "[OpenAI] Streaming usage not supported by endpoint; retrying without stream_options",
           );
-          response = (await createStream(false)) as any;
+          response = await createStream(false);
         }
 
         rawResponse = response;
@@ -695,8 +767,11 @@ export async function generateContent(
           }
 
           // 处理 reasoning content (OpenAI reasoning 模型)
-          if (isReasoning && (delta as any)?.reasoning_content) {
-            reasoningContent += (delta as any).reasoning_content;
+          const deltaReasoning = isReasoning
+            ? getReasoningContent(delta)
+            : undefined;
+          if (deltaReasoning) {
+            reasoningContent += deltaReasoning;
           }
 
           // 处理工具调用 (流式模式下工具调用是增量传输的)
@@ -716,9 +791,7 @@ export async function generateContent(
                   id: tc.id || `tool_${index}`,
                   name: tc.function?.name || "",
                   arguments: tc.function?.arguments || "",
-                  thoughtSignature:
-                    (tc as any).extra_content?.google?.thought_signature ||
-                    (tc.function as any)?.thought_signature,
+                  thoughtSignature: getToolCallThoughtSignature(tc),
                 });
               }
             }
@@ -777,9 +850,7 @@ export async function generateContent(
               >,
               // Extract thought_signature if present (Gemini compatibility)
               // Gemini 3 uses extra_content.google.thought_signature format
-              thoughtSignature:
-                (tc as any).extra_content?.google?.thought_signature ||
-                (tc.function as any).thought_signature,
+              thoughtSignature: getToolCallThoughtSignature(tc),
             }));
         }
 
@@ -792,8 +863,11 @@ export async function generateContent(
         usage = parseOpenAIUsage(response.usage);
 
         // 提取 reasoning content (OpenAI o1/o3 系列)
-        if (isReasoning && (message as any)?.reasoning_content) {
-          reasoningContent = (message as any).reasoning_content;
+        const messageReasoning = isReasoning
+          ? getReasoningContent(message)
+          : undefined;
+        if (messageReasoning) {
+          reasoningContent = messageReasoning;
           console.log(
             `[OpenAI] Extracted reasoning content (${reasoningContent.length} chars)`,
           );
@@ -804,7 +878,7 @@ export async function generateContent(
 
       // 如果有工具调用，返回工具调用结果（同时保留 content 和 reasoning）
       if (toolCalls.length > 0) {
-        const toolResult: any = {
+        const toolResult: OpenAIToolResultPayload = {
           functionCalls: toolCalls,
           // 保留 content 以便在下次请求时包含
           content: content || undefined,
@@ -858,7 +932,7 @@ export async function generateContent(
           throw new JSONParseError("openai", content.substring(0, 500), error);
         }
         // 返回纯文本
-        const narrative: any = { narrative: content };
+        const narrative: OpenAINarrativePayload = { narrative: content };
         if (reasoningContent) {
           narrative._reasoning = reasoningContent;
         }
@@ -926,7 +1000,7 @@ function convertToOpenAIMessages(
           role: "assistant",
           content: textContent || null,
           tool_calls: toolCallParts.map((p) => {
-            const toolCall: any = {
+            const toolCall: OpenAICompatibleToolCall = {
               id: p.toolUse.id,
               type: "function" as const,
               function: {
@@ -976,10 +1050,11 @@ function convertToReasoningMessages(
 
   // Reasoning 模型使用 developer 角色替代 system
   if (systemInstruction) {
-    result.push({
-      role: "developer" as any,
+    const developerMessage: ChatCompletionDeveloperMessageParam = {
+      role: "developer",
       content: systemInstruction,
-    });
+    };
+    result.push(developerMessage);
   }
 
   for (const msg of messages) {
@@ -1025,7 +1100,7 @@ function convertToReasoningMessages(
           role: "assistant",
           content: textContent || null,
           tool_calls: toolCallParts.map((p) => {
-            const toolCall: any = {
+            const toolCall: OpenAICompatibleToolCall = {
               id: p.toolUse.id,
               type: "function" as const,
               function: {
@@ -1077,13 +1152,18 @@ function convertToReasoningMessages(
       .join("\\n");
 
     if (textContent) {
-      result.push({
-        role:
-          msg.role === "developer"
-            ? ("developer" as any)
-            : (msg.role as "user" | "assistant"),
-        content: textContent,
-      });
+      if (msg.role === "developer") {
+        const developerMessage: ChatCompletionDeveloperMessageParam = {
+          role: "developer",
+          content: textContent,
+        };
+        result.push(developerMessage);
+      } else {
+        result.push({
+          role: msg.role as "user" | "assistant",
+          content: textContent,
+        });
+      }
     }
   }
 
@@ -1161,7 +1241,7 @@ function convertToClaudeCompatibleMessages(
           role: "assistant",
           content: textContent || null,
           tool_calls: toolCallParts.map((p) => {
-            const toolCall: any = {
+            const toolCall: OpenAICompatibleToolCall = {
               id: p.toolUse.id,
               type: "function" as const,
               function: {
@@ -1260,7 +1340,7 @@ function convertToGeminiCompatibleMessages(
           role: "assistant",
           content: textContent || null,
           tool_calls: toolCallParts.map((p) => {
-            const toolCall: any = {
+            const toolCall: OpenAICompatibleToolCall = {
               id: p.toolUse.id,
               type: "function" as const,
               function: {
@@ -1645,7 +1725,11 @@ export function buildSystemMessage(
 export function buildDeveloperMessage(
   content: string,
 ): ChatCompletionMessageParam {
-  return { role: "developer" as any, content };
+  const developerMessage: ChatCompletionDeveloperMessageParam = {
+    role: "developer",
+    content,
+  };
+  return developerMessage;
 }
 
 /**
@@ -1680,7 +1764,7 @@ export function buildToolCallMessage(
     role: "assistant",
     content: content || null,
     tool_calls: toolCalls.map((tc) => {
-      const toolCall: any = {
+      const toolCall: OpenAICompatibleToolCall = {
         id: tc.id,
         type: "function" as const,
         function: {
@@ -1778,11 +1862,7 @@ export function fromUnifiedMessage(
 
   if (imageParts.length > 0 && message.role === "user") {
     // OpenAI vision format: array of content parts with image_url
-    const contentArray: Array<{
-      type: string;
-      text?: string;
-      image_url?: { url: string };
-    }> = [];
+    const contentArray: ChatCompletionContentPart[] = [];
 
     // Add text parts
     for (const tp of textParts) {
@@ -1800,7 +1880,7 @@ export function fromUnifiedMessage(
 
     return {
       role: "user",
-      content: contentArray as any,
+      content: contentArray,
     };
   }
 

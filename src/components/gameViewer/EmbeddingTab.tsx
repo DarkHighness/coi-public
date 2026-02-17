@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import type { TFunction } from "i18next";
 import { EmbeddingProgress } from "../../hooks/useEmbeddingStatus";
 import { Section, InfoRow } from "./helpers";
 
@@ -11,7 +12,7 @@ interface EmbeddingTabProps {
   embeddingProgress: EmbeddingProgress | null;
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
-  t: (key: string, options?: any) => string;
+  t: TFunction;
 }
 
 export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({

@@ -58,6 +58,23 @@ type SummaryConsistencyRuntime = {
   targetForkLatestTurn: number | null;
 };
 
+const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const extractSuccessfulSummary = (value: unknown): StorySummary | null => {
+  if (!isRecordObject(value) || value.success !== true) {
+    return null;
+  }
+  const data = value.data;
+  if (!isRecordObject(data)) {
+    return null;
+  }
+  const summary = data.summary;
+  return summary && typeof summary === "object"
+    ? (summary as StorySummary)
+    : null;
+};
+
 const containsForbiddenSummaryTokens = (summary: StorySummary): boolean => {
   const forbidden = [
     /vfs_/i,
@@ -310,8 +327,8 @@ export async function runSummaryLoopCore(options: {
       ? indexForAnchor.activeTurnId
       : null;
 
-  if (typeof (input.vfsSession as any)?.setActiveForkId === "function") {
-    (input.vfsSession as any).setActiveForkId(targetForkId);
+  if (typeof input.vfsSession.setActiveForkId === "function") {
+    input.vfsSession.setActiveForkId(targetForkId);
   }
 
   conversationHistory.push(
@@ -462,8 +479,8 @@ export async function runSummaryLoopCore(options: {
       const index = readConversationIndex(snapshot);
       const forkId = targetForkId;
 
-      if (typeof (input.vfsSession as any)?.setActiveForkId === "function") {
-        (input.vfsSession as any).setActiveForkId(forkId);
+      if (typeof input.vfsSession.setActiveForkId === "function") {
+        input.vfsSession.setActiveForkId(forkId);
       }
 
       const turnNumberByTargetFork =
@@ -483,10 +500,6 @@ export async function runSummaryLoopCore(options: {
       const toolCtx = {
         vfsSession: input.vfsSession,
         settings: input.settings,
-        gameState: {
-          forkId,
-          turnNumber: typeof turnNumber === "number" ? turnNumber : 0,
-        } as any,
         vfsActor: "ai" as const,
         vfsMode: "normal" as const,
       };
@@ -595,8 +608,8 @@ export async function runSummaryLoopCore(options: {
           toolCtx,
         );
 
-        if (call.name === finishToolName && output && (output as any).success) {
-          const produced = (output as any).data?.summary ?? null;
+        if (call.name === finishToolName) {
+          const produced = extractSuccessfulSummary(output);
           const hasForbidden =
             produced && typeof produced === "object"
               ? containsForbiddenSummaryTokens(produced as StorySummary)
@@ -640,7 +653,9 @@ export async function runSummaryLoopCore(options: {
           }
 
           finalSummary = produced;
-          loopFinished = true;
+          if (produced) {
+            loopFinished = true;
+          }
         }
 
         toolResponses.push({

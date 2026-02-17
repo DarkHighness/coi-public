@@ -1,8 +1,13 @@
 import { vfsToolRegistry } from "../tools/registry";
+import type { VfsToolName } from "../tools/types";
 import type { VfsToolCapability } from "./types";
 
 const toLegacyCapability = (toolName: string): VfsToolCapability => {
-  const capability = vfsToolRegistry.getCapability(toolName as any);
+  if (!vfsToolRegistry.has(toolName)) {
+    throw new Error(`Unknown VFS tool capability requested: ${toolName}`);
+  }
+  const normalizedToolName: VfsToolName = toolName;
+  const capability = vfsToolRegistry.getCapability(normalizedToolName);
   return {
     toolName,
     summary: capability.summary,
@@ -50,7 +55,8 @@ export class VfsToolCapabilityRegistry {
     if (!vfsToolRegistry.has(toolName)) {
       return `- \`${toolName}\`: capability metadata missing.`;
     }
-    return vfsToolRegistry.describeForPrompt(toolName as any);
+    const normalizedToolName: VfsToolName = toolName;
+    return vfsToolRegistry.describeForPrompt(normalizedToolName);
   }
 }
 

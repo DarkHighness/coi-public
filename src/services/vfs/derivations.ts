@@ -154,6 +154,353 @@ const normalizePlayerRate = (rate: unknown): PlayerRate | undefined => {
   };
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const toStringOrUndefined = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const toBooleanOrUndefined = (value: unknown): boolean | undefined =>
+  typeof value === "boolean" ? value : undefined;
+
+const toNumberOrUndefined = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isFinite(value) ? value : undefined;
+
+const toStringArrayOrUndefined = (value: unknown): string[] | undefined =>
+  Array.isArray(value) && value.every((entry) => typeof entry === "string")
+    ? value
+    : undefined;
+
+const normalizeAtmosphere = (
+  value: unknown,
+): AtmosphereObject | undefined => {
+  if (!isRecord(value)) return undefined;
+  if (typeof value.envTheme !== "string") return undefined;
+  if (typeof value.ambience !== "string") return undefined;
+  return {
+    envTheme: value.envTheme as AtmosphereObject["envTheme"],
+    ambience: value.ambience as AtmosphereObject["ambience"],
+  };
+};
+
+const STORY_ENDING_VALUES = new Set<StorySegment["ending"]>([
+  "continue",
+  "death",
+  "victory",
+  "true_ending",
+  "bad_ending",
+  "neutral_ending",
+]);
+
+const normalizeEnding = (value: unknown): StorySegment["ending"] =>
+  typeof value === "string" && STORY_ENDING_VALUES.has(value as StorySegment["ending"])
+    ? (value as StorySegment["ending"])
+    : "continue";
+
+const normalizeChoices = (value: unknown): Array<string | Choice> => {
+  if (!Array.isArray(value)) return [];
+  const choices: Array<string | Choice> = [];
+
+  for (const entry of value) {
+    if (typeof entry === "string") {
+      choices.push(entry);
+      continue;
+    }
+
+    if (!isRecord(entry) || typeof entry.text !== "string") {
+      continue;
+    }
+
+    choices.push({
+      text: entry.text,
+      consequence: toStringOrUndefined(entry.consequence),
+    });
+  }
+
+  return choices;
+};
+
+type ActorProfileData = ActorBundle["profile"];
+
+const isActorProfileData = (value: unknown): value is ActorProfileData => {
+  if (!isRecord(value)) return false;
+  if (typeof value.id !== "string") return false;
+  if (value.kind !== "player" && value.kind !== "npc") return false;
+  if (typeof value.currentLocation !== "string") return false;
+  if (
+    !Array.isArray(value.knownBy) ||
+    value.knownBy.some((entry) => typeof entry !== "string")
+  ) {
+    return false;
+  }
+  if (!isRecord(value.visible) || typeof value.visible.name !== "string") {
+    return false;
+  }
+  return true;
+};
+
+const isActorSkillData = (
+  value: unknown,
+): value is ActorBundle["skills"][number] => isRecord(value);
+
+const isActorConditionData = (
+  value: unknown,
+): value is ActorBundle["conditions"][number] => isRecord(value);
+
+const isActorTraitData = (
+  value: unknown,
+): value is ActorBundle["traits"][number] => isRecord(value);
+
+const isActorInventoryItemData = (
+  value: unknown,
+): value is InventoryItem => {
+  if (!isRecord(value)) return false;
+  return typeof value.id === "string" && typeof value.name === "string";
+};
+
+type QuestViewData = {
+  status?: Quest["status"];
+  unlocked?: boolean;
+  unlockReason?: string;
+};
+
+type KnowledgeViewData = {
+  discoveredAtGameTime?: string;
+  unlocked?: boolean;
+  unlockReason?: string;
+};
+
+type TimelineViewData = {
+  unlocked?: boolean;
+  unlockReason?: string;
+};
+
+type LocationViewData = {
+  isVisited?: boolean;
+  unlocked?: boolean;
+  unlockReason?: string;
+  discoveredAtGameTime?: string;
+};
+
+type FactionViewData = {
+  unlocked?: boolean;
+  unlockReason?: string;
+  standing?: number;
+  standingTag?: string;
+};
+
+type CausalChainViewData = {
+  unlocked?: boolean;
+  unlockReason?: string;
+  investigationNotes?: string;
+  linkedEventIds?: string[];
+};
+
+type WorldInfoViewData = {
+  worldSettingUnlocked?: boolean;
+  worldSettingUnlockReason?: string;
+  mainGoalUnlocked?: boolean;
+  mainGoalUnlockReason?: string;
+};
+
+type ViewCategory =
+  | "quests"
+  | "knowledge"
+  | "timeline"
+  | "locations"
+  | "factions"
+  | "causal_chains";
+
+type ActorDataPath =
+  | { kind: "profile"; actorId: string }
+  | { kind: "viewWorldInfo"; actorId: string }
+  | { kind: "viewEntity"; actorId: string; category: ViewCategory; entityId: string }
+  | { kind: "skills"; actorId: string }
+  | { kind: "conditions"; actorId: string }
+  | { kind: "traits"; actorId: string }
+  | { kind: "inventory"; actorId: string };
+
+const parseActorDataPath = (pathWithoutCurrent: string): ActorDataPath | null => {
+  if (!pathWithoutCurrent.startsWith("world/characters/")) {
+    return null;
+  }
+
+  const parts = pathWithoutCurrent.split("/");
+  const actorId = parts[2];
+  if (!actorId) return null;
+
+  if (parts.length === 4 && parts[3] === "profile.json") {
+    return { kind: "profile", actorId };
+  }
+
+  const section = parts[3];
+  if (section === "views") {
+    if (parts.length === 5 && parts[4] === "world_info.json") {
+      return { kind: "viewWorldInfo", actorId };
+    }
+
+    const category = parts[4];
+    const filename = parts[5];
+    if (!category || !filename || !filename.endsWith(".json")) {
+      return null;
+    }
+
+    const entityId = filename.slice(0, -".json".length);
+    if (!entityId) return null;
+    if (
+      category !== "quests" &&
+      category !== "knowledge" &&
+      category !== "timeline" &&
+      category !== "locations" &&
+      category !== "factions" &&
+      category !== "causal_chains"
+    ) {
+      return null;
+    }
+
+    return {
+      kind: "viewEntity",
+      actorId,
+      category,
+      entityId,
+    };
+  }
+
+  if (section === "skills") return { kind: "skills", actorId };
+  if (section === "conditions") return { kind: "conditions", actorId };
+  if (section === "traits") return { kind: "traits", actorId };
+  if (section === "inventory") return { kind: "inventory", actorId };
+  return null;
+};
+
+const parseQuestViewData = (value: unknown): QuestViewData | null => {
+  if (!isRecord(value)) return null;
+  const status =
+    value.status === "active" ||
+    value.status === "completed" ||
+    value.status === "failed"
+      ? value.status
+      : undefined;
+  return {
+    status,
+    unlocked: toBooleanOrUndefined(value.unlocked),
+    unlockReason: toStringOrUndefined(value.unlockReason),
+  };
+};
+
+const parseKnowledgeViewData = (value: unknown): KnowledgeViewData | null => {
+  if (!isRecord(value)) return null;
+  return {
+    discoveredAtGameTime: toStringOrUndefined(value.discoveredAtGameTime),
+    unlocked: toBooleanOrUndefined(value.unlocked),
+    unlockReason: toStringOrUndefined(value.unlockReason),
+  };
+};
+
+const parseTimelineViewData = (value: unknown): TimelineViewData | null => {
+  if (!isRecord(value)) return null;
+  return {
+    unlocked: toBooleanOrUndefined(value.unlocked),
+    unlockReason: toStringOrUndefined(value.unlockReason),
+  };
+};
+
+const parseLocationViewData = (value: unknown): LocationViewData | null => {
+  if (!isRecord(value)) return null;
+  return {
+    isVisited: toBooleanOrUndefined(value.isVisited),
+    unlocked: toBooleanOrUndefined(value.unlocked),
+    unlockReason: toStringOrUndefined(value.unlockReason),
+    discoveredAtGameTime: toStringOrUndefined(value.discoveredAtGameTime),
+  };
+};
+
+const parseFactionViewData = (value: unknown): FactionViewData | null => {
+  if (!isRecord(value)) return null;
+  return {
+    unlocked: toBooleanOrUndefined(value.unlocked),
+    unlockReason: toStringOrUndefined(value.unlockReason),
+    standing: toNumberOrUndefined(value.standing),
+    standingTag: toStringOrUndefined(value.standingTag),
+  };
+};
+
+const parseCausalChainViewData = (
+  value: unknown,
+): CausalChainViewData | null => {
+  if (!isRecord(value)) return null;
+  return {
+    unlocked: toBooleanOrUndefined(value.unlocked),
+    unlockReason: toStringOrUndefined(value.unlockReason),
+    investigationNotes: toStringOrUndefined(value.investigationNotes),
+    linkedEventIds: toStringArrayOrUndefined(value.linkedEventIds),
+  };
+};
+
+const parseWorldInfoViewData = (value: unknown): WorldInfoViewData | null => {
+  if (!isRecord(value)) return null;
+  return {
+    worldSettingUnlocked: toBooleanOrUndefined(value.worldSettingUnlocked),
+    worldSettingUnlockReason: toStringOrUndefined(
+      value.worldSettingUnlockReason,
+    ),
+    mainGoalUnlocked: toBooleanOrUndefined(value.mainGoalUnlocked),
+    mainGoalUnlockReason: toStringOrUndefined(value.mainGoalUnlockReason),
+  };
+};
+
+const isForkTree = (value: unknown): value is GameState["forkTree"] => {
+  if (!isRecord(value)) return false;
+  if (typeof value.nextForkId !== "number" || !Number.isFinite(value.nextForkId)) {
+    return false;
+  }
+  if (!isRecord(value.nodes)) return false;
+
+  for (const node of Object.values(value.nodes)) {
+    if (!isRecord(node)) return false;
+    if (typeof node.id !== "number" || !Number.isFinite(node.id)) return false;
+    if (
+      node.parentId !== null &&
+      (typeof node.parentId !== "number" || !Number.isFinite(node.parentId))
+    ) {
+      return false;
+    }
+    if (
+      typeof node.createdAt !== "number" ||
+      !Number.isFinite(node.createdAt) ||
+      typeof node.createdAtTurn !== "number" ||
+      !Number.isFinite(node.createdAtTurn) ||
+      typeof node.sourceNodeId !== "string"
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
+type OpeningNarrativeData = {
+  narrative: string;
+  choices: Array<string | Choice>;
+  imagePrompt?: string;
+  atmosphere?: AtmosphereObject;
+  narrativeTone?: string;
+  ending: StorySegment["ending"];
+  forceEnd?: boolean;
+};
+
+const parseOpeningNarrative = (value: unknown): OpeningNarrativeData | null => {
+  if (!isRecord(value) || typeof value.narrative !== "string") return null;
+  return {
+    narrative: value.narrative,
+    choices: normalizeChoices(value.choices),
+    imagePrompt: toStringOrUndefined(value.imagePrompt),
+    atmosphere: normalizeAtmosphere(value.atmosphere),
+    narrativeTone: toStringOrUndefined(value.narrativeTone),
+    ending: normalizeEnding(value.ending),
+    forceEnd: toBooleanOrUndefined(value.forceEnd),
+  };
+};
+
 const createBaseGameState = (): GameState => ({
   nodes: {},
   activeNodeId: null,
@@ -455,17 +802,17 @@ const deriveConversationNodes = (
       id: modelId,
       parentId: modelParentId,
       text: turn.assistant.narrative || "",
-      choices: (turn.assistant.choices || []) as Array<string | Choice>,
+      choices: normalizeChoices(turn.assistant.choices),
       imagePrompt: "",
       role: "model",
       timestamp: turn.createdAt,
       segmentIdx,
-      usage: normalizeTokenUsage((turn.assistant as any).usage),
-      atmosphere: turn.assistant.atmosphere as any,
+      usage: normalizeTokenUsage(turn.assistant.usage),
+      atmosphere: normalizeAtmosphere(turn.assistant.atmosphere),
       narrativeTone: turn.assistant.narrativeTone,
-      ending: (turn.assistant.ending as any) || "continue",
+      ending: normalizeEnding(turn.assistant.ending),
       forceEnd: turn.assistant.forceEnd,
-      playerRate: normalizePlayerRate((turn.meta as any)?.playerRate),
+      playerRate: normalizePlayerRate(turn.meta?.playerRate),
     };
     segmentIdx += 1;
   }
@@ -495,11 +842,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     a.path.localeCompare(b.path),
   );
 
-  const actorProfiles = new Map<string, Record<string, unknown>>();
-  const actorSkills = new Map<string, unknown[]>();
-  const actorConditions = new Map<string, unknown[]>();
-  const actorTraits = new Map<string, unknown[]>();
-  const actorInventory = new Map<string, unknown[]>();
+  const actorProfiles = new Map<string, ActorProfileData>();
+  const actorSkills = new Map<string, ActorBundle["skills"]>();
+  const actorConditions = new Map<string, ActorBundle["conditions"]>();
+  const actorTraits = new Map<string, ActorBundle["traits"]>();
+  const actorInventory = new Map<string, InventoryItem[]>();
   const placeholders: Placeholder[] = [];
   const locationItemsByLocationId: Record<string, InventoryItem[]> = {};
   const questDefinitions: Quest[] = [];
@@ -510,13 +857,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const causalChainDefinitions: CausalChain[] = [];
 
   // Per-actor views (player only for UI derivation)
-  const playerQuestViews = new Map<string, any>();
-  const playerKnowledgeViews = new Map<string, any>();
-  const playerTimelineViews = new Map<string, any>();
-  const playerLocationViews = new Map<string, any>();
-  const playerFactionViews = new Map<string, any>();
-  const playerCausalChainViews = new Map<string, any>();
-  let playerWorldInfoView: any | null = null;
+  const playerQuestViews = new Map<string, QuestViewData>();
+  const playerKnowledgeViews = new Map<string, KnowledgeViewData>();
+  const playerTimelineViews = new Map<string, TimelineViewData>();
+  const playerLocationViews = new Map<string, LocationViewData>();
+  const playerFactionViews = new Map<string, FactionViewData>();
+  const playerCausalChainViews = new Map<string, CausalChainViewData>();
+  let playerWorldInfoView: WorldInfoViewData | null = null;
   let hasGlobalTheme = false;
   let currentSoulMarkdown: string | null = null;
   let globalSoulMarkdown: string | null = null;
@@ -564,20 +911,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     if (data === null) continue;
 
     if (pathWithoutCurrent === "world/global.json") {
-      const globalData = data as {
-        time?: string;
-        theme?: string;
-        currentLocation?: string;
-        atmosphere?: AtmosphereObject;
-        turnNumber?: number;
-        forkId?: number;
-        language?: string;
-        customContext?: string;
-        presetProfile?: Partial<SavePresetProfile>;
-        seedImageId?: string;
-        narrativeScale?: GameState["narrativeScale"];
-        initialPrompt?: string;
-      };
+      if (!isRecord(data)) {
+        continue;
+      }
+      const globalData = data;
       if (
         typeof globalData.time === "string" &&
         globalData.time.trim() !== ""
@@ -597,8 +934,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       ) {
         state.currentLocation = globalData.currentLocation.trim();
       }
-      if (globalData.atmosphere) {
-        state.atmosphere = globalData.atmosphere;
+      const atmosphere = normalizeAtmosphere(globalData.atmosphere);
+      if (atmosphere) {
+        state.atmosphere = atmosphere;
       }
       if (typeof globalData.turnNumber === "number") {
         state.turnNumber = globalData.turnNumber;
@@ -616,12 +954,18 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         state.customContext = globalData.customContext;
       }
       state.presetProfile = normalizeSavePresetProfile(
-        globalData.presetProfile,
+        isRecord(globalData.presetProfile)
+          ? (globalData.presetProfile as Partial<SavePresetProfile>)
+          : undefined,
       );
       if (typeof globalData.seedImageId === "string") {
         state.seedImageId = globalData.seedImageId;
       }
-      if (typeof globalData.narrativeScale === "string") {
+      if (
+        globalData.narrativeScale === "epic" ||
+        globalData.narrativeScale === "intimate" ||
+        globalData.narrativeScale === "balanced"
+      ) {
         state.narrativeScale = globalData.narrativeScale;
       }
       if (typeof globalData.initialPrompt === "string") {
@@ -631,15 +975,41 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     if (pathWithoutCurrent === "world/world_info.json") {
-      state.worldInfo = sanitizeCanonicalWorldRecord(
-        "world_info",
-        data,
-      ).sanitized as any;
+      const sanitized = sanitizeCanonicalWorldRecord("world_info", data).sanitized;
+      if (isRecord(sanitized)) {
+        state.worldInfo = sanitized as GameState["worldInfo"];
+      }
       continue;
     }
 
     if (pathWithoutCurrent === "world/theme_config.json") {
-      state.themeConfig = data as any;
+      if (isRecord(data)) {
+        const {
+          name,
+          narrativeStyle,
+          worldSetting,
+          backgroundTemplate,
+          example,
+          isRestricted,
+        } = data;
+        if (
+          typeof name === "string" &&
+          typeof narrativeStyle === "string" &&
+          typeof worldSetting === "string" &&
+          typeof backgroundTemplate === "string" &&
+          typeof example === "string" &&
+          typeof isRestricted === "boolean"
+        ) {
+          state.themeConfig = {
+            name,
+            narrativeStyle,
+            worldSetting,
+            backgroundTemplate,
+            example,
+            isRestricted,
+          };
+        }
+      }
       continue;
     }
 
@@ -679,100 +1049,103 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     }
 
     // Actor-first layout: world/characters/<id>/(profile.json|skills/*|conditions/*|traits/*|inventory/*)
-    if (pathWithoutCurrent.startsWith("world/characters/")) {
-      const parts = pathWithoutCurrent.split("/");
-      const actorId = parts[2];
-      if (!actorId) continue;
+    const actorPath = parseActorDataPath(pathWithoutCurrent);
+    if (actorPath) {
+      const { actorId } = actorPath;
 
-      // profile.json
-      if (parts.length === 4 && parts[3] === "profile.json") {
-        actorProfiles.set(actorId, data as Record<string, unknown>);
+      if (actorPath.kind === "profile") {
+        if (isActorProfileData(data)) {
+          actorProfiles.set(actorId, data);
+        }
         continue;
       }
 
-      // subfolders
-      const sub = parts[3];
-      if (sub === "views") {
-        // views/world_info.json
-        if (parts.length === 5 && parts[4] === "world_info.json") {
-          if (actorId === state.playerActorId) {
-            playerWorldInfoView = data as any;
+      if (actorPath.kind === "viewWorldInfo") {
+        if (actorId === state.playerActorId) {
+          const parsedView = parseWorldInfoViewData(data);
+          if (parsedView) {
+            playerWorldInfoView = parsedView;
           }
-          continue;
         }
+        continue;
+      }
 
-        // views/<category>/<entityId>.json
-        const category = parts[4];
-        const filename = parts[5];
-        if (!category || !filename || !filename.endsWith(".json")) continue;
-        const entityId = filename.slice(0, -".json".length);
+      if (actorPath.kind === "viewEntity") {
         if (actorId !== state.playerActorId) {
           continue;
         }
 
-        if (category === "quests") {
-          playerQuestViews.set(entityId, data as any);
+        if (actorPath.category === "quests") {
+          const view = parseQuestViewData(data);
+          if (view) playerQuestViews.set(actorPath.entityId, view);
           continue;
         }
-        if (category === "knowledge") {
-          playerKnowledgeViews.set(entityId, data as any);
+        if (actorPath.category === "knowledge") {
+          const view = parseKnowledgeViewData(data);
+          if (view) playerKnowledgeViews.set(actorPath.entityId, view);
           continue;
         }
-        if (category === "timeline") {
-          playerTimelineViews.set(entityId, data as any);
+        if (actorPath.category === "timeline") {
+          const view = parseTimelineViewData(data);
+          if (view) playerTimelineViews.set(actorPath.entityId, view);
           continue;
         }
-        if (category === "locations") {
-          playerLocationViews.set(entityId, data as any);
+        if (actorPath.category === "locations") {
+          const view = parseLocationViewData(data);
+          if (view) playerLocationViews.set(actorPath.entityId, view);
           continue;
         }
-        if (category === "factions") {
-          playerFactionViews.set(entityId, data as any);
+        if (actorPath.category === "factions") {
+          const view = parseFactionViewData(data);
+          if (view) playerFactionViews.set(actorPath.entityId, view);
           continue;
         }
-        if (category === "causal_chains") {
-          playerCausalChainViews.set(entityId, data as any);
+        if (actorPath.category === "causal_chains") {
+          const view = parseCausalChainViewData(data);
+          if (view) playerCausalChainViews.set(actorPath.entityId, view);
           continue;
         }
         continue;
       }
-      if (sub === "skills") {
-        const list = actorSkills.get(actorId) ?? [];
-        list.push(data);
-        actorSkills.set(actorId, list);
+
+      if (actorPath.kind === "skills") {
+        if (isActorSkillData(data)) {
+          const list = actorSkills.get(actorId) ?? [];
+          list.push(data);
+          actorSkills.set(actorId, list);
+        }
         continue;
       }
-      if (sub === "conditions") {
-        const list = actorConditions.get(actorId) ?? [];
-        list.push(data);
-        actorConditions.set(actorId, list);
+      if (actorPath.kind === "conditions") {
+        if (isActorConditionData(data)) {
+          const list = actorConditions.get(actorId) ?? [];
+          list.push(data);
+          actorConditions.set(actorId, list);
+        }
         continue;
       }
-      if (sub === "traits") {
-        const list = actorTraits.get(actorId) ?? [];
-        list.push(data);
-        actorTraits.set(actorId, list);
+      if (actorPath.kind === "traits") {
+        if (isActorTraitData(data)) {
+          const list = actorTraits.get(actorId) ?? [];
+          list.push(data);
+          actorTraits.set(actorId, list);
+        }
         continue;
       }
-      if (sub === "inventory") {
-        const list = actorInventory.get(actorId) ?? [];
-        list.push(data);
-        actorInventory.set(actorId, list);
+      if (actorPath.kind === "inventory") {
+        if (isActorInventoryItemData(data)) {
+          const list = actorInventory.get(actorId) ?? [];
+          list.push(data);
+          actorInventory.set(actorId, list);
+        }
         continue;
       }
       continue;
     }
 
     if (pathWithoutCurrent === "conversation/fork_tree.json") {
-      const tree = data as any;
-      if (
-        tree &&
-        typeof tree === "object" &&
-        typeof tree.nextForkId === "number" &&
-        tree.nodes &&
-        typeof tree.nodes === "object"
-      ) {
-        state.forkTree = tree;
+      if (isForkTree(data)) {
+        state.forkTree = data;
       }
       continue;
     }
@@ -782,55 +1155,69 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       const parts = pathWithoutCurrent.split("/");
       if (parts.length >= 5 && parts[3] === "items") {
         const locId = parts[2];
-        const list = locationItemsByLocationId[locId] ?? [];
-        list.push(data as InventoryItem);
-        locationItemsByLocationId[locId] = list;
+        if (isActorInventoryItemData(data)) {
+          const list = locationItemsByLocationId[locId] ?? [];
+          list.push(data);
+          locationItemsByLocationId[locId] = list;
+        }
         continue;
       }
     }
 
     if (pathWithoutCurrent.startsWith("world/quests/")) {
-      questDefinitions.push(
-        sanitizeCanonicalWorldRecord("quests", data).sanitized as Quest,
-      );
+      const sanitized = sanitizeCanonicalWorldRecord("quests", data).sanitized;
+      if (isRecord(sanitized)) {
+        questDefinitions.push(sanitized as Quest);
+      }
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/locations/")) {
-      locationDefinitions.push(
-        sanitizeCanonicalWorldRecord("locations", data).sanitized as Location,
-      );
+      const sanitized = sanitizeCanonicalWorldRecord(
+        "locations",
+        data,
+      ).sanitized;
+      if (isRecord(sanitized)) {
+        locationDefinitions.push(sanitized as Location);
+      }
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/knowledge/")) {
-      knowledgeDefinitions.push(
-        sanitizeCanonicalWorldRecord("knowledge", data)
-          .sanitized as KnowledgeEntry,
-      );
+      const sanitized = sanitizeCanonicalWorldRecord(
+        "knowledge",
+        data,
+      ).sanitized;
+      if (isRecord(sanitized)) {
+        knowledgeDefinitions.push(sanitized as KnowledgeEntry);
+      }
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/factions/")) {
-      factionDefinitions.push(
-        sanitizeCanonicalWorldRecord("factions", data).sanitized as Faction,
-      );
+      const sanitized = sanitizeCanonicalWorldRecord("factions", data).sanitized;
+      if (isRecord(sanitized)) {
+        factionDefinitions.push(sanitized as Faction);
+      }
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/timeline/")) {
-      timelineDefinitions.push(
-        sanitizeCanonicalWorldRecord("timeline", data)
-          .sanitized as TimelineEvent,
-      );
+      const sanitized = sanitizeCanonicalWorldRecord("timeline", data).sanitized;
+      if (isRecord(sanitized)) {
+        timelineDefinitions.push(sanitized as TimelineEvent);
+      }
       continue;
     }
 
     if (pathWithoutCurrent.startsWith("world/causal_chains/")) {
-      causalChainDefinitions.push(
-        sanitizeCanonicalWorldRecord("causal_chains", data)
-          .sanitized as CausalChain,
-      );
+      const sanitized = sanitizeCanonicalWorldRecord(
+        "causal_chains",
+        data,
+      ).sanitized;
+      if (isRecord(sanitized)) {
+        causalChainDefinitions.push(sanitized as CausalChain);
+      }
     }
   }
 
@@ -844,18 +1231,21 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   // Merge canonical entities with player views into UI-friendly view models.
   const playerId = state.playerActorId;
-  const hasKnownByPlayer = (entity: any): boolean =>
-    Array.isArray(entity?.knownBy) && entity.knownBy.includes(playerId);
-  const withDerivedKnownByPlayer = (entity: any, hasView: boolean): any => {
+  const hasKnownByPlayer = (entity: { knownBy?: string[] }): boolean =>
+    Array.isArray(entity.knownBy) && entity.knownBy.includes(playerId);
+  const withDerivedKnownByPlayer = <T extends { knownBy?: string[] }>(
+    entity: T,
+    hasView: boolean,
+  ): T => {
     if (!hasView) return entity;
-    if (!Array.isArray(entity?.knownBy)) {
+    if (!Array.isArray(entity.knownBy)) {
       return { ...entity, knownBy: [playerId] };
     }
     if (entity.knownBy.includes(playerId)) return entity;
     return { ...entity, knownBy: [...entity.knownBy, playerId] };
   };
 
-  const mergeQuest = (q: any): any => {
+  const mergeQuest = (q: Quest): Quest => {
     const view = playerQuestViews.get(q.id);
     const qWithKnown = withDerivedKnownByPlayer(q, Boolean(view));
     if (view && !hasKnownByPlayer(q)) {
@@ -863,7 +1253,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         `[VFS] Quest view exists but canonical knownBy missing ${playerId}: ${q.id}`,
       );
     }
-    const status = view?.status ?? "active";
+    const status = view?.status ?? q.status ?? "active";
     return {
       ...qWithKnown,
       status,
@@ -872,7 +1262,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     };
   };
 
-  const mergeKnowledge = (k: any): any => {
+  const mergeKnowledge = (k: KnowledgeEntry): KnowledgeEntry => {
     const view = playerKnowledgeViews.get(k.id);
     const kWithKnown = withDerivedKnownByPlayer(k, Boolean(view));
     if (view && !hasKnownByPlayer(k)) {
@@ -888,7 +1278,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     };
   };
 
-  const mergeTimeline = (e: any): any => {
+  const mergeTimeline = (e: TimelineEvent): TimelineEvent => {
     const view = playerTimelineViews.get(e.id);
     const eWithKnown = withDerivedKnownByPlayer(e, Boolean(view));
     if (view && !hasKnownByPlayer(e)) {
@@ -903,7 +1293,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     };
   };
 
-  const mergeLocation = (loc: any): any => {
+  const mergeLocation = (loc: Location): Location => {
     const view = playerLocationViews.get(loc.id);
     const locWithKnown = withDerivedKnownByPlayer(loc, Boolean(view));
     if (view && !hasKnownByPlayer(loc)) {
@@ -916,11 +1306,15 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       isVisited: view?.isVisited ?? false,
       unlocked: view?.unlocked ?? false,
       unlockReason: view?.unlockReason,
-      discoveredAt: view?.discoveredAtGameTime,
     };
   };
 
-  const mergeFaction = (f: any): any => {
+  type FactionWithView = Faction & {
+    standing?: number;
+    standingTag?: string;
+  };
+
+  const mergeFaction = (f: Faction): FactionWithView => {
     const view = playerFactionViews.get(f.id);
     const fWithKnown = withDerivedKnownByPlayer(f, Boolean(view));
     if (view && !hasKnownByPlayer(f)) {
@@ -937,7 +1331,14 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     };
   };
 
-  const mergeCausalChain = (c: any): any => {
+  type CausalChainWithView = CausalChain & {
+    unlocked?: boolean;
+    unlockReason?: string;
+    investigationNotes?: string;
+    linkedEventIds?: string[];
+  };
+
+  const mergeCausalChain = (c: CausalChain): CausalChainWithView => {
     const view = playerCausalChainViews.get(c.chainId);
     const cWithKnown = withDerivedKnownByPlayer(c, Boolean(view));
     if (view && !hasKnownByPlayer(c)) {
@@ -954,17 +1355,17 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     };
   };
 
-  state.quests = questDefinitions.map(mergeQuest) as any;
-  state.locations = locationDefinitions.map(mergeLocation) as any;
-  state.knowledge = knowledgeDefinitions.map(mergeKnowledge) as any;
-  state.factions = factionDefinitions.map(mergeFaction) as any;
-  state.timeline = timelineDefinitions.map(mergeTimeline) as any;
-  state.causalChains = causalChainDefinitions.map(mergeCausalChain) as any;
+  state.quests = questDefinitions.map(mergeQuest);
+  state.locations = locationDefinitions.map(mergeLocation);
+  state.knowledge = knowledgeDefinitions.map(mergeKnowledge);
+  state.factions = factionDefinitions.map(mergeFaction);
+  state.timeline = timelineDefinitions.map(mergeTimeline);
+  state.causalChains = causalChainDefinitions.map(mergeCausalChain);
 
   // World info unlock flags (per-actor view)
-  if (playerWorldInfoView) {
-    (state.worldInfo as any) = {
-      ...(state.worldInfo as any),
+  if (playerWorldInfoView && state.worldInfo) {
+    state.worldInfo = {
+      ...state.worldInfo,
       worldSettingUnlocked: playerWorldInfoView.worldSettingUnlocked ?? false,
       worldSettingUnlockReason: playerWorldInfoView.worldSettingUnlockReason,
       mainGoalUnlocked: playerWorldInfoView.mainGoalUnlocked ?? false,
@@ -976,51 +1377,56 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const bundles: ActorBundle[] = [];
   for (const [actorId, profile] of actorProfiles.entries()) {
     bundles.push({
-      profile: profile as any,
-      skills: (actorSkills.get(actorId) ?? []) as any,
-      conditions: (actorConditions.get(actorId) ?? []) as any,
-      traits: (actorTraits.get(actorId) ?? []) as any,
-      inventory: (actorInventory.get(actorId) ?? []) as any,
-    } as any);
+      profile,
+      skills: actorSkills.get(actorId) ?? [],
+      conditions: actorConditions.get(actorId) ?? [],
+      traits: actorTraits.get(actorId) ?? [],
+      inventory: actorInventory.get(actorId) ?? [],
+    });
   }
-  state.actors = bundles as any;
+  state.actors = bundles;
   state.locationItemsByLocationId = locationItemsByLocationId;
   state.placeholders = placeholders;
 
   const playerBundle =
-    bundles.find((b) => (b?.profile as any)?.id === state.playerActorId) ??
-    null;
+    bundles.find((bundle) => bundle.profile.id === state.playerActorId) ?? null;
   if (playerBundle) {
     state.inventory = Array.isArray(playerBundle.inventory)
-      ? (playerBundle.inventory as InventoryItem[])
+      ? playerBundle.inventory.filter((item) => isActorInventoryItemData(item))
       : [];
 
     // Backfill CharacterStatus for legacy UI panels (CharacterPanel).
-    const visible = (playerBundle.profile as any)?.visible ?? {};
-    const profile = (playerBundle.profile as any) ?? {};
-    const outlinePlayer = (state.outline as any)?.player?.profile ?? {};
+    const visible = playerBundle.profile.visible ?? {};
+    const profile = playerBundle.profile;
+    const profileLegacy = profile as Record<string, unknown>;
+    const outlinePlayer = state.outline?.player?.profile;
     const outlineVisible = outlinePlayer?.visible ?? {};
-    const base = (state.character ?? DEFAULT_CHARACTER) as any;
+    const outlineProfileLegacy: Record<string, unknown> | null = isRecord(
+      outlinePlayer,
+    )
+      ? outlinePlayer
+      : null;
+    const base: CharacterStatus = state.character ?? DEFAULT_CHARACTER;
 
     const title =
       pickMeaningfulCharacterText(
         visible.title,
         visible.roleTag,
-        profile.title,
-        profile.roleTag,
+        toStringOrUndefined(profileLegacy.title),
+        toStringOrUndefined(profileLegacy.roleTag),
         outlineVisible.title,
         outlineVisible.roleTag,
-        outlinePlayer.title,
-        outlinePlayer.roleTag,
+        toStringOrUndefined(outlineProfileLegacy?.title),
+        toStringOrUndefined(outlineProfileLegacy?.roleTag),
         base.title,
       ) ?? "";
 
     const age =
       pickMeaningfulCharacterText(
         visible.age,
-        profile.age,
+        toStringOrUndefined(profileLegacy.age),
         outlineVisible.age,
-        outlinePlayer.age,
+        toStringOrUndefined(outlineProfileLegacy?.age),
         base.age,
       ) ?? "";
 
@@ -1028,39 +1434,39 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       pickMeaningfulCharacterText(
         visible.profession,
         visible.roleTag,
-        profile.profession,
-        profile.roleTag,
+        toStringOrUndefined(profileLegacy.profession),
+        toStringOrUndefined(profileLegacy.roleTag),
         outlineVisible.profession,
         outlineVisible.roleTag,
-        outlinePlayer.profession,
-        outlinePlayer.roleTag,
+        toStringOrUndefined(outlineProfileLegacy?.profession),
+        toStringOrUndefined(outlineProfileLegacy?.roleTag),
         base.profession,
       ) ?? "";
 
     const race =
       pickMeaningfulCharacterText(
         visible.race,
-        profile.race,
+        toStringOrUndefined(profileLegacy.race),
         outlineVisible.race,
-        outlinePlayer.race,
+        toStringOrUndefined(outlineProfileLegacy?.race),
         base.race,
       ) ?? "";
 
     const background =
       pickMeaningfulCharacterText(
         visible.background,
-        profile.background,
+        toStringOrUndefined(profileLegacy.background),
         outlineVisible.background,
-        outlinePlayer.background,
+        toStringOrUndefined(outlineProfileLegacy?.background),
         base.background,
       ) ?? "";
 
     const status =
       pickMeaningfulCharacterText(
         visible.status,
-        profile.status,
+        toStringOrUndefined(profileLegacy.status),
         outlineVisible.status,
-        outlinePlayer.status,
+        toStringOrUndefined(outlineProfileLegacy?.status),
         base.status,
       ) ?? "";
 
@@ -1068,32 +1474,32 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       pickMeaningfulCharacterText(
         visible.appearance,
         visible.description,
-        profile.appearance,
-        profile.description,
+        toStringOrUndefined(profileLegacy.appearance),
+        toStringOrUndefined(profileLegacy.description),
         outlineVisible.appearance,
         outlineVisible.description,
-        outlinePlayer.appearance,
-        outlinePlayer.description,
+        toStringOrUndefined(outlineProfileLegacy?.appearance),
+        toStringOrUndefined(outlineProfileLegacy?.description),
         base.appearance,
       ) ??
       (base.appearance || "");
 
     const currentLocation =
-      pickMeaningfulCharacterText(
-        profile.currentLocation,
-        outlinePlayer.currentLocation,
-        state.currentLocation,
-        base.currentLocation,
-      ) ?? "";
+        pickMeaningfulCharacterText(
+          profile.currentLocation ?? undefined,
+          outlinePlayer?.currentLocation,
+          state.currentLocation,
+          base.currentLocation,
+        ) ?? "";
 
     state.character = {
       ...base,
       name:
         pickMeaningfulCharacterText(
           visible.name,
-          profile.name,
+          toStringOrUndefined(profileLegacy.name),
           outlineVisible.name,
-          outlinePlayer.name,
+          toStringOrUndefined(outlineProfileLegacy?.name),
           base.name,
         ) ?? base.name,
       title,
@@ -1112,7 +1518,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       profession,
       background,
       race,
-    } as any;
+    };
 
     if (
       isPlaceholderCharacterText(state.currentLocation) &&
@@ -1125,24 +1531,24 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       source: "playerBundle",
       playerActorId: state.playerActorId,
       visibleAge: visible.age,
-      profileAge: profile.age,
+      profileAge: toStringOrUndefined(profileLegacy.age),
       outlineAge: outlineVisible.age,
-      outlineProfileAge: outlinePlayer.age,
+      outlineProfileAge: toStringOrUndefined(outlineProfileLegacy?.age),
     });
     warnMissingPlayerRequiredField("race", state.character.race, {
       source: "playerBundle",
       playerActorId: state.playerActorId,
       visibleRace: visible.race,
-      profileRace: profile.race,
+      profileRace: toStringOrUndefined(profileLegacy.race),
       outlineRace: outlineVisible.race,
-      outlineProfileRace: outlinePlayer.race,
+      outlineProfileRace: toStringOrUndefined(outlineProfileLegacy?.race),
     });
   }
 
   // Derive NPC list for sidebar panels from actor bundles.
   state.npcs = bundles
-    .filter((b) => (b?.profile as any)?.kind === "npc")
-    .map((b) => b.profile) as any;
+    .filter((bundle) => bundle.profile.kind === "npc")
+    .map((bundle) => bundle.profile as NPC);
 
   const conversation = deriveConversationNodes(files);
   state.nodes = conversation.nodes;
@@ -1216,13 +1622,18 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const outline = readOutlineFile(files);
   if (outline) {
     state.outline = outline;
-    if ((outline as any).narrativeScale) {
-      state.narrativeScale = (outline as any).narrativeScale;
+    if (outline.narrativeScale) {
+      state.narrativeScale = outline.narrativeScale;
     }
 
-    const outlineVisible = (outline as any)?.player?.profile?.visible ?? {};
-    const outlineProfile = (outline as any)?.player?.profile ?? {};
-    const currentCharacter = (state.character ?? DEFAULT_CHARACTER) as any;
+    const outlineVisible = outline.player?.profile?.visible ?? {};
+    const outlineProfile = outline.player?.profile;
+    const outlineProfileLegacy: Record<string, unknown> | null = isRecord(
+      outlineProfile,
+    )
+      ? outlineProfile
+      : null;
+    const currentCharacter: CharacterStatus = state.character ?? DEFAULT_CHARACTER;
 
     state.character = {
       ...currentCharacter,
@@ -1236,35 +1647,35 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         pickMeaningfulCharacterText(
           currentCharacter.age,
           outlineVisible.age,
-          outlineProfile.age,
+          toStringOrUndefined(outlineProfileLegacy?.age),
         ) ?? "",
       profession:
         pickMeaningfulCharacterText(
           currentCharacter.profession,
           outlineVisible.profession,
           outlineVisible.roleTag,
-          outlineProfile.profession,
-          outlineProfile.roleTag,
+          toStringOrUndefined(outlineProfileLegacy?.profession),
+          toStringOrUndefined(outlineProfileLegacy?.roleTag),
         ) ?? "",
       race:
         pickMeaningfulCharacterText(
           currentCharacter.race,
           outlineVisible.race,
-          outlineProfile.race,
+          toStringOrUndefined(outlineProfileLegacy?.race),
         ) ?? "",
       background:
         pickMeaningfulCharacterText(
           currentCharacter.background,
           outlineVisible.background,
-          outlineProfile.background,
+          toStringOrUndefined(outlineProfileLegacy?.background),
         ) ?? "",
       currentLocation:
         pickMeaningfulCharacterText(
           currentCharacter.currentLocation,
-          outlineProfile.currentLocation,
+          outlineProfile?.currentLocation ?? undefined,
           state.currentLocation,
         ) ?? "",
-    } as any;
+    };
 
     if (
       isPlaceholderCharacterText(state.currentLocation) &&
@@ -1277,13 +1688,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       source: "outlineFallback",
       playerActorId: state.playerActorId,
       outlineAge: outlineVisible.age,
-      outlineProfileAge: outlineProfile.age,
+      outlineProfileAge: toStringOrUndefined(outlineProfileLegacy?.age),
     });
     warnMissingPlayerRequiredField("race", state.character.race, {
       source: "outlineFallback",
       playerActorId: state.playerActorId,
       outlineRace: outlineVisible.race,
-      outlineProfileRace: outlineProfile.race,
+      outlineProfileRace: toStringOrUndefined(outlineProfileLegacy?.race),
     });
   }
 
@@ -1292,52 +1703,44 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   // doesn't get stuck on "journey not started".
   if (state.outline) {
     const hasAnyNodes = state.nodes && Object.keys(state.nodes).length > 0;
-    const opening = (state.outline as any).openingNarrative;
-    const hasOpening = opening && typeof opening.narrative === "string";
+    const opening = parseOpeningNarrative(state.outline.openingNarrative);
+    const hasOpening = Boolean(opening);
 
-    if (!hasAnyNodes && hasOpening) {
+    if (!hasAnyNodes && opening && hasOpening) {
       const firstNodeId = "model-fork-0/turn-0";
+      const openingNode: StorySegment = {
+        id: firstNodeId,
+        parentId: null,
+        text: opening.narrative,
+        choices: opening.choices,
+        imagePrompt: opening.imagePrompt || "",
+        role: "model",
+        timestamp: Date.now(),
+        segmentIdx: 0,
+        atmosphere: opening.atmosphere,
+        narrativeTone: opening.narrativeTone,
+        ending: opening.ending,
+        forceEnd: opening.forceEnd,
+      };
       state.nodes = {
-        [firstNodeId]: {
-          id: firstNodeId,
-          parentId: null,
-          text: opening.narrative,
-          choices: Array.isArray(opening.choices)
-            ? opening.choices.map((c: any) =>
-                typeof c === "string"
-                  ? c
-                  : {
-                      text: c?.text ?? "",
-                      consequence: c?.consequence,
-                    },
-              )
-            : [],
-          imagePrompt: opening.imagePrompt || "",
-          role: "model",
-          timestamp: Date.now(),
-          segmentIdx: 0,
-          atmosphere: opening.atmosphere,
-          narrativeTone: opening.narrativeTone,
-          ending: opening.ending || "continue",
-          forceEnd: opening.forceEnd,
-        },
-      } as any;
+        [firstNodeId]: openingNode,
+      };
       state.activeNodeId = firstNodeId;
       state.rootNodeId = firstNodeId;
-      state.currentFork = [state.nodes[firstNodeId]] as any;
+      state.currentFork = [openingNode];
       state.forkId = 0;
       state.turnNumber = 0;
     } else if (hasAnyNodes && !state.activeNodeId) {
       // If nodes exist but active pointer is missing, pick the latest model segment.
       const modelSegments = Object.values(state.nodes).filter(
-        (seg: any) => seg && seg.role === "model",
-      ) as any[];
+        (seg): seg is StorySegment => Boolean(seg) && seg.role === "model",
+      );
       if (modelSegments.length > 0) {
         modelSegments.sort((a, b) => (a.segmentIdx ?? 0) - (b.segmentIdx ?? 0));
         const last = modelSegments[modelSegments.length - 1];
         state.activeNodeId = last.id;
         state.rootNodeId = state.rootNodeId || modelSegments[0].id;
-        state.currentFork = deriveHistory(state.nodes as any, last.id) as any;
+        state.currentFork = deriveHistory(state.nodes, last.id);
       }
     }
   }

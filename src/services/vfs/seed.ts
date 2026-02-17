@@ -1,6 +1,5 @@
 import type {
   AtmosphereObject,
-  CausalChain,
   GameState,
   SavePresetProfile,
   StoryOutline,
@@ -117,10 +116,39 @@ const omitUndefined = (value: Record<string, unknown>): Record<string, unknown> 
     Object.entries(value).filter(([, entry]) => entry !== undefined),
   );
 
-const stripUiOnlyFields = <T extends Record<string, unknown>>(
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+};
+
+const asTrimmedString = (value: unknown): string | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const getKnownByList = (value: unknown): string[] => {
+  const record = asRecord(value);
+  if (!record || !Array.isArray(record.knownBy)) {
+    return [];
+  }
+  return record.knownBy
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+};
+
+const asArray = (value: unknown): unknown[] =>
+  Array.isArray(value) ? value : [];
+
+const stripUiOnlyFields = <T extends object>(
   value: T,
 ): T => {
-  const next = { ...value } as Record<string, unknown>;
+  const next = { ...(value as Record<string, unknown>) };
   delete next.highlight;
   delete next.lastAccess;
   return next as T;
@@ -129,22 +157,15 @@ const stripUiOnlyFields = <T extends Record<string, unknown>>(
 const buildPlaceholderDraftMarkdown = (
   placeholder: Record<string, unknown>,
 ): string => {
-  const id =
-    typeof placeholder.id === "string" && placeholder.id.trim().length > 0
-      ? placeholder.id.trim()
-      : "unknown";
+  const id = asTrimmedString(placeholder.id) ?? "unknown";
   const label =
     typeof placeholder.label === "string" ? placeholder.label.trim() : "";
+  const visible = asRecord(placeholder.visible);
   const description =
-    typeof (placeholder.visible as any)?.description === "string"
-      ? ((placeholder.visible as any).description as string).trim()
+    typeof visible?.description === "string"
+      ? visible.description.trim()
       : "";
-  const knownBy = Array.isArray(placeholder.knownBy)
-    ? placeholder.knownBy
-        .filter((entry): entry is string => typeof entry === "string")
-        .map((entry) => entry.trim())
-        .filter((entry) => entry.length > 0)
-    : [];
+  const knownBy = getKnownByList(placeholder);
 
   const lines: string[] = [
     "# Placeholder Draft",
@@ -175,28 +196,35 @@ const buildPlaceholderDraftMarkdown = (
 
 const writePlaceholderArtifacts = (
   session: VfsSession,
-  placeholder: Record<string, unknown>,
+  placeholder: unknown,
 ): void => {
-  const id = placeholder.id;
-  if (typeof id !== "string" || id.trim().length === 0) {
+  const placeholderRecord = asRecord(placeholder);
+  if (!placeholderRecord) {
     return;
   }
-  const placeholderId = id.trim();
+  const placeholderId = asTrimmedString(placeholderRecord.id);
+  if (!placeholderId) {
+    return;
+  }
   session.writeFile(
     `world/placeholders/${placeholderId}.md`,
-    buildPlaceholderDraftMarkdown(placeholder),
+    buildPlaceholderDraftMarkdown(placeholderRecord),
     "text/markdown",
   );
 };
 
 const writePlaceholderDraftFile = (
   session: VfsSession,
-  draftFile: Record<string, unknown>,
+  draftFile: unknown,
 ): void => {
+  const draftRecord = asRecord(draftFile);
+  if (!draftRecord) {
+    return;
+  }
   const rawPath =
-    typeof draftFile.path === "string" ? draftFile.path.trim() : "";
+    typeof draftRecord.path === "string" ? draftRecord.path.trim() : "";
   const rawMarkdown =
-    typeof draftFile.markdown === "string" ? draftFile.markdown.trim() : "";
+    typeof draftRecord.markdown === "string" ? draftRecord.markdown.trim() : "";
 
   if (!/^world\/placeholders\/[^/]+\.md$/.test(rawPath)) {
     return;
@@ -211,13 +239,14 @@ const writePlaceholderDraftFile = (
 
 const writeWorldInfoAndView = (
   session: VfsSession,
-  worldInfo: any,
+  worldInfo: unknown,
   playerActorId: string,
 ): void => {
-  const worldSettingUnlocked = (worldInfo as any)?.worldSettingUnlocked;
-  const worldSettingUnlockReason = (worldInfo as any)?.worldSettingUnlockReason;
-  const mainGoalUnlocked = (worldInfo as any)?.mainGoalUnlocked;
-  const mainGoalUnlockReason = (worldInfo as any)?.mainGoalUnlockReason;
+  const worldInfoRecord = asRecord(worldInfo);
+  const worldSettingUnlocked = worldInfoRecord?.worldSettingUnlocked;
+  const worldSettingUnlockReason = worldInfoRecord?.worldSettingUnlockReason;
+  const mainGoalUnlocked = worldInfoRecord?.mainGoalUnlocked;
+  const mainGoalUnlockReason = worldInfoRecord?.mainGoalUnlockReason;
   const definition = sanitizeCanonicalWorldRecord(
     "world_info",
     worldInfo,
@@ -237,32 +266,32 @@ const writeWorldInfoAndView = (
 
 const writeQuestDefinitionAndView = (
   session: VfsSession,
-  quest: any,
+  quest: unknown,
   playerActorId: string,
 ): void => {
-  if (!quest?.id) return;
-  const status = (quest as any).status;
-  const unlocked = (quest as any).unlocked;
-  const unlockReason = (quest as any).unlockReason;
+  const questRecord = asRecord(quest);
+  const questId = asTrimmedString(questRecord?.id);
+  if (!questId) return;
+  const status = questRecord?.status;
+  const unlocked = questRecord?.unlocked;
+  const unlockReason = questRecord?.unlockReason;
   const definition = sanitizeCanonicalWorldRecord("quests", quest).sanitized;
-  writeJson(session, `world/quests/${quest.id}.json`, definition);
+  writeJson(session, `world/quests/${questId}.json`, definition);
 
-  const knownBy: string[] = Array.isArray(definition.knownBy)
-    ? definition.knownBy
-    : [];
+  const knownBy = getKnownByList(definition);
   if (!knownBy.includes(playerActorId)) return;
 
   writeJson(
     session,
-    `world/characters/${playerActorId}/views/quests/${quest.id}.json`,
+    `world/characters/${playerActorId}/views/quests/${questId}.json`,
     omitUndefined({
-      entityId: quest.id,
+      entityId: questId,
       status: status ?? "active",
       unlocked,
       unlockReason,
-      objectiveState: (quest as any).objectiveState,
-      acceptedAtGameTime: (quest as any).acceptedAtGameTime,
-      completedAtGameTime: (quest as any).completedAtGameTime,
+      objectiveState: questRecord?.objectiveState,
+      acceptedAtGameTime: questRecord?.acceptedAtGameTime,
+      completedAtGameTime: questRecord?.completedAtGameTime,
     }),
   );
 };
@@ -275,16 +304,18 @@ const writeDefinitionAndView = (
     | "locations"
     | "factions"
     | "causal_chains",
-  entity: any,
+  entity: unknown,
   playerActorId: string,
   options?: { keyField?: string; viewExtra?: Record<string, unknown> },
 ): void => {
+  const entityRecord = asRecord(entity);
+  if (!entityRecord) return;
   const keyField = options?.keyField ?? "id";
-  const id = entity?.[keyField];
+  const id = entityRecord[keyField];
   if (typeof id !== "string" || id.trim().length === 0) return;
 
-  const unlocked = (entity as any).unlocked;
-  const unlockReason = (entity as any).unlockReason;
+  const unlocked = entityRecord.unlocked;
+  const unlockReason = entityRecord.unlockReason;
   const definition = sanitizeCanonicalWorldRecord(category, entity).sanitized;
 
   // Canonical write
@@ -300,9 +331,7 @@ const writeDefinitionAndView = (
             : "world/causal_chains";
   writeJson(session, `${basePath}/${id}.json`, definition);
 
-  const knownBy: string[] = Array.isArray(definition.knownBy)
-    ? definition.knownBy
-    : [];
+  const knownBy = getKnownByList(definition);
   if (!knownBy.includes(playerActorId)) return;
 
   // View write
@@ -316,37 +345,40 @@ const writeDefinitionAndView = (
   writeJson(session, viewBase, view);
 };
 
-const writeActorBundle = (session: VfsSession, bundle: any): void => {
-  const profile = bundle?.profile;
-  if (!profile || typeof profile !== "object") return;
-  const actorId = (profile as any).id;
-  if (typeof actorId !== "string" || actorId.trim().length === 0) return;
+const writeActorBundle = (session: VfsSession, bundle: unknown): void => {
+  const bundleRecord = asRecord(bundle);
+  if (!bundleRecord) return;
+  const profileRecord = asRecord(bundleRecord.profile);
+  if (!profileRecord) return;
+  const actorId = asTrimmedString(profileRecord.id);
+  if (!actorId) return;
 
-  const id = actorId.trim();
+  const id = actorId;
   writeJson(
     session,
     `world/characters/${id}/profile.json`,
-    stripUiOnlyFields(profile as Record<string, unknown>),
+    stripUiOnlyFields(profileRecord),
   );
 
-  const writeSub = (subPath: string, items: any[] | undefined) => {
+  const writeSub = (subPath: string, items: unknown) => {
     if (!Array.isArray(items)) return;
     for (const item of items) {
-      if (!item || typeof item !== "object") continue;
-      const itemId = (item as any).id;
-      if (typeof itemId !== "string" || itemId.trim().length === 0) continue;
+      const itemRecord = asRecord(item);
+      if (!itemRecord) continue;
+      const itemId = asTrimmedString(itemRecord.id);
+      if (!itemId) continue;
       writeJson(
         session,
-        `world/characters/${id}/${subPath}/${itemId.trim()}.json`,
-        stripUiOnlyFields(item as Record<string, unknown>),
+        `world/characters/${id}/${subPath}/${itemId}.json`,
+        stripUiOnlyFields(itemRecord),
       );
     }
   };
 
-  writeSub("skills", bundle?.skills);
-  writeSub("conditions", bundle?.conditions);
-  writeSub("traits", bundle?.traits);
-  writeSub("inventory", bundle?.inventory);
+  writeSub("skills", bundleRecord.skills);
+  writeSub("conditions", bundleRecord.conditions);
+  writeSub("traits", bundleRecord.traits);
+  writeSub("inventory", bundleRecord.inventory);
 };
 
 export const seedVfsSessionFromGameState = (
@@ -386,24 +418,23 @@ export const seedVfsSessionFromGameState = (
     writeJson(session, "world/theme_config.json", state.themeConfig);
   }
 
-  if (Array.isArray(state.customRules)) {
-    for (const rule of state.customRules as any[]) {
-      const id = (rule as any)?.id;
-      const title = (rule as any)?.title;
-      const content = (rule as any)?.content;
+  if (state.customRules) {
+    for (const rule of state.customRules) {
+      const id = asTrimmedString(rule.id);
+      if (!id) continue;
+      const title = asTrimmedString(rule.title) ?? id;
       const priority =
-        typeof (rule as any)?.priority === "number"
-          ? (rule as any).priority
+        typeof rule.priority === "number" && Number.isFinite(rule.priority)
+          ? rule.priority
           : 99;
-      if (typeof id !== "string" || id.trim().length === 0) continue;
 
-      const packPath = toCustomRulePackPath(priority, title || id);
+      const packPath = toCustomRulePackPath(priority, title);
       const markdown = buildCustomRulePackMarkdown({
-        category: title || id,
+        category: title,
         whenToApply: "Use when this category is relevant to the current scene.",
         rules:
-          typeof content === "string" && content.trim().length > 0
-            ? content
+          typeof rule.content === "string" && rule.content.trim().length > 0
+            ? rule.content
                 .split(/\r?\n/)
                 .map((line) => line.trim())
                 .filter(Boolean)
@@ -420,43 +451,47 @@ export const seedVfsSessionFromGameState = (
   const playerActorId = state.playerActorId || "char:player";
 
   if (state.worldInfo) {
-    writeWorldInfoAndView(session, state.worldInfo as any, playerActorId);
+    writeWorldInfoAndView(session, state.worldInfo, playerActorId);
   }
 
   // Canonical + player views split
-  for (const q of (state.quests as any[]) ?? []) {
+  for (const q of state.quests) {
     writeQuestDefinitionAndView(session, q, playerActorId);
   }
-  for (const loc of (state.locations as any[]) ?? []) {
+  for (const loc of state.locations) {
+    const locRecord = asRecord(loc);
     writeDefinitionAndView(session, "locations", loc, playerActorId, {
       viewExtra: {
-        isVisited: (loc as any).isVisited,
-        visitedCount: (loc as any).visitedCount,
-        discoveredAtGameTime: (loc as any).discoveredAt,
+        isVisited: locRecord?.isVisited,
+        visitedCount: locRecord?.visitedCount,
+        discoveredAtGameTime: locRecord?.discoveredAt,
       },
     });
   }
-  for (const k of (state.knowledge as any[]) ?? []) {
+  for (const k of state.knowledge) {
+    const knowledgeRecord = asRecord(k);
     writeDefinitionAndView(session, "knowledge", k, playerActorId, {
       viewExtra: {
-        discoveredAtGameTime: (k as any).discoveredAt,
-        beliefSummary: (k as any).beliefSummary,
+        discoveredAtGameTime: knowledgeRecord?.discoveredAt,
+        beliefSummary: knowledgeRecord?.beliefSummary,
       },
     });
   }
-  for (const f of (state.factions as any[]) ?? []) {
+  for (const f of state.factions) {
+    const factionRecord = asRecord(f);
     writeDefinitionAndView(session, "factions", f, playerActorId, {
       viewExtra: {
-        standing: (f as any).standing,
-        standingTag: (f as any).standingTag,
+        standing: factionRecord?.standing,
+        standingTag: factionRecord?.standingTag,
       },
     });
   }
-  for (const e of (state.timeline as any[]) ?? []) {
+  for (const e of state.timeline) {
+    const timelineRecord = asRecord(e);
     writeDefinitionAndView(session, "timeline", e, playerActorId, {
       viewExtra: {
-        rememberedAs: (e as any).rememberedAs,
-        suspicions: (e as any).suspicions,
+        rememberedAs: timelineRecord?.rememberedAs,
+        suspicions: timelineRecord?.suspicions,
       },
     });
   }
@@ -464,39 +499,39 @@ export const seedVfsSessionFromGameState = (
   for (const [locId, items] of Object.entries(
     state.locationItemsByLocationId,
   )) {
-    if (!Array.isArray(items)) continue;
-    for (const item of items as any[]) {
-      const id = (item as any)?.id;
-      if (typeof id !== "string" || id.trim().length === 0) continue;
+    for (const item of items) {
+      const itemRecord = asRecord(item);
+      const id = asTrimmedString(itemRecord?.id);
+      if (!id) continue;
       writeJson(
         session,
         `world/locations/${locId}/items/${id}.json`,
-        stripUiOnlyFields(item as Record<string, unknown>),
+        stripUiOnlyFields(itemRecord),
       );
     }
   }
 
-  if (state.causalChains) {
-    for (const chain of state.causalChains as CausalChain[]) {
-      if (!chain || !chain.chainId) {
-        continue;
-      }
-      writeDefinitionAndView(session, "causal_chains", chain, playerActorId, {
-        keyField: "chainId",
-        viewExtra: {
-          investigationNotes: (chain as any).investigationNotes,
-          linkedEventIds: (chain as any).linkedEventIds,
-        },
-      });
+  for (const chain of state.causalChains) {
+    const chainRecord = asRecord(chain);
+    if (!chainRecord || !asTrimmedString(chainRecord.chainId)) {
+      continue;
     }
+    writeDefinitionAndView(session, "causal_chains", chain, playerActorId, {
+      keyField: "chainId",
+      viewExtra: {
+        investigationNotes: chainRecord.investigationNotes,
+        linkedEventIds: chainRecord.linkedEventIds,
+      },
+    });
   }
 
-  if (Array.isArray(state.placeholders)) {
-    for (const placeholder of state.placeholders as any[]) {
-      if (!placeholder || typeof placeholder !== "object") continue;
+  if (state.placeholders) {
+    for (const placeholder of state.placeholders) {
+      const placeholderRecord = asRecord(placeholder);
+      if (!placeholderRecord) continue;
       writePlaceholderArtifacts(
         session,
-        stripUiOnlyFields(placeholder as Record<string, unknown>),
+        stripUiOnlyFields(placeholderRecord),
       );
     }
   }
@@ -595,6 +630,14 @@ export const seedVfsSessionFromOutline = (
     narrativeScale?: GameState["narrativeScale"];
   },
 ): void => {
+  const outlineRecord = asRecord(outline);
+  const outlineNarrativeScale = outlineRecord?.narrativeScale;
+  const outlinePlayer = outlineRecord?.player;
+  const outlineNpcs = asArray(outlineRecord?.npcs);
+  const outlinePlaceholders = asArray(outlineRecord?.placeholders);
+  const outlineCausalChains = asArray(outlineRecord?.causalChains);
+  const outlineLocationItems = asArray(outlineRecord?.locationItems);
+
   ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
@@ -638,7 +681,7 @@ export const seedVfsSessionFromOutline = (
     {
       title: outline.title,
       premise: outline.premise,
-      narrativeScale: (outline as any).narrativeScale,
+      narrativeScale: outlineNarrativeScale,
       worldSetting: outline.worldSetting,
       mainGoal: outline.mainGoal,
       worldSettingUnlocked: false,
@@ -648,19 +691,14 @@ export const seedVfsSessionFromOutline = (
   );
 
   // Actor-first outline seeding
-  if ((outline as any).player) {
-    writeActorBundle(session, (outline as any).player);
+  if (outlinePlayer) {
+    writeActorBundle(session, outlinePlayer);
   }
-  if (Array.isArray((outline as any).npcs)) {
-    for (const npc of (outline as any).npcs as any[]) {
-      writeActorBundle(session, npc);
-    }
+  for (const npc of outlineNpcs) {
+    writeActorBundle(session, npc);
   }
-  if (Array.isArray((outline as any).placeholders)) {
-    for (const draftFile of (outline as any).placeholders as any[]) {
-      if (!draftFile || typeof draftFile !== "object") continue;
-      writePlaceholderDraftFile(session, draftFile as Record<string, unknown>);
-    }
+  for (const draftFile of outlinePlaceholders) {
+    writePlaceholderDraftFile(session, draftFile);
   }
 
   // Canonical + per-actor views.
@@ -668,47 +706,49 @@ export const seedVfsSessionFromOutline = (
   const gameTime = options.time;
   const currentLocId = options.currentLocation;
 
-  for (const q of (outline.quests as any[]) ?? []) {
+  for (const q of outline.quests) {
     writeQuestDefinitionAndView(session, q, playerActorId);
   }
-  for (const k of (outline.knowledge as any[]) ?? []) {
+  for (const k of outline.knowledge) {
     writeDefinitionAndView(session, "knowledge", k, playerActorId, {
       viewExtra: { discoveredAtGameTime: gameTime },
     });
   }
-  for (const e of (outline.timeline as any[]) ?? []) {
+  for (const e of outline.timeline) {
     writeDefinitionAndView(session, "timeline", e, playerActorId);
   }
-  for (const f of (outline.factions as any[]) ?? []) {
+  for (const f of outline.factions) {
     writeDefinitionAndView(session, "factions", f, playerActorId);
   }
-  for (const loc of (outline.locations as any[]) ?? []) {
+  for (const loc of outline.locations) {
+    const locId = asTrimmedString(asRecord(loc)?.id);
     writeDefinitionAndView(session, "locations", loc, playerActorId, {
       viewExtra: {
         discoveredAtGameTime: gameTime,
-        isVisited: loc.id === currentLocId,
-        visitedCount: loc.id === currentLocId ? 1 : 0,
+        isVisited: !!locId && locId === currentLocId,
+        visitedCount: !!locId && locId === currentLocId ? 1 : 0,
       },
     });
   }
-  for (const chain of ((outline as any).causalChains as any[]) ?? []) {
+  for (const chain of outlineCausalChains) {
+    const chainRecord = asRecord(chain);
     writeDefinitionAndView(session, "causal_chains", chain, playerActorId, {
       keyField: "chainId",
       viewExtra: {
-        linkedEventIds: (chain as any).linkedEventIds,
+        linkedEventIds: chainRecord?.linkedEventIds,
       },
     });
   }
 
-  for (const item of (outline as any).locationItems ?? []) {
-    if (!item || typeof item !== "object") continue;
-    const locId = (item as any).locationId;
-    const id = (item as any).id;
-    if (typeof locId !== "string" || typeof id !== "string") continue;
+  for (const item of outlineLocationItems) {
+    const itemRecord = asRecord(item);
+    const locId = asTrimmedString(itemRecord?.locationId);
+    const id = asTrimmedString(itemRecord?.id);
+    if (!locId || !id || !itemRecord) continue;
     writeJson(
       session,
       `world/locations/${locId}/items/${id}.json`,
-      stripUiOnlyFields(item as Record<string, unknown>),
+      stripUiOnlyFields(itemRecord),
     );
   }
 };

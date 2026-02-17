@@ -18,6 +18,15 @@ export const VFS_BLOBS_STORE = "vfs_blobs";
 let dbPromise: Promise<IDBDatabase> | null = null;
 let vfsDbPromise: Promise<IDBDatabase> | null = null;
 
+const hasStringSaveId = (value: unknown): value is { saveId: string } => {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "saveId" in value &&
+    typeof value.saveId === "string"
+  );
+};
+
 /**
  * Initialize and open the IndexedDB database
  */
@@ -148,10 +157,10 @@ export const getAllVfsSaveIds = async (): Promise<string[]> => {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      const rows = (request.result as any[] | undefined) ?? [];
+      const rows = (request.result as unknown[] | undefined) ?? [];
       const ids = new Set<string>();
       for (const row of rows) {
-        if (row && typeof row.saveId === "string") {
+        if (hasStringSaveId(row)) {
           ids.add(row.saveId);
         }
       }
@@ -179,7 +188,9 @@ export const saveMetadata = async <T>(key: string, data: T): Promise<void> => {
 /**
  * Load metadata
  */
-export const loadMetadata = async <T = any>(key: string): Promise<T | null> => {
+export const loadMetadata = async <T = unknown>(
+  key: string,
+): Promise<T | null> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([META_STORE], "readonly");
@@ -222,7 +233,7 @@ export const deleteVfsSave = async (saveId: string): Promise<void> => {
     const snapshotsStore = transaction.objectStore(VFS_SNAPSHOTS_STORE);
     const blobsStore = transaction.objectStore(VFS_BLOBS_STORE);
 
-    // 1) Delete any rows we can identify via VFS meta records.
+    // 1) Delete rows we can identify via VFS meta records.
     const metaCursorReq = metaStore.openCursor();
     metaCursorReq.onsuccess = () => {
       const cursor = metaCursorReq.result as IDBCursorWithValue | null;
@@ -256,7 +267,7 @@ export const deleteVfsSave = async (saveId: string): Promise<void> => {
           blobCursorReq.onerror = () => reject(blobCursorReq.error);
         }
 
-        // 3) Also delete orphan snapshot rows (if any) by key prefix.
+        // 3) Also delete orphan snapshot rows by key prefix.
         const snapCursorReq = snapshotsStore.openKeyCursor();
         snapCursorReq.onsuccess = () => {
           const snapCursor = snapCursorReq.result as IDBCursor | null;
@@ -273,8 +284,8 @@ export const deleteVfsSave = async (saveId: string): Promise<void> => {
         return;
       }
 
-      const row = cursor.value as any;
-      if (row && typeof row.saveId === "string" && row.saveId === saveId) {
+      const row = cursor.value as unknown;
+      if (hasStringSaveId(row) && row.saveId === saveId) {
         const id = cursor.primaryKey;
         metaStore.delete(id);
         snapshotsStore.delete(id);

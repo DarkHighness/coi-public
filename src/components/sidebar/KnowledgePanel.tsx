@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { KnowledgeEntry, ListState } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
@@ -34,7 +35,7 @@ interface KnowledgeItemProps {
   expandedSet: Set<string | number>;
   isModal: boolean;
   onToggle: (id: string | number, isModal: boolean) => void;
-  t: any; // Or specific translation function type
+  t: TFunction;
   isPinned?: boolean;
   onPin?: () => void;
   onDragStart?: (e: React.DragEvent) => void;

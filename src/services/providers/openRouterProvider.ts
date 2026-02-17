@@ -66,7 +66,7 @@ function createClient(config: OpenRouterConfig): OpenRouter {
 /**
  * Create request options with custom headers for OpenRouter
  */
-function createRequestOptions(): any {
+function createRequestOptions(): OpenRouterRequestOptions {
   return {
     fetchOptions: {
       headers: {
@@ -89,6 +89,156 @@ export interface OpenRouterContentGenerationResponse {
   usage: TokenUsage;
   raw: unknown;
 }
+
+interface OpenRouterRequestOptions {
+  fetchOptions: {
+    headers: {
+      "HTTP-Referer": string;
+      "X-Title": string;
+    };
+  };
+}
+
+type OpenRouterModelWithFallback = models.Model & {
+  slug?: string;
+  context_length?: number;
+};
+
+interface OpenRouterReasoningOption {
+  effort: string;
+  exclude?: boolean;
+}
+
+interface OpenRouterResponseFormatOption {
+  type: string;
+  schema?: unknown;
+  jsonSchema?: unknown;
+}
+
+type OpenRouterToolChoiceOption =
+  | "required"
+  | "none"
+  | "auto"
+  | {
+      type: "function";
+      function: { name: string };
+    };
+
+interface OpenRouterGenerationParams {
+  model: string;
+  messages: models.Message[];
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
+  stream?: boolean;
+  tools?: unknown[];
+  toolChoice?: OpenRouterToolChoiceOption;
+  allow_fallbacks?: boolean;
+  require_parameters?: boolean;
+  sort?: string;
+  reasoning?: OpenRouterReasoningOption;
+  responseFormat?: OpenRouterResponseFormatOption;
+}
+
+interface OpenRouterGenerationToolResult extends Record<string, unknown> {
+  functionCalls: ToolCallResult[];
+  content?: string;
+  _reasoning?: string;
+}
+
+interface OpenRouterGenerationTextResult extends Record<string, unknown> {
+  content: string;
+  _reasoning?: string;
+}
+
+interface OpenRouterCompatToolCall extends models.ChatMessageToolCall {
+  function: models.ChatMessageToolCallFunction & {
+    thought_signature?: string;
+  };
+  extra_content?: {
+    google?: {
+      thought_signature?: string;
+    };
+  };
+}
+
+interface OpenRouterStreamingDeltaCompat extends models.ChatStreamingMessageChunk {
+  reasoning_content?: string;
+  tool_calls?: models.ChatStreamingMessageToolCall[];
+}
+
+interface OpenRouterImageGenerationParams extends OpenRouterGenerationParams {
+  modalities: string[];
+  imageConfig: {
+    aspectRatio: string;
+  };
+}
+
+interface OpenRouterImageResultRecord {
+  imageUrl?: {
+    url?: string;
+  };
+  image_url?: {
+    url?: string;
+  };
+}
+
+interface OpenRouterEmbeddingItemDto {
+  index: number;
+  embedding: number[];
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const toRecord = (value: unknown): Record<string, unknown> =>
+  isRecord(value) ? value : {};
+
+const readNumber = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
+
+const readString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const readStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+};
+
+const getReasoningContent = (value: unknown): string => {
+  if (!isRecord(value)) return "";
+  const reasoningContent = readString(value.reasoning_content);
+  if (reasoningContent) return reasoningContent;
+  const reasoning = readString(value.reasoning);
+  return reasoning || "";
+};
+
+const getThoughtSignature = (value: unknown): string | undefined => {
+  if (!isRecord(value)) return undefined;
+
+  const extraContent = isRecord(value.extra_content)
+    ? value.extra_content
+    : undefined;
+  const google = extraContent && isRecord(extraContent.google)
+    ? extraContent.google
+    : undefined;
+  const googleSignature = readString(google?.thought_signature);
+  if (googleSignature) return googleSignature;
+
+  const toolFunction = isRecord(value.function) ? value.function : undefined;
+  return readString(toolFunction?.thought_signature);
+};
 const readUsageNumber = (
   usage: Record<string, unknown> | null | undefined,
   keys: string[],
@@ -274,10 +424,22 @@ export async function getCredits(
   try {
     const client = createClient(config);
     const response = await client.credits.getCredits();
-    const data = response as any;
+    const responseRecord = toRecord(response);
+    const responseData = isRecord(responseRecord.data)
+      ? responseRecord.data
+      : {};
+
     // Parse the response to get credit information
-    const totalCredits = data.data?.totalCredits || data.totalCredits || 0;
-    const usedCredits = data.data?.usedCredits || data.usedCredits || 0;
+    const totalCredits =
+      readNumber(responseData.totalCredits) ??
+      readNumber(responseRecord.totalCredits) ??
+      0;
+    const usedCredits =
+      readNumber(responseData.usedCredits) ??
+      readNumber(responseData.totalUsage) ??
+      readNumber(responseRecord.usedCredits) ??
+      readNumber(responseRecord.totalUsage) ??
+      0;
     const remainingCredits = totalCredits - usedCredits;
     return {
       totalCredits,
@@ -306,20 +468,25 @@ export async function getModels(
   try {
     const client = createClient(config);
     const response = await client.models.list();
-    const data = response as any;
-    if (!data.data || !Array.isArray(data.data)) {
+    if (!response.data || !Array.isArray(response.data)) {
       throw new Error("Invalid response format from models.list()");
     }
-    return data.data.map((m: any) => {
+    return response.data.map((rawModel) => {
+      const m = rawModel as OpenRouterModelWithFallback;
+      const id = m.id || m.slug || "";
+      const name = m.name || m.id || m.slug || "";
       const capabilities = inferModelCapabilities({
-        id: m.id || m.slug,
-        name: m.name || m.id || m.slug,
+        id,
+        name,
         ...m,
       });
       return {
-        id: m.id || m.slug,
-        name: m.name || m.id || m.slug,
-        contextLength: m.context_length || m.contextLength,
+        id,
+        name,
+        contextLength:
+          m.contextLength ??
+          m.context_length ??
+          undefined,
         capabilities,
       };
     });
@@ -401,7 +568,7 @@ export async function generateContent(
         : undefined;
 
       // Convert toolChoice
-      let toolChoice: any = undefined;
+      let toolChoice: OpenRouterToolChoiceOption | undefined;
       if (tools && tools.length > 0) {
         if (options?.toolChoice === "required") {
           toolChoice = "required";
@@ -421,7 +588,7 @@ export async function generateContent(
       }
 
       // Build request parameters
-      const requestParams: any = {
+      const requestParams: OpenRouterGenerationParams = {
         model,
         messages,
         temperature: options?.temperature,
@@ -441,7 +608,7 @@ export async function generateContent(
 
       // Unified Reasoning Parameters (OpenRouter)
       // Reference: https://openrouter.ai/docs/guides/best-practices/reasoning-tokens
-      let reasoning: any = undefined;
+      let reasoning: OpenRouterReasoningOption | undefined;
 
       const effort = options?.thinkingEffort;
 
@@ -515,14 +682,17 @@ export async function generateContent(
  */
 async function handleNonStreamingResponse(
   client: OpenRouter,
-  params: any,
+  params: OpenRouterGenerationParams,
   schema?: ZodTypeAny,
 ): Promise<OpenRouterContentGenerationResponse> {
-  const response = await client.chat.send(params, createRequestOptions());
-  const data = response as any;
-  const choice = data.choices?.[0];
+  const response = (await client.chat.send(
+    params as models.ChatGenerationParams,
+    createRequestOptions(),
+  )) as models.ChatResponse;
+  const choice = response.choices?.[0];
   const message = choice?.message;
-  const content = message?.content || "";
+  const content =
+    typeof message?.content === "string" ? message.content : "";
   let toolCalls: ToolCallResult[] = [];
   try {
     toolCalls = extractOpenRouterToolCalls(message);
@@ -533,18 +703,15 @@ async function handleNonStreamingResponse(
   if (choice?.finishReason === "content_filter") {
     throw new SafetyFilterError("openrouter");
   }
-  const usage = parseOpenRouterUsage(data.usage);
+  const usage = parseOpenRouterUsage(response.usage);
 
   // 提取 reasoning content (如果存在)
-  let reasoningContent = "";
-  if (message?.reasoning_content) {
-    reasoningContent = message.reasoning_content;
-  }
+  const reasoningContent = getReasoningContent(message);
 
   console.log(`[OpenRouter] Generation complete. Usage:`, usage);
 
   if (toolCalls.length > 0) {
-    const toolResult: any = {
+    const toolResult: OpenRouterGenerationToolResult = {
       functionCalls: toolCalls,
       // 保留 content 以便在下次请求时包含
       content: content || undefined,
@@ -555,7 +722,7 @@ async function handleNonStreamingResponse(
     return {
       result: toolResult,
       usage,
-      raw: data,
+      raw: response,
     };
   }
   if (schema && content) {
@@ -567,10 +734,10 @@ async function handleNonStreamingResponse(
         return {
           result: { ...result, _reasoning: reasoningContent },
           usage,
-          raw: data,
+          raw: response,
         };
       }
-      return { result, usage, raw: data };
+      return { result, usage, raw: response };
     } catch (error) {
       console.error(`[OpenRouter] Failed to parse JSON content:`, content);
       if (error instanceof AIProviderError) {
@@ -580,25 +747,27 @@ async function handleNonStreamingResponse(
     }
   }
   // 返回纯文本
-  const result: any = { content };
+  const result: OpenRouterGenerationTextResult = { content };
   if (reasoningContent) {
     result._reasoning = reasoningContent;
   }
-  return { result, usage, raw: data };
+  return { result, usage, raw: response };
 }
 /**
  * Handle streaming response using SDK
  */
 async function handleStreamingResponse(
   client: OpenRouter,
-  params: any,
+  params: OpenRouterGenerationParams,
   onChunk: (text: string) => void,
   schema?: ZodTypeAny,
 ): Promise<OpenRouterContentGenerationResponse> {
-  const stream = await client.chat.send(
-    { ...params, stream: true },
+  const stream = (await client.chat.send(
+    { ...params, stream: true } as models.ChatGenerationParams & {
+      stream: true;
+    },
     createRequestOptions(),
-  );
+  )) as AsyncIterable<models.ChatStreamingResponseChunkData>;
   let content = "";
   let reasoningContent = ""; // 累积 reasoning content
   let usage: TokenUsage = {
@@ -612,20 +781,23 @@ async function handleStreamingResponse(
     { id: string; name: string; arguments: string; thoughtSignature?: string }
   > = new Map();
   try {
-    for await (const chunk of stream as any) {
-      const delta = chunk.choices?.[0]?.delta;
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta as
+        | OpenRouterStreamingDeltaCompat
+        | undefined;
       if (delta?.content) {
         content += delta.content;
         onChunk(delta.content);
       }
       // 处理 reasoning content
-      if (delta?.reasoning_content) {
-        reasoningContent += delta.reasoning_content;
+      const deltaReasoning = getReasoningContent(delta);
+      if (deltaReasoning) {
+        reasoningContent += deltaReasoning;
       }
       const deltaToolCalls = delta?.toolCalls || delta?.tool_calls;
       if (deltaToolCalls) {
         for (const tc of deltaToolCalls) {
-          const index = tc.index;
+          const index = typeof tc.index === "number" ? tc.index : 0;
           const existing = accumulatedToolCalls.get(index);
           if (existing) {
             if (tc.function?.arguments) {
@@ -637,9 +809,7 @@ async function handleStreamingResponse(
               name: tc.function?.name || "",
               arguments: tc.function?.arguments || "",
               // Gemini 3 uses extra_content.google.thought_signature format
-              thoughtSignature:
-                tc.extra_content?.google?.thought_signature ||
-                tc.function?.thought_signature,
+              thoughtSignature: getThoughtSignature(tc),
             });
           }
         }
@@ -672,7 +842,7 @@ async function handleStreamingResponse(
   console.log(`[OpenRouter] Stream complete. Usage:`, usage);
 
   if (toolCalls.length > 0) {
-    const toolResult: any = {
+    const toolResult: OpenRouterGenerationToolResult = {
       functionCalls: toolCalls,
       // 保留 content 以便在下次请求时包含
       content: content || undefined,
@@ -708,7 +878,7 @@ async function handleStreamingResponse(
     }
   }
   // 返回纯文本
-  const result: any = { content };
+  const result: OpenRouterGenerationTextResult = { content };
   if (reasoningContent) {
     result._reasoning = reasoningContent;
   }
@@ -720,8 +890,10 @@ async function handleStreamingResponse(
 function convertToOpenAIMessages(
   systemInstruction: string,
   messages: UnifiedMessage[],
-): any[] {
-  const result: any[] = [{ role: "system", content: systemInstruction }];
+): models.Message[] {
+  const result: models.Message[] = [
+    { role: "system", content: systemInstruction },
+  ];
   for (const msg of messages) {
     if (msg.role === "tool") {
       for (const part of msg.content) {
@@ -745,38 +917,40 @@ function convertToOpenAIMessages(
       continue;
     }
     if (msg.role === "assistant") {
-      const toolCallParts = msg.content.filter(
-        (p): p is ToolCallContentPart => p.type === "tool_use",
-      );
+        const toolCallParts = msg.content.filter(
+          (p): p is ToolCallContentPart => p.type === "tool_use",
+        );
       if (toolCallParts.length > 0) {
         const textContent = msg.content
           .filter((p): p is TextContentPart => p.type === "text")
           .map((p) => p.text)
           .join("\n");
         // OpenRouter SDK uses camelCase format
+        const toolCalls: OpenRouterCompatToolCall[] = toolCallParts.map((p) => {
+          const toolCall: OpenRouterCompatToolCall = {
+            id: p.toolUse.id,
+            type: "function",
+            function: {
+              name: p.toolUse.name,
+              arguments: JSON.stringify(p.toolUse.args),
+            },
+          };
+          // Include thought_signature if present (Gemini 3 compatibility)
+          // Gemini 3 uses extra_content.google.thought_signature format
+          if (p.toolUse.thoughtSignature) {
+            toolCall.extra_content = {
+              google: {
+                thought_signature: p.toolUse.thoughtSignature,
+              },
+            };
+          }
+          return toolCall;
+        });
+
         result.push({
           role: "assistant",
           content: textContent || null,
-          toolCalls: toolCallParts.map((p) => {
-            const toolCall: any = {
-              id: p.toolUse.id,
-              type: "function",
-              function: {
-                name: p.toolUse.name,
-                arguments: JSON.stringify(p.toolUse.args),
-              },
-            };
-            // Include thought_signature if present (Gemini 3 compatibility)
-            // Gemini 3 uses extra_content.google.thought_signature format
-            if (p.toolUse.thoughtSignature) {
-              toolCall.extra_content = {
-                google: {
-                  thought_signature: p.toolUse.thoughtSignature,
-                },
-              };
-            }
-            return toolCall;
-          }),
+          toolCalls,
         });
         continue;
       }
@@ -791,7 +965,7 @@ function convertToOpenAIMessages(
 
     // If there are images, use multipart content format
     if (imageParts.length > 0 && msg.role === "user") {
-      const contentArray: any[] = [];
+      const contentArray: models.ChatMessageContentItem[] = [];
 
       // Add text content first
       const textContent = textParts.map((p) => p.text).join("\n");
@@ -829,9 +1003,13 @@ function convertToOpenAIMessages(
  */
 function convertToOpenRouterTools(
   tools: GenerateContentOptions["tools"],
-): any[] {
+): models.ToolDefinitionJson[] {
   return (tools || []).map((tool) =>
-    createOpenRouterTool(tool.name, tool.description, tool.parameters),
+    createOpenRouterTool(
+      tool.name,
+      tool.description,
+      tool.parameters,
+    ) as models.ToolDefinitionJson,
   );
 }
 // ============================================================================
@@ -862,22 +1040,31 @@ export async function generateImage(
         modalities: ["image", "text"],
         imageConfig: { aspectRatio },
         stream: false,
-      } as any,
+      } as models.ChatGenerationParams,
       createRequestOptions(),
     );
-    const data = response as any;
+    const data = toRecord(response);
+    const choices = Array.isArray(data.choices) ? data.choices : [];
+    const firstChoice = choices[0];
+    const firstChoiceRecord = isRecord(firstChoice) ? firstChoice : {};
+    const message = isRecord(firstChoiceRecord.message)
+      ? firstChoiceRecord.message
+      : {};
+    const images = Array.isArray(message.images) ? message.images : [];
+    const firstImage = isRecord(images[0])
+      ? (images[0] as OpenRouterImageResultRecord)
+      : undefined;
+
     // Check for images in the response
-    if (data.choices?.[0]?.message?.images?.length) {
+    if (firstImage) {
       return {
-        url:
-          data.choices[0].message.images[0].imageUrl?.url ||
-          data.choices[0].message.images[0].image_url?.url,
+        url: firstImage.imageUrl?.url || firstImage.image_url?.url,
         raw: data,
         usage: data.usage ? parseOpenRouterUsage(data.usage) : undefined,
       };
     }
     // Fallback: Check if URL is in content (some models)
-    const content = data.choices?.[0]?.message?.content;
+    const content = readString(message.content);
     const urlMatch = content?.match(/https?:\/\/[^\s)]+/);
     if (urlMatch) {
       return { url: urlMatch[0], raw: data };
@@ -944,16 +1131,27 @@ async function generateImageLegacy(
     },
   );
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
+    const err = (await response.json().catch(() => ({}))) as unknown;
+    const errRecord = isRecord(err) ? err : {};
+    const errError = isRecord(errRecord.error) ? errRecord.error : {};
+    const errorMessage = readString(errError.message);
     throw new AIProviderError(
-      err.error?.message || `OpenRouter Image API Error: ${response.status}`,
+      errorMessage || `OpenRouter Image API Error: ${response.status}`,
       "openrouter",
     );
   }
-  const result = await response.json();
+  const result = (await response.json()) as unknown;
+  const resultRecord = isRecord(result) ? result : {};
+  const choices = Array.isArray(resultRecord.choices) ? resultRecord.choices : [];
+  const firstChoice = isRecord(choices[0]) ? choices[0] : {};
+  const message = isRecord(firstChoice.message) ? firstChoice.message : {};
+  const images = Array.isArray(message.images) ? message.images : [];
+  const firstImage = isRecord(images[0])
+    ? (images[0] as OpenRouterImageResultRecord)
+    : undefined;
   return {
-    url: result.choices[0].message.images[0].image_url?.url || null,
-    raw: result,
+    url: firstImage?.image_url?.url || firstImage?.imageUrl?.url || null,
+    raw: resultRecord,
   };
 }
 // ============================================================================
@@ -1000,14 +1198,12 @@ export async function getEmbeddingModels(
     // First, try using SDK
     const client = createClient(config);
     const response = await client.embeddings.listModels();
-    const data = response as any;
-
-    if (!data.data || !Array.isArray(data.data)) {
+    if (!response.data || !Array.isArray(response.data)) {
       console.warn("Invalid response format from embeddings.listModels()");
       throw new Error("Invalid SDK response format");
     }
 
-    const embeddingModels = processEmbeddingModels(data.data);
+    const embeddingModels = processEmbeddingModels(response.data);
 
     if (embeddingModels.length === 0) {
       console.warn("No embedding models found in SDK response");
@@ -1032,25 +1228,36 @@ export async function getEmbeddingModels(
         throw new Error(`Failed to load local JSON: ${response.status}`);
       }
       const data = await response.json();
+      const dataRecord = isRecord(data) ? data : {};
+      const dataModels = Array.isArray(dataRecord.data) ? dataRecord.data : [];
 
-      if (!data.data || !Array.isArray(data.data)) {
+      if (!dataRecord.data || !Array.isArray(dataRecord.data)) {
         throw new Error("Invalid local JSON format");
       }
 
-      if (data.data.length === 0) {
+      if (dataModels.length === 0) {
         throw new Error("No embedding models found in local JSON");
       }
 
       // They are all embedding models in this file
       // Thus, we can directly map them
-      const models = data.data.map((m: any) => {
-        return {
-          id: m.id || m.slug,
-          name: m.name || m.id || m.slug,
-          dimensions: guessEmbeddingDimensions((m.id || m.slug).toLowerCase()),
-          contextLength: m.context_length || m.contextLength || 8192,
-        };
-      });
+      const models = dataModels
+        .filter(isRecord)
+        .map((m) => {
+          const id = readString(m.id) || readString(m.slug) || "";
+          const name = readString(m.name) || id;
+          const contextLength =
+            readNumber(m.context_length) ??
+            readNumber(m.contextLength) ??
+            8192;
+
+          return {
+            id,
+            name,
+            dimensions: guessEmbeddingDimensions(id.toLowerCase()),
+            contextLength,
+          };
+        });
 
       console.log(
         `[OpenRouter] Loaded ${models.length} embedding models from local JSON file`,
@@ -1067,22 +1274,33 @@ export async function getEmbeddingModels(
 /**
  * Process raw model data into EmbeddingModelInfo
  */
-function processEmbeddingModels(models: any[]): EmbeddingModelInfo[] {
+function processEmbeddingModels(modelsData: unknown[]): EmbeddingModelInfo[] {
   const embeddingModels: EmbeddingModelInfo[] = [];
 
-  for (const model of models) {
-    const id = (model.id || model.slug || "").toLowerCase();
+  for (const model of modelsData) {
+    if (!isRecord(model)) continue;
+    const id =
+      (readString(model.id) || readString(model.slug) || "").toLowerCase();
+    const outputModalities = readStringArray(model.output_modalities);
+    const modality = readStringArray(model.modality);
 
     // Check if this is an embedding model
     if (
-      model.output_modalities?.includes("embeddings") ||
-      model.modality?.includes("embeddings")
+      outputModalities.includes("embeddings") ||
+      modality.includes("embeddings")
     ) {
       embeddingModels.push({
-        id: model.id || model.slug,
-        name: model.name || model.id || model.slug,
+        id: readString(model.id) || readString(model.slug) || "",
+        name:
+          readString(model.name) ||
+          readString(model.id) ||
+          readString(model.slug) ||
+          "",
         dimensions: guessEmbeddingDimensions(id),
-        contextLength: model.context_length || model.contextLength || 8192,
+        contextLength:
+          readNumber(model.context_length) ??
+          readNumber(model.contextLength) ??
+          8192,
       });
     }
   }
@@ -1163,16 +1381,26 @@ export async function generateEmbedding(
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as unknown;
+    const dataRecord = isRecord(data) ? data : {};
+    const items = Array.isArray(dataRecord.data) ? dataRecord.data : [];
+    const embeddingItems: OpenRouterEmbeddingItemDto[] = items
+      .filter((item): item is Record<string, unknown> => isRecord(item))
+      .map((item) => ({
+        index: readNumber(item.index) ?? 0,
+        embedding: Array.isArray(item.embedding)
+          ? item.embedding.filter((v): v is number => typeof v === "number")
+          : [],
+      }));
 
-    const embeddings = data.data
-      .sort((a: any, b: any) => a.index - b.index)
-      .map((item: any) => new Float32Array(item.embedding));
+    const embeddings = embeddingItems
+      .sort((a, b) => a.index - b.index)
+      .map((item) => new Float32Array(item.embedding));
 
     return {
       embeddings,
       usage: (() => {
-        const parsedUsage = parseOpenRouterUsage(data.usage);
+        const parsedUsage = parseOpenRouterUsage(dataRecord.usage);
         return {
           promptTokens: parsedUsage.promptTokens,
           totalTokens: parsedUsage.totalTokens,

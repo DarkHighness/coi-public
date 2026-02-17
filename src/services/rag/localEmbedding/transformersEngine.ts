@@ -12,6 +12,31 @@ const DEFAULT_DEVICE_ORDER: LocalTransformersDevice[] = [
 ];
 const DEFAULT_BATCH_SIZE = 8;
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object";
+
+const isArrayLikeNumber = (value: unknown): value is ArrayLike<number> => {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "length" in value &&
+    typeof value.length === "number"
+  );
+};
+
+interface OnnxWasmEnvironment {
+  wasmPaths?: { mjs?: string; wasm?: string };
+  proxy?: boolean;
+}
+
+interface TransformersRuntimeEnvironment {
+  allowLocalModels?: boolean;
+  useBrowserCache?: boolean;
+  backends?: {
+    onnx?: unknown;
+  };
+}
+
 export interface TransformersModelProgressEvent {
   status?: string;
   name?: string;
@@ -84,9 +109,12 @@ const l2Normalize = (vector: number[]): number[] => {
 
 const isWebGpuAvailable = (): boolean => {
   try {
+    const currentNavigator: unknown =
+      typeof navigator !== "undefined" ? navigator : undefined;
     return (
-      typeof navigator !== "undefined" &&
-      typeof (navigator as any).gpu !== "undefined"
+      isObject(currentNavigator) &&
+      "gpu" in currentNavigator &&
+      typeof currentNavigator.gpu !== "undefined"
     );
   } catch {
     return false;
@@ -139,16 +167,11 @@ const toBlobUrl = async (
 };
 
 export const ensureOnnxWasmPaths = async (onnxEnv: unknown): Promise<void> => {
-  const wasmEnv =
-    onnxEnv &&
-    typeof onnxEnv === "object" &&
-    "wasm" in onnxEnv &&
-    (onnxEnv as any).wasm
-      ? ((onnxEnv as any).wasm as {
-          wasmPaths?: { mjs?: string; wasm?: string };
-          proxy?: boolean;
-        })
-      : null;
+  const wasmCandidate =
+    isObject(onnxEnv) && "wasm" in onnxEnv ? onnxEnv.wasm : null;
+  const wasmEnv: OnnxWasmEnvironment | null = isObject(wasmCandidate)
+    ? (wasmCandidate as OnnxWasmEnvironment)
+    : null;
 
   if (!wasmEnv || !wasmEnv.wasmPaths) {
     return;
@@ -186,7 +209,7 @@ export const ensureOnnxWasmPaths = async (onnxEnv: unknown): Promise<void> => {
 
 export const resolveTransformersPipelineDevice = (
   device: LocalTransformersDevice,
-): string => {
+): "webgpu" | "wasm" => {
   switch (device) {
     case "webgpu":
       return "webgpu";
@@ -205,17 +228,15 @@ const createEngine = async (
   onProgress?: TransformersProgressCallback,
 ): Promise<TransformersEmbeddingEngine> => {
   const transformers = await import("@huggingface/transformers");
-  const env = (transformers as any).env as
-    | {
-        allowLocalModels?: boolean;
-        useBrowserCache?: boolean;
-      }
-    | undefined;
+  const envCandidate = (transformers as { env?: unknown }).env;
+  const env = isObject(envCandidate)
+    ? (envCandidate as TransformersRuntimeEnvironment)
+    : undefined;
 
   if (env) {
     env.allowLocalModels = false;
     env.useBrowserCache = true;
-    await ensureOnnxWasmPaths((env as any).backends?.onnx);
+    await ensureOnnxWasmPaths(env.backends?.onnx);
   }
 
   const errors: string[] = [];
@@ -240,7 +261,7 @@ const createEngine = async (
             }
             onProgress(event as TransformersModelProgressEvent);
           },
-        } as any,
+        },
       );
 
       const embed = async (texts: string[]): Promise<number[][]> => {
@@ -257,7 +278,7 @@ const createEngine = async (
           const result = await extractor(batch, {
             pooling: "mean",
             normalize: true,
-          } as any);
+          });
 
           if (Array.isArray(result)) {
             for (const item of result) {
@@ -271,9 +292,13 @@ const createEngine = async (
 
           const tensorData =
             result && typeof result === "object" && "data" in result
-              ? Array.from((result as any).data as ArrayLike<number>).map((v) =>
-                  Number(v),
-                )
+              ? (() => {
+                  const data = (result as { data?: unknown }).data;
+                  if (!isArrayLikeNumber(data)) {
+                    return [];
+                  }
+                  return Array.from(data).map((v) => Number(v));
+                })()
               : [];
 
           if (batch.length <= 1) {
@@ -283,7 +308,13 @@ const createEngine = async (
 
           const dims =
             result && typeof result === "object" && "dims" in result
-              ? ((result as any).dims as number[])
+              ? (() => {
+                  const nextDims = (result as { dims?: unknown }).dims;
+                  if (!Array.isArray(nextDims)) {
+                    return [batch.length, tensorData.length / Math.max(batch.length, 1)];
+                  }
+                  return nextDims.map((dim) => Number(dim));
+                })()
               : [batch.length, tensorData.length / Math.max(batch.length, 1)];
 
           const vectorSize = dims.length >= 2 ? dims[dims.length - 1] : 0;
@@ -303,7 +334,7 @@ const createEngine = async (
       };
 
       const dispose = () => {
-        const disposable = extractor as unknown as { dispose?: () => void };
+        const disposable = extractor as { dispose?: () => void };
         if (typeof disposable.dispose === "function") {
           disposable.dispose();
         }

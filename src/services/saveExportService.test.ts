@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
+import type { VfsFileMap, VfsSnapshot } from "./vfs/types";
 
 const saveMetadataMock = vi.fn<(key: string, value: any) => Promise<void>>(
   async () => undefined,
@@ -30,13 +31,7 @@ const openVfsDBMock = vi.fn(async () => ({
 const saveImageMock = vi.fn(async () => "new-image-id");
 const getImagesBySaveIdMock = vi.fn(async () => []);
 
-type SnapshotRecord = {
-  saveId: string;
-  forkId: number;
-  turn: number;
-  createdAt: number;
-  files: Record<string, any>;
-};
+type SnapshotRecord = VfsSnapshot;
 
 type ExportSnapshotV3 = {
   encoding: "blob_ref_v1";
@@ -348,7 +343,7 @@ const makeSnapshotWithConversationHistory = (
   conversationTurnMax: number,
 ): SnapshotRecord => {
   const root = `turns/fork-0/turn-${snapshotTurn}`;
-  const files: Record<string, any> = {
+  const files: VfsFileMap = {
     [`${root}/world/global.json`]: {
       path: `${root}/world/global.json`,
       content: JSON.stringify({ seedImageId: "old-image-id" }),

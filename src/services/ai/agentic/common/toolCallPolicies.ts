@@ -66,8 +66,8 @@ export const collectWriteTargetsFromToolCall = (
   };
 
   if (call.name === "vfs_move") {
-    pushTarget((args as any)?.from);
-    pushTarget((args as any)?.to);
+    pushTarget(args.from);
+    pushTarget(args.to);
     return Array.from(targets.values());
   }
 
@@ -80,7 +80,7 @@ export const collectWriteTargetsFromToolCall = (
     call.name === "vfs_merge_json" ||
     call.name === "vfs_delete"
   ) {
-    pushTarget((args as any)?.path);
+    pushTarget(args.path);
     return Array.from(targets.values());
   }
 

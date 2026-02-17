@@ -723,6 +723,11 @@ const asRecord = (value: unknown): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 
+const isToolFailureOutput = (value: unknown): boolean => {
+  const record = asRecord(value);
+  return record.success === false;
+};
+
 const normalizeVmWriteTargets = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
   const targets = new Set<string>();
@@ -739,28 +744,31 @@ const normalizeVmWriteTargets = (value: unknown): string[] => {
 const parseVmCallTrace = (value: unknown): VmExecutionTraceItem[] => {
   if (!Array.isArray(value)) return [];
 
-  return value
-    .map((item) => {
-      const record = asRecord(item);
-      const toolNameRaw = record.toolName;
-      const toolName = typeof toolNameRaw === "string" ? toolNameRaw : "";
-      const success = record.success === true;
-      const code =
-        typeof record.code === "string" && record.code.length > 0
-          ? record.code
-          : undefined;
-      const writeTargets = normalizeVmWriteTargets(record.writeTargets);
-      if (!toolName) {
-        return null;
-      }
-      return {
-        toolName,
-        success,
-        code,
-        writeTargets,
-      } satisfies VmExecutionTraceItem;
-    })
-    .filter((item): item is VmExecutionTraceItem => item !== null);
+  const parsed: VmExecutionTraceItem[] = [];
+  for (const item of value) {
+    const record = asRecord(item);
+    const toolNameRaw = record.toolName;
+    const toolName = typeof toolNameRaw === "string" ? toolNameRaw : "";
+    if (!toolName) {
+      continue;
+    }
+
+    const code =
+      typeof record.code === "string" && record.code.length > 0
+        ? record.code
+        : undefined;
+    const traceItem: VmExecutionTraceItem = {
+      toolName,
+      success: record.success === true,
+      writeTargets: normalizeVmWriteTargets(record.writeTargets),
+    };
+    if (code) {
+      traceItem.code = code;
+    }
+    parsed.push(traceItem);
+  }
+
+  return parsed;
 };
 
 const parseVmExecutionMetaFromCandidate = (
@@ -1221,18 +1229,14 @@ async function processToolCalls(
             );
 
             // Check for errors
-            if (
-              output &&
-              typeof output === "object" &&
-              "success" in output &&
-              (output as any).success === false
-            ) {
+            if (isToolFailureOutput(output)) {
               isError = true;
             }
-          } catch (err: any) {
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
             output = {
               success: false,
-              error: `Tool execution failed: ${err.message}`,
+              error: `Tool execution failed: ${message}`,
               code: "EXECUTION_ERROR",
             };
             isError = true;
@@ -1281,7 +1285,7 @@ async function processToolCalls(
             loopState.pendingWriteFailurePaths.delete(target);
           }
         }
-        // If a previous malformed write had unknown target, any successful write
+        // If a previous malformed write had unknown target, a successful write
         // indicates the model recovered its write workflow and can proceed.
         loopState.pendingWriteFailurePaths.delete(UNKNOWN_WRITE_TARGET);
       }

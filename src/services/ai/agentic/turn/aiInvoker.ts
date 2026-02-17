@@ -9,6 +9,11 @@ import type {
   ToolCallResult,
   ZodToolDefinition,
 } from "../../../providers/types";
+import type {
+  ChatGenerateRequest,
+  ChatGenerateResponse,
+  ProviderBase,
+} from "../../provider/interfaces";
 import {
   isContextLengthError,
   isInvalidArgumentError,
@@ -31,13 +36,13 @@ export interface AICallConfig {
   modelId: string;
   systemInstruction: string;
   tools: ZodToolDefinition[];
-  toolChoice: string;
+  toolChoice: ChatGenerateRequest["toolChoice"];
   temperature?: number;
   topP?: number;
   topK?: number;
   minP?: number;
-  mediaResolution?: string;
-  thinkingEffort?: string;
+  mediaResolution?: ChatGenerateRequest["mediaResolution"];
+  thinkingEffort?: ChatGenerateRequest["thinkingEffort"];
 }
 
 export interface AICallResult {
@@ -55,7 +60,7 @@ export interface AICallResult {
  * Call AI with retry logic
  */
 export async function invokeAI(
-  provider: any,
+  provider: ProviderBase,
   config: AICallConfig,
   history: UnifiedMessage[],
   budgetState: BudgetState,
@@ -64,7 +69,7 @@ export async function invokeAI(
   const toolConfig = config.tools.map((t) => ({
     name: t.name,
     description: t.description,
-    parameters: t.parameters as any,
+    parameters: t.parameters,
   }));
 
   try {
@@ -79,13 +84,13 @@ export async function invokeAI(
         systemInstruction: config.systemInstruction,
         messages: [],
         tools: toolConfig,
-        toolChoice: config.toolChoice as any,
-        mediaResolution: config.mediaResolution as any,
+        toolChoice: config.toolChoice,
+        mediaResolution: config.mediaResolution,
         temperature: config.temperature,
         topP: config.topP,
         topK: config.topK,
         minP: config.minP,
-        thinkingEffort: config.thinkingEffort as any,
+        thinkingEffort: config.thinkingEffort,
       },
       history,
       {
@@ -109,10 +114,24 @@ export async function invokeAI(
       },
     );
 
-    const result = resp.result as any;
+    const result = resp.result;
+    const resultRecord =
+      result && typeof result === "object"
+        ? (result as Record<string, unknown>)
+        : null;
+    const functionCalls = extractFunctionCalls(result);
+    const text =
+      typeof result === "string"
+        ? result
+        : typeof resultRecord?.text === "string"
+          ? resultRecord.text
+          : typeof resultRecord?.content === "string"
+            ? resultRecord.content
+            : "";
+
     return {
-      text: result.text || result.content || "",
-      functionCalls: result.functionCalls,
+      text,
+      functionCalls,
       usage: resp.usage,
       retries: resp.retries,
     };
@@ -121,6 +140,31 @@ export async function invokeAI(
     throw e; // Re-throw if not handled
   }
 }
+
+const extractFunctionCalls = (
+  result: ChatGenerateResponse["result"],
+): ToolCallResult[] | undefined => {
+  if (!result || typeof result !== "object") {
+    return undefined;
+  }
+  const record = result as { functionCalls?: unknown };
+  if (!Array.isArray(record.functionCalls)) {
+    return undefined;
+  }
+  return record.functionCalls.filter((call): call is ToolCallResult => {
+    if (!call || typeof call !== "object") {
+      return false;
+    }
+    const candidate = call as Record<string, unknown>;
+    return (
+      typeof candidate.name === "string" &&
+      (typeof candidate.id === "string" ||
+        typeof candidate.id === "undefined") &&
+      typeof candidate.args === "object" &&
+      candidate.args !== null
+    );
+  });
+};
 
 /**
  * Handle AI call errors
