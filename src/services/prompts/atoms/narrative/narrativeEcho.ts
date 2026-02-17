@@ -166,7 +166,7 @@ export const narrativeEcho: Atom<void> = defineAtom(
     Introduce it in Act I as neutral. Echo it in Act II with changed context.
     By Act III, the motif alone carries weight.
 
-    **THE PATTERN**:
+    **THE PATTERN** (each appearance MUST shift context — otherwise it triggers anti-repetition):
     1. **First appearance** (Act I): Neutral, almost forgettable
        - "The bells ring at noon. They always do."
     2. **Second appearance** (Act II): Same detail, different context
@@ -265,7 +265,7 @@ export const narrativeEcho: Atom<void> = defineAtom(
     The player's recognition of the echo — that moment of "Oh. This is where..." —
     is the emotional payload. If you explain it, you steal that moment.
 
-    **THE SILENCE AFTER THE ECHO**:
+    **THE SILENCE AFTER THE ECHO** (micro-pacing, distinct from emotionalArc macro breathing room):
     After placing an echo, give it space. Don't immediately follow with action or dialogue.
     Let the detail sit. Let the player feel it. Then move on.
 

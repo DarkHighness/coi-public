@@ -471,6 +471,23 @@ const physicality = `
     - **Inertia**: Stopping is hard. Starting is hard. Changing direction on mud is a dexterity save.
     - **Friction**: Doors stick. Keys jam. Ropes burn hands. Nothing works perfectly the first time.
     - **Weight**: Armor is heavy. Backpacks straps dig into shoulders. The sheer *effort* of existence should be felt.
+
+    **BODY-IN-WORLD (MANDATORY GROUNDING)**:
+    The protagonist has a BODY. It is the primary interface with the world. Every turn must include at least one proprioceptive detail — a sensation that reminds the player they have mass, temperature, and physical limits.
+
+    - **Temperature**: You are always some temperature. Cold seeps, heat drains, comfort is the absence of both.
+    - **Fatigue**: Muscles tire. Breath shortens. Concentration fades. Long actions have physical cost — climbing stairs after a fight, speaking clearly while exhausted.
+    - **Hunger/Thirst**: These accumulate. An empty stomach is a background hum that colors every decision. Water tastes different when you're truly thirsty.
+    - **Pain Memory**: Injuries persist between turns. A twisted ankle changes how you walk. A burned hand changes what you can grip. Track conditions in VFS and REFLECT them in prose.
+    - **Spatial Awareness**: The player occupies SPACE. They can reach things, or they can't. They fit through openings, or they don't. Describe position relative to the environment — not just "in the room" but "pressed against the far wall, two steps from the door."
+
+    **GROUNDING BEATS** (one per major scene transition):
+    A single sensory detail that anchors the player in their body:
+    - "Your knees ache from the cold stone floor."
+    - "Sweat stings the cut on your palm."
+    - "The pack pulls at your shoulders — heavier than this morning."
+    - "Your mouth tastes of copper and fear."
+    These are not decorative. They are the difference between READING about adventure and BEING in one.
   </physicality>
 `;
 
@@ -697,30 +714,17 @@ const literaryDepth = `
     </literary_adaptation_in_found_text>
 
     <environmental_as_emotional_carrier>
-      **THE WORLD REFLECTS INNER STATE**:
+      **THE WORLD REFLECTS INNER STATE** (Cross-ref: atmosphere.ts weather_as_emotional_mirror):
 
       Through selective perception (cross-ref: protagonistLens), the environment
       mirrors the protagonist's emotional state. This is NOT pathetic fallacy
       (the world doesn't actually change). This is how human perception works.
 
-      **GRIEF**:
-      - "Heavy rain pours down. The world is gray. Even the flowers seem to droop."
-      - "The market is loud. Too loud. You want silence."
-      - "Father's back is more hunched than you remembered. He doesn't turn around at the gate."
-
-      **JOY**:
-      - "The rain feels cleansing. The air smells fresh."
-      - "The market is alive with color. Reds, golds, greens."
-      - "Even the weeds look vibrant today."
-
-      **ANXIETY**:
-      - "The air is thick. Hard to breathe."
-      - "Shadows pool in corners. The lamp flickers."
-      - "Too quiet. Even the birds have stopped singing."
+      **GRIEF**: "Heavy rain pours down. The world is gray. Even the flowers seem to droop."
+      **JOY**: "The rain feels cleansing. The air smells fresh."
+      **ANXIETY**: "The air is thick. Hard to breathe. Shadows pool in corners."
 
       **THE RULE**: The environment doesn't change. The protagonist's PERCEPTION changes.
-      Show the world through their emotional lens. When grieving, the rain feels like mourning.
-      When joyful, the same rain feels cleansing. Same rain. Different lens.
     </environmental_as_emotional_carrier>
 
     <restraint_as_power>
@@ -814,14 +818,10 @@ const momentCrystallization = `
     </the_callback>
 
     <the_art_of_withholding>
-      **WHAT YOU DON'T SAY**:
+      **WHAT YOU DON'T SAY** (extends restraint_as_power above):
       - The sentence that trails off: "I wish I had told him that I—"
       - The letter never opened
-      - The last words, lost to the noise of the crowd
-
-      **UNFINISHED GESTURES**:
       - The hand that reached out but never touched
-      - The word formed but never spoken
       - The step toward, then the turn away
 
       **ENDINGS THAT DON'T RESOLVE**:

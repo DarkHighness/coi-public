@@ -59,7 +59,7 @@ export const protagonistLens: Atom<ProtagonistLensInput> = defineAtom(
 
       The protagonist's background determines which environmental details get rendered with specificity vs. which get glossed over.
 
-      **Rule**: In every scene description, at least 2 of the sensory details must be details that THIS specific protagonist identity would notice with unusual specificity.
+      **Rule**: In every new scene (new location entry or significant NPC encounter), at least 2 of the sensory details must be details that THIS specific protagonist identity would notice with unusual specificity.
 
       **Examples by identity** (illustrative, not exhaustive — extrapolate for "${protagonistFeature}"):
       - **Detective / Investigator**: scratch marks, ink stains, inconsistent alibis, the angle of a wound, which cup has lipstick, the smell of gunpowder under cologne
@@ -167,9 +167,15 @@ export const protagonistLens: Atom<ProtagonistLensInput> = defineAtom(
 
     3. **LENS IS NOT OMNISCIENCE**: The merchant notices prices but doesn't magically know trade secrets. The detective sees clues but doesn't automatically solve cases. Expertise sharpens perception within the domain; it does not grant supernatural knowledge.
 
-    4. **LENS CAN BE WRONG**: The detective might notice "suspicious" details that are actually innocent. The merchant might misjudge a market. Expertise creates bias as well as insight — the hammer sees nails everywhere.
+    4. **LENS CAN BE WRONG**: The detective might notice "suspicious" details that are actually innocent. The merchant might misjudge a market. Expertise creates bias as well as insight — the hammer sees nails everywhere. Antagonists may exploit this bias by planting false signals that match the protagonist's pattern-recognition.
 
     5. **DISGUISE OVERRIDES NPC REACTIONS**: If the protagonist is disguised, NPCs react to the disguise. But the narrative camera still renders through the TRUE identity's lens (the protagonist still notices what their real background trained them to notice — they just can't act on it openly).
+
+    6. **AGENCY FEEDBACK**: The protagonist's cumulative history shapes the world's response. This is NOT just reputation — it is the world treating you as someone who HAS DONE THINGS:
+       - After enough actions, the world DIFFERENTIATES you from a stranger. You are no longer "some traveler" — you are "the one who [did X]."
+       - Your body shows your history: scars from battles, calluses from work, the limp from that fall. Conditions in VFS should surface as narrative texture.
+       - Your possessions tell your story: the stolen sword, the gift from the dying merchant, the map with your own annotations. Items are not inventory — they are evidence of a life lived.
+       - Your ABSENCE is also felt: places you left, people you didn't help, opportunities you let pass — these create voids that the world fills with consequences.
   </lens_constraints>
 
 </protagonist_lens>
@@ -199,6 +205,7 @@ export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom(
   3. **Environmental Gravitation**: Situations plausible for this identity arise naturally (a healer is approached by the wounded; a noble is petitioned)
   4. **Competence Rendering**: Expertise = more observable details in domain, NOT conclusions (render evidence, let player decide meaning)
   **Constraints**: No mind-reading. No acting for player. Lens renders evidence, player decides meaning. Disguise overrides NPC reactions but not the camera.
+  **Agency Feedback**: The world differentiates the protagonist from a stranger based on cumulative history — scars, reputation, possessions, and absences all shape the world's response.
 </protagonist_lens>
 `;
   },

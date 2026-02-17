@@ -72,6 +72,15 @@ export const mysteryMechanics: Atom<void> = defineAtom(
     - update Quest visible objective (next actionable step)
     - update NPC visible status/impression (based on what was observed, not mind-reading)
   </clue_bookkeeping>
+
+  <investigation_pacing>
+    **PACING AN INVESTIGATION**
+    - **Momentum**: Every investigation action should yield SOMETHING — a fact, a new question, a closed door that tells you where to look next. "Nothing happens" is not an outcome.
+    - **Escalation**: As the player gets closer to truth, the stakes rise. People get nervous. Evidence starts disappearing. The antagonist begins to move.
+    - **The Ticking Clock**: Investigations need pressure. A deadline, a competing investigator, a witness who's about to leave town, evidence that's degrading.
+    - **False Confidence**: Let the player build a theory that feels right — then introduce one detail that cracks it. The best mysteries make you feel smart, then make you doubt.
+    - **The Cost of Knowing**: Some truths are dangerous. Learning them changes relationships, creates enemies, or forces impossible choices. The player should sometimes wish they hadn't looked.
+  </investigation_pacing>
 </rule>
 `,
 );

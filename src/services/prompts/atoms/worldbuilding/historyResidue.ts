@@ -32,14 +32,28 @@ Design goal: history should appear as **physical**, **institutional**, and **psy
 <method>
 ## Method: Build 3 Eras in 6 bullets
 Pick:
-- **Era A (old order)**: who ruled, what they built
-- **Era B (rupture)**: war, plague, revolution, collapse, invasion
-- **Era C (current compromise)**: who profits now, what is forbidden now
+- **Era A (old order)**: who ruled, what they built, why they believed they would last
+- **Era B (rupture)**: war, plague, revolution, collapse, invasion — the event that broke the continuity
+- **Era C (current compromise)**: who profits now from the wreckage, what is forbidden now because of the rupture
 
 For each era, write:
-- 1 thing people **still use**
-- 1 thing people **still fear**
+- 1 thing people **still use** (physical: a road, an aqueduct, a calendar; institutional: a law, a guild charter, a border; psychological: a phrase, a gesture, a superstition)
+- 1 thing people **still fear** (physical: a ruin no one enters, a sealed vault, a poisoned well; institutional: a dormant treaty clause, a bloodline claim, a debt ledger; psychological: a name spoken in whispers, a date people avoid, a ritual performed "just in case")
 </method>
+
+<contested_truth_mechanics>
+## Contested Truth → Gameplay Impact
+When a hidden truth is revealed, it must change at least one of:
+| Discovery | Consequence |
+|-----------|------------|
+| Official history was fabricated | Legitimacy of current rulers shaken → faction loyalty shifts, potential uprising |
+| Folk memory was correct | Underground group gains credibility → recruitment surge, resource access |
+| Private archive proves guilt | Blackmail leverage unlocked → new quest branch, NPC alliance/betrayal |
+| Ancient treaty still legally binding | Territorial claim revived → diplomatic crisis, border closure |
+| Technology was suppressed, not lost | Arms race or gold rush → economic disruption, faction scramble |
+
+**Trigger rule**: Truths surface when the player enters the context where they matter — visits the archive, meets the descendant, reads the inscription. Do NOT dump lore as exposition.
+</contested_truth_mechanics>
 
 <residue_hooks>
 ## Residue Hooks (turn history into scenes — every ruin is a story waiting to be read by someone who knows the alphabet)
@@ -54,10 +68,16 @@ Ask:
 
 <memory_and_truth>
 ## Memory vs Truth (use dual narratives — because memory is not a recording, it is a story told by the survivor)
-History is contested:
-- Official record (who benefits?)
-- Folk story (who suffers?)
-- Private archive (who hides it?)
+History is contested. For each major event, define three accounts:
+- **Official record** (who benefits from this version? What does it justify?)
+- **Folk story** (who suffers in the official version? What do they remember differently?)
+- **Private archive** (who hid the evidence? What would happen if it surfaced?)
+
+Verification methods shape the conflict:
+- Physical evidence (ruins, bones, artifacts) — hard to fake, easy to destroy
+- Written records (treaties, ledgers, letters) — easy to forge, hard to destroy completely
+- Oral tradition (songs, proverbs, rituals) — survives destruction, drifts over generations
+- Living witnesses (elders, prisoners, exiles) — reliable but mortal, and can be silenced
 
 Reveals should change **actions**, not just lore. A truth that doesn't alter what someone does next is trivia, not history.
 </memory_and_truth>

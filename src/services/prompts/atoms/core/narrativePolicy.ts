@@ -63,6 +63,7 @@ const hiddenNarration = `
 
 const noProtagonistMindReading = `
   <rule name="NO PROTAGONIST MIND-READING (PLAYER = PROTAGONIST)">
+    (Authoritative definition — roleInstruction.ts references this rule.)
     - NEVER narrate what the protagonist thinks, feels (emotion), believes, wants, remembers, suspects, or decides.
     - DO NOT write internal monologue for the protagonist.
     - Instead: describe sensory data, bodily reactions, actions, dialogue, and observable tells.

@@ -33,16 +33,13 @@ Design goal: make negotiation create durable constraints, access gates, and futu
 
 <diplomatic_gates>
 ## Diplomacy as Access Control
-Common gates:
-- **Letters of passage** / safe conduct
-- **Embassy immunity** (and its limits)
-- **Port/customs clearance**
-- **Audience protocol** (titles, seating, gifts, witnesses)
-- **Jurisdiction boundaries** (whose law applies where?)
-
-Each gate needs:
-- Gatekeeper + process
-- Workaround + verification risk
+| Gate | Gatekeeper | Process | Forgery/Workaround | Detection Risk |
+|------|-----------|---------|-------------------|----------------|
+| Letters of passage | issuing authority (crown, corp, temple) | petition + fee + waiting period | forged seal (requires skilled forger + sample) | checkpoint comparison, magical/tech verification |
+| Embassy immunity | ambassador + host state | formal accreditation | claim false identity/rank | staff recognition, records check, informant tip |
+| Port/customs clearance | harbormaster + customs officer | manifest inspection + tariff | bribe, hidden compartments, falsified cargo list | random deep inspection, informant, rival tip-off |
+| Audience protocol | court chamberlain / secretary | titles, gifts, sponsorship, waiting queue | patron connection, bribery, blackmail | other petitioners notice, rivals sabotage |
+| Jurisdiction | local vs foreign authority | treaties, precedent, negotiation | flee jurisdiction, claim diplomatic immunity | host state decides on edge cases — politics, not law |
 </diplomatic_gates>
 
 <bargaining_tables>
@@ -68,16 +65,18 @@ Always define:
 
 <hostages_and_collateral>
 ## Hostages, Collateral, and Guarantees (trust written in flesh and grain)
-Guarantees that create play:
-- Hostages/wards (political + personal stakes)
-- Escrowed funds / grain / relics
-- Third-party guarantor with enforcement power
-- Oath/ritual enforcement with failure modes
+| Guarantee Type | Strength | Failure Mode | Player Hook |
+|---------------|----------|-------------|-------------|
+| Hostages/wards | high (personal stakes) | hostage escapes, hostage dies, captor grows attached, hostage converts | rescue, negotiate, weaponize attachment |
+| Escrowed funds/grain/relics | medium (economic) | escrow agent embezzles, goods spoil, market crashes devaluing collateral | audit, steal from escrow, devalue enemy's collateral |
+| Third-party guarantor | high (reputational) | guarantor picks a side, guarantor weakens, guarantor demands payment | influence guarantor, expose bias, become the guarantor |
+| Oath/ritual enforcement | variable (belief-dependent) | oath broken with no divine consequence → faith crisis; OR divine consequence manifests → terror | test the oath, exploit true believers, fake the ritual |
+| Marriage alliance | high (generational) | partner rebels, partner dies, heir disputed, cultural friction | romance, poison, annulment, secret heir |
 
 Keep it legible:
-- What counts as breach?
-- Who decides?
-- What is the first consequence?
+- What counts as breach? (concrete acts, not vibes)
+- Who decides? (arbiter with their own interests)
+- What is the first consequence? (proportional, escalating, and exploitable)
 </hostages_and_collateral>
 
 <quick_design_template>

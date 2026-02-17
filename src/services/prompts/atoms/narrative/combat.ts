@@ -18,21 +18,49 @@ export const combatMechanics: Atom<void> = defineAtom(
     - It is not a dance. It is fast, confusing, and exhausting.
     - **No "Exchanges"**: Don't write "He attacks, you block, he attacks again." Write "A blur of steel. The jar of impact travels up your arm. You are breathing hard."
     - **Environmental Chaos**: Tables overturn. Mud makes footing slippery. Blood gets in eyes. Use the mess.
+    - **Duration Reality**: Most real fights last seconds, not minutes. A knife fight is over in two heartbeats. A siege is days of boredom punctuated by hours of terror.
   </core_combat_philosophy>
+
+  <spatial_combat>
+    **SPACE IS A WEAPON**:
+    - Every fight happens somewhere. The "where" matters as much as the "who."
+    - Narrow corridors neutralize numbers. Open ground favors archers. Stairs give high-ground advantage but limit retreat.
+    - Render positions: "Your back hits the wall. The door is three strides to the left. Two of them are between you and it."
+    - Objects in the scene are tools: a chair is a shield, a lantern is a weapon, a rug can be pulled.
+  </spatial_combat>
+
+  <fatigue_and_degradation>
+    **FATIGUE IS THE REAL ENEMY**:
+    - After 30 seconds of real combat, arms burn. After a minute, everything is survival.
+    - Armor is heavy. Weapons get slippery with sweat and blood. Grips fail.
+    - Render degradation: "Your sword arm is lead. Each parry comes slower. The next one might not come at all."
+    - A fresh fighter beating an exhausted expert is realistic, not dramatic license.
+  </fatigue_and_degradation>
 
   <injury_system>
     **PAIN IS PHYSICAL**:
     - Don't say "You take 10 damage."
     - Say "The blade bites deep into your thigh. The leg buckles. Warmth spreads down your boot."
+    - **Injury Persistence**: If the narrative says "leg broken", you CANNOT run in the next sentence. You crawl. You limp. The penalty persists across turns.
+    - **Adrenaline Masking**: In combat, injuries may not register immediately. The slash across your ribs only starts screaming when the adrenaline fades. Render the delay.
+    - **Accumulation**: Minor wounds stack. Three small cuts don't individually slow you, but together they're bleeding you dry.
   </injury_system>
+
+  <aftermath>
+    **AFTER THE FIGHT**:
+    - Violence has consequences beyond the combat itself. Hands shake. Ears ring. Stomach turns.
+    - The first kill is not glorious. It is vomit, trembling, and the inability to stop seeing it.
+    - Survivors are changed: hypervigilance, flinching at loud sounds, checking exits.
+    - The scene left behind tells a story: blood patterns, broken furniture, the smell that doesn't leave.
+  </aftermath>
 
   <logic_enforcement>
     **CONSISTENCY IS LAW**:
-    - **Injury Persistence**: If the narrative says "leg broken", you CANNOT run in the next sentence. You crawl. You limp. The penalty persists.
     - **Genre/Tech Coherence**:
-      * **Fantasy**: No cellphones, no "downloads", no plastic. Magic exists, but follows rules (cost/fatigue).
-      * **Historical**: No modern concepts (democracy, germs, atoms) unless appropriate for the era.
-      * **Sci-Fi**: No "magic" without explanation. Physics (gravity, vacuum) kills.
+      * **Fantasy**: Magic exists but follows rules (cost/fatigue). A fireball singes the caster's eyebrows.
+      * **Historical**: Weapons are heavy, armor has gaps, and a single arrow wound can be fatal.
+      * **Sci-Fi**: Physics kills. Vacuum is instant. Energy weapons cauterize. Zero-G combat is disorienting.
+    - **Weapon Physics**: A sword cannot cut through plate armor. A dagger is useless at range. A bow requires strength AND training. Respect the tools.
   </logic_enforcement>
 </rule>
 `,
@@ -53,35 +81,62 @@ export const combatMechanicsSkill: SkillAtom<void> = defineSkillAtom(
 
     quickStart: `
 1. Combat is ugly - fast, confusing, exhausting (not choreographed)
-2. No exchanges - blur of action, not turn-based
-3. Pain is physical - describe the wound, not HP loss
-4. Injuries persist - broken leg means no running
+2. Space is a weapon - positions, objects, terrain all matter
+3. Fatigue degrades everything - arms burn, grips fail, reactions slow
+4. Pain is physical - describe the wound, not HP loss
+5. Injuries persist and accumulate across turns
+6. Aftermath matters - shaking hands, ringing ears, the smell that stays
 `.trim(),
 
     checklist: [
-      "Combat feels chaotic (not choreographed)?",
-      "Using environmental chaos (mud, blood, overturned tables)?",
-      "Pain described physically (not abstractly)?",
-      "Injuries persist and affect subsequent actions?",
+      "Combat feels chaotic and disorienting (not choreographed)?",
+      "Using spatial positioning and environmental objects?",
+      "Rendering fatigue and degradation as combat progresses?",
+      "Pain described physically (not abstractly as HP/damage)?",
+      "Injuries persist and affect subsequent scenes?",
+      "Aftermath rendered (psychological and physical toll)?",
+      "Weapon physics respected (no cutting through plate armor)?",
       "Genre consistency maintained (no anachronisms)?",
     ],
 
     examples: [
       {
-        scenario: "No Exchanges",
+        scenario: "Spatial combat awareness",
+        context: [
+          "A tavern brawl erupts around the player in a tight room with overturned tables and a narrow exit.",
+          "Two attackers approach from different directions.",
+        ],
+        constraints: [
+          "Render specific positions, distances, and available environmental objects.",
+          "Do not describe combat as abstract exchanges — ground it in the room.",
+        ],
+        pitfalls: [
+          "Writing combat in a featureless void where space doesn't matter.",
+          "Ignoring the narrow exit that should force tactical decisions.",
+        ],
         wrong: `"He attacks. You block. He attacks again."
-(Turn-based, mechanical.)`,
-        right: `"A blur of steel. The jar of impact travels up your arm.
-You are breathing hard. When did you start bleeding?"
-(Chaotic, visceral, disorienting.)`,
+(Turn-based, mechanical, no space.)`,
+        right: `"Your back hits the bar. The door is three strides to the left. One of them kicks a chair into your path — the other is already swinging."
+(Spatial, chaotic, objects matter.)`,
       },
       {
-        scenario: "Physical Pain",
-        wrong: `"You take 10 damage."
-(Abstract, gamified.)`,
-        right: `"The blade bites deep into your thigh. The leg buckles.
-Warmth spreads down your boot."
-(Physical, immediate, consequential.)`,
+        scenario: "Fatigue and injury accumulation",
+        context: [
+          "The player has been fighting for over a minute and has sustained a cut to the forearm.",
+          "The opponent is fresh, having just arrived.",
+        ],
+        constraints: [
+          "Show fatigue degrading the player's performance.",
+          "The earlier wound should still be bleeding and affecting grip.",
+        ],
+        pitfalls: [
+          "Treating the player as equally capable despite wounds and exhaustion.",
+          "Forgetting the forearm cut when describing sword work.",
+        ],
+        wrong: `"You parry his strike easily and counter-attack."
+(No fatigue, no wound effect.)`,
+        right: `"Your sword arm is lead. The parry comes late — the impact jars through the cut on your forearm and your grip almost fails. He's fresh. You are not."
+(Fatigue + injury compounding.)`,
       },
     ],
   }),

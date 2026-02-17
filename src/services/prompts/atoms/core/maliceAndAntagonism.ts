@@ -276,6 +276,7 @@ export const maliceAndAntagonism: Atom<void> = defineAtom(
 
     **THE 90/10 RULE**:
     Smart antagonists only act when odds are heavily in their favor.
+    Operationally: antagonist delays direct action until (1) protagonist is isolated, (2) evidence is destroyed, (3) allies are removed, OR (4) public perception has shifted in their favor.
     If they're attacking openly, they're either desperate or already won.
   </antagonist_behavior>
 

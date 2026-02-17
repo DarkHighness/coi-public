@@ -15,12 +15,8 @@ export const stateManagement: Atom<void> = defineAtom(
   <rule name="STATE MANAGEMENT">
     - **PATH MODEL**: Canonical paths are \`shared/**\` + \`forks/{forkId}/**\`; \`current/**\` is an alias view that resolves to canonical locations.
     - Output ONLY changes (DELTAS).
-    - **PROACTIVE UPDATE PRINCIPLE**: ALWAYS update state IMMEDIATELY when events occur. Do NOT delay updates.
-      * When a character gains/loses an item → update inventory in the SAME turn.
-      * When an NPC moves or changes status → update their currentLocation/status in the SAME turn.
-      * When time passes → update time in the SAME turn.
-      * When relationships change (signals, revealed truths) → update relations in the SAME turn.
-      * When world events happen → update worldEvents/factions in the SAME turn.
+    - **PROACTIVE UPDATE PRINCIPLE**: Update state in the SAME turn when events occur. Never delay to future turns.
+      * Inventory gain/loss, NPC movement/status change, time passage, relationship shifts, world events/factions — all updated immediately.
       * **NEVER** rely on future turns to "catch up" on state changes. State must reflect reality at ALL times.
     - **CASCADE EFFECTS**: When one state changes, consider what else MUST change:
       * Item destroyed → Remove from inventory + update any NPC who wanted it.
@@ -138,6 +134,18 @@ export const stateManagement: Atom<void> = defineAtom(
       * ✅ Narrative: "He hands you the key." + Tool: \`vfs_write_file(...)\` for \`current/world/characters/char:player/inventory/inv_key.json\`
       * ❌ Narrative: "The bridge collapses." (No tool call) -> **STRICT FORBIDDEN**
       * ✅ Narrative: "The bridge collapses." + Tool: \`vfs_patch_json({ path: "current/world/locations/loc_bridge.json", patch: [{ op: "replace", path: "/visible/description", value: "Rubble..." }] })\`
+
+    - **CONSEQUENCE SURFACING (MANDATORY — How past choices become visible)**:
+      * Past player decisions MUST surface organically in current narrative. The world REMEMBERS.
+      * **Surfacing channels** (at least one per turn when relevant history exists):
+        - **NPC Memory**: NPCs reference past interactions. The merchant you cheated raises prices. The guard you spared nods as you pass. Use \`hidden.memory\` and \`relations[]\` to drive these.
+        - **Environment Traces**: Locations show marks of player passage. The door they broke is crudely repaired. The garden they planted has grown. The battlefield they fled still has bones.
+        - **Reputation Ripple**: Third parties who weren't present know about the player's actions. Rumors travel. "Aren't you the one who...?"
+        - **Resource Echo**: Resources spent or gained in past turns constrain current options. Gold spent is gold gone. Allies burned don't answer calls.
+        - **Causal Chain Resolution**: Delayed consequences from \`current/world/causal_chains/\` trigger when conditions are met. Check chains each turn.
+      * **Anti-pattern: Amnesia World** — If an NPC interacted with the player 3 turns ago and neither their \`relations[]\` nor narrative acknowledges it, the world has amnesia. FIX IT.
+      * **Anti-pattern: Announcement** — Do NOT narrate consequences as announcements ("Because you helped the merchant, he..."). Show through BEHAVIOR: the merchant slides an extra coin across the counter without explanation.
+      * **Minimum**: When the player returns to a location or re-encounters an NPC from 3+ turns ago, at least ONE detail must reflect what happened last time.
 
     - **VFS STATE AUTHORITY (MANDATORY)**:
       * The VFS is the ONLY source of truth for game state. All state changes MUST be performed via VFS tools.

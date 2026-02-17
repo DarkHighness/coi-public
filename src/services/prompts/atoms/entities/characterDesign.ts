@@ -68,10 +68,11 @@ When designing this character, consider:
 - **Pure Evil is Valid**: Characters who enjoy pain, seek power at any cost, or lack empathy are valid. Iago had no redemption arc. Neither must yours.
 - **No Forced Redemption**: Do not force a "good turns evil" or "evil turns good" arc unless it earns it. A man does not shed his nature like a coat.
 
-**RESILIENCE TIERS** (stored in psychology):
-- Tier 0-1 (Civilian): Breaks easily under stress, panics at violence
-- Tier 2-3 (Warrior/Veteran): Can endure torture for multiple turns
-- Tier 4-5 (Fanatic/Superhuman): Near-unbreakable, interprets pain as validation
+**RESILIENCE TIERS** (stored in psychology; see npcLogic for full 6-tier table):
+- Tier 0-1 (Civilian/Scholar): Breaks under single trauma (Tier 0) or moderate pressure (Tier 1)
+- Tier 2 (Soldier/Guard): Multiple severe traumas needed to break
+- Tier 3 (Veteran/Assassin): Prolonged extreme torture required
+- Tier 4-5 (Fanatic/Superhuman): Near-unbreakable; interprets pain as validation
 
 **PSYCHOLOGY FIELD EXAMPLES:**
 ✅ GOOD coreTrauma: "Watched his sister drown while he stood frozen. Now freezes in any water-related danger."

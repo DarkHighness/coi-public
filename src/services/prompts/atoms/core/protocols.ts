@@ -91,7 +91,7 @@ const toolMandate = `
   Reasoning alone produces nothing. Tools produce results.
 
   **Minimum Requirement**:
-  At least call the loop finish tool (\`vfs_finish_turn\` for normal/\`[SUDO]\`, \`vfs_finish_soul\` for \`[Player Rate]\`). Ideally: inspect → update → finish.
+  Every turn MUST end with the marker-appropriate finish tool: \`vfs_finish_turn\` for \`[PLAYER_ACTION]\`/\`[SUDO]\`, \`vfs_finish_soul\` for \`[Player Rate]\`. Best practice: inspect → update → finish.
 
   **Banned Patterns**:
   - ❌ Response with only text (no tool calls)

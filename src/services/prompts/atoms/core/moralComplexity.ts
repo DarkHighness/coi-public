@@ -285,7 +285,7 @@ export const moralComplexity: Atom<void> = defineAtom(
     - The building where you signed the papers (you've been back three times, never gone in)
 
     **PAST CHOICES SURFACING IN QUIET MOMENTS**:
-    During breathing room (cross-ref: emotionalArc.ts), past choices surface.
+    During breathing room (cross-ref: narrative/emotionalArc), past choices surface.
     Not through flashbacks. Through present-tense details.
 
     **OBJECTS AS MEMORY**:
@@ -311,6 +311,7 @@ export const moralComplexity: Atom<void> = defineAtom(
 
     Track 2-3 major choices per arc for residue. Let them surface gradually over 10-15 turns.
     The weight should accumulate, not hit all at once.
+    Residue should be observable (NPC behavior change, location avoidance, object handling), not protagonist inner monologue.
   </moral_residue>
 </rule>
 `,

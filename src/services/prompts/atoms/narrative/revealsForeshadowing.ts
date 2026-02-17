@@ -29,7 +29,7 @@ Design goal: make reveals feel inevitable *in hindsight* and immediately change 
 </rule>
 
 <foreshadowing_types>
-## Foreshadowing Types (use 2-3, not all)
+## Foreshadowing Types (pick 2-3 signal types per reveal)
 - **Physical residue**: scars, broken seals, missing supplies
 - **Procedural residue**: logs, permits, audits, paperwork anomalies
 - **Behavioral tells**: avoidance, rehearsed lines, mismatched incentives
@@ -38,12 +38,13 @@ Design goal: make reveals feel inevitable *in hindsight* and immediately change 
 </foreshadowing_types>
 
 <reveal_lanes>
-## Reveal Lanes (avoid single-point failure)
-Always provide multiple lanes:
-1) Scene evidence (what’s in the world)
+## Reveal Lanes (distribute signals across lanes; avoid single-point failure)
+Three discovery channels — place signals in at least 2 lanes:
+1) Scene evidence (what’s in the physical world)
 2) Human evidence (witnesses, incentives, fear)
 3) Record evidence (documents/logs/ledger)
 
+Types describe WHAT the signal is; lanes describe WHERE it can be found.
 If one lane is blocked, another can still progress the story.
 </reveal_lanes>
 

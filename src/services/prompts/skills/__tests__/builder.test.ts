@@ -27,7 +27,7 @@ describe("skills prompt builder hygiene", () => {
       'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
     );
     expect(prompt).toContain(
-      "Theme skills are optional accelerators, not hard gates",
+      "optional accelerators, not hard gates",
     );
     expect(prompt).toContain("Theme skills live under `current/skills/theme/**`");
   });
@@ -97,9 +97,9 @@ describe("skills prompt builder hygiene", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
 
     expect(prompt).toContain(
-      "Hierarchy below is a navigation map (hubs + entry points), not a complete catalog.",
+      "Hierarchy below is a navigation map (hubs + entry points), not the complete catalog.",
     );
-    expect(prompt).toContain("Priority protocol: load hub/high first");
-    expect(prompt).toContain("Execution requirement:");
+    expect(prompt).toContain("hub/high priority first");
+    expect(prompt).toContain("Convert loaded skills into explicit constraints");
   });
 });

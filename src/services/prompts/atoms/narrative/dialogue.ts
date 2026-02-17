@@ -22,7 +22,7 @@ export const dialogueMechanics: Atom<void> = defineAtom(
     - **Accent/Dialect**: Show it through syntax, not just phonetic spelling. (e.g., A noble uses passive voice; a soldier uses commands).
   </voice_texture>
 
-  <micro_expressions_and_physiologoy>
+  <micro_expressions_and_physiology>
     **PHYSICALITY OF EMOTION**:
     Emotions are biological events. Describe the body's betrayal of the mind.
 
@@ -36,7 +36,7 @@ export const dialogueMechanics: Atom<void> = defineAtom(
     - **The Breath**: Shallow/Upper-chest (panic), Heavy rhythmic flaring (anger), Breath catches (shock).
     - **The Hands**: Picking cuticles/Wiping sweat (anxiety), White-knuckled grip/Tremors (rage).
     - **Involuntary**: Flushing red (shame), Going pale (terror), Upper lip curl (disgust).
-  </micro_expressions_and_physiologoy>
+  </micro_expressions_and_physiology>
 
   <literary_elements_in_speech>
     **WHEN NPCS SPEAK POETICALLY**:
@@ -181,12 +181,7 @@ export const dialogueMechanics: Atom<void> = defineAtom(
   </cultural_dialogue_patterns>
 
   <integration_with_other_atoms>
-    **CROSS-REFERENCES**:
-
-    - Works with **indirectExpression**: Body language shows emotion during dialogue
-    - Works with **literaryAdaptation**: Found text can contain literary adaptations
-    - Works with **npcLogic**: Cultural patterns match NPC autonomy and rejection behaviors
-    - Works with **writingCraft**: Dialogue is action, subtext, testing, trading, hiding
+    Cross-refs: **indirectExpression** (body language), **literaryAdaptation** (found text), **npcLogic** (NPC autonomy/rejection), **writingCraft** (dialogue as action/subtext).
   </integration_with_other_atoms>
 </rule>
 `,

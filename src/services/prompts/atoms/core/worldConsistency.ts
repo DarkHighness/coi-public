@@ -126,6 +126,7 @@ function getIndifferenceContent(
         - Serendipity favors the protagonist. "Lucky breaks" are part of the genre.
         - Focus: Growth, relationships, healing, and overcoming trauma.
         - Failure is a lesson, not an ending.
+        (Mechanical luck and off-screen motion details → livingWorld atom.)
       </world_disposition>`;
   } else if (level === "hostile") {
     return `

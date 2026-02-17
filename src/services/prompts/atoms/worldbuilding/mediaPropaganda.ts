@@ -69,11 +69,16 @@ Create play by forcing choices:
 
 <reputation_marks>
 ## Reputation Marks (persistent consequences)
-Reputation changes access:
-- Doors open/close (audiences, sponsors, jobs, safehouses)
-- Increased surveillance
-- Informant interest
-- Protection offers (with strings)
+Reputation changes access over time:
+| Mark | Gained By | Effect | Duration | Reversal |
+|------|-----------|--------|----------|----------|
+| "Whistleblower" | publishing damaging truth | +underground trust, −institutional access | permanent until cleared | retraction (costs credibility) or regime change |
+| "Reliable source" | verified reports | +journalist access, +audience size | degrades without new scoops | one major error destroys it |
+| "Known spreader" | publishing unverified rumor | −archive access, +tabloid interest | 1 season | verified correction + public apology |
+| "Corporate asset" | favorable coverage of power | +funding/protection, −street credibility | while useful to patron | patron abandons when inconvenient |
+| "Dangerous" | exposing powerful figures | +informant interest, +surveillance, protection offers with strings | escalates if not resolved | leave the region or find leverage |
+
+**Story latency**: A published story peaks in 1-3 days, enters "common knowledge" in 1-2 weeks, and fades from active discussion in 1 season — UNLESS it triggers institutional action (investigation, trial, war), which extends its life indefinitely.
 </reputation_marks>
 
 <quick_design_template>

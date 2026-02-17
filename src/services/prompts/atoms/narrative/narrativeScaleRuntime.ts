@@ -139,12 +139,28 @@ export const narrativeScaleEpic: Atom<void> = defineAtom(
   </character_treatment>
 
   <language_calibration>
-    **EPIC LANGUAGE IS APPROPRIATE**:
+    **EPIC LANGUAGE IS APPROPRIATE — BUT GROUNDED**:
     - Grand declarations, oaths, and vows fit the tone
-    - Describe battle with visceral intensity
-    - Cosmic scale can be invoked: "The stars themselves trembled"
-    - But ground it in personal experience: "She felt the tremor in her bones"
+    - Cosmic scale can be invoked, but anchor it in the body: not just "The stars trembled" but "She felt the tremor in her bones before she saw the sky crack"
+    - ❌ AVOID: empty grandeur — "The ancient power surged through him, and he knew his destiny"
+    - ✅ USE: grounded grandeur — "The power tore through his ribs like swallowed lightning. His teeth cracked. His vision whited out. When it passed, the hillside was glass."
   </language_calibration>
+
+  <pacing_discipline>
+    **NOT EVERY SCENE IS THE CLIMACTIC BATTLE**:
+    - Epic stories need breathing room: the campfire before the siege, the letter written before dawn, the meal shared before the march
+    - 十年磨一剑 (Ten years to forge a single blade) — training arcs, quiet preparation, and slow accumulation make the climax land
+    - Alternate intensity: battle → aftermath → planning → discovery → tension → confrontation
+    - Even in war, soldiers eat, sleep, argue over dice, and miss home
+  </pacing_discipline>
+
+  <anti_patterns>
+    **EPIC DOES NOT MEAN**:
+    - Every NPC delivers prophecy (most people in an epic world are still ordinary)
+    - Every scene needs a dramatic reveal (mundane logistics of war create immersion)
+    - The protagonist is always the center of cosmic attention (empires have their own inertia)
+    - Power arrives without cost (the stronger the gift, the steeper the price)
+  </anti_patterns>
 </narrative_scale_guidance>
 `,
 );
@@ -175,19 +191,43 @@ export const narrativeScaleBalanced: Atom<void> = defineAtom(
 
   <conflict_design>
     **GROUNDED THREATS**:
-    - A corrupt official, a rival family, a dangerous secret
+    - A corrupt official, a rival family, a dangerous secret, a conspiracy with local reach
     - The threat is real but not cosmic
     - Victory means safety, justice, or resolution—not saving reality
-    - The protagonist is special but not "the chosen one"
+    - The protagonist is capable but not "the chosen one"—earned skill, not destiny
+
+    **INVESTIGATION & DISCOVERY MECHANICS**:
+    - Clues arrive incomplete: a name without a face, a motive without proof, a witness who lies about one detail
+    - Let the player assemble the picture; do not hand them conclusions
+    - Red herrings are earned: they must be plausible enough to follow before the dead end reveals itself
+    - 局中局，计中计 (Schemes within schemes) — the first answer is rarely the whole answer
   </conflict_design>
 
   <tone_flexibility>
     **BLEND INTIMATE AND EPIC**:
-    - Quiet moments between intense scenes
-    - Relationships matter as much as action
-    - Humor and lightness can coexist with danger
+    - Quiet moments between intense scenes: the drink after the interrogation, the walk home after the fight
+    - Relationships matter as much as action — an ally's trust is as valuable as a weapon
+    - Humor and lightness can coexist with danger; tension that never breaks becomes exhausting
     - The world has texture—both grand vistas and cozy corners
+
+    **PACING RHYTHM**:
+    - Investigation → Discovery → Complication → Confrontation → Aftermath → New Thread
+    - 黎明前最黑暗的时刻 (Darkest hour before dawn) — but dawn is earned, not guaranteed
+    - Let the player feel competent: their skills and preparation matter, their attention is rewarded
   </tone_flexibility>
+
+  <language_calibration>
+    **MATCH THE THRESHOLD**:
+    - ❌ AVOID: "The fate of all existence rested on your shoulders"
+    - ✅ USE: "If you don't find the ledger by morning, three families lose their homes"
+    - ❌ AVOID: "You make a friend at the market" (too low-stakes for balanced)
+    - ✅ USE: "The merchant remembers your face. She slides the note across the counter without being asked"
+
+    **小人物的大抉择 (Big choices for small people)**:
+    - The detective who can solve the case or protect her informant—not both
+    - The smuggler who knows the route but owes the wrong people a favor
+    - The healer who has one dose of antivenom and two patients
+  </language_calibration>
 </narrative_scale_guidance>
 `,
 );

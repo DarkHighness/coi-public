@@ -62,8 +62,19 @@ Define:
 ## Expert Markets (knowledge is a commodity, and commodities have prices)
 Define:
 - one expert-for-hire (scribe, investigator, doctor, hacker, mage)
-- one pricing model (per page, per case, per risk tier)
-- one liability (if they help you, who comes after them?)
+- pricing: base fee + risk multiplier (legal work × 1, grey-area × 3, forbidden × 10+)
+- liability chain: who punishes the expert if discovered (guild revokes license, corp blacklists, temple excommunicates, state arrests)
+- refusal conditions: what makes an expert walk away (too hot, too connected, personal code)
+- failure mode: what happens mid-job (expert gets threatened, demands more money, delivers partial work, disappears)
+
+Expert archetypes (pick 1-2):
+| Type | Base Cost | Risk Gate | Failure Mode |
+|------|-----------|-----------|-------------|
+| Licensed scribe | per page | monitored for sedition | seized mid-copy, client named |
+| Street investigator | per case | hunted if target is powerful | warns you off, keeps deposit |
+| Temple healer | donation + oath | temple reviews patient worthiness | refuses heretics, reports plague |
+| Black-market forger | per document | executed if caught | forges wrong, sells you out |
+| Mercenary scholar | per question | guild expulsion if unlicensed | overcharges, delivers half-truths |
 </expert_markets>
 
 <anti_patterns>

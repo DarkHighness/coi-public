@@ -136,13 +136,18 @@ const npcEcosystem = `
 
     <biological_imperative>
       **NPCs ARE MEAT, NOT CODE**:
-      They are slaves to their biology, the tyranny of the glands. Prioritize this over "Plot".
+      They are slaves to their biology. Prioritize this over "Plot" — but biological needs create drama, never erase it.
 
-      - **Fatigue**: It is 3 AM. The guard is not "vigilant". His eyelids are made of lead. His thoughts swim. He is irritable the way only the sleep-deprived can be -- mean without malice. He will take a bribe just to make you go away so he can close his eyes.
-      - **Hunger**: A hungry merchant is distracted. His stomach is the loudest voice in any negotiation. He rushes the deal to get to lunch.
-      - **Pain**: Even a small cut hurts. It throbs with the heartbeat. It makes them sweat, flinch, snap at people who aren't the cause. A "minor wound" ruins their mood for the day and their sleep for the week.
-      - **Libido/Loneliness**: They check out attractive people (subtly). They preen. They get distracted by a pretty face. The body wants what the body wants, regardless of what the plot demands.
-      - **Temperature**: If it's cold, they huddle. They rush indoors. They complain, and their complaints have the honesty of misery. Use this!
+      - **Fatigue**: It is 3 AM. The guard is not "vigilant". His eyelids are lead. He is irritable — mean without malice. He will take a bribe just to close his eyes.
+        *Trigger*: nighttime + hours on duty > 6, or post-combat. *Effect*: lowered perception, shortened temper, susceptible to bribery.
+      - **Hunger**: A hungry merchant rushes the deal to get to lunch. His stomach is the loudest voice in negotiation.
+        *Trigger*: missed meals, poverty, prolonged travel. *Effect*: distracted, impatient, open to food-based persuasion.
+      - **Pain**: Even a small cut throbs with the heartbeat, makes them sweat, flinch, snap. A "minor wound" ruins mood for the day.
+        *Trigger*: any active condition (wound/poison/curse). *Effect*: irritability, reduced cooperation, visible flinching.
+      - **Libido/Loneliness**: They check out attractive people (subtly). They preen. The body wants what it wants.
+      - **Temperature**: If cold, they huddle, rush indoors, complain with the honesty of misery.
+
+      **BOUNDARY**: Biological needs can delay, distract, or complicate a plot-critical moment — but never erase it entirely. The sleepy guard still guards; he's just worse at it.
     </biological_imperative>
   </npc_ecosystem>
 `;
@@ -344,14 +349,14 @@ const npcDialogueTactics = `
       - **Sincerity**: plain, direct truth when they have nothing to gain (or when they’re tired of games).
     </tactics>
 
-    <pure_love_mode>
+    <sincere_expression>
       **SINCERE SCENES ARE REAL**
       In simple romance / “short-drama” tone, or when social complexity is low, NPCs may be straightforward:
       - They can say "I love you" without a scheme.
       - They can comfort without asking for payment.
       - They can be loyal even when it costs them.
       Keep it believable with concrete behaviors (show up, wait, bring food, take blame), not abstract declarations.
-    </pure_love_mode>
+    </sincere_expression>
 
     <tells>
       Lies should leak through observable tells:
@@ -375,6 +380,7 @@ const npcMemorySystem = `
     - **Pattern Recognition**: People categorize you fast. If your behavior is predatory or unstable, they adapt (witnesses, distance, backup, refusing privacy).
     - **Emotional Anchors**: Strong emotions create lasting memories. Save their child, and they'll die for you. Humiliate them publicly, and they'll plot your downfall.
     - **Grudges & Gratitude**: Track in \`hidden.impression\`. These persist across sessions and influence all decisions.
+    - **Cross-Turn Consistency**: Check NPC's prior state before rendering new behavior. A kind NPC cannot turn hostile without an intervening event. If mood/status changed, the cause must be traceable in game state.
   </npc_memory_system>
 `;
 
@@ -665,7 +671,7 @@ function getAutonomyContent(
       - **Self-Interest Rule**: Every action is calculated. If betraying you yields more profit than helping you, they will betray you.
       - **Active Hostility**: Rivals may set traps, spread rumors, or hire assassins proactively.
       - **Price vs Principle**: Many people have a price. Some don't. Find out which by pressure, loss, and time.
-      - **Deception is Default**: Assume everyone is lying or omitting truth.
+      - **Deception is Default (this mode)**: Assume everyone is lying or omitting truth.
       - **Irrelevance**: To a king, you are an ant. To a merchant, you are a wallet. To a bandit, you are prey.
 
       **COMPLETE AUTONOMY**:
@@ -801,24 +807,8 @@ ${dailyExistence}
 ${groupBehavior}
 
   <integration_with_literary_atoms>
-    **CROSS-REFERENCES FOR LITERARY REFINEMENT**:
-
-    - Works with **indirectExpression**: NPCs show emotion through body language, gestures, and physical tells
-      * The body betrays what words hide
-      * Micro-expressions reveal truth during dialogue
-      * Found objects (letters, notes, diaries) tell emotional stories
-
-    - Works with **literaryAdaptation**: NPC-written text can contain literary adaptations
-      * Diary entries with poetic cadence (educated NPCs in emotional moments)
-      * Notes left behind with classical patterns adapted to context
-      * Graffiti that echoes literary structures (fragmented, incomplete)
-      * Letters never sent with adapted classical phrases
-      * These should feel DISCOVERED, not placed
-
-    - **Restraint mechanisms**: Literary elements in NPC content follow 20-30% frequency rule
-      * Not every NPC speaks poetically
-      * Only in appropriate contexts (dying words, drunk confession, cultural ritual, educated character in grief)
-      * Pragmatic characters (soldiers, merchants, children) speak plainly
+    Cross-refs: **indirectExpression** (body language/physical tells during dialogue), **literaryAdaptation** (NPC-written text: diary entries, letters, graffiti — feel DISCOVERED not placed), **dialogue** (cultural rejection patterns).
+    Literary elements in NPC content follow 20-30% frequency rule: only in appropriate contexts (dying words, drunk confession, cultural ritual, educated character in grief). Pragmatic characters speak plainly.
   </integration_with_literary_atoms>
 </true_person_npc_logic>
 `;

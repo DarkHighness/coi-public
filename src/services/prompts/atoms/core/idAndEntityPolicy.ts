@@ -183,7 +183,7 @@ const minimalEntity = `
         * ❌ Create a new item file for \`item_fog\` -> Absurd.
         * ✅ \`vfs_patch_json({ path: "current/world/locations/loc_here.json", patch: [{ op: "replace", path: "/visible/atmosphere", value: "Thick fog..." }] })\`
 
-      **RULE**: Only create a new ID if it needs to be tracked *independently* and *mechanically* for >10 turns.
+      **RULE**: Only create a new ID if: (a) entity persists across multiple turns, (b) multiple actors interact with it, OR (c) player must track its state changes.
       For everything else, **UPDATE EXISTING FIELDS** (\`description\`, \`mood\`, \`status\`).
 
       **DUPLICATE PREVENTION (SESSION REBUILD)**:

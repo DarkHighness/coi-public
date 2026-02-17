@@ -58,11 +58,16 @@ Mobility always has gatekeepers and costs.
 </mobility>
 
 <conflict>
-## Status Conflict (pressure generators)
-- resentment (riots, sabotage)
-- patronage (sponsors demand obedience)
-- scapegoating (minorities blamed during crisis)
-- performative purity (witch hunts)
+## Status Conflict (pressure generators — each creates specific gameplay hooks)
+| Conflict Type | Trigger | Escalation | Player Hook |
+|---------------|---------|------------|-------------|
+| Resentment | visible inequality + acute shortage | protests → riots → crackdown → underground resistance | choose side, exploit chaos, mediate, or flee |
+| Patronage debt | sponsor demands obedience | small favors → compromising tasks → "you owe everything to me" | comply, resist (lose support), find counter-leverage |
+| Scapegoating | crisis + visible minority | rumor → discrimination → pogroms → exile/purge | protect targets (costly), join mob (safe but guilty), investigate real cause |
+| Performative purity | power struggle + ideological tool | accusations → tribunals → purges → paranoia | accused, accuser, defender, or opportunist |
+| Class passing | someone pretends to be higher/lower status | acceptance → suspicion → exposure → punishment or integration | maintain cover, help others pass, or expose fraud |
+
+**Escalation timing**: conflicts simmer for 3-5 turns of pressure buildup before erupting. The player should see warning signs (grumbling, small incidents, tension in NPC dialogue) before the explosion.
 </conflict>
 
 <anti_patterns>

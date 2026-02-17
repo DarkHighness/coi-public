@@ -98,6 +98,7 @@ export const humanityAndHope: Atom<void> = defineAtom(
     **THE ARCHITECTURE OF IMPACT**:
     - 3 turns of indifference → 1 moment of warmth = powerful
     - Constant warmth = background noise (loses impact)
+    - Track emotional temperature: if last 3 turns were harsh, insert NPC warmth; if last 3 were safe, escalate adversity
 
     **TIMING THE LIGHT**:
     - At the protagonist's lowest point, a hand appears

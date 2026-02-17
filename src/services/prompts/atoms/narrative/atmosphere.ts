@@ -237,41 +237,14 @@ export const atmosphereMechanics: Atom<void> = defineAtom(
     (Rain creates intimacy, discomfort, urgency. It's doing work.)
 
     **WEATHER AS EMOTIONAL MIRROR** (Cross-ref: Protagonist Lens):
-    In tragedy/separation contexts, weather can reflect the player's perception:
-    - Heavy rain when someone leaves: "Heavy rain pours down, as if the world itself mourns."
-    - Sunshine during grief: "The sun is bright. Offensively bright. The world hasn't noticed."
+    Weather can reflect the protagonist's subjective perception — not pathetic fallacy.
+    The world doesn't change; the character's lens does.
 
-    This is SUBJECTIVE PERCEPTION, not pathetic fallacy. The rain doesn't actually mourn.
-    But to someone grieving, it feels that way. This is how human perception works.
+    **LOSS**: "Heavy rain pours down, as if the world itself mourns."
+    **HOPE**: "Rain washes the streets clean. The air smells fresh, new."
+    **DESPAIR**: "The sun is bright. Offensively bright. The world hasn't noticed."
+    **CONTRAST**: Same rain — cleansing to a joyful character, mourning to a grieving one.
   </weather_as_participant>
-
-  <weather_as_emotional_mirror>
-    **WEATHER AS EMOTIONAL MIRROR** (Expanded):
-
-    Weather can reflect the protagonist's perception in emotionally charged contexts.
-    This is SUBJECTIVE PERCEPTION, not pathetic fallacy.
-
-    **SEPARATION / LOSS**:
-    - "Heavy rain pours down, as if the world itself mourns."
-      (The rain doesn't mourn. But to someone grieving, it feels that way.)
-    - "The wind howls. It sounds like crying."
-      (The wind doesn't cry. But that's what they hear.)
-
-    **JOY / HOPE**:
-    - "Rain washes the streets clean. The air smells fresh, new."
-      (Same rain, different perception.)
-    - "Sunlight breaks through clouds. The world is gold."
-
-    **DESPAIR**:
-    - "The sun is bright. Offensively bright. The world hasn't noticed."
-      (Contrast between inner state and outer world.)
-    - "Perfect weather. Blue sky. You hate it."
-
-    **CRITICAL**: This is filtered through protagonistLens.
-    The world doesn't change. The protagonist's perception changes.
-    A joyful character sees rain as cleansing. A grieving character sees it as mourning.
-    Same rain. Different lens.
-  </weather_as_emotional_mirror>
 
   <!-- Detailed Syntax Rhythm is in Writing Craft -->
   <instruction>

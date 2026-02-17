@@ -374,7 +374,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_ls",
     description:
-      "List VFS entries. Supports plain listing, glob filtering via patterns, always returns stats (including chars/lines), and includes read-strategy hints for likely-over-limit files.",
+      "List VFS directory entries. Returns metadata (chars, lines) per entry. Supports glob patterns for filtering and suggests read strategies for large files.",
     parameters: z
       .object({
         path: vfsOptionalPathSchema.describe(
@@ -439,7 +439,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_schema",
     description:
-      "Describe the expected JSON schema for a VFS path (Zod-based). Helps avoid invalid keys and missing fields.",
+      "Show the expected JSON schema for one or more VFS paths. Use before writing to avoid invalid keys or missing fields.",
     parameters: z
       .object({
         paths: z
@@ -465,7 +465,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_read_chars",
-    description: "Read VFS file content by a character window.",
+    description: "Read file content by character range (start offset + length).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path."),
@@ -506,7 +506,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_read_lines",
-    description: "Read VFS file content by line range.",
+    description: "Read file content by line range (1-based startLine + endLine or lineCount).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path."),
@@ -545,7 +545,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_read_json",
-    description: "Read JSON file values by JSON pointers.",
+    description: "Read JSON file values by JSON Pointer paths (e.g. '/visible/name', '' for root).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
@@ -581,7 +581,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_read_markdown",
     description:
-      "Read markdown file content by section selectors (heading or hierarchical index).",
+      "Read markdown sections by heading name (exact match) or hierarchical index (e.g. '1', '1.2', '2.3.1').",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("Markdown file path."),
@@ -621,7 +621,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_search",
     description:
-      "Search VFS files by text/regex/fuzzy (optionally semantic, when available).",
+      "Search VFS file contents by text, regex, or fuzzy matching (optionally semantic, when available).",
     parameters: z
       .object({
         query: z.string().describe("Search query (text or regex)."),
@@ -662,7 +662,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_vm",
     description:
-      "Run sequential JavaScript snippets in a restricted VM sandbox and orchestrate allowed VFS tool calls.",
+      "Execute sequential JavaScript snippets in a sandboxed VM. Scripts can emit allowlisted VFS tool calls for multi-step dependent operations within a single response.",
     parameters: z
       .object({
         scripts: vfsVmScriptsSchema.describe(
@@ -710,7 +710,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_write_file",
-    description: "Create or overwrite a file.",
+    description: "Create or overwrite a single file with the given content.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path."),
@@ -734,7 +734,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_append_text",
-    description: "Append text to an existing text/markdown file.",
+    description: "Append text to the end of an existing text or markdown file.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path (text/markdown)."),
@@ -767,7 +767,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_edit_lines",
-    description: "Apply line-based edits to a text/markdown file.",
+    description: "Apply line-based insert/replace edits to a text or markdown file.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path (text/markdown)."),
@@ -801,7 +801,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_write_markdown",
     description:
-      "Add/replace/delete markdown sections using heading/index selectors.",
+      "Add, replace, or delete markdown sections by heading name or hierarchical index selector.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("Markdown file path."),
@@ -839,7 +839,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_patch_json",
-    description: "Apply RFC 6902 JSON patch operations to one JSON file.",
+    description: "Apply RFC 6902 JSON Patch operations (add/replace/remove/move/copy/test) to a JSON file.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
@@ -858,7 +858,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_merge_json",
-    description: "Deep-merge one JSON object into an existing JSON file.",
+    description: "Deep-merge a JSON object into an existing JSON file (arrays are replaced, not appended; deletions require vfs_patch_json).",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
@@ -877,7 +877,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_move",
-    description: "Move or rename a file path.",
+    description: "Move or rename a single file to a new path.",
     parameters: z
       .object({
         from: vfsFilePathSchema.describe("Source path."),
@@ -896,7 +896,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_delete",
-    description: "Delete one file path.",
+    description: "Delete a single file at the given path.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("Path to delete."),
@@ -915,7 +915,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_finish_turn",
     description:
-      "Append a new turn to the active fork and set it active (writes conversation index + turn file).",
+      "Commit a new conversation turn: append to the active fork and set it active. Writes conversation index and turn file. MUST be the LAST tool call.",
     parameters: z
       .object({
         assistant: z
@@ -974,7 +974,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_finish_soul",
     description:
-      "Finish a Player Rate feedback loop by updating soul markdown docs (current save and/or global mirror).",
+      "Commit Player Rate feedback: update soul markdown docs for current save and/or global mirror. MUST be the LAST tool call in [Player Rate] loops.",
     parameters: z
       .object({
         currentSoul: z
@@ -1009,7 +1009,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_finish_summary",
     description:
-      "Finish the summary loop by appending a StorySummary and updating forks/{activeFork}/story/summary/state.json.",
+      "Commit a story summary: append a StorySummary record and update summary state. MUST be the LAST tool call in summary loops.",
     parameters: z
       .object({
         displayText: z
@@ -1051,7 +1051,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     defineCatalogTool({
       name: entry.name,
       description:
-        `Commit outline phase ${entry.phase} payload and write to shared/narrative/outline/phases/phase${entry.phase}.json.`,
+        `Commit outline phase ${entry.phase} payload. Validates and writes to shared/narrative/outline/phases/phase${entry.phase}.json. MUST be the LAST tool call for this phase.`,
       parameters: entry.schema.describe(
         `Outline phase ${entry.phase} payload JSON object.`,
       ),

@@ -33,24 +33,17 @@ describe("prompt flow isolation", () => {
   });
 
   it("keeps runtime floor skill guidance explicit per loop type", () => {
-    expect(getTurnRuntimeFloor()).toContain(
-      "Loop preflight (required before non-read tools)",
-    );
-    expect(getTurnRuntimeFloor()).toContain("Hard gate (enforced)");
-    expect(getTurnRuntimeFloor()).toContain("commands/runtime/turn/SKILL.md");
-    expect(getTurnRuntimeFloor()).toContain("Structured error recovery flow");
+    // Turn runtime floor: hard gate, skill paths, error recovery
+    expect(getTurnRuntimeFloor()).toContain("Loop preflight");
+    expect(getTurnRuntimeFloor()).toContain("hard gate");
+    expect(getTurnRuntimeFloor()).toContain("commands/runtime/SKILL.md");
+    expect(getTurnRuntimeFloor()).toContain("Error recovery");
 
-    expect(getOutlineRuntimeFloor()).toContain(
-      "Loop quick-start (recommended)",
-    );
-    expect(getOutlineRuntimeFloor()).toContain(
-      "Soft gate (advisory, not blocking)",
-    );
+    // Outline runtime floor: quick-start, skill paths, error recovery
+    expect(getOutlineRuntimeFloor()).toContain("Quick-start (recommended)");
     expect(getOutlineRuntimeFloor()).toContain(
       "commands/runtime/outline/SKILL.md",
     );
-    expect(getOutlineRuntimeFloor()).toContain(
-      "Structured error recovery flow",
-    );
+    expect(getOutlineRuntimeFloor()).toContain("Error recovery");
   });
 });

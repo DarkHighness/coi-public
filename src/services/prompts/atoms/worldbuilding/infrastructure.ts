@@ -44,33 +44,50 @@ Play hooks:
 <power_and_fuel>
 ## Power & Fuel
 - Source: grid, generators, steam, mana reactors, biofuel, coal, solar
-- Priority: hospitals, security, corp towers, noble quarters
-- Failure: brownouts, rolling blackouts, fuel embargo
+- Priority tiers: hospitals → security → corp/noble → commercial → residential → slums
+- Capacity: define a rough load ceiling. At 80% = brownouts begin; 100% = rolling blackouts; 120% = cascade failure
+- Failure: brownouts (random districts lose power), rolling blackouts (scheduled rotation), total blackout (cascade — comms die, security gates unlock, cold storage spoils)
 
 Play hooks:
-- illegal hookups
-- maintenance crews as gatekeepers
+- illegal hookups (steal power → if caught, disconnection + fine + flagged)
+- maintenance crews as gatekeepers (bribe for priority, sabotage for rivals)
+- fuel embargo: price spikes → heating vs cooking vs industry tradeoffs
 </power_and_fuel>
 
 <roads_ports_transit>
 ## Roads, Ports, Transit
-- Chokepoints: bridges, elevators, docks, rail yards, airlocks
+- Chokepoints: bridges, elevators, docks, rail yards, airlocks, mountain passes
 - Maintenance: tolls, road gangs, unions, military engineers
-- Failure: collapse, blockade, strikes
+- Speed vs cost: fast route = expensive/monitored; cheap route = slow/dangerous; secret route = risky/illegal
+- Failure: collapse (weeks to repair), blockade (political), strikes (negotiable), weather (seasonal)
 </roads_ports_transit>
 
 <comms>
 ## Communication
 - Layer: couriers, print, radio, net, scrying, messenger birds
-- Cost: subscriptions, stamps, encryption keys, licenses
-- Failure: censorship, jamming, surveillance, rumor distortions
+- Cost and speed by layer:
+  | Layer | Cost | Speed | Intercept Risk | Failure Mode |
+  |-------|------|-------|----------------|-------------|
+  | Courier | per-distance + danger bonus | days | ambush, bribery | courier killed/captured |
+  | Print | subscription/per-copy | hours (local) | censorship, seizure | press raided/burned |
+  | Radio/scrying | license + equipment | instant | monitoring, jamming | jammed, triangulated |
+  | Bird/spirit | per-message + handler fee | hours | predators, wards | lost, intercepted |
+  | Black channel | steep (trust + coin) | variable | betrayal | informant, sting |
+- Surveillance: who monitors which layer, what triggers investigation, how long records are kept
 </comms>
 
 <healthcare>
 ## Healthcare
 - Who provides: temple, clinics, guild surgeons, corp med, black market
-- Capacity: beds, supplies, triage rules
-- Failure: shortages, counterfeit meds, outbreak protocols
+- Capacity: beds per provider, supply stock (days until exhaustion during crisis), specialist availability
+- Triage rules (who gets treated first):
+  | Provider | Priority | Cost | Refusal Conditions |
+  |----------|----------|------|--------------------|
+  | Temple | faithful → children → all | donation + prayer | heretics, excommunicated, enemies of faith |
+  | Corp clinic | employees → card-holders → walk-ins (lottery) | insurance/cash | unregistered, blacklisted |
+  | Guild surgeon | members → referrals → cash | guild rate + materials | non-members during shortage |
+  | Black market | anyone with coin | 3-5× standard rate | nothing — but quality varies, no liability |
+- Failure: supply shortage → triage hardens, counterfeit meds circulate, outbreak protocol (quarantine zones, movement restrictions, information blackout)
 </healthcare>
 
 <quick_design_template>

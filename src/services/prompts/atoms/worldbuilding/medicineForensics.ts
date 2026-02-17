@@ -31,14 +31,24 @@ Design goal: make wounds, treatment, and evidence create *choices*, not just fla
 
 <injury_clocks>
 ## Injury as Clocks (the body keeps its own merciless schedule)
-- Use a **clock per injury**: *Bleeding / Infection / Shock / Exposure / Disability / Heat*.
-- Every action has a tradeoff: **time vs risk vs cost vs secrecy**.
-- Treatment should have **failure modes**: wrong dose, counterfeit meds, relapse, complications.
+Use a **clock per injury** with concrete segment counts:
 
-Simple pattern:
-1) Stabilize (stop the clock from ticking fast)
-2) Treat (reduce clock segments)
-3) Recover (time + restrictions; recovery creates plot constraints)
+| Injury Type | Segments | Per Segment ≈ | Untreated End State |
+|-------------|----------|---------------|---------------------|
+| Bleeding | 4 | minutes | death |
+| Infection | 6 | hours | fever → sepsis → death |
+| Shock | 3 | minutes | organ failure |
+| Exposure (cold/heat) | 6 | hours | hypothermia/heatstroke |
+| Broken bone | 8 | days | permanent disability if unset |
+| Poison (fast) | 3 | minutes to hours | depends on toxin |
+| Poison (slow) | 6 | days | organ damage → death |
+
+**Clock mechanics**:
+1) **Stabilize** — stop the clock from advancing (tourniquet, warmth, antidote first dose). Requires basic supplies or improvisation.
+2) **Treat** — reduce segments (surgery, medicine, magic). Requires skill + materials. Failure = clock resumes or complication added.
+3) **Recover** — remaining segments tick down as rest (days/weeks). Recovery creates constraints: can't fight, can't travel fast, vulnerable.
+
+Treatment failure modes: wrong dose (new clock: overdose), counterfeit meds (clock pauses then resumes worse), relapse (healed clock reactivates at half), complications (new secondary clock).
 </injury_clocks>
 
 <care_access>
@@ -65,10 +75,24 @@ Chain-of-custody template:
 </evidence_chain>
 
 <poison_and_toxins>
-## Poisons / Toxins / Drugs (not instant-kill buttons)
-- Poisons have **vector** (ingest/inject/contact/inhalation), **onset**, and **antidote access**.
-- Antidotes are gated by **sponsor**, **payment**, or **institutional approval**.
-- Counterfeit medicine exists when: need + scarcity + weak enforcement.
+## Poisons / Toxins / Drugs (not instant-kill buttons — they are processes with timelines)
+Every poison has 5 properties:
+
+| Property | Define It |
+|----------|-----------|
+| **Vector** | ingested / injected / contact / inhaled |
+| **Onset** | instant (combat), minutes (assassination), hours (political), days (slow murder) |
+| **Symptoms** | visible progression the player can observe or diagnose |
+| **Antidote** | what cures it, who has it, what it costs, how fast it works |
+| **Detection** | how forensics can identify it post-mortem or during treatment |
+
+Antidotes are gated by **sponsor**, **payment**, or **institutional approval**:
+- Temple antidote: requires confession + donation (hours to access)
+- Guild pharmacist: cash + prescription from recognized healer (available but expensive)
+- Black market: immediate, 5× price, might be counterfeit (10-20% failure rate)
+- Self-treatment: herbalism/alchemy skill check, wrong ingredients = second poisoning
+
+Counterfeit medicine circulates when: high demand + scarce supply + weak enforcement. It looks right, costs less, and kills slowly.
 </poison_and_toxins>
 
 <quick_design_template>

@@ -98,7 +98,7 @@ describe("contextInjector", () => {
       "[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]",
     );
     expect(getText(history[7])).toContain(
-      "If finishing with `vfs_finish_turn`",
+      "vfs_finish_turn",
     );
     expect(getText(history[8])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[8])).toContain("commands/runtime/SKILL.md");

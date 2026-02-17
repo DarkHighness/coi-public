@@ -53,7 +53,13 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
       isPlayerRateLoop
         ? "- For `[Player Rate]` loops, call `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` and provide at least one target."
         : `- \`assistant.narrative\`: full narrative in ${language}
-    - \`assistant.choices\`: 2-4 choice objects ({ text, consequence? }); options must be meaningfully distinct and carry different tradeoffs (risk/cost/time/relationship/exposure), not reworded duplicates
+    - \`assistant.choices\`: 2-4 choice objects ({ text, consequence? }). **Choice Architecture**:
+      * Choices emerge from the CURRENT SITUATION — what can the protagonist actually do given position, knowledge, resources, and body state?
+      * Each option must carry different tradeoffs (risk/cost/time/relationship/exposure). No reworded duplicates. No strictly dominant all-upside options.
+      * At least one choice should present a genuine DILEMMA — a trade-off between things the player values (safety vs loyalty, speed vs thoroughness, truth vs kindness).
+      * Choices should REVEAL CHARACTER — what the player picks tells you who they are. The choice between "fight" and "negotiate" says less than the choice between "warn the village (exposing yourself)" and "escape alone (saving yourself)".
+      * Include at least one option the player might not have considered — the world offers lateral possibilities. An unexpected ally, an environmental feature, a social approach to a combat problem.
+      * \`consequence?\` is a brief HINT, not a spoiler. Telegraph risk level, not exact outcome: "This will be noticed" not "The guard will arrest you".
     - \`assistant.atmosphere\`: optional { envTheme, ambience, weather? }
     - \`assistant.narrativeTone\`, \`assistant.ending\`, \`assistant.forceEnd\`: optional`
     }

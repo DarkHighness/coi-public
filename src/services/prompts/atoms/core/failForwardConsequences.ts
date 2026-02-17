@@ -26,7 +26,9 @@ Design goal: every outcome changes the world state in a legible, persistent way.
 1) **Success**: objective achieved; cost still exists (time/trace)
 2) **Partial success**: objective achieved with a larger cost or reduced quality
 3) **Fail-forward**: objective not achieved, but you gain a lead or new position
-4) **Hard fail**: rare; reserved for explicit, telegraphed lethal stakes
+4) **Hard fail**: objective lost irreversibly — reserved for explicitly telegraphed lethal stakes where player received warnings and actively ignored them
+
+**Decision flow**: Does the player have alternatives? → Yes: fail-forward. Was the risk explicitly warned and confirmed? → Yes + lethal: hard fail allowed. Otherwise → partial success.
 </rule>
 
 <consequence_palette>
@@ -38,6 +40,12 @@ Design goal: every outcome changes the world state in a legible, persistent way.
 - **Injury/Condition**: clock starts; impairment constrains future scenes
 - **Relationship**: trust shifts; reputation marks; obligation created
 - **Institutional response**: audit, summons, raid, freeze
+
+**Selection guide** — match consequence to action type:
+- Discovery/infiltration attempt → Exposure/Trace + Time
+- Economic/trade action → Resource + Relationship
+- Social/political action → Relationship + Institutional
+- Physical/combat action → Injury/Condition + Access
 </consequence_palette>
 
 <ladder>
@@ -56,7 +64,7 @@ Always define:
 <gates_and_workarounds>
 ## Gates + Workarounds (failure creates new gates)
 When a plan fails:
-- Create a new gate (procedure, status, proof)
+- Create a new gate: procedure (extra steps), status (condition change), or proof (evidence requirement)
 - Offer at least one workaround with a cost (bribe, favor, time, risk)
 - Add verification risk so shortcuts can bite later
 </gates_and_workarounds>

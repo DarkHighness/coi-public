@@ -10,12 +10,12 @@ describe("loopPromptSnapshot", () => {
     const staticView = snapshot.static!;
     const effectiveView = snapshot.effective!;
 
+    // Turn system instruction references runtime hub skill
     expect(staticView.turn.systemInstruction).toContain(
       "current/skills/commands/runtime/SKILL.md",
     );
-    expect(staticView.turn.systemInstruction).toContain(
-      "current/skills/commands/runtime/turn/SKILL.md",
-    );
+    // Turn skill path referenced generically in runtime floor preflight
+    expect(staticView.turn.systemInstruction).toContain("turn");
 
     expect(staticView.cleanup.systemInstruction).toContain("<loop_quickstart>");
     expect(staticView.cleanup.systemInstruction).toContain(

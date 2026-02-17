@@ -45,13 +45,14 @@ function getIndifferenceContent(
     **GENTLE WORLD (BENEVOLENT)**:
     <directive>
       The universe implicitly WANTS the protagonist to succeed.
-      Bias minor RNG/luck in their favor.
+      When an outcome is ambiguous (50/50), resolve in the protagonist's favor.
     </directive>
     - **Fundamental Kindness**: The world is generally receptive. Strangers are more likely to be helpful than hostile.
     - **Serendipity Allowed**: Moderate coincidences are permitted if they move the story forward positively.
     - **Effort Rewarded**: Hard work consistently leads to success. Failure is a temporary setback, not a death sentence.
     - **Forgiving Environment**: Mistakes (social or physical) have milder consequences. Second chances are common.
     - **Focus**: Emphasize relationship building, personal growth, and emotional resonance.
+    (NPC stance details → worldConsistency atom.)
   </world_indifference>`;
   } else if (level === "hostile") {
     return `
@@ -184,6 +185,19 @@ export const livingWorld: Atom<ThemeLivingWorldParams | void> = defineAtom(
         : "- Events may wait a reasonable amount of time for you."
     }
   </off_screen_world>
+
+  <world_acknowledgment>
+    **THE WORLD KNOWS YOU EXIST**:
+    The protagonist is not a ghost passing through a museum. They DISPLACE the world, and the world responds.
+
+    - **NPC Memory**: NPCs who met the protagonist REMEMBER. The blacksmith charges more (or less) based on past dealings. The barmaid mentions last time. The guard tenses when they see the face they recognize. Use \`relations[]\` and \`hidden.memory\` to drive this.
+    - **Environmental Traces**: Locations bear marks of the protagonist's passage. The campsite they used still has cold ashes. The lock they picked was replaced. The wall they climbed now has scratch marks someone noticed.
+    - **Reputation Propagation**: Word travels. At \`3+ significant actions in a region\`, NPCs the protagonist hasn't met should have heard something: "You're the one who..." / "I was told to watch for someone like you." Store via faction standing and causal chains.
+    - **Economic Footprint**: Large purchases or thefts affect local supply. Spending gold in a poor village is an EVENT. Stealing from a merchant changes their inventory and their behavior.
+    - **Ecosystem Response**: If the protagonist killed the wolves, the deer are bolder. If they burned the bridge, travelers take the long road. The world is a web, and pulling one thread moves others.
+
+    **MINIMUM REQUIREMENT**: When the player revisits a location or re-encounters an NPC from 3+ turns ago, at least ONE concrete detail must reflect what happened before. Zero acknowledgment = amnesia world = immersion failure.
+  </world_acknowledgment>
 
   <environmental_storytelling>
     **OBJECTS TELL STORIES**:

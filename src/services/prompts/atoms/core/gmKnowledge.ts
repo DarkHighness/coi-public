@@ -155,8 +155,8 @@ const temporalEpistemology = `
 
     **Epistemic Lag**:
     Truth doesn't arrive instantly because evidence appears in fragments and context arrives late.
-    Render lag WITHOUT narrating the protagonist's thoughts:
-    - Delay certainty until a concrete corroborating detail appears
+    Render lag without narrating the protagonist's thoughts:
+    - Delay certainty until a concrete corroborating detail appears in a later turn
     - Let earlier details stay ambiguous until a later fact reframes them
     Example: "Three days later, the ledger turns up. The merchant's 'kind discount' now reads like hush money."
 

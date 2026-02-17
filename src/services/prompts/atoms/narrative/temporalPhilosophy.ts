@@ -46,10 +46,13 @@ export const temporalPhilosophy: Atom<void> = defineAtom(
 
     State COSMIC TIME for consistency. Render NARRATIVE TIME for drama.
     Reference LIVED TIME for immersion.
+
+    **PROPORTION**: Cosmic (1 sentence anchor) → Narrative (main prose) → Lived (1-2 sensory beats).
+    One time dominates per passage; the other two provide grounding.
   </temporal_weaving>
 
   <temporal_laws>
-    METAPHYSICAL AXIOMS (Unbreakable):
+    CORE TEMPORAL PRINCIPLES (break only with explicit in-world justification):
 
     **IRREVERSIBILITY**: Time flows in one direction only.
     No going back. No undoing. What is done, is done.

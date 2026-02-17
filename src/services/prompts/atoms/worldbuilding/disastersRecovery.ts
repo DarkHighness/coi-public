@@ -61,11 +61,21 @@ Each measure needs:
 
 <recovery_debt>
 ## Recovery Debt (the disaster ends, but its debts never do)
-Recovery creates:
-- debt (to lenders, temples, corps)
-- reforms (new laws, new surveillance)
-- resentment (who was saved vs abandoned)
-- reconstruction contracts (corruption opportunities)
+Recovery creates persistent gameplay constraints:
+
+| Debt Type | Who Owes | Who Profits | Player Consequence |
+|-----------|----------|-------------|-------------------|
+| Financial | city/region to lenders | banks, corps, foreign powers | taxes rise, services cut, loans called in |
+| Political | rulers to population | reformers, demagogues, military | new laws/surveillance, power shifts, scapegoating |
+| Social | survivors to each other | whoever was "first saved" | resentment between districts, trust collapse, vigilante justice |
+| Infrastructure | everyone to builders | construction guilds, smugglers | months of disruption, temporary workarounds become permanent, corruption in contracts |
+
+Three recovery paths (pick one as dominant):
+- **Authoritarian**: fast rebuild, heavy surveillance, dissent crushed → stable but resentful
+- **Inclusive**: slow rebuild, consensus-driven, equitable allocation → fair but vulnerable to next crisis
+- **Neglectful**: resources hoarded by elites, slums left to rot → cheap for rulers, breeding ground for unrest
+
+The path chosen defines the political landscape for the next arc.
 </recovery_debt>
 
 <anti_patterns>
