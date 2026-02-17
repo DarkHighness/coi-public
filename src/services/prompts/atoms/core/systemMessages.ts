@@ -73,7 +73,6 @@ ${capabilityText}
 
 **SKILLS**:
 - **PREFLIGHT**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
-- **DOMAIN SKILLS (SESSION START)**: Read current/skills/index.json, then load 1-3 domain skills that match the current scene context (NPC interaction → npc/logic + npc/soul; writing quality → craft/emotional-empathy; etc.). Reuse across turns; re-read only on \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` or insufficient scope.
 
 **EXECUTION**: Apply changes decisively — if the command contradicts mutable lore, OVERWRITE IT (immutable zones remain protected).
 
@@ -116,7 +115,6 @@ ${capabilityText}
 
 **SKILLS**:
 - **PREFLIGHT (ENFORCED)**: Before first mutation, read: current/skills/commands/runtime/SKILL.md, the active command protocol ("turn" or "player-rate"), current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
-- **DOMAIN SKILLS (SESSION START)**: Read current/skills/index.json, then load 1-3 domain skills matched to the scene (e.g. NPC dialogue → npc/logic + npc/soul; emotional beats → craft/emotional-empathy; moral complexity → gm/moral-complexity). Reuse across turns. Re-read only on \`[SYSTEM: EXTERNAL_FILE_CHANGES]\`, insufficient scope, or explicit recovery need.
 
 **DATA ACCESS**:
 - Inspect before mutating. Atmosphere refs: \`current/refs/atmosphere/\` (alias of \`shared/system/refs/atmosphere/\`).
@@ -180,7 +178,6 @@ ${capabilityText}
 
 **SKILLS**:
 - **PREFLIGHT (ENFORCED)**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
-- **DOMAIN SKILLS (SESSION START)**: Read current/skills/index.json, then load 1-3 domain skills matched to the cleanup context. Reuse across turns. Re-read only on \`[SYSTEM: EXTERNAL_FILE_CHANGES]\`, insufficient scope, or explicit recovery need.
 
 **WORKFLOW**:
 1. Use \`vfs_ls\` / \`vfs_search\` / read tools to locate and verify duplicate candidates. For large JSON, prefer pointer/line scoped reads; avoid broad full-file char reads.

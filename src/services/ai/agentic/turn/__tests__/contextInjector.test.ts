@@ -76,10 +76,10 @@ describe("contextInjector", () => {
     expect(getText(history[4])).toContain(
       "Do not skip required skill preflight",
     );
-    expect(getText(history[4])).toContain("current/skills/index.json");
     expect(getText(history[4])).toContain("DOMAIN SKILL LOADING");
+    expect(getText(history[4])).toContain("npc/logic/SKILL.md");
     expect(getText(history[4])).toContain(
-      "Reuse across subsequent turns",
+      "Reuse loaded skills across turns",
     );
     expect(getText(history[4])).toContain("You are currently in God mode.");
     expect(getText(history[4])).toContain("Unlock mode is currently ON.");
@@ -113,8 +113,8 @@ describe("contextInjector", () => {
     expect(getText(history[10])).toContain(
       "Do not skip required skill preflight",
     );
-    expect(getText(history[10])).toContain("current/skills/index.json");
     expect(getText(history[10])).toContain("DOMAIN SKILL LOADING");
+    expect(getText(history[10])).toContain("npc/logic/SKILL.md");
   });
 
   it("injects normal turn instruction without semantic hints when RAG is off", () => {
@@ -172,7 +172,7 @@ describe("contextInjector", () => {
     expect(getText(history[3])).toContain(
       "Do not skip required skill preflight",
     );
-    expect(getText(history[3])).toContain("current/skills/index.json");
+    expect(getText(history[3])).toContain("current/skills/npc/logic/SKILL.md");
     expect(getText(history[3])).toContain("DOMAIN SKILL LOADING");
   });
 

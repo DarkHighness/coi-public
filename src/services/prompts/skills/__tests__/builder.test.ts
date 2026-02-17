@@ -23,12 +23,9 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain("<theme_key>long_aotian</theme_key>");
     expect(prompt).toContain("<theme_skill_selection_protocol>");
     expect(prompt).toContain(
-      'vfs_read_chars({ path: "current/skills/index.json" })',
-    );
-    expect(prompt).toContain(
       'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
     );
-    expect(prompt).toContain("Trigger examples:");
+    expect(prompt).toContain("catalog hierarchy above");
     expect(prompt).toContain(
       "Theme skills live under `current/skills/theme/**`",
     );
@@ -85,9 +82,7 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain("`presets/runtime`");
     expect(prompt).toContain("`worldbuilding`");
     expect(prompt).toContain("`core/id-and-entities`");
-    expect(prompt).toContain(
-      "See `current/skills/index.json` for complete skill coverage.",
-    );
+    expect(prompt).toContain("</skills_catalog>");
   });
 
   it("keeps index entries aligned with catalog metadata source", () => {
@@ -107,9 +102,9 @@ describe("skills prompt builder hygiene", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
 
     expect(prompt).toContain(
-      "Hierarchy below is a navigation map (hubs + entry points), not the complete catalog.",
+      "Hierarchy below is the navigation map (hubs + entry points).",
     );
-    expect(prompt).toContain("at session start, read index.json");
+    expect(prompt).toContain("before first game mutation each session");
     expect(prompt).toContain("Convert loaded skills into explicit constraints");
   });
 });

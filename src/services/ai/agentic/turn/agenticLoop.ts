@@ -354,7 +354,6 @@ export async function runAgenticLoopRefactored(
       ...loopState.requiredCommandSkillPaths,
       ...loopState.requiredSoulReadPaths,
       ...loopState.requiredPresetSkillPaths,
-      "skills/index.json",
     ],
     maxOptionalRefs: 3,
   });
@@ -1013,6 +1012,73 @@ function checkPresetSkillReadGate(
   };
 }
 
+/**
+ * Domain skill soft gate — fires ONCE per session.
+ * If the AI attempts a mutation without having read any domain skill,
+ * block with a suggestion. After the first reminder, never fire again.
+ * Skipped in sudo/cleanup/player-rate modes (focused tasks, not storytelling).
+ */
+const DOMAIN_SKILL_INDICATOR_PATHS = [
+  "skills/npc/logic/SKILL.md",
+  "skills/npc/soul/SKILL.md",
+  "skills/npc/dialogue/SKILL.md",
+  "skills/craft/emotional-empathy/SKILL.md",
+  "skills/gm/moral-complexity/SKILL.md",
+  "skills/gm/knowledge/SKILL.md",
+  "skills/worldbuilding/SKILL.md",
+] as const;
+
+function checkDomainSkillSoftGate(
+  functionCalls: ToolCallResult[],
+  loopState: LoopState,
+):
+  | { ok: true }
+  | { ok: false; error: { success: false; error: string; code: string } } {
+  if (loopState.domainSkillReminderFired) {
+    return { ok: true };
+  }
+
+  if (
+    loopState.isSudoMode ||
+    loopState.isCleanupMode ||
+    loopState.isPlayerRateMode
+  ) {
+    return { ok: true };
+  }
+
+  const hasMutationLikeCall = functionCalls.some(
+    (call) => !isReadOnlyInspectionToolName(call.name),
+  );
+  if (!hasMutationLikeCall) {
+    return { ok: true };
+  }
+
+  const hasDomainSkill = DOMAIN_SKILL_INDICATOR_PATHS.some((path) =>
+    loopState.vfsSession.hasToolSeenInCurrentEpoch(path),
+  );
+
+  if (hasDomainSkill) {
+    return { ok: true };
+  }
+
+  loopState.domainSkillReminderFired = true;
+
+  return {
+    ok: false,
+    error: {
+      success: false,
+      error:
+        `[ERROR: DOMAIN_SKILL_MISSING] No domain skill loaded. ` +
+        `Read at least 1 before mutations. Pick the most relevant:\n` +
+        `- NPC scene → vfs_read_chars({ path: "current/skills/npc/logic/SKILL.md" })\n` +
+        `- Emotional scene → vfs_read_chars({ path: "current/skills/craft/emotional-empathy/SKILL.md" })\n` +
+        `- Moral dilemma → vfs_read_chars({ path: "current/skills/gm/moral-complexity/SKILL.md" })\n` +
+        `This reminder fires once per session.`,
+      code: "DOMAIN_SKILL_MISSING",
+    },
+  };
+}
+
 async function processToolCalls(
   params: ProcessToolCallsParams,
 ): Promise<ProcessToolCallsResult> {
@@ -1090,6 +1156,11 @@ async function processToolCalls(
     const presetSkillGate = checkPresetSkillReadGate([call], loopState);
     if ("error" in presetSkillGate) {
       return presetSkillGate.error;
+    }
+
+    const domainSkillGate = checkDomainSkillSoftGate([call], loopState);
+    if ("error" in domainSkillGate) {
+      return domainSkillGate.error;
     }
 
     return null;

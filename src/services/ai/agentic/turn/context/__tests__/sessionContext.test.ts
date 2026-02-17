@@ -172,13 +172,7 @@ describe("sessionContext", () => {
     expect(coldStartText?.text).toContain(
       "current/skills/craft/writing/SKILL.md",
     );
-    expect(coldStartText?.text).toContain("[SECTION: RECOMMENDED_SKILL_READS]");
     expect(coldStartText?.text).toContain("[SECTION: TARGETED_HISTORY_LOOKUP]");
-    expect(coldStartText?.text).toContain("Read 1-3 additional skill files");
-    expect(coldStartText?.text).toContain("prioritize those first");
-    expect(coldStartText?.text).toContain(
-      "Reuse those skill docs across turns",
-    );
     expect(coldStartText?.text).toContain("current/conversation/session.jsonl");
     expect(coldStartText?.text).toContain("lines/search windows");
     expect(initializedHistory).toEqual(

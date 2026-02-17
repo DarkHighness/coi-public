@@ -73,6 +73,8 @@ export interface LoopState {
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
   /** Pending existing-file write targets that must be retried successfully before finish */
   pendingWriteFailurePaths: Set<string>;
+  /** Whether the one-time domain skill reminder has already fired */
+  domainSkillReminderFired: boolean;
 }
 
 // ============================================================================
@@ -194,6 +196,7 @@ export function createLoopState(
     vfsElevationIntent,
     vfsElevationScopeTemplateIds,
     pendingWriteFailurePaths: new Set<string>(),
+    domainSkillReminderFired: false,
   };
 }
 

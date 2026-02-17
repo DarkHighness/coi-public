@@ -184,12 +184,14 @@ export function injectNormalTurnInstruction(
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
   modeSkillLines.push(
     "Do not skip required skill preflight above. Non-read tools are hard-blocked until those reads are done.",
-    "**DOMAIN SKILL LOADING (SESSION START — DO THIS)**:",
-    '1. Read `vfs_read_json({ path: "current/skills/index.json", pointers: ["/skills"] })` to see the full skill catalog.',
-    "2. Select 1-3 domain skills that match the current scene (NPC interaction → npc/logic + npc/soul; writing quality → craft/emotional-empathy; moral dilemma → gm/moral-complexity; combat → relevant theme skill).",
-    "3. Read each selected skill once. Reuse across subsequent turns without re-reading.",
-    "Re-read only when `[SYSTEM: EXTERNAL_FILE_CHANGES]` fires, prior scope is insufficient, or error recovery explicitly requires it.",
-    "If you wrote the file yourself in this session, keep moving without re-read unless you need new sections/pointers.",
+    "**DOMAIN SKILL LOADING — DO THIS before first game mutation**:",
+    "Your system prompt contains the full skill catalog. Pick 1-2 skills matching this turn and read them now:",
+    '- NPC interaction/dialogue → `vfs_read_chars({ path: "current/skills/npc/logic/SKILL.md" })`',
+    '- Emotional/dramatic scene → `vfs_read_chars({ path: "current/skills/craft/emotional-empathy/SKILL.md" })`',
+    '- Complex NPC growth/psychology → `vfs_read_chars({ path: "current/skills/npc/soul/SKILL.md" })`',
+    '- Moral dilemma/gray ethics → `vfs_read_chars({ path: "current/skills/gm/moral-complexity/SKILL.md" })`',
+    "Reuse loaded skills across turns; re-read only on `[SYSTEM: EXTERNAL_FILE_CHANGES]` or insufficient scope.",
+    "Skip domain skills only for purely mechanical actions (inventory check, simple movement).",
   );
   if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
     modeSkillLines.push(
