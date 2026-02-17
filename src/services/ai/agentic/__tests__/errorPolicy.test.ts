@@ -3,6 +3,7 @@ import {
   buildMalformedToolCallFeedback,
   classifyAgenticError,
 } from "../errorPolicy";
+import { AIProviderError } from "../../../providers/types";
 
 describe("errorPolicy", () => {
   it("classifies transient provider failures as silent_retry", () => {
@@ -31,6 +32,20 @@ describe("errorPolicy", () => {
   it("classifies terminal provider failures", () => {
     const result = classifyAgenticError(new Error("safety policy blocked"));
     expect(result.kind).toBe("terminal");
+  });
+
+  it("classifies stream timeout/stall provider codes as terminal", () => {
+    expect(
+      classifyAgenticError(
+        new AIProviderError("stream timeout", "claude", "STREAM_TIMEOUT"),
+      ).kind,
+    ).toBe("terminal");
+
+    expect(
+      classifyAgenticError(
+        new AIProviderError("stream stalled", "claude", "STREAM_STALLED"),
+      ).kind,
+    ).toBe("terminal");
   });
 
   it("returns unknown for uncategorized errors", () => {

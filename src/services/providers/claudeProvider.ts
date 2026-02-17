@@ -150,6 +150,10 @@ const parseToolArgumentsValue = (
   return rawInput;
 };
 
+const CLAUDE_STREAM_IDLE_TIMEOUT_MS = 60_000;
+const CLAUDE_STREAM_MAX_DURATION_MS = 15 * 60_000;
+const CLAUDE_STREAM_REQUEST_TIMEOUT_MS = CLAUDE_STREAM_MAX_DURATION_MS + 30_000;
+
 // ============================================================================
 // Client Factory
 // ============================================================================
@@ -654,101 +658,170 @@ Answer the user's request using relevant tools (if they are available). Before c
 
       if (options?.onChunk) {
         // 流式生成
-        const stream = await client.messages.create({
-          ...requestParams,
-          stream: true,
-        });
+        const streamAbortController = new AbortController();
+        let abortReason: "stream_stalled" | "stream_timeout" | null = null;
+        let stallTimer: ReturnType<typeof setTimeout> | null = null;
+        let deadlineTimer: ReturnType<typeof setTimeout> | null = null;
 
-        rawResponse = stream;
+        const clearStreamTimers = () => {
+          if (stallTimer) {
+            clearTimeout(stallTimer);
+            stallTimer = null;
+          }
+          if (deadlineTimer) {
+            clearTimeout(deadlineTimer);
+            deadlineTimer = null;
+          }
+        };
 
-        // 累积工具调用信息
-        const accumulatedToolCalls: Map<
-          number,
-          { id: string; name: string; input: string }
-        > = new Map();
+        const abortStreamWithReason = (
+          reason: "stream_stalled" | "stream_timeout",
+        ) => {
+          if (abortReason) return;
+          abortReason = reason;
+          streamAbortController.abort();
+        };
 
-        let currentToolIndex = -1;
+        const resetStallTimer = () => {
+          if (stallTimer) clearTimeout(stallTimer);
+          stallTimer = setTimeout(() => {
+            abortStreamWithReason("stream_stalled");
+          }, CLAUDE_STREAM_IDLE_TIMEOUT_MS);
+        };
 
-        for await (const event of stream) {
-          // 处理不同类型的事件
-          if (event.type === "content_block_start") {
-            const block = event.content_block;
-            if (block.type === "tool_use") {
-              currentToolIndex++;
-              accumulatedToolCalls.set(currentToolIndex, {
-                id: block.id,
-                name: block.name,
-                input: "",
-              });
-            }
-          } else if (event.type === "content_block_delta") {
-            const delta = event.delta;
-            if (delta.type === "text_delta") {
-              // 文本内容
-              content += delta.text;
-              options.onChunk(delta.text);
-            } else if (delta.type === "thinking_delta") {
-              // Thinking content (Claude Extended Thinking)
-              thinkingContent += getThinkingText(delta);
-            } else if (delta.type === "input_json_delta") {
-              // 工具调用参数（增量）
-              const existing = accumulatedToolCalls.get(currentToolIndex);
-              if (existing) {
-                existing.input += delta.partial_json;
+        deadlineTimer = setTimeout(() => {
+          abortStreamWithReason("stream_timeout");
+        }, CLAUDE_STREAM_MAX_DURATION_MS);
+        resetStallTimer();
+
+        try {
+          const stream = await client.messages.create(
+            {
+              ...requestParams,
+              stream: true,
+            },
+            {
+              signal: streamAbortController.signal,
+              timeout: CLAUDE_STREAM_REQUEST_TIMEOUT_MS,
+              maxRetries: 0,
+            },
+          );
+
+          rawResponse = stream;
+
+          // 累积工具调用信息
+          const accumulatedToolCalls: Map<
+            number,
+            { id: string; name: string; input: string }
+          > = new Map();
+
+          let currentToolIndex = -1;
+
+          for await (const event of stream) {
+            resetStallTimer();
+
+            // 处理不同类型的事件
+            if (event.type === "content_block_start") {
+              const block = event.content_block;
+              if (block.type === "tool_use") {
+                currentToolIndex++;
+                accumulatedToolCalls.set(currentToolIndex, {
+                  id: block.id,
+                  name: block.name,
+                  input: "",
+                });
               }
-            }
-          } else if (event.type === "message_delta") {
-            // 更新使用量
-            if (event.usage) {
-              const deltaUsage = parseClaudeUsage(event.usage);
-              if (deltaUsage.reported) {
-                usage.completionTokens = Math.max(
-                  usage.completionTokens,
-                  deltaUsage.completionTokens,
-                );
-                if (typeof deltaUsage.cacheRead === "number") {
-                  usage.cacheRead = deltaUsage.cacheRead;
+            } else if (event.type === "content_block_delta") {
+              const delta = event.delta;
+              if (delta.type === "text_delta") {
+                // 文本内容
+                content += delta.text;
+                options.onChunk(delta.text);
+              } else if (delta.type === "thinking_delta") {
+                // Thinking content (Claude Extended Thinking)
+                thinkingContent += getThinkingText(delta);
+              } else if (delta.type === "input_json_delta") {
+                // 工具调用参数（增量）
+                const existing = accumulatedToolCalls.get(currentToolIndex);
+                if (existing) {
+                  existing.input += delta.partial_json;
                 }
-                if (typeof deltaUsage.cacheWrite === "number") {
-                  usage.cacheWrite = deltaUsage.cacheWrite;
-                }
-                usage.reported = true;
               }
-            }
-          } else if (event.type === "message_start") {
-            // 初始使用量
-            if (event.message.usage) {
-              const startUsage = parseClaudeUsage(event.message.usage);
-              if (startUsage.reported) {
-                usage.promptTokens = Math.max(
-                  usage.promptTokens,
-                  startUsage.promptTokens,
-                );
-                if (typeof startUsage.cacheWrite === "number") {
-                  usage.cacheWrite = startUsage.cacheWrite;
+            } else if (event.type === "message_delta") {
+              // 更新使用量
+              if (event.usage) {
+                const deltaUsage = parseClaudeUsage(event.usage);
+                if (deltaUsage.reported) {
+                  usage.completionTokens = Math.max(
+                    usage.completionTokens,
+                    deltaUsage.completionTokens,
+                  );
+                  if (typeof deltaUsage.cacheRead === "number") {
+                    usage.cacheRead = deltaUsage.cacheRead;
+                  }
+                  if (typeof deltaUsage.cacheWrite === "number") {
+                    usage.cacheWrite = deltaUsage.cacheWrite;
+                  }
+                  usage.reported = true;
                 }
-                if (typeof startUsage.cacheRead === "number") {
-                  usage.cacheRead = startUsage.cacheRead;
+              }
+            } else if (event.type === "message_start") {
+              // 初始使用量
+              if (event.message.usage) {
+                const startUsage = parseClaudeUsage(event.message.usage);
+                if (startUsage.reported) {
+                  usage.promptTokens = Math.max(
+                    usage.promptTokens,
+                    startUsage.promptTokens,
+                  );
+                  if (typeof startUsage.cacheWrite === "number") {
+                    usage.cacheWrite = startUsage.cacheWrite;
+                  }
+                  if (typeof startUsage.cacheRead === "number") {
+                    usage.cacheRead = startUsage.cacheRead;
+                  }
+                  usage.reported = true;
                 }
-                usage.reported = true;
               }
             }
           }
+
+          // 解析累积的工具调用
+          for (const [, tc] of accumulatedToolCalls) {
+            toolCalls.push({
+              id: tc.id,
+              name: tc.name,
+              args: parseToolArgumentsText(tc.input, tc.name),
+            });
+          }
+        } catch (error) {
+          if (abortReason === "stream_stalled") {
+            throw new AIProviderError(
+              `[ERROR: STREAM_STALLED] Claude streaming response was idle for over ${Math.floor(CLAUDE_STREAM_IDLE_TIMEOUT_MS / 1000)}s and was aborted to prevent hanging.`,
+              "claude",
+              "STREAM_STALLED",
+              error,
+            );
+          }
+
+          if (abortReason === "stream_timeout") {
+            throw new AIProviderError(
+              `[ERROR: STREAM_TIMEOUT] Claude streaming response exceeded ${Math.floor(CLAUDE_STREAM_MAX_DURATION_MS / 60000)} minutes and was aborted to prevent hanging.`,
+              "claude",
+              "STREAM_TIMEOUT",
+              error,
+            );
+          }
+
+          throw error;
+        } finally {
+          clearStreamTimers();
         }
 
         if (thinkingContent) {
           console.log(
             `[Claude] Extracted thinking content from stream (${thinkingContent.length} chars)`,
           );
-        }
-
-        // 解析累积的工具调用
-        for (const [, tc] of accumulatedToolCalls) {
-          toolCalls.push({
-            id: tc.id,
-            name: tc.name,
-            args: parseToolArgumentsText(tc.input, tc.name),
-          });
         }
 
         usage.totalTokens = usage.promptTokens + usage.completionTokens;

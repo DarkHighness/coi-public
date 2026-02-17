@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { withRetry } from "./utils";
+import { AIProviderError } from "./types";
 
 describe("provider withRetry", () => {
   it("does not retry when long-request streaming transport is required", async () => {
@@ -35,5 +36,25 @@ describe("provider withRetry", () => {
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
     randomSpy.mockRestore();
+  });
+
+  it("does not retry STREAM_TIMEOUT provider errors", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fn = vi
+      .fn()
+      .mockRejectedValue(
+        new AIProviderError(
+          "stream exceeded timeout guard",
+          "claude",
+          "STREAM_TIMEOUT",
+        ),
+      );
+
+    await expect(withRetry(fn, 3, 0, "claude")).rejects.toThrow(
+      "stream exceeded timeout guard",
+    );
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
