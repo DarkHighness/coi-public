@@ -48,6 +48,6 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).toContain(
       'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
     );
-    expect(prompt).toContain("optional guidance in outline mode");
+    expect(prompt).toContain("SKILL USAGE FOR GENRE DEPTH");
   });
 });

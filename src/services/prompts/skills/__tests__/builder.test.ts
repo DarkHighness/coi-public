@@ -28,7 +28,7 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain(
       'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
     );
-    expect(prompt).toContain("optional accelerators, not hard gates");
+    expect(prompt).toContain("Trigger examples:");
     expect(prompt).toContain(
       "Theme skills live under `current/skills/theme/**`",
     );
@@ -109,7 +109,7 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain(
       "Hierarchy below is a navigation map (hubs + entry points), not the complete catalog.",
     );
-    expect(prompt).toContain("hub/high priority first");
+    expect(prompt).toContain("at session start, read index.json");
     expect(prompt).toContain("Convert loaded skills into explicit constraints");
   });
 });

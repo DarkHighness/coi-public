@@ -18,9 +18,9 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("shared/system/refs");
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
     expect(content).toContain("NO COMMIT SPAM");
-    expect(content).toContain("SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)");
+    expect(content).toContain("DOMAIN SKILLS (SESSION START)");
     expect(content).toContain("current/skills/index.json");
-    expect(content).toContain("Once per session");
+    expect(content).toContain("1-3 domain skills");
     expect(content).toContain("broad full-file");
     expect(content).toContain("vfs_vm");
     expect(content).toContain("top-level tool call");
@@ -55,7 +55,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("vfs_ls");
     expect(content).toContain("vfs_search");
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
-    expect(content).toContain("SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)");
+    expect(content).toContain("DOMAIN SKILLS (SESSION START)");
     expect(content).toContain("vfs_vm");
     expect(content).toContain("only top-level tool call");
     expect(content).toContain("JavaScript");
@@ -69,7 +69,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("already prefixed with **[SUDO]**");
     expect(content).toContain("forced elevated update payload");
     expect(content).toContain("immutable/finish policy constraints");
-    expect(content).toContain("SKILL DISCOVERY (RECOMMENDED, SESSION-SCOPED)");
+    expect(content).toContain("DOMAIN SKILLS (SESSION START)");
     expect(content).toContain("vfs_vm");
     expect(content).toContain("only top-level tool call");
     expect(content).toContain("JavaScript");

@@ -184,12 +184,12 @@ export function injectNormalTurnInstruction(
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
   modeSkillLines.push(
     "Do not skip required skill preflight above. Non-read tools are hard-blocked until those reads are done.",
-    "Strongly recommended per session (not every turn):",
-    '- `vfs_read_json({ path: "current/skills/index.json", pointers: ["/skills"] })`',
-    "- At session cold start/rebuild, select and read 1-3 additional skill files aligned with active domain/theme/mechanics.",
-    "- Reuse those skill docs across later turns; do not re-read by default.",
-    "- Session read-cache rule: re-read only when `[SYSTEM: EXTERNAL_FILE_CHANGES]` is present, prior read scope is insufficient, or recovery explicitly requires it.",
-    "- If you wrote the file yourself in this session, keep moving without re-read unless you need new sections/pointers.",
+    "**DOMAIN SKILL LOADING (SESSION START — DO THIS)**:",
+    '1. Read `vfs_read_json({ path: "current/skills/index.json", pointers: ["/skills"] })` to see the full skill catalog.',
+    "2. Select 1-3 domain skills that match the current scene (NPC interaction → npc/logic + npc/soul; writing quality → craft/emotional-empathy; moral dilemma → gm/moral-complexity; combat → relevant theme skill).",
+    "3. Read each selected skill once. Reuse across subsequent turns without re-reading.",
+    "Re-read only when `[SYSTEM: EXTERNAL_FILE_CHANGES]` fires, prior scope is insufficient, or error recovery explicitly requires it.",
+    "If you wrote the file yourself in this session, keep moving without re-read unless you need new sections/pointers.",
   );
   if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
     modeSkillLines.push(

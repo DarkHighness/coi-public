@@ -354,6 +354,7 @@ export async function runAgenticLoopRefactored(
       ...loopState.requiredCommandSkillPaths,
       ...loopState.requiredSoulReadPaths,
       ...loopState.requiredPresetSkillPaths,
+      "skills/index.json",
     ],
     maxOptionalRefs: 3,
   });
