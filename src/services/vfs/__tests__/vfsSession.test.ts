@@ -389,6 +389,18 @@ describe("VfsSession", () => {
     ).toThrow();
   });
 
+  it("blocks renaming writable files into immutable read-only paths", () => {
+    const session = new VfsSession();
+    session.writeFile("world/notes.md", "draft", "text/markdown");
+
+    expect(() =>
+      session.renameFile("world/notes.md", "skills/custom.md"),
+    ).toThrow(/read-only/i);
+
+    expect(session.readFile("world/notes.md")?.content).toBe("draft");
+    expect(session.readFile("skills/custom.md")).toBeNull();
+  });
+
   it("exposes global read-only skills files", () => {
     const session = new VfsSession();
     expect(session.readFile("skills/README.md")?.contentType).toBe(
