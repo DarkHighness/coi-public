@@ -393,4 +393,67 @@ describe("openaiProvider helper conversions", () => {
     });
     expect(converted[1]).toEqual({ role: "user", content: "hello" });
   });
+
+  it("resolves default max output tokens by model family", async () => {
+    const { resolveOpenAIMaxOutputTokens } = await import("./openaiProvider");
+
+    expect(resolveOpenAIMaxOutputTokens("gpt-4o-mini")).toBe(16384);
+    expect(resolveOpenAIMaxOutputTokens("o3")).toBe(100000);
+    expect(resolveOpenAIMaxOutputTokens("anthropic/claude-sonnet-4-5")).toBe(
+      64000,
+    );
+    expect(resolveOpenAIMaxOutputTokens("gemini-2.5-pro")).toBe(65536);
+    expect(resolveOpenAIMaxOutputTokens("openai/unknown-model")).toBe(128000);
+  });
+
+  it("uses player-configured fallback for unknown models", async () => {
+    const { resolveOpenAIMaxOutputTokens } = await import("./openaiProvider");
+    expect(
+      resolveOpenAIMaxOutputTokens("openai/unknown-model", {
+        maxOutputTokensFallback: 48000,
+      }),
+    ).toBe(48000);
+  });
+
+  it("applies max_tokens by default for non-reasoning models", async () => {
+    const { generateContent } = await import("./openaiProvider");
+
+    await generateContent(
+      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      "gpt-4o-mini",
+      "",
+      [
+        {
+          role: "user",
+          content: [{ type: "text", text: "Hello" }],
+        },
+      ] as any,
+      undefined,
+      undefined,
+    );
+
+    expect(lastCreateParams?.max_tokens).toBe(16384);
+    expect(lastCreateParams?.max_completion_tokens).toBeUndefined();
+  });
+
+  it("applies max_completion_tokens for reasoning models", async () => {
+    const { generateContent } = await import("./openaiProvider");
+
+    await generateContent(
+      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      "o3",
+      "",
+      [
+        {
+          role: "user",
+          content: [{ type: "text", text: "Hello" }],
+        },
+      ] as any,
+      undefined,
+      undefined,
+    );
+
+    expect(lastCreateParams?.max_completion_tokens).toBe(100000);
+    expect(lastCreateParams?.max_tokens).toBeUndefined();
+  });
 });

@@ -368,6 +368,7 @@ export const generateVeoScript = async (
       topP,
       topK,
       minP,
+      maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
     });
 
     const script = typeof result === "string" ? result : JSON.stringify(result);

@@ -101,6 +101,11 @@ export interface GenerateContentOptions {
   topK?: number;
   /** Min-P 采样 (OpenRouter) */
   minP?: number;
+  /**
+   * Optional player-configured fallback cap.
+   * Used only when the model-specific max output limit is unknown.
+   */
+  maxOutputTokensFallback?: number;
   /** 流式输出回调 */
   onChunk?: (text: string) => void;
   /** 工具定义列表 (使用 Zod Schema) */

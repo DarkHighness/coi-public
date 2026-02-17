@@ -35,6 +35,7 @@ import {
   getEmbeddingModels,
   getModels,
   parseOpenRouterUsage,
+  resolveOpenRouterMaxTokens,
   validateConnection,
 } from "./openRouterProvider";
 
@@ -143,6 +144,28 @@ describe("openRouterProvider usage parsing", () => {
       totalTokens: 44,
       reported: true,
     });
+  });
+});
+
+describe("resolveOpenRouterMaxTokens", () => {
+  it("resolves model caps across provider namespaces", () => {
+    expect(resolveOpenRouterMaxTokens("openai/gpt-4o-mini")).toBe(16384);
+    expect(resolveOpenRouterMaxTokens("anthropic/claude-sonnet-4-5")).toBe(
+      64000,
+    );
+    expect(resolveOpenRouterMaxTokens("google/gemini-2.5-pro")).toBe(65536);
+  });
+
+  it("falls back when model id is unknown", () => {
+    expect(resolveOpenRouterMaxTokens("unknown/vendor-model")).toBe(128000);
+  });
+
+  it("uses player-configured fallback for unknown model ids", () => {
+    expect(
+      resolveOpenRouterMaxTokens("unknown/vendor-model", {
+        maxOutputTokensFallback: 56000,
+      }),
+    ).toBe(56000);
   });
 });
 

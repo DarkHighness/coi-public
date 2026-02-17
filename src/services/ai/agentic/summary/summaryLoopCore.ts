@@ -394,6 +394,7 @@ export async function runSummaryLoopCore(options: {
           settings.extra?.forceAutoToolChoice,
         ),
         temperature: settings.story?.temperature,
+        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
       },
       conversationHistory,
       {

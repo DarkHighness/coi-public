@@ -52,6 +52,13 @@ import {
   getAspectRatio,
 } from "./types";
 import { zodToGemini } from "../zodCompiler";
+import {
+  DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS,
+  MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS,
+  getDefaultModelMaxOutputTokens,
+  isLowOutputFallbackSetting,
+  sanitizePositiveOutputTokens,
+} from "../modelOutputTokens";
 import type { ZodTypeAny } from "zod";
 import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 
@@ -169,6 +176,50 @@ const parseToolArguments = (
     );
   }
   return rawArgs;
+};
+
+const normalizeGeminiModelId = (model: string): string => {
+  const trimmed = model.trim().toLowerCase();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const slashIndex = trimmed.lastIndexOf("/");
+  return slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : trimmed;
+};
+
+const GEMINI_MAX_OUTPUT_FALLBACK_TOKENS =
+  DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.gemini;
+const WARNED_LOW_GEMINI_FALLBACKS = new Set<string>();
+
+export const resolveGeminiMaxOutputTokens = (
+  model: string,
+  options?: GenerateContentOptions,
+): number => {
+  const normalized = normalizeGeminiModelId(model);
+  const mapped =
+    getDefaultModelMaxOutputTokens("gemini", normalized) ||
+    getDefaultModelMaxOutputTokens("gemini", model);
+  if (mapped) {
+    return mapped;
+  }
+
+  const configuredFallback = sanitizePositiveOutputTokens(
+    options?.maxOutputTokensFallback,
+  );
+  if (configuredFallback) {
+    if (isLowOutputFallbackSetting(configuredFallback)) {
+      const warningKey = `${normalized}:${configuredFallback}`;
+      if (!WARNED_LOW_GEMINI_FALLBACKS.has(warningKey)) {
+        WARNED_LOW_GEMINI_FALLBACKS.add(warningKey);
+        console.warn(
+          `[Gemini] maxOutputTokensFallback=${configuredFallback} is below recommended ${MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS}; low values can truncate responses and break game flow.`,
+        );
+      }
+    }
+    return configuredFallback;
+  }
+
+  return GEMINI_MAX_OUTPUT_FALLBACK_TOKENS;
 };
 
 const isGeminiContent = (value: UnifiedMessage | Content): value is Content =>
@@ -647,7 +698,7 @@ export async function generateContent(
 
       // 构建生成配置
       const { config: generationConfig, modifiedSystemInstruction } =
-        buildGenerationConfig(systemInstruction, schema, options);
+        buildGenerationConfig(model, systemInstruction, schema, options);
 
       // 兼容性图片生成: 如果是图片模型（非 Imagen）且启用了兼容模式，转交给 generateImage
       if (
@@ -927,12 +978,14 @@ function handleFinishReason(
  * 构建生成配置
  */
 function buildGenerationConfig(
+  model: string,
   systemInstruction: string,
   schema?: ZodTypeAny,
   options?: GenerateContentOptions,
 ): { config: GenerateContentConfig; modifiedSystemInstruction: string } {
   const config: GenerateContentConfig = {};
   let modifiedSystemInstruction = systemInstruction;
+  config.maxOutputTokens = resolveGeminiMaxOutputTokens(model, options);
 
   // 工具配置 - 从 Zod 直接编译到 Gemini 格式
   let functionDeclarations: Array<{

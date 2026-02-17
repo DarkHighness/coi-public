@@ -12,6 +12,7 @@ import {
   GLOBAL_SOUL_LOGICAL_PATH,
   normalizeSoulMarkdown,
 } from "../../services/vfs/soulTemplates";
+import { MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS } from "../../services/modelOutputTokens";
 
 const readGlobalSoulMirror = (
   snapshot: ReturnType<VfsSession["snapshot"]>,
@@ -71,6 +72,15 @@ export const SettingsExtra: React.FC = () => {
     typeof customInstructionRaw === "string" ? customInstructionRaw.trim() : "";
   const customInstructionEnabled =
     extra.customInstructionEnabled ?? Boolean(customInstructionTrimmed);
+  const outputFallbackValue =
+    typeof extra.maxOutputTokensFallback === "number" &&
+    Number.isFinite(extra.maxOutputTokensFallback) &&
+    extra.maxOutputTokensFallback > 0
+      ? Math.floor(extra.maxOutputTokensFallback)
+      : null;
+  const showLowOutputFallbackWarning =
+    outputFallbackValue !== null &&
+    outputFallbackValue < MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS;
   const runtimeRevision = runtimeContext?.state.runtimeRevision;
   const vfsSession = runtimeContext?.state.vfsSession;
   const runtimeGameState = runtimeContext?.state.gameState;
@@ -737,6 +747,49 @@ export const SettingsExtra: React.FC = () => {
               className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
             />
           </div>
+
+          {/* Max Output Fallback Tokens */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-theme-text">
+                {t("settings.extra.maxOutputTokensFallback") ||
+                  "Max Output Fallback Tokens"}
+              </div>
+              <div className="text-[10px] text-theme-muted">
+                {t("settings.extra.maxOutputTokensFallbackHelp") ||
+                  "Used only when model-specific output cap is unknown. Leave empty to use provider defaults."}
+              </div>
+            </div>
+            <input
+              type="number"
+              min={1024}
+              max={1048576}
+              value={outputFallbackValue ?? ""}
+              placeholder="auto"
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                if (!raw) {
+                  updateExtra("maxOutputTokensFallback", undefined);
+                  return;
+                }
+                const parsed = Number.parseInt(raw, 10);
+                if (!Number.isFinite(parsed)) {
+                  return;
+                }
+                updateExtra(
+                  "maxOutputTokensFallback",
+                  Math.max(1024, Math.min(1048576, parsed)),
+                );
+              }}
+              className="w-28 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center placeholder:text-theme-muted/60"
+            />
+          </div>
+          {showLowOutputFallbackWarning && (
+            <div className="text-[10px] text-theme-warning">
+              {t("settings.extra.maxOutputTokensFallbackWarning") ||
+                `Warning: values below ${MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS} may truncate output and break gameplay.`}
+            </div>
+          )}
         </div>
 
         {/* Reset Tutorials */}

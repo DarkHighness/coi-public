@@ -1081,6 +1081,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         topP: settings.story?.topP,
         topK: settings.story?.topK,
         minP: settings.story?.minP,
+        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
         thinkingEffort: settings.story?.thinkingEffort,
       },
       conversationHistory,

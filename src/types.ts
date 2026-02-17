@@ -1414,6 +1414,11 @@ export interface AISettings {
      * Example: `0.1` means single-read payload budget targets ~10% of context.
      */
     vfsReadTokenBudgetPercent?: number;
+    /**
+     * Optional fallback max output tokens when model-specific output caps
+     * cannot be resolved. Too-small values can cause truncated turns.
+     */
+    maxOutputTokensFallback?: number;
   };
 
   // Player Psychology System - cross-save global soul content

@@ -103,6 +103,19 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
   delete migratedExtra.customPromptInjection;
   delete migratedExtra.promptInjectionEnabled;
 
+  const configuredOutputFallback = migratedExtra.maxOutputTokensFallback;
+  if (
+    typeof configuredOutputFallback === "number" &&
+    Number.isFinite(configuredOutputFallback)
+  ) {
+    migratedExtra.maxOutputTokensFallback = Math.max(
+      1,
+      Math.floor(configuredOutputFallback),
+    );
+  } else {
+    delete migratedExtra.maxOutputTokensFallback;
+  }
+
   return {
     ...DEFAULTS,
     ...sanitized,

@@ -29,6 +29,13 @@ import type {
   ToolArguments,
 } from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
+import {
+  DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS,
+  MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS,
+  getDefaultModelMaxOutputTokens,
+  isLowOutputFallbackSetting,
+  sanitizePositiveOutputTokens,
+} from "../modelOutputTokens";
 
 import {
   OpenAIConfig,
@@ -163,6 +170,71 @@ const parseToolArguments = (
   }
 
   return parsed;
+};
+
+type OpenAIResolvedProviderProtocol = "openai" | "gemini" | "claude";
+const OPENAI_PROTOCOL_MAX_OUTPUT_FALLBACK: Record<
+  OpenAIResolvedProviderProtocol,
+  number
+> = {
+  openai: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.openai,
+  claude: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.claude,
+  gemini: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.gemini,
+};
+const WARNED_LOW_OPENAI_FALLBACKS = new Set<string>();
+
+const normalizeOpenAIModelId = (model: string): string => {
+  const trimmed = model.trim().toLowerCase();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const slashIndex = trimmed.lastIndexOf("/");
+  return slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : trimmed;
+};
+
+const resolveOpenAIProviderProtocol = (
+  model: string,
+): OpenAIResolvedProviderProtocol => {
+  const normalized = normalizeOpenAIModelId(model);
+  if (isClaudeModel(model) || isClaudeModel(normalized)) {
+    return "claude";
+  }
+  if (isGeminiModel(model) || isGeminiModel(normalized)) {
+    return "gemini";
+  }
+  return "openai";
+};
+
+export const resolveOpenAIMaxOutputTokens = (
+  model: string,
+  options?: GenerateContentOptions,
+): number => {
+  const protocol = resolveOpenAIProviderProtocol(model);
+  const normalizedModel = normalizeOpenAIModelId(model);
+  const mapped =
+    getDefaultModelMaxOutputTokens(protocol, normalizedModel) ||
+    getDefaultModelMaxOutputTokens(protocol, model);
+  if (mapped) {
+    return mapped;
+  }
+
+  const configuredFallback = sanitizePositiveOutputTokens(
+    options?.maxOutputTokensFallback,
+  );
+  if (configuredFallback) {
+    if (isLowOutputFallbackSetting(configuredFallback)) {
+      const warningKey = `${protocol}:${normalizedModel}:${configuredFallback}`;
+      if (!WARNED_LOW_OPENAI_FALLBACKS.has(warningKey)) {
+        WARNED_LOW_OPENAI_FALLBACKS.add(warningKey);
+        console.warn(
+          `[OpenAI] maxOutputTokensFallback=${configuredFallback} is below recommended ${MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS}; low values can truncate responses and break game flow.`,
+        );
+      }
+    }
+    return configuredFallback;
+  }
+
+  return OPENAI_PROTOCOL_MAX_OUTPUT_FALLBACK[protocol];
 };
 
 // ============================================================================
@@ -671,6 +743,12 @@ export async function generateContent(
               })()
             : undefined,
       };
+      const maxOutputTokens = resolveOpenAIMaxOutputTokens(model, options);
+      if (isReasoning && !useCompat) {
+        requestParams.max_completion_tokens = maxOutputTokens;
+      } else {
+        requestParams.max_tokens = maxOutputTokens;
+      }
 
       // 添加 reasoning_effort 参数 (OpenAI reasoning 模型)
       const effort = options?.thinkingEffort;

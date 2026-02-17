@@ -33,6 +33,7 @@ export interface ChatGenerateRequest {
   topP?: number;
   topK?: number;
   minP?: number;
+  maxOutputTokensFallback?: number;
   thinkingEffort?:
     | "xhigh"
     | "high"

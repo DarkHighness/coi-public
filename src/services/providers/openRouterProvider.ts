@@ -54,7 +54,15 @@ import {
   createGeminiTool,
   createOpenRouterTool,
   isGeminiModel,
+  isClaudeModel,
 } from "../zodCompiler";
+import {
+  DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS,
+  MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS,
+  getDefaultModelMaxOutputTokens,
+  isLowOutputFallbackSetting,
+  sanitizePositiveOutputTokens,
+} from "../modelOutputTokens";
 import type { ZodTypeAny } from "zod";
 import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 // ============================================================================
@@ -129,6 +137,7 @@ type OpenRouterToolChoiceOption =
 interface OpenRouterGenerationParams {
   model: string;
   messages: models.Message[];
+  maxTokens?: number;
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -224,6 +233,80 @@ const parseToolArguments = (
   }
 
   return parsed;
+};
+
+type OpenRouterResolvedProviderProtocol = "openai" | "gemini" | "claude";
+const OPENROUTER_PROTOCOL_MAX_OUTPUT_FALLBACK: Record<
+  OpenRouterResolvedProviderProtocol,
+  number
+> = {
+  openai: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.openai,
+  claude: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.claude,
+  gemini: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.gemini,
+};
+const WARNED_LOW_OPENROUTER_FALLBACKS = new Set<string>();
+
+const normalizeOpenRouterModelId = (model: string): string => {
+  const trimmed = model.trim().toLowerCase();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const slashIndex = trimmed.lastIndexOf("/");
+  return slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : trimmed;
+};
+
+const resolveOpenRouterProviderProtocol = (
+  model: string,
+): OpenRouterResolvedProviderProtocol => {
+  const normalizedModel = normalizeOpenRouterModelId(model);
+  const lower = model.trim().toLowerCase();
+  if (
+    lower.startsWith("anthropic/") ||
+    isClaudeModel(model) ||
+    isClaudeModel(normalizedModel)
+  ) {
+    return "claude";
+  }
+  if (
+    lower.startsWith("google/") ||
+    isGeminiModel(model) ||
+    isGeminiModel(normalizedModel)
+  ) {
+    return "gemini";
+  }
+  return "openai";
+};
+
+export const resolveOpenRouterMaxTokens = (
+  model: string,
+  options?: GenerateContentOptions,
+): number => {
+  const protocol = resolveOpenRouterProviderProtocol(model);
+  const normalizedModel = normalizeOpenRouterModelId(model);
+  const mapped =
+    getDefaultModelMaxOutputTokens(protocol, normalizedModel) ||
+    getDefaultModelMaxOutputTokens(protocol, model);
+  if (mapped) {
+    return mapped;
+  }
+
+  const configuredFallback = sanitizePositiveOutputTokens(
+    options?.maxOutputTokensFallback,
+  );
+  if (configuredFallback) {
+    if (isLowOutputFallbackSetting(configuredFallback)) {
+      const warningKey = `${protocol}:${normalizedModel}:${configuredFallback}`;
+      if (!WARNED_LOW_OPENROUTER_FALLBACKS.has(warningKey)) {
+        WARNED_LOW_OPENROUTER_FALLBACKS.add(warningKey);
+        console.warn(
+          `[OpenRouter] maxOutputTokensFallback=${configuredFallback} is below recommended ${MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS}; low values can truncate responses and break game flow.`,
+        );
+      }
+    }
+    return configuredFallback;
+  }
+
+  return OPENROUTER_PROTOCOL_MAX_OUTPUT_FALLBACK[protocol];
 };
 
 const readNumber = (value: unknown): number | undefined => {
@@ -623,6 +706,7 @@ export async function generateContent(
       const requestParams: OpenRouterGenerationParams = {
         model,
         messages,
+        maxTokens: resolveOpenRouterMaxTokens(model, options),
         temperature: options?.temperature,
         topP: options?.topP,
         topK: options?.topK,

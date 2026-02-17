@@ -94,6 +94,7 @@ export async function handleAICall(
         topP: storyCfg?.topP,
         topK: storyCfg?.topK,
         minP: storyCfg?.minP,
+        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
         thinkingEffort: storyCfg?.thinkingEffort,
       },
       conversationHistory,

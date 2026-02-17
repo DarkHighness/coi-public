@@ -41,6 +41,7 @@ export interface AICallConfig {
   topP?: number;
   topK?: number;
   minP?: number;
+  maxOutputTokensFallback?: number;
   mediaResolution?: ChatGenerateRequest["mediaResolution"];
   thinkingEffort?: ChatGenerateRequest["thinkingEffort"];
 }
@@ -90,6 +91,7 @@ export async function invokeAI(
         topP: config.topP,
         topK: config.topK,
         minP: config.minP,
+        maxOutputTokensFallback: config.maxOutputTokensFallback,
         thinkingEffort: config.thinkingEffort,
       },
       history,

@@ -23,6 +23,13 @@ import type {
 } from "@anthropic-ai/sdk/resources/messages";
 
 import type { TokenUsage, JsonObject, ToolArguments } from "../../types";
+import {
+  DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS,
+  MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS,
+  getDefaultModelMaxOutputTokens,
+  isLowOutputFallbackSetting,
+  sanitizePositiveOutputTokens,
+} from "../modelOutputTokens";
 
 import {
   ModelInfo,
@@ -218,6 +225,50 @@ const CLAUDE_ALL_USAGE_KEYS = [
   ...CLAUDE_CACHE_READ_KEYS,
   ...CLAUDE_CACHE_WRITE_KEYS,
 ] as const;
+
+const CLAUDE_FALLBACK_MAX_OUTPUT_TOKENS =
+  DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.claude;
+const WARNED_LOW_CLAUDE_FALLBACKS = new Set<string>();
+
+const normalizeClaudeModelId = (model: string): string => {
+  const trimmed = model.trim().toLowerCase();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const slashIndex = trimmed.lastIndexOf("/");
+  return slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : trimmed;
+};
+
+export const resolveClaudeMaxTokens = (
+  model: string,
+  options?: GenerateContentOptions,
+): number => {
+  const normalizedModel = normalizeClaudeModelId(model);
+  const mapped =
+    getDefaultModelMaxOutputTokens("claude", normalizedModel) ||
+    getDefaultModelMaxOutputTokens("claude", model);
+  if (mapped) {
+    return mapped;
+  }
+
+  const configuredFallback = sanitizePositiveOutputTokens(
+    options?.maxOutputTokensFallback,
+  );
+  if (configuredFallback) {
+    if (isLowOutputFallbackSetting(configuredFallback)) {
+      const warningKey = `${normalizedModel}:${configuredFallback}`;
+      if (!WARNED_LOW_CLAUDE_FALLBACKS.has(warningKey)) {
+        WARNED_LOW_CLAUDE_FALLBACKS.add(warningKey);
+        console.warn(
+          `[Claude] maxOutputTokensFallback=${configuredFallback} is below recommended ${MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS}; low values can truncate responses and break game flow.`,
+        );
+      }
+    }
+    return configuredFallback;
+  }
+
+  return CLAUDE_FALLBACK_MAX_OUTPUT_TOKENS;
+};
 
 export function parseClaudeUsage(usageMetadata: unknown): TokenUsage {
   const usage = isJsonObject(usageMetadata) ? usageMetadata : null;
@@ -567,7 +618,7 @@ Answer the user's request using relevant tools (if they are available). Before c
       // 构建请求参数
       const requestParams: MessageCreateParams = {
         model,
-        max_tokens: thinking ? 64000 : 8192, // Thinking 模式需要更大的 max_tokens
+        max_tokens: resolveClaudeMaxTokens(model, options),
         system: finalSystemInstruction,
         messages,
         // Thinking 模式下不能使用 temperature (必须为 1.0 或不传，SDK 默认处理)
