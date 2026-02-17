@@ -31,3 +31,4 @@ export {
   characterDesignPrimer,
   type CharacterDesignInput,
 } from "./characterDesign";
+export { npcSoul, npcSoulPrimer } from "./npcSoul";
