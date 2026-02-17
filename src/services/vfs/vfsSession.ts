@@ -647,10 +647,6 @@ export class VfsSession {
       return;
     }
 
-    if (!this.hasToolAccessedInCurrentEpoch(canonicalPath)) {
-      return;
-    }
-
     this.seenByEpoch.delete(canonicalPath);
     this.accessedFilesByEpoch.delete(canonicalPath);
     this.outOfBandReadInvalidations.set(canonicalPath, changeType);
@@ -660,13 +656,6 @@ export class VfsSession {
     const canonicalFrom = this.resolveCanonicalPath(from);
     const canonicalTo = this.resolveCanonicalPath(to);
     if (!canonicalFrom || !canonicalTo || canonicalFrom === canonicalTo) {
-      return;
-    }
-
-    if (
-      !this.hasToolAccessedInCurrentEpoch(canonicalFrom) &&
-      !this.hasToolAccessedInCurrentEpoch(canonicalTo)
-    ) {
       return;
     }
 

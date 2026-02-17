@@ -74,6 +74,41 @@ describe("vfsMutationGuard", () => {
       expect(result).toBeNull();
     });
 
+    it("re-enforces read requirement after out-of-band mutation", () => {
+      const session = new VfsSession();
+      session.writeFile("world/global.json", "{}", "application/json");
+      session.noteToolSeen("world/global.json");
+
+      const initiallyAllowed = requireReadBeforeMutateForExistingFile(
+        session,
+        "world/global.json",
+        "merge",
+      );
+      expect(initiallyAllowed).toBeNull();
+
+      session.noteOutOfBandMutation("world/global.json", "modified");
+
+      const blockedAfterExternalChange = requireReadBeforeMutateForExistingFile(
+        session,
+        "world/global.json",
+        "merge",
+      );
+      expect(blockedAfterExternalChange?.success).toBe(false);
+      expect(blockedAfterExternalChange?.code).toBe("INVALID_ACTION");
+      expect(blockedAfterExternalChange?.details?.issues?.[0]?.code).toBe(
+        "READ_REQUIRED",
+      );
+
+      session.noteToolSeen("world/global.json");
+
+      const allowedAfterReread = requireReadBeforeMutateForExistingFile(
+        session,
+        "world/global.json",
+        "merge",
+      );
+      expect(allowedAfterReread).toBeNull();
+    });
+
     it("does not enforce read-before-mutate for read-only skills paths", () => {
       const session = new VfsSession();
 

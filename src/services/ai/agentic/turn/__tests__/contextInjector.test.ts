@@ -9,6 +9,7 @@ import {
   injectOutOfBandReadInvalidations,
   injectSudoModeInstruction,
 } from "../contextInjector";
+import { VfsSession } from "../../../../vfs/vfsSession";
 
 const getText = (message: any): string =>
   message?.content?.find((part: any) => part.type === "text")?.text ?? "";
@@ -223,6 +224,25 @@ describe("contextInjector", () => {
     expect(getText(history[0])).toContain(
       "current/world/notes.md -> current/world/logs.md (moved)",
     );
+  });
+
+  it("injects reminders for seen-only files changed out of band", () => {
+    const session = new VfsSession();
+    session.noteToolSeen("world/notes.md");
+    session.noteOutOfBandMutation("world/notes.md", "modified");
+
+    const invalidations = session.drainOutOfBandReadInvalidations();
+    expect(invalidations).toEqual([
+      { path: "world/notes.md", changeType: "modified" },
+    ]);
+
+    const history: any[] = [];
+    injectOutOfBandReadInvalidations(history, invalidations);
+
+    expect(history).toHaveLength(1);
+    expect(getText(history[0])).toContain("EXTERNAL_FILE_CHANGES");
+    expect(getText(history[0])).toContain("current/world/notes.md");
+    expect(getText(history[0])).toContain("re-read it first");
   });
 
   it("keeps ready consequences injection as no-op", () => {
