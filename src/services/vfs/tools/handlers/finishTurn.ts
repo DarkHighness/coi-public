@@ -74,13 +74,6 @@ export const handleFinishTurn: VfsToolHandler = (args, ctx) =>
               }
             : undefined;
 
-        if (runtime.retconAck !== undefined && !normalizedRetconAck) {
-          return createError(
-            "vfs_finish_turn: retconAck must include a non-empty summary string",
-            "INVALID_DATA",
-          );
-        }
-
         const retconAckResult = applyCustomRulesRetconAck(
           draft,
           normalizedRetconAck,

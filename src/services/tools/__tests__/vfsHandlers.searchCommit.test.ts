@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { VfsSession } from "../../vfs/vfsSession";
 import { dispatchToolCall, dispatchToolCallAsync } from "../handlers";
+import {
+  getCustomRulesAckState,
+  syncCustomRulesAckState,
+} from "../../customRulesAckState";
 import { createSummaryPayload } from "./vfsHandlers.helpers";
 
 describe("VFS handlers search/commit", () => {
@@ -77,6 +81,60 @@ describe("VFS handlers search/commit", () => {
 
     expect(index.success).toBe(true);
     expect(JSON.parse(index.data.content).activeTurnId).toBe("fork-0/turn-1");
+  });
+
+  it("ignores legacy finish_turn runtime-only fields and keeps system userAction", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session, vfsTurnUserAction: "system action" };
+
+    const commit = dispatchToolCall(
+      "vfs_finish_turn",
+      {
+        userAction: "legacy action that should be ignored",
+        assistant: {
+          narrative: "You review the ledger.",
+          choices: [{ text: "Proceed" }, { text: "Pause" }],
+        },
+        retconAck: { hash: "legacy-hash" },
+      },
+      ctx,
+    ) as any;
+
+    expect(commit.success).toBe(true);
+    const turnPath = `current/conversation/turns/${commit.data.turnId}.json`;
+    const turnFile = dispatchToolCall("vfs_read_chars", { path: turnPath }, ctx) as any;
+    expect(turnFile.success).toBe(true);
+    const parsedTurn = JSON.parse(turnFile.data.content);
+    expect(parsedTurn.userAction).toBe("system action");
+  });
+
+  it("accepts pending retcon acknowledgement with summary and ignores legacy hash", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session, vfsTurnUserAction: "advance timeline" };
+
+    session.writeFile("custom_rules/12-custom/rule.md", "rule v1", "text/markdown");
+    syncCustomRulesAckState(session);
+    session.writeFile("custom_rules/12-custom/rule.md", "rule v2", "text/markdown");
+    syncCustomRulesAckState(session);
+
+    const commit = dispatchToolCall(
+      "vfs_finish_turn",
+      {
+        assistant: {
+          narrative: "You adjust continuity and move forward.",
+          choices: [{ text: "Continue" }, { text: "Re-evaluate" }],
+        },
+        retconAck: {
+          hash: "wrong-legacy-hash",
+          summary: "Continuity updated after rule change.",
+        },
+      },
+      ctx,
+    ) as any;
+
+    expect(commit.success).toBe(true);
+    const ackState = getCustomRulesAckState(session);
+    expect(ackState?.pendingHash).toBeUndefined();
   });
 
   it("requires runtime-injected fields for summary finish tool", () => {

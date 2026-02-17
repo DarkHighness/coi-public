@@ -145,6 +145,9 @@ describe("VFS global skills generator", () => {
     expect(commandRuntimeHub).toContain("globalThis");
     expect(commandTurn).toContain("name: commands-turn");
     expect(commandTurn).toContain("vfs_finish_turn");
+    expect(commandTurn).toContain("retconAck?: { summary }");
+    expect(commandTurn).not.toContain("vfs_finish_turn({ userAction");
+    expect(commandTurn).not.toContain("retconAck?: { hash");
     expect(commandTurn).toContain("vfs_vm");
     expect(commandTurn).toContain("JavaScript");
     expect(commandTurn).toContain("globalThis");
@@ -157,9 +160,11 @@ describe("VFS global skills generator", () => {
     expect(commandPlayerRate).toContain("globalThis");
     expect(commandPlayerRate).toContain("internal self-guidance notes");
     expect(commandCleanup).toContain("vfs_vm");
+    expect(commandCleanup).toContain("retconAck?: { summary }");
     expect(commandCleanup).toContain("JavaScript");
     expect(commandCleanup).toContain("globalThis");
     expect(commandSudo).toContain("vfs_vm");
+    expect(commandSudo).toContain("retconAck?: { summary }");
     expect(commandSudo).toContain("JavaScript");
     expect(commandSudo).toContain("globalThis");
     expect(commandSummary).toContain("name: commands-summary");

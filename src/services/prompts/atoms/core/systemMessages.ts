@@ -95,6 +95,7 @@ This is a **GM COMMAND**. You must:
    - Inside \`vfs_vm\`, finish is optional but at most once and must be the last inner tool call.
 9. Apply changes decisively - if the command contradicts existing mutable lore, **OVERWRITE IT** (immutable zones remain protected by policy).
 10. **FINISH RULE**: Your LAST tool call must be \`vfs_finish_turn\`.
+   - Use exact args shape: \`{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }\`.
 11. ${CONVERSATION_GUARD_LINE}
 12. When tool recovery succeeds after a prior failure, add one concise \`[code] cause -> fix\` memo to \`current/world/soul.md\` under \`## Tool Usage Hints\` (AI self-note).
 `;
@@ -148,7 +149,6 @@ You are in AGENTIC MODE (VFS-only).
    - Identity contract: \`notes.md\` + \`soul.md\` files are AI-to-AI self-notes (you writing to your future self), not player-facing raw text.
 9. **FINISH RULE**: Your LAST tool call must be \`${resolvedFinishToolName}\`.
    - For \`vfs_finish_turn\`, use exact args shape: \`{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }\`.
-   - \`userAction\` is runtime-injected by system; do NOT provide it in tool args.
 10. **EFFICIENCY RULE (STRICT)**: If this response will finish, do NOT place read-only tools (\`vfs_ls\`/\`vfs_schema\`/\`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\`/\`vfs_search\`) immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE (TARGETED)**: If a writable write fails, prioritize repairing failed targets (inspect+retry same targets), but block finish ONLY for blocking errors (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
     - Non-blocking failures may be reported while preserving successful tool-call results.
@@ -175,7 +175,7 @@ You are in AGENTIC MODE (VFS-only).
       ? "1) `vfs_read_markdown` on `current/world/soul.md` and `current/world/global/soul.md` (prefer `headings`/`indices`)\n  2) `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
       : "1) `vfs_search` within `current/world/` (or canonical fork world path) for a name/ID\n  2) `vfs_patch_json` / `vfs_merge_json` (or `vfs_write_file` when creating) to update the exact JSON field(s)\n  3) `" +
         resolvedFinishToolName +
-        "` with `{ assistant: { narrative: \"...\", choices: [...] }, retconAck?: { summary: \"...\" } }` as the LAST call (`userAction` is runtime-injected)"
+        "` with `{ assistant: { narrative: \"...\", choices: [...] }, retconAck?: { summary: \"...\" } }` as the LAST call"
   }
 </examples>
 `;
@@ -219,6 +219,7 @@ You are in CLEANUP MODE (VFS-only).
    - \`vfs_vm\` scripts must be JavaScript (no pseudo-tool JSON text), and must not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`.
    - Inside \`vfs_vm\`, finish is optional but at most once and must be the last inner tool call.
 9. **FINISH**: Your LAST tool call must be \`${finishToolName || "vfs_finish_turn"}\`.
+   - If finishing with \`vfs_finish_turn\`, use \`{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }\`.
 10. **EFFICIENCY RULE (STRICT)**: Do NOT issue read-only tools immediately before finish unless they are directly required to perform OR verify same-response mutations (e.g. read back a just-edited file to confirm a merge/delete result). Pure read-only→finish batches are treated as waste.
 11. **WRITE FAILURE REPAIR MODE (TARGETED)**: If a writable write fails, next calls should repair failed targets first, but finish is blocked only by blocking errors (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
     - After repair succeeds, append one concise \`[code] cause -> fix\` bullet to \`current/world/soul.md\` under \`## Tool Usage Hints\`.
@@ -274,7 +275,7 @@ export const retconAckRequiredMessage: Atom<RetconAckSystemMessageInput> =
       exportName: "retconAckRequiredMessage",
     },
     ({ pendingHash, pendingReason }) =>
-      `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.\nThe system auto-injects hash="${pendingHash}".`,
+      `[SYSTEM: RETCON_ACK_REQUIRED]\nCustom rules changed and continuity ACK is required before finishing the turn.\nInclude \`retconAck\` in your finish call:\n- summary: short in-world continuity adjustment\nReason: ${pendingReason || "customRules"}.`,
   );
 
 /**

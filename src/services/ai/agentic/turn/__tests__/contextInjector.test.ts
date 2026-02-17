@@ -61,6 +61,7 @@ describe("contextInjector", () => {
     expect(history).toHaveLength(11);
     expect(history.every((msg) => msg.role === "user")).toBe(true);
     expect(getText(history[0])).toContain("FORCE UPDATE MODE");
+    expect(getText(history[0])).toContain("retconAck?: { summary:");
     expect(getText(history[1])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[1])).toContain("commands/runtime/SKILL.md");
     expect(getText(history[1])).toContain("commands/runtime/sudo/SKILL.md");
@@ -95,6 +96,9 @@ describe("contextInjector", () => {
     );
     expect(getText(history[7])).toContain(
       "[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]",
+    );
+    expect(getText(history[7])).toContain(
+      "If finishing with `vfs_finish_turn`",
     );
     expect(getText(history[8])).toContain("COMMAND SKILL REQUIRED");
     expect(getText(history[8])).toContain("commands/runtime/SKILL.md");
@@ -203,7 +207,6 @@ describe("contextInjector", () => {
 
     expect(history).toHaveLength(1);
     expect(getText(history[0])).toContain("RETCON_ACK_REQUIRED");
-    expect(getText(history[0])).toContain("hash_123");
     expect(getText(history[0])).toContain("retconAck");
   });
 

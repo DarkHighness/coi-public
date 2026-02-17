@@ -41,6 +41,7 @@ You MUST follow these runtime protocol constraints:
     - Character profile status/mood fields live under \`/visible/*\` (for example \`/visible/status\`, not \`/status\`).
     - If any context block shows merged read-model \`unlocked\` fields on world entities, NEVER copy those fields back into canonical world writes.
 - End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_finish_soul\` for \`[Player Rate]\` loops). If finishing through \`vfs_vm\`, the same finish-last rule applies to its inner calls.
+- For \`vfs_finish_turn\`, use args shape \`{ assistant: { narrative, choices }, retconAck?: { summary } }\`.
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - Loop preflight (required before non-read tools):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).

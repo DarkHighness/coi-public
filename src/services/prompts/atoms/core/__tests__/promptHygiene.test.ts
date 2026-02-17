@@ -69,6 +69,9 @@ describe("core prompt hygiene", () => {
 
     // Turn finish protocol should avoid generic conversation writes
     expect(content).toContain("vfs_finish_turn");
+    expect(content).toContain("retconAck?: { summary }");
+    expect(content).not.toContain("vfs_finish_turn({ userAction");
+    expect(content).not.toContain("retconAck?: { hash");
     expect(content).toContain("vfs_write_file");
     expect(content).toContain("vfs_vm");
     expect(content).toContain("top-level tool call");

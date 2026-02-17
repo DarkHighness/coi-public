@@ -915,7 +915,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_finish_turn",
     description:
-      "Append a new turn to the active fork and set it active (writes conversation index + turn file). `userAction` and `retconAck.hash` are runtime-injected system fields.",
+      "Append a new turn to the active fork and set it active (writes conversation index + turn file).",
     parameters: z
       .object({
         assistant: z

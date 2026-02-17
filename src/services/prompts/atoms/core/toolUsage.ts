@@ -86,6 +86,11 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
 
   **TURN COMPLETION**:
   - Your LAST tool call must be \`${finishToolName}\`.
+  ${
+    finishToolName === "vfs_finish_turn"
+      ? "- For `vfs_finish_turn`, use args shape `{ assistant: { narrative, choices }, retconAck?: { summary } }`."
+      : ""
+  }
   - If a write to existing writable target(s) fails, enter repair mode: next calls should inspect/retry those failed targets first.
   - Finish is blocked only for blocking failures (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
   - Missing-target write failures are non-blocking: finish may proceed, but retry if creating that target is still required.
