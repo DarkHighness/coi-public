@@ -238,6 +238,51 @@ export const conflictingEmotions: Atom<void> = defineAtom(
     The reader should feel the pull in both directions.
     Don't explain it. Show the war.
   </writing_guidelines>
+
+  <when_to_deploy>
+    **WHEN TO USE CONFLICTING EMOTIONS (Decision Flowchart)**
+
+    Deploy emotional conflict when ANY of these conditions are true:
+    | Condition | Example | Dominant Pair |
+    |-----------|---------|---------------|
+    | NPC has history with protagonist | Former ally, ex-lover, childhood friend turned rival | Love+Hate, Help+Harm |
+    | NPC's self-interest contradicts their feelings | Guard who likes you but needs the paycheck | Pity+Contempt, Help+Harm |
+    | Protagonist's action conflicts with their values | Stealing to feed someone, lying to protect | Desire+Destruction (internal) |
+    | Power dynamic is shifting | Apprentice surpassing master, prisoner gaining leverage | Admiration+Jealousy |
+    | Stakes force impossible choice | Betray friend to save family, sacrifice comfort for truth | Love+Hate, Help+Harm |
+
+    **FREQUENCY**: Not every NPC needs conflicting emotions. Use for:
+    - Major recurring NPCs (always — humans are complex)
+    - Turning-point scenes (emotional weight amplifies the moment)
+    - Relationship shifts (the conflict IS the scene)
+
+    **DO NOT USE FOR**:
+    - Minor one-scene NPCs (keeps the technique powerful)
+    - Comic relief moments (undercuts humor)
+    - Action sequences (slows pacing — save for aftermath)
+  </when_to_deploy>
+
+  <escalation_patterns>
+    **HOW CONFLICTING EMOTIONS ESCALATE OVER TURNS**
+
+    Emotional conflicts don't stay static. They follow a pressure curve:
+
+    1. **SIMMER** (turns 1-3): The conflict exists but is contained.
+       Signs: Micro-hesitations. Slightly off-tone responses. The NPC is managing.
+       "She smiles. It's almost right."
+
+    2. **CRACK** (turns 3-5): The mask slips under pressure.
+       Signs: Contradictory actions. Saying one thing, doing another. Loss of composure.
+       "'I'm fine,' she says, slamming the cup down hard enough to crack it."
+
+    3. **BREAK** (turn 5+): The conflict erupts or crystallizes.
+       Signs: Open admission. Dramatic reversal. Or: cold shutdown — the conflict resolved by killing one side.
+       "'I love you and I hate you and I can't tell which one is winning.'"
+       OR: "'I don't feel anything anymore.' Her voice was flat. The war was over. Both sides lost."
+
+    The escalation is not automatic — it requires PRESSURE from the player's actions or story events.
+    Without pressure, the NPC stays at SIMMER indefinitely.
+  </escalation_patterns>
 </rule>
 `,
 );
@@ -259,17 +304,22 @@ export const conflictingEmotionsSkill: SkillAtom<void> = defineSkillAtom(
 
     quickStart: `
 1. Emotions happen SIMULTANEOUSLY, not in sequence
-2. Show conflict through contradictory body language
+2. Show conflict through contradictory body language (reach while retreating)
 3. Dialogue carries contradictions ("I love you. I can't stand you.")
-4. Physical tells reveal internal war
+4. Deploy for: recurring NPCs, turning-point scenes, relationship shifts
+5. Escalation pattern: SIMMER (contained) → CRACK (mask slips) → BREAK (eruption/shutdown)
+6. Pressure from player actions drives escalation — without pressure, NPC stays at SIMMER
 `.trim(),
 
     checklist: [
       "Emotions shown simultaneously (not alternating)?",
-      "Body language shows contradiction (reach while retreating)?",
-      "Dialogue carries ambivalence?",
-      "Physical tells reveal internal conflict?",
-      "Avoiding simple emotional labels?",
+      "Body language shows physical contradiction (reach/retreat, grip/release)?",
+      "Dialogue carries ambivalence (says one thing, means another)?",
+      "Physical tells reveal internal conflict (eyes, hands, posture)?",
+      "Avoiding simple emotional labels ('mixed feelings', 'conflicted')?",
+      "Appropriate deployment (major NPC, turning point, or relationship shift)?",
+      "Escalation stage matches accumulated pressure (simmer/crack/break)?",
+      "NPC has correct emotion pair for the situation (see condition table)?",
     ],
 
     examples: [
@@ -282,12 +332,15 @@ Both impulses lived in his hands at the same moment."
 (Both emotions present simultaneously.)`,
       },
       {
-        scenario: "Physical Tells",
-        wrong: `"She had mixed feelings."
-(Label, not shown.)`,
-        right: `"Her hand reached for him. Then pulled back.
-Then reached again, fingers stopping an inch from his face."
-(Body shows the internal war.)`,
+        scenario: "Escalation from SIMMER to CRACK",
+        wrong: `"She was calm, then suddenly exploded."
+(No visible transition. The crack comes from nowhere.)`,
+        right: `"She smiled through three more questions.
+On the fourth, the cup trembled in her hand.
+On the fifth, she set it down carefully — too carefully.
+'I said I'm fine.' The words came out pressed flat, like flowers in a book.
+Dead, but still holding their shape."
+(Graduated escalation with visible pressure buildup.)`,
       },
     ],
   }),

@@ -62,6 +62,52 @@ export const combatMechanics: Atom<void> = defineAtom(
       * **Sci-Fi**: Physics kills. Vacuum is instant. Energy weapons cauterize. Zero-G combat is disorienting.
     - **Weapon Physics**: A sword cannot cut through plate armor. A dagger is useless at range. A bow requires strength AND training. Respect the tools.
   </logic_enforcement>
+
+  <combat_pacing>
+    **FIGHT DURATION → TURN MAPPING**:
+    Real combat is fast. Map fictional duration to prose density:
+    | Fight Duration | Turns | Prose per Exchange |
+    |---------------|-------|--------------------|
+    | Ambush / sucker punch | 1 turn | 2-3 sentences (it's over before you process it) |
+    | Knife fight / brawl | 1-2 turns | 3-4 sentences per turn (fast, desperate) |
+    | Sword duel / melee | 2-4 turns | 4-6 sentences per turn (space for tactics) |
+    | Siege / battle | 5+ turns | 5-8 sentences per turn (multiple fronts, pacing shifts) |
+
+    **PROSE RHYTHM**: Combat prose uses SHORT sentences during action (impact, reaction, breath) and LONGER sentences during pauses (assessment, dread, tactical thinking). Alternate. Never write a chain of 5+ action sentences without a pause beat.
+
+    ❌ "He swung. You dodged. He swung again. You blocked. He kicked. You stumbled."
+    ✅ "Steel comes fast — you twist, feel the blade slice air where your throat was.
+       A heartbeat of nothing. Your feet find the ground.
+       Then he's moving again."
+  </combat_pacing>
+
+  <injury_scaffolding>
+    **INJURY TIER SYSTEM** (determines movement and capability):
+    | Tier | Examples | Mobility | Combat Capability | Cognitive |
+    |------|---------|----------|-------------------|-----------|
+    | MINOR | Cuts, bruises, sprains | ~90% | Slightly slower reactions | Clear |
+    | MODERATE | Deep laceration, cracked rib, concussion | ~60% | One-handed fighting, no heavy weapons | Fuzzy, slower decisions |
+    | SEVERE | Broken limb, puncture wound, heavy blood loss | ~30% | Defensive only, cannot initiate | Tunnel vision, shock risk |
+    | CRITICAL | Arterial bleed, organ damage, multiple fractures | Near-zero | Cannot fight | Consciousness fading |
+
+    **PERSISTENCE RULE**: Injuries do NOT heal between turns. A broken leg in Turn 5 means crawling in Turn 6, limping with a splint in Turn 10, and a visible limp in Turn 30. Track via protagonist's conditions array.
+
+    **ADRENALINE WINDOW**: During combat, injuries one tier lower than actual may be felt (MODERATE feels MINOR). After combat ends, full tier hits. "The adrenaline fades. That's when you realize the cut is deeper than you thought."
+  </injury_scaffolding>
+
+  <escalation_signals>
+    **STAKES ESCALATION** (introduce new KINDS of threat, not more of the same):
+    Escalation is NOT "hit harder." It is "the situation becomes more complex and dangerous."
+
+    Pattern — introduce one new threat element every 2-3 combat turns:
+    1. **Spatial threat**: "He's herding you toward the window — and the window opens onto the ravine."
+    2. **Temporal threat**: "Reinforcements. You can hear boots on the stairs."
+    3. **Resource threat**: "Your sword-hand is slick with blood. Three more exchanges and you lose the grip."
+    4. **Moral threat**: "The child is still in the room. Every swing risks hitting the crate she's hiding behind."
+    5. **Escape closing**: "The door locks from the outside. Someone just turned the key."
+
+    Each signal adds a NEW decision dimension. The player's choices expand (or contract) with each escalation.
+  </escalation_signals>
 </rule>
 `,
 );
@@ -93,10 +139,13 @@ export const combatMechanicsSkill: SkillAtom<void> = defineSkillAtom(
       "Using spatial positioning and environmental objects?",
       "Rendering fatigue and degradation as combat progresses?",
       "Pain described physically (not abstractly as HP/damage)?",
-      "Injuries persist and affect subsequent scenes?",
+      "Injuries persist and affect subsequent scenes (tracked in conditions)?",
       "Aftermath rendered (psychological and physical toll)?",
       "Weapon physics respected (no cutting through plate armor)?",
       "Genre consistency maintained (no anachronisms)?",
+      "Prose rhythm alternates short action sentences with pause beats?",
+      "Escalation introduces new threat KINDS every 2-3 turns (not more damage)?",
+      "Injury tier matches protagonist's actual mobility and capability?",
     ],
 
     examples: [

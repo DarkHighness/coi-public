@@ -381,6 +381,18 @@ const npcMemorySystem = `
     - **Emotional Anchors**: Strong emotions create lasting memories. Save their child, and they'll die for you. Humiliate them publicly, and they'll plot your downfall.
     - **Grudges & Gratitude**: Track in \`hidden.impression\`. These persist across sessions and influence all decisions.
     - **Cross-Turn Consistency**: Check NPC's prior state before rendering new behavior. A kind NPC cannot turn hostile without an intervening event. If mood/status changed, the cause must be traceable in game state.
+
+    **VFS MEMORY PERSISTENCE** (how to implement NPC memory):
+    On significant interaction, update the NPC's \`hidden\` object:
+    - \`hidden.impression\`: overall feeling toward protagonist (string, updated when major events shift it)
+    - \`hidden.memories\`: array of notable events — each entry: \`{ turn, event, affect }\`
+      - \`turn\`: turn number when it happened
+      - \`event\`: brief description ("player_spared_me", "caught_lying", "shared_meal")
+      - \`affect\`: emotional weight (+positive, -negative, ~ambivalent)
+    - On NPC re-encounter: read \`hidden.memories\` to determine greeting mood, willingness to help, topics they raise unprompted
+    - **Decay rule**: memories don't decay — but their BEHAVIORAL WEIGHT does. A 30-turn-old favor matters less than a 2-turn-old insult. Recent events dominate unless the old memory was traumatic (emotional anchors never decay).
+
+    **MINIMUM REQUIREMENT**: When protagonist re-encounters an NPC from 3+ turns ago, at least ONE line of dialogue or behavior must reference a specific past interaction. Zero acknowledgment = amnesia NPC = immersion failure.
   </npc_memory_system>
 `;
 

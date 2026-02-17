@@ -82,6 +82,23 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     <rule>\`${resolvedFinishToolName}\` MUST be your LAST tool call.</rule>
     <rule>Double-check JSON syntax before calling any tool.</rule>
   </rules>
+
+  <pre_finish_validation>
+    **BEFORE CALLING ${resolvedFinishToolName}** — verify:
+    ${
+      isPlayerRateLoop
+        ? `- soul.md updated with specific, falsifiable observations (not vague notes)
+    - No visible plot advancement in this loop
+    - At least one soul section received an update (currentSoul or globalSoul)`
+        : `- narrative is grounded in protagonist's body and senses (not omniscient summary)
+    - choices are 2-4 genuine options with DIFFERENT cost profiles
+    - at least one choice presents a real dilemma (values in tension)
+    - consequence hints telegraph risk level, not exact outcomes
+    - world state files updated to reflect what changed this turn
+    - no entity created without prior search (vfs_search)
+    - injured/exhausted/hungry protagonist conditions reflected in narrative`
+    }
+  </pre_finish_validation>
 </output_format>
 `;
   },

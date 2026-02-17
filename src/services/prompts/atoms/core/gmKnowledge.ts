@@ -301,10 +301,14 @@ ${temporalEpistemology}
 `.trim(),
 
     quickStart: `
-1. Check entity's \`unlocked\` flag before revealing hidden info
-2. Use \`hidden\` for NPC behavior logic, \`visible\` for narrative
-3. Only unlock when player has DEFINITIVE PROOF
-4. Write unlocks to view files, not canonical entity files
+1. CHECK: Does the entity have hidden info? Read its file first.
+2. GATE: Does the player have DEFINITIVE PROOF (not suspicion)?
+   - Suspicion → NPC behaves per hidden layer, but narrative uses only visible layer
+   - Proof → proceed to unlock
+3. PROOF TYPES: confession heard, document found, mechanism triggered, direct observation
+4. UNLOCK: Set entity's unlocked field; write to view file, NOT canonical entity
+5. NARRATE: Revelation must be complete (not partial hints) and change available choices
+6. HIDDEN LAYER STILL DRIVES NPC BEHAVIOR even when locked — just invisible to narrative
 `.trim(),
 
     checklist: [

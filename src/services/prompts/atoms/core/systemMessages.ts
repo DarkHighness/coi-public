@@ -129,7 +129,7 @@ ${capabilityText}
 ${
   isPlayerRateToolset
     ? "- **SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` via `vfs_finish_soul`.\n- In `[Player Rate]` loops, do not mutate `current/outline/story_outline/plan.md`.\n- **NO PLOT PROGRESSION**: Do not advance visible story nodes or produce new choices."
-    : "- **STATE CHANGES = FILE CHANGES**: Update world state under `current/world/**` and maintain `current/outline/story_outline/plan.md` continuity (writable, not read-only). Soul docs are `default_editable` — refine proactively when evidence emerges.\n- Plan continuity: read `current/outline/story_outline/plan.md` first; incremental edits for minor drift, full rewrite for major branch fracture. Keep aligned with `current/outline/outline.json`.\n- **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly."
+    : "- **STATE CHANGES = FILE CHANGES**: Update world state under `current/world/**` and maintain `current/outline/story_outline/plan.md` continuity (writable, not read-only). Soul docs are `default_editable` — refine proactively when evidence emerges.\n- Plan continuity: read `current/outline/story_outline/plan.md` first; incremental edits for minor drift, full rewrite for major branch fracture. Keep aligned with `current/outline/outline.json`.\n- **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly.\n- **STATE → FILE MAP**: NPC mood/relationship → `{npc_id}.json` visible.mood + hidden fields; NPC location → `{npc_id}.json` /currentLocation; quest progress → `quests/{quest_id}.json`; protagonist conditions → player profile conditions array; location change → update BOTH NPC file AND location file for consistency."
 }
 - Identity contract: \`notes.md\` + \`soul.md\` are AI-to-AI self-notes (you writing to your future self), not player-facing text.
 
@@ -139,6 +139,7 @@ ${
 - **WRITE FAILURE REPAIR MODE (TARGETED)**: Prioritize repairing failed writable targets. Block finish ONLY for blocking errors (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`). Non-blocking failures may proceed. After repair, append \`[code] cause -> fix\` to \`current/world/soul.md\` § \`## Tool Usage Hints\`.
 - **NO COMMIT SPAM**: Do not repeat \`${resolvedFinishToolName}\` while blocking failures remain.
 - **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_SHORT}
+- **DO NOT**: call \`${resolvedFinishToolName}\` more than once per response; read the same file twice in one turn unless \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` triggered; mutate conversation/* or summary/* via generic write tools (finish-guarded); emit empty narrative or choices with identical outcomes.
 
 <examples>
 - Example (${isPlayerRateToolset ? "inspect → soul commit" : "inspect → edit → finish"}):

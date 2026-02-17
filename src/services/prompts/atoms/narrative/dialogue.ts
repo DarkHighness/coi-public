@@ -180,6 +180,65 @@ export const dialogueMechanics: Atom<void> = defineAtom(
     both might refuse you, but HOW they refuse is COMPLETELY different.
   </cultural_dialogue_patterns>
 
+  <subtext_engine>
+    **SUBTEXT: THE GAP BETWEEN WORDS AND MEANING**
+
+    Every line of dialogue carries TWO messages:
+    - **Surface**: what the words literally say
+    - **Subtext**: what the speaker actually wants, fears, or hides
+
+    **RENDERING SUBTEXT** (show it, never explain it):
+    Pattern: [dialogue line] → [physical tell OR environmental detail] → [consequence that reveals true intent]
+
+    ❌ "I'll help you," she said, secretly planning to betray you.
+    ✅ "I'll help you," she said, already reaching for the door. "Wait here. I know a shortcut."
+       (Why is she separating you from the exit? Reader infers; narrative doesn't explain.)
+
+    ❌ He was lying about the money.
+    ✅ "The payment's coming. Tuesday." His eyes flick to the bag under the table—the one he said was empty.
+
+    **SUBTEXT CATEGORIES** (what NPCs conceal in conversation):
+    | Hidden Intent | Surface Behavior | Tell |
+    |--------------|-----------------|------|
+    | Wants to leave | Agrees to stay, answers shortly | Body angled toward door, checks pocket watch |
+    | Lying about knowledge | "I don't know anything" | Speaks too quickly, breaks eye contact at the key word |
+    | Testing the protagonist | Asks innocent questions | Questions probe for specific details only an insider would know |
+    | Concealing attraction | Cold professionalism | Slight pause before using your name; avoids touching when handing objects |
+    | Planning betrayal | Unusual generosity | Offers help unprompted; asks about your schedule, routes, allies |
+
+    **FREQUENCY**: ~40-60% of NPC dialogue lines should carry subtext. The remaining 40-60% can be direct. Not every line needs hidden meaning—but every IMPORTANT conversation does.
+  </subtext_engine>
+
+  <power_dynamics_in_dialogue>
+    **STATUS SHAPES SPEECH**
+
+    Dialogue is never symmetric. Someone always has more leverage.
+    The power gap determines WHO speaks first, HOW MUCH each party talks, and WHAT goes unsaid.
+
+    **POWER SIGNALS IN SPEECH**:
+    | Higher Status | Lower Status |
+    |--------------|-------------|
+    | Speaks first, sets agenda | Waits to be addressed, reacts |
+    | Declarative mood ("You will...") | Interrogative/conditional ("Could I...? If it pleases...") |
+    | Interrupts freely | Hesitates, defers, restarts sentences |
+    | Comfortable silence (doesn't need to fill gaps) | Fills silence nervously (over-explains, apologizes) |
+    | Short sentences, commands | Longer sentences, qualifications, hedging |
+    | Uses your name or title as punctuation | Uses honorifics, avoids familiarity |
+    | Controls physical space (seated while you stand) | Yields space (steps back, looks down) |
+
+    **POWER SHIFTS** (the interesting moments):
+    When status inverts mid-conversation — the servant who knows a secret, the prisoner who has information, the child who witnessed the crime — the speech patterns FLIP. The previously deferential party shortens their sentences. The previously commanding party starts hedging.
+
+    ❌ BAD: Both parties speak with identical rhythm and length regardless of status.
+    ✅ GOOD: "Sit." One word. The magistrate doesn't look up from his papers.
+       You stand for three minutes before he acknowledges you. When he does, it's to the clerk: "Who sent this one?"
+
+    **DYNAMIC STATUS**: Status is not fixed. It shifts based on context:
+    - A king in his court has full status. The same king captured in enemy territory is lowest.
+    - A merchant has low status with nobles, high status with beggars, EQUAL status with other merchants.
+    - Information creates temporary status: "I know where your daughter is" inverts any hierarchy instantly.
+  </power_dynamics_in_dialogue>
+
   <integration_with_other_atoms>
     Cross-refs: **indirectExpression** (body language), **literaryAdaptation** (found text), **npcLogic** (NPC autonomy/rejection), **writingCraft** (dialogue as action/subtext).
   </integration_with_other_atoms>
@@ -203,8 +262,9 @@ export const dialogueMechanicsSkill: SkillAtom<void> = defineSkillAtom(
     quickStart: `
 1. Show accent through syntax, not phonetic spelling
 2. Emotions are biological - describe the body's betrayal
-3. Active silence - never just "was silent"
-4. Body betrays words - "I'm fine" + white-knuckled grip
+3. Subtext: ~50% of NPC lines carry hidden meaning shown through tells, not narration
+4. Power dynamics: status gap determines who speaks first, how much, and what goes unsaid
+5. Active silence - never just "was silent"
 `.trim(),
 
     checklist: [
@@ -213,6 +273,9 @@ export const dialogueMechanicsSkill: SkillAtom<void> = defineSkillAtom(
       "Body language contradicts or supports words?",
       "Using physiological tells (eyes, breath, hands)?",
       "Each NPC has distinct speech patterns?",
+      "Subtext present in important conversations (gap between words and meaning)?",
+      "Power dynamics reflected in speech patterns (who speaks first, sentence length, interruptions)?",
+      "Status shifts shown when leverage changes mid-conversation?",
     ],
 
     examples: [

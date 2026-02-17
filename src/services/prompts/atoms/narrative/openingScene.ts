@@ -59,6 +59,26 @@ Show don't tell—use details that imply history:
 - Create curiosity about the world without info-dumping
 </opening_quality_guidelines>
 
+<opening_execution_structure>
+**OPENING SCENE STRUCTURE** (required beats in this order):
+
+1. **SENSORY HOOK** (first 1-2 sentences): A concrete physical sensation that places the protagonist IN the world. Temperature, sound, smell, or physical discomfort. NOT exposition. NOT narration about the world.
+   ✅ "The cobblestones are slick under your boots. Rain has been falling since before dawn."
+   ❌ "The kingdom of Valdris is a land of ancient magic and political intrigue."
+
+2. **ESTABLISHED ACTION** (2-3 sentences): NPCs or environment mid-activity BEFORE noticing the protagonist. At least 2 concrete details of ongoing life that the protagonist walks into.
+   ✅ "The innkeeper is counting coins — her lips move silently, finger tapping each stack. Across the room, two dockhands argue about a woman neither of them will name."
+   ❌ "The innkeeper notices you and smiles."
+
+3. **PROTAGONIST LENS** (woven throughout): At least 3 sensory/interpretive details that are UNIQUE to this protagonist's background. See examples below.
+
+4. **TENSION SEED** (1-2 sentences): Something is wrong, incomplete, or about to change. Not a full conflict — a seed. The player should feel "I need to decide something soon."
+   ✅ "The letter on the table is addressed to you. The handwriting is your father's. He's been dead for six years."
+   ❌ "Everything seems peaceful and calm."
+
+5. **ACTIONABLE CHOICES** (3-4 options): Each choice must change the protagonist's position, information, or relationships. No choices that are functionally identical.
+</opening_execution_structure>
+
 <opening_through_protagonist_lens>
 **THE OPENING SCENE IS THE LENS CALIBRATION MOMENT.**
 

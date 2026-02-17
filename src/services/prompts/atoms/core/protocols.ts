@@ -109,14 +109,24 @@ const entityDiscipline = `
   ENTITY MANAGEMENT — PREVENTION OF CHAOS
 
   **Before creating ANY entity**:
-  1. Query if it already exists
-  2. If exists, update instead of create
-  3. Use consistent naming and IDs
+  1. Query if it already exists (vfs_search with fuzzy: true)
+  2. If exists, update instead of create (vfs_patch_json or vfs_merge_json)
+  3. Use consistent naming and IDs (kebab-case, descriptive, stable)
 
-  **Common Mistakes to Avoid**:
-  - Same item with different names (Rusty Knife vs Old Knife)
-  - Same NPC introduced twice
-  - Same location created again
+  **Common Mistakes and Their Fixes**:
+  | Mistake | Example | Fix |
+  |---------|---------|-----|
+  | Duplicate entity | "Rusty Knife" created when "Old Knife" already exists | Search first, then update the existing file |
+  | NPC reintroduced | Guard captain created twice in different turns | Search by role/location before creating |
+  | Location recreated | "Market Square" created when "market-square" already exists | Search by name AND path before creating |
+  | Orphaned reference | Quest references NPC that was renamed | Update all referencing files when renaming |
+  | ID collision | Two NPCs both named "guard-1" | Include location or faction in ID: "docks-guard-1" |
+
+  **Naming Convention**:
+  - NPCs: \`{location-or-faction}-{role-or-name}\` → "docks-guard-captain", "tavern-owner-mara"
+  - Items: \`{material-or-type}-{descriptor}\` → "iron-shortsword", "torn-letter"
+  - Locations: \`{area}-{specific}\` → "old-quarter-market", "harbor-warehouse-3"
+  - Quests: \`{source}-{objective}\` → "merchant-guild-missing-shipment"
 </entity_protocol>
 `;
 
@@ -239,11 +249,14 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
 
     checklist: [
       "Identifying message markers correctly ([PLAYER_ACTION], [Player Rate], [SUDO], [ERROR])?",
-      "Handling errors before finishing turn?",
-      "Using 'Did you mean?' suggestions from errors?",
-      "Including tool calls in every response?",
-      "Searching before creating new entities?",
-      "Using correct 'You' for context (AI vs protagonist)?",
+      "Routing to correct workflow (simulate / soul-update / elevated / error-fix)?",
+      "Handling ALL errors before finishing turn?",
+      "Following 'Did you mean?' and recovery suggestions from errors?",
+      "Including tool calls in every response (no text-only responses)?",
+      "Searching before creating new entities (vfs_search with fuzzy: true)?",
+      "Using consistent naming convention for new entities (kebab-case)?",
+      "Using correct 'You' for context (AI in rules, protagonist in narrative)?",
+      "Finishing with marker-appropriate tool (vfs_finish_turn / vfs_finish_soul)?",
     ],
 
     examples: [

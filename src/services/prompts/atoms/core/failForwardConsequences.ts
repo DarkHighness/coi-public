@@ -119,11 +119,29 @@ export const failForwardConsequencesSkill: SkillAtom<void> = defineSkillAtom(
     ],
     examples: [
       {
-        scenario: "Fail-forward after a failed roll",
+        scenario: "Fail-forward after failed infiltration",
         wrong: `"You fail. Nothing happens. Try again."`,
-        right: `"You fail the pickup, but you spot the courier’s route (new lead).
-Your attempt leaves a camera timestamp (receipt). A 24h review clock starts.
-You can flee now, or stay to confirm identity (higher certainty, higher exposure). "`,
+        right: `"You fail the lockpick, but you spot the courier's route through the gap (new lead).
+Your attempt leaves scratches on the lock face (receipt: next person who checks will know).
+The guard rotation resumes in 20 minutes (clock).
+Flee now (clean escape, lead only) or wait for the courier (identity confirmed, higher exposure)."`,
+      },
+      {
+        scenario: "Partial success in social encounter",
+        wrong: `"The merchant agrees to help you." (Full success with no cost.)`,
+        right: `"The merchant agrees, but the price doubled when he saw your face.
+He knows who sent you now (receipt: he'll mention it to the guild).
+The deal closes in 48 hours (clock: if you don't pay, he sells to the other buyer).
+Pay the premium now, or find leverage to renegotiate before the deadline."`,
+      },
+      {
+        scenario: "Hard fail with prior warning",
+        wrong: `"You die suddenly from the trap." (No prior warning or telegraphing.)`,
+        right: `"The inscription warned you. The bones at the threshold warned you. You went in anyway.
+The ceiling drops. No time to dodge — you chose to ignore the signs.
+Your left arm is pinned. The stone weighs more than you do.
+Someone will come eventually. You hope it's someone friendly."
+(Hard fail allowed: lethal risk was explicitly telegraphed and player confirmed entry.)`,
       },
     ],
   }),
