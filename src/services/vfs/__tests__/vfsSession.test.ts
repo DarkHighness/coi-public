@@ -198,6 +198,83 @@ describe("VfsSession", () => {
     expect(session.readFile("world/placeholders/quest:untouched.md")).toBeTruthy();
   });
 
+  it("removes categorized placeholder draft markdown after entity promotion write", () => {
+    const session = new VfsSession();
+
+    session.writeFile(
+      "world/placeholders/quests/quest:signal.md",
+      "# Placeholder Draft\n\n- id: quest:signal\n",
+      "text/markdown",
+    );
+
+    session.writeFile(
+      "world/quests/quest:signal.json",
+      JSON.stringify({
+        id: "quest:signal",
+        type: "main",
+        title: "The Signal at Dawn",
+        knownBy: ["char:player"],
+        visible: {
+          description: "Investigate the lighthouse signal.",
+          objectives: ["Reach the lighthouse"],
+        },
+        hidden: {
+          trueDescription: "Decode the covert warning message.",
+          trueObjectives: ["Obtain the cipher lens"],
+          secretOutcome: "Expose the smuggler route",
+          twist: "Signal was sent by a faction insider",
+        },
+      }),
+      "application/json",
+    );
+
+    expect(session.readFile("world/placeholders/quests/quest:signal.md")).toBeNull();
+  });
+
+  it("removes placeholder drafts for promoted entity when canonical file is renamed", () => {
+    const session = new VfsSession();
+
+    session.writeFile(
+      "world/placeholders/quest:signal.md",
+      "# Placeholder Draft\n\n- id: quest:signal\n",
+      "text/markdown",
+    );
+    session.writeFile(
+      "world/placeholders/quests/quest:signal.md",
+      "# Placeholder Draft\n\n- id: quest:signal\n",
+      "text/markdown",
+    );
+
+    session.writeFile(
+      "world/quests/quest:staging.json",
+      JSON.stringify({
+        id: "quest:staging",
+        type: "main",
+        title: "Staging Quest",
+        knownBy: ["char:player"],
+        visible: {
+          description: "Temporary quest used during migration.",
+          objectives: ["Stage"],
+        },
+        hidden: {
+          trueDescription: "Temporary hidden details.",
+          trueObjectives: ["Finalize"],
+          secretOutcome: "Promoted",
+          twist: "Renamed into canonical id",
+        },
+      }),
+      "application/json",
+    );
+
+    session.renameFile(
+      "world/quests/quest:staging.json",
+      "world/quests/quest:signal.json",
+    );
+
+    expect(session.readFile("world/placeholders/quest:signal.md")).toBeNull();
+    expect(session.readFile("world/placeholders/quests/quest:signal.md")).toBeNull();
+  });
+
   it("lists directories", () => {
     const session = new VfsSession();
     session.writeFile("world/npcs/npc:1.json", "{}", "application/json");

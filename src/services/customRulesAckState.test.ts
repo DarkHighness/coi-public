@@ -83,6 +83,11 @@ describe("customRulesAckState", () => {
 
     const missing = applyCustomRulesRetconAck(session);
     expect(missing).toMatchObject({ ok: false, code: "INVALID_DATA" });
+    if (missing.ok) {
+      throw new Error("Expected missing retconAck to fail");
+    }
+    expect(missing.message).toContain("vfs_finish_turn");
+    expect(missing.message).not.toContain("commit_turn");
 
     const mismatch = applyCustomRulesRetconAck(session, {
       hash: "wrong",

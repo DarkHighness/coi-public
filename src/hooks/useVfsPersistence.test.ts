@@ -116,4 +116,32 @@ describe("useVfsPersistence slot naming", () => {
       },
     });
   });
+
+  it("ignores invalid entityPresentation entries when lastAccess shape is broken", () => {
+    const base = {
+      inventory: { pinnedIds: [], customOrder: [] },
+      locations: { pinnedIds: [], customOrder: [] },
+      npcs: { pinnedIds: [], customOrder: [] },
+      knowledge: { pinnedIds: [], customOrder: [] },
+      quests: { pinnedIds: [], customOrder: [] },
+      entityPresentation: {
+        "inventory:item:1": {
+          highlight: false,
+          lastAccess: { forkId: 0, turnNumber: 1, timestamp: 1000 },
+        },
+      },
+    } as any;
+
+    const merged = mergeStoredUiState(base, {
+      entityPresentation: {
+        "inventory:item:2": {
+          highlight: true,
+          lastAccess: { forkId: 0, turnNumber: Number.NaN, timestamp: 2000 },
+        },
+      },
+    });
+
+    expect(merged.entityPresentation).toEqual(base.entityPresentation);
+    expect(merged.entityPresentation?.["inventory:item:2"]).toBeUndefined();
+  });
 });
