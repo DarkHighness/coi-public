@@ -712,10 +712,13 @@ Answer the user's request using relevant tools (if they are available). Before c
           // 累积工具调用信息
           const accumulatedToolCalls: Map<
             number,
-            { id: string; name: string; input: string }
+            {
+              id: string;
+              name: string;
+              input: string;
+              startInput?: unknown;
+            }
           > = new Map();
-
-          let currentToolIndex = -1;
 
           for await (const event of stream) {
             resetStallTimer();
@@ -724,11 +727,11 @@ Answer the user's request using relevant tools (if they are available). Before c
             if (event.type === "content_block_start") {
               const block = event.content_block;
               if (block.type === "tool_use") {
-                currentToolIndex++;
-                accumulatedToolCalls.set(currentToolIndex, {
+                accumulatedToolCalls.set(event.index, {
                   id: block.id,
                   name: block.name,
                   input: "",
+                  startInput: block.input,
                 });
               }
             } else if (event.type === "content_block_delta") {
@@ -742,7 +745,7 @@ Answer the user's request using relevant tools (if they are available). Before c
                 thinkingContent += getThinkingText(delta);
               } else if (delta.type === "input_json_delta") {
                 // 工具调用参数（增量）
-                const existing = accumulatedToolCalls.get(currentToolIndex);
+                const existing = accumulatedToolCalls.get(event.index);
                 if (existing) {
                   existing.input += delta.partial_json;
                 }
@@ -787,11 +790,18 @@ Answer the user's request using relevant tools (if they are available). Before c
           }
 
           // 解析累积的工具调用
-          for (const [, tc] of accumulatedToolCalls) {
+          const orderedToolCalls = [...accumulatedToolCalls.entries()].sort(
+            ([a], [b]) => a - b,
+          );
+          for (const [, tc] of orderedToolCalls) {
+            const parsedArgs =
+              tc.input.trim().length > 0
+                ? parseToolArgumentsText(tc.input, tc.name)
+                : parseToolArgumentsValue(tc.startInput ?? {}, tc.name);
             toolCalls.push({
               id: tc.id,
               name: tc.name,
-              args: parseToolArgumentsText(tc.input, tc.name),
+              args: parsedArgs,
             });
           }
         } catch (error) {
