@@ -81,3 +81,9 @@ export {
   sessionContinuityPrimer,
   sessionContinuitySkill,
 } from "./sessionContinuity";
+
+export {
+  emotionalEmpathy,
+  emotionalEmpathyPrimer,
+  emotionalEmpathySkill,
+} from "./emotionalEmpathy";
