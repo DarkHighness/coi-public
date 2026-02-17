@@ -40,6 +40,13 @@ export interface RetryResult extends ChatGenerateResponse {
 }
 
 const MAX_VALIDATION_ISSUES_IN_ERROR = 4;
+const LONG_REQUEST_STREAMING_REQUIRED_PATTERN =
+  /streaming is required for operations that may take longer than 10 minutes|long-requests/i;
+const INTERNAL_STREAM_NOOP_CHUNK = () => {};
+
+const requiresStreamingTransportForLongRequest = (
+  message: string,
+): boolean => LONG_REQUEST_STREAMING_REQUIRED_PATTERN.test(message);
 
 const toRecord = (value: unknown): JsonObject | null =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -374,6 +381,7 @@ export async function callWithAgenticRetry(
     completionTokens: 0,
     totalTokens: 0,
   };
+  let forceInternalStreaming = false;
   let sawExplicitUnknownUsage = false;
   const schemaGuidanceShownByTool = new Set<string>();
 
@@ -383,23 +391,50 @@ export async function callWithAgenticRetry(
       response = await provider.generateChat({
         ...request,
         messages: history as unknown[],
+        ...(forceInternalStreaming && !request.onChunk
+          ? { onChunk: INTERNAL_STREAM_NOOP_CHUNK }
+          : {}),
       });
     } catch (providerError) {
       const classified = classifyAgenticError(providerError);
+      const fallback =
+        providerError instanceof Error
+          ? providerError
+          : new Error(String(providerError));
+      const rawProviderMessage = classified.rawMessage || fallback.message;
+
+      const shouldRetryWithStreamingTransport =
+        !request.onChunk &&
+        !forceInternalStreaming &&
+        requiresStreamingTransportForLongRequest(rawProviderMessage) &&
+        attempt < maxRetries;
+
+      if (shouldRetryWithStreamingTransport) {
+        attempt++;
+        forceInternalStreaming = true;
+        const retryMessage =
+          "[ERROR: STREAMING_REQUIRED] Provider requires streaming transport for this long-running request. Retrying with internal streaming mode.";
+        console.warn(
+          `[AgenticRetry] ${retryMessage} (${attempt}/${maxRetries})`,
+        );
+        if (onRetry) {
+          onRetry(retryMessage, attempt, {
+            silent: true,
+            classification: "silent_retry",
+          });
+        }
+        continue;
+      }
+
       const isRetryable =
         classified.kind === "silent_retry" ||
         classified.kind === "model_fixable";
 
       if (!isRetryable || attempt >= maxRetries) {
-        const fallback =
-          providerError instanceof Error
-            ? providerError
-            : new Error(String(providerError));
-
         if (classified.kind === "unknown") {
           throw new Error(
             `[ERROR: UNKNOWN_PROVIDER_ERROR] Provider returned an unexpected, non-retryable error. ` +
-              `Raw provider details: ${classified.rawMessage || fallback.message}. ` +
+              `Raw provider details: ${rawProviderMessage}. ` +
               "Confirm provider health (credentials, rate limits, network) before retrying; escalate if it persists.",
           );
         }

@@ -28,7 +28,8 @@ export interface ChatGenerateRequest {
     | "none"
     | { type: "function"; name: string };
   schema?: ZodTypeAny;
-  /** 不支持 streaming，本项目可忽略 */
+  /** Optional stream callback; provider may still return aggregated result. */
+  onChunk?: (text: string) => void;
   temperature?: number;
   topP?: number;
   topK?: number;

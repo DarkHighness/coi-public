@@ -556,6 +556,52 @@ describe("callWithAgenticRetry behavior", () => {
     );
   });
 
+  it("retries once with internal streaming when provider requires long-request streaming", async () => {
+    const generateChat = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error(
+          "Streaming is required for operations that may take longer than 10 minutes.",
+        ),
+      )
+      .mockResolvedValueOnce({
+        result: {
+          functionCalls: [{ id: "call_ok", name: toolName, args: { foo: "ok" } }],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      });
+
+    const provider = {
+      protocol: "claude",
+      instanceId: "provider-1",
+      instance: {} as any,
+      generateChat,
+    } as any;
+
+    const onRetry = vi.fn();
+    const result = await callWithAgenticRetry(
+      provider,
+      makeRequest() as any,
+      [],
+      {
+        requiredToolName: toolName,
+        maxRetries: 1,
+        onRetry,
+      },
+    );
+
+    expect(result.retries).toBe(1);
+    expect(generateChat).toHaveBeenCalledTimes(2);
+    expect(generateChat.mock.calls[0]?.[0]?.onChunk).toBeUndefined();
+    expect(typeof generateChat.mock.calls[1]?.[0]?.onChunk).toBe("function");
+    expect(onRetry).toHaveBeenCalledWith(
+      expect.stringContaining("STREAMING_REQUIRED"),
+      1,
+      expect.objectContaining({ silent: true, classification: "silent_retry" }),
+    );
+  });
+
   it("throws unknown provider errors without automatic retry", async () => {
     const provider = createProvider([
       new Error("backend panic without classification"),

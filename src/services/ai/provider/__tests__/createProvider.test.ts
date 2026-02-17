@@ -134,6 +134,7 @@ describe("createProvider", () => {
     });
 
     const provider = createProvider(createInstance("openai"));
+    const onChunk = vi.fn();
 
     await provider.generateChat({
       modelId: "gpt-4o",
@@ -148,6 +149,7 @@ describe("createProvider", () => {
       topK: 20,
       minP: 0.1,
       thinkingEffort: "medium",
+      onChunk,
     } as any);
 
     expect(mocks.openaiGenerateContent).toHaveBeenCalledWith(
@@ -163,6 +165,7 @@ describe("createProvider", () => {
         topK: 20,
         minP: 0.1,
         thinkingEffort: "medium",
+        onChunk,
       }),
     );
   });

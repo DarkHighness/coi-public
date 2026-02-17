@@ -78,6 +78,7 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
       const options: GenerateContentOptions = {
         tools: request.tools,
         toolChoice: request.toolChoice,
+        onChunk: request.onChunk,
         temperature: request.temperature,
         topP: request.topP,
         topK: request.topK,
@@ -85,7 +86,6 @@ export function createProvider(instance: ProviderInstance): ProviderBase {
         maxOutputTokensFallback: request.maxOutputTokensFallback,
         thinkingEffort: request.thinkingEffort,
         mediaResolution: request.mediaResolution,
-        // streaming ignored by design
       };
 
       if (instance.protocol === "gemini") {
