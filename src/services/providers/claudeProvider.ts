@@ -153,8 +153,29 @@ const parseToolArgumentsValue = (
 const isEmptyObjectValue = (value: unknown): value is JsonObject =>
   isJsonObject(value) && Object.keys(value).length === 0;
 
-const CLAUDE_STREAM_IDLE_TIMEOUT_MS = 60_000;
+const hasMeaningfulToolArgs = (args: ToolArguments): boolean =>
+  !isEmptyObjectValue(args);
+
+const parseStreamTimeoutMs = (
+  rawValue: string | undefined,
+  fallbackMs: number,
+  minMs: number,
+  maxMs: number,
+): number => {
+  if (!rawValue) return fallbackMs;
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallbackMs;
+  const normalized = Math.floor(parsed);
+  return Math.max(minMs, Math.min(maxMs, normalized));
+};
+
 const CLAUDE_STREAM_MAX_DURATION_MS = 15 * 60_000;
+const CLAUDE_STREAM_IDLE_TIMEOUT_MS = parseStreamTimeoutMs(
+  process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS,
+  180_000,
+  60_000,
+  CLAUDE_STREAM_MAX_DURATION_MS - 30_000,
+);
 const CLAUDE_STREAM_REQUEST_TIMEOUT_MS = CLAUDE_STREAM_MAX_DURATION_MS + 30_000;
 
 // ============================================================================
@@ -665,6 +686,9 @@ Answer the user's request using relevant tools (if they are available). Before c
         let abortReason: "stream_stalled" | "stream_timeout" | null = null;
         let stallTimer: ReturnType<typeof setTimeout> | null = null;
         let deadlineTimer: ReturnType<typeof setTimeout> | null = null;
+        let sawMessageStop = false;
+        let sawToolUseInputDelta = false;
+        let sawMeaningfulToolUseStartInput = false;
 
         const clearStreamTimers = () => {
           if (stallTimer) {
@@ -718,6 +742,9 @@ Answer the user's request using relevant tools (if they are available). Before c
             if (event.type === "content_block_start") {
               const block = event.content_block;
               if (block.type === "tool_use") {
+                if (isJsonObject(block.input) && !isEmptyObjectValue(block.input)) {
+                  sawMeaningfulToolUseStartInput = true;
+                }
                 accumulatedToolCalls.set(event.index, {
                   id: block.id,
                   name: block.name,
@@ -735,11 +762,16 @@ Answer the user's request using relevant tools (if they are available). Before c
                 // Thinking content (Claude Extended Thinking)
                 thinkingContent += getThinkingText(delta);
               } else if (delta.type === "input_json_delta") {
+                if (delta.partial_json.trim().length > 0) {
+                  sawToolUseInputDelta = true;
+                }
                 const existing = accumulatedToolCalls.get(event.index);
                 if (existing) {
                   existing.input += delta.partial_json;
                 }
               }
+            } else if (event.type === "message_stop") {
+              sawMessageStop = true;
             } else if (event.type === "message_delta") {
               // 更新使用量
               if (event.usage) {
@@ -839,6 +871,23 @@ Answer the user's request using relevant tools (if they are available). Before c
             }));
           }
 
+          const hasOnlyEmptyToolArgs =
+            toolCalls.length > 0 &&
+            toolCalls.every((toolCall) => !hasMeaningfulToolArgs(toolCall.args));
+          if (
+            accumulatedToolCalls.size > 0 &&
+            hasOnlyEmptyToolArgs &&
+            !sawMeaningfulToolUseStartInput &&
+            !sawToolUseInputDelta &&
+            !sawMessageStop
+          ) {
+            throw new AIProviderError(
+              "[ERROR: STREAM_INCOMPLETE] Claude stream ended before tool arguments were fully delivered; tool input remained empty and message_stop was not observed.",
+              "claude",
+              "STREAM_INCOMPLETE",
+            );
+          }
+
           if (finalContent) {
             content = finalContent;
           }
@@ -867,6 +916,21 @@ Answer the user's request using relevant tools (if they are available). Before c
               `[ERROR: STREAM_TIMEOUT] Claude streaming response exceeded ${Math.floor(CLAUDE_STREAM_MAX_DURATION_MS / 60000)} minutes and was aborted to prevent hanging.`,
               "claude",
               "STREAM_TIMEOUT",
+              error,
+            );
+          }
+
+          const errorMessage =
+            error instanceof Error ? error.message : String(error ?? "");
+          if (
+            /stream ended without producing a Message|request ended without sending any chunks|Unexpected event order/i.test(
+              errorMessage,
+            )
+          ) {
+            throw new AIProviderError(
+              "[ERROR: STREAM_INCOMPLETE] Claude streaming response ended before a complete assistant message was assembled.",
+              "claude",
+              "STREAM_INCOMPLETE",
               error,
             );
           }

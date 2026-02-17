@@ -57,4 +57,24 @@ describe("provider withRetry", () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  it("does not retry STREAM_INCOMPLETE provider errors", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fn = vi
+      .fn()
+      .mockRejectedValue(
+        new AIProviderError(
+          "stream ended before a complete message was assembled",
+          "claude",
+          "STREAM_INCOMPLETE",
+        ),
+      );
+
+    await expect(withRetry(fn, 3, 0, "claude")).rejects.toThrow(
+      "stream ended before a complete message was assembled",
+    );
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
 });

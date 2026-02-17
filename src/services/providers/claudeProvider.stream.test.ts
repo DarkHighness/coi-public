@@ -238,4 +238,61 @@ describe("claudeProvider streaming tool input parsing", () => {
     expect(calls?.[0]?.name).toBe("test_tool");
     expect(calls?.[0]?.args).toEqual({ foo: "from-delta" });
   });
+
+  it("throws STREAM_INCOMPLETE when stream ends with empty tool input before message_stop", async () => {
+    const events = [
+      {
+        type: "message_start",
+        message: { usage: { input_tokens: 8 } },
+      },
+      {
+        type: "content_block_start",
+        index: 0,
+        content_block: {
+          type: "tool_use",
+          id: "toolu_4",
+          name: "test_tool",
+          input: {},
+        },
+      },
+      { type: "content_block_stop", index: 0 },
+      // Intentionally missing message_stop and input_json_delta
+    ];
+    mocks.messagesStream.mockReturnValue({
+      ...makeStream(events),
+      finalMessage: vi.fn().mockResolvedValue({
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_4",
+            name: "test_tool",
+            input: {},
+          },
+        ],
+        usage: { input_tokens: 8, output_tokens: 1 },
+        stop_reason: "tool_use",
+        stop_sequence: null,
+      }),
+    });
+
+    await expect(
+      generateContent(
+        { apiKey: "test-key" },
+        "claude-sonnet-4-5-20250929",
+        "system",
+        baseMessages,
+        undefined,
+        {
+          tools: [
+            {
+              name: "test_tool",
+              description: "test tool",
+              parameters: z.object({ foo: z.string() }),
+            },
+          ],
+          onChunk: vi.fn(),
+        },
+      ),
+    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
+  });
 });

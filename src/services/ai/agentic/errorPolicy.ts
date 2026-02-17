@@ -69,6 +69,7 @@ export function classifyAgenticError(
     providerCode === "UNSUPPORTED" ||
     providerCode === "STREAM_TIMEOUT" ||
     providerCode === "STREAM_STALLED" ||
+    providerCode === "STREAM_INCOMPLETE" ||
     TERMINAL_PATTERN.test(rawMessage)
   ) {
     return {

@@ -46,6 +46,16 @@ describe("errorPolicy", () => {
         new AIProviderError("stream stalled", "claude", "STREAM_STALLED"),
       ).kind,
     ).toBe("terminal");
+
+    expect(
+      classifyAgenticError(
+        new AIProviderError(
+          "stream incomplete",
+          "claude",
+          "STREAM_INCOMPLETE",
+        ),
+      ).kind,
+    ).toBe("terminal");
   });
 
   it("returns unknown for uncategorized errors", () => {
