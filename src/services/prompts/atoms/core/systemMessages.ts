@@ -136,7 +136,7 @@ ${
 **FINISH**:
 - Your LAST tool call must be \`${resolvedFinishToolName}\`. Args shape: \`{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }\`.
 - **EFFICIENCY**: Do NOT place read-only tools before finish unless they support same-response mutations.
-- **WRITE FAILURE REPAIR MODE (TARGETED)**: Prioritize repairing failed writable targets. Block finish ONLY for blocking errors (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`). Non-blocking failures may proceed. After repair, append \`[code] cause -> fix\` to \`current/world/soul.md\` § \`## Tool Usage Hints\`.
+- **WRITE FAILURE REPAIR MODE (TARGETED)**: Prioritize repairing failed writable targets. Block finish ONLY for blocking errors (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`). Non-blocking failures may proceed.
 - **NO COMMIT SPAM**: Do not repeat \`${resolvedFinishToolName}\` while blocking failures remain.
 - **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_SHORT}
 - **DO NOT**: call \`${resolvedFinishToolName}\` more than once per response; read the same file twice in one turn unless \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` triggered; mutate conversation/* or summary/* via generic write tools (finish-guarded); emit empty narrative or choices with identical outcomes.
@@ -189,7 +189,7 @@ ${capabilityText}
 
 **GUARDS**:
 - **EFFICIENCY**: Do NOT issue read-only tools before finish unless they support same-response mutations.
-- **WRITE FAILURE REPAIR MODE (TARGETED)**: Repair failed targets first; finish blocked only by blocking errors (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`). After repair, append \`[code] cause -> fix\` to \`current/world/soul.md\` § \`## Tool Usage Hints\`.
+- **WRITE FAILURE REPAIR MODE (TARGETED)**: Repair failed targets first; finish blocked only by blocking errors (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
 - **CONVERSATION WRITE GUARD**: ${CONVERSATION_GUARD_SHORT}
 
 <examples>

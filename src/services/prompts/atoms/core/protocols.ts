@@ -56,30 +56,14 @@ const errorRecovery = `
 <error_recovery_protocol>
   WHEN TOOLS FAIL — RECOVERY PROCEDURE
 
-  **Error Types (by \`code\`)**:
-  - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Wrong arguments or invalid payload/structure.
-  - \`NOT_FOUND\`: Path/ID missing in VFS (under \`current/**\` alias or canonical \`shared/**\` / \`forks/{id}/**\`).
-  - \`ALREADY_EXISTS\`: Duplicate creation attempt.
-  - \`INVALID_ACTION\`: Unsupported operation or protocol violation (read-before-mutate / finish-last / finish-guarded).
-  - \`FINISH_GUARD_REQUIRED\`: Tried to mutate finish-guarded conversation/summary state.
+  **Error codes**: \`NOT_FOUND\` | \`INVALID_PARAMS\` | \`INVALID_DATA\` | \`INVALID_ACTION\` | \`FINISH_GUARD_REQUIRED\` | \`IMMUTABLE_READONLY\` | \`ELEVATION_REQUIRED\`.
 
-  **Mandatory Steps**:
-  1. Read the error message carefully
-  2. If present, follow \`details.recovery\` and open \`details.refs\`
-  3. Look for "Did you mean: ...?" suggestions
-  4. Retry with corrected arguments OR search files to find correct IDs
-  5. Do NOT finish while blocking errors remain unresolved (hard gates and required-write-retry codes such as \`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`)
-
-  **Self-Correction**:
-  - If \`NOT_FOUND\`, use \`vfs_ls\` on the parent dir, then \`vfs_search\` with \`fuzzy: true\` to locate the correct path/ID
-  - If \`INVALID_PARAMS\`/\`INVALID_DATA\`, read split docs (\`current/refs/tools/{toolName}/README.md\`, \`current/refs/tools/{toolName}/EXAMPLES.md\`, \`current/refs/tool-schemas/{toolName}/README.md\`) and (for JSON targets) \`vfs_schema({ paths: ["{targetPath}"] })\`
-  - If a read hit char-cap/size limits, retry with narrower tools: \`vfs_read_json\` + \`pointers\`, bounded \`vfs_read_lines\`, or \`vfs_read_markdown\` section selectors
-  - If patch reports path/add/schema mismatch, stop repeating the same payload; inspect parent pointers/path first and switch strategy
-  - If \`ALREADY_EXISTS\`, read target content first (\`vfs_read_json\`/\`vfs_read_markdown\`/\`vfs_read_lines\` as appropriate), then update via split write tools (usually \`vfs_patch_json\` / \`vfs_merge_json\`, or \`vfs_write_file\` for replacement)
-  - If \`FINISH_GUARD_REQUIRED\`, use the loop's finish tool (never generic mutation tools on guarded paths)
-  - After writable write failure, enter repair mode for failed targets first; block finish only when the failure is blocking (hard gate / required-write-retry)
-  - Do NOT call finish repeatedly while blocking failed targets remain unresolved
-  - If you cannot fix, explain in narrative why
+  **Steps**:
+  1. Read \`error\` message + \`details.issues\` (field-level errors) to understand what went wrong.
+  2. Follow \`details.recovery\` steps in order (context-aware, safe to execute sequentially).
+  3. If \`details.hint.nextCalls\` is present, use those exact calls. If \`details.hint.avoid\` is present, do NOT repeat that pattern.
+  4. Do NOT finish while blocking errors remain (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\` in error text).
+  5. If same \`code\` repeats twice, narrow scope and report blocker instead of retrying.
 </error_recovery_protocol>
 `;
 
@@ -251,7 +235,7 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
       "Identifying message markers correctly ([PLAYER_ACTION], [Player Rate], [SUDO], [ERROR])?",
       "Routing to correct workflow (simulate / soul-update / elevated / error-fix)?",
       "Handling ALL errors before finishing turn?",
-      "Following 'Did you mean?' and recovery suggestions from errors?",
+      "Following `details.recovery` steps and `details.hint` from error responses?",
       "Including tool calls in every response (no text-only responses)?",
       "Searching before creating new entities (vfs_search with fuzzy: true)?",
       "Using consistent naming convention for new entities (kebab-case)?",

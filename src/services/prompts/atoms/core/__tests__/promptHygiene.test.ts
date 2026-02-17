@@ -79,8 +79,8 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("globalThis");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");
-    expect(content).toContain("WRITE-FAILURE REPAIR MODE");
-    expect(content).toContain("NO COMMIT SPAM");
+    expect(content).toContain("Blocking errors");
+    expect(content).toContain("WRITE_EXISTING_TARGET_RETRY_REQUIRED");
     expect(content).not.toContain(
       "write both files via `vfs_write_file`/`vfs_write_file`",
     );

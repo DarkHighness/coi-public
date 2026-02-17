@@ -33,14 +33,9 @@ You MUST follow these runtime protocol constraints:
   4) Plan: read anchors → mutate → verify → finish (one finish call, last).
   5) Cold start: preload required files with reads instead of triggering gate errors.
 - Error recovery (when tool returns \`{ success:false, code, error }\`):
-  1) Do NOT finish while blocking errors remain (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\`, \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
-  2) Fix by \`code\`:
-     - \`NOT_FOUND\`: start from guaranteed root (\`current\`/\`shared\`/\`forks\`) with \`vfs_ls\`, then \`vfs_search\`, then walk parents segment-by-segment (do not assume immediate parent exists).
-     - \`INVALID_PARAMS\`: read split tool docs and retry with schema-valid args.
-     - \`INVALID_DATA\`: run \`vfs_schema\`, align fields/types. Common fixes: remove root \`unlocked\`/\`unlockReason\` from world entities; location → \`/currentLocation\`; status → \`/visible/status\`; trust schema over merged context fields.
-     - \`INVALID_ACTION\`: fix tool order/read-before-write/finish-last, then retry.
-     - \`FINISH_GUARD_REQUIRED\`: use the loop's finish tool instead.
-  3) Re-read only when recovery needs unseen data or on \`[SYSTEM: EXTERNAL_FILE_CHANGES]\`.
+  1) Read \`error\` + \`details.issues\` to diagnose, then follow \`details.recovery\` steps in order.
+  2) If \`details.hint.avoid\` is set, do NOT repeat that pattern. Use \`details.hint.nextCalls\` if present.
+  3) Do NOT finish while blocking errors remain (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\`, \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
   4) If same \`code\` repeats twice, narrow scope and report blocker.
   5) On retry success, append \`[code] cause -> fix\` to \`current/world/soul.md § Tool Usage Hints\`.
 </runtime_floor>`;
@@ -59,7 +54,7 @@ You MUST follow these outline protocol constraints:
   2) Use read-only lookup if needed, then submit exactly one phase tool.
 - Error recovery:
   1) Keep phase/tool unchanged.
-  2) Fix by code: \`INVALID_PARAMS\` → read tool docs, fix args; \`INVALID_DATA\`/\`READ_LIMIT_EXCEEDED\` → use \`details.hint.nextCalls\`.
+  2) Read \`error\` + \`details.issues\` to diagnose; follow \`details.recovery\` steps; use \`details.hint.nextCalls\` if present.
   3) Retry same phase submit tool.
 </runtime_floor>`;
 

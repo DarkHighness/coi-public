@@ -96,7 +96,6 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
       ? ""
       : "- Keep any `plan.md` revision causally aligned with `current/outline/outline.json` and already-committed world facts."
   }
-  - If tool retry succeeds after failure, append \`[code] cause -> fix\` to \`current/world/soul.md § Tool Usage Hints\`.
   - Conversation/summary paths are finish-guarded — write only via finish tools.
 
   **CUSTOM RULE PACKS**:

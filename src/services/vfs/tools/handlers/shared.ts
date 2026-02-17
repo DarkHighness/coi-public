@@ -127,83 +127,96 @@ const uniqueStrings = (items: Array<string | undefined>): string[] => {
   return next;
 };
 
-const buildToolDocRecoveryReadCall = (toolDocRef: string): string =>
-  `vfs_read_chars({ path: "${toolDocRef}" })`;
+const SOUL_TOOL_LEARNING_HINT =
+  'On success: log "[code] cause→fix" in soul.md § Tool Usage Hints.';
 
-const SOUL_TOOL_LEARNING_RECOVERY =
-  'After recovery succeeds, append one concise "[code] cause -> fix" bullet under `## Tool Usage Hints` in `current/world/soul.md` (AI self-note) via one writable tool (`vfs_write_file`/`vfs_append_text`/`vfs_edit_lines`/`vfs_write_markdown`/`vfs_patch_json`/`vfs_merge_json`) or `vfs_finish_soul` in `[Player Rate]`.';
-
-const withSoulToolLearningRecovery = (steps: string[]): string[] => {
-  const exists = steps.includes(SOUL_TOOL_LEARNING_RECOVERY);
-  return exists ? steps : [...steps, SOUL_TOOL_LEARNING_RECOVERY];
+/**
+ * Append soul-learning hint only for mutation-related errors
+ * (write failures, action violations, permission issues).
+ * Simple read/param errors don't need soul logging.
+ */
+const withSoulLearning = (
+  steps: string[],
+  attach: boolean,
+): string[] => {
+  if (!attach) return steps;
+  const exists = steps.includes(SOUL_TOOL_LEARNING_HINT);
+  return exists ? steps : [...steps, SOUL_TOOL_LEARNING_HINT];
 };
+
+/** Codes where soul learning is worth logging */
+const SOUL_LEARNING_CODES = new Set<string>([
+  "INVALID_ACTION",
+  "INVALID_DATA",
+  "IMMUTABLE_READONLY",
+  "ELEVATION_REQUIRED",
+  "FINISH_GUARD_REQUIRED",
+]);
 
 const defaultRecoveryByCode = (
   code: ToolCallError["code"],
   toolName: string,
 ): string[] => {
   const toolDocRef = getToolDocRef(toolName);
-  const toolExamplesRef = getToolExamplesRef(toolName);
-  const toolSchemaRef = getToolSchemaRef(toolName);
+  const shouldLearn = SOUL_LEARNING_CODES.has(code);
 
   if (code === "INVALID_DATA" || code === "INVALID_PARAMS") {
-    return withSoulToolLearningRecovery([
-      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for tool overview, ${buildToolDocRecoveryReadCall(toolExamplesRef)} for examples, and ${buildToolDocRecoveryReadCall(toolSchemaRef)} for schema summary. Then retry with schema-valid arguments.`,
-      `If schema summary points to PART files, read only the needed part from current/refs/tool-schemas/${toolName}/PART-xx.md.`,
-      "If you're writing/merging JSON, use vfs_schema on the target path(s) to confirm allowed fields/types before retrying.",
-      "If you're modifying an existing file, read it first (read-before-mutate), then retry.",
-    ]);
+    return withSoulLearning(
+      [
+        "1. Check `details.issues` for field-level errors — fix those specific fields first.",
+        `2. If unclear, read ${toolDocRef} and run vfs_schema on the target path to confirm allowed fields/types.`,
+      ],
+      shouldLearn,
+    );
   }
   if (code === "INVALID_ACTION") {
-    return withSoulToolLearningRecovery([
-      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} to confirm tool preconditions, then retry.`,
-      "If the error mentions read-before-mutate, read the target file in this epoch and retry the same operation.",
-      "If the error mentions finish ordering, ensure the commit tool is the last call and there is only one finish.",
-    ]);
+    return withSoulLearning(
+      [
+        `1. Read ${toolDocRef} to confirm preconditions (read-before-mutate / finish-last / single-finish).`,
+        "2. Fix call order and retry.",
+      ],
+      shouldLearn,
+    );
   }
   if (code === "IMMUTABLE_READONLY") {
-    return withSoulToolLearningRecovery([
-      "Target path is immutable read-only (common: skills/refs or unregistered paths). Choose a writable path and retry.",
-      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for constraints/examples.`,
-    ]);
+    return withSoulLearning(
+      ["Target is immutable read-only. Choose a writable path instead."],
+      shouldLearn,
+    );
   }
   if (code === "ELEVATION_REQUIRED") {
-    return withSoulToolLearningRecovery([
-      "Write requires elevation. Do not brute-force retries; use the designated elevation flow or report the blocker.",
-      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for constraints/examples.`,
-    ]);
+    return withSoulLearning(
+      ["Write requires elevation. Use the designated elevation flow or report blocker."],
+      shouldLearn,
+    );
   }
   if (code === "FINISH_GUARD_REQUIRED") {
-    return withSoulToolLearningRecovery([
-      "Conversation/summary paths are finish-guarded: use vfs_finish_turn or vfs_finish_summary (not generic write tools).",
-      `Use ${buildToolDocRecoveryReadCall(toolDocRef)} for the correct commit schema/examples.`,
-    ]);
+    return withSoulLearning(
+      ["Path is finish-guarded. Use the loop's finish tool (vfs_finish_turn / vfs_finish_summary) instead."],
+      shouldLearn,
+    );
   }
   if (code === "EDITOR_CONFIRM_REQUIRED") {
-    return withSoulToolLearningRecovery([
-      "Write requires editor confirmation. Stop and report blocker instead of retrying.",
-    ]);
+    return ["Write requires editor confirmation. Report blocker; do not retry."];
   }
   if (code === "NOT_FOUND") {
-    return withSoulToolLearningRecovery([
-      "Start from a guaranteed root (current/shared/forks) with vfs_ls, then walk path segments; do not assume the immediate parent exists.",
-      "Use vfs_search with fuzzy=true from that root to locate moved/renamed files before retrying.",
-      "If the missing path is a JSON resource, vfs_schema can still describe expected fields/template even before the file exists.",
-    ]);
+    return [
+      "1. vfs_ls from a guaranteed root (current / shared / forks) to discover available paths.",
+      "2. vfs_search with fuzzy=true from that root to locate moved/renamed files.",
+      "3. Confirm the correct path, then retry.",
+    ];
   }
   if (code === "RAG_DISABLED") {
-    return withSoulToolLearningRecovery([
-      "Retry with semantic=false (or omit semantic), or enable the embedding runtime before retrying.",
-    ]);
+    return ["Retry with semantic=false (or omit semantic)."];
   }
-  return withSoulToolLearningRecovery([
-    `Use ${buildToolDocRecoveryReadCall(toolDocRef)}, then retry.`,
-  ]);
+  return [
+    "Check `error` message for details. Verify args match tool schema, then retry with corrected input.",
+  ];
 };
 
 const qualifyPathForRecovery = (
   inputPath: string,
-): { qualifiedPath: string; parentDir: string; fileName: string } => {
+): { qualifiedPath: string; fileName: string } => {
   const normalizedInput = normalizeVfsPath(inputPath);
   const qualifiedPath =
     normalizedInput === "" ||
@@ -215,16 +228,12 @@ const qualifyPathForRecovery = (
       : `current/${normalizedInput}`;
   const qualifiedWithoutTrailingSlash = qualifiedPath.replace(/\/$/, "");
   const lastSlash = qualifiedWithoutTrailingSlash.lastIndexOf("/");
-  const parentDir =
-    lastSlash > 0
-      ? qualifiedWithoutTrailingSlash.slice(0, lastSlash)
-      : "current";
   const fileName =
     lastSlash >= 0
       ? qualifiedWithoutTrailingSlash.slice(lastSlash + 1)
       : qualifiedWithoutTrailingSlash;
 
-  return { qualifiedPath, parentDir, fileName };
+  return { qualifiedPath, fileName };
 };
 
 const resolveRecoveryRootDir = (qualifiedPath: string): string => {
@@ -238,62 +247,42 @@ const resolveRecoveryRootDir = (qualifiedPath: string): string => {
   return "current";
 };
 
-const buildRecoveryParentWalkCalls = (
-  rootDir: string,
-  parentDir: string,
-): string[] => {
-  const normalizedParent = parentDir.replace(/\/$/, "");
-  if (
-    normalizedParent === "" ||
-    normalizedParent === rootDir ||
-    !normalizedParent.startsWith(`${rootDir}/`)
-  ) {
-    return [];
-  }
-
-  const relative = normalizedParent.slice(rootDir.length + 1);
-  const segments = relative.split("/").filter(Boolean);
-  const calls: string[] = [];
-  let cursor = rootDir;
-  for (const segment of segments) {
-    cursor = `${cursor}/${segment}`;
-    calls.push(`vfs_ls({ path: "${cursor}" })`);
-  }
-  return calls;
-};
-
 export const buildNotFoundRecovery = (inputPath: string): string[] => {
-  const { qualifiedPath, parentDir, fileName } =
+  const { qualifiedPath, fileName } =
     qualifyPathForRecovery(inputPath);
   const rootDir = resolveRecoveryRootDir(qualifiedPath);
-  const parentWalkCalls = buildRecoveryParentWalkCalls(rootDir, parentDir);
-  const parentWalkHint =
-    parentWalkCalls.length > 0
-      ? `Then walk parents and stop at first missing: ${parentWalkCalls.join(" -> ")}`
-      : `Then verify the corrected path under "${rootDir}" and retry.`;
+  const isJson = qualifiedPath.endsWith(".json");
 
-  return withSoulToolLearningRecovery([
-    `Try: vfs_ls({ path: "${rootDir}" })`,
-    `Then: vfs_search({ path: "${rootDir}", query: "${fileName}", fuzzy: true })`,
-    parentWalkHint,
-    `If you need expected JSON fields: vfs_schema({ paths: ["${qualifiedPath}"] })`,
-  ]);
+  const steps = [
+    `1. vfs_ls({ path: "${rootDir}" }) — discover available entries from the guaranteed root.`,
+    `2. vfs_search({ path: "${rootDir}", query: "${fileName}", fuzzy: true }) — locate the target.`,
+    "3. Confirm the correct path from results above, then retry.",
+  ];
+
+  if (isJson) {
+    steps.push(
+      `4. If you need the expected schema before the file exists: vfs_schema({ paths: ["${qualifiedPath}"] }).`,
+    );
+  }
+
+  return steps;
 };
 
 export const buildReadLinesRecovery = (inputPath: string): string[] => {
   const { qualifiedPath } = qualifyPathForRecovery(inputPath);
-  return withSoulToolLearningRecovery([
-    `Try: vfs_read_lines({ path: "${qualifiedPath}", startLine: 1, lineCount: 200 })`,
-    "Then adjust line numbers/ranges and retry.",
-  ]);
+  return [
+    `1. vfs_read_lines({ path: "${qualifiedPath}", startLine: 1, lineCount: 200 }) — inspect content.`,
+    "2. Adjust line numbers/ranges and retry.",
+  ];
 };
 
 const buildSchemaAndReadRecovery = (inputPath: string): string[] => {
   const { qualifiedPath } = qualifyPathForRecovery(inputPath);
-  return withSoulToolLearningRecovery([
-    `Try: vfs_schema({ paths: ["${qualifiedPath}"] })`,
-    `Then: vfs_read_chars({ path: "${qualifiedPath}", start: 0, offset: 2000 }) to inspect current content before retrying.`,
-  ]);
+  return [
+    `1. vfs_schema({ paths: ["${qualifiedPath}"] }) — check expected fields.`,
+    `2. vfs_read_chars({ path: "${qualifiedPath}", start: 0, offset: 2000 }) — inspect current content.`,
+    "3. Fix payload and retry.",
+  ];
 };
 
 const rewriteResolvedPathInMessage = (
@@ -495,7 +484,7 @@ export const ensureNotFinishGuardedMutation = (
     normalizeToolDocName(toolName),
     {
       recovery: [
-        "Use vfs_finish_turn or vfs_finish_summary for finish-guarded conversation/summary files.",
+        "Path is finish-guarded. Use vfs_finish_turn or vfs_finish_summary instead.",
       ],
     },
   );
@@ -541,19 +530,17 @@ export const createReadLimitError = (
         : "current";
     const linesWindowCall = `vfs_read_lines({ path: "${qualifiedPath}", startLine: 1, lineCount: 200 })`;
     const charsWindowCall = `vfs_read_chars({ path: "${qualifiedPath}", start: 0, offset: ${suggestedChunkChars} })`;
-    const recovery = [
-      "Read payload exceeded budget. Use details.hint.nextCalls for bounded retry.",
-    ];
     const nextCalls = [linesWindowCall, charsWindowCall];
-    if (mode === "json") {
-      recovery.push(
-        "After bounded inspection, retry vfs_read_json with specific pointers (avoid broad root pointer '/').",
-      );
-    } else if (mode === "markdown") {
-      recovery.push(
-        "After bounded inspection, retry vfs_read_markdown with exact selectors (`headings`/`indices`).",
-      );
-    }
+
+    const modeHint =
+      mode === "json"
+        ? "Then retry vfs_read_json with narrower pointers (avoid root '/')."
+        : mode === "markdown"
+          ? "Then retry vfs_read_markdown with exact selectors (headings/indices)."
+          : "";
+    const recovery = [
+      `Budget exceeded. Use hint.nextCalls for bounded retry.${modeHint ? ` ${modeHint}` : ""}`,
+    ];
 
     const avoidHint =
       mode === "json"
@@ -596,26 +583,17 @@ export const createReadLimitError = (
           code: "READ_LIMIT_HINT",
           summary:
             mode === "markdown"
-              ? "Do not retry broad markdown reads. Switch to section selectors (`indices`/`headings`) or bounded lines/chars windows."
-              : "Do not retry path-only broad reads. Switch to bounded lines/chars windows (or narrowed JSON pointers).",
+              ? "Switch to section selectors (indices/headings) or bounded lines/chars windows."
+              : "Switch to bounded lines/chars windows (or narrowed JSON pointers).",
           avoid: avoidHint,
           nextCalls,
           metadata: {
-            mode,
-            path: qualifiedPath,
             tokenBudget: normalizedTokenBudget,
-            ...(normalizedEstimatedTokens !== null
-              ? { estimatedTokens: normalizedEstimatedTokens }
-              : {}),
             suggestedChunkChars,
           },
         },
         refs: [
           getToolDocRef(resolvedToolName),
-          getToolSchemaRef(resolvedToolName),
-          TOOL_DOCS_README_REF,
-          TOOL_SCHEMA_DOCS_README_REF,
-          TOOL_SCHEMA_DOCS_INDEX_REF,
         ],
       },
     );

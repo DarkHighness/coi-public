@@ -637,8 +637,8 @@ export const validateWritePayload = (
                   },
                 ],
           recovery: [
-            "Align payload fields/types with schema constraints and retry.",
-            "Reference current/refs/tools/README.md plus the tool-specific README/EXAMPLES and tool-schemas README listed in details.refs.",
+            "1. Check `details.issues` above for exact field errors — fix those specific fields/types.",
+            "2. If unclear, run vfs_schema on the target path and reference tool-schemas docs in details.refs.",
           ],
         },
       ),

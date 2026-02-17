@@ -211,27 +211,11 @@ When you render those consequences into prose, write like a skilled human storyt
 <ERROR_RECOVERY_PROTOCOL>
   **ERROR HANDLING & RECOVERY**
 
-  When a tool call fails, follow these steps:
-
-  1. **Identify by \`code\`**:
-     - \`INVALID_PARAMS\` / \`INVALID_DATA\`: Payload doesn't match schema. Fix: check \`vfs_schema\`, read tool docs at \`current/refs/tools/{toolName}/README.md\`, retry with valid args. If patch fails with \`OPERATION_PATH_CANNOT_ADD\`, inspect parent pointers first.
-     - \`NOT_FOUND\`: Path doesn't exist. Fix: \`vfs_ls\` parent dir, then \`vfs_search\` with \`fuzzy: true\`. Never guess filenames.
-     - \`ALREADY_EXISTS\`: Entity exists. Fix: read it first, then update (not create).
-     - \`INVALID_ACTION\`: Protocol violation. Fix: read tool docs, confirm preconditions, retry.
-     - \`FINISH_GUARD_REQUIRED\`: Use finish tool, not generic write tools on guarded paths.
-     - \`IMMUTABLE_READONLY\`: Target is read-only. Do not retry writes.
-     - \`ELEVATION_REQUIRED\` / \`EDITOR_CONFIRM_REQUIRED\`: Stop and report blocker.
-     - \`RAG_DISABLED\`: Retry \`vfs_search\` without \`semantic\`.
-
-  2. **Read feedback**: Follow \`details.recovery\` hints and \`Did you mean: ...?\` suggestions.
-
-  3. **Resolution**:
-     - **Blocking errors** (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\`, \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`): MUST fix before finishing.
-     - **WRITE-FAILURE REPAIR MODE**: After a writable write failure, prioritize repairing failed targets. Non-blocking failures may proceed to finish.
-     - **NO COMMIT SPAM**: Do not repeat finish calls while blocking errors remain.
-     - Self-correct in the same turn. If same error repeats twice, narrow scope and report blocker.
-
-  4. **Communication**: If unfixable, explain in narrative before ending the turn.
+  When a tool call returns \`{ success: false, code, error }\`:
+  1. Read \`error\` + \`details.issues\` to understand the failure, then follow \`details.recovery\` steps in order.
+  2. If \`details.hint.nextCalls\` is present, use those exact calls. If \`details.hint.avoid\` is set, do NOT repeat that pattern.
+  3. **Blocking errors** (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\`, \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`): MUST fix before finish.
+  4. If same \`code\` repeats twice, narrow scope and report blocker. If unfixable, explain in narrative.
 </ERROR_RECOVERY_PROTOCOL>
 
 <MANDATORY_TOOL_CALL>
