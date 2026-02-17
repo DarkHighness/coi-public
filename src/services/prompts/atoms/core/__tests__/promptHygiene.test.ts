@@ -70,6 +70,10 @@ describe("core prompt hygiene", () => {
     // Turn finish protocol should avoid generic conversation writes
     expect(content).toContain("vfs_finish_turn");
     expect(content).toContain("vfs_write_file");
+    expect(content).toContain("vfs_vm");
+    expect(content).toContain("top-level tool call");
+    expect(content).toContain("JavaScript");
+    expect(content).toContain("globalThis");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");
     expect(content).toContain("WRITE-FAILURE REPAIR MODE");

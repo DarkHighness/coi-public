@@ -289,6 +289,111 @@ describe("agenticLoop command skill gate", () => {
     expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
   });
 
+  it("blocks vfs_vm before preflight reads are satisfied", async () => {
+    const vfsSession = createVfsSession(false);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-vm-preflight",
+          name: "vfs_vm",
+          args: {
+            scripts: ["emit({ step: 'preflight-check' });"],
+          },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-vm-preflight-gate",
+        vfsSession,
+      }),
+    ).rejects.toThrow(/TURN_NOT_COMMITTED/);
+
+    expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+  });
+
+  it("blocks mixed batches that include vfs_vm with other top-level calls", async () => {
+    const vfsSession = createVfsSession(true);
+
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-vm-mixed",
+            name: "vfs_vm",
+            args: { scripts: ["emit('vm-batch');"] },
+          },
+          {
+            id: "call-read-mixed",
+            name: "vfs_read_chars",
+            args: { path: "current/world/soul.md" },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-finish",
+            name: "vfs_finish_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockResolvedValue({ success: true });
+
+    await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-vm-mixed-batch",
+      vfsSession,
+    });
+
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(1);
+    expect(toolProcessorMock.executeGenericTool.mock.calls[0]?.[0]).toBe(
+      "vfs_finish_turn",
+    );
+  });
+
   it("allows read-only inspection tools in cold start even when runtime skills are unread", async () => {
     const vfsSession = createVfsSession(false);
 

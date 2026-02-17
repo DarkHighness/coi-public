@@ -2483,9 +2483,6 @@ export const gameResponseSchema = z.object({
 
 /**
  * Assistant section schema for a completed turn.
- *
- * Note: The runtime no longer uses a dedicated "finish" tool. Turns are finalized
- * by writing the VFS conversation files (index + turn file).
  */
 export function buildTurnAssistantSchema() {
   const baseFields = {

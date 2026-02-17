@@ -42,6 +42,8 @@ export interface ToolContext {
   requiredCommandSkillPaths?: string[];
   /** Required preset skill paths that must be read in current epoch */
   requiredPresetSkillPaths?: string[];
+  /** Allowed top-level tool names for current loop (used by vfs_vm inner gate) */
+  allowedToolNames?: string[];
   /** VFS actor identity for policy checks (defaults to ai in tool handlers) */
   vfsActor?: VfsActor;
   /** VFS mode for policy checks */

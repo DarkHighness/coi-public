@@ -61,6 +61,11 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - Use \`vfs_patch_json\` (RFC 6902) to update JSON.
   - Use \`vfs_merge_json\` to deep-merge JSON objects (arrays replaced, no deletions).
   - Use \`vfs_move\` to rename paths and \`vfs_delete\` to remove files.
+  - Use \`vfs_vm\` for sequential multi-step orchestration when one response needs dependent tool calls.
+    - \`vfs_vm\` must be the ONLY top-level tool call in that assistant response.
+    - Inside \`vfs_vm\`, only current-loop allowlisted tools are legal; \`vfs_vm\` recursion is forbidden.
+    - \`vfs_vm\` scripts must be JavaScript (no pseudo-tool JSON text), and must not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`.
+    - Inside \`vfs_vm\`, finish is optional but at most once and must be the last inner tool call.
   - Prefer omitting optional fields; use \`null\` only if you must, and treat it as “use defaults”.
 
   **STATE = FILES**:
@@ -91,9 +96,10 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   - For large JSON files, prefer \`vfs_read_json\` with narrow \`pointers\` (or bounded \`vfs_read_lines\`), and avoid full-file \`vfs_read_chars\` by default.
   - For large markdown files, use \`vfs_read_markdown\` section selectors before widening to line windows.
   - Do NOT write finish-guarded conversation/summary paths via generic mutation tools.
+  - Do NOT use \`vfs_vm\` to call tools outside current-loop allowlist, and do NOT call finish before remaining inner mutations.
   - ${
-    toolsetId === "playerRate"
-      ? "Do not advance visible story nodes in `[Player Rate]` loops."
+      toolsetId === "playerRate"
+        ? "Do not advance visible story nodes in `[Player Rate]` loops."
       : "Normal turn loops should still produce coherent narrative + choices in finish payload."
   }
 </tool_usage>

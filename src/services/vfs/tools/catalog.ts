@@ -103,6 +103,32 @@ const vfsContentTypeSchema = z.enum([
   "text/markdown",
 ]);
 
+const VFS_VM_DEFAULT_MAX_TOOL_CALLS = 16;
+const VFS_VM_MAX_TOOL_CALLS_CAP = 64;
+const VFS_VM_DEFAULT_MAX_SCRIPT_CHARS = 4000;
+const VFS_VM_TOTAL_SCRIPT_CHARS_CAP = 16000;
+
+const vfsVmScriptsSchema = z
+  .array(
+    z
+      .string()
+      .min(1, "Script must not be empty.")
+      .max(
+        VFS_VM_DEFAULT_MAX_SCRIPT_CHARS,
+        `Each script must be <= ${VFS_VM_DEFAULT_MAX_SCRIPT_CHARS} chars.`,
+      ),
+  )
+  .min(1, "Provide at least one script.")
+  .superRefine((scripts, issueCtx) => {
+    const totalChars = scripts.reduce((sum, script) => sum + script.length, 0);
+    if (totalChars > VFS_VM_TOTAL_SCRIPT_CHARS_CAP) {
+      issueCtx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Total scripts length must be <= ${VFS_VM_TOTAL_SCRIPT_CHARS_CAP} chars.`,
+      });
+    }
+  });
+
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
     z.string(),
@@ -631,6 +657,55 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
       cleanup: 40,
       summary: 40,
       outline: 40,
+    }),
+  }),
+  defineCatalogTool({
+    name: "vfs_vm",
+    description:
+      "Run sequential JavaScript snippets in a restricted VM sandbox and orchestrate allowed VFS tool calls.",
+    parameters: z
+      .object({
+        scripts: vfsVmScriptsSchema.describe(
+          "JavaScript snippets only (not JSON/pseudo calls), executed in order with shared state + emit + allowlisted vfs_* helpers. Forbidden tokens: import/eval/Function/globalThis/window.",
+        ),
+        maxToolCalls: z
+          .number()
+          .int()
+          .positive()
+          .max(VFS_VM_MAX_TOOL_CALLS_CAP)
+          .optional()
+          .describe(
+            `Optional inner tool call cap. Default ${VFS_VM_DEFAULT_MAX_TOOL_CALLS}, hard cap ${VFS_VM_MAX_TOOL_CALLS_CAP}.`,
+          ),
+        maxScriptChars: z
+          .number()
+          .int()
+          .positive()
+          .max(VFS_VM_DEFAULT_MAX_SCRIPT_CHARS)
+          .optional()
+          .describe(
+            `Optional per-script char cap. Default ${VFS_VM_DEFAULT_MAX_SCRIPT_CHARS}. Total scripts cap is ${VFS_VM_TOTAL_SCRIPT_CHARS_CAP} chars.`,
+          ),
+      })
+      .strict(),
+    handlerKey: "vm",
+    capability: {
+      summary:
+        "Execute scripted multi-step VFS orchestration with runtime allowlist + finish ordering gate.",
+      readOnly: false,
+      mayWriteClasses: [
+        "default_editable",
+        "elevated_editable",
+        "finish_guarded",
+      ],
+      needsElevationFor: ["elevated_editable"],
+      immutableZones: IMMUTABLE_ZONES,
+      toolsets: ["turn", "playerRate", "cleanup"],
+    },
+    toolsetOrder: ordered({
+      turn: 49,
+      playerRate: 49,
+      cleanup: 49,
     }),
   }),
   defineCatalogTool({

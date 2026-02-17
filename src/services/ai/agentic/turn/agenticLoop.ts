@@ -66,6 +66,7 @@ import {
   isReadOnlyInspectionToolName,
   isLikelyNoOpReadBeforeFinishBatch,
   isWriteMutationToolName,
+  normalizeWriteTargetPath,
   UNRECOVERABLE_WRITE_ERROR_CODES,
   UNKNOWN_WRITE_TARGET,
 } from "../common/toolCallPolicies";
@@ -698,6 +699,156 @@ const findTurnCrossForkViolations = (
   return violations;
 };
 
+interface VmExecutionTraceItem {
+  toolName: string;
+  success: boolean;
+  code?: string;
+  writeTargets: string[];
+}
+
+interface VmExecutionMeta {
+  successfulWriteTargets: string[];
+  failedWriteTargets: string[];
+  hasUnknownFailure: boolean;
+  successfulWriteCallCount: number;
+  finishCalled: boolean;
+  finishToolName: string | null;
+  callTrace: VmExecutionTraceItem[];
+}
+
+const asRecord = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
+};
+
+const normalizeVmWriteTargets = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const targets = new Set<string>();
+  for (const candidate of value) {
+    if (typeof candidate !== "string") continue;
+    const normalized = normalizeWriteTargetPath(candidate);
+    if (normalized) {
+      targets.add(normalized);
+    }
+  }
+  return Array.from(targets.values());
+};
+
+const parseVmCallTrace = (value: unknown): VmExecutionTraceItem[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      const record = asRecord(item);
+      const toolNameRaw = record.toolName;
+      const toolName = typeof toolNameRaw === "string" ? toolNameRaw : "";
+      const success = record.success === true;
+      const code =
+        typeof record.code === "string" && record.code.length > 0
+          ? record.code
+          : undefined;
+      const writeTargets = normalizeVmWriteTargets(record.writeTargets);
+      if (!toolName) {
+        return null;
+      }
+      return {
+        toolName,
+        success,
+        code,
+        writeTargets,
+      } satisfies VmExecutionTraceItem;
+    })
+    .filter((item): item is VmExecutionTraceItem => item !== null);
+};
+
+const parseVmExecutionMetaFromCandidate = (
+  candidate: unknown,
+): VmExecutionMeta | null => {
+  const record = asRecord(candidate);
+  if (Object.keys(record).length === 0) {
+    return null;
+  }
+
+  const writes = asRecord(record.writes);
+  const finish = asRecord(record.finish);
+  const callTrace = parseVmCallTrace(record.callTrace);
+  const successfulWriteTargets = normalizeVmWriteTargets(
+    writes.successfulTargets,
+  );
+  const failedWriteTargets = normalizeVmWriteTargets(writes.failedTargets);
+  const hasUnknownFailure = writes.hasUnknownFailure === true;
+  const successfulWriteCallCountRaw = writes.successfulWriteCallCount;
+  const successfulWriteCallCount =
+    typeof successfulWriteCallCountRaw === "number" &&
+    Number.isFinite(successfulWriteCallCountRaw) &&
+    successfulWriteCallCountRaw > 0
+      ? Math.floor(successfulWriteCallCountRaw)
+      : 0;
+  const finishCalled =
+    finish.called === true ||
+    (typeof finish.callCount === "number" && finish.callCount > 0);
+  const finishToolName =
+    typeof finish.toolName === "string" && finish.toolName.length > 0
+      ? finish.toolName
+      : null;
+
+  if (
+    successfulWriteTargets.length === 0 &&
+    failedWriteTargets.length === 0 &&
+    !hasUnknownFailure &&
+    successfulWriteCallCount === 0 &&
+    !finishCalled &&
+    callTrace.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    successfulWriteTargets,
+    failedWriteTargets,
+    hasUnknownFailure,
+    successfulWriteCallCount,
+    finishCalled,
+    finishToolName,
+    callTrace,
+  };
+};
+
+const extractVmExecutionMeta = (output: unknown): VmExecutionMeta | null => {
+  const root = asRecord(output);
+  if (Object.keys(root).length === 0) {
+    return null;
+  }
+
+  const fromRoot = parseVmExecutionMetaFromCandidate(root.vmMeta);
+  if (fromRoot) {
+    return fromRoot;
+  }
+
+  const data = asRecord(root.data);
+  const fromDataVmMeta = parseVmExecutionMetaFromCandidate(data.vmMeta);
+  if (fromDataVmMeta) {
+    return fromDataVmMeta;
+  }
+
+  const fromData = parseVmExecutionMetaFromCandidate(data);
+  if (fromData) {
+    return fromData;
+  }
+
+  const details = asRecord(root.details);
+  const hint = asRecord(details.hint);
+  const metadata = asRecord(hint.metadata);
+  const fromHint = parseVmExecutionMetaFromCandidate(metadata.vmMeta);
+  if (fromHint) {
+    return fromHint;
+  }
+
+  return null;
+};
+
 function checkCommandSkillReadGate(
   functionCalls: ToolCallResult[],
   loopState: LoopState,
@@ -912,6 +1063,9 @@ async function processToolCalls(
     functionCalls,
     finishToolName,
   );
+  const hasVmMixedBatch =
+    functionCalls.length > 1 &&
+    functionCalls.some((call) => call.name === "vfs_vm");
 
   const targetForkId =
     typeof gameState.forkId === "number" ? gameState.forkId : 0;
@@ -959,6 +1113,15 @@ async function processToolCalls(
     const gateError = getGateErrorForCall(call);
     if (gateError) {
       output = gateError;
+      isError = true;
+      blockedByGuardian = true;
+    } else if (hasVmMixedBatch) {
+      output = {
+        success: false,
+        error:
+          '[ERROR: VFS_VM_MIXED_BATCH] "vfs_vm" must be the ONLY top-level tool call in this assistant response.',
+        code: "INVALID_ACTION",
+      };
       isError = true;
       blockedByGuardian = true;
     } else if (mustOnlyFinish && !isFinishToolCall(call)) {
@@ -1078,6 +1241,26 @@ async function processToolCalls(
       }
     }
 
+    const vmMeta = call.name === "vfs_vm" ? extractVmExecutionMeta(output) : null;
+
+    if (call.name === "vfs_vm" && vmMeta && !blockedByGuardian) {
+      for (const target of vmMeta.failedWriteTargets) {
+        loopState.pendingWriteFailurePaths.add(target);
+      }
+
+      for (const target of vmMeta.successfulWriteTargets) {
+        loopState.pendingWriteFailurePaths.delete(target);
+      }
+
+      if (vmMeta.hasUnknownFailure) {
+        loopState.pendingWriteFailurePaths.add(UNKNOWN_WRITE_TARGET);
+      }
+
+      if (vmMeta.successfulWriteCallCount > 0) {
+        loopState.pendingWriteFailurePaths.delete(UNKNOWN_WRITE_TARGET);
+      }
+    }
+
     if (isWriteTool && !blockedByGuardian) {
       if (isError) {
         const classification = classifyWriteFailure({
@@ -1138,6 +1321,17 @@ async function processToolCalls(
     );
     if (responseFromVfs) {
       loopState.accumulatedResponse = responseFromVfs;
+      turnFinished = true;
+      onToolCallsUpdate?.([]);
+      break;
+    }
+
+    if (
+      call.name === "vfs_vm" &&
+      !isError &&
+      vmMeta?.finishCalled === true &&
+      vmMeta.finishToolName === finishToolName
+    ) {
       turnFinished = true;
       onToolCallsUpdate?.([]);
       break;

@@ -46,6 +46,7 @@ export const VFS_SEARCH_TOOL = getTool("vfs_search");
 export const VFS_SEARCH_TOOL_NO_SEMANTIC = getTool("vfs_search", {
   ragEnabled: false,
 });
+export const VFS_VM_TOOL = getTool("vfs_vm");
 export const VFS_WRITE_FILE_TOOL = getTool("vfs_write_file");
 export const VFS_APPEND_TEXT_TOOL = getTool("vfs_append_text");
 export const VFS_EDIT_LINES_TOOL = getTool("vfs_edit_lines");

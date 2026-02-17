@@ -13,6 +13,7 @@ describe("VFS tools", () => {
     expect(names).toContain("vfs_read_json");
     expect(names).toContain("vfs_read_markdown");
     expect(names).toContain("vfs_write_file");
+    expect(names).toContain("vfs_vm");
     expect(names).toContain("vfs_append_text");
     expect(names).toContain("vfs_edit_lines");
     expect(names).toContain("vfs_write_markdown");
@@ -51,6 +52,46 @@ describe("VFS tools", () => {
         path: null,
       }).success,
     ).toBe(false);
+  });
+
+  it("validates vfs_vm schema limits", () => {
+    const vm = byName.get("vfs_vm");
+    expect(vm).toBeDefined();
+    if (!vm) return;
+
+    expect(
+      vm.parameters.safeParse({
+        scripts: [],
+      }).success,
+    ).toBe(false);
+
+    expect(
+      vm.parameters.safeParse({
+        scripts: ["emit(1);"],
+        maxToolCalls: 65,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      vm.parameters.safeParse({
+        scripts: ["emit(1);"],
+        maxScriptChars: 5000,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      vm.parameters.safeParse({
+        scripts: new Array(5).fill(new Array(3500).fill("a").join("")),
+      }).success,
+    ).toBe(false);
+
+    expect(
+      vm.parameters.safeParse({
+        scripts: ["emit(1);"],
+        maxToolCalls: 16,
+        maxScriptChars: 4000,
+      }).success,
+    ).toBe(true);
   });
 
   it("allows redundant from fields on non-move/copy patch ops", () => {

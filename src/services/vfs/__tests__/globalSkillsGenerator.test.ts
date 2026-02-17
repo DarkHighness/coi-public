@@ -101,6 +101,9 @@ describe("VFS global skills generator", () => {
     const commandPlayerRate = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/player-rate/SKILL.md",
     )?.content;
+    const commandCleanup = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/cleanup/SKILL.md",
+    )?.content;
     const commandSummary = seeds.find(
       (seed) => seed.path === "skills/commands/runtime/summary/SKILL.md",
     )?.content;
@@ -137,13 +140,28 @@ describe("VFS global skills generator", () => {
     expect(commandRuntimeHub).toContain(
       "current/skills/commands/runtime/outline/SKILL.md",
     );
+    expect(commandRuntimeHub).toContain("vfs_vm");
+    expect(commandRuntimeHub).toContain("JavaScript");
+    expect(commandRuntimeHub).toContain("globalThis");
     expect(commandTurn).toContain("name: commands-turn");
     expect(commandTurn).toContain("vfs_finish_turn");
+    expect(commandTurn).toContain("vfs_vm");
+    expect(commandTurn).toContain("JavaScript");
+    expect(commandTurn).toContain("globalThis");
     expect(commandPlayerRate).toContain("name: commands-player-rate");
     expect(commandPlayerRate).toContain("[Player Rate]");
     expect(commandPlayerRate).toContain("current/world/soul.md");
     expect(commandPlayerRate).toContain("vfs_finish_soul");
+    expect(commandPlayerRate).toContain("vfs_vm");
+    expect(commandPlayerRate).toContain("JavaScript");
+    expect(commandPlayerRate).toContain("globalThis");
     expect(commandPlayerRate).toContain("internal self-guidance notes");
+    expect(commandCleanup).toContain("vfs_vm");
+    expect(commandCleanup).toContain("JavaScript");
+    expect(commandCleanup).toContain("globalThis");
+    expect(commandSudo).toContain("vfs_vm");
+    expect(commandSudo).toContain("JavaScript");
+    expect(commandSudo).toContain("globalThis");
     expect(commandSummary).toContain("name: commands-summary");
     expect(commandSummary).toContain("query_summary");
     expect(commandSummary).toContain("Structured Error Recovery Flow");

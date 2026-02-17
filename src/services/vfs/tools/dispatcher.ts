@@ -33,6 +33,11 @@ import { handleFinishOutlinePhase6 } from "./handlers/finishOutlinePhase6";
 import { handleFinishOutlinePhase7 } from "./handlers/finishOutlinePhase7";
 import { handleFinishOutlinePhase8 } from "./handlers/finishOutlinePhase8";
 import { handleFinishOutlinePhase9 } from "./handlers/finishOutlinePhase9";
+import { createVmHandler } from "./handlers/vm";
+
+const handleVm = createVmHandler((name, args, context) =>
+  vfsToolDispatcher.dispatchAsync(name, args, context),
+);
 
 const HANDLERS: Record<VfsToolHandlerKey, (args: Record<string, unknown>, ctx: ToolContext) => unknown | Promise<unknown>> = {
   inspect_ls: handleInspectLs,
@@ -42,6 +47,7 @@ const HANDLERS: Record<VfsToolHandlerKey, (args: Record<string, unknown>, ctx: T
   read_json: handleReadJson,
   read_markdown: handleReadMarkdown,
   inspect_search: handleInspectSearch,
+  vm: handleVm,
   write_file: handleWriteFile,
   append_text: handleAppendText,
   edit_lines: handleEditLines,

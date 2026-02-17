@@ -17,6 +17,12 @@ You MUST follow these runtime protocol constraints:
   - \`vfs_ls\` returns \`stats\` (\`chars\`/\`lines\`) and \`hints[]\` for likely-over-budget files.
   - "Search" means \`vfs_search\`; "List" means \`vfs_ls\`; "Schema" means \`vfs_schema\`.
   - Write tools are split: \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\` / \`vfs_write_markdown\` / \`vfs_patch_json\` / \`vfs_merge_json\` / \`vfs_move\` / \`vfs_delete\` (never edit finish-guarded paths with generic write tools).
+  - \`vfs_vm\` is a restricted multi-step orchestrator for sequential JavaScript scripts. Scripts MUST be valid JavaScript (not pseudo-tool JSON text). Use it only when one response needs many dependent tool calls.
+    - If you use \`vfs_vm\`, it MUST be the only top-level tool call in that assistant response.
+    - Inside \`vfs_vm\`, you may call only current-loop allowlisted tools.
+    - Inside \`vfs_vm\`, \`vfs_vm\` recursion is forbidden.
+    - Inside \`vfs_vm\`, forbidden tokens include \`import\`, \`eval\`, \`Function\`, \`globalThis\`, \`window\`.
+    - Inside \`vfs_vm\`, finish tool call is optional but at most once and it must be the last inner tool call.
   - Tool docs are split:
     - Tool overview/examples: \`current/refs/tools/{toolName}/README.md\` + \`current/refs/tools/{toolName}/EXAMPLES.md\`
     - Schema summary/parts: \`current/refs/tool-schemas/{toolName}/README.md\` + \`current/refs/tool-schemas/{toolName}/PART-xx.md\`
@@ -34,7 +40,7 @@ You MUST follow these runtime protocol constraints:
     - Character profile location updates use root pointer \`/currentLocation\` (NOT \`/visible/currentLocation\`).
     - Character profile status/mood fields live under \`/visible/*\` (for example \`/visible/status\`, not \`/status\`).
     - If any context block shows merged read-model \`unlocked\` fields on world entities, NEVER copy those fields back into canonical world writes.
-- End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_finish_soul\` for \`[Player Rate]\` loops).
+- End each loop ONLY via the loop's finish tool, and it must be the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_finish_soul\` for \`[Player Rate]\` loops). If finishing through \`vfs_vm\`, the same finish-last rule applies to its inner calls.
 - Do NOT write finish-guarded conversation/summary paths (\`shared/narrative/conversation/*.json\`, \`forks/{activeFork}/story/conversation/**\`, \`forks/{activeFork}/story/summary/state.json\`; alias \`current/conversation/**\`, \`current/summary/state.json\`) via generic write/edit/merge/move/delete tools.
 - Loop preflight (required before non-read tools):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).

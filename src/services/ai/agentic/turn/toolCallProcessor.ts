@@ -38,6 +38,7 @@ export function executeGenericTool(
     vfsSession: loopState.vfsSession,
     requiredCommandSkillPaths: loopState.requiredCommandSkillPaths,
     requiredPresetSkillPaths: loopState.requiredPresetSkillPaths,
+    allowedToolNames: loopState.activeTools.map((tool) => tool.name),
     vfsActor: "ai",
     vfsMode: loopState.vfsMode,
     vfsElevationToken: loopState.vfsElevationToken ?? null,

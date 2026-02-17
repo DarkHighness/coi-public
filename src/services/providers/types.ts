@@ -129,7 +129,6 @@ export type InferToolParams<T> =
 
 /**
  * 工具/函数定义 (运行时兼容类型，用于传递给 API)
- * @deprecated 内部使用 TypedToolDefinition 以保持类型安全
  */
 export interface ZodToolDefinition {
   name: string;
