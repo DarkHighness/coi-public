@@ -407,22 +407,15 @@ export async function callWithAgenticRetry(
         !request.onChunk &&
         !forceInternalStreaming &&
         requiresStreamingTransportForLongRequest(rawProviderMessage) &&
-        attempt < maxRetries;
+        attempt <= maxRetries;
 
       if (shouldRetryWithStreamingTransport) {
-        attempt++;
         forceInternalStreaming = true;
-        const retryMessage =
-          "[ERROR: STREAMING_REQUIRED] Provider requires streaming transport for this long-running request. Retrying with internal streaming mode.";
+        const switchMessage =
+          "[ERROR: STREAMING_REQUIRED] Provider requires streaming transport for this long-running request. Switching to internal streaming mode.";
         console.warn(
-          `[AgenticRetry] ${retryMessage} (${attempt}/${maxRetries})`,
+          `[AgenticRetry] ${switchMessage}`,
         );
-        if (onRetry) {
-          onRetry(retryMessage, attempt, {
-            silent: true,
-            classification: "silent_retry",
-          });
-        }
         continue;
       }
 

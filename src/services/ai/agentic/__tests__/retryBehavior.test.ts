@@ -556,7 +556,7 @@ describe("callWithAgenticRetry behavior", () => {
     );
   });
 
-  it("retries once with internal streaming when provider requires long-request streaming", async () => {
+  it("switches to internal streaming without consuming retry budget when required", async () => {
     const generateChat = vi
       .fn()
       .mockRejectedValueOnce(
@@ -591,15 +591,11 @@ describe("callWithAgenticRetry behavior", () => {
       },
     );
 
-    expect(result.retries).toBe(1);
+    expect(result.retries).toBe(0);
     expect(generateChat).toHaveBeenCalledTimes(2);
     expect(generateChat.mock.calls[0]?.[0]?.onChunk).toBeUndefined();
     expect(typeof generateChat.mock.calls[1]?.[0]?.onChunk).toBe("function");
-    expect(onRetry).toHaveBeenCalledWith(
-      expect.stringContaining("STREAMING_REQUIRED"),
-      1,
-      expect.objectContaining({ silent: true, classification: "silent_retry" }),
-    );
+    expect(onRetry).not.toHaveBeenCalled();
   });
 
   it("throws unknown provider errors without automatic retry", async () => {
