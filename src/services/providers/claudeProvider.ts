@@ -150,6 +150,9 @@ const parseToolArgumentsValue = (
   return rawInput;
 };
 
+const isEmptyObjectValue = (value: unknown): value is JsonObject =>
+  isJsonObject(value) && Object.keys(value).length === 0;
+
 const CLAUDE_STREAM_IDLE_TIMEOUT_MS = 60_000;
 const CLAUDE_STREAM_MAX_DURATION_MS = 15 * 60_000;
 const CLAUDE_STREAM_REQUEST_TIMEOUT_MS = CLAUDE_STREAM_MAX_DURATION_MS + 30_000;
@@ -703,11 +706,26 @@ Answer the user's request using relevant tools (if they are available). Before c
 
           rawResponse = stream;
 
+          const accumulatedToolCalls: Map<
+            number,
+            { id: string; name: string; input: string; startInput?: unknown }
+          > = new Map();
+
           for await (const event of stream) {
             resetStallTimer();
 
             // 处理不同类型的事件
-            if (event.type === "content_block_delta") {
+            if (event.type === "content_block_start") {
+              const block = event.content_block;
+              if (block.type === "tool_use") {
+                accumulatedToolCalls.set(event.index, {
+                  id: block.id,
+                  name: block.name,
+                  input: "",
+                  startInput: block.input,
+                });
+              }
+            } else if (event.type === "content_block_delta") {
               const delta = event.delta;
               if (delta.type === "text_delta") {
                 // 文本内容
@@ -716,6 +734,11 @@ Answer the user's request using relevant tools (if they are available). Before c
               } else if (delta.type === "thinking_delta") {
                 // Thinking content (Claude Extended Thinking)
                 thinkingContent += getThinkingText(delta);
+              } else if (delta.type === "input_json_delta") {
+                const existing = accumulatedToolCalls.get(event.index);
+                if (existing) {
+                  existing.input += delta.partial_json;
+                }
               }
             } else if (event.type === "message_delta") {
               // 更新使用量
@@ -778,8 +801,42 @@ Answer the user's request using relevant tools (if they are available). Before c
             }
           }
 
+          const accumulatedById = new Map<string, ToolArguments>();
+          const accumulatedOrdered = [...accumulatedToolCalls.entries()].sort(
+            ([a], [b]) => a - b,
+          );
+          for (const [, tc] of accumulatedOrdered) {
+            const parsedArgs =
+              tc.input.trim().length > 0
+                ? parseToolArgumentsText(tc.input, tc.name)
+                : parseToolArgumentsValue(tc.startInput ?? {}, tc.name);
+            accumulatedById.set(tc.id, parsedArgs);
+          }
+
           if (finalToolCalls.length > 0) {
-            toolCalls = finalToolCalls;
+            toolCalls = finalToolCalls.map((call) => {
+              const fallbackArgs = accumulatedById.get(call.id);
+              if (!fallbackArgs) return call;
+
+              // If SDK final message returns empty tool input, but stream deltas contain
+              // a richer payload, prefer the accumulated payload.
+              if (
+                isEmptyObjectValue(call.args) &&
+                !isEmptyObjectValue(fallbackArgs)
+              ) {
+                return { ...call, args: fallbackArgs };
+              }
+              return call;
+            });
+          } else if (accumulatedOrdered.length > 0) {
+            toolCalls = accumulatedOrdered.map(([, tc]) => ({
+              id: tc.id,
+              name: tc.name,
+              args:
+                tc.input.trim().length > 0
+                  ? parseToolArgumentsText(tc.input, tc.name)
+                  : parseToolArgumentsValue(tc.startInput ?? {}, tc.name),
+            }));
           }
 
           if (finalContent) {

@@ -174,4 +174,68 @@ describe("claudeProvider streaming tool input parsing", () => {
     expect(calls?.[0]?.name).toBe("test_tool");
     expect(calls?.[0]?.args).toEqual({ foo: "baz" });
   });
+
+  it("falls back to accumulated delta when finalMessage tool input is empty", async () => {
+    const events = [
+      {
+        type: "content_block_start",
+        index: 0,
+        content_block: {
+          type: "tool_use",
+          id: "toolu_3",
+          name: "test_tool",
+          input: {},
+        },
+      },
+      {
+        type: "content_block_delta",
+        index: 0,
+        delta: {
+          type: "input_json_delta",
+          partial_json: '{"foo":"from-delta"}',
+        },
+      },
+      { type: "content_block_stop", index: 0 },
+      { type: "message_stop" },
+    ];
+    mocks.messagesStream.mockReturnValue({
+      ...makeStream(events),
+      finalMessage: vi.fn().mockResolvedValue({
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_3",
+            name: "test_tool",
+            input: {},
+          },
+        ],
+        usage: { input_tokens: 12, output_tokens: 1 },
+        stop_reason: "tool_use",
+        stop_sequence: null,
+      }),
+    });
+
+    const result = await generateContent(
+      { apiKey: "test-key" },
+      "claude-sonnet-4-5-20250929",
+      "system",
+      baseMessages,
+      undefined,
+      {
+        tools: [
+          {
+            name: "test_tool",
+            description: "test tool",
+            parameters: z.object({ foo: z.string() }),
+          },
+        ],
+        onChunk: vi.fn(),
+      },
+    );
+
+    const calls = (result.result as { functionCalls?: Array<any> }).functionCalls;
+    expect(calls).toHaveLength(1);
+    expect(calls?.[0]?.name).toBe("test_tool");
+    expect(calls?.[0]?.args).toEqual({ foo: "from-delta" });
+  });
 });
