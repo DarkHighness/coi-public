@@ -23,6 +23,15 @@ import {
 } from "zod";
 import { AIProviderError } from "./types";
 
+const LONG_REQUEST_STREAMING_REQUIRED_PATTERN =
+  /streaming is required for operations that may take longer than 10 minutes|long-requests/i;
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error ?? "");
+
+const isLongRequestStreamingRequiredError = (error: unknown): boolean =>
+  LONG_REQUEST_STREAMING_REQUIRED_PATTERN.test(getErrorMessage(error));
+
 /**
  * Zod Tool Definition simplified interface for utility use
  */
@@ -100,6 +109,10 @@ export async function withRetry<T>(
  * Check if an error is retryable
  */
 function isRetryableError(error: unknown): boolean {
+  if (isLongRequestStreamingRequiredError(error)) {
+    return false;
+  }
+
   if (error instanceof AIProviderError) {
     // Don't retry on specific errors
     if (
