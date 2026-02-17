@@ -56,7 +56,7 @@ export const normalizeWriteTargetPath = (rawPath: string): string => {
 export const collectWriteTargetsFromToolCall = (
   call: ToolCallResult,
 ): string[] => {
-  const args = (call.args || {}) as Record<string, unknown>;
+  const args = call.args;
   const targets = new Set<string>();
 
   const pushTarget = (candidate: unknown): void => {
@@ -88,8 +88,10 @@ export const collectWriteTargetsFromToolCall = (
 };
 
 export const getToolErrorCode = (output: unknown): string | null => {
-  if (!output || typeof output !== "object") return null;
-  const rawCode = (output as Record<string, unknown>).code;
+  if (!output || typeof output !== "object" || Array.isArray(output)) {
+    return null;
+  }
+  const rawCode = (output as { code?: unknown }).code;
   return typeof rawCode === "string" ? rawCode : null;
 };
 

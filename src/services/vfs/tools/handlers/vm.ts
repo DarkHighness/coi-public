@@ -115,15 +115,14 @@ class VmAbortError extends Error {
   }
 }
 
-const asRecord = (value: unknown): Record<string, unknown> => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-  return value as Record<string, unknown>;
-};
+const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isToolError = (value: unknown): value is ToolCallError => {
-  const record = asRecord(value);
+  if (!isRecordObject(value)) {
+    return false;
+  }
+  const record = value;
   return (
     record.success === false &&
     typeof record.error === "string" &&

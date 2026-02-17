@@ -170,7 +170,7 @@ const findSummaryCrossForkViolations = (
 };
 
 const validateCommitSummaryArgs = (
-  args: unknown,
+  args: Record<string, unknown>,
   runtimeFieldErrorCodePrefix: "COMPACT_SUMMARY" | "QUERY_SUMMARY",
 ):
   | { ok: true }
@@ -179,12 +179,11 @@ const validateCommitSummaryArgs = (
       code: "INVALID_DATA";
       error: string;
     } => {
-  const raw = (args ?? {}) as Record<string, unknown>;
   if (
-    "nodeRange" in raw ||
-    "lastSummarizedIndex" in raw ||
-    "id" in raw ||
-    "createdAt" in raw
+    "nodeRange" in args ||
+    "lastSummarizedIndex" in args ||
+    "id" in args ||
+    "createdAt" in args
   ) {
     return {
       ok: false,
@@ -197,12 +196,11 @@ const validateCommitSummaryArgs = (
 };
 
 const injectSummaryRuntimeArgs = (
-  args: unknown,
+  args: Record<string, unknown>,
   expectedRange: { fromIndex: number; toIndex: number },
 ): Record<string, unknown> => {
-  const raw = (args ?? {}) as Record<string, unknown>;
   return {
-    ...raw,
+    ...args,
     nodeRange: {
       fromIndex: expectedRange.fromIndex,
       toIndex: expectedRange.toIndex,

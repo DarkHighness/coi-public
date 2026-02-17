@@ -716,16 +716,16 @@ interface VmExecutionMeta {
   callTrace: VmExecutionTraceItem[];
 }
 
-const asRecord = (value: unknown): Record<string, unknown> => {
+const toRecordOrNull = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
+    return null;
   }
   return value as Record<string, unknown>;
 };
 
 const isToolFailureOutput = (value: unknown): boolean => {
-  const record = asRecord(value);
-  return record.success === false;
+  const record = toRecordOrNull(value);
+  return record?.success === false;
 };
 
 const normalizeVmWriteTargets = (value: unknown): string[] => {
@@ -746,7 +746,10 @@ const parseVmCallTrace = (value: unknown): VmExecutionTraceItem[] => {
 
   const parsed: VmExecutionTraceItem[] = [];
   for (const item of value) {
-    const record = asRecord(item);
+    const record = toRecordOrNull(item);
+    if (!record) {
+      continue;
+    }
     const toolNameRaw = record.toolName;
     const toolName = typeof toolNameRaw === "string" ? toolNameRaw : "";
     if (!toolName) {
@@ -774,13 +777,13 @@ const parseVmCallTrace = (value: unknown): VmExecutionTraceItem[] => {
 const parseVmExecutionMetaFromCandidate = (
   candidate: unknown,
 ): VmExecutionMeta | null => {
-  const record = asRecord(candidate);
-  if (Object.keys(record).length === 0) {
+  const record = toRecordOrNull(candidate);
+  if (!record) {
     return null;
   }
 
-  const writes = asRecord(record.writes);
-  const finish = asRecord(record.finish);
+  const writes = toRecordOrNull(record.writes) ?? {};
+  const finish = toRecordOrNull(record.finish) ?? {};
   const callTrace = parseVmCallTrace(record.callTrace);
   const successfulWriteTargets = normalizeVmWriteTargets(
     writes.successfulTargets,
@@ -825,8 +828,8 @@ const parseVmExecutionMetaFromCandidate = (
 };
 
 const extractVmExecutionMeta = (output: unknown): VmExecutionMeta | null => {
-  const root = asRecord(output);
-  if (Object.keys(root).length === 0) {
+  const root = toRecordOrNull(output);
+  if (!root) {
     return null;
   }
 
@@ -835,23 +838,27 @@ const extractVmExecutionMeta = (output: unknown): VmExecutionMeta | null => {
     return fromRoot;
   }
 
-  const data = asRecord(root.data);
-  const fromDataVmMeta = parseVmExecutionMetaFromCandidate(data.vmMeta);
-  if (fromDataVmMeta) {
-    return fromDataVmMeta;
+  const data = toRecordOrNull(root.data);
+  if (data) {
+    const fromDataVmMeta = parseVmExecutionMetaFromCandidate(data.vmMeta);
+    if (fromDataVmMeta) {
+      return fromDataVmMeta;
+    }
+
+    const fromData = parseVmExecutionMetaFromCandidate(data);
+    if (fromData) {
+      return fromData;
+    }
   }
 
-  const fromData = parseVmExecutionMetaFromCandidate(data);
-  if (fromData) {
-    return fromData;
-  }
-
-  const details = asRecord(root.details);
-  const hint = asRecord(details.hint);
-  const metadata = asRecord(hint.metadata);
-  const fromHint = parseVmExecutionMetaFromCandidate(metadata.vmMeta);
-  if (fromHint) {
-    return fromHint;
+  const details = toRecordOrNull(root.details);
+  const hint = details ? toRecordOrNull(details.hint) : null;
+  const metadata = hint ? toRecordOrNull(hint.metadata) : null;
+  if (metadata) {
+    const fromHint = parseVmExecutionMetaFromCandidate(metadata.vmMeta);
+    if (fromHint) {
+      return fromHint;
+    }
   }
 
   return null;
@@ -1016,7 +1023,7 @@ async function processToolCalls(
 
     const touched: string[] = [];
 
-    const args = (call.args ?? {}) as Record<string, unknown>;
+    const args = call.args;
     const maybePath = args.path;
     const maybeFrom = args.from;
     const maybeTo = args.to;
@@ -1092,7 +1099,7 @@ async function processToolCalls(
 
   const liveToolCalls: ToolCallRecord[] = functionCalls.map((call) => ({
     name: call.name,
-    input: (call.args || {}) as Record<string, unknown>,
+    input: call.args,
     output: null,
     timestamp: Date.now(),
     contextUsage: contextUsageSnapshot || undefined,
