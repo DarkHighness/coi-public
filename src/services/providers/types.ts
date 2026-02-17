@@ -319,6 +319,9 @@ export interface AIProvider<TConfig extends ProviderConfig> {
   /** 获取可用模型列表 */
   getModels(config: TConfig): Promise<ModelInfo[]>;
 
+  /** 精确 token 计数（可选能力） */
+  countTokens?(config: TConfig, model: string, content: string): Promise<number>;
+
   /** 生成内容 (对话/工具调用) */
   generateContent(
     config: TConfig,

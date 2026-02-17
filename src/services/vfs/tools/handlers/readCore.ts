@@ -1,8 +1,6 @@
 import { createError, createSuccess } from "../../../tools/toolResult";
-import {
-  estimateTokensForMixedText,
-  resolveVfsReadTokenBudget,
-} from "../../../ai/contextUsage";
+import { resolveVfsReadTokenBudget } from "../../../ai/contextUsage";
+import { createReadTokenCounter } from "../../../ai/tokenCounter";
 import { toCurrentPath } from "../../currentAlias";
 import { normalizeVfsPath } from "../../utils";
 import {
@@ -73,170 +71,253 @@ const createReadHandler = (
       const readTokenBudget = readBudgetResolution.tokenBudget;
       const readSafeCharsHint = readBudgetResolution.projectedSafeChars;
       const readCalibrationFactor = readBudgetResolution.calibrationFactor;
-      const estimateReadTokens = (content: string): number =>
-        estimateTokensForMixedText(content, {
-          calibrationFactor: readCalibrationFactor,
-        });
-
-      if (mode === "json") {
-        if (file.contentType !== "application/json") {
-          return createError(`File is not JSON: ${inputPath}`, "INVALID_DATA");
+      const tokenCounter = createReadTokenCounter({
+        settings: ctx.settings,
+        calibrationFactor: readCalibrationFactor,
+      });
+      const estimateReadTokens = (content: string): number => {
+        const result = tokenCounter.count(content);
+        if (result instanceof Promise) {
+          throw new Error("Unexpected async token counter in sync read path");
         }
+        return result.tokens;
+      };
+      const countReadTokensAsync = async (content: string): Promise<number> => {
+        const result = await tokenCounter.count(content);
+        return result.tokens;
+      };
 
-        let document: unknown;
-        try {
-          document = JSON.parse(file.content);
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error);
-          return createError(`Invalid JSON: ${message}`, "INVALID_DATA");
-        }
+      const runSyncReadFlow = () => {
+        if (mode === "json") {
+          if (file.contentType !== "application/json") {
+            return createError(`File is not JSON: ${inputPath}`, "INVALID_DATA");
+          }
 
-        const pointers = Array.isArray(runtime.pointers)
-          ? runtime.pointers.filter(
-              (pointer): pointer is string => typeof pointer === "string",
-            )
-          : [];
-        if (pointers.length === 0) {
-          return createError(
-            `${toolName}: pointers must be provided`,
-            "INVALID_DATA",
+          let document: unknown;
+          try {
+            document = JSON.parse(file.content);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            return createError(`Invalid JSON: ${message}`, "INVALID_DATA");
+          }
+
+          const pointers = Array.isArray(runtime.pointers)
+            ? runtime.pointers.filter(
+                (pointer): pointer is string => typeof pointer === "string",
+              )
+            : [];
+          if (pointers.length === 0) {
+            return createError(
+              `${toolName}: pointers must be provided`,
+              "INVALID_DATA",
+            );
+          }
+
+          const maxChars =
+            typeof runtime.maxChars === "number" ? runtime.maxChars : null;
+          const extracts: Array<{
+            pointer: string;
+            type: string;
+            json: string;
+            truncated: boolean;
+            jsonChars: number;
+          }> = [];
+          const missing: Array<{ pointer: string; error: string }> = [];
+          let totalJsonTokens = 0;
+
+          for (const pointer of pointers) {
+            const resolvedPointer = resolveJsonPointer(document, pointer);
+            if (isJsonPointerResolveError(resolvedPointer)) {
+              missing.push({ pointer, error: resolvedPointer.error });
+              continue;
+            }
+
+            const valueType = describeJsonValueType(resolvedPointer.value);
+            const jsonString = JSON.stringify(resolvedPointer.value);
+            const fullJson =
+              typeof jsonString === "string" ? jsonString : "null";
+            const pointerTokens = estimateReadTokens(fullJson);
+            if (typeof maxChars === "number" && fullJson.length > maxChars) {
+              return createReadLimitError(
+                mode,
+                `pointer "${pointer}" yields ${fullJson.length} chars, exceeding maxChars=${maxChars}`,
+                inputPath,
+                {
+                  tokenBudget: readTokenBudget,
+                  estimatedTokens: pointerTokens,
+                  suggestedChunkChars: readSafeCharsHint,
+                },
+                toolName,
+              );
+            }
+            if (pointerTokens > readTokenBudget) {
+              return createReadLimitError(
+                mode,
+                `pointer "${pointer}" payload token count is ${pointerTokens}, exceeding budget ${readTokenBudget}`,
+                inputPath,
+                {
+                  tokenBudget: readTokenBudget,
+                  estimatedTokens: pointerTokens,
+                  suggestedChunkChars: readSafeCharsHint,
+                },
+                toolName,
+              );
+            }
+            totalJsonTokens += pointerTokens;
+            if (totalJsonTokens > readTokenBudget) {
+              return createReadLimitError(
+                mode,
+                `combined pointer payload token count is ${totalJsonTokens}, exceeding budget ${readTokenBudget}`,
+                inputPath,
+                {
+                  tokenBudget: readTokenBudget,
+                  estimatedTokens: totalJsonTokens,
+                  suggestedChunkChars: readSafeCharsHint,
+                },
+                toolName,
+              );
+            }
+
+            extracts.push({
+              pointer,
+              type: valueType,
+              json: fullJson,
+              truncated: false,
+              jsonChars: fullJson.length,
+            });
+          }
+
+          return createSuccess(
+            {
+              mode,
+              path: toCurrentPath(file.path),
+              contentType: file.contentType,
+              extracts,
+              missing,
+              size: file.size,
+              hash: file.hash,
+              updatedAt: file.updatedAt,
+            },
+            "VFS JSON subpaths read",
           );
         }
 
-        const maxChars =
-          typeof runtime.maxChars === "number" ? runtime.maxChars : null;
-        const extracts: Array<{
-          pointer: string;
-          type: string;
-          json: string;
-          truncated: boolean;
-          jsonChars: number;
-        }> = [];
-        const missing: Array<{ pointer: string; error: string }> = [];
-        let totalJsonTokens = 0;
+        if (mode === "lines") {
+          const lines = file.content.split(/\r?\n/);
+          const totalLines = lines.length;
+          const startLine =
+            typeof runtime.startLine === "number" ? runtime.startLine : 1;
 
-        for (const pointer of pointers) {
-          const resolvedPointer = resolveJsonPointer(document, pointer);
-          if (isJsonPointerResolveError(resolvedPointer)) {
-            missing.push({ pointer, error: resolvedPointer.error });
-            continue;
+          if (startLine < 1 || startLine > Math.max(totalLines, 1)) {
+            return createError(
+              `${toolName}: startLine out of range (${startLine})`,
+              "INVALID_DATA",
+            );
           }
 
-          const valueType = describeJsonValueType(resolvedPointer.value);
-          const jsonString = JSON.stringify(resolvedPointer.value);
-          const fullJson = typeof jsonString === "string" ? jsonString : "null";
-          const pointerTokens = estimateReadTokens(fullJson);
-          if (typeof maxChars === "number" && fullJson.length > maxChars) {
+          let endLine: number;
+          if (typeof runtime.endLine === "number") {
+            endLine = runtime.endLine;
+          } else if (typeof runtime.lineCount === "number") {
+            endLine = startLine + runtime.lineCount - 1;
+          } else {
+            endLine = totalLines;
+          }
+
+          if (endLine < startLine) {
+            return createError(
+              `${toolName}: endLine must be >= startLine`,
+              "INVALID_DATA",
+            );
+          }
+          const requestedEndLine = endLine;
+          const clampedEndLine = Math.min(endLine, totalLines);
+          const warnings: string[] = [];
+          if (requestedEndLine > totalLines) {
+            warnings.push(
+              `${toolName}: requested endLine=${requestedEndLine} exceeds max endLine=${totalLines}; clamped to ${clampedEndLine}.`,
+            );
+          }
+
+          const startIndex = startLine - 1;
+          const endIndexExclusive = clampedEndLine;
+          const content = lines.slice(startIndex, endIndexExclusive).join("\n");
+          const contentTokens = estimateReadTokens(content);
+          if (contentTokens > readTokenBudget) {
             return createReadLimitError(
               mode,
-              `pointer "${pointer}" yields ${fullJson.length} chars, exceeding maxChars=${maxChars}`,
+              `requested line range payload token count is ${contentTokens}, exceeding budget ${readTokenBudget}`,
               inputPath,
               {
                 tokenBudget: readTokenBudget,
-                estimatedTokens: pointerTokens,
+                estimatedTokens: contentTokens,
                 suggestedChunkChars: readSafeCharsHint,
               },
               toolName,
             );
           }
-          if (pointerTokens > readTokenBudget) {
-            return createReadLimitError(
-              mode,
-              `pointer "${pointer}" estimates ${pointerTokens} tokens, exceeding budget ${readTokenBudget}`,
-              inputPath,
-              {
-                tokenBudget: readTokenBudget,
-                estimatedTokens: pointerTokens,
-                suggestedChunkChars: readSafeCharsHint,
-              },
-              toolName,
-            );
-          }
-          totalJsonTokens += pointerTokens;
-          if (totalJsonTokens > readTokenBudget) {
-            return createReadLimitError(
-              mode,
-              `combined pointer payload estimates ${totalJsonTokens} tokens, exceeding budget ${readTokenBudget}`,
-              inputPath,
-              {
-                tokenBudget: readTokenBudget,
-                estimatedTokens: totalJsonTokens,
-                suggestedChunkChars: readSafeCharsHint,
-              },
-              toolName,
-            );
-          }
 
-          extracts.push({
-            pointer,
-            type: valueType,
-            json: fullJson,
-            truncated: false,
-            jsonChars: fullJson.length,
-          });
+          return createSuccess(
+            {
+              mode,
+              path: toCurrentPath(file.path),
+              contentType: file.contentType,
+              content,
+              lineStart: startLine,
+              lineEnd: clampedEndLine,
+              requestedLineEnd: requestedEndLine,
+              totalLines,
+              truncated: startLine !== 1 || clampedEndLine !== totalLines,
+              ...(warnings.length > 0 ? { warnings } : {}),
+              size: file.size,
+              hash: file.hash,
+              updatedAt: file.updatedAt,
+            },
+            "VFS file lines read",
+          );
         }
 
-        return createSuccess(
-          {
-            mode,
-            path: toCurrentPath(file.path),
-            contentType: file.contentType,
-            extracts,
-            missing,
-            size: file.size,
-            hash: file.hash,
-            updatedAt: file.updatedAt,
-          },
-          "VFS JSON subpaths read",
-        );
-      }
+        const startRaw = runtime.start;
+        const offsetRaw = runtime.offset;
+        const maxChars = runtime.maxChars;
 
-      if (mode === "lines") {
-        const lines = file.content.split(/\r?\n/);
-        const totalLines = lines.length;
-        const startLine =
-          typeof runtime.startLine === "number" ? runtime.startLine : 1;
+        const start = typeof startRaw === "number" ? startRaw : 0;
+        const hasOffset = typeof offsetRaw === "number";
+        const hasMaxChars = typeof maxChars === "number";
 
-        if (startLine < 1 || startLine > Math.max(totalLines, 1)) {
+        if (start > 0 && !hasOffset && !hasMaxChars) {
           return createError(
-            `${toolName}: startLine out of range (${startLine})`,
+            `${toolName}: when providing start, also provide offset (preferred) or maxChars`,
             "INVALID_DATA",
           );
         }
 
-        let endLine: number;
-        if (typeof runtime.endLine === "number") {
-          endLine = runtime.endLine;
-        } else if (typeof runtime.lineCount === "number") {
-          endLine = startLine + runtime.lineCount - 1;
-        } else {
-          endLine = totalLines;
-        }
-
-        if (endLine < startLine) {
-          return createError(
-            `${toolName}: endLine must be >= startLine`,
-            "INVALID_DATA",
-          );
-        }
-        const requestedEndLine = endLine;
-        const clampedEndLine = Math.min(endLine, totalLines);
+        const length =
+          hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
+        const totalChars = file.content.length;
+        const sliceStart = Math.min(Math.max(start, 0), totalChars);
+        const requestedEndExclusive =
+          typeof length === "number"
+            ? sliceStart + Math.max(length, 0)
+            : totalChars;
+        const sliceEndExclusive =
+          typeof length === "number"
+            ? Math.min(requestedEndExclusive, totalChars)
+            : totalChars;
         const warnings: string[] = [];
-        if (requestedEndLine > totalLines) {
+        if (requestedEndExclusive > totalChars) {
           warnings.push(
-            `${toolName}: requested endLine=${requestedEndLine} exceeds max endLine=${totalLines}; clamped to ${clampedEndLine}.`,
+            `${toolName}: requested end=${requestedEndExclusive} exceeds max end=${totalChars}; clamped to ${sliceEndExclusive}.`,
           );
         }
 
-        const startIndex = startLine - 1;
-        const endIndexExclusive = clampedEndLine;
-        const content = lines.slice(startIndex, endIndexExclusive).join("\n");
+        const content = file.content.slice(sliceStart, sliceEndExclusive);
         const contentTokens = estimateReadTokens(content);
         if (contentTokens > readTokenBudget) {
           return createReadLimitError(
             mode,
-            `requested line range estimates ${contentTokens} tokens, exceeding budget ${readTokenBudget}`,
+            `requested char range payload token count is ${contentTokens}, exceeding budget ${readTokenBudget}`,
             inputPath,
             {
               tokenBudget: readTokenBudget,
@@ -246,6 +327,7 @@ const createReadHandler = (
             toolName,
           );
         }
+        const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;
 
         return createSuccess(
           {
@@ -253,88 +335,285 @@ const createReadHandler = (
             path: toCurrentPath(file.path),
             contentType: file.contentType,
             content,
-            lineStart: startLine,
-            lineEnd: clampedEndLine,
-            requestedLineEnd: requestedEndLine,
-            totalLines,
-            truncated: startLine !== 1 || clampedEndLine !== totalLines,
+            truncated,
+            sliceStart,
+            sliceEndExclusive,
+            requestedEndExclusive,
+            totalChars,
             ...(warnings.length > 0 ? { warnings } : {}),
             size: file.size,
             hash: file.hash,
             updatedAt: file.updatedAt,
           },
-          "VFS file lines read",
+          "VFS file read",
         );
-      }
+      };
 
-      const startRaw = runtime.start;
-      const offsetRaw = runtime.offset;
-      const maxChars = runtime.maxChars;
+      const runAsyncReadFlow = async () => {
+        if (mode === "json") {
+          if (file.contentType !== "application/json") {
+            return createError(`File is not JSON: ${inputPath}`, "INVALID_DATA");
+          }
 
-      const start = typeof startRaw === "number" ? startRaw : 0;
-      const hasOffset = typeof offsetRaw === "number";
-      const hasMaxChars = typeof maxChars === "number";
+          let document: unknown;
+          try {
+            document = JSON.parse(file.content);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            return createError(`Invalid JSON: ${message}`, "INVALID_DATA");
+          }
 
-      if (start > 0 && !hasOffset && !hasMaxChars) {
-        return createError(
-          `${toolName}: when providing start, also provide offset (preferred) or maxChars`,
-          "INVALID_DATA",
-        );
-      }
+          const pointers = Array.isArray(runtime.pointers)
+            ? runtime.pointers.filter(
+                (pointer): pointer is string => typeof pointer === "string",
+              )
+            : [];
+          if (pointers.length === 0) {
+            return createError(
+              `${toolName}: pointers must be provided`,
+              "INVALID_DATA",
+            );
+          }
 
-      const length = hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
-      const totalChars = file.content.length;
-      const sliceStart = Math.min(Math.max(start, 0), totalChars);
-      const requestedEndExclusive =
-        typeof length === "number"
-          ? sliceStart + Math.max(length, 0)
-          : totalChars;
-      const sliceEndExclusive =
-        typeof length === "number"
-          ? Math.min(requestedEndExclusive, totalChars)
-          : totalChars;
-      const warnings: string[] = [];
-      if (requestedEndExclusive > totalChars) {
-        warnings.push(
-          `${toolName}: requested end=${requestedEndExclusive} exceeds max end=${totalChars}; clamped to ${sliceEndExclusive}.`,
-        );
-      }
+          const maxChars =
+            typeof runtime.maxChars === "number" ? runtime.maxChars : null;
+          const extracts: Array<{
+            pointer: string;
+            type: string;
+            json: string;
+            truncated: boolean;
+            jsonChars: number;
+          }> = [];
+          const missing: Array<{ pointer: string; error: string }> = [];
+          let totalJsonTokens = 0;
 
-      const content = file.content.slice(sliceStart, sliceEndExclusive);
-      const contentTokens = estimateReadTokens(content);
-      if (contentTokens > readTokenBudget) {
-        return createReadLimitError(
-          mode,
-          `requested char range estimates ${contentTokens} tokens, exceeding budget ${readTokenBudget}`,
-          inputPath,
+          for (const pointer of pointers) {
+            const resolvedPointer = resolveJsonPointer(document, pointer);
+            if (isJsonPointerResolveError(resolvedPointer)) {
+              missing.push({ pointer, error: resolvedPointer.error });
+              continue;
+            }
+
+            const valueType = describeJsonValueType(resolvedPointer.value);
+            const jsonString = JSON.stringify(resolvedPointer.value);
+            const fullJson =
+              typeof jsonString === "string" ? jsonString : "null";
+            const pointerTokens = await countReadTokensAsync(fullJson);
+            if (typeof maxChars === "number" && fullJson.length > maxChars) {
+              return createReadLimitError(
+                mode,
+                `pointer "${pointer}" yields ${fullJson.length} chars, exceeding maxChars=${maxChars}`,
+                inputPath,
+                {
+                  tokenBudget: readTokenBudget,
+                  estimatedTokens: pointerTokens,
+                  suggestedChunkChars: readSafeCharsHint,
+                },
+                toolName,
+              );
+            }
+            if (pointerTokens > readTokenBudget) {
+              return createReadLimitError(
+                mode,
+                `pointer "${pointer}" payload token count is ${pointerTokens}, exceeding budget ${readTokenBudget}`,
+                inputPath,
+                {
+                  tokenBudget: readTokenBudget,
+                  estimatedTokens: pointerTokens,
+                  suggestedChunkChars: readSafeCharsHint,
+                },
+                toolName,
+              );
+            }
+            totalJsonTokens += pointerTokens;
+            if (totalJsonTokens > readTokenBudget) {
+              return createReadLimitError(
+                mode,
+                `combined pointer payload token count is ${totalJsonTokens}, exceeding budget ${readTokenBudget}`,
+                inputPath,
+                {
+                  tokenBudget: readTokenBudget,
+                  estimatedTokens: totalJsonTokens,
+                  suggestedChunkChars: readSafeCharsHint,
+                },
+                toolName,
+              );
+            }
+
+            extracts.push({
+              pointer,
+              type: valueType,
+              json: fullJson,
+              truncated: false,
+              jsonChars: fullJson.length,
+            });
+          }
+
+          return createSuccess(
+            {
+              mode,
+              path: toCurrentPath(file.path),
+              contentType: file.contentType,
+              extracts,
+              missing,
+              size: file.size,
+              hash: file.hash,
+              updatedAt: file.updatedAt,
+            },
+            "VFS JSON subpaths read",
+          );
+        }
+
+        if (mode === "lines") {
+          const lines = file.content.split(/\r?\n/);
+          const totalLines = lines.length;
+          const startLine =
+            typeof runtime.startLine === "number" ? runtime.startLine : 1;
+
+          if (startLine < 1 || startLine > Math.max(totalLines, 1)) {
+            return createError(
+              `${toolName}: startLine out of range (${startLine})`,
+              "INVALID_DATA",
+            );
+          }
+
+          let endLine: number;
+          if (typeof runtime.endLine === "number") {
+            endLine = runtime.endLine;
+          } else if (typeof runtime.lineCount === "number") {
+            endLine = startLine + runtime.lineCount - 1;
+          } else {
+            endLine = totalLines;
+          }
+
+          if (endLine < startLine) {
+            return createError(
+              `${toolName}: endLine must be >= startLine`,
+              "INVALID_DATA",
+            );
+          }
+          const requestedEndLine = endLine;
+          const clampedEndLine = Math.min(endLine, totalLines);
+          const warnings: string[] = [];
+          if (requestedEndLine > totalLines) {
+            warnings.push(
+              `${toolName}: requested endLine=${requestedEndLine} exceeds max endLine=${totalLines}; clamped to ${clampedEndLine}.`,
+            );
+          }
+
+          const startIndex = startLine - 1;
+          const endIndexExclusive = clampedEndLine;
+          const content = lines.slice(startIndex, endIndexExclusive).join("\n");
+          const contentTokens = await countReadTokensAsync(content);
+          if (contentTokens > readTokenBudget) {
+            return createReadLimitError(
+              mode,
+              `requested line range payload token count is ${contentTokens}, exceeding budget ${readTokenBudget}`,
+              inputPath,
+              {
+                tokenBudget: readTokenBudget,
+                estimatedTokens: contentTokens,
+                suggestedChunkChars: readSafeCharsHint,
+              },
+              toolName,
+            );
+          }
+
+          return createSuccess(
+            {
+              mode,
+              path: toCurrentPath(file.path),
+              contentType: file.contentType,
+              content,
+              lineStart: startLine,
+              lineEnd: clampedEndLine,
+              requestedLineEnd: requestedEndLine,
+              totalLines,
+              truncated: startLine !== 1 || clampedEndLine !== totalLines,
+              ...(warnings.length > 0 ? { warnings } : {}),
+              size: file.size,
+              hash: file.hash,
+              updatedAt: file.updatedAt,
+            },
+            "VFS file lines read",
+          );
+        }
+
+        const startRaw = runtime.start;
+        const offsetRaw = runtime.offset;
+        const maxChars = runtime.maxChars;
+
+        const start = typeof startRaw === "number" ? startRaw : 0;
+        const hasOffset = typeof offsetRaw === "number";
+        const hasMaxChars = typeof maxChars === "number";
+
+        if (start > 0 && !hasOffset && !hasMaxChars) {
+          return createError(
+            `${toolName}: when providing start, also provide offset (preferred) or maxChars`,
+            "INVALID_DATA",
+          );
+        }
+
+        const length =
+          hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
+        const totalChars = file.content.length;
+        const sliceStart = Math.min(Math.max(start, 0), totalChars);
+        const requestedEndExclusive =
+          typeof length === "number"
+            ? sliceStart + Math.max(length, 0)
+            : totalChars;
+        const sliceEndExclusive =
+          typeof length === "number"
+            ? Math.min(requestedEndExclusive, totalChars)
+            : totalChars;
+        const warnings: string[] = [];
+        if (requestedEndExclusive > totalChars) {
+          warnings.push(
+            `${toolName}: requested end=${requestedEndExclusive} exceeds max end=${totalChars}; clamped to ${sliceEndExclusive}.`,
+          );
+        }
+
+        const content = file.content.slice(sliceStart, sliceEndExclusive);
+        const contentTokens = await countReadTokensAsync(content);
+        if (contentTokens > readTokenBudget) {
+          return createReadLimitError(
+            mode,
+            `requested char range payload token count is ${contentTokens}, exceeding budget ${readTokenBudget}`,
+            inputPath,
+            {
+              tokenBudget: readTokenBudget,
+              estimatedTokens: contentTokens,
+              suggestedChunkChars: readSafeCharsHint,
+            },
+            toolName,
+          );
+        }
+        const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;
+
+        return createSuccess(
           {
-            tokenBudget: readTokenBudget,
-            estimatedTokens: contentTokens,
-            suggestedChunkChars: readSafeCharsHint,
+            mode,
+            path: toCurrentPath(file.path),
+            contentType: file.contentType,
+            content,
+            truncated,
+            sliceStart,
+            sliceEndExclusive,
+            requestedEndExclusive,
+            totalChars,
+            ...(warnings.length > 0 ? { warnings } : {}),
+            size: file.size,
+            hash: file.hash,
+            updatedAt: file.updatedAt,
           },
-          toolName,
+          "VFS file read",
         );
-      }
-      const truncated = sliceStart !== 0 || sliceEndExclusive !== totalChars;
+      };
 
-      return createSuccess(
-        {
-          mode,
-          path: toCurrentPath(file.path),
-          contentType: file.contentType,
-          content,
-          truncated,
-          sliceStart,
-          sliceEndExclusive,
-          requestedEndExclusive,
-          totalChars,
-          ...(warnings.length > 0 ? { warnings } : {}),
-          size: file.size,
-          hash: file.hash,
-          updatedAt: file.updatedAt,
-        },
-        "VFS file read",
-      );
+      return tokenCounter.usesProviderCountTokens
+        ? runAsyncReadFlow()
+        : runSyncReadFlow();
     });
 };
 

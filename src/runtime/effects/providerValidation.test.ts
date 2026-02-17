@@ -216,6 +216,31 @@ describe("validateProvidersForMode", () => {
     );
   });
 
+  it("deduplicates connection checks when required features share a provider", async () => {
+    const settings = createSettings({
+      lore: { providerId: "story-provider" },
+      image: { providerId: "story-provider", enabled: false },
+      audio: { providerId: "audio-provider", enabled: false },
+      video: { providerId: "video-provider", enabled: false },
+      script: { providerId: "script-provider", enabled: false },
+      embedding: {
+        providerId: "embedding-provider",
+        enabled: false,
+        runtime: "remote",
+        modelId: "text-embedding-3-small",
+      },
+    });
+
+    const result = await validateProvidersForMode(settings, "start");
+
+    expect(result.ok).toBe(true);
+    expect(validateConnectionMock).toHaveBeenCalledTimes(1);
+    expect(validateConnectionMock).toHaveBeenCalledWith(
+      settings,
+      "story-provider",
+    );
+  });
+
   it("reports optional warnings and skips duplicate optional checks on story provider", async () => {
     const settings = createSettings({
       image: { providerId: "story-provider", enabled: true },

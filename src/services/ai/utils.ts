@@ -403,6 +403,48 @@ interface ModelCacheEntry {
 
 const modelCache: Record<string, ModelCacheEntry> = {};
 
+const CONNECTION_VALIDATION_TTL_MS = 15 * 60 * 1000;
+
+export interface ValidateConnectionResult {
+  isValid: boolean;
+  error?: string;
+  localError?: boolean;
+}
+
+export interface ValidateConnectionOptions {
+  forceRefresh?: boolean;
+}
+
+interface ConnectionValidationCacheEntry {
+  timestamp: number;
+  result: ValidateConnectionResult;
+}
+
+const connectionValidationCache = new Map<
+  string,
+  ConnectionValidationCacheEntry
+>();
+const connectionValidationInFlight = new Map<
+  string,
+  Promise<ValidateConnectionResult>
+>();
+
+const createApiKeyFingerprint = (apiKey: string): string => {
+  if (!apiKey) return "0";
+  return `${apiKey.length}:${apiKey.slice(0, 2)}:${apiKey.slice(-2)}`;
+};
+
+const createConnectionValidationCacheKey = (
+  instance: ProviderInstance,
+): string =>
+  [
+    instance.id,
+    instance.protocol,
+    instance.baseUrl || "",
+    createApiKeyFingerprint(instance.apiKey || ""),
+    String(instance.lastModified || 0),
+  ].join("|");
+
 /**
  * 获取可用模型列表
  * @param settings 设置对象
@@ -479,11 +521,13 @@ export const getModels = async (
  * 注意：此函数可以验证禁用的 provider，因为用户可能需要先测试再启用
  * @param settings 设置对象
  * @param providerId Provider ID
+ * @param options forceRefresh=true 时跳过缓存并强制实时校验
  */
 export const validateConnection = async (
   settings: AISettings,
   providerId: string,
-): Promise<{ isValid: boolean; error?: string; localError?: boolean }> => {
+  options?: ValidateConnectionOptions,
+): Promise<ValidateConnectionResult> => {
   // 直接查找 provider 实例，不检查 enabled 状态
   const instance = settings.providers.instances.find(
     (p) => p.id === providerId,
@@ -501,29 +545,64 @@ export const validateConnection = async (
     return { isValid: false, error: "API key is required", localError: true };
   }
 
+  const forceRefresh = options?.forceRefresh === true;
+  const cacheKey = createConnectionValidationCacheKey(instance);
+  const now = Date.now();
+  if (!forceRefresh) {
+    const cached = connectionValidationCache.get(cacheKey);
+    if (cached && now - cached.timestamp < CONNECTION_VALIDATION_TTL_MS) {
+      return cached.result;
+    }
+    const inFlight = connectionValidationInFlight.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+  }
+
   const config = createProviderConfig(instance);
 
-  try {
-    switch (instance.protocol) {
-      case "gemini":
-        await validateGeminiConnection(config as GeminiConfig);
-        break;
-      case "openai":
-        await validateOpenAIConnection(config as OpenAIConfig);
-        break;
-      case "openrouter":
-        await validateOpenRouterConnection(config as OpenRouterConfig);
-        break;
-      case "claude":
-        await validateClaudeConnection(config as ClaudeConfig);
-        break;
-      default:
-        throw new Error(`Unknown protocol: ${instance.protocol}`);
+  const remoteValidationPromise = (async (): Promise<ValidateConnectionResult> => {
+    try {
+      switch (instance.protocol) {
+        case "gemini":
+          await validateGeminiConnection(config as GeminiConfig);
+          break;
+        case "openai":
+          await validateOpenAIConnection(config as OpenAIConfig);
+          break;
+        case "openrouter":
+          await validateOpenRouterConnection(config as OpenRouterConfig);
+          break;
+        case "claude":
+          await validateClaudeConnection(config as ClaudeConfig);
+          break;
+        default:
+          throw new Error(`Unknown protocol: ${instance.protocol}`);
+      }
+      return { isValid: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return { isValid: false, error: message, localError: false };
     }
-    return { isValid: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return { isValid: false, error: message, localError: false };
+  })();
+
+  if (!forceRefresh) {
+    connectionValidationInFlight.set(cacheKey, remoteValidationPromise);
+  }
+
+  try {
+    const result = await remoteValidationPromise;
+    if (!result.localError) {
+      connectionValidationCache.set(cacheKey, {
+        timestamp: Date.now(),
+        result,
+      });
+    }
+    return result;
+  } finally {
+    if (!forceRefresh) {
+      connectionValidationInFlight.delete(cacheKey);
+    }
   }
 };
 

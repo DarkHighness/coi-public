@@ -8,6 +8,10 @@ import {
   type ToolErrorBatch,
   type ToolErrorDetails,
 } from "../../../tools/toolResult";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  computeReadTokenBudgetFromContextWindow,
+} from "../../../ai/contextUsage";
 import { type VfsContentType, type VfsFileMap } from "../../types";
 import { normalizeVfsPath } from "../../utils";
 import { VfsSession, VfsWriteAccessError } from "../../vfsSession";
@@ -62,7 +66,10 @@ const TOOL_SCHEMA_DOCS_README_REF = "current/refs/tool-schemas/README.md";
 const TOOL_SCHEMA_DOCS_INDEX_REF = "current/refs/tool-schemas/index.json";
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
 
-export const VFS_READ_HARD_TOKEN_BUDGET = 320;
+export const VFS_READ_HARD_TOKEN_BUDGET =
+  computeReadTokenBudgetFromContextWindow(
+    DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  );
 
 export const OUTLINE_PHASE_SCHEMAS = [
   outlinePhase0Schema,
@@ -488,7 +495,7 @@ export const createReadLimitError = (
 
     const budgetText =
       normalizedEstimatedTokens !== null
-        ? `Token budget is ${normalizedTokenBudget} (estimated payload ${normalizedEstimatedTokens}).`
+        ? `Token budget is ${normalizedTokenBudget} (payload token count ${normalizedEstimatedTokens}).`
         : `Token budget is ${normalizedTokenBudget}.`;
 
     const followupGuidance =

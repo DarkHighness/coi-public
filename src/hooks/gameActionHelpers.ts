@@ -21,12 +21,12 @@ import {
 } from "../utils/constants/atmosphere";
 import { sessionManager } from "../services/ai/sessionManager";
 import { writeSessionHistoryJsonl } from "../services/vfs/conversation";
-import {
-  getModelsForInstance,
-  getProviderInstance,
-} from "../services/ai/provider/registry";
+import { getProviderInstance } from "../services/ai/provider/registry";
 import { getProviderConfig } from "../services/ai/utils";
-import { resolveModelContextWindowTokens } from "../services/modelContextWindows";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextWindowTokens,
+} from "../services/modelContextWindows";
 
 const rebuildSessionIfPresent = async (
   aiSettings: AISettings,
@@ -260,8 +260,6 @@ export const handleSummarization = async (
   logs?: LogEntry[];
   error?: string;
 }> => {
-  const DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS = 32000;
-
   const committedContextNodes = deriveHistory(
     gameState.nodes,
     effectiveParentId,
@@ -299,7 +297,7 @@ export const handleSummarization = async (
   const autoCompactEnabled = aiSettings.extra?.autoCompactEnabled ?? true;
   const autoCompactThreshold = aiSettings.extra?.autoCompactThreshold ?? 0.7;
 
-  const resolveContextLengthTokens = async (): Promise<number | null> => {
+  const resolveContextLengthTokens = (): number | null => {
     const startedAt = Date.now();
 
     const storyProvider = getProviderInstance(
@@ -309,52 +307,27 @@ export const handleSummarization = async (
     if (!storyProvider) {
       console.debug("[Summarization] Context length resolved", {
         source: "fallback.noProvider",
-        value: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
+        value: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
         elapsedMs: Date.now() - startedAt,
       });
-      return DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS;
+      return DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS;
     }
 
-    try {
-      const models = await getModelsForInstance(storyProvider);
-      const modelInfo = models.find((m) => m.id === aiSettings.story.modelId);
-      const resolution = resolveModelContextWindowTokens({
-        settings: aiSettings,
-        providerId: aiSettings.story.providerId,
-        providerProtocol: storyProvider.protocol,
-        modelId: aiSettings.story.modelId,
-        providerReportedContextLength: modelInfo?.contextLength,
-        fallback: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
-      });
-      console.debug("[Summarization] Context length resolved", {
-        source: resolution.source,
-        value: resolution.value,
-        providerId: storyProvider.id,
-        modelId: aiSettings.story.modelId,
-        elapsedMs: Date.now() - startedAt,
-      });
-      return resolution.value;
-    } catch (error) {
-      console.warn(
-        "[Summarization] Failed to resolve model context length",
-        error,
-      );
-      const resolution = resolveModelContextWindowTokens({
-        settings: aiSettings,
-        providerId: aiSettings.story.providerId,
-        providerProtocol: storyProvider.protocol,
-        modelId: aiSettings.story.modelId,
-        fallback: DEFAULT_CONTEXT_LENGTH_FALLBACK_TOKENS,
-      });
-      console.debug("[Summarization] Context length resolved", {
-        source: resolution.source,
-        value: resolution.value,
-        providerId: storyProvider.id,
-        modelId: aiSettings.story.modelId,
-        elapsedMs: Date.now() - startedAt,
-      });
-      return resolution.value;
-    }
+    const resolution = resolveModelContextWindowTokens({
+      settings: aiSettings,
+      providerId: aiSettings.story.providerId,
+      providerProtocol: storyProvider.protocol,
+      modelId: aiSettings.story.modelId,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+    console.debug("[Summarization] Context length resolved", {
+      source: resolution.source,
+      value: resolution.value,
+      providerId: storyProvider.id,
+      modelId: aiSettings.story.modelId,
+      elapsedMs: Date.now() - startedAt,
+    });
+    return resolution.value;
   };
 
   // Token-Usage Trigger: use last promptTokens from previous model response
@@ -373,7 +346,7 @@ export const handleSummarization = async (
         : undefined;
 
     if (typeof lastPromptTokens === "number" && lastPromptTokens > 0) {
-      const contextLengthTokens = await resolveContextLengthTokens();
+      const contextLengthTokens = resolveContextLengthTokens();
       if (contextLengthTokens && contextLengthTokens > 0) {
         const ratio = lastPromptTokens / contextLengthTokens;
         if (ratio >= autoCompactThreshold) {

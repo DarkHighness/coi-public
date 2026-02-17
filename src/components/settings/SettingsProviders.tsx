@@ -404,7 +404,9 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
   // Test connection
   const handleTestConnection = async (id: string) => {
     setTestingId(id);
-    const { isValid, error } = await validateConnection(currentSettings, id);
+    const { isValid, error } = await validateConnection(currentSettings, id, {
+      forceRefresh: true,
+    });
     setTestingId(null);
 
     showToast(

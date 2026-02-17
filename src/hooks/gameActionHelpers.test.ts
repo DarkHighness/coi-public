@@ -4,6 +4,7 @@ import type { GameState, StorySegment, TokenUsage } from "../types";
 const summarizeContextMock = vi.hoisted(() => vi.fn());
 const getProviderConfigMock = vi.hoisted(() => vi.fn());
 const getProviderInstanceMock = vi.hoisted(() => vi.fn());
+const getModelsForInstanceMock = vi.hoisted(() => vi.fn());
 const conversationMock = vi.hoisted(() => ({
   writeSessionHistoryJsonl: vi.fn(),
 }));
@@ -32,6 +33,7 @@ vi.mock("../services/ai/provider/registry", async (importOriginal) => {
   return {
     ...actual,
     getProviderInstance: getProviderInstanceMock,
+    getModelsForInstance: getModelsForInstanceMock,
   };
 });
 
@@ -180,6 +182,7 @@ beforeEach(() => {
   sessionManagerMock.onSummaryCreated.mockResolvedValue(undefined);
   sessionManagerMock.getHistory.mockReturnValue([]);
   sessionManagerMock.invalidate.mockResolvedValue(undefined);
+  getModelsForInstanceMock.mockReset();
 });
 
 describe("createModelNode", () => {
@@ -386,6 +389,45 @@ describe("handleSummarization", () => {
     );
     expect(result.lastIndex).toBe(1);
     expect(result.contextNodes).toHaveLength(2);
+  });
+
+  it("resolves summarization context window without fetching model list", async () => {
+    const parentNode = {
+      id: "model-parent",
+      parentId: null,
+      role: "model",
+      text: "parent",
+      choices: [],
+      segmentIdx: 0,
+      summarizedIndex: 0,
+      summaries: [],
+      usage: { promptTokens: 120 },
+      timestamp: 0,
+      ending: "continue",
+    } as any;
+    const gameState = createMinimalGameState({
+      nodes: { [parentNode.id]: parentNode },
+      activeNodeId: parentNode.id,
+      forkId: 0,
+    });
+
+    await handleSummarization(
+      gameState,
+      parentNode.id,
+      "user-temp",
+      "",
+      [],
+      0,
+      false,
+      aiSettings,
+      "en",
+      {} as any,
+      "slot-1",
+      0,
+      false,
+    );
+
+    expect(getModelsForInstanceMock).not.toHaveBeenCalled();
   });
 });
 

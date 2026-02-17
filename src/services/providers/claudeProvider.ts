@@ -286,6 +286,38 @@ export async function validateConnection(config: ClaudeConfig): Promise<void> {
   }
 }
 
+/**
+ * 使用 Claude Token Count API 精确计算输入 token 数
+ */
+export async function countTokens(
+  config: ClaudeConfig,
+  model: string,
+  content: string,
+): Promise<number> {
+  try {
+    const client = createClaudeClient(config);
+    const response = await client.messages.countTokens({
+      model,
+      messages: [{ role: "user", content }],
+    });
+
+    const inputTokens = response.input_tokens;
+    if (typeof inputTokens !== "number" || !Number.isFinite(inputTokens)) {
+      throw new Error("Missing input_tokens in countTokens response");
+    }
+
+    return Math.max(0, Math.floor(inputTokens));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AIProviderError(
+      `Failed to count tokens via Claude API: ${message}`,
+      "claude",
+      undefined,
+      error,
+    );
+  }
+}
+
 // ============================================================================
 // Model Listing
 // ============================================================================

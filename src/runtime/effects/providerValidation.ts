@@ -183,13 +183,28 @@ export async function validateProvidersForMode(
     };
   }
 
+  const connectionCheckByProviderId = new Map<
+    string,
+    Promise<Awaited<ReturnType<typeof validateConnection>>>
+  >();
+  const validateProviderConnection = (
+    providerId: string,
+  ): Promise<Awaited<ReturnType<typeof validateConnection>>> => {
+    const existing = connectionCheckByProviderId.get(providerId);
+    if (existing) {
+      return existing;
+    }
+    const request = validateConnection(aiSettings, providerId);
+    connectionCheckByProviderId.set(providerId, request);
+    return request;
+  };
+
   const requiredConnectionChecks = requiredFeatures;
   for (const feature of requiredConnectionChecks) {
     const providerName =
       getProviderInstance(aiSettings, feature.providerId)?.name ||
       feature.providerId;
-    const { isValid, error, localError } = await validateConnection(
-      aiSettings,
+    const { isValid, error, localError } = await validateProviderConnection(
       feature.providerId,
     );
 
@@ -214,8 +229,7 @@ export async function validateProvidersForMode(
       getProviderInstance(aiSettings, feature.providerId)?.name ||
       feature.providerId;
 
-    const { isValid, error, localError } = await validateConnection(
-      aiSettings,
+    const { isValid, error, localError } = await validateProviderConnection(
       feature.providerId,
     );
 

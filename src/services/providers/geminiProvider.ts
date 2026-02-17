@@ -128,6 +128,9 @@ const readNumber = (value: unknown): number | undefined => {
   return undefined;
 };
 
+const normalizeErrorForLog = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 const getGeminiUsageMetadata = (
   value: unknown,
 ): GeminiUsageMetadataDto | null => {
@@ -323,6 +326,108 @@ export async function validateConnection(config: GeminiConfig): Promise<void> {
       "gemini",
       undefined,
       error,
+    );
+  }
+}
+
+const parseCountTokensValue = (payload: unknown): number | null => {
+  if (!isRecord(payload)) {
+    return null;
+  }
+  const keys = [
+    "totalTokens",
+    "totalTokenCount",
+    "total_tokens",
+    "total_token_count",
+  ];
+  for (const key of keys) {
+    const value = readNumber(payload[key]);
+    if (typeof value === "number") {
+      return Math.max(0, Math.floor(value));
+    }
+  }
+  return null;
+};
+
+async function countTokensViaRestApi(
+  config: GeminiConfig,
+  model: string,
+  content: string,
+): Promise<number> {
+  const baseUrl =
+    (config.baseUrl || "https://generativelanguage.googleapis.com").replace(
+      /\/$/,
+      "",
+    );
+  const modelPath = model.startsWith("models/") ? model : `models/${model}`;
+  const url = `${baseUrl}/v1beta/${modelPath}:countTokens?key=${encodeURIComponent(config.apiKey)}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: content }],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `REST countTokens returned ${response.status}: ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as unknown;
+  const tokens = parseCountTokensValue(data);
+  if (tokens === null) {
+    throw new Error("Invalid countTokens REST response payload");
+  }
+  return tokens;
+}
+
+/**
+ * 使用 Gemini countTokens API 精确计算输入 token 数
+ */
+export async function countTokens(
+  config: GeminiConfig,
+  model: string,
+  content: string,
+): Promise<number> {
+  let sdkError: unknown = null;
+
+  try {
+    const client = createGeminiClient(config);
+    const response = await client.models.countTokens({
+      model,
+      contents: content,
+    });
+
+    const tokens = parseCountTokensValue(response as unknown);
+    if (tokens === null) {
+      throw new Error("Invalid countTokens SDK response payload");
+    }
+
+    return tokens;
+  } catch (error) {
+    sdkError = error;
+  }
+
+  try {
+    return await countTokensViaRestApi(config, model, content);
+  } catch (restError) {
+    const sdkMessage = normalizeErrorForLog(sdkError);
+    const restMessage = normalizeErrorForLog(restError);
+    throw new AIProviderError(
+      `Failed to count tokens via Gemini API (SDK: ${sdkMessage}; REST: ${restMessage})`,
+      "gemini",
+      undefined,
+      restError,
     );
   }
 }
