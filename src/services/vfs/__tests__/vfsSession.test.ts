@@ -275,6 +275,57 @@ describe("VfsSession", () => {
     expect(session.readFile("world/placeholders/quests/quest:signal.md")).toBeNull();
   });
 
+  it("keeps placeholder draft when canonical promotion write fails due to invalid JSON", () => {
+    const session = new VfsSession();
+
+    session.writeFile(
+      "world/placeholders/quest:signal.md",
+      "# Placeholder Draft\n\n- id: quest:signal\n",
+      "text/markdown",
+    );
+
+    expect(() =>
+      session.writeFile(
+        "world/quests/quest:signal.json",
+        "{ invalid json }",
+        "application/json",
+      ),
+    ).toThrow("Invalid JSON content");
+
+    expect(session.readFile("world/placeholders/quest:signal.md")).toBeTruthy();
+  });
+
+  it("keeps placeholder draft when canonical promotion write fails unlock regression checks", () => {
+    const session = new VfsSession();
+    session.writeFile(
+      "world/characters/char:npc_guard/profile.json",
+      JSON.stringify({
+        ...createProfileWithRelationUnlock(),
+        id: "char:npc_guard",
+      }),
+      "application/json",
+    );
+    session.writeFile(
+      "world/placeholders/char:npc_guard.md",
+      "# Placeholder Draft\n\n- id: char:npc_guard\n",
+      "text/markdown",
+    );
+
+    expect(() =>
+      session.writeFile(
+        "world/characters/char:npc_guard/profile.json",
+        JSON.stringify({
+          ...createProfileWithRelationUnlock(),
+          id: "char:npc_guard",
+          unlocked: false,
+        }),
+        "application/json",
+      ),
+    ).toThrow("Unlock regression is not allowed");
+
+    expect(session.readFile("world/placeholders/char:npc_guard.md")).toBeTruthy();
+  });
+
   it("lists directories", () => {
     const session = new VfsSession();
     session.writeFile("world/npcs/npc:1.json", "{}", "application/json");
