@@ -84,7 +84,7 @@ interface PatchJsonOp {
 interface MergeJsonOp {
   op: "merge_json";
   path: string;
-  content: Record<string, unknown>;
+  content: JsonObject;
 }
 
 interface MoveOp {
@@ -109,7 +109,7 @@ export type MutateOp =
 
 export const executeMutateOps = (
   toolName: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   ops: MutateOp[],
   ctx: ToolContext,
 ) =>
@@ -517,10 +517,22 @@ export const executeMutateOps = (
               op.content,
             );
             warnings.push(...sanitizedMerge.warnings);
-            const mergeContent = sanitizedMerge.sanitized as Record<
-              string,
-              unknown
-            >;
+            if (
+              typeof sanitizedMerge.sanitized !== "object" ||
+              sanitizedMerge.sanitized === null ||
+              Array.isArray(sanitizedMerge.sanitized)
+            ) {
+              return withBatchError(
+                createError(
+                  "merge_json content must be a JSON object after sanitization.",
+                  "INVALID_DATA",
+                ),
+                opIndex,
+                op.op,
+                op.path,
+              );
+            }
+            const mergeContent = sanitizedMerge.sanitized as JsonObject;
             if (Object.keys(mergeContent).length === 0) {
               continue;
             }

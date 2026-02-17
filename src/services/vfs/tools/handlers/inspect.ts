@@ -45,7 +45,7 @@ const asStringArray = (value: unknown): string[] | null => {
 export const handleInspectLs: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_ls", args, () => {
     const session = getSession(ctx);
-    const runtime = args as Record<string, unknown>;
+    const runtime = args as JsonObject;
     const pathArg = typeof runtime.path === "string" ? runtime.path : undefined;
     const patterns = asStringArray(runtime.patterns);
     const excludePatterns = asStringArray(runtime.excludePatterns);
@@ -232,7 +232,7 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
         return toLsStatEntryForDir(resolvedEntryPath, snapshotPaths);
       });
 
-      const payload: Record<string, unknown> = {
+      const payload: JsonObject = {
         entries,
         stats,
         hints: buildLsHints(filesForHints),
@@ -331,7 +331,7 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
       return [toLsStatEntryForFile(file)];
     });
 
-    const payload: Record<string, unknown> = {
+    const payload: JsonObject = {
       entries: matches,
       stats,
       hints: buildLsHints(filesForHints),
@@ -348,7 +348,7 @@ export const handleInspectLs: VfsToolHandler = (args, ctx) =>
 export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_schema", args, () => {
     const session = getSession(ctx);
-    const runtime = args as Record<string, unknown>;
+    const runtime = args as JsonObject;
     const paths = asStringArray(runtime.paths) ?? [];
     if (paths.length === 0) {
       return createError("vfs_schema: paths must include at least one path", "INVALID_DATA");
@@ -511,7 +511,7 @@ export const handleInspectSchema: VfsToolHandler = (args, ctx) =>
 export const handleInspectSearch: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_search", args, async () => {
     const session = getSession(ctx);
-    const runtime = args as Record<string, unknown>;
+    const runtime = args as JsonObject;
     const query = typeof runtime.query === "string" ? runtime.query : null;
     if (!query) {
       return createError("vfs_search: query must be a non-empty string", "INVALID_DATA");

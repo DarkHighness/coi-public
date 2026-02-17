@@ -3,6 +3,22 @@ import type { VfsSession } from "./services/vfs/vfsSession";
 import type { VfsElevationIntent } from "./services/vfs/core/types";
 import type { VfsElevationScopeTemplateIds } from "./services/vfs/core/elevation";
 
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+export type JsonArray = JsonValue[];
+
+/**
+ * Dynamic object payload from provider responses, tool args, and persisted logs.
+ * We keep unknown at the edge and require explicit narrowing before business use.
+ */
+export interface JsonObject {
+  [key: string]: unknown;
+}
+
+export interface ToolArguments extends JsonObject {}
+
+export interface I18nParams extends JsonObject {}
+
 // ============================================================================
 // 版本化时间戳类型
 // ============================================================================
@@ -516,7 +532,7 @@ export interface HiddenInfo {
   realPersonality?: string;
   secrets?: string[];
   realMotives?: string;
-  hiddenAttributes?: Record<string, unknown>;
+  hiddenAttributes?: JsonObject;
   [key: string]: unknown;
 }
 
@@ -554,8 +570,8 @@ export interface ToolCallContextUsageSnapshot {
 // Individual tool call record
 export interface ToolCallRecord {
   name: string;
-  input: unknown;
-  output: unknown;
+  input: JsonValue;
+  output: JsonValue;
   timestamp: number;
   contextUsage?: ToolCallContextUsageSnapshot;
 }
@@ -585,7 +601,7 @@ export interface LogEntry {
   /** Tool name (for type="tool") */
   toolName?: string;
   /** Tool input arguments (for type="tool") */
-  toolInput?: Record<string, unknown>;
+  toolInput?: ToolArguments;
   /** Tool output (for type="tool") */
   toolOutput?: {
     success?: boolean;
@@ -1108,7 +1124,7 @@ export interface PromptAtomConfig {
   /** The atom name to load */
   atom: PromptAtomName;
   /** Parameters to pass to the atom function */
-  params?: Record<string, unknown>;
+  params?: JsonObject;
   /** Priority for conflict resolution (higher = more important). Default: 0 */
   priority?: number;
   /** Whether this atom is enabled. Default: true */
@@ -1584,7 +1600,7 @@ export interface UnifiedMessage {
     toolUse?: {
       id: string;
       name: string;
-      args: Record<string, unknown>;
+      args: ToolArguments;
     };
     toolResult?: {
       id: string;
@@ -1598,7 +1614,7 @@ export interface UnifiedMessage {
 export interface UnifiedToolCallResult {
   id: string;
   name: string;
-  args: Record<string, unknown>;
+  args: ToolArguments;
 }
 
 // ============================================================================
@@ -1678,7 +1694,7 @@ export interface ExportManifest {
 /** Result of import operation */
 export interface I18nMessage {
   key: string;
-  params?: Record<string, unknown>;
+  params?: I18nParams;
 }
 
 export interface ImportResult {

@@ -14,7 +14,12 @@
 import { OpenRouter } from "@openrouter/sdk";
 import * as models from "@openrouter/sdk/models";
 import { jsonrepair } from "jsonrepair";
-import type { EmbeddingTaskType, TokenUsage } from "../../types";
+import type {
+  EmbeddingTaskType,
+  TokenUsage,
+  JsonObject,
+  ToolArguments,
+} from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
 import { generateSpeech as generateOpenAISpeech } from "./openaiProvider";
 import {
@@ -84,7 +89,7 @@ function createRequestOptions(): OpenRouterRequestOptions {
 export interface OpenRouterContentGenerationResponse {
   result:
     | { functionCalls?: ToolCallResult[] }
-    | Record<string, unknown>
+    | JsonObject
     | string;
   usage: TokenUsage;
   raw: unknown;
@@ -141,13 +146,13 @@ interface OpenRouterGenerationParams {
   responseFormat?: OpenRouterResponseFormatOption;
 }
 
-interface OpenRouterGenerationToolResult extends Record<string, unknown> {
+interface OpenRouterGenerationToolResult extends JsonObject {
   functionCalls: ToolCallResult[];
   content?: string;
   _reasoning?: string;
 }
 
-interface OpenRouterGenerationTextResult extends Record<string, unknown> {
+interface OpenRouterGenerationTextResult extends JsonObject {
   content: string;
   _reasoning?: string;
 }
@@ -189,11 +194,39 @@ interface OpenRouterEmbeddingItemDto {
   embedding: number[];
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+const isRecord = (value: unknown): value is JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-const toRecord = (value: unknown): Record<string, unknown> =>
-  isRecord(value) ? value : {};
+const requireRecord = (value: unknown, context: string): JsonObject => {
+  if (!isRecord(value)) {
+    throw new AIProviderError(
+      `Invalid OpenRouter ${context} response shape`,
+      "openrouter",
+      "INVALID_RESPONSE",
+    );
+  }
+  return value;
+};
+
+const parseToolArguments = (
+  rawArguments: string,
+  toolName: string,
+): ToolArguments => {
+  const normalized = rawArguments.trim().length > 0 ? rawArguments : "{}";
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(normalized);
+  } catch {
+    throw new MalformedToolCallError("openrouter", toolName, rawArguments);
+  }
+
+  if (!isRecord(parsed)) {
+    throw new MalformedToolCallError("openrouter", toolName, rawArguments);
+  }
+
+  return parsed;
+};
 
 const readNumber = (value: unknown): number | undefined => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -240,7 +273,7 @@ const getThoughtSignature = (value: unknown): string | undefined => {
   return readString(toolFunction?.thought_signature);
 };
 const readUsageNumber = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): number | undefined => {
   if (!usage) return undefined;
@@ -260,18 +293,18 @@ const readUsageNumber = (
 };
 
 const readNestedUsageNumber = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   paths: ReadonlyArray<ReadonlyArray<string>>,
 ): number | undefined => {
   if (!usage) return undefined;
   for (const path of paths) {
     let current: unknown = usage;
     for (const key of path) {
-      if (!current || typeof current !== "object") {
+      if (!isRecord(current)) {
         current = undefined;
         break;
       }
-      current = (current as Record<string, unknown>)[key];
+      current = current[key];
     }
     if (typeof current === "number" && Number.isFinite(current)) {
       return Math.max(0, Math.floor(current));
@@ -287,7 +320,7 @@ const readNestedUsageNumber = (
 };
 
 const hasAnyUsageField = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): boolean => {
   if (!usage) return false;
@@ -330,10 +363,7 @@ const OPENROUTER_ALL_USAGE_KEYS = [
 ] as const;
 
 export function parseOpenRouterUsage(usageMetadata: unknown): TokenUsage {
-  const usage =
-    usageMetadata && typeof usageMetadata === "object"
-      ? (usageMetadata as Record<string, unknown>)
-      : null;
+  const usage = isRecord(usageMetadata) ? usageMetadata : null;
 
   const prompt = readUsageNumber(usage, [...OPENROUTER_PROMPT_KEYS]);
   const completion = readUsageNumber(usage, [...OPENROUTER_COMPLETION_KEYS]);
@@ -424,7 +454,7 @@ export async function getCredits(
   try {
     const client = createClient(config);
     const response = await client.credits.getCredits();
-    const responseRecord = toRecord(response);
+    const responseRecord = requireRecord(response, "credits");
     const responseData = isRecord(responseRecord.data)
       ? responseRecord.data
       : {};
@@ -432,8 +462,14 @@ export async function getCredits(
     // Parse the response to get credit information
     const totalCredits =
       readNumber(responseData.totalCredits) ??
-      readNumber(responseRecord.totalCredits) ??
-      0;
+      readNumber(responseRecord.totalCredits);
+    if (typeof totalCredits !== "number") {
+      throw new AIProviderError(
+        "OpenRouter credits response missing totalCredits",
+        "openrouter",
+        "INVALID_RESPONSE",
+      );
+    }
     const usedCredits =
       readNumber(responseData.usedCredits) ??
       readNumber(responseData.totalUsage) ??
@@ -824,20 +860,12 @@ async function handleStreamingResponse(
   }
   const toolCalls: ToolCallResult[] = [];
   for (const [, tc] of accumulatedToolCalls) {
-    try {
-      toolCalls.push({
-        id: tc.id,
-        name: tc.name,
-        args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
-        thoughtSignature: tc.thoughtSignature,
-      });
-    } catch (parseError) {
-      console.error(
-        `[OpenRouter] Failed to parse tool call arguments:`,
-        tc.arguments,
-      );
-      throw new MalformedToolCallError("openrouter", tc.name, tc.arguments);
-    }
+    toolCalls.push({
+      id: tc.id,
+      name: tc.name,
+      args: parseToolArguments(tc.arguments, tc.name),
+      thoughtSignature: tc.thoughtSignature,
+    });
   }
   console.log(`[OpenRouter] Stream complete. Usage:`, usage);
 
@@ -1043,13 +1071,27 @@ export async function generateImage(
       } as models.ChatGenerationParams,
       createRequestOptions(),
     );
-    const data = toRecord(response);
+    const data = requireRecord(response, "image generation");
     const choices = Array.isArray(data.choices) ? data.choices : [];
     const firstChoice = choices[0];
-    const firstChoiceRecord = isRecord(firstChoice) ? firstChoice : {};
+    const firstChoiceRecord = isRecord(firstChoice) ? firstChoice : null;
+    if (!firstChoiceRecord) {
+      throw new AIProviderError(
+        "OpenRouter image generation returned no choices",
+        "openrouter",
+        "INVALID_RESPONSE",
+      );
+    }
     const message = isRecord(firstChoiceRecord.message)
       ? firstChoiceRecord.message
-      : {};
+      : null;
+    if (!message) {
+      throw new AIProviderError(
+        "OpenRouter image generation returned invalid message payload",
+        "openrouter",
+        "INVALID_RESPONSE",
+      );
+    }
     const images = Array.isArray(message.images) ? message.images : [];
     const firstImage = isRecord(images[0])
       ? (images[0] as OpenRouterImageResultRecord)
@@ -1141,16 +1183,37 @@ async function generateImageLegacy(
     );
   }
   const result = (await response.json()) as unknown;
-  const resultRecord = isRecord(result) ? result : {};
+  const resultRecord = requireRecord(result, "legacy image generation");
   const choices = Array.isArray(resultRecord.choices) ? resultRecord.choices : [];
-  const firstChoice = isRecord(choices[0]) ? choices[0] : {};
-  const message = isRecord(firstChoice.message) ? firstChoice.message : {};
+  const firstChoice = isRecord(choices[0]) ? choices[0] : null;
+  if (!firstChoice) {
+    throw new AIProviderError(
+      "OpenRouter image generation returned no choices",
+      "openrouter",
+      "INVALID_RESPONSE",
+    );
+  }
+  const message = isRecord(firstChoice.message) ? firstChoice.message : null;
+  if (!message) {
+    throw new AIProviderError(
+      "OpenRouter image generation returned invalid message payload",
+      "openrouter",
+      "INVALID_RESPONSE",
+    );
+  }
   const images = Array.isArray(message.images) ? message.images : [];
   const firstImage = isRecord(images[0])
     ? (images[0] as OpenRouterImageResultRecord)
     : undefined;
+  if (!firstImage?.image_url?.url && !firstImage?.imageUrl?.url) {
+    throw new AIProviderError(
+      "OpenRouter image generation returned no image URL",
+      "openrouter",
+      "INVALID_RESPONSE",
+    );
+  }
   return {
-    url: firstImage?.image_url?.url || firstImage?.imageUrl?.url || null,
+    url: firstImage.image_url?.url || firstImage.imageUrl?.url || null,
     raw: resultRecord,
   };
 }
@@ -1355,7 +1418,7 @@ export async function generateEmbedding(
   try {
     const url = "https://openrouter.ai/api/v1/embeddings";
 
-    const requestBody: Record<string, unknown> = {
+    const requestBody: JsonObject = {
       model: modelId,
       input: texts,
     };
@@ -1382,10 +1445,17 @@ export async function generateEmbedding(
     }
 
     const data = (await response.json()) as unknown;
-    const dataRecord = isRecord(data) ? data : {};
+    const dataRecord = requireRecord(data, "embedding");
     const items = Array.isArray(dataRecord.data) ? dataRecord.data : [];
+    if (!Array.isArray(dataRecord.data)) {
+      throw new AIProviderError(
+        "OpenRouter embedding response missing data array",
+        "openrouter",
+        "INVALID_RESPONSE",
+      );
+    }
     const embeddingItems: OpenRouterEmbeddingItemDto[] = items
-      .filter((item): item is Record<string, unknown> => isRecord(item))
+      .filter((item): item is JsonObject => isRecord(item))
       .map((item) => ({
         index: readNumber(item.index) ?? 0,
         embedding: Array.isArray(item.embedding)

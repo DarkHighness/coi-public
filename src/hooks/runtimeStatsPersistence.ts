@@ -12,7 +12,7 @@ const normalizeBoolean = (value: unknown): boolean => value === true;
 export const normalizeTokenUsage = (value: unknown): TokenUsage => {
   const source =
     value && typeof value === "object"
-      ? (value as Record<string, unknown>)
+      ? (value as JsonObject)
       : {};
 
   const read = (key: keyof TokenUsage): number => {
@@ -47,7 +47,7 @@ export const normalizeLogs = (value: unknown): LogEntry[] => {
 export const parseRuntimeStats = (value: unknown): RuntimeStatsSnapshot => {
   const source =
     value && typeof value === "object"
-      ? (value as Record<string, unknown>)
+      ? (value as JsonObject)
       : {};
 
   return {

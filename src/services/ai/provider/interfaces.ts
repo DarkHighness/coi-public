@@ -45,7 +45,7 @@ export interface ChatGenerateRequest {
 }
 
 export interface ChatGenerateResponse {
-  result: Record<string, unknown> | { functionCalls?: unknown[] } | string;
+  result: JsonObject | { functionCalls?: unknown[] } | string;
   usage: TokenUsage;
   raw: unknown;
 }

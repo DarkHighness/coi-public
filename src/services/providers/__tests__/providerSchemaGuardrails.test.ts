@@ -103,4 +103,27 @@ describe("provider schema guardrails", () => {
       expect(text).not.toContain('"id"');
     }
   });
+
+  it("keeps vfs_finish_turn schema and schemaHint free of runtime-only fields", () => {
+    const tool = ALL_DEFINED_TOOLS.find((item) => item.name === "vfs_finish_turn");
+    expect(tool).toBeDefined();
+    if (!tool) return;
+
+    const openaiSchema = serialize(zodToOpenAISchema(tool.parameters, true));
+    const geminiSchema = serialize(
+      zodToGeminiCompatibleSchema(tool.parameters),
+    );
+    const claudeSchema = serialize(
+      zodToClaudeCompatibleSchema(tool.parameters),
+    );
+    const hint = getToolSchemaHint(tool.parameters, "", {
+      toolName: tool.name,
+    });
+
+    for (const text of [openaiSchema, geminiSchema, claudeSchema, hint]) {
+      expect(text).not.toContain("userAction");
+      expect(text).not.toContain("retconAck.hash");
+      expect(text).not.toContain('"hash"');
+    }
+  });
 });

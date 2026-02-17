@@ -28,7 +28,7 @@ const createReadHandler = (
   return (args, ctx) =>
     runWithStructuredErrors(toolName, args, () => {
       const session = getSession(ctx);
-      const runtime = args as Record<string, unknown>;
+      const runtime = args as JsonObject;
       const inputPath = typeof runtime.path === "string" ? runtime.path : null;
       if (typeof inputPath !== "string" || inputPath.trim().length === 0) {
         return createError(`${toolName}: path must be a non-empty string`, "INVALID_DATA");

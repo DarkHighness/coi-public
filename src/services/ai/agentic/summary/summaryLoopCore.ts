@@ -58,7 +58,7 @@ type SummaryConsistencyRuntime = {
   targetForkLatestTurn: number | null;
 };
 
-const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const extractSuccessfulSummary = (value: unknown): StorySummary | null => {
@@ -94,7 +94,7 @@ const containsForbiddenSummaryTokens = (summary: StorySummary): boolean => {
       return value.some((v) => hasForbidden(v));
     }
     if (value && typeof value === "object") {
-      return Object.values(value as Record<string, unknown>).some((v) =>
+      return Object.values(value as JsonObject).some((v) =>
         hasForbidden(v),
       );
     }
@@ -127,7 +127,7 @@ const collectSummaryPathCandidates = (
     return [];
   }
 
-  return Object.entries(value as Record<string, unknown>).flatMap(([k, v]) =>
+  return Object.entries(value as JsonObject).flatMap(([k, v]) =>
     collectSummaryPathCandidates(v, k),
   );
 };
@@ -170,7 +170,7 @@ const findSummaryCrossForkViolations = (
 };
 
 const validateCommitSummaryArgs = (
-  args: Record<string, unknown>,
+  args: JsonObject,
   runtimeFieldErrorCodePrefix: "COMPACT_SUMMARY" | "QUERY_SUMMARY",
 ):
   | { ok: true }
@@ -196,9 +196,9 @@ const validateCommitSummaryArgs = (
 };
 
 const injectSummaryRuntimeArgs = (
-  args: Record<string, unknown>,
+  args: JsonObject,
   expectedRange: { fromIndex: number; toIndex: number },
-): Record<string, unknown> => {
+): JsonObject => {
   return {
     ...args,
     nodeRange: {
@@ -579,7 +579,7 @@ export async function runSummaryLoopCore(options: {
           continue;
         }
 
-        let dispatchArgs: Record<string, unknown> = call.args;
+        let dispatchArgs: JsonObject = call.args;
         if (call.name === finishToolName) {
           const finishRangeValidation = validateCommitSummaryArgs(
             call.args,

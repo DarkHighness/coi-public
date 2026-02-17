@@ -15,7 +15,7 @@ export interface CustomRulesAckSignatureDigest {
 }
 
 export interface RetconAckPayload {
-  hash: string;
+  hash?: string;
   summary: string;
 }
 
@@ -56,7 +56,7 @@ const normalizeCustomRulesFileSet = (files: VfsFileMap): string => {
 
 const parseState = (raw: unknown): CustomRulesAckState | null => {
   if (!raw || typeof raw !== "object") return null;
-  const data = raw as Record<string, unknown>;
+  const data = raw as JsonObject;
   if (typeof data.effectiveHash !== "string" || !data.effectiveHash.trim()) {
     return null;
   }
@@ -195,10 +195,7 @@ export const syncCustomRulesAckState = (
 };
 
 const readCurrentGameTime = (session: VfsSession): string => {
-  const raw = readJson(session, "world/global.json") as Record<
-    string,
-    unknown
-  > | null;
+  const raw = readJson(session, "world/global.json") as JsonObject | null;
   const value = raw?.time;
   if (typeof value === "string" && value.trim()) {
     return value.trim();
@@ -286,11 +283,12 @@ export const applyCustomRulesRetconAck = (
       code: "INVALID_DATA",
       message:
         `[ERROR: RETCON_ACK_REQUIRED] Custom rules changed and require acknowledgement. ` +
-        `Include retconAck: { hash: "${state.pendingHash}", summary: "..." } in vfs_finish_turn.`,
+        `Include retconAck: { summary: "..." } in vfs_finish_turn (hash is system-injected).`,
     };
   }
 
-  if (normalizeText(retconAck.hash) !== state.pendingHash) {
+  const effectiveHash = normalizeText(retconAck.hash) || state.pendingHash;
+  if (effectiveHash !== state.pendingHash) {
     return {
       ok: false,
       code: "INVALID_DATA",

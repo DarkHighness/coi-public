@@ -97,7 +97,7 @@ interface StorageTierBytes {
   reclaimableBytes: number;
 }
 
-type SqlRow = Record<string, unknown>;
+type SqlRow = JsonObject;
 
 const readOptionalString = (value: unknown): string | undefined =>
   typeof value === "string" && value.length > 0 ? value : undefined;

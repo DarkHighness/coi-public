@@ -79,7 +79,7 @@ const normalizeTokenUsage = (usage: unknown): TokenUsage | undefined => {
     return undefined;
   }
 
-  const source = usage as Record<string, unknown>;
+  const source = usage as JsonObject;
   const normalizeNumber = (value: unknown): number => {
     if (typeof value !== "number" || !Number.isFinite(value)) {
       return 0;
@@ -113,7 +113,7 @@ const normalizePlayerRate = (rate: unknown): PlayerRate | undefined => {
     return undefined;
   }
 
-  const source = rate as Record<string, unknown>;
+  const source = rate as JsonObject;
   const vote = source.vote;
   if (vote !== "up" && vote !== "down") {
     return undefined;
@@ -154,7 +154,7 @@ const normalizePlayerRate = (rate: unknown): PlayerRate | undefined => {
   };
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const toStringOrUndefined = (value: unknown): string | undefined =>
@@ -609,7 +609,7 @@ const pickMeaningfulCharacterText = (
 const warnMissingPlayerRequiredField = (
   field: "age" | "race",
   value: unknown,
-  details: Record<string, unknown>,
+  details: JsonObject,
 ): void => {
   if (!isPlaceholderCharacterText(value)) {
     return;
@@ -1398,10 +1398,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
     // Backfill CharacterStatus for legacy UI panels (CharacterPanel).
     const visible = playerBundle.profile.visible ?? {};
     const profile = playerBundle.profile;
-    const profileLegacy = profile as Record<string, unknown>;
+    const profileLegacy = profile as JsonObject;
     const outlinePlayer = state.outline?.player?.profile;
     const outlineVisible = outlinePlayer?.visible ?? {};
-    const outlineProfileLegacy: Record<string, unknown> | null = isRecord(
+    const outlineProfileLegacy: JsonObject | null = isRecord(
       outlinePlayer,
     )
       ? outlinePlayer
@@ -1628,7 +1628,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
     const outlineVisible = outline.player?.profile?.visible ?? {};
     const outlineProfile = outline.player?.profile;
-    const outlineProfileLegacy: Record<string, unknown> | null = isRecord(
+    const outlineProfileLegacy: JsonObject | null = isRecord(
       outlineProfile,
     )
       ? outlineProfile

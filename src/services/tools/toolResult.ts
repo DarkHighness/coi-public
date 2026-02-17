@@ -41,7 +41,7 @@ export interface ToolErrorHint {
   summary: string;
   avoid?: string;
   nextCalls?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
 }
 
 export interface ToolErrorDetails {

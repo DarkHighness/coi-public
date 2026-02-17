@@ -53,6 +53,7 @@ import {
 } from "./resultAccumulator";
 import { normalizeVfsPath } from "../../../vfs/utils";
 import { rollbackVfsSessionToCheckpoint } from "../../../vfs/runtimeCheckpoints";
+import { toJsonValue } from "../../../jsonValue";
 import {
   buildToolCallContextUsageSnapshot,
   recordPromptTokenCalibrationSample,
@@ -110,6 +111,7 @@ export interface AgenticLoopConfig {
   vfsElevationScopeTemplateIds?: string[] | "all_elevated";
   requiredPresetSkillPaths?: string[];
   requiredPresetSkillRequirements?: ActivePresetSkillRequirement[];
+  currentUserAction?: string;
 }
 
 export interface AgenticLoopResult {
@@ -141,6 +143,31 @@ const detectPlayerRateMode = (
   }
 
   return false;
+};
+
+const resolveCurrentUserAction = (
+  explicitUserAction: string | undefined,
+  initialContents: UnifiedMessage[],
+): string | null => {
+  if (
+    typeof explicitUserAction === "string" &&
+    explicitUserAction.trim().length > 0
+  ) {
+    return explicitUserAction;
+  }
+
+  for (let i = initialContents.length - 1; i >= 0; i -= 1) {
+    const message = initialContents[i];
+    if (message.role !== "user") {
+      continue;
+    }
+    const text = getMessageText(message);
+    if (text.trim().length > 0) {
+      return text;
+    }
+  }
+
+  return null;
 };
 
 const formatPathPreview = (
@@ -180,7 +207,7 @@ const appendWriteFailureGuidance = (
   if (!output || typeof output !== "object") {
     return output;
   }
-  const record = output as Record<string, unknown>;
+  const record = output as JsonObject;
   const existingError = typeof record.error === "string" ? record.error : "";
   if (existingError.includes(guidance)) {
     return output;
@@ -280,6 +307,7 @@ export async function runAgenticLoopRefactored(
     vfsElevationScopeTemplateIds,
     requiredPresetSkillPaths,
     requiredPresetSkillRequirements,
+    currentUserAction: explicitCurrentUserAction,
   } = config;
 
   // Initialize provider
@@ -288,6 +316,10 @@ export async function runAgenticLoopRefactored(
     initialContents,
     isSudoMode,
     isCleanupMode,
+  );
+  const currentUserAction = resolveCurrentUserAction(
+    explicitCurrentUserAction,
+    initialContents,
   );
 
   // Initialize loop state
@@ -538,6 +570,7 @@ export async function runAgenticLoopRefactored(
         allLogs,
         onToolCallsUpdate,
         contextUsageSnapshot,
+        currentUserAction,
       });
 
       // Add tool responses to history
@@ -623,6 +656,7 @@ interface ProcessToolCallsParams {
     | "history_rewrite"
     | "editor_session";
   vfsElevationScopeTemplateIds?: string[] | "all_elevated";
+  currentUserAction?: string | null;
 }
 
 interface ProcessToolCallsResult {
@@ -657,7 +691,7 @@ const extractTurnPathCandidates = (value: unknown, key?: string): string[] => {
     return [];
   }
 
-  return Object.entries(value as Record<string, unknown>).flatMap(([k, v]) =>
+  return Object.entries(value as JsonObject).flatMap(([k, v]) =>
     extractTurnPathCandidates(v, k),
   );
 };
@@ -716,11 +750,11 @@ interface VmExecutionMeta {
   callTrace: VmExecutionTraceItem[];
 }
 
-const toRecordOrNull = (value: unknown): Record<string, unknown> | null => {
+const toRecordOrNull = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 const isToolFailureOutput = (value: unknown): boolean => {
@@ -997,6 +1031,7 @@ async function processToolCalls(
     allLogs,
     onToolCallsUpdate,
     contextUsageSnapshot,
+    currentUserAction,
   } = params;
 
   const finishToolName = loopState.finishToolName;
@@ -1110,6 +1145,7 @@ async function processToolCalls(
     loopState,
     gameState,
     settings,
+    currentUserAction: currentUserAction ?? undefined,
   };
 
   for (let callIndex = 0; callIndex < functionCalls.length; callIndex += 1) {
@@ -1306,7 +1342,7 @@ async function processToolCalls(
 
     liveToolCalls[callIndex] = {
       ...liveToolCalls[callIndex],
-      output,
+      output: toJsonValue(output),
     };
     onToolCallsUpdate?.([...liveToolCalls]);
 

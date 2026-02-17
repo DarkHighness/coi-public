@@ -38,7 +38,7 @@ interface EmbeddingUsage {
   totalTokens: number;
 }
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
+const isObject = (value: unknown): value is JsonObject =>
   value !== null && typeof value === "object";
 
 const toNumberArray = (value: unknown): number[] => {

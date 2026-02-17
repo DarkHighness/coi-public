@@ -24,7 +24,7 @@ export function defineTool<TParams extends ZodTypeAny>(
 
 export function validateToolArgs<TParams extends ZodTypeAny>(
   tool: TypedToolDefinition<TParams>,
-  args: Record<string, unknown>,
+  args: JsonObject,
 ): z.infer<TParams> {
   const result = tool.parameters.safeParse(args);
   if (!result.success) {

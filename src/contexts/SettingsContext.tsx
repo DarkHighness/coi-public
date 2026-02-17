@@ -51,7 +51,7 @@ export const useSettingsContext = () => {
  */
 function mergeSettings(parsed: Partial<AISettings>): AISettings {
   // Remove deprecated fields (kept for backward compatibility in saved JSON).
-  const sanitized: Partial<AISettings> & Record<string, unknown> = {
+  const sanitized: Partial<AISettings> & JsonObject = {
     ...parsed,
   };
   delete sanitized.freshSegmentCount;

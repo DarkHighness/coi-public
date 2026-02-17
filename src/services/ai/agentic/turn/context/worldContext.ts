@@ -45,18 +45,18 @@ const toBlock = (tag: string, path: string, content: string): string => {
   return `<${tag} path="${path}">\n${trimmed}\n</${tag}>`;
 };
 
-const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+const toObjectRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 const sanitizeOutlineForRuntimeContext = (payload: unknown): unknown => {
   const root = toObjectRecord(payload);
   if (!root) return payload;
 
-  const sanitizedRoot: Record<string, unknown> = { ...root };
+  const sanitizedRoot: JsonObject = { ...root };
 
   for (const key of WORLD_INFO_VIEW_ONLY_KEYS) {
     if (key in sanitizedRoot) {
@@ -70,7 +70,7 @@ const sanitizeOutlineForRuntimeContext = (payload: unknown): unknown => {
     sanitizedRoot[collectionKey] = collection.map((entry) => {
       const entryRecord = toObjectRecord(entry);
       if (!entryRecord) return entry;
-      const sanitizedEntry: Record<string, unknown> = { ...entryRecord };
+      const sanitizedEntry: JsonObject = { ...entryRecord };
       for (const key of WORLD_ENTITY_VIEW_ONLY_KEYS) {
         if (key in sanitizedEntry) {
           delete sanitizedEntry[key];

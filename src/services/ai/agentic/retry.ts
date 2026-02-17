@@ -41,10 +41,45 @@ export interface RetryResult extends ChatGenerateResponse {
 
 const MAX_VALIDATION_ISSUES_IN_ERROR = 4;
 
-const toRecord = (value: unknown): Record<string, unknown> | null =>
+const toRecord = (value: unknown): JsonObject | null =>
   value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as JsonObject)
     : null;
+
+const normalizeFinishTurnArgsForValidation = (
+  args: JsonObject,
+): JsonObject => {
+  const normalized: JsonObject = { ...args };
+
+  if ("userAction" in normalized) {
+    delete normalized.userAction;
+  }
+
+  const retconAck = toRecord(normalized.retconAck);
+  if (retconAck) {
+    const nextRetconAck = { ...retconAck };
+    if ("hash" in nextRetconAck) {
+      delete nextRetconAck.hash;
+    }
+    if (Object.keys(nextRetconAck).length === 0) {
+      delete normalized.retconAck;
+    } else {
+      normalized.retconAck = nextRetconAck;
+    }
+  }
+
+  return normalized;
+};
+
+const normalizeToolArgsForValidation = (
+  toolName: string,
+  args: JsonObject,
+): JsonObject => {
+  if (toolName === "vfs_finish_turn") {
+    return normalizeFinishTurnArgsForValidation(args);
+  }
+  return args;
+};
 
 const summarizeZodIssues = (
   error: ZodError,
@@ -208,7 +243,7 @@ const estimateCompletionTokens = (
     return 0;
   }
 
-  const payload = result as Record<string, unknown>;
+  const payload = result as JsonObject;
   const snippets: string[] = [];
 
   if (typeof payload.content === "string") {
@@ -486,7 +521,7 @@ export async function callWithAgenticRetry(
       if (potentialJson) {
         // Find which tool this JSON might belong to
         let matchedToolName: string | null = null;
-        let matchedArgs: Record<string, unknown> | null = null;
+        let matchedArgs: JsonObject | null = null;
         const potentialRecord = toRecord(potentialJson);
 
         // Pattern A: Virtual tool call object { name, args } or { name, arguments }
@@ -500,13 +535,16 @@ export async function callWithAgenticRetry(
             potentialRecord.args ?? potentialRecord.arguments,
           );
           const toolDef = request.tools?.find((t) => t.name === toolName);
+          const normalizedArgsRecord = argsRecord
+            ? normalizeToolArgsForValidation(toolName, argsRecord)
+            : argsRecord;
           if (
             toolDef &&
-            argsRecord &&
-            toolDef.parameters.safeParse(argsRecord).success
+            normalizedArgsRecord &&
+            toolDef.parameters.safeParse(normalizedArgsRecord).success
           ) {
             matchedToolName = toolName;
-            matchedArgs = argsRecord;
+            matchedArgs = normalizedArgsRecord;
           }
         }
 
@@ -517,16 +555,24 @@ export async function callWithAgenticRetry(
               rootSchema ||
               request.tools?.find((t) => t.name === requiredToolName)
                 ?.parameters;
-            if (schema && schema.safeParse(potentialRecord).success) {
+            const normalizedPotential = normalizeToolArgsForValidation(
+              requiredToolName,
+              potentialRecord,
+            );
+            if (schema && schema.safeParse(normalizedPotential).success) {
               matchedToolName = requiredToolName;
-              matchedArgs = potentialRecord;
+              matchedArgs = normalizedPotential;
             }
           } else if (request.tools && request.tools.length > 0) {
             // Try to match against any available tool
             for (const tool of request.tools) {
-              if (tool.parameters.safeParse(potentialRecord).success) {
+              const normalizedPotential = normalizeToolArgsForValidation(
+                tool.name,
+                potentialRecord,
+              );
+              if (tool.parameters.safeParse(normalizedPotential).success) {
                 matchedToolName = tool.name;
-                matchedArgs = potentialRecord;
+                matchedArgs = normalizedPotential;
                 break;
               }
             }
@@ -546,7 +592,7 @@ export async function callWithAgenticRetry(
           ];
           // Update result to include virtual function calls for downstream logic
           if (result && typeof result === "object") {
-            (result as Record<string, unknown>).functionCalls = functionCalls;
+            (result as JsonObject).functionCalls = functionCalls;
           } else {
             result = { functionCalls };
           }
@@ -578,7 +624,26 @@ export async function callWithAgenticRetry(
           (toolCall.name === requiredToolName ? rootSchema : null);
 
         if (schema) {
-          const validationResult = schema.safeParse(toolCall.args);
+          const normalizedArgs = normalizeToolArgsForValidation(
+            toolCall.name,
+            toolCall.args,
+          );
+          const primaryValidation = schema.safeParse(normalizedArgs);
+          const validationResult =
+            !primaryValidation.success && normalizedArgs !== toolCall.args
+              ? schema.safeParse(toolCall.args)
+              : primaryValidation;
+
+          if (validationResult.success) {
+            if (
+              primaryValidation.success &&
+              normalizedArgs !== toolCall.args
+            ) {
+              toolCall.args = normalizedArgs;
+            }
+            continue;
+          }
+
           if (!validationResult.success) {
             console.warn(`[ToolValidation] ${toolCall.name} invalid args`, {
               args: toolCall.args,

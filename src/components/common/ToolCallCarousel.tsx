@@ -31,7 +31,7 @@ const getCallStatus = (call: ToolCallRecord): ToolCallStatus => {
   if (call.output == null) return "running";
 
   if (typeof call.output === "object" && call.output !== null) {
-    const output = call.output as Record<string, unknown>;
+    const output = call.output as JsonObject;
     if (output.success === false) return "failed";
     if (
       typeof output.error === "string" &&

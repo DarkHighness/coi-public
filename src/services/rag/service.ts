@@ -74,7 +74,7 @@ const getBrowserWindow = (): WindowWithRagService | null => {
   return window as WindowWithRagService;
 };
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
+const isObject = (value: unknown): value is JsonObject =>
   value !== null && typeof value === "object";
 
 export class RAGService {

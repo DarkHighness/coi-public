@@ -117,7 +117,7 @@ export async function invokeAI(
     const result = resp.result;
     const resultRecord =
       result && typeof result === "object"
-        ? (result as Record<string, unknown>)
+        ? (result as JsonObject)
         : null;
     const functionCalls = extractFunctionCalls(result);
     const text =
@@ -155,7 +155,7 @@ const extractFunctionCalls = (
     if (!call || typeof call !== "object") {
       return false;
     }
-    const candidate = call as Record<string, unknown>;
+    const candidate = call as JsonObject;
     return (
       typeof candidate.name === "string" &&
       (typeof candidate.id === "string" ||

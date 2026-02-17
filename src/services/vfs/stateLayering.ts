@@ -86,11 +86,11 @@ const normalizeLogicalPath = (path: string): string => {
 
 const toObjectRecord = (
   value: unknown,
-): Record<string, unknown> | null => {
+): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 const decodeJsonPointerRootKey = (pointer: unknown): string | null => {
@@ -156,7 +156,7 @@ export const sanitizeCanonicalWorldRecord = (
     return { sanitized: value, strippedKeys: [], warnings: [] };
   }
 
-  const sanitizedRecord: Record<string, unknown> = { ...record };
+  const sanitizedRecord: JsonObject = { ...record };
   for (const key of strippedKeys) {
     delete sanitizedRecord[key];
   }
@@ -209,7 +209,7 @@ export const filterCanonicalWorldPatchOpsByPath = (
   let strippedCount = 0;
 
   for (const op of patchOps) {
-    const opRecord = op as Record<string, unknown>;
+    const opRecord = op as JsonObject;
     const pathKey = decodeJsonPointerRootKey(opRecord.path);
     const fromKey = decodeJsonPointerRootKey(opRecord.from);
     if (
@@ -264,7 +264,7 @@ export const sanitizeOutlineWorldCollections = (
     };
   }
 
-  let nextRoot: Record<string, unknown> = { ...root };
+  let nextRoot: JsonObject = { ...root };
   const warnings: string[] = [];
 
   const worldInfoSanitized = sanitizeCanonicalWorldRecord(

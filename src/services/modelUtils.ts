@@ -8,12 +8,12 @@ export interface ModelCapabilities {
 }
 
 export const parseModelCapabilities = (
-  info: Record<string, unknown>,
+  info: JsonObject,
 ): Partial<ModelCapabilities> => {
   const capabilities: Partial<ModelCapabilities> = {};
   const architecture =
     info.architecture && typeof info.architecture === "object"
-      ? (info.architecture as Record<string, unknown>)
+      ? (info.architecture as JsonObject)
       : {};
   const supportedParameters =
     info.supported_parameters || info.supportedParameters || [];

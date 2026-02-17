@@ -81,7 +81,7 @@ export const deriveSlotNameFromState = (
   return null;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const isVfsFile = (value: unknown): value is VfsFile => {
@@ -185,10 +185,10 @@ export const mergeStoredUiState = (
     "knowledge",
     "quests",
   ] as const;
-  const merged: GameState["uiState"] & Record<string, unknown> = { ...base };
+  const merged: GameState["uiState"] & JsonObject = { ...base };
 
   for (const section of sections) {
-    const incoming = (stored as Record<string, unknown>)[section];
+    const incoming = (stored as JsonObject)[section];
     if (!isListState(incoming)) {
       continue;
     }
@@ -198,7 +198,7 @@ export const mergeStoredUiState = (
     };
   }
 
-  const incomingEntityPresentation = (stored as Record<string, unknown>)[
+  const incomingEntityPresentation = (stored as JsonObject)[
     "entityPresentation"
   ];
   if (isEntityPresentationMap(incomingEntityPresentation)) {
@@ -208,7 +208,7 @@ export const mergeStoredUiState = (
     };
   }
 
-  const storedRecord = stored as Record<string, unknown>;
+  const storedRecord = stored as JsonObject;
   for (const key of Object.keys(stored)) {
     if (sections.includes(key as (typeof sections)[number])) {
       continue;

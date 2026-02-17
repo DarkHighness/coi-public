@@ -196,7 +196,7 @@ export interface CreateLogEntryParams {
   // Semantic fields
   type?: LogEntry["type"];
   toolName?: string;
-  toolInput?: Record<string, unknown>;
+  toolInput?: JsonObject;
   toolOutput?: unknown;
   phase?: number;
   turnId?: string;
@@ -339,7 +339,7 @@ export const createLogEntry = (params: CreateLogEntryParams): LogEntry => {
   };
 
   // Enhanced console logging
-  const logDetails: Record<string, unknown> = {
+  const logDetails: JsonObject = {
     type: entry.type,
     usage: entry.usage,
   };
@@ -609,7 +609,7 @@ export const IMAGE_BASED_THEME = "imageBased";
  */
 export const getThemeName = (
   themeKey: string | undefined | null,
-  tFunc: (key: string, options?: Record<string, unknown>) => string,
+  tFunc: (key: string, options?: JsonObject) => string,
   defaultValue?: string,
 ): string => {
   if (!themeKey || themeKey === IMAGE_BASED_THEME) {
@@ -634,7 +634,7 @@ export const getThemeName = (
 export const getThemeTranslation = (
   themeKey: string,
   field: "narrativeStyle" | "worldSetting" | "example" | "backgroundTemplate",
-  tFunc: (key: string, options?: Record<string, unknown>) => string,
+  tFunc: (key: string, options?: JsonObject) => string,
 ): string => {
   // imageBased theme doesn't have predefined translations (content is generated from image)
   if (themeKey === IMAGE_BASED_THEME) {
@@ -1655,7 +1655,7 @@ export function resolveNarrativeStyle(input: {
 export const resolveThemeConfig = (
   themeKey: string,
   language: string,
-  tFunc: (key: string, options?: Record<string, unknown>) => string,
+  tFunc: (key: string, options?: JsonObject) => string,
 ): {
   narrativeStyle: string;
   backgroundTemplate: string;
@@ -1721,7 +1721,7 @@ import type { ResolvedThemeConfig } from "../../types";
  */
 export const createThemeConfig = (
   themeKey: string | undefined | null,
-  tFunc: (key: string, options?: Record<string, unknown>) => string,
+  tFunc: (key: string, options?: JsonObject) => string,
 ): ResolvedThemeConfig => {
   // imageBased theme returns empty config - will be populated from Phase 0
   if (!themeKey || themeKey === IMAGE_BASED_THEME) {

@@ -5,6 +5,8 @@
  * converted to/from Gemini, OpenAI, and other provider formats.
  */
 
+import type { JsonObject, ToolArguments } from "../types";
+
 // --- Role Types ---
 
 export type MessageRole = "system" | "user" | "assistant" | "tool";
@@ -32,7 +34,7 @@ export interface ToolCallPart {
   toolUse: {
     id: string;
     name: string;
-    args: Record<string, unknown>;
+    args: ToolArguments;
     thoughtSignature?: string; // Gemini's thought signature for tool calls
   };
 }
@@ -87,7 +89,7 @@ export const createToolCallMessage = (
   toolCalls: Array<{
     id: string;
     name: string;
-    arguments: Record<string, unknown>;
+    arguments: ToolArguments;
     thoughtSignature?: string; // Required for Gemini 3 models
   }>,
   textContent?: string,
@@ -140,7 +142,7 @@ export const createToolResponseMessage = (
 export interface ToolCallResult {
   id: string;
   name: string;
-  args: Record<string, unknown>;
+  args: ToolArguments;
   thoughtSignature?: string; // Gemini's thought signature for tool calls
 }
 
@@ -166,7 +168,7 @@ interface GeminiFunctionResponseDto {
 interface GeminiFunctionCallDto {
   id?: string;
   name: string;
-  args?: Record<string, unknown>;
+  args?: ToolArguments;
 }
 
 interface GeminiTextPartDto {
@@ -237,11 +239,37 @@ interface OpenAIBaseMessageDto {
 
 type OpenAIMessageDto = OpenAIBaseMessageDto;
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+const isRecord = (value: unknown): value is JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
+
+const parseToolArguments = (
+  rawValue: unknown,
+  source: string,
+): ToolArguments => {
+  if (rawValue === undefined) {
+    return {};
+  }
+  if (isRecord(rawValue)) {
+    return rawValue;
+  }
+  throw new Error(`[messageTypes] Invalid tool args from ${source}`);
+};
+
+const parseToolArgumentsText = (
+  rawText: string,
+  source: string,
+): ToolArguments => {
+  try {
+    return parseToolArguments(JSON.parse(rawText), source);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown parse error";
+    throw new Error(`[messageTypes] Failed to parse tool args from ${source}: ${message}`);
+  }
+};
 
 // --- Conversion Functions ---
 
@@ -492,9 +520,10 @@ export const fromGeminiFormat = (
           toolUse: {
             id: readString(functionCall.id) || `call_${functionName}`,
             name: functionName,
-            args: isRecord(functionCall.args)
-              ? (functionCall.args as Record<string, unknown>)
-              : {},
+            args: parseToolArguments(
+              functionCall.args,
+              `Gemini functionCall(${functionName})`,
+            ),
             thoughtSignature: readString(rawPart.thoughtSignature),
           },
         });
@@ -578,7 +607,12 @@ export const fromOpenAIFormat = (openaiMessages: unknown[]): UnifiedMessage[] =>
         if (!functionData) continue;
 
         const functionName = readString(functionData.name) || "";
-        const argsText = readString(functionData.arguments) || "{}";
+        const argsText = readString(functionData.arguments);
+        if (!argsText) {
+          throw new Error(
+            `[messageTypes] Missing tool arguments for OpenAI function call: ${functionName}`,
+          );
+        }
         const extraContent = isRecord(rawToolCall.extra_content)
           ? rawToolCall.extra_content
           : null;
@@ -587,33 +621,22 @@ export const fromOpenAIFormat = (openaiMessages: unknown[]): UnifiedMessage[] =>
             ? extraContent.google
             : null;
 
-        try {
-          content.push({
-            type: "tool_use",
-            toolUse: {
-              id: readString(rawToolCall.id) || `call_${functionName}`,
-              name: functionName,
-              args: JSON.parse(argsText),
-              // Extract thought_signature if present (Gemini via OpenAI proxy)
-              // Gemini 3 uses extra_content.google.thought_signature format
-              thoughtSignature:
-                readString(googleExtra?.thought_signature) ||
-                readString(functionData.thought_signature),
-            },
-          });
-        } catch {
-          content.push({
-            type: "tool_use",
-            toolUse: {
-              id: readString(rawToolCall.id) || `call_${functionName}`,
-              name: functionName,
-              args: {},
-              thoughtSignature:
-                readString(googleExtra?.thought_signature) ||
-                readString(functionData.thought_signature),
-            },
-          });
-        }
+        content.push({
+          type: "tool_use",
+          toolUse: {
+            id: readString(rawToolCall.id) || `call_${functionName}`,
+            name: functionName,
+            args: parseToolArgumentsText(
+              argsText,
+              `OpenAI function call(${functionName})`,
+            ),
+            // Extract thought_signature if present (Gemini via OpenAI proxy)
+            // Gemini 3 uses extra_content.google.thought_signature format
+            thoughtSignature:
+              readString(googleExtra?.thought_signature) ||
+              readString(functionData.thought_signature),
+          },
+        });
       }
       return { role: "assistant" as MessageRole, content };
     }

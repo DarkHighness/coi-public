@@ -123,7 +123,7 @@ const IMAGE_REFERENCE_KEYS = new Set([
   "previewImage",
 ]);
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const VFS_CONTENT_TYPES: ReadonlySet<VfsContentType> = new Set([
@@ -223,9 +223,9 @@ const transformJsonValueForImageReferences = (
     return value;
   }
 
-  const nextObject: Record<string, unknown> = {};
+  const nextObject: JsonObject = {};
   for (const [key, rawChild] of Object.entries(
-    value as Record<string, unknown>,
+    value as JsonObject,
   )) {
     if (options.stripImageReferences && IMAGE_REFERENCE_KEYS.has(key)) {
       continue;
@@ -663,7 +663,7 @@ const isConversationIndexShape = (
   value: unknown,
 ): value is ConversationIndex => {
   if (!value || typeof value !== "object") return false;
-  const maybe = value as Record<string, unknown>;
+  const maybe = value as JsonObject;
   if (typeof maybe.activeForkId !== "number") return false;
   if (typeof maybe.activeTurnId !== "string") return false;
   if (
@@ -1667,7 +1667,7 @@ export async function validateImport(file: File): Promise<ImportValidation> {
 
   const pushError = (
     key: string,
-    params?: Record<string, unknown>,
+    params?: JsonObject,
     debugMessage?: string,
   ) => {
     errors.push(debugMessage ?? key);
@@ -1676,7 +1676,7 @@ export async function validateImport(file: File): Promise<ImportValidation> {
 
   const pushWarning = (
     key: string,
-    params?: Record<string, unknown>,
+    params?: JsonObject,
     debugMessage?: string,
   ) => {
     warnings.push(debugMessage ?? key);

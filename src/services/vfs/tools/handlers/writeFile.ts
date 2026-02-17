@@ -5,7 +5,7 @@ export const handleWriteFile: VfsToolHandler = (args, ctx) => {
   const typedArgs = args as Omit<Extract<MutateOp, { op: "write_file" }>, "op">;
   return executeMutateOps(
     "vfs_write_file",
-    typedArgs as Record<string, unknown>,
+    typedArgs as JsonObject,
     [{ op: "write_file", ...typedArgs }],
     ctx,
   );

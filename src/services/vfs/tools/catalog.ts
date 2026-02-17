@@ -915,14 +915,9 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_finish_turn",
     description:
-      "Append a new turn to the active fork and set it active (writes conversation index + turn file).",
+      "Append a new turn to the active fork and set it active (writes conversation index + turn file). `userAction` and `retconAck.hash` are runtime-injected system fields.",
     parameters: z
       .object({
-        userAction: z
-          .string()
-          .describe(
-            "The player's action text for this turn (stored in the turn file).",
-          ),
         assistant: z
           .object({
             narrative: z
@@ -949,18 +944,15 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .describe("Assistant payload stored in the turn file."),
         retconAck: z
           .object({
-            hash: z
-              .string()
-              .describe("Pending prompt injection hash to acknowledge."),
             summary: z
               .string()
-              .optional()
+              .min(1)
               .describe("Short in-world retcon acknowledgement summary."),
           })
           .strict()
           .optional()
           .describe(
-            "Required when a prompt retcon acknowledgement is pending for this save.",
+            "Required when a prompt retcon acknowledgement is pending for this save. Runtime injects the pending hash.",
           ),
       })
       .strict(),

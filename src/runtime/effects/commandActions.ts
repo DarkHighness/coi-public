@@ -117,7 +117,7 @@ export function createCommandActions({
       }
 
       if (typeof choice === "object" && choice !== null) {
-        const record = choice as Record<string, unknown>;
+        const record = choice as JsonObject;
         const text =
           (typeof record.text === "string" && record.text) ||
           (typeof record.choice === "string" && record.choice) ||

@@ -102,7 +102,7 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
     return true;
   }
 
-  for (const key of Object.keys(input as Record<string, unknown>)) {
+  for (const key of Object.keys(input as JsonObject)) {
     if (key === "__proto__" || key === "constructor" || key === "prototype") {
       return true;
     }
@@ -112,8 +112,8 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
     }
     if (
       hasUnknownKeys(
-        (input as Record<string, unknown>)[key],
-        (parsed as Record<string, unknown>)[key],
+        (input as JsonObject)[key],
+        (parsed as JsonObject)[key],
       )
     ) {
       return true;
@@ -220,11 +220,11 @@ const toPlaceholderDraftCanonicalCandidates = (
   );
 };
 
-const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+const toObjectRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 const readBoolean = (value: unknown): boolean | null =>
@@ -865,7 +865,7 @@ export class VfsSession {
         ? (nextRecord.relations as unknown[])
         : [];
 
-      const nextById = new Map<string, Record<string, unknown>>();
+      const nextById = new Map<string, JsonObject>();
       for (const relation of nextRelations) {
         const relationRecord = toObjectRecord(relation);
         if (!relationRecord) continue;
@@ -1139,7 +1139,7 @@ export class VfsSession {
 
   public mergeJson(
     path: string,
-    content: Record<string, unknown>,
+    content: JsonObject,
     options?: VfsWriteOptions,
   ): void {
     const canonicalPath = this.assertWritablePath(path, options, "json_merge");

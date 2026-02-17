@@ -53,7 +53,7 @@ type JsonPointerResolveResult =
   | { ok: false; error: string };
 
 export type VfsToolHandler = (
-  args: Record<string, unknown>,
+  args: JsonObject,
   ctx: ToolContext,
 ) => unknown | Promise<unknown>;
 
@@ -269,7 +269,7 @@ export const classifyJsonMutationError = (params: {
   };
 };
 
-const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 export const isToolCallErrorResult = (value: unknown): value is ToolCallError => {
@@ -316,11 +316,11 @@ export const withToolErrorDetails = (
 
 export const runWithStructuredErrors = (
   toolName: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   runner: () => unknown | Promise<unknown>,
   options?: {
     batchFromArgs?: (
-      args: Record<string, unknown>,
+      args: JsonObject,
     ) => ToolErrorBatch | undefined;
   },
 ): unknown | Promise<unknown> => {
@@ -586,7 +586,7 @@ export const resolveJsonPointer = (
     }
 
     if (current && typeof current === "object") {
-      const record = current as Record<string, unknown>;
+      const record = current as JsonObject;
       if (!(token in record)) {
         return { ok: false, error: `Missing key "${token}"` };
       }
@@ -1179,7 +1179,7 @@ export const ensureSeparatorNewline = (left: string, right: string): string => {
 export const formatOutlineCommitValidationError = (error: unknown): string => {
   const errRecord =
     error && typeof error === "object"
-      ? (error as Record<string, unknown>)
+      ? (error as JsonObject)
       : null;
   const issues = errRecord?.issues;
   if (!Array.isArray(issues)) {
@@ -1190,7 +1190,7 @@ export const formatOutlineCommitValidationError = (error: unknown): string => {
     .map((issue) => {
       const issueRecord =
         issue && typeof issue === "object"
-          ? (issue as Record<string, unknown>)
+          ? (issue as JsonObject)
           : null;
       const path = Array.isArray(issueRecord?.path)
         ? issueRecord.path

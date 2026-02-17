@@ -20,10 +20,10 @@ const isJsonScalar = (value: unknown): value is string | number | boolean | null
 
 const TOOL_SCHEMA_PART_MAX_LINES = 140;
 
-const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
-const getSchemaDef = (schema: z.ZodTypeAny): Record<string, unknown> | null => {
+const getSchemaDef = (schema: z.ZodTypeAny): JsonObject | null => {
   const candidate = (schema as { _def?: unknown })._def;
   return isRecordObject(candidate) ? candidate : null;
 };
@@ -127,7 +127,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       scripts: [
         "const base = await vfs_read_json({ path: 'current/world/global.json', pointers: ['/turnNumber'] }); const turn = Number(base.data?.extracts?.[0]?.json ?? '0'); state.nextTurn = turn + 1; emit({ step: 'read', turn });",
         "await vfs_merge_json({ path: 'current/world/global.json', content: { turnNumber: state.nextTurn } }); emit({ step: 'write', turnNumber: state.nextTurn });",
-        "await vfs_finish_turn({ userAction: 'Audit world state', assistant: { narrative: 'You confirm the timeline marker and seal the update.', choices: [{ text: 'Proceed with patrol route' }, { text: 'Review one more clue' }] } });",
+        "await vfs_finish_turn({ assistant: { narrative: 'You confirm the timeline marker and seal the update.', choices: [{ text: 'Proceed with patrol route' }, { text: 'Review one more clue' }] } });",
       ],
       maxToolCalls: 12,
       maxScriptChars: 4000,
@@ -214,7 +214,6 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
   ],
   vfs_finish_turn: [
     {
-      userAction: "Inspect the ruined gate",
       assistant: {
         narrative: "You brush moss aside and find fresh claw marks.",
         choices: [{ text: "Follow the tracks" }, { text: "Set up camp nearby" }],

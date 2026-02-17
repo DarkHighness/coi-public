@@ -7,7 +7,12 @@
  * 避免使用 any 类型，提供一致的 API 体验。
  */
 
-import type { TokenUsage, ModelInfo as BaseModelInfo } from "../../types";
+import type {
+  TokenUsage,
+  ModelInfo as BaseModelInfo,
+  JsonValue,
+  ToolArguments,
+} from "../../types";
 
 // ============================================================================
 // Provider Configuration Types
@@ -173,7 +178,7 @@ export interface ToolCallContentPart {
   toolUse: {
     id: string;
     name: string;
-    args: Record<string, unknown>;
+    args: ToolArguments;
     thoughtSignature?: string; // Gemini's thought signature for tool calls
   };
 }
@@ -211,7 +216,7 @@ export interface UnifiedMessage {
 export interface ToolCallResult {
   id: string;
   name: string;
-  args: Record<string, unknown>;
+  args: ToolArguments;
   thoughtSignature?: string; // Gemini's thought signature for tool calls
 }
 
@@ -224,7 +229,7 @@ export interface GenerationResultWithToolCalls {
 /** 生成结果 - 文本/JSON */
 export interface GenerationResultWithContent {
   type: "content";
-  content: unknown;
+  content: JsonValue;
 }
 
 /** 统一生成结果 */

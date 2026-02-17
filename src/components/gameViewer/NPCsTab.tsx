@@ -26,7 +26,7 @@ const isRelationEdge = (value: unknown): value is RelationEdge =>
 const toRelationEdges = (value: unknown): RelationEdge[] =>
   Array.isArray(value) ? value.filter(isRelationEdge) : [];
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const readString = (value: unknown): string | undefined =>

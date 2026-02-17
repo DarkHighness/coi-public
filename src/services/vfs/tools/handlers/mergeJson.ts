@@ -5,7 +5,7 @@ export const handleMergeJson: VfsToolHandler = (args, ctx) => {
   const typedArgs = args as Omit<Extract<MutateOp, { op: "merge_json" }>, "op">;
   return executeMutateOps(
     "vfs_merge_json",
-    typedArgs as Record<string, unknown>,
+    typedArgs as JsonObject,
     [{ op: "merge_json", ...typedArgs }],
     ctx,
   );

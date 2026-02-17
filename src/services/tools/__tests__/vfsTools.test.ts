@@ -167,7 +167,7 @@ describe("VFS tools", () => {
     expect(result.success).toBe(true);
   });
 
-  it("does not expose vfs_finish_turn meta and accepts retconAck without summary", () => {
+  it("keeps vfs_finish_turn schema free of runtime-only fields", () => {
     const finishTurn = byName.get("vfs_finish_turn");
     expect(finishTurn).toBeDefined();
     if (!finishTurn) return;
@@ -182,15 +182,40 @@ describe("VFS tools", () => {
     });
     expect(withMeta.success).toBe(false);
 
-    const withoutSummary = finishTurn.parameters.safeParse({
+    const withRuntimeUserAction = finishTurn.parameters.safeParse({
       userAction: "look around",
+      assistant: {
+        narrative: "You scan the room.",
+        choices: [{ text: "Inspect desk" }, { text: "Open door" }],
+      },
+    });
+    expect(withRuntimeUserAction.success).toBe(false);
+
+    const withLegacyRetconHash = finishTurn.parameters.safeParse({
       assistant: {
         narrative: "You scan the room.",
         choices: [{ text: "Inspect desk" }, { text: "Open door" }],
       },
       retconAck: { hash: "abc123" },
     });
-    expect(withoutSummary.success).toBe(true);
+    expect(withLegacyRetconHash.success).toBe(false);
+
+    const minimal = finishTurn.parameters.safeParse({
+      assistant: {
+        narrative: "You scan the room.",
+        choices: [{ text: "Inspect desk" }, { text: "Open door" }],
+      },
+    });
+    expect(minimal.success).toBe(true);
+
+    const withRetconSummary = finishTurn.parameters.safeParse({
+      assistant: {
+        narrative: "You scan the room.",
+        choices: [{ text: "Inspect desk" }, { text: "Open door" }],
+      },
+      retconAck: { summary: "Continuity adjusted after rule update." },
+    });
+    expect(withRetconSummary.success).toBe(true);
   });
 
   it("embeds permission contract and matches capability registry", () => {

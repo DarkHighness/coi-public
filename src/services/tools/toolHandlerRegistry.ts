@@ -54,6 +54,8 @@ export interface ToolContext {
   vfsElevationIntent?: VfsElevationIntent;
   /** Optional elevation template scope bound to the token */
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
+  /** System-injected current turn user action for finish-commit tools */
+  vfsTurnUserAction?: string;
 }
 
 /**
@@ -61,7 +63,7 @@ export interface ToolContext {
  * Handlers can be sync or async.
  */
 export type ToolHandler = (
-  args: Record<string, unknown>,
+  args: JsonObject,
   ctx: ToolContext,
 ) => unknown | Promise<unknown>;
 
@@ -214,7 +216,7 @@ export function getRegisteredToolNames(): string[] {
  */
 export function dispatchToolCall(
   name: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   context: ToolContext,
 ): unknown | Promise<unknown> {
   const resolvedName = resolveRegisteredToolName(name);
@@ -246,7 +248,7 @@ export function dispatchToolCall(
  */
 export async function dispatchToolCallAsync(
   name: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   context: ToolContext,
 ): Promise<unknown> {
   const result = dispatchToolCall(name, args, context);

@@ -68,7 +68,7 @@ interface BuildThemeKeysOptions {
   sortMode: ThemeSortMode;
   favoriteThemeKeys?: Set<string> | string[];
   usageByTheme?: Record<string, ThemeUsageStats | undefined>;
-  t: (key: string, options?: Record<string, unknown>) => string;
+  t: (key: string, options?: JsonObject) => string;
 }
 
 const getCategoryRank = (category?: string): number => {

@@ -24,7 +24,7 @@ interface PrepareEntitiesOptions {
   defaultUnlocked?: boolean;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const normalizePlaceholderDraftPath = (

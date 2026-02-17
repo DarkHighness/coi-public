@@ -27,7 +27,7 @@ export interface TurnRecoveryRunnerParams<Result> {
   autoApproveSessionRebuildKinds?: TurnRecoveryKind[];
   maxDurationMs?: number;
   sleep?: (ms: number) => Promise<void>;
-  onLog?: (payload: Record<string, unknown>) => void;
+  onLog?: (payload: JsonObject) => void;
 }
 
 export interface TurnRecoveryRunnerResult<Result> {

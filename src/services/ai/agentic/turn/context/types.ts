@@ -125,7 +125,7 @@ export interface ContextBuilderConfig {
   /** AI settings */
   settings: AISettings;
   /** Translation function */
-  tFunc?: (key: string, options?: Record<string, unknown>) => string;
+  tFunc?: (key: string, options?: JsonObject) => string;
 }
 
 export interface LiveToolCallUpdateOptions {

@@ -37,7 +37,7 @@ const getValueAtPath = (
       return undefined;
     }
 
-    current = (current as Record<string, unknown>)[String(segment)];
+    current = (current as JsonObject)[String(segment)];
   }
   return current;
 };
@@ -50,7 +50,7 @@ const collectDirectSubfields = (value: unknown): string[] => {
   if (!value || typeof value !== "object") {
     return [];
   }
-  return Object.keys(value as Record<string, unknown>).slice(
+  return Object.keys(value as JsonObject).slice(
     0,
     MAX_DIRECT_SUBFIELDS,
   );

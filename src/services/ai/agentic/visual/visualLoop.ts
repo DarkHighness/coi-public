@@ -46,7 +46,7 @@ export interface VisualLoopResult {
 
 const isToolCallResult = (value: unknown): value is ToolCallResult => {
   if (!value || typeof value !== "object") return false;
-  const call = value as Record<string, unknown>;
+  const call = value as JsonObject;
   return (
     typeof call.name === "string" &&
     (typeof call.id === "string" || typeof call.id === "undefined") &&

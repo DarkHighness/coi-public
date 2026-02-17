@@ -490,7 +490,7 @@ export const createModelNode = (
         return choice;
       }
       if (typeof choice === "object" && choice !== null) {
-        const choiceRecord = choice as Record<string, unknown>;
+        const choiceRecord = choice as JsonObject;
         const text =
           typeof choiceRecord.text === "string"
             ? choiceRecord.text

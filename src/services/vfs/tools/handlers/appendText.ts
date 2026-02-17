@@ -8,7 +8,7 @@ export const handleAppendText: VfsToolHandler = (args, ctx) => {
   >;
   return executeMutateOps(
     "vfs_append_text",
-    typedArgs as Record<string, unknown>,
+    typedArgs as JsonObject,
     [{ op: "append_text", ...typedArgs }],
     ctx,
   );

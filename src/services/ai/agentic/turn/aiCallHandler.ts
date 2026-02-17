@@ -159,7 +159,7 @@ const extractFunctionCalls = (
   if (!Array.isArray(raw)) return undefined;
   return raw.filter((call): call is ToolCallResult => {
     if (!call || typeof call !== "object") return false;
-    const record = call as Record<string, unknown>;
+    const record = call as JsonObject;
     return (
       typeof record.name === "string" &&
       (typeof record.id === "string" || typeof record.id === "undefined") &&
@@ -172,7 +172,7 @@ const extractFunctionCalls = (
 const extractTextContent = (result: ChatGenerateResponse["result"]): string => {
   if (typeof result === "string") return result;
   if (!result || typeof result !== "object") return "";
-  const record = result as Record<string, unknown>;
+  const record = result as JsonObject;
   if (typeof record.text === "string") return record.text;
   if (typeof record.content === "string") return record.content;
   return "";

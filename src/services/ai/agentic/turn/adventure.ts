@@ -80,7 +80,7 @@ export interface AgenticLoopResult {
   recovery?: TurnRecoveryTrace;
 }
 
-const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const readModelPromptEntries = (value: unknown): ModelPromptEntry[] | undefined => {
@@ -122,13 +122,13 @@ export const generateAdventureTurn = async (
   const fallbackThemeConfig = resolveThemeConfig(
     context.themeKey,
     context.language,
-    context.tFunc as (key: string, options?: Record<string, unknown>) => string,
+    context.tFunc as (key: string, options?: JsonObject) => string,
   );
   const resolvedThemeConfig = gameState.themeConfig;
 
   const narrativeStyleOverride =
     gameState.outline && typeof gameState.outline === "object"
-      ? (gameState.outline as Record<string, unknown>).narrativeStyle
+      ? (gameState.outline as JsonObject).narrativeStyle
       : undefined;
   const baseNarrativeStyle =
     typeof narrativeStyleOverride === "string" && narrativeStyleOverride.trim()
@@ -421,6 +421,7 @@ export const generateAdventureTurn = async (
       context.vfsElevationScopeTemplateIds,
       requiredPresetSkillPaths,
       requiredPresetSkillRequirements,
+      context.userAction,
     );
 
     const newMessages = result._conversationHistory.slice(activeHistory.length);
@@ -649,6 +650,7 @@ export const runAgenticLoop = async (
   vfsElevationScopeTemplateIds?: string[] | "all_elevated",
   requiredPresetSkillPaths: string[] = [],
   requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
+  currentUserAction?: string,
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
   return runAgenticLoopRefactored({
@@ -672,5 +674,6 @@ export const runAgenticLoop = async (
     vfsElevationScopeTemplateIds,
     requiredPresetSkillPaths,
     requiredPresetSkillRequirements,
+    currentUserAction,
   });
 };

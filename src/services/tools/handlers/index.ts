@@ -13,7 +13,7 @@ export function hasHandler(name: string): boolean {
 
 export function dispatchToolCall(
   name: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   context: ToolContext,
 ): unknown | Promise<unknown> {
   return vfsToolDispatcher.dispatch(name, args, context);
@@ -21,7 +21,7 @@ export function dispatchToolCall(
 
 export async function dispatchToolCallAsync(
   name: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   context: ToolContext,
 ): Promise<unknown> {
   return vfsToolDispatcher.dispatchAsync(name, args, context);

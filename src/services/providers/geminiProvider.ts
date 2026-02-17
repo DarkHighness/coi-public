@@ -21,7 +21,12 @@ import {
   HarmBlockThreshold,
 } from "@google/genai";
 
-import type { EmbeddingTaskType, TokenUsage } from "../../types";
+import type {
+  EmbeddingTaskType,
+  TokenUsage,
+  JsonObject,
+  ToolArguments,
+} from "../../types";
 
 import {
   GeminiConfig,
@@ -56,7 +61,7 @@ import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 
 /** 内容生成响应 (兼容格式) */
 export interface GeminiContentGenerationResponse {
-  result: { functionCalls?: ToolCallResult[] } | Record<string, unknown>;
+  result: { functionCalls?: ToolCallResult[] } | JsonObject;
   usage: TokenUsage;
   raw: unknown;
 }
@@ -99,13 +104,13 @@ interface GeminiLegacyImagePart {
 interface GeminiFunctionCallPartDto extends Part {
   functionCall: {
     name: string;
-    args: Record<string, unknown>;
+    args: JsonObject;
   };
   thoughtSignature?: string;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+const isRecord = (value: unknown): value is JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
@@ -144,6 +149,23 @@ const getThoughtSignature = (value: unknown): string | undefined => {
   return readString(value.thoughtSignature) || readString(value.thought_signature);
 };
 
+const parseToolArguments = (
+  rawArgs: unknown,
+  toolName: string,
+): ToolArguments => {
+  if (rawArgs === undefined) {
+    return {};
+  }
+  if (!isRecord(rawArgs)) {
+    throw new MalformedToolCallError(
+      "gemini",
+      toolName,
+      JSON.stringify(rawArgs),
+    );
+  }
+  return rawArgs;
+};
+
 const isGeminiContent = (value: UnifiedMessage | Content): value is Content =>
   isRecord(value) && Array.isArray((value as { parts?: unknown }).parts);
 
@@ -167,7 +189,7 @@ export function createGeminiClient(config: GeminiConfig): GoogleGenAI {
 }
 
 const readUsageNumber = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): number | undefined => {
   if (!usage) return undefined;
@@ -187,7 +209,7 @@ const readUsageNumber = (
 };
 
 const hasAnyUsageField = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): boolean => {
   if (!usage) return false;
@@ -229,10 +251,7 @@ const GEMINI_ALL_USAGE_KEYS = [
 ];
 
 export function parseGeminiUsageMetadata(usageMetadata: unknown): TokenUsage {
-  const usage =
-    usageMetadata && typeof usageMetadata === "object"
-      ? (usageMetadata as Record<string, unknown>)
-      : null;
+  const usage = isRecord(usageMetadata) ? usageMetadata : null;
 
   const prompt = readUsageNumber(usage, [...GEMINI_PROMPT_KEYS]);
   const completion = readUsageNumber(usage, [...GEMINI_COMPLETION_KEYS]);
@@ -552,7 +571,7 @@ export async function generateContent(
               totalTokens: 0,
               reported: false,
             },
-            raw: imageRes.raw || {},
+            raw: imageRes.raw ?? null,
           };
         }
       }
@@ -617,7 +636,7 @@ export async function generateContent(
             functionCalls = fcParts.map((p, index) => ({
               id: `gemini_call_${p.functionCall.name}_${index}`,
               name: p.functionCall.name || "",
-              args: (p.functionCall.args as Record<string, unknown>) || {},
+              args: parseToolArguments(p.functionCall.args, p.functionCall.name),
               // Extract thoughtSignature if present
               thoughtSignature: getThoughtSignature(p),
             }));
@@ -655,9 +674,16 @@ export async function generateContent(
         const parsedResult = parseJSONResponse(text);
         // Schema Validation
         validateSchema(parsedResult, schema, "gemini");
+        if (!isRecord(parsedResult)) {
+          throw new JSONParseError(
+            "gemini",
+            text.substring(0, 500),
+            new Error("Schema output must be a JSON object"),
+          );
+        }
 
         return {
-          result: parsedResult as Record<string, unknown>,
+          result: parsedResult,
           usage,
           raw: rawResponse,
         };
@@ -735,7 +761,10 @@ async function streamGeneration(
           functionCalls.push({
             id: `gemini_call_${part.functionCall.name}_${functionCalls.length}`,
             name: part.functionCall.name || "",
-            args: (part.functionCall.args as Record<string, unknown>) || {},
+            args: parseToolArguments(
+              part.functionCall.args,
+              part.functionCall.name || "unknown",
+            ),
             // Extract thoughtSignature if present
             thoughtSignature: getThoughtSignature(functionCallPart),
           });

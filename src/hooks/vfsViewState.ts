@@ -138,7 +138,7 @@ const normalizeEntityId = (entry: unknown): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const stableSerializeWithoutPresentation = (value: unknown): string => {
@@ -220,7 +220,7 @@ const applyEntityPresentationToList = <T>(
     const presentation = nextPresentation[key];
     const highlight = nextPresentation[key]?.highlight;
     if (isRecord(entry)) {
-      const withPresentation = { ...(entry as Record<string, unknown>) };
+      const withPresentation = { ...(entry as JsonObject) };
       if (typeof highlight === "boolean") {
         withPresentation.highlight = highlight;
       }

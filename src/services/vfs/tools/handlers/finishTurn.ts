@@ -14,11 +14,11 @@ import {
   type VfsToolHandler,
 } from "./shared";
 
-const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+const toObjectRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 const toTurnAssistant = (value: unknown): TurnFile["assistant"] | null => {
@@ -46,14 +46,19 @@ const toTurnAssistant = (value: unknown): TurnFile["assistant"] | null => {
 
 export const handleFinishTurn: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_finish_turn", args, () => {
-    const runtime = args as Record<string, unknown>;
+    const runtime = args as JsonObject;
     const userAction =
-      typeof runtime.userAction === "string" ? runtime.userAction : null;
+      typeof ctx.vfsTurnUserAction === "string" &&
+      ctx.vfsTurnUserAction.trim().length > 0
+        ? ctx.vfsTurnUserAction
+        : typeof runtime.userAction === "string"
+          ? runtime.userAction
+          : null;
     const assistant = toTurnAssistant(runtime.assistant);
 
     if (typeof userAction !== "string" || !assistant) {
       return createError(
-        "vfs_finish_turn: userAction (string) and assistant payload are required.",
+        "vfs_finish_turn: runtime-injected userAction and assistant payload are required.",
         "INVALID_DATA",
       );
     }
@@ -63,20 +68,15 @@ export const handleFinishTurn: VfsToolHandler = (args, ctx) =>
       (draft) => {
         const retconAck = toObjectRecord(runtime.retconAck);
         const normalizedRetconAck =
-          retconAck && typeof retconAck.hash === "string"
+          retconAck && typeof retconAck.summary === "string"
             ? {
-                hash: retconAck.hash,
-                summary:
-                  typeof retconAck.summary === "string" &&
-                  retconAck.summary.trim().length > 0
-                    ? retconAck.summary
-                    : "Retcon acknowledgement applied.",
+                summary: retconAck.summary,
               }
             : undefined;
 
         if (runtime.retconAck !== undefined && !normalizedRetconAck) {
           return createError(
-            "vfs_finish_turn: retconAck must include a hash string",
+            "vfs_finish_turn: retconAck must include a non-empty summary string",
             "INVALID_DATA",
           );
         }

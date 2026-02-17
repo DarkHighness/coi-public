@@ -22,7 +22,12 @@ import type {
 } from "openai/resources/chat/completions";
 import type { ImagesResponse } from "openai/resources/images";
 
-import type { EmbeddingTaskType, TokenUsage } from "../../types";
+import type {
+  EmbeddingTaskType,
+  TokenUsage,
+  JsonObject,
+  ToolArguments,
+} from "../../types";
 import { parseModelCapabilities } from "../modelUtils";
 
 import {
@@ -68,7 +73,7 @@ import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 
 /** 内容生成响应 (兼容格式) */
 export interface OpenAIContentGenerationResponse {
-  result: { functionCalls?: ToolCallResult[] } | Record<string, unknown>;
+  result: { functionCalls?: ToolCallResult[] } | JsonObject;
   usage: TokenUsage;
   raw:
     | ChatCompletion
@@ -115,23 +120,26 @@ type OpenAICompatibleToolCall = ChatCompletionMessageFunctionToolCall & {
   };
 };
 
+const isJsonObject = (value: unknown): value is JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 const getReasoningContent = (value: unknown): string | undefined => {
-  if (!value || typeof value !== "object") return undefined;
-  const reasoning = (value as Record<string, unknown>).reasoning_content;
+  if (!isJsonObject(value)) return undefined;
+  const reasoning = value.reasoning_content;
   return typeof reasoning === "string" ? reasoning : undefined;
 };
 
 const getToolCallThoughtSignature = (value: unknown): string | undefined => {
-  if (!value || typeof value !== "object") return undefined;
-  const record = value as Record<string, unknown>;
+  if (!isJsonObject(value)) return undefined;
+  const record = value;
 
   const extraContent =
-    record.extra_content && typeof record.extra_content === "object"
-      ? (record.extra_content as Record<string, unknown>)
+    isJsonObject(record.extra_content)
+      ? record.extra_content
       : null;
   const googleContent =
-    extraContent?.google && typeof extraContent.google === "object"
-      ? (extraContent.google as Record<string, unknown>)
+    extraContent && isJsonObject(extraContent.google)
+      ? extraContent.google
       : null;
   const googleThought = googleContent?.thought_signature;
   if (typeof googleThought === "string") {
@@ -139,11 +147,31 @@ const getToolCallThoughtSignature = (value: unknown): string | undefined => {
   }
 
   const toolFunction =
-    record.function && typeof record.function === "object"
-      ? (record.function as Record<string, unknown>)
+    isJsonObject(record.function)
+      ? record.function
       : null;
   const functionThought = toolFunction?.thought_signature;
   return typeof functionThought === "string" ? functionThought : undefined;
+};
+
+const parseToolArguments = (
+  rawArguments: string,
+  toolName: string,
+): ToolArguments => {
+  const normalized = rawArguments.trim().length > 0 ? rawArguments : "{}";
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(normalized);
+  } catch {
+    throw new MalformedToolCallError("openai", toolName, rawArguments);
+  }
+
+  if (!isJsonObject(parsed)) {
+    throw new MalformedToolCallError("openai", toolName, rawArguments);
+  }
+
+  return parsed;
 };
 
 // ============================================================================
@@ -162,7 +190,7 @@ export function createOpenAIClient(config: OpenAIConfig): OpenAI {
 }
 
 const readUsageNumber = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): number | undefined => {
   if (!usage) return undefined;
@@ -182,18 +210,18 @@ const readUsageNumber = (
 };
 
 const readNestedUsageNumber = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   paths: ReadonlyArray<ReadonlyArray<string>>,
 ): number | undefined => {
   if (!usage) return undefined;
   for (const path of paths) {
     let current: unknown = usage;
     for (const key of path) {
-      if (!current || typeof current !== "object") {
+      if (!isJsonObject(current)) {
         current = undefined;
         break;
       }
-      current = (current as Record<string, unknown>)[key];
+      current = current[key];
     }
     if (typeof current === "number" && Number.isFinite(current)) {
       return Math.max(0, Math.floor(current));
@@ -209,7 +237,7 @@ const readNestedUsageNumber = (
 };
 
 const hasAnyUsageField = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): boolean => {
   if (!usage) return false;
@@ -248,10 +276,7 @@ const OPENAI_ALL_USAGE_KEYS = [
 ] as const;
 
 export function parseOpenAIUsage(usageMetadata: unknown): TokenUsage {
-  const usage =
-    usageMetadata && typeof usageMetadata === "object"
-      ? (usageMetadata as Record<string, unknown>)
-      : null;
+  const usage = isJsonObject(usageMetadata) ? usageMetadata : null;
 
   const prompt = readUsageNumber(usage, [...OPENAI_PROMPT_KEYS]);
   const completion = readUsageNumber(usage, [...OPENAI_COMPLETION_KEYS]);
@@ -805,20 +830,12 @@ export async function generateContent(
 
         // 解析累积的工具调用
         for (const [, tc] of accumulatedToolCalls) {
-          try {
-            toolCalls.push({
-              id: tc.id,
-              name: tc.name,
-              args: JSON.parse(tc.arguments || "{}") as Record<string, unknown>,
-              thoughtSignature: tc.thoughtSignature,
-            });
-          } catch (parseError) {
-            console.error(
-              `[OpenAI] Failed to parse tool call arguments:`,
-              tc.arguments,
-            );
-            throw new MalformedToolCallError("openai", tc.name, tc.arguments);
-          }
+          toolCalls.push({
+            id: tc.id,
+            name: tc.name,
+            args: parseToolArguments(tc.arguments, tc.name),
+            thoughtSignature: tc.thoughtSignature,
+          });
         }
       } else {
         // 非流式生成
@@ -844,10 +861,7 @@ export async function generateContent(
             .map((tc) => ({
               id: tc.id,
               name: tc.function.name,
-              args: JSON.parse(tc.function.arguments) as Record<
-                string,
-                unknown
-              >,
+              args: parseToolArguments(tc.function.arguments, tc.function.name),
               // Extract thought_signature if present (Gemini compatibility)
               // Gemini 3 uses extra_content.google.thought_signature format
               thoughtSignature: getToolCallThoughtSignature(tc),
@@ -1755,7 +1769,7 @@ export function buildToolCallMessage(
   toolCalls: Array<{
     id: string;
     name: string;
-    args: Record<string, unknown>;
+    args: ToolArguments;
     thoughtSignature?: string;
   }>,
   content?: string,

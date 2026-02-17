@@ -63,7 +63,7 @@ export const MarkdownText = React.memo<MarkdownTextProps>(
           ...(markdownComponents as Components),
           ...customComponents,
         };
-        const mutableComponents = mergedComponents as Record<string, unknown>;
+        const mutableComponents = mergedComponents as JsonObject;
 
         for (const [key, customComponent] of Object.entries(customComponents)) {
           if (typeof customComponent !== "function") {

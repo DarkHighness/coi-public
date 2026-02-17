@@ -39,7 +39,7 @@ const handleVm = createVmHandler((name, args, context) =>
   vfsToolDispatcher.dispatchAsync(name, args, context),
 );
 
-const HANDLERS: Record<VfsToolHandlerKey, (args: Record<string, unknown>, ctx: ToolContext) => unknown | Promise<unknown>> = {
+const HANDLERS: Record<VfsToolHandlerKey, (args: JsonObject, ctx: ToolContext) => unknown | Promise<unknown>> = {
   inspect_ls: handleInspectLs,
   inspect_schema: handleInspectSchema,
   read_chars: handleReadChars,
@@ -73,6 +73,9 @@ const HANDLERS: Record<VfsToolHandlerKey, (args: Record<string, unknown>, ctx: T
 
 const MAX_VALIDATION_ISSUES = 8;
 
+const isRecordObject = (value: unknown): value is JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 const formatValidationIssues = (issues: Array<{ path: Array<string | number>; message: string }>): string => {
   const lines = issues.slice(0, MAX_VALIDATION_ISSUES).map((issue) => {
     const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
@@ -86,7 +89,7 @@ const formatValidationIssues = (issues: Array<{ path: Array<string | number>; me
 
 const extraValidation = (
   name: VfsToolName,
-  parsed: Record<string, unknown>,
+  parsed: JsonObject,
 ): null | ReturnType<typeof createError> => {
   if (name === "vfs_finish_soul") {
     const currentSoul = parsed.currentSoul;
@@ -106,16 +109,51 @@ const extraValidation = (
   return null;
 };
 
-const validateArgs = (name: VfsToolName, args: Record<string, unknown>) => {
+const normalizeFinishTurnArgsForValidation = (
+  args: JsonObject,
+): JsonObject => {
+  const normalized: JsonObject = { ...args };
+
+  if ("userAction" in normalized) {
+    delete normalized.userAction;
+  }
+
+  if (isRecordObject(normalized.retconAck)) {
+    const nextRetconAck: JsonObject = { ...normalized.retconAck };
+    if ("hash" in nextRetconAck) {
+      delete nextRetconAck.hash;
+    }
+    if (Object.keys(nextRetconAck).length === 0) {
+      delete normalized.retconAck;
+    } else {
+      normalized.retconAck = nextRetconAck;
+    }
+  }
+
+  return normalized;
+};
+
+const normalizeArgsForValidation = (
+  name: VfsToolName,
+  args: JsonObject,
+): JsonObject => {
+  if (name === "vfs_finish_turn") {
+    return normalizeFinishTurnArgsForValidation(args);
+  }
+  return args;
+};
+
+const validateArgs = (name: VfsToolName, args: JsonObject) => {
   const tool = vfsToolRegistry.getDefinition(name);
+  const normalizedArgs = normalizeArgsForValidation(name, args);
   const strictSchema =
     tool.parameters instanceof z.ZodObject
       ? tool.parameters.strict()
       : tool.parameters;
-  const result = strictSchema.safeParse(args);
+  const result = strictSchema.safeParse(normalizedArgs);
 
   if (result.success) {
-    const parsed = result.data as Record<string, unknown>;
+    const parsed = result.data as JsonObject;
     const extraError = extraValidation(name, parsed);
     if (extraError) {
       return { valid: false as const, error: extraError };
@@ -139,7 +177,7 @@ export class VfsToolDispatcher {
 
   public dispatch(
     name: string,
-    args: Record<string, unknown>,
+    args: JsonObject,
     context: ToolContext,
   ): unknown | Promise<unknown> {
     if (!this.has(name)) {
@@ -158,7 +196,7 @@ export class VfsToolDispatcher {
 
   public async dispatchAsync(
     name: string,
-    args: Record<string, unknown>,
+    args: JsonObject,
     context: ToolContext,
   ): Promise<unknown> {
     const output = this.dispatch(name, args, context);

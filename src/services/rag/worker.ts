@@ -68,9 +68,9 @@ let localRuntimeInfo: LocalEmbeddingRuntimeInfo | null = null;
 
 const ports: Set<MessagePort> = new Set();
 
-const toRecord = (value: unknown): Record<string, unknown> =>
+const toRecord = (value: unknown): JsonObject =>
   value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as JsonObject)
     : {};
 
 const readStringField = (value: unknown, key: string): string | undefined => {

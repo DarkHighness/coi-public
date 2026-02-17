@@ -30,7 +30,7 @@ interface SectionEditOptions {
   allowOutlineEdit?: boolean;
 }
 
-type JsonRecord = Record<string, unknown>;
+type JsonRecord = JsonObject;
 
 interface ActorBundle {
   profile: JsonRecord;
@@ -190,8 +190,8 @@ export const applySectionEdit = (
     const existing = readJson(session, "world/global.json");
     const merged =
       existing && typeof existing === "object" && !Array.isArray(existing)
-        ? { ...(existing as Record<string, unknown>), ...data }
-        : { ...(data as Record<string, unknown>) };
+        ? { ...(existing as JsonObject), ...data }
+        : { ...(data as JsonObject) };
     writeJson(session, "world/global.json", merged);
     return;
   }
@@ -320,7 +320,7 @@ export const applySectionEdit = (
     if (!item || typeof item !== "object") {
       continue;
     }
-    const id = (item as Record<string, unknown>)[config.idField];
+    const id = (item as JsonObject)[config.idField];
     if (typeof id !== "string" || id.trim().length === 0) {
       throw new Error(`Missing ${config.idField} for ${section} entry.`);
     }

@@ -4,6 +4,8 @@ import ts from "typescript";
 
 type Rule =
   | "any-disallowed"
+  | "record-any-disallowed"
+  | "record-unknown-disallowed"
   | "double-assertion-unknown-disallowed"
   | "unknown-outside-boundary";
 
@@ -195,6 +197,29 @@ function collectViolationsInFile(filePath: string): Violation[] {
       }
     }
 
+    if (ts.isTypeReferenceNode(node)) {
+      const typeName = ts.isIdentifier(node.typeName) ? node.typeName.text : "";
+      if (typeName === "Record" && node.typeArguments?.length === 2) {
+        const [keyType, valueType] = node.typeArguments;
+        const isStringKey = keyType.kind === ts.SyntaxKind.StringKeyword;
+        if (isStringKey && valueType.kind === ts.SyntaxKind.AnyKeyword) {
+          violations.push(
+            makeViolation(sourceFile, sourceText, node, "record-any-disallowed"),
+          );
+        }
+        if (isStringKey && valueType.kind === ts.SyntaxKind.UnknownKeyword) {
+          violations.push(
+            makeViolation(
+              sourceFile,
+              sourceText,
+              node,
+              "record-unknown-disallowed",
+            ),
+          );
+        }
+      }
+    }
+
     ts.forEachChild(node, visit);
   };
 
@@ -236,7 +261,7 @@ function main(): void {
   }
 
   console.log(
-    `[type-escapes] OK (${files.length} files scanned, any=0, no double unknown assertions, unknown within boundary policy)`,
+    `[type-escapes] OK (${files.length} files scanned, no any, no Record<string, any|unknown>, no double unknown assertions, unknown within boundary policy)`,
   );
 }
 

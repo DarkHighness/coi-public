@@ -111,16 +111,16 @@ const ensureDirectoryStructure = (session: VfsSession): void => {
   ensureDirectoryScaffolds(session);
 };
 
-const omitUndefined = (value: Record<string, unknown>): Record<string, unknown> =>
+const omitUndefined = (value: JsonObject): JsonObject =>
   Object.fromEntries(
     Object.entries(value).filter(([, entry]) => entry !== undefined),
   );
 
-const asRecord = (value: unknown): Record<string, unknown> | null => {
+const asRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 const asTrimmedString = (value: unknown): string | null => {
@@ -148,14 +148,14 @@ const asArray = (value: unknown): unknown[] =>
 const stripUiOnlyFields = <T extends object>(
   value: T,
 ): T => {
-  const next = { ...(value as Record<string, unknown>) };
+  const next = { ...(value as JsonObject) };
   delete next.highlight;
   delete next.lastAccess;
   return next as T;
 };
 
 const buildPlaceholderDraftMarkdown = (
-  placeholder: Record<string, unknown>,
+  placeholder: JsonObject,
 ): string => {
   const id = asTrimmedString(placeholder.id) ?? "unknown";
   const label =
@@ -306,7 +306,7 @@ const writeDefinitionAndView = (
     | "causal_chains",
   entity: unknown,
   playerActorId: string,
-  options?: { keyField?: string; viewExtra?: Record<string, unknown> },
+  options?: { keyField?: string; viewExtra?: JsonObject },
 ): void => {
   const entityRecord = asRecord(entity);
   if (!entityRecord) return;
@@ -336,7 +336,7 @@ const writeDefinitionAndView = (
 
   // View write
   const viewBase = `world/characters/${playerActorId}/views/${category}/${id}.json`;
-  const view: Record<string, unknown> = omitUndefined({
+  const view: JsonObject = omitUndefined({
     entityId: id,
     unlocked,
     unlockReason,

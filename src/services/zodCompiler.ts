@@ -50,7 +50,7 @@ export interface OpenAISchema {
   enum?: Array<string | number | boolean | null>;
   additionalProperties?: boolean | OpenAISchema;
   anyOf?: OpenAISchema[];
-  // Index signature to satisfy Record<string, unknown> constraint
+  // Index signature to satisfy JsonObject constraint
   [key: string]: unknown;
 }
 

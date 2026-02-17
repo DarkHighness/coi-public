@@ -3,7 +3,6 @@ import { VfsSession } from "../../vfs/vfsSession";
 import { dispatchToolCallAsync } from "../handlers";
 
 const createTurnFinishArgs = () => ({
-  userAction: "Check the checkpoint",
   assistant: {
     narrative: "You confirm the ledger and close the cycle.",
     choices: [{ text: "Move forward" }, { text: "Wait and observe" }],
@@ -93,6 +92,7 @@ describe("VFS handlers vm", () => {
         "vfs_finish_turn",
         "vfs_read_chars",
       ],
+      vfsTurnUserAction: "Check the checkpoint",
     };
 
     const finishNotLast = (await dispatchToolCallAsync(

@@ -9,6 +9,7 @@ import { createLogEntry } from "../../utils";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import { deriveGameStateFromVfs } from "../../../vfs/derivations";
 import { readConversationIndex, readTurnFile } from "../../../vfs/conversation";
+import { toJsonValue } from "../../../jsonValue";
 
 // ============================================================================
 // Response Processing
@@ -129,8 +130,8 @@ export function createIterationLog(
     endpoint: `adventure-iteration-${iteration}`,
     toolCalls: toolCalls.map((tc) => ({
       name: tc.name,
-      input: tc.input,
-      output: tc.output,
+      input: toJsonValue(tc.input),
+      output: toJsonValue(tc.output),
       timestamp: Date.now(),
     })),
     usage,

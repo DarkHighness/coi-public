@@ -13,7 +13,7 @@ import {
 
 export const handleFinishSoul: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_finish_soul", args, () => {
-    const runtime = args as Record<string, unknown>;
+    const runtime = args as JsonObject;
     const currentSoul =
       typeof runtime.currentSoul === "string" ? runtime.currentSoul : null;
     const globalSoul =

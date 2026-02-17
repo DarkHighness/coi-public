@@ -40,6 +40,7 @@ import { THEMES } from "../../../../utils/constants";
 import { vfsToolRegistry } from "../../../vfs/tools";
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { normalizeVfsPath } from "../../../vfs/utils";
+import { toJsonValue } from "../../../jsonValue";
 import { vfsElevationTokenManager } from "../../../vfs/core/elevation";
 import {
   outlinePhase0Schema,
@@ -240,7 +241,7 @@ const OUTLINE_RESUME_ANCHOR_MARKER = "[OUTLINE RESUME ANCHOR]";
 
 type PartialPhaseKey = keyof PartialStoryOutline;
 
-const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const getPartialPhaseKey = (phaseNum: number): PartialPhaseKey =>
@@ -259,13 +260,13 @@ const setPartialPhase = (
   partial[getPartialPhaseKey(phaseNum)] = value;
 };
 
-const getStringArg = (args: Record<string, unknown>, key: string): string => {
+const getStringArg = (args: JsonObject, key: string): string => {
   const value = args[key];
   return typeof value === "string" ? value : "";
 };
 
 const getArrayArg = (
-  args: Record<string, unknown>,
+  args: JsonObject,
   key: string,
 ): unknown[] | null => {
   const value = args[key];
@@ -431,7 +432,7 @@ const extractGlobRoot = (pattern: string): string => {
 
 const validateOutlineReadOnlyVfsArgs = (
   toolName: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   allowPrefixes: string[],
 ): string | null => {
   const reject = (detail: string) =>
@@ -591,7 +592,7 @@ export const generateStoryOutlinePhased = async (
   theme: string,
   language: string,
   customContext?: string,
-  tFunc?: (key: string, options?: Record<string, unknown>) => string,
+  tFunc?: (key: string, options?: JsonObject) => string,
   options?: PhasedOutlineOptions,
 ): Promise<{
   outline: StoryOutline;
@@ -1244,7 +1245,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
         liveToolCalls = toolCalls.map((tc) => ({
           name: tc.name,
-          input: (tc.args || {}) as Record<string, unknown>,
+          input: (tc.args || {}) as JsonObject,
           output: null,
           timestamp: Date.now(),
         }));
@@ -1539,7 +1540,9 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         liveToolCalls = liveToolCalls.map((call, index) => ({
           ...call,
           output:
-            responseMapById.get(toolCalls[index]?.id || "") ?? call.output,
+            toJsonValue(
+              responseMapById.get(toolCalls[index]?.id || "") ?? call.output,
+            ),
         }));
         options.onToolCallsUpdate?.([...liveToolCalls]);
 

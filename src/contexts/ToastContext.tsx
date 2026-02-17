@@ -32,7 +32,7 @@ interface ToastContextType {
   clearToasts: () => void;
   pushStateChangeToasts: (
     changes: StateChanges,
-    t: (key: string, options?: Record<string, unknown>) => string,
+    t: (key: string, options?: JsonObject) => string,
   ) => void;
 }
 
@@ -74,7 +74,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const pushStateChangeToasts = useCallback(
     (
       changes: StateChanges,
-      t: (key: string, options?: Record<string, unknown>) => string,
+      t: (key: string, options?: JsonObject) => string,
     ) => {
       const mobile = isMobile;
 

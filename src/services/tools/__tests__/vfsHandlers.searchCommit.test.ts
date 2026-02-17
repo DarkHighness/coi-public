@@ -53,12 +53,11 @@ describe("VFS handlers search/commit", () => {
 
   it("commits turn with finish tool and updates conversation index", () => {
     const session = new VfsSession();
-    const ctx = { vfsSession: session };
+    const ctx = { vfsSession: session, vfsTurnUserAction: "look around" };
 
     const commit = dispatchToolCall(
       "vfs_finish_turn",
       {
-        userAction: "look around",
         assistant: {
           narrative: "You scan the room.",
           choices: [{ text: "Inspect desk" }, { text: "Open door" }],

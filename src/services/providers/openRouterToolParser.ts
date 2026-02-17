@@ -1,7 +1,33 @@
+import type { JsonObject, ToolArguments } from "../../types";
 import type { ToolCallResult } from "./types";
 
+const isJsonObject = (value: unknown): value is JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const parseToolArguments = (
+  rawArgs: unknown,
+  toolName: string,
+): ToolArguments => {
+  if (rawArgs === undefined) {
+    return {};
+  }
+  if (typeof rawArgs === "string") {
+    const parsed = JSON.parse(rawArgs);
+    if (!isJsonObject(parsed)) {
+      throw new Error(
+        `[OpenRouter] Tool args must be a JSON object for ${toolName}`,
+      );
+    }
+    return parsed;
+  }
+  if (isJsonObject(rawArgs)) {
+    return rawArgs;
+  }
+  throw new Error(`[OpenRouter] Invalid tool args type for ${toolName}`);
+};
+
 export const extractOpenRouterToolCalls = (
-  message: Record<string, unknown> | null | undefined,
+  message: JsonObject | null | undefined,
 ): ToolCallResult[] => {
   const rawCalls =
     (message as { toolCalls?: unknown }).toolCalls ||
@@ -26,13 +52,7 @@ export const extractOpenRouterToolCalls = (
 
     const fn = call.function || {};
     const rawArgs = fn.arguments ?? call.arguments;
-    let args: Record<string, unknown> = {};
-
-    if (typeof rawArgs === "string") {
-      args = JSON.parse(rawArgs) as Record<string, unknown>;
-    } else if (rawArgs && typeof rawArgs === "object") {
-      args = rawArgs as Record<string, unknown>;
-    }
+    const args = parseToolArguments(rawArgs, fn.name || call.name || "unknown");
 
     return {
       id: call.id,

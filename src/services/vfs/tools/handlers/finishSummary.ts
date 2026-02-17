@@ -7,16 +7,16 @@ import {
   type VfsToolHandler,
 } from "./shared";
 
-const toObjectRecord = (value: unknown): Record<string, unknown> | null => {
+const toObjectRecord = (value: unknown): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 export const handleFinishSummary: VfsToolHandler = (args, ctx) =>
   runWithStructuredErrors("vfs_finish_summary", args, () => {
-    const runtime = args as Record<string, unknown>;
+    const runtime = args as JsonObject;
 
     if ("id" in runtime || "createdAt" in runtime) {
       return createError(
@@ -72,7 +72,7 @@ export const handleFinishSummary: VfsToolHandler = (args, ctx) =>
         const existingState = toObjectRecord(parsed);
         const existingSummaries = Array.isArray(existingState?.summaries)
           ? existingState.summaries.filter(
-              (summary): summary is Record<string, unknown> =>
+              (summary): summary is JsonObject =>
                 !!summary &&
                 typeof summary === "object" &&
                 !Array.isArray(summary),

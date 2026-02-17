@@ -77,7 +77,7 @@ type OutlineHydrationLog = Omit<Partial<LogEntry>, "usage"> & {
   usage?: Partial<TokenUsage>;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const isNonEmptyString = (value: unknown): value is string =>
@@ -90,7 +90,7 @@ const withCreatedAndModified = <T extends object>(
   entity: T,
   now: number,
 ): Omit<T, "modifiedAt"> & { createdAt: number; lastModified: number } => {
-  const record = entity as Record<string, unknown>;
+  const record = entity as JsonObject;
   const { modifiedAt: _ignored, ...rest } = entity as T & {
     modifiedAt?: unknown;
   };
@@ -106,7 +106,7 @@ const withCreatedAt = <T extends object>(
   entity: T,
   now: number,
 ): Omit<T, "modifiedAt"> & { createdAt: number } => {
-  const record = entity as Record<string, unknown>;
+  const record = entity as JsonObject;
   const { modifiedAt: _ignored, ...rest } = entity as T & {
     modifiedAt?: unknown;
   };

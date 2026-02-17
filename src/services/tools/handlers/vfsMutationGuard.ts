@@ -95,7 +95,7 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
     return true;
   }
 
-  for (const key of Object.keys(input as Record<string, unknown>)) {
+  for (const key of Object.keys(input as JsonObject)) {
     if (key === "__proto__" || key === "constructor" || key === "prototype") {
       return true;
     }
@@ -106,8 +106,8 @@ const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
 
     if (
       hasUnknownKeys(
-        (input as Record<string, unknown>)[key],
-        (parsed as Record<string, unknown>)[key],
+        (input as JsonObject)[key],
+        (parsed as JsonObject)[key],
       )
     ) {
       return true;
@@ -154,11 +154,11 @@ const isSupportedVfsContentType = (
 
 const toPlainRecord = (
   value: unknown,
-): Record<string, unknown> | null => {
+): JsonObject | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as JsonObject;
 };
 
 const extractViewEntityIdFromPath = (normalizedPath: string): string | null => {

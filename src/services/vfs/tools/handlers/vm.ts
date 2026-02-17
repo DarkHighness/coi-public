@@ -36,7 +36,7 @@ const DANGEROUS_SCRIPT_PATTERNS: Array<{
 
 type VmInnerDispatcher = (
   name: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   ctx: ToolContext,
 ) => Promise<unknown>;
 
@@ -46,7 +46,7 @@ interface VmArgs {
   maxScriptChars?: number;
 }
 
-const parseVmArgs = (args: Record<string, unknown>): VmArgs => {
+const parseVmArgs = (args: JsonObject): VmArgs => {
   const scripts = Array.isArray(args.scripts)
     ? args.scripts.filter((item): item is string => typeof item === "string")
     : [];
@@ -69,7 +69,7 @@ interface VmCallTraceItem {
   index: number;
   scriptIndex: number;
   toolName: string;
-  args: Record<string, unknown>;
+  args: JsonObject;
   success: boolean;
   code?: string;
   error?: string;
@@ -84,7 +84,7 @@ interface VmExecutionMeta {
   maxScriptChars: number;
   emitted: unknown[];
   scriptResults: unknown[];
-  state: Record<string, unknown>;
+  state: JsonObject;
   callTrace: VmCallTraceItem[];
   writes: {
     successfulTargets: string[];
@@ -115,7 +115,7 @@ class VmAbortError extends Error {
   }
 }
 
-const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isToolError = (value: unknown): value is ToolCallError => {
@@ -152,7 +152,7 @@ const normalizeWriteTargetPath = (rawPath: string): string | null => {
 
 const collectWriteTargets = (
   toolName: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
 ): string[] => {
   const targets = new Set<string>();
   const pushTarget = (candidate: unknown): void => {
@@ -186,7 +186,7 @@ const findDangerousPattern = (script: string): string | null => {
 
 const normalizeCallArgs = (
   value: unknown,
-): { ok: true; args: Record<string, unknown> } | { ok: false; error: ToolCallError } => {
+): { ok: true; args: JsonObject } | { ok: false; error: ToolCallError } => {
   if (value == null) {
     return { ok: true, args: {} };
   }
@@ -201,7 +201,7 @@ const normalizeCallArgs = (
     };
   }
 
-  return { ok: true, args: value as Record<string, unknown> };
+  return { ok: true, args: value as JsonObject };
 };
 
 const wrapInnerToolError = (params: {
@@ -247,7 +247,7 @@ export const createVmHandler = (
 
     const emitted: unknown[] = [];
     const scriptResults: unknown[] = [];
-    const state: Record<string, unknown> = {};
+    const state: JsonObject = {};
     const callTrace: VmCallTraceItem[] = [];
     const successfulWriteTargets = new Set<string>();
     const failedWriteTargets = new Set<string>();

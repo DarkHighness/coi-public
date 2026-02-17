@@ -31,7 +31,7 @@ export interface TurnFile {
     forceEnd?: boolean;
     usage?: TokenUsage;
   };
-  media?: Record<string, unknown>;
+  media?: JsonObject;
   meta?: {
     playerRate?: PlayerRate;
     [key: string]: unknown;

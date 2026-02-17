@@ -22,7 +22,7 @@ import type {
   Tool,
 } from "@anthropic-ai/sdk/resources/messages";
 
-import type { TokenUsage } from "../../types";
+import type { TokenUsage, JsonObject, ToolArguments } from "../../types";
 
 import {
   ModelInfo,
@@ -63,7 +63,7 @@ export interface ClaudeConfig {
 
 /** 内容生成响应 (兼容格式) */
 export interface ClaudeContentGenerationResponse {
-  result: { functionCalls?: ToolCallResult[] } | Record<string, unknown>;
+  result: { functionCalls?: ToolCallResult[] } | JsonObject;
   usage: TokenUsage;
   raw: Message | AsyncIterable<MessageStreamEvent>;
 }
@@ -97,13 +97,50 @@ type ClaudeAssistantContentPart =
       type: "tool_use";
       id: string;
       name: string;
-      input: Record<string, unknown>;
+      input: JsonObject;
     };
 
 const getThinkingText = (value: unknown): string => {
   if (!value || typeof value !== "object") return "";
   const thinking = (value as ClaudeThinkingBlockLike).thinking;
   return typeof thinking === "string" ? thinking : "";
+};
+
+const isJsonObject = (value: unknown): value is JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const parseToolArgumentsText = (
+  rawInput: string,
+  toolName: string,
+): ToolArguments => {
+  const normalized = rawInput.trim().length > 0 ? rawInput : "{}";
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(normalized);
+  } catch {
+    throw new MalformedToolCallError("claude", toolName, rawInput);
+  }
+
+  if (!isJsonObject(parsed)) {
+    throw new MalformedToolCallError("claude", toolName, rawInput);
+  }
+
+  return parsed;
+};
+
+const parseToolArgumentsValue = (
+  rawInput: unknown,
+  toolName: string,
+): ToolArguments => {
+  if (!isJsonObject(rawInput)) {
+    throw new MalformedToolCallError(
+      "claude",
+      toolName,
+      JSON.stringify(rawInput),
+    );
+  }
+  return rawInput;
 };
 
 // ============================================================================
@@ -126,7 +163,7 @@ export function createClaudeClient(config: ClaudeConfig): Anthropic {
 }
 
 const readUsageNumber = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): number | undefined => {
   if (!usage) return undefined;
@@ -146,7 +183,7 @@ const readUsageNumber = (
 };
 
 const hasAnyUsageField = (
-  usage: Record<string, unknown> | null | undefined,
+  usage: JsonObject | null | undefined,
   keys: string[],
 ): boolean => {
   if (!usage) return false;
@@ -183,10 +220,7 @@ const CLAUDE_ALL_USAGE_KEYS = [
 ] as const;
 
 export function parseClaudeUsage(usageMetadata: unknown): TokenUsage {
-  const usage =
-    usageMetadata && typeof usageMetadata === "object"
-      ? (usageMetadata as Record<string, unknown>)
-      : null;
+  const usage = isJsonObject(usageMetadata) ? usageMetadata : null;
 
   const prompt = readUsageNumber(usage, [...CLAUDE_PROMPT_KEYS]);
   const completion = readUsageNumber(usage, [...CLAUDE_COMPLETION_KEYS]);
@@ -627,19 +661,11 @@ Answer the user's request using relevant tools (if they are available). Before c
 
         // 解析累积的工具调用
         for (const [, tc] of accumulatedToolCalls) {
-          try {
-            toolCalls.push({
-              id: tc.id,
-              name: tc.name,
-              args: JSON.parse(tc.input || "{}") as Record<string, unknown>,
-            });
-          } catch (parseError) {
-            console.error(
-              `[Claude] Failed to parse tool call arguments:`,
-              tc.input,
-            );
-            throw new MalformedToolCallError("claude", tc.name, tc.input);
-          }
+          toolCalls.push({
+            id: tc.id,
+            name: tc.name,
+            args: parseToolArgumentsText(tc.input, tc.name),
+          });
         }
 
         usage.totalTokens = usage.promptTokens + usage.completionTokens;
@@ -664,7 +690,7 @@ Answer the user's request using relevant tools (if they are available). Before c
             toolCalls.push({
               id: toolBlock.id,
               name: toolBlock.name,
-              args: toolBlock.input as Record<string, unknown>,
+              args: parseToolArgumentsValue(toolBlock.input, toolBlock.name),
             });
           }
         }
@@ -901,11 +927,11 @@ function convertToolsForClaude(
     // 构建 input_schema，只有在有必填字段时才包含 required
     const inputSchema: {
       type: "object";
-      properties: Record<string, unknown>;
+      properties: JsonObject;
       required?: string[];
     } = {
       type: "object" as const,
-      properties: (schema.properties || {}) as Record<string, unknown>,
+      properties: isJsonObject(schema.properties) ? schema.properties : {},
     };
 
     // 只有在有必填字段时才添加 required
@@ -925,22 +951,18 @@ function convertToolsForClaude(
  * 递归移除 schema 中的 additionalProperties 字段
  */
 function removeAdditionalProperties(
-  schema: Record<string, unknown>,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+  schema: JsonObject,
+): JsonObject {
+  const result: JsonObject = {};
   for (const [key, value] of Object.entries(schema)) {
     if (key === "additionalProperties") {
       continue; // 跳过 additionalProperties
     }
-    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-      result[key] = removeAdditionalProperties(
-        value as Record<string, unknown>,
-      );
+    if (isJsonObject(value)) {
+      result[key] = removeAdditionalProperties(value);
     } else if (Array.isArray(value)) {
       result[key] = value.map((item) =>
-        typeof item === "object" && item !== null
-          ? removeAdditionalProperties(item as Record<string, unknown>)
-          : item,
+        isJsonObject(item) ? removeAdditionalProperties(item) : item,
       );
     } else {
       result[key] = value;

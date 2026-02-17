@@ -95,7 +95,7 @@ const RELATIONSHIP_IDENTITY_KEYWORDS = [
   "spouse",
 ];
 
-const isRecordObject = (value: unknown): value is Record<string, unknown> =>
+const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
 const normalizeText = (value: unknown): string =>

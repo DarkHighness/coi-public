@@ -150,7 +150,7 @@ export class ConversationHistoryRewriteService {
     options: {
       requestId: string;
       reason: string;
-      payload: Record<string, unknown>;
+      payload: JsonObject;
       writeContext: VfsWriteContext;
     },
   ): string {

@@ -12,7 +12,7 @@ const DEFAULT_DEVICE_ORDER: LocalTransformersDevice[] = [
 ];
 const DEFAULT_BATCH_SIZE = 8;
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
+const isObject = (value: unknown): value is JsonObject =>
   value !== null && typeof value === "object";
 
 const isArrayLikeNumber = (value: unknown): value is ArrayLike<number> => {

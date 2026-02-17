@@ -17,14 +17,15 @@ export interface ToolCallContext {
   loopState: LoopState;
   gameState: GameState;
   settings: AISettings;
+  currentUserAction?: string;
 }
 
 export function executeGenericTool(
   name: string,
-  args: Record<string, unknown>,
+  args: JsonObject,
   ctx: ToolCallContext,
 ): unknown {
-  const { loopState, gameState, settings } = ctx;
+  const { loopState, gameState, settings, currentUserAction } = ctx;
 
   if (!hasHandler(name)) {
     return createError(`Unknown tool: ${name}`, "UNKNOWN");
@@ -47,6 +48,12 @@ export function executeGenericTool(
     vfsElevationToken: loopState.vfsElevationToken ?? null,
     vfsElevationIntent: loopState.vfsElevationIntent,
     vfsElevationScopeTemplateIds: loopState.vfsElevationScopeTemplateIds,
+    vfsTurnUserAction:
+      typeof currentUserAction === "string" && currentUserAction.length > 0
+        ? currentUserAction
+        : typeof args.userAction === "string" && args.userAction.length > 0
+          ? args.userAction
+          : undefined,
   };
 
   return dispatchToolCall(name, args, toolContext);
