@@ -695,46 +695,19 @@ Answer the user's request using relevant tools (if they are available). Before c
         resetStallTimer();
 
         try {
-          const stream = await client.messages.create(
-            {
-              ...requestParams,
-              stream: true,
-            },
-            {
-              signal: streamAbortController.signal,
-              timeout: CLAUDE_STREAM_REQUEST_TIMEOUT_MS,
-              maxRetries: 0,
-            },
-          );
+          const stream = client.messages.stream(requestParams, {
+            signal: streamAbortController.signal,
+            timeout: CLAUDE_STREAM_REQUEST_TIMEOUT_MS,
+            maxRetries: 0,
+          });
 
           rawResponse = stream;
-
-          // 累积工具调用信息
-          const accumulatedToolCalls: Map<
-            number,
-            {
-              id: string;
-              name: string;
-              input: string;
-              startInput?: unknown;
-            }
-          > = new Map();
 
           for await (const event of stream) {
             resetStallTimer();
 
             // 处理不同类型的事件
-            if (event.type === "content_block_start") {
-              const block = event.content_block;
-              if (block.type === "tool_use") {
-                accumulatedToolCalls.set(event.index, {
-                  id: block.id,
-                  name: block.name,
-                  input: "",
-                  startInput: block.input,
-                });
-              }
-            } else if (event.type === "content_block_delta") {
+            if (event.type === "content_block_delta") {
               const delta = event.delta;
               if (delta.type === "text_delta") {
                 // 文本内容
@@ -743,12 +716,6 @@ Answer the user's request using relevant tools (if they are available). Before c
               } else if (delta.type === "thinking_delta") {
                 // Thinking content (Claude Extended Thinking)
                 thinkingContent += getThinkingText(delta);
-              } else if (delta.type === "input_json_delta") {
-                // 工具调用参数（增量）
-                const existing = accumulatedToolCalls.get(event.index);
-                if (existing) {
-                  existing.input += delta.partial_json;
-                }
               }
             } else if (event.type === "message_delta") {
               // 更新使用量
@@ -789,20 +756,44 @@ Answer the user's request using relevant tools (if they are available). Before c
             }
           }
 
-          // 解析累积的工具调用
-          const orderedToolCalls = [...accumulatedToolCalls.entries()].sort(
-            ([a], [b]) => a - b,
-          );
-          for (const [, tc] of orderedToolCalls) {
-            const parsedArgs =
-              tc.input.trim().length > 0
-                ? parseToolArgumentsText(tc.input, tc.name)
-                : parseToolArgumentsValue(tc.startInput ?? {}, tc.name);
-            toolCalls.push({
-              id: tc.id,
-              name: tc.name,
-              args: parsedArgs,
-            });
+          // Use SDK-assembled final message as source of truth for tool_use.input.
+          const finalMessage = await stream.finalMessage();
+
+          let finalContent = "";
+          let finalThinking = "";
+          const finalToolCalls: ToolCallResult[] = [];
+
+          for (const block of finalMessage.content) {
+            if (block.type === "text") {
+              finalContent += (block as TextBlock).text;
+            } else if (block.type === "thinking") {
+              finalThinking += getThinkingText(block);
+            } else if (block.type === "tool_use") {
+              const toolBlock = block as ToolUseBlock;
+              finalToolCalls.push({
+                id: toolBlock.id,
+                name: toolBlock.name,
+                args: parseToolArgumentsValue(toolBlock.input, toolBlock.name),
+              });
+            }
+          }
+
+          if (finalToolCalls.length > 0) {
+            toolCalls = finalToolCalls;
+          }
+
+          if (finalContent) {
+            content = finalContent;
+          }
+
+          if (finalThinking) {
+            thinkingContent = finalThinking;
+          }
+
+          // Prefer final usage when available.
+          const finalUsage = parseClaudeUsage(finalMessage.usage);
+          if (finalUsage.reported) {
+            usage = finalUsage;
           }
         } catch (error) {
           if (abortReason === "stream_stalled") {
