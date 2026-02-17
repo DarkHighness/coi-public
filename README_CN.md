@@ -324,4 +324,8 @@ Chronicles of Infinity 是一套面向战役长度互动小说的叙事优先 AI
 
 ## 许可证
 
-MIT License。
+本仓库源代码采用
+[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)。
+
+禁止任何形式的商业用途。
+完整条款见 `LICENSE`。

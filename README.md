@@ -324,4 +324,8 @@ If you prefer npm, use `npm install` and `npm run dev`.
 
 ## License
 
-MIT License.
+Source code in this repository is licensed under
+[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
+
+Commercial use in any form is prohibited.
+See `LICENSE` for full terms.
