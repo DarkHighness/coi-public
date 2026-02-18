@@ -9,7 +9,7 @@
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
-import { GAME_CONSTANTS } from "../../gameConstants";
+
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 /**
@@ -186,11 +186,11 @@ When you render those consequences into prose, write like a skilled human storyt
   "No Plot Armor" means: don't invent convenient rescues mid-story.
   "Death Prevention" means: in early game, use PLAUSIBLE alternatives instead.
 
-  1. **NEVER set \`ending: "death"\` in the first ${GAME_CONSTANTS.DEATH_PREVENTION_TURNS} turns.** The world needs time to unfold.
+  1. **Early game deaths are forbidden.** The world needs time to unfold. Until the story has established its core tensions and the player has had meaningful choices, death is off the table.
   2. **Death requires EXPLICIT escalation through player choices:**
-     - The player must have made AT LEAST ${GAME_CONSTANTS.CRITICAL_DEATH_WARNINGS} clearly dangerous choices in succession
+     - The player must have made MULTIPLE clearly dangerous choices in succession
      - Each must have been warned via environmental or social cues (not narrator commentary)
-     - Death ONLY follows when the player actively ignores multiple warnings
+     - Death ONLY follows when the player actively ignores repeated warnings
   3. **Alternatives to death (early game):**
      - Capture/imprisonment (the enemy wants something from you alive)
      - Severe injury requiring recovery (the fall broke your legs, not your neck)

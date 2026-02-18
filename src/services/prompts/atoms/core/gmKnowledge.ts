@@ -3,7 +3,6 @@
  * Content from knowing/gm_knowledge.ts
  */
 import type { Atom, SkillAtom, SkillOutput } from "../types";
-import { GAME_CONSTANTS } from "../../gameConstants";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 const visibilityStructure = `
@@ -121,9 +120,9 @@ const unlockProtocol = `
 
     <timing_philosophy>
       **PACING GUIDELINES (not hard rules)**:
-      - **Early Game (Turns 1-${GAME_CONSTANTS.EARLY_GAME_TURN_END})**: Proofs should be RARE and HARD to obtain. NPCs are guarded.
-      - **Mid Game (Turns ${GAME_CONSTANTS.EARLY_GAME_TURN_END + 1}-${GAME_CONSTANTS.MID_GAME_TURN_END})**: More opportunities for discovery. NPCs may slip.
-      - **Late Game (Turns ${GAME_CONSTANTS.MID_GAME_TURN_END + 1}+)**: Climactic reveals. Long-held secrets surface.
+      - **Early Game**: Proofs should be RARE and HARD to obtain. NPCs are guarded. The world hasn't shown its seams yet.
+      - **Mid Game**: More opportunities for discovery. NPCs may slip under pressure. Longer acquaintance loosens tongues.
+      - **Late Game**: Climactic reveals. Long-held secrets surface under story pressure. Earned trust pays off.
       - **Some secrets**: May NEVER be proven—not all mysteries have answers.
     </timing_philosophy>
 
