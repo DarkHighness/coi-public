@@ -855,9 +855,9 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).not.toHaveBeenCalled();
     expect(
       (input.vfsSession as any).hasToolSeenInCurrentEpoch,
-    ).toHaveBeenCalledWith("world/soul.md");
+    ).toHaveBeenCalledWith("workspace/SOUL.md");
     expect(
       (input.vfsSession as any).hasToolSeenInCurrentEpoch,
-    ).toHaveBeenCalledWith("world/global/soul.md");
+    ).toHaveBeenCalledWith("workspace/USER.md");
   });
 });

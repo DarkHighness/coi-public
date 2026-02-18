@@ -430,10 +430,6 @@ export interface GameState {
   // Custom Rules for per-save prompt customization
   customRules?: CustomRule[];
 
-  // Player Psychology System - per-save soul markdown content
-  // Records how the player is approaching THIS specific story (current/world/soul.md)
-  playerProfile?: string;
-
   // Narrative Scale - AI's creative decision about story scope
   // Set during Phase 1 outline generation, influences subsequent prompts
   narrativeScale?: "epic" | "intimate" | "balanced";
@@ -1151,9 +1147,6 @@ export interface AISettings {
     // Tutorial completion flags
     tutorialStartScreenCompleted?: boolean; // StartScreen tutorial has been completed
     tutorialGamePageCompleted?: boolean; // GamePage tutorial has been completed
-    // Player Psychology System
-    disablePlayerProfiling?: boolean; // Disable cross-save player psychology tracking
-
     // ======================================================================
     // Auto-Compaction / Summary
     // ======================================================================
@@ -1186,9 +1179,6 @@ export interface AISettings {
     maxOutputTokensFallback?: number;
   };
 
-  // Player Psychology System - cross-save global soul content
-  // Source of truth across all saves (mirrored to current/world/global/soul.md)
-  playerProfile?: string;
 }
 
 export type CustomRulesAckPendingReason = "customRules";

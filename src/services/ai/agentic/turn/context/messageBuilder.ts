@@ -8,6 +8,11 @@ import type { GameState } from "@/types";
 import type { UnifiedMessage } from "@/services/messageTypes";
 import { createUserMessage } from "@/services/messageTypes";
 import type { VfsSession } from "@/services/vfs/vfsSession";
+import {
+  WORKSPACE_MEMORY_DOC_ORDER,
+  getWorkspaceMemoryLogicalPath,
+  readWorkspaceMemoryDoc,
+} from "@/services/vfs/memoryTemplates";
 import { getLatestSummaryReferencesMarkdown } from "@/services/ai/agentic/startup";
 import type { TurnMessagesResult } from "./types";
 import {
@@ -20,6 +25,15 @@ const hasKnownUserMarker = (text: string): boolean =>
   text.startsWith("[PLAYER_ACTION]") ||
   text.startsWith("[SUDO]") ||
   text.startsWith("[Player Rate]");
+
+const buildWorkspaceMemoryFileMessage = (
+  vfsSession: VfsSession,
+  doc: (typeof WORKSPACE_MEMORY_DOC_ORDER)[number],
+): UnifiedMessage => {
+  const path = getWorkspaceMemoryLogicalPath(doc);
+  const content = readWorkspaceMemoryDoc(vfsSession, doc);
+  return createUserMessage(`<file path="${path}">\n${content}\n</file>`);
+};
 
 function buildLatestSummaryContext(gameState: GameState): string {
   const summaries = gameState.summaries;
@@ -75,7 +89,9 @@ export function buildInitialContext(
   gameState: GameState,
   vfsSession: VfsSession,
 ): UnifiedMessage[] {
-  const messages: UnifiedMessage[] = [];
+  const messages: UnifiedMessage[] = WORKSPACE_MEMORY_DOC_ORDER.map((doc) =>
+    buildWorkspaceMemoryFileMessage(vfsSession, doc),
+  );
 
   const worldFoundation = buildWorldFoundation(vfsSession);
   const protagonist = buildProtagonist(vfsSession);

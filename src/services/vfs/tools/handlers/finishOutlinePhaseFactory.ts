@@ -48,7 +48,7 @@ export const createFinishOutlinePhaseHandler = (
             const storyPlanMarkdown = payload?.storyPlanMarkdown;
             if (typeof storyPlanMarkdown === "string") {
               writeOutlineStoryPlan(draft, storyPlanMarkdown);
-              planPath = toCurrentPath("outline/story_outline/plan.md");
+              planPath = toCurrentPath("workspace/PLAN.md");
             }
           }
 

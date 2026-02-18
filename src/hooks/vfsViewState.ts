@@ -381,7 +381,6 @@ export const mergeDerivedViewState = (
     customContext: derived.customContext ?? base.customContext,
     language: derived.language || base.language,
     customRules: derived.customRules,
-    playerProfile: derived.playerProfile ?? base.playerProfile,
     narrativeScale: derived.narrativeScale ?? base.narrativeScale,
     seedImageId: derived.seedImageId ?? base.seedImageId,
     initialPrompt: derived.initialPrompt ?? base.initialPrompt,

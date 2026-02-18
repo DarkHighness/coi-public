@@ -37,11 +37,11 @@ import type { VfsSession } from "../../services/vfs/vfsSession";
 import { vfsElevationTokenManager } from "../../services/vfs/core/elevation";
 import { normalizeVfsPath } from "../../services/vfs/utils";
 import {
-  CURRENT_SOUL_LOGICAL_PATH,
-  GLOBAL_SOUL_CANONICAL_PATH,
-  GLOBAL_SOUL_LOGICAL_PATH,
-  normalizeSoulMarkdown,
-} from "../../services/vfs/soulTemplates";
+  WORKSPACE_SOUL_CANONICAL_PATH,
+  WORKSPACE_SOUL_LOGICAL_PATH,
+  WORKSPACE_USER_CANONICAL_PATH,
+  WORKSPACE_USER_LOGICAL_PATH,
+} from "../../services/vfs/memoryTemplates";
 
 type ShowToast = (
   message: string,
@@ -55,7 +55,6 @@ interface CommandActionsDeps {
   currentSlotId: string | null;
   gameStateRef: MutableRefObject<GameState>;
   setGameState: Dispatch<SetStateAction<GameState>>;
-  handleSaveSettings: (settings: AISettings) => void;
   showToast: ShowToast;
   t: TFunction;
   vfsSession: VfsSession;
@@ -74,7 +73,6 @@ export function createCommandActions({
   currentSlotId,
   gameStateRef,
   setGameState,
-  handleSaveSettings,
   showToast,
   t,
   vfsSession,
@@ -180,22 +178,18 @@ export function createCommandActions({
     message: string;
   }) => (typeof window !== "undefined" ? window.confirm(message) : false);
 
-  const snapshotCandidatesForGlobalSoul = [
-    GLOBAL_SOUL_CANONICAL_PATH,
-    GLOBAL_SOUL_LOGICAL_PATH,
-    `current/${GLOBAL_SOUL_LOGICAL_PATH}`,
-  ];
+  const PLAYER_RATE_MEMORY_PATHS = new Set([
+    WORKSPACE_SOUL_LOGICAL_PATH,
+    `current/${WORKSPACE_SOUL_LOGICAL_PATH}`,
+    WORKSPACE_SOUL_CANONICAL_PATH,
+    WORKSPACE_USER_LOGICAL_PATH,
+    `current/${WORKSPACE_USER_LOGICAL_PATH}`,
+    WORKSPACE_USER_CANONICAL_PATH,
+  ]);
 
-  const isSoulPath = (path: string): boolean => {
+  const isPlayerRateMemoryPath = (path: string): boolean => {
     const normalized = normalizeVfsPath(path);
-    return (
-      normalized === CURRENT_SOUL_LOGICAL_PATH ||
-      normalized === `current/${CURRENT_SOUL_LOGICAL_PATH}` ||
-      normalized === GLOBAL_SOUL_LOGICAL_PATH ||
-      normalized === `current/${GLOBAL_SOUL_LOGICAL_PATH}` ||
-      normalized === GLOBAL_SOUL_CANONICAL_PATH ||
-      /\/story\/world\/soul\.md$/.test(normalized)
-    );
+    return PLAYER_RATE_MEMORY_PATHS.has(normalized);
   };
 
   const captureSnapshotFiles = () => {
@@ -218,7 +212,7 @@ export function createCommandActions({
     return cloned;
   };
 
-  const restoreSnapshotExceptSoul = (
+  const restoreSnapshotExceptPlayerRateMemory = (
     baseline: Record<
       string,
       {
@@ -230,7 +224,7 @@ export function createCommandActions({
     const after = vfsSession.snapshot();
 
     for (const [path, file] of Object.entries(after)) {
-      if (isSoulPath(path)) {
+      if (isPlayerRateMemoryPath(path)) {
         continue;
       }
 
@@ -260,7 +254,7 @@ export function createCommandActions({
     }
 
     for (const [path, file] of Object.entries(baseline)) {
-      if (isSoulPath(path)) {
+      if (isPlayerRateMemoryPath(path)) {
         continue;
       }
       if (after[path]) {
@@ -268,35 +262,6 @@ export function createCommandActions({
       }
       vfsSession.writeFile(path, file.content, file.contentType);
     }
-  };
-
-  const readGlobalSoulFromSnapshot = (
-    snapshot: ReturnType<VfsSession["snapshot"]>,
-  ) => {
-    for (const path of snapshotCandidatesForGlobalSoul) {
-      const file = snapshot[path];
-      if (!file) continue;
-      if (
-        file.contentType === "text/markdown" ||
-        file.contentType === "text/plain"
-      ) {
-        return normalizeSoulMarkdown("global", file.content);
-      }
-    }
-    return null;
-  };
-
-  const syncSettingsFromGlobalSoulMirror = (
-    snapshot: ReturnType<VfsSession["snapshot"]>,
-  ) => {
-    const globalSoul = readGlobalSoulFromSnapshot(snapshot);
-    if (!globalSoul) return;
-    if (globalSoul === aiSettings.playerProfile) return;
-
-    handleSaveSettings({
-      ...aiSettings,
-      playerProfile: globalSoul,
-    });
   };
 
   const parseTurnFromModelSegmentId = (
@@ -972,8 +937,8 @@ export function createCommandActions({
         context,
       );
 
-      // Restore all non-soul writes from the isolated rate-processing turn.
-      restoreSnapshotExceptSoul(baselineSnapshot);
+      // Restore all non-memory writes from the isolated rate-processing turn.
+      restoreSnapshotExceptPlayerRateMemory(baselineSnapshot);
 
       const processedAt = Date.now();
       const processedRate: PlayerRate = {
@@ -1001,13 +966,12 @@ export function createCommandActions({
       };
       setGameState(gameStateRef.current);
 
-      syncSettingsFromGlobalSoulMirror(vfsSnapshot);
       emitRecoveryNotice("rate", recovery);
       triggerSave();
       return { success: true };
     } catch (error: unknown) {
       try {
-        restoreSnapshotExceptSoul(baselineSnapshot);
+        restoreSnapshotExceptPlayerRateMemory(baselineSnapshot);
       } catch (rollbackError) {
         console.warn(
           "[PlayerRate] Failed to rollback isolated rate turn",

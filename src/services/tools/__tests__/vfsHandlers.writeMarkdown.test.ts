@@ -135,16 +135,16 @@ describe("vfs_write_markdown", () => {
   it("updates outline story plan markdown when read-before-mutate is satisfied", () => {
     const session = new VfsSession();
     session.writeFile(
-      "outline/story_outline/plan.md",
+      "workspace/PLAN.md",
       ["# Plan", "", "## Phase 1", "", "- [ ] Reach the gate"].join("\n"),
       "text/markdown",
     );
-    readForMutation(session, "outline/story_outline/plan.md");
+    readForMutation(session, "workspace/PLAN.md");
 
     const writeResult = dispatchToolCall(
       "vfs_write_markdown",
       {
-        path: "current/outline/story_outline/plan.md",
+        path: "current/workspace/PLAN.md",
         action: "add_section",
         parent: { heading: "Plan" },
         section: {
@@ -160,7 +160,7 @@ describe("vfs_write_markdown", () => {
     const readResult = dispatchToolCall(
       "vfs_read_markdown",
       {
-        path: "current/outline/story_outline/plan.md",
+        path: "current/workspace/PLAN.md",
         headings: ["Branch Update"],
       },
       { vfsSession: session },
@@ -174,7 +174,7 @@ describe("vfs_write_markdown", () => {
   it("enforces read-before-mutate for existing outline story plan markdown", () => {
     const session = new VfsSession();
     session.writeFile(
-      "outline/story_outline/plan.md",
+      "workspace/PLAN.md",
       "# Plan\n\n## Phase 1\n\n- [ ] Reach the gate",
       "text/markdown",
     );
@@ -182,7 +182,7 @@ describe("vfs_write_markdown", () => {
     const result = dispatchToolCall(
       "vfs_write_markdown",
       {
-        path: "current/outline/story_outline/plan.md",
+        path: "current/workspace/PLAN.md",
         action: "add_section",
         section: { title: "Next", content: "x" },
       },

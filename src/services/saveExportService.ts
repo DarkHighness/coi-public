@@ -1257,7 +1257,6 @@ const createVfsSnapshotsFromLegacyState = async (
         ...state,
         ...(snapshotState ?? {}),
         theme: state.theme,
-        playerProfile: state.playerProfile,
         customContext: state.customContext,
         language: state.language,
         narrativeScale: state.narrativeScale,

@@ -11,7 +11,7 @@ interface OutlineProgressFile {
 
 const OUTLINE_PATH = "current/outline/outline.json";
 const OUTLINE_PROGRESS_PATH = "current/outline/progress.json";
-const OUTLINE_STORY_PLAN_PATH = "current/outline/story_outline/plan.md";
+const OUTLINE_STORY_PLAN_PATH = "workspace/PLAN.md";
 
 const resolveRelativePath = (path: string): string =>
   normalizeVfsPath(stripCurrentPath(path));

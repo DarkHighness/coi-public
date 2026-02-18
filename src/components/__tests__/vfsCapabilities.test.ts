@@ -48,7 +48,7 @@ describe("vfs capabilities", () => {
 
   it("marks outline story plan as editable", () => {
     const capabilities = getFilePathCapabilities(
-      "outline/story_outline/plan.md",
+      "workspace/PLAN.md",
       createContext(),
     );
 

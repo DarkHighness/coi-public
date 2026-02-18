@@ -19,10 +19,8 @@ import {
 } from "./customRules";
 import { ensureDirectoryScaffolds } from "./directoryScaffolds";
 import {
-  CURRENT_SOUL_LOGICAL_PATH,
-  GLOBAL_SOUL_LOGICAL_PATH,
-  normalizeSoulMarkdown,
-} from "./soulTemplates";
+  ensureWorkspaceMemoryDocuments,
+} from "./memoryTemplates";
 import { sanitizeCanonicalWorldRecord } from "./stateLayering";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {
@@ -96,20 +94,6 @@ const ensureCustomRulesReadme = (session: VfsSession): void => {
       "text/markdown",
     );
   }
-};
-
-const writeSoulDocuments = (
-  session: VfsSession,
-  options?: {
-    currentProfile?: string;
-    globalProfile?: string;
-  },
-): void => {
-  const currentSoul = normalizeSoulMarkdown("current", options?.currentProfile);
-  const globalSoul = normalizeSoulMarkdown("global", options?.globalProfile);
-
-  session.writeFile(CURRENT_SOUL_LOGICAL_PATH, currentSoul, "text/markdown");
-  session.writeFile(GLOBAL_SOUL_LOGICAL_PATH, globalSoul, "text/markdown");
 };
 
 const ensureDirectoryStructure = (session: VfsSession): void => {
@@ -384,10 +368,7 @@ export const seedVfsSessionFromGameState = (
   ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
-  writeSoulDocuments(session, {
-    currentProfile: state.playerProfile,
-    globalProfile: state.playerProfile,
-  });
+  ensureWorkspaceMemoryDocuments(session);
 
   writeJson(session, "world/global.json", {
     time: state.time,
@@ -533,7 +514,7 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
   ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
-  writeSoulDocuments(session);
+  ensureWorkspaceMemoryDocuments(session);
 
   writeJson(session, "world/global.json", {
     time: "Day 1, 08:00",
@@ -634,7 +615,7 @@ export const seedVfsSessionFromOutline = (
   ensureDirectoryStructure(session);
   ensureGlobalNotes(session);
   ensureCustomRulesReadme(session);
-  writeSoulDocuments(session);
+  ensureWorkspaceMemoryDocuments(session);
 
   writeJson(session, "world/global.json", {
     time: options.time,

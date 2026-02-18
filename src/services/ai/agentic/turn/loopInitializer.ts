@@ -17,10 +17,6 @@ import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
 import { vfsToolRegistry } from "../../../vfs/tools";
 import {
-  CURRENT_SOUL_LOGICAL_PATH,
-  GLOBAL_SOUL_LOGICAL_PATH,
-} from "../../../vfs/soulTemplates";
-import {
   getConversationMarker,
   type ConversationMarker,
 } from "./resultAccumulator";
@@ -57,8 +53,6 @@ export interface LoopState {
   isPlayerRateMode: boolean;
   /** Required command skill paths for this loop */
   requiredCommandSkillPaths: string[];
-  /** Session-level mandatory soul reads before mutation */
-  requiredSoulReadPaths: string[];
   /** Required preset skill paths for this loop */
   requiredPresetSkillPaths: string[];
   /** Active preset requirements with source metadata */
@@ -166,10 +160,6 @@ export function createLoopState(
         ]),
     ).values(),
   );
-  const requiredSoulReadPaths = isCleanupMode
-    ? []
-    : [CURRENT_SOUL_LOGICAL_PATH, GLOBAL_SOUL_LOGICAL_PATH];
-
   return {
     vfsSession,
     conversationMarker,
@@ -188,7 +178,6 @@ export function createLoopState(
     finishToolName,
     isRAGEnabled,
     requiredCommandSkillPaths,
-    requiredSoulReadPaths,
     requiredPresetSkillPaths: uniqueRequiredPresetSkillPaths,
     requiredPresetSkillRequirements: uniqueRequiredPresetSkillRequirements,
     vfsMode: resolvedVfsMode,

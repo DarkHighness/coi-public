@@ -2,7 +2,7 @@ import type { GameState } from "@/types";
 import { normalizeVfsPath } from "@/services/vfs/utils";
 
 const PATH_TOKEN_RE =
-  /(?:^|[\s(])((?:current|shared|forks|skills|conversation|session|world|summary)\/[A-Za-z0-9._\-/]+(?:\.[A-Za-z0-9]+)?)/g;
+  /(?:^|[\s(])((?:current|shared|forks|skills|conversation|session|world|summary|workspace)\/[A-Za-z0-9._\-/]+(?:\.[A-Za-z0-9]+)?)/g;
 const MARKDOWN_LINK_RE = /\[[^\]]+\]\(([^)]+)\)/g;
 const INLINE_CODE_RE = /`([^`]+)`/g;
 const LIST_ITEM_RE = /^\s*[-*+]\s+(.*)$/;
@@ -13,6 +13,7 @@ const KNOWN_RELATIVE_PREFIXES = [
   "session/",
   "world/",
   "summary/",
+  "workspace/",
 ] as const;
 
 const BROAD_REFERENCE_SET = new Set(["current/skills/index.json"]);
@@ -140,8 +141,10 @@ export const isAnchorReferencePath = (path: string): boolean =>
   /^current\/session\/[^/]+\.jsonl$/i.test(path) ||
   path === "current/session/lineage.json" ||
   path === "current/conversation/index.json" ||
-  path === "current/world/soul.md" ||
-  path === "current/world/global/soul.md" ||
+  path === "current/workspace/IDENTITY.md" ||
+  path === "current/workspace/SOUL.md" ||
+  path === "current/workspace/USER.md" ||
+  path === "current/workspace/PLAN.md" ||
   path === "current/summary/state.json";
 
 export const isBroadReferencePath = (path: string): boolean =>

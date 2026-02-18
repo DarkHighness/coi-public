@@ -144,7 +144,7 @@ describe("VFS global skills generator", () => {
     expect(commandRuntimeHub).toContain("JavaScript");
     expect(commandRuntimeHub).toContain("globalThis");
     expect(commandRuntimeHub).toContain(
-      "maintain `current/outline/story_outline/plan.md` continuity",
+      "maintain `workspace/PLAN.md` continuity",
     );
     expect(commandTurn).toContain("name: commands-turn");
     expect(commandTurn).toContain("vfs_finish_turn");
@@ -154,18 +154,17 @@ describe("VFS global skills generator", () => {
     expect(commandTurn).toContain("vfs_vm");
     expect(commandTurn).toContain("JavaScript");
     expect(commandTurn).toContain("globalThis");
-    expect(commandTurn).toContain("current/outline/story_outline/plan.md");
+    expect(commandTurn).toContain("workspace/PLAN.md");
     expect(commandTurn).toContain("full `plan.md` rewrite is allowed");
     expect(commandTurn).toContain(
       "Major branch fracture (new dominant trajectory)",
     );
     expect(commandPlayerRate).toContain("name: commands-player-rate");
     expect(commandPlayerRate).toContain("[Player Rate]");
-    expect(commandPlayerRate).toContain("current/world/soul.md");
-    expect(commandPlayerRate).toContain("vfs_finish_soul");
+    expect(commandPlayerRate).toContain("workspace/SOUL.md");
+    expect(commandPlayerRate).toContain("vfs_end_turn");
     expect(commandPlayerRate).toContain("vfs_vm");
-    expect(commandPlayerRate).toContain("JavaScript");
-    expect(commandPlayerRate).toContain("globalThis");
+    expect(commandPlayerRate).toContain("unavailable in this loop");
     expect(commandPlayerRate).toContain("AI-to-AI self-notes");
     expect(commandCleanup).toContain("vfs_vm");
     expect(commandCleanup).toContain("retconAck?: { summary }");

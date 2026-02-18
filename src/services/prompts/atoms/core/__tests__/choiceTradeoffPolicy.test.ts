@@ -36,7 +36,7 @@ describe("choice tradeoff policy", () => {
   it("keeps player-rate loop free from normal-turn choice constraints", () => {
     const playerRatePrompt = outputFormat({
       language: "en",
-      finishToolName: "vfs_finish_soul",
+      finishToolName: "vfs_end_turn",
     });
 
     expect(playerRatePrompt).toContain(

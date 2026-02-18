@@ -36,6 +36,7 @@ const OPERATION_HINTS_BY_TOOL: Partial<Record<VfsToolName, string>> = {
   vfs_move: "move",
   vfs_delete: "delete",
   vfs_finish_turn: "finish_commit",
+  vfs_end_turn: "finish_end",
   vfs_finish_summary: "finish_summary",
 };
 
@@ -690,11 +691,10 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
       ],
       needsElevationFor: ["elevated_editable"],
       immutableZones: IMMUTABLE_ZONES,
-      toolsets: ["turn", "playerRate", "cleanup"],
+      toolsets: ["turn", "cleanup"],
     },
     toolsetOrder: ordered({
       turn: 49,
-      playerRate: 49,
       cleanup: 49,
     }),
   }),
@@ -715,10 +715,12 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     handlerKey: "write_file",
     capability: {
       ...CAPABILITY_WRITE_MUTATION,
+      toolsets: ["turn", "playerRate", "cleanup"],
       summary: "Create or overwrite one file.",
     },
     toolsetOrder: ordered({
       turn: 50,
+      playerRate: 50,
       cleanup: 50,
     }),
   }),
@@ -782,10 +784,12 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     handlerKey: "edit_lines",
     capability: {
       ...CAPABILITY_WRITE_MUTATION,
+      toolsets: ["turn", "playerRate", "cleanup"],
       summary: "Apply line-based text edits.",
     },
     toolsetOrder: ordered({
       turn: 52,
+      playerRate: 52,
       cleanup: 52,
     }),
   }),
@@ -821,10 +825,12 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     handlerKey: "write_markdown",
     capability: {
       ...CAPABILITY_WRITE_MUTATION,
+      toolsets: ["turn", "playerRate", "cleanup"],
       summary: "Mutate markdown sections by selector.",
     },
     toolsetOrder: ordered({
       turn: 52.5,
+      playerRate: 52.5,
       cleanup: 52.5,
     }),
   }),
@@ -970,29 +976,13 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     }),
   }),
   defineCatalogTool({
-    name: "vfs_finish_soul",
+    name: "vfs_end_turn",
     description:
-      "Commit Player Rate feedback: update soul markdown docs for current save and/or global mirror. MUST be the LAST tool call in [Player Rate] loops.",
-    parameters: z
-      .object({
-        currentSoul: z
-          .string()
-          .optional()
-          .describe(
-            "Optional markdown content for current save soul (`current/world/soul.md`).",
-          ),
-        globalSoul: z
-          .string()
-          .optional()
-          .describe(
-            "Optional markdown content for global soul mirror (`current/world/global/soul.md`).",
-          ),
-      })
-      .strict(),
-    handlerKey: "finish_soul",
+      "End Player Rate feedback loop (no args). MUST be the LAST tool call in [Player Rate] loops.",
+    parameters: z.object({}).strict(),
+    handlerKey: "end_turn",
     capability: {
-      summary:
-        "Commit soul markdown updates for current save and/or global mirror.",
+      summary: "Finish Player Rate loop without committing conversation turn.",
       readOnly: false,
       mayWriteClasses: ["default_editable"],
       needsElevationFor: [],

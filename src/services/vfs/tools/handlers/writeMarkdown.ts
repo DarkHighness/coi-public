@@ -6,6 +6,7 @@ import {
 } from "../../../tools/handlers/vfsMutationGuard";
 import { toCurrentPath } from "../../currentAlias";
 import {
+  enforceWorkspaceMemoryWritePolicy,
   ensureNotFinishGuardedMutation,
   isPathResolveError,
   requireToolSeenForExistingFile,
@@ -206,6 +207,14 @@ export const handleWriteMarkdown: VfsToolHandler = (args, ctx) =>
       );
       if (finishGuardError) {
         return finishGuardError;
+      }
+      const memoryPolicyError = enforceWorkspaceMemoryWritePolicy(
+        ctx,
+        resolved.path,
+        "vfs_write_markdown",
+      );
+      if (memoryPolicyError) {
+        return memoryPolicyError;
       }
 
       const existing = draft.readFile(resolved.path);

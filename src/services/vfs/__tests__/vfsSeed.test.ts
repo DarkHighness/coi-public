@@ -13,16 +13,16 @@ describe("seedVfsSessionFromDefaults", () => {
 
     expect(session.readFile("world/global.json")).toBeTruthy();
     expect(session.readFile("world/notes.md")).toBeTruthy();
-    expect(session.readFile("world/soul.md")).toBeTruthy();
-    expect(session.readFile("world/global/soul.md")).toBeTruthy();
+    expect(session.readFile("workspace/SOUL.md")).toBeTruthy();
+    expect(session.readFile("workspace/USER.md")).toBeTruthy();
     expect(session.readFile("conversation/index.json")).toBeTruthy();
     expect(
       session.readFile("conversation/turns/fork-0/turn-0.json"),
     ).toBeTruthy();
 
     const notes = session.readFile("world/notes.md")?.content ?? "";
-    const currentSoul = session.readFile("world/soul.md")?.content ?? "";
-    const globalSoul = session.readFile("world/global/soul.md")?.content ?? "";
+    const currentSoul = session.readFile("workspace/SOUL.md")?.content ?? "";
+    const globalSoul = session.readFile("workspace/USER.md")?.content ?? "";
     const playerProfile = JSON.parse(
       session.readFile("world/characters/char:player/profile.json")?.content ??
         "{}",
@@ -36,8 +36,8 @@ describe("seedVfsSessionFromDefaults", () => {
       };
     };
     expect(notes).toContain("Story Teller AI");
-    expect(currentSoul).toContain("Story Teller AI");
-    expect(globalSoul).toContain("Story Teller AI");
+    expect(currentSoul).toContain("# SOUL");
+    expect(globalSoul).toContain("# USER");
     expect(playerProfile.visible?.age).toBe("Unspecified");
     expect(playerProfile.visible?.gender).toBe("Unspecified");
     expect(playerProfile.visible?.profession).toBe("Unspecified");

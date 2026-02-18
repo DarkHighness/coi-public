@@ -27,7 +27,6 @@ import { canonicalToLogicalVfsPath } from "./core/pathResolver";
 import { readConversationIndex, readTurnFile } from "./conversation";
 import { readOutlineFile, readOutlineProgress } from "./outline";
 import { deriveCustomRulesFromVfs } from "./customRules";
-import { normalizeSoulMarkdown } from "./soulTemplates";
 import { sanitizeCanonicalWorldRecord } from "./stateLayering";
 
 const DEFAULT_FORK_TREE = {
@@ -1164,32 +1163,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const causalChainViewObservers = new Map<string, Set<string>>();
   let playerWorldInfoView: WorldInfoViewData | null = null;
   let hasGlobalTheme = false;
-  let currentSoulMarkdown: string | null = null;
-  let globalSoulMarkdown: string | null = null;
 
   for (const file of entries) {
     const normalizedPath = normalizeVfsPath(file.path);
     const pathWithoutCurrent = stripCurrentPrefix(normalizedPath);
-
-    if (pathWithoutCurrent === "world/soul.md") {
-      if (
-        file.contentType === "text/markdown" ||
-        file.contentType === "text/plain"
-      ) {
-        currentSoulMarkdown = normalizeSoulMarkdown("current", file.content);
-      }
-      continue;
-    }
-
-    if (pathWithoutCurrent === "world/global/soul.md") {
-      if (
-        file.contentType === "text/markdown" ||
-        file.contentType === "text/plain"
-      ) {
-        globalSoulMarkdown = normalizeSoulMarkdown("global", file.content);
-      }
-      continue;
-    }
 
     if (
       pathWithoutCurrent.startsWith("world/placeholders/") &&
@@ -1599,12 +1576,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   }
 
   state.customRules = deriveCustomRulesFromVfs(files);
-
-  if (currentSoulMarkdown) {
-    state.playerProfile = currentSoulMarkdown;
-  } else if (globalSoulMarkdown) {
-    state.playerProfile = normalizeSoulMarkdown("current", globalSoulMarkdown);
-  }
 
   // Merge canonical entities with player views into UI-friendly view models.
 

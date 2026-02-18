@@ -32,7 +32,7 @@ describe("vfsPolicyEngine", () => {
   });
 
   it("allows AI writes to outline story plan in normal mode", () => {
-    const decision = vfsPolicyEngine.canWrite("outline/story_outline/plan.md", {
+    const decision = vfsPolicyEngine.canWrite("workspace/PLAN.md", {
       actor: "ai",
       mode: "normal",
     });
@@ -43,7 +43,7 @@ describe("vfsPolicyEngine", () => {
 
   it("allows writing outline story plan in normal editor flow", () => {
     const sessionToken = vfsElevationTokenManager.issueEditorSessionToken();
-    const decision = vfsPolicyEngine.canWrite("outline/story_outline/plan.md", {
+    const decision = vfsPolicyEngine.canWrite("workspace/PLAN.md", {
       actor: "user_editor",
       mode: "normal",
       editorSessionToken: sessionToken,

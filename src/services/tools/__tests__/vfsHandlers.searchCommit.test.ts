@@ -165,42 +165,25 @@ describe("VFS handlers search/commit", () => {
     expect(invalid.code).toBe("INVALID_DATA");
   });
 
-  it("commits soul markdown with dedicated finish tool", () => {
+  it("ends player-rate loop with empty finish tool payload", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
-    const invalid = dispatchToolCall("vfs_finish_soul", {}, ctx) as any;
-    expect(invalid.success).toBe(false);
-
     const commit = dispatchToolCall(
-      "vfs_finish_soul",
-      {
-        currentSoul:
-          "# Player Soul (This Save)\n\n## Guidance For AI\n- Keep concise.\n",
-        globalSoul:
-          "# Player Soul (Global)\n\n## Guidance For AI\n- Reduce AI flavor.\n",
-      },
+      "vfs_end_turn",
+      {},
       ctx,
     ) as any;
 
     expect(commit.success).toBe(true);
-    expect(commit.data.updated).toContain("current/world/soul.md");
-    expect(commit.data.updated).toContain("current/world/global/soul.md");
+    expect(commit.data).toMatchObject({ ended: true });
 
-    const currentSoul = dispatchToolCall(
-      "vfs_read_chars",
-      { path: "current/world/soul.md" },
+    const invalid = dispatchToolCall(
+      "vfs_end_turn",
+      { currentSoul: "legacy" },
       ctx,
     ) as any;
-    expect(currentSoul.success).toBe(true);
-    expect(currentSoul.data.content).toContain("Player Soul (This Save)");
-
-    const globalSoul = dispatchToolCall(
-      "vfs_read_chars",
-      { path: "current/world/global/soul.md" },
-      ctx,
-    ) as any;
-    expect(globalSoul.success).toBe(true);
-    expect(globalSoul.data.content).toContain("Player Soul (Global)");
+    expect(invalid.success).toBe(false);
+    expect(invalid.code).toBe("INVALID_PARAMS");
   });
 });

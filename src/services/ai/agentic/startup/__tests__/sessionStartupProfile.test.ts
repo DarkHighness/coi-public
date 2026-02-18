@@ -40,7 +40,7 @@ describe("sessionStartupProfile", () => {
         "- current/skills/e/SKILL.md",
       ].join("\n"),
       mandatoryReadPaths: ["current/skills/commands/runtime/SKILL.md"],
-      fallbackReadPaths: ["session/session-a.jsonl", "world/soul.md"],
+      fallbackReadPaths: ["session/session-a.jsonl", "workspace/SOUL.md"],
       maxOptionalRefs: 1,
       maxParsedRefs: 3,
     });
@@ -50,7 +50,7 @@ describe("sessionStartupProfile", () => {
     expect(profile.preloadReadPaths).toEqual([
       "current/skills/commands/runtime/SKILL.md",
       "current/session/session-a.jsonl",
-      "current/world/soul.md",
+      "current/workspace/SOUL.md",
     ]);
     expect(profile.warnings.join("\n")).toContain(
       "Using narrow runtime fallback refs",

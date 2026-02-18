@@ -49,16 +49,28 @@ const mapLogicalToCanonical = (logicalPath: string, forkId: number): string => {
     return withSharedPrefix(`config/${logical}`);
   }
 
+  if (logical === "workspace/SOUL.md") {
+    return withSharedPrefix("config/workspace/SOUL.md");
+  }
+
+  if (logical === "workspace/USER.md") {
+    return withSharedPrefix("config/workspace/USER.md");
+  }
+
+  if (logical === "workspace/IDENTITY.md") {
+    return withSharedPrefix("config/workspace/IDENTITY.md");
+  }
+
+  if (logical === "workspace/PLAN.md") {
+    return withForkPrefix(forkId, "story/workspace/PLAN.md");
+  }
+
   if (logical === "world/theme_config.json") {
     return withSharedPrefix("config/theme/theme_config.json");
   }
 
   if (logical === "world/runtime/custom_rules_ack_state.json") {
     return withSharedPrefix("config/runtime/custom_rules_ack_state.json");
-  }
-
-  if (logical === "world/global/soul.md") {
-    return withSharedPrefix("config/runtime/soul.md");
   }
 
   if (logical === "conversation/index.json") {
@@ -126,16 +138,24 @@ const mapCanonicalToLogical = (
     return canonical.slice("shared/config/".length);
   }
 
+  if (canonical === "shared/config/workspace/SOUL.md") {
+    return "workspace/SOUL.md";
+  }
+
+  if (canonical === "shared/config/workspace/USER.md") {
+    return "workspace/USER.md";
+  }
+
+  if (canonical === "shared/config/workspace/IDENTITY.md") {
+    return "workspace/IDENTITY.md";
+  }
+
   if (canonical === "shared/config/theme/theme_config.json") {
     return "world/theme_config.json";
   }
 
   if (canonical === "shared/config/runtime/custom_rules_ack_state.json") {
     return "world/runtime/custom_rules_ack_state.json";
-  }
-
-  if (canonical === "shared/config/runtime/soul.md") {
-    return "world/global/soul.md";
   }
 
   if (canonical === "shared/narrative/outline") {
@@ -174,6 +194,13 @@ const mapCanonicalToLogical = (
 
   if (startsWithSegment(rest, "story/conversation")) {
     return rest.slice("story/".length);
+  }
+
+  if (rest === "story/workspace/PLAN.md") {
+    if (!looseFork && forkId !== activeForkId) {
+      return canonical;
+    }
+    return "workspace/PLAN.md";
   }
 
   if (rest === "story/summary/state.json") {

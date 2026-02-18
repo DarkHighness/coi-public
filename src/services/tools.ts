@@ -53,7 +53,7 @@ export const VFS_MERGE_JSON_TOOL = getTool("vfs_merge_json");
 export const VFS_MOVE_TOOL = getTool("vfs_move");
 export const VFS_DELETE_TOOL = getTool("vfs_delete");
 export const VFS_FINISH_TURN_TOOL = getTool("vfs_finish_turn");
-export const VFS_FINISH_SOUL_TOOL = getTool("vfs_finish_soul");
+export const VFS_END_TURN_TOOL = getTool("vfs_end_turn");
 export const VFS_FINISH_SUMMARY_TOOL = getTool("vfs_finish_summary");
 export const VFS_FINISH_OUTLINE_PHASE_0_TOOL = getTool(
   "vfs_finish_outline_phase_0",

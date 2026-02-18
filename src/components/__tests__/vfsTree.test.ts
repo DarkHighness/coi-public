@@ -104,7 +104,7 @@ describe("vfs tree builder", () => {
     expect(isReadonlyPath("outline/progress.json")).toBe(false);
     expect(isReadonlyPath("summary/state.json")).toBe(true);
     expect(isReadonlyPath("outline/outline.json")).toBe(false);
-    expect(isReadonlyPath("outline/story_outline/plan.md")).toBe(false);
+    expect(isReadonlyPath("workspace/PLAN.md")).toBe(false);
     expect(isReadonlyPath("world/characters/char:player/profile.json")).toBe(
       false,
     );

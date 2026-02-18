@@ -95,7 +95,7 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("refs/**");
 
     // Outline adaptation protocol must be present in runtime prompts
-    expect(content).toContain("current/outline/story_outline/plan.md");
+    expect(content).toContain("workspace/PLAN.md");
     expect(content).toContain("plan.md is guidance");
     expect(content).toContain("Natural recovery");
     expect(content).toContain("No deus-ex-machina corrections");

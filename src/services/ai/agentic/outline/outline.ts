@@ -43,6 +43,11 @@ import { normalizeVfsPath } from "../../../vfs/utils";
 import { toJsonValue } from "../../../jsonValue";
 import { vfsElevationTokenManager } from "../../../vfs/core/elevation";
 import {
+  WORKSPACE_MEMORY_DOC_ORDER,
+  getWorkspaceMemoryLogicalPath,
+  readWorkspaceMemoryDoc,
+} from "../../../vfs/memoryTemplates";
+import {
   outlinePhase0Schema,
   outlinePhase1Schema,
   outlinePhase2Schema,
@@ -238,6 +243,20 @@ const getOutlineDefaultReadOnlyAllowPrefixes = (
 };
 
 const OUTLINE_RESUME_ANCHOR_MARKER = "[OUTLINE RESUME ANCHOR]";
+
+const buildWorkspaceMemoryMessages = (
+  vfsSession: VfsSession,
+): UnifiedMessage[] =>
+  WORKSPACE_MEMORY_DOC_ORDER.map((doc) => {
+    const path = getWorkspaceMemoryLogicalPath(doc);
+    const content = readWorkspaceMemoryDoc(vfsSession, doc);
+    return createUserMessage(`<file path="${path}">\n${content}\n</file>`);
+  });
+
+const getWorkspaceMemoryMessageMarkers = (): string[] =>
+  WORKSPACE_MEMORY_DOC_ORDER.map(
+    (doc) => `<file path="${getWorkspaceMemoryLogicalPath(doc)}">`,
+  );
 
 type PartialPhaseKey = keyof PartialStoryOutline;
 
@@ -572,6 +591,34 @@ const userMessageContainsText = (
   );
 };
 
+const isWorkspaceMemoryMessage = (
+  message: UnifiedMessage,
+  markers: string[],
+): boolean =>
+  message.role === "user" &&
+  markers.some((marker) => userMessageContainsText(message, marker));
+
+const ensureWorkspaceMemoryMessagePrefix = (
+  history: UnifiedMessage[],
+  vfsSession: VfsSession,
+): UnifiedMessage[] => {
+  const markers = getWorkspaceMemoryMessageMarkers();
+  const hasAllMarkers = markers.every((marker) =>
+    history.some((message) => userMessageContainsText(message, marker)),
+  );
+  if (hasAllMarkers) {
+    return history;
+  }
+
+  const withoutLegacyMemoryMessages = history.filter(
+    (message) => !isWorkspaceMemoryMessage(message, markers),
+  );
+  return [
+    ...buildWorkspaceMemoryMessages(vfsSession),
+    ...withoutLegacyMemoryMessages,
+  ];
+};
+
 const hasRecentPhasePromptMarker = (
   history: UnifiedMessage[],
   phase: number,
@@ -821,6 +868,10 @@ export const generateStoryOutlinePhased = async (
   if (options.resumeFrom) {
     // Resume from checkpoint
     conversationHistory = [...options.resumeFrom.conversationHistory];
+    conversationHistory = ensureWorkspaceMemoryMessagePrefix(
+      conversationHistory,
+      vfsSession,
+    );
     partial = { ...options.resumeFrom.partial };
     currentPhase = options.resumeFrom.currentPhase;
     liveToolCalls = [...(options.resumeFrom.liveToolCalls || [])];
@@ -838,7 +889,7 @@ export const generateStoryOutlinePhased = async (
     options.onToolCallsUpdate?.(liveToolCalls);
   } else {
     // Start fresh
-    conversationHistory = [];
+    conversationHistory = ensureWorkspaceMemoryMessagePrefix([], vfsSession);
     partial = {};
     liveToolCalls = [];
     options.onToolCallsUpdate?.([]);

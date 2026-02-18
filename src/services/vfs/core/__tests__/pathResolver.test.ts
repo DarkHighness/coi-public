@@ -34,20 +34,17 @@ describe("pathResolver", () => {
   });
 
   it("maps outline story plan alias and canonical paths", () => {
-    const alias = resolveVfsPath("current/outline/story_outline/plan.md", {
+    const alias = resolveVfsPath("current/workspace/PLAN.md", {
       activeForkId: 0,
     });
 
-    expect(alias.canonicalPath).toBe(
-      "shared/narrative/outline/story_outline/plan.md",
-    );
-    expect(alias.logicalPath).toBe("outline/story_outline/plan.md");
+    expect(alias.canonicalPath).toBe("forks/0/story/workspace/PLAN.md");
+    expect(alias.logicalPath).toBe("workspace/PLAN.md");
 
-    const canonical = resolveVfsPath(
-      "shared/narrative/outline/story_outline/plan.md",
-      { activeForkId: 0 },
-    );
-    expect(canonical.displayPath).toBe("current/outline/story_outline/plan.md");
+    const canonical = resolveVfsPath("forks/0/story/workspace/PLAN.md", {
+      activeForkId: 0,
+    });
+    expect(canonical.displayPath).toBe("current/workspace/PLAN.md");
   });
 
   it("maps legacy logical paths into canonical paths", () => {
@@ -65,10 +62,10 @@ describe("pathResolver", () => {
       }),
     ).toBe("forks/4/runtime/session/session-a.jsonl");
     expect(
-      toCanonicalVfsPath("current/world/global/soul.md", {
+      toCanonicalVfsPath("current/workspace/USER.md", {
         activeForkId: 4,
       }),
-    ).toBe("shared/config/runtime/soul.md");
+    ).toBe("shared/config/workspace/USER.md");
   });
 
   it("keeps non-active fork world files canonical unless loose mode", () => {
@@ -94,9 +91,9 @@ describe("pathResolver", () => {
       }),
     ).toBe("current/summary/state.json");
     expect(
-      toCurrentDisplayPath("shared/config/runtime/soul.md", {
+      toCurrentDisplayPath("shared/config/workspace/USER.md", {
         activeForkId: 1,
       }),
-    ).toBe("current/world/global/soul.md");
+    ).toBe("current/workspace/USER.md");
   });
 });

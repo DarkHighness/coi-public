@@ -352,7 +352,6 @@ export async function runAgenticLoopRefactored(
       getLatestSummaryReferencesMarkdown(gameState),
     mandatoryReadPaths: [
       ...loopState.requiredCommandSkillPaths,
-      ...loopState.requiredSoulReadPaths,
       ...loopState.requiredPresetSkillPaths,
     ],
     maxOptionalRefs: 3,
@@ -936,44 +935,6 @@ function checkCommandSkillReadGate(
   };
 }
 
-function checkSoulReadGate(
-  functionCalls: ToolCallResult[],
-  loopState: LoopState,
-):
-  | { ok: true }
-  | { ok: false; error: { success: false; error: string; code: string } } {
-  const required = loopState.requiredSoulReadPaths;
-  if (!required || required.length === 0) {
-    return { ok: true };
-  }
-
-  const hasMutationLikeCall = functionCalls.some(
-    (call) => !isReadOnlyInspectionToolName(call.name),
-  );
-  if (!hasMutationLikeCall) {
-    return { ok: true };
-  }
-
-  const missing = required.filter(
-    (path) => !loopState.vfsSession.hasToolSeenInCurrentEpoch(path),
-  );
-
-  if (missing.length === 0) {
-    return { ok: true };
-  }
-
-  return {
-    ok: false,
-    error: {
-      success: false,
-      error: `[ERROR: SOUL_NOT_READ] Session preflight requires reading soul memory anchors before non-read tools: ${
-        missing.length > 0 ? formatPathPreview(missing) : "(none)"
-      }.\nAction: call a read tool on each anchor once (prefer vfs_read_markdown when section selectors are known), then continue.`,
-      code: "SOUL_NOT_READ",
-    },
-  };
-}
-
 function checkPresetSkillReadGate(
   functionCalls: ToolCallResult[],
   loopState: LoopState,
@@ -1146,11 +1107,6 @@ async function processToolCalls(
     const commandGate = checkCommandSkillReadGate([call], loopState);
     if ("error" in commandGate) {
       return commandGate.error;
-    }
-
-    const soulGate = checkSoulReadGate([call], loopState);
-    if ("error" in soulGate) {
-      return soulGate.error;
     }
 
     const presetSkillGate = checkPresetSkillReadGate([call], loopState);

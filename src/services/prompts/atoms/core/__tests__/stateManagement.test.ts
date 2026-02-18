@@ -22,7 +22,7 @@ describe("stateManagement atom", () => {
   it("documents outline guidance with player-first adaptation protocol", () => {
     const content = stateManagement();
     expect(content).toContain("current/outline/outline.json");
-    expect(content).toContain("current/outline/story_outline/plan.md");
+    expect(content).toContain("workspace/PLAN.md");
     expect(content).toContain("current/outline/progress.json");
     expect(content).toContain("plan.md is guidance");
     expect(content).toContain("Natural recovery");

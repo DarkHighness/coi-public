@@ -143,8 +143,8 @@ const createVfsSession = (hasSeenSkill: boolean, seenSkillPaths?: string[]) => {
     "skills/craft/writing/SKILL.md",
     "skills/commands/runtime/god/SKILL.md",
     "skills/commands/runtime/unlock/SKILL.md",
-    "world/soul.md",
-    "world/global/soul.md",
+    "workspace/SOUL.md",
+    "workspace/USER.md",
     "skills/presets/runtime/narrative-style/SKILL.md",
     "skills/npc/logic/SKILL.md",
   ];
@@ -354,7 +354,7 @@ describe("agenticLoop command skill gate", () => {
           {
             id: "call-read-mixed",
             name: "vfs_read_chars",
-            args: { path: "current/world/soul.md" },
+            args: { path: "current/workspace/SOUL.md" },
           },
         ],
       })
@@ -499,7 +499,7 @@ describe("agenticLoop command skill gate", () => {
     );
   });
 
-  it("finishes player-rate loop via vfs_finish_soul without creating conversation turn", async () => {
+  it("finishes player-rate loop via vfs_end_turn without creating conversation turn", async () => {
     const vfsSession = createVfsSession(true);
 
     aiHandlerMock.handleAICall.mockResolvedValue({
@@ -512,7 +512,7 @@ describe("agenticLoop command skill gate", () => {
       functionCalls: [
         {
           id: "call-rate-finish",
-          name: "vfs_finish_soul",
+          name: "vfs_end_turn",
           args: {
             currentSoul:
               "# Player Soul (This Save)\n\n## Guidance For AI\n- keep concise.\n",
@@ -524,7 +524,7 @@ describe("agenticLoop command skill gate", () => {
     toolProcessorMock.executeGenericTool.mockResolvedValue({
       success: true,
       data: {
-        updated: ["current/world/soul.md"],
+        updated: ["current/workspace/SOUL.md"],
       },
     });
 
@@ -552,13 +552,13 @@ describe("agenticLoop command skill gate", () => {
 
     expect(result.response.narrative).toBe("");
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledWith(
-      "vfs_finish_soul",
+      "vfs_end_turn",
       expect.anything(),
       expect.anything(),
     );
   });
 
-  it("blocks non-read tools when soul anchors are unread in current epoch", async () => {
+  it("does not block non-read tools on SOUL/USER read state", async () => {
     const vfsSession = createVfsSession(true, [
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/turn/SKILL.md",
@@ -596,16 +596,14 @@ describe("agenticLoop command skill gate", () => {
       }),
     ).rejects.toThrow(/TURN_NOT_COMMITTED/);
 
-    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
-    expect(vfsSession.hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
-      "world/soul.md",
-    );
-    expect(vfsSession.hasToolSeenInCurrentEpoch).toHaveBeenCalledWith(
-      "world/global/soul.md",
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledWith(
+      "vfs_write_file",
+      expect.anything(),
+      expect.anything(),
     );
   });
 
-  it("keeps mixed batches partially executable when soul gate blocks only some calls", async () => {
+  it("keeps mixed batches executable without SOUL_NOT_READ gating", async () => {
     const seenPaths = [
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/turn/SKILL.md",
@@ -633,7 +631,7 @@ describe("agenticLoop command skill gate", () => {
             id: "call-read-soul",
             name: "vfs_read_lines",
             args: {
-              path: "current/world/soul.md",
+              path: "current/workspace/SOUL.md",
               startLine: 1,
               lineCount: 20,
             },
@@ -642,7 +640,7 @@ describe("agenticLoop command skill gate", () => {
             id: "call-read-global-soul",
             name: "vfs_read_lines",
             args: {
-              path: "current/world/global/soul.md",
+              path: "current/workspace/USER.md",
               startLine: 1,
               lineCount: 20,
             },
@@ -680,10 +678,10 @@ describe("agenticLoop command skill gate", () => {
       (name: string, args: Record<string, unknown>) => {
         if (name === "vfs_read_lines") {
           const path = String(args.path ?? "");
-          if (path === "current/world/soul.md") {
-            seenPaths.push("world/soul.md");
-          } else if (path === "current/world/global/soul.md") {
-            seenPaths.push("world/global/soul.md");
+          if (path === "current/workspace/SOUL.md") {
+            seenPaths.push("workspace/SOUL.md");
+          } else if (path === "current/workspace/USER.md") {
+            seenPaths.push("workspace/USER.md");
           }
           return { success: true, path };
         }
@@ -714,19 +712,12 @@ describe("agenticLoop command skill gate", () => {
     expect(
       toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
     ).toEqual([
+      "vfs_write_file",
       "vfs_read_lines",
       "vfs_read_lines",
       "vfs_write_file",
       "vfs_finish_turn",
     ]);
-
-    const blockedWriteLog = result.logs.find(
-      (log) =>
-        log.endpoint === "tool_execution" &&
-        log.toolName === "vfs_write_file" &&
-        String((log as any).toolOutput?.error || "").includes("SOUL_NOT_READ"),
-    );
-    expect(blockedWriteLog).toBeDefined();
 
     const soulReadLogs = result.logs.filter(
       (log) =>
@@ -915,8 +906,8 @@ describe("agenticLoop command skill gate", () => {
       "skills/commands/runtime/turn/SKILL.md",
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
-      "world/soul.md",
-      "world/global/soul.md",
+      "workspace/SOUL.md",
+      "workspace/USER.md",
       "skills/presets/runtime/culture/SKILL.md",
       "skills/presets/runtime/culture-japanese/SKILL.md",
     ]);

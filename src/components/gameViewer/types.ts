@@ -12,6 +12,7 @@ export type ViewTab =
   | "npcs"
   | "quests"
   | "lore"
+  | "memory"
   | "embedding";
 
 export interface TabConfig {
@@ -26,6 +27,7 @@ export const TAB_CONFIGS: Record<ViewTab, TabConfig> = {
   npcs: { icon: "👥", labelKey: "gameViewer.npcs" },
   quests: { icon: "📜", labelKey: "gameViewer.quests" },
   lore: { icon: "📚", labelKey: "gameViewer.lore" },
+  memory: { icon: "🧾", labelKey: "gameViewer.memory" },
   embedding: { icon: "🧠", labelKey: "gameViewer.embedding" },
 };
 

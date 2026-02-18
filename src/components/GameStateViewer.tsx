@@ -22,6 +22,7 @@ import {
   NPCsTab,
   QuestsTab,
   LoreTab,
+  MemoryTab,
   EmbeddingTab,
 } from "./gameViewer";
 
@@ -77,6 +78,8 @@ export const GameStateViewerComponent: React.FC<GameStateViewerProps> = ({
         return <QuestsTab {...commonProps} />;
       case "lore":
         return <LoreTab {...commonProps} />;
+      case "memory":
+        return <MemoryTab />;
       case "embedding":
         return (
           <EmbeddingTab

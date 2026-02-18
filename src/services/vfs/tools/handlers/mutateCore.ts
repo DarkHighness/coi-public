@@ -21,6 +21,7 @@ import {
   buildNotFoundRecovery,
   buildReadLinesRecovery,
   classifyJsonMutationError,
+  enforceWorkspaceMemoryWritePolicy,
   ensureNotFinishGuardedMutation,
   ensureSeparatorNewline,
   isPathResolveError,
@@ -154,6 +155,14 @@ export const executeMutateOps = (
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
             }
+            const memoryPolicyError = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolved.path,
+              `${toolName}(write_file)`,
+            );
+            if (memoryPolicyError) {
+              return withBatchError(memoryPolicyError, opIndex, op.op, op.path);
+            }
 
             const seenError = requireToolSeenForExistingFile(
               draft,
@@ -209,6 +218,14 @@ export const executeMutateOps = (
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
+            }
+            const memoryPolicyError = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolved.path,
+              `${toolName}(append_text)`,
+            );
+            if (memoryPolicyError) {
+              return withBatchError(memoryPolicyError, opIndex, op.op, op.path);
             }
 
             const existing = draft.readFile(resolved.path);
@@ -277,6 +294,14 @@ export const executeMutateOps = (
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
+            }
+            const memoryPolicyError = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolved.path,
+              `${toolName}(edit_lines)`,
+            );
+            if (memoryPolicyError) {
+              return withBatchError(memoryPolicyError, opIndex, op.op, op.path);
             }
 
             const existing = draft.readFile(resolved.path);
@@ -435,6 +460,14 @@ export const executeMutateOps = (
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
             }
+            const memoryPolicyError = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolved.path,
+              `${toolName}(patch_json)`,
+            );
+            if (memoryPolicyError) {
+              return withBatchError(memoryPolicyError, opIndex, op.op, op.path);
+            }
 
             const existing = draft.readFile(resolved.path);
             if (!existing) {
@@ -506,6 +539,14 @@ export const executeMutateOps = (
             );
             if (finishGuardError) {
               return withBatchError(finishGuardError, opIndex, op.op, op.path);
+            }
+            const memoryPolicyError = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolved.path,
+              `${toolName}(merge_json)`,
+            );
+            if (memoryPolicyError) {
+              return withBatchError(memoryPolicyError, opIndex, op.op, op.path);
             }
             const seenError = requireToolSeenForExistingFile(
               draft,
@@ -629,6 +670,27 @@ export const executeMutateOps = (
             if (finishGuardTo) {
               return withBatchError(finishGuardTo, opIndex, op.op, movePair.to);
             }
+            const memoryPolicyFrom = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolvedFrom.path,
+              `${toolName}(move)`,
+            );
+            if (memoryPolicyFrom) {
+              return withBatchError(
+                memoryPolicyFrom,
+                opIndex,
+                op.op,
+                movePair.from,
+              );
+            }
+            const memoryPolicyTo = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolvedTo.path,
+              `${toolName}(move)`,
+            );
+            if (memoryPolicyTo) {
+              return withBatchError(memoryPolicyTo, opIndex, op.op, movePair.to);
+            }
 
             const from = normalizeVfsPath(resolvedFrom.path);
             const to = normalizeVfsPath(resolvedTo.path);
@@ -684,6 +746,19 @@ export const executeMutateOps = (
             );
             if (finishGuard) {
               return withBatchError(finishGuard, opIndex, op.op, targetPath);
+            }
+            const memoryPolicyError = enforceWorkspaceMemoryWritePolicy(
+              ctx,
+              resolved.path,
+              `${toolName}(delete)`,
+            );
+            if (memoryPolicyError) {
+              return withBatchError(
+                memoryPolicyError,
+                opIndex,
+                op.op,
+                targetPath,
+              );
             }
 
             const normalized = normalizeVfsPath(resolved.path);

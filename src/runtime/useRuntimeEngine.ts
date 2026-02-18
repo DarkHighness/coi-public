@@ -17,7 +17,6 @@ import { createCommandActions } from "./effects/commandActions";
 import { useImageGenerationQueue } from "./effects/imageGeneration";
 import { createDomainUiActions } from "./effects/domainUiActions";
 import { createLifecycleActions } from "./effects/lifecycleOrchestration";
-import { reconcileGlobalSoulWithSettingsOnLoad } from "../services/vfs/soulSync";
 
 export const useRuntimeEngine = () => {
   const { gameState, setGameState } = useGameState();
@@ -226,21 +225,6 @@ export const useRuntimeEngine = () => {
   const startNewGame = lifecycleActions.startNewGame;
   const resumeOutlineGeneration = lifecycleActions.resumeOutlineGeneration;
 
-  const loadSlotWithSoulSync = useCallback(
-    async (id: string) => {
-      const result = await loadSlot(id);
-      if (result?.success) {
-        reconcileGlobalSoulWithSettingsOnLoad({
-          vfsSession,
-          settings: aiSettings,
-          updateSettings: handleSaveSettings,
-        });
-      }
-      return result;
-    },
-    [aiSettings, handleSaveSettings, loadSlot, vfsSession],
-  );
-
   const commandActions = useMemo(
     () =>
       createCommandActions({
@@ -249,7 +233,6 @@ export const useRuntimeEngine = () => {
         currentSlotId,
         gameStateRef,
         setGameState,
-        handleSaveSettings,
         showToast,
         t,
         vfsSession,
@@ -262,7 +245,6 @@ export const useRuntimeEngine = () => {
       language,
       currentSlotId,
       setGameState,
-      handleSaveSettings,
       showToast,
       t,
       vfsSession,
@@ -367,7 +349,7 @@ export const useRuntimeEngine = () => {
     currentHistory,
     saveSlots,
     renameSlot,
-    loadSlot: loadSlotWithSoulSync,
+    loadSlot,
     deleteSlot,
     currentSlotId,
     themeMode,

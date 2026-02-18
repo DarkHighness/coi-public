@@ -522,21 +522,20 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.nodes["model-fork-0/turn-0"]).toBeTruthy();
   });
 
-  it("reads current soul markdown and prefers it over global soul", () => {
+  it("does not map workspace memory docs onto legacy settings.playerProfile", () => {
     const files: VfsFileMap = {
-      "world/soul.md": makeMarkdownFile(
-        "world/soul.md",
+      "workspace/SOUL.md": makeMarkdownFile(
+        "workspace/SOUL.md",
         "# Player Soul (This Save)\n\n- Scope: This Save\n",
       ),
-      "world/global/soul.md": makeMarkdownFile(
-        "world/global/soul.md",
+      "workspace/USER.md": makeMarkdownFile(
+        "workspace/USER.md",
         "# Player Soul (Global)\n\n- Scope: Global\n",
       ),
     };
 
     const state = deriveGameStateFromVfs(files);
-    expect(state.playerProfile).toContain("Player Soul (This Save)");
-    expect(state.playerProfile).not.toContain("Player Soul (Global)");
+    expect((state as any).playerProfile).toBeUndefined();
   });
 
   it("throws on legacy world/player_profile.json saves", () => {

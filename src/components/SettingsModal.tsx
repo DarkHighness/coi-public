@@ -9,6 +9,7 @@ import { SettingsModels } from "./settings/SettingsModels";
 import { SettingsAudio } from "./settings/SettingsAudio";
 import { SettingsEmbedding } from "./settings/SettingsEmbedding";
 import { SettingsExtra } from "./settings/SettingsExtra";
+import { SettingsMemory } from "./settings/SettingsMemory";
 import { SettingsProviders } from "./settings/SettingsProviders";
 import { useToast } from "./Toast";
 import { useTutorialContextOptional } from "../contexts/TutorialContext";
@@ -108,6 +109,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               showToast={showToast}
             />
           )}
+
+          {activeTab === "memory" && <SettingsMemory />}
 
           {activeTab === "models" && <SettingsModels showToast={showToast} />}
 

@@ -5,6 +5,7 @@ export type Tab =
   | "audio"
   | "appearance"
   | "data"
+  | "memory"
   | "extra";
 
 export type FunctionKey =

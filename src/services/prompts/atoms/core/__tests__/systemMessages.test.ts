@@ -24,7 +24,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("top-level tool call");
     expect(content).toContain("JavaScript");
     expect(content).toContain("globalThis");
-    expect(content).toContain("current/outline/story_outline/plan.md");
+    expect(content).toContain("workspace/PLAN.md");
     expect(content).toContain("major branch fracture");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
     expect(content).not.toContain(legacyFinishTool);

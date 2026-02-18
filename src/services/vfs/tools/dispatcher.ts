@@ -9,7 +9,7 @@ import {
   handleInspectSearch,
 } from "./handlers/inspect";
 import { handleFinishTurn } from "./handlers/finishTurn";
-import { handleFinishSoul } from "./handlers/finishSoul";
+import { handleEndTurn } from "./handlers/finishEndTurn";
 import { handleFinishSummary } from "./handlers/finishSummary";
 import { handleReadChars } from "./handlers/readChars";
 import { handleReadLines } from "./handlers/readLines";
@@ -60,7 +60,7 @@ const HANDLERS: Record<
   move: handleMove,
   delete: handleDelete,
   finish_turn: handleFinishTurn,
-  finish_soul: handleFinishSoul,
+  end_turn: handleEndTurn,
   finish_summary: handleFinishSummary,
   finish_outline_phase_0: handleFinishOutlinePhase0,
   finish_outline_phase_1: handleFinishOutlinePhase1,
@@ -98,21 +98,8 @@ const extraValidation = (
   name: VfsToolName,
   parsed: JsonObject,
 ): null | ReturnType<typeof createError> => {
-  if (name === "vfs_finish_soul") {
-    const currentSoul = parsed.currentSoul;
-    const globalSoul = parsed.globalSoul;
-    const hasCurrent =
-      typeof currentSoul === "string" && currentSoul.trim().length > 0;
-    const hasGlobal =
-      typeof globalSoul === "string" && globalSoul.trim().length > 0;
-    if (!hasCurrent && !hasGlobal) {
-      return createError(
-        "[VALIDATION_ERROR] vfs_finish_soul: at least one of currentSoul/globalSoul must be a non-empty string.",
-        "INVALID_PARAMS",
-      );
-    }
-  }
-
+  void name;
+  void parsed;
   return null;
 };
 

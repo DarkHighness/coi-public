@@ -24,7 +24,6 @@ import {
   readTurnFile,
   writeTurnFile,
 } from "../services/vfs/conversation";
-import { syncSettingsFromGlobalSoulAfterTurn } from "../services/vfs/soulSync";
 import {
   updateProviderStats,
   handleForking,
@@ -717,11 +716,6 @@ export const useGameAction = ({
           gameStateRef.current,
           derivedState,
         );
-        syncSettingsFromGlobalSoulAfterTurn({
-          snapshot: vfsSnapshot,
-          settings: aiSettings,
-          updateSettings: handleSaveSettings,
-        });
         const activeModelNodeId = derivedState.activeNodeId;
         if (!activeModelNodeId) {
           throw new Error(

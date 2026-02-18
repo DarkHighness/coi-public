@@ -203,7 +203,7 @@ export const generateAdventureTurn = async (
   const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
   const isPlayerRateMode = context.userAction.startsWith("[Player Rate]");
   const finishToolName = isPlayerRateMode
-    ? "vfs_finish_soul"
+    ? "vfs_end_turn"
     : "vfs_finish_turn";
 
   // ===== Build system instruction using Skills System =====
@@ -224,7 +224,6 @@ export const generateAdventureTurn = async (
     playerMaliceIntensity: effectivePlayerMaliceIntensity,
     isNSFW: settings.extra?.nsfw,
     godMode: gameState.godMode,
-    disablePlayerProfiling: settings.extra?.disablePlayerProfiling,
     protagonistName: gameState.character.name,
     protagonistRole: gameState.character.title,
     protagonistLocation:

@@ -78,7 +78,7 @@ ${capabilityText}
 
 **FINISH**: Your LAST tool call must be \`vfs_finish_turn\`. Args shape: \`{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }\`.
 - ${CONVERSATION_GUARD_SHORT}
-- On tool retry success, append \`[code] cause -> fix\` to \`current/world/soul.md\` § \`## Tool Usage Hints\`.
+- On tool retry success, append \`[code] cause -> fix\` to \`workspace/SOUL.md\` § \`## Tool Usage Hints\`.
 `;
   },
 );
@@ -95,7 +95,7 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
   ({ finishToolName, toolsetId, ragEnabled = true }) => {
     const resolvedToolsetId =
       toolsetId ??
-      (finishToolName === "vfs_finish_soul" ? "playerRate" : "turn");
+      (finishToolName === "vfs_end_turn" ? "playerRate" : "turn");
     const isPlayerRateToolset = resolvedToolsetId === "playerRate";
     const resolvedFinishToolName =
       finishToolName ||
@@ -111,7 +111,11 @@ You are in AGENTIC MODE (VFS-only).
 **TOOLS**:
 ${formatToolListForPrompt(resolvedToolsetId)}
 ${capabilityText}
-- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Scripts must be JavaScript (not pseudo-tool JSON text), must not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`.
+${
+  isPlayerRateToolset
+    ? "- `vfs_vm` is not available in `[Player Rate]` toolset."
+    : "- `vfs_vm` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text), and do not use `globalThis`/`window`/`import`/`eval`/`Function`. Runtime caps are fixed by system: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars."
+}
 
 **SKILLS**:
 - **PREFLIGHT (ENFORCED)**: Before first mutation, read: current/skills/commands/runtime/SKILL.md, the active command protocol ("turn" or "player-rate"), current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
@@ -126,13 +130,17 @@ ${capabilityText}
 **STATE**:
 ${
   isPlayerRateToolset
-    ? "- **SOUL-ONLY UPDATE**: For `[Player Rate]`, only update `current/world/soul.md` and/or `current/world/global/soul.md` via `vfs_finish_soul`.\n- In `[Player Rate]` loops, do not mutate `current/outline/story_outline/plan.md`.\n- **NO PLOT PROGRESSION**: Do not advance visible story nodes or produce new choices."
-    : "- **STATE CHANGES = FILE CHANGES**: Update world state under `current/world/**` and maintain `current/outline/story_outline/plan.md` continuity (writable, not read-only). Soul docs are `default_editable` — refine proactively when evidence emerges.\n- Plan continuity: read `current/outline/story_outline/plan.md` first; incremental edits for minor drift, full rewrite for major branch fracture. Keep aligned with `current/outline/outline.json`.\n- **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly.\n- **STATE → FILE MAP**: NPC mood/relationship → `{npc_id}.json` visible.mood + hidden fields; NPC location → `{npc_id}.json` /currentLocation; quest progress → `quests/{quest_id}.json`; protagonist conditions → player profile conditions array; location change → update BOTH NPC file AND location file for consistency."
+    ? "- **MEMORY-ONLY UPDATE**: For `[Player Rate]`, only update `workspace/SOUL.md` and/or `workspace/USER.md`.\n- Do NOT mutate `workspace/PLAN.md` in this loop.\n- **NO PLOT PROGRESSION**: Do not advance visible story nodes or produce new choices.\n- **NO PRIVILEGE ESCALATION**: Player-rate is not `sudo`/`forceUpdate`/`godMode`.\n- **NO FACT REWRITE**: Do not use player-rate to rewrite established world facts, timeline outcomes, or hard lore."
+    : "- **STATE CHANGES = FILE CHANGES**: Update world state under `current/world/**` and maintain `workspace/PLAN.md` continuity (writable strategic guidance).\n- Plan continuity: read `workspace/PLAN.md` first; incremental edits for minor drift, full rewrite for major branch fracture. Keep aligned with `current/outline/outline.json`.\n- **CONSEQUENCES**: If PENDING CONSEQUENCES are shown, update relevant world files directly.\n- **STATE → FILE MAP**: NPC mood/relationship → `{npc_id}.json` visible.mood + hidden fields; NPC location → `{npc_id}.json` /currentLocation; quest progress → `quests/{quest_id}.json`; protagonist conditions → player profile conditions array; location change → update BOTH NPC file AND location file for consistency."
 }
 - Identity contract: \`notes.md\` + \`soul.md\` are AI-to-AI self-notes (you writing to your future self), not player-facing text.
 
 **FINISH**:
-- Your LAST tool call must be \`${resolvedFinishToolName}\`. Args shape: \`{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }\`.
+- Your LAST tool call must be \`${resolvedFinishToolName}\`. ${
+  isPlayerRateToolset
+    ? "Args must be empty object: `{}`."
+    : 'Args shape: `{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }`.'
+}
 - **EFFICIENCY**: Do NOT place read-only tools before finish unless they support same-response mutations.
 - **WRITE FAILURE REPAIR MODE (TARGETED)**: Prioritize repairing failed writable targets. Block finish ONLY for blocking errors (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`). Non-blocking failures may proceed.
 - **NO COMMIT SPAM**: Do not repeat \`${resolvedFinishToolName}\` while blocking failures remain.
@@ -143,8 +151,8 @@ ${
 - Example (${isPlayerRateToolset ? "inspect → soul commit" : "inspect → edit → finish"}):
   ${
     isPlayerRateToolset
-      ? "1) `vfs_read_markdown` on `current/world/soul.md` and `current/world/global/soul.md` (prefer `headings`/`indices`)\n  2) `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` (at least one)\n  3) Do not emit new plot node content in this loop"
-      : "1) `vfs_search` within `current/world/` and/or `current/outline/story_outline/plan.md` for target anchors\n  2) Use `vfs_patch_json` / `vfs_merge_json` (or `vfs_write_file` when creating) for world updates; use `vfs_write_markdown` for incremental `plan.md` updates or `vfs_write_file` for full `plan.md` rewrite when fracture is major\n  3) `" +
+      ? "1) `vfs_read_markdown` on `workspace/SOUL.md` and `workspace/USER.md` (prefer `headings`/`indices`)\n  2) update SOUL/USER via write tools when needed\n  3) `vfs_end_turn({})` as LAST call\n  4) Do not emit new plot node content in this loop"
+      : "1) `vfs_search` within `current/world/` and/or `workspace/PLAN.md` for target anchors\n  2) Use `vfs_patch_json` / `vfs_merge_json` (or `vfs_write_file` when creating) for world updates; use `vfs_write_markdown` for incremental `plan.md` updates or `vfs_write_file` for full `plan.md` rewrite when fracture is major\n  3) `" +
         resolvedFinishToolName +
         '` with `{ assistant: { narrative: "...", choices: [...] }, retconAck?: { summary: "..." } }` as the LAST call'
   }

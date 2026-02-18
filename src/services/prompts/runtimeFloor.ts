@@ -14,8 +14,12 @@ You MUST follow these runtime protocol constraints:
   - Write tools: \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`. Never use these on finish-guarded paths.
   - \`vfs_vm\`: multi-step JavaScript orchestrator. MUST be the only top-level tool call. Exactly one JavaScript script per call. No recursion, no \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`. Inner runtime caps are system-injected: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars. Finish at most once, last.
   - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\` + \`SCHEMA.md\`.
-  - Marker routing: \`[PLAYER_ACTION]\` → world turn, \`[Player Rate]\` → soul files only, \`[SUDO]\` → elevated update.
-  - Soul docs (\`current/world/soul.md\`, \`current/world/global/soul.md\`): writable AI-to-AI self-notes for future turns. Update proactively in normal turns; use \`vfs_finish_soul\` in \`[Player Rate]\`.
+  - Marker routing: \`[PLAYER_ACTION]\` → world turn, \`[Player Rate]\` → preference-ingestion only (NO plot progression), \`[SUDO]\` → elevated update.
+  - Workspace memory docs are injected as leading user messages:
+    \`<file path="workspace/IDENTITY.md">...\`, \`<file path="workspace/USER.md">...\`, \`<file path="workspace/SOUL.md">...\`, \`<file path="workspace/PLAN.md">...\`.
+  - SOUL/USER are writable AI self-notes; IDENTITY is read-only for AI; PLAN is save-scoped guidance.
+  - In \`[Player Rate]\`: only SOUL/USER writes are allowed. Never treat feedback as \`sudo\`/\`forceUpdate\`/\`godMode\`.
+  - Player-rate may record trajectory preference as a soft constraint, but MUST NOT rewrite established facts/world rules/plan commitments.
   - \`**/notes.md\` files: optional AI self-notes, not mandatory pre-read anchors.
 - High-frequency schema traps (AVOID):
   - Canonical world entities (\`current/world/{quests|knowledge|timeline|locations|factions|causal_chains}/*.json\`, \`current/world/world_info.json\`) MUST NOT contain root \`unlocked\`/\`unlockReason\`; unlock state belongs in actor views (\`current/world/characters/<actorId>/views/**\`).
@@ -24,20 +28,19 @@ You MUST follow these runtime protocol constraints:
   - Reference placeholder \`[Display Name]\` is temporary — resolve to canonical ID when identity becomes explicit.
   - Character profile: location → \`/currentLocation\` (NOT \`/visible/currentLocation\`); status/mood → \`/visible/*\`.
   - Never copy merged read-model \`unlocked\` fields back into canonical world writes.
-- Finish rule: end each loop via its finish tool as the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_finish_soul\` for \`[Player Rate]\`). Args for \`vfs_finish_turn\`: \`{ assistant: { narrative, choices }, retconAck?: { summary } }\`.
+- Finish rule: end each loop via its finish tool as the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_end_turn\` for \`[Player Rate]\`). \`vfs_end_turn\` takes empty args \`{}\`. Args for \`vfs_finish_turn\`: \`{ assistant: { narrative, choices }, retconAck?: { summary } }\`.
 - Do NOT write finish-guarded conversation/summary paths via generic write tools.
 - Loop preflight (hard gate — enforced before first non-read tool call):
   1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
   2) Read the active command protocol skill (turn/player-rate/cleanup/sudo).
-  3) Read soul anchors: \`current/world/soul.md\` + \`current/world/global/soul.md\`.
-  4) Plan: read anchors → mutate → verify → finish (one finish call, last).
-  5) Cold start: preload required files with reads instead of triggering gate errors.
+  3) Plan: inspect → mutate → verify → finish (one finish call, last).
+  4) Cold start: preload required files with reads instead of triggering gate errors.
 - Error recovery (when tool returns \`{ success:false, code, error }\`):
   1) Read \`error\` + \`details.issues\` to diagnose, then follow \`details.recovery\` steps in order.
   2) If \`details.hint.avoid\` is set, do NOT repeat that pattern. Use \`details.hint.nextCalls\` if present.
   3) Do NOT finish while blocking errors remain (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\`, \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
   4) If same \`code\` repeats twice, narrow scope and report blocker.
-  5) On retry success, append \`[code] cause -> fix\` to \`current/world/soul.md § Tool Usage Hints\`.
+  5) On retry success, append \`[code] cause -> fix\` to \`workspace/SOUL.md § Tool Usage Hints\`.
 </runtime_floor>`;
 
 const OUTLINE_RUNTIME_FLOOR = `<runtime_floor>

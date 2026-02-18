@@ -116,7 +116,6 @@ const baseGameState = {
   },
   customRules: [],
   godMode: false,
-  playerProfile: null,
   customContext: null,
   forkId: 0,
 } as any;

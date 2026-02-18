@@ -42,7 +42,7 @@ describe("loopInitializer", () => {
     expect(turnTools.some((tool) => tool.name === "vfs_finish_turn")).toBe(
       true,
     );
-    expect(turnTools.some((tool) => tool.name === "vfs_finish_soul")).toBe(
+    expect(turnTools.some((tool) => tool.name === "vfs_end_turn")).toBe(
       false,
     );
     expect(turnTools.some((tool) => tool.name === "vfs_finish_summary")).toBe(
@@ -127,10 +127,6 @@ describe("loopInitializer", () => {
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
     ]);
-    expect(state.requiredSoulReadPaths).toEqual([
-      "world/soul.md",
-      "world/global/soul.md",
-    ]);
     expect(state.requiredPresetSkillPaths).toEqual([]);
     expect(state.requiredPresetSkillRequirements).toEqual([]);
   });
@@ -167,7 +163,6 @@ describe("loopInitializer", () => {
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
     ]);
-    expect(cleanupState.requiredSoulReadPaths).toEqual([]);
   });
 
   it("uses player-rate protocol skill when rate mode is active", () => {
@@ -191,7 +186,7 @@ describe("loopInitializer", () => {
     );
 
     expect(state.isPlayerRateMode).toBe(true);
-    expect(state.finishToolName).toBe("vfs_finish_soul");
+    expect(state.finishToolName).toBe("vfs_end_turn");
     expect(state.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/player-rate/SKILL.md",
@@ -199,7 +194,7 @@ describe("loopInitializer", () => {
       "skills/craft/writing/SKILL.md",
     ]);
     expect(
-      state.activeTools.some((tool) => tool.name === "vfs_finish_soul"),
+      state.activeTools.some((tool) => tool.name === "vfs_end_turn"),
     ).toBe(true);
     expect(
       state.activeTools.some((tool) => tool.name === "vfs_finish_turn"),

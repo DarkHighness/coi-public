@@ -71,9 +71,9 @@ describe("summaryContext", () => {
     expect(instruction).toContain("current/skills/craft/writing/SKILL.md");
     expect(instruction).toContain("Loop quick-start (recommended)");
     expect(instruction).toContain("Read fork anchors");
-    expect(instruction).toContain("read soul anchors once per read-epoch");
-    expect(instruction).toContain("current/world/soul.md");
-    expect(instruction).toContain("current/world/global/soul.md");
+    expect(instruction).toContain("Use injected memory files");
+    expect(instruction).toContain("workspace/SOUL.md");
+    expect(instruction).toContain("workspace/USER.md");
     expect(instruction).toContain("notes.md");
     expect(instruction).toContain("optional context only");
     expect(instruction).toContain("current/session/<session_uid>.jsonl");

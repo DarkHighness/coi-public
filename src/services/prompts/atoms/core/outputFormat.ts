@@ -18,7 +18,7 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
   },
   ({ language, finishToolName }) => {
     const resolvedFinishToolName = finishToolName || "vfs_finish_turn";
-    const isPlayerRateLoop = resolvedFinishToolName === "vfs_finish_soul";
+    const isPlayerRateLoop = resolvedFinishToolName === "vfs_end_turn";
 
     return `
 <output_format>
@@ -42,8 +42,8 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     - Do NOT write finish-guarded paths (\`current/conversation/**\`, \`current/summary/state.json\`) via generic write tools.
     - ${
       isPlayerRateLoop
-        ? "In `[Player Rate]` loops, do not mutate `current/outline/story_outline/plan.md`."
-        : "In normal turns, `current/outline/story_outline/plan.md` is writable for continuity maintenance. Read before edit; use incremental updates for minor drift, and full rewrite when branch fracture is major."
+        ? "In `[Player Rate]` loops, do not mutate `workspace/PLAN.md`."
+        : "In normal turns, `workspace/PLAN.md` is writable for continuity maintenance. Read before edit; use incremental updates for minor drift, and full rewrite when branch fracture is major."
     }
   </turn_files>
 
@@ -51,7 +51,7 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     **Finish Payload**:
     ${
       isPlayerRateLoop
-        ? "- For `[Player Rate]` loops, call `vfs_finish_soul` with `{ currentSoul?, globalSoul? }` and provide at least one target."
+        ? "- For `[Player Rate]` loops, call `vfs_end_turn` with empty args: `{}`."
         : `- \`assistant.narrative\`: full narrative in ${language}
     - \`assistant.choices\`: 2-4 choice objects ({ text, consequence? }). **Choice Architecture**:
       * Choices emerge from the CURRENT SITUATION — what can the protagonist actually do given position, knowledge, resources, and body state?
@@ -70,8 +70,8 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     <rule>Inspect with read tools before edits.</rule>
     <rule>${
       isPlayerRateLoop
-        ? "In `[Player Rate]` loops, only mutate soul markdown and do not advance visible plot."
-        : "Use appropriate write tools for world updates under `current/world/**`, and maintain `current/outline/story_outline/plan.md` continuity (minor drift: incremental update; major fracture: full rewrite allowed)."
+        ? "In `[Player Rate]` loops, only mutate `workspace/SOUL.md` and `workspace/USER.md`, and do not advance visible plot."
+        : "Use appropriate write tools for world updates under `current/world/**`, and maintain `workspace/PLAN.md` continuity (minor drift: incremental update; major fracture: full rewrite allowed)."
     }</rule>
     <rule>${
       isPlayerRateLoop
@@ -87,9 +87,9 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     **BEFORE CALLING ${resolvedFinishToolName}** — verify:
     ${
       isPlayerRateLoop
-        ? `- soul.md updated with specific, falsifiable observations (not vague notes)
-    - No visible plot advancement in this loop
-    - At least one soul section received an update (currentSoul or globalSoul)`
+        ? `- No visible plot advancement in this loop
+    - If you update memory, only SOUL/USER are touched
+    - Player-rate is applied as preference learning, not fact rewriting`
         : `- narrative is grounded in protagonist's body and senses (not omniscient summary)
     - choices are 2-4 genuine options with DIFFERENT cost profiles
     - at least one choice presents a real dilemma (values in tension)

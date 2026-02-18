@@ -58,23 +58,23 @@ describe("vfsResourceTemplateRegistry", () => {
     expect(rewrite.retention).toBe("archival");
   });
 
-  it("matches editable outline story plan template", () => {
+  it("matches editable save-scoped workspace plan template", () => {
     const plan = vfsResourceTemplateRegistry.match(
-      "shared/narrative/outline/story_outline/plan.md",
+      "forks/0/story/workspace/PLAN.md",
     );
 
-    expect(plan.id).toBe("template.narrative.outline.story_plan");
+    expect(plan.id).toBe("template.story.workspace_plan");
     expect(plan.permissionClass).toBe("default_editable");
     expect(plan.shape).toBe("markdown_doc");
     expect(plan.allowedWriteOps).toContain("write");
   });
 
-  it("matches editable global soul runtime template", () => {
+  it("matches editable workspace user memory template", () => {
     const soul = vfsResourceTemplateRegistry.match(
-      "shared/config/runtime/soul.md",
+      "shared/config/workspace/USER.md",
     );
 
-    expect(soul.id).toBe("template.config.runtime_soul");
+    expect(soul.id).toBe("template.config.workspace_user");
     expect(soul.permissionClass).toBe("default_editable");
     expect(soul.scope).toBe("shared");
     expect(soul.contentTypes).toContain("text/markdown");

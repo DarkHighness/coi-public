@@ -27,8 +27,14 @@ import {
 import { getRAGService } from "../../../rag";
 import { requireReadBeforeMutateForExistingFile } from "../../../tools/handlers/vfsMutationGuard";
 import { vfsPathRegistry } from "../../core/pathRegistry";
+import { toLogicalVfsPath } from "../../core/pathResolver";
 import { type ToolContext } from "../../../tools/toolHandlerRegistry";
 import type { VfsWriteContext } from "../../core/types";
+import {
+  WORKSPACE_IDENTITY_LOGICAL_PATH,
+  WORKSPACE_SOUL_LOGICAL_PATH,
+  WORKSPACE_USER_LOGICAL_PATH,
+} from "../../memoryTemplates";
 import {
   outlinePhase0Schema,
   outlinePhase1Schema,
@@ -444,6 +450,98 @@ export const resolveAiWriteContext = (
       : ctx.vfsSession.getActiveForkId(),
   ...overrides,
 });
+
+const PLAYER_RATE_ALLOWED_WRITE_PATHS = new Set([
+  WORKSPACE_SOUL_LOGICAL_PATH,
+  WORKSPACE_USER_LOGICAL_PATH,
+]);
+
+export const isPlayerRateLoopContext = (ctx: ToolContext): boolean => {
+  const userAction =
+    typeof ctx.vfsTurnUserAction === "string" ? ctx.vfsTurnUserAction : "";
+  if (userAction.trimStart().startsWith("[Player Rate]")) {
+    return true;
+  }
+  return (
+    Array.isArray(ctx.allowedToolNames) &&
+    ctx.allowedToolNames.includes("vfs_end_turn")
+  );
+};
+
+const toLogicalPathForPolicy = (ctx: ToolContext, path: string): string => {
+  const activeForkId = resolveAiWriteContext(ctx).activeForkId;
+  return normalizeVfsPath(
+    toLogicalVfsPath(path, {
+      activeForkId:
+        typeof activeForkId === "number"
+          ? activeForkId
+          : ctx.vfsSession.getActiveForkId(),
+    }),
+  );
+};
+
+export const enforceWorkspaceMemoryWritePolicy = (
+  ctx: ToolContext,
+  path: string,
+  toolName: string,
+): ToolCallError | null => {
+  const actor = ctx.vfsActor ?? "ai";
+  if (actor !== "ai") {
+    return null;
+  }
+
+  const logicalPath = toLogicalPathForPolicy(ctx, path);
+  if (!logicalPath) {
+    return null;
+  }
+
+  if (logicalPath === WORKSPACE_IDENTITY_LOGICAL_PATH) {
+    return withToolErrorDetails(
+      createError(
+        `${toolName}: current/${WORKSPACE_IDENTITY_LOGICAL_PATH} is read-only for AI writes.`,
+        "INVALID_ACTION",
+        {
+          category: "policy",
+          issues: [
+            {
+              path: `current/${logicalPath}`,
+              code: "MEMORY_IDENTITY_READONLY",
+              message:
+                "IDENTITY.md is a fixed identity anchor and cannot be edited by AI tool calls.",
+            },
+          ],
+        },
+      ),
+      toolName,
+    );
+  }
+
+  if (
+    isPlayerRateLoopContext(ctx) &&
+    !PLAYER_RATE_ALLOWED_WRITE_PATHS.has(logicalPath)
+  ) {
+    return withToolErrorDetails(
+      createError(
+        `${toolName}: [Player Rate] writes are restricted to current/${WORKSPACE_SOUL_LOGICAL_PATH} and current/${WORKSPACE_USER_LOGICAL_PATH}.`,
+        "INVALID_ACTION",
+        {
+          category: "policy",
+          issues: [
+            {
+              path: `current/${logicalPath}`,
+              code: "PLAYER_RATE_WRITE_SCOPE_VIOLATION",
+              message:
+                "Player-rate loop cannot mutate storyline/world files; only SOUL.md and USER.md are writable.",
+            },
+          ],
+        },
+      ),
+      toolName,
+    );
+  }
+
+  return null;
+};
 
 export const requireToolSeenForExistingFile = (
   session: VfsSession,

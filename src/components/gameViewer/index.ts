@@ -29,4 +29,5 @@ export { CharacterTab } from "./CharacterTab";
 export { NPCsTab } from "./NPCsTab";
 export { QuestsTab } from "./QuestsTab";
 export { LoreTab } from "./LoreTab";
+export { MemoryTab } from "./MemoryTab";
 export { EmbeddingTab } from "./EmbeddingTab";

@@ -128,13 +128,11 @@ function createDeps(overrides: Record<string, unknown> = {}) {
   return {
     aiSettings: {
       embedding: { enabled: false },
-      playerProfile: "# Player Soul (Global)",
     } as any,
     language: "en" as any,
     currentSlotId: "slot-1",
     gameStateRef,
     setGameState,
-    handleSaveSettings: vi.fn(),
     showToast: vi.fn(),
     t: (key: string) => key,
     vfsSession,
@@ -324,11 +322,11 @@ describe("commandActions", () => {
         content: '{"time":"Day 1"}',
         contentType: "application/json",
       },
-      "world/soul.md": {
+      "workspace/SOUL.md": {
         content: "# Player Soul (This Save)\n",
         contentType: "text/markdown",
       },
-      "shared/config/runtime/soul.md": {
+      "shared/config/workspace/USER.md": {
         content: "# Player Soul (Global)\n- Scope: Global\n",
         contentType: "text/markdown",
       },
@@ -340,11 +338,11 @@ describe("commandActions", () => {
         content: '{"time":"Day 2"}',
         contentType: "application/json",
       },
-      "world/soul.md": {
+      "workspace/SOUL.md": {
         content: "# Player Soul (This Save)\n- Last Updated: changed\n",
         contentType: "text/markdown",
       },
-      "shared/config/runtime/soul.md": {
+      "shared/config/workspace/USER.md": {
         content: "# Player Soul (Global)\n- Last Updated: changed\n",
         contentType: "text/markdown",
       },
@@ -407,7 +405,6 @@ describe("commandActions", () => {
       '{"time":"Day 1"}',
       "application/json",
     );
-    expect(deps.handleSaveSettings).toHaveBeenCalledTimes(1);
     expect(deps.triggerSave).toHaveBeenCalledTimes(1);
   });
 });

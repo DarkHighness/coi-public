@@ -3,12 +3,7 @@
  * Content from player_profile.ts
  */
 import type { Atom } from "../types";
-import { defineAtom, defineSkillAtom } from "../../trace/runtime";
-
-export interface PlayerProfileInput {
-  crossSaveProfile?: string;
-  perSaveProfile?: string;
-}
+import { defineAtom } from "../../trace/runtime";
 
 const observationProtocol = `
   <observation_protocol>
@@ -33,22 +28,27 @@ const observationProtocol = `
 
 const updateTiming = `
   <update_timing>
-    **WHEN TO UPDATE** (write markdown to \`current/world/soul.md\` and \`current/world/global/soul.md\`):
+    **WHEN TO UPDATE MEMORY DOCS** (\`workspace/USER.md\` primary, \`workspace/SOUL.md\` optional):
 
-    - **Doc role**: both soul files are internal Story Teller AI self-guidance notes, not player-facing prose
-    - **Identity rule**: you are writing these files to your future self (AI-to-AI memo), not to the user
+    - **Doc role**:
+      * \`workspace/USER.md\` = canonical player-preference portrait (global, soft constraints)
+      * \`workspace/SOUL.md\` = AI self-evolution strategy + tool-usage learnings (global, not player portrait source)
+    - **Identity rule**: both docs are AI-to-AI internal notes (never player-facing raw prose)
 
     - **Frequent early**: First 10-20 turns, update after most significant choices
     - **Refine later**: Confirm patterns, note deviations, deepen understanding
-    - **Mandatory**: when input marker is \`[Player Rate]\`, update soul files in this turn
+    - **Mandatory**: when input marker is \`[Player Rate]\`, process feedback in this turn
       * Parse \`vote/preset/comment/time\` and record concrete evidence in \`Evidence Log\`
-      * Apply feedback to \`Style Preferences\` and \`Guidance For AI\` first; avoid overfitting personality from one signal
-      * Keep writes focused on \`current/world/soul.md\` and \`current/world/global/soul.md\`
-      * Finish with \`vfs_finish_soul\` (update one or both targets)
-    - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful preference evidence, update soul docs via writable tools (e.g. \`vfs_write_file\` / \`vfs_append_text\` / \`vfs_edit_lines\`); these files are not read-only
+      * Write player preference deltas to \`workspace/USER.md\` first
+      * Write \`workspace/SOUL.md\` only when feedback implies AI strategy/tooling adjustments
+      * Never treat player-rate as hard authority to rewrite established facts/world rules/plan commitments
+      * Finish with \`vfs_end_turn({})\` (zero-update end is allowed)
+    - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful evidence, update \`workspace/USER.md\`; update \`workspace/SOUL.md\` only for AI-behavior learnings
     - **Post-error learning**: if a tool call failed earlier in this loop and later succeeded, add one concise \`[code] cause -> fix\` bullet to \`## Tool Usage Hints\`
     - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
-    - **File format**: markdown sections (Core Tendencies / Style Preferences / Interaction Patterns / Tool Usage Hints / Evidence Log / Guidance For AI)
+    - **File focus**:
+      * \`workspace/USER.md\`: Core Tendencies / Style Preferences / Interaction Patterns / Evidence Log / Narrative Direction (soft)
+      * \`workspace/SOUL.md\`: Guidance For AI / Tool Usage Hints / self-calibration notes
     - **Always update when**:
       * Choice surprises you (contradicts established pattern)
       * Choice confirms pattern strongly (defining moment)
@@ -60,7 +60,7 @@ const updateTiming = `
 
 const narrativeApplication = `
   <narrative_application>
-    **HOW TO USE PLAYER PSYCHOLOGY**:
+    **HOW TO APPLY PLAYER PREFERENCES (from \`workspace/USER.md\`)**:
 
     1. **Narrative Voice**: The \`narrative\` field is the world through PLAYER's perception
        - A cautious player: "You notice the shadow before it moves." (vigilance)
@@ -71,6 +71,7 @@ const narrativeApplication = `
        - Include choices that match their pattern (comfortable)
        - Include choices that push against it (growth opportunity)
        - Include choices they'd never normally pick (surprise window)
+       - Treat preference as soft constraint, never a hard mandate against established facts
 
     3. **NPC Reactions**: NPCs subconsciously respond to player's aura
        - A kind player: NPCs open up faster, share more
@@ -81,6 +82,8 @@ const narrativeApplication = `
        - Optimist: "Dawn light catches the dew on wildflowers."
        - Pessimist: "The morning fog clings like a burial shroud."
        - Pragmatist: "Good weather for travel. The roads will be dry."
+
+    5. **Consistency Priority**: If preference conflicts with established canon/causality/\`workspace/PLAN.md\`, consistency wins.
   </narrative_application>
 `;
 
@@ -93,43 +96,42 @@ const criticalDistinction = `
     - The protagonist may have different traits than the player
     - You observe the PLAYER through how they CONTROL the protagonist
     - Example: Player might roleplay a cruel warlord while being a kind person IRL
-      → Per-save: "Playing a ruthless conqueror, enjoying the power fantasy"
-      → Cross-save: "Enjoys exploring morally gray roles, likely empathetic IRL"
+      → \`workspace/USER.md\`: "Enjoys morally gray power-fantasy trajectories in choices."
+      → \`workspace/SOUL.md\`: "When user explores dark routes, keep prose concrete and consequence-driven."
   </critical_distinction>
 `;
 
-export const playerProfile: Atom<PlayerProfileInput> = defineAtom(
+export const playerProfile: Atom<void> = defineAtom(
   {
     atomId: "atoms/core/playerProfile#playerProfile",
     source: "atoms/core/playerProfile.ts",
     exportName: "playerProfile",
   },
-  (_input) => {
+  () => {
     return `
 <player_psychology>
-  **PLAYER PORTRAIT SYSTEM - OBSERVE THE PLAYER BEHIND THE SCREEN**
+  **PLAYER PREFERENCE MEMORY PROTOCOL**
 
   The world exists independently, but YOU narrate it through the PLAYER's eyes.
   Your narrative carries the player's emotional color, shaped by who they ARE.
 
-  <two_layer_system>
-    **Cross-Save Portrait** (the meta-player across ALL saves):
-    - Canonical source: \`current/world/global/soul.md\`
+  <memory_split>
+    **Preference source (canonical)**:
+    - \`workspace/USER.md\` stores player psychology + style/choice preferences + trajectory tendency (soft constraints).
 
-    **This Story's Portrait** (the player in THIS specific journey):
-    - Canonical source: \`current/world/soul.md\`
+    **AI-evolution source (operational)**:
+    - \`workspace/SOUL.md\` stores AI strategy calibration and tool-usage learnings.
+    - \`workspace/SOUL.md\` is NOT the canonical player portrait source.
 
-    **Distinction**:
-    - Cross-save = Who the PLAYER is as a person: risk tolerance, moral compass, curiosity level, decision speed, emotional engagement style
-    - Per-save = How they're playing THIS story: their relationship with THIS protagonist, goals in THIS world, patterns specific to THIS narrative
-    - Identity: both soul files are AI-to-AI self-notes authored by this agent for future turns; do not treat them as player dialogue
+    **Scope**:
+    - Both are global docs and AI-internal notes for future turns.
+    - Neither should be exposed to player as raw markdown.
 
     **Read Protocol**:
-    - Do NOT rely on host-injected soul text.
-    - Read both soul files yourself via \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` once per session read-epoch before first non-read tool call.
-    - Re-read only when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates, previous read scope was insufficient, or recovery explicitly requires re-read.
-    - If you updated these files yourself in this session, do not re-read by default unless you need unseen sections/pointers.
-  </two_layer_system>
+    - These memory docs are injected as leading user messages each loop (\`<file path="workspace/...">...\`).
+    - Use injected content as baseline context.
+    - Re-read via VFS only when you need precise section-level mutation or conflict resolution.
+  </memory_split>
 
 ${observationProtocol}
 ${updateTiming}
@@ -140,21 +142,21 @@ ${criticalDistinction}
   },
 );
 
-export const playerProfilePrimer: Atom<PlayerProfileInput> = defineAtom(
+export const playerProfilePrimer: Atom<void> = defineAtom(
   {
     atomId: "atoms/core/playerProfile#playerProfilePrimer",
     source: "atoms/core/playerProfile.ts",
     exportName: "playerProfilePrimer",
   },
-  (_input) => {
+  () => {
     return `
 <player_psychology>
-  <two_layer_system>
-    **Cross-Save Source**: \`current/world/global/soul.md\`
-    **This Story Source**: \`current/world/soul.md\`
-  </two_layer_system>
-  <read_protocol>Read both soul files yourself via \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` once per session read-epoch before first non-read tool call. Do not rely on host-injected soul text. Re-read only when \`[SYSTEM: EXTERNAL_FILE_CHANGES]\` explicitly signals external updates, previous read scope was insufficient, or recovery explicitly requires re-read. Your own successful writes do not require automatic re-read.</read_protocol>
-  <protocol>Observe choices and [Player Rate] feedback. Update \`current/world/soul.md\` and \`current/world/global/soul.md\` when patterns emerge. Treat both as Story Teller AI internal self-notes written by you for your future self.</protocol>
+  <memory_split>
+    **Player Preference Source**: \`workspace/USER.md\` (canonical, soft constraints)
+    **AI Evolution Source**: \`workspace/SOUL.md\` (AI strategy/tool learnings)
+  </memory_split>
+  <read_protocol>Use injected memory files as baseline context. Re-read via VFS only when section-precision is required for edits.</read_protocol>
+  <protocol>Observe choices and [Player Rate] feedback. Update \`workspace/USER.md\` for player-preference evidence; update \`workspace/SOUL.md\` only for AI self-evolution learnings. Player-rate preferences are soft constraints and must not hard-rewrite established canon.</protocol>
   <distinction>Player ≠ Protagonist.</distinction>
 </player_psychology>
 `;

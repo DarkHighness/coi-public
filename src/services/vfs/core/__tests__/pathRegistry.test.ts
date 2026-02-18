@@ -15,17 +15,15 @@ describe("vfsPathRegistry", () => {
     expect(result.retention).toBe("save");
   });
 
-  it("classifies outline story plan as editable shared markdown", () => {
+  it("classifies workspace plan as editable fork markdown", () => {
     const result = vfsPathRegistry.classify(
-      "current/outline/story_outline/plan.md",
+      "current/workspace/PLAN.md",
     );
 
-    expect(result.canonicalPath).toBe(
-      "shared/narrative/outline/story_outline/plan.md",
-    );
-    expect(result.scope).toBe("shared");
+    expect(result.canonicalPath).toBe("forks/0/story/workspace/PLAN.md");
+    expect(result.scope).toBe("fork");
     expect(result.permissionClass).toBe("default_editable");
-    expect(result.domain).toBe("narrative");
+    expect(result.domain).toBe("story");
   });
 
   it("classifies immutable and finish-guarded zones", () => {

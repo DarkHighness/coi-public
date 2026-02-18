@@ -24,7 +24,10 @@ const messageProtocol = `
   **[Player Rate]** — Player feedback on this turn output
   Treat as feedback ingestion for soul updates. Do NOT treat it as a protagonist action or advance story events.
   Example: \`[Player Rate] {"turnId":"fork-0/turn-12","vote":"down","preset":"AI flavor too strong"}\`
-  Required handling: parse \`vote/preset/comment/time\` when present, then update \`current/world/soul.md\` and \`current/world/global/soul.md\`. Both are Story Teller AI internal self-notes.
+  Required handling: parse \`vote/preset/comment/time\` when present, then update \`workspace/SOUL.md\` and \`workspace/USER.md\`. Both are Story Teller AI internal self-notes.
+  - Do NOT treat Player-Rate as \`sudo\`, \`forceUpdate\`, or \`godMode\`.
+  - Do NOT use Player-Rate to rewrite established facts/world rules/causal outcomes.
+  - You MAY store player trajectory preferences in \`USER.md\` as soft constraints for future turns.
   This does NOT mean soul updates are exclusive to \`[Player Rate]\`: in normal \`[PLAYER_ACTION]\` turns, you may proactively refine soul docs when multi-turn evidence warrants it.
 
   **[CONTEXT: ...]** — Background information
@@ -45,7 +48,7 @@ const messageProtocol = `
   **Processing Priority**:
   1. Determine the leading marker of the active user message
   2. If [PLAYER_ACTION], simulate world consequences
-  3. If [Player Rate], update soul files only (no visible story progression)
+  3. If [Player Rate], update soul files only (no visible story progression, no factual retcon)
   4. If [SUDO], execute elevated update workflow (immutable/finish guards still apply)
   5. In normal [PLAYER_ACTION] turns, optionally update soul files via writable tools when new preference evidence appears
   6. Use [CONTEXT] and [SYSTEM] for background; handle [ERROR] before finishing
@@ -75,7 +78,7 @@ const toolMandate = `
   Reasoning alone produces nothing. Tools produce results.
 
   **Minimum Requirement**:
-  Every turn MUST end with the marker-appropriate finish tool: \`vfs_finish_turn\` for \`[PLAYER_ACTION]\`/\`[SUDO]\`, \`vfs_finish_soul\` for \`[Player Rate]\`. Best practice: inspect → update → finish.
+  Every turn MUST end with the marker-appropriate finish tool: \`vfs_finish_turn\` for \`[PLAYER_ACTION]\`/\`[SUDO]\`, \`vfs_end_turn\` for \`[Player Rate]\`. Best practice: inspect → update → finish.
 
   **Banned Patterns**:
   - ❌ Response with only text (no tool calls)
@@ -226,7 +229,7 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
 3. In normal [PLAYER_ACTION] turns, proactively refine soul files when strong evidence emerges
 4. Route [SUDO] to elevated update workflow
 5. Handle [ERROR] by retrying with corrected arguments
-6. Finish with the marker-appropriate finish tool (Player Rate => \`vfs_finish_soul\`)
+6. Finish with the marker-appropriate finish tool (Player Rate => \`vfs_end_turn\`)
 7. Search before creating entities
 8. "You" in rules = AI, "You" in narrative = protagonist
 `.trim(),
@@ -240,7 +243,7 @@ export const protocolsSkill: SkillAtom<void> = defineSkillAtom(
       "Searching before creating new entities (vfs_search with fuzzy: true)?",
       "Using consistent naming convention for new entities (kebab-case)?",
       "Using correct 'You' for context (AI in rules, protagonist in narrative)?",
-      "Finishing with marker-appropriate tool (vfs_finish_turn / vfs_finish_soul)?",
+      "Finishing with marker-appropriate tool (vfs_finish_turn / vfs_end_turn)?",
     ],
 
     examples: [

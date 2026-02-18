@@ -554,7 +554,7 @@ describe("VFS handlers mutations", () => {
   it("allows outline story plan overwrite via vfs_write_file after read-before-mutate", () => {
     const session = new VfsSession();
     session.writeFile(
-      "outline/story_outline/plan.md",
+      "workspace/PLAN.md",
       "# Plan\n\n## Phase 1\n\n- [ ] Reach the gate",
       "text/markdown",
     );
@@ -563,7 +563,7 @@ describe("VFS handlers mutations", () => {
     const blocked = dispatchOps(ctx, [
       {
         op: "write_file",
-        path: "current/outline/story_outline/plan.md",
+        path: "current/workspace/PLAN.md",
         content:
           "# Plan\n\n## Phase 1\n\n- [x] Reach the gate\n\n## Phase 2\n\n- [ ] Enter the archive",
         contentType: "text/markdown",
@@ -575,14 +575,14 @@ describe("VFS handlers mutations", () => {
 
     dispatchToolCall(
       "vfs_read_chars",
-      { path: "current/outline/story_outline/plan.md" },
+      { path: "current/workspace/PLAN.md" },
       ctx,
     );
 
     const ok = dispatchOps(ctx, [
       {
         op: "write_file",
-        path: "current/outline/story_outline/plan.md",
+        path: "current/workspace/PLAN.md",
         content:
           "# Plan\n\n## Phase 1\n\n- [x] Reach the gate\n\n## Phase 2\n\n- [ ] Enter the archive",
         contentType: "text/markdown",
@@ -590,11 +590,11 @@ describe("VFS handlers mutations", () => {
     ]) as any;
 
     expect(ok.success).toBe(true);
-    expect(ok.data.written).toContain("current/outline/story_outline/plan.md");
+    expect(ok.data.written).toContain("current/workspace/PLAN.md");
 
     const readBack = dispatchToolCall(
       "vfs_read_chars",
-      { path: "current/outline/story_outline/plan.md" },
+      { path: "current/workspace/PLAN.md" },
       ctx,
     ) as any;
     expect(readBack.success).toBe(true);

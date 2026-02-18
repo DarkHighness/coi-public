@@ -21,7 +21,7 @@ describe("contextInjector", () => {
     injectSudoModeInstruction(history);
     injectNormalTurnInstruction(
       history,
-      "vfs_finish_soul",
+      "vfs_end_turn",
       false,
       {
         godMode: true,
@@ -160,15 +160,15 @@ describe("contextInjector", () => {
     );
     expect(getText(history[1])).toContain("skills/core/protocols/SKILL.md");
     expect(getText(history[1])).toContain("skills/craft/writing/SKILL.md");
-    expect(getText(history[0])).toContain("vfs_finish_soul");
+    expect(getText(history[0])).toContain("vfs_end_turn");
     expect(getText(history[1])).not.toContain("commands/runtime/god/SKILL.md");
     expect(getText(history[1])).not.toContain(
       "commands/runtime/unlock/SKILL.md",
     );
     expect(getText(history[2])).toContain("PLAYER RATE MODE");
-    expect(getText(history[2])).toContain("current/world/soul.md");
-    expect(getText(history[2])).toContain("current/world/global/soul.md");
-    expect(getText(history[2])).toContain("vfs_finish_soul");
+    expect(getText(history[2])).toContain("workspace/SOUL.md");
+    expect(getText(history[2])).toContain("workspace/USER.md");
+    expect(getText(history[2])).toContain("vfs_end_turn");
     expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
     expect(getText(history[3])).toContain(
       "Do not skip required skill preflight",
@@ -257,8 +257,8 @@ describe("contextInjector", () => {
     injectColdStartRequiredReads(history, [
       "skills/commands/runtime/SKILL.md",
       "skills/commands/runtime/player-rate/SKILL.md",
-      "world/soul.md",
-      "world/global/soul.md",
+      "workspace/SOUL.md",
+      "workspace/USER.md",
       "session/session-a.jsonl",
       "skills/commands/runtime/SKILL.md",
     ]);
@@ -270,10 +270,10 @@ describe("contextInjector", () => {
       'vfs_read_lines({ path: "current/skills/commands/runtime/SKILL.md", startLine: 1, lineCount: 120',
     );
     expect(text).toContain(
-      'vfs_read_lines({ path: "current/world/soul.md", startLine: 1, lineCount: 90',
+      'vfs_read_lines({ path: "current/workspace/SOUL.md", startLine: 1, lineCount: 90',
     );
     expect(text).toContain(
-      'vfs_read_lines({ path: "current/world/global/soul.md", startLine: 1, lineCount: 90',
+      'vfs_read_lines({ path: "current/workspace/USER.md", startLine: 1, lineCount: 90',
     );
     expect(text).toContain(
       'vfs_read_lines({ path: "current/session/session-a.jsonl", startLine: 1, lineCount: 80',

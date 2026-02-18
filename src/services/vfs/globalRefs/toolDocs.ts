@@ -100,7 +100,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
   ],
   vfs_read_markdown: [
     {
-      path: "current/world/soul.md",
+      path: "workspace/SOUL.md",
       headings: ["Tool Usage Hints", "Guidance For AI"],
     },
     {
@@ -158,7 +158,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
   ],
   vfs_write_markdown: [
     {
-      path: "current/world/soul.md",
+      path: "workspace/SOUL.md",
       action: "add_section",
       parent: { heading: "Tool Usage Hints" },
       section: {
@@ -169,14 +169,14 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
     {
-      path: "current/world/soul.md",
+      path: "workspace/SOUL.md",
       action: "replace_section",
       target: { heading: "Tool Usage Hints" },
       content:
         "- [INVALID_ACTION] skipped read-before-write. Fix: read target first, then write.\n- [INVALID_PARAMS] missing required field. Fix: re-check schema and retry once.",
     },
     {
-      path: "current/world/soul.md",
+      path: "workspace/SOUL.md",
       action: "delete_section",
       target: { index: "4.2" },
     },
@@ -215,21 +215,8 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
   ],
-  vfs_finish_soul: [
-    {
-      currentSoul:
-        "# Player Soul (This Save)\\n\\n## Tool Usage Hints\\n- [INVALID_PARAMS] Missing required field -> re-read tool docs and send schema-valid args.\\n\\n## Guidance For AI\\n- Keep prose tighter when player asks for concise style.\\n",
-    },
-    {
-      globalSoul:
-        "# Player Soul (Global)\\n\\n## Tool Usage Hints\\n- [INVALID_ACTION] Read-before-write failed -> always read target via vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json before edit.\\n\\n## Evidence Log\\n- turn fork-0/turn-12: downvote, preset=AI flavor too strong.\\n",
-    },
-    {
-      currentSoul:
-        "# Player Soul (This Save)\\n\\n## Guidance For AI\\n- Reduce ornamental metaphors.\\n",
-      globalSoul:
-        "# Player Soul (Global)\\n\\n## Style Preferences\\n- Prefer direct, concrete wording.\\n",
-    },
+  vfs_end_turn: [
+    {},
   ],
   vfs_finish_summary: [
     {

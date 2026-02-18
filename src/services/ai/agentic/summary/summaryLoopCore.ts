@@ -21,15 +21,10 @@ import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { readConversationIndex } from "../../../vfs/conversation";
 import { vfsToolRegistry } from "../../../vfs/tools";
 import {
-  CURRENT_SOUL_LOGICAL_PATH,
-  GLOBAL_SOUL_LOGICAL_PATH,
-} from "../../../vfs/soulTemplates";
-import {
   accumulateSummaryUsage,
   createSummaryLoopState,
 } from "./summaryInitializer";
 import type { SummaryAgenticLoopResult, SummaryLoopInput } from "./summary";
-import { isReadOnlyInspectionToolName } from "../common/toolCallPolicies";
 
 const SUMMARY_PATH_ARG_KEYS = new Set([
   "path",
@@ -39,11 +34,6 @@ const SUMMARY_PATH_ARG_KEYS = new Set([
   "patterns",
   "excludePatterns",
 ]);
-
-const SUMMARY_REQUIRED_SOUL_PATHS = [
-  CURRENT_SOUL_LOGICAL_PATH,
-  GLOBAL_SOUL_LOGICAL_PATH,
-] as const;
 
 export type SummaryLoopCoreMode = "session_compact" | "query_summary";
 
@@ -200,50 +190,6 @@ const injectSummaryRuntimeArgs = (
       toIndex: expectedRange.toIndex,
     },
     lastSummarizedIndex: expectedRange.toIndex + 1,
-  };
-};
-
-const checkSummarySoulReadGate = (
-  functionCalls: ToolCallResult[],
-  vfsSession: SummaryLoopInput["vfsSession"],
-): null | {
-  success: false;
-  error: string;
-  code: "SOUL_NOT_READ";
-} => {
-  const hasNonReadCall = functionCalls.some(
-    (call) => !isReadOnlyInspectionToolName(call.name),
-  );
-  if (!hasNonReadCall) {
-    return null;
-  }
-
-  const hasToolSeenInCurrentEpoch = (
-    vfsSession as {
-      hasToolSeenInCurrentEpoch?: (path: string) => boolean;
-    }
-  ).hasToolSeenInCurrentEpoch;
-
-  if (typeof hasToolSeenInCurrentEpoch !== "function") {
-    return null;
-  }
-
-  const missing = SUMMARY_REQUIRED_SOUL_PATHS.filter(
-    (path) => !hasToolSeenInCurrentEpoch(path),
-  );
-
-  if (missing.length === 0) {
-    return null;
-  }
-
-  const shown = missing.map((path) => `current/${path}`).join(", ");
-
-  return {
-    success: false,
-    error:
-      `[ERROR: SOUL_NOT_READ] Read required soul anchors before non-read tools: ${shown}. ` +
-      "Action: call a read tool on each missing anchor once (prefer vfs_read_markdown when section selectors are known), then continue.",
-    code: "SOUL_NOT_READ",
   };
 };
 
@@ -496,19 +442,6 @@ export async function runSummaryLoopCore(options: {
       };
 
       for (const call of functionCalls) {
-        const soulGateError = checkSummarySoulReadGate(
-          [call],
-          input.vfsSession,
-        );
-        if (soulGateError) {
-          toolResponses.push({
-            toolCallId: call.id,
-            name: call.name,
-            content: soulGateError,
-          });
-          continue;
-        }
-
         if (mustOnlyFinish && call.name !== finishToolName) {
           toolResponses.push({
             toolCallId: call.id,

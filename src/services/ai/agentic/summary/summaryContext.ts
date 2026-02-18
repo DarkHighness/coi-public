@@ -89,7 +89,7 @@ Finish tool:
 Loop quick-start (recommended):
 ${summaryBaselineLines.join("\n")}
 5) Read fork anchors (\`current/conversation/index.json\`, turn files, summary state).
-6) Session preflight: read soul anchors once per read-epoch (\`current/world/soul.md\`, \`current/world/global/soul.md\`) for player-preference alignment.
+6) Use injected memory files (\`workspace/IDENTITY.md\`, \`workspace/USER.md\`, \`workspace/SOUL.md\`, \`workspace/PLAN.md\`) for alignment.
 7) Draft summary fields, then finish once with \`vfs_finish_summary\` as the LAST tool call.
 
 When you have enough information, call \`vfs_finish_summary\`.
@@ -101,7 +101,7 @@ ${summaryBaselineBullets.join("\n")}
 Notes policy:
 - \`current/world/notes.md\` is optional context only.
 - Do not treat notes as mandatory per-summary pre-read.
-- Soul files are mandatory memory anchors for summary alignment.
+- Memory docs are already injected in the loop context; VFS re-read is optional unless precision is required.
 
 When historical continuity is unclear, query \`current/session/<session_uid>.jsonl\` in windows:
 - Use \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.

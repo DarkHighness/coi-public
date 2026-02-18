@@ -113,7 +113,7 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          `await vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())}); await vfs_read_chars({ path: "current/world/soul.md", start: 0, offset: 10 });`,
+          `await vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())}); await vfs_read_chars({ path: "current/workspace/SOUL.md", start: 0, offset: 10 });`,
         ],
       },
       ctx,

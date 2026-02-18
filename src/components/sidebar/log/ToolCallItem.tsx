@@ -29,7 +29,7 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
 
   const isFinish =
     call.name === "vfs_finish_turn" ||
-    call.name === "vfs_finish_soul" ||
+    call.name === "vfs_end_turn" ||
     call.name === "vfs_finish_summary" ||
     isOutlineCommit;
   const isSuccess = !isError;
