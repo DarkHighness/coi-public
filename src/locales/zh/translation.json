@@ -20,6 +20,11 @@
     "trueObjectives": "真实目标",
     "secretOutcome": "隐藏收获"
   },
+  "questType": {
+    "main": "主线",
+    "side": "支线",
+    "hidden": "隐藏"
+  },
   "summarySnapshot": "剧情回顾",
   "copyImagePrompt": "复制图片提示",
   "copied": "已复制!",

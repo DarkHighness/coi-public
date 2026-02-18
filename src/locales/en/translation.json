@@ -20,6 +20,11 @@
     "trueObjectives": "True Objectives",
     "secretOutcome": "Secret Outcome"
   },
+  "questType": {
+    "main": "Main",
+    "side": "Side",
+    "hidden": "Hidden"
+  },
   "knowledgePanel": {
     "title": "Knowledge",
     "empty": "No knowledge discovered yet.",

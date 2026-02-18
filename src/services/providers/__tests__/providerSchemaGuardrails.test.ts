@@ -128,4 +128,29 @@ describe("provider schema guardrails", () => {
       expect(text).not.toContain('"hash"');
     }
   });
+
+  it("keeps vfs_finish_outline_phase_4 location schema free of system timestamp fields", () => {
+    const tool = ALL_DEFINED_TOOLS.find(
+      (item) => item.name === "vfs_finish_outline_phase_4",
+    );
+    expect(tool).toBeDefined();
+    if (!tool) return;
+
+    const openaiSchema = serialize(zodToOpenAISchema(tool.parameters, true));
+    const geminiSchema = serialize(
+      zodToGeminiCompatibleSchema(tool.parameters),
+    );
+    const claudeSchema = serialize(
+      zodToClaudeCompatibleSchema(tool.parameters),
+    );
+    const hint = getToolSchemaHint(tool.parameters, "", {
+      toolName: tool.name,
+    });
+
+    for (const text of [openaiSchema, geminiSchema, claudeSchema, hint]) {
+      expect(text).not.toContain("createdAt");
+      expect(text).not.toContain("modifiedAt");
+      expect(text).not.toContain("lastAccess");
+    }
+  });
 });

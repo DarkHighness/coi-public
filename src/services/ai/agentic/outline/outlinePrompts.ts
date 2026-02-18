@@ -51,6 +51,7 @@ export function getPhasePrompt(
         protagonistFeature,
         submitToolName,
         {
+          genderPreference: sharedContext.genderPreference,
           culturePreference: sharedContext.culturePreference,
           culturePreferenceSource: sharedContext.culturePreferenceSource,
           cultureEffectiveCircle: sharedContext.cultureEffectiveCircle,

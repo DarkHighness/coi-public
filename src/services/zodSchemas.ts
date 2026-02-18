@@ -378,6 +378,17 @@ export const locationSchema = z.object({
 });
 
 /**
+ * Outline authoring input for locations.
+ * System/runtime fields are managed by engine and must not be model-authored.
+ */
+export const outlineLocationSchema = locationSchema
+  .omit({
+    createdAt: true,
+    modifiedAt: true,
+  })
+  .strict();
+
+/**
  * Derived UI model for Location (canonical definition + per-actor view fields).
  * NOTE: These fields MUST NOT be stored in `world/locations/*.json`.
  */
@@ -2001,7 +2012,7 @@ export const outlinePhase3Schema = z.object({
  */
 export const outlinePhase4Schema = z.object({
   locations: z
-    .array(locationSchema)
+    .array(outlineLocationSchema)
     .describe(
       "1-2 initial locations with detailed visible and hidden layers. Each MUST have a unique 'id' field.",
     ),

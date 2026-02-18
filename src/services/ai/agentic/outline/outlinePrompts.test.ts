@@ -83,6 +83,7 @@ describe("outlinePrompts", () => {
       "feat",
       "vfs_finish_outline_phase_0",
       {
+        genderPreference: undefined,
         culturePreference: undefined,
         culturePreferenceSource: undefined,
         cultureEffectiveCircle: undefined,
