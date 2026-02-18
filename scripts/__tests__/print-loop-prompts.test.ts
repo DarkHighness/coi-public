@@ -7,11 +7,15 @@ import { describe, expect, it } from "vitest";
 const REPO_ROOT = "/Users/twiliness/Desktop/coi";
 const SCRIPT_PATH = `${REPO_ROOT}/scripts/print-loop-prompts.ts`;
 
-const runSnapshotScript = (view: "static" | "effective" | "both"): string => {
+const runSnapshotScript = (
+  view: "static" | "effective" | "both",
+  extraArgs: string[] = [],
+): string => {
   const tmp = mkdtempSync(join(tmpdir(), "loop-prompts-"));
   const outputPath = join(tmp, `snapshot-${view}.md`);
+  const extra = extraArgs.join(" ");
   execSync(
-    `node --import tsx ${SCRIPT_PATH} -- --lang en --view ${view} --out ${outputPath}`,
+    `node --import tsx ${SCRIPT_PATH} -- --lang en --view ${view} --out ${outputPath}${extra ? ` ${extra}` : ""}`,
     {
       cwd: REPO_ROOT,
       stdio: "pipe",
@@ -27,6 +31,8 @@ describe("print-loop-prompts script", () => {
     expect(content).toContain("## turn (static)");
     expect(content).toContain("## turn (effective)");
     expect(content).toContain("## cleanup (effective)");
+    expect(content).toContain("[CONTEXT: Summary Task]");
+    expect(content).toContain("(god mode active)");
   });
 
   it("prints static-only view when requested", () => {
@@ -41,5 +47,10 @@ describe("print-loop-prompts script", () => {
     expect(content).toContain("View mode: effective");
     expect(content).toContain("## turn (effective)");
     expect(content).not.toContain("## turn (static)");
+  });
+
+  it("supports disabling all-options toggles", () => {
+    const content = runSnapshotScript("effective", ["--no-all-options"]);
+    expect(content).not.toContain("(god mode active)");
   });
 });

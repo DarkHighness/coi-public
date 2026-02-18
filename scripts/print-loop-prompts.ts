@@ -11,12 +11,14 @@ type Args = {
   summaryLanguage?: string;
   outputPath?: string;
   viewMode: LoopPromptSnapshotViewMode;
+  allOptions: boolean;
 };
 
 const parseArgs = (argv: string[]): Args => {
   const args: Args = {
     languageCode: "en",
     viewMode: "both",
+    allOptions: true,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -34,6 +36,14 @@ const parseArgs = (argv: string[]): Args => {
     if (token === "--out" && argv[i + 1]) {
       args.outputPath = argv[i + 1]!;
       i += 1;
+      continue;
+    }
+    if (token === "--all-options") {
+      args.allOptions = true;
+      continue;
+    }
+    if (token === "--no-all-options") {
+      args.allOptions = false;
       continue;
     }
     if (token === "--view" && argv[i + 1]) {
@@ -54,6 +64,8 @@ const parseArgs = (argv: string[]): Args => {
           "  --lang <code>          Base language code for turn/outline prompts (default: en)",
           "  --summary-lang <name>  Summary language label override (default derived from --lang)",
           "  --view <mode>          static | effective | both (default: both)",
+          "  --all-options          Enable all optional prompt settings (default: on)",
+          "  --no-all-options       Disable optional prompt-setting toggles",
           "  --out <path>           Write markdown snapshot to file",
           "  --help                 Show this help message",
         ].join("\n"),
@@ -72,6 +84,7 @@ const main = (): void => {
     languageCode: args.languageCode,
     summaryLanguage: args.summaryLanguage,
     viewMode: args.viewMode,
+    enableAllOptions: args.allOptions,
   });
   const markdown = formatLoopPromptSnapshotMarkdown(snapshot);
 

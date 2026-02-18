@@ -21,6 +21,10 @@ describe("export-skill-doc-structure script", () => {
     const outDir = runScript();
     const skillsRoot = join(outDir, "skills");
 
+    expect(existsSync(join(skillsRoot, "README.md"))).toBe(true);
+    expect(existsSync(join(skillsRoot, "STYLE.md"))).toBe(true);
+    expect(existsSync(join(skillsRoot, "TAXONOMY.md"))).toBe(true);
+
     const identityDir = join(skillsRoot, "core/identity");
     expect(existsSync(join(identityDir, "SKILL.md"))).toBe(true);
     expect(existsSync(join(identityDir, "atoms.json"))).toBe(true);

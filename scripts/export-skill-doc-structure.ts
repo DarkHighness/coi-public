@@ -219,14 +219,35 @@ const main = (): void => {
 
   clearPromptTraceRegistry();
   setPromptTraceEnabled(true);
+  let tracedSkillSeeds: ReturnType<typeof generateVfsSkillSeeds> = [];
   try {
-    generateVfsSkillSeeds();
+    tracedSkillSeeds = generateVfsSkillSeeds();
   } finally {
     setPromptTraceEnabled(false);
   }
 
   const traceByPrompt = getLatestTraceByPrompt(getPromptTraceHistory());
   const allFiles = Object.values(buildGlobalVfsSkills());
+  const tracedMarkdownByPath = new Map<string, string>();
+  for (const seed of tracedSkillSeeds) {
+    if (seed.path.endsWith(".md")) {
+      tracedMarkdownByPath.set(seed.path, seed.content);
+    }
+  }
+
+  const rootSkillDocs = allFiles
+    .filter(
+      (file) =>
+        file.path === "skills/README.md" ||
+        file.path === "skills/STYLE.md" ||
+        file.path === "skills/TAXONOMY.md",
+    )
+    .sort((left, right) => left.path.localeCompare(right.path));
+  for (const file of rootSkillDocs) {
+    const outputPath = path.join(skillsDir, path.basename(file.path));
+    writeFileSync(outputPath, file.content, "utf8");
+  }
+
   const allCatalogEntries = [...getAllSkillCatalogEntries()].sort((a, b) =>
     a.id.localeCompare(b.id),
   );
@@ -251,6 +272,10 @@ const main = (): void => {
         (file) =>
           file.path.startsWith(skillPrefix) && file.path.endsWith(".md"),
       )
+      .map((file) => ({
+        path: file.path,
+        content: tracedMarkdownByPath.get(file.path) ?? file.content,
+      }))
       .sort((left, right) => left.path.localeCompare(right.path));
 
     for (const file of markdownFiles) {

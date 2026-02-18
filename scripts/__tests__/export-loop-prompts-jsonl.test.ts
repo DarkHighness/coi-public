@@ -57,6 +57,47 @@ describe("export-loop-prompts-jsonl script", () => {
     expect(typeof parsedTurnLine.messageIndex).toBe("number");
     expect(typeof parsedTurnLine.text).toBe("string");
 
+    const summaryQueryMessages = readFileSync(
+      join(loopsRoot, "summary_query", "prompts.jsonl"),
+      "utf8",
+    )
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { section: string; text: string });
+    const queryInitialContext = summaryQueryMessages.find(
+      (message) => message.section === "initial_context_effective",
+    );
+    expect(queryInitialContext?.text.startsWith("[CONTEXT: Summary Task]")).toBe(
+      true,
+    );
+
+    const summaryCompactMessages = readFileSync(
+      join(loopsRoot, "summary_compact", "prompts.jsonl"),
+      "utf8",
+    )
+      .trim()
+      .split("\n")
+      .map(
+        (line) =>
+          JSON.parse(line) as { promptId: string; section: string; role: string },
+      );
+    expect(
+      summaryCompactMessages.some(
+        (message) =>
+          message.promptId === "turn.system" &&
+          message.section === "shared_story_system_instruction_effective" &&
+          message.role === "system",
+      ),
+    ).toBe(true);
+
+    const outlinePhasePrompt = JSON.parse(
+      readFileSync(join(loopsRoot, "outline_phase_1", "prompts.jsonl"), "utf8")
+        .trim()
+        .split("\n")[0]!,
+    ) as { text: string };
+    expect(outlinePhasePrompt.text).toContain("<phase_context>");
+    expect(outlinePhasePrompt.text).toContain("[PHASE 1 OF 9");
+
     const turnAtoms = JSON.parse(
       readFileSync(join(loopsRoot, "turn", "atoms.json"), "utf8"),
     ) as {
