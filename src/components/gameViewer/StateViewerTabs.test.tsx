@@ -4,6 +4,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LoreTab } from "./LoreTab";
+import { NPCsTab } from "./NPCsTab";
 import { QuestsTab } from "./QuestsTab";
 import { WorldTab } from "./WorldTab";
 
@@ -32,6 +33,8 @@ const baseState = {
   locations: [],
   factions: [],
   quests: [],
+  npcs: [],
+  actors: [],
   knowledge: [],
   timeline: [],
   inventory: [],
@@ -230,5 +233,81 @@ describe("GameViewer non-player field coverage", () => {
     expect(screen.getByText(/Observation/i)).toBeTruthy();
     expect(screen.getByText("Pattern resembles gate sigil")).toBeTruthy();
     expect(screen.getByText(/Emotional Weight/i)).toBeTruthy();
+  });
+
+  it("renders NPC visible attributes and relation hidden details", () => {
+    const gameState = {
+      ...baseState,
+      actors: [
+        {
+          profile: {
+            id: "char:player",
+            kind: "player",
+            currentLocation: "loc:market",
+            knownBy: ["char:player"],
+            visible: { name: "Player" },
+            relations: [
+              {
+                id: "rel:perception-1",
+                kind: "perception",
+                to: { kind: "character", id: "char:npc_1" },
+                knownBy: ["char:player"],
+                visible: {
+                  description: "Seems guarded.",
+                  evidence: ["Avoids eye contact"],
+                },
+              },
+            ],
+          },
+        },
+      ],
+      npcs: [
+        {
+          id: "char:npc_1",
+          kind: "npc",
+          knownBy: ["char:player"],
+          currentLocation: "loc:market",
+          visible: {
+            name: "Watcher",
+            race: "Human",
+            gender: "Female",
+            attributes: [{ label: "HP", value: 7, maxValue: 10, color: "red" }],
+          },
+          relations: [
+            {
+              id: "rel:attitude-1",
+              kind: "attitude",
+              to: { kind: "character", id: "char:player" },
+              knownBy: ["char:npc_1"],
+              unlocked: true,
+              unlockReason: "Mind link opened",
+              visible: { signals: ["Cold smile"] },
+              hidden: {
+                affinity: 62,
+                observation: "Testing every response",
+                ambivalence: "Needs the player but fears betrayal",
+                transactionalBenefit: "Access to vault routes",
+                motives: "Protects own secret",
+              },
+            },
+          ],
+          hidden: {},
+        },
+      ],
+    } as any;
+
+    render(
+      React.createElement(NPCsTab, {
+        gameState,
+        expandedSections: new Set(["npcs"]),
+        toggleSection: () => undefined,
+        t,
+      }),
+    );
+
+    expect(screen.getByText("HP: 7/10")).toBeTruthy();
+    expect(screen.getByText("Avoids eye contact")).toBeTruthy();
+    expect(screen.getByText("Mind link opened")).toBeTruthy();
+    expect(screen.getByText("Protects own secret")).toBeTruthy();
   });
 });

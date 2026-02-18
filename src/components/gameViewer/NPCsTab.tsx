@@ -260,6 +260,25 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                         value={npc.visible.background}
                       />
                     )}
+                    {Array.isArray(npc.visible?.attributes) &&
+                      npc.visible.attributes.length > 0 && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                            {t("gameViewer.attributes", {
+                              defaultValue: "Attributes",
+                            })}
+                            :
+                          </span>
+                          <ul className="list-disc list-inside pl-2 text-theme-text/80 space-y-1">
+                            {npc.visible.attributes.map((attr, i) => (
+                              <li key={`${attr.label}-${i}`}>
+                                {attr.icon ? `${attr.icon} ` : ""}
+                                {attr.label}: {attr.value}/{attr.maxValue}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
                     {(readString(attitudeVisible?.reputationTag) ||
                       readString(attitudeVisible?.claimedIntent) ||
@@ -331,8 +350,106 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                             }
                           />
                         </div>
+                        {readStringArray(perceptionVisible?.evidence).length >
+                          0 && (
+                          <div className="mt-2 text-theme-text/80 pl-2 border-l-2 border-theme-border/20">
+                            <span className="text-xs uppercase tracking-wider text-theme-primary/70 block mb-1">
+                              {t("gameViewer.evidence", {
+                                defaultValue: "Evidence",
+                              })}
+                              :
+                            </span>
+                            <ul className="list-disc list-inside">
+                              {readStringArray(perceptionVisible?.evidence).map(
+                                (e: string, i: number) => (
+                                  <li key={i}>
+                                    <MarkdownText content={e} inline />
+                                  </li>
+                                ),
+                              )}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
+                    {showTrueAttitude &&
+                      (readString(attitude?.unlockReason) ||
+                        readString(attitudeHidden?.impression) ||
+                        readString(attitudeHidden?.observation) ||
+                        readString(attitudeHidden?.ambivalence) ||
+                        readString(attitudeHidden?.transactionalBenefit) ||
+                        readString(attitudeHidden?.motives) ||
+                        readString(attitudeHidden?.currentThought)) && (
+                        <div>
+                          <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                            {t("gameViewer.trueAttitude", {
+                              defaultValue: "True Attitude",
+                            })}
+                            :
+                          </span>
+                          <div className="text-theme-text/80 pl-2 border-l-2 border-theme-unlocked/30 space-y-1">
+                            {readString(attitude?.unlockReason) && (
+                              <InfoRow
+                                label={t("gameViewer.unlockReason", {
+                                  defaultValue: "Unlock Reason",
+                                })}
+                                value={readString(attitude?.unlockReason) || ""}
+                              />
+                            )}
+                            {readString(attitudeHidden?.impression) && (
+                              <InfoRow
+                                label={t("gameViewer.impression", {
+                                  defaultValue: "Impression",
+                                })}
+                                value={readString(attitudeHidden?.impression) || ""}
+                              />
+                            )}
+                            {readString(attitudeHidden?.observation) && (
+                              <InfoRow
+                                label={t("gameViewer.observation", {
+                                  defaultValue: "Observation",
+                                })}
+                                value={readString(attitudeHidden?.observation) || ""}
+                              />
+                            )}
+                            {readString(attitudeHidden?.ambivalence) && (
+                              <InfoRow
+                                label={t("gameViewer.ambivalence", {
+                                  defaultValue: "Ambivalence",
+                                })}
+                                value={readString(attitudeHidden?.ambivalence) || ""}
+                              />
+                            )}
+                            {readString(attitudeHidden?.transactionalBenefit) && (
+                              <InfoRow
+                                label={t("gameViewer.transactionalBenefit", {
+                                  defaultValue: "Transactional Benefit",
+                                })}
+                                value={
+                                  readString(attitudeHidden?.transactionalBenefit) ||
+                                  ""
+                                }
+                              />
+                            )}
+                            {readString(attitudeHidden?.motives) && (
+                              <InfoRow
+                                label={t("hidden.motives", {
+                                  defaultValue: "Motives",
+                                })}
+                                value={readString(attitudeHidden?.motives) || ""}
+                              />
+                            )}
+                            {readString(attitudeHidden?.currentThought) && (
+                              <InfoRow
+                                label={t("sidebar.npc.currentThought", {
+                                  defaultValue: "Current Thought",
+                                })}
+                                value={readString(attitudeHidden?.currentThought) || ""}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
                   </div>
 
                   {(gameState.unlockMode || npc.unlocked) && npc.hidden && (
