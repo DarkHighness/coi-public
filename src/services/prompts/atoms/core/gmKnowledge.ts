@@ -184,24 +184,24 @@ export const gmKnowledgePrimer: Atom<void> = defineAtom(
   },
   () => `
 <gm_knowledge>
-  **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` = observer actor knows.
+  **YOU ARE THE GM.** You see ALL \`hidden\` fields. Omniscience is your power — wield it through subtext, never exposition. For deep guidance, read \`gm/knowledge\` skill.
 
   <dual_layer>
-    - **visible**: What the active observer actor perceives (show in narrative)
-    - **hidden**: True motives, secrets (use for NPC logic, don't reveal)
-    - **unlocked**: false = observer actor doesn't know; true = observer actor discovered
+    - **visible**: What the observer actor perceives — the surface, the mask. This is what you narrate.
+    - **hidden**: True motives, secrets, fears. These drive NPC behavior but are never directly revealed — they LEAK through word choice, hesitation, inconsistency.
+    - **unlocked**: false = observer doesn't know; true = earned definitive proof. Suspicion is not knowing.
   </dual_layer>
 
   <rules>
-    - NPCs act on hidden.realMotives even when the active observer actor doesn't know them
+    - NPCs act on hidden.realMotives even when the observer doesn't know them
     - Items exhibit hidden.truth effects subtly before unlocked
     - Locations have hidden.dangers that can harm unaware actors
-    - Create foreshadowing based on hidden info
+    - Create foreshadowing from hidden info — the best clues are recognized only in retrospect
   </rules>
 
   <unlock_protocol>
-    - ONLY unlock when the observer actor has DEFINITIVE PROOF (found letter, witnessed confession)
-    - Suspicion ≠ proof. Rumors ≠ truth. Actors must EARN revelations.
+    - ONLY unlock when the observer actor has DEFINITIVE PROOF (found letter, witnessed confession, caught red-handed)
+    - Suspicion ≠ proof. Rumors ≠ truth. Actors must EARN revelations through action.
     - First appearance/explicit mention updates known status, not unlock, unless hidden truth is proven.
     - If references use \`[Display Name]\` and identity is now explicit, promote to canonical ID in the same turn.
     - Evaluate as \`(observerActorId, targetEntityId)\`: "A knows B's secret" requires A's unlock state for B to be true.

@@ -122,7 +122,10 @@ describe("GameViewer non-player field coverage", () => {
       worldInfo: {
         mainGoal: {
           visible: { description: "Survive", conditions: "Find shelter" },
-          hidden: { trueDescription: "Break the loop", trueConditions: "Wake up" },
+          hidden: {
+            trueDescription: "Break the loop",
+            trueConditions: "Wake up",
+          },
         },
         mainGoalUnlocked: true,
         mainGoalUnlockReason: "Memory trigger",
@@ -137,7 +140,10 @@ describe("GameViewer non-player field coverage", () => {
           unlocked: true,
           unlockReason: "Witness confession",
           visible: { description: "Track clues", objectives: ["Visit dock"] },
-          hidden: { trueDescription: "Expose a spy", trueObjectives: ["Record proof"] },
+          hidden: {
+            trueDescription: "Expose a spy",
+            trueObjectives: ["Record proof"],
+          },
         },
       ],
     } as any;
@@ -169,7 +175,10 @@ describe("GameViewer non-player field coverage", () => {
           unlockReason: "Compared two manuscripts",
           discoveredAt: "Day 2",
           relatedTo: ["loc:market"],
-          visible: { description: "Partially burned", details: "Mentions a sky war" },
+          visible: {
+            description: "Partially burned",
+            details: "Mentions a sky war",
+          },
           hidden: {
             fullTruth: "It records a pact.",
             toBeRevealed: ["Signer identity"],
@@ -185,7 +194,10 @@ describe("GameViewer non-player field coverage", () => {
           icon: "⏳",
           unlocked: true,
           unlockReason: "Signal analysis",
-          visible: { description: "Sirens stopped", causedBy: "Unknown jammer" },
+          visible: {
+            description: "Sirens stopped",
+            causedBy: "Unknown jammer",
+          },
           hidden: {
             trueDescription: "The jammer was internal.",
             trueCausedBy: "fac:iron",
@@ -208,7 +220,10 @@ describe("GameViewer non-player field coverage", () => {
             description: "Cold to touch",
             observation: "Pattern resembles gate sigil",
           },
-          hidden: { truth: "Opens the archive vault", secrets: ["Needs blood seal"] },
+          hidden: {
+            truth: "Opens the archive vault",
+            secrets: ["Needs blood seal"],
+          },
         },
       ],
     } as any;
@@ -349,7 +364,8 @@ describe("GameViewer non-player field coverage", () => {
             },
           ],
           hidden: {
-            realMotives: "Hidden from player unless unlocked by player evidence",
+            realMotives:
+              "Hidden from player unless unlocked by player evidence",
           },
           unlocked: false,
         },

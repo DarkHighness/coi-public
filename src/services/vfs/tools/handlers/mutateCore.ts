@@ -689,7 +689,12 @@ export const executeMutateOps = (
               `${toolName}(move)`,
             );
             if (memoryPolicyTo) {
-              return withBatchError(memoryPolicyTo, opIndex, op.op, movePair.to);
+              return withBatchError(
+                memoryPolicyTo,
+                opIndex,
+                op.op,
+                movePair.to,
+              );
             }
 
             const from = normalizeVfsPath(resolvedFrom.path);

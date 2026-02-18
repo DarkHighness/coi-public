@@ -358,7 +358,8 @@ const MAX_OUTPUT_TOKENS_BY_MODEL = new Map<string, number>(
   ]),
 );
 
-const normalizeModelId = (modelId: string): string => modelId.trim().toLowerCase();
+const normalizeModelId = (modelId: string): string =>
+  modelId.trim().toLowerCase();
 
 export const sanitizePositiveOutputTokens = (
   value: unknown,
@@ -400,4 +401,3 @@ export function getDefaultModelMaxOutputTokens(
   );
   return rule?.maxOutputTokens;
 }
-

@@ -97,7 +97,9 @@ const parseArgs = (argv: string[]): Args => {
   return args;
 };
 
-const resolveRoots = (outDir: string): { rootDir: string; skillsDir: string } => {
+const resolveRoots = (
+  outDir: string,
+): { rootDir: string; skillsDir: string } => {
   const rootDir = path.resolve(process.cwd(), outDir);
   const skillsDir =
     path.basename(rootDir) === "skills"
@@ -106,7 +108,9 @@ const resolveRoots = (outDir: string): { rootDir: string; skillsDir: string } =>
   return { rootDir, skillsDir };
 };
 
-const getLatestTraceByPrompt = (traces: PromptTrace[]): Map<string, PromptTrace> => {
+const getLatestTraceByPrompt = (
+  traces: PromptTrace[],
+): Map<string, PromptTrace> => {
   const map = new Map<string, PromptTrace>();
   for (const trace of traces) {
     map.set(trace.promptId, trace);
@@ -244,7 +248,8 @@ const main = (): void => {
     const skillPrefix = `skills/${skillPath}/`;
     const markdownFiles = allFiles
       .filter(
-        (file) => file.path.startsWith(skillPrefix) && file.path.endsWith(".md"),
+        (file) =>
+          file.path.startsWith(skillPrefix) && file.path.endsWith(".md"),
       )
       .sort((left, right) => left.path.localeCompare(right.path));
 

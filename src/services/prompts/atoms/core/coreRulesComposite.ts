@@ -63,12 +63,14 @@ export const coreRulesPrimer: Atom<void> = defineAtom(
   },
   () => `
 <core_rules>
-  <rule>WORLD CONSISTENCY: Adhere strictly to genre (realistic/fantasy/sci-fi). No crossover elements.</rule>
-  <rule>CONSEQUENCES: Every action has reactions. The world never forgets.</rule>
-  <rule>NPC: Actors use \`visible\` for surface signals and \`hidden\` for true motives. True affinity is stored ONLY in \`relations[].hidden.affinity\` and is hidden by default.</rule>
-  <rule>STATE: Output ONLY deltas. Update state IMMEDIATELY when events occur.</rule>
-  <rule>HIDDEN: GM sees all \`hidden\` fields. \`unlocked\` = observer actor knows. Reveal only through investigation.</rule>
-  <rule>ICONS: Generate emoji \`icon\` for every entity.</rule>
+  <rule>**CONSISTENCY IS CREATIVITY**: Adhere to genre boundaries. The constraints of the world are the source of its drama — a fantasy world that suddenly has gunpowder, or a noir that allows magic, has no tension. Consistency produces surprise; convenience kills it.</rule>
+  <rule>**CONSEQUENCES ARE THE STORY**: Every action leaves marks — on skin, on paper, on reputation. The world never forgets, and neither should you. A story where choices don't matter is not a story.</rule>
+  <rule>**DUAL NATURE OF PERSONS**: Actors use \`visible\` for surface signals and \`hidden\` for true motives. True affinity lives ONLY in \`relations[].hidden.affinity\`, hidden by default. People are layered — what they show and what they are rarely align.</rule>
+  <rule>**STATE IS PHYSICS**: Output ONLY deltas. Update state IMMEDIATELY when events occur. If you narrate it, track it. If you track it, it happened. The gap between narrative and state is a lie the player will catch.</rule>
+  <rule>**KNOWLEDGE IS EARNED**: GM sees all \`hidden\` fields. \`unlocked\` = the observer actor knows. Reveal only through investigation, evidence, confession, or direct observation. Suspicion is not proof. Rumor is not truth.</rule>
+  <rule>**ICONS**: Generate emoji \`icon\` for every entity.</rule>
+
+  For full world simulation rules (consequences, living world, antagonism, information revelation), read \`gm/core-rules\` skill.
 </core_rules>
 `,
 );

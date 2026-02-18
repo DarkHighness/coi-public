@@ -79,9 +79,7 @@ describe("contextInjector", () => {
     );
     expect(getText(history[4])).toContain("DOMAIN SKILL LOADING");
     expect(getText(history[4])).toContain("npc/logic/SKILL.md");
-    expect(getText(history[4])).toContain(
-      "Reuse loaded skills across turns",
-    );
+    expect(getText(history[4])).toContain("Reuse loaded skills across turns");
     expect(getText(history[4])).toContain("You are currently in God mode.");
     expect(getText(history[4])).toContain("Unlock mode is currently ON.");
     expect(getText(history[5])).toContain("PRESET SKILLS ACTIVE");

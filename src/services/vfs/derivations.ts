@@ -481,7 +481,9 @@ const withKnownByObservers = <T extends { knownBy?: string[] }>(
   if (toAdd.length === 0) return entity;
 
   const baseKnownBy = Array.isArray(entity.knownBy)
-    ? entity.knownBy.filter((entry): entry is string => typeof entry === "string")
+    ? entity.knownBy.filter(
+        (entry): entry is string => typeof entry === "string",
+      )
     : [];
 
   let changed = false;
@@ -501,7 +503,9 @@ const missingKnownByActors = (
 ): string[] => {
   if (!observerIds) return [];
   const knownBy = Array.isArray(entity.knownBy)
-    ? entity.knownBy.filter((entry): entry is string => typeof entry === "string")
+    ? entity.knownBy.filter(
+        (entry): entry is string => typeof entry === "string",
+      )
     : [];
   const knownBySet = new Set(knownBy);
   return Array.from(observerIds).filter((actorId) => !knownBySet.has(actorId));
@@ -517,7 +521,9 @@ const ensureUnlockedEntityKnownByObserver = <T extends JsonObject>(
   }
 
   const knownBy = Array.isArray(entity.knownBy)
-    ? entity.knownBy.filter((entry): entry is string => typeof entry === "string")
+    ? entity.knownBy.filter(
+        (entry): entry is string => typeof entry === "string",
+      )
     : [];
   console.warn(
     `[VFS] Auto-repaired unlock invariant: unlocked=true but knownBy missing observer ${observerActorId} at ${context}`,
@@ -861,7 +867,9 @@ const detectLegacyGenderToken = (value: unknown): string | undefined => {
   return hasMale ? (hasCjk ? "男性" : "Male") : hasCjk ? "女性" : "Female";
 };
 
-const inferLegacyGenderFromRace = (...values: unknown[]): string | undefined => {
+const inferLegacyGenderFromRace = (
+  ...values: unknown[]
+): string | undefined => {
   for (const value of values) {
     const inferred = detectLegacyGenderToken(value);
     if (inferred) {
@@ -880,7 +888,10 @@ const toRaceOnlyCharacterText = (value: unknown): string | undefined => {
   let stripped = normalized;
   for (const term of LEGACY_GENDER_STRIP_TERMS) {
     if (isAsciiWord(term)) {
-      stripped = stripped.replace(new RegExp(`\\b${escapeRegex(term)}\\b`, "gi"), " ");
+      stripped = stripped.replace(
+        new RegExp(`\\b${escapeRegex(term)}\\b`, "gi"),
+        " ",
+      );
     } else {
       stripped = stripped.split(term).join(" ");
     }
@@ -1356,7 +1367,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         if (actorPath.category === "quests") {
           const view = parseQuestViewData(data);
           if (view) {
-            registerViewObserver(questViewObservers, actorPath.entityId, actorId);
+            registerViewObserver(
+              questViewObservers,
+              actorPath.entityId,
+              actorId,
+            );
             if (actorId === state.playerActorId) {
               playerQuestViews.set(actorPath.entityId, view);
             }
@@ -1810,7 +1825,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         toRaceOnlyCharacterText(visible.race),
         toRaceOnlyCharacterText(toStringOrUndefined(profileLegacy.race)),
         toRaceOnlyCharacterText(outlineVisible.race),
-        toRaceOnlyCharacterText(toStringOrUndefined(outlineProfileLegacy?.race)),
+        toRaceOnlyCharacterText(
+          toStringOrUndefined(outlineProfileLegacy?.race),
+        ),
         toRaceOnlyCharacterText(base.race),
       ) ?? "";
 
@@ -1920,7 +1937,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   // Derive NPC list for sidebar panels from actor bundles.
   state.npcs = bundles
     .filter((bundle) => bundle.profile.kind === "npc")
-    .map((bundle) => projectNpcForObserver(bundle.profile, state.playerActorId));
+    .map((bundle) =>
+      projectNpcForObserver(bundle.profile, state.playerActorId),
+    );
 
   const conversation = deriveConversationNodes(files);
   state.nodes = conversation.nodes;
@@ -2044,7 +2063,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         pickMeaningfulCharacterText(
           toRaceOnlyCharacterText(currentCharacter.race),
           toRaceOnlyCharacterText(outlineVisible.race),
-          toRaceOnlyCharacterText(toStringOrUndefined(outlineProfileLegacy?.race)),
+          toRaceOnlyCharacterText(
+            toStringOrUndefined(outlineProfileLegacy?.race),
+          ),
         ) ?? "",
       background:
         pickMeaningfulCharacterText(

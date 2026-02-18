@@ -31,15 +31,15 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
   const hidden = playerProfile?.hidden;
   const hasHiddenContent = Boolean(
     hidden &&
-      (hidden.trueName ||
-        hidden.race ||
-        hidden.gender ||
-        hidden.status ||
-        hidden.realPersonality ||
-        hidden.realMotives ||
-        hidden.routine ||
-        hidden.currentThought ||
-        (Array.isArray(hidden.secrets) && hidden.secrets.length > 0)),
+    (hidden.trueName ||
+      hidden.race ||
+      hidden.gender ||
+      hidden.status ||
+      hidden.realPersonality ||
+      hidden.realMotives ||
+      hidden.routine ||
+      hidden.currentThought ||
+      (Array.isArray(hidden.secrets) && hidden.secrets.length > 0)),
   );
   const showHiddenBlock = Boolean(
     (gameState.unlockMode || playerProfile?.unlocked) && hasHiddenContent,
@@ -56,7 +56,10 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
         isExpanded={expandedSections.has("charBasic")}
         onToggle={toggleSection}
       >
-        <InfoRow label={t("gameViewer.name")} value={visible?.name || char.name} />
+        <InfoRow
+          label={t("gameViewer.name")}
+          value={visible?.name || char.name}
+        />
         <InfoRow
           label={t("gameViewer.titleLabel")}
           value={visible?.title || char.title || unknownText}
@@ -105,7 +108,10 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
           value={visible?.appearance || char.appearance || unknownText}
         />
         {visible?.description && (
-          <InfoRow label={t("description") || "Description"} value={visible.description} />
+          <InfoRow
+            label={t("description") || "Description"}
+            value={visible.description}
+          />
         )}
         {showHiddenBlock && hidden && (
           <HiddenContent
@@ -114,13 +120,19 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
             content={
               <div className="space-y-2">
                 {hidden.trueName && (
-                  <InfoRow label={t("gameViewer.trueName")} value={hidden.trueName} />
+                  <InfoRow
+                    label={t("gameViewer.trueName")}
+                    value={hidden.trueName}
+                  />
                 )}
                 {hidden.race && (
                   <InfoRow label={t("gameViewer.race")} value={hidden.race} />
                 )}
                 {hidden.gender && (
-                  <InfoRow label={t("gameViewer.gender")} value={hidden.gender} />
+                  <InfoRow
+                    label={t("gameViewer.gender")}
+                    value={hidden.gender}
+                  />
                 )}
                 {hidden.status && (
                   <InfoRow
@@ -141,7 +153,10 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
                   />
                 )}
                 {hidden.routine && (
-                  <InfoRow label={t("gameViewer.routine")} value={hidden.routine} />
+                  <InfoRow
+                    label={t("gameViewer.routine")}
+                    value={hidden.routine}
+                  />
                 )}
                 {hidden.currentThought && (
                   <InfoRow

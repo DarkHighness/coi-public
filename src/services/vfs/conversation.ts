@@ -197,9 +197,7 @@ const generateSessionHistoryUid = (sessionId: string): string => {
   return `${base}-${ts}-${rand}`;
 };
 
-const normalizeSessionLineage = (
-  lineage: unknown,
-): SessionLineageState => {
+const normalizeSessionLineage = (lineage: unknown): SessionLineageState => {
   if (!isRecord(lineage)) {
     return {
       ...EMPTY_SESSION_LINEAGE,
@@ -229,9 +227,11 @@ const normalizeSessionLineage = (
       const uid =
         typeof rawNode.uid === "string" && rawNode.uid.trim().length > 0
           ? rawNode.uid
-          : extractSessionUidFromPath(path) ?? generateSessionHistoryUid("session");
+          : (extractSessionUidFromPath(path) ??
+            generateSessionHistoryUid("session"));
       const sessionId =
-        typeof rawNode.sessionId === "string" && rawNode.sessionId.trim().length > 0
+        typeof rawNode.sessionId === "string" &&
+        rawNode.sessionId.trim().length > 0
           ? rawNode.sessionId
           : "unknown";
       const parentPath =
@@ -240,7 +240,8 @@ const normalizeSessionLineage = (
           ? normalizeVfsPath(rawNode.parentPath)
           : null;
       const createdAt =
-        typeof rawNode.createdAt === "number" && Number.isFinite(rawNode.createdAt)
+        typeof rawNode.createdAt === "number" &&
+        Number.isFinite(rawNode.createdAt)
           ? Math.floor(rawNode.createdAt)
           : Date.now();
       nodesByPath[path] = {
@@ -253,7 +254,8 @@ const normalizeSessionLineage = (
   }
 
   const activePath =
-    typeof lineage.activePath === "string" && isSessionHistoryPath(lineage.activePath)
+    typeof lineage.activePath === "string" &&
+    isSessionHistoryPath(lineage.activePath)
       ? normalizeVfsPath(lineage.activePath)
       : null;
 
@@ -292,7 +294,10 @@ const pruneSessionLineageByLru = (
 
   if (
     normalizedActivePath &&
-    Object.prototype.hasOwnProperty.call(lineage.nodesByPath, normalizedActivePath)
+    Object.prototype.hasOwnProperty.call(
+      lineage.nodesByPath,
+      normalizedActivePath,
+    )
   ) {
     keepPaths.add(normalizedActivePath);
   }
@@ -342,7 +347,9 @@ const pruneSessionLineageByLru = (
 };
 
 export const readSessionLineage = (files: VfsFileMap): SessionLineageState =>
-  normalizeSessionLineage(parseJson<SessionLineageState>(files, SESSION_LINEAGE_PATH));
+  normalizeSessionLineage(
+    parseJson<SessionLineageState>(files, SESSION_LINEAGE_PATH),
+  );
 
 export const writeSessionLineage = (
   session: VfsSession,
@@ -369,7 +376,9 @@ export const getSessionHistoryPathForSession = (
   return path;
 };
 
-export const getActiveSessionHistoryPath = (files: VfsFileMap): string | null => {
+export const getActiveSessionHistoryPath = (
+  files: VfsFileMap,
+): string | null => {
   const lineage = readSessionLineage(files);
   if (lineage.activePath && isSessionHistoryPath(lineage.activePath)) {
     return lineage.activePath;
@@ -408,9 +417,10 @@ export const ensureSessionHistoryPath = (
           extractSessionUidFromPath(normalizedPath) ??
           generateSessionHistoryUid(sessionId),
         sessionId,
-        parentPath: lineage.activePath && lineage.activePath !== normalizedPath
-          ? lineage.activePath
-          : null,
+        parentPath:
+          lineage.activePath && lineage.activePath !== normalizedPath
+            ? lineage.activePath
+            : null,
         createdAt: nextSessionLineageTimestamp(lineage),
       };
       lineage.nodesByPath[normalizedPath] = node;
@@ -561,7 +571,10 @@ export const writeSessionHistoryJsonl = (
     if (options?.sessionId) {
       return ensureSessionHistoryPath(session, options.sessionId, options).path;
     }
-    return getActiveSessionHistoryPath(session.snapshot()) ?? LEGACY_SESSION_JSONL_PATH;
+    return (
+      getActiveSessionHistoryPath(session.snapshot()) ??
+      LEGACY_SESSION_JSONL_PATH
+    );
   })();
 
   session.writeFile(

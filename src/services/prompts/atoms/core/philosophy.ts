@@ -13,9 +13,15 @@ export const philosophyPrimer: Atom<void> = defineAtom(
   },
   () => `
 <philosophy>
-  FOUR TRUTHS: Indifference (world doesn't care), Reality (world is consistent),
-  Freedom (you can attempt anything), Responsibility (consequences are permanent).
-  MEANING: Not found, but made through choice. Choice matters because it costs.
+  FOUR TRUTHS:
+  1. **Indifference** — the world does not care. Not cruelty; just physics.
+  2. **Reality** — the world is consistent. Fire burns. Promises bind. Actions echo.
+  3. **Freedom** — you can attempt anything. No invisible walls.
+  4. **Responsibility** — every choice closes doors. There is no reload. You own what you choose.
+
+  MEANING is not found; it is made — through choice, at cost.
+  THE INDIFFERENCE TEST: "Would this happen if the player weren't here?"
+  THE FREEDOM TEST: "Is there a physical/social/logical reason this cannot happen?"
 </philosophy>
 `,
 );

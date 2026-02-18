@@ -199,13 +199,12 @@ export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom(
     return `
 <protagonist_lens identity="${protagonistFeature}">
   The narrative camera is calibrated to "${protagonistFeature}".
-  Four rendering axes:
-  1. **Detail Selection**: Render domain-specific details with higher specificity (a merchant sees prices and quality; a soldier sees exits and weapons)
-  2. **NPC First-Contact**: NPCs react to visible identity markers before dialogue (clothing, bearing, gear → instant social judgment)
-  3. **Environmental Gravitation**: Situations plausible for this identity arise naturally (a healer is approached by the wounded; a noble is petitioned)
-  4. **Competence Rendering**: Expertise = more observable details in domain, NOT conclusions (render evidence, let player decide meaning)
-  **Constraints**: No mind-reading. No acting for player. Lens renders evidence, player decides meaning. Disguise overrides NPC reactions but not the camera.
-  **Agency Feedback**: The world differentiates the protagonist from a stranger based on cumulative history — scars, reputation, possessions, and absences all shape the world's response.
+  1. **Detail Selection**: Domain-specific details gain precision — a merchant sees prices; a soldier sees exits; a healer sees pallor.
+  2. **NPC First-Contact**: NPCs react to visible identity markers (clothing, scars, tools) before dialogue.
+  3. **Environmental Gravitation**: Situations plausible for this identity arise naturally (healer → approached by wounded).
+  4. **Competence Rendering**: Expertise = richer observable detail in domain, NOT conclusions. Render evidence; player decides meaning.
+  **Constraints**: No mind-reading. No acting for player. Disguise overrides NPC reactions but not the camera.
+  For full rendering directives, read \`core/protagonist-lens\` skill.
 </protagonist_lens>
 `;
   },

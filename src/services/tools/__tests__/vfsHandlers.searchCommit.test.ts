@@ -169,11 +169,7 @@ describe("VFS handlers search/commit", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
-    const commit = dispatchToolCall(
-      "vfs_end_turn",
-      {},
-      ctx,
-    ) as any;
+    const commit = dispatchToolCall("vfs_end_turn", {}, ctx) as any;
 
     expect(commit.success).toBe(true);
     expect(commit.data).toMatchObject({ ended: true });

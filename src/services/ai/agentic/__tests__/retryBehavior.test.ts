@@ -566,7 +566,9 @@ describe("callWithAgenticRetry behavior", () => {
       )
       .mockResolvedValueOnce({
         result: {
-          functionCalls: [{ id: "call_ok", name: toolName, args: { foo: "ok" } }],
+          functionCalls: [
+            { id: "call_ok", name: toolName, args: { foo: "ok" } },
+          ],
         },
         usage: makeUsage(1, 1),
         raw: null,

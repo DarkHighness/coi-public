@@ -144,7 +144,9 @@ describe("VFS conversation helpers", () => {
       const sessionJsonlPaths = Object.keys(snapshot).filter((path) =>
         path.startsWith("session/"),
       );
-      expect(sessionJsonlPaths.filter((path) => path.endsWith(".jsonl"))).toHaveLength(2);
+      expect(
+        sessionJsonlPaths.filter((path) => path.endsWith(".jsonl")),
+      ).toHaveLength(2);
     } finally {
       setSessionHistoryLruLimit(DEFAULT_SESSION_HISTORY_LRU_LIMIT);
     }

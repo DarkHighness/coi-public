@@ -192,10 +192,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
     Number.isFinite(rawReadBudgetPercent)
       ? Math.min(
           CONTEXT_WINDOW_READ_CAP_PERCENT_MAX,
-          Math.max(
-            CONTEXT_WINDOW_READ_CAP_PERCENT_MIN,
-            rawReadBudgetPercent,
-          ),
+          Math.max(CONTEXT_WINDOW_READ_CAP_PERCENT_MIN, rawReadBudgetPercent),
         )
       : CONTEXT_WINDOW_READ_CAP_PERCENT;
   const readBudgetPercentDisplay = Math.round(readBudgetPercent * 100);
@@ -505,8 +502,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         <div className="space-y-2 pt-3 border-t border-theme-border/20">
           <div className="flex justify-between">
             <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
-              {t("models.vfsReadTokenBudgetPercent") ||
-                "VFS Read Budget Ratio"}
+              {t("models.vfsReadTokenBudgetPercent") || "VFS Read Budget Ratio"}
             </label>
             <span className="text-theme-text font-mono">
               {readBudgetPercentDisplay}%

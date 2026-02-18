@@ -1341,7 +1341,9 @@ export const actorVisibleSchema = z.object({
   race: z
     .string()
     .nullish()
-    .describe("Surface race/species only (player-facing; do not include gender)."),
+    .describe(
+      "Surface race/species only (player-facing; do not include gender).",
+    ),
   attributes: z
     .array(characterAttributeSchema)
     .nullish()

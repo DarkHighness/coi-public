@@ -254,7 +254,9 @@ const resolveDetectedGender = (signal: GenderSignal): Gender | null => {
   return null;
 };
 
-const validateRelationshipIdentityFields = (visible: JsonObject): string | null => {
+const validateRelationshipIdentityFields = (
+  visible: JsonObject,
+): string | null => {
   const restrictedFields: Array<{
     path: "visible.title" | "visible.profession" | "visible.roleTag";
     value: unknown;
@@ -369,8 +371,10 @@ export const validateGenderPreferencePhase3 = (
   }
 
   const neutralHints: string[] = [];
-  if (hiddenSignal.hasNeutral) neutralHints.push("hidden.gender appears neutral/unspecified");
-  if (visibleSignal.hasNeutral) neutralHints.push("visible.gender appears neutral/unspecified");
+  if (hiddenSignal.hasNeutral)
+    neutralHints.push("hidden.gender appears neutral/unspecified");
+  if (visibleSignal.hasNeutral)
+    neutralHints.push("visible.gender appears neutral/unspecified");
 
   return (
     `Phase 3: cannot determine protagonist gender from hidden.gender/visible.gender. ` +

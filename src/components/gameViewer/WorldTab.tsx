@@ -469,7 +469,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   faction.visible.relations.length > 0 && (
                     <div className="mt-3">
                       <SubsectionLabel>
-                        {t("gameViewer.relations", { defaultValue: "Relations" })}
+                        {t("gameViewer.relations", {
+                          defaultValue: "Relations",
+                        })}
                         :
                       </SubsectionLabel>
                       <ul className="list-disc list-inside pl-2 text-sm text-theme-muted space-y-1">
@@ -555,11 +557,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   :
                                 </span>
                                 <ul className="list-disc list-inside pl-2">
-                                  {faction.hidden.relations.map((relation, i) => (
-                                    <li key={`${relation.target}-${i}`}>
-                                      {relation.target}: {relation.status}
-                                    </li>
-                                  ))}
+                                  {faction.hidden.relations.map(
+                                    (relation, i) => (
+                                      <li key={`${relation.target}-${i}`}>
+                                        {relation.target}: {relation.status}
+                                      </li>
+                                    ),
+                                  )}
                                 </ul>
                               </div>
                             )}

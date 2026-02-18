@@ -40,9 +40,9 @@ describe("VFS global refs tool docs", () => {
           entry.schemaPath === `current/refs/tools/${entry.name}/SCHEMA.md`,
       ),
     ).toBe(true);
-    expect(Object.keys(files).some((path) => path.startsWith("refs/tool-schemas"))).toBe(
-      false,
-    );
+    expect(
+      Object.keys(files).some((path) => path.startsWith("refs/tool-schemas")),
+    ).toBe(false);
   });
 
   it("emits per-tool docs (overview/examples/schema) in tools folder", () => {

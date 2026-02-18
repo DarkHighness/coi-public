@@ -9,10 +9,13 @@ const SCRIPT_PATH = `${REPO_ROOT}/scripts/export-loop-prompts-jsonl.ts`;
 
 const runScript = (): string => {
   const outDir = mkdtempSync(join(tmpdir(), "loop-export-"));
-  execSync(`node --import tsx ${SCRIPT_PATH} -- --out ${outDir} --lang en --clean`, {
-    cwd: REPO_ROOT,
-    stdio: "pipe",
-  });
+  execSync(
+    `node --import tsx ${SCRIPT_PATH} -- --out ${outDir} --lang en --clean`,
+    {
+      cwd: REPO_ROOT,
+      stdio: "pipe",
+    },
+  );
   return outDir;
 };
 
@@ -78,9 +81,9 @@ describe("export-loop-prompts-jsonl script", () => {
     };
     expect(catalogJson.kind).toBe("loops");
     expect(catalogJson.items.length).toBeGreaterThanOrEqual(25);
-    expect(catalogJson.items.some((item) => item.id === "outline_phase_9")).toBe(
-      true,
-    );
+    expect(
+      catalogJson.items.some((item) => item.id === "outline_phase_9"),
+    ).toBe(true);
 
     const catalogMd = readFileSync(join(outDir, "catalog.md"), "utf8");
     expect(catalogMd).toContain("# Loop Export Catalog");

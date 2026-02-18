@@ -206,7 +206,12 @@ describe("SettingsContext", () => {
       JSON.stringify({
         story: { providerId: "p1", modelId: "m1" },
         providers: { instances: [], nextId: 1 },
-        audioVolume: { bgmVolume: 0.5, bgmMuted: false, ttsVolume: 1, ttsMuted: false },
+        audioVolume: {
+          bgmVolume: 0.5,
+          bgmMuted: false,
+          ttsVolume: 1,
+          ttsMuted: false,
+        },
         language: "en",
         extra: {
           sessionHistoryLruLimit: 96,

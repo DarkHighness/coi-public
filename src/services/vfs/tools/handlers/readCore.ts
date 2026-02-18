@@ -90,7 +90,10 @@ const createReadHandler = (
       const runSyncReadFlow = () => {
         if (mode === "json") {
           if (file.contentType !== "application/json") {
-            return createError(`File is not JSON: ${inputPath}`, "INVALID_DATA");
+            return createError(
+              `File is not JSON: ${inputPath}`,
+              "INVALID_DATA",
+            );
           }
 
           let document: unknown;
@@ -293,8 +296,11 @@ const createReadHandler = (
           );
         }
 
-        const length =
-          hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
+        const length = hasOffset
+          ? offsetRaw
+          : hasMaxChars
+            ? maxChars
+            : undefined;
         const totalChars = file.content.length;
         const sliceStart = Math.min(Math.max(start, 0), totalChars);
         const requestedEndExclusive =
@@ -352,7 +358,10 @@ const createReadHandler = (
       const runAsyncReadFlow = async () => {
         if (mode === "json") {
           if (file.contentType !== "application/json") {
-            return createError(`File is not JSON: ${inputPath}`, "INVALID_DATA");
+            return createError(
+              `File is not JSON: ${inputPath}`,
+              "INVALID_DATA",
+            );
           }
 
           let document: unknown;
@@ -555,8 +564,11 @@ const createReadHandler = (
           );
         }
 
-        const length =
-          hasOffset ? offsetRaw : hasMaxChars ? maxChars : undefined;
+        const length = hasOffset
+          ? offsetRaw
+          : hasMaxChars
+            ? maxChars
+            : undefined;
         const totalChars = file.content.length;
         const sliceStart = Math.min(Math.max(start, 0), totalChars);
         const requestedEndExclusive =

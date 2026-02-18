@@ -105,7 +105,8 @@ describe("claudeProvider streaming tool input parsing", () => {
       },
     );
 
-    const calls = (result.result as { functionCalls?: Array<any> }).functionCalls;
+    const calls = (result.result as { functionCalls?: Array<any> })
+      .functionCalls;
     expect(calls).toHaveLength(1);
     expect(calls?.[0]?.name).toBe("test_tool");
     expect(calls?.[0]?.args).toEqual({ foo: "bar" });
@@ -169,7 +170,8 @@ describe("claudeProvider streaming tool input parsing", () => {
       },
     );
 
-    const calls = (result.result as { functionCalls?: Array<any> }).functionCalls;
+    const calls = (result.result as { functionCalls?: Array<any> })
+      .functionCalls;
     expect(calls).toHaveLength(1);
     expect(calls?.[0]?.name).toBe("test_tool");
     expect(calls?.[0]?.args).toEqual({ foo: "baz" });
@@ -233,7 +235,8 @@ describe("claudeProvider streaming tool input parsing", () => {
       },
     );
 
-    const calls = (result.result as { functionCalls?: Array<any> }).functionCalls;
+    const calls = (result.result as { functionCalls?: Array<any> })
+      .functionCalls;
     expect(calls).toHaveLength(1);
     expect(calls?.[0]?.name).toBe("test_tool");
     expect(calls?.[0]?.args).toEqual({ foo: "from-delta" });

@@ -1,9 +1,6 @@
 import type { AISettings } from "../../types";
 import { estimateTokensForMixedText } from "./contextUsage";
-import {
-  createProviderConfig,
-  getProviderInstance,
-} from "./provider/registry";
+import { createProviderConfig, getProviderInstance } from "./provider/registry";
 import type { ClaudeConfig, GeminiConfig } from "../providers/types";
 import { countTokens as countClaudeTokens } from "../providers/claudeProvider";
 import { countTokens as countGeminiTokens } from "../providers/geminiProvider";

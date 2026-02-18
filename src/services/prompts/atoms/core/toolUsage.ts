@@ -32,8 +32,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
   },
   (input) => {
     const finishToolName = input?.finishToolName || "vfs_finish_turn";
-    const toolsetId =
-      finishToolName === "vfs_end_turn" ? "playerRate" : "turn";
+    const toolsetId = finishToolName === "vfs_end_turn" ? "playerRate" : "turn";
     const ragEnabled = input?.ragEnabled ?? true;
 
     const capabilityText = gateSemanticCapabilityText(

@@ -202,9 +202,7 @@ export const generateAdventureTurn = async (
   const isSudoMode = context.userAction.startsWith("[SUDO]");
   const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
   const isPlayerRateMode = context.userAction.startsWith("[Player Rate]");
-  const finishToolName = isPlayerRateMode
-    ? "vfs_end_turn"
-    : "vfs_finish_turn";
+  const finishToolName = isPlayerRateMode ? "vfs_end_turn" : "vfs_finish_turn";
 
   // ===== Build system instruction using Skills System =====
   const baseSystemInstruction = buildCoreSystemInstructionWithSkills({
@@ -365,8 +363,11 @@ export const generateAdventureTurn = async (
     startupMode,
   };
 
-  const { sessionId, sessionBindingKey, activeHistory: initialHistory } =
-    await setupSession(sessionSetupOptions);
+  const {
+    sessionId,
+    sessionBindingKey,
+    activeHistory: initialHistory,
+  } = await setupSession(sessionSetupOptions);
 
   context.vfsSession.bindConversationSession(sessionBindingKey);
 

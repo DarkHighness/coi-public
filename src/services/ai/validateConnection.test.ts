@@ -15,7 +15,8 @@ vi.mock("../providers/geminiProvider", async (importOriginal) => {
 });
 
 vi.mock("../providers/openaiProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../providers/openaiProvider")>();
+  const actual =
+    await importOriginal<typeof import("../providers/openaiProvider")>();
   return {
     ...actual,
     validateConnection: validateOpenAIConnectionMock,

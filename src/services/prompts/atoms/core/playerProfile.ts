@@ -174,12 +174,12 @@ export const playerProfilePrimer: Atom<void> = defineAtom(
     return `
 <player_psychology>
   <memory_split>
-    **Player Preference Source**: \`workspace/USER.md\` (canonical, soft constraints)
-    **AI Evolution Source**: \`workspace/SOUL.md\` (AI strategy/tool learnings)
+    **Player Preference Source**: \`workspace/USER.md\` — psychological portrait from observed choices (soft constraints).
+    **AI Evolution Source**: \`workspace/SOUL.md\` — AI craft journal (strategy/tool learnings, not player data).
   </memory_split>
   <read_protocol>Use injected memory files as baseline context. Re-read via VFS only when section-precision is required for edits.</read_protocol>
-  <protocol>Observe choices and [Player Rate] feedback. Update \`workspace/USER.md\` for player-preference evidence; update \`workspace/SOUL.md\` only for AI self-evolution learnings. Player-rate preferences are soft constraints and must not hard-rewrite established canon.</protocol>
-  <distinction>Player ≠ Protagonist.</distinction>
+  <protocol>Observe choices and [Player Rate] feedback. Update \`workspace/USER.md\` for player-preference evidence; update \`workspace/SOUL.md\` only for AI self-evolution learnings. Preferences are soft constraints — they inform, never override, established canon.</protocol>
+  <distinction>**Player ≠ Protagonist.** The player decides intent; the protagonist lives the consequences. Never conflate their knowledge, emotions, or agency.</distinction>
 </player_psychology>
 `;
   },

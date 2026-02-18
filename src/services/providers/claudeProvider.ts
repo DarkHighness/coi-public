@@ -742,7 +742,10 @@ Answer the user's request using relevant tools (if they are available). Before c
             if (event.type === "content_block_start") {
               const block = event.content_block;
               if (block.type === "tool_use") {
-                if (isJsonObject(block.input) && !isEmptyObjectValue(block.input)) {
+                if (
+                  isJsonObject(block.input) &&
+                  !isEmptyObjectValue(block.input)
+                ) {
                   sawMeaningfulToolUseStartInput = true;
                 }
                 accumulatedToolCalls.set(event.index, {
@@ -873,7 +876,9 @@ Answer the user's request using relevant tools (if they are available). Before c
 
           const hasOnlyEmptyToolArgs =
             toolCalls.length > 0 &&
-            toolCalls.every((toolCall) => !hasMeaningfulToolArgs(toolCall.args));
+            toolCalls.every(
+              (toolCall) => !hasMeaningfulToolArgs(toolCall.args),
+            );
           if (
             accumulatedToolCalls.size > 0 &&
             hasOnlyEmptyToolArgs &&

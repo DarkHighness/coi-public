@@ -139,10 +139,7 @@ const SOUL_TOOL_LEARNING_HINT =
  * (write failures, action violations, permission issues).
  * Simple read/param errors don't need soul logging.
  */
-const withSoulLearning = (
-  steps: string[],
-  attach: boolean,
-): string[] => {
+const withSoulLearning = (steps: string[], attach: boolean): string[] => {
   if (!attach) return steps;
   const exists = steps.includes(SOUL_TOOL_LEARNING_HINT);
   return exists ? steps : [...steps, SOUL_TOOL_LEARNING_HINT];
@@ -190,18 +187,24 @@ const defaultRecoveryByCode = (
   }
   if (code === "ELEVATION_REQUIRED") {
     return withSoulLearning(
-      ["Write requires elevation. Use the designated elevation flow or report blocker."],
+      [
+        "Write requires elevation. Use the designated elevation flow or report blocker.",
+      ],
       shouldLearn,
     );
   }
   if (code === "FINISH_GUARD_REQUIRED") {
     return withSoulLearning(
-      ["Path is finish-guarded. Use the loop's finish tool (vfs_finish_turn / vfs_finish_summary) instead."],
+      [
+        "Path is finish-guarded. Use the loop's finish tool (vfs_finish_turn / vfs_finish_summary) instead.",
+      ],
       shouldLearn,
     );
   }
   if (code === "EDITOR_CONFIRM_REQUIRED") {
-    return ["Write requires editor confirmation. Report blocker; do not retry."];
+    return [
+      "Write requires editor confirmation. Report blocker; do not retry.",
+    ];
   }
   if (code === "NOT_FOUND") {
     return [
@@ -252,8 +255,7 @@ const resolveRecoveryRootDir = (qualifiedPath: string): string => {
 };
 
 export const buildNotFoundRecovery = (inputPath: string): string[] => {
-  const { qualifiedPath, fileName } =
-    qualifyPathForRecovery(inputPath);
+  const { qualifiedPath, fileName } = qualifyPathForRecovery(inputPath);
   const rootDir = resolveRecoveryRootDir(qualifiedPath);
   const isJson = qualifiedPath.endsWith(".json");
 
@@ -688,9 +690,7 @@ export const createReadLimitError = (
             suggestedChunkChars,
           },
         },
-        refs: [
-          getToolDocRef(resolvedToolName),
-        ],
+        refs: [getToolDocRef(resolvedToolName)],
       },
     );
   })();

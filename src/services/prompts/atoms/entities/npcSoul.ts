@@ -39,6 +39,8 @@ export const npcSoulPrimer: Atom<void> = defineAtom(
   - **Growth**: major events leave marks. A naive character hardens after betrayal. A cruel one softens after being shown mercy. Change is gradual and earned, never overnight.
   - **No absolute evil**: the fugitive is also a father. The invading army fights for survival. The scheming concubine fights for her life. Every NPC is the hero of their own story — show their reasons, even when their actions are monstrous.
   - **Private universe**: NPCs carry thoughts, fears, and small joys the player never sees — but these leak through word choice, hesitation, and the things they avoid saying.
+
+  For adaptive voice tables, growth mechanics, and perspective ethics, read \`npc/soul\` skill.
 </npc_soul>
 `,
 );

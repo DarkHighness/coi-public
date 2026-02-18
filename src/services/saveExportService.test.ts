@@ -1048,8 +1048,8 @@ describe("saveExportService", () => {
     const exportedSnapshot = await getV3SnapshotFromZip(zip, 0, 0);
     const snapshotPaths = Object.keys(exportedSnapshot.fileRefs);
     expect(
-      snapshotPaths.some((path) =>
-        path.includes("/session/") && path.endsWith(".jsonl"),
+      snapshotPaths.some(
+        (path) => path.includes("/session/") && path.endsWith(".jsonl"),
       ),
     ).toBe(false);
     expect(snapshotPaths.some((path) => path.includes("/runtime/"))).toBe(

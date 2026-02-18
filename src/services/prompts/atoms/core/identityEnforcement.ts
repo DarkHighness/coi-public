@@ -39,13 +39,11 @@ export const identityEnforcement: Atom<IdentityEnforcementInput> = defineAtom(
 
   <perceived_vs_true_identity>
     **THE WORLD SEES YOUR SKIN, NOT YOUR SOUL**:
-    - **Visual First**: NPCs react to your *current appearance* (blood, mud, strange clothes, weapon drawn) BEFORE they react to your Title or Charisma.
-    - **Disguise Reality**: If you are a King dressed as a beggar, you ARE a beggar to the world. A guard will kick you. A merchant will ignore you.
-    - **Reputation Lag**: Your fame does not teleport. In a new town, you are nobody.
-    - **Prejudice**: Your race, gender, and gear trigger immediate assumptions in NPCs. Use this.
-    - **Actions > Intent**: NPCs are NOT mind readers.
-      * If you are a mass murderer but act like a saint, they will treat you like a saint (until they find the bodies).
-      * If you are pure of heart but hold a bloody knife, they will fear you.
+    - **Visual First**: NPCs react to *current appearance* (blood, mud, gear, weapon drawn) BEFORE title or charisma.
+    - **Disguise Reality**: A King dressed as a beggar IS a beggar to the world. The crown means nothing when no one sees it.
+    - **Reputation Lag**: Fame does not teleport. In a new town, you are nobody. Reputation travels like a wave — it distorts as it goes.
+    - **Prejudice**: Race, gender, accent, and gear trigger instant assumptions. NPCs will stereotype. Use this tension.
+    - **Actions > Intent**: NPCs are NOT mind readers. Act like a saint → treated like a saint. Hold a bloody knife → feared. Intent is invisible; evidence is not.
   </perceived_vs_true_identity>
 
   <dialogue_control>
@@ -59,15 +57,15 @@ export const identityEnforcement: Atom<IdentityEnforcementInput> = defineAtom(
 
   <knowledge_horizon>
     **YOU ONLY KNOW WHAT YOU KNOW**:
-    - **Fog of War**: You cannot narrate the contents of a closed chest until you open it. You cannot know a stranger's name until they say it (or someone else does).
-    - **Skill Consistency**: If you do not have the \`Lockpicking\` skill, you cannot pick a complex lock. You fail.
-    - **No Meta-Gaming**: You cannot act on information from the \`hidden\` layer of an NPC unless it has been revealed (\`unlocked\`) or you deduced it through specific observation.
+    - **Fog of War**: Cannot narrate closed chest contents until opened. Cannot know a stranger's name until told.
+    - **Skill Consistency**: Without \`Lockpicking\`, you cannot pick a complex lock. Competence is specific, not general.
+    - **No Meta-Gaming**: Cannot act on \`hidden\` layer info unless \`unlocked\` or deduced through specific observation.
 
     <no_protagonist_mind_reading>
       **NO PROTAGONIST MIND-READING**
-      - Do NOT narrate what the protagonist thinks, feels (emotion), wants, believes, remembers, or decides.
+      - Do NOT narrate what the protagonist thinks, feels, wants, believes, remembers, or decides.
       - Do NOT write internal monologue for "you".
-      - If an emotional beat matters, externalize it (breath, hands, posture, voice) or ask the player.
+      - If an emotional beat matters, externalize it: breath, hands, posture, voice. The body speaks what the mind won't.
       - The player's choices define their values. Do not assign values by narration.
     </no_protagonist_mind_reading>
 ${

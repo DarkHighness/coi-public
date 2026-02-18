@@ -301,7 +301,10 @@ export const createVmHandler = (
       typeof ctx.vfsVmMaxScriptChars === "number" &&
       Number.isFinite(ctx.vfsVmMaxScriptChars) &&
       ctx.vfsVmMaxScriptChars > 0
-        ? Math.min(Math.floor(ctx.vfsVmMaxScriptChars), DEFAULT_MAX_SCRIPT_CHARS)
+        ? Math.min(
+            Math.floor(ctx.vfsVmMaxScriptChars),
+            DEFAULT_MAX_SCRIPT_CHARS,
+          )
         : DEFAULT_MAX_SCRIPT_CHARS;
 
     const allowedToolNames = new Set(
@@ -624,7 +627,11 @@ export const createVmHandler = (
             scriptLineOffset,
           );
           const vmError = firstFailure ?? error.toolError;
-          firstFailure = withScriptLineContext(vmError, scriptIndex, lineColumn);
+          firstFailure = withScriptLineContext(
+            vmError,
+            scriptIndex,
+            lineColumn,
+          );
         } else {
           const message =
             error instanceof Error ? error.message : String(error);

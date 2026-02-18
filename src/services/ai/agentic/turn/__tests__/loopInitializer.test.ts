@@ -42,9 +42,7 @@ describe("loopInitializer", () => {
     expect(turnTools.some((tool) => tool.name === "vfs_finish_turn")).toBe(
       true,
     );
-    expect(turnTools.some((tool) => tool.name === "vfs_end_turn")).toBe(
-      false,
-    );
+    expect(turnTools.some((tool) => tool.name === "vfs_end_turn")).toBe(false);
     expect(turnTools.some((tool) => tool.name === "vfs_finish_summary")).toBe(
       false,
     );
@@ -193,9 +191,9 @@ describe("loopInitializer", () => {
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
     ]);
-    expect(
-      state.activeTools.some((tool) => tool.name === "vfs_end_turn"),
-    ).toBe(true);
+    expect(state.activeTools.some((tool) => tool.name === "vfs_end_turn")).toBe(
+      true,
+    );
     expect(
       state.activeTools.some((tool) => tool.name === "vfs_finish_turn"),
     ).toBe(false);

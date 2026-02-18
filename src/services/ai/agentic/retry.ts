@@ -44,9 +44,8 @@ const LONG_REQUEST_STREAMING_REQUIRED_PATTERN =
   /streaming is required for operations that may take longer than 10 minutes|long-requests/i;
 const INTERNAL_STREAM_NOOP_CHUNK = () => {};
 
-const requiresStreamingTransportForLongRequest = (
-  message: string,
-): boolean => LONG_REQUEST_STREAMING_REQUIRED_PATTERN.test(message);
+const requiresStreamingTransportForLongRequest = (message: string): boolean =>
+  LONG_REQUEST_STREAMING_REQUIRED_PATTERN.test(message);
 
 const toRecord = (value: unknown): JsonObject | null =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -413,9 +412,7 @@ export async function callWithAgenticRetry(
         forceInternalStreaming = true;
         const switchMessage =
           "[ERROR: STREAMING_REQUIRED] Provider requires streaming transport for this long-running request. Switching to internal streaming mode.";
-        console.warn(
-          `[AgenticRetry] ${switchMessage}`,
-        );
+        console.warn(`[AgenticRetry] ${switchMessage}`);
         continue;
       }
 

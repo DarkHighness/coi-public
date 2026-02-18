@@ -814,12 +814,13 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   );
   const ageText = normalizeDisplayText(character.age) ?? "";
   const statusText = pickDisplayValue([character.status], unknownText);
-  const hiddenRaceText = normalizeDisplayText(playerProfile?.hidden?.race) ?? "";
+  const hiddenRaceText =
+    normalizeDisplayText(playerProfile?.hidden?.race) ?? "";
   const hiddenGenderText =
     normalizeDisplayText(playerProfile?.hidden?.gender) ?? "";
   const showHiddenIdentity = Boolean(
     (unlockMode || playerProfile?.unlocked) &&
-      (hiddenRaceText || hiddenGenderText),
+    (hiddenRaceText || hiddenGenderText),
   );
 
   const rawCurrentLocation = pickDisplayValue([character.currentLocation], "");

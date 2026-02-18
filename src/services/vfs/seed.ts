@@ -18,9 +18,7 @@ import {
   toCustomRulePackPath,
 } from "./customRules";
 import { ensureDirectoryScaffolds } from "./directoryScaffolds";
-import {
-  ensureWorkspaceMemoryDocuments,
-} from "./memoryTemplates";
+import { ensureWorkspaceMemoryDocuments } from "./memoryTemplates";
 import { sanitizeCanonicalWorldRecord } from "./stateLayering";
 
 const writeJson = (session: VfsSession, path: string, value: unknown) => {

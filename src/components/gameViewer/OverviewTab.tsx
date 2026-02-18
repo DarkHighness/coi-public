@@ -33,7 +33,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   const hiddenGender = playerProfile?.hidden?.gender;
   const showHiddenIdentity = Boolean(
     (gameState.unlockMode || playerProfile?.unlocked) &&
-      (hiddenRace || hiddenGender),
+    (hiddenRace || hiddenGender),
   );
   const currentLocationDisplay = resolveLocationDisplayName(
     gameState.currentLocation,

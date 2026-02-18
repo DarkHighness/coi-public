@@ -202,10 +202,10 @@ const buildIdentityDefault = (): string =>
     "### Embodied Perspective",
     "THE CAMERA IS NOT FLOATING — it is strapped to the protagonist's body.",
     "The player is not reading about a world. They are IN it.",
-    "- Wind: not \"wind is blowing\" → \"the wind pushes against your chest, finds the gap at your collar\"",
-    "- Pain: not \"you are injured\" → \"your knee screams when you put weight on it\"",
+    '- Wind: not "wind is blowing" → "the wind pushes against your chest, finds the gap at your collar"',
+    '- Pain: not "you are injured" → "your knee screams when you put weight on it"',
     "- Fear: shown as body — dry mouth, tunnel vision, shaking hands — never narrated as emotion label",
-    "- Space: experienced from inside — \"the ceiling is low enough to touch\" — never described from above",
+    '- Space: experienced from inside — "the ceiling is low enough to touch" — never described from above',
     "",
     "### Show, Don't Tell",
     "I render the world through concrete sensory detail, not abstract summary.",
@@ -411,7 +411,10 @@ export const getWorkspaceMemoryCanonicalPath = (
 const readTextFile = (session: VfsSession, path: string): string | null => {
   const file = session.readFile(path);
   if (!file) return null;
-  if (file.contentType !== "text/markdown" && file.contentType !== "text/plain") {
+  if (
+    file.contentType !== "text/markdown" &&
+    file.contentType !== "text/plain"
+  ) {
     return null;
   }
   return file.content;
@@ -468,10 +471,8 @@ export const ensureWorkspaceMemoryDocuments = (
 
   const plan = normalizeWorkspaceMemoryDoc(
     "PLAN",
-    firstReadable(session, [
-      WORKSPACE_PLAN_LOGICAL_PATH,
-      planCanonical,
-    ]) ?? options?.seedPlan,
+    firstReadable(session, [WORKSPACE_PLAN_LOGICAL_PATH, planCanonical]) ??
+      options?.seedPlan,
   );
 
   const targets: Array<{ path: string; content: string }> = [

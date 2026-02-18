@@ -215,9 +215,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
   ],
-  vfs_end_turn: [
-    {},
-  ],
+  vfs_end_turn: [{}],
   vfs_finish_summary: [
     {
       displayText: "The party reached the ruins and uncovered recent activity.",

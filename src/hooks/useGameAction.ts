@@ -1068,9 +1068,7 @@ export const useGameAction = ({
       modelId: story.modelId,
       protocol: provider.protocol,
     });
-    console.log(
-      `[useGameAction] Manually invalidating session: ${session.id}`,
-    );
+    console.log(`[useGameAction] Manually invalidating session: ${session.id}`);
     await sessionManager.invalidate(session.id, "manual_clear");
     vfsSession.beginReadEpoch("manual_invalidate");
   }, [aiSettings, currentSlotId, vfsSession]);

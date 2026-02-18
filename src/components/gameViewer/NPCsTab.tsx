@@ -124,7 +124,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
               );
               const attitudeUnlockedForPlayer = Boolean(
                 attitude?.unlocked === true &&
-                  actorKnows(attitude?.knownBy, playerId),
+                actorKnows(attitude?.knownBy, playerId),
               );
               const showTrueAttitude = Boolean(
                 gameState.unlockMode || attitudeUnlockedForPlayer,
@@ -223,7 +223,10 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                     )}
 
                     {npc.visible?.age && (
-                      <InfoRow label={t("gameViewer.age")} value={npc.visible.age} />
+                      <InfoRow
+                        label={t("gameViewer.age")}
+                        value={npc.visible.age}
+                      />
                     )}
 
                     {npc.visible?.status && (
@@ -411,7 +414,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 label={t("gameViewer.impression", {
                                   defaultValue: "Impression",
                                 })}
-                                value={readString(attitudeHidden?.impression) || ""}
+                                value={
+                                  readString(attitudeHidden?.impression) || ""
+                                }
                               />
                             )}
                             {readString(attitudeHidden?.observation) && (
@@ -419,7 +424,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 label={t("gameViewer.observation", {
                                   defaultValue: "Observation",
                                 })}
-                                value={readString(attitudeHidden?.observation) || ""}
+                                value={
+                                  readString(attitudeHidden?.observation) || ""
+                                }
                               />
                             )}
                             {readString(attitudeHidden?.ambivalence) && (
@@ -427,17 +434,22 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 label={t("gameViewer.ambivalence", {
                                   defaultValue: "Ambivalence",
                                 })}
-                                value={readString(attitudeHidden?.ambivalence) || ""}
+                                value={
+                                  readString(attitudeHidden?.ambivalence) || ""
+                                }
                               />
                             )}
-                            {readString(attitudeHidden?.transactionalBenefit) && (
+                            {readString(
+                              attitudeHidden?.transactionalBenefit,
+                            ) && (
                               <InfoRow
                                 label={t("gameViewer.transactionalBenefit", {
                                   defaultValue: "Transactional Benefit",
                                 })}
                                 value={
-                                  readString(attitudeHidden?.transactionalBenefit) ||
-                                  ""
+                                  readString(
+                                    attitudeHidden?.transactionalBenefit,
+                                  ) || ""
                                 }
                               />
                             )}
@@ -446,7 +458,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 label={t("hidden.motives", {
                                   defaultValue: "Motives",
                                 })}
-                                value={readString(attitudeHidden?.motives) || ""}
+                                value={
+                                  readString(attitudeHidden?.motives) || ""
+                                }
                               />
                             )}
                             {readString(attitudeHidden?.currentThought) && (
@@ -454,7 +468,10 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                                 label={t("sidebar.npc.currentThought", {
                                   defaultValue: "Current Thought",
                                 })}
-                                value={readString(attitudeHidden?.currentThought) || ""}
+                                value={
+                                  readString(attitudeHidden?.currentThought) ||
+                                  ""
+                                }
                               />
                             )}
                           </div>
@@ -464,99 +481,101 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
 
                   {(gameState.unlockMode || npcUnlockedForPlayer) &&
                     npc.hidden && (
-                    <HiddenContent
-                      t={t}
-                      content={
-                        <div className="space-y-2">
-                          {npc.hidden.trueName && (
-                            <InfoRow
-                              label={t("sidebar.npc.trueName")}
-                              value={npc.hidden.trueName}
-                            />
-                          )}
-                          {npc.hidden.realPersonality && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("hidden.personality")}:
-                              </span>
-                              <MarkdownText
-                                content={npc.hidden.realPersonality}
+                      <HiddenContent
+                        t={t}
+                        content={
+                          <div className="space-y-2">
+                            {npc.hidden.trueName && (
+                              <InfoRow
+                                label={t("sidebar.npc.trueName")}
+                                value={npc.hidden.trueName}
                               />
-                            </div>
-                          )}
-                          {npc.hidden.realMotives && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("hidden.motives")}:
-                              </span>
-                              <MarkdownText content={npc.hidden.realMotives} />
-                            </div>
-                          )}
-                          {npc.hidden.race && (
-                            <InfoRow
-                              label={t("gameViewer.race")}
-                              value={npc.hidden.race}
-                            />
-                          )}
-                          {npc.hidden.gender && (
-                            <InfoRow
-                              label={t("gameViewer.gender")}
-                              value={npc.hidden.gender}
-                            />
-                          )}
-                          {npc.hidden.routine && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("hidden.routine", {
-                                  defaultValue: "Routine",
-                                })}
-                                :
-                              </span>
-                              <MarkdownText content={npc.hidden.routine} />
-                            </div>
-                          )}
-                          {npc.hidden.currentThought && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("sidebar.npc.currentThought")}:
-                              </span>
-                              <MarkdownText
-                                content={npc.hidden.currentThought}
-                              />
-                            </div>
-                          )}
-                          {Array.isArray(npc.hidden.secrets) &&
-                            npc.hidden.secrets.length > 0 && (
+                            )}
+                            {npc.hidden.realPersonality && (
                               <div>
                                 <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                  {t("hidden.secrets")}:
+                                  {t("hidden.personality")}:
                                 </span>
-                                <ul className="list-disc list-inside">
-                                  {npc.hidden.secrets.map(
-                                    (s: string, i: number) => (
-                                      <li key={i}>
-                                        <MarkdownText content={s} inline />
-                                      </li>
-                                    ),
-                                  )}
-                                </ul>
+                                <MarkdownText
+                                  content={npc.hidden.realPersonality}
+                                />
                               </div>
                             )}
-                          {npc.hidden.status && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                                {t("hidden.actualStatus", {
-                                  defaultValue: "Actually Doing",
-                                })}
-                                :
-                              </span>
-                              <MarkdownText content={npc.hidden.status} />
-                            </div>
-                          )}
-                        </div>
-                      }
-                    />
-                  )}
+                            {npc.hidden.realMotives && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                  {t("hidden.motives")}:
+                                </span>
+                                <MarkdownText
+                                  content={npc.hidden.realMotives}
+                                />
+                              </div>
+                            )}
+                            {npc.hidden.race && (
+                              <InfoRow
+                                label={t("gameViewer.race")}
+                                value={npc.hidden.race}
+                              />
+                            )}
+                            {npc.hidden.gender && (
+                              <InfoRow
+                                label={t("gameViewer.gender")}
+                                value={npc.hidden.gender}
+                              />
+                            )}
+                            {npc.hidden.routine && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                  {t("hidden.routine", {
+                                    defaultValue: "Routine",
+                                  })}
+                                  :
+                                </span>
+                                <MarkdownText content={npc.hidden.routine} />
+                              </div>
+                            )}
+                            {npc.hidden.currentThought && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                  {t("sidebar.npc.currentThought")}:
+                                </span>
+                                <MarkdownText
+                                  content={npc.hidden.currentThought}
+                                />
+                              </div>
+                            )}
+                            {Array.isArray(npc.hidden.secrets) &&
+                              npc.hidden.secrets.length > 0 && (
+                                <div>
+                                  <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                    {t("hidden.secrets")}:
+                                  </span>
+                                  <ul className="list-disc list-inside">
+                                    {npc.hidden.secrets.map(
+                                      (s: string, i: number) => (
+                                        <li key={i}>
+                                          <MarkdownText content={s} inline />
+                                        </li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+                            {npc.hidden.status && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                                  {t("hidden.actualStatus", {
+                                    defaultValue: "Actually Doing",
+                                  })}
+                                  :
+                                </span>
+                                <MarkdownText content={npc.hidden.status} />
+                              </div>
+                            )}
+                          </div>
+                        }
+                      />
+                    )}
                 </div>
               );
             })}

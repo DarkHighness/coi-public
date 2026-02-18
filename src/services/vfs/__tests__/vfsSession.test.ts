@@ -64,7 +64,9 @@ describe("VfsSession", () => {
     expect(internal.content.startsWith("__vfs_lz16__:")).toBe(true);
 
     expect(session.readFile("session/session-a.jsonl")?.content).toBe(content);
-    expect(session.snapshot()["session/session-a.jsonl"]?.content).toBe(content);
+    expect(session.snapshot()["session/session-a.jsonl"]?.content).toBe(
+      content,
+    );
     expect(
       session.searchText("assistant", { path: "session/session-a.jsonl" }),
     ).toEqual(

@@ -225,9 +225,7 @@ export const computeReadTokenBudgetFromContextWindow = (
 ): number =>
   Math.max(
     1,
-    Math.floor(
-      contextWindowTokens * normalizeReadCapPercent(readCapPercent),
-    ),
+    Math.floor(contextWindowTokens * normalizeReadCapPercent(readCapPercent)),
   );
 
 export const estimateSafeCharsFromTokenBudget = (tokenBudget: number): number =>

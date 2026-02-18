@@ -527,7 +527,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
                           {t("gameViewer.race") || "Race"}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
-                          <MarkdownText content={rel.hidden.race} indentSize={2} />
+                          <MarkdownText
+                            content={rel.hidden.race}
+                            indentSize={2}
+                          />
                         </div>
                       </div>
                     )}

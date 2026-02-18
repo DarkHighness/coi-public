@@ -118,11 +118,16 @@ export const handleReadMarkdown: VfsToolHandler = (args, ctx) =>
     if (selectedSections.length === 0) {
       const recoveryPath = toCurrentPath(file.path);
       const dedupedHeadings = Array.from(
-        new Set(parsed.flat.map((section) => section.title.trim()).filter(Boolean)),
+        new Set(
+          parsed.flat.map((section) => section.title.trim()).filter(Boolean),
+        ),
       );
       const availableHeadings =
         dedupedHeadings.length > 0
-          ? dedupedHeadings.slice(0, 8).map((title) => `"${title}"`).join(", ")
+          ? dedupedHeadings
+              .slice(0, 8)
+              .map((title) => `"${title}"`)
+              .join(", ")
           : "(none)";
       const availableIndices =
         parsed.flat.length > 0

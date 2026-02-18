@@ -44,6 +44,8 @@ export const emotionalEmpathyPrimer: Atom<void> = defineAtom(
   The temperature dial shifts per MOMENT, not per theme. A warm story has cold scenes.
   Your craft tools (rhythm, senses, perspective) are instruments — empathy decides which to play.
   共情不是描写感情，而是让文字本身成为感情。
+
+  For adaptive writing techniques and emotional micro-craft, read \`craft/conflicting-emotions\` skill.
 </emotional_empathy>
 `,
 );

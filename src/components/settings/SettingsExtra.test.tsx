@@ -152,7 +152,9 @@ describe("SettingsExtra", () => {
 
     const genderSelect = (
       screen.getAllByRole("combobox") as HTMLSelectElement[]
-    ).find((select) => Boolean(select.querySelector('option[value="pan_gender"]')));
+    ).find((select) =>
+      Boolean(select.querySelector('option[value="pan_gender"]')),
+    );
     expect(genderSelect).toBeTruthy();
 
     fireEvent.change(genderSelect as HTMLSelectElement, {

@@ -49,11 +49,7 @@ describe("errorPolicy", () => {
 
     expect(
       classifyAgenticError(
-        new AIProviderError(
-          "stream incomplete",
-          "claude",
-          "STREAM_INCOMPLETE",
-        ),
+        new AIProviderError("stream incomplete", "claude", "STREAM_INCOMPLETE"),
       ).kind,
     ).toBe("terminal");
   });

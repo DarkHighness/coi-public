@@ -46,7 +46,8 @@ export const MemoryWorkspacePanel: React.FC<MemoryWorkspacePanelProps> = ({
   const currentSlotId = runtimeContext?.state.currentSlotId ?? null;
   const applyVfsDerivedState = runtimeContext?.actions.applyVfsDerivedState;
   const triggerSave = runtimeContext?.actions.triggerSave;
-  const [activeDoc, setActiveDoc] = React.useState<WorkspaceMemoryDocId>("SOUL");
+  const [activeDoc, setActiveDoc] =
+    React.useState<WorkspaceMemoryDocId>("SOUL");
   const [drafts, setDrafts] = React.useState<DraftMap>(createDefaultDraftMap);
   const [status, setStatus] = React.useState<string>("");
 
@@ -99,7 +100,11 @@ export const MemoryWorkspacePanel: React.FC<MemoryWorkspacePanelProps> = ({
       }
 
       const normalized = normalizeWorkspaceMemoryDoc(doc, content);
-      vfsSession.writeFile(getWorkspaceMemoryLogicalPath(doc), normalized, "text/markdown");
+      vfsSession.writeFile(
+        getWorkspaceMemoryLogicalPath(doc),
+        normalized,
+        "text/markdown",
+      );
       setDrafts((prev) => ({ ...prev, [doc]: normalized }));
 
       const derived = deriveGameStateFromVfs(vfsSession.snapshot());
@@ -219,7 +224,11 @@ export const MemoryWorkspacePanel: React.FC<MemoryWorkspacePanelProps> = ({
           >
             {t("memory.reset", { defaultValue: "Reset to Default" })}
           </button>
-          {status && <span className="text-[11px] text-theme-text-secondary">{status}</span>}
+          {status && (
+            <span className="text-[11px] text-theme-text-secondary">
+              {status}
+            </span>
+          )}
         </div>
       </div>
     </div>

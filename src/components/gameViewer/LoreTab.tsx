@@ -59,21 +59,22 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                     <MarkdownText content={entry.visible.details} />
                   </div>
                 )}
-                {Array.isArray(entry.relatedTo) && entry.relatedTo.length > 0 && (
-                  <div className="mt-2">
-                    <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                      {t("gameViewer.relatedEntities", {
-                        defaultValue: "Related Entities",
-                      })}
-                      :
-                    </span>
-                    <ul className="list-disc list-inside pl-2 text-sm text-theme-muted">
-                      {entry.relatedTo.map((target, i) => (
-                        <li key={`${target}-${i}`}>{target}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {Array.isArray(entry.relatedTo) &&
+                  entry.relatedTo.length > 0 && (
+                    <div className="mt-2">
+                      <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                        {t("gameViewer.relatedEntities", {
+                          defaultValue: "Related Entities",
+                        })}
+                        :
+                      </span>
+                      <ul className="list-disc list-inside pl-2 text-sm text-theme-muted">
+                        {entry.relatedTo.map((target, i) => (
+                          <li key={`${target}-${i}`}>{target}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 {entry.discoveredAt && (
                   <InfoRow
                     label={t("gameViewer.discoveredAt", {
@@ -241,7 +242,9 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                             />
                           )}
                           {event.hidden.trueDescription && (
-                            <MarkdownText content={event.hidden.trueDescription} />
+                            <MarkdownText
+                              content={event.hidden.trueDescription}
+                            />
                           )}
                           {event.hidden.trueCausedBy && (
                             <InfoRow

@@ -94,8 +94,7 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
   },
   ({ finishToolName, toolsetId, ragEnabled = true }) => {
     const resolvedToolsetId =
-      toolsetId ??
-      (finishToolName === "vfs_end_turn" ? "playerRate" : "turn");
+      toolsetId ?? (finishToolName === "vfs_end_turn" ? "playerRate" : "turn");
     const isPlayerRateToolset = resolvedToolsetId === "playerRate";
     const resolvedFinishToolName =
       finishToolName ||
@@ -137,10 +136,10 @@ ${
 
 **FINISH**:
 - Your LAST tool call must be \`${resolvedFinishToolName}\`. ${
-  isPlayerRateToolset
-    ? "Args must be empty object: `{}`."
-    : 'Args shape: `{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }`.'
-}
+      isPlayerRateToolset
+        ? "Args must be empty object: `{}`."
+        : 'Args shape: `{ assistant: { narrative: "<string>", choices: [...] }, retconAck?: { summary: "<string>" } }`.'
+    }
 - **EFFICIENCY**: Do NOT place read-only tools before finish unless they support same-response mutations.
 - **WRITE FAILURE REPAIR MODE (TARGETED)**: Prioritize repairing failed writable targets. Block finish ONLY for blocking errors (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\` / \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`). Non-blocking failures may proceed.
 - **NO COMMIT SPAM**: Do not repeat \`${resolvedFinishToolName}\` while blocking failures remain.

@@ -561,30 +561,32 @@ export const validateConnection = async (
 
   const config = createProviderConfig(instance);
 
-  const remoteValidationPromise = (async (): Promise<ValidateConnectionResult> => {
-    try {
-      switch (instance.protocol) {
-        case "gemini":
-          await validateGeminiConnection(config as GeminiConfig);
-          break;
-        case "openai":
-          await validateOpenAIConnection(config as OpenAIConfig);
-          break;
-        case "openrouter":
-          await validateOpenRouterConnection(config as OpenRouterConfig);
-          break;
-        case "claude":
-          await validateClaudeConnection(config as ClaudeConfig);
-          break;
-        default:
-          throw new Error(`Unknown protocol: ${instance.protocol}`);
+  const remoteValidationPromise =
+    (async (): Promise<ValidateConnectionResult> => {
+      try {
+        switch (instance.protocol) {
+          case "gemini":
+            await validateGeminiConnection(config as GeminiConfig);
+            break;
+          case "openai":
+            await validateOpenAIConnection(config as OpenAIConfig);
+            break;
+          case "openrouter":
+            await validateOpenRouterConnection(config as OpenRouterConfig);
+            break;
+          case "claude":
+            await validateClaudeConnection(config as ClaudeConfig);
+            break;
+          default:
+            throw new Error(`Unknown protocol: ${instance.protocol}`);
+        }
+        return { isValid: true };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        return { isValid: false, error: message, localError: false };
       }
-      return { isValid: true };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      return { isValid: false, error: message, localError: false };
-    }
-  })();
+    })();
 
   if (!forceRefresh) {
     connectionValidationInFlight.set(cacheKey, remoteValidationPromise);

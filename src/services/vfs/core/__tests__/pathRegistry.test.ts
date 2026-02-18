@@ -16,9 +16,7 @@ describe("vfsPathRegistry", () => {
   });
 
   it("classifies workspace plan as editable fork markdown", () => {
-    const result = vfsPathRegistry.classify(
-      "current/workspace/PLAN.md",
-    );
+    const result = vfsPathRegistry.classify("current/workspace/PLAN.md");
 
     expect(result.canonicalPath).toBe("forks/0/story/workspace/PLAN.md");
     expect(result.scope).toBe("fork");

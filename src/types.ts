@@ -1178,7 +1178,6 @@ export interface AISettings {
      */
     maxOutputTokensFallback?: number;
   };
-
 }
 
 export type CustomRulesAckPendingReason = "customRules";

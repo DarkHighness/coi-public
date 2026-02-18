@@ -538,7 +538,11 @@ export class VfsSession {
   }
 
   private toReadableContent(file: VfsFile): string {
-    return tryDecompressSessionContent(file.path, file.contentType, file.content);
+    return tryDecompressSessionContent(
+      file.path,
+      file.contentType,
+      file.content,
+    );
   }
 
   private toReadableFile(file: VfsFile, pathOverride?: string): VfsFile {
@@ -1116,7 +1120,10 @@ export class VfsSession {
    * This is intended for read-only tooling (ls/stat/glob/search), NOT persistence.
    */
   public snapshotAll(): VfsFileMap {
-    const readonlyDisplay = toDisplayFileMap(this.readonlyFiles, this.activeForkId);
+    const readonlyDisplay = toDisplayFileMap(
+      this.readonlyFiles,
+      this.activeForkId,
+    );
     return mergeFiles(readonlyDisplay, this.snapshot());
   }
 

@@ -405,11 +405,9 @@ async function countTokensViaRestApi(
   model: string,
   content: string,
 ): Promise<number> {
-  const baseUrl =
-    (config.baseUrl || "https://generativelanguage.googleapis.com").replace(
-      /\/$/,
-      "",
-    );
+  const baseUrl = (
+    config.baseUrl || "https://generativelanguage.googleapis.com"
+  ).replace(/\/$/, "");
   const modelPath = model.startsWith("models/") ? model : `models/${model}`;
   const url = `${baseUrl}/v1beta/${modelPath}:countTokens?key=${encodeURIComponent(config.apiKey)}`;
 
