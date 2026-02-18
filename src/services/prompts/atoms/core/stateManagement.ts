@@ -52,7 +52,7 @@ export const stateManagement: Atom<void> = defineAtom(
           1) Search existing canonical IDs first (\`vfs_search\` + \`vfs_ls\`).
           2) If a matching entity exists, rewrite touched references to that canonical ID in the same response.
           3) If no match exists and the entity is now mechanically significant, create a canonical entity file with a stable ID, then replace \`[Display Name]\` references with that ID.
-          4) If the protagonist now confirms the entity exists, update canonical \`knownBy\` (add \`char:player\`) and create the corresponding player view file for world entities.
+          4) If an actor now confirms the entity exists, update canonical \`knownBy\` (add that actor id; for protagonist-facing turns this is usually \`char:player\`) and create/update the matching actor view file for world entities.
           5) Delete the corresponding placeholder draft markdown in \`current/world/placeholders/**\` only after canonical write succeeds.
           6) If canonical write fails, keep draft file, fix the error, and retry promotion (do not delete draft on failed write).
       * **Never mix ID+name in one field** (e.g., \`"loc_tavern (Silver Inn)"\`, \`"loc_tavern [Silver Inn]"\` are forbidden).
@@ -85,13 +85,13 @@ export const stateManagement: Atom<void> = defineAtom(
         - \`current/world/characters/<actorId>/views/factions/<factionId>.json\`
         - \`current/world/characters/<actorId>/views/causal_chains/<chainId>.json\`
       * **Write rule**:
-        - Discovery/progress/unlock/visited/status/standing → write the ACTOR VIEW (usually \`char:player\`).
-        - \`highlight\` / \`lastAccess\` are UI-only metadata in \`ui_state:*\`; do NOT write them into VFS files.
+        - Discovery/progress/unlock/visited/status/standing → write the ACTOR VIEW (observer-specific; protagonist-facing turns usually \`char:player\`).
+        - UI-only transient presentation/access metadata lives in \`ui_state:*\`; do NOT write it into VFS files.
         - World changes / new facts / real truth updates → write the CANONICAL file.
         - For existing canonical records, prefer \`vfs_patch_json\`/\`vfs_merge_json\` on targeted fields; avoid full \`vfs_write_file\` rewrites that may carry stale/forbidden keys.
         - If read context shows merged UI fields (for example world-entity \`unlocked\`), treat them as read-model only and strip them from canonical writes.
       * **knownBy is canonical**:
-        - When the protagonist first CONFIRMS an entity exists, add \`char:player\` to canonical \`knownBy\` AND create the corresponding player view file.
+        - When an actor first CONFIRMS an entity exists, add that actor id to canonical \`knownBy\` and create/update the corresponding actor view file.
       * **Unlock is view-only (non-actor entities)**:
         - NEVER write \`unlocked/unlockReason\` to canonical quests/knowledge/timeline/locations/factions/causal_chains/world_info.
         - NEVER patch canonical world files at JSON pointer \`/unlocked\` or \`/unlockReason\` (including remove/replace/add).
@@ -99,10 +99,14 @@ export const stateManagement: Atom<void> = defineAtom(
         - For \`world_info\`, use \`current/world/characters/<actorId>/views/world_info.json\` fields:
           \`worldSettingUnlocked/worldSettingUnlockReason\`, \`mainGoalUnlocked/mainGoalUnlockReason\`.
       * **knownBy vs unlocked decision protocol (STRICT)**:
-        - Mention/encounter/verified existence ⇒ update \`knownBy\` (player now knows it exists), but keep \`unlocked=false\` unless hidden truth is proven.
-        - Definitive proof of hidden truth (confession/document/direct observation) ⇒ set \`unlocked=true\` + concrete \`unlockReason\` in the correct storage layer.
+        - **Progression is mandatory**: first \`knownBy\`, then \`unlocked\`. Treat unlock as second-stage revelation on top of known existence.
+        - Mention/encounter/verified existence ⇒ update \`knownBy\` (observer actor now knows it exists), but keep \`unlocked=false\` unless hidden truth is proven.
+        - Definitive proof of hidden truth (confession/document/direct observation) ⇒ set \`unlocked=true\` + concrete \`unlockReason\` for the specific observer actor in the correct storage layer.
+        - If you perform both in one turn, include both writes in sequence: establish \`knownBy\` first, then set \`unlocked=true\`.
+        - Invariant: when setting \`unlocked=true\` for an observer actor, that actor MUST be present in \`knownBy\` in the same turn.
         - Suspicion/rumor/partial clues ⇒ keep \`unlocked=false\`; only update visible clues.
         - Never unlock “for drama” without proof.
+        - Evaluate epistemics as a tuple \`(observerActorId, targetEntityId)\`: "A knows B's secret" is true only when A's unlock state for B is true (or relation/entity-layer unlock for actor/relation/item targets).
 
     - **Relations (Dual Layer, STRICT)**:
       * Relationships are stored as directed edges in \`profile.relations[]\` (on the source actor).
@@ -113,7 +117,7 @@ export const stateManagement: Atom<void> = defineAtom(
         - \`hidden.affinity\` (0-100): TRUE attitude score, DEFAULT HIDDEN.
       * Two independent switches:
         - \`knownBy\`: who knows this relation/entity exists
-        - \`unlocked\`: whether the player has definitive proof and may see hidden truth in UI
+        - \`unlocked\`: whether a specific observer actor has definitive proof of hidden truth
     - **Time**: Always update time if it passes.
     - **World Events**: Record significant off-screen events.
     - **Factions**: Update agendas/reputations.

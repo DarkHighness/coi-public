@@ -6,38 +6,38 @@ import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 const unlockVsHighlight = `
-  <rule name="UNLOCKING vs HIGHLIGHTING - CRITICAL DISTINCTION">
+  <rule name="UNLOCKING vs UI PRESENTATION STATE - CRITICAL DISTINCTION">
     **TWO DIFFERENT SYSTEMS WITH DIFFERENT PURPOSES**:
 
     1. **\`unlocked: true\`** - REVELATION SYSTEM
-       - **Purpose**: Mark that PLAYER now knows a previously hidden truth
+       - **Purpose**: Mark that an observer actor now knows a previously hidden truth
        - **Scope**: Changes visible vs hidden boundary
-       - **When to set**: Player discovers secret via investigation, NPC revelation, or ability
-       - **Effect**: Hidden info becomes visible in player's knowledge
+       - **When to set**: An actor gets definitive proof via investigation, revelation, or direct observation
+       - **Effect**: Hidden info becomes visible for the unlocked observer actor
        - **Irreversible**: Once unlocked, stays unlocked (knowledge cannot be un-learned)
-       - **GM Role**: You always see hidden info; \`unlocked\` only affects what PLAYER knows
+       - **GM Role**: You always see hidden info; \`unlocked\` only affects what a specific observer actor can narratively know
        - **Storage (CURRENT ARCHITECTURE)**:
-         * World entities (quests/knowledge/timeline/locations/factions/causal_chains) → unlock state lives in \`current/world/characters/char:player/views/**\` (do NOT write canonical unlocked).
+         * World entities (quests/knowledge/timeline/locations/factions/causal_chains) → unlock state lives in \`current/world/characters/<actorId>/views/**\` (do NOT write canonical unlocked).
          * Never patch canonical world files at \`/unlocked\` or \`/unlockReason\` (including remove ops).
-         * \`world_info\` → unlock state lives in \`current/world/characters/char:player/views/world_info.json\` with \`worldSettingUnlocked/mainGoalUnlocked\` (+ reason fields).
+         * \`world_info\` → unlock state lives in \`current/world/characters/<actorId>/views/world_info.json\` with \`worldSettingUnlocked/mainGoalUnlocked\` (+ reason fields).
          * Actors/relations/items/traits → unlock state lives on the entity file itself.
 
-    2. **UI highlight** - UI NOTIFICATION SYSTEM (runtime-managed)
-       - **Purpose**: Draw player's attention to a CHANGE in the UI
-       - **Scope**: Visual indicator only, does not affect hidden/visible
+    2. **UI presentation state** - RUNTIME-MANAGED VISUAL SYSTEM
+       - **Purpose**: Surface changed entities in UI without changing narrative truth
+       - **Scope**: Visual-only; does not change hidden/visible boundaries
        - **Storage**: UI-only metadata (\`ui_state:*\`), not VFS entity JSON
-       - **Authoring rule**: Do NOT write \`highlight\` / \`lastAccess\` fields in VFS payloads
-       - **Effect**: UI shows highlight indicator (yellow glow, badge, etc.)
-       - **Transient**: UI clears highlight after player views it
+       - **Authoring rule**: Do NOT write transient UI presentation/access metadata in VFS payloads
+       - **Ownership**: Runtime controls this layer completely
 
     **COMMON MISTAKES**:
-    - ❌ Using UI highlight to reveal secrets (use \`unlocked\` instead)
-    - ❌ Writing \`highlight\` fields into VFS world/view files
+    - ❌ Using UI presentation state to reveal secrets (use \`unlocked\` instead)
+    - ❌ Writing UI presentation/access fields into VFS world/view files
     - ❌ Setting \`unlocked\` for things that were already visible
 
     **CORRECT PATTERNS**:
-    - Player finds hidden treasure: set \`unlocked: true\` in the correct unlock-storage layer; UI auto-highlights the changed entity
-    - Player buys item from shop: write the inventory entity only; UI auto-highlights the new item
+    - Player finds hidden treasure: set \`unlocked: true\` in the correct actor-view/entity storage layer
+    - Player buys item from shop: write only the inventory entity change
+    - NPC A learns NPC B's secret: update A's knowledge path (\`knownBy\` + actor view/entity-layer \`unlocked\`) for that specific observer
     - GM adds hidden backstory: No flags needed (hidden by default, GM sees it)
   </rule>
 `;

@@ -33,6 +33,50 @@ describe("vfs tree builder", () => {
     expect(tree.children?.some((n) => n.name === "world")).toBe(true);
   });
 
+  it("adds views folders for every actor found in VFS snapshot", () => {
+    const tree = buildVfsTree({
+      "world/characters/char:npc_guard/profile.json": {
+        path: "world/characters/char:npc_guard/profile.json",
+      } as any,
+      "world/characters/char:npc_guard/views/knowledge/lore_blackmail.json": {
+        path: "world/characters/char:npc_guard/views/knowledge/lore_blackmail.json",
+      } as any,
+    });
+
+    const world = tree.children?.find((n) => n.name === "world");
+    const characters = world?.children?.find((n) => n.name === "characters");
+    const npcFolder = characters?.children?.find(
+      (n) => n.kind === "folder" && n.name === "char:npc_guard",
+    );
+    expect(npcFolder).toBeTruthy();
+
+    const views = npcFolder?.children?.find(
+      (n) => n.kind === "folder" && n.name === "views",
+    );
+    expect(views).toBeTruthy();
+
+    const viewCategories = (views?.children || [])
+      .filter((n) => n.kind === "folder")
+      .map((n) => n.name);
+    expect(viewCategories).toEqual(
+      expect.arrayContaining([
+        "quests",
+        "knowledge",
+        "timeline",
+        "locations",
+        "factions",
+        "causal_chains",
+      ]),
+    );
+
+    const knowledge = views?.children?.find(
+      (n) => n.kind === "folder" && n.name === "knowledge",
+    );
+    expect(
+      knowledge?.children?.some((n) => n.name === "lore_blackmail.json"),
+    ).toBe(true);
+  });
+
   it("supports entity notes.md living under <id>/notes.md alongside <id>.json", () => {
     const tree = buildVfsTree({
       "world/quests/quest:1.json": { path: "world/quests/quest:1.json" } as any,

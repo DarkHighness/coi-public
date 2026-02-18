@@ -595,4 +595,116 @@ describe("deriveGameStateFromVfs", () => {
       processedAt: 456,
     });
   });
+
+  it("derives knownBy observers from non-player world views while keeping unlock player-scoped", () => {
+    const files: VfsFileMap = {
+      "world/characters/char:player/profile.json": makeJsonFile(
+        "world/characters/char:player/profile.json",
+        {
+          id: "char:player",
+          kind: "player",
+          currentLocation: "loc:inn",
+          knownBy: ["char:player"],
+          visible: { name: "Player", attributes: [] },
+          relations: [],
+        },
+      ),
+      "world/characters/char:npc_guard/profile.json": makeJsonFile(
+        "world/characters/char:npc_guard/profile.json",
+        {
+          id: "char:npc_guard",
+          kind: "npc",
+          currentLocation: "loc:inn",
+          knownBy: ["char:player", "char:npc_guard"],
+          visible: { name: "Guard", attributes: [] },
+          relations: [],
+        },
+      ),
+      "world/knowledge/lore_blackmail.json": makeJsonFile(
+        "world/knowledge/lore_blackmail.json",
+        {
+          id: "lore_blackmail",
+          knownBy: ["char:player"],
+          title: "Blackmail Ledger",
+          visible: { summary: "A suspicious ledger exists." },
+          hidden: { fullTruth: "It implicates the guard captain." },
+        },
+      ),
+      "world/characters/char:npc_guard/views/knowledge/lore_blackmail.json":
+        makeJsonFile(
+          "world/characters/char:npc_guard/views/knowledge/lore_blackmail.json",
+          {
+            entityId: "lore_blackmail",
+            unlocked: true,
+            unlockReason: "Guard reviewed the ledger directly.",
+          },
+        ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+    const lore = state.knowledge.find((entry) => entry.id === "lore_blackmail");
+    expect(lore).toBeTruthy();
+    expect(lore?.knownBy).toContain("char:npc_guard");
+    expect(lore?.unlocked).toBe(false);
+  });
+
+  it("auto-repairs unlocked=>knownBy for actor-owned entities and prevents NPC-only unlock leakage in npcs view", () => {
+    const files: VfsFileMap = {
+      "world/characters/char:player/profile.json": makeJsonFile(
+        "world/characters/char:player/profile.json",
+        {
+          id: "char:player",
+          kind: "player",
+          currentLocation: "loc:inn",
+          knownBy: ["char:player"],
+          visible: { name: "Player", attributes: [] },
+          relations: [],
+        },
+      ),
+      "world/characters/char:npc_1/profile.json": makeJsonFile(
+        "world/characters/char:npc_1/profile.json",
+        {
+          id: "char:npc_1",
+          kind: "npc",
+          currentLocation: "loc:inn",
+          knownBy: [],
+          unlocked: true,
+          unlockReason: "NPC-only knowledge",
+          visible: { name: "Watcher", attributes: [] },
+          relations: [
+            {
+              id: "rel:attitude-1",
+              kind: "attitude",
+              to: { kind: "character", id: "char:player" },
+              knownBy: [],
+              unlocked: true,
+              unlockReason: "NPC-only relation unlock",
+              visible: { signals: ["Cold smile"] },
+              hidden: { affinity: 60 },
+            },
+          ],
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+    const npcBundle = state.actors.find(
+      (bundle) => bundle.profile.id === "char:npc_1",
+    );
+    expect(npcBundle).toBeTruthy();
+    expect(npcBundle?.profile.knownBy).toContain("char:npc_1");
+    const repairedRelation = npcBundle?.profile.relations?.[0] as
+      | { knownBy?: string[] }
+      | undefined;
+    expect(repairedRelation?.knownBy).toContain("char:npc_1");
+
+    const projectedNpc = state.npcs.find((npc) => npc.id === "char:npc_1");
+    expect(projectedNpc).toBeTruthy();
+    expect(projectedNpc?.unlocked).toBe(false);
+    const projectedRelation = projectedNpc?.relations?.[0] as
+      | { unlocked?: boolean; unlockReason?: string }
+      | undefined;
+    expect(projectedRelation?.unlocked).toBe(false);
+    expect(projectedRelation?.unlockReason).toBeUndefined();
+  });
 });

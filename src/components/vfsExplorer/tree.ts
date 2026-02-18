@@ -45,6 +45,17 @@ const DEFAULT_DIRECTORY_PATHS = [
   "skills",
 ];
 
+const VIEW_DIRECTORY_PATHS = [
+  "quests",
+  "knowledge",
+  "timeline",
+  "locations",
+  "factions",
+  "causal_chains",
+] as const;
+
+const ACTOR_PATH_PATTERN = /^world\/characters\/([^/]+)(?:\/|$)/;
+
 const createFolderNode = (name: string, path: string): TreeMap => ({
   node: {
     name,
@@ -133,11 +144,32 @@ const finalizeTree = (tree: TreeMap): VfsTreeNode => {
   };
 };
 
+const collectActorIdsFromFiles = (files: VfsFileMap): string[] => {
+  const actorIds = new Set<string>(["char:player"]);
+  for (const file of Object.values(files)) {
+    const normalizedPath = stripCurrentPrefix(file.path);
+    const match = ACTOR_PATH_PATTERN.exec(normalizedPath);
+    if (!match?.[1]) {
+      continue;
+    }
+    actorIds.add(match[1]);
+  }
+  return Array.from(actorIds).sort((a, b) => a.localeCompare(b));
+};
+
 export const buildVfsTree = (files: VfsFileMap): VfsTreeNode => {
   const root = createFolderNode("current", "");
 
   for (const dir of DEFAULT_DIRECTORY_PATHS) {
     addFolderPath(root, dir);
+  }
+
+  for (const actorId of collectActorIdsFromFiles(files)) {
+    addFolderPath(root, `world/characters/${actorId}`);
+    addFolderPath(root, `world/characters/${actorId}/views`);
+    for (const viewPath of VIEW_DIRECTORY_PATHS) {
+      addFolderPath(root, `world/characters/${actorId}/views/${viewPath}`);
+    }
   }
 
   for (const file of Object.values(files)) {

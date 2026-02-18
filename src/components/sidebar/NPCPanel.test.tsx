@@ -164,4 +164,41 @@ describe("NPCPanel", () => {
     expect(screen.getByText("High Dimension")).toBeTruthy();
     expect(screen.getByText("Unknown Truth")).toBeTruthy();
   });
+
+  it("does not reveal attitude hidden details when relation unlock is NPC-only", () => {
+    const npc = makeNpc({
+      knownBy: ["char:player"],
+      unlocked: true,
+      hidden: { realMotives: "Player-unlocked NPC truth" },
+      relations: [
+        {
+          id: "rel:attitude-1",
+          kind: "attitude",
+          to: { kind: "character", id: "char:player" },
+          knownBy: ["char:npc_1"],
+          unlocked: true,
+          unlockReason: "NPC-only unlock",
+          visible: { signals: ["Cold smile"] },
+          hidden: { affinity: 70, impression: "Secret impression" },
+        },
+      ],
+    });
+
+    render(
+      React.createElement(NPCPanel, {
+        npcs: [npc],
+        actors: [],
+        playerActorId: "char:player",
+        locations: [],
+        themeFont: "font-theme",
+        listState: { pinnedIds: [], customOrder: [], hiddenIds: [] },
+        onUpdateList: vi.fn(),
+      }),
+    );
+
+    fireEvent.click(screen.getByText("NPC One"));
+    expect(screen.getByText("Player-unlocked NPC truth")).toBeTruthy();
+    expect(screen.queryByText("NPC-only unlock")).toBeNull();
+    expect(screen.queryByText("Secret impression")).toBeNull();
+  });
 });

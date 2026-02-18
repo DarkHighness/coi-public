@@ -108,12 +108,19 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("Never guess filenames");
     expect(content).toContain("Placeholder promotion (MANDATORY)");
     expect(content).toContain("knownBy vs unlocked decision protocol (STRICT)");
+    expect(content).toContain("first `knownBy`, then `unlocked`");
+    expect(content).toContain("Invariant: when");
+    expect(content).toContain("`unlocked=true`");
     expect(content).toContain(
       "hidden-truth proof, not about first-time appearance",
     );
+    expect(content).toContain("(observerActorId, targetEntityId)");
+    expect(content).toContain("A knows B's secret");
     expect(content).toContain("current/world/placeholders/**/*.md");
     expect(content).not.toContain("current/world/placeholder/");
     expect(content).not.toContain("world/placeholder/");
+    expect(content).not.toContain("UI highlight");
+    expect(content).not.toContain("auto-highlights");
     expect(content).toContain(
       "delete draft only after canonical write succeeds",
     );

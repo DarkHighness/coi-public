@@ -37,6 +37,9 @@ const readStringArray = (value: unknown): string[] =>
     ? value.filter((item): item is string => typeof item === "string")
     : [];
 
+const actorKnows = (knownBy: unknown, actorId: string): boolean =>
+  Array.isArray(knownBy) && knownBy.some((entry) => entry === actorId);
+
 type AttitudeRelation = RelationEdge & {
   kind: "attitude";
   hidden?: unknown;
@@ -116,8 +119,15 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
               const attitudeHidden = isRecord(attitude?.hidden)
                 ? attitude.hidden
                 : null;
+              const npcUnlockedForPlayer = Boolean(
+                npc.unlocked === true && actorKnows(npc.knownBy, playerId),
+              );
+              const attitudeUnlockedForPlayer = Boolean(
+                attitude?.unlocked === true &&
+                  actorKnows(attitude?.knownBy, playerId),
+              );
               const showTrueAttitude = Boolean(
-                gameState.unlockMode || attitude?.unlocked === true,
+                gameState.unlockMode || attitudeUnlockedForPlayer,
               );
               const affinity =
                 showTrueAttitude && typeof attitudeHidden?.affinity === "number"
@@ -452,7 +462,8 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                       )}
                   </div>
 
-                  {(gameState.unlockMode || npc.unlocked) && npc.hidden && (
+                  {(gameState.unlockMode || npcUnlockedForPlayer) &&
+                    npc.hidden && (
                     <HiddenContent
                       t={t}
                       content={

@@ -67,7 +67,7 @@ export const coreRulesPrimer: Atom<void> = defineAtom(
   <rule>CONSEQUENCES: Every action has reactions. The world never forgets.</rule>
   <rule>NPC: Actors use \`visible\` for surface signals and \`hidden\` for true motives. True affinity is stored ONLY in \`relations[].hidden.affinity\` and is hidden by default.</rule>
   <rule>STATE: Output ONLY deltas. Update state IMMEDIATELY when events occur.</rule>
-  <rule>HIDDEN: GM sees all \`hidden\` fields. \`unlocked\` = player knows. Reveal only through investigation.</rule>
+  <rule>HIDDEN: GM sees all \`hidden\` fields. \`unlocked\` = observer actor knows. Reveal only through investigation.</rule>
   <rule>ICONS: Generate emoji \`icon\` for every entity.</rule>
 </core_rules>
 `,

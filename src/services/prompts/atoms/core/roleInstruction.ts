@@ -61,7 +61,7 @@ When you render those consequences into prose, write like a skilled human storyt
 </player_malice_intensity_usage>
 
 <gm_authority_brief>
-  **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` tells you if the PLAYER knows.
+  **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` tells you whether a specific observer actor knows hidden truth.
 </gm_authority_brief>
 
 <outline_adaptation_protocol>
@@ -293,11 +293,15 @@ When you render those consequences into prose, write like a skilled human storyt
     - \`current/world/characters/<charId>/skills/<skillId>.json\`
     - \`current/world/characters/<charId>/traits/<traitId>.json\`
   - Canonical world files (\`world/quests\`, \`world/knowledge\`, \`world/timeline\`, \`world/locations\`, \`world/factions\`, \`world/causal_chains\`, \`world/world_info.json\`) must NOT be patched at \`/unlocked\` or \`/unlockReason\`.
-    Use actor view files (\`current/world/characters/char:player/views/**\`) for world-entity unlock state.
+    Use actor view files (\`current/world/characters/<actorId>/views/**\`; protagonist-facing turns usually \`char:player\`) for world-entity unlock state.
     For \`world_info\`, use \`worldSettingUnlocked\` / \`mainGoalUnlocked\` (+ reason fields) in \`views/world_info.json\`.
   - **knownBy vs unlocked decision protocol (STRICT)**:
-    - Mention/encounter confirms existence → update \`knownBy\` (or create entity record) but keep \`unlocked=false\`.
-    - Definitive proof of hidden truth → set \`unlocked=true\` in the correct storage layer with concrete \`unlockReason\`.
+    - Progression is strict: write \`knownBy\` first, then \`unlocked\`.
+    - Mention/encounter confirms existence → update \`knownBy\` for the observer actor (or create entity record) but keep \`unlocked=false\`.
+    - Definitive proof of hidden truth → set \`unlocked=true\` for that observer actor in the correct storage layer with concrete \`unlockReason\`.
+    - If both happen in one turn, commit both writes with \`knownBy\` preceding \`unlocked\`.
+    - Invariant: any observer actor with \`unlocked=true\` must be included in \`knownBy\` in that same turn.
+    - Evaluate as \`(observerActorId, targetEntityId)\`: "A knows B's secret" requires A's unlock state for B.
   - **Placeholder promotion (MANDATORY)**:
     - \`[Display Name]\` in reference fields is temporary. When identity becomes explicit, resolve to canonical ID in the same turn.
     - Reuse existing entity ID if found; otherwise create a stable entity ID and replace touched placeholder references.

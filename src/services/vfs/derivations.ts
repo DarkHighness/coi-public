@@ -300,6 +300,8 @@ type WorldInfoViewData = {
   mainGoalUnlockReason?: string;
 };
 
+type ViewObserverMap = Map<string, Set<string>>;
+
 type ViewCategory =
   | "quests"
   | "knowledge"
@@ -451,6 +453,176 @@ const parseWorldInfoViewData = (value: unknown): WorldInfoViewData | null => {
     mainGoalUnlocked: toBooleanOrUndefined(value.mainGoalUnlocked),
     mainGoalUnlockReason: toStringOrUndefined(value.mainGoalUnlockReason),
   };
+};
+
+const actorKnows = (knownBy: unknown, actorId: string): boolean =>
+  Array.isArray(knownBy) && knownBy.some((entry) => entry === actorId);
+
+const registerViewObserver = (
+  map: ViewObserverMap,
+  entityId: string,
+  actorId: string,
+): void => {
+  const existing = map.get(entityId);
+  if (existing) {
+    existing.add(actorId);
+    return;
+  }
+  map.set(entityId, new Set([actorId]));
+};
+
+const withKnownByObservers = <T extends { knownBy?: string[] }>(
+  entity: T,
+  observerIds: Iterable<string> | undefined,
+): T => {
+  if (!observerIds) return entity;
+  const toAdd = Array.from(observerIds).filter(
+    (id): id is string => typeof id === "string" && id.trim().length > 0,
+  );
+  if (toAdd.length === 0) return entity;
+
+  const baseKnownBy = Array.isArray(entity.knownBy)
+    ? entity.knownBy.filter((entry): entry is string => typeof entry === "string")
+    : [];
+
+  let changed = false;
+  const merged = [...baseKnownBy];
+  for (const observerId of toAdd) {
+    if (merged.includes(observerId)) continue;
+    merged.push(observerId);
+    changed = true;
+  }
+
+  return changed ? ({ ...entity, knownBy: merged } as T) : entity;
+};
+
+const missingKnownByActors = (
+  entity: { knownBy?: string[] },
+  observerIds: Iterable<string> | undefined,
+): string[] => {
+  if (!observerIds) return [];
+  const knownBy = Array.isArray(entity.knownBy)
+    ? entity.knownBy.filter((entry): entry is string => typeof entry === "string")
+    : [];
+  const knownBySet = new Set(knownBy);
+  return Array.from(observerIds).filter((actorId) => !knownBySet.has(actorId));
+};
+
+const ensureUnlockedEntityKnownByObserver = <T extends JsonObject>(
+  entity: T,
+  observerActorId: string,
+  context: string,
+): T => {
+  if (entity.unlocked !== true || actorKnows(entity.knownBy, observerActorId)) {
+    return entity;
+  }
+
+  const knownBy = Array.isArray(entity.knownBy)
+    ? entity.knownBy.filter((entry): entry is string => typeof entry === "string")
+    : [];
+  console.warn(
+    `[VFS] Auto-repaired unlock invariant: unlocked=true but knownBy missing observer ${observerActorId} at ${context}`,
+  );
+  return {
+    ...entity,
+    knownBy: [...knownBy, observerActorId],
+  } as T;
+};
+
+const normalizeActorProfileUnlockInvariants = (
+  profile: ActorProfileData,
+  actorIdFromPath: string,
+): ActorProfileData => {
+  const observerActorId =
+    typeof actorIdFromPath === "string" && actorIdFromPath.trim().length > 0
+      ? actorIdFromPath
+      : profile.id;
+
+  let normalizedProfile = ensureUnlockedEntityKnownByObserver(
+    profile,
+    observerActorId,
+    `world/characters/${actorIdFromPath}/profile.json`,
+  ) as ActorProfileData;
+
+  const relations = Array.isArray(normalizedProfile.relations)
+    ? normalizedProfile.relations
+    : [];
+  let relationsChanged = false;
+  const normalizedRelations = relations.map((relation, index) => {
+    if (!isRecord(relation)) {
+      return relation;
+    }
+    const relationId =
+      typeof relation.id === "string" && relation.id.trim().length > 0
+        ? relation.id
+        : `#${index}`;
+    const normalizedRelation = ensureUnlockedEntityKnownByObserver(
+      relation,
+      observerActorId,
+      `world/characters/${actorIdFromPath}/profile.json#relation:${relationId}`,
+    ) as typeof relation;
+    if (normalizedRelation !== relation) {
+      relationsChanged = true;
+    }
+    return normalizedRelation;
+  });
+
+  if (relationsChanged) {
+    normalizedProfile = {
+      ...normalizedProfile,
+      relations: normalizedRelations,
+    };
+  }
+
+  return normalizedProfile;
+};
+
+const projectUnlockedForObserver = <T extends JsonObject>(
+  entity: T,
+  observerActorId: string,
+): T => {
+  if (entity.unlocked !== true || actorKnows(entity.knownBy, observerActorId)) {
+    return entity;
+  }
+  const projected: JsonObject = { ...entity, unlocked: false };
+  delete projected.unlockReason;
+  return projected as T;
+};
+
+const projectNpcForObserver = (
+  profile: ActorProfileData,
+  observerActorId: string,
+): NPC => {
+  const projectedProfile = projectUnlockedForObserver(
+    profile,
+    observerActorId,
+  ) as ActorProfileData;
+  const relations = Array.isArray(projectedProfile.relations)
+    ? projectedProfile.relations
+    : [];
+
+  let relationsChanged = false;
+  const projectedRelations = relations.map((relation) => {
+    if (!isRecord(relation)) {
+      return relation;
+    }
+    const projectedRelation = projectUnlockedForObserver(
+      relation,
+      observerActorId,
+    ) as typeof relation;
+    if (projectedRelation !== relation) {
+      relationsChanged = true;
+    }
+    return projectedRelation;
+  });
+
+  if (projectedProfile !== profile || relationsChanged) {
+    return {
+      ...projectedProfile,
+      relations: projectedRelations,
+    } as NPC;
+  }
+  return projectedProfile as NPC;
 };
 
 const isForkTree = (value: unknown): value is GameState["forkTree"] => {
@@ -976,13 +1148,20 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   const timelineDefinitions: TimelineEvent[] = [];
   const causalChainDefinitions: CausalChain[] = [];
 
-  // Per-actor views (player only for UI derivation)
+  // Per-actor views: always collect observer ownership from VFS;
+  // player view is additionally projected into UI convenience fields.
   const playerQuestViews = new Map<string, QuestViewData>();
   const playerKnowledgeViews = new Map<string, KnowledgeViewData>();
   const playerTimelineViews = new Map<string, TimelineViewData>();
   const playerLocationViews = new Map<string, LocationViewData>();
   const playerFactionViews = new Map<string, FactionViewData>();
   const playerCausalChainViews = new Map<string, CausalChainViewData>();
+  const questViewObservers = new Map<string, Set<string>>();
+  const knowledgeViewObservers = new Map<string, Set<string>>();
+  const timelineViewObservers = new Map<string, Set<string>>();
+  const locationViewObservers = new Map<string, Set<string>>();
+  const factionViewObservers = new Map<string, Set<string>>();
+  const causalChainViewObservers = new Map<string, Set<string>>();
   let playerWorldInfoView: WorldInfoViewData | null = null;
   let hasGlobalTheme = false;
   let currentSoulMarkdown: string | null = null;
@@ -1178,7 +1357,10 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
       if (actorPath.kind === "profile") {
         if (isActorProfileData(data)) {
-          actorProfiles.set(actorId, data);
+          actorProfiles.set(
+            actorId,
+            normalizeActorProfileUnlockInvariants(data, actorId),
+          );
         }
         continue;
       }
@@ -1194,38 +1376,84 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       }
 
       if (actorPath.kind === "viewEntity") {
-        if (actorId !== state.playerActorId) {
-          continue;
-        }
-
         if (actorPath.category === "quests") {
           const view = parseQuestViewData(data);
-          if (view) playerQuestViews.set(actorPath.entityId, view);
+          if (view) {
+            registerViewObserver(questViewObservers, actorPath.entityId, actorId);
+            if (actorId === state.playerActorId) {
+              playerQuestViews.set(actorPath.entityId, view);
+            }
+          }
           continue;
         }
         if (actorPath.category === "knowledge") {
           const view = parseKnowledgeViewData(data);
-          if (view) playerKnowledgeViews.set(actorPath.entityId, view);
+          if (view) {
+            registerViewObserver(
+              knowledgeViewObservers,
+              actorPath.entityId,
+              actorId,
+            );
+            if (actorId === state.playerActorId) {
+              playerKnowledgeViews.set(actorPath.entityId, view);
+            }
+          }
           continue;
         }
         if (actorPath.category === "timeline") {
           const view = parseTimelineViewData(data);
-          if (view) playerTimelineViews.set(actorPath.entityId, view);
+          if (view) {
+            registerViewObserver(
+              timelineViewObservers,
+              actorPath.entityId,
+              actorId,
+            );
+            if (actorId === state.playerActorId) {
+              playerTimelineViews.set(actorPath.entityId, view);
+            }
+          }
           continue;
         }
         if (actorPath.category === "locations") {
           const view = parseLocationViewData(data);
-          if (view) playerLocationViews.set(actorPath.entityId, view);
+          if (view) {
+            registerViewObserver(
+              locationViewObservers,
+              actorPath.entityId,
+              actorId,
+            );
+            if (actorId === state.playerActorId) {
+              playerLocationViews.set(actorPath.entityId, view);
+            }
+          }
           continue;
         }
         if (actorPath.category === "factions") {
           const view = parseFactionViewData(data);
-          if (view) playerFactionViews.set(actorPath.entityId, view);
+          if (view) {
+            registerViewObserver(
+              factionViewObservers,
+              actorPath.entityId,
+              actorId,
+            );
+            if (actorId === state.playerActorId) {
+              playerFactionViews.set(actorPath.entityId, view);
+            }
+          }
           continue;
         }
         if (actorPath.category === "causal_chains") {
           const view = parseCausalChainViewData(data);
-          if (view) playerCausalChainViews.set(actorPath.entityId, view);
+          if (view) {
+            registerViewObserver(
+              causalChainViewObservers,
+              actorPath.entityId,
+              actorId,
+            );
+            if (actorId === state.playerActorId) {
+              playerCausalChainViews.set(actorPath.entityId, view);
+            }
+          }
           continue;
         }
         continue;
@@ -1233,32 +1461,52 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
       if (actorPath.kind === "skills") {
         if (isActorSkillData(data)) {
+          const normalized = ensureUnlockedEntityKnownByObserver(
+            data,
+            actorId,
+            `world/characters/${actorId}/skills`,
+          ) as ActorBundle["skills"][number];
           const list = actorSkills.get(actorId) ?? [];
-          list.push(data);
+          list.push(normalized);
           actorSkills.set(actorId, list);
         }
         continue;
       }
       if (actorPath.kind === "conditions") {
         if (isActorConditionData(data)) {
+          const normalized = ensureUnlockedEntityKnownByObserver(
+            data,
+            actorId,
+            `world/characters/${actorId}/conditions`,
+          ) as ActorBundle["conditions"][number];
           const list = actorConditions.get(actorId) ?? [];
-          list.push(data);
+          list.push(normalized);
           actorConditions.set(actorId, list);
         }
         continue;
       }
       if (actorPath.kind === "traits") {
         if (isActorTraitData(data)) {
+          const normalized = ensureUnlockedEntityKnownByObserver(
+            data,
+            actorId,
+            `world/characters/${actorId}/traits`,
+          ) as ActorBundle["traits"][number];
           const list = actorTraits.get(actorId) ?? [];
-          list.push(data);
+          list.push(normalized);
           actorTraits.set(actorId, list);
         }
         continue;
       }
       if (actorPath.kind === "inventory") {
         if (isActorInventoryItemData(data)) {
+          const normalized = ensureUnlockedEntityKnownByObserver(
+            data,
+            actorId,
+            `world/characters/${actorId}/inventory`,
+          ) as InventoryItem;
           const list = actorInventory.get(actorId) ?? [];
-          list.push(data);
+          list.push(normalized);
           actorInventory.set(actorId, list);
         }
         continue;
@@ -1359,27 +1607,15 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   }
 
   // Merge canonical entities with player views into UI-friendly view models.
-  const playerId = state.playerActorId;
-  const hasKnownByPlayer = (entity: { knownBy?: string[] }): boolean =>
-    Array.isArray(entity.knownBy) && entity.knownBy.includes(playerId);
-  const withDerivedKnownByPlayer = <T extends { knownBy?: string[] }>(
-    entity: T,
-    hasView: boolean,
-  ): T => {
-    if (!hasView) return entity;
-    if (!Array.isArray(entity.knownBy)) {
-      return { ...entity, knownBy: [playerId] };
-    }
-    if (entity.knownBy.includes(playerId)) return entity;
-    return { ...entity, knownBy: [...entity.knownBy, playerId] };
-  };
 
   const mergeQuest = (q: Quest): Quest => {
     const view = playerQuestViews.get(q.id);
-    const qWithKnown = withDerivedKnownByPlayer(q, Boolean(view));
-    if (view && !hasKnownByPlayer(q)) {
+    const observers = questViewObservers.get(q.id);
+    const qWithKnown = withKnownByObservers(q, observers);
+    const missing = missingKnownByActors(q, observers);
+    if (missing.length > 0) {
       console.warn(
-        `[VFS] Quest view exists but canonical knownBy missing ${playerId}: ${q.id}`,
+        `[VFS] Quest view exists but canonical knownBy missing observer(s) ${missing.join(", ")}: ${q.id}`,
       );
     }
     const status = view?.status ?? q.status ?? "active";
@@ -1393,10 +1629,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   const mergeKnowledge = (k: KnowledgeEntry): KnowledgeEntry => {
     const view = playerKnowledgeViews.get(k.id);
-    const kWithKnown = withDerivedKnownByPlayer(k, Boolean(view));
-    if (view && !hasKnownByPlayer(k)) {
+    const observers = knowledgeViewObservers.get(k.id);
+    const kWithKnown = withKnownByObservers(k, observers);
+    const missing = missingKnownByActors(k, observers);
+    if (missing.length > 0) {
       console.warn(
-        `[VFS] Knowledge view exists but canonical knownBy missing ${playerId}: ${k.id}`,
+        `[VFS] Knowledge view exists but canonical knownBy missing observer(s) ${missing.join(", ")}: ${k.id}`,
       );
     }
     return {
@@ -1409,10 +1647,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   const mergeTimeline = (e: TimelineEvent): TimelineEvent => {
     const view = playerTimelineViews.get(e.id);
-    const eWithKnown = withDerivedKnownByPlayer(e, Boolean(view));
-    if (view && !hasKnownByPlayer(e)) {
+    const observers = timelineViewObservers.get(e.id);
+    const eWithKnown = withKnownByObservers(e, observers);
+    const missing = missingKnownByActors(e, observers);
+    if (missing.length > 0) {
       console.warn(
-        `[VFS] Timeline view exists but canonical knownBy missing ${playerId}: ${e.id}`,
+        `[VFS] Timeline view exists but canonical knownBy missing observer(s) ${missing.join(", ")}: ${e.id}`,
       );
     }
     return {
@@ -1424,10 +1664,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   const mergeLocation = (loc: Location): Location => {
     const view = playerLocationViews.get(loc.id);
-    const locWithKnown = withDerivedKnownByPlayer(loc, Boolean(view));
-    if (view && !hasKnownByPlayer(loc)) {
+    const observers = locationViewObservers.get(loc.id);
+    const locWithKnown = withKnownByObservers(loc, observers);
+    const missing = missingKnownByActors(loc, observers);
+    if (missing.length > 0) {
       console.warn(
-        `[VFS] Location view exists but canonical knownBy missing ${playerId}: ${loc.id}`,
+        `[VFS] Location view exists but canonical knownBy missing observer(s) ${missing.join(", ")}: ${loc.id}`,
       );
     }
     return {
@@ -1445,10 +1687,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   const mergeFaction = (f: Faction): FactionWithView => {
     const view = playerFactionViews.get(f.id);
-    const fWithKnown = withDerivedKnownByPlayer(f, Boolean(view));
-    if (view && !hasKnownByPlayer(f)) {
+    const observers = factionViewObservers.get(f.id);
+    const fWithKnown = withKnownByObservers(f, observers);
+    const missing = missingKnownByActors(f, observers);
+    if (missing.length > 0) {
       console.warn(
-        `[VFS] Faction view exists but canonical knownBy missing ${playerId}: ${f.id}`,
+        `[VFS] Faction view exists but canonical knownBy missing observer(s) ${missing.join(", ")}: ${f.id}`,
       );
     }
     return {
@@ -1469,10 +1713,12 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
 
   const mergeCausalChain = (c: CausalChain): CausalChainWithView => {
     const view = playerCausalChainViews.get(c.chainId);
-    const cWithKnown = withDerivedKnownByPlayer(c, Boolean(view));
-    if (view && !hasKnownByPlayer(c)) {
+    const observers = causalChainViewObservers.get(c.chainId);
+    const cWithKnown = withKnownByObservers(c, observers);
+    const missing = missingKnownByActors(c, observers);
+    if (missing.length > 0) {
       console.warn(
-        `[VFS] Causal chain view exists but canonical knownBy missing ${playerId}: ${c.chainId}`,
+        `[VFS] Causal chain view exists but canonical knownBy missing observer(s) ${missing.join(", ")}: ${c.chainId}`,
       );
     }
     return {
@@ -1703,7 +1949,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
   // Derive NPC list for sidebar panels from actor bundles.
   state.npcs = bundles
     .filter((bundle) => bundle.profile.kind === "npc")
-    .map((bundle) => bundle.profile as NPC);
+    .map((bundle) => projectNpcForObserver(bundle.profile, state.playerActorId));
 
   const conversation = deriveConversationNodes(files);
   state.nodes = conversation.nodes;

@@ -278,7 +278,7 @@ describe("GameViewer non-player field coverage", () => {
               id: "rel:attitude-1",
               kind: "attitude",
               to: { kind: "character", id: "char:player" },
-              knownBy: ["char:npc_1"],
+              knownBy: ["char:npc_1", "char:player"],
               unlocked: true,
               unlockReason: "Mind link opened",
               visible: { signals: ["Cold smile"] },
@@ -309,5 +309,68 @@ describe("GameViewer non-player field coverage", () => {
     expect(screen.getByText("Avoids eye contact")).toBeTruthy();
     expect(screen.getByText("Mind link opened")).toBeTruthy();
     expect(screen.getByText("Protects own secret")).toBeTruthy();
+  });
+
+  it("does not render NPC hidden unlock content when only NPC knows it", () => {
+    const gameState = {
+      ...baseState,
+      actors: [
+        {
+          profile: {
+            id: "char:player",
+            kind: "player",
+            currentLocation: "loc:market",
+            knownBy: ["char:player"],
+            visible: { name: "Player" },
+            relations: [],
+          },
+        },
+      ],
+      npcs: [
+        {
+          id: "char:npc_1",
+          kind: "npc",
+          knownBy: ["char:player"],
+          currentLocation: "loc:market",
+          visible: { name: "Watcher" },
+          relations: [
+            {
+              id: "rel:attitude-1",
+              kind: "attitude",
+              to: { kind: "character", id: "char:player" },
+              knownBy: ["char:npc_1"],
+              unlocked: true,
+              unlockReason: "Mind link opened",
+              visible: { signals: ["Cold smile"] },
+              hidden: {
+                affinity: 62,
+                motives: "Protects own secret",
+              },
+            },
+          ],
+          hidden: {
+            realMotives: "Hidden from player unless unlocked by player evidence",
+          },
+          unlocked: false,
+        },
+      ],
+    } as any;
+
+    render(
+      React.createElement(NPCsTab, {
+        gameState,
+        expandedSections: new Set(["npcs"]),
+        toggleSection: () => undefined,
+        t,
+      }),
+    );
+
+    expect(screen.queryByText("Mind link opened")).toBeNull();
+    expect(screen.queryByText("Protects own secret")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Hidden from player unless unlocked by player evidence",
+      ),
+    ).toBeNull();
   });
 });

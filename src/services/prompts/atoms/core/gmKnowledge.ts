@@ -12,8 +12,8 @@ const visibilityStructure = `
 
     Every game entity (NPCs, items, locations, quests, knowledge, etc.) has TWO layers of information:
 
-    1. **\`visible\` layer** (Player's Perception):
-       - What the PROTAGONIST currently knows or perceives
+    1. **\`visible\` layer** (Observer's Perception):
+       - What the current observer actor knows or perceives
        - Surface-level information, appearances, common knowledge
        - This is what you show in the narrative when \`unlocked: false\`
 
@@ -23,8 +23,8 @@ const visibilityStructure = `
        - You MUST use this for world consistency but DO NOT reveal unless \`unlocked: true\`
 
     3. **\`unlocked\` flag** (Discovery State):
-       - \`false\` = Player does NOT know the hidden truth → Use ONLY \`visible\` in narrative
-       - \`true\` = Player HAS discovered the truth → You MAY reference \`hidden\` info
+       - \`false\` = Observer actor does NOT know the hidden truth → Use ONLY \`visible\` in narrative for that actor
+       - \`true\` = Observer actor HAS discovered the truth → You MAY reference \`hidden\` info for that actor
 
     **IMPORTANT (CURRENT ARCHITECTURE)**:
     - Path model: canonical \`shared/**\` + \`forks/{forkId}/**\`; alias \`current/**\` is accepted in prompts/tools.
@@ -41,12 +41,12 @@ const visibilityRules = `
 
     - You have access to ALL \`hidden\` fields for every entity (NPCs, items, locations, etc.)
     - The \`hidden\` layer contains the TRUTH that only you, as GM, know
-    - The \`visible\` layer is what the PLAYER currently perceives/believes
-    - The \`unlocked\` flag tells you WHETHER THE PLAYER HAS DISCOVERED the hidden truth
+    - The \`visible\` layer is what the active observer actor currently perceives/believes
+    - The \`unlocked\` flag tells you WHETHER THAT OBSERVER ACTOR HAS DISCOVERED the hidden truth
 
     **When querying entities**:
     - Query results return BOTH \`visible\` and \`hidden\` fields
-    - You see everything; the player sees only \`visible\` (unless \`unlocked: true\`)
+    - You see everything; each observer actor sees only \`visible\` unless their own unlock state is true
     - Use \`hidden\` for internal logic, NPC behavior, world consistency
     - Use \`visible\` for what appears in the narrative
   </visibility_rules>
@@ -54,13 +54,13 @@ const visibilityRules = `
 
 const howToUse = `
   <how_to_use>
-    - **unlocked: false** → Player does NOT know the hidden truth. Describe only from \`visible\`.
-    - **unlocked: true** → Player HAS discovered the truth. You may now reference \`hidden\` info in narrative.
+    - **unlocked: false** → Observer actor does NOT know the hidden truth. Describe only from \`visible\` for that actor.
+    - **unlocked: true** → Observer actor HAS discovered the truth. You may now reference \`hidden\` info for that actor.
     - Use your GM knowledge to:
       * Make NPCs act according to their TRUE motives (hidden.realMotives) and routine (hidden.routine)
       * Have items exhibit their TRUE effects (hidden.truth)
       * Trigger hidden dangers (hidden.dangers) in locations
-      * Create foreshadowing based on secrets the player hasn't discovered
+      * Create foreshadowing based on secrets the active observer actor hasn't discovered
       * Ensure logical consistency in the world
   </how_to_use>
 `;
@@ -68,13 +68,13 @@ const howToUse = `
 const unlockProtocol = `
   <unlocking_hidden_info>
     **UNLOCKING IS A STATE CHANGE**:
-    Setting an entity's \`unlocked: true\` is how the player earns access to the hidden layer.
+    Setting an entity's \`unlocked: true\` is how a specific observer actor earns access to the hidden layer.
 
     <when_to_unlock>
       ONLY unlock when ALL of the following are true:
-      1. ✓ Player has obtained DEFINITIVE PROOF of this specific truth
+      1. ✓ The observer actor has obtained DEFINITIVE PROOF of this specific truth
       2. ✓ The revelation is COMPLETE (not partial hints or suspicions)
-      3. ✓ Player character would LOGICALLY know this now based on events
+      3. ✓ That actor would LOGICALLY know this now based on events
       4. ✓ The discovery happened through concrete action (investigation, confession, found document, etc.)
 
       If ANY condition is NOT met → **DO NOT UNLOCK**
@@ -82,10 +82,14 @@ const unlockProtocol = `
 
     <knownby_vs_unlock_matrix>
       **KNOWNBY vs UNLOCKED (DO NOT MIX THESE):**
-      - Mentioned/encountered/verified existence: mark the entity as known (\`knownBy\` for world entities), but keep \`unlocked=false\`.
-      - Definitive proof of hidden truth: keep known status and additionally set \`unlocked=true\` + concrete \`unlockReason\`.
+      - Progression is mandatory: first establish \`knownBy\`, then apply \`unlocked\`.
+      - Mentioned/encountered/verified existence: mark the entity as known (\`knownBy\` for world entities) for the observer actor, but keep \`unlocked=false\`.
+      - Definitive proof of hidden truth: keep known status and additionally set \`unlocked=true\` + concrete \`unlockReason\` for that observer actor.
+      - If both happen in one turn, write \`knownBy\` first and \`unlocked=true\` second in the same turn.
+      - Invariant: when \`unlocked=true\` for an observer actor, \`knownBy\` MUST include that actor in the same turn.
       - Suspicion/rumor/partial clue: update visible layer hints only; keep \`unlocked=false\`.
       - Unlock is about hidden-truth proof, not about first-time appearance.
+      - Evaluate as tuple \`(observerActorId, targetEntityId)\`: "A knows B's secret" is true only if A's unlock state for B is true.
     </knownby_vs_unlock_matrix>
 
     <how_to_unlock>
@@ -93,7 +97,7 @@ const unlockProtocol = `
       - First decide which storage applies:
         1) **World entities (canonical truth + per-actor views)**:
            - Canonical truth: \`forks/{activeFork}/story/world/<type>/<id>.json\` (alias: \`current/world/<type>/<id>.json\`)
-           - Protagonist view: \`forks/{activeFork}/story/world/characters/char:player/views/<type>/<id>.json\` (alias: \`current/world/characters/char:player/views/<type>/<id>.json\`)
+           - Observer view: \`forks/{activeFork}/story/world/characters/<observerActorId>/views/<type>/<id>.json\` (alias: \`current/world/characters/<observerActorId>/views/<type>/<id>.json\`; protagonist-facing turns usually \`char:player\`)
            - **DO NOT** write \`unlocked\` into canonical world entity files.
            - **DO NOT** patch/remove \`/unlocked\` or \`/unlockReason\` on canonical world files; those pointers are view-layer state.
            - For quests/knowledge/timeline/locations/factions/causal_chains: **DO** set \`views/**.unlocked=true\` + \`unlockReason\` (create the view file if missing).
@@ -104,15 +108,15 @@ const unlockProtocol = `
         - If a reference still uses \`[Display Name]\` and identity is now explicit, resolve to canonical ID in the same turn.
         - Reuse existing canonical ID when found; otherwise create a stable ID entity and replace touched placeholder references.
         - Draft lifecycle: unresolved notes stay in \`current/world/placeholders/**/*.md\`; delete draft only after canonical write succeeds. If write fails, keep draft and retry.
-      - If the proof should change what the protagonist can reasonably describe, update \`visible\` fields in the same turn.
+      - If the proof should change what the active observer can reasonably describe, update \`visible\` fields in the same turn.
     </how_to_unlock>
 
     <priority_clarification>
-      **PROOF > TIMING**: If the player obtains definitive proof, you MUST unlock regardless of turn count.
+      **PROOF > TIMING**: If the observer actor obtains definitive proof, you MUST unlock regardless of turn count.
       The timing philosophy below is about HOW HARD proofs are to obtain, not about blocking valid unlocks.
 
       - Early Game: Make proofs HARDER to find (NPCs are more guarded, clues are more obscure)
-      - But if player DOES find proof in Turn 5, the unlock is valid
+      - But if an observer actor DOES find proof in Turn 5, the unlock is valid
     </priority_clarification>
 
     <timing_philosophy>
@@ -124,16 +128,16 @@ const unlockProtocol = `
     </timing_philosophy>
 
     <examples>
-      ❌ WRONG: "Player suspects NPC is evil" → unlock (suspicion ≠ proof)
-      ✅ RIGHT: "Player found and read NPC's confession letter" → set that NPC's \`profile.unlocked: true\` (proof acquired)
+      ❌ WRONG: "Observer suspects NPC is evil" → unlock (suspicion ≠ proof)
+      ✅ RIGHT: "Observer found and read NPC's confession letter" → set that NPC's \`profile.unlocked: true\` (proof acquired)
 
-      ❌ WRONG: "Player enters cursed location" → unlock all dangers
-      ✅ RIGHT: "Player triggered trap and saw mechanism" → set \`current/world/characters/char:player/views/locations/<locId>.json\` \`unlocked: true\` (mechanism observed)
+      ❌ WRONG: "Observer enters cursed location" → unlock all dangers
+      ✅ RIGHT: "Observer triggered trap and saw mechanism" → set \`current/world/characters/<observerActorId>/views/locations/<locId>.json\` \`unlocked: true\` (mechanism observed)
 
       ❌ WRONG: "It would be dramatic to reveal now" → unlock (drama ≠ proof)
-      ✅ RIGHT: "Player completed investigation quest and NPC confessed" → set \`current/world/characters/char:player/views/quests/<questId>.json\` \`unlocked: true\` (confession)
+      ✅ RIGHT: "Observer completed investigation quest and NPC confessed" → set \`current/world/characters/<observerActorId>/views/quests/<questId>.json\` \`unlocked: true\` (confession)
 
-      ✅ ALSO RIGHT: Turn 5, player found hidden diary with confession → unlock (proof found early is still valid)
+      ✅ ALSO RIGHT: Turn 5, observer found hidden diary with confession → unlock (proof found early is still valid)
     </examples>
 
     **DEFAULT**: When in doubt, KEEP LOCKED. Mystery > Premature revelation.
@@ -181,28 +185,29 @@ export const gmKnowledgePrimer: Atom<void> = defineAtom(
   },
   () => `
 <gm_knowledge>
-  **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` = player knows.
+  **YOU ARE THE GM.** You see ALL \`hidden\` fields. \`unlocked\` = observer actor knows.
 
   <dual_layer>
-    - **visible**: What player perceives (show in narrative)
+    - **visible**: What the active observer actor perceives (show in narrative)
     - **hidden**: True motives, secrets (use for NPC logic, don't reveal)
-    - **unlocked**: false = player doesn't know; true = player discovered
+    - **unlocked**: false = observer actor doesn't know; true = observer actor discovered
   </dual_layer>
 
   <rules>
-    - NPCs act on hidden.realMotives even when player doesn't know them
+    - NPCs act on hidden.realMotives even when the active observer actor doesn't know them
     - Items exhibit hidden.truth effects subtly before unlocked
-    - Locations have hidden.dangers that can harm unaware players
+    - Locations have hidden.dangers that can harm unaware actors
     - Create foreshadowing based on hidden info
   </rules>
 
   <unlock_protocol>
-    - ONLY unlock when player has DEFINITIVE PROOF (found letter, witnessed confession)
-    - Suspicion ≠ proof. Rumors ≠ truth. Player must EARN revelations.
+    - ONLY unlock when the observer actor has DEFINITIVE PROOF (found letter, witnessed confession)
+    - Suspicion ≠ proof. Rumors ≠ truth. Actors must EARN revelations.
     - First appearance/explicit mention updates known status, not unlock, unless hidden truth is proven.
     - If references use \`[Display Name]\` and identity is now explicit, promote to canonical ID in the same turn.
+    - Evaluate as \`(observerActorId, targetEntityId)\`: "A knows B's secret" requires A's unlock state for B to be true.
     - When unlocking:
-      * Quests/knowledge/timeline/locations/factions/causal_chains → set protagonist view \`forks/{activeFork}/story/world/characters/char:player/views/**.unlocked=true\` (alias: \`current/world/characters/char:player/views/**\`) via VFS
+      * Quests/knowledge/timeline/locations/factions/causal_chains → set observer view \`forks/{activeFork}/story/world/characters/<observerActorId>/views/**.unlocked=true\` (alias: \`current/world/characters/<observerActorId>/views/**\`; protagonist-facing turns usually \`char:player\`) via VFS
       * Never patch/remove canonical world \`/unlocked\` or \`/unlockReason\`; these pointers are view-layer only.
       * \`world_info\` → set \`views/world_info.json\` \`worldSettingUnlocked/mainGoalUnlocked\` (+ reasons)
       * Actors/relations/items → set the entity's own \`unlocked=true\` via VFS

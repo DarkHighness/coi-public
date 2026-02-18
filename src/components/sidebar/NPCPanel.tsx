@@ -48,6 +48,7 @@ export const buildNpcList = (
 type NpcAttitudeRelation = RelationEdge & {
   kind: "attitude";
   to: { kind: "character"; id: string };
+  knownBy?: string[];
   visible: {
     signals?: string[];
     reputationTag?: string;
@@ -156,7 +157,17 @@ const NpcItem: React.FC<NpcItemProps> = ({
       r.to.id === String(rel.id),
   );
 
-  const showTrueAttitude = Boolean(unlockMode || attitude?.unlocked === true);
+  const playerKnowsNpc = Array.isArray(rel.knownBy)
+    ? rel.knownBy.includes(playerActorId)
+    : false;
+  const npcUnlockedForPlayer = Boolean(rel.unlocked === true && playerKnowsNpc);
+  const playerKnowsAttitude = Array.isArray(attitude?.knownBy)
+    ? attitude.knownBy.includes(playerActorId)
+    : false;
+  const attitudeUnlockedForPlayer = Boolean(
+    attitude?.unlocked === true && playerKnowsAttitude,
+  );
+  const showTrueAttitude = Boolean(unlockMode || attitudeUnlockedForPlayer);
   const trueAffinity =
     typeof attitude?.hidden?.affinity === "number"
       ? attitude.hidden.affinity
@@ -204,7 +215,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                 {getValidIcon(rel.icon, "👤")}
               </span>
               {rel.visible?.name || t("unknown") || "Unknown"}
-              {rel.unlocked && (
+              {npcUnlockedForPlayer && (
                 <svg
                   className="w-3.5 h-3.5 text-yellow-400"
                   fill="currentColor"
@@ -465,7 +476,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                 </div>
 
                 {/* Unlocked Hidden Truth - Outer Layer */}
-                {(unlockMode || rel.unlocked) && (
+                {(unlockMode || npcUnlockedForPlayer) && (
                   <div className="pt-2 mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                       <svg

@@ -19,7 +19,7 @@ You MUST follow these runtime protocol constraints:
   - \`**/notes.md\` files: optional AI self-notes, not mandatory pre-read anchors.
 - High-frequency schema traps (AVOID):
   - Canonical world entities (\`current/world/{quests|knowledge|timeline|locations|factions|causal_chains}/*.json\`, \`current/world/world_info.json\`) MUST NOT contain root \`unlocked\`/\`unlockReason\`; unlock state belongs in actor views (\`current/world/characters/<actorId>/views/**\`).
-  - UI-only fields (\`highlight\`, \`lastAccess\`) belong to \`ui_state:*\` metadata — NEVER write into VFS world/view JSON.
+  - UI-only transient presentation metadata belongs to \`ui_state:*\` — NEVER write it into VFS world/view JSON.
   - Unresolved drafts → \`current/world/placeholders/**/*.md\`; delete draft only after canonical write succeeds.
   - Reference placeholder \`[Display Name]\` is temporary — resolve to canonical ID when identity becomes explicit.
   - Character profile: location → \`/currentLocation\` (NOT \`/visible/currentLocation\`); status/mood → \`/visible/*\`.
