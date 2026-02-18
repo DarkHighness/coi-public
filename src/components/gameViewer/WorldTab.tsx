@@ -66,6 +66,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   t={t}
                   content={
                     <div className="space-y-2">
+                      {worldInfo.worldSettingUnlockReason && (
+                        <InfoRow
+                          label={t("gameViewer.unlockReason", {
+                            defaultValue: "Unlock Reason",
+                          })}
+                          value={worldInfo.worldSettingUnlockReason}
+                        />
+                      )}
                       {worldInfo.worldSetting.hidden.hiddenRules && (
                         <div>
                           <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
@@ -209,6 +217,19 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               )}
                             />
                           )}
+                          {loc.visible.atmosphere.envTheme && (
+                            <InfoRow
+                              label={t("gameViewer.environmentTheme", {
+                                defaultValue: "Environment Theme",
+                              })}
+                              value={t(
+                                `atmosphere.envTheme.${loc.visible.atmosphere.envTheme}`,
+                                {
+                                  defaultValue: loc.visible.atmosphere.envTheme,
+                                },
+                              )}
+                            />
+                          )}
                           {loc.visible.atmosphere.ambience && (
                             <InfoRow
                               label={t("gameViewer.ambience") || "Ambience"}
@@ -314,6 +335,15 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         </div>
                       </div>
                     )}
+                    {typeof loc.discoveredAt === "number" &&
+                      Number.isFinite(loc.discoveredAt) && (
+                        <InfoRow
+                          label={t("gameViewer.discoveredAt", {
+                            defaultValue: "Discovered",
+                          })}
+                          value={new Date(loc.discoveredAt).toLocaleString()}
+                        />
+                      )}
                   </div>
                   {(loc.unlocked || gameState.unlockMode) && loc.hidden && (
                     <HiddenContent
@@ -368,6 +398,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 </ul>
                               </div>
                             )}
+                          {loc.unlockReason && (
+                            <InfoRow
+                              label={t("gameViewer.unlockReason", {
+                                defaultValue: "Unlock Reason",
+                              })}
+                              value={loc.unlockReason}
+                            />
+                          )}
                         </div>
                       }
                     />
@@ -411,12 +449,52 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     {faction.visible.influence}
                   </div>
                 )}
+                {Array.isArray(faction.visible.members) &&
+                  faction.visible.members.length > 0 && (
+                    <div className="mt-3">
+                      <SubsectionLabel>
+                        {t("gameViewer.members", { defaultValue: "Members" })}:
+                      </SubsectionLabel>
+                      <ul className="list-disc list-inside pl-2 text-sm text-theme-muted space-y-1">
+                        {faction.visible.members.map((member, i) => (
+                          <li key={`${member.name}-${i}`}>
+                            {member.name}
+                            {member.title ? ` (${member.title})` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {Array.isArray(faction.visible.relations) &&
+                  faction.visible.relations.length > 0 && (
+                    <div className="mt-3">
+                      <SubsectionLabel>
+                        {t("gameViewer.relations", { defaultValue: "Relations" })}
+                        :
+                      </SubsectionLabel>
+                      <ul className="list-disc list-inside pl-2 text-sm text-theme-muted space-y-1">
+                        {faction.visible.relations.map((relation, i) => (
+                          <li key={`${relation.target}-${i}`}>
+                            {relation.target}: {relation.status}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 {(faction.unlocked || gameState.unlockMode) &&
                   faction.hidden && (
                     <HiddenContent
                       t={t}
                       content={
                         <div className="space-y-2">
+                          {faction.unlockReason && (
+                            <InfoRow
+                              label={t("gameViewer.unlockReason", {
+                                defaultValue: "Unlock Reason",
+                              })}
+                              value={faction.unlockReason}
+                            />
+                          )}
                           {faction.hidden.agenda && (
                             <div>
                               <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
@@ -448,6 +526,43 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               />
                             </div>
                           )}
+                          {Array.isArray(faction.hidden.members) &&
+                            faction.hidden.members.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.hiddenMembers", {
+                                    defaultValue: "Hidden Members",
+                                  })}
+                                  :
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {faction.hidden.members.map((member, i) => (
+                                    <li key={`${member.name}-${i}`}>
+                                      {member.name}
+                                      {member.title ? ` (${member.title})` : ""}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          {Array.isArray(faction.hidden.relations) &&
+                            faction.hidden.relations.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.hiddenRelations", {
+                                    defaultValue: "Hidden Relations",
+                                  })}
+                                  :
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {faction.hidden.relations.map((relation, i) => (
+                                    <li key={`${relation.target}-${i}`}>
+                                      {relation.target}: {relation.status}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                         </div>
                       }
                     />

@@ -8,7 +8,7 @@ import type { TFunction } from "i18next";
 import { GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
-import { Section, EmptyState, HiddenContent } from "./helpers";
+import { Section, EmptyState, HiddenContent, InfoRow } from "./helpers";
 
 interface LoreTabProps {
   gameState: GameState;
@@ -54,11 +54,47 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                 <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
                   <MarkdownText content={entry.visible.description} />
                 </div>
+                {entry.visible.details && (
+                  <div className="mt-2 text-theme-text/80 text-sm pl-2 border-l-2 border-theme-border/30">
+                    <MarkdownText content={entry.visible.details} />
+                  </div>
+                )}
+                {Array.isArray(entry.relatedTo) && entry.relatedTo.length > 0 && (
+                  <div className="mt-2">
+                    <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                      {t("gameViewer.relatedEntities", {
+                        defaultValue: "Related Entities",
+                      })}
+                      :
+                    </span>
+                    <ul className="list-disc list-inside pl-2 text-sm text-theme-muted">
+                      {entry.relatedTo.map((target, i) => (
+                        <li key={`${target}-${i}`}>{target}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {entry.discoveredAt && (
+                  <InfoRow
+                    label={t("gameViewer.discoveredAt", {
+                      defaultValue: "Discovered",
+                    })}
+                    value={entry.discoveredAt}
+                  />
+                )}
                 {(entry.unlocked || gameState.unlockMode) && entry.hidden && (
                   <HiddenContent
                     t={t}
                     content={
                       <div className="space-y-2">
+                        {entry.unlockReason && (
+                          <InfoRow
+                            label={t("gameViewer.unlockReason", {
+                              defaultValue: "Unlock Reason",
+                            })}
+                            value={entry.unlockReason}
+                          />
+                        )}
                         {entry.hidden.fullTruth && (
                           <MarkdownText content={entry.hidden.fullTruth} />
                         )}
@@ -72,6 +108,24 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                                 {entry.hidden.misconceptions.map((misc, i) => (
                                   <li key={i}>
                                     <MarkdownText content={misc} inline />
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        {entry.hidden.toBeRevealed &&
+                          entry.hidden.toBeRevealed.length > 0 && (
+                            <div>
+                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                {t("gameViewer.toBeRevealed", {
+                                  defaultValue: "To Be Revealed",
+                                })}
+                                :
+                              </span>
+                              <ul className="list-disc list-inside pl-2">
+                                {entry.hidden.toBeRevealed.map((info, i) => (
+                                  <li key={i}>
+                                    <MarkdownText content={info} inline />
                                   </li>
                                 ))}
                               </ul>
@@ -123,9 +177,14 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                   className="p-4 bg-theme-bg rounded-none border border-theme-border/40"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-theme-muted font-mono">
-                      {event.gameTime}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-theme-muted font-mono">
+                        {event.gameTime}
+                      </span>
+                      <span className="text-sm text-theme-primary font-semibold">
+                        {event.name}
+                      </span>
+                    </div>
                     <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted flex items-center gap-1 border border-theme-border/50 uppercase tracking-wider">
                       <span>{getValidIcon(event.icon, "⏳")}</span>
                       {t(`timeline.categories.${event.category}`, {
@@ -136,6 +195,84 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                   <div className="story-text text-theme-text text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
                     <MarkdownText content={event.visible.description} />
                   </div>
+                  {event.visible.causedBy && (
+                    <InfoRow
+                      label={t("gameViewer.causedBy", {
+                        defaultValue: "Caused By",
+                      })}
+                      value={event.visible.causedBy}
+                    />
+                  )}
+                  {Array.isArray(event.involvedEntities) &&
+                    event.involvedEntities.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                          {t("gameViewer.involvedEntities", {
+                            defaultValue: "Involved Entities",
+                          })}
+                          :
+                        </span>
+                        <ul className="list-disc list-inside pl-2 text-sm text-theme-muted">
+                          {event.involvedEntities.map((entityId, i) => (
+                            <li key={`${entityId}-${i}`}>{entityId}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  {event.chainId && (
+                    <InfoRow
+                      label={t("gameViewer.causalChain", {
+                        defaultValue: "Causal Chain",
+                      })}
+                      value={event.chainId}
+                    />
+                  )}
+                  {(event.unlocked || gameState.unlockMode) && event.hidden && (
+                    <HiddenContent
+                      t={t}
+                      content={
+                        <div className="space-y-2">
+                          {event.unlockReason && (
+                            <InfoRow
+                              label={t("gameViewer.unlockReason", {
+                                defaultValue: "Unlock Reason",
+                              })}
+                              value={event.unlockReason}
+                            />
+                          )}
+                          {event.hidden.trueDescription && (
+                            <MarkdownText content={event.hidden.trueDescription} />
+                          )}
+                          {event.hidden.trueCausedBy && (
+                            <InfoRow
+                              label={t("gameViewer.trueCausedBy", {
+                                defaultValue: "True Cause",
+                              })}
+                              value={event.hidden.trueCausedBy}
+                            />
+                          )}
+                          {Array.isArray(event.hidden.consequences) &&
+                            event.hidden.consequences.length > 0 && (
+                              <div>
+                                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
+                                  {t("gameViewer.consequences", {
+                                    defaultValue: "Consequences",
+                                  })}
+                                  :
+                                </span>
+                                <ul className="list-disc list-inside pl-2">
+                                  {event.hidden.consequences.map((c, i) => (
+                                    <li key={i}>
+                                      <MarkdownText content={c} inline />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
+                      }
+                    />
+                  )}
                 </div>
               ))}
           </div>
@@ -217,6 +354,19 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                     </span>
                   </div>
                 )}
+                {item.visible?.observation && (
+                  <div className="text-xs mt-1 pl-1">
+                    <span className="text-theme-primary/70">
+                      {t("gameViewer.observation", {
+                        defaultValue: "Observation",
+                      })}
+                      :
+                    </span>
+                    <div className="text-theme-muted">
+                      <MarkdownText content={item.visible.observation} />
+                    </div>
+                  </div>
+                )}
                 {item.visible?.usage && (
                   <div className="text-xs">
                     <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
@@ -237,11 +387,32 @@ export const LoreTab: React.FC<LoreTabProps> = ({
                     </div>
                   </div>
                 )}
+                {item.emotionalWeight && (
+                  <div className="text-xs border-t border-theme-border/30 pt-2 mt-1">
+                    <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                      {t("gameViewer.emotionalWeight", {
+                        defaultValue: "Emotional Weight",
+                      })}
+                      :
+                    </span>
+                    <div className="text-theme-muted">
+                      <MarkdownText content={item.emotionalWeight} />
+                    </div>
+                  </div>
+                )}
                 {(item.unlocked || gameState.unlockMode) && item.hidden && (
                   <HiddenContent
                     t={t}
                     content={
                       <div className="space-y-1 text-xs">
+                        {item.unlockReason && (
+                          <InfoRow
+                            label={t("gameViewer.unlockReason", {
+                              defaultValue: "Unlock Reason",
+                            })}
+                            value={item.unlockReason}
+                          />
+                        )}
                         {item.hidden.truth && (
                           <MarkdownText content={item.hidden.truth} />
                         )}

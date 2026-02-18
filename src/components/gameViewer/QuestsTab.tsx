@@ -8,7 +8,7 @@ import type { TFunction } from "i18next";
 import { GameState, Quest } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
-import { Section, EmptyState, HiddenContent } from "./helpers";
+import { Section, EmptyState, HiddenContent, InfoRow } from "./helpers";
 
 interface QuestsTabProps {
   gameState: GameState;
@@ -24,9 +24,16 @@ const QuestCard: React.FC<{
   t: TFunction;
 }> = ({ quest, gameState, t }) => (
   <div className="p-4 bg-theme-bg rounded-none border border-theme-border/40">
-    <div className="font-bold text-theme-primary text-sm flex items-center gap-2 mb-2">
-      <span>{getValidIcon(quest.icon, "📜")}</span>
-      {quest.title}
+    <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="font-bold text-theme-primary text-sm flex items-center gap-2">
+        <span>{getValidIcon(quest.icon, "📜")}</span>
+        {quest.title}
+      </div>
+      <span className="text-[10px] uppercase tracking-wider text-theme-muted px-2 py-0.5 border border-theme-border/50 bg-theme-surface rounded">
+        {t(`questType.${quest.type}`, {
+          defaultValue: quest.type,
+        })}
+      </span>
     </div>
     <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
       <MarkdownText content={quest.visible.description} />
@@ -53,6 +60,14 @@ const QuestCard: React.FC<{
         t={t}
         content={
           <div className="space-y-2">
+            {quest.unlockReason && (
+              <InfoRow
+                label={t("gameViewer.unlockReason", {
+                  defaultValue: "Unlock Reason",
+                })}
+                value={quest.unlockReason}
+              />
+            )}
             {quest.hidden.trueDescription && (
               <MarkdownText content={quest.hidden.trueDescription} />
             )}
@@ -140,6 +155,14 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
                 t={t}
                 content={
                   <div className="space-y-2">
+                    {gameState.worldInfo.mainGoalUnlockReason && (
+                      <InfoRow
+                        label={t("gameViewer.unlockReason", {
+                          defaultValue: "Unlock Reason",
+                        })}
+                        value={gameState.worldInfo.mainGoalUnlockReason}
+                      />
+                    )}
                     {gameState.worldInfo.mainGoal.hidden.trueDescription && (
                       <MarkdownText
                         content={
