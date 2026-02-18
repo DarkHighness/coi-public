@@ -785,8 +785,9 @@ describe("runSummaryLoop", () => {
     );
   });
 
-  it("blocks query summary finish until soul anchors are read in current epoch", async () => {
-    mockCallWithAgenticRetry.mockResolvedValueOnce({
+  it("does not block query summary finish on soul anchor pre-read state", async () => {
+    mockCallWithAgenticRetry.mockReset();
+    mockCallWithAgenticRetry.mockResolvedValue({
       result: {
         functionCalls: [
           {
@@ -798,6 +799,18 @@ describe("runSummaryLoop", () => {
       },
       usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
       raw: {},
+    });
+    mockDispatchToolCallAsync.mockReset();
+    mockDispatchToolCallAsync.mockResolvedValue({
+      success: true,
+      data: {
+        summary: {
+          id: "s1",
+          ...makeCommitSummaryArgs(),
+          nodeRange: { fromIndex: 0, toIndex: 1 },
+          lastSummarizedIndex: 2,
+        },
+      },
     });
 
     const input = makeInput({
@@ -816,12 +829,16 @@ describe("runSummaryLoop", () => {
 
     const result = await runSummaryLoop(input, "query_summary");
 
-    expect(result.summary).toBeNull();
-    expect(mockDispatchToolCallAsync).not.toHaveBeenCalled();
+    expect(result.summary?.id).toBe("s1");
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
+    expect(
+      (input.vfsSession as any).hasToolSeenInCurrentEpoch,
+    ).not.toHaveBeenCalled();
   });
 
-  it("blocks compact summary finish until soul anchors are read in current epoch", async () => {
-    mockCallWithAgenticRetry.mockResolvedValueOnce({
+  it("does not block compact summary finish on soul anchor pre-read state", async () => {
+    mockCallWithAgenticRetry.mockReset();
+    mockCallWithAgenticRetry.mockResolvedValue({
       result: {
         functionCalls: [
           {
@@ -833,6 +850,18 @@ describe("runSummaryLoop", () => {
       },
       usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
       raw: {},
+    });
+    mockDispatchToolCallAsync.mockReset();
+    mockDispatchToolCallAsync.mockResolvedValue({
+      success: true,
+      data: {
+        summary: {
+          id: "s1",
+          ...makeCommitSummaryArgs(),
+          nodeRange: { fromIndex: 0, toIndex: 1 },
+          lastSummarizedIndex: 2,
+        },
+      },
     });
 
     const input = makeInput({
@@ -851,13 +880,10 @@ describe("runSummaryLoop", () => {
 
     const result = await runSummaryLoop(input, "session_compact");
 
-    expect(result.summary).toBeNull();
-    expect(mockDispatchToolCallAsync).not.toHaveBeenCalled();
+    expect(result.summary?.id).toBe("s1");
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
     expect(
       (input.vfsSession as any).hasToolSeenInCurrentEpoch,
-    ).toHaveBeenCalledWith("workspace/SOUL.md");
-    expect(
-      (input.vfsSession as any).hasToolSeenInCurrentEpoch,
-    ).toHaveBeenCalledWith("workspace/USER.md");
+    ).not.toHaveBeenCalled();
   });
 });

@@ -10,7 +10,7 @@ describe("skills prompt builder hygiene", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
     expect(prompt).not.toContain("[SYSTEM: COMPACT_NOW]");
     expect(prompt).not.toContain("vfs_finish_summary");
-    expect(prompt).toContain("current/custom_rules/NN-*/RULES.md");
+    expect(prompt).toContain("workspace/PLAN.md");
     expect(prompt).toContain("shared/system/skills");
   });
 

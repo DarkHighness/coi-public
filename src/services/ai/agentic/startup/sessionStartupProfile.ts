@@ -32,6 +32,7 @@ const KNOWN_RELATIVE_PREFIXES = [
   "session/",
   "world/",
   "summary/",
+  "workspace/",
 ] as const;
 
 const normalizeInputPath = (path: string): string | null => {

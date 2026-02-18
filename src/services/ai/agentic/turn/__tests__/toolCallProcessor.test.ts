@@ -16,6 +16,10 @@ const createContext = () => ({
     accumulatedResponse: { narrative: "" },
     changedEntities: new Map<string, string>(),
     vfsSession: {},
+    budgetState: {
+      toolCallsMax: 20,
+      toolCallsUsed: 4,
+    },
     requiredCommandSkillPaths: ["skills/commands/runtime/sudo/SKILL.md"],
     requiredPresetSkillPaths: [
       "skills/presets/runtime/narrative-style/SKILL.md",

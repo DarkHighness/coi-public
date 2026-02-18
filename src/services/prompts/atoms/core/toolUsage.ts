@@ -84,7 +84,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
     - \`workspace/IDENTITY.md\`: identity anchor (AI read-only).
     - \`workspace/USER.md\`: player preference portrait (global, soft constraints).
     - \`workspace/SOUL.md\`: AI self-evolution memo (global).
-    - \`workspace/PLAN.md\`: save-scoped outline/trajectory guidance.
+    - \`workspace/PLAN.md\`: save-scoped outline trajectory guidance.
   - ${
     toolsetId === "playerRate"
       ? "In `[Player Rate]`, do NOT mutate `workspace/PLAN.md` or any `current/world/**` file."
