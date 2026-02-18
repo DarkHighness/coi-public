@@ -11,6 +11,7 @@ import { AISettings, ModelInfo, LanguageCode } from "../types";
 import { DEFAULTS } from "../utils/constants";
 import { getModels } from "../services/aiService";
 import { upsertPerModelContextWindowOverride } from "../services/modelContextWindows";
+import { setSessionHistoryLruLimit } from "../services/vfs/conversation";
 
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
@@ -116,6 +117,20 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
     delete migratedExtra.maxOutputTokensFallback;
   }
 
+  const configuredSessionHistoryLruLimit = migratedExtra.sessionHistoryLruLimit;
+  if (
+    typeof configuredSessionHistoryLruLimit === "number" &&
+    Number.isFinite(configuredSessionHistoryLruLimit)
+  ) {
+    migratedExtra.sessionHistoryLruLimit = Math.max(
+      1,
+      Math.floor(configuredSessionHistoryLruLimit),
+    );
+  } else {
+    migratedExtra.sessionHistoryLruLimit =
+      DEFAULTS.extra?.sessionHistoryLruLimit ?? 64;
+  }
+
   return {
     ...DEFAULTS,
     ...sanitized,
@@ -207,6 +222,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       i18n.changeLanguage(settings.language);
     }
   }, [settings, i18n]);
+
+  useEffect(() => {
+    const configured = settings.extra?.sessionHistoryLruLimit;
+    const normalized =
+      typeof configured === "number" &&
+      Number.isFinite(configured) &&
+      configured > 0
+        ? Math.floor(configured)
+        : (DEFAULTS.extra?.sessionHistoryLruLimit ?? 64);
+    setSessionHistoryLruLimit(normalized);
+  }, [settings.extra?.sessionHistoryLruLimit]);
 
   // Auto-replace unavailable providers with available ones
   useEffect(() => {

@@ -49,6 +49,49 @@ describe("VfsSession", () => {
     expect(session.readFile("world/global.json")?.content).toBe("{}");
   });
 
+  it("stores session jsonl in compressed form while exposing plain content", () => {
+    const session = new VfsSession();
+    session.setActiveForkId(3);
+    const content =
+      '{"role":"user","content":"hello"}\n{"role":"assistant","content":"world"}';
+
+    session.writeFile("session/session-a.jsonl", content, "application/jsonl");
+
+    const internal = (session as any).files[
+      "forks/3/runtime/session/session-a.jsonl"
+    ];
+    expect(typeof internal?.content).toBe("string");
+    expect(internal.content.startsWith("__vfs_lz16__:")).toBe(true);
+
+    expect(session.readFile("session/session-a.jsonl")?.content).toBe(content);
+    expect(session.snapshot()["session/session-a.jsonl"]?.content).toBe(content);
+    expect(
+      session.searchText("assistant", { path: "session/session-a.jsonl" }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "session/session-a.jsonl" }),
+      ]),
+    );
+  });
+
+  it("keeps session jsonl readable across rename/delete flows", () => {
+    const session = new VfsSession();
+    session.setActiveForkId(1);
+    const content = '{"role":"assistant","content":"rename-check"}';
+
+    session.writeFile("session/session-a.jsonl", content, "application/jsonl");
+    session.renameFile("session/session-a.jsonl", "session/session-b.jsonl");
+
+    const internal = (session as any).files[
+      "forks/1/runtime/session/session-b.jsonl"
+    ];
+    expect(internal?.content.startsWith("__vfs_lz16__:")).toBe(true);
+    expect(session.readFile("session/session-b.jsonl")?.content).toBe(content);
+
+    session.deleteFile("session/session-b.jsonl");
+    expect(session.readFile("session/session-b.jsonl")).toBeNull();
+  });
+
   it("injects entityId for actor view JSON files when missing", () => {
     const session = new VfsSession();
     session.writeFile(

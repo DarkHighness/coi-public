@@ -194,7 +194,7 @@ describe("agenticLoop tool logging", () => {
           id: "call-read-session",
           name: "vfs_read_lines",
           args: {
-            path: "current/conversation/session.jsonl",
+            path: "current/session/session-a.jsonl",
             startLine: 1,
             lineCount: 50,
           },

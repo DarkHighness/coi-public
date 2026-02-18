@@ -6,6 +6,10 @@ import {
   LogEntry,
   TurnRecoveryTrace,
 } from "../../../../types";
+import {
+  HistoryCorruptedError,
+  isContextLengthError,
+} from "../../contextCompressor";
 
 import type { AgenticLoopResult } from "../turn/adventure";
 import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
@@ -24,6 +28,8 @@ export interface CleanupResult {
   changedEntities: Array<{ id: string; type: string }>;
   recovery?: TurnRecoveryTrace;
 }
+
+export type CleanupMode = "auto" | "session_cleanup" | "query_cleanup";
 
 type CleanupPromptInput = {
   state: GameState;
@@ -260,6 +266,7 @@ export function getCleanupLoopSystemPrompt(
 export const generateEntityCleanup = async (
   inputState: GameState,
   context: TurnContext,
+  mode: CleanupMode = "auto",
 ): Promise<CleanupResult> => {
   const { generateAdventureTurn } = await import("../turn/adventure");
 
@@ -274,11 +281,68 @@ export const generateEntityCleanup = async (
     vfsElevationToken: context.vfsElevationToken ?? null,
   };
 
-  // Use the same adventure turn generation
-  const result: AgenticLoopResult = await generateAdventureTurn(
-    inputState,
-    cleanupContext,
-  );
+  const runCleanup = async (
+    cleanupTurnContext: TurnContext,
+  ): Promise<AgenticLoopResult> =>
+    generateAdventureTurn(inputState, cleanupTurnContext);
+
+  const queryCleanupSlotId = (slotId?: string): string => {
+    const normalizedSlotId =
+      typeof slotId === "string" && slotId.trim().length > 0
+        ? slotId.trim()
+        : "default";
+    if (normalizedSlotId.endsWith(":cleanup")) {
+      // Ensure fallback mode still gets a fresh isolated session key.
+      return `${normalizedSlotId}:query`;
+    }
+    return `${normalizedSlotId}:cleanup`;
+  };
+
+  const shouldFallbackToQueryCleanup = (error: unknown): boolean => {
+    if (error instanceof HistoryCorruptedError) {
+      return true;
+    }
+    if (isContextLengthError(error)) {
+      return true;
+    }
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    const normalized = error.message.toLowerCase();
+    return (
+      normalized.includes("history_corrupted") ||
+      normalized.includes("context_length_exceeded")
+    );
+  };
+
+  const queryCleanupContext: TurnContext = {
+    ...cleanupContext,
+    slotId: queryCleanupSlotId(cleanupContext.slotId),
+    recentHistory: [],
+  };
+
+  const result: AgenticLoopResult = await (async () => {
+    if (mode === "session_cleanup") {
+      return runCleanup(cleanupContext);
+    }
+
+    if (mode === "query_cleanup") {
+      return runCleanup(queryCleanupContext);
+    }
+
+    try {
+      return await runCleanup(cleanupContext);
+    } catch (error) {
+      if (!shouldFallbackToQueryCleanup(error)) {
+        throw error;
+      }
+      console.warn(
+        "[Cleanup] Session cleanup failed with context/history issue, falling back to query cleanup session.",
+        error,
+      );
+      return runCleanup(queryCleanupContext);
+    }
+  })();
 
   return {
     response: result.response,

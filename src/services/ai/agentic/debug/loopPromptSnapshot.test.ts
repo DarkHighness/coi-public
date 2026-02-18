@@ -29,7 +29,7 @@ describe("loopPromptSnapshot", () => {
       "current/skills/commands/runtime/summary/SKILL.md",
     );
     expect(staticView.summaryQuery.anchorTemplate).toContain(
-      "current/conversation/session.jsonl",
+      "current/session/<session_uid>.jsonl",
     );
 
     expect(staticView.summaryCompact.triggerInstruction).toContain(

@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { VfsSession } from "../vfsSession";
 import {
-  SESSION_JSONL_PATH,
+  DEFAULT_SESSION_HISTORY_LRU_LIMIT,
   buildTurnId,
   buildTurnPath,
+  getActiveSessionHistoryPath,
   readSessionHistoryJsonl,
+  readSessionLineage,
+  setSessionHistoryLruLimit,
   readConversationIndex,
   readTurnFile,
   writeSessionHistoryJsonl,
@@ -53,34 +56,51 @@ describe("VFS conversation helpers", () => {
     ];
 
     writeSessionHistoryJsonl(session, nativeHistory, {
+      sessionId: "session-a",
       operation: "finish_commit",
     });
 
-    const file = session.readFile(SESSION_JSONL_PATH);
+    const snapshot = session.snapshot();
+    const historyPath = getActiveSessionHistoryPath(snapshot);
+    expect(historyPath).toMatch(/^session\/[^/]+\.jsonl$/);
+
+    const file = session.readFile(historyPath!);
     expect(file?.contentType).toBe("application/jsonl");
     expect(file?.content).toContain('{"role":"user","content":"hello"}');
-    expect(readSessionHistoryJsonl(session.snapshot())).toEqual(nativeHistory);
+    expect(
+      readSessionHistoryJsonl(snapshot, { sessionId: "session-a" }),
+    ).toEqual(nativeHistory);
   });
 
-  it("returns empty session mirror when file is missing or has wrong type", () => {
+  it("throws when requested session mirror is missing or wrong type", () => {
     const missing = new VfsSession();
-    expect(readSessionHistoryJsonl(missing.snapshot())).toEqual([]);
+    expect(() =>
+      readSessionHistoryJsonl(missing.snapshot(), {
+        path: "session/missing.jsonl",
+      }),
+    ).toThrow("not found");
 
     const wrongType = new VfsSession();
-    wrongType.writeFile(SESSION_JSONL_PATH, "{}", "application/json");
-    expect(readSessionHistoryJsonl(wrongType.snapshot())).toEqual([]);
+    wrongType.writeFile("session/custom.jsonl", "{}", "application/json");
+    expect(() =>
+      readSessionHistoryJsonl(wrongType.snapshot(), {
+        path: "session/custom.jsonl",
+      }),
+    ).toThrow("not jsonl");
   });
 
   it("skips malformed jsonl lines while keeping valid entries", () => {
     const session = new VfsSession();
     session.writeFile(
-      SESSION_JSONL_PATH,
+      "session/custom.jsonl",
       '{"role":"user"}\n{invalid}\n{"role":"assistant"}',
       "application/jsonl",
     );
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const parsed = readSessionHistoryJsonl(session.snapshot());
+    const parsed = readSessionHistoryJsonl(session.snapshot(), {
+      path: "session/custom.jsonl",
+    });
 
     expect(parsed).toEqual([{ role: "user" }, { role: "assistant" }]);
     expect(warnSpy).toHaveBeenCalled();
@@ -94,5 +114,39 @@ describe("VFS conversation helpers", () => {
         () => "not serializable",
       ] as unknown[]),
     ).toThrow("Failed to serialize provider-native history entry at index 0");
+  });
+
+  it("applies LRU pruning for session mirrors with configurable limit", () => {
+    const session = new VfsSession();
+    setSessionHistoryLruLimit(2);
+
+    try {
+      writeSessionHistoryJsonl(session, [{ id: "a" }], {
+        sessionId: "session-a",
+        operation: "finish_commit",
+      });
+      writeSessionHistoryJsonl(session, [{ id: "b" }], {
+        sessionId: "session-b",
+        operation: "finish_commit",
+      });
+      writeSessionHistoryJsonl(session, [{ id: "c" }], {
+        sessionId: "session-c",
+        operation: "finish_commit",
+      });
+
+      const snapshot = session.snapshot();
+      const lineage = readSessionLineage(snapshot);
+      expect(Object.keys(lineage.nodesByPath)).toHaveLength(2);
+      expect(lineage.latestPathBySessionId["session-a"]).toBeUndefined();
+      expect(lineage.latestPathBySessionId["session-b"]).toBeDefined();
+      expect(lineage.latestPathBySessionId["session-c"]).toBeDefined();
+
+      const sessionJsonlPaths = Object.keys(snapshot).filter((path) =>
+        path.startsWith("session/"),
+      );
+      expect(sessionJsonlPaths.filter((path) => path.endsWith(".jsonl"))).toHaveLength(2);
+    } finally {
+      setSessionHistoryLruLimit(DEFAULT_SESSION_HISTORY_LRU_LIMIT);
+    }
   });
 });

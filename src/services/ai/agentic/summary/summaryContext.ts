@@ -103,14 +103,14 @@ Notes policy:
 - Do not treat notes as mandatory per-summary pre-read.
 - Soul files are mandatory memory anchors for summary alignment.
 
-When historical continuity is unclear, query \`current/conversation/session.jsonl\` in windows:
+When historical continuity is unclear, query \`current/session/<session_uid>.jsonl\` in windows:
 - Use \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with \`mode: "lines"\` and bounded ranges, or use \`vfs_search\`.
 - Do NOT full-read large session.jsonl files in one call.
 
 Next-session handoff (\`nextSessionReferencesMarkdown\`):
 - When finishing, provide \`nextSessionReferencesMarkdown\` as short markdown handoff notes.
 - Prioritize useful SKILL docs that were actually needed this run (\`current/skills/**/SKILL.md\`).
-- Keep it narrow: prefer 2-5 total paths (typically 1-3 skills + 1-2 anchors such as \`current/conversation/session.jsonl\`).
+- Keep it narrow: prefer 2-5 total paths (typically 1-3 skills + 1-2 anchors such as \`current/session/<session_uid>.jsonl\`).
 - Avoid broad reads by default: do NOT include \`current/skills/index.json\` unless no specific skill path can be named.
 - Free-form markdown is allowed, but keep explicit path references early and clear.
 
@@ -132,7 +132,7 @@ Structured error recovery flow (if a tool returns \`{ success:false, code, error
 
 - Example (query session history safely):
   Call \`vfs_read_chars/vfs_read_lines/vfs_read_json\` with:
-  - path: \`current/conversation/session.jsonl\`
+  - path: \`current/session/<session_uid>.jsonl\`
   - mode: \`"lines"\`
   - startLine: \`1\`
   - lineCount: \`40\`

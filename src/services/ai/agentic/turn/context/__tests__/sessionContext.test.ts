@@ -36,6 +36,7 @@ const runtimeCheckpointMock = vi.hoisted(() => ({
 }));
 
 const conversationMock = vi.hoisted(() => ({
+  ensureSessionHistoryPath: vi.fn(),
   writeSessionHistoryJsonl: vi.fn(),
 }));
 
@@ -60,6 +61,7 @@ vi.mock("@/services/vfs/runtimeCheckpoints", () => ({
 }));
 
 vi.mock("@/services/vfs/conversation", () => ({
+  ensureSessionHistoryPath: conversationMock.ensureSessionHistoryPath,
   writeSessionHistoryJsonl: conversationMock.writeSessionHistoryJsonl,
 }));
 
@@ -94,6 +96,11 @@ describe("sessionContext", () => {
       createTextMessage("user", text),
     );
     runtimeCheckpointMock.rollbackVfsSessionToCheckpoint.mockReturnValue(true);
+    conversationMock.ensureSessionHistoryPath.mockReturnValue({
+      path: "session/session-1.jsonl",
+      parentPath: null,
+      created: false,
+    });
   });
 
   it("initializes empty session with hydrated history and clears init session", async () => {
@@ -173,7 +180,7 @@ describe("sessionContext", () => {
       "current/skills/craft/writing/SKILL.md",
     );
     expect(coldStartText?.text).toContain("[SECTION: TARGETED_HISTORY_LOOKUP]");
-    expect(coldStartText?.text).toContain("current/conversation/session.jsonl");
+    expect(coldStartText?.text).toContain("current/session/session-1.jsonl");
     expect(coldStartText?.text).toContain("lines/search windows");
     expect(initializedHistory).toEqual(
       expect.arrayContaining([
@@ -199,6 +206,9 @@ describe("sessionContext", () => {
     );
 
     expect(result.sessionId).toBe("session-1");
+    expect(result.sessionHistoryPath).toBe("current/session/session-1.jsonl");
+    expect(result.parentSessionHistoryPath).toBeNull();
+    expect(result.sessionBindingKey).toBe("current/session/session-1.jsonl");
     expect(result.activeHistory[0]?.role).toBe("user");
     expect(conversationMock.writeSessionHistoryJsonl).toHaveBeenCalled();
   });
@@ -301,7 +311,7 @@ describe("sessionContext", () => {
       contextMessages: [],
       hotStartReferencesMarkdown: [
         "- current/skills/worldbuilding/travel/SKILL.md",
-        "- current/conversation/session.jsonl",
+        "- current/session/session-prev.jsonl",
       ].join("\n"),
     });
 
@@ -319,7 +329,7 @@ describe("sessionContext", () => {
     expect(coldStartText?.text).toContain(
       "current/skills/worldbuilding/travel/SKILL.md",
     );
-    expect(coldStartText?.text).toContain("current/conversation/session.jsonl");
+    expect(coldStartText?.text).toContain("current/session/session-prev.jsonl");
   });
 
   it("reuses existing non-empty session without resetting history", async () => {

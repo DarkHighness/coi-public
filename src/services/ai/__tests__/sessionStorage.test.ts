@@ -176,6 +176,7 @@ const createSession = (
   lastAccessedAt: number,
 ): StoredSession => ({
   id,
+  configKey: `${slotId}|0|provider-1|model-1|openai`,
   slotId,
   config: {
     slotId,
@@ -268,5 +269,22 @@ describe("sessionStorage", () => {
     delete (globalThis as any).indexedDB;
     const freshSessionStorage = await loadSessionStorage();
     expect(freshSessionStorage.isAvailable()).toBe(false);
+  });
+
+  it("finds latest session by config key", async () => {
+    const sessionStorage = await loadSessionStorage();
+
+    await sessionStorage.initialize();
+    await sessionStorage.saveSession(createSession("a1", "slot-a", 1));
+    await sessionStorage.saveSession(createSession("a2", "slot-a", 10));
+    await sessionStorage.saveSession({
+      ...createSession("b1", "slot-a", 20),
+      configKey: "slot-a|0|provider-1|model-2|openai",
+    });
+
+    const found = await sessionStorage.findLatestSessionByConfigKey(
+      "slot-a|0|provider-1|model-1|openai",
+    );
+    expect(found?.id).toBe("a2");
   });
 });

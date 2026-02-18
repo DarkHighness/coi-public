@@ -1175,6 +1175,11 @@ export interface AISettings {
      */
     vfsReadTokenBudgetPercent?: number;
     /**
+     * Session mirror retention count for `current/session/*.jsonl`.
+     * Uses LRU pruning (default: 64, min: 1).
+     */
+    sessionHistoryLruLimit?: number;
+    /**
      * Optional fallback max output tokens when model-specific output caps
      * cannot be resolved. Too-small values can cause truncated turns.
      */

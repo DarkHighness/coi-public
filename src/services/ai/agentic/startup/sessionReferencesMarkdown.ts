@@ -2,7 +2,7 @@ import type { GameState } from "@/types";
 import { normalizeVfsPath } from "@/services/vfs/utils";
 
 const PATH_TOKEN_RE =
-  /(?:^|[\s(])((?:current|shared|forks|skills|conversation|world|summary)\/[A-Za-z0-9._\-/]+(?:\.[A-Za-z0-9]+)?)/g;
+  /(?:^|[\s(])((?:current|shared|forks|skills|conversation|session|world|summary)\/[A-Za-z0-9._\-/]+(?:\.[A-Za-z0-9]+)?)/g;
 const MARKDOWN_LINK_RE = /\[[^\]]+\]\(([^)]+)\)/g;
 const INLINE_CODE_RE = /`([^`]+)`/g;
 const LIST_ITEM_RE = /^\s*[-*+]\s+(.*)$/;
@@ -10,6 +10,7 @@ const LIST_ITEM_RE = /^\s*[-*+]\s+(.*)$/;
 const KNOWN_RELATIVE_PREFIXES = [
   "skills/",
   "conversation/",
+  "session/",
   "world/",
   "summary/",
 ] as const;
@@ -17,7 +18,7 @@ const KNOWN_RELATIVE_PREFIXES = [
 const BROAD_REFERENCE_SET = new Set(["current/skills/index.json"]);
 
 export const DEFAULT_STARTUP_ANCHORS = [
-  "current/conversation/session.jsonl",
+  "current/session/lineage.json",
 ] as const;
 
 export interface SessionReferencesMarkdownParseResult {
@@ -136,7 +137,8 @@ export const isSkillReferencePath = (path: string): boolean =>
   /^current\/skills\/.+\/SKILL\.md$/i.test(path);
 
 export const isAnchorReferencePath = (path: string): boolean =>
-  path === "current/conversation/session.jsonl" ||
+  /^current\/session\/[^/]+\.jsonl$/i.test(path) ||
+  path === "current/session/lineage.json" ||
   path === "current/conversation/index.json" ||
   path === "current/world/soul.md" ||
   path === "current/world/global/soul.md" ||

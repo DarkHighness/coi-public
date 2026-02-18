@@ -7,6 +7,7 @@ import { GlobalStorageStats } from "../../services/rag";
 import { getImageStorageStats } from "../../utils/imageStorage";
 import { sessionManager } from "../../services/ai/sessionManager";
 import { invalidateRAGSnapshotCache } from "../../runtime/effects/ragDocuments";
+import { useSettings } from "../../hooks/useSettings";
 
 export const SettingsData: React.FC<SettingsDataProps> = ({
   saveCount = 0,
@@ -15,6 +16,7 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
   showToast,
 }) => {
   const { t } = useTranslation();
+  const { settings: currentSettings, updateSettings } = useSettings();
   const runtimeContext = useOptionalRuntimeContext();
   const ragState = runtimeContext?.state.rag ?? null;
   const ragActions = runtimeContext?.actions.rag ?? null;
@@ -31,6 +33,14 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
     persistedSessionCount: number;
     totalHistoryItems: number;
   } | null>(null);
+  const rawSessionHistoryLruLimit =
+    currentSettings.extra?.sessionHistoryLruLimit;
+  const sessionHistoryLruLimit =
+    typeof rawSessionHistoryLruLimit === "number" &&
+    Number.isFinite(rawSessionHistoryLruLimit) &&
+    rawSessionHistoryLruLimit > 0
+      ? Math.floor(rawSessionHistoryLruLimit)
+      : 64;
 
   useEffect(() => {
     fetchStorageEstimate();
@@ -375,6 +385,39 @@ export const SettingsData: React.FC<SettingsDataProps> = ({
             </div>
           </div>
         )}
+        <div className="space-y-2 mb-4 border-t border-theme-border/20 pt-3">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("data.sessionHistoryLruLimit", "Session Mirror LRU Limit")}
+            </label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={sessionHistoryLruLimit}
+              onChange={(e) => {
+                const parsed = parseInt(e.target.value, 10);
+                if (!Number.isFinite(parsed) || parsed < 1) {
+                  return;
+                }
+                updateSettings({
+                  ...currentSettings,
+                  extra: {
+                    ...currentSettings.extra,
+                    sessionHistoryLruLimit: Math.floor(parsed),
+                  },
+                });
+              }}
+              className="w-24 bg-theme-bg border border-theme-border rounded px-2 py-1 text-theme-text font-mono text-sm text-right"
+            />
+          </div>
+          <p className="text-xs text-theme-muted italic">
+            {t(
+              "data.sessionHistoryLruLimitHelp",
+              "Number of recent current/session/*.jsonl mirrors retained in VFS (default: 64). Older sessions are pruned by LRU.",
+            )}
+          </p>
+        </div>
         <button
           onClick={async () => {
             if (

@@ -282,17 +282,17 @@ describe("VFS handlers read/schema/ls", () => {
 
     const result = dispatchToolCall(
       "vfs_schema",
-      { paths: ["current/conversation/session.jsonl"] },
+      { paths: ["current/session/session-a.jsonl"] },
       ctx,
     ) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.missing).toEqual([]);
     expect(result.data.schemas[0].classification.templateId).toBe(
-      "template.story.conversation.session_jsonl",
+      "template.runtime.session_jsonl",
     );
     expect(result.data.schemas[0].hint).toContain(
-      "Template: template.story.conversation.session_jsonl",
+      "Template: template.runtime.session_jsonl",
     );
   });
 
@@ -377,14 +377,14 @@ describe("VFS handlers read/schema/ls", () => {
     expect(result.data.access[0].templateId).toBe("template.story.world");
   });
 
-  it("includes expected session jsonl path in conversation layout", () => {
+  it("includes expected session lineage path in session layout", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session };
 
     const result = dispatchToolCall(
       "vfs_ls",
       {
-        path: "current/conversation",
+        path: "current/session",
         includeExpected: true,
         includeAccess: true,
       },
@@ -393,7 +393,7 @@ describe("VFS handlers read/schema/ls", () => {
 
     expect(result.success).toBe(true);
     const sessionJsonl = result.data.layout.find(
-      (entry: any) => entry.path === "current/conversation/session.jsonl",
+      (entry: any) => entry.path === "current/session/lineage.json",
     );
     expect(sessionJsonl).toBeDefined();
     expect(sessionJsonl.exists).toBe(false);

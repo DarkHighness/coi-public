@@ -11,7 +11,7 @@ describe("sessionReferencesMarkdown", () => {
       [
         "- `current/skills/commands/runtime/SKILL.md`",
         "- [Turn Skill](current/skills/commands/runtime/turn/SKILL.md)",
-        "Please read current/conversation/session.jsonl before continuing.",
+        "Please read current/session/session-a.jsonl before continuing.",
       ].join("\n"),
     );
 
@@ -19,7 +19,7 @@ describe("sessionReferencesMarkdown", () => {
       expect.arrayContaining([
         "current/skills/commands/runtime/SKILL.md",
         "current/skills/commands/runtime/turn/SKILL.md",
-        "current/conversation/session.jsonl",
+        "current/session/session-a.jsonl",
       ]),
     );
     expect(result.skillRefs).toEqual(
@@ -28,7 +28,7 @@ describe("sessionReferencesMarkdown", () => {
         "current/skills/commands/runtime/turn/SKILL.md",
       ]),
     );
-    expect(result.anchorRefs).toEqual(["current/conversation/session.jsonl"]);
+    expect(result.anchorRefs).toEqual(["current/session/session-a.jsonl"]);
     expect(result.warnings).toEqual(
       expect.arrayContaining([
         expect.stringContaining("Dropped 1 unparseable reference"),
@@ -62,13 +62,13 @@ describe("sessionReferencesMarkdown", () => {
       mode: "turn",
       latestSummaryReferencesMarkdown: "random prose with no valid path",
       mandatoryReadPaths: ["skills/commands/runtime/SKILL.md"],
-      fallbackReadPaths: ["current/conversation/session.jsonl"],
+      fallbackReadPaths: ["current/session/session-a.jsonl"],
     });
 
     expect(profile.usedFallback).toBe(true);
     expect(profile.preloadReadPaths).toEqual([
       "current/skills/commands/runtime/SKILL.md",
-      "current/conversation/session.jsonl",
+      "current/session/session-a.jsonl",
     ]);
     expect(profile.hotStartReferencesMarkdown).toBe(
       "random prose with no valid path",

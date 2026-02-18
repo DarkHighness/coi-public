@@ -29,11 +29,18 @@ describe("vfsResourceTemplateRegistry", () => {
     expect(summary.allowedWriteOps).toEqual(["finish_summary"]);
 
     const sessionMirror = vfsResourceTemplateRegistry.match(
-      "forks/0/story/conversation/session.jsonl",
+      "forks/0/runtime/session/session-a.jsonl",
     );
     expect(sessionMirror.permissionClass).toBe("finish_guarded");
-    expect(sessionMirror.id).toBe("template.story.conversation.session_jsonl");
+    expect(sessionMirror.id).toBe("template.runtime.session_jsonl");
     expect(sessionMirror.allowedWriteOps).toEqual(["finish_commit"]);
+
+    const lineage = vfsResourceTemplateRegistry.match(
+      "forks/0/runtime/session/lineage.json",
+    );
+    expect(lineage.permissionClass).toBe("finish_guarded");
+    expect(lineage.id).toBe("template.runtime.session_lineage");
+    expect(lineage.allowedWriteOps).toEqual(["finish_commit"]);
   });
 
   it("matches elevated templates for outline phases and history rewrites", () => {

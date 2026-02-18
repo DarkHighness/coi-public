@@ -366,10 +366,10 @@ export const generateAdventureTurn = async (
     startupMode,
   };
 
-  const { sessionId, activeHistory: initialHistory } =
+  const { sessionId, sessionBindingKey, activeHistory: initialHistory } =
     await setupSession(sessionSetupOptions);
 
-  context.vfsSession.bindConversationSession(sessionId);
+  context.vfsSession.bindConversationSession(sessionBindingKey);
 
   // Handle retry detection ONLY for explicit retry requests.
   // Never infer retry from plain action text equality in normal turns.
@@ -464,6 +464,9 @@ export const generateAdventureTurn = async (
 
   let autoCompactAttemptedForContextOverflow = false;
   const maybeAutoCompactOnContextOverflow = async (): Promise<void> => {
+    if (isCleanupMode) {
+      return;
+    }
     if (autoCompactAttemptedForContextOverflow) {
       return;
     }
@@ -545,7 +548,9 @@ export const generateAdventureTurn = async (
       ...sessionSetupOptions,
       isInit: false,
     });
-    context.vfsSession.bindConversationSession(refreshedSession.sessionId);
+    context.vfsSession.bindConversationSession(
+      refreshedSession.sessionBindingKey,
+    );
     activeHistory = refreshedSession.activeHistory;
   };
 

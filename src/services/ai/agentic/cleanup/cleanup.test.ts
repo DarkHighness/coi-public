@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateEntityCleanup } from "./cleanup";
 import { generateAdventureTurn } from "../turn/adventure";
+import { HistoryCorruptedError } from "../../contextCompressor";
 
 vi.mock("../turn/adventure", () => ({
   generateAdventureTurn: vi.fn(),
@@ -102,5 +103,64 @@ describe("generateEntityCleanup", () => {
     );
 
     expect(result.recovery).toEqual(recovery);
+  });
+
+  it("falls back to query cleanup on context/history failures", async () => {
+    mockedGenerateAdventureTurn
+      .mockRejectedValueOnce(
+        new HistoryCorruptedError(new Error("history mismatch")),
+      )
+      .mockResolvedValueOnce({
+        response: { narrative: "fallback ok", choices: [] },
+        logs: [],
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        changedEntities: [],
+        _conversationHistory: [],
+      } as any);
+
+    const inputState = { forkId: 2 } as any;
+    const context = {
+      slotId: "slot-main",
+      userAction: "ignored",
+      recentHistory: [{ role: "user", text: "x" }],
+    } as any;
+
+    const result = await generateEntityCleanup(inputState, context);
+
+    expect(result.response.narrative).toBe("fallback ok");
+    expect(mockedGenerateAdventureTurn).toHaveBeenCalledTimes(2);
+
+    const [, firstContext] = mockedGenerateAdventureTurn.mock.calls[0] as any[];
+    const [, secondContext] = mockedGenerateAdventureTurn.mock
+      .calls[1] as any[];
+    expect(firstContext.slotId).toBe("slot-main");
+    expect(secondContext.slotId).toBe("slot-main:cleanup");
+    expect(secondContext.recentHistory).toEqual([]);
+  });
+
+  it("supports explicit query cleanup mode", async () => {
+    mockedGenerateAdventureTurn.mockResolvedValue({
+      response: { narrative: "query mode", choices: [] },
+      logs: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      changedEntities: [],
+      _conversationHistory: [],
+    } as any);
+
+    await generateEntityCleanup(
+      { forkId: 3 } as any,
+      {
+        slotId: "slot-clean",
+        userAction: "ignored",
+        recentHistory: [{ role: "assistant", text: "seed" }],
+      } as any,
+      "query_cleanup",
+    );
+
+    expect(mockedGenerateAdventureTurn).toHaveBeenCalledTimes(1);
+    const [, calledContext] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
+    expect(calledContext.slotId).toBe("slot-clean:cleanup");
+    expect(calledContext.recentHistory).toEqual([]);
   });
 });

@@ -21,7 +21,10 @@ import {
   type SessionStartupMode,
 } from "@/services/ai/agentic/startup";
 import type { VfsSession } from "@/services/vfs/vfsSession";
-import { writeSessionHistoryJsonl } from "@/services/vfs/conversation";
+import {
+  ensureSessionHistoryPath,
+  writeSessionHistoryJsonl,
+} from "@/services/vfs/conversation";
 import {
   checkpointVfsSession,
   rollbackVfsSessionToCheckpoint,
@@ -53,16 +56,26 @@ export interface SessionSetupOptions {
 
 export interface SessionSetupResult {
   sessionId: string;
+  sessionHistoryPath: string;
+  parentSessionHistoryPath: string | null;
+  sessionBindingKey: string;
   activeHistory: UnifiedMessage[];
 }
 
 const DEFAULT_COMMAND_PROTOCOL_SKILL_PATH =
   "current/skills/commands/runtime/turn/SKILL.md";
 
+const toCurrentPath = (path: string): string => {
+  const normalized = path.replace(/^current\//, "").replace(/^\/+/, "");
+  return `current/${normalized}`;
+};
+
 const buildColdStartSkillHintMessage = (options?: {
   commandProtocolSkillPath?: string;
   hotStartReferencesMarkdown?: string | null;
   startupMode?: SessionStartupMode;
+  sessionHistoryPath?: string;
+  parentSessionHistoryPath?: string | null;
 }): UnifiedMessage => {
   const commandProtocolSkillPath =
     options?.commandProtocolSkillPath ?? DEFAULT_COMMAND_PROTOCOL_SKILL_PATH;
@@ -90,6 +103,16 @@ const buildColdStartSkillHintMessage = (options?: {
   const recommendedAnchorPaths = startupProfile.recommendedReadPaths.filter(
     (path) => !recommendedSkillPaths.includes(path),
   );
+  const currentSessionPath =
+    typeof options?.sessionHistoryPath === "string" &&
+    options.sessionHistoryPath.length > 0
+      ? options.sessionHistoryPath
+      : "current/session/<session_uid>.jsonl";
+  const parentSessionPath =
+    typeof options?.parentSessionHistoryPath === "string" &&
+    options.parentSessionHistoryPath.length > 0
+      ? options.parentSessionHistoryPath
+      : null;
 
   const hotStartPriorityLines =
     recommendedSkillPaths.length > 0 || recommendedAnchorPaths.length > 0
@@ -100,7 +123,7 @@ const buildColdStartSkillHintMessage = (options?: {
         ]
       : [
           "- No high-confidence handoff paths were parsed; use narrow fallback anchors.",
-          "- Default fallback anchor: `current/conversation/session.jsonl`.",
+          `- Default fallback anchor: \`${currentSessionPath}\`.`,
         ];
 
   const diagnosticsLines =
@@ -126,8 +149,20 @@ const buildColdStartSkillHintMessage = (options?: {
       ...hotStartPriorityLines,
       ...diagnosticsLines,
       "",
+      "[SECTION: SESSION_LINEAGE]",
+      `Current session mirror: \`${currentSessionPath}\``,
+      parentSessionPath
+        ? `Parent session mirror: \`${parentSessionPath}\``
+        : "Parent session mirror: (none)",
+      parentSessionPath
+        ? "If you need prior context, read the parent session in bounded line windows."
+        : "If cross-session continuity is needed later, query summary anchors first.",
+      "",
       "[SECTION: TARGETED_HISTORY_LOOKUP]",
-      "If prior context is needed, query `current/conversation/session.jsonl` with lines/search windows.",
+      `If prior context is needed, query \`${currentSessionPath}\` with lines/search windows.`,
+      parentSessionPath
+        ? `For earlier history, query \`${parentSessionPath}\` with bounded line windows.`
+        : "When no parent session exists, stay within current session anchors.",
       "Avoid full-file reads of `session.jsonl` in one shot.",
     ].join("\n"),
   );
@@ -138,18 +173,51 @@ const hasKnownUserMarker = (text: string): boolean =>
   text.startsWith("[SUDO]") ||
   text.startsWith("[Player Rate]");
 
+type SessionMirrorState = {
+  path: string;
+  parentPath: string | null;
+  currentPath: string;
+  currentParentPath: string | null;
+  bindToken: string;
+};
+
+const resolveSessionMirrorState = (
+  sessionId: string,
+  vfsSession: VfsSession,
+  forkId?: number,
+): SessionMirrorState => {
+  if (typeof forkId === "number" && Number.isFinite(forkId) && forkId >= 0) {
+    vfsSession.setActiveForkId(Math.floor(forkId));
+  }
+  const ensured = ensureSessionHistoryPath(vfsSession, sessionId, {
+    operation: "finish_commit",
+  });
+  const currentPath = toCurrentPath(ensured.path);
+  const currentParentPath = ensured.parentPath
+    ? toCurrentPath(ensured.parentPath)
+    : null;
+  return {
+    path: ensured.path,
+    parentPath: ensured.parentPath,
+    currentPath,
+    currentParentPath,
+    bindToken: currentPath,
+  };
+};
+
 const syncSessionHistoryMirror = (
   sessionId: string,
   vfsSession: VfsSession,
   forkId?: number,
-): void => {
-  if (typeof forkId === "number" && Number.isFinite(forkId) && forkId >= 0) {
-    vfsSession.setActiveForkId(Math.floor(forkId));
-  }
+): SessionMirrorState => {
+  const mirror = resolveSessionMirrorState(sessionId, vfsSession, forkId);
   const nativeHistory = sessionManager.getHistory(sessionId);
   writeSessionHistoryJsonl(vfsSession, nativeHistory, {
+    sessionId,
+    path: mirror.path,
     operation: "finish_commit",
   });
+  return mirror;
 };
 
 // ============================================================================
@@ -207,6 +275,8 @@ export async function setupSession(
   sessionManager.setCacheHint(session.id, cacheHint);
   sessionManager.setSystemInstruction(session.id, systemInstruction);
 
+  const mirrorState = resolveSessionMirrorState(session.id, vfsSession, forkId);
+
   // Initialize if empty
   const needsInit = sessionManager.isEmpty(session.id);
   if (needsInit) {
@@ -219,6 +289,8 @@ export async function setupSession(
         commandProtocolSkillPath,
         hotStartReferencesMarkdown,
         startupMode,
+        sessionHistoryPath: mirrorState.currentPath,
+        parentSessionHistoryPath: mirrorState.currentParentPath,
       },
     );
     sessionManager.setHistory(session.id, initialHistory);
@@ -226,10 +298,17 @@ export async function setupSession(
 
   // Get active history
   const activeHistory = getActiveHistory(session.id, protocol);
-  syncSessionHistoryMirror(session.id, vfsSession, forkId);
+  const synchronizedMirror = syncSessionHistoryMirror(
+    session.id,
+    vfsSession,
+    forkId,
+  );
 
   return {
     sessionId: session.id,
+    sessionHistoryPath: synchronizedMirror.currentPath,
+    parentSessionHistoryPath: synchronizedMirror.currentParentPath,
+    sessionBindingKey: synchronizedMirror.bindToken,
     activeHistory,
   };
 }
@@ -250,6 +329,8 @@ function buildInitialHistory(
     commandProtocolSkillPath?: string;
     hotStartReferencesMarkdown?: string | null;
     startupMode?: SessionStartupMode;
+    sessionHistoryPath?: string;
+    parentSessionHistoryPath?: string | null;
   },
 ): unknown[] {
   let initialHistory: UnifiedMessage[] = [...contextMessages];
@@ -261,6 +342,8 @@ function buildInitialHistory(
         commandProtocolSkillPath: options.commandProtocolSkillPath,
         hotStartReferencesMarkdown: options.hotStartReferencesMarkdown,
         startupMode: options.startupMode,
+        sessionHistoryPath: options.sessionHistoryPath,
+        parentSessionHistoryPath: options.parentSessionHistoryPath,
       }),
     ];
   }

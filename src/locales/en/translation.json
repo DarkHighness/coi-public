@@ -1232,6 +1232,8 @@
     "clearSessionCache": "Clear Session Cache",
     "sessionCache": "Session Cache",
     "sessionCacheDesc": "Cached history sessions are better hit prefix cache when continuing the game",
+    "sessionHistoryLruLimit": "Session Mirror LRU Limit",
+    "sessionHistoryLruLimitHelp": "Number of recent current/session/*.jsonl mirrors retained in VFS (default: 64). Older sessions are pruned by LRU.",
     "confirmClearSessionCache": "Clear all cached AI context? This won't affect your saves.",
     "sessionCacheCleared": "Session cache cleared",
     "clearSessionCacheError": "Failed to clear session cache."

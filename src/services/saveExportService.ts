@@ -304,7 +304,8 @@ const shouldDropRebuildableSessionFile = (
   const template = vfsResourceTemplateRegistry.match(canonicalPath);
 
   return (
-    template.id === "template.story.conversation.session_jsonl" ||
+    template.id === "template.runtime.session_jsonl" ||
+    template.id === "template.runtime.session_lineage" ||
     template.id === "template.runtime.fork"
   );
 };

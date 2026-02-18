@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const changeLanguage = vi.hoisted(() => vi.fn());
 const getModels = vi.hoisted(() => vi.fn());
+const setSessionHistoryLruLimit = vi.hoisted(() => vi.fn());
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -18,6 +19,10 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../services/aiService", () => ({
   getModels,
+}));
+
+vi.mock("../services/vfs/conversation", () => ({
+  setSessionHistoryLruLimit,
 }));
 
 import { SettingsProvider, useSettingsContext } from "./SettingsContext";
@@ -193,5 +198,48 @@ describe("SettingsContext", () => {
 
     expect(getModels).not.toHaveBeenCalled();
     expect(captured.providerModels["provider-1"][0].id).toBe("m1");
+  });
+
+  it("applies session mirror LRU limit from settings", async () => {
+    localStorage.setItem(
+      "chronicles_aisettings",
+      JSON.stringify({
+        story: { providerId: "p1", modelId: "m1" },
+        providers: { instances: [], nextId: 1 },
+        audioVolume: { bgmVolume: 0.5, bgmMuted: false, ttsVolume: 1, ttsMuted: false },
+        language: "en",
+        extra: {
+          sessionHistoryLruLimit: 96,
+        },
+      }),
+    );
+
+    let captured: any = null;
+    const Consumer = () => {
+      captured = useSettingsContext();
+      return React.createElement("div");
+    };
+
+    render(
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
+    );
+
+    expect(setSessionHistoryLruLimit).toHaveBeenCalledWith(96);
+
+    await act(async () => {
+      captured.updateSettings({
+        ...captured.settings,
+        extra: {
+          ...(captured.settings.extra || {}),
+          sessionHistoryLruLimit: 32,
+        },
+      });
+    });
+
+    expect(setSessionHistoryLruLimit).toHaveBeenCalledWith(32);
   });
 });

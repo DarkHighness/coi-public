@@ -1,4 +1,5 @@
 import { applyPatch as applyJsonPatch } from "fast-json-patch/module/core.mjs";
+import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
 import {
@@ -145,6 +146,9 @@ const ENTITY_LOGICAL_WORLD_PATH_PATTERNS: RegExp[] = [
 ];
 
 const CANONICAL_WORLD_PATH_PATTERN = /^forks\/([^/]+)\/story\/(world\/.+)$/;
+const CANONICAL_SESSION_JSONL_PATH_PATTERN =
+  /^forks\/[^/]+\/runtime\/session\/[^/]+\.jsonl$/;
+const COMPRESSED_SESSION_PREFIX = "__vfs_lz16__:";
 
 const isEntityLogicalWorldPath = (path: string): boolean =>
   ENTITY_LOGICAL_WORLD_PATH_PATTERNS.some((pattern) => pattern.test(path));
@@ -257,6 +261,65 @@ const applyPatchFn: ApplyPatchFn = (
 
 const normalizeErrorWhitespace = (message: string): string =>
   message.replace(/\s+/g, " ").trim();
+
+const shouldCompressSessionJsonl = (
+  canonicalPath: string,
+  contentType: VfsContentType,
+): boolean =>
+  contentType === "application/jsonl" &&
+  CANONICAL_SESSION_JSONL_PATH_PATTERN.test(canonicalPath);
+
+const tryCompressSessionContent = (
+  canonicalPath: string,
+  contentType: VfsContentType,
+  content: string,
+): string => {
+  if (!shouldCompressSessionJsonl(canonicalPath, contentType)) {
+    return content;
+  }
+
+  try {
+    const compressed = compressToUTF16(content);
+    if (typeof compressed !== "string" || compressed.length === 0) {
+      return content;
+    }
+    return `${COMPRESSED_SESSION_PREFIX}${compressed}`;
+  } catch (error) {
+    console.warn(
+      `[VfsSession] Failed to compress session jsonl (${canonicalPath}), using plain text.`,
+      error,
+    );
+    return content;
+  }
+};
+
+const tryDecompressSessionContent = (
+  canonicalPath: string,
+  contentType: VfsContentType,
+  storedContent: string,
+): string => {
+  if (!shouldCompressSessionJsonl(canonicalPath, contentType)) {
+    return storedContent;
+  }
+  if (!storedContent.startsWith(COMPRESSED_SESSION_PREFIX)) {
+    return storedContent;
+  }
+
+  const payload = storedContent.slice(COMPRESSED_SESSION_PREFIX.length);
+  try {
+    const decompressed = decompressFromUTF16(payload);
+    if (typeof decompressed !== "string") {
+      return storedContent;
+    }
+    return decompressed;
+  } catch (error) {
+    console.warn(
+      `[VfsSession] Failed to decompress session jsonl (${canonicalPath}), falling back to stored content.`,
+      error,
+    );
+    return storedContent;
+  }
+};
 
 const stripJsonPatchTreeDump = (message: string): string =>
   message.replace(/\s+tree:\s+\{[\s\S]*$/i, "").trim();
@@ -451,6 +514,21 @@ export class VfsSession {
         activeForkId: this.activeForkId,
       }) || path,
     );
+  }
+
+  private toReadableContent(file: VfsFile): string {
+    return tryDecompressSessionContent(file.path, file.contentType, file.content);
+  }
+
+  private toReadableFile(file: VfsFile, pathOverride?: string): VfsFile {
+    const content = this.toReadableContent(file);
+    return {
+      ...file,
+      path: pathOverride ?? file.path,
+      content,
+      size: content.length,
+      hash: hashContent(content),
+    };
   }
 
   public noteToolSeen(path: string): void {
@@ -959,9 +1037,14 @@ export class VfsSession {
     }
 
     const hash = hashContent(normalizedContent);
+    const storedContent = tryCompressSessionContent(
+      canonicalPath,
+      contentType,
+      normalizedContent,
+    );
     this.files[canonicalPath] = {
       path: canonicalPath,
-      content: normalizedContent,
+      content: storedContent,
       contentType,
       hash,
       size: normalizedContent.length,
@@ -987,18 +1070,24 @@ export class VfsSession {
         ? canonicalPath
         : this.toDisplayPath(canonicalPath);
 
-    return {
-      ...file,
-      path: pathForRead,
-    };
+    return this.toReadableFile(file, pathForRead);
   }
 
   public snapshot(): VfsFileMap {
-    return toDisplayFileMap(this.files, this.activeForkId);
+    const display: VfsFileMap = {};
+    for (const file of Object.values(this.files)) {
+      const displayPath = this.toDisplayPath(file.path);
+      display[displayPath] = this.toReadableFile(file, displayPath);
+    }
+    return display;
   }
 
   public snapshotCanonical(): VfsFileMap {
-    return cloneFiles(this.files);
+    const canonical: VfsFileMap = {};
+    for (const file of Object.values(this.files)) {
+      canonical[file.path] = this.toReadableFile(file, file.path);
+    }
+    return canonical;
   }
 
   /**
@@ -1006,14 +1095,12 @@ export class VfsSession {
    * This is intended for read-only tooling (ls/stat/glob/search), NOT persistence.
    */
   public snapshotAll(): VfsFileMap {
-    return mergeFiles(
-      toDisplayFileMap(this.readonlyFiles, this.activeForkId),
-      toDisplayFileMap(this.files, this.activeForkId),
-    );
+    const readonlyDisplay = toDisplayFileMap(this.readonlyFiles, this.activeForkId);
+    return mergeFiles(readonlyDisplay, this.snapshot());
   }
 
   public snapshotAllCanonical(): VfsFileMap {
-    return mergeFiles(this.readonlyFiles, this.files);
+    return mergeFiles(this.readonlyFiles, this.snapshotCanonical());
   }
 
   public restore(snapshot: VfsFileMap): void {
@@ -1024,9 +1111,19 @@ export class VfsSession {
         continue;
       }
 
+      const normalizedContent = file.content;
+      const storedContent = tryCompressSessionContent(
+        canonicalPath,
+        file.contentType,
+        normalizedContent,
+      );
+
       next[canonicalPath] = {
         ...file,
         path: canonicalPath,
+        content: storedContent,
+        hash: hashContent(normalizedContent),
+        size: normalizedContent.length,
       };
     }
     this.files = next;
@@ -1042,9 +1139,18 @@ export class VfsSession {
     if (canonicalFrom === canonicalTo) {
       return;
     }
+    const readableContent = this.toReadableContent(file);
+    const storedContent = tryCompressSessionContent(
+      canonicalTo,
+      file.contentType,
+      readableContent,
+    );
     this.files[canonicalTo] = {
       ...file,
       path: canonicalTo,
+      content: storedContent,
+      hash: hashContent(readableContent),
+      size: readableContent.length,
       updatedAt: Date.now(),
     };
     delete this.files[canonicalFrom];

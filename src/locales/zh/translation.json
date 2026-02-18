@@ -1260,6 +1260,8 @@
     "clearSessionCache": "清空会话缓存",
     "sessionCache": "会话缓存",
     "sessionCacheDesc": "缓存历史会话已在继续游戏时更好的命中前缀缓存",
+    "sessionHistoryLruLimit": "会话镜像 LRU 上限",
+    "sessionHistoryLruLimitHelp": "控制 VFS 中保留的 current/session/*.jsonl 最近会话数量（默认：64）。超过上限后按 LRU 自动裁剪旧会话。",
     "confirmClearSessionCache": "确认清空所有缓存的 AI 上下文？这不会影响你的存档。",
     "sessionCacheCleared": "会话缓存已清空",
     "clearSessionCacheError": "清空会话缓存失败。",

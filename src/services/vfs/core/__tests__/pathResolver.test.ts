@@ -60,10 +60,10 @@ describe("pathResolver", () => {
       }),
     ).toBe("forks/4/ops/history_rewrites/a.json");
     expect(
-      toCanonicalVfsPath("current/conversation/session.jsonl", {
+      toCanonicalVfsPath("current/session/session-a.jsonl", {
         activeForkId: 4,
       }),
-    ).toBe("forks/4/story/conversation/session.jsonl");
+    ).toBe("forks/4/runtime/session/session-a.jsonl");
     expect(
       toCanonicalVfsPath("current/world/global/soul.md", {
         activeForkId: 4,

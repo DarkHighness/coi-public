@@ -76,7 +76,7 @@ describe("summaryContext", () => {
     expect(instruction).toContain("current/world/global/soul.md");
     expect(instruction).toContain("notes.md");
     expect(instruction).toContain("optional context only");
-    expect(instruction).toContain("current/conversation/session.jsonl");
+    expect(instruction).toContain("current/session/<session_uid>.jsonl");
     expect(instruction).toContain('mode: "lines"');
     expect(instruction).toContain("Do NOT full-read large session.jsonl files");
     expect(instruction).toContain("nextSessionReferencesMarkdown");

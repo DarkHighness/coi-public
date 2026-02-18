@@ -112,7 +112,7 @@ describe("messageBuilder", () => {
             id: 2,
             displayText: "new",
             nextSessionReferencesMarkdown:
-              "- current/conversation/session.jsonl\n- current/skills/index.json",
+              "- current/session/session-a.jsonl\n- current/skills/index.json",
           },
         ],
       }),
@@ -123,7 +123,7 @@ describe("messageBuilder", () => {
     const hotStartBlock = texts.find((text) =>
       text.includes("[CONTEXT: Hot Start References]"),
     );
-    expect(hotStartBlock).toContain("current/conversation/session.jsonl");
+    expect(hotStartBlock).toContain("current/session/session-a.jsonl");
     expect(hotStartBlock).toContain("current/skills/index.json");
     expect(
       texts.some((text) =>

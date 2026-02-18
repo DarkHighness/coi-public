@@ -206,7 +206,7 @@ describe("vfsMutationGuard", () => {
 
     it("rejects jsonl path with non-jsonl contentType", () => {
       const result = validateWritePayload(
-        "conversation/session.jsonl",
+        "session/session-a.jsonl",
         '{"role":"user"}',
         "text/plain",
       );
@@ -251,7 +251,7 @@ describe("vfsMutationGuard", () => {
 
     it("rejects invalid JSONL line payload", () => {
       const result = validateWritePayload(
-        "conversation/session.jsonl",
+        "session/session-a.jsonl",
         '{"role":"user"}\n{invalid}',
         "application/jsonl",
       );
@@ -261,7 +261,7 @@ describe("vfsMutationGuard", () => {
 
     it("accepts valid JSONL payload", () => {
       const result = validateWritePayload(
-        "conversation/session.jsonl",
+        "session/session-a.jsonl",
         '{"role":"user"}\n{"role":"assistant"}',
         "application/jsonl",
       );

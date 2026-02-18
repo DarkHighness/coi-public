@@ -43,17 +43,17 @@ describe("vfs layout report", () => {
     expect(summaryState?.updateTriggers).toContain("summary_commit");
   });
 
-  it("includes expected session mirror path with finish commit trigger", () => {
+  it("includes expected session lineage path with finish commit trigger", () => {
     const session = new VfsSession();
 
     const layout = buildVfsLayoutReport(session, {
-      rootPath: "current/conversation",
+      rootPath: "current/session",
       includeExpected: true,
       activeForkId: 0,
     });
 
     const sessionMirror = layout.find(
-      (entry) => entry.path === "current/conversation/session.jsonl",
+      (entry) => entry.path === "current/session/lineage.json",
     );
 
     expect(sessionMirror).toBeDefined();

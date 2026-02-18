@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const storage = vi.hoisted(() => ({
   initialize: vi.fn(async () => undefined),
-  getSession: vi.fn(async () => undefined),
+  findLatestSessionByConfigKey: vi.fn(async () => undefined),
   saveSession: vi.fn(async () => undefined),
   enforceLruLimit: vi.fn(async () => undefined),
   deleteSession: vi.fn(async () => undefined),
@@ -39,7 +39,7 @@ describe("sessionManager", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
-    storage.getSession.mockResolvedValue(undefined);
+    storage.findLatestSessionByConfigKey.mockResolvedValue(undefined);
     await sessionManager.clearAll();
   });
 
@@ -55,11 +55,15 @@ describe("sessionManager", () => {
 
     const second = await sessionManager.getOrCreateSession(configB as any);
 
-    expect(first.id).toBe("slot-a:0:provider-1:model-1");
-    expect(second.id).toBe("slot-a:0:provider-1:model-2");
+    expect(first.id).toMatch(/^sess_[a-z0-9]+_[a-z0-9]+$/);
+    expect(second.id).toMatch(/^sess_[a-z0-9]+_[a-z0-9]+$/);
+    expect(first.id).not.toBe(second.id);
     expect(storage.saveSession).toHaveBeenCalledTimes(1);
     expect(storage.saveSession).toHaveBeenCalledWith(
-      expect.objectContaining({ id: first.id }),
+      expect.objectContaining({
+        id: first.id,
+        configKey: "slot-a|0|provider-1|model-1|openai",
+      }),
     );
   });
 
@@ -92,7 +96,7 @@ describe("sessionManager", () => {
     ]);
   });
 
-  it("clears history and cache hint when summary is created", async () => {
+  it("retires session on summary and creates new id on next request", async () => {
     const session = await sessionManager.getOrCreateSession(configA as any);
 
     sessionManager.appendHistory(session.id, [{ id: "m1" }]);
@@ -105,8 +109,11 @@ describe("sessionManager", () => {
 
     expect(sessionManager.getHistory(session.id)).toEqual([]);
     expect(sessionManager.getCacheHint(session.id)).toBeNull();
-    expect(sessionManager.getCurrentSession()?.lastSummaryId).toBe("summary-1");
+    expect(sessionManager.getCurrentSession()).toBeNull();
     expect(storage.deleteSession).toHaveBeenCalledWith(session.id);
+
+    const next = await sessionManager.getOrCreateSession(configA as any);
+    expect(next.id).not.toBe(session.id);
   });
 
   it("overrides toolChoice to auto when forceAuto is true", () => {
@@ -119,8 +126,9 @@ describe("sessionManager", () => {
   });
 
   it("loads stored session and sanitizes dangling or duplicate history", async () => {
-    storage.getSession.mockResolvedValueOnce({
-      id: "slot-a:0:provider-1:model-1",
+    storage.findLatestSessionByConfigKey.mockResolvedValueOnce({
+      id: "sess_legacy_a",
+      configKey: "slot-a|0|provider-1|model-1|openai",
       slotId: "slot-a",
       config: configA,
       nativeHistory: [
@@ -217,12 +225,14 @@ describe("sessionManager", () => {
     const overflow = await sessionManager.onContextOverflow(session.id);
     expect(overflow).toEqual({ needsSummary: true });
     expect(sessionManager.getHistory(session.id)).toEqual([]);
+    expect(sessionManager.getCurrentSession()).toBeNull();
     expect(warnSpy).toHaveBeenCalled();
 
     await sessionManager.invalidate("not-current", "manual_clear");
     expect(storage.deleteSession).toHaveBeenCalledTimes(1);
 
-    await sessionManager.invalidate(session.id, "manual_clear");
+    const next = await sessionManager.getOrCreateSession(configA as any);
+    await sessionManager.invalidate(next.id, "manual_clear");
     expect(storage.deleteSession).toHaveBeenCalledTimes(2);
   });
 
@@ -269,16 +279,26 @@ describe("sessionManager", () => {
     const warnSpy = vi
       .spyOn(console, "warn")
       .mockImplementation(() => undefined);
-    storage.getSession.mockRejectedValueOnce(new Error("db offline"));
+    storage.findLatestSessionByConfigKey.mockRejectedValueOnce(
+      new Error("db offline"),
+    );
 
     const session = await sessionManager.getOrCreateSession(configA as any);
 
-    expect(session.id).toBe("slot-a:0:provider-1:model-1");
+    expect(session.id).toMatch(/^sess_[a-z0-9]+_[a-z0-9]+$/);
     expect(session.nativeHistory).toEqual([]);
     expect(warnSpy).toHaveBeenCalledWith(
       "[SessionManager] Failed to load session from storage:",
       expect.any(Error),
     );
+  });
+
+  it("creates fresh session id after manual invalidate", async () => {
+    const first = await sessionManager.getOrCreateSession(configA as any);
+    await sessionManager.invalidate(first.id, "manual_clear");
+
+    const second = await sessionManager.getOrCreateSession(configA as any);
+    expect(second.id).not.toBe(first.id);
   });
 
   it("no-ops non-current operations while overflow still requests summary", async () => {

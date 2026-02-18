@@ -148,7 +148,8 @@ describe("generateAdventureTurn recovery wiring", () => {
     vi.clearAllMocks();
 
     setupSessionMock.mockResolvedValue({
-      sessionId: "slot-1:0:provider-1:model-1",
+      sessionId: "sess_test_1",
+      sessionBindingKey: "current/session/session-a.jsonl",
       activeHistory: [],
     });
     handleRetryDetectionMock.mockImplementation(

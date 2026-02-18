@@ -242,7 +242,7 @@ describe("runSummaryLoop", () => {
     );
     expect(anchorText).toContain("Last summary checkpoint: id=s-prev");
     expect(anchorText).toContain("NEVER cross forks");
-    expect(anchorText).toContain("current/conversation/session.jsonl");
+    expect(anchorText).toContain("current/session/<session_uid>.jsonl");
     expect(anchorText).toContain("query-style reads only");
     expect(anchorText).toContain("nextSessionReferencesMarkdown");
     expect(anchorText).toContain("useful SKILL docs first");
@@ -417,7 +417,7 @@ describe("runSummaryLoop", () => {
             args: {
               ...makeCommitSummaryArgs(),
               nextSessionReferencesMarkdown:
-                "- current/skills/commands/runtime/SKILL.md\n- current/conversation/session.jsonl",
+                "- current/skills/commands/runtime/SKILL.md\n- current/session/<session_uid>.jsonl",
             },
           },
         ],
@@ -432,7 +432,7 @@ describe("runSummaryLoop", () => {
       finishTool,
       expect.objectContaining({
         nextSessionReferencesMarkdown:
-          "- current/skills/commands/runtime/SKILL.md\n- current/conversation/session.jsonl",
+          "- current/skills/commands/runtime/SKILL.md\n- current/session/<session_uid>.jsonl",
         nodeRange: { fromIndex: 1, toIndex: 4 },
         lastSummarizedIndex: 5,
       }),

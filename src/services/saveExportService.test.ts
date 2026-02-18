@@ -428,8 +428,8 @@ const makeSnapshotWithSessionArtifacts = (saveId: string): SnapshotRecord => ({
       size: 10,
       updatedAt: 1,
     },
-    "turns/fork-0/turn-0/conversation/session.jsonl": {
-      path: "turns/fork-0/turn-0/conversation/session.jsonl",
+    "turns/fork-0/turn-0/session/session-a.jsonl": {
+      path: "turns/fork-0/turn-0/session/session-a.jsonl",
       content: '{"role":"assistant","content":"cached"}\n',
       contentType: "application/jsonl",
       hash: "sj",
@@ -1049,7 +1049,7 @@ describe("saveExportService", () => {
     const snapshotPaths = Object.keys(exportedSnapshot.fileRefs);
     expect(
       snapshotPaths.some((path) =>
-        path.endsWith("/conversation/session.jsonl"),
+        path.includes("/session/") && path.endsWith(".jsonl"),
       ),
     ).toBe(false);
     expect(snapshotPaths.some((path) => path.includes("/runtime/"))).toBe(
@@ -1066,9 +1066,9 @@ describe("saveExportService", () => {
     ).toBe(true);
 
     expect(
-      zip.file("vfs/history/fork-0/turn-0/conversation/session.jsonl"),
+      zip.file("vfs/history/fork-0/turn-0/session/session-a.jsonl"),
     ).toBeNull();
-    expect(zip.file("vfs/current/conversation/session.jsonl")).toBeNull();
+    expect(zip.file("vfs/current/session/session-a.jsonl")).toBeNull();
     expect(
       zip.file("vfs/history/fork-0/turn-0/runtime/transient.json"),
     ).toBeNull();

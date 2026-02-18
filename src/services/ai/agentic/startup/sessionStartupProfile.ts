@@ -29,6 +29,7 @@ export interface SessionStartupProfile {
 const KNOWN_RELATIVE_PREFIXES = [
   "skills/",
   "conversation/",
+  "session/",
   "world/",
   "summary/",
 ] as const;

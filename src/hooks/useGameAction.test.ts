@@ -6,6 +6,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const generateAdventureTurn = vi.hoisted(() => vi.fn());
 const invalidateSession = vi.hoisted(() => vi.fn(async () => undefined));
+const getOrCreateSession = vi.hoisted(() =>
+  vi.fn(async () => ({ id: "sess-test-opaque-id" })),
+);
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -25,6 +28,7 @@ vi.mock("../services/aiService", () => ({
 
 vi.mock("../services/ai/sessionManager", () => ({
   sessionManager: {
+    getOrCreateSession,
     invalidate: invalidateSession,
   },
 }));
@@ -53,7 +57,7 @@ const makeSettings = () =>
       modelId: "model-1",
     },
     providers: {
-      instances: [],
+      instances: [{ id: "provider-1", protocol: "openai" }],
     },
     extra: {},
   }) as any;
@@ -128,8 +132,15 @@ describe("useGameAction", () => {
       await api!.handleInvalidateSession();
     });
 
+    expect(getOrCreateSession).toHaveBeenCalledWith({
+      slotId: "slot-77",
+      forkId: 0,
+      providerId: "provider-1",
+      modelId: "model-1",
+      protocol: "openai",
+    });
     expect(invalidateSession).toHaveBeenCalledWith(
-      "slot-77:0:provider-1:model-1",
+      "sess-test-opaque-id",
       "manual_clear",
     );
     expect(vfsSession.beginReadEpoch).toHaveBeenCalledWith("manual_invalidate");

@@ -71,7 +71,7 @@ Required read sequence:
 2) \`current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json\`
 3) \`forks/${runtime.targetForkId}/story/summary/state.json\`
 4) \`current/summary/state.json\` (ONLY safe when active fork == target fork)
-5) Optional context recall: \`current/conversation/session.jsonl\` via query-style reads only (vfs_read_chars/vfs_read_lines/vfs_read_json lines window or vfs_search)
+5) Optional context recall: \`current/session/<session_uid>.jsonl\` via query-style reads only (vfs_read_chars/vfs_read_lines/vfs_read_json lines window or vfs_search)
 
 Hard constraints:
 - ONLY summarize target fork ${runtime.targetForkId}; NEVER cross forks.

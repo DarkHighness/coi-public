@@ -120,7 +120,7 @@ ${capabilityText}
 - Inspect before mutating. Atmosphere refs: \`current/refs/atmosphere/\` (alias of \`shared/system/refs/atmosphere/\`).
 - Markdown: prefer \`vfs_read_markdown\` with section selectors; \`vfs_read_lines\` when selectors unknown.
 - Large JSON: prefer \`vfs_read_json\` with narrow \`pointers\` (\`pointers\` is REQUIRED); avoid broad full-file \`vfs_read_chars\`.
-- Large text (especially \`current/conversation/session.jsonl\`): use bounded \`vfs_read_lines\`.
+- Large text (especially \`current/session/<session_uid>.jsonl\`): use bounded \`vfs_read_lines\`.
 - Check existing files before adding new entities (NO DUPLICATES).
 
 **STATE**:

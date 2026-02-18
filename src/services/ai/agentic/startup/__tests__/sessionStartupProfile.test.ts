@@ -8,7 +8,7 @@ describe("sessionStartupProfile", () => {
       latestSummaryReferencesMarkdown: [
         "- current/skills/index.json",
         "- current/skills/worldbuilding/travel/SKILL.md",
-        "- current/conversation/session.jsonl",
+        "- current/session/session-a.jsonl",
       ].join("\n"),
       mandatoryReadPaths: ["skills/commands/runtime/SKILL.md"],
       maxOptionalRefs: 3,
@@ -19,7 +19,7 @@ describe("sessionStartupProfile", () => {
       "current/skills/worldbuilding/travel/SKILL.md",
     );
     expect(profile.recommendedReadPaths).toContain(
-      "current/conversation/session.jsonl",
+      "current/session/session-a.jsonl",
     );
     expect(profile.recommendedReadPaths).not.toContain(
       "current/skills/index.json",
@@ -40,7 +40,7 @@ describe("sessionStartupProfile", () => {
         "- current/skills/e/SKILL.md",
       ].join("\n"),
       mandatoryReadPaths: ["current/skills/commands/runtime/SKILL.md"],
-      fallbackReadPaths: ["conversation/session.jsonl", "world/soul.md"],
+      fallbackReadPaths: ["session/session-a.jsonl", "world/soul.md"],
       maxOptionalRefs: 1,
       maxParsedRefs: 3,
     });
@@ -49,7 +49,7 @@ describe("sessionStartupProfile", () => {
     expect(profile.parsed.isOverwide).toBe(true);
     expect(profile.preloadReadPaths).toEqual([
       "current/skills/commands/runtime/SKILL.md",
-      "current/conversation/session.jsonl",
+      "current/session/session-a.jsonl",
       "current/world/soul.md",
     ]);
     expect(profile.warnings.join("\n")).toContain(
@@ -67,7 +67,7 @@ describe("sessionStartupProfile", () => {
     expect(profile.usedFallback).toBe(true);
     expect(profile.preloadReadPaths).toEqual([
       "current/skills/core/protocols/SKILL.md",
-      "current/conversation/session.jsonl",
+      "current/session/lineage.json",
     ]);
     expect(profile.hotStartReferencesMarkdown).toBe("");
   });

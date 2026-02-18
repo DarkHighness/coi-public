@@ -161,7 +161,7 @@ describe("VFS tools", () => {
         unrevealed: ["u"],
       },
       nextSessionReferencesMarkdown:
-        "- current/skills/commands/runtime/SKILL.md\n- current/conversation/session.jsonl",
+        "- current/skills/commands/runtime/SKILL.md\n- current/session/session-a.jsonl",
     });
 
     expect(result.success).toBe(true);

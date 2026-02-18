@@ -1057,9 +1057,27 @@ export const useGameAction = ({
     const { story } = aiSettings;
     if (!story || !currentSlotId) return;
 
-    const sessionId = `${currentSlotId}:${gameStateRef.current.forkId ?? 0}:${story.providerId}:${story.modelId}`;
-    console.log(`[useGameAction] Manually invalidating session: ${sessionId}`);
-    await sessionManager.invalidate(sessionId, "manual_clear");
+    const provider = aiSettings.providers.instances.find(
+      (instance) => instance.id === story.providerId,
+    );
+    if (!provider) {
+      console.warn(
+        `[useGameAction] Cannot invalidate session: provider "${story.providerId}" not found`,
+      );
+      return;
+    }
+
+    const session = await sessionManager.getOrCreateSession({
+      slotId: currentSlotId,
+      forkId: gameStateRef.current.forkId ?? 0,
+      providerId: story.providerId,
+      modelId: story.modelId,
+      protocol: provider.protocol,
+    });
+    console.log(
+      `[useGameAction] Manually invalidating session: ${session.id}`,
+    );
+    await sessionManager.invalidate(session.id, "manual_clear");
     vfsSession.beginReadEpoch("manual_invalidate");
   }, [aiSettings, currentSlotId, vfsSession]);
 

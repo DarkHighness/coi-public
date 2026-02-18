@@ -12,7 +12,7 @@
  * 设计原则：
  * - 上层只需提供 SessionConfig，无需关心缓存失效逻辑
  * - 直接存储 Provider 原生格式，消除运行时转换开销
- * - 会话 ID 包含所有影响缓存有效性的因素
+ * - 会话 ID 为不透明随机值；配置恢复依赖稳定 configKey
  * - 内存中只保留当前存档的会话，其他会话持久化到 IndexedDB
  */
 
@@ -51,6 +51,8 @@ export type InvalidationReason =
 interface Session {
   /** 会话 ID */
   id: string;
+  /** 稳定配置键（用于恢复同配置的最新会话） */
+  configKey: string;
   /** 会话配置快照 */
   config: SessionConfig;
   /** Provider 原生格式的对话历史 */
@@ -106,6 +108,8 @@ class HistorySessionManager {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   /** 持久化防抖延迟 (ms) */
   private readonly PERSIST_DEBOUNCE = 2000;
+  /** 当前进程内已退役的 sessionId（禁止复用） */
+  private retiredSessionIds = new Set<string>();
 
   /**
    * 初始化 - 必须在使用前调用
@@ -141,7 +145,7 @@ class HistorySessionManager {
    * 获取或创建会话
    */
   async getOrCreateSession(config: SessionConfig): Promise<Session> {
-    const newSessionId = this.generateSessionId(config);
+    const configKey = this.buildConfigKey(config);
 
     // 检查是否切换存档
     if (this.currentSlotId !== config.slotId) {
@@ -151,10 +155,10 @@ class HistorySessionManager {
       this.currentSession = null;
     }
 
-    // 检查是否切换到不同会话（同存档内）
-    if (this.currentSession && this.currentSession.id !== newSessionId) {
+    // 检查是否切换到不同配置（同存档内）
+    if (this.currentSession && this.currentSession.configKey !== configKey) {
       console.log(
-        `[SessionManager] Session changed: ${this.currentSession.id} -> ${newSessionId}`,
+        `[SessionManager] Session config changed: ${this.currentSession.configKey} -> ${configKey}`,
       );
       // 持久化旧会话
       await this.persistCurrentSession();
@@ -167,9 +171,9 @@ class HistorySessionManager {
       return this.currentSession;
     }
 
-    // 尝试从 IndexedDB 加载
-    const stored = await this.loadSessionFromStorage(newSessionId);
-    if (stored) {
+    // 尝试从 IndexedDB 加载同配置最近会话
+    const stored = await this.loadSessionFromStorage(configKey);
+    if (stored && !this.retiredSessionIds.has(stored.id)) {
       // SANITIZATION: Remove dangling/invalid tail messages
       // This handles cases where the app exited while waiting for AI response
       let sanitizedHistory = [...stored.nativeHistory];
@@ -187,7 +191,7 @@ class HistorySessionManager {
         // This is a valid state that can be resumed.
         if (last?.role === "user") {
           console.warn(
-            `[SessionManager] Found dangling user message in loaded session ${newSessionId}, removing.`,
+            `[SessionManager] Found dangling user message in loaded session ${stored.id}, removing.`,
           );
           sanitizedHistory.pop();
           wasSanitized = true;
@@ -199,7 +203,7 @@ class HistorySessionManager {
           // Gemini: Check for empty parts
           if (Array.isArray(last.parts) && last.parts.length === 0) {
             console.warn(
-              `[SessionManager] Found empty model message in loaded session ${newSessionId}, removing.`,
+              `[SessionManager] Found empty model message in loaded session ${stored.id}, removing.`,
             );
             sanitizedHistory.pop();
             wasSanitized = true;
@@ -220,10 +224,17 @@ class HistorySessionManager {
         break;
       }
 
+      const storedConfigKey =
+        typeof stored.configKey === "string" && stored.configKey.length > 0
+          ? stored.configKey
+          : this.buildConfigKey(stored.config);
+      const configKeyUpgraded = storedConfigKey !== stored.configKey;
+
       this.currentSession = {
         ...stored,
+        configKey: storedConfigKey,
         nativeHistory: sanitizedHistory,
-        dirty: wasSanitized, // Mark dirty if changed so we save the clean version later
+        dirty: wasSanitized || configKeyUpgraded, // Mark dirty if changed so we save the clean version later
         cacheHint: stored.cacheHint ?? null,
         systemInstruction:
           typeof stored.systemInstruction === "string"
@@ -245,24 +256,31 @@ class HistorySessionManager {
       );
       if (this.currentSession.nativeHistory.length !== originalLength) {
         wasSanitized = true;
+        this.currentSession.dirty = true;
         console.log(
           `[SessionManager] Deduplicated history: ${originalLength} -> ${this.currentSession.nativeHistory.length}`,
         );
       }
 
-      if (wasSanitized) {
+      if (wasSanitized || configKeyUpgraded) {
         this.schedulePersist();
       }
 
       console.log(
-        `[SessionManager] Loaded session from storage: ${newSessionId} (${this.currentSession.nativeHistory.length} messages${wasSanitized ? ", sanitized" : ""})`,
+        `[SessionManager] Loaded session from storage: ${stored.id} (${this.currentSession.nativeHistory.length} messages${wasSanitized ? ", sanitized" : ""})`,
       );
       return this.currentSession;
     }
 
-    // 创建新会话
+    if (stored && this.retiredSessionIds.has(stored.id)) {
+      console.warn(`[SessionManager] Skipping retired session: ${stored.id}`);
+    }
+
+    // 创建新会话（不会复用旧会话 ID）
+    const newSessionId = this.generateSessionId();
     const session: Session = {
       id: newSessionId,
+      configKey,
       config: { ...config },
       nativeHistory: [],
       systemInstruction: null,
@@ -477,7 +495,7 @@ class HistorySessionManager {
   }
 
   /**
-   * 通知 Summary 创建 - 清空会话历史并从存储删除
+   * 通知 Summary 创建 - 当前会话退役，不允许复用
    */
   async onSummaryCreated(sessionId: string, summaryId: string): Promise<void> {
     if (!this.currentSession || this.currentSession.id !== sessionId) {
@@ -488,27 +506,13 @@ class HistorySessionManager {
     }
 
     console.log(
-      `[SessionManager] Summary created (${summaryId}), clearing history for session: ${sessionId}`,
+      `[SessionManager] Summary created (${summaryId}), retiring session: ${sessionId}`,
     );
-    this.currentSession.nativeHistory = [];
-    this.currentSession.lastSummaryId = summaryId;
-    this.currentSession.cacheHint = null;
-    this.currentSession.lastAccessedAt = Date.now();
-    this.currentSession.dirty = true;
-
-    // 从存储中删除（历史已失效）
-    try {
-      await sessionStorage.deleteSession(sessionId);
-    } catch (error) {
-      console.warn(
-        "[SessionManager] Failed to delete session from storage:",
-        error,
-      );
-    }
+    await this.retireCurrentSession(sessionId);
   }
 
   /**
-   * 通知 Context 溢出 - 清空会话历史并从存储删除
+   * 通知 Context 溢出 - 当前会话退役，不允许复用
    */
   async onContextOverflow(
     sessionId: string,
@@ -521,28 +525,15 @@ class HistorySessionManager {
     }
 
     console.log(
-      `[SessionManager] Context overflow, clearing history for session: ${sessionId}`,
+      `[SessionManager] Context overflow, retiring session: ${sessionId}`,
     );
-    this.currentSession.nativeHistory = [];
-    this.currentSession.cacheHint = null;
-    this.currentSession.lastAccessedAt = Date.now();
-    this.currentSession.dirty = true;
-
-    // 从存储中删除
-    try {
-      await sessionStorage.deleteSession(sessionId);
-    } catch (error) {
-      console.warn(
-        "[SessionManager] Failed to delete session from storage:",
-        error,
-      );
-    }
+    await this.retireCurrentSession(sessionId);
 
     return { needsSummary: true };
   }
 
   /**
-   * 手动失效会话 - 清空历史并删除存储
+   * 手动失效会话 - 当前会话退役，不允许复用
    */
   async invalidate(
     sessionId: string,
@@ -558,19 +549,7 @@ class HistorySessionManager {
     console.log(
       `[SessionManager] Session invalidated: ${sessionId}, reason: ${reason}`,
     );
-    this.currentSession.nativeHistory = [];
-    this.currentSession.lastAccessedAt = Date.now();
-    this.currentSession.dirty = true;
-
-    // 从存储中删除
-    try {
-      await sessionStorage.deleteSession(sessionId);
-    } catch (error) {
-      console.warn(
-        "[SessionManager] Failed to delete session from storage:",
-        error,
-      );
-    }
+    await this.retireCurrentSession(sessionId);
   }
 
   /**
@@ -602,6 +581,7 @@ class HistorySessionManager {
   async clearAll(): Promise<void> {
     this.currentSession = null;
     this.currentSlotId = null;
+    this.retiredSessionIds.clear();
 
     try {
       await sessionStorage.clearAll();
@@ -728,18 +708,33 @@ class HistorySessionManager {
   /**
    * 生成会话 ID
    */
-  private generateSessionId(config: SessionConfig): string {
-    return `${config.slotId}:${config.forkId}:${config.providerId}:${config.modelId}`;
+  private generateSessionId(): string {
+    const ts = Date.now().toString(36);
+    const random = Math.random().toString(36).slice(2, 10);
+    return `sess_${ts}_${random}`;
+  }
+
+  /**
+   * 生成稳定配置键（用于同配置恢复）
+   */
+  private buildConfigKey(config: SessionConfig): string {
+    return [
+      config.slotId,
+      String(config.forkId),
+      config.providerId,
+      config.modelId,
+      config.protocol,
+    ].join("|");
   }
 
   /**
    * 从存储加载会话
    */
   private async loadSessionFromStorage(
-    sessionId: string,
+    configKey: string,
   ): Promise<StoredSession | undefined> {
     try {
-      return await sessionStorage.getSession(sessionId);
+      return await sessionStorage.findLatestSessionByConfigKey(configKey);
     } catch (error) {
       console.warn(
         "[SessionManager] Failed to load session from storage:",
@@ -763,6 +758,7 @@ class HistorySessionManager {
 
     const stored: StoredSession = {
       id: this.currentSession.id,
+      configKey: this.currentSession.configKey,
       slotId: this.currentSession.config.slotId,
       config: this.currentSession.config,
       systemInstruction: this.currentSession.systemInstruction,
@@ -785,6 +781,24 @@ class HistorySessionManager {
       await sessionStorage.enforceLruLimit();
     } catch (error) {
       console.warn("[SessionManager] Failed to persist session:", error);
+    }
+  }
+
+  private async retireCurrentSession(sessionId: string): Promise<void> {
+    if (!this.currentSession || this.currentSession.id !== sessionId) {
+      return;
+    }
+
+    this.retiredSessionIds.add(sessionId);
+    this.currentSession = null;
+
+    try {
+      await sessionStorage.deleteSession(sessionId);
+    } catch (error) {
+      console.warn(
+        "[SessionManager] Failed to delete session from storage:",
+        error,
+      );
     }
   }
 

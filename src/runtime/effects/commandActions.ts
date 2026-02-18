@@ -720,7 +720,9 @@ export function createCommandActions({
         for (const [path, file] of Object.entries(snapshot)) {
           if (
             path.startsWith("conversation/") ||
-            path.startsWith("current/conversation/")
+            path.startsWith("current/conversation/") ||
+            path.startsWith("session/") ||
+            path.startsWith("current/session/")
           ) {
             baseline[path] = {
               content: file.content,
@@ -745,7 +747,7 @@ export function createCommandActions({
         themeKey: gameStateRef.current.theme,
         tFunc: t,
         settings: aiSettings,
-        slotId: `${currentSlotId || "default"}:cleanup`,
+        slotId: currentSlotId || "default",
         vfsSession,
         onToolCallsUpdate: (toolCalls) => {
           setGameState((prev) => ({
@@ -770,7 +772,9 @@ export function createCommandActions({
       for (const path of Object.keys(afterCleanupSnapshot)) {
         if (
           (path.startsWith("conversation/") ||
-            path.startsWith("current/conversation/")) &&
+            path.startsWith("current/conversation/") ||
+            path.startsWith("session/") ||
+            path.startsWith("current/session/")) &&
           !baselineConversationFiles[path]
         ) {
           try {

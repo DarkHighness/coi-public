@@ -28,6 +28,7 @@ export type ProviderCacheHint =
 
 export interface StoredSession {
   id: string;
+  configKey: string;
   slotId: string;
   config: SessionConfig;
   /**
@@ -52,7 +53,7 @@ export interface StoredSession {
 
 const DB_NAME = "coi-session-cache";
 // NOTE: 彻底重构后，不做迁移；升级版本并在 onupgradeneeded 中重建 store 来清空旧数据。
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_NAME = "sessions";
 const MAX_SESSIONS = 100;
 
@@ -98,6 +99,7 @@ class SessionStorage {
 
         const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
         store.createIndex("slotId", "slotId", { unique: false });
+        store.createIndex("configKey", "configKey", { unique: false });
         store.createIndex("lastAccessedAt", "lastAccessedAt", {
           unique: false,
         });
@@ -186,6 +188,46 @@ class SessionStorage {
       request.onerror = () => {
         console.error(
           "[SessionStorage] Failed to delete session:",
+          request.error,
+        );
+        reject(request.error);
+      };
+    });
+  }
+
+  /**
+   * Find latest session by stable config key
+   */
+  async findLatestSessionByConfigKey(
+    configKey: string,
+  ): Promise<StoredSession | undefined> {
+    const db = await this.ensureDb();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readonly");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const sessions = request.result as StoredSession[];
+        if (!Array.isArray(sessions) || sessions.length === 0) {
+          resolve(undefined);
+          return;
+        }
+
+        const matched = sessions
+          .filter(
+            (session) =>
+              typeof session?.configKey === "string" &&
+              session.configKey === configKey,
+          )
+          .sort((a, b) => b.lastAccessedAt - a.lastAccessedAt);
+
+        resolve(matched[0]);
+      };
+      request.onerror = () => {
+        console.error(
+          "[SessionStorage] Failed to find latest session by config key:",
           request.error,
         );
         reject(request.error);
