@@ -122,9 +122,11 @@ ${recentHistoryXml}
   </recent_narrative_flow>
 </veo_context>`;
 
-    return `
-${trace.record(cinematographerRole)}
+    // Keep atom tracing for policy/coverage, but avoid duplicating role content
+    // in user prompt because role authority should come from system instruction.
+    trace.record(cinematographerRole);
 
+    return `
 **CRITICAL PERSPECTIVE INSTRUCTION:**
 ${trace.record(perspectiveInstruction)}
 ${getCulturalAdaptationInstruction(language)}

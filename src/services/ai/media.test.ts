@@ -212,4 +212,59 @@ describe("media service", () => {
       "provider unavailable",
     );
   });
+
+  it("keeps veo system instruction distinct from user prompt content", async () => {
+    getProviderConfig.mockImplementation((_settings, endpoint: string) => {
+      if (endpoint === "script") {
+        return {
+          instance: { id: "provider-1", protocol: "openai" },
+          modelId: "gpt-4.1",
+          thinkingEffort: "medium",
+          mediaResolution: "720p",
+          temperature: 0.4,
+          topP: 0.9,
+          topK: 40,
+          minP: 0,
+        };
+      }
+      return null;
+    });
+
+    getVeoScriptPrompt.mockReturnValueOnce("<veo_context/>");
+
+    const generateChat = vi.fn(async () => ({
+      result: "veo script",
+      usage: { promptTokens: 12, completionTokens: 34, totalTokens: 46 },
+      raw: { ok: true },
+    }));
+    createProvider.mockReturnValue({ generateChat });
+
+    const result = await generateVeoScript(
+      {} as any,
+      {} as any,
+      [] as any,
+      "English",
+    );
+
+    expect(result.script).toBe("veo script");
+    expect(generateChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        systemInstruction:
+          "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "<veo_context/>",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(generateChat.mock.calls[0]?.[0]?.messages[0]?.content[0]?.text).not
+      .toContain("AWARD-WINNING cinematographer");
+  });
 });

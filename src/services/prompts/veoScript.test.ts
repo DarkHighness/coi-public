@@ -92,10 +92,10 @@ describe("getVeoScriptPrompt", () => {
     activeNodeId: "n1",
   } as any;
 
-  it("renders detailed context XML with role and style directives", () => {
+  it("renders detailed context XML without duplicating role directive", () => {
     const prompt = getVeoScriptPrompt(baseState, [], "Chinese");
 
-    expect(prompt).toContain("[role]");
+    expect(prompt).not.toContain("[role]");
     expect(prompt).toContain("[perspective]");
     expect(prompt).toContain("[culture:Chinese]");
     expect(adaptationMock).toHaveBeenCalledWith("Chinese");
