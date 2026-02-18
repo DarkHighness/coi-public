@@ -705,6 +705,8 @@
       "summaryRetryLimitHelp": "Retry limit for summary loops (default: 5)",
       "maxToolCalls": "Max Tool Calls",
       "maxToolCallsHelp": "Maximum total tool calls per agentic loop (default: 50)",
+      "maxOutputTokensFallback": "Max Output Fallback Tokens",
+      "maxOutputTokensFallbackHelp": "Used only when model-specific output cap is unknown. Leave empty to use provider defaults.",
       "resetTutorials": "Reset Tutorials",
       "resetTutorialsHelp": "Show onboarding tutorials again on next visit",
       "resetTutorialsButton": "Reset"

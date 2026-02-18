@@ -733,6 +733,8 @@
       "summaryRetryLimitHelp": "Summary/Compact/Query 循环的重试上限（默认：5）",
       "maxToolCalls": "最大工具调用次数",
       "maxToolCallsHelp": "每个代理循环的最大工具调用总数（默认：50）",
+      "maxOutputTokensFallback": "输出兜底 Token 上限",
+      "maxOutputTokensFallbackHelp": "仅在无法确定模型专属输出上限时使用。留空则使用提供商默认值。",
       "resetTutorials": "重置新手教程",
       "resetTutorialsHelp": "下次访问时重新显示新手引导",
       "resetTutorialsButton": "重置"
