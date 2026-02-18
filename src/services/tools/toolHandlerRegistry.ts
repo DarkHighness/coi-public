@@ -56,6 +56,10 @@ export interface ToolContext {
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds;
   /** System-injected current turn user action for finish-commit tools */
   vfsTurnUserAction?: string;
+  /** System-injected inner vfs_vm tool call limit */
+  vfsVmMaxToolCalls?: number;
+  /** System-injected inner vfs_vm per-script char limit */
+  vfsVmMaxScriptChars?: number;
 }
 
 /**

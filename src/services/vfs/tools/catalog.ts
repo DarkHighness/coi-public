@@ -105,9 +105,7 @@ const vfsContentTypeSchema = z.enum([
   "text/markdown",
 ]);
 
-const VFS_VM_DEFAULT_MAX_TOOL_CALLS = 16;
-const VFS_VM_MAX_TOOL_CALLS_CAP = 64;
-const VFS_VM_DEFAULT_MAX_SCRIPT_CHARS = 4000;
+const VFS_VM_DEFAULT_MAX_SCRIPT_CHARS = 16000;
 const VFS_VM_TOTAL_SCRIPT_CHARS_CAP = 16000;
 
 const vfsVmScriptsSchema = z
@@ -120,7 +118,7 @@ const vfsVmScriptsSchema = z
         `Each script must be <= ${VFS_VM_DEFAULT_MAX_SCRIPT_CHARS} chars.`,
       ),
   )
-  .min(1, "Provide at least one script.")
+  .length(1, "Provide exactly one script.")
   .superRefine((scripts, issueCtx) => {
     const totalChars = scripts.reduce((sum, script) => sum + script.length, 0);
     if (totalChars > VFS_VM_TOTAL_SCRIPT_CHARS_CAP) {
@@ -676,26 +674,8 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     parameters: z
       .object({
         scripts: vfsVmScriptsSchema.describe(
-          "JavaScript snippets only (not JSON/pseudo calls), executed in order with shared state + emit + allowlisted vfs_* helpers. Forbidden tokens: import/eval/Function/globalThis/window.",
+          "Exactly one JavaScript snippet (not JSON/pseudo calls). Executed with shared state + allowlisted vfs_* helpers. Runtime caps are system-injected: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars. Forbidden tokens: import/eval/Function/globalThis/window.",
         ),
-        maxToolCalls: z
-          .number()
-          .int()
-          .positive()
-          .max(VFS_VM_MAX_TOOL_CALLS_CAP)
-          .optional()
-          .describe(
-            `Optional inner tool call cap. Default ${VFS_VM_DEFAULT_MAX_TOOL_CALLS}, hard cap ${VFS_VM_MAX_TOOL_CALLS_CAP}.`,
-          ),
-        maxScriptChars: z
-          .number()
-          .int()
-          .positive()
-          .max(VFS_VM_DEFAULT_MAX_SCRIPT_CHARS)
-          .optional()
-          .describe(
-            `Optional per-script char cap. Default ${VFS_VM_DEFAULT_MAX_SCRIPT_CHARS}. Total scripts cap is ${VFS_VM_TOTAL_SCRIPT_CHARS_CAP} chars.`,
-          ),
       })
       .strict(),
     handlerKey: "vm",

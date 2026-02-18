@@ -69,7 +69,7 @@ This is a **GM COMMAND**. The user action is already prefixed with **[SUDO]**. T
 **TOOLS**:
 ${formatToolListForPrompt(toolsetId)}
 ${capabilityText}
-- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Scripts must be JavaScript (not pseudo-tool JSON text), must not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`.
+- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text), and do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Runtime caps are fixed by system: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars.
 
 **SKILLS**:
 - **PREFLIGHT**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
@@ -174,7 +174,7 @@ You are in CLEANUP MODE (VFS-only).
 **TOOLS**:
 ${formatToolListForPrompt("cleanup")}
 ${capabilityText}
-- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Scripts must be JavaScript (not pseudo-tool JSON text), must not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`.
+- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text), and do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Runtime caps are fixed by system: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars.
 
 **SKILLS**:
 - **PREFLIGHT (ENFORCED)**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.

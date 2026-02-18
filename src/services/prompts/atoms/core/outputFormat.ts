@@ -37,7 +37,7 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
   <turn_files>
     **TURN COMPLETION RULE**:
     - Every loop MUST end with \`${resolvedFinishToolName}\` as the LAST tool call.
-    - \`vfs_vm\`: if used, it must be the ONLY top-level tool call. Inside: only allowlisted tools, no recursion, JavaScript only (no \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`), finish at most once and last.
+    - \`vfs_vm\`: if used, it must be the ONLY top-level tool call. Inside: only allowlisted tools, no recursion, JavaScript only (no \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`), and exactly one script. Runtime caps are fixed by system: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars. Finish at most once and last.
     - Do NOT place read-only tools before finish unless they directly support same-response writes.
     - Do NOT write finish-guarded paths (\`current/conversation/**\`, \`current/summary/state.json\`) via generic write tools.
     - ${

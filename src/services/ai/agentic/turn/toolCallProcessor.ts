@@ -20,12 +20,21 @@ export interface ToolCallContext {
   currentUserAction?: string;
 }
 
+const SYSTEM_VFS_VM_MAX_TOOL_CALLS = 32;
+const SYSTEM_VFS_VM_MAX_SCRIPT_CHARS = 16000;
+
 export function executeGenericTool(
   name: string,
   args: JsonObject,
   ctx: ToolCallContext,
 ): unknown {
   const { loopState, gameState, settings, currentUserAction } = ctx;
+  const budgetRemainingRaw =
+    loopState.budgetState.toolCallsMax - loopState.budgetState.toolCallsUsed;
+  const budgetRemaining = Number.isFinite(budgetRemainingRaw)
+    ? Math.max(0, Math.floor(budgetRemainingRaw))
+    : 0;
+  const vmToolCallCap = Math.min(SYSTEM_VFS_VM_MAX_TOOL_CALLS, budgetRemaining);
 
   if (!hasHandler(name)) {
     return createError(`Unknown tool: ${name}`, "UNKNOWN");
@@ -54,6 +63,8 @@ export function executeGenericTool(
         : typeof args.userAction === "string" && args.userAction.length > 0
           ? args.userAction
           : undefined,
+    vfsVmMaxToolCalls: vmToolCallCap,
+    vfsVmMaxScriptChars: SYSTEM_VFS_VM_MAX_SCRIPT_CHARS,
   };
 
   return dispatchToolCall(name, args, toolContext);

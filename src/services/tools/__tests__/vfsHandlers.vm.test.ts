@@ -21,16 +21,14 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          "state.path = 'current/world/vm.txt'; await vfs_write_file({ path: state.path, content: 'alpha', contentType: 'text/plain' }); emit({ step: 'write', path: state.path });",
-          "const read = await vfs_read_chars({ path: state.path, start: 0, offset: 16 }); emit({ step: 'read', content: read.data?.content }); return read.data?.content;",
+          "state.path = 'current/world/vm.txt'; await vfs_write_file({ path: state.path, content: 'alpha', contentType: 'text/plain' }); emit({ step: 'write', path: state.path }); const read = await vfs_read_chars({ path: state.path, start: 0, offset: 16 }); emit({ step: 'read', content: read.data?.content }); return read.data?.content;",
         ],
-        maxToolCalls: 8,
       },
       ctx,
     )) as any;
 
     expect(result.success).toBe(true);
-    expect(result.data?.scriptsCompleted).toBe(2);
+    expect(result.data?.scriptsCompleted).toBe(1);
     expect(result.data?.toolCallsUsed).toBe(2);
     expect(result.data?.emitted).toEqual(
       expect.arrayContaining([
@@ -39,6 +37,26 @@ describe("VFS handlers vm", () => {
       ]),
     );
     expect(session.readFile("world/vm.txt")?.content).toBe("alpha");
+  });
+
+  it("rejects multiple scripts in one vm call", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm", "vfs_read_chars"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: ["emit('a');", "emit('b');"],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_PARAMS");
+    expect(result.error).toContain("Provide exactly one script");
   });
 
   it("rejects inner tool calls outside runtime allowlist", async () => {
@@ -138,6 +156,7 @@ describe("VFS handlers vm", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_ACTION");
     expect(result.error).toContain("VFS_VM_SCRIPT_FORBIDDEN_TOKEN");
+    expect(result.error).toContain("line 1:");
   });
 
   it("keeps inner tool success/failure isolated and reports clear failing tool context", async () => {
@@ -162,6 +181,7 @@ describe("VFS handlers vm", () => {
     expect(result.error).toContain("VFS_VM_INNER_TOOL_ERROR");
     expect(result.error).toContain('tool="vfs_read_json"');
     expect(result.error).toContain("scripts[0]");
+    expect(result.error).toContain("line ");
     expect(result.vmMeta?.callTrace?.length).toBe(2);
     expect(result.vmMeta?.callTrace?.[0]?.toolName).toBe("vfs_write_file");
     expect(result.vmMeta?.callTrace?.[0]?.success).toBe(true);
@@ -169,5 +189,49 @@ describe("VFS handlers vm", () => {
     expect(result.vmMeta?.callTrace?.[1]?.success).toBe(false);
     expect(result.vmMeta?.callTrace?.[1]?.code).toBe("INVALID_DATA");
     expect(session.readFile("world/notes.md")?.content).toContain("vm note");
+  });
+
+  it("reports compile-time script errors with clear context", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: ["const broken = ;"],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_PARAMS");
+    expect(result.error).toContain("VFS_VM_SCRIPT_SYNTAX_ERROR");
+    expect(result.error).toContain("scripts[0]");
+    expect(result.error).toContain("failed to compile as JavaScript");
+  });
+
+  it("reports runtime script errors with clear context", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: ["throw new Error('boom');"],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("UNKNOWN");
+    expect(result.error).toContain("VFS_VM_SCRIPT_RUNTIME_ERROR");
+    expect(result.error).toContain("scripts[0]");
+    expect(result.error).toContain("boom");
   });
 });

@@ -81,15 +81,19 @@ describe("VFS tools", () => {
 
     expect(
       vm.parameters.safeParse({
-        scripts: new Array(5).fill(new Array(3500).fill("a").join("")),
+        scripts: ["emit(1);", "emit(2);"],
+      }).success,
+    ).toBe(false);
+
+    expect(
+      vm.parameters.safeParse({
+        scripts: [new Array(16001).fill("a").join("")],
       }).success,
     ).toBe(false);
 
     expect(
       vm.parameters.safeParse({
         scripts: ["emit(1);"],
-        maxToolCalls: 16,
-        maxScriptChars: 4000,
       }).success,
     ).toBe(true);
   });

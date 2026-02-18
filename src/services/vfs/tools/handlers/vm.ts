@@ -7,9 +7,9 @@ import type { ToolContext } from "../../../tools/toolHandlerRegistry";
 import { normalizeVfsPath } from "../../utils";
 import type { VfsToolHandler } from "./shared";
 
-const DEFAULT_MAX_TOOL_CALLS = 16;
-const MAX_TOOL_CALLS_CAP = 64;
-const DEFAULT_MAX_SCRIPT_CHARS = 4000;
+const DEFAULT_MAX_TOOL_CALLS = 32;
+const MAX_TOOL_CALLS_CAP = 32;
+const DEFAULT_MAX_SCRIPT_CHARS = 16000;
 const TOTAL_SCRIPT_CHARS_CAP = 16000;
 
 const WRITE_MUTATION_TOOL_NAMES = new Set([
@@ -42,27 +42,14 @@ type VmInnerDispatcher = (
 
 interface VmArgs {
   scripts: string[];
-  maxToolCalls?: number;
-  maxScriptChars?: number;
 }
 
 const parseVmArgs = (args: JsonObject): VmArgs => {
   const scripts = Array.isArray(args.scripts)
     ? args.scripts.filter((item): item is string => typeof item === "string")
     : [];
-  const maxToolCalls =
-    typeof args.maxToolCalls === "number" && Number.isFinite(args.maxToolCalls)
-      ? args.maxToolCalls
-      : undefined;
-  const maxScriptChars =
-    typeof args.maxScriptChars === "number" &&
-    Number.isFinite(args.maxScriptChars)
-      ? args.maxScriptChars
-      : undefined;
   return {
     scripts,
-    maxToolCalls,
-    maxScriptChars,
   };
 };
 
@@ -173,10 +160,83 @@ const collectWriteTargets = (toolName: string, args: JsonObject): string[] => {
   return [];
 };
 
-const findDangerousPattern = (script: string): string | null => {
+interface VmLineColumn {
+  line: number;
+  column: number;
+}
+
+const getLineColumnFromOffset = (
+  source: string,
+  offset: number,
+): VmLineColumn => {
+  const safeOffset = Math.max(0, Math.min(source.length, offset));
+  const prior = source.slice(0, safeOffset);
+  const lines = prior.split("\n");
+  const line = lines.length;
+  const column = (lines[lines.length - 1]?.length ?? 0) + 1;
+  return { line, column };
+};
+
+const parseLineColumnFromStack = (
+  stack: string | undefined,
+  sourceLabel: string,
+  lineOffset: number,
+): VmLineColumn | null => {
+  if (typeof stack !== "string" || stack.length === 0) {
+    return null;
+  }
+
+  const escapedSource = sourceLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const sourcePattern = new RegExp(`${escapedSource}:(\\d+):(\\d+)`);
+  const anonymousPattern = /<anonymous>:(\d+):(\d+)/;
+  const patterns = [sourcePattern, anonymousPattern];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(stack);
+    if (!match) continue;
+    const rawLine = Number(match[1]);
+    const rawColumn = Number(match[2]);
+    if (!Number.isFinite(rawLine) || !Number.isFinite(rawColumn)) {
+      continue;
+    }
+    const line = Math.max(1, rawLine - lineOffset);
+    const column = Math.max(1, rawColumn);
+    return { line, column };
+  }
+
+  return null;
+};
+
+const formatLineColumn = (lineColumn: VmLineColumn): string =>
+  `line ${lineColumn.line}:${lineColumn.column}`;
+
+const withScriptLineContext = (
+  error: ToolCallError,
+  scriptIndex: number,
+  lineColumn: VmLineColumn | null,
+): ToolCallError => {
+  if (!lineColumn) return error;
+  if (error.error.includes(" line ")) return error;
+  return {
+    ...error,
+    error:
+      `${error.error} ` +
+      `(scripts[${scriptIndex}] ${formatLineColumn(lineColumn)}).`,
+  };
+};
+
+const findDangerousPattern = (
+  script: string,
+): { label: string; lineColumn: VmLineColumn } | null => {
   for (const item of DANGEROUS_SCRIPT_PATTERNS) {
-    if (item.regex.test(script)) {
-      return item.label;
+    const match = item.regex.exec(script);
+    if (match) {
+      const offset =
+        typeof match.index === "number" && match.index >= 0 ? match.index : 0;
+      return {
+        label: item.label,
+        lineColumn: getLineColumnFromOffset(script, offset),
+      };
     }
   }
   return null;
@@ -230,12 +290,18 @@ export const createVmHandler = (
     const typedArgs = parseVmArgs(args);
     const scripts = Array.isArray(typedArgs.scripts) ? typedArgs.scripts : [];
     const maxToolCalls =
-      typeof typedArgs.maxToolCalls === "number"
-        ? Math.min(typedArgs.maxToolCalls, MAX_TOOL_CALLS_CAP)
+      typeof ctx.vfsVmMaxToolCalls === "number" &&
+      Number.isFinite(ctx.vfsVmMaxToolCalls)
+        ? Math.min(
+            Math.max(0, Math.floor(ctx.vfsVmMaxToolCalls)),
+            MAX_TOOL_CALLS_CAP,
+          )
         : DEFAULT_MAX_TOOL_CALLS;
     const maxScriptChars =
-      typeof typedArgs.maxScriptChars === "number"
-        ? Math.min(typedArgs.maxScriptChars, DEFAULT_MAX_SCRIPT_CHARS)
+      typeof ctx.vfsVmMaxScriptChars === "number" &&
+      Number.isFinite(ctx.vfsVmMaxScriptChars) &&
+      ctx.vfsVmMaxScriptChars > 0
+        ? Math.min(Math.floor(ctx.vfsVmMaxScriptChars), DEFAULT_MAX_SCRIPT_CHARS)
         : DEFAULT_MAX_SCRIPT_CHARS;
 
     const allowedToolNames = new Set(
@@ -288,6 +354,14 @@ export const createVmHandler = (
         callIndex: finishCallIndex,
       },
     });
+
+    if (scripts.length !== 1) {
+      const error = createError(
+        `[VFS_VM_SCRIPT_COUNT_INVALID] Expected exactly 1 script, received ${scripts.length}.`,
+        "INVALID_PARAMS",
+      );
+      return attachVmMeta(error, buildVmMeta());
+    }
 
     const fail = (error: ToolCallError): VmAbortError => {
       if (!firstFailure) {
@@ -480,6 +554,9 @@ export const createVmHandler = (
     for (let scriptIndex = 0; scriptIndex < scripts.length; scriptIndex += 1) {
       activeScriptIndex = scriptIndex;
       const script = scripts[scriptIndex] ?? "";
+      const sourceLabel = `vfs_vm_script_${scriptIndex}.js`;
+      const scriptLineOffset = 1;
+      const scriptSource = `"use strict";\n${script}\n//# sourceURL=${sourceLabel}`;
 
       if (script.length > maxScriptChars) {
         firstFailure = createError(
@@ -491,8 +568,9 @@ export const createVmHandler = (
 
       const dangerousToken = findDangerousPattern(script);
       if (dangerousToken) {
+        const lineContext = formatLineColumn(dangerousToken.lineColumn);
         firstFailure = createError(
-          `[VFS_VM_SCRIPT_FORBIDDEN_TOKEN] scripts[${scriptIndex}] contains forbidden token "${dangerousToken}". ` +
+          `[VFS_VM_SCRIPT_FORBIDDEN_TOKEN] scripts[${scriptIndex}] contains forbidden token "${dangerousToken.label}" at ${lineContext}. ` +
             "Allowed language is JavaScript only. Forbidden tokens include: import, eval, Function, globalThis, window.",
           "INVALID_ACTION",
         );
@@ -506,12 +584,21 @@ export const createVmHandler = (
           "emit",
           "state",
           ...helperToolNames,
-          `"use strict";\nconst globalThis = undefined;\nconst window = undefined;\nconst Function = undefined;\n${script}`,
+          "globalThis",
+          "window",
+          "Function",
+          scriptSource,
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        const lineColumn = parseLineColumnFromStack(
+          error instanceof Error ? error.stack : undefined,
+          sourceLabel,
+          scriptLineOffset,
+        );
+        const lineText = lineColumn ? ` ${formatLineColumn(lineColumn)}` : "";
         firstFailure = createError(
-          `[VFS_VM_SCRIPT_SYNTAX_ERROR] scripts[${scriptIndex}] failed to compile as JavaScript: ${message}`,
+          `[VFS_VM_SCRIPT_SYNTAX_ERROR] scripts[${scriptIndex}]${lineText} failed to compile as JavaScript: ${message}`,
           "INVALID_PARAMS",
         );
         break;
@@ -523,17 +610,32 @@ export const createVmHandler = (
           emit,
           state,
           ...helperFunctions,
+          undefined,
+          undefined,
+          undefined,
         );
         scriptResults.push(result);
         scriptsCompleted += 1;
       } catch (error) {
         if (error instanceof VmAbortError) {
-          firstFailure = firstFailure ?? error.toolError;
+          const lineColumn = parseLineColumnFromStack(
+            error.stack,
+            sourceLabel,
+            scriptLineOffset,
+          );
+          const vmError = firstFailure ?? error.toolError;
+          firstFailure = withScriptLineContext(vmError, scriptIndex, lineColumn);
         } else {
           const message =
             error instanceof Error ? error.message : String(error);
+          const lineColumn = parseLineColumnFromStack(
+            error instanceof Error ? error.stack : undefined,
+            sourceLabel,
+            scriptLineOffset,
+          );
+          const lineText = lineColumn ? ` ${formatLineColumn(lineColumn)}` : "";
           firstFailure = createError(
-            `[VFS_VM_SCRIPT_RUNTIME_ERROR] scripts[${scriptIndex}] failed: ${message}`,
+            `[VFS_VM_SCRIPT_RUNTIME_ERROR] scripts[${scriptIndex}]${lineText} failed: ${message}`,
             "UNKNOWN",
           );
         }

@@ -116,25 +116,18 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
   vfs_vm: [
     {
       scripts: [
-        "state.keyword = 'gate'; const found = await vfs_search({ query: state.keyword, path: 'current/world', limit: 5 }); emit({ step: 'search', count: found.data?.results?.length ?? 0 });",
-        "await vfs_write_file({ path: 'current/world/notes/vm-run.md', content: '# VM Run\\n\\n- keyword: ' + state.keyword, contentType: 'text/markdown' }); emit({ step: 'write', path: 'current/world/notes/vm-run.md' });",
+        "state.keyword = 'gate'; const found = await vfs_search({ query: state.keyword, path: 'current/world', limit: 5 }); await vfs_write_file({ path: 'current/world/notes/vm-run.md', content: '# VM Run\\n\\n- keyword: ' + state.keyword, contentType: 'text/markdown' }); return { count: found.data?.results?.length ?? 0, path: 'current/world/notes/vm-run.md' };",
       ],
-      maxToolCalls: 8,
     },
     {
       scripts: [
-        "const base = await vfs_read_json({ path: 'current/world/global.json', pointers: ['/turnNumber'] }); const turn = Number(base.data?.extracts?.[0]?.json ?? '0'); state.nextTurn = turn + 1; emit({ step: 'read', turn });",
-        "await vfs_merge_json({ path: 'current/world/global.json', content: { turnNumber: state.nextTurn } }); emit({ step: 'write', turnNumber: state.nextTurn });",
-        "await vfs_finish_turn({ assistant: { narrative: 'You confirm the timeline marker and seal the update.', choices: [{ text: 'Proceed with patrol route' }, { text: 'Review one more clue' }] } });",
+        "const base = await vfs_read_json({ path: 'current/world/global.json', pointers: ['/turnNumber'] }); const turn = Number(base.data?.extracts?.[0]?.json ?? '0'); state.nextTurn = turn + 1; await vfs_merge_json({ path: 'current/world/global.json', content: { turnNumber: state.nextTurn } }); await vfs_finish_turn({ assistant: { narrative: 'You confirm the timeline marker and seal the update.', choices: [{ text: 'Proceed with patrol route' }, { text: 'Review one more clue' }] } });",
       ],
-      maxToolCalls: 12,
-      maxScriptChars: 4000,
     },
     {
       scripts: [
-        "emit({ phase: 'repair-start' }); await call('vfs_patch_json', { path: 'current/world/global.json', patch: [{ op: 'replace', path: '/missingField', value: 1 }] });",
+        "await call('vfs_patch_json', { path: 'current/world/global.json', patch: [{ op: 'replace', path: '/missingField', value: 1 }] });",
       ],
-      maxToolCalls: 2,
     },
   ],
   vfs_write_file: [
