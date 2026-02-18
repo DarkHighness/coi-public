@@ -23,8 +23,10 @@
     "prompts:deps:build": "tsx scripts/build-prompt-atom-graph.ts",
     "prompts:deps:check": "tsx scripts/build-prompt-atom-graph.ts --check",
     "prompts:loops:print": "node --import tsx scripts/print-loop-prompts.ts",
+    "prompts:loops:export": "node --import tsx scripts/export-loop-prompts-jsonl.ts",
     "prompts:trace:check": "tsx scripts/check-atom-trace-style.ts",
-    "skills:atoms:check": "tsx scripts/check-skill-target-atoms.ts"
+    "skills:atoms:check": "tsx scripts/check-skill-target-atoms.ts",
+    "skills:docs:export": "node --import tsx scripts/export-skill-doc-structure.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.0",

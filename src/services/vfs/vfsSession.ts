@@ -1,5 +1,5 @@
 import { applyPatch as applyJsonPatch } from "fast-json-patch/module/core.mjs";
-import { compressToUTF16, decompressFromUTF16 } from "lz-string";
+import * as lzStringModule from "lz-string";
 import { z } from "zod";
 import { getSchemaForPath } from "./schemas";
 import {
@@ -34,6 +34,27 @@ type ApplyPatchFn = (
   validateOperation?: boolean,
   mutateDocument?: boolean,
 ) => { newDocument: unknown };
+
+type LzStringApi = {
+  compressToUTF16: (input: string) => string;
+  decompressFromUTF16: (input: string) => string | null;
+};
+
+const lzStringApi: LzStringApi =
+  (
+    lzStringModule as unknown as {
+      default?: Partial<LzStringApi>;
+    }
+  ).default &&
+  typeof (
+    lzStringModule as unknown as {
+      default?: Partial<LzStringApi>;
+    }
+  ).default?.compressToUTF16 === "function"
+    ? (lzStringModule as unknown as { default: LzStringApi }).default
+    : (lzStringModule as unknown as LzStringApi);
+
+const { compressToUTF16, decompressFromUTF16 } = lzStringApi;
 
 const cloneFiles = (files: VfsFileMap): VfsFileMap => {
   const cloned: VfsFileMap = {};
