@@ -32,6 +32,7 @@ const DANGEROUS_SCRIPT_PATTERNS: Array<{
   { regex: /\bFunction\b/, label: "Function" },
   { regex: /\bglobalThis\b/, label: "globalThis" },
   { regex: /\bwindow\b/, label: "window" },
+  { regex: /\bVFS\s*\./, label: "VFS namespace" },
 ];
 
 type VmInnerDispatcher = (
@@ -572,11 +573,20 @@ export const createVmHandler = (
       const dangerousToken = findDangerousPattern(script);
       if (dangerousToken) {
         const lineContext = formatLineColumn(dangerousToken.lineColumn);
-        firstFailure = createError(
-          `[VFS_VM_SCRIPT_FORBIDDEN_TOKEN] scripts[${scriptIndex}] contains forbidden token "${dangerousToken.label}" at ${lineContext}. ` +
-            "Allowed language is JavaScript only. Forbidden tokens include: import, eval, Function, globalThis, window.",
-          "INVALID_ACTION",
-        );
+        if (dangerousToken.label === "VFS namespace") {
+          firstFailure = createError(
+            `[VFS_VM_NAMESPACE_BLOCKED] scripts[${scriptIndex}] references "VFS" at ${lineContext}. ` +
+              "Call injected helpers directly without namespace (for example `await vfs_read_chars({...})` or `await call(\"vfs_read_chars\", {...})`). " +
+              "Do not use `VFS.read(...)` or any `VFS.*` access.",
+            "INVALID_ACTION",
+          );
+        } else {
+          firstFailure = createError(
+            `[VFS_VM_SCRIPT_FORBIDDEN_TOKEN] scripts[${scriptIndex}] contains forbidden token "${dangerousToken.label}" at ${lineContext}. ` +
+              "Allowed language is JavaScript only. Forbidden tokens include: import, eval, Function, globalThis, window, VFS namespace access.",
+            "INVALID_ACTION",
+          );
+        }
         break;
       }
 
@@ -641,10 +651,22 @@ export const createVmHandler = (
             scriptLineOffset,
           );
           const lineText = lineColumn ? ` ${formatLineColumn(lineColumn)}` : "";
-          firstFailure = createError(
-            `[VFS_VM_SCRIPT_RUNTIME_ERROR] scripts[${scriptIndex}]${lineText} failed: ${message}`,
-            "UNKNOWN",
-          );
+          const referencesVfsVariable =
+            /\bVFS\b/.test(message) &&
+            /is not defined|is undefined|not defined/i.test(message);
+          if (referencesVfsVariable) {
+            firstFailure = createError(
+              `[VFS_VM_NAMESPACE_BLOCKED] scripts[${scriptIndex}]${lineText} references "VFS" variable. ` +
+                "Call injected helpers directly without namespace (for example `await vfs_read_chars({...})` or `await call(\"vfs_read_chars\", {...})`). " +
+                "Do not use `VFS.read(...)` or any `VFS.*` access.",
+              "INVALID_ACTION",
+            );
+          } else {
+            firstFailure = createError(
+              `[VFS_VM_SCRIPT_RUNTIME_ERROR] scripts[${scriptIndex}]${lineText} failed: ${message}`,
+              "UNKNOWN",
+            );
+          }
         }
         break;
       }

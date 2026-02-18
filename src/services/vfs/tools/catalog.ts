@@ -671,11 +671,11 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_vm",
     description:
-      "Execute sequential JavaScript snippets in a sandboxed VM. Scripts can emit allowlisted VFS tool calls for multi-step dependent operations within a single response.",
+      "Execute sequential JavaScript snippets in a sandboxed VM. Scripts can emit allowlisted VFS tool calls for multi-step dependent operations within a single response. Call `vfs_*` helpers directly (no `VFS.*` namespace).",
     parameters: z
       .object({
         scripts: vfsVmScriptsSchema.describe(
-          "Exactly one JavaScript snippet (not JSON/pseudo calls). Executed with shared state + allowlisted vfs_* helpers. Runtime caps are system-injected: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars. Forbidden tokens: import/eval/Function/globalThis/window.",
+          "Exactly one JavaScript snippet (not JSON/pseudo calls). Executed with shared state + allowlisted vfs_* helpers called directly by tool name (for example `await vfs_read_chars({...})`; do NOT use `VFS.read(...)`/`VFS.*`). Runtime caps are system-injected: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars. Forbidden tokens: import/eval/Function/globalThis/window plus VFS namespace access.",
         ),
       })
       .strict(),

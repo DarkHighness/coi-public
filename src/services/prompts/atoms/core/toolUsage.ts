@@ -75,6 +75,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
           "- Plan continuity writes: `workspace/PLAN.md` (save-scoped).",
           "- Generic write/edit tools may include text + JSON mutations and file move/delete when allowlisted.",
           "- If `vfs_vm` is available in this loop, it must be the ONLY top-level tool call.",
+          "- Inside `vfs_vm` scripts, call injected `vfs_*` helpers directly (e.g. `await vfs_read_chars({...})`), not `VFS.read(...)` or `VFS.*`.",
         ].join("\n")
   }
 

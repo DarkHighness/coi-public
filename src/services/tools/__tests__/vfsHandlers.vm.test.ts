@@ -159,6 +159,50 @@ describe("VFS handlers vm", () => {
     expect(result.error).toContain("line 1:");
   });
 
+  it("rejects VFS namespace usage and points to direct vfs_* helper calls", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm", "vfs_read_chars"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: ["const data = await VFS.read({ path: 'current/world/global.json' }); return data;"],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_ACTION");
+    expect(result.error).toContain("VFS_VM_NAMESPACE_BLOCKED");
+    expect(result.error).toContain("VFS.read");
+    expect(result.error).toContain("vfs_read_chars");
+  });
+
+  it("rejects bare VFS variable reads with actionable namespace guidance", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: ["return VFS;"],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_ACTION");
+    expect(result.error).toContain("VFS_VM_NAMESPACE_BLOCKED");
+    expect(result.error).toContain("references \"VFS\" variable");
+    expect(result.error).toContain("VFS.read");
+  });
+
   it("keeps inner tool success/failure isolated and reports clear failing tool context", async () => {
     const session = new VfsSession();
     const ctx = {

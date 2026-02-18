@@ -143,6 +143,7 @@ describe("VFS global skills generator", () => {
     expect(commandRuntimeHub).toContain("vfs_vm");
     expect(commandRuntimeHub).toContain("JavaScript");
     expect(commandRuntimeHub).toContain("globalThis");
+    expect(commandRuntimeHub).toContain("VFS.read");
     expect(commandRuntimeHub).toContain(
       "maintain `workspace/PLAN.md` continuity",
     );
@@ -154,6 +155,7 @@ describe("VFS global skills generator", () => {
     expect(commandTurn).toContain("vfs_vm");
     expect(commandTurn).toContain("JavaScript");
     expect(commandTurn).toContain("globalThis");
+    expect(commandTurn).toContain("VFS.read");
     expect(commandTurn).toContain("workspace/PLAN.md");
     expect(commandTurn).toContain("full `plan.md` rewrite is allowed");
     expect(commandTurn).toContain(
@@ -170,10 +172,12 @@ describe("VFS global skills generator", () => {
     expect(commandCleanup).toContain("retconAck?: { summary }");
     expect(commandCleanup).toContain("JavaScript");
     expect(commandCleanup).toContain("globalThis");
+    expect(commandCleanup).toContain("VFS.read");
     expect(commandSudo).toContain("vfs_vm");
     expect(commandSudo).toContain("retconAck?: { summary }");
     expect(commandSudo).toContain("JavaScript");
     expect(commandSudo).toContain("globalThis");
+    expect(commandSudo).toContain("VFS.read");
     expect(commandSummary).toContain("name: commands-summary");
     expect(commandSummary).toContain("query mode");
     expect(commandSummary).toContain("## Error Recovery");
