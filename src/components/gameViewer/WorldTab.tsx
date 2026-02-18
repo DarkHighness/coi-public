@@ -223,7 +223,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 defaultValue: "Environment Theme",
                               })}
                               value={t(
-                                `atmosphere.envTheme.${loc.visible.atmosphere.envTheme}`,
+                                `envThemeNames.${loc.visible.atmosphere.envTheme}`,
                                 {
                                   defaultValue: loc.visible.atmosphere.envTheme,
                                 },
