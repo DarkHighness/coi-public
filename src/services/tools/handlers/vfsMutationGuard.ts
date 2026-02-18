@@ -35,7 +35,7 @@ export type MutationOperation =
 
 const VFS_WRITE_DOC_REFS = [
   "current/refs/tools/README.md",
-  "current/refs/tool-schemas/README.md",
+  "current/refs/tools/index.json",
 ];
 
 const uniqueStrings = (items: Array<string | undefined>): string[] => {
@@ -61,7 +61,7 @@ const createVfsWriteGuardError = (
     ...(details?.refs ?? []),
     `current/refs/tools/${toolName}/README.md`,
     `current/refs/tools/${toolName}/EXAMPLES.md`,
-    `current/refs/tool-schemas/${toolName}/README.md`,
+    `current/refs/tools/${toolName}/SCHEMA.md`,
     ...VFS_WRITE_DOC_REFS,
   ]);
   return createError(error, code, {
@@ -638,7 +638,7 @@ export const validateWritePayload = (
                 ],
           recovery: [
             "1. Check `details.issues` above for exact field errors — fix those specific fields/types.",
-            "2. If unclear, run vfs_schema on the target path and reference tool-schemas docs in details.refs.",
+            "2. If unclear, run vfs_schema on the target path and reference tool README/SCHEMA docs in details.refs.",
           ],
         },
       ),

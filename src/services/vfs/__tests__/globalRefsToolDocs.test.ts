@@ -5,28 +5,17 @@ import { buildGlobalVfsRefs } from "../globalRefs";
 const definedTools = vfsToolRegistry.getDefinitions();
 
 describe("VFS global refs tool docs", () => {
-  it("generates split tool/schema indexes", () => {
+  it("generates tools index with in-folder schema paths", () => {
     const files = buildGlobalVfsRefs();
     const readme = files["refs/tools/README.md"]?.content ?? "";
     const toolsIndexRaw = files["refs/tools/index.json"]?.content ?? "{}";
-    const schemaIndexRaw =
-      files["refs/tool-schemas/index.json"]?.content ?? "{}";
     const toolsIndex = JSON.parse(toolsIndexRaw) as {
       count?: number;
       tools?: Array<{
         name: string;
         overviewPath: string;
         examplesPath: string;
-        schemaSummaryPath: string;
-        schemaPartPaths: string[];
-      }>;
-    };
-    const schemaIndex = JSON.parse(schemaIndexRaw) as {
-      count?: number;
-      schemas?: Array<{
-        name: string;
-        summaryPath: string;
-        partPaths: string[];
+        schemaPath: string;
       }>;
     };
 
@@ -37,42 +26,43 @@ describe("VFS global refs tool docs", () => {
       'vfs_read_json({ path: "current/refs/tools/index.json" })',
     );
     expect(readme).toContain(
-      'vfs_read_json({ path: "current/refs/tool-schemas/index.json" })',
+      'vfs_read_lines({ path: "current/refs/tools/vfs_read_markdown/SCHEMA.md", startLine: 1, lineCount: 120 })',
     );
     expect(readme).not.toContain("## SCHEMA");
     expect(readme).not.toContain("## EXAMPLES");
+    expect(readme).not.toContain("tool-schemas");
+    expect(readme).not.toContain("PART-");
     expect(toolsIndex.count).toBe(definedTools.length);
     expect(toolsIndex.tools?.length).toBe(definedTools.length);
-    expect(schemaIndex.count).toBe(definedTools.length);
-    expect(schemaIndex.schemas?.length).toBe(definedTools.length);
+    expect(
+      (toolsIndex.tools ?? []).every(
+        (entry) =>
+          entry.schemaPath === `current/refs/tools/${entry.name}/SCHEMA.md`,
+      ),
+    ).toBe(true);
+    expect(Object.keys(files).some((path) => path.startsWith("refs/tool-schemas"))).toBe(
+      false,
+    );
   });
 
-  it("emits per-tool split docs (overview/examples/schema summary + schema parts)", () => {
+  it("emits per-tool docs (overview/examples/schema) in tools folder", () => {
     const files = buildGlobalVfsRefs();
 
     for (const tool of definedTools) {
       const overviewPath = `refs/tools/${tool.name}/README.md`;
       const examplesPath = `refs/tools/${tool.name}/EXAMPLES.md`;
-      const schemaSummaryPath = `refs/tool-schemas/${tool.name}/README.md`;
+      const schemaPath = `refs/tools/${tool.name}/SCHEMA.md`;
       const overview = files[overviewPath]?.content ?? "";
       const examples = files[examplesPath]?.content ?? "";
-      const schemaSummary = files[schemaSummaryPath]?.content ?? "";
+      const schema = files[schemaPath]?.content ?? "";
 
       expect(overview).toContain(`# ${tool.name}`);
       expect(overview).toContain("## INTRO");
       expect(overview).toContain("## WHERE TO READ NEXT");
       expect(examples).toContain(`# ${tool.name} Examples`);
       expect(examples).toContain("```json");
-      expect(schemaSummary).toContain(`# ${tool.name} Schema`);
-      expect(schemaSummary).toContain("## Parts");
-
-      const partFiles = Object.keys(files).filter(
-        (path) =>
-          path.startsWith(`refs/tool-schemas/${tool.name}/PART-`) &&
-          path.endsWith(".md"),
-      );
-      expect(partFiles.length).toBeGreaterThan(0);
-      expect(files[partFiles[0]]?.content ?? "").toContain("```ts");
+      expect(schema).toContain(`# ${tool.name} Schema`);
+      expect(schema).toContain("```ts");
     }
   });
 });

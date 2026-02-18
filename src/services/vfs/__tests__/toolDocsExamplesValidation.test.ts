@@ -22,7 +22,7 @@ describe("tool docs examples validation", () => {
       expect(indexNames.has(name)).toBe(true);
       expect(docs[`refs/tools/${name}/README.md`]).toBeTruthy();
       expect(docs[`refs/tools/${name}/EXAMPLES.md`]).toBeTruthy();
-      expect(docs[`refs/tool-schemas/${name}/README.md`]).toBeTruthy();
+      expect(docs[`refs/tools/${name}/SCHEMA.md`]).toBeTruthy();
     }
 
     for (const tool of defs) {

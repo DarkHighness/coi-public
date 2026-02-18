@@ -124,7 +124,7 @@ const buildToolDocBoundedReadHint = (params: {
   toolExamplesRef: string;
   toolSchemaRef: string;
 }): string =>
-  `Use \`vfs_read_chars({ path: "${params.toolDocRef}" })\` + \`vfs_read_chars({ path: "${params.toolExamplesRef}" })\` + \`vfs_read_chars({ path: "${params.toolSchemaRef}" })\` before retrying; if schema summary points to PART files, read only needed PART-xx.md.`;
+  `Use \`vfs_read_chars({ path: "${params.toolDocRef}" })\` + \`vfs_read_chars({ path: "${params.toolExamplesRef}" })\` + \`vfs_read_chars({ path: "${params.toolSchemaRef}" })\` before retrying.`;
 
 const buildInvalidParametersMessage = (params: {
   toolName: string;
@@ -149,7 +149,7 @@ const buildInvalidParametersMessage = (params: {
     `Tool docs: \`${toolDocRef}\` + \`${toolExamplesRef}\``,
     `Schema docs: \`${toolSchemaRef}\``,
     "Docs index: `current/refs/tools/README.md`",
-    "Schema index: `current/refs/tool-schemas/index.json`",
+    "Tools index: `current/refs/tools/index.json`",
   ];
   const discriminatorTypeHint = buildDiscriminatorTypeHint(validationError);
   if (discriminatorTypeHint) {
@@ -674,7 +674,7 @@ export async function callWithAgenticRetry(
             });
             const toolDocRef = `current/refs/tools/${toolCall.name}/README.md`;
             const toolExamplesRef = `current/refs/tools/${toolCall.name}/EXAMPLES.md`;
-            const toolSchemaRef = `current/refs/tool-schemas/${toolCall.name}/README.md`;
+            const toolSchemaRef = `current/refs/tools/${toolCall.name}/SCHEMA.md`;
             const wasGuidanceShown = schemaGuidanceShownByTool.has(
               toolCall.name,
             );

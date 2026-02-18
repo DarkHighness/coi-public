@@ -62,8 +62,6 @@ export type VfsToolHandler = (
 ) => unknown | Promise<unknown>;
 
 const TOOL_DOCS_README_REF = "current/refs/tools/README.md";
-const TOOL_SCHEMA_DOCS_README_REF = "current/refs/tool-schemas/README.md";
-const TOOL_SCHEMA_DOCS_INDEX_REF = "current/refs/tool-schemas/index.json";
 const TURN_ID_PATTERN = /^conversation\/turns\/fork-(\d+)\/turn-(\d+)\.json$/;
 
 export const VFS_READ_HARD_TOKEN_BUDGET =
@@ -112,7 +110,7 @@ export const getToolExamplesRef = (toolName: string): string =>
   `current/refs/tools/${normalizeToolDocName(toolName)}/EXAMPLES.md`;
 
 export const getToolSchemaRef = (toolName: string): string =>
-  `current/refs/tool-schemas/${normalizeToolDocName(toolName)}/README.md`;
+  `current/refs/tools/${normalizeToolDocName(toolName)}/SCHEMA.md`;
 
 const uniqueStrings = (items: Array<string | undefined>): string[] => {
   const seen = new Set<string>();

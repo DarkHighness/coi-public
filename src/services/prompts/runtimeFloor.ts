@@ -13,7 +13,7 @@ You MUST follow these runtime protocol constraints:
   - Read tools: \`vfs_read_markdown\` (prefer section selectors), \`vfs_read_chars\`, \`vfs_read_lines\` (use for large files with bounded ranges), \`vfs_read_json\` (requires \`pointers\`), \`vfs_ls\` (returns stats/hints), \`vfs_schema\`, \`vfs_search\`.
   - Write tools: \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`. Never use these on finish-guarded paths.
   - \`vfs_vm\`: multi-step JavaScript orchestrator. MUST be the only top-level tool call. No recursion, no \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`. Finish at most once, last.
-  - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\`; schemas: \`current/refs/tool-schemas/{toolName}/README.md\` + \`PART-xx.md\`.
+  - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\` + \`SCHEMA.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` → world turn, \`[Player Rate]\` → soul files only, \`[SUDO]\` → elevated update.
   - Soul docs (\`current/world/soul.md\`, \`current/world/global/soul.md\`): writable AI-to-AI self-notes for future turns. Update proactively in normal turns; use \`vfs_finish_soul\` in \`[Player Rate]\`.
   - \`**/notes.md\` files: optional AI self-notes, not mandatory pre-read anchors.
@@ -47,7 +47,7 @@ You MUST follow these outline protocol constraints:
   - In OUTLINE MODE, use read-only tools (\`vfs_read_markdown\`/\`vfs_read_chars\`/\`vfs_read_lines\`/\`vfs_read_json\`, \`vfs_schema\`, \`vfs_ls\`, \`vfs_search\`) for schema/contract checks before submit.
   - Prefer \`vfs_read_markdown\` with section selectors; for large files, use bounded \`vfs_read_lines\`.
   - Never call write/move/delete tools in outline mode.
-  - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\`; schemas: \`current/refs/tool-schemas/{toolName}/README.md\` + \`PART-xx.md\`.
+  - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\` + \`SCHEMA.md\`.
 - Submit ONLY with the phase-specific submit tool. Do NOT combine it with other tools.
 - Quick-start (recommended):
   1) Read \`current/skills/commands/runtime/SKILL.md\` + \`current/skills/commands/runtime/outline/SKILL.md\`.
