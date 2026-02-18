@@ -304,6 +304,8 @@ When you render those consequences into prose, write like a skilled human storyt
     - Definitive proof of hidden truth → set \`unlocked=true\` for that observer actor in the correct storage layer with concrete \`unlockReason\`.
     - If both happen in one turn, commit both writes with \`knownBy\` preceding \`unlocked\`.
     - Invariant: any observer actor with \`unlocked=true\` must be included in \`knownBy\` in that same turn.
+    - Actor-profile guardrail: for \`current/world/characters/<actorId>/profile.json\` and \`profile.relations[]\`, observer actor is \`<actorId>\`; \`unlocked=true\` requires \`knownBy\` containing \`<actorId>\` in the same write.
+    - Forbidden pattern: NPC profile/relation with \`unlocked=true\` while \`knownBy\` has only \`char:player\` and misses the NPC observer.
     - Evaluate as \`(observerActorId, targetEntityId)\`: "A knows B's secret" requires A's unlock state for B.
   - **Placeholder promotion (MANDATORY)**:
     - \`[Display Name]\` in reference fields is temporary. When identity becomes explicit, resolve to canonical ID in the same turn.

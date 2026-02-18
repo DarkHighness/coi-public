@@ -104,6 +104,8 @@ export const stateManagement: Atom<void> = defineAtom(
         - Definitive proof of hidden truth (confession/document/direct observation) ⇒ set \`unlocked=true\` + concrete \`unlockReason\` for the specific observer actor in the correct storage layer.
         - If you perform both in one turn, include both writes in sequence: establish \`knownBy\` first, then set \`unlocked=true\`.
         - Invariant: when setting \`unlocked=true\` for an observer actor, that actor MUST be present in \`knownBy\` in the same turn.
+        - Actor-profile guardrail: for \`current/world/characters/<actorId>/profile.json\` and \`profile.relations[]\`, observer actor is \`<actorId>\`; if \`unlocked=true\`, \`knownBy\` MUST include \`<actorId>\` in the same write.
+        - Invalid pattern (forbidden): \`unlocked=true\` + \`knownBy\` missing the observer actor (for example only \`char:player\` on an NPC-owned profile relation).
         - Suspicion/rumor/partial clues ⇒ keep \`unlocked=false\`; only update visible clues.
         - Never unlock “for drama” without proof.
         - Evaluate epistemics as a tuple \`(observerActorId, targetEntityId)\`: "A knows B's secret" is true only when A's unlock state for B is true (or relation/entity-layer unlock for actor/relation/item targets).

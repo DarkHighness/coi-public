@@ -76,7 +76,7 @@ export const hiddenLayerQuality: Atom<void> = defineAtom(
     - **UNLOCKED IS RUNTIME STATE**: Default to locked on creation. Only flip to unlocked when an observer actor has definitive proof, via a VFS state update:
       * Quests/knowledge/timeline/locations/factions/causal_chains → set \`current/world/characters/<actorId>/views/**.unlocked=true\` (+ unlockReason; protagonist-facing turns usually \`char:player\`)
       * \`world_info\` → set \`current/world/characters/<actorId>/views/world_info.json\` \`worldSettingUnlocked/mainGoalUnlocked\` (+ reason fields)
-      * Actors/relations/items/traits → set the entity's own \`unlocked=true\`
+      * Actors/relations/items/traits → set the entity's own \`unlocked=true\`, and include observer actor in \`knownBy\` in the same write (for \`profile.json\`/relations, observer is that profile's \`<actorId>\`)
   </minimum_standards>
 
   <quality_check>

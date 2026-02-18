@@ -34,6 +34,8 @@ describe("stateManagement atom", () => {
     expect(content).toContain("Progression is mandatory");
     expect(content).toContain("first `knownBy`, then `unlocked`");
     expect(content).toContain("Invariant: when setting `unlocked=true`");
+    expect(content).toContain("Actor-profile guardrail");
+    expect(content).toContain("knownBy` MUST include `<actorId>`");
     expect(content).toContain("current/world/placeholders/**/*.md");
     expect(content).toContain(
       "Delete the corresponding placeholder draft markdown",

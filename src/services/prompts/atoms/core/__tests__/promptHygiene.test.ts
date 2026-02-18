@@ -111,6 +111,8 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("first `knownBy`, then `unlocked`");
     expect(content).toContain("Invariant: when");
     expect(content).toContain("`unlocked=true`");
+    expect(content).toContain("Actor-profile guardrail");
+    expect(content).toContain("Forbidden pattern");
     expect(content).toContain(
       "hidden-truth proof, not about first-time appearance",
     );

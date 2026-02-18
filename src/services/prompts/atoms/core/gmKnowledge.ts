@@ -86,6 +86,8 @@ const unlockProtocol = `
       - Definitive proof of hidden truth: keep known status and additionally set \`unlocked=true\` + concrete \`unlockReason\` for that observer actor.
       - If both happen in one turn, write \`knownBy\` first and \`unlocked=true\` second in the same turn.
       - Invariant: when \`unlocked=true\` for an observer actor, \`knownBy\` MUST include that actor in the same turn.
+      - Actor-profile guardrail: for \`world/characters/<actorId>/profile.json\` and \`profile.relations[]\`, observer actor is that same \`<actorId>\`.
+      - Strict ban: never output \`unlocked=true\` with missing observer in \`knownBy\` (for example \`knownBy: ["char:player"]\` but observer is \`char:npc_guard\`).
       - Suspicion/rumor/partial clue: update visible layer hints only; keep \`unlocked=false\`.
       - Unlock is about hidden-truth proof, not about first-time appearance.
       - Evaluate as tuple \`(observerActorId, targetEntityId)\`: "A knows B's secret" is true only if A's unlock state for B is true.
@@ -135,6 +137,9 @@ const unlockProtocol = `
 
       ❌ WRONG: "It would be dramatic to reveal now" → unlock (drama ≠ proof)
       ✅ RIGHT: "Observer completed investigation quest and NPC confessed" → set \`current/world/characters/<observerActorId>/views/quests/<questId>.json\` \`unlocked: true\` (confession)
+
+      ❌ WRONG: write \`current/world/characters/char_gu_hanshan/profile.json\` with \`unlocked: true\` and \`knownBy: ["char:player"]\` only
+      ✅ RIGHT: if profile/relation is unlocked for \`char_gu_hanshan\`, include \`"char_gu_hanshan"\` in \`knownBy\` in the same write
 
       ✅ ALSO RIGHT: Turn 5, observer found hidden diary with confession → unlock (proof found early is still valid)
     </examples>
