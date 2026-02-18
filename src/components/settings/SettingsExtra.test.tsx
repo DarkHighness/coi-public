@@ -187,6 +187,25 @@ describe("SettingsExtra", () => {
     ).toBeTruthy();
   });
 
+  it("supports pan_gender selection", () => {
+    render(React.createElement(SettingsExtra));
+
+    const genderSelect = (
+      screen.getAllByRole("combobox") as HTMLSelectElement[]
+    ).find((select) => Boolean(select.querySelector('option[value="pan_gender"]')));
+    expect(genderSelect).toBeTruthy();
+
+    fireEvent.change(genderSelect as HTMLSelectElement, {
+      target: { value: "pan_gender" },
+    });
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extra: expect.objectContaining({ genderPreference: "pan_gender" }),
+      }),
+    );
+  });
+
   it("shows max output fallback warning when value is too low", () => {
     settingsState = {
       ...baseSettings(),

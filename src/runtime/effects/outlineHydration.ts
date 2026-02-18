@@ -447,6 +447,7 @@ export function buildOutlineHydratedState({
       attributes: toCharacterAttributes(visible.attributes),
       appearance: visible.appearance ?? baseState.character.appearance,
       age: visible.age ?? baseState.character.age ?? "Unknown",
+      gender: visible.gender ?? baseState.character.gender ?? "Unspecified",
       profession:
         visible.profession ?? baseState.character.profession ?? "Unknown",
       background: visible.background ?? baseState.character.background ?? "",

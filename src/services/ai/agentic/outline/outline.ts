@@ -1352,7 +1352,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
             // Phase 3: Additional protagonist gender validation
             if (phaseNum === 3 && settings.extra?.genderPreference) {
               const genderPref = settings.extra.genderPreference;
-              if (genderPref === "male" || genderPref === "female") {
+              if (
+                genderPref === "male" ||
+                genderPref === "female" ||
+                genderPref === "pan_gender"
+              ) {
                 const genderError = validateGenderPreferencePhase3(
                   validatedData,
                   genderPref,

@@ -78,6 +78,7 @@ describe("deriveGameStateFromVfs", () => {
             attributes: [],
             appearance: "Travel-worn",
             age: "21",
+            gender: "Male",
             profession: "Scout",
             background: "Raised on the frontier.",
             race: "Human Male",
@@ -118,7 +119,8 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.customRules).toHaveLength(1);
     expect(state.character.name).toBe("Arin");
     expect(state.character.age).toBe("21");
-    expect(state.character.race).toBe("Human Male");
+    expect(state.character.gender).toBe("Male");
+    expect(state.character.race).toBe("Human");
     expect(state.character.age).not.toBe("Unknown");
     expect(state.character.race).not.toBe("Unknown");
     expect(state.character.skills).toEqual([]);
@@ -128,7 +130,7 @@ describe("deriveGameStateFromVfs", () => {
     expect(state.actors).toHaveLength(1);
   });
 
-  it("does not synthesize 'Unknown' for missing player age/race", () => {
+  it("does not synthesize 'Unknown' for missing player age/race/gender", () => {
     const files: VfsFileMap = {
       "world/characters/char:player/profile.json": makeJsonFile(
         "world/characters/char:player/profile.json",
@@ -155,8 +157,10 @@ describe("deriveGameStateFromVfs", () => {
 
     expect(state.character.age).toBe("");
     expect(state.character.race).toBe("");
+    expect(state.character.gender).toBe("");
     expect(state.character.age).not.toBe("Unknown");
     expect(state.character.race).not.toBe("Unknown");
+    expect(state.character.gender).not.toBe("Unknown");
   });
 
   it("falls back to root-level player profile fields when visible fields are missing", () => {
@@ -189,7 +193,8 @@ describe("deriveGameStateFromVfs", () => {
       const state = deriveGameStateFromVfs(files);
 
       expect(state.character.age).toBe("26");
-      expect(state.character.race).toBe("Elf Female");
+      expect(state.character.race).toBe("Elf");
+      expect(state.character.gender).toBe("Female");
       expect(state.character.profession).toBe("Ranger");
       expect(state.character.background).toBe("Raised by forest wardens.");
       expect(state.character.title).toBe("Scout Captain");
@@ -201,9 +206,44 @@ describe("deriveGameStateFromVfs", () => {
         "[VFS] Player required field missing: race",
         expect.anything(),
       );
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        "[VFS] Player required field missing: gender",
+        expect.anything(),
+      );
     } finally {
       warnSpy.mockRestore();
     }
+  });
+
+  it("infers gender from legacy combined chinese race strings without rewriting files", () => {
+    const files: VfsFileMap = {
+      "world/characters/char:player/profile.json": makeJsonFile(
+        "world/characters/char:player/profile.json",
+        {
+          id: "char:player",
+          kind: "player",
+          currentLocation: "loc:inn",
+          knownBy: ["char:player"],
+          visible: {
+            name: "Arin",
+            title: "Wanderer",
+            status: "Healthy",
+            attributes: [],
+            appearance: "Travel-worn",
+            age: "26",
+            profession: "Scout",
+            background: "Raised in borderlands.",
+            race: "人类男性",
+          },
+          relations: [],
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+
+    expect(state.character.race).toBe("人类");
+    expect(state.character.gender).toBe("男性");
   });
 
   it("throws on legacy world/character.json saves", () => {

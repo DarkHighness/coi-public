@@ -117,11 +117,24 @@ describe("outlinePrompts", () => {
         customContext: undefined,
         hasImageContext: false,
         protagonistFeature: "hero",
+        genderPreference: "male",
       }),
     ).toBe("prelude\n\np3");
     expect(promptsMock.getOutlinePhase2Prompt).toHaveBeenCalledWith(
       "hero",
       "vfs_finish_outline_phase_0",
+      "male",
+    );
+
+    getPhasePrompt(3, "vfs_finish_outline_phase_0", {
+      ...sharedContext,
+      protagonistFeature: "hero",
+      genderPreference: "pan_gender",
+    });
+    expect(promptsMock.getOutlinePhase2Prompt).toHaveBeenLastCalledWith(
+      "hero",
+      "vfs_finish_outline_phase_0",
+      "pan_gender",
     );
 
     expect(getPhasePrompt(4, "vfs_finish_outline_phase_0", sharedContext)).toBe(

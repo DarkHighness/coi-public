@@ -701,11 +701,12 @@
         "sub_saharan_african": "撒哈拉以南非洲文化圈"
       },
       "genderPreference": "性别偏好",
-      "genderPreferenceHelp": "在生成故事时强制要求主角的性别。",
+      "genderPreferenceHelp": "none=不约束；pan_gender=禁止显式男/女性别词；male/female=约束真实性别。",
       "genderPreferences": {
         "male": "男",
         "female": "女",
-        "none": "无偏好"
+        "none": "不约束",
+        "pan_gender": "泛性别（不显式提及性别）"
       },
       "promptInjection": "自定义指令",
       "promptInjectionHelp": "启用后，这段玩家指令可影响风格、剧情走向、情节设定与世界规则偏置。",
@@ -1613,6 +1614,7 @@
     "status": "状态",
     "profession": "职业",
     "race": "种族",
+    "gender": "性别",
     "background": "背景",
     "appearance": "外貌",
     "roleTag": "角色标签",

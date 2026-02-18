@@ -39,6 +39,7 @@ const DEFAULT_SAVE_PRESET_PROFILE: SavePresetProfile = {
 
 const DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS = {
   age: "Unspecified",
+  gender: "Unspecified",
   profession: "Unspecified",
   background: "Unspecified",
   race: "Unspecified",
@@ -562,6 +563,7 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
         appearance: DEFAULT_CHARACTER.appearance,
         attributes: DEFAULT_CHARACTER.attributes,
         age: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.age,
+        gender: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.gender,
         profession: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.profession,
         background: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.background,
         race: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.race,

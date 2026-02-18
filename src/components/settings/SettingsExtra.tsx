@@ -63,10 +63,13 @@ export const SettingsExtra: React.FC = () => {
         return false;
     }
   };
-  const isGenderPreference = (
-    value: string,
-  ): value is NonNullable<ExtraSettings["genderPreference"]> =>
-    value === "none" || value === "male" || value === "female";
+const isGenderPreference = (
+  value: string,
+): value is NonNullable<ExtraSettings["genderPreference"]> =>
+  value === "none" ||
+  value === "male" ||
+  value === "female" ||
+  value === "pan_gender";
   const customInstructionRaw = extra.customInstruction || "";
   const customInstructionTrimmed =
     typeof customInstructionRaw === "string" ? customInstructionRaw.trim() : "";
@@ -446,6 +449,10 @@ export const SettingsExtra: React.FC = () => {
             >
               <option value="none">
                 {t("settings.extra.genderPreferences.none") || "No Preference"}
+              </option>
+              <option value="pan_gender">
+                {t("settings.extra.genderPreferences.pan_gender") ||
+                  "Pan-gender (No explicit gender words)"}
               </option>
               <option value="male">
                 {t("settings.extra.genderPreferences.male") || "Male"}

@@ -277,6 +277,22 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     </div>
                   </div>
                 )}
+                <div className="mt-2">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                    {t("gameViewer.race") || "Race"}
+                  </span>
+                  <div className="text-theme-text-secondary text-xs">
+                    {rel.visible?.race || t("unknown") || "Unknown"}
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                    {t("gameViewer.gender") || "Gender"}
+                  </span>
+                  <div className="text-theme-text-secondary text-xs">
+                    {rel.visible?.gender || t("unknown") || "Unknown"}
+                  </div>
+                </div>
                 {rel.visible.voice && (
                   <div className="mt-2">
                     <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
@@ -488,6 +504,31 @@ const NpcItem: React.FC<NpcItemProps> = ({
                         <div className="leading-relaxed text-theme-text">
                           <MarkdownText
                             content={rel.hidden.realMotives}
+                            indentSize={2}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {rel.hidden?.race && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("gameViewer.race") || "Race"}:
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText content={rel.hidden.race} indentSize={2} />
+                        </div>
+                      </div>
+                    )}
+
+                    {rel.hidden?.gender && (
+                      <div className="mb-2">
+                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                          {t("gameViewer.gender") || "Gender"}:
+                        </span>
+                        <div className="leading-relaxed text-theme-text">
+                          <MarkdownText
+                            content={rel.hidden.gender}
                             indentSize={2}
                           />
                         </div>

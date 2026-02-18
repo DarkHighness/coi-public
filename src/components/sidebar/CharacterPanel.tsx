@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActorProfile,
   CharacterStatus,
   CharacterSkill,
   CharacterCondition,
@@ -14,6 +15,8 @@ import { resolveLocationDisplayName } from "../../utils/entityDisplay";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
+  playerProfile?: ActorProfile | null;
+  unlockMode?: boolean;
   locations?: Location[];
   themeFont: string;
 }
@@ -788,6 +791,8 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
 
 export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   character,
+  playerProfile,
+  unlockMode,
   locations,
   themeFont,
 }) => {
@@ -799,9 +804,23 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   const unknownText = t("unknown") || "Unknown";
   const titleText = pickDisplayValue([character.title], unknownText);
   const professionText = pickDisplayValue([character.profession], unknownText);
-  const raceText = normalizeDisplayText(character.race) ?? "";
+  const raceText = pickDisplayValue(
+    [character.race, playerProfile?.visible?.race],
+    unknownText,
+  );
+  const genderText = pickDisplayValue(
+    [character.gender, playerProfile?.visible?.gender],
+    unknownText,
+  );
   const ageText = normalizeDisplayText(character.age) ?? "";
   const statusText = pickDisplayValue([character.status], unknownText);
+  const hiddenRaceText = normalizeDisplayText(playerProfile?.hidden?.race) ?? "";
+  const hiddenGenderText =
+    normalizeDisplayText(playerProfile?.hidden?.gender) ?? "";
+  const showHiddenIdentity = Boolean(
+    (unlockMode || playerProfile?.unlocked) &&
+      (hiddenRaceText || hiddenGenderText),
+  );
 
   const rawCurrentLocation = pickDisplayValue([character.currentLocation], "");
   const currentLocationText = rawCurrentLocation
@@ -900,6 +919,15 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
                 <div className="py-2 flex items-start justify-between gap-3">
                   <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
+                    {t("gameViewer.gender") || "Gender"}
+                  </span>
+                  <span className="text-xs text-theme-text text-right break-words whitespace-normal">
+                    {genderText}
+                  </span>
+                </div>
+
+                <div className="py-2 flex items-start justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
                     {t("gameViewer.age") || t("age") || "Age"}
                   </span>
                   <span className="text-xs text-theme-text text-right break-words whitespace-normal">
@@ -943,6 +971,34 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                       </svg>
                       {currentLocationText}
                     </span>
+                  </div>
+                )}
+
+                {showHiddenIdentity && (
+                  <div className="py-2 space-y-2 border-t border-theme-divider/60">
+                    <div className="text-[10px] uppercase tracking-wider text-theme-primary">
+                      {t("gameViewer.hiddenLabel") || "Hidden"}
+                    </div>
+                    {hiddenRaceText && (
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
+                          {t("gameViewer.race") || t("race") || "Race"}
+                        </span>
+                        <span className="text-xs text-theme-text text-right break-words whitespace-normal">
+                          {hiddenRaceText}
+                        </span>
+                      </div>
+                    )}
+                    {hiddenGenderText && (
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
+                          {t("gameViewer.gender") || "Gender"}
+                        </span>
+                        <span className="text-xs text-theme-text text-right break-words whitespace-normal">
+                          {hiddenGenderText}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

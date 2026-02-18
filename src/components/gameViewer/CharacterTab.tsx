@@ -24,6 +24,27 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
   t,
 }) => {
   const char = gameState.character;
+  const playerProfile = gameState.actors.find(
+    (bundle) => bundle.profile.id === gameState.playerActorId,
+  )?.profile;
+  const visible = playerProfile?.visible;
+  const hidden = playerProfile?.hidden;
+  const hasHiddenContent = Boolean(
+    hidden &&
+      (hidden.trueName ||
+        hidden.race ||
+        hidden.gender ||
+        hidden.status ||
+        hidden.realPersonality ||
+        hidden.realMotives ||
+        hidden.routine ||
+        hidden.currentThought ||
+        (Array.isArray(hidden.secrets) && hidden.secrets.length > 0)),
+  );
+  const showHiddenBlock = Boolean(
+    (gameState.unlockMode || playerProfile?.unlocked) && hasHiddenContent,
+  );
+  const unknownText = t("unknown") || "Unknown";
 
   return (
     <div className="space-y-4">
@@ -35,20 +56,108 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
         isExpanded={expandedSections.has("charBasic")}
         onToggle={toggleSection}
       >
-        <InfoRow label={t("gameViewer.name")} value={char.name} />
-        <InfoRow label={t("gameViewer.titleLabel")} value={char.title} />
-        <InfoRow label={t("gameViewer.status")} value={char.status} />
-        {char.profession && (
-          <InfoRow label={t("gameViewer.profession")} value={char.profession} />
+        <InfoRow label={t("gameViewer.name")} value={visible?.name || char.name} />
+        <InfoRow
+          label={t("gameViewer.titleLabel")}
+          value={visible?.title || char.title || unknownText}
+        />
+        <InfoRow
+          label={t("gameViewer.status")}
+          value={visible?.status || char.status || unknownText}
+        />
+        <InfoRow
+          label={t("gameViewer.age")}
+          value={visible?.age || char.age || unknownText}
+        />
+        <InfoRow
+          label={t("gameViewer.profession")}
+          value={visible?.profession || char.profession || unknownText}
+        />
+        <InfoRow
+          label={t("gameViewer.race")}
+          value={visible?.race || char.race || unknownText}
+        />
+        <InfoRow
+          label={t("gameViewer.gender")}
+          value={visible?.gender || char.gender || unknownText}
+        />
+        {visible?.roleTag && (
+          <InfoRow label={t("gameViewer.roleTag")} value={visible.roleTag} />
         )}
-        {char.race && (
-          <InfoRow label={t("gameViewer.race")} value={char.race} />
+        {visible?.voice && (
+          <InfoRow label={t("gameViewer.voice")} value={visible.voice} />
         )}
-        {char.background && (
-          <InfoRow label={t("gameViewer.background")} value={char.background} />
+        {visible?.mannerism && (
+          <InfoRow
+            label={t("gameViewer.mannerism")}
+            value={visible.mannerism}
+          />
         )}
-        {char.appearance && (
-          <InfoRow label={t("gameViewer.appearance")} value={char.appearance} />
+        {visible?.mood && (
+          <InfoRow label={t("gameViewer.mood")} value={visible.mood} />
+        )}
+        <InfoRow
+          label={t("gameViewer.background")}
+          value={visible?.background || char.background || unknownText}
+        />
+        <InfoRow
+          label={t("gameViewer.appearance")}
+          value={visible?.appearance || char.appearance || unknownText}
+        />
+        {visible?.description && (
+          <InfoRow label={t("description") || "Description"} value={visible.description} />
+        )}
+        {showHiddenBlock && hidden && (
+          <HiddenContent
+            t={t}
+            label={t("gameViewer.hiddenLabel") || "Hidden"}
+            content={
+              <div className="space-y-2">
+                {hidden.trueName && (
+                  <InfoRow label={t("gameViewer.trueName")} value={hidden.trueName} />
+                )}
+                {hidden.race && (
+                  <InfoRow label={t("gameViewer.race")} value={hidden.race} />
+                )}
+                {hidden.gender && (
+                  <InfoRow label={t("gameViewer.gender")} value={hidden.gender} />
+                )}
+                {hidden.status && (
+                  <InfoRow
+                    label={t("gameViewer.trueStatus")}
+                    value={hidden.status}
+                  />
+                )}
+                {hidden.realPersonality && (
+                  <InfoRow
+                    label={t("gameViewer.realPersonality")}
+                    value={hidden.realPersonality}
+                  />
+                )}
+                {hidden.realMotives && (
+                  <InfoRow
+                    label={t("gameViewer.realMotives")}
+                    value={hidden.realMotives}
+                  />
+                )}
+                {hidden.routine && (
+                  <InfoRow label={t("gameViewer.routine")} value={hidden.routine} />
+                )}
+                {hidden.currentThought && (
+                  <InfoRow
+                    label={t("gameViewer.currentThought")}
+                    value={hidden.currentThought}
+                  />
+                )}
+                {Array.isArray(hidden.secrets) && hidden.secrets.length > 0 && (
+                  <InfoRow
+                    label={t("gameViewer.secrets")}
+                    value={hidden.secrets.join(" / ")}
+                  />
+                )}
+              </div>
+            }
+          />
         )}
         {/* Psychology - top-level, always visible */}
         {char.psychology && (

@@ -673,11 +673,12 @@
         "sub_saharan_african": "Sub-Saharan African"
       },
       "genderPreference": "Gender Preference",
-      "genderPreferenceHelp": "Force the protagonist's gender when generating stories.",
+      "genderPreferenceHelp": "none = no constraint; pan_gender = must avoid explicit male/female wording; male/female = enforce true gender requirement.",
       "genderPreferences": {
         "male": "Male",
         "female": "Female",
-        "none": "No Preference"
+        "none": "No Constraint",
+        "pan_gender": "Pan-gender (No Explicit Gender)"
       },
       "promptInjection": "Custom Instruction",
       "promptInjectionHelp": "When enabled, this player instruction can shape style, plot direction, setting assumptions, and world-rule bias.",
@@ -1575,6 +1576,7 @@
     "status": "Status",
     "profession": "Profession",
     "race": "Race",
+    "gender": "Gender",
     "weather": "Weather",
     "background": "Background",
     "appearance": "Appearance",

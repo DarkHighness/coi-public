@@ -166,6 +166,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <section className="py-3">
               <CharacterPanel
                 character={character}
+                playerProfile={
+                  gameState.actors?.find(
+                    (bundle) => bundle.profile.id === gameState.playerActorId,
+                  )?.profile ?? null
+                }
+                unlockMode={gameState.unlockMode}
                 locations={gameState.locations || []}
                 themeFont={currentThemeConfig.fontClass}
               />

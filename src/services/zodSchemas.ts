@@ -1329,6 +1329,10 @@ export const actorVisibleSchema = z.object({
   name: z.string().describe("Name the protagonist knows."),
   title: z.string().nullish().describe("Surface title/role (player-facing)."),
   age: z.string().nullish().describe("Apparent age (player-facing)."),
+  gender: z
+    .string()
+    .nullish()
+    .describe("Surface-presented gender (player-facing)."),
   profession: z.string().nullish().describe("Surface profession/role."),
   background: z
     .string()
@@ -1337,7 +1341,7 @@ export const actorVisibleSchema = z.object({
   race: z
     .string()
     .nullish()
-    .describe("Race/species + gender combined when relevant (player-facing)."),
+    .describe("Surface race/species only (player-facing; do not include gender)."),
   attributes: z
     .array(characterAttributeSchema)
     .nullish()
@@ -1362,6 +1366,16 @@ export const actorVisibleSchema = z.object({
 
 export const actorHiddenSchema = z.object({
   trueName: z.string().nullish().describe("True name (GM truth)."),
+  race: z
+    .string()
+    .nullish()
+    .describe("True race/species (GM truth; may differ from visible race)."),
+  gender: z
+    .string()
+    .nullish()
+    .describe(
+      "True gender identity (GM truth; may differ from visible presentation).",
+    ),
   realPersonality: z
     .string()
     .nullish()
@@ -1485,14 +1499,18 @@ export const characterProfileSchema = z.object({
     .string()
     .nullish()
     .describe("Character's age (e.g. '25', 'Unknown', 'Ancient')."),
+  gender: z
+    .string()
+    .nullish()
+    .describe(
+      "Character's visible gender presentation (e.g. 'Male', 'Female', 'Unspecified').",
+    ),
   profession: z.string().nullish().describe("Character's occupation or class."),
   background: z.string().nullish().describe("Brief life story and background."),
   race: z
     .string()
     .nullish()
-    .describe(
-      "The character's race AND gender combined (e.g. 'Human Male', 'Female Elf', 'Male Dwarf', 'Female Orc'). CRITICAL: Include gender to ensure consistent pronoun usage throughout the narrative.",
-    ),
+    .describe("The character's race/species only (do not include gender)."),
   psychology: z
     .object({
       coreTrauma: z.string().describe("Past failure/trauma driving them."),
@@ -1527,13 +1545,16 @@ export const characterStatusSchema = z.object({
   age: z
     .string()
     .describe("Character's age (e.g. '25', 'Unknown', 'Ancient')."),
+  gender: z
+    .string()
+    .describe(
+      "Character's visible gender presentation (e.g. 'Male', 'Female', 'Unspecified').",
+    ),
   profession: z.string().describe("Character's occupation or class."),
   background: z.string().describe("Brief life story and background."),
   race: z
     .string()
-    .describe(
-      "The character's race AND gender combined (e.g. 'Human Male', 'Female Elf', 'Male Dwarf', 'Female Orc'). CRITICAL: Include gender to ensure consistent pronoun usage throughout the narrative.",
-    ),
+    .describe("The character's race/species only (do not include gender)."),
   psychology: z
     .object({
       coreTrauma: z.string().describe("Past failure/trauma driving them."),
@@ -1708,6 +1729,7 @@ export const strictPlayerVisibleSchema = actorVisibleSchema.extend({
   name: requiredConcretePlayerString("player.profile.visible.name"),
   title: requiredConcretePlayerString("player.profile.visible.title"),
   age: requiredConcretePlayerString("player.profile.visible.age"),
+  gender: requiredConcretePlayerString("player.profile.visible.gender"),
   profession: requiredConcretePlayerString("player.profile.visible.profession"),
   background: requiredConcretePlayerString("player.profile.visible.background"),
   race: requiredConcretePlayerString("player.profile.visible.race"),
@@ -2403,6 +2425,7 @@ export const gameResponseSchema = z.object({
           status: z.string().nullish(),
           appearance: z.string().nullish(),
           age: z.string().nullish(),
+          gender: z.string().nullish(),
           profession: z.string().nullish(),
           background: z.string().nullish(),
           race: z.string().nullish(),

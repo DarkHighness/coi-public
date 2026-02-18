@@ -29,6 +29,7 @@ describe("seedVfsSessionFromDefaults", () => {
     ) as {
       visible?: {
         age?: string;
+        gender?: string;
         profession?: string;
         background?: string;
         race?: string;
@@ -38,6 +39,7 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(currentSoul).toContain("Story Teller AI");
     expect(globalSoul).toContain("Story Teller AI");
     expect(playerProfile.visible?.age).toBe("Unspecified");
+    expect(playerProfile.visible?.gender).toBe("Unspecified");
     expect(playerProfile.visible?.profession).toBe("Unspecified");
     expect(playerProfile.visible?.background).toBe("Unspecified");
     expect(playerProfile.visible?.race).toBe("Unspecified");

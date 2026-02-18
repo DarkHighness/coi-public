@@ -71,7 +71,11 @@ export function getPhasePrompt(
       );
       break;
     case 3:
-      phaseBody = getOutlinePhase2Prompt(protagonistFeature, submitToolName);
+      phaseBody = getOutlinePhase2Prompt(
+        protagonistFeature,
+        submitToolName,
+        sharedContext.genderPreference,
+      );
       break;
     case 4:
       phaseBody = getOutlinePhase3Prompt(submitToolName);

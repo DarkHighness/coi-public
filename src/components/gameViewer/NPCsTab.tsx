@@ -198,6 +198,69 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                       />
                     )}
 
+                    {npc.visible?.title && (
+                      <InfoRow
+                        label={t("gameViewer.titleLabel")}
+                        value={npc.visible.title}
+                      />
+                    )}
+
+                    {npc.visible?.profession && (
+                      <InfoRow
+                        label={t("gameViewer.profession")}
+                        value={npc.visible.profession}
+                      />
+                    )}
+
+                    {npc.visible?.age && (
+                      <InfoRow label={t("gameViewer.age")} value={npc.visible.age} />
+                    )}
+
+                    {npc.visible?.status && (
+                      <InfoRow
+                        label={t("gameViewer.perceivedStatus")}
+                        value={npc.visible.status}
+                      />
+                    )}
+
+                    <InfoRow
+                      label={t("gameViewer.race")}
+                      value={npc.visible?.race || t("unknown")}
+                    />
+
+                    <InfoRow
+                      label={t("gameViewer.gender")}
+                      value={npc.visible?.gender || t("unknown")}
+                    />
+
+                    {npc.visible?.voice && (
+                      <InfoRow
+                        label={t("gameViewer.voice")}
+                        value={npc.visible.voice}
+                      />
+                    )}
+
+                    {npc.visible?.mannerism && (
+                      <InfoRow
+                        label={t("gameViewer.mannerism")}
+                        value={npc.visible.mannerism}
+                      />
+                    )}
+
+                    {npc.visible?.mood && (
+                      <InfoRow
+                        label={t("gameViewer.mood")}
+                        value={npc.visible.mood}
+                      />
+                    )}
+
+                    {npc.visible?.background && (
+                      <InfoRow
+                        label={t("gameViewer.background")}
+                        value={npc.visible.background}
+                      />
+                    )}
+
                     {(readString(attitudeVisible?.reputationTag) ||
                       readString(attitudeVisible?.claimedIntent) ||
                       readStringArray(attitudeVisible?.signals).length > 0) && (
@@ -300,6 +363,18 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                               </span>
                               <MarkdownText content={npc.hidden.realMotives} />
                             </div>
+                          )}
+                          {npc.hidden.race && (
+                            <InfoRow
+                              label={t("gameViewer.race")}
+                              value={npc.hidden.race}
+                            />
+                          )}
+                          {npc.hidden.gender && (
+                            <InfoRow
+                              label={t("gameViewer.gender")}
+                              value={npc.hidden.gender}
+                            />
                           )}
                           {npc.hidden.routine && (
                             <div>

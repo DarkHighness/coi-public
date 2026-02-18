@@ -26,6 +26,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 }) => {
   const outline = gameState.outline;
   const char = gameState.character;
+  const playerProfile = gameState.actors.find(
+    (bundle) => bundle.profile.id === gameState.playerActorId,
+  )?.profile;
+  const hiddenRace = playerProfile?.hidden?.race;
+  const hiddenGender = playerProfile?.hidden?.gender;
+  const showHiddenIdentity = Boolean(
+    (gameState.unlockMode || playerProfile?.unlocked) &&
+      (hiddenRace || hiddenGender),
+  );
   const currentLocationDisplay = resolveLocationDisplayName(
     gameState.currentLocation,
     gameState,
@@ -98,8 +107,28 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <InfoRow label={t("gameViewer.name")} value={char.name} />
         <InfoRow label={t("gameViewer.titleLabel")} value={char.title} />
         <InfoRow label={t("gameViewer.status")} value={char.status} />
+        <InfoRow label={t("gameViewer.age")} value={char.age || t("unknown")} />
         {char.profession && (
           <InfoRow label={t("gameViewer.profession")} value={char.profession} />
+        )}
+        <InfoRow
+          label={t("gameViewer.race")}
+          value={char.race || t("unknown")}
+        />
+        <InfoRow
+          label={t("gameViewer.gender")}
+          value={char.gender || t("unknown")}
+        />
+        {showHiddenIdentity && (
+          <div className="mt-3 pt-2 border-t border-theme-border/30">
+            <SubsectionLabel>{t("gameViewer.hiddenLabel")}:</SubsectionLabel>
+            {hiddenRace && (
+              <InfoRow label={t("gameViewer.race")} value={hiddenRace} />
+            )}
+            {hiddenGender && (
+              <InfoRow label={t("gameViewer.gender")} value={hiddenGender} />
+            )}
+          </div>
         )}
         {char.attributes.length > 0 && (
           <div className="mt-3 pt-2 border-t border-theme-border/30">

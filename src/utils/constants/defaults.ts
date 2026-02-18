@@ -14,6 +14,8 @@ export const DEFAULT_CHARACTER: CharacterStatus = {
   hiddenTraits: [],
   status: "Pending",
   appearance: "Loading...",
+  race: "",
+  gender: "",
 };
 
 export const LANG_MAP: Record<LanguageCode, string> = {

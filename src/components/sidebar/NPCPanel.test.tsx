@@ -46,8 +46,10 @@ const makeNpc = (overrides: Record<string, unknown> = {}) =>
       name: "NPC One",
       description: "A mysterious stranger",
       status: "Idle",
+      race: "Human",
+      gender: "Female",
     },
-    hidden: {},
+    hidden: { race: "High Dimension", gender: "Unknown Truth" },
     ...overrides,
   }) as any;
 
@@ -136,5 +138,30 @@ describe("NPCPanel", () => {
 
     fireEvent.click(screen.getByTitle("viewAll"));
     expect(screen.getByText("detailed-modal")).toBeTruthy();
+  });
+
+  it("shows visible race/gender and gates hidden race/gender by unlock", () => {
+    const baseProps = {
+      npcs: [makeNpc()],
+      actors: [],
+      playerActorId: "char:player",
+      locations: [],
+      themeFont: "font-theme",
+      listState: { pinnedIds: [], customOrder: [], hiddenIds: [] },
+      onUpdateList: vi.fn(),
+    };
+
+    const { rerender } = render(React.createElement(NPCPanel, baseProps));
+
+    fireEvent.click(screen.getByText("NPC One"));
+    expect(screen.getByText("Human")).toBeTruthy();
+    expect(screen.getByText("Female")).toBeTruthy();
+    expect(screen.queryByText("High Dimension")).toBeNull();
+    expect(screen.queryByText("Unknown Truth")).toBeNull();
+
+    rerender(React.createElement(NPCPanel, { ...baseProps, unlockMode: true }));
+    fireEvent.click(screen.getByText("NPC One"));
+    expect(screen.getByText("High Dimension")).toBeTruthy();
+    expect(screen.getByText("Unknown Truth")).toBeTruthy();
   });
 });

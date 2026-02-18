@@ -613,8 +613,121 @@ const pickMeaningfulCharacterText = (
   return undefined;
 };
 
+const LEGACY_MALE_GENDER_TERMS = [
+  "male",
+  "man",
+  "boy",
+  "mr",
+  "男性",
+  "男人",
+  "男生",
+  "男孩",
+  "男",
+];
+
+const LEGACY_FEMALE_GENDER_TERMS = [
+  "female",
+  "woman",
+  "girl",
+  "mrs",
+  "ms",
+  "miss",
+  "女性",
+  "女人",
+  "女生",
+  "女孩",
+  "女",
+];
+
+const LEGACY_GENDER_STRIP_TERMS = [
+  "male",
+  "female",
+  "man",
+  "woman",
+  "boy",
+  "girl",
+  "男性",
+  "女性",
+  "男人",
+  "女人",
+  "男生",
+  "女生",
+  "男孩",
+  "女孩",
+].sort((a, b) => b.length - a.length);
+
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const isAsciiWord = (value: string): boolean => /^[a-z][a-z- ]*$/i.test(value);
+
+const containsGenderTerm = (text: string, term: string): boolean => {
+  const normalizedText = text.toLowerCase();
+  const normalizedTerm = term.toLowerCase();
+  if (isAsciiWord(normalizedTerm)) {
+    return new RegExp(`\\b${escapeRegex(normalizedTerm)}\\b`, "i").test(
+      normalizedText,
+    );
+  }
+  return normalizedText.includes(normalizedTerm);
+};
+
+const detectLegacyGenderToken = (value: unknown): string | undefined => {
+  const normalized = normalizeCharacterText(value)?.toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  const hasMale = LEGACY_MALE_GENDER_TERMS.some((term) =>
+    containsGenderTerm(normalized, term),
+  );
+  const hasFemale = LEGACY_FEMALE_GENDER_TERMS.some((term) =>
+    containsGenderTerm(normalized, term),
+  );
+  if (hasMale === hasFemale) {
+    return undefined;
+  }
+  const hasCjk = /[\u3040-\u30ff\u3400-\u9fff]/u.test(normalized);
+  return hasMale ? (hasCjk ? "男性" : "Male") : hasCjk ? "女性" : "Female";
+};
+
+const inferLegacyGenderFromRace = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    const inferred = detectLegacyGenderToken(value);
+    if (inferred) {
+      return inferred;
+    }
+  }
+  return undefined;
+};
+
+const toRaceOnlyCharacterText = (value: unknown): string | undefined => {
+  const normalized = normalizeCharacterText(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  let stripped = normalized;
+  for (const term of LEGACY_GENDER_STRIP_TERMS) {
+    if (isAsciiWord(term)) {
+      stripped = stripped.replace(new RegExp(`\\b${escapeRegex(term)}\\b`, "gi"), " ");
+    } else {
+      stripped = stripped.split(term).join(" ");
+    }
+  }
+
+  stripped = stripped
+    .replace(/(^|[\s/|,，、()（）\-])(男|女)(?=$|[\s/|,，、()（）\-])/gu, "$1")
+    .replace(/^(男|女)/u, "")
+    .replace(/(男|女)$/u, "")
+    .replace(/[()（）【】\[\]/|,，、\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return stripped.length > 0 ? stripped : normalized;
+};
+
 const warnMissingPlayerRequiredField = (
-  field: "age" | "race",
+  field: "age" | "race" | "gender",
   value: unknown,
   details: JsonObject,
 ): void => {
@@ -1457,13 +1570,31 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         base.profession,
       ) ?? "";
 
+    const inferredGenderFromLegacyRace = inferLegacyGenderFromRace(
+      visible.race,
+      toStringOrUndefined(profileLegacy.race),
+      outlineVisible.race,
+      toStringOrUndefined(outlineProfileLegacy?.race),
+      base.race,
+    );
+
+    const gender =
+      pickMeaningfulCharacterText(
+        visible.gender,
+        toStringOrUndefined(profileLegacy.gender),
+        outlineVisible.gender,
+        toStringOrUndefined(outlineProfileLegacy?.gender),
+        inferredGenderFromLegacyRace,
+        base.gender,
+      ) ?? "";
+
     const race =
       pickMeaningfulCharacterText(
-        visible.race,
-        toStringOrUndefined(profileLegacy.race),
-        outlineVisible.race,
-        toStringOrUndefined(outlineProfileLegacy?.race),
-        base.race,
+        toRaceOnlyCharacterText(visible.race),
+        toRaceOnlyCharacterText(toStringOrUndefined(profileLegacy.race)),
+        toRaceOnlyCharacterText(outlineVisible.race),
+        toRaceOnlyCharacterText(toStringOrUndefined(outlineProfileLegacy?.race)),
+        toRaceOnlyCharacterText(base.race),
       ) ?? "";
 
     const background =
@@ -1529,6 +1660,7 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         : [],
       currentLocation,
       age,
+      gender,
       profession,
       background,
       race,
@@ -1556,6 +1688,15 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       profileRace: toStringOrUndefined(profileLegacy.race),
       outlineRace: outlineVisible.race,
       outlineProfileRace: toStringOrUndefined(outlineProfileLegacy?.race),
+    });
+    warnMissingPlayerRequiredField("gender", state.character.gender, {
+      source: "playerBundle",
+      playerActorId: state.playerActorId,
+      visibleGender: visible.gender,
+      profileGender: toStringOrUndefined(profileLegacy.gender),
+      outlineGender: outlineVisible.gender,
+      outlineProfileGender: toStringOrUndefined(outlineProfileLegacy?.gender),
+      inferredGenderFromLegacyRace,
     });
   }
 
@@ -1647,6 +1788,11 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       : null;
     const currentCharacter: CharacterStatus =
       state.character ?? DEFAULT_CHARACTER;
+    const inferredGenderFromOutlineRace = inferLegacyGenderFromRace(
+      outlineVisible.race,
+      toStringOrUndefined(outlineProfileLegacy?.race),
+      currentCharacter.race,
+    );
 
     state.character = {
       ...currentCharacter,
@@ -1662,6 +1808,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
           outlineVisible.age,
           toStringOrUndefined(outlineProfileLegacy?.age),
         ) ?? "",
+      gender:
+        pickMeaningfulCharacterText(
+          currentCharacter.gender,
+          outlineVisible.gender,
+          toStringOrUndefined(outlineProfileLegacy?.gender),
+          inferredGenderFromOutlineRace,
+        ) ?? "",
       profession:
         pickMeaningfulCharacterText(
           currentCharacter.profession,
@@ -1672,9 +1825,9 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
         ) ?? "",
       race:
         pickMeaningfulCharacterText(
-          currentCharacter.race,
-          outlineVisible.race,
-          toStringOrUndefined(outlineProfileLegacy?.race),
+          toRaceOnlyCharacterText(currentCharacter.race),
+          toRaceOnlyCharacterText(outlineVisible.race),
+          toRaceOnlyCharacterText(toStringOrUndefined(outlineProfileLegacy?.race)),
         ) ?? "",
       background:
         pickMeaningfulCharacterText(
@@ -1708,6 +1861,13 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       playerActorId: state.playerActorId,
       outlineRace: outlineVisible.race,
       outlineProfileRace: toStringOrUndefined(outlineProfileLegacy?.race),
+    });
+    warnMissingPlayerRequiredField("gender", state.character.gender, {
+      source: "outlineFallback",
+      playerActorId: state.playerActorId,
+      outlineGender: outlineVisible.gender,
+      outlineProfileGender: toStringOrUndefined(outlineProfileLegacy?.gender),
+      inferredGenderFromOutlineRace,
     });
   }
 

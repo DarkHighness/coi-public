@@ -978,6 +978,7 @@ export interface CharacterAction {
     | "profession"
     | "background"
     | "race"
+    | "gender"
     | "condition" // New
     | "hiddenTrait"; // New
   action: "add" | "remove" | "update";
@@ -1075,9 +1076,11 @@ export interface CharacterUpdates {
   profile?: {
     status?: string;
     appearance?: string;
+    age?: string;
     profession?: string;
     background?: string;
     race?: string;
+    gender?: string;
   };
 }
 
@@ -1343,7 +1346,7 @@ export interface AISettings {
   extra?: {
     detailedDescription?: boolean;
     nsfw?: boolean; // Enable NSFW/adult content generation
-    genderPreference?: "male" | "female" | "none"; // Force protagonist gender in story generation
+    genderPreference?: "male" | "female" | "none" | "pan_gender"; // Protagonist gender constraint in story generation
     /**
      * Cultural preference for naming/cultural mechanics.
      * - follow_story_setting: infer from theme/world setting
