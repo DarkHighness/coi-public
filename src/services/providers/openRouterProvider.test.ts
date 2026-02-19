@@ -594,7 +594,7 @@ describe("openRouterProvider tool-call handling", () => {
         "sys",
         [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
       ),
-    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
+    ).rejects.toMatchObject({ code: "MALFORMED_TOOL_CALL" });
   });
 
   it("throws when streaming response finishes with tool_calls but has no valid tool payload", async () => {
@@ -626,6 +626,6 @@ describe("openRouterProvider tool-call handling", () => {
         undefined,
         { onChunk: vi.fn() } as any,
       ),
-    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
+    ).rejects.toMatchObject({ code: "MALFORMED_TOOL_CALL" });
   });
 });

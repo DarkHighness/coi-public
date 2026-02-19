@@ -77,4 +77,24 @@ describe("provider withRetry", () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  it("does not retry MALFORMED_TOOL_CALL provider errors", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fn = vi
+      .fn()
+      .mockRejectedValue(
+        new AIProviderError(
+          "tool call payload was malformed",
+          "openrouter",
+          "MALFORMED_TOOL_CALL",
+        ),
+      );
+
+    await expect(withRetry(fn, 3, 0, "openrouter")).rejects.toThrow(
+      "tool call payload was malformed",
+    );
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
 });

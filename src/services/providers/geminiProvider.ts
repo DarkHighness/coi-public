@@ -178,6 +178,16 @@ const parseToolArguments = (
   return rawArgs;
 };
 
+const buildMissingToolPayloadDetail = (
+  base: string,
+  hintedToolNames: readonly string[],
+): string => {
+  if (hintedToolNames.length === 0) {
+    return base;
+  }
+  return `${base}; hinted tools: ${hintedToolNames.join(", ")}`;
+};
+
 const normalizeGeminiModelId = (model: string): string => {
   const trimmed = model.trim().toLowerCase();
   if (!trimmed) {
@@ -782,24 +792,45 @@ export async function generateContent(
         handleFinishReason(finishReason, candidate?.finishMessage);
 
         // 提取工具调用
+        let sawFunctionCallPart = false;
+        const hintedToolNames = new Set<string>();
         if (candidate?.content?.parts) {
           const fcParts = candidate.content.parts.filter(
             (p: Part): p is Part & { functionCall: FunctionCall } =>
               p.functionCall !== undefined,
           );
+          sawFunctionCallPart = fcParts.length > 0;
 
           if (fcParts.length > 0) {
-            functionCalls = fcParts.map((p, index) => ({
-              id: `gemini_call_${p.functionCall.name}_${index}`,
-              name: p.functionCall.name || "",
-              args: parseToolArguments(
-                p.functionCall.args,
-                p.functionCall.name,
-              ),
-              // Extract thoughtSignature if present
-              thoughtSignature: getThoughtSignature(p),
-            }));
+            functionCalls = fcParts.flatMap((p, index) => {
+              const toolName = (p.functionCall.name || "").trim();
+              if (toolName) {
+                hintedToolNames.add(toolName);
+              }
+              if (!toolName) {
+                return [];
+              }
+              return [
+                {
+                  id: `gemini_call_${toolName}_${index}`,
+                  name: toolName,
+                  args: parseToolArguments(p.functionCall.args, toolName),
+                  // Extract thoughtSignature if present
+                  thoughtSignature: getThoughtSignature(p),
+                },
+              ];
+            });
           }
+        }
+
+        if (sawFunctionCallPart && functionCalls.length === 0) {
+          throw new MalformedToolCallError(
+            "gemini",
+            buildMissingToolPayloadDetail(
+              "response emitted functionCall parts but none could be parsed into valid tool calls",
+              Array.from(hintedToolNames),
+            ),
+          );
         }
 
         // 如果没有工具调用，提取文本
@@ -985,10 +1016,9 @@ async function streamGeneration(
     }));
 
   if (sawFunctionCallPart && functionCalls.length === 0) {
-    throw new AIProviderError(
-      "[ERROR: STREAM_INCOMPLETE] Gemini stream emitted functionCall parts but none could be parsed into valid tool calls.",
+    throw new MalformedToolCallError(
       "gemini",
-      "STREAM_INCOMPLETE",
+      "stream emitted functionCall parts but none could be parsed into valid tool calls",
     );
   }
 

@@ -257,6 +257,40 @@ describe("openaiProvider additional branches", () => {
     ).rejects.toThrow("Video generation is not supported");
   });
 
+  it("throws non-stream malformed tool-call error and keeps tool name details", async () => {
+    sdkMocks.chatCreate.mockResolvedValueOnce({
+      choices: [
+        {
+          finish_reason: "tool_calls",
+          message: {
+            content: "",
+            tool_calls: [
+              {
+                id: "call_1",
+                name: "vfs_write_file",
+                arguments: '{"path":"current/world/global.json",',
+              },
+            ],
+          },
+        },
+      ],
+      usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+    });
+
+    try {
+      await generateContent(
+        { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+        "gpt-4o-mini",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+      );
+      throw new Error("expected non-stream malformed tool-call rejection");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "MALFORMED_TOOL_CALL" });
+      expect(String(error)).toContain("vfs_write_file");
+    }
+  });
+
   it("throws safety error when streaming finish_reason is content_filter", async () => {
     async function* filteredStream() {
       yield {
@@ -358,6 +392,6 @@ describe("openaiProvider additional branches", () => {
         undefined,
         { onChunk: vi.fn() } as any,
       ),
-    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
+    ).rejects.toMatchObject({ code: "MALFORMED_TOOL_CALL" });
   });
 });

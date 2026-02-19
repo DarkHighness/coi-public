@@ -45,7 +45,10 @@ import {
   MalformedToolCallError,
   getAspectRatio,
 } from "./types";
-import { extractOpenRouterToolCalls } from "./openRouterToolParser";
+import {
+  collectOpenRouterToolNameHints,
+  extractOpenRouterToolCalls,
+} from "./openRouterToolParser";
 // Re-export OpenRouterConfig for consumers
 export type { OpenRouterConfig } from "./types";
 import {
@@ -233,6 +236,16 @@ const parseToolArguments = (
   }
 
   return parsed;
+};
+
+const buildMissingToolPayloadDetail = (
+  base: string,
+  hintedToolNames: readonly string[],
+): string => {
+  if (hintedToolNames.length === 0) {
+    return base;
+  }
+  return `${base}; hinted tools: ${hintedToolNames.join(", ")}`;
 };
 
 type OpenRouterResolvedProviderProtocol = "openai" | "gemini" | "claude";
@@ -855,10 +868,13 @@ async function handleNonStreamingResponse(
 
   if (toolCalls.length > 0 || finishedWithToolCalls) {
     if (finishedWithToolCalls && toolCalls.length === 0) {
-      throw new AIProviderError(
-        "[ERROR: STREAM_INCOMPLETE] OpenRouter finished with tool_calls but no valid tool call payload was parsed.",
+      const hintedToolNames = collectOpenRouterToolNameHints(message);
+      throw new MalformedToolCallError(
         "openrouter",
-        "STREAM_INCOMPLETE",
+        buildMissingToolPayloadDetail(
+          "finish_reason=tool_calls but no valid tool call payload was parsed",
+          hintedToolNames,
+        ),
       );
     }
     const toolResult: OpenRouterGenerationToolResult = {
@@ -1031,10 +1047,19 @@ async function handleStreamingResponse(
 
   if (toolCalls.length > 0 || finishedWithToolCalls) {
     if (finishedWithToolCalls && toolCalls.length === 0) {
-      throw new AIProviderError(
-        "[ERROR: STREAM_INCOMPLETE] OpenRouter stream finished with tool_calls but no valid tool call payload was parsed.",
+      const hintedToolNames = Array.from(
+        new Set(
+          Array.from(accumulatedToolCalls.values())
+            .map((tool) => tool.name.trim())
+            .filter((name) => name.length > 0),
+        ),
+      );
+      throw new MalformedToolCallError(
         "openrouter",
-        "STREAM_INCOMPLETE",
+        buildMissingToolPayloadDetail(
+          "stream finished with tool_calls but no valid tool call payload was parsed",
+          hintedToolNames,
+        ),
       );
     }
     const toolResult: OpenRouterGenerationToolResult = {

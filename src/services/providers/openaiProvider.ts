@@ -199,6 +199,16 @@ const parseToolArguments = (
   return parsed;
 };
 
+const buildMissingToolPayloadDetail = (
+  base: string,
+  hintedToolNames: readonly string[],
+): string => {
+  if (hintedToolNames.length === 0) {
+    return base;
+  }
+  return `${base}; hinted tools: ${hintedToolNames.join(", ")}`;
+};
+
 type OpenAIResolvedProviderProtocol = "openai" | "gemini" | "claude";
 const OPENAI_PROTOCOL_MAX_OUTPUT_FALLBACK: Record<
   OpenAIResolvedProviderProtocol,
@@ -963,6 +973,14 @@ export async function generateContent(
           });
         }
 
+        const hintedToolNames = Array.from(
+          new Set(
+            Array.from(accumulatedToolCalls.values())
+              .map((tc) => tc.name.trim())
+              .filter((name) => name.length > 0),
+          ),
+        );
+
         if (isContentFilterFinishReason(streamFinishReason)) {
           throw new SafetyFilterError("openai");
         }
@@ -971,10 +989,12 @@ export async function generateContent(
           isToolCallsFinishReason(streamFinishReason) &&
           toolCalls.length === 0
         ) {
-          throw new AIProviderError(
-            "[ERROR: STREAM_INCOMPLETE] OpenAI finished with tool_calls but no valid tool call payload was parsed.",
+          throw new MalformedToolCallError(
             "openai",
-            "STREAM_INCOMPLETE",
+            buildMissingToolPayloadDetail(
+              "stream finished with tool_calls but no valid tool call payload was parsed",
+              hintedToolNames,
+            ),
           );
         }
       } else {
@@ -989,30 +1009,46 @@ export async function generateContent(
         content = message?.content || "";
 
         // 处理工具调用
-        if (message?.tool_calls) {
-          toolCalls = message.tool_calls
-            .filter(
-              (
-                tc,
-              ): tc is typeof tc & {
-                function: { name: string; arguments: string };
-              } =>
-                "function" in tc &&
-                tc.function !== undefined &&
-                typeof tc.function.name === "string" &&
-                tc.function.name.trim().length > 0,
-            )
-            .map((tc) => ({
-              id: tc.id,
-              name: tc.function.name.trim(),
-              args: parseToolArguments(
-                tc.function.arguments,
-                tc.function.name.trim(),
-              ),
-              // Extract thought_signature if present (Gemini compatibility)
-              // Gemini 3 uses extra_content.google.thought_signature format
-              thoughtSignature: getToolCallThoughtSignature(tc),
-            }));
+        const rawToolCalls = Array.isArray(
+          (message as { tool_calls?: unknown })?.tool_calls,
+        )
+          ? (((message as { tool_calls?: unknown }).tool_calls as unknown[]) ??
+              [])
+          : [];
+        const hintedToolNames = new Set<string>();
+        if (rawToolCalls.length > 0) {
+          toolCalls = rawToolCalls.flatMap((tc, index) => {
+            const tcRecord = isJsonObject(tc) ? tc : null;
+            const functionRecord =
+              tcRecord && isJsonObject(tcRecord.function)
+                ? tcRecord.function
+                : null;
+            const toolName = (
+              readString(functionRecord?.name) || readString(tcRecord?.name) || ""
+            ).trim();
+            if (toolName) {
+              hintedToolNames.add(toolName);
+            }
+            if (!toolName) {
+              return [];
+            }
+            const hasFunctionArguments =
+              functionRecord &&
+              Object.prototype.hasOwnProperty.call(functionRecord, "arguments");
+            const toolArguments = hasFunctionArguments
+              ? readString(functionRecord.arguments) || ""
+              : readString(tcRecord?.arguments) || "";
+            return [
+              {
+                id: readString(tcRecord?.id) || `tool_${index}`,
+                name: toolName,
+                args: parseToolArguments(toolArguments, toolName),
+                // Extract thought_signature if present (Gemini compatibility)
+                // Gemini 3 uses extra_content.google.thought_signature format
+                thoughtSignature: getToolCallThoughtSignature(tc),
+              },
+            ];
+          });
         }
 
         // 检查内容过滤
@@ -1022,10 +1058,12 @@ export async function generateContent(
         }
 
         if (isToolCallsFinishReason(finishReason) && toolCalls.length === 0) {
-          throw new AIProviderError(
-            "[ERROR: STREAM_INCOMPLETE] OpenAI finished with tool_calls but no valid tool call payload was parsed.",
+          throw new MalformedToolCallError(
             "openai",
-            "STREAM_INCOMPLETE",
+            buildMissingToolPayloadDetail(
+              "finish_reason=tool_calls but no valid tool call payload was parsed",
+              Array.from(hintedToolNames),
+            ),
           );
         }
 

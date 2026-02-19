@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { extractOpenRouterToolCalls } from "../openRouterToolParser";
+import {
+  collectOpenRouterToolNameHints,
+  extractOpenRouterToolCalls,
+} from "../openRouterToolParser";
 
 describe("extractOpenRouterToolCalls", () => {
   it("parses tool_calls (OpenAI style)", () => {
@@ -108,5 +111,49 @@ describe("extractOpenRouterToolCalls", () => {
 
     expect(calls).toHaveLength(1);
     expect(calls[0].name).toBe("vfs_read_chars");
+  });
+
+  it("collects tool name hints from mixed tool payload styles", () => {
+    const message = {
+      tool_calls: [
+        {
+          function: {
+            name: "vfs_read_chars",
+          },
+        },
+        {
+          name: "vfs_write_file",
+        },
+        {
+          type: "url_citation",
+        },
+      ],
+    };
+
+    expect(collectOpenRouterToolNameHints(message)).toEqual([
+      "vfs_read_chars",
+      "vfs_write_file",
+    ]);
+  });
+
+  it("throws malformed tool-call error with tool name on invalid JSON arguments", () => {
+    const message = {
+      tool_calls: [
+        {
+          function: {
+            name: "vfs_write_file",
+            arguments: '{"path":"current/world/global.json",',
+          },
+        },
+      ],
+    };
+
+    try {
+      extractOpenRouterToolCalls(message);
+      throw new Error("expected extractOpenRouterToolCalls to throw");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "MALFORMED_TOOL_CALL" });
+      expect(String(error)).toContain("vfs_write_file");
+    }
   });
 });

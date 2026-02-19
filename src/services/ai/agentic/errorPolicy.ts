@@ -28,6 +28,8 @@ const MODEL_FIXABLE_PATTERN =
   /invalid[_\s-]*parameters?|schema validation|json parse|must be last|multiple finish|forced finish|no tool call/i;
 
 const TERMINAL_PATTERN = /safety|quota|unsupported/i;
+const JSON_PARSE_PATTERN =
+  /failed to parse ai response as json|json parse error|unexpected token.*json/i;
 
 const toMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error || "");
@@ -44,6 +46,8 @@ export function classifyAgenticError(
   const isMalformedToolCall =
     providerCode === "MALFORMED_TOOL_CALL" ||
     MALFORMED_TOOL_CALL_PATTERN.test(rawMessage);
+  const isJsonParseFailure =
+    providerCode === "JSON_PARSE_ERROR" || JSON_PARSE_PATTERN.test(rawMessage);
 
   if (isContextLengthError(error) || isInvalidArgumentError(error)) {
     return {
@@ -60,6 +64,15 @@ export function classifyAgenticError(
       rawMessage,
       providerCode,
       isMalformedToolCall: true,
+    };
+  }
+
+  if (isJsonParseFailure) {
+    return {
+      kind: "silent_retry",
+      rawMessage,
+      providerCode,
+      isMalformedToolCall,
     };
   }
 

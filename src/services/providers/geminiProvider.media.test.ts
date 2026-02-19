@@ -303,6 +303,43 @@ describe("geminiProvider media and embedding branches", () => {
     ).rejects.toMatchObject({ code: "SAFETY" });
   });
 
+  it("throws non-stream malformed tool-call error with tool name details", async () => {
+    sdkMocks.generateContent.mockResolvedValueOnce({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                functionCall: {
+                  name: "vfs_read_chars",
+                  args: "not-an-object",
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usageMetadata: {
+        promptTokenCount: 3,
+        candidatesTokenCount: 1,
+        totalTokenCount: 4,
+      },
+    });
+
+    try {
+      await generateContent(
+        { apiKey: "k" } as any,
+        "gemini-2.5-flash",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+      );
+      throw new Error("expected non-stream malformed tool-call rejection");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "MALFORMED_TOOL_CALL" });
+      expect(String(error)).toContain("vfs_read_chars");
+    }
+  });
+
   it("deduplicates repeated streaming functionCall parts across chunks", async () => {
     sdkMocks.generateContentStream.mockResolvedValueOnce({
       async *[Symbol.asyncIterator]() {
@@ -403,6 +440,6 @@ describe("geminiProvider media and embedding branches", () => {
         undefined,
         { onChunk: vi.fn() } as any,
       ),
-    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
+    ).rejects.toMatchObject({ code: "MALFORMED_TOOL_CALL" });
   });
 });

@@ -1,5 +1,5 @@
 import type { JsonObject, ToolArguments } from "../../types";
-import type { ToolCallResult } from "./types";
+import { MalformedToolCallError, type ToolCallResult } from "./types";
 
 const isJsonObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -12,10 +12,16 @@ const parseToolArguments = (
     return {};
   }
   if (typeof rawArgs === "string") {
-    const parsed = JSON.parse(rawArgs);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawArgs);
+    } catch (error) {
+      throw new MalformedToolCallError("openrouter", toolName, error);
+    }
     if (!isJsonObject(parsed)) {
-      throw new Error(
-        `[OpenRouter] Tool args must be a JSON object for ${toolName}`,
+      throw new MalformedToolCallError(
+        "openrouter",
+        `${toolName}: arguments must be a JSON object`,
       );
     }
     return parsed;
@@ -23,7 +29,10 @@ const parseToolArguments = (
   if (isJsonObject(rawArgs)) {
     return rawArgs;
   }
-  throw new Error(`[OpenRouter] Invalid tool args type for ${toolName}`);
+  throw new MalformedToolCallError(
+    "openrouter",
+    `${toolName}: invalid tool args type`,
+  );
 };
 
 const readNonEmptyString = (value: unknown): string | undefined => {
@@ -34,16 +43,38 @@ const readNonEmptyString = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-export const extractOpenRouterToolCalls = (
+const getRawToolCalls = (
   message: JsonObject | null | undefined,
-): ToolCallResult[] => {
+): unknown[] => {
+  if (!message) {
+    return [];
+  }
   const rawCalls =
     (message as { toolCalls?: unknown }).toolCalls ||
     (message as { tool_calls?: unknown }).tool_calls;
+  return Array.isArray(rawCalls) ? rawCalls : [];
+};
 
-  if (!Array.isArray(rawCalls)) {
-    return [];
+export const collectOpenRouterToolNameHints = (
+  message: JsonObject | null | undefined,
+): string[] => {
+  const names = new Set<string>();
+  for (const tc of getRawToolCalls(message)) {
+    const call = tc as { function?: { name?: unknown }; name?: unknown };
+    const functionName = readNonEmptyString(call.function?.name);
+    const fallbackName = readNonEmptyString(call.name);
+    const name = functionName || fallbackName;
+    if (name) {
+      names.add(name);
+    }
   }
+  return Array.from(names);
+};
+
+export const extractOpenRouterToolCalls = (
+  message: JsonObject | null | undefined,
+): ToolCallResult[] => {
+  const rawCalls = getRawToolCalls(message);
 
   const parsedCalls: ToolCallResult[] = [];
 

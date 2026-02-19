@@ -19,6 +19,17 @@ describe("errorPolicy", () => {
     expect(result.isMalformedToolCall).toBe(true);
   });
 
+  it("classifies JSON parse failures as silent_retry", () => {
+    const result = classifyAgenticError(
+      new AIProviderError(
+        "Failed to parse AI response as JSON",
+        "openrouter",
+        "JSON_PARSE_ERROR",
+      ),
+    );
+    expect(result.kind).toBe("silent_retry");
+  });
+
   it("classifies context/history corruption as rebuild_required", () => {
     expect(
       classifyAgenticError(new Error("maximum context length exceeded")).kind,
