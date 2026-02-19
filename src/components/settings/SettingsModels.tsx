@@ -330,10 +330,10 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-slide-in">
+    <div className="flex flex-col gap-6 animate-slide-in">
       {/* Warning: No available providers */}
       {hasNoAvailableProviders && (
-        <div className="border-l-2 border-red-500/60 pl-3 py-2 flex items-start gap-3">
+        <div className="order-0 border-l-2 border-red-500/60 pl-3 py-2 flex items-start gap-3">
           <svg
             className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
             fill="none"
@@ -359,7 +359,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="order-1 flex justify-end">
         <button
           onClick={() => onLoadModels(true)}
           disabled={loadingModels || hasNoAvailableProviders}
@@ -400,8 +400,28 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         </button>
       </div>
 
+      <div className="order-2 space-y-1 pt-4 border-t-2 border-theme-border/55">
+        <h3 className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+          {t("models.modelSelectionTitle") || "Model Selection"}
+        </h3>
+        <p className="text-[11px] text-theme-muted">
+          {t("models.modelSelectionHelp") ||
+            "Configure provider and model routing for Story, Lore, Script, Image, Video, and Audio."}
+        </p>
+      </div>
+
+      <div className="order-4 space-y-1 pt-5 border-t-2 border-theme-border/55">
+        <h3 className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+          {t("models.runtimeControlsTitle") || "Runtime Controls"}
+        </h3>
+        <p className="text-[11px] text-theme-muted">
+          {t("models.runtimeControlsHelp") ||
+            "Control agentic loop retries, tool behavior, and max-output budgeting strategy."}
+        </p>
+      </div>
+
       {/* Disable Model Filter Toggle */}
-      <div className="flex items-center justify-between gap-4 py-4 border-b border-theme-border/25">
+      <div className="order-5 flex items-center justify-between gap-4 py-4 border-b border-theme-border/25">
         <div>
           <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
             {t("models.disableFilter") || "Disable Model Filter"}
@@ -445,7 +465,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
       </div>
 
       {/* Agentic Loop Settings */}
-      <div className="py-4 border-b border-theme-border/25 space-y-4">
+      <div className="order-6 py-4 border-b border-theme-border/25 space-y-4">
         <div>
           <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
             {t("settings.extra.agenticLoop") || "Agentic Loop Settings"}
@@ -718,8 +738,18 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         )}
       </div>
 
+      <div className="order-7 space-y-1 pt-5 border-t-2 border-theme-border/55">
+        <h3 className="text-sm font-bold text-theme-primary uppercase tracking-widest">
+          {t("models.contextControlsTitle") || "Context Controls"}
+        </h3>
+        <p className="text-[11px] text-theme-muted">
+          {t("models.contextControlsHelp") ||
+            "Tune compaction thresholds and active context-window behavior for stability."}
+        </p>
+      </div>
+
       {/* Auto Compaction */}
-      <div className="space-y-3 pb-4 border-b border-theme-border">
+      <div className="order-8 space-y-3 pb-4 border-b border-theme-border">
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">
@@ -1049,7 +1079,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
         return (
           <div
             key={section.key}
-            className="space-y-3 pb-6 border-b border-theme-border last:border-0"
+            className="order-3 space-y-3 pb-6 border-b border-theme-border last:border-0"
           >
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold text-theme-primary uppercase tracking-widest">

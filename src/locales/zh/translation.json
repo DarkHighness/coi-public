@@ -985,6 +985,12 @@
     "sandstorm": "沙尘暴"
   },
   "models": {
+    "modelSelectionTitle": "模型选择",
+    "modelSelectionHelp": "为故事、Lore、脚本、图像、视频与语音配置 Provider 与模型路由。",
+    "runtimeControlsTitle": "运行控制",
+    "runtimeControlsHelp": "管理代理循环重试、工具行为与最大输出预算策略。",
+    "contextControlsTitle": "上下文控制",
+    "contextControlsHelp": "调节压缩阈值与上下文窗口行为，提升稳定性。",
     "story": "故事生成",
     "script": "Veo 脚本生成",
     "image": "图像生成",

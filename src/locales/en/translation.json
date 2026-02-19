@@ -947,6 +947,12 @@
   "viewAll": "View All",
   "clickToCycle": "Click to Cycle",
   "models": {
+    "modelSelectionTitle": "Model Selection",
+    "modelSelectionHelp": "Configure provider and model routing for Story, Lore, Script, Image, Video, and Audio.",
+    "runtimeControlsTitle": "Runtime Controls",
+    "runtimeControlsHelp": "Control agentic loop retries, tool behavior, and max-output budgeting strategy.",
+    "contextControlsTitle": "Context Controls",
+    "contextControlsHelp": "Tune compaction thresholds and active context-window behavior for stability.",
     "story": "Story Generation",
     "script": "Veo Script Generation",
     "image": "Image Generation",
