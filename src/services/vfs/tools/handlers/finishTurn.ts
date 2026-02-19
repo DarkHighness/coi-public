@@ -53,9 +53,7 @@ export const handleFinishTurn: VfsToolHandler = (args, ctx) =>
       typeof ctx.vfsTurnUserAction === "string" &&
       ctx.vfsTurnUserAction.trim().length > 0
         ? ctx.vfsTurnUserAction
-        : typeof runtime.userAction === "string"
-          ? runtime.userAction
-          : null;
+        : null;
     const assistant = toTurnAssistant(runtime.assistant);
 
     if (typeof userAction !== "string" || !assistant) {

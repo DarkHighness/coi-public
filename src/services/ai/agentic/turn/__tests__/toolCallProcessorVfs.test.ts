@@ -78,13 +78,13 @@ describe("toolCallProcessor VFS integration", () => {
     const commit = executeGenericTool(
       "vfs_finish_turn",
       {
-        userAction: "start",
         assistant: createAssistantPayload("hello"),
       },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
+        currentUserAction: "start",
       },
     ) as { success?: boolean };
 
@@ -109,13 +109,13 @@ describe("toolCallProcessor VFS integration", () => {
     const commit = executeGenericTool(
       "vfs_finish_turn",
       {
-        userAction: "start",
         assistant: createAssistantPayload("hello"),
       },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
+        currentUserAction: "start",
       },
     ) as { success?: boolean };
 
@@ -141,13 +141,13 @@ describe("toolCallProcessor VFS integration", () => {
     const firstCommit = executeGenericTool(
       "vfs_finish_turn",
       {
-        userAction: "start",
         assistant: createAssistantPayload("hello"),
       },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
+        currentUserAction: "start",
       },
     ) as { success?: boolean };
 
@@ -158,13 +158,13 @@ describe("toolCallProcessor VFS integration", () => {
     const secondCommit = executeGenericTool(
       "vfs_finish_turn",
       {
-        userAction: "next",
         assistant: createAssistantPayload("second"),
       },
       {
         loopState,
         gameState,
         settings: DEFAULTS,
+        currentUserAction: "next",
       },
     ) as { success?: boolean };
 

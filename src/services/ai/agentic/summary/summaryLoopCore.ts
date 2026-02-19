@@ -179,20 +179,6 @@ const validateCommitSummaryArgs = (
   return { ok: true };
 };
 
-const injectSummaryRuntimeArgs = (
-  args: JsonObject,
-  expectedRange: { fromIndex: number; toIndex: number },
-): JsonObject => {
-  return {
-    ...args,
-    nodeRange: {
-      fromIndex: expectedRange.fromIndex,
-      toIndex: expectedRange.toIndex,
-    },
-    lastSummarizedIndex: expectedRange.toIndex + 1,
-  };
-};
-
 export async function runSummaryLoopCore(options: {
   input: SummaryLoopInput;
   provider: ReturnType<typeof sessionManager.getProvider>;
@@ -439,6 +425,7 @@ export async function runSummaryLoopCore(options: {
         settings: input.settings,
         vfsActor: "ai" as const,
         vfsMode: "normal" as const,
+        vfsSummaryNodeRange: input.nodeRange,
       };
 
       for (const call of functionCalls) {
@@ -508,7 +495,6 @@ export async function runSummaryLoopCore(options: {
           continue;
         }
 
-        let dispatchArgs: JsonObject = call.args;
         if (call.name === finishToolName) {
           const finishRangeValidation = validateCommitSummaryArgs(
             call.args,
@@ -526,12 +512,11 @@ export async function runSummaryLoopCore(options: {
             });
             continue;
           }
-          dispatchArgs = injectSummaryRuntimeArgs(call.args, input.nodeRange);
         }
 
         const output = await dispatchToolCallAsync(
           call.name,
-          dispatchArgs,
+          call.args,
           toolCtx,
         );
 
@@ -573,7 +558,7 @@ export async function runSummaryLoopCore(options: {
                 model: modelId,
                 endpoint: "summary_tool",
                 toolName: call.name,
-                toolInput: dispatchArgs,
+                toolInput: call.args,
                 toolOutput: output,
               }),
             );
@@ -598,7 +583,7 @@ export async function runSummaryLoopCore(options: {
             model: modelId,
             endpoint: "summary_tool",
             toolName: call.name,
-            toolInput: dispatchArgs,
+            toolInput: call.args,
             toolOutput: output,
           }),
         );

@@ -60,9 +60,7 @@ export function executeGenericTool(
     vfsTurnUserAction:
       typeof currentUserAction === "string" && currentUserAction.length > 0
         ? currentUserAction
-        : typeof args.userAction === "string" && args.userAction.length > 0
-          ? args.userAction
-          : undefined,
+        : undefined,
     vfsVmMaxToolCalls: vmToolCallCap,
     vfsVmMaxScriptChars: SYSTEM_VFS_VM_MAX_SCRIPT_CHARS,
   };

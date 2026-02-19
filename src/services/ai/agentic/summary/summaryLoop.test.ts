@@ -392,12 +392,10 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
-      {
-        ...makeCommitSummaryArgs(),
-        nodeRange: { fromIndex: 4, toIndex: 9 },
-        lastSummarizedIndex: 10,
-      },
-      expect.any(Object),
+      makeCommitSummaryArgs(),
+      expect.objectContaining({
+        vfsSummaryNodeRange: { fromIndex: 4, toIndex: 9 },
+      }),
     );
   });
 
@@ -433,10 +431,10 @@ describe("runSummaryLoop", () => {
       expect.objectContaining({
         nextSessionReferencesMarkdown:
           "- current/skills/commands/runtime/SKILL.md\n- current/session/<session_uid>.jsonl",
-        nodeRange: { fromIndex: 1, toIndex: 4 },
-        lastSummarizedIndex: 5,
       }),
-      expect.any(Object),
+      expect.objectContaining({
+        vfsSummaryNodeRange: { fromIndex: 1, toIndex: 4 },
+      }),
     );
   });
 
@@ -594,12 +592,10 @@ describe("runSummaryLoop", () => {
     );
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
-      {
-        ...makeCommitSummaryArgs(),
-        nodeRange: { fromIndex: 0, toIndex: 1 },
-        lastSummarizedIndex: 2,
-      },
-      expect.any(Object),
+      makeCommitSummaryArgs(),
+      expect.objectContaining({
+        vfsSummaryNodeRange: { fromIndex: 0, toIndex: 1 },
+      }),
     );
   });
 
@@ -776,12 +772,10 @@ describe("runSummaryLoop", () => {
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
     expect(mockDispatchToolCallAsync).toHaveBeenCalledWith(
       finishTool,
-      {
-        ...makeCommitSummaryArgs(),
-        nodeRange: { fromIndex: 0, toIndex: 1 },
-        lastSummarizedIndex: 2,
-      },
-      expect.any(Object),
+      makeCommitSummaryArgs(),
+      expect.objectContaining({
+        vfsSummaryNodeRange: { fromIndex: 0, toIndex: 1 },
+      }),
     );
   });
 

@@ -76,9 +76,6 @@ const HANDLERS: Record<
 
 const MAX_VALIDATION_ISSUES = 8;
 
-const isRecordObject = (value: unknown): value is JsonObject =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
 const formatValidationIssues = (
   issues: Array<{ path: Array<string | number>; message: string }>,
 ): string => {
@@ -103,36 +100,56 @@ const extraValidation = (
   return null;
 };
 
-const normalizeFinishTurnArgsForValidation = (args: JsonObject): JsonObject => {
-  const normalized: JsonObject = { ...args };
+const normalizeArgsForValidation = (
+  _name: VfsToolName,
+  args: JsonObject,
+): JsonObject => args;
 
-  if ("userAction" in normalized) {
-    delete normalized.userAction;
+type RuntimeArgsInjector = (
+  parsed: JsonObject,
+  context: ToolContext,
+) => JsonObject;
+
+const injectFinishSummaryRuntimeArgs: RuntimeArgsInjector = (
+  parsed,
+  context,
+) => {
+  const nodeRange = context.vfsSummaryNodeRange;
+  if (
+    !nodeRange ||
+    typeof nodeRange.fromIndex !== "number" ||
+    !Number.isFinite(nodeRange.fromIndex) ||
+    typeof nodeRange.toIndex !== "number" ||
+    !Number.isFinite(nodeRange.toIndex)
+  ) {
+    return parsed;
   }
 
-  if (isRecordObject(normalized.retconAck)) {
-    const nextRetconAck: JsonObject = { ...normalized.retconAck };
-    if ("hash" in nextRetconAck) {
-      delete nextRetconAck.hash;
-    }
-    if (Object.keys(nextRetconAck).length === 0) {
-      delete normalized.retconAck;
-    } else {
-      normalized.retconAck = nextRetconAck;
-    }
-  }
+  const fromIndex = Math.floor(nodeRange.fromIndex);
+  const toIndex = Math.floor(nodeRange.toIndex);
 
-  return normalized;
+  return {
+    ...parsed,
+    nodeRange: {
+      fromIndex,
+      toIndex,
+    },
+    lastSummarizedIndex: toIndex + 1,
+  };
 };
 
-const normalizeArgsForValidation = (
+const RUNTIME_ARGS_INJECTORS: Partial<Record<VfsToolName, RuntimeArgsInjector>> =
+  {
+    vfs_finish_summary: injectFinishSummaryRuntimeArgs,
+  };
+
+const applyRuntimeArgsAfterValidation = (
   name: VfsToolName,
-  args: JsonObject,
+  parsed: JsonObject,
+  context: ToolContext,
 ): JsonObject => {
-  if (name === "vfs_finish_turn") {
-    return normalizeFinishTurnArgsForValidation(args);
-  }
-  return args;
+  const injector = RUNTIME_ARGS_INJECTORS[name];
+  return injector ? injector(parsed, context) : parsed;
 };
 
 const validateArgs = (name: VfsToolName, args: JsonObject) => {
@@ -181,9 +198,14 @@ export class VfsToolDispatcher {
       return validation.error;
     }
 
+    const dispatchArgs = applyRuntimeArgsAfterValidation(
+      name,
+      validation.parsed,
+      context,
+    );
     const entry = vfsToolRegistry.getCatalogEntry(name);
     const handler = HANDLERS[entry.handlerKey];
-    return handler(validation.parsed, context);
+    return handler(dispatchArgs, context);
   }
 
   public async dispatchAsync(

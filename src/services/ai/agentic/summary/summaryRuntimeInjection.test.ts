@@ -112,7 +112,7 @@ beforeEach(() => {
 });
 
 describe("summary runtime field injection", () => {
-  it("injects nodeRange/lastSummarizedIndex before dispatching vfs_finish_summary", async () => {
+  it("passes content-only args and runtime injection context for vfs_finish_summary", async () => {
     mockCallWithAgenticRetry.mockResolvedValue({
       result: {
         functionCalls: [
@@ -145,12 +145,18 @@ describe("summary runtime field injection", () => {
     await runSummaryLoop(makeInput(), "query_summary");
 
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
-    const [, dispatchedArgs] = mockDispatchToolCallAsync.mock.calls[0] as [
+    const [, dispatchedArgs, dispatchedContext] = mockDispatchToolCallAsync.mock
+      .calls[0] as [
       string,
       any,
+      any,
     ];
-    expect(dispatchedArgs.nodeRange).toEqual({ fromIndex: 3, toIndex: 8 });
-    expect(dispatchedArgs.lastSummarizedIndex).toBe(9);
+    expect(dispatchedArgs.nodeRange).toBeUndefined();
+    expect(dispatchedArgs.lastSummarizedIndex).toBeUndefined();
+    expect(dispatchedContext.vfsSummaryNodeRange).toEqual({
+      fromIndex: 3,
+      toIndex: 8,
+    });
   });
 
   it("rejects AI-supplied runtime fields before dispatch", async () => {

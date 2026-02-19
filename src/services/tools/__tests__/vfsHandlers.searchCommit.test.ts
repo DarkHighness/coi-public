@@ -83,7 +83,7 @@ describe("VFS handlers search/commit", () => {
     expect(JSON.parse(index.data.content).activeTurnId).toBe("fork-0/turn-1");
   });
 
-  it("ignores legacy finish_turn runtime-only fields and keeps system userAction", () => {
+  it("rejects legacy finish_turn runtime-only fields", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session, vfsTurnUserAction: "system action" };
 
@@ -100,19 +100,11 @@ describe("VFS handlers search/commit", () => {
       ctx,
     ) as any;
 
-    expect(commit.success).toBe(true);
-    const turnPath = `current/conversation/turns/${commit.data.turnId}.json`;
-    const turnFile = dispatchToolCall(
-      "vfs_read_chars",
-      { path: turnPath },
-      ctx,
-    ) as any;
-    expect(turnFile.success).toBe(true);
-    const parsedTurn = JSON.parse(turnFile.data.content);
-    expect(parsedTurn.userAction).toBe("system action");
+    expect(commit.success).toBe(false);
+    expect(commit.code).toBe("INVALID_PARAMS");
   });
 
-  it("accepts pending retcon acknowledgement with summary and ignores legacy hash", () => {
+  it("accepts pending retcon acknowledgement with summary only", () => {
     const session = new VfsSession();
     const ctx = { vfsSession: session, vfsTurnUserAction: "advance timeline" };
 
@@ -137,7 +129,6 @@ describe("VFS handlers search/commit", () => {
           choices: [{ text: "Continue" }, { text: "Re-evaluate" }],
         },
         retconAck: {
-          hash: "wrong-legacy-hash",
           summary: "Continuity updated after rule change.",
         },
       },
@@ -147,6 +138,42 @@ describe("VFS handlers search/commit", () => {
     expect(commit.success).toBe(true);
     const ackState = getCustomRulesAckState(session);
     expect(ackState?.pendingHash).toBeUndefined();
+  });
+
+  it("rejects pending retcon acknowledgement when legacy hash is supplied", () => {
+    const session = new VfsSession();
+    const ctx = { vfsSession: session, vfsTurnUserAction: "advance timeline" };
+
+    session.writeFile(
+      "custom_rules/12-custom/rule.md",
+      "rule v1",
+      "text/markdown",
+    );
+    syncCustomRulesAckState(session);
+    session.writeFile(
+      "custom_rules/12-custom/rule.md",
+      "rule v2",
+      "text/markdown",
+    );
+    syncCustomRulesAckState(session);
+
+    const commit = dispatchToolCall(
+      "vfs_finish_turn",
+      {
+        assistant: {
+          narrative: "You adjust continuity and move forward.",
+          choices: [{ text: "Continue" }, { text: "Re-evaluate" }],
+        },
+        retconAck: {
+          hash: "legacy-hash",
+          summary: "Continuity updated after rule change.",
+        },
+      },
+      ctx,
+    ) as any;
+
+    expect(commit.success).toBe(false);
+    expect(commit.code).toBe("INVALID_PARAMS");
   });
 
   it("requires runtime-injected fields for summary finish tool", () => {
@@ -163,6 +190,46 @@ describe("VFS handlers search/commit", () => {
 
     expect(invalid.success).toBe(false);
     expect(invalid.code).toBe("INVALID_DATA");
+  });
+
+  it("injects summary runtime fields from tool context after validation", () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      vfsSummaryNodeRange: { fromIndex: 0, toIndex: 1 },
+    };
+
+    const commit = dispatchToolCall(
+      "vfs_finish_summary",
+      {
+        ...createSummaryPayload(),
+      },
+      ctx,
+    ) as any;
+
+    expect(commit.success).toBe(true);
+    expect(commit.data.summary.nodeRange).toEqual({ fromIndex: 0, toIndex: 1 });
+  });
+
+  it("rejects AI-supplied summary runtime fields even when runtime context exists", () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      vfsSummaryNodeRange: { fromIndex: 0, toIndex: 1 },
+    };
+
+    const invalid = dispatchToolCall(
+      "vfs_finish_summary",
+      {
+        ...createSummaryPayload(),
+        nodeRange: { fromIndex: 0, toIndex: 1 },
+        lastSummarizedIndex: 2,
+      },
+      ctx,
+    ) as any;
+
+    expect(invalid.success).toBe(false);
+    expect(invalid.code).toBe("INVALID_PARAMS");
   });
 
   it("ends player-rate loop with empty finish tool payload", () => {

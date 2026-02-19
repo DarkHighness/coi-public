@@ -52,39 +52,6 @@ const toRecord = (value: unknown): JsonObject | null =>
     ? (value as JsonObject)
     : null;
 
-const normalizeFinishTurnArgsForValidation = (args: JsonObject): JsonObject => {
-  const normalized: JsonObject = { ...args };
-
-  if ("userAction" in normalized) {
-    delete normalized.userAction;
-  }
-
-  const retconAck = toRecord(normalized.retconAck);
-  if (retconAck) {
-    const nextRetconAck = { ...retconAck };
-    if ("hash" in nextRetconAck) {
-      delete nextRetconAck.hash;
-    }
-    if (Object.keys(nextRetconAck).length === 0) {
-      delete normalized.retconAck;
-    } else {
-      normalized.retconAck = nextRetconAck;
-    }
-  }
-
-  return normalized;
-};
-
-const normalizeToolArgsForValidation = (
-  toolName: string,
-  args: JsonObject,
-): JsonObject => {
-  if (toolName === "vfs_finish_turn") {
-    return normalizeFinishTurnArgsForValidation(args);
-  }
-  return args;
-};
-
 const summarizeZodIssues = (
   error: ZodError,
   maxIssues: number = MAX_VALIDATION_ISSUES_IN_ERROR,
@@ -558,16 +525,13 @@ export async function callWithAgenticRetry(
             potentialRecord.args ?? potentialRecord.arguments,
           );
           const toolDef = request.tools?.find((t) => t.name === toolName);
-          const normalizedArgsRecord = argsRecord
-            ? normalizeToolArgsForValidation(toolName, argsRecord)
-            : argsRecord;
           if (
             toolDef &&
-            normalizedArgsRecord &&
-            toolDef.parameters.safeParse(normalizedArgsRecord).success
+            argsRecord &&
+            toolDef.parameters.safeParse(argsRecord).success
           ) {
             matchedToolName = toolName;
-            matchedArgs = normalizedArgsRecord;
+            matchedArgs = argsRecord;
           }
         }
 
@@ -578,24 +542,16 @@ export async function callWithAgenticRetry(
               rootSchema ||
               request.tools?.find((t) => t.name === requiredToolName)
                 ?.parameters;
-            const normalizedPotential = normalizeToolArgsForValidation(
-              requiredToolName,
-              potentialRecord,
-            );
-            if (schema && schema.safeParse(normalizedPotential).success) {
+            if (schema && schema.safeParse(potentialRecord).success) {
               matchedToolName = requiredToolName;
-              matchedArgs = normalizedPotential;
+              matchedArgs = potentialRecord;
             }
           } else if (request.tools && request.tools.length > 0) {
             // Try to match against any available tool
             for (const tool of request.tools) {
-              const normalizedPotential = normalizeToolArgsForValidation(
-                tool.name,
-                potentialRecord,
-              );
-              if (tool.parameters.safeParse(normalizedPotential).success) {
+              if (tool.parameters.safeParse(potentialRecord).success) {
                 matchedToolName = tool.name;
-                matchedArgs = normalizedPotential;
+                matchedArgs = potentialRecord;
                 break;
               }
             }
@@ -647,20 +603,8 @@ export async function callWithAgenticRetry(
           (toolCall.name === requiredToolName ? rootSchema : null);
 
         if (schema) {
-          const normalizedArgs = normalizeToolArgsForValidation(
-            toolCall.name,
-            toolCall.args,
-          );
-          const primaryValidation = schema.safeParse(normalizedArgs);
-          const validationResult =
-            !primaryValidation.success && normalizedArgs !== toolCall.args
-              ? schema.safeParse(toolCall.args)
-              : primaryValidation;
-
+          const validationResult = schema.safeParse(toolCall.args);
           if (validationResult.success) {
-            if (primaryValidation.success && normalizedArgs !== toolCall.args) {
-              toolCall.args = normalizedArgs;
-            }
             continue;
           }
 
