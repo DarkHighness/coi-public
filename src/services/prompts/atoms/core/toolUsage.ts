@@ -3,7 +3,7 @@
  * Content from output_format.ts
  */
 import type { Atom } from "../types";
-import { vfsToolRegistry } from "../../../vfs/tools";
+import { vfsToolRegistry } from "../../../vfs/tools/registry";
 import { defineAtom } from "../../trace/runtime";
 
 const gateSemanticCapabilityText = (

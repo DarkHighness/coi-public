@@ -8,8 +8,8 @@
  * live in the toolUsage system prompt atom. Keep these brief.
  */
 import type { Atom } from "../types";
-import { vfsToolRegistry } from "../../../vfs/tools";
-import type { VfsToolsetId } from "../../../vfs/tools";
+import { vfsToolRegistry } from "../../../vfs/tools/registry";
+import type { VfsToolsetId } from "../../../vfs/tools/types";
 import { defineAtom } from "../../trace/runtime";
 
 export interface SystemMessageInput {

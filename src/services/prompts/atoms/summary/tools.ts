@@ -7,7 +7,7 @@
  */
 
 import type { Atom } from "../types";
-import { vfsToolRegistry } from "../../../vfs/tools";
+import { vfsToolRegistry } from "../../../vfs/tools/registry";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 /**

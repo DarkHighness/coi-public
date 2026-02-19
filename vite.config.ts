@@ -80,11 +80,14 @@ export default defineConfig(({ mode }) => {
               return "ai-prompts";
             }
 
+            if (id.includes("services/zodSchemas")) {
+              return "ai-prompts";
+            }
+
             if (
               id.includes("services/ai/") ||
               id.includes("services/providers/") ||
               id.includes("services/zodCompiler") ||
-              id.includes("services/zodSchemas") ||
               id.includes("services/messageTypes")
             ) {
               return "ai-runtime";
