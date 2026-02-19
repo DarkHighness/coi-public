@@ -11,6 +11,11 @@ const DEFAULT_MAX_TOOL_CALLS = 32;
 const MAX_TOOL_CALLS_CAP = 32;
 const DEFAULT_MAX_SCRIPT_CHARS = 16000;
 const TOTAL_SCRIPT_CHARS_CAP = 16000;
+const MAX_LOG_ENTRIES = 40;
+const MAX_LOG_ENTRY_CHARS = 512;
+const MAX_LOG_TOTAL_CHARS = 4096;
+const VFS_VM_MISSING_MAIN_SENTINEL = "__VFS_VM_MISSING_MAIN__";
+const VFS_VM_MAIN_NOT_ASYNC_SENTINEL = "__VFS_VM_MAIN_NOT_ASYNC__";
 
 const WRITE_MUTATION_TOOL_NAMES = new Set([
   "vfs_write_file",
@@ -54,27 +59,12 @@ const parseVmArgs = (args: JsonObject): VmArgs => {
   };
 };
 
-interface VmCallTraceItem {
-  index: number;
-  scriptIndex: number;
-  toolName: string;
-  args: JsonObject;
-  success: boolean;
-  code?: string;
-  error?: string;
-  writeTargets: string[];
-}
-
 interface VmExecutionMeta {
   scriptsRequested: number;
   scriptsCompleted: number;
   toolCallsUsed: number;
   maxToolCalls: number;
   maxScriptChars: number;
-  emitted: unknown[];
-  scriptResults: unknown[];
-  state: JsonObject;
-  callTrace: VmCallTraceItem[];
   writes: {
     successfulTargets: string[];
     failedTargets: string[];
@@ -87,6 +77,18 @@ interface VmExecutionMeta {
     toolName: string | null;
     callIndex: number | null;
   };
+}
+
+interface VmCapturedLog {
+  index: number;
+  message: string;
+  truncated: boolean;
+}
+
+interface VmResultData {
+  result: unknown;
+  logs: VmCapturedLog[];
+  vmMeta: VmExecutionMeta;
 }
 
 const AsyncFunction = Object.getPrototypeOf(async function () {})
@@ -275,14 +277,100 @@ const wrapInnerToolError = (params: {
     `tool="${params.toolName}": ${params.error.error}`,
 });
 
-const attachVmMeta = <T extends object>(
+const stringifyVmLogArg = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const createVmConsoleCapture = (): {
+  logs: VmCapturedLog[];
+  consoleProxy: { log: (...args: unknown[]) => void };
+} => {
+  const logs: VmCapturedLog[] = [];
+  let totalChars = 0;
+  let overflowed = false;
+
+  const markOverflow = () => {
+    overflowed = true;
+    if (logs.length > 0) {
+      const last = logs[logs.length - 1];
+      if (last && !last.truncated) {
+        logs[logs.length - 1] = { ...last, truncated: true };
+      }
+    }
+  };
+
+  const pushLog = (...args: unknown[]) => {
+    if (logs.length >= MAX_LOG_ENTRIES || totalChars >= MAX_LOG_TOTAL_CHARS) {
+      markOverflow();
+      return;
+    }
+
+    const rawMessage = args.map((arg) => stringifyVmLogArg(arg)).join(" ");
+    let message = rawMessage;
+    let truncated = false;
+
+    if (message.length > MAX_LOG_ENTRY_CHARS) {
+      message = message.slice(0, MAX_LOG_ENTRY_CHARS);
+      truncated = true;
+    }
+
+    const remainingChars = MAX_LOG_TOTAL_CHARS - totalChars;
+    if (remainingChars <= 0) {
+      markOverflow();
+      return;
+    }
+
+    if (message.length > remainingChars) {
+      message = message.slice(0, remainingChars);
+      truncated = true;
+    }
+
+    totalChars += message.length;
+    logs.push({
+      index: logs.length,
+      message,
+      truncated,
+    });
+
+    if (overflowed) {
+      const last = logs[logs.length - 1];
+      if (last && !last.truncated) {
+        logs[logs.length - 1] = { ...last, truncated: true };
+      }
+    }
+  };
+
+  return {
+    logs,
+    consoleProxy: {
+      log: (...args: unknown[]) => pushLog(...args),
+    },
+  };
+};
+
+const attachVmResult = <T extends object>(
   result: T,
-  vmMeta: VmExecutionMeta,
-): T & { vmMeta: VmExecutionMeta } =>
+  payload: VmResultData,
+): T & { data: VmResultData; vmMeta: VmExecutionMeta } =>
   ({
     ...(result as object),
-    vmMeta,
-  }) as T & { vmMeta: VmExecutionMeta };
+    data: payload,
+    vmMeta: payload.vmMeta,
+  }) as T & { data: VmResultData; vmMeta: VmExecutionMeta };
 
 export const createVmHandler = (
   dispatchInner: VmInnerDispatcher,
@@ -314,10 +402,8 @@ export const createVmHandler = (
       ),
     );
 
-    const emitted: unknown[] = [];
-    const scriptResults: unknown[] = [];
     const state: JsonObject = {};
-    const callTrace: VmCallTraceItem[] = [];
+    const { logs, consoleProxy } = createVmConsoleCapture();
     const successfulWriteTargets = new Set<string>();
     const failedWriteTargets = new Set<string>();
 
@@ -330,6 +416,7 @@ export const createVmHandler = (
     let finishCallIndex: number | null = null;
     let activeScriptIndex = -1;
     let firstFailure: ToolCallError | null = null;
+    let mainResult: unknown = null;
 
     const buildVmMeta = (): VmExecutionMeta => ({
       scriptsRequested: scripts.length,
@@ -337,10 +424,6 @@ export const createVmHandler = (
       toolCallsUsed,
       maxToolCalls,
       maxScriptChars,
-      emitted: [...emitted],
-      scriptResults: [...scriptResults],
-      state: { ...state },
-      callTrace: [...callTrace],
       writes: {
         successfulTargets: Array.from(successfulWriteTargets.values()).sort(
           (a, b) => a.localeCompare(b),
@@ -359,12 +442,19 @@ export const createVmHandler = (
       },
     });
 
+    const buildVmPayload = (vmMeta: VmExecutionMeta): VmResultData => ({
+      result: mainResult,
+      logs: [...logs],
+      vmMeta,
+    });
+
     if (scripts.length !== 1) {
       const error = createError(
         `[VFS_VM_SCRIPT_COUNT_INVALID] Expected exactly 1 script, received ${scripts.length}.`,
         "INVALID_PARAMS",
       );
-      return attachVmMeta(error, buildVmMeta());
+      const vmMeta = buildVmMeta();
+      return attachVmResult(error, buildVmPayload(vmMeta));
     }
 
     const fail = (error: ToolCallError): VmAbortError => {
@@ -450,6 +540,7 @@ export const createVmHandler = (
       }
 
       toolCallsUsed += 1;
+      const callIndex = toolCallsUsed - 1;
 
       let output: unknown;
       try {
@@ -473,21 +564,10 @@ export const createVmHandler = (
       const outputError = isToolError(output) ? output : null;
       const outputIsError = outputError !== null;
 
-      callTrace.push({
-        index: callTrace.length,
-        scriptIndex: activeScriptIndex,
-        toolName: normalizedToolName,
-        args: normalizedArgs.args,
-        success: !outputIsError,
-        code: outputError?.code,
-        error: outputError?.error,
-        writeTargets,
-      });
-
       if (isFinishCall) {
         finishCallCount += 1;
         finishToolName = normalizedToolName;
-        finishCallIndex = callTrace.length - 1;
+        finishCallIndex = callIndex;
       }
 
       if (WRITE_MUTATION_TOOL_NAMES.has(normalizedToolName)) {
@@ -534,7 +614,8 @@ export const createVmHandler = (
         `[VFS_VM_TOTAL_SCRIPT_CHARS_EXCEEDED] Total scripts length (${totalScriptChars}) exceeds ${TOTAL_SCRIPT_CHARS_CAP}.`,
         "INVALID_PARAMS",
       );
-      return attachVmMeta(error, buildVmMeta());
+      const vmMeta = buildVmMeta();
+      return attachVmResult(error, buildVmPayload(vmMeta));
     }
 
     if (allowedToolNames.size === 0) {
@@ -542,25 +623,34 @@ export const createVmHandler = (
         "[VFS_VM_ALLOWLIST_MISSING] vfs_vm requires runtime allowlist context.",
         "INVALID_ACTION",
       );
-      return attachVmMeta(error, buildVmMeta());
+      const vmMeta = buildVmMeta();
+      return attachVmResult(error, buildVmPayload(vmMeta));
     }
 
     const helperToolNames = Array.from(allowedToolNames.values())
       .filter((name) => name.startsWith("vfs_") && name !== "vfs_vm")
       .sort((a, b) => a.localeCompare(b));
-    const helperFunctions = helperToolNames.map(
-      (toolName) => (toolArgs?: unknown) => call(toolName, toolArgs),
-    );
-    const emit = (value: unknown): void => {
-      emitted.push(value);
+    const vmContext: { call: typeof call; state: JsonObject } & Record<
+      string,
+      unknown
+    > = {
+      call,
+      state,
     };
+    for (const toolName of helperToolNames) {
+      vmContext[toolName] = (toolArgs?: unknown) => call(toolName, toolArgs);
+    }
 
     for (let scriptIndex = 0; scriptIndex < scripts.length; scriptIndex += 1) {
       activeScriptIndex = scriptIndex;
       const script = scripts[scriptIndex] ?? "";
       const sourceLabel = `vfs_vm_script_${scriptIndex}.js`;
       const scriptLineOffset = 1;
-      const scriptSource = `"use strict";\n${script}\n//# sourceURL=${sourceLabel}`;
+      const scriptSource =
+        `"use strict";\n` +
+        `${script}\n` +
+        `return typeof main === "undefined" ? undefined : main;\n` +
+        `//# sourceURL=${sourceLabel}`;
 
       if (script.length > maxScriptChars) {
         firstFailure = createError(
@@ -576,7 +666,7 @@ export const createVmHandler = (
         if (dangerousToken.label === "VFS namespace") {
           firstFailure = createError(
             `[VFS_VM_NAMESPACE_BLOCKED] scripts[${scriptIndex}] references "VFS" at ${lineContext}. ` +
-              "Call injected helpers directly without namespace (for example `await vfs_read_chars({...})` or `await call(\"vfs_read_chars\", {...})`). " +
+              "Call helper wrappers via `ctx.vfs_read_chars({...})` or `ctx.call(\"vfs_read_chars\", {...})` inside `main(ctx)`. " +
               "Do not use `VFS.read(...)` or any `VFS.*` access.",
             "INVALID_ACTION",
           );
@@ -593,10 +683,8 @@ export const createVmHandler = (
       let scriptRunner: (...runtimeArgs: unknown[]) => Promise<unknown>;
       try {
         scriptRunner = new AsyncFunction(
-          "call",
-          "emit",
-          "state",
-          ...helperToolNames,
+          "__vmCtx",
+          "console",
           "globalThis",
           "window",
           "Function",
@@ -618,16 +706,23 @@ export const createVmHandler = (
       }
 
       try {
-        const result = await scriptRunner(
-          call,
-          emit,
-          state,
-          ...helperFunctions,
+        const mainCandidate = await scriptRunner(
+          vmContext,
+          consoleProxy,
           undefined,
           undefined,
           undefined,
         );
-        scriptResults.push(result);
+
+        if (typeof mainCandidate !== "function") {
+          throw new Error(VFS_VM_MISSING_MAIN_SENTINEL);
+        }
+
+        if (mainCandidate.constructor !== AsyncFunction) {
+          throw new Error(VFS_VM_MAIN_NOT_ASYNC_SENTINEL);
+        }
+
+        mainResult = await mainCandidate(vmContext);
         scriptsCompleted += 1;
       } catch (error) {
         if (error instanceof VmAbortError) {
@@ -654,10 +749,20 @@ export const createVmHandler = (
           const referencesVfsVariable =
             /\bVFS\b/.test(message) &&
             /is not defined|is undefined|not defined/i.test(message);
-          if (referencesVfsVariable) {
+          if (message === VFS_VM_MISSING_MAIN_SENTINEL) {
+            firstFailure = createError(
+              `[VFS_VM_MISSING_MAIN] scripts[${scriptIndex}] must declare \`async function main(ctx)\` and return the final output from main.`,
+              "INVALID_PARAMS",
+            );
+          } else if (message === VFS_VM_MAIN_NOT_ASYNC_SENTINEL) {
+            firstFailure = createError(
+              `[VFS_VM_MAIN_NOT_ASYNC] scripts[${scriptIndex}] main must be async (declare \`async function main(ctx)\`).`,
+              "INVALID_PARAMS",
+            );
+          } else if (referencesVfsVariable) {
             firstFailure = createError(
               `[VFS_VM_NAMESPACE_BLOCKED] scripts[${scriptIndex}]${lineText} references "VFS" variable. ` +
-                "Call injected helpers directly without namespace (for example `await vfs_read_chars({...})` or `await call(\"vfs_read_chars\", {...})`). " +
+                "Call helper wrappers via `ctx.vfs_read_chars({...})` or `ctx.call(\"vfs_read_chars\", {...})` inside `main(ctx)`. " +
                 "Do not use `VFS.read(...)` or any `VFS.*` access.",
               "INVALID_ACTION",
             );
@@ -677,11 +782,12 @@ export const createVmHandler = (
     }
 
     const vmMeta = buildVmMeta();
+    const vmPayload = buildVmPayload(vmMeta);
     if (firstFailure) {
-      return attachVmMeta(firstFailure, vmMeta);
+      return attachVmResult(firstFailure, vmPayload);
     }
 
-    const success = createSuccess(vmMeta, "vfs_vm scripts executed");
-    return attachVmMeta(success, vmMeta);
+    const success = createSuccess(vmPayload, "vfs_vm script executed");
+    return attachVmResult(success, vmPayload);
   };
 };

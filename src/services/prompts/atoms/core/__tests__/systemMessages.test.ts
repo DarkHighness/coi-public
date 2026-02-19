@@ -25,6 +25,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("JavaScript");
     expect(content).toContain("globalThis");
     expect(content).toContain("VFS.read");
+    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
     expect(content).toContain("workspace/PLAN.md");
     expect(content).toContain("major branch fracture");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
@@ -60,6 +61,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("JavaScript");
     expect(content).toContain("globalThis");
     expect(content).toContain("VFS.read");
+    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
   });
 
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {
@@ -75,6 +77,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("JavaScript");
     expect(content).toContain("globalThis");
     expect(content).toContain("VFS.read");
+    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
     expect(content).not.toContain("bypass normal simulation constraints");
     expect(content).not.toContain(legacyForceUpdateTool);
   });

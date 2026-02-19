@@ -114,6 +114,7 @@ describe("loopInitializer", () => {
     expect(state.conversationMarker).toBeNull();
     expect(state.finishToolName).toBe("vfs_finish_turn");
     expect(state.isRAGEnabled).toBe(true);
+    expect(state.turnKind).toBe("normal");
     expect(state.budgetState).toMatchObject({
       toolCallsMax: 50,
       retriesMax: 3,
@@ -161,6 +162,7 @@ describe("loopInitializer", () => {
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
     ]);
+    expect(cleanupState.turnKind).toBe("session_cleanup");
   });
 
   it("uses player-rate protocol skill when rate mode is active", () => {
@@ -184,6 +186,7 @@ describe("loopInitializer", () => {
     );
 
     expect(state.isPlayerRateMode).toBe(true);
+    expect(state.turnKind).toBe("normal");
     expect(state.finishToolName).toBe("vfs_end_turn");
     expect(state.requiredCommandSkillPaths).toEqual([
       "skills/commands/runtime/SKILL.md",
@@ -265,5 +268,28 @@ describe("loopInitializer", () => {
         source: "save_profile",
       },
     ]);
+  });
+
+  it("supports explicit turnKind override", () => {
+    const vfsSession = new VfsSession();
+
+    const state = createLoopState(
+      {} as any,
+      { embedding: { enabled: false } } as any,
+      false,
+      true,
+      vfsSession,
+      [],
+      undefined,
+      null,
+      [],
+      undefined,
+      undefined,
+      {
+        turnKind: "query_cleanup",
+      },
+    );
+
+    expect(state.turnKind).toBe("query_cleanup");
   });
 });

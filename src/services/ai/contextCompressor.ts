@@ -67,14 +67,25 @@ export function requiresHistoryRebuild(error: unknown): boolean {
   return isContextLengthError(error) || isInvalidArgumentError(error);
 }
 
+export interface ContextOverflowMetadata {
+  turnKind?: string;
+  usageRatio?: number;
+  autoCompactThreshold?: number;
+  dangerThreshold?: number;
+  dangerous?: boolean;
+}
+
 /**
  * Context Overflow Error - thrown when context exceeds provider limits.
  * Caller should handle by triggering History rebuild (session manager clears history on overflow).
  */
 export class ContextOverflowError extends Error {
-  constructor(originalError: Error) {
+  readonly metadata: ContextOverflowMetadata;
+
+  constructor(originalError: Error, metadata: ContextOverflowMetadata = {}) {
     super(`CONTEXT_LENGTH_EXCEEDED: ${originalError.message}`);
     this.name = "ContextOverflowError";
+    this.metadata = metadata;
   }
 }
 

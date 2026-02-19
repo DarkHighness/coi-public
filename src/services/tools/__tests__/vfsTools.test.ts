@@ -67,21 +67,24 @@ describe("VFS tools", () => {
 
     expect(
       vm.parameters.safeParse({
-        scripts: ["emit(1);"],
+        scripts: ["async function main(ctx) { return 1; }"],
         maxToolCalls: 65,
       }).success,
     ).toBe(false);
 
     expect(
       vm.parameters.safeParse({
-        scripts: ["emit(1);"],
+        scripts: ["async function main(ctx) { return 1; }"],
         maxScriptChars: 5000,
       }).success,
     ).toBe(false);
 
     expect(
       vm.parameters.safeParse({
-        scripts: ["emit(1);", "emit(2);"],
+        scripts: [
+          "async function main(ctx) { return 1; }",
+          "async function main(ctx) { return 2; }",
+        ],
       }).success,
     ).toBe(false);
 
@@ -93,7 +96,7 @@ describe("VFS tools", () => {
 
     expect(
       vm.parameters.safeParse({
-        scripts: ["emit(1);"],
+        scripts: ["async function main(ctx) { return 1; }"],
       }).success,
     ).toBe(true);
   });

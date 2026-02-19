@@ -30,7 +30,12 @@ import {
 } from "../../../messageTypes";
 
 // Import modular components
-import { createLoopState, accumulateUsage, LoopState } from "./loopInitializer";
+import {
+  createLoopState,
+  accumulateUsage,
+  type LoopState,
+  type AgenticTurnKind,
+} from "./loopInitializer";
 import {
   injectSudoModeInstruction,
   injectNormalTurnInstruction,
@@ -56,6 +61,7 @@ import { rollbackVfsSessionToCheckpoint } from "../../../vfs/runtimeCheckpoints"
 import { toJsonValue } from "../../../jsonValue";
 import {
   buildToolCallContextUsageSnapshot,
+  AUTO_QUERY_DANGER_THRESHOLD,
   recordPromptTokenCalibrationSample,
 } from "../../contextUsage";
 import { ContextOverflowError } from "../../contextCompressor";
@@ -112,6 +118,7 @@ export interface AgenticLoopConfig {
   requiredPresetSkillPaths?: string[];
   requiredPresetSkillRequirements?: ActivePresetSkillRequirement[];
   currentUserAction?: string;
+  turnKind?: AgenticTurnKind;
 }
 
 export interface AgenticLoopResult {
@@ -308,6 +315,7 @@ export async function runAgenticLoopRefactored(
     requiredPresetSkillPaths,
     requiredPresetSkillRequirements,
     currentUserAction: explicitCurrentUserAction,
+    turnKind,
   } = config;
 
   // Initialize provider
@@ -337,6 +345,7 @@ export async function runAgenticLoopRefactored(
     vfsElevationScopeTemplateIds,
     {
       isPlayerRateMode,
+      turnKind,
     },
   );
   const startupMode: SessionStartupMode = isCleanupMode
@@ -507,22 +516,41 @@ export async function runAgenticLoopRefactored(
       const hasFinishCall = (aiResult.functionCalls || []).some(
         (call) => call.name === loopState.finishToolName,
       );
+      const inDangerZone =
+        contextUsageSnapshot.usageRatio >= AUTO_QUERY_DANGER_THRESHOLD;
+      const shouldUseDangerOnlyThreshold =
+        loopState.turnKind === "session_cleanup" ||
+        loopState.turnKind === "session_compact";
+      const shouldTriggerContextOverflow = shouldUseDangerOnlyThreshold
+        ? inDangerZone
+        : contextUsageSnapshot.usageRatio >=
+          contextUsageSnapshot.autoCompactThreshold;
       if (
         autoCompactEnabled &&
         !autoCompactTriggeredByContextPressure &&
         !hasFinishCall &&
-        contextUsageSnapshot.usageRatio >=
-          contextUsageSnapshot.autoCompactThreshold
+        shouldTriggerContextOverflow
       ) {
         autoCompactTriggeredByContextPressure = true;
         const ratioPercent = Math.round(contextUsageSnapshot.usageRatio * 100);
         const thresholdPercent = Math.round(
           contextUsageSnapshot.autoCompactThreshold * 100,
         );
+        const dangerPercent = Math.round(AUTO_QUERY_DANGER_THRESHOLD * 100);
+        const appliedThresholdPercent = shouldUseDangerOnlyThreshold
+          ? dangerPercent
+          : thresholdPercent;
         throw new ContextOverflowError(
           new Error(
-            `AUTO_COMPACT_THRESHOLD_REACHED: promptTokens=${contextUsageSnapshot.promptTokens}, contextWindow=${contextUsageSnapshot.contextWindowTokens}, ratio=${ratioPercent}% >= ${thresholdPercent}%`,
+            `AUTO_COMPACT_THRESHOLD_REACHED: turnKind=${loopState.turnKind}, promptTokens=${contextUsageSnapshot.promptTokens}, contextWindow=${contextUsageSnapshot.contextWindowTokens}, ratio=${ratioPercent}% >= ${appliedThresholdPercent}%`,
           ),
+          {
+            turnKind: loopState.turnKind,
+            usageRatio: contextUsageSnapshot.usageRatio,
+            autoCompactThreshold: contextUsageSnapshot.autoCompactThreshold,
+            dangerThreshold: AUTO_QUERY_DANGER_THRESHOLD,
+            dangerous: inDangerZone,
+          },
         );
       }
 
@@ -732,13 +760,6 @@ const findTurnCrossForkViolations = (
   return violations;
 };
 
-interface VmExecutionTraceItem {
-  toolName: string;
-  success: boolean;
-  code?: string;
-  writeTargets: string[];
-}
-
 interface VmExecutionMeta {
   successfulWriteTargets: string[];
   failedWriteTargets: string[];
@@ -746,7 +767,6 @@ interface VmExecutionMeta {
   successfulWriteCallCount: number;
   finishCalled: boolean;
   finishToolName: string | null;
-  callTrace: VmExecutionTraceItem[];
 }
 
 const toRecordOrNull = (value: unknown): JsonObject | null => {
@@ -774,39 +794,6 @@ const normalizeVmWriteTargets = (value: unknown): string[] => {
   return Array.from(targets.values());
 };
 
-const parseVmCallTrace = (value: unknown): VmExecutionTraceItem[] => {
-  if (!Array.isArray(value)) return [];
-
-  const parsed: VmExecutionTraceItem[] = [];
-  for (const item of value) {
-    const record = toRecordOrNull(item);
-    if (!record) {
-      continue;
-    }
-    const toolNameRaw = record.toolName;
-    const toolName = typeof toolNameRaw === "string" ? toolNameRaw : "";
-    if (!toolName) {
-      continue;
-    }
-
-    const code =
-      typeof record.code === "string" && record.code.length > 0
-        ? record.code
-        : undefined;
-    const traceItem: VmExecutionTraceItem = {
-      toolName,
-      success: record.success === true,
-      writeTargets: normalizeVmWriteTargets(record.writeTargets),
-    };
-    if (code) {
-      traceItem.code = code;
-    }
-    parsed.push(traceItem);
-  }
-
-  return parsed;
-};
-
 const parseVmExecutionMetaFromCandidate = (
   candidate: unknown,
 ): VmExecutionMeta | null => {
@@ -817,7 +804,6 @@ const parseVmExecutionMetaFromCandidate = (
 
   const writes = toRecordOrNull(record.writes) ?? {};
   const finish = toRecordOrNull(record.finish) ?? {};
-  const callTrace = parseVmCallTrace(record.callTrace);
   const successfulWriteTargets = normalizeVmWriteTargets(
     writes.successfulTargets,
   );
@@ -843,8 +829,7 @@ const parseVmExecutionMetaFromCandidate = (
     failedWriteTargets.length === 0 &&
     !hasUnknownFailure &&
     successfulWriteCallCount === 0 &&
-    !finishCalled &&
-    callTrace.length === 0
+    !finishCalled
   ) {
     return null;
   }
@@ -856,7 +841,6 @@ const parseVmExecutionMetaFromCandidate = (
     successfulWriteCallCount,
     finishCalled,
     finishToolName,
-    callTrace,
   };
 };
 

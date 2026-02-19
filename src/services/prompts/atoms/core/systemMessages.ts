@@ -69,7 +69,7 @@ This is a **GM COMMAND**. The user action is already prefixed with **[SUDO]**. T
 **TOOLS**:
 ${formatToolListForPrompt(toolsetId)}
 ${capabilityText}
-- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text), and do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Inside script, call helpers directly by tool name (for example \`await vfs_read_chars({...})\`); do NOT use \`VFS.read(...)\` or any \`VFS.*\` namespace. Runtime enforces bounded inner tool calls and script length.
+- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text) and define \`async function main(ctx)\`; vm output is the return value from \`main\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers (for example \`await ctx.vfs_read_chars({...})\`); do NOT use \`VFS.read(...)\` or any \`VFS.*\` namespace. Outside \`vfs_vm\`, call \`vfs_*\` tools directly as top-level tool calls; \`ctx.*\` is only available inside \`main(ctx)\`. Do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Runtime enforces bounded inner tool calls/script length and returns bounded \`console.log\` logs.
 
 **SKILLS**:
 - **PREFLIGHT**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
@@ -113,7 +113,7 @@ ${capabilityText}
 ${
   isPlayerRateToolset
     ? "- `vfs_vm` is not available in `[Player Rate]` toolset."
-    : "- `vfs_vm` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text), and do not use `globalThis`/`window`/`import`/`eval`/`Function`. Inside script, call helpers directly by tool name (for example `await vfs_read_chars({...})`); do NOT use `VFS.read(...)` or any `VFS.*` namespace. Runtime enforces bounded inner tool calls and script length."
+    : "- `vfs_vm` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text) and define `async function main(ctx)`; vm output is the return value from `main`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers (for example `await ctx.vfs_read_chars({...})`); do NOT use `VFS.read(...)` or any `VFS.*` namespace. Outside `vfs_vm`, call `vfs_*` tools directly as top-level tool calls; `ctx.*` is only available inside `main(ctx)`. Do not use `globalThis`/`window`/`import`/`eval`/`Function`. Runtime enforces bounded inner tool calls/script length and returns bounded `console.log` logs."
 }
 
 **SKILLS**:
@@ -181,7 +181,7 @@ You are in CLEANUP MODE (VFS-only).
 **TOOLS**:
 ${formatToolListForPrompt("cleanup")}
 ${capabilityText}
-- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text), and do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Inside script, call helpers directly by tool name (for example \`await vfs_read_chars({...})\`); do NOT use \`VFS.read(...)\` or any \`VFS.*\` namespace. Runtime enforces bounded inner tool calls and script length.
+- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text) and define \`async function main(ctx)\`; vm output is the return value from \`main\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers (for example \`await ctx.vfs_read_chars({...})\`); do NOT use \`VFS.read(...)\` or any \`VFS.*\` namespace. Outside \`vfs_vm\`, call \`vfs_*\` tools directly as top-level tool calls; \`ctx.*\` is only available inside \`main(ctx)\`. Do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Runtime enforces bounded inner tool calls/script length and returns bounded \`console.log\` logs.
 
 **SKILLS**:
 - **PREFLIGHT (ENFORCED)**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.

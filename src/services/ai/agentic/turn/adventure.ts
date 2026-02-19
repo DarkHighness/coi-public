@@ -13,7 +13,10 @@ import {
   TurnRecoveryTrace,
 } from "../../../../types";
 
-import { isContextLengthError } from "../../contextCompressor";
+import {
+  ContextOverflowError,
+  isContextLengthError,
+} from "../../contextCompressor";
 
 import { UnifiedMessage } from "../../../messageTypes";
 
@@ -54,6 +57,7 @@ import {
 
 // Import refactored agentic loop
 import { runAgenticLoopRefactored } from "./agenticLoop";
+import type { AgenticTurnKind } from "./loopInitializer";
 import {
   composeSystemInstruction,
   getTurnRuntimeFloor,
@@ -78,6 +82,10 @@ export interface AgenticLoopResult {
   changedEntities: Array<{ id: string; type: string }>;
   _conversationHistory: UnifiedMessage[];
   recovery?: TurnRecoveryTrace;
+}
+
+export interface AdventureTurnOptions {
+  turnKind?: AgenticTurnKind;
 }
 
 const isRecordObject = (value: unknown): value is JsonObject =>
@@ -111,6 +119,7 @@ const readModelPromptEntries = (
 export const generateAdventureTurn = async (
   gameState: GameState,
   context: TurnContext,
+  options: AdventureTurnOptions = {},
 ): Promise<AgenticLoopResult> => {
   if (!context.settings) {
     throw new Error("settings is required in context");
@@ -395,6 +404,7 @@ export const generateAdventureTurn = async (
   const requiredPresetSkillPaths = requiredPresetSkillRequirements.map(
     (entry) => entry.path,
   );
+  let latestContextOverflowError: ContextOverflowError | null = null;
 
   const executeSingleAttempt = async (
     attemptSettings: AISettings = context.settings,
@@ -402,29 +412,39 @@ export const generateAdventureTurn = async (
     createCheckpoint(sessionId, context.vfsSession);
 
     const fullContext = [...activeHistory, userMessage];
-    const result = await runAgenticLoop(
-      instance.protocol,
-      instance,
-      modelId,
-      systemInstruction,
-      fullContext,
-      gameState,
-      generationDetails,
-      attemptSettings,
-      isSudoMode,
-      isCleanupMode,
-      sessionId,
-      context.vfsSession,
-      retconAckPending,
-      context.onToolCallsUpdate,
-      context.vfsMode,
-      context.vfsElevationToken ?? null,
-      context.vfsElevationIntent,
-      context.vfsElevationScopeTemplateIds,
-      requiredPresetSkillPaths,
-      requiredPresetSkillRequirements,
-      context.userAction,
-    );
+    let result: AgenticLoopResult;
+    try {
+      result = await runAgenticLoop(
+        instance.protocol,
+        instance,
+        modelId,
+        systemInstruction,
+        fullContext,
+        gameState,
+        generationDetails,
+        attemptSettings,
+        isSudoMode,
+        isCleanupMode,
+        sessionId,
+        context.vfsSession,
+        retconAckPending,
+        context.onToolCallsUpdate,
+        context.vfsMode,
+        context.vfsElevationToken ?? null,
+        context.vfsElevationIntent,
+        context.vfsElevationScopeTemplateIds,
+        requiredPresetSkillPaths,
+        requiredPresetSkillRequirements,
+        context.userAction,
+        options.turnKind,
+      );
+      latestContextOverflowError = null;
+    } catch (error) {
+      if (error instanceof ContextOverflowError) {
+        latestContextOverflowError = error;
+      }
+      throw error;
+    }
 
     const newMessages = result._conversationHistory.slice(activeHistory.length);
     console.log(
@@ -463,14 +483,15 @@ export const generateAdventureTurn = async (
   };
 
   let autoCompactAttemptedForContextOverflow = false;
-  const maybeAutoCompactOnContextOverflow = async (): Promise<void> => {
+  const maybeAutoCompactOnContextOverflow = async (
+    overflowError?: unknown,
+  ): Promise<void> => {
     if (isCleanupMode) {
       return;
     }
     if (autoCompactAttemptedForContextOverflow) {
       return;
     }
-    autoCompactAttemptedForContextOverflow = true;
 
     const autoCompactEnabled =
       context.settings.extra?.autoCompactEnabled ?? true;
@@ -500,6 +521,9 @@ export const generateAdventureTurn = async (
       context.userAction.trim().length > 0
         ? { segmentIdx: committedLength, text: context.userAction }
         : null;
+    const forceQuerySummary =
+      overflowError instanceof ContextOverflowError &&
+      overflowError.metadata?.dangerous === true;
 
     try {
       const sumResult = await summarizeContext({
@@ -514,12 +538,13 @@ export const generateAdventureTurn = async (
         language: context.language,
         settings: context.settings,
         pendingPlayerAction,
-        mode: "auto",
+        mode: forceQuerySummary ? "query_summary" : "auto",
       });
 
       if (sumResult.summary) {
+        autoCompactAttemptedForContextOverflow = true;
         console.log(
-          `[TurnRecovery] Auto compact/query summary on context pressure succeeded (range ${nodeRange.fromIndex}-${nodeRange.toIndex}).`,
+          `[TurnRecovery] Auto compact/query summary on context pressure succeeded (mode=${forceQuerySummary ? "query_summary" : "auto"}, range ${nodeRange.fromIndex}-${nodeRange.toIndex}).`,
         );
       } else if (sumResult.error) {
         console.warn(
@@ -536,7 +561,7 @@ export const generateAdventureTurn = async (
 
   const resetSessionForRecovery = async (kind: TurnRecoveryKind) => {
     if (kind === "context") {
-      await maybeAutoCompactOnContextOverflow();
+      await maybeAutoCompactOnContextOverflow(latestContextOverflowError);
       await sessionManager.onContextOverflow(sessionId);
       context.vfsSession.beginReadEpoch("context_overflow");
     } else {
@@ -608,7 +633,7 @@ export const generateAdventureTurn = async (
     if (recoveryKind === "context" || isContextLengthError(error)) {
       await sessionManager.onContextOverflow(sessionId);
       context.vfsSession.beginReadEpoch("context_overflow");
-      await maybeAutoCompactOnContextOverflow();
+      await maybeAutoCompactOnContextOverflow(error);
       const contextError = new Error(
         `CONTEXT_LENGTH_EXCEEDED: ${error instanceof Error ? error.message : String(error)}`,
       ) as Error & {
@@ -659,6 +684,7 @@ export const runAgenticLoop = async (
   requiredPresetSkillPaths: string[] = [],
   requiredPresetSkillRequirements: ActivePresetSkillRequirement[] = [],
   currentUserAction?: string,
+  turnKind?: AgenticTurnKind,
 ): Promise<AgenticLoopResult> => {
   // Delegate to refactored agentic loop
   return runAgenticLoopRefactored({
@@ -683,5 +709,6 @@ export const runAgenticLoop = async (
     requiredPresetSkillPaths,
     requiredPresetSkillRequirements,
     currentUserAction,
+    turnKind,
   });
 };

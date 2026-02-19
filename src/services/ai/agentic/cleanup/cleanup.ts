@@ -5,11 +5,21 @@ import {
   GameResponse,
   LogEntry,
   TurnRecoveryTrace,
+  type UnifiedMessage,
 } from "../../../../types";
 import {
   HistoryCorruptedError,
   isContextLengthError,
 } from "../../contextCompressor";
+import {
+  AUTO_QUERY_DANGER_THRESHOLD,
+  buildToolCallContextUsageSnapshot,
+} from "../../contextUsage";
+import { sessionManager } from "../../sessionManager";
+import { getProviderConfig } from "../../utils";
+import { estimatePromptTokens } from "../retry";
+import { fromGeminiFormat, createUserMessage } from "../../../messageTypes";
+import { vfsToolRegistry } from "../../../vfs/tools";
 
 import type { AgenticLoopResult } from "../turn/adventure";
 import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
@@ -253,6 +263,76 @@ export function getCleanupLoopSystemPrompt(
   return buildCleanupPrompt(state as GameState);
 }
 
+const isUnifiedMessageRecord = (value: unknown): value is UnifiedMessage =>
+  !!value &&
+  typeof value === "object" &&
+  typeof (value as { role?: unknown }).role === "string" &&
+  Array.isArray((value as { content?: unknown }).content);
+
+const estimateCleanupContextUsage = async (
+  context: TurnContext,
+  cleanupPrompt: string,
+  forkId: number,
+) => {
+  if (!context.settings || typeof context.settings !== "object") {
+    return null;
+  }
+
+  const providerInfo = getProviderConfig(context.settings, "story");
+  if (!providerInfo) {
+    return null;
+  }
+
+  if (typeof context.slotId !== "string" || context.slotId.trim().length === 0) {
+    return null;
+  }
+
+  const { instance, modelId } = providerInfo;
+  const session = await sessionManager.getOrCreateSession({
+    slotId: context.slotId,
+    forkId,
+    providerId: instance.id,
+    modelId,
+    protocol: instance.protocol,
+  });
+  const systemInstruction = sessionManager.getSystemInstruction(session.id);
+  if (!systemInstruction) {
+    return null;
+  }
+
+  const nativeHistory = sessionManager.getHistory(session.id);
+  const history: UnifiedMessage[] =
+    instance.protocol === "gemini"
+      ? fromGeminiFormat(nativeHistory)
+      : nativeHistory.filter(isUnifiedMessageRecord);
+
+  const tools = vfsToolRegistry
+    .getDefinitionsForToolset("cleanup", {
+      ragEnabled: context.settings.embedding?.enabled ?? false,
+    })
+    .map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    }));
+
+  const promptTokens = estimatePromptTokens(
+    {
+      modelId,
+      systemInstruction,
+      messages: [],
+      tools,
+    },
+    [...history, createUserMessage(cleanupPrompt)],
+  );
+
+  return buildToolCallContextUsageSnapshot({
+    settings: context.settings,
+    promptTokens,
+    autoCompactThreshold: context.settings.extra?.autoCompactThreshold,
+  });
+};
+
 /**
  * 生成实体清理 (Entity Cleanup)
  *
@@ -283,8 +363,9 @@ export const generateEntityCleanup = async (
 
   const runCleanup = async (
     cleanupTurnContext: TurnContext,
+    turnKind: "session_cleanup" | "query_cleanup",
   ): Promise<AgenticLoopResult> =>
-    generateAdventureTurn(inputState, cleanupTurnContext);
+    generateAdventureTurn(inputState, cleanupTurnContext, { turnKind });
 
   const queryCleanupSlotId = (slotId?: string): string => {
     const normalizedSlotId =
@@ -323,15 +404,39 @@ export const generateEntityCleanup = async (
 
   const result: AgenticLoopResult = await (async () => {
     if (mode === "session_cleanup") {
-      return runCleanup(cleanupContext);
+      return runCleanup(cleanupContext, "session_cleanup");
     }
 
     if (mode === "query_cleanup") {
-      return runCleanup(queryCleanupContext);
+      return runCleanup(queryCleanupContext, "query_cleanup");
     }
 
     try {
-      return await runCleanup(cleanupContext);
+      const usageSnapshot = await estimateCleanupContextUsage(
+        cleanupContext,
+        cleanupPrompt,
+        typeof inputState.forkId === "number" ? inputState.forkId : 0,
+      );
+      if (
+        usageSnapshot &&
+        usageSnapshot.usageRatio >= AUTO_QUERY_DANGER_THRESHOLD
+      ) {
+        const ratioPercent = Math.round(usageSnapshot.usageRatio * 100);
+        const dangerPercent = Math.round(AUTO_QUERY_DANGER_THRESHOLD * 100);
+        console.warn(
+          `[Cleanup] Context usage ${ratioPercent}% >= danger threshold ${dangerPercent}%; routing directly to query cleanup.`,
+        );
+        return runCleanup(queryCleanupContext, "query_cleanup");
+      }
+    } catch (error) {
+      console.warn(
+        "[Cleanup] Failed to estimate cleanup context pressure; defaulting to session cleanup first.",
+        error,
+      );
+    }
+
+    try {
+      return await runCleanup(cleanupContext, "session_cleanup");
     } catch (error) {
       if (!shouldFallbackToQueryCleanup(error)) {
         throw error;
@@ -340,7 +445,7 @@ export const generateEntityCleanup = async (
         "[Cleanup] Session cleanup failed with context/history issue, falling back to query cleanup session.",
         error,
       );
-      return runCleanup(queryCleanupContext);
+      return runCleanup(queryCleanupContext, "query_cleanup");
     }
   })();
 

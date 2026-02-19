@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ContextOverflowError } from "@/services/ai/contextCompressor";
 
 const setupSessionMock = vi.hoisted(() => vi.fn());
 const handleRetryDetectionMock = vi.hoisted(() => vi.fn());
@@ -391,6 +392,34 @@ describe("generateAdventureTurn recovery wiring", () => {
     expect(summarizeContextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: "auto",
+        nodeRange: { fromIndex: 0, toIndex: 0 },
+      }),
+    );
+  });
+
+  it("uses query_summary directly when context overflow is marked dangerous", async () => {
+    summarizeContextMock.mockResolvedValueOnce({
+      summary: { id: "sum-danger" },
+      logs: [],
+    });
+    executeTurnWithRecoveryMock.mockRejectedValueOnce(
+      new ContextOverflowError(new Error("danger"), { dangerous: true }),
+    );
+
+    const gameStateWithPendingRange = {
+      ...baseGameState,
+      currentFork: [{ id: "node-0" }],
+      lastSummarizedIndex: 0,
+      summaries: [],
+    } as any;
+
+    await expect(
+      generateAdventureTurn(gameStateWithPendingRange, makeContext()),
+    ).rejects.toThrow(/CONTEXT_LENGTH_EXCEEDED/);
+
+    expect(summarizeContextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: "query_summary",
         nodeRange: { fromIndex: 0, toIndex: 0 },
       }),
     );

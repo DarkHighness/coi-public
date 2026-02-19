@@ -3,15 +3,72 @@ import { generateEntityCleanup } from "./cleanup";
 import { generateAdventureTurn } from "../turn/adventure";
 import { HistoryCorruptedError } from "../../contextCompressor";
 
+const getProviderConfigMock = vi.hoisted(() => vi.fn());
+const getOrCreateSessionMock = vi.hoisted(() => vi.fn());
+const getSystemInstructionMock = vi.hoisted(() => vi.fn());
+const getHistoryMock = vi.hoisted(() => vi.fn());
+const estimatePromptTokensMock = vi.hoisted(() => vi.fn());
+const buildToolCallContextUsageSnapshotMock = vi.hoisted(() => vi.fn());
+const getDefinitionsForToolsetMock = vi.hoisted(() => vi.fn());
+const fromGeminiFormatMock = vi.hoisted(() => vi.fn());
+
 vi.mock("../turn/adventure", () => ({
   generateAdventureTurn: vi.fn(),
 }));
+
+vi.mock("../../utils", () => ({
+  getProviderConfig: getProviderConfigMock,
+}));
+
+vi.mock("../../sessionManager", () => ({
+  sessionManager: {
+    getOrCreateSession: getOrCreateSessionMock,
+    getSystemInstruction: getSystemInstructionMock,
+    getHistory: getHistoryMock,
+  },
+}));
+
+vi.mock("../retry", () => ({
+  estimatePromptTokens: estimatePromptTokensMock,
+}));
+
+vi.mock("../../contextUsage", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    buildToolCallContextUsageSnapshot: buildToolCallContextUsageSnapshotMock,
+  };
+});
+
+vi.mock("../../../vfs/tools", () => ({
+  vfsToolRegistry: {
+    getDefinitionsForToolset: getDefinitionsForToolsetMock,
+  },
+}));
+
+vi.mock("../../../messageTypes", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    fromGeminiFormat: fromGeminiFormatMock,
+  };
+});
 
 const mockedGenerateAdventureTurn = vi.mocked(generateAdventureTurn);
 
 describe("generateEntityCleanup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getProviderConfigMock.mockReturnValue(null);
+    getOrCreateSessionMock.mockResolvedValue({ id: "sess-1" });
+    getSystemInstructionMock.mockReturnValue("sys");
+    getHistoryMock.mockReturnValue([]);
+    estimatePromptTokensMock.mockReturnValue(50);
+    buildToolCallContextUsageSnapshotMock.mockReturnValue({
+      usageRatio: 0.5,
+    });
+    getDefinitionsForToolsetMock.mockReturnValue([]);
+    fromGeminiFormatMock.mockReturnValue([]);
   });
 
   it("builds cleanup prompt with guardrails and routes through adventure loop", async () => {
@@ -162,5 +219,90 @@ describe("generateEntityCleanup", () => {
       .calls[0] as any[];
     expect(calledContext.slotId).toBe("slot-clean:cleanup");
     expect(calledContext.recentHistory).toEqual([]);
+  });
+
+  it("auto mode prefers session cleanup when context usage is below danger threshold", async () => {
+    getProviderConfigMock.mockReturnValue({
+      instance: { id: "provider-1", protocol: "openai" },
+      modelId: "model-1",
+    });
+    buildToolCallContextUsageSnapshotMock.mockReturnValue({
+      usageRatio: 0.82,
+    });
+
+    mockedGenerateAdventureTurn.mockResolvedValueOnce({
+      response: { narrative: "session cleanup ok", choices: [] },
+      logs: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      changedEntities: [],
+      _conversationHistory: [],
+    } as any);
+
+    await generateEntityCleanup(
+      { forkId: 5 } as any,
+      {
+        slotId: "slot-clean",
+        userAction: "ignored",
+        recentHistory: [],
+        settings: {
+          story: { providerId: "provider-1", modelId: "model-1" },
+          providers: {
+            instances: [{ id: "provider-1", protocol: "openai" }],
+          },
+          extra: { autoCompactThreshold: 0.7 },
+          embedding: { enabled: false },
+        },
+      } as any,
+      "auto",
+    );
+
+    expect(mockedGenerateAdventureTurn).toHaveBeenCalledTimes(1);
+    const [, calledContext, calledOptions] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
+    expect(calledContext.slotId).toBe("slot-clean");
+    expect(calledOptions?.turnKind).toBe("session_cleanup");
+  });
+
+  it("auto mode routes directly to query cleanup when context usage is in danger zone", async () => {
+    getProviderConfigMock.mockReturnValue({
+      instance: { id: "provider-1", protocol: "openai" },
+      modelId: "model-1",
+    });
+    buildToolCallContextUsageSnapshotMock.mockReturnValue({
+      usageRatio: 0.95,
+    });
+
+    mockedGenerateAdventureTurn.mockResolvedValueOnce({
+      response: { narrative: "query cleanup", choices: [] },
+      logs: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      changedEntities: [],
+      _conversationHistory: [],
+    } as any);
+
+    await generateEntityCleanup(
+      { forkId: 5 } as any,
+      {
+        slotId: "slot-clean",
+        userAction: "ignored",
+        recentHistory: [{ role: "user", text: "x" }],
+        settings: {
+          story: { providerId: "provider-1", modelId: "model-1" },
+          providers: {
+            instances: [{ id: "provider-1", protocol: "openai" }],
+          },
+          extra: { autoCompactThreshold: 0.7 },
+          embedding: { enabled: false },
+        },
+      } as any,
+      "auto",
+    );
+
+    expect(mockedGenerateAdventureTurn).toHaveBeenCalledTimes(1);
+    const [, calledContext, calledOptions] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
+    expect(calledContext.slotId).toBe("slot-clean:cleanup");
+    expect(calledContext.recentHistory).toEqual([]);
+    expect(calledOptions?.turnKind).toBe("query_cleanup");
   });
 });

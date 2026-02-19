@@ -160,7 +160,7 @@ describe("agenticLoop context pressure recovery", () => {
     vi.clearAllMocks();
   });
 
-  it("triggers context recovery when usage crosses threshold before non-finish tool execution", async () => {
+  it("normal turn triggers context recovery at 70% threshold before non-finish tools", async () => {
     const vfsSession = createVfsSession();
     checkpointVfsSession("session-1", vfsSession as any);
     aiHandlerMock.handleAICall.mockResolvedValue({
@@ -198,15 +198,155 @@ describe("agenticLoop context pressure recovery", () => {
     expect(vfsSession.restoreReadFenceState).toHaveBeenCalledTimes(1);
   });
 
+  it("normal turn still interrupts in danger zone (90%+)", async () => {
+    const vfsSession = createVfsSession();
+    checkpointVfsSession("session-1", vfsSession as any);
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 95,
+        completionTokens: 3,
+        totalTokens: 98,
+      },
+      functionCalls: [
+        {
+          id: "call-1",
+          name: "vfs_write_file",
+          args: { ops: [] },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-1",
+        vfsSession,
+      }),
+    ).rejects.toThrow(/CONTEXT_LENGTH_EXCEEDED/);
+
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+  });
+
+  it("session cleanup prefers in-session execution below danger threshold", async () => {
+    const vfsSession = createVfsSession();
+    checkpointVfsSession("session-1", vfsSession as any);
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 80,
+          completionTokens: 4,
+          totalTokens: 84,
+        },
+        functionCalls: [
+          {
+            id: "call-write",
+            name: "vfs_write_file",
+            args: { path: "current/world/notes.md", content: "ok" },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 80,
+          completionTokens: 4,
+          totalTokens: 84,
+        },
+        functionCalls: [
+          {
+            id: "call-finish",
+            name: "vfs_finish_turn",
+            args: {
+              userAction: "cleanup",
+              assistant: { narrative: "done", choices: [{ text: "A" }] },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+      isCleanupMode: true,
+      turnKind: "session_cleanup",
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(2);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
+  });
+
+  it("session cleanup routes to context overflow at 90%+ before tools", async () => {
+    const vfsSession = createVfsSession();
+    checkpointVfsSession("session-1", vfsSession as any);
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 95,
+        completionTokens: 2,
+        totalTokens: 97,
+      },
+      functionCalls: [
+        {
+          id: "call-write",
+          name: "vfs_write_file",
+          args: { path: "current/world/notes.md", content: "boom" },
+        },
+      ],
+    });
+
+    await expect(
+      runAgenticLoopRefactored({
+        protocol: "openai",
+        instance: { id: "provider-1", protocol: "openai" } as any,
+        modelId: "model-1",
+        systemInstruction: "sys",
+        initialContents: [],
+        gameState: createGameState(),
+        settings: createSettings(),
+        sessionId: "session-1",
+        vfsSession,
+        isCleanupMode: true,
+        turnKind: "session_cleanup",
+      }),
+    ).rejects.toThrow(/CONTEXT_LENGTH_EXCEEDED/);
+
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+  });
+
   it("does not interrupt when finish tool is present in the same high-usage round", async () => {
     const vfsSession = createVfsSession();
     checkpointVfsSession("session-1", vfsSession as any);
     aiHandlerMock.handleAICall.mockResolvedValue({
       text: "",
       usage: {
-        promptTokens: 80,
+        promptTokens: 95,
         completionTokens: 5,
-        totalTokens: 85,
+        totalTokens: 100,
       },
       functionCalls: [
         {

@@ -77,6 +77,7 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("top-level tool call");
     expect(content).toContain("JavaScript");
     expect(content).toContain("globalThis");
+    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");
     expect(content).toContain("Blocking errors");

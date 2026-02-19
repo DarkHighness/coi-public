@@ -10,7 +10,7 @@ const createTurnFinishArgs = () => ({
 });
 
 describe("VFS handlers vm", () => {
-  it("executes scripts in order with shared state + emitted values", async () => {
+  it("executes async main(ctx) and returns only main result with bounded logs", async () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -21,21 +21,29 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          "state.path = 'current/world/vm.txt'; await vfs_write_file({ path: state.path, content: 'alpha', contentType: 'text/plain' }); emit({ step: 'write', path: state.path }); const read = await vfs_read_chars({ path: state.path, start: 0, offset: 16 }); emit({ step: 'read', content: read.data?.content }); return read.data?.content;",
+          [
+            "async function main(ctx) {",
+            "  ctx.state.path = 'current/world/vm.txt';",
+            "  await ctx.vfs_write_file({ path: ctx.state.path, content: 'alpha', contentType: 'text/plain' });",
+            "  console.log('write', ctx.state.path);",
+            "  const read = await ctx.vfs_read_chars({ path: ctx.state.path, start: 0, offset: 16 });",
+            "  console.log({ step: 'read', content: read.data?.content });",
+            "  return read.data?.content;",
+            "}",
+          ].join("\n"),
         ],
       },
       ctx,
     )) as any;
 
     expect(result.success).toBe(true);
-    expect(result.data?.scriptsCompleted).toBe(1);
-    expect(result.data?.toolCallsUsed).toBe(2);
-    expect(result.data?.emitted).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ step: "write" }),
-        expect.objectContaining({ step: "read", content: "alpha" }),
-      ]),
-    );
+    expect(result.data?.result).toBe("alpha");
+    expect(result.data?.vmMeta?.scriptsCompleted).toBe(1);
+    expect(result.data?.vmMeta?.toolCallsUsed).toBe(2);
+    expect(Array.isArray(result.data?.logs)).toBe(true);
+    expect(result.data?.logs?.[0]?.message).toContain("write");
+    expect(result.data?.logs?.[1]?.message).toContain("read");
+    expect(result.data?.emitted).toBeUndefined();
     expect(session.readFile("world/vm.txt")?.content).toBe("alpha");
   });
 
@@ -49,7 +57,7 @@ describe("VFS handlers vm", () => {
     const result = (await dispatchToolCallAsync(
       "vfs_vm",
       {
-        scripts: ["emit('a');", "emit('b');"],
+        scripts: ["async function main(ctx) { return 'a'; }", "return 'b';"],
       },
       ctx,
     )) as any;
@@ -57,6 +65,46 @@ describe("VFS handlers vm", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_PARAMS");
     expect(result.error).toContain("Provide exactly one script");
+  });
+
+  it("requires scripts to declare async main(ctx)", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: ["const x = 1;"],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_PARAMS");
+    expect(result.error).toContain("VFS_VM_MISSING_MAIN");
+  });
+
+  it("requires main(ctx) to be async", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: ["function main(ctx) { return 1; }"],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe("INVALID_PARAMS");
+    expect(result.error).toContain("VFS_VM_MAIN_NOT_ASYNC");
   });
 
   it("rejects inner tool calls outside runtime allowlist", async () => {
@@ -70,7 +118,11 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          "await call('vfs_write_file', { path: 'current/world/vm.txt', content: 'x', contentType: 'text/plain' });",
+          [
+            "async function main(ctx) {",
+            "  await ctx.call('vfs_write_file', { path: 'current/world/vm.txt', content: 'x', contentType: 'text/plain' });",
+            "}",
+          ].join("\n"),
         ],
       },
       ctx,
@@ -91,7 +143,13 @@ describe("VFS handlers vm", () => {
     const result = (await dispatchToolCallAsync(
       "vfs_vm",
       {
-        scripts: ['await call("vfs_vm", { scripts: ["emit(1)"] });'],
+        scripts: [
+          [
+            "async function main(ctx) {",
+            "  await ctx.call('vfs_vm', { scripts: ['async function main(ctx) { return 1; }'] });",
+            "}",
+          ].join("\n"),
+        ],
       },
       ctx,
     )) as any;
@@ -113,7 +171,12 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          `await vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())}); await vfs_read_chars({ path: "current/workspace/SOUL.md", start: 0, offset: 10 });`,
+          [
+            "async function main(ctx) {",
+            `  await ctx.vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())});`,
+            '  await ctx.vfs_read_chars({ path: "current/workspace/SOUL.md", start: 0, offset: 10 });',
+            "}",
+          ].join("\n"),
         ],
       },
       ctx,
@@ -127,7 +190,12 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          `await vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())}); await vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())});`,
+          [
+            "async function main(ctx) {",
+            `  await ctx.vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())});`,
+            `  await ctx.vfs_finish_turn(${JSON.stringify(createTurnFinishArgs())});`,
+            "}",
+          ].join("\n"),
         ],
       },
       ctx,
@@ -148,7 +216,14 @@ describe("VFS handlers vm", () => {
     const result = (await dispatchToolCallAsync(
       "vfs_vm",
       {
-        scripts: ["const leak = globalThis; emit(leak);"],
+        scripts: [
+          [
+            "async function main(ctx) {",
+            "  const leak = globalThis;",
+            "  console.log(leak);",
+            "}",
+          ].join("\n"),
+        ],
       },
       ctx,
     )) as any;
@@ -156,10 +231,10 @@ describe("VFS handlers vm", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_ACTION");
     expect(result.error).toContain("VFS_VM_SCRIPT_FORBIDDEN_TOKEN");
-    expect(result.error).toContain("line 1:");
+    expect(result.error).toContain("line 2:");
   });
 
-  it("rejects VFS namespace usage and points to direct vfs_* helper calls", async () => {
+  it("rejects VFS namespace usage and points to ctx helper calls", async () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -169,7 +244,14 @@ describe("VFS handlers vm", () => {
     const result = (await dispatchToolCallAsync(
       "vfs_vm",
       {
-        scripts: ["const data = await VFS.read({ path: 'current/world/global.json' }); return data;"],
+        scripts: [
+          [
+            "async function main(ctx) {",
+            "  const data = await VFS.read({ path: 'current/world/global.json' });",
+            "  return data;",
+            "}",
+          ].join("\n"),
+        ],
       },
       ctx,
     )) as any;
@@ -177,8 +259,7 @@ describe("VFS handlers vm", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_ACTION");
     expect(result.error).toContain("VFS_VM_NAMESPACE_BLOCKED");
-    expect(result.error).toContain("VFS.read");
-    expect(result.error).toContain("vfs_read_chars");
+    expect(result.error).toContain("ctx.vfs_read_chars");
   });
 
   it("rejects bare VFS variable reads with actionable namespace guidance", async () => {
@@ -191,7 +272,13 @@ describe("VFS handlers vm", () => {
     const result = (await dispatchToolCallAsync(
       "vfs_vm",
       {
-        scripts: ["return VFS;"],
+        scripts: [
+          [
+            "async function main(ctx) {",
+            "  return VFS;",
+            "}",
+          ].join("\n"),
+        ],
       },
       ctx,
     )) as any;
@@ -200,10 +287,10 @@ describe("VFS handlers vm", () => {
     expect(result.code).toBe("INVALID_ACTION");
     expect(result.error).toContain("VFS_VM_NAMESPACE_BLOCKED");
     expect(result.error).toContain("references \"VFS\" variable");
-    expect(result.error).toContain("VFS.read");
+    expect(result.error).toContain("ctx.vfs_read_chars");
   });
 
-  it("keeps inner tool success/failure isolated and reports clear failing tool context", async () => {
+  it("keeps inner tool failure isolated and reports clear failing tool context", async () => {
     const session = new VfsSession();
     const ctx = {
       vfsSession: session,
@@ -214,7 +301,12 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          "await vfs_write_file({ path: 'current/world/notes.md', content: 'vm note', contentType: 'text/markdown' }); await vfs_read_json({ path: 'current/world/notes.md', pointers: ['/x'] });",
+          [
+            "async function main(ctx) {",
+            "  await ctx.vfs_write_file({ path: 'current/world/notes.md', content: 'vm note', contentType: 'text/markdown' });",
+            "  await ctx.vfs_read_json({ path: 'current/world/notes.md', pointers: ['/x'] });",
+            "}",
+          ].join("\n"),
         ],
       },
       ctx,
@@ -226,12 +318,9 @@ describe("VFS handlers vm", () => {
     expect(result.error).toContain('tool="vfs_read_json"');
     expect(result.error).toContain("scripts[0]");
     expect(result.error).toContain("line ");
-    expect(result.vmMeta?.callTrace?.length).toBe(2);
-    expect(result.vmMeta?.callTrace?.[0]?.toolName).toBe("vfs_write_file");
-    expect(result.vmMeta?.callTrace?.[0]?.success).toBe(true);
-    expect(result.vmMeta?.callTrace?.[1]?.toolName).toBe("vfs_read_json");
-    expect(result.vmMeta?.callTrace?.[1]?.success).toBe(false);
-    expect(result.vmMeta?.callTrace?.[1]?.code).toBe("INVALID_DATA");
+    expect(result.data?.vmMeta?.writes?.successfulTargets).toContain(
+      "current/world/notes.md",
+    );
     expect(session.readFile("world/notes.md")?.content).toContain("vm note");
   });
 
@@ -267,7 +356,13 @@ describe("VFS handlers vm", () => {
     const result = (await dispatchToolCallAsync(
       "vfs_vm",
       {
-        scripts: ["throw new Error('boom');"],
+        scripts: [
+          [
+            "async function main(ctx) {",
+            "  throw new Error('boom');",
+            "}",
+          ].join("\n"),
+        ],
       },
       ctx,
     )) as any;
@@ -277,5 +372,35 @@ describe("VFS handlers vm", () => {
     expect(result.error).toContain("VFS_VM_SCRIPT_RUNTIME_ERROR");
     expect(result.error).toContain("scripts[0]");
     expect(result.error).toContain("boom");
+  });
+
+  it("truncates vm logs and marks truncation", async () => {
+    const session = new VfsSession();
+    const ctx = {
+      vfsSession: session,
+      allowedToolNames: ["vfs_vm"],
+    };
+
+    const result = (await dispatchToolCallAsync(
+      "vfs_vm",
+      {
+        scripts: [
+          [
+            "async function main(ctx) {",
+            "  for (let i = 0; i < 60; i += 1) {",
+            "    console.log('entry', i, 'x'.repeat(300));",
+            "  }",
+            "  return 'ok';",
+            "}",
+          ].join("\n"),
+        ],
+      },
+      ctx,
+    )) as any;
+
+    expect(result.success).toBe(true);
+    expect(result.data?.result).toBe("ok");
+    expect(result.data?.logs?.length).toBeLessThanOrEqual(40);
+    expect(result.data?.logs?.some((entry: any) => entry.truncated)).toBe(true);
   });
 });

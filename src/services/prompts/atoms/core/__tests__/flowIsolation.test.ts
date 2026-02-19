@@ -38,6 +38,9 @@ describe("prompt flow isolation", () => {
     expect(getTurnRuntimeFloor()).toContain("hard gate");
     expect(getTurnRuntimeFloor()).toContain("commands/runtime/SKILL.md");
     expect(getTurnRuntimeFloor()).toContain("Error recovery");
+    expect(getTurnRuntimeFloor()).toContain(
+      "`ctx.*` is only available inside `main(ctx)`",
+    );
 
     // Outline runtime floor: quick-start, skill paths, error recovery
     expect(getOutlineRuntimeFloor()).toContain("Quick-start (recommended)");

@@ -310,7 +310,9 @@ describe("agenticLoop command skill gate", () => {
           id: "call-vm-preflight",
           name: "vfs_vm",
           args: {
-            scripts: ["emit({ step: 'preflight-check' });"],
+            scripts: [
+              "async function main(ctx) { console.log({ step: 'preflight-check' }); return null; }",
+            ],
           },
         },
       ],
@@ -349,7 +351,9 @@ describe("agenticLoop command skill gate", () => {
           {
             id: "call-vm-mixed",
             name: "vfs_vm",
-            args: { scripts: ["emit('vm-batch');"] },
+            args: {
+              scripts: ["async function main(ctx) { console.log('vm-batch'); }"],
+            },
           },
           {
             id: "call-read-mixed",

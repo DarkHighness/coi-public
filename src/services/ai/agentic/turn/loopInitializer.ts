@@ -26,6 +26,13 @@ import type { ActivePresetSkillRequirement } from "../../utils";
 // Types
 // ============================================================================
 
+export type AgenticTurnKind =
+  | "normal"
+  | "session_compact"
+  | "query_summary"
+  | "session_cleanup"
+  | "query_cleanup";
+
 export interface LoopState {
   /** VFS session for file-based state */
   vfsSession: VfsSession;
@@ -49,6 +56,8 @@ export interface LoopState {
   isRAGEnabled: boolean;
   /** Whether in CLEANUP mode */
   isCleanupMode: boolean;
+  /** Logical turn kind for context-pressure routing */
+  turnKind: AgenticTurnKind;
   /** Whether this loop is triggered by [Player Rate] */
   isPlayerRateMode: boolean;
   /** Required command skill paths for this loop */
@@ -92,10 +101,12 @@ export function createLoopState(
   vfsElevationScopeTemplateIds?: VfsElevationScopeTemplateIds,
   options?: {
     isPlayerRateMode?: boolean;
+    turnKind?: AgenticTurnKind;
   },
 ): LoopState {
   const isPlayerRateMode =
     options?.isPlayerRateMode === true && !isSudoMode && !isCleanupMode;
+  const turnKind = options?.turnKind ?? (isCleanupMode ? "session_cleanup" : "normal");
   const budgetState = createBudgetState(settings, {
     loopType: isCleanupMode ? "cleanup" : "turn",
   });
@@ -174,6 +185,7 @@ export function createLoopState(
     activeTools,
     isSudoMode,
     isCleanupMode,
+    turnKind,
     isPlayerRateMode,
     finishToolName,
     isRAGEnabled,
