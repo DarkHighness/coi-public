@@ -213,6 +213,34 @@ describe("SettingsContext", () => {
 
   it("uses cached provider models when cache is fresh", async () => {
     localStorage.setItem(
+      "chronicles_aisettings",
+      JSON.stringify({
+        story: { providerId: "provider-1", modelId: "m1" },
+        providers: {
+          instances: [
+            {
+              id: "provider-1",
+              name: "OpenAI",
+              protocol: "openai",
+              baseUrl: "https://api.openai.com/v1",
+              apiKey: "key-1",
+              enabled: true,
+              createdAt: 1,
+              lastModified: 1,
+            },
+          ],
+          nextId: 2,
+        },
+        audioVolume: {
+          bgmVolume: 0.5,
+          bgmMuted: false,
+          ttsVolume: 1,
+          ttsMuted: false,
+        },
+        language: "en",
+      }),
+    );
+    localStorage.setItem(
       "chronicles_model_cache",
       JSON.stringify({
         timestamp: Date.now(),
@@ -242,6 +270,135 @@ describe("SettingsContext", () => {
 
     expect(getModels).not.toHaveBeenCalled();
     expect(captured.providerModels["provider-1"][0].id).toBe("m1");
+  });
+
+  it("ignores incomplete fresh cache and fetches missing provider models", async () => {
+    getModels.mockImplementation(async (_settings, providerId: string) => [
+      { id: `${providerId}-model`, name: `${providerId} model` },
+    ]);
+
+    localStorage.setItem(
+      "chronicles_aisettings",
+      JSON.stringify({
+        story: { providerId: "provider-1", modelId: "m1" },
+        providers: {
+          instances: [
+            {
+              id: "provider-1",
+              name: "OpenAI",
+              protocol: "openai",
+              baseUrl: "https://api.openai.com/v1",
+              apiKey: "key-1",
+              enabled: true,
+              createdAt: 1,
+              lastModified: 1,
+            },
+            {
+              id: "provider-2",
+              name: "OpenRouter",
+              protocol: "openrouter",
+              baseUrl: "https://openrouter.ai/api/v1",
+              apiKey: "key-2",
+              enabled: true,
+              createdAt: 2,
+              lastModified: 2,
+            },
+          ],
+          nextId: 3,
+        },
+        audioVolume: {
+          bgmVolume: 0.5,
+          bgmMuted: false,
+          ttsVolume: 1,
+          ttsMuted: false,
+        },
+        language: "en",
+      }),
+    );
+    localStorage.setItem(
+      "chronicles_model_cache",
+      JSON.stringify({
+        timestamp: Date.now(),
+        models: {
+          "provider-1": [{ id: "m1", name: "Model 1" }],
+        },
+      }),
+    );
+
+    let captured: any = null;
+    const Consumer = () => {
+      captured = useSettingsContext();
+      return React.createElement("div");
+    };
+
+    render(
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
+    );
+
+    await act(async () => {
+      await captured.loadModels(false);
+    });
+
+    expect(getModels).toHaveBeenCalledTimes(2);
+    expect(captured.providerModels["provider-1"]?.[0]?.id).toBe(
+      "provider-1-model",
+    );
+    expect(captured.providerModels["provider-2"]?.[0]?.id).toBe(
+      "provider-2-model",
+    );
+  });
+
+  it("auto-refreshes models when provider topology changes", async () => {
+    getModels.mockResolvedValue([]);
+
+    let captured: any = null;
+    const Consumer = () => {
+      captured = useSettingsContext();
+      return React.createElement("div");
+    };
+
+    render(
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
+    );
+
+    await act(async () => {
+      captured.updateSettings({
+        ...captured.settings,
+        providers: {
+          ...captured.settings.providers,
+          instances: [
+            ...captured.settings.providers.instances,
+            {
+              id: "provider-new",
+              name: "New Provider",
+              protocol: "openai",
+              baseUrl: "https://api.openai.com/v1",
+              apiKey: "new-key",
+              enabled: true,
+              createdAt: Date.now(),
+              lastModified: Date.now(),
+            },
+          ],
+          nextId: captured.settings.providers.nextId + 1,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(getModels).toHaveBeenCalledWith(
+        expect.any(Object),
+        "provider-new",
+        false,
+      );
+    });
   });
 
   it("applies session mirror LRU limit from settings", async () => {
