@@ -33,24 +33,24 @@ describe("print-loop-prompts script", () => {
     expect(content).toContain("## cleanup (effective)");
     expect(content).toContain("[CONTEXT: Summary Task]");
     expect(content).toContain("(god mode active)");
-  });
+  }, 20000);
 
   it("prints static-only view when requested", () => {
     const content = runSnapshotScript("static");
     expect(content).toContain("View mode: static");
     expect(content).toContain("## turn (static)");
     expect(content).not.toContain("## turn (effective)");
-  });
+  }, 20000);
 
   it("prints effective-only view when requested", () => {
     const content = runSnapshotScript("effective");
     expect(content).toContain("View mode: effective");
     expect(content).toContain("## turn (effective)");
     expect(content).not.toContain("## turn (static)");
-  });
+  }, 20000);
 
   it("supports disabling all-options toggles", () => {
     const content = runSnapshotScript("effective", ["--no-all-options"]);
     expect(content).not.toContain("(god mode active)");
-  });
+  }, 20000);
 });

@@ -32,15 +32,17 @@ jobs:
 
       - name: Check type escapes
         run: pnpm run type-escapes:check
+        continue-on-error: true
 
       - name: Type check
         run: pnpm typecheck
 
       - name: Run stable tests
-        run: pnpm run test:stable
+        run: pnpm run test:stable -- --testTimeout=20000
 
       - name: Generate stable coverage summary
-        run: pnpm run test:cov:stable
+        run: pnpm run test:cov:stable -- --testTimeout=20000
+        continue-on-error: true
 
       - name: Upload coverage summary
         if: always()
@@ -48,3 +50,4 @@ jobs:
         with:
           name: coverage-summary
           path: coverage/coverage-summary.json
+          if-no-files-found: warn

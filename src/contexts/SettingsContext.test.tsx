@@ -1,21 +1,25 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { render, act } from "@testing-library/react";
+import { render, act, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const changeLanguage = vi.hoisted(() => vi.fn());
 const getModels = vi.hoisted(() => vi.fn());
 const setSessionHistoryLruLimit = vi.hoisted(() => vi.fn());
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    i18n: {
-      language: "en",
-      changeLanguage,
-    },
-  }),
-}));
+vi.mock("react-i18next", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-i18next")>();
+  return {
+    ...actual,
+    useTranslation: () => ({
+      i18n: {
+        language: "en",
+        changeLanguage,
+      },
+    }),
+  };
+});
 
 vi.mock("../services/aiService", () => ({
   getModels,
@@ -44,7 +48,7 @@ describe("SettingsContext", () => {
     );
   });
 
-  it("migrates legacy prompt injection fields from storage", () => {
+  it("migrates legacy prompt injection fields from storage", async () => {
     localStorage.setItem(
       "chronicles_aisettings",
       JSON.stringify({
@@ -86,7 +90,9 @@ describe("SettingsContext", () => {
     expect(
       (captured.settings.extra as Record<string, unknown>).clearerSearchTool,
     ).toBeUndefined();
-    expect(changeLanguage).toHaveBeenCalledWith("zh");
+    await waitFor(() => {
+      expect(changeLanguage).toHaveBeenCalledWith("zh");
+    });
   });
 
   it("uses default culture preference when settings are fresh", () => {
