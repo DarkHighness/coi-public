@@ -245,7 +245,7 @@ describe("runSummaryLoop", () => {
     expect(anchorText).toContain("current/session/<session_uid>.jsonl");
     expect(anchorText).toContain("query-style reads only");
     expect(anchorText).toContain("nextSessionReferencesMarkdown");
-    expect(anchorText).toContain("useful SKILL docs first");
+    expect(anchorText).toContain("Quality mandate");
   });
 
   it("uses compact-specific anchor contract in session_compact mode", async () => {
@@ -299,11 +299,11 @@ describe("runSummaryLoop", () => {
     );
     expect(compactAnchor).toContain("Verification-only reads (optional)");
     expect(compactAnchor).toContain("nextSessionReferencesMarkdown");
-    expect(compactAnchor).toContain("useful SKILL docs first");
+    expect(compactAnchor).toContain("Quality mandate");
     expect(compactAnchor).toContain("Structured error recovery");
     expect(compactAnchor).toContain("FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE");
     expect(compactTrigger).toContain("nextSessionReferencesMarkdown");
-    expect(compactTrigger).toContain("short markdown handoff notes");
+    expect(compactTrigger).toContain("GM Notes");
   });
 
   it("blocks cross-fork path arguments in summary tool calls", async () => {

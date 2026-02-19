@@ -23,7 +23,7 @@ describe("loopPromptSnapshot", () => {
     );
 
     expect(staticView.summaryQuery.systemInstruction).toContain(
-      "Loop quick-start (recommended)",
+      "Loop pipeline (execute in order)",
     );
     expect(staticView.summaryQuery.systemInstruction).toContain(
       "current/skills/commands/runtime/summary/SKILL.md",

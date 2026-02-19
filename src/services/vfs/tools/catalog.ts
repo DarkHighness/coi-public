@@ -290,7 +290,7 @@ const CAPABILITY_WRITE_MUTATION: VfsToolCapabilityV2 = {
   mayWriteClasses: ["default_editable", "elevated_editable"],
   needsElevationFor: ["elevated_editable"],
   immutableZones: IMMUTABLE_ZONES,
-  toolsets: ["turn", "cleanup"],
+  toolsets: ["turn", "cleanup", "summary"],
 };
 
 const TOOLSET_NONE = {
@@ -1017,7 +1017,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .string()
           .optional()
           .describe(
-            "Optional free-form markdown handoff for next-session hot-start.",
+            "Dual-purpose handoff for the next session. Section 1 '## Paths': VFS path references for warm-start (2-5 skill/anchor paths). Section 2 '## GM Notes': Concrete, actionable strategic observations — pending consequences, narrative threads needing resolution, player behavior patterns, what the next turn should set up. Must be SPECIFIC (name entities, reference turns, state conditions) not vague platitudes.",
           ),
       })
       .strict(),

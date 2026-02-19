@@ -68,22 +68,32 @@ Primary source for facts:
 
 Required read sequence:
 1) \`current/conversation/index.json\`
-2) \`current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json\`
+2) \`current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json\` — read THOROUGHLY, extract specific names, items, dialogue, choices.
 3) \`forks/${runtime.targetForkId}/story/summary/state.json\`
 4) \`current/summary/state.json\` (ONLY safe when active fork == target fork)
-5) Optional context recall: \`current/session/<session_uid>.jsonl\` via query-style reads only (vfs_read_chars/vfs_read_lines/vfs_read_json lines window or vfs_search)
+5) Optional context recall: \`current/session/<session_uid>.jsonl\` via query-style reads only
+
+Memory doc update (MANDATORY when evidence warrants):
+- Read \`workspace/SOUL.md\`, \`workspace/USER.md\`, \`workspace/PLAN.md\` (injected or via VFS).
+- Update \`workspace/SOUL.md\`: GM strategic notes, narrative technique learnings, tool-usage fixes.
+- Update \`workspace/USER.md\`: Player behavior patterns, choice preferences, psychology evidence.
+- Update \`workspace/PLAN.md\`: Story trajectory adjustments if player actions diverged from plan.
+- Write updates BEFORE calling \`vfs_finish_summary\`.
+- Skip updates ONLY for purely mechanical turns (movement, inventory check) with no meaningful evidence.
 
 Hard constraints:
 - ONLY summarize target fork ${runtime.targetForkId}; NEVER cross forks.
 - Do NOT summarize outside the specified summary range.
 - Keep continuity with existing summaries and established story facts.
 - If reading session.jsonl, use targeted lines/search windows; avoid full-file reads.
-- If uncertain, use read-only VFS tools first (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search).
-- Session read-cache rule: avoid re-reading the same file/path windows across this conversation session.
-- Re-read only when the system explicitly provides an external-change signal (\`[SYSTEM: EXTERNAL_FILE_CHANGES]\`), previous read scope was insufficient, or recovery explicitly requires re-read.
-- If you updated a file yourself in this session, do not re-read by default unless you need additional sections/pointers.
+- Session read-cache rule: avoid re-reading the same file/path windows unless externally changed.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
-- In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
+
+Quality mandate:
+- Be SPECIFIC in every field: name entities, quote dialogue, reference locations, track conditions.
+- Trace CAUSALITY: why things happened, what consequences are pending.
+- Preserve DECISION CONTEXT: what choices existed, what the player chose, what they rejected.
+- \`nextSessionReferencesMarkdown\` must contain BOTH VFS path refs AND concrete GM strategic notes.
 - Output summary content only. Never mention tools/retries/errors/budgets.`;
 };
 
@@ -123,15 +133,26 @@ Verification-only reads (optional):
 - \`current/conversation/turns/fork-${runtime.targetForkId}/turn-*.json\`
 - \`forks/${runtime.targetForkId}/story/summary/state.json\`
 
+Memory doc update (MANDATORY when evidence warrants):
+- Update \`workspace/SOUL.md\`: GM strategic notes, narrative learnings, tool-usage fixes from this session.
+- Update \`workspace/USER.md\`: Player behavior patterns, choice preferences, psychology evidence observed in session.
+- Update \`workspace/PLAN.md\`: Story trajectory adjustments if player actions diverged from the plan.
+- Memory docs are injected in context; re-read only when you need sections not in the injected snapshot.
+- Write updates BEFORE calling \`vfs_finish_summary\`.
+- Skip updates ONLY for purely mechanical turns with no meaningful evidence.
+
 Hard constraints:
 - Keep compaction scoped to target fork ${runtime.targetForkId}; NEVER cross forks.
 - Do NOT summarize outside the specified summary range.
 - Preserve continuity with previous summaries and in-session events.
-- Session read-cache rule: avoid re-reading the same file/path windows across this conversation session.
-- Re-read only when the system explicitly provides an external-change signal (\`[SYSTEM: EXTERNAL_FILE_CHANGES]\`), previous read scope was insufficient, or recovery explicitly requires re-read.
-- If you updated a file yourself in this session, do not re-read by default unless you need additional sections/pointers.
+- Session read-cache rule: avoid re-reading the same file/path windows unless externally changed.
 - Runtime will inject \`nodeRange\` and \`lastSummarizedIndex=${targetLastSummarizedIndex}\` for \`vfs_finish_summary\`.
-- In \`nextSessionReferencesMarkdown\`, record useful SKILL docs first (\`current/skills/**/SKILL.md\`) and keep references narrow (avoid broad catalog-only handoff).
+
+Quality mandate:
+- Be SPECIFIC: name entities, quote key dialogue, reference exact locations/items/conditions.
+- Trace CAUSALITY: connect causes to effects, track pending consequences.
+- Preserve DECISION CONTEXT: what choices the player faced and what they chose.
+- \`nextSessionReferencesMarkdown\` must contain BOTH VFS path refs AND concrete GM strategic notes.
 - Output summary content only. Never mention tools/retries/errors/budgets.
 
 Structured error recovery (when tool response is \`{ success:false, code, error }\`):
@@ -157,21 +178,29 @@ export const buildCompactModeTriggerMessage = (input: {
   return (
     `${COMPACT_TRIGGER}\n` +
     `You are entering **session compaction** mode.\n\n` +
-    `Loop quick-start (recommended):\n` +
+    `Loop pipeline (execute in order):\n` +
     `${compactBaseline}\n` +
     `5) If details are uncertain, do bounded read-only verification on current fork.\n` +
-    `6) Finish once via "vfs_finish_summary" as LAST tool call.\n\n` +
+    `6) **Update memory docs** — write \`workspace/SOUL.md\` (GM notes/learnings), \`workspace/USER.md\` (player patterns), \`workspace/PLAN.md\` (trajectory adjustments) when the summarized turns contain actionable evidence. Skip only for purely mechanical turns.\n` +
+    `7) Finish once via "vfs_finish_summary" as LAST tool call.\n\n` +
     `Requirements:\n` +
     `- Produce exactly ONE summary by calling "vfs_finish_summary" as your LAST tool call.\n` +
     `- The summary MUST be in ${languageCode}.\n` +
     `- Cover nodeRange: ${input.nodeRange.fromIndex}-${input.nodeRange.toIndex}.\n` +
     `- Runtime will set lastSummarizedIndex = ${input.targetLastSummarizedIndex}.\n` +
-    `- Fill \`nextSessionReferencesMarkdown\` with short markdown handoff notes; include explicit paths early (prefer useful \`current/skills/**/SKILL.md\`, then at most 1-2 anchors).\n` +
-    `- Keep handoff narrow: avoid broad catalog-only references such as \`current/skills/index.json\` unless no specific skill can be named.\n` +
+    `- \`nextSessionReferencesMarkdown\` must contain TWO sections:\n` +
+    `  1. \`## Paths\` — 2-5 VFS path references (prefer \`current/skills/**/SKILL.md\` + 1-2 anchors).\n` +
+    `  2. \`## GM Notes\` — Concrete, actionable strategic observations: pending consequences with trigger conditions, narrative threads needing resolution, player behavior patterns, what the next turn should set up. Be SPECIFIC — name entities, reference turns, state conditions.\n` +
     `- DO NOT mention tools, failures, retries, budgets, or internal errors anywhere in the summary fields.\n\n` +
+    `Quality mandate:\n` +
+    `- Be SPECIFIC in every field: name entities by ID/name, quote key dialogue, reference exact locations.\n` +
+    `- Trace CAUSALITY: connect causes to effects, note pending consequences.\n` +
+    `- Preserve DECISION CONTEXT: what choices existed, what the player chose, what they rejected.\n` +
+    `- ❌ NEVER write vague summaries like "events progressed" or "the story continued."\n` +
+    `- ❌ NEVER write shallow GM notes like "continue the story" or "things are going well."\n\n` +
     `If compact skill files are unavailable, continue with protocol-safe tool usage and keep finish last.\n` +
-    `If you need to verify details, use read-only VFS tools (vfs_read_chars/vfs_read_lines/vfs_read_json/vfs_search/etc.) and stay on target fork only.\n` +
+    `If you need to verify details, use read-only VFS tools and stay on target fork only.\n` +
     `Across this conversation session, reuse already-read anchors instead of repeatedly reading the same files/windows.\n` +
-    `Re-read only when an explicit external-change signal (\`[SYSTEM: EXTERNAL_FILE_CHANGES]\`) is present, recovery requires it, or you need unseen sections/pointers; your own writes do not require automatic re-read.`
+    `Re-read only when an explicit external-change signal (\`[SYSTEM: EXTERNAL_FILE_CHANGES]\`) is present, recovery requires it, or you need unseen sections/pointers.`
   );
 };

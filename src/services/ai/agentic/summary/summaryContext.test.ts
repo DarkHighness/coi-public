@@ -60,28 +60,28 @@ describe("summaryContext", () => {
     expect(instruction).toContain(
       "Ensure key sensory details and character emotional shifts are captured",
     );
-    expect(instruction).toContain("displayText: Brief 2-3 sentences");
-    expect(instruction).toContain("in en, visible layer only");
-    expect(instruction).toContain("read command protocol (hub first)");
+    expect(instruction).toContain("displayText (en, 2-3 sentences)");
+    expect(instruction).toContain("UI-facing summary from the player");
+    expect(instruction).toContain("Loop pipeline (execute in order)");
     expect(instruction).toContain("current/skills/commands/runtime/SKILL.md");
     expect(instruction).toContain(
       "current/skills/commands/runtime/summary/SKILL.md",
     );
     expect(instruction).toContain("current/skills/core/protocols/SKILL.md");
     expect(instruction).toContain("current/skills/craft/writing/SKILL.md");
-    expect(instruction).toContain("Loop quick-start (recommended)");
+    expect(instruction).toContain("Loop pipeline (execute in order)");
     expect(instruction).toContain("Read fork anchors");
-    expect(instruction).toContain("Use injected memory files");
+    expect(instruction).toContain("injected in context");
     expect(instruction).toContain("workspace/SOUL.md");
     expect(instruction).toContain("workspace/USER.md");
     expect(instruction).toContain("notes.md");
     expect(instruction).toContain("optional context only");
     expect(instruction).toContain("current/session/<session_uid>.jsonl");
-    expect(instruction).toContain('mode: "lines"');
+    expect(instruction).toContain("vfs_read_lines");
     expect(instruction).toContain("Do NOT full-read large session.jsonl files");
     expect(instruction).toContain("nextSessionReferencesMarkdown");
     expect(instruction).toContain("useful SKILL docs");
-    expect(instruction).toContain("Avoid broad reads by default");
+    expect(instruction).toContain("Update memory docs");
     expect(instruction).toContain("Structured error recovery flow");
     expect(instruction).toContain("RUNTIME_FIELDS_FORBIDDEN");
   });

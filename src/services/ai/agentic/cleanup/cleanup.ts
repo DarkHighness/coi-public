@@ -71,6 +71,7 @@ const cleanupPromptAtom = defineAtom(
   2) Use \`vfs_read_chars/vfs_read_lines/vfs_read_json\` on \`current/skills/commands/runtime/cleanup/SKILL.md\` (cleanup protocol).
   3) Build candidate list with \`vfs_ls\` + \`vfs_search\`.
   4) Verify with \`vfs_read_chars/vfs_read_lines/vfs_read_json\`, then mutate/verify/finish.
+  5) **Update memory docs** when cleanup reveals actionable patterns.
 </loop_quickstart>
 
 <workflow>
@@ -97,7 +98,13 @@ const cleanupPromptAtom = defineAtom(
      - Re-run \`vfs_ls\` / \`vfs_search\` to confirm duplicates were removed and references still resolve.
      - Avoid read-only "sanity checks" right before finish just to look thorough.
 
-  5) Finish with \`vfs_finish_turn\` as the LAST tool call.
+  5) **Update memory docs** when cleanup reveals patterns:
+     - \`workspace/SOUL.md\`: If you notice recurring entity duplication patterns, record what causes them and how to prevent them (e.g., "NPC aliases cause splits — always search aliases before creating").
+     - \`workspace/USER.md\`: If cleanup reveals player interaction patterns (e.g., hoarding items, repeatedly visiting the same location), record the observation.
+     - \`workspace/PLAN.md\`: If cleanup consolidated quest/timeline entities, ensure the plan reflects the current canonical state.
+     - Skip updates when cleanup is purely mechanical with no pattern insights.
+
+  6) Finish with \`vfs_finish_turn\` as the LAST tool call.
 </workflow>
 
 <recommended_categories>
