@@ -65,6 +65,33 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       rollupOptions: {
+        onwarn(warning, warn) {
+          const id = typeof warning.id === "string" ? warning.id : "";
+          const message =
+            typeof warning.message === "string" ? warning.message : "";
+
+          // PGlite bundles NodeFS support for Node runtimes; in browser builds
+          // Vite maps Node built-ins to __vite-browser-external and reports
+          // missing export warnings for that unused path.
+          if (
+            warning.code === "MISSING_EXPORT" &&
+            id.includes("@electric-sql/pglite/dist/fs/nodefs.js") &&
+            message.includes("__vite-browser-external")
+          ) {
+            return;
+          }
+
+          // PGlite's upstream bundle uses eval internally; keep build logs
+          // focused on actionable app warnings.
+          if (
+            warning.code === "EVAL" &&
+            id.includes("@electric-sql/pglite/dist/index.js")
+          ) {
+            return;
+          }
+
+          warn(warning);
+        },
         output: {
           manualChunks: (id) => {
             // ===== App chunks =====

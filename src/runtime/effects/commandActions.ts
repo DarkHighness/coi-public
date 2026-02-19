@@ -37,17 +37,11 @@ import {
   WORKSPACE_USER_CANONICAL_PATH,
   WORKSPACE_USER_LOGICAL_PATH,
 } from "../../services/vfs/memoryTemplates";
-
-let aiServiceModulePromise: Promise<
-  typeof import("../../services/aiService")
-> | null = null;
-
-const loadAiService = async () => {
-  if (!aiServiceModulePromise) {
-    aiServiceModulePromise = import("../../services/aiService");
-  }
-  return aiServiceModulePromise;
-};
+import {
+  generateAdventureTurn,
+  generateEntityCleanup,
+  generateForceUpdate,
+} from "../../services/aiService";
 
 type ShowToast = (
   message: string,
@@ -557,7 +551,6 @@ export function createCommandActions({
         confirmRecoveryAction,
       };
 
-      const { generateForceUpdate } = await loadAiService();
       const { response, logs, recovery } = await generateForceUpdate(
         prompt,
         gameStateRef.current,
@@ -731,7 +724,6 @@ export function createCommandActions({
         confirmRecoveryAction,
       };
 
-      const { generateEntityCleanup } = await loadAiService();
       const { response, logs, changedEntities, recovery } =
         await generateEntityCleanup(gameStateRef.current, context);
 
@@ -940,7 +932,6 @@ export function createCommandActions({
         confirmRecoveryAction,
       };
 
-      const { generateAdventureTurn } = await loadAiService();
       const { recovery } = await generateAdventureTurn(
         gameStateRef.current,
         context,

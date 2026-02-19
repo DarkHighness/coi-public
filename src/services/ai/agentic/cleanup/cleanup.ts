@@ -20,8 +20,10 @@ import { getProviderConfig } from "../../utils";
 import { estimatePromptTokens } from "../retry";
 import { fromGeminiFormat, createUserMessage } from "../../../messageTypes";
 import { vfsToolRegistry } from "../../../vfs/tools";
-
-import type { AgenticLoopResult } from "../turn/adventure";
+import {
+  generateAdventureTurn,
+  type AgenticLoopResult,
+} from "../turn/adventure";
 import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
 
 // ============================================================================
@@ -358,8 +360,6 @@ export const generateEntityCleanup = async (
   context: TurnContext,
   mode: CleanupMode = "auto",
 ): Promise<CleanupResult> => {
-  const { generateAdventureTurn } = await import("../turn/adventure");
-
   // Build cleanup prompt with entity context embedded
   const cleanupPrompt = buildCleanupPrompt(inputState);
 

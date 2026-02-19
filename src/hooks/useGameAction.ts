@@ -40,20 +40,11 @@ import {
   resolveModelContextWindowUpperBound,
   upsertLearnedModelContextWindow,
 } from "../services/modelContextWindows";
+import { generateAdventureTurn } from "../services/aiService";
 
-let aiServiceModulePromise: Promise<
-  typeof import("../services/aiService")
-> | null = null;
 let sessionManagerModulePromise: Promise<
   typeof import("../services/ai/sessionManager")
 > | null = null;
-
-const loadAiService = async () => {
-  if (!aiServiceModulePromise) {
-    aiServiceModulePromise = import("../services/aiService");
-  }
-  return aiServiceModulePromise;
-};
 
 const loadSessionManager = async () => {
   if (!sessionManagerModulePromise) {
@@ -676,7 +667,6 @@ export const useGameAction = ({
         }
 
         // Generate Turn - pass GameState directly with TurnContext
-        const { generateAdventureTurn } = await loadAiService();
         const {
           response,
           logs: turnLogs,

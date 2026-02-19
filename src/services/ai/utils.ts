@@ -22,11 +22,22 @@ import type {
 } from "../providers/types";
 
 import { applyDefaultContextWindowsToModels } from "../modelContextWindows";
-
-const loadGeminiProvider = () => import("../providers/geminiProvider");
-const loadOpenAIProvider = () => import("../providers/openaiProvider");
-const loadOpenRouterProvider = () => import("../providers/openRouterProvider");
-const loadClaudeProvider = () => import("../providers/claudeProvider");
+import {
+  getModels as getGeminiModels,
+  validateConnection as validateGeminiConnection,
+} from "../providers/geminiProvider";
+import {
+  getModels as getOpenAIModels,
+  validateConnection as validateOpenAIConnection,
+} from "../providers/openaiProvider";
+import {
+  getModels as getOpenRouterModels,
+  validateConnection as validateOpenRouterConnection,
+} from "../providers/openRouterProvider";
+import {
+  getModels as getClaudeModels,
+  validateConnection as validateClaudeConnection,
+} from "../providers/claudeProvider";
 
 // ============================================================================
 // Configuration Types
@@ -466,23 +477,19 @@ export const getModels = async (
 
     switch (instance.protocol) {
       case "gemini": {
-        const provider = await loadGeminiProvider();
-        models = await provider.getModels(config as GeminiConfig);
+        models = await getGeminiModels(config as GeminiConfig);
         break;
       }
       case "openai": {
-        const provider = await loadOpenAIProvider();
-        models = await provider.getModels(config as OpenAIConfig);
+        models = await getOpenAIModels(config as OpenAIConfig);
         break;
       }
       case "openrouter": {
-        const provider = await loadOpenRouterProvider();
-        models = await provider.getModels(config as OpenRouterConfig);
+        models = await getOpenRouterModels(config as OpenRouterConfig);
         break;
       }
       case "claude": {
-        const provider = await loadClaudeProvider();
-        models = await provider.getModels(config as ClaudeConfig);
+        models = await getClaudeModels(config as ClaudeConfig);
         break;
       }
       default:
@@ -555,23 +562,19 @@ export const validateConnection = async (
       try {
         switch (instance.protocol) {
           case "gemini": {
-            const provider = await loadGeminiProvider();
-            await provider.validateConnection(config as GeminiConfig);
+            await validateGeminiConnection(config as GeminiConfig);
             break;
           }
           case "openai": {
-            const provider = await loadOpenAIProvider();
-            await provider.validateConnection(config as OpenAIConfig);
+            await validateOpenAIConnection(config as OpenAIConfig);
             break;
           }
           case "openrouter": {
-            const provider = await loadOpenRouterProvider();
-            await provider.validateConnection(config as OpenRouterConfig);
+            await validateOpenRouterConnection(config as OpenRouterConfig);
             break;
           }
           case "claude": {
-            const provider = await loadClaudeProvider();
-            await provider.validateConnection(config as ClaudeConfig);
+            await validateClaudeConnection(config as ClaudeConfig);
             break;
           }
           default:

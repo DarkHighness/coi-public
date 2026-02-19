@@ -12,20 +12,10 @@ import { DEFAULTS } from "../utils/constants/defaults";
 import { ensureLanguageResources } from "../utils/i18n";
 import { upsertPerModelContextWindowOverride } from "../services/modelContextWindows";
 import { setSessionHistoryLruLimit } from "../services/vfs/conversation";
+import { getModels } from "../services/aiService";
 
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
-
-let aiServiceModulePromise: Promise<
-  typeof import("../services/aiService")
-> | null = null;
-
-const loadAiService = async () => {
-  if (!aiServiceModulePromise) {
-    aiServiceModulePromise = import("../services/aiService");
-  }
-  return aiServiceModulePromise;
-};
 
 interface SettingsContextType {
   settings: AISettings;
@@ -458,7 +448,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const currentSettings = settingsRef.current;
-      const { getModels } = await loadAiService();
       // Load models for all providers with API keys
       const providersWithKeys = currentSettings.providers.instances.filter(
         (p) => p.apiKey && p.apiKey.trim() !== "",

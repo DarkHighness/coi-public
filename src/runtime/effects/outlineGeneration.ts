@@ -1,6 +1,9 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import type { TFunction } from "i18next";
-import type { OutlinePhaseProgress } from "../../services/aiService";
+import {
+  generateStoryOutlinePhased,
+  type OutlinePhaseProgress,
+} from "../../services/aiService";
 import { writeOutlineProgress } from "../../services/vfs/outline";
 import type {
   AISettings,
@@ -9,17 +12,6 @@ import type {
   SavePresetProfile,
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
-
-let aiServiceModulePromise: Promise<
-  typeof import("../../services/aiService")
-> | null = null;
-
-const loadAiService = async () => {
-  if (!aiServiceModulePromise) {
-    aiServiceModulePromise = import("../../services/aiService");
-  }
-  return aiServiceModulePromise;
-};
 
 interface RunOutlineGenerationParams {
   theme: string;
@@ -60,7 +52,6 @@ export async function runOutlineGenerationPhased({
   sessionTag,
   logPrefix,
 }: RunOutlineGenerationParams) {
-  const { generateStoryOutlinePhased } = await loadAiService();
   return generateStoryOutlinePhased(theme, language, customContext, t, {
     onPhaseProgress,
     resumeFrom,

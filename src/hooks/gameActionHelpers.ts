@@ -27,20 +27,10 @@ import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   resolveModelContextWindowTokens,
 } from "../services/modelContextWindows";
-
-let aiServiceModulePromise: Promise<
-  typeof import("../services/aiService")
-> | null = null;
+import { summarizeContext } from "../services/aiService";
 let sessionManagerModulePromise: Promise<
   typeof import("../services/ai/sessionManager")
 > | null = null;
-
-const loadAiService = async () => {
-  if (!aiServiceModulePromise) {
-    aiServiceModulePromise = import("../services/aiService");
-  }
-  return aiServiceModulePromise;
-};
 
 const loadSessionManager = async () => {
   if (!sessionManagerModulePromise) {
@@ -398,7 +388,6 @@ export const handleSummarization = async (
           ? { segmentIdx: committedLength, text: action }
           : null;
 
-      const { summarizeContext } = await loadAiService();
       const sumResult = await summarizeContext({
         vfsSession,
         slotId: slotId || "default",

@@ -7,17 +7,7 @@ import {
 } from "react";
 import { saveImage } from "../../utils/imageStorage";
 import type { AISettings, GameState, StorySegment } from "../../types";
-
-let aiServiceModulePromise: Promise<
-  typeof import("../../services/aiService")
-> | null = null;
-
-const loadAiService = async () => {
-  if (!aiServiceModulePromise) {
-    aiServiceModulePromise = import("../../services/aiService");
-  }
-  return aiServiceModulePromise;
-};
+import { generateSceneImage } from "../../services/aiService";
 
 interface UseImageGenerationQueueParams {
   aiSettings: AISettings;
@@ -92,7 +82,6 @@ export function useImageGenerationQueue({
       try {
         const snapshot = node.stateSnapshot || gameStateRef.current;
 
-        const { generateSceneImage } = await loadAiService();
         const { url, log, blob } = await generateSceneImage(
           node.imagePrompt || "",
           aiSettings,
