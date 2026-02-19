@@ -17,6 +17,18 @@ import { getModels } from "../services/aiService";
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
 
+const buildProviderModelLoadTopologyKey = (
+  providers: AISettings["providers"]["instances"],
+): string =>
+  providers
+    .filter((p) => p.apiKey && p.apiKey.trim() !== "")
+    .map(
+      (p) =>
+        `${p.id}::${p.protocol}::${p.baseUrl}::${p.enabled ? "1" : "0"}::${p.apiKey.trim()}`,
+    )
+    .sort()
+    .join("||");
+
 interface SettingsContextType {
   settings: AISettings;
   updateSettings: (
@@ -220,6 +232,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   // Ref to track current settings for async operations
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const providerModelLoadTopologyRef = useRef<string | null>(null);
 
   // Sync language with settings on mount and when settings change
   useEffect(() => {
@@ -434,15 +447,38 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const loadModels = useCallback(async (force: boolean = false) => {
     setIsLoadingModels(true);
     try {
+      const currentSettings = settingsRef.current;
+      // Load models for all providers with API keys
+      const providersWithKeys = currentSettings.providers.instances.filter(
+        (p) => p.apiKey && p.apiKey.trim() !== "",
+      );
+
+      if (providersWithKeys.length === 0) {
+        setProviderModels({});
+        return;
+      }
+
       // Check cache first if not forced
       if (!force) {
         const cached = localStorage.getItem(MODEL_CACHE_KEY);
         if (cached) {
           try {
             const { timestamp, models } = JSON.parse(cached);
+            const parsedModels =
+              models && typeof models === "object" ? models : null;
+            const hasAllProvidersCached =
+              parsedModels &&
+              providersWithKeys.every((provider) =>
+                Array.isArray(
+                  (parsedModels as Record<string, unknown>)[provider.id],
+                ),
+              );
             // Cache valid for 24 hours
-            if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-              setProviderModels(models);
+            if (
+              Date.now() - timestamp < 24 * 60 * 60 * 1000 &&
+              hasAllProvidersCached
+            ) {
+              setProviderModels(parsedModels as Record<string, ModelInfo[]>);
               setIsLoadingModels(false);
               return;
             }
@@ -451,12 +487,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
       }
-
-      const currentSettings = settingsRef.current;
-      // Load models for all providers with API keys
-      const providersWithKeys = currentSettings.providers.instances.filter(
-        (p) => p.apiKey && p.apiKey.trim() !== "",
-      );
 
       const modelPromises = providersWithKeys.map(async (provider) => {
         try {
@@ -491,6 +521,28 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsLoadingModels(false);
     }
   }, []);
+
+  // Auto-refresh models when provider topology changes after mount.
+  useEffect(() => {
+    const topologyKey = buildProviderModelLoadTopologyKey(
+      settings.providers.instances,
+    );
+    const previousTopologyKey = providerModelLoadTopologyRef.current;
+    providerModelLoadTopologyRef.current = topologyKey;
+
+    // Skip initial mount; SettingsModels handles first-load behavior.
+    if (previousTopologyKey === null) {
+      return;
+    }
+    if (previousTopologyKey === topologyKey) {
+      return;
+    }
+    if (!topologyKey) {
+      return;
+    }
+
+    void loadModels(false);
+  }, [settings.providers.instances, loadModels]);
 
   // Derived language
   const language = i18n.language as LanguageCode;
