@@ -16,8 +16,9 @@ import { setSessionHistoryLruLimit } from "../services/vfs/conversation";
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
 
-let aiServiceModulePromise: Promise<typeof import("../services/aiService")> | null =
-  null;
+let aiServiceModulePromise: Promise<
+  typeof import("../services/aiService")
+> | null = null;
 
 const loadAiService = async () => {
   if (!aiServiceModulePromise) {

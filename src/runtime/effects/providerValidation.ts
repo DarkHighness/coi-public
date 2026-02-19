@@ -12,8 +12,9 @@ type ValidateConnectionResult = {
   localError?: boolean;
 };
 
-let aiServiceModulePromise: Promise<typeof import("../../services/aiService")> | null =
-  null;
+let aiServiceModulePromise: Promise<
+  typeof import("../../services/aiService")
+> | null = null;
 
 const loadAiService = async () => {
   if (!aiServiceModulePromise) {

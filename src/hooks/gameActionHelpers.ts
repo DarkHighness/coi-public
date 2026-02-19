@@ -28,8 +28,9 @@ import {
   resolveModelContextWindowTokens,
 } from "../services/modelContextWindows";
 
-let aiServiceModulePromise: Promise<typeof import("../services/aiService")> | null =
-  null;
+let aiServiceModulePromise: Promise<
+  typeof import("../services/aiService")
+> | null = null;
 let sessionManagerModulePromise: Promise<
   typeof import("../services/ai/sessionManager")
 > | null = null;

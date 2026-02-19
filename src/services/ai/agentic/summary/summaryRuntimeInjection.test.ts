@@ -146,11 +146,7 @@ describe("summary runtime field injection", () => {
 
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(1);
     const [, dispatchedArgs, dispatchedContext] = mockDispatchToolCallAsync.mock
-      .calls[0] as [
-      string,
-      any,
-      any,
-    ];
+      .calls[0] as [string, any, any];
     expect(dispatchedArgs.nodeRange).toBeUndefined();
     expect(dispatchedArgs.lastSummarizedIndex).toBeUndefined();
     expect(dispatchedContext.vfsSummaryNodeRange).toEqual({

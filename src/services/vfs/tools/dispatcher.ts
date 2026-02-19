@@ -138,10 +138,11 @@ const injectFinishSummaryRuntimeArgs: RuntimeArgsInjector = (
   };
 };
 
-const RUNTIME_ARGS_INJECTORS: Partial<Record<VfsToolName, RuntimeArgsInjector>> =
-  {
-    vfs_finish_summary: injectFinishSummaryRuntimeArgs,
-  };
+const RUNTIME_ARGS_INJECTORS: Partial<
+  Record<VfsToolName, RuntimeArgsInjector>
+> = {
+  vfs_finish_summary: injectFinishSummaryRuntimeArgs,
+};
 
 const applyRuntimeArgsAfterValidation = (
   name: VfsToolName,

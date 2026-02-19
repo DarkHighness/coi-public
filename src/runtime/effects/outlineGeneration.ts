@@ -10,8 +10,9 @@ import type {
 } from "../../types";
 import type { VfsSession } from "../../services/vfs/vfsSession";
 
-let aiServiceModulePromise: Promise<typeof import("../../services/aiService")> | null =
-  null;
+let aiServiceModulePromise: Promise<
+  typeof import("../../services/aiService")
+> | null = null;
 
 const loadAiService = async () => {
   if (!aiServiceModulePromise) {

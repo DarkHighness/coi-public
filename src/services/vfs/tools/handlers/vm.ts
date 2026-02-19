@@ -666,7 +666,7 @@ export const createVmHandler = (
         if (dangerousToken.label === "VFS namespace") {
           firstFailure = createError(
             `[VFS_VM_NAMESPACE_BLOCKED] scripts[${scriptIndex}] references "VFS" at ${lineContext}. ` +
-              "Call helper wrappers via `ctx.vfs_read_chars({...})` or `ctx.call(\"vfs_read_chars\", {...})` inside `main(ctx)`. " +
+              'Call helper wrappers via `ctx.vfs_read_chars({...})` or `ctx.call("vfs_read_chars", {...})` inside `main(ctx)`. ' +
               "Do not use `VFS.read(...)` or any `VFS.*` access.",
             "INVALID_ACTION",
           );
@@ -762,7 +762,7 @@ export const createVmHandler = (
           } else if (referencesVfsVariable) {
             firstFailure = createError(
               `[VFS_VM_NAMESPACE_BLOCKED] scripts[${scriptIndex}]${lineText} references "VFS" variable. ` +
-                "Call helper wrappers via `ctx.vfs_read_chars({...})` or `ctx.call(\"vfs_read_chars\", {...})` inside `main(ctx)`. " +
+                'Call helper wrappers via `ctx.vfs_read_chars({...})` or `ctx.call("vfs_read_chars", {...})` inside `main(ctx)`. ' +
                 "Do not use `VFS.read(...)` or any `VFS.*` access.",
               "INVALID_ACTION",
             );

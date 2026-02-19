@@ -38,8 +38,9 @@ import {
   WORKSPACE_USER_LOGICAL_PATH,
 } from "../../services/vfs/memoryTemplates";
 
-let aiServiceModulePromise: Promise<typeof import("../../services/aiService")> | null =
-  null;
+let aiServiceModulePromise: Promise<
+  typeof import("../../services/aiService")
+> | null = null;
 
 const loadAiService = async () => {
   if (!aiServiceModulePromise) {

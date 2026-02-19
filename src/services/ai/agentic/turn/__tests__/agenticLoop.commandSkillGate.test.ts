@@ -352,7 +352,9 @@ describe("agenticLoop command skill gate", () => {
             id: "call-vm-mixed",
             name: "vfs_vm",
             args: {
-              scripts: ["async function main(ctx) { console.log('vm-batch'); }"],
+              scripts: [
+                "async function main(ctx) { console.log('vm-batch'); }",
+              ],
             },
           },
           {

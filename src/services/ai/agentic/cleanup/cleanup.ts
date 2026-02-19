@@ -290,7 +290,10 @@ const estimateCleanupContextUsage = async (
     return null;
   }
 
-  if (typeof context.slotId !== "string" || context.slotId.trim().length === 0) {
+  if (
+    typeof context.slotId !== "string" ||
+    context.slotId.trim().length === 0
+  ) {
     return null;
   }
 

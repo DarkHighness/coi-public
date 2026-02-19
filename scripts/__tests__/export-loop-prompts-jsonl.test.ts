@@ -67,9 +67,9 @@ describe("export-loop-prompts-jsonl script", () => {
     const queryInitialContext = summaryQueryMessages.find(
       (message) => message.section === "initial_context_effective",
     );
-    expect(queryInitialContext?.text.startsWith("[CONTEXT: Summary Task]")).toBe(
-      true,
-    );
+    expect(
+      queryInitialContext?.text.startsWith("[CONTEXT: Summary Task]"),
+    ).toBe(true);
 
     const summaryCompactMessages = readFileSync(
       join(loopsRoot, "summary_compact", "prompts.jsonl"),
@@ -79,7 +79,11 @@ describe("export-loop-prompts-jsonl script", () => {
       .split("\n")
       .map(
         (line) =>
-          JSON.parse(line) as { promptId: string; section: string; role: string },
+          JSON.parse(line) as {
+            promptId: string;
+            section: string;
+            role: string;
+          },
       );
     expect(
       summaryCompactMessages.some(

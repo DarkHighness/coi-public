@@ -264,7 +264,8 @@ describe("media service", () => {
         ],
       }),
     );
-    expect(generateChat.mock.calls[0]?.[0]?.messages[0]?.content[0]?.text).not
-      .toContain("AWARD-WINNING cinematographer");
+    expect(
+      generateChat.mock.calls[0]?.[0]?.messages[0]?.content[0]?.text,
+    ).not.toContain("AWARD-WINNING cinematographer");
   });
 });

@@ -136,9 +136,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const { settings, themeMode } = useSettings();
   const tutorial = useTutorialContextOptional();
-  const [selectableThemes, setSelectableThemes] = useState<
-    Record<string, StoryThemeConfig> | null
-  >(null);
+  const [selectableThemes, setSelectableThemes] = useState<Record<
+    string,
+    StoryThemeConfig
+  > | null>(null);
   const [themesLoading, setThemesLoading] = useState(false);
   const [themesLoadError, setThemesLoadError] = useState<string | null>(null);
 
@@ -802,7 +803,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           {selectableThemes ? (
             <ThemeSelector
               themes={selectableThemes}
-              onSelect={(theme, role) => handleStart(theme, customContext, role)}
+              onSelect={(theme, role) =>
+                handleStart(theme, customContext, role)
+              }
               onPreviewTheme={onThemePreview}
               onBack={exitThemeSelect}
             />

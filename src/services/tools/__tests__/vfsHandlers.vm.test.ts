@@ -273,11 +273,7 @@ describe("VFS handlers vm", () => {
       "vfs_vm",
       {
         scripts: [
-          [
-            "async function main(ctx) {",
-            "  return VFS;",
-            "}",
-          ].join("\n"),
+          ["async function main(ctx) {", "  return VFS;", "}"].join("\n"),
         ],
       },
       ctx,
@@ -286,7 +282,7 @@ describe("VFS handlers vm", () => {
     expect(result.success).toBe(false);
     expect(result.code).toBe("INVALID_ACTION");
     expect(result.error).toContain("VFS_VM_NAMESPACE_BLOCKED");
-    expect(result.error).toContain("references \"VFS\" variable");
+    expect(result.error).toContain('references "VFS" variable');
     expect(result.error).toContain("ctx.vfs_read_chars");
   });
 

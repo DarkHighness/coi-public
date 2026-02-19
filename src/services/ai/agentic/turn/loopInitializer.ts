@@ -106,7 +106,8 @@ export function createLoopState(
 ): LoopState {
   const isPlayerRateMode =
     options?.isPlayerRateMode === true && !isSudoMode && !isCleanupMode;
-  const turnKind = options?.turnKind ?? (isCleanupMode ? "session_cleanup" : "normal");
+  const turnKind =
+    options?.turnKind ?? (isCleanupMode ? "session_cleanup" : "normal");
   const budgetState = createBudgetState(settings, {
     loopType: isCleanupMode ? "cleanup" : "turn",
   });

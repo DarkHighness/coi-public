@@ -75,7 +75,9 @@ const FALLBACK_THEME_VISUAL_META: ThemeVisualMeta = {
 let themeVisualMetaPromise: Promise<Record<string, ThemeVisualMeta>> | null =
   null;
 
-const loadThemeVisualMeta = async (): Promise<Record<string, ThemeVisualMeta>> => {
+const loadThemeVisualMeta = async (): Promise<
+  Record<string, ThemeVisualMeta>
+> => {
   if (!themeVisualMetaPromise) {
     themeVisualMetaPromise = import("./utils/constants/themes").then(
       ({ THEMES }) =>
@@ -176,9 +178,10 @@ function AppContent() {
 
   // Track preview theme from StartScreen
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
-  const [themeVisualMeta, setThemeVisualMeta] = useState<
-    Record<string, ThemeVisualMeta> | null
-  >(null);
+  const [themeVisualMeta, setThemeVisualMeta] = useState<Record<
+    string,
+    ThemeVisualMeta
+  > | null>(null);
 
   // Streaming text for initialization
   const [streamedText, setStreamedText] = useState("");

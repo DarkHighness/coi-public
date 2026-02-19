@@ -8,8 +8,9 @@ import {
 import { saveImage } from "../../utils/imageStorage";
 import type { AISettings, GameState, StorySegment } from "../../types";
 
-let aiServiceModulePromise: Promise<typeof import("../../services/aiService")> | null =
-  null;
+let aiServiceModulePromise: Promise<
+  typeof import("../../services/aiService")
+> | null = null;
 
 const loadAiService = async () => {
   if (!aiServiceModulePromise) {
