@@ -61,6 +61,19 @@ const resolveRoutedProviderProtocol = (
   return "openai";
 };
 
+const applyConfiguredHardCap = (
+  maxOutputTokens: number,
+  tokenBudget?: TokenBudgetConfig,
+): number => {
+  const hardCap = sanitizePositiveOutputTokens(
+    tokenBudget?.maxOutputTokensHardCap,
+  );
+  if (!hardCap) {
+    return maxOutputTokens;
+  }
+  return Math.max(1, Math.min(maxOutputTokens, hardCap));
+};
+
 const resolveModelMaxOutputTokens = (params: {
   providerProtocol: ProviderProtocol;
   modelId: string;
@@ -86,7 +99,7 @@ const resolveModelMaxOutputTokens = (params: {
     return {
       resolvedProviderProtocol,
       normalizedModelId,
-      maxOutputTokens: mapped,
+      maxOutputTokens: applyConfiguredHardCap(mapped, params.tokenBudget),
     };
   }
 
@@ -111,15 +124,20 @@ const resolveModelMaxOutputTokens = (params: {
     return {
       resolvedProviderProtocol,
       normalizedModelId,
-      maxOutputTokens: configuredFallback,
+      maxOutputTokens: applyConfiguredHardCap(
+        configuredFallback,
+        params.tokenBudget,
+      ),
     };
   }
 
   return {
     resolvedProviderProtocol,
     normalizedModelId,
-    maxOutputTokens:
+    maxOutputTokens: applyConfiguredHardCap(
       DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS[resolvedProviderProtocol],
+      params.tokenBudget,
+    ),
   };
 };
 

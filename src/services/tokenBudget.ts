@@ -1,3 +1,5 @@
+export const NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS = 32_768;
+
 export interface TokenBudgetConfig {
   /**
    * Optional fallback output cap for unknown models.
@@ -8,6 +10,12 @@ export interface TokenBudgetConfig {
    * Optional resolved context window for the active provider+model.
    */
   contextWindowTokens?: number;
+  /**
+   * Optional hard cap for single-round output tokens.
+   * Useful for runtime turns where overly large outputs tend to trigger
+   * provider-side context overflow retries.
+   */
+  maxOutputTokensHardCap?: number;
   /**
    * Optional total token estimate for the current request input budget.
    * This should prefer provider-reported `total_tokens` from prior rounds.

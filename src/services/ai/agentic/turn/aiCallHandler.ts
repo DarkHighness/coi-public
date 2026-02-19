@@ -7,6 +7,7 @@
 import type { AISettings, TokenUsage } from "../../../../types";
 import type { ToolCallResult } from "../../../providers/types";
 import type { UnifiedMessage } from "../../../messageTypes";
+import { NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../../../tokenBudget";
 import type {
   ProviderBase,
   ChatGenerateResponse,
@@ -108,6 +109,7 @@ export async function handleAICall(
         tokenBudget: {
           maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
           contextWindowTokens,
+          maxOutputTokensHardCap: NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS,
         },
         thinkingEffort: storyCfg?.thinkingEffort,
       },

@@ -107,6 +107,9 @@ describe("handleAICall", () => {
         mediaResolution: "high",
         temperature: 0.6,
         topP: 0.9,
+        tokenBudget: expect.objectContaining({
+          maxOutputTokensHardCap: 32768,
+        }),
       }),
       expect.any(Array),
       expect.objectContaining({

@@ -60,4 +60,19 @@ describe("resolveTokenBudget", () => {
     expect(budget.modelMaxOutputTokens).toBe(48000);
     expect(budget.maxOutputTokens).toBe(48000);
   });
+
+  it("applies explicit hard cap for non-outline runtime calls", () => {
+    const budget = resolveTokenBudget({
+      providerProtocol: "openrouter",
+      modelId: "unknown/vendor-model",
+      tokenBudget: {
+        maxOutputTokensFallback: 128000,
+        contextWindowTokens: 204800,
+        maxOutputTokensHardCap: 32768,
+      },
+    });
+
+    expect(budget.modelMaxOutputTokens).toBe(32768);
+    expect(budget.maxOutputTokens).toBe(32768);
+  });
 });

@@ -43,6 +43,7 @@ import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   resolveModelContextWindowTokens,
 } from "../modelContextWindows";
+import { NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../tokenBudget";
 
 // ============================================================================
 // Image/Video/Speech Generation
@@ -382,6 +383,7 @@ export const generateVeoScript = async (
       tokenBudget: {
         maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
         contextWindowTokens,
+        maxOutputTokensHardCap: NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS,
       },
     });
 
