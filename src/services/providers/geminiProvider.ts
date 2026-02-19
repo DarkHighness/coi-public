@@ -887,7 +887,17 @@ async function streamGeneration(
   });
 
   let text = "";
-  const functionCalls: ToolCallResult[] = [];
+  const accumulatedFunctionCalls: Map<
+    string,
+    {
+      order: number;
+      name: string;
+      args: ToolArguments;
+      thoughtSignature?: string;
+    }
+  > = new Map();
+  let toolCallOrder = 0;
+  let sawFunctionCallPart = false;
   let usage: {
     promptTokenCount?: number;
     candidatesTokenCount?: number;
@@ -913,20 +923,47 @@ async function streamGeneration(
 
     // 收集工具调用
     const candidate = chunk.candidates?.[0];
+    const finishReason =
+      readString((candidate as { finishReason?: unknown } | undefined)?.finishReason) ||
+      (isRecord(candidate) ? readString(candidate.finish_reason) : undefined);
+    const finishMessage =
+      readString((candidate as { finishMessage?: unknown } | undefined)?.finishMessage) ||
+      (isRecord(candidate) ? readString(candidate.finish_message) : undefined);
+    if (finishReason) {
+      handleFinishReason(finishReason, finishMessage);
+    }
+
     if (candidate?.content?.parts) {
-      for (const part of candidate.content.parts) {
+      for (let partIndex = 0; partIndex < candidate.content.parts.length; partIndex += 1) {
+        const part = candidate.content.parts[partIndex]!;
         if (part.functionCall) {
+          sawFunctionCallPart = true;
           const functionCallPart = part as GeminiFunctionCallPartWithSignature;
-          functionCalls.push({
-            id: `gemini_call_${part.functionCall.name}_${functionCalls.length}`,
-            name: part.functionCall.name || "",
-            args: parseToolArguments(
-              part.functionCall.args,
-              part.functionCall.name || "unknown",
-            ),
-            // Extract thoughtSignature if present
-            thoughtSignature: getThoughtSignature(functionCallPart),
-          });
+          const toolName = part.functionCall.name || "";
+          if (!toolName) {
+            continue;
+          }
+          const slotKey = `${partIndex}:${toolName}`;
+          const parsedArgs = parseToolArguments(
+            part.functionCall.args,
+            toolName,
+          );
+          const thoughtSignature = getThoughtSignature(functionCallPart);
+          const existing = accumulatedFunctionCalls.get(slotKey);
+          if (existing) {
+            existing.args = parsedArgs;
+            if (thoughtSignature) {
+              existing.thoughtSignature = thoughtSignature;
+            }
+          } else {
+            accumulatedFunctionCalls.set(slotKey, {
+              order: toolCallOrder,
+              name: toolName,
+              args: parsedArgs,
+              thoughtSignature,
+            });
+            toolCallOrder += 1;
+          }
         }
       }
     }
@@ -936,6 +973,23 @@ async function streamGeneration(
     if (chunkUsage) {
       usage = chunkUsage;
     }
+  }
+
+  const functionCalls: ToolCallResult[] = [...accumulatedFunctionCalls.values()]
+    .sort((a, b) => a.order - b.order)
+    .map((call, index) => ({
+      id: `gemini_call_${call.name}_${index}`,
+      name: call.name,
+      args: call.args,
+      thoughtSignature: call.thoughtSignature,
+    }));
+
+  if (sawFunctionCallPart && functionCalls.length === 0) {
+    throw new AIProviderError(
+      "[ERROR: STREAM_INCOMPLETE] Gemini stream emitted functionCall parts but none could be parsed into valid tool calls.",
+      "gemini",
+      "STREAM_INCOMPLETE",
+    );
   }
 
   console.log(

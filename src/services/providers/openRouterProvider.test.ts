@@ -4,6 +4,7 @@ const sdkMocks = vi.hoisted(() => ({
   modelsList: vi.fn(),
   creditsGet: vi.fn(),
   embeddingsListModels: vi.fn(),
+  chatSend: vi.fn(),
 }));
 
 const generateOpenAISpeechMock = vi.hoisted(() => vi.fn());
@@ -13,6 +14,7 @@ vi.mock("@openrouter/sdk", () => {
     models = { list: sdkMocks.modelsList };
     credits = { getCredits: sdkMocks.creditsGet };
     embeddings = { listModels: sdkMocks.embeddingsListModels };
+    chat = { send: sdkMocks.chatSend };
 
     constructor(_opts: any) {}
   }
@@ -27,6 +29,7 @@ vi.mock("./openaiProvider", () => ({
 }));
 
 import {
+  generateContent,
   generateEmbedding,
   generateImage,
   generateSpeech,
@@ -443,5 +446,186 @@ describe("openRouterProvider exports", () => {
         ["alpha"],
       ),
     ).rejects.toThrow("OpenRouter embedding failed: HTTP 400: bad-request");
+  });
+});
+
+describe("openRouterProvider tool-call handling", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns functionCalls for non-streaming snake_case tool_calls responses", async () => {
+    sdkMocks.chatSend.mockResolvedValueOnce({
+      choices: [
+        {
+          finish_reason: "tool_calls",
+          native_finish_reason: "tool_calls",
+          message: {
+            content: "",
+            tool_calls: [
+              {
+                id: "call_1",
+                function: {
+                  name: "vfs_finish_outline_phase_1",
+                  arguments: JSON.stringify({
+                    storyPlanMarkdown: "# test plan",
+                  }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usage: {
+        prompt_tokens: 11,
+        completion_tokens: 7,
+        total_tokens: 18,
+      },
+    });
+
+    const res = await generateContent(
+      { apiKey: "k" } as any,
+      "z-ai/glm-5",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+    );
+
+    const result = res.result as { functionCalls?: Array<any> };
+    expect(result.functionCalls).toHaveLength(1);
+    expect(result.functionCalls?.[0]).toMatchObject({
+      id: "call_1",
+      name: "vfs_finish_outline_phase_1",
+      args: { storyPlanMarkdown: "# test plan" },
+    });
+  });
+
+  it("parses streaming legacy tool call chunks with root-level name/arguments", async () => {
+    async function* streamChunks() {
+      yield {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: "call_legacy",
+                  name: "vfs_read_lines",
+                  arguments: JSON.stringify({
+                    path: "current/world/global.json",
+                    startLine: 1,
+                    endLine: 3,
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      };
+      yield {
+        choices: [
+          {
+            delta: {},
+            finish_reason: "tool_calls",
+            native_finish_reason: "tool_calls",
+          },
+        ],
+        usage: {
+          prompt_tokens: 9,
+          completion_tokens: 4,
+          total_tokens: 13,
+        },
+      };
+    }
+
+    sdkMocks.chatSend.mockResolvedValueOnce(streamChunks());
+
+    const onChunk = vi.fn();
+    const res = await generateContent(
+      { apiKey: "k" } as any,
+      "z-ai/glm-5",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+      undefined,
+      { onChunk } as any,
+    );
+
+    const result = res.result as { functionCalls?: Array<any> };
+    expect(result.functionCalls).toHaveLength(1);
+    expect(result.functionCalls?.[0]).toMatchObject({
+      id: "call_legacy",
+      name: "vfs_read_lines",
+      args: {
+        path: "current/world/global.json",
+        startLine: 1,
+        endLine: 3,
+      },
+    });
+    expect(onChunk).not.toHaveBeenCalled();
+  });
+
+  it("throws when non-streaming response finishes with tool_calls but has no valid tool payload", async () => {
+    sdkMocks.chatSend.mockResolvedValueOnce({
+      choices: [
+        {
+          finish_reason: "tool_calls",
+          native_finish_reason: "tool_calls",
+          message: {
+            content: "",
+            tool_calls: [
+              {
+                type: "url_citation",
+                url_citation: { url: "https://example.com" },
+              },
+            ],
+          },
+        },
+      ],
+      usage: {
+        prompt_tokens: 3,
+        completion_tokens: 1,
+        total_tokens: 4,
+      },
+    });
+
+    await expect(
+      generateContent(
+        { apiKey: "k" } as any,
+        "z-ai/glm-5",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+      ),
+    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
+  });
+
+  it("throws when streaming response finishes with tool_calls but has no valid tool payload", async () => {
+    async function* streamChunks() {
+      yield {
+        choices: [
+          {
+            delta: {},
+            finish_reason: "tool_calls",
+            native_finish_reason: "tool_calls",
+          },
+        ],
+        usage: {
+          prompt_tokens: 4,
+          completion_tokens: 2,
+          total_tokens: 6,
+        },
+      };
+    }
+
+    sdkMocks.chatSend.mockResolvedValueOnce(streamChunks());
+
+    await expect(
+      generateContent(
+        { apiKey: "k" } as any,
+        "z-ai/glm-5",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+        undefined,
+        { onChunk: vi.fn() } as any,
+      ),
+    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
   });
 });

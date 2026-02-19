@@ -125,6 +125,33 @@ type OpenAICompatibleToolCall = ChatCompletionMessageFunctionToolCall & {
 const isJsonObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const readString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const readNumber = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
+
+const getFinishReason = (choice: unknown): string | undefined => {
+  if (!isJsonObject(choice)) return undefined;
+  return readString(choice.finish_reason) || readString(choice.finishReason);
+};
+
+const isContentFilterFinishReason = (reason: string | undefined): boolean =>
+  reason === "content_filter";
+
+const isToolCallsFinishReason = (reason: string | undefined): boolean =>
+  reason === "tool_calls";
+
 const getReasoningContent = (value: unknown): string | undefined => {
   if (!isJsonObject(value)) return undefined;
   const reasoning = value.reasoning_content;
@@ -846,9 +873,14 @@ export async function generateContent(
             thoughtSignature?: string;
           }
         > = new Map();
+        let streamFinishReason: string | undefined;
 
         for await (const chunk of response) {
           const choice = chunk.choices[0];
+          const finishReason = getFinishReason(choice);
+          if (finishReason) {
+            streamFinishReason = finishReason;
+          }
           const delta = choice?.delta;
 
           // 处理文本内容
@@ -868,21 +900,45 @@ export async function generateContent(
           // 处理工具调用 (流式模式下工具调用是增量传输的)
           if (delta?.tool_calls) {
             for (const tc of delta.tool_calls) {
-              const index = tc.index ?? 0;
+              const tcRecord = isJsonObject(tc) ? tc : null;
+              const functionRecord =
+                tcRecord && isJsonObject(tcRecord.function)
+                  ? tcRecord.function
+                  : null;
+              const index =
+                typeof tc.index === "number"
+                  ? tc.index
+                  : (readNumber(tcRecord?.index) ?? 0);
+              const toolName =
+                readString(functionRecord?.name) ||
+                readString(tcRecord?.name) ||
+                "";
+              const normalizedToolName = toolName.trim();
+              const toolArguments =
+                readString(functionRecord?.arguments) ||
+                readString(tcRecord?.arguments) ||
+                "";
+              const toolId = readString(tcRecord?.id) || `tool_${index}`;
+              const thoughtSignature = getToolCallThoughtSignature(tc);
               const existing = accumulatedToolCalls.get(index);
               if (existing) {
-                // 累加参数
-                if (tc.function?.arguments) {
-                  existing.arguments += tc.function.arguments;
+                if (!existing.name && normalizedToolName) {
+                  existing.name = normalizedToolName;
+                }
+                if (toolArguments) {
+                  existing.arguments += toolArguments;
+                }
+                if (!existing.thoughtSignature && thoughtSignature) {
+                  existing.thoughtSignature = thoughtSignature;
                 }
               } else {
                 // 新工具调用
                 // Gemini 3 uses extra_content.google.thought_signature format
                 accumulatedToolCalls.set(index, {
-                  id: tc.id || `tool_${index}`,
-                  name: tc.function?.name || "",
-                  arguments: tc.function?.arguments || "",
-                  thoughtSignature: getToolCallThoughtSignature(tc),
+                  id: toolId,
+                  name: normalizedToolName,
+                  arguments: toolArguments,
+                  thoughtSignature,
                 });
               }
             }
@@ -896,12 +952,30 @@ export async function generateContent(
 
         // 解析累积的工具调用
         for (const [, tc] of accumulatedToolCalls) {
+          if (!tc.name) {
+            continue;
+          }
           toolCalls.push({
             id: tc.id,
             name: tc.name,
             args: parseToolArguments(tc.arguments, tc.name),
             thoughtSignature: tc.thoughtSignature,
           });
+        }
+
+        if (isContentFilterFinishReason(streamFinishReason)) {
+          throw new SafetyFilterError("openai");
+        }
+
+        if (
+          isToolCallsFinishReason(streamFinishReason) &&
+          toolCalls.length === 0
+        ) {
+          throw new AIProviderError(
+            "[ERROR: STREAM_INCOMPLETE] OpenAI finished with tool_calls but no valid tool call payload was parsed.",
+            "openai",
+            "STREAM_INCOMPLETE",
+          );
         }
       } else {
         // 非流式生成
@@ -922,12 +996,19 @@ export async function generateContent(
                 tc,
               ): tc is typeof tc & {
                 function: { name: string; arguments: string };
-              } => "function" in tc && tc.function !== undefined,
+              } =>
+                "function" in tc &&
+                tc.function !== undefined &&
+                typeof tc.function.name === "string" &&
+                tc.function.name.trim().length > 0,
             )
             .map((tc) => ({
               id: tc.id,
-              name: tc.function.name,
-              args: parseToolArguments(tc.function.arguments, tc.function.name),
+              name: tc.function.name.trim(),
+              args: parseToolArguments(
+                tc.function.arguments,
+                tc.function.name.trim(),
+              ),
               // Extract thought_signature if present (Gemini compatibility)
               // Gemini 3 uses extra_content.google.thought_signature format
               thoughtSignature: getToolCallThoughtSignature(tc),
@@ -935,9 +1016,17 @@ export async function generateContent(
         }
 
         // 检查内容过滤
-        const finishReason = response.choices[0]?.finish_reason;
-        if (finishReason === "content_filter") {
+        const finishReason = getFinishReason(response.choices[0]);
+        if (isContentFilterFinishReason(finishReason)) {
           throw new SafetyFilterError("openai");
+        }
+
+        if (isToolCallsFinishReason(finishReason) && toolCalls.length === 0) {
+          throw new AIProviderError(
+            "[ERROR: STREAM_INCOMPLETE] OpenAI finished with tool_calls but no valid tool call payload was parsed.",
+            "openai",
+            "STREAM_INCOMPLETE",
+          );
         }
 
         usage = parseOpenAIUsage(response.usage);

@@ -354,6 +354,25 @@ const getThoughtSignature = (value: unknown): string | undefined => {
   const toolFunction = isRecord(value.function) ? value.function : undefined;
   return readString(toolFunction?.thought_signature);
 };
+
+const getFinishReason = (choice: unknown): string | undefined => {
+  if (!isRecord(choice)) return undefined;
+  return readString(choice.finishReason) || readString(choice.finish_reason);
+};
+
+const getNativeFinishReason = (choice: unknown): string | undefined => {
+  if (!isRecord(choice)) return undefined;
+  return (
+    readString(choice.nativeFinishReason) ||
+    readString(choice.native_finish_reason)
+  );
+};
+
+const isToolCallsFinishReason = (reason: string | undefined): boolean =>
+  reason === "tool_calls";
+
+const isContentFilterFinishReason = (reason: string | undefined): boolean =>
+  reason === "content_filter";
 const readUsageNumber = (
   usage: JsonObject | null | undefined,
   keys: string[],
@@ -806,6 +825,8 @@ async function handleNonStreamingResponse(
     createRequestOptions(),
   )) as models.ChatResponse;
   const choice = response.choices?.[0];
+  const finishReason = getFinishReason(choice);
+  const nativeFinishReason = getNativeFinishReason(choice);
   const message = choice?.message;
   const content = typeof message?.content === "string" ? message.content : "";
   let toolCalls: ToolCallResult[] = [];
@@ -815,7 +836,10 @@ async function handleNonStreamingResponse(
     console.error("[OpenRouter] Failed to parse tool calls:", error);
     throw error;
   }
-  if (choice?.finishReason === "content_filter") {
+  if (
+    isContentFilterFinishReason(finishReason) ||
+    isContentFilterFinishReason(nativeFinishReason)
+  ) {
     throw new SafetyFilterError("openrouter");
   }
   const usage = parseOpenRouterUsage(response.usage);
@@ -825,7 +849,18 @@ async function handleNonStreamingResponse(
 
   console.log(`[OpenRouter] Generation complete. Usage:`, usage);
 
-  if (toolCalls.length > 0) {
+  const finishedWithToolCalls =
+    isToolCallsFinishReason(finishReason) ||
+    isToolCallsFinishReason(nativeFinishReason);
+
+  if (toolCalls.length > 0 || finishedWithToolCalls) {
+    if (finishedWithToolCalls && toolCalls.length === 0) {
+      throw new AIProviderError(
+        "[ERROR: STREAM_INCOMPLETE] OpenRouter finished with tool_calls but no valid tool call payload was parsed.",
+        "openrouter",
+        "STREAM_INCOMPLETE",
+      );
+    }
     const toolResult: OpenRouterGenerationToolResult = {
       functionCalls: toolCalls,
       // 保留 content 以便在下次请求时包含
@@ -891,13 +926,25 @@ async function handleStreamingResponse(
     totalTokens: 0,
     reported: false,
   };
+  let finishReason: string | undefined;
+  let nativeFinishReason: string | undefined;
   const accumulatedToolCalls: Map<
     number,
     { id: string; name: string; arguments: string; thoughtSignature?: string }
   > = new Map();
   try {
     for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta as
+      const choice = chunk.choices?.[0];
+      const chunkFinishReason = getFinishReason(choice);
+      const chunkNativeFinishReason = getNativeFinishReason(choice);
+      if (chunkFinishReason) {
+        finishReason = chunkFinishReason;
+      }
+      if (chunkNativeFinishReason) {
+        nativeFinishReason = chunkNativeFinishReason;
+      }
+
+      const delta = choice?.delta as
         | OpenRouterStreamingDeltaCompat
         | undefined;
       if (delta?.content) {
@@ -912,19 +959,39 @@ async function handleStreamingResponse(
       const deltaToolCalls = delta?.toolCalls || delta?.tool_calls;
       if (deltaToolCalls) {
         for (const tc of deltaToolCalls) {
-          const index = typeof tc.index === "number" ? tc.index : 0;
+          const tcRecord = isRecord(tc) ? tc : null;
+          const functionRecord =
+            tcRecord && isRecord(tcRecord.function)
+              ? tcRecord.function
+              : undefined;
+          const index =
+            typeof tc.index === "number" ? tc.index : readNumber(tcRecord?.index) || 0;
+          const toolName =
+            readString(functionRecord?.name) || readString(tcRecord?.name) || "";
+          const toolArguments =
+            readString(functionRecord?.arguments) ||
+            readString(tcRecord?.arguments) ||
+            "";
+          const toolId = readString(tcRecord?.id) || `tool_${index}`;
+          const thoughtSignature = getThoughtSignature(tc);
           const existing = accumulatedToolCalls.get(index);
           if (existing) {
-            if (tc.function?.arguments) {
-              existing.arguments += tc.function.arguments;
+            if (!existing.name && toolName) {
+              existing.name = toolName;
+            }
+            if (toolArguments) {
+              existing.arguments += toolArguments;
+            }
+            if (!existing.thoughtSignature && thoughtSignature) {
+              existing.thoughtSignature = thoughtSignature;
             }
           } else {
             accumulatedToolCalls.set(index, {
-              id: tc.id || `tool_${index}`,
-              name: tc.function?.name || "",
-              arguments: tc.function?.arguments || "",
+              id: toolId,
+              name: toolName,
+              arguments: toolArguments,
               // Gemini 3 uses extra_content.google.thought_signature format
-              thoughtSignature: getThoughtSignature(tc),
+              thoughtSignature,
             });
           }
         }
@@ -939,6 +1006,9 @@ async function handleStreamingResponse(
   }
   const toolCalls: ToolCallResult[] = [];
   for (const [, tc] of accumulatedToolCalls) {
+    if (!tc.name) {
+      continue;
+    }
     toolCalls.push({
       id: tc.id,
       name: tc.name,
@@ -948,7 +1018,25 @@ async function handleStreamingResponse(
   }
   console.log(`[OpenRouter] Stream complete. Usage:`, usage);
 
-  if (toolCalls.length > 0) {
+  if (
+    isContentFilterFinishReason(finishReason) ||
+    isContentFilterFinishReason(nativeFinishReason)
+  ) {
+    throw new SafetyFilterError("openrouter");
+  }
+
+  const finishedWithToolCalls =
+    isToolCallsFinishReason(finishReason) ||
+    isToolCallsFinishReason(nativeFinishReason);
+
+  if (toolCalls.length > 0 || finishedWithToolCalls) {
+    if (finishedWithToolCalls && toolCalls.length === 0) {
+      throw new AIProviderError(
+        "[ERROR: STREAM_INCOMPLETE] OpenRouter stream finished with tool_calls but no valid tool call payload was parsed.",
+        "openrouter",
+        "STREAM_INCOMPLETE",
+      );
+    }
     const toolResult: OpenRouterGenerationToolResult = {
       functionCalls: toolCalls,
       // 保留 content 以便在下次请求时包含

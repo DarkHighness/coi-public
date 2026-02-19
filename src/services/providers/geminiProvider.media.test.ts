@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sdkMocks = vi.hoisted(() => ({
   generateContent: vi.fn(),
+  generateContentStream: vi.fn(),
   generateImages: vi.fn(),
   generateVideos: vi.fn(),
   listModels: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("@google/genai", () => {
   class GoogleGenAI {
     models = {
       generateContent: sdkMocks.generateContent,
+      generateContentStream: sdkMocks.generateContentStream,
       generateImages: sdkMocks.generateImages,
       generateVideos: sdkMocks.generateVideos,
       list: sdkMocks.listModels,
@@ -47,6 +49,7 @@ vi.mock("@google/genai", () => {
 });
 
 import {
+  generateContent,
   generateEmbedding,
   generateImage,
   generateSpeech,
@@ -270,5 +273,136 @@ describe("geminiProvider media and embedding branches", () => {
       promptTokens: 3,
       totalTokens: 3,
     });
+  });
+
+  it("throws safety error when streaming candidate finishReason is SAFETY", async () => {
+    sdkMocks.generateContentStream.mockResolvedValueOnce({
+      async *[Symbol.asyncIterator]() {
+        yield {
+          text: "",
+          candidates: [
+            {
+              finishReason: "SAFETY",
+              finishMessage: "blocked",
+              content: { parts: [] },
+            },
+          ],
+        };
+      },
+    });
+
+    await expect(
+      generateContent(
+        { apiKey: "k" } as any,
+        "gemini-2.5-flash",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+        undefined,
+        { onChunk: vi.fn() } as any,
+      ),
+    ).rejects.toMatchObject({ code: "SAFETY" });
+  });
+
+  it("deduplicates repeated streaming functionCall parts across chunks", async () => {
+    sdkMocks.generateContentStream.mockResolvedValueOnce({
+      async *[Symbol.asyncIterator]() {
+        yield {
+          text: "",
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    functionCall: {
+                      name: "vfs_read_chars",
+                      args: { path: "current/world/README.md" },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+          usageMetadata: {
+            promptTokenCount: 5,
+            candidatesTokenCount: 2,
+            totalTokenCount: 7,
+          },
+        };
+        yield {
+          text: "",
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    functionCall: {
+                      name: "vfs_read_chars",
+                      args: { path: "current/world/README.md" },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+          usageMetadata: {
+            promptTokenCount: 5,
+            candidatesTokenCount: 2,
+            totalTokenCount: 7,
+          },
+        };
+      },
+    });
+
+    const result = await generateContent(
+      { apiKey: "k" } as any,
+      "gemini-2.5-flash",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+      undefined,
+      { onChunk: vi.fn() } as any,
+    );
+
+    const functionCalls = (result.result as { functionCalls?: Array<any> })
+      .functionCalls;
+    expect(functionCalls).toHaveLength(1);
+    expect(functionCalls?.[0]).toMatchObject({
+      name: "vfs_read_chars",
+      args: { path: "current/world/README.md" },
+    });
+  });
+
+  it("throws when stream emits functionCall parts but none are valid", async () => {
+    sdkMocks.generateContentStream.mockResolvedValueOnce({
+      async *[Symbol.asyncIterator]() {
+        yield {
+          text: "",
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    functionCall: {
+                      name: "",
+                      args: { path: "current/world/README.md" },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+      },
+    });
+
+    await expect(
+      generateContent(
+        { apiKey: "k" } as any,
+        "gemini-2.5-flash",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+        undefined,
+        { onChunk: vi.fn() } as any,
+      ),
+    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
   });
 });

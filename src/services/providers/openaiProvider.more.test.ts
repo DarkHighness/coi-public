@@ -23,6 +23,7 @@ vi.mock("openai", () => {
 });
 
 import {
+  generateContent,
   generateEmbedding,
   generateImage,
   generateSpeech,
@@ -254,5 +255,109 @@ describe("openaiProvider additional branches", () => {
     await expect(
       generateVideo({ apiKey: "k" } as any, "any", "", ""),
     ).rejects.toThrow("Video generation is not supported");
+  });
+
+  it("throws safety error when streaming finish_reason is content_filter", async () => {
+    async function* filteredStream() {
+      yield {
+        choices: [{ delta: { content: "partial" } }],
+      };
+      yield {
+        choices: [{ delta: {}, finish_reason: "content_filter" }],
+      };
+    }
+
+    sdkMocks.chatCreate.mockResolvedValueOnce(filteredStream());
+
+    await expect(
+      generateContent(
+        { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+        "gpt-4o-mini",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+        undefined,
+        { onChunk: vi.fn() } as any,
+      ),
+    ).rejects.toMatchObject({ code: "SAFETY" });
+  });
+
+  it("reconstructs streaming tool call when name arrives after argument chunks", async () => {
+    async function* toolCallStream() {
+      yield {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: "call_1",
+                  function: {
+                    arguments: '{"path":"current/world/',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+      yield {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  function: {
+                    name: "vfs_read_chars",
+                    arguments: 'README.md"}',
+                  },
+                },
+              ],
+            },
+            finish_reason: "tool_calls",
+          },
+        ],
+      };
+    }
+
+    sdkMocks.chatCreate.mockResolvedValueOnce(toolCallStream());
+
+    const res = await generateContent(
+      { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+      "gpt-4o-mini",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+      undefined,
+      { onChunk: vi.fn() } as any,
+    );
+
+    const result = res.result as { functionCalls?: Array<any> };
+    expect(result.functionCalls).toHaveLength(1);
+    expect(result.functionCalls?.[0]).toMatchObject({
+      id: "call_1",
+      name: "vfs_read_chars",
+      args: { path: "current/world/README.md" },
+    });
+  });
+
+  it("throws when stream ends with tool_calls finish but no valid tool payload", async () => {
+    async function* emptyToolStream() {
+      yield {
+        choices: [{ delta: {}, finish_reason: "tool_calls" }],
+      };
+    }
+
+    sdkMocks.chatCreate.mockResolvedValueOnce(emptyToolStream());
+
+    await expect(
+      generateContent(
+        { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+        "gpt-4o-mini",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+        undefined,
+        { onChunk: vi.fn() } as any,
+      ),
+    ).rejects.toMatchObject({ code: "STREAM_INCOMPLETE" });
   });
 });

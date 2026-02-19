@@ -26,6 +26,14 @@ const parseToolArguments = (
   throw new Error(`[OpenRouter] Invalid tool args type for ${toolName}`);
 };
 
+const readNonEmptyString = (value: unknown): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
 export const extractOpenRouterToolCalls = (
   message: JsonObject | null | undefined,
 ): ToolCallResult[] => {
@@ -37,29 +45,46 @@ export const extractOpenRouterToolCalls = (
     return [];
   }
 
-  return rawCalls.map((tc) => {
+  const parsedCalls: ToolCallResult[] = [];
+
+  for (const tc of rawCalls) {
     const call = tc as {
       id?: string;
       function?: {
-        name?: string;
+        name?: unknown;
         arguments?: unknown;
         thought_signature?: string;
       };
-      name?: string;
+      name?: unknown;
       arguments?: unknown;
       extra_content?: { google?: { thought_signature?: string } };
     };
 
     const fn = call.function || {};
-    const rawArgs = fn.arguments ?? call.arguments;
-    const args = parseToolArguments(rawArgs, fn.name || call.name || "unknown");
+    const functionName = readNonEmptyString(fn.name);
+    const fallbackName = readNonEmptyString(call.name);
+    const name = functionName || fallbackName;
 
-    return {
+    // Skip non-function entries (for example url_citation) instead of emitting blank tool calls.
+    if (!name) {
+      continue;
+    }
+
+    const hasFunctionArguments =
+      typeof call.function === "object" &&
+      call.function !== null &&
+      Object.prototype.hasOwnProperty.call(call.function, "arguments");
+    const rawArgs = hasFunctionArguments ? fn.arguments : call.arguments;
+    const args = parseToolArguments(rawArgs, name);
+
+    parsedCalls.push({
       id: call.id,
-      name: fn.name || call.name || "",
+      name,
       args,
       thoughtSignature:
         call.extra_content?.google?.thought_signature || fn.thought_signature,
-    };
-  });
+    });
+  }
+
+  return parsedCalls;
 };
