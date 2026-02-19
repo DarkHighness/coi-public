@@ -14,38 +14,19 @@ import {
   ModelInfo,
 } from "../../types";
 
-import {
+import type {
   GeminiConfig,
   OpenAIConfig,
   OpenRouterConfig,
   ClaudeConfig,
 } from "../providers/types";
 
-import {
-  generateContent as generateGeminiContent,
-  getModels as getGeminiModels,
-  validateConnection as validateGeminiConnection,
-} from "../providers/geminiProvider";
-
-import {
-  generateContent as generateOpenAIContent,
-  getModels as getOpenAIModels,
-  validateConnection as validateOpenAIConnection,
-} from "../providers/openaiProvider";
-
-import {
-  generateContent as generateOpenRouterContent,
-  getModels as getOpenRouterModels,
-  validateConnection as validateOpenRouterConnection,
-} from "../providers/openRouterProvider";
-
-import {
-  generateContent as generateClaudeContent,
-  getModels as getClaudeModels,
-  validateConnection as validateClaudeConnection,
-} from "../providers/claudeProvider";
-
 import { applyDefaultContextWindowsToModels } from "../modelContextWindows";
+
+const loadGeminiProvider = () => import("../providers/geminiProvider");
+const loadOpenAIProvider = () => import("../providers/openaiProvider");
+const loadOpenRouterProvider = () => import("../providers/openRouterProvider");
+const loadClaudeProvider = () => import("../providers/claudeProvider");
 
 // ============================================================================
 // Configuration Types
@@ -484,18 +465,26 @@ export const getModels = async (
     let models: ModelInfo[];
 
     switch (instance.protocol) {
-      case "gemini":
-        models = await getGeminiModels(config as GeminiConfig);
+      case "gemini": {
+        const provider = await loadGeminiProvider();
+        models = await provider.getModels(config as GeminiConfig);
         break;
-      case "openai":
-        models = await getOpenAIModels(config as OpenAIConfig);
+      }
+      case "openai": {
+        const provider = await loadOpenAIProvider();
+        models = await provider.getModels(config as OpenAIConfig);
         break;
-      case "openrouter":
-        models = await getOpenRouterModels(config as OpenRouterConfig);
+      }
+      case "openrouter": {
+        const provider = await loadOpenRouterProvider();
+        models = await provider.getModels(config as OpenRouterConfig);
         break;
-      case "claude":
-        models = await getClaudeModels(config as ClaudeConfig);
+      }
+      case "claude": {
+        const provider = await loadClaudeProvider();
+        models = await provider.getModels(config as ClaudeConfig);
         break;
+      }
       default:
         throw new Error(`Unknown protocol: ${instance.protocol}`);
     }
@@ -565,18 +554,26 @@ export const validateConnection = async (
     (async (): Promise<ValidateConnectionResult> => {
       try {
         switch (instance.protocol) {
-          case "gemini":
-            await validateGeminiConnection(config as GeminiConfig);
+          case "gemini": {
+            const provider = await loadGeminiProvider();
+            await provider.validateConnection(config as GeminiConfig);
             break;
-          case "openai":
-            await validateOpenAIConnection(config as OpenAIConfig);
+          }
+          case "openai": {
+            const provider = await loadOpenAIProvider();
+            await provider.validateConnection(config as OpenAIConfig);
             break;
-          case "openrouter":
-            await validateOpenRouterConnection(config as OpenRouterConfig);
+          }
+          case "openrouter": {
+            const provider = await loadOpenRouterProvider();
+            await provider.validateConnection(config as OpenRouterConfig);
             break;
-          case "claude":
-            await validateClaudeConnection(config as ClaudeConfig);
+          }
+          case "claude": {
+            const provider = await loadClaudeProvider();
+            await provider.validateConnection(config as ClaudeConfig);
             break;
+          }
           default:
             throw new Error(`Unknown protocol: ${instance.protocol}`);
         }

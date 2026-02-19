@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { GameState, StoryOutline, CharacterStatus, ForkTree } from "../types";
-import { DEFAULT_CHARACTER } from "../utils/constants";
-import { DEFAULT_SAVE_PRESET_PROFILE } from "../services/ai/utils";
+import { DEFAULT_CHARACTER } from "../utils/constants/defaults";
+import { DEFAULT_SAVE_PRESET_PROFILE } from "../utils/presetProfile";
 
 // Default fork tree (original timeline)
 const INITIAL_FORK_TREE: ForkTree = {

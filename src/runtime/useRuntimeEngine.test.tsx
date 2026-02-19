@@ -101,10 +101,7 @@ vi.mock("../utils/theme/deriveThemeVars", () => ({
   deriveThemeVars: deriveThemeVarsMock,
 }));
 
-vi.mock("../utils/constants", () => ({
-  THEMES: {
-    fantasy: { envTheme: "fantasy" },
-  },
+vi.mock("../utils/constants/envThemes", () => ({
   ENV_THEMES: {
     fantasy: {
       vars: {
@@ -377,7 +374,7 @@ describe("useRuntimeEngine", () => {
     expect(lifecycle.resumeOutlineGeneration).toHaveBeenCalled();
   });
 
-  it("uses locked story env theme in start view and skips atmosphere-derived theme lookup", () => {
+  it("uses locked current atmosphere env theme in start view and skips atmosphere-derived theme lookup", () => {
     routerState.pathname = "/";
     runtimeState.gameState = {
       theme: "unknown-theme",
@@ -405,7 +402,7 @@ describe("useRuntimeEngine", () => {
 
     expect(getThemeKeyForAtmosphereMock).not.toHaveBeenCalled();
     expect(document.documentElement.style.getPropertyValue("--bg")).toBe(
-      "#445566",
+      "#ddeeff",
     );
     expect(document.title).toBe("Chronicles");
   });

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { MarkdownText } from "./render/MarkdownText";
 import { ExportOptionsModal } from "./ExportOptionsModal";
 import { ImportSaveModal } from "./ImportSaveModal";
-import { getThemeName } from "../services/ai/utils";
+import { getThemeName } from "../utils/themeLabels";
 import { useToast } from "./Toast";
 
 interface SaveManagerProps {

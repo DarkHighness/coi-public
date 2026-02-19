@@ -19,19 +19,12 @@ vi.mock("../services/aiService", () => ({
   summarizeContext: summarizeContextMock,
 }));
 
-vi.mock("../services/ai/utils", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../services/ai/utils")>();
-  return {
-    ...actual,
-    getProviderConfig: getProviderConfigMock,
-  };
-});
-
 vi.mock("../services/ai/provider/registry", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("../services/ai/provider/registry")>();
   return {
     ...actual,
+    getProviderConfig: getProviderConfigMock,
     getProviderInstance: getProviderInstanceMock,
     getModelsForInstance: getModelsForInstanceMock,
   };

@@ -8,13 +8,23 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { AISettings, ModelInfo, LanguageCode } from "../types";
-import { DEFAULTS } from "../utils/constants";
-import { getModels } from "../services/aiService";
+import { DEFAULTS } from "../utils/constants/defaults";
+import { ensureLanguageResources } from "../utils/i18n";
 import { upsertPerModelContextWindowOverride } from "../services/modelContextWindows";
 import { setSessionHistoryLruLimit } from "../services/vfs/conversation";
 
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
+
+let aiServiceModulePromise: Promise<typeof import("../services/aiService")> | null =
+  null;
+
+const loadAiService = async () => {
+  if (!aiServiceModulePromise) {
+    aiServiceModulePromise = import("../services/aiService");
+  }
+  return aiServiceModulePromise;
+};
 
 interface SettingsContextType {
   settings: AISettings;
@@ -219,7 +229,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     // Sync language with i18n
     if (settings.language && settings.language !== i18n.language) {
-      i18n.changeLanguage(settings.language);
+      void ensureLanguageResources(settings.language)
+        .then(() => i18n.changeLanguage(settings.language))
+        .catch((error) => {
+          console.warn(
+            `[SettingsContext] Failed to load language "${settings.language}":`,
+            error,
+          );
+          i18n.changeLanguage(settings.language);
+        });
     }
   }, [settings, i18n]);
 
@@ -375,7 +393,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     (lang: LanguageCode) => {
       const newSettings = { ...settingsRef.current, language: lang };
       updateSettings(newSettings);
-      i18n.changeLanguage(lang);
+      void ensureLanguageResources(lang)
+        .then(() => i18n.changeLanguage(lang))
+        .catch((error) => {
+          console.warn(
+            `[SettingsContext] Failed to load language "${lang}":`,
+            error,
+          );
+          i18n.changeLanguage(lang);
+        });
     },
     [updateSettings, i18n],
   );
@@ -431,6 +457,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const currentSettings = settingsRef.current;
+      const { getModels } = await loadAiService();
       // Load models for all providers with API keys
       const providersWithKeys = currentSettings.providers.instances.filter(
         (p) => p.apiKey && p.apiKey.trim() !== "",

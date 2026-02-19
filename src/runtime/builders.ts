@@ -1,4 +1,4 @@
-import { THEMES, ENV_THEMES } from "../utils/constants";
+import { ENV_THEMES } from "../utils/constants/envThemes";
 import { getThemeKeyForAtmosphere } from "../utils/constants/atmosphere";
 import type { AISettings, GameState, ThemeConfig } from "../types";
 import type { RuntimeMetaState } from "./actions";
@@ -25,12 +25,10 @@ export function resolveRuntimeThemeConfig(
   gameState: Pick<GameState, "theme" | "atmosphere">,
   aiSettings: Pick<AISettings, "lockEnvTheme" | "fixedEnvTheme">,
 ): ThemeConfig {
-  const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
-
   const currentEnvThemeKey = aiSettings.lockEnvTheme
-    ? aiSettings.fixedEnvTheme || currentStoryTheme.envTheme
+    ? aiSettings.fixedEnvTheme || gameState.atmosphere?.envTheme || "fantasy"
     : getThemeKeyForAtmosphere(
-        gameState.atmosphere || currentStoryTheme.defaultAtmosphere,
+        gameState.atmosphere || { envTheme: "fantasy", ambience: "quiet" },
       );
 
   return ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;

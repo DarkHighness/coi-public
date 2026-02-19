@@ -5,7 +5,7 @@ import { PlayerRateInput, StorySegment } from "../types";
 import { useGameState } from "../hooks/useGameState";
 import { useVfsPersistence } from "../hooks/useVfsPersistence";
 import { useSettings } from "../hooks/useSettings";
-import { THEMES, ENV_THEMES } from "../utils/constants";
+import { ENV_THEMES } from "../utils/constants/envThemes";
 import { deriveThemeVars } from "../utils/theme/deriveThemeVars";
 import { getThemeKeyForAtmosphere } from "../utils/constants/atmosphere";
 import { deriveHistory } from "../utils/storyUtils";
@@ -86,13 +86,13 @@ export const useRuntimeEngine = () => {
   // Theme Application
   useEffect(() => {
     const root = document.documentElement;
-    const storyTheme = THEMES[gameState.theme] || THEMES.fantasy;
 
     // Determine the envTheme key based on lockEnvTheme setting
     let envThemeKey: string;
     if (aiSettings.lockEnvTheme) {
-      // Locked: use fixedEnvTheme if set, otherwise story's default envTheme
-      envThemeKey = aiSettings.fixedEnvTheme || storyTheme.envTheme;
+      // Locked: use fixedEnvTheme if set, otherwise use the current atmosphere env theme.
+      envThemeKey =
+        aiSettings.fixedEnvTheme || gameState.atmosphere?.envTheme || "fantasy";
     } else {
       // Dynamic: derive from current atmosphere
       envThemeKey = getThemeKeyForAtmosphere(gameState.atmosphere);

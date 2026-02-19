@@ -10,13 +10,11 @@ import { useTranslation } from "react-i18next";
 import { StartScreen } from "./components/StartScreen";
 // Note: Old embedding manager has been replaced with the new RAG service
 // RAG lifecycle is managed in runtime hooks + runtime effects
-import { THEMES, ENV_THEMES } from "./utils/constants";
+import { ENV_THEMES } from "./utils/constants/envThemes";
 import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { isCriticalAppError } from "./utils/appErrorClassifier";
 import { type OutlinePhaseProgress } from "./services/aiService";
 import { importSave } from "./services/saveExportService";
-import { InitializingPage } from "./components/pages/InitializingPage";
-import { GamePage } from "./components/pages/GamePage";
 import { GlobalStyles } from "./components/GlobalStyles";
 import {
   ErrorBoundary,
@@ -50,6 +48,50 @@ const EnvironmentalEffects = React.lazy(() =>
     default: module.EnvironmentalEffects,
   })),
 );
+const InitializingPage = React.lazy(() =>
+  import("./components/pages/InitializingPage").then((module) => ({
+    default: module.InitializingPage,
+  })),
+);
+const GamePage = React.lazy(() =>
+  import("./components/pages/GamePage").then((module) => ({
+    default: module.GamePage,
+  })),
+);
+
+type ThemeVisualMeta = {
+  envTheme: string;
+  defaultAtmosphere: {
+    envTheme: string;
+    ambience: string;
+  };
+};
+
+const FALLBACK_THEME_VISUAL_META: ThemeVisualMeta = {
+  envTheme: "fantasy",
+  defaultAtmosphere: { envTheme: "fantasy", ambience: "quiet" },
+};
+
+let themeVisualMetaPromise: Promise<Record<string, ThemeVisualMeta>> | null =
+  null;
+
+const loadThemeVisualMeta = async (): Promise<Record<string, ThemeVisualMeta>> => {
+  if (!themeVisualMetaPromise) {
+    themeVisualMetaPromise = import("./utils/constants/themes").then(
+      ({ THEMES }) =>
+        Object.fromEntries(
+          Object.entries(THEMES).map(([key, theme]) => [
+            key,
+            {
+              envTheme: theme.envTheme,
+              defaultAtmosphere: theme.defaultAtmosphere,
+            },
+          ]),
+        ),
+    );
+  }
+  return themeVisualMetaPromise;
+};
 
 // Main App wrapper that provides all global contexts
 // Order: ToastProvider > RuntimeProvider > TutorialProvider
@@ -134,6 +176,9 @@ function AppContent() {
 
   // Track preview theme from StartScreen
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
+  const [themeVisualMeta, setThemeVisualMeta] = useState<
+    Record<string, ThemeVisualMeta> | null
+  >(null);
 
   // Streaming text for initialization
   const [streamedText, setStreamedText] = useState("");
@@ -189,7 +234,31 @@ function AppContent() {
     document.title = t("title");
   }, [t, language]);
 
-  const currentStoryTheme = THEMES[gameState.theme] || THEMES.fantasy;
+  const ensureThemeVisualMetaLoaded = React.useCallback(async () => {
+    if (themeVisualMeta) return;
+    try {
+      const loaded = await loadThemeVisualMeta();
+      setThemeVisualMeta(loaded);
+    } catch (error) {
+      console.error("Failed to load theme metadata:", error);
+    }
+  }, [themeVisualMeta]);
+
+  useEffect(() => {
+    if (location.pathname !== "/" || previewTheme) {
+      void ensureThemeVisualMetaLoaded();
+    }
+  }, [location.pathname, previewTheme, ensureThemeVisualMetaLoaded]);
+
+  const resolveThemeVisualMeta = React.useCallback(
+    (themeKey: string | null | undefined): ThemeVisualMeta => {
+      if (!themeKey) return FALLBACK_THEME_VISUAL_META;
+      return themeVisualMeta?.[themeKey] || FALLBACK_THEME_VISUAL_META;
+    },
+    [themeVisualMeta],
+  );
+
+  const currentStoryTheme = resolveThemeVisualMeta(gameState.theme);
 
   // Use viewed segment's atmosphere if available, otherwise fall back to current game state
   // Priority: Preview Theme (StartScreen) > Viewed Segment (History Scroll) > Current Game State
@@ -247,7 +316,7 @@ function AppContent() {
   }, []);
 
   if (previewTheme) {
-    const previewStoryTheme = THEMES[previewTheme] || THEMES.fantasy;
+    const previewStoryTheme = resolveThemeVisualMeta(previewTheme);
     currentAtmosphere = previewStoryTheme.defaultAtmosphere;
     // For preview, always use the theme's envTheme
     currentEnvThemeKey = previewStoryTheme.envTheme;
@@ -531,33 +600,37 @@ function AppContent() {
           <Route
             path="/initializing"
             element={
-              <SectionErrorBoundary name="InitializingPage">
-                <InitializingPage
-                  themeFont={currentThemeConfig.fontClass}
-                  isProcessing={gameState.isProcessing}
-                  streamedText={streamedText}
-                  phaseProgress={phaseProgress}
-                  seedImageUrl={seedImageUrl}
-                  showToolCallCarousel={
-                    aiSettings.extra?.toolCallCarousel ?? true
-                  }
-                  liveToolCalls={gameState.liveToolCalls || []}
-                />
-              </SectionErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <SectionErrorBoundary name="InitializingPage">
+                  <InitializingPage
+                    themeFont={currentThemeConfig.fontClass}
+                    isProcessing={gameState.isProcessing}
+                    streamedText={streamedText}
+                    phaseProgress={phaseProgress}
+                    seedImageUrl={seedImageUrl}
+                    showToolCallCarousel={
+                      aiSettings.extra?.toolCallCarousel ?? true
+                    }
+                    liveToolCalls={gameState.liveToolCalls || []}
+                  />
+                </SectionErrorBoundary>
+              </Suspense>
             }
           />
 
           <Route
             path="/game"
             element={
-              <SectionErrorBoundary name="GamePage">
-                <GamePage
-                  onOpenSettings={() => setIsSettingsOpen(true)}
-                  onOpenSaves={() => setIsSaveManagerOpen(true)}
-                  onViewedSegmentChange={setViewedSegment}
-                  overrideThemeConfig={currentThemeConfig}
-                />
-              </SectionErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <SectionErrorBoundary name="GamePage">
+                  <GamePage
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenSaves={() => setIsSaveManagerOpen(true)}
+                    onViewedSegmentChange={setViewedSegment}
+                    overrideThemeConfig={currentThemeConfig}
+                  />
+                </SectionErrorBoundary>
+              </Suspense>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

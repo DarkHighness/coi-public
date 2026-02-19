@@ -4,7 +4,7 @@ import type { SavePresetProfile } from "../types";
 import {
   DEFAULT_SAVE_PRESET_PROFILE,
   normalizeSavePresetProfile,
-} from "../services/ai/utils";
+} from "../utils/presetProfile";
 import { PresetProfileFields } from "./PresetProfileFields";
 
 interface PresetProfileModalProps {

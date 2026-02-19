@@ -4,28 +4,31 @@ import React, {
   lazy,
   Suspense,
   useEffect,
-  useMemo,
   useCallback,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
-import { THEMES } from "../utils/constants";
 import { ThemeSelector } from "./ThemeSelector";
 import { CustomGameModal } from "./CustomGameModal";
 import { CustomContextModal } from "./CustomContextModal";
 import { ImageUploadModal } from "./ImageUploadModal";
-import { SaveSlot, ImportResult, LanguageCode } from "../types";
+import {
+  SaveSlot,
+  ImportResult,
+  LanguageCode,
+  StoryThemeConfig,
+} from "../types";
 import { ButterflyBackground } from "./effects/ButterflyBackground";
 import { MarkdownText } from "./render/MarkdownText";
 import { BUILD_INFO } from "../utils/constants/buildInfo";
 import { getImage } from "../utils/imageStorage";
-import { getThemeName } from "../services/ai/utils";
+import { getThemeName, IMAGE_BASED_THEME } from "../utils/themeLabels";
 import { useMediaQuery } from "../hooks/useMediaQuery";
-import { IMAGE_BASED_THEME } from "../services/ai/utils";
 import { useSettings } from "../hooks/useSettings";
 import { useTutorialContextOptional } from "../contexts/TutorialContext";
 import { useTutorialTarget } from "../hooks/useTutorial";
 import { createStartScreenTutorialFlow } from "./tutorial/tutorialFlows";
+import { loadSelectableThemes } from "./startScreen/themeLoader";
 
 // Lazy load PhotoGalleryModal for code splitting
 const PhotoGalleryModal = lazy(() =>
@@ -133,13 +136,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const { settings, themeMode } = useSettings();
   const tutorial = useTutorialContextOptional();
-  const selectableThemes = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(THEMES).filter(([key]) => key !== "custom"),
-      ),
-    [],
-  );
+  const [selectableThemes, setSelectableThemes] = useState<
+    Record<string, StoryThemeConfig> | null
+  >(null);
+  const [themesLoading, setThemesLoading] = useState(false);
+  const [themesLoadError, setThemesLoadError] = useState<string | null>(null);
 
   // Tutorial target refs
   const settingsButtonRef =
@@ -213,9 +214,30 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     [clearStartTimer],
   );
 
+  const ensureThemesLoaded = useCallback(async () => {
+    if (selectableThemes || themesLoading) return;
+    setThemesLoading(true);
+    setThemesLoadError(null);
+    try {
+      const themes = await loadSelectableThemes();
+      setSelectableThemes(themes);
+    } catch (error) {
+      console.error("Failed to load themes:", error);
+      setThemesLoadError("load_failed");
+    } finally {
+      setThemesLoading(false);
+    }
+  }, [selectableThemes, themesLoading]);
+
+  useEffect(() => {
+    if (mode !== "theme_select" || selectableThemes || themesLoading) return;
+    void ensureThemesLoaded();
+  }, [mode, selectableThemes, themesLoading, ensureThemesLoaded]);
+
   // Enter theme selection mode and set to fantasy preview
   const enterThemeSelect = () => {
     setMode("theme_select");
+    void ensureThemesLoaded();
     onThemePreview?.("fantasy"); // Set to fantasy as default
   };
 
@@ -726,14 +748,35 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
                 <div className="flex-1 relative min-h-0">
                   {!isDesktop && (
-                    <ThemeSelector
-                      themes={selectableThemes}
-                      onSelect={(theme, role) =>
-                        handleStart(theme, customContext, role)
-                      }
-                      onPreviewTheme={onThemePreview}
-                      onBack={exitThemeSelect}
-                    />
+                    <>
+                      {selectableThemes ? (
+                        <ThemeSelector
+                          themes={selectableThemes}
+                          onSelect={(theme, role) =>
+                            handleStart(theme, customContext, role)
+                          }
+                          onPreviewTheme={onThemePreview}
+                          onBack={exitThemeSelect}
+                        />
+                      ) : (
+                        <div
+                          className={`h-full flex flex-col items-center justify-center gap-3 ${textSecondaryClass}`}
+                        >
+                          {themesLoading && (
+                            <div className="animate-spin w-7 h-7 border-2 border-current/20 border-t-current rounded-full" />
+                          )}
+                          <span className="text-xs tracking-wide uppercase">
+                            {themesLoadError
+                              ? t("error", {
+                                  defaultValue: "Failed to load themes",
+                                })
+                              : t("loading", {
+                                  defaultValue: "Loading themes...",
+                                })}
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -756,12 +799,25 @@ export const StartScreen: React.FC<StartScreenProps> = ({
             isNightMode ? "bg-black/45" : "bg-slate-100/80"
           }`}
         >
-          <ThemeSelector
-            themes={selectableThemes}
-            onSelect={(theme, role) => handleStart(theme, customContext, role)}
-            onPreviewTheme={onThemePreview}
-            onBack={exitThemeSelect}
-          />
+          {selectableThemes ? (
+            <ThemeSelector
+              themes={selectableThemes}
+              onSelect={(theme, role) => handleStart(theme, customContext, role)}
+              onPreviewTheme={onThemePreview}
+              onBack={exitThemeSelect}
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-theme-text-secondary">
+              {themesLoading && (
+                <div className="animate-spin w-8 h-8 border-2 border-current/20 border-t-current rounded-full" />
+              )}
+              <span className="text-xs tracking-[0.12em] uppercase">
+                {themesLoadError
+                  ? t("error", { defaultValue: "Failed to load themes" })
+                  : t("loading", { defaultValue: "Loading themes..." })}
+              </span>
+            </div>
+          )}
         </div>
       )}
 

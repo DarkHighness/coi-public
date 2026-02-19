@@ -1,5 +1,5 @@
 import { StoryThemeConfig } from "../../types";
-import { CategoryKey } from "../../utils/constants/themes";
+import { CategoryKey } from "../../utils/constants/themeCategories";
 
 export type ThemeSortMode =
   | "category"

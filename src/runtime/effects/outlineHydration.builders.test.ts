@@ -15,7 +15,7 @@ vi.mock("../../utils/constants/atmosphere", () => ({
   normalizeAtmosphere: normalizeAtmosphereMock,
 }));
 
-vi.mock("../../services/ai/utils", () => ({
+vi.mock("../../utils/themeLabels", () => ({
   getThemeName: getThemeNameMock,
 }));
 

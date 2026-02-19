@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { CATEGORY_KEYS, CategoryKey } from "../../utils/constants/themes";
+import { CATEGORY_KEYS, CategoryKey } from "../../utils/constants/themeCategories";
 import { THEME_SORT_OPTIONS, ThemeSortMode } from "./themeSort";
 
 interface ThemeFiltersProps {

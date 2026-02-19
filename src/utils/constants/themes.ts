@@ -1,25 +1,10 @@
 import { StoryThemeConfig } from "../../types";
+import { CATEGORY_KEYS, CategoryKey } from "./themeCategories";
 
 type StoryThemeRegistryEntry = Omit<
   StoryThemeConfig,
   "narrativeStyle" | "worldSetting"
 >;
-
-// Visual/Atmospheric Themes (Dynamic)
-export const CATEGORY_KEYS = [
-  "all",
-  "ancient",
-  "modern",
-  "fantasy",
-  "suspense",
-  "wuxia",
-  "scifi",
-  "game",
-  "novel",
-  "movie",
-  "chinese_short_drama",
-] as const;
-export type CategoryKey = (typeof CATEGORY_KEYS)[number];
 
 // Story Themes (Static Genres)
 const THEME_REGISTRY: Record<string, StoryThemeRegistryEntry> = {

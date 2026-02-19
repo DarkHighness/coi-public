@@ -1,13 +1,10 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import type { TFunction } from "i18next";
-import { THEMES, LANG_MAP } from "../../utils/constants";
+import { LANG_MAP } from "../../utils/constants/defaults";
 import { preloadAudio } from "../../utils/audioLoader";
 import { saveImage } from "../../utils/imageStorage";
-import {
-  getThemeName,
-  IMAGE_BASED_THEME,
-  normalizeSavePresetProfile,
-} from "../../services/ai/utils";
+import { normalizeSavePresetProfile } from "../../utils/presetProfile";
+import { getThemeName, IMAGE_BASED_THEME } from "../../utils/themeLabels";
 import {
   ContextOverflowError,
   HistoryCorruptedError,
@@ -43,6 +40,17 @@ import {
   indexInitialEntities,
 } from "./ragDocuments";
 import { createResetGameState } from "../../hooks/useGameState";
+
+let selectableThemeKeysPromise: Promise<string[]> | null = null;
+
+const loadSelectableThemeKeys = async (): Promise<string[]> => {
+  if (!selectableThemeKeysPromise) {
+    selectableThemeKeysPromise = import("../../utils/constants/themes").then(
+      ({ THEMES }) => Object.keys(THEMES).filter((key) => key !== "custom"),
+    );
+  }
+  return selectableThemeKeysPromise;
+};
 
 type ShowToast = (
   message: string,
@@ -340,9 +348,7 @@ export function createLifecycleActions({
     if (seedImage && !initialTheme) {
       selectedTheme = IMAGE_BASED_THEME;
     } else {
-      const selectableThemeKeys = Object.keys(THEMES).filter(
-        (key) => key !== "custom",
-      );
+      const selectableThemeKeys = await loadSelectableThemeKeys();
       selectedTheme =
         initialTheme ||
         selectableThemeKeys[

@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import { createStateSnapshot } from "../../utils/snapshotManager";
 import { normalizeAtmosphere } from "../../utils/constants/atmosphere";
-import { getThemeName } from "../../services/ai/utils";
+import { getThemeName } from "../../utils/themeLabels";
 import type {
   ActorBundle,
   Faction,

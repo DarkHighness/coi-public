@@ -14,9 +14,8 @@ import {
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { vfsElevationTokenManager } from "../services/vfs/core/elevation";
-import { generateAdventureTurn } from "../services/aiService";
 import { HistoryCorruptedError } from "../services/ai/contextCompressor";
-import { LANG_MAP } from "../utils/constants";
+import { LANG_MAP } from "../utils/constants/defaults";
 import { deriveHistory } from "../utils/storyUtils";
 import { deriveGameStateFromVfs } from "../services/vfs/derivations";
 import {
@@ -32,7 +31,6 @@ import {
   notifySessionSummaryCreated,
 } from "./gameActionHelpers";
 import { mergeDerivedViewState } from "./vfsViewState";
-import { sessionManager } from "../services/ai/sessionManager";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   buildModelContextWindowKey,
@@ -42,6 +40,26 @@ import {
   resolveModelContextWindowUpperBound,
   upsertLearnedModelContextWindow,
 } from "../services/modelContextWindows";
+
+let aiServiceModulePromise: Promise<typeof import("../services/aiService")> | null =
+  null;
+let sessionManagerModulePromise: Promise<
+  typeof import("../services/ai/sessionManager")
+> | null = null;
+
+const loadAiService = async () => {
+  if (!aiServiceModulePromise) {
+    aiServiceModulePromise = import("../services/aiService");
+  }
+  return aiServiceModulePromise;
+};
+
+const loadSessionManager = async () => {
+  if (!sessionManagerModulePromise) {
+    sessionManagerModulePromise = import("../services/ai/sessionManager");
+  }
+  return sessionManagerModulePromise;
+};
 
 interface UseGameActionProps {
   gameState: GameState;
@@ -657,6 +675,7 @@ export const useGameAction = ({
         }
 
         // Generate Turn - pass GameState directly with TurnContext
+        const { generateAdventureTurn } = await loadAiService();
         const {
           response,
           logs: turnLogs,
@@ -1061,6 +1080,7 @@ export const useGameAction = ({
       return;
     }
 
+    const { sessionManager } = await loadSessionManager();
     const session = await sessionManager.getOrCreateSession({
       slotId: currentSlotId,
       forkId: gameStateRef.current.forkId ?? 0,

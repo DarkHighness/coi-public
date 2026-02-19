@@ -48,6 +48,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
+      conditions: ["onnxruntime-web-use-extern-wasm"],
     },
     optimizeDeps: {
       exclude: [

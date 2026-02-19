@@ -6,7 +6,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => fallback ?? key,
+    t: (key: string, options?: unknown) => {
+      if (typeof options === "string") return options;
+      if (
+        options &&
+        typeof options === "object" &&
+        "defaultValue" in options &&
+        typeof (options as { defaultValue?: unknown }).defaultValue === "string"
+      ) {
+        return (options as { defaultValue: string }).defaultValue;
+      }
+      return key;
+    },
   }),
 }));
 
@@ -71,9 +82,20 @@ vi.mock("../utils/imageStorage", () => ({
   getImage: vi.fn(async () => null),
 }));
 
-vi.mock("../services/ai/utils", () => ({
+vi.mock("../utils/themeLabels", () => ({
   getThemeName: () => "Fantasy",
   IMAGE_BASED_THEME: "image-based",
+}));
+
+vi.mock("./startScreen/themeLoader", () => ({
+  loadSelectableThemes: vi.fn(async () => ({
+    fantasy: {
+      envTheme: "fantasy",
+      defaultAtmosphere: { envTheme: "fantasy", ambience: "quiet" },
+      narrativeStyle: "Fantasy style",
+      worldSetting: "Fantasy world",
+    },
+  })),
 }));
 
 vi.mock("../hooks/useMediaQuery", () => ({
@@ -192,6 +214,10 @@ describe("StartScreen", () => {
     fireEvent.click(screen.getByText("startTitle"));
     expect(onThemePreview).toHaveBeenCalledWith("fantasy");
 
+    await act(async () => {
+      await Promise.resolve();
+    });
+
     fireEvent.click(screen.getByText("select-theme"));
 
     await act(async () => {
@@ -201,7 +227,7 @@ describe("StartScreen", () => {
     expect(onStart).toHaveBeenCalledWith("fantasy", "", undefined, "wanderer");
   });
 
-  it("clears preview when exiting theme selection", () => {
+  it("clears preview when exiting theme selection", async () => {
     const onThemePreview = vi.fn();
 
     render(
@@ -216,6 +242,9 @@ describe("StartScreen", () => {
     );
 
     fireEvent.click(screen.getByText("startTitle"));
+    await act(async () => {
+      await Promise.resolve();
+    });
     fireEvent.click(screen.getByText("back-theme"));
 
     expect(onThemePreview).toHaveBeenLastCalledWith(null);

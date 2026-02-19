@@ -10,7 +10,7 @@ import type {
 import {
   DEFAULT_SAVE_PRESET_PROFILE,
   normalizeSavePresetProfile,
-} from "../services/ai/utils";
+} from "../utils/presetProfile";
 
 interface PresetProfileFieldsProps {
   value?: SavePresetProfile;

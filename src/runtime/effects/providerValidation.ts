@@ -1,4 +1,3 @@
-import { validateConnection } from "../../services/aiService";
 import { getEnvApiKey } from "../../utils/env";
 import type { AISettings } from "../../types";
 import type {
@@ -6,6 +5,22 @@ import type {
   RuntimeValidationMode,
   RuntimeValidationResult,
 } from "../state";
+
+type ValidateConnectionResult = {
+  isValid: boolean;
+  error?: string;
+  localError?: boolean;
+};
+
+let aiServiceModulePromise: Promise<typeof import("../../services/aiService")> | null =
+  null;
+
+const loadAiService = async () => {
+  if (!aiServiceModulePromise) {
+    aiServiceModulePromise = import("../../services/aiService");
+  }
+  return aiServiceModulePromise;
+};
 
 type ValidationFeature = RuntimeValidationIssue["feature"];
 
@@ -185,16 +200,18 @@ export async function validateProvidersForMode(
 
   const connectionCheckByProviderId = new Map<
     string,
-    Promise<Awaited<ReturnType<typeof validateConnection>>>
+    Promise<ValidateConnectionResult>
   >();
   const validateProviderConnection = (
     providerId: string,
-  ): Promise<Awaited<ReturnType<typeof validateConnection>>> => {
+  ): Promise<ValidateConnectionResult> => {
     const existing = connectionCheckByProviderId.get(providerId);
     if (existing) {
       return existing;
     }
-    const request = validateConnection(aiSettings, providerId);
+    const request = loadAiService().then(({ validateConnection }) =>
+      validateConnection(aiSettings, providerId),
+    );
     connectionCheckByProviderId.set(providerId, request);
     return request;
   };

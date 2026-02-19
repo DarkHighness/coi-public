@@ -13,20 +13,40 @@ import type { VfsSession } from "../services/vfs/vfsSession";
 import { createFork, createStateSnapshot } from "../utils/snapshotManager";
 import { getRAGService } from "../services/rag";
 import { deriveHistory } from "../utils/storyUtils";
-import { summarizeContext } from "../services/aiService";
-import { LANG_MAP } from "../utils/constants";
+import { LANG_MAP } from "../utils/constants/defaults";
 import {
   AtmosphereObject,
   normalizeAtmosphere,
 } from "../utils/constants/atmosphere";
-import { sessionManager } from "../services/ai/sessionManager";
 import { writeSessionHistoryJsonl } from "../services/vfs/conversation";
-import { getProviderInstance } from "../services/ai/provider/registry";
-import { getProviderConfig } from "../services/ai/utils";
+import {
+  getProviderConfig,
+  getProviderInstance,
+} from "../services/ai/provider/registry";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   resolveModelContextWindowTokens,
 } from "../services/modelContextWindows";
+
+let aiServiceModulePromise: Promise<typeof import("../services/aiService")> | null =
+  null;
+let sessionManagerModulePromise: Promise<
+  typeof import("../services/ai/sessionManager")
+> | null = null;
+
+const loadAiService = async () => {
+  if (!aiServiceModulePromise) {
+    aiServiceModulePromise = import("../services/aiService");
+  }
+  return aiServiceModulePromise;
+};
+
+const loadSessionManager = async () => {
+  if (!sessionManagerModulePromise) {
+    sessionManagerModulePromise = import("../services/ai/sessionManager");
+  }
+  return sessionManagerModulePromise;
+};
 
 const rebuildSessionIfPresent = async (
   aiSettings: AISettings,
@@ -56,6 +76,7 @@ const rebuildSessionIfPresent = async (
         ? `${slotId}:summary`
         : `${slotId}:cleanup`;
 
+  const { sessionManager } = await loadSessionManager();
   const session = await sessionManager.getOrCreateSession({
     slotId: targetSlotId,
     forkId,
@@ -109,6 +130,7 @@ export const notifySessionSummaryCreated = async (
   }
 
   // Get or create the story session to make it current
+  const { sessionManager } = await loadSessionManager();
   const storySession = await sessionManager.getOrCreateSession({
     slotId,
     forkId,
@@ -375,6 +397,7 @@ export const handleSummarization = async (
           ? { segmentIdx: committedLength, text: action }
           : null;
 
+      const { summarizeContext } = await loadAiService();
       const sumResult = await summarizeContext({
         vfsSession,
         slotId: slotId || "default",

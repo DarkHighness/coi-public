@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../../types";
-import { CategoryKey } from "../../utils/constants/themes";
+import { CategoryKey } from "../../utils/constants/themeCategories";
 import { ENV_THEMES } from "../../utils/constants/envThemes";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { ThemeFilters } from "./ThemeFilters";
