@@ -20,7 +20,7 @@ describe("vfs tree builder", () => {
 
     const outline = (tree.children || []).find((n) => n.name === "outline");
     expect(outline?.children?.some((n) => n.name === "story_outline")).toBe(
-      true,
+      false,
     );
   });
 

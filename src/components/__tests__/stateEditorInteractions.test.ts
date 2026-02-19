@@ -16,6 +16,10 @@ import { deriveGameStateFromVfs } from "../../services/vfs/derivations";
 import { vfsElevationTokenManager } from "../../services/vfs/core/elevation";
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: {
+    type: "3rdParty" as const,
+    init: () => undefined,
+  },
   useTranslation: () => ({
     t: () => "",
   }),
@@ -285,6 +289,23 @@ describe("StateEditor interactions", () => {
     expect(
       screen.getByText("README files are locked and cannot be deleted."),
     ).toBeTruthy();
+  });
+
+  it("shows read-only badge for protected files", async () => {
+    renderStateEditor([
+      {
+        path: "conversation/index.json",
+        content: "{}",
+        contentType: "application/json",
+      },
+    ]);
+
+    await ensureFileVisible(/index\.json/i, ["conversation"]);
+
+    const indexButton = await screen.findByRole("button", {
+      name: /index\.json/i,
+    });
+    expect(within(indexButton).getByText("Read Only")).toBeTruthy();
   });
 
   it("opens mobile action sheet from explicit more button with file actions", async () => {

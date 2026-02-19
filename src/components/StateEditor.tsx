@@ -2118,9 +2118,9 @@ export const StateEditor: React.FC<StateEditorProps> = ({
       );
     }
 
-    const caps = getFilePathCapabilities(node.path, capabilityContext);
+    const caps = getFilePathCapabilities(normalizedPath, capabilityContext);
     const readonly = !caps.canEdit;
-    const isSelected = node.path === selectedPath;
+    const isSelected = normalizedPath === selectedPathNormalized;
     const inBatch = batchSelectedSet.has(normalizedPath);
 
     return (
@@ -2160,7 +2160,7 @@ export const StateEditor: React.FC<StateEditorProps> = ({
           <span className="w-3 text-[10px] font-mono">-</span>
           <span className="truncate flex-1">{node.name}</span>
           {readonly && (
-            <span className="text-[10px] text-theme-info">
+            <span className="shrink-0 text-[10px] text-theme-info">
               {t("stateEditor.readOnly") || "Read Only"}
             </span>
           )}
