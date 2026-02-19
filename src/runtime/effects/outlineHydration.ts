@@ -489,6 +489,7 @@ export function buildOutlineHydratedState({
     atmosphere: normalizeAtmosphere(outline.initialAtmosphere),
     time: outline.initialTime || "Day 1",
     narrativeScale: outline.narrativeScale,
+    error: null,
   };
 
   if (clearLiveToolCalls) {
@@ -590,6 +591,7 @@ export function applyOpeningNarrativeState(
     initialPrompt: fallbackPrompt,
     turnNumber: 0,
     atmosphere: openingAtmosphere,
+    error: null,
   };
 }
 

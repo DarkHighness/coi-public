@@ -89,6 +89,7 @@ describe("outlineHydration builders", () => {
       },
       uiState: { panel: "left" },
       liveToolCalls: [{ name: "stale-call" }],
+      error: "stale outline error",
     } as any;
 
     const outline = {
@@ -212,6 +213,7 @@ describe("outlineHydration builders", () => {
     expect(nextState.seedImageId).toBe("seed-9");
     expect(nextState.liveToolCalls).toEqual([]);
     expect(nextState.customContext).toBe("custom");
+    expect(nextState.error).toBeNull();
   });
 
   it("builds opening segment and fallback prompt with optional custom context", () => {
@@ -286,6 +288,7 @@ describe("outlineHydration builders", () => {
       initialPrompt: "old",
       turnNumber: 9,
       atmosphere: { envTheme: "old", ambience: "old" },
+      error: "stale init error",
     } as any;
 
     const firstNode = {
@@ -309,5 +312,6 @@ describe("outlineHydration builders", () => {
     expect(nextState.turnNumber).toBe(0);
     expect(nextState.initialPrompt).toBe("new prompt");
     expect(nextState.atmosphere).toEqual({ envTheme: "new", ambience: "calm" });
+    expect(nextState.error).toBeNull();
   });
 });

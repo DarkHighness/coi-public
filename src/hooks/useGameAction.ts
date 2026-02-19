@@ -926,6 +926,7 @@ export const useGameAction = ({
                 (mergedBase.tokenUsage?.cacheWrite || 0) +
                 (usage.cacheWrite || 0),
             },
+            error: null,
           };
 
           // CRITICAL: Update ref immediately to ensure generateImageForNode can see the new node
