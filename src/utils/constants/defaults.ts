@@ -159,6 +159,7 @@ export const DEFAULTS: AISettings = {
     autoCompactThreshold: 0.7,
     vfsReadTokenBudgetPercent: 0.1,
     sessionHistoryLruLimit: 64,
+    providerManagedMaxTokens: true,
     forceAutoToolChoice: false,
     toolCallCarousel: true,
     culturePreference: "follow_story_setting",

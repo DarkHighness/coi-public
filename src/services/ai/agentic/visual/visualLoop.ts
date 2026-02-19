@@ -125,6 +125,8 @@ export async function runVisualLoop(
         toolChoice: "required",
         temperature: 1.0,
         tokenBudget: {
+          providerManagedMaxTokens:
+            settings.extra?.providerManagedMaxTokens ?? true,
           maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
           contextWindowTokens,
           maxOutputTokensHardCap: NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS,

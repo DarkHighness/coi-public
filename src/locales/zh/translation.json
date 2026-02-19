@@ -740,6 +740,8 @@
       "maxToolCallsHelp": "每个代理循环的最大工具调用总数（默认：50）",
       "maxOutputTokensFallback": "输出兜底 Token 上限",
       "maxOutputTokensFallbackHelp": "仅在无法确定模型专属输出上限时使用。留空则使用提供商默认值。",
+      "providerManagedMaxTokens": "由 Provider 管理最大输出 Token",
+      "providerManagedMaxTokensHelp": "默认开启。开启后请求不会注入 maxTokens/max_tokens/max_completion_tokens/maxOutputTokens，交由底层 Provider 默认策略决定。",
       "resetTutorials": "重置新手教程",
       "resetTutorialsHelp": "下次访问时重新显示新手引导",
       "resetTutorialsButton": "重置"

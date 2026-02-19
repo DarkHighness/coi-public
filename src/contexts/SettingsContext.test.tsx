@@ -87,6 +87,7 @@ describe("SettingsContext", () => {
     expect(captured.settings.extra.culturePreference).toBe(
       "follow_story_setting",
     );
+    expect(captured.settings.extra.providerManagedMaxTokens).toBe(true);
     expect(
       (captured.settings.extra as Record<string, unknown>).clearerSearchTool,
     ).toBeUndefined();
@@ -113,6 +114,43 @@ describe("SettingsContext", () => {
     expect(captured.settings.extra.culturePreference).toBe(
       "follow_story_setting",
     );
+    expect(captured.settings.extra.providerManagedMaxTokens).toBe(true);
+  });
+
+  it("preserves explicit provider-managed max tokens toggle from storage", () => {
+    localStorage.setItem(
+      "chronicles_aisettings",
+      JSON.stringify({
+        story: { providerId: "p1", modelId: "m1" },
+        providers: { instances: [], nextId: 1 },
+        audioVolume: {
+          bgmVolume: 0.5,
+          bgmMuted: false,
+          ttsVolume: 1,
+          ttsMuted: false,
+        },
+        language: "en",
+        extra: {
+          providerManagedMaxTokens: false,
+        },
+      }),
+    );
+
+    let captured: any = null;
+    const Consumer = () => {
+      captured = useSettingsContext();
+      return React.createElement("div");
+    };
+
+    render(
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
+    );
+
+    expect(captured.settings.extra.providerManagedMaxTokens).toBe(false);
   });
 
   it("supports partial updateSettings and persists merged settings", async () => {

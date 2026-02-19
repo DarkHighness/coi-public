@@ -39,12 +39,6 @@ const baseSettings = () => ({
     toolCallCarousel: true,
     customInstructionEnabled: false,
     customInstruction: "",
-    maxAgenticRounds: 20,
-    turnRetryLimit: 3,
-    turnMaxRecoveryLevel: 3,
-    turnRecoveryBackoffBaseMs: 300,
-    maxErrorRetries: 3,
-    maxToolCalls: 50,
   },
 });
 
@@ -95,39 +89,17 @@ describe("SettingsExtra", () => {
     ).toBeNull();
   });
 
-  it("clamps numeric extra settings to valid ranges", () => {
+  it("does not render agentic loop controls in extra tab", () => {
     render(React.createElement(SettingsExtra));
 
-    const numberInputs = screen.getAllByRole(
-      "spinbutton",
-    ) as HTMLInputElement[];
-    expect(numberInputs).toHaveLength(7);
-
-    fireEvent.change(numberInputs[0], { target: { value: "999" } });
-    fireEvent.change(numberInputs[1], { target: { value: "-5" } });
-    fireEvent.change(numberInputs[5], { target: { value: "1" } });
-    fireEvent.change(numberInputs[6], { target: { value: "100" } });
-
-    expect(updateSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        extra: expect.objectContaining({ maxAgenticRounds: 100 }),
-      }),
-    );
-    expect(updateSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        extra: expect.objectContaining({ turnRetryLimit: 0 }),
-      }),
-    );
-    expect(updateSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        extra: expect.objectContaining({ maxToolCalls: 5 }),
-      }),
-    );
-    expect(updateSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        extra: expect.objectContaining({ maxOutputTokensFallback: 1024 }),
-      }),
-    );
+    expect(screen.queryByText("settings.extra.agenticLoop")).toBeNull();
+    expect(screen.queryByText("settings.extra.forceAutoToolChoice")).toBeNull();
+    expect(
+      screen.queryByText("settings.extra.maxOutputTokensFallback"),
+    ).toBeNull();
+    expect(
+      screen.queryByText("settings.extra.providerManagedMaxTokens"),
+    ).toBeNull();
   });
 
   it("shows custom instruction warning when enabled and non-empty", () => {
@@ -166,22 +138,6 @@ describe("SettingsExtra", () => {
         extra: expect.objectContaining({ genderPreference: "pan_gender" }),
       }),
     );
-  });
-
-  it("shows max output fallback warning when value is too low", () => {
-    settingsState = {
-      ...baseSettings(),
-      extra: {
-        ...baseSettings().extra,
-        maxOutputTokensFallback: 4096,
-      },
-    };
-
-    render(React.createElement(SettingsExtra));
-
-    expect(
-      screen.getByText("settings.extra.maxOutputTokensFallbackWarning"),
-    ).toBeTruthy();
   });
 
   it("resets tutorial flags and reloads page", () => {

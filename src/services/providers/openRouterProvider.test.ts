@@ -154,7 +154,7 @@ describe("openRouterProvider dynamic output budget", () => {
     vi.clearAllMocks();
   });
 
-  it("caps maxTokens to remaining context budget when prompt estimate is provided", async () => {
+  it("omits maxTokens by default", async () => {
     sdkMocks.chatSend.mockResolvedValueOnce({
       choices: [
         {
@@ -178,6 +178,43 @@ describe("openRouterProvider dynamic output budget", () => {
       undefined,
       {
         tokenBudget: {
+          contextWindowTokens: 204800,
+          promptTokenEstimate: 82000,
+        },
+      } as any,
+    );
+
+    const requestParams = sdkMocks.chatSend.mock.calls[0]?.[0] as {
+      maxTokens?: number;
+    };
+    expect(requestParams?.maxTokens).toBeUndefined();
+  });
+
+  it("caps maxTokens when provider-managed mode is disabled", async () => {
+    sdkMocks.chatSend.mockResolvedValueOnce({
+      choices: [
+        {
+          finish_reason: "stop",
+          native_finish_reason: "stop",
+          message: { content: "ok" },
+        },
+      ],
+      usage: {
+        prompt_tokens: 10,
+        completion_tokens: 2,
+        total_tokens: 12,
+      },
+    });
+
+    await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+      undefined,
+      {
+        tokenBudget: {
+          providerManagedMaxTokens: false,
           contextWindowTokens: 204800,
           promptTokenEstimate: 82000,
         },
@@ -225,6 +262,7 @@ describe("openRouterProvider dynamic output budget", () => {
       undefined,
       {
         tokenBudget: {
+          providerManagedMaxTokens: false,
           maxOutputTokensFallback: 128000,
           contextWindowTokens: 1_000_000,
           promptTokenEstimate: 1,

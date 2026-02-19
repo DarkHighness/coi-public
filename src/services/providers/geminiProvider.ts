@@ -1032,7 +1032,7 @@ function buildGenerationConfig(
 ): { config: GenerateContentConfig; modifiedSystemInstruction: string } {
   const config: GenerateContentConfig = {};
   let modifiedSystemInstruction = systemInstruction;
-  config.maxOutputTokens = resolveTokenBudget({
+  const tokenBudgetResolution = resolveTokenBudget({
     providerProtocol: "gemini",
     modelId: model,
     tokenBudget: options?.tokenBudget,
@@ -1040,7 +1040,10 @@ function buildGenerationConfig(
     messages: contents,
     tools: options?.tools,
     schema,
-  }).maxOutputTokens;
+  });
+  if (tokenBudgetResolution.shouldInjectMaxOutputTokens) {
+    config.maxOutputTokens = tokenBudgetResolution.maxOutputTokens;
+  }
 
   // 工具配置 - 从 Zod 直接编译到 Gemini 格式
   let functionDeclarations: Array<{

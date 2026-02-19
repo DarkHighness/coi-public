@@ -17,6 +17,10 @@ type RoutedProviderProtocol = "openai" | "gemini" | "claude";
 
 const warnedLowFallbacks = new Set<string>();
 
+const shouldInjectMaxOutputTokens = (
+  tokenBudget?: TokenBudgetConfig,
+): boolean => tokenBudget?.providerManagedMaxTokens === false;
+
 const normalizeModelId = (modelId: string): string => {
   const trimmed = modelId.trim().toLowerCase();
   if (!trimmed) return trimmed;
@@ -158,6 +162,7 @@ export interface TokenBudgetResolution {
   contextWindowTokens: number;
   modelMaxOutputTokens: number;
   maxOutputTokens: number;
+  shouldInjectMaxOutputTokens: boolean;
 }
 
 export const resolveTokenBudget = (
@@ -195,5 +200,8 @@ export const resolveTokenBudget = (
     contextWindowTokens,
     modelMaxOutputTokens: modelOutput.maxOutputTokens,
     maxOutputTokens,
+    shouldInjectMaxOutputTokens: shouldInjectMaxOutputTokens(
+      params.tokenBudget,
+    ),
   };
 };

@@ -712,6 +712,8 @@
       "maxToolCallsHelp": "Maximum total tool calls per agentic loop (default: 50)",
       "maxOutputTokensFallback": "Max Output Fallback Tokens",
       "maxOutputTokensFallbackHelp": "Used only when model-specific output cap is unknown. Leave empty to use provider defaults.",
+      "providerManagedMaxTokens": "Provider-managed Max Tokens",
+      "providerManagedMaxTokensHelp": "Enabled by default. When on, requests omit maxTokens/max_tokens/max_completion_tokens/maxOutputTokens and let provider defaults apply.",
       "resetTutorials": "Reset Tutorials",
       "resetTutorialsHelp": "Show onboarding tutorials again on next visit",
       "resetTutorialsButton": "Reset"

@@ -118,6 +118,11 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
     delete migratedExtra.maxOutputTokensFallback;
   }
 
+  if (typeof migratedExtra.providerManagedMaxTokens !== "boolean") {
+    migratedExtra.providerManagedMaxTokens =
+      DEFAULTS.extra?.providerManagedMaxTokens ?? true;
+  }
+
   const configuredSessionHistoryLruLimit = migratedExtra.sessionHistoryLruLimit;
   if (
     typeof configuredSessionHistoryLruLimit === "number" &&

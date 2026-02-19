@@ -709,7 +709,7 @@ export async function generateContent(
               })()
             : undefined,
       };
-      const contextBoundMaxOutputTokens = resolveTokenBudget({
+      const tokenBudgetResolution = resolveTokenBudget({
         providerProtocol: "openai",
         modelId: model,
         tokenBudget: options?.tokenBudget,
@@ -717,11 +717,14 @@ export async function generateContent(
         messages: contents,
         tools: options?.tools,
         schema,
-      }).maxOutputTokens;
-      if (isReasoning && !useCompat) {
-        requestParams.max_completion_tokens = contextBoundMaxOutputTokens;
-      } else {
-        requestParams.max_tokens = contextBoundMaxOutputTokens;
+      });
+      if (tokenBudgetResolution.shouldInjectMaxOutputTokens) {
+        if (isReasoning && !useCompat) {
+          requestParams.max_completion_tokens =
+            tokenBudgetResolution.maxOutputTokens;
+        } else {
+          requestParams.max_tokens = tokenBudgetResolution.maxOutputTokens;
+        }
       }
 
       // 添加 reasoning_effort 参数 (OpenAI reasoning 模型)

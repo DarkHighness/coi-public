@@ -1177,6 +1177,11 @@ export interface AISettings {
      * cannot be resolved. Too-small values can cause truncated turns.
      */
     maxOutputTokensFallback?: number;
+    /**
+     * When enabled (default), do not inject max-output-token params and let
+     * each provider decide output length. Disable to use app-side budgeting.
+     */
+    providerManagedMaxTokens?: boolean;
   };
 }
 

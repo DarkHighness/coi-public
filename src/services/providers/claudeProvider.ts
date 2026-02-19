@@ -593,7 +593,7 @@ Answer the user's request using relevant tools (if they are available). Before c
         }
       }
 
-      const maxTokens = resolveTokenBudget({
+      const tokenBudgetResolution = resolveTokenBudget({
         providerProtocol: "claude",
         modelId: model,
         tokenBudget: options?.tokenBudget,
@@ -601,12 +601,14 @@ Answer the user's request using relevant tools (if they are available). Before c
         messages: contents,
         tools: options?.tools,
         schema,
-      }).maxOutputTokens;
+      });
 
       // 构建请求参数
       const requestParams: MessageCreateParams = {
         model,
-        max_tokens: maxTokens,
+        ...(tokenBudgetResolution.shouldInjectMaxOutputTokens
+          ? { max_tokens: tokenBudgetResolution.maxOutputTokens }
+          : {}),
         system: finalSystemInstruction,
         messages,
         // Thinking 模式下不能使用 temperature (必须为 1.0 或不传，SDK 默认处理)
@@ -617,7 +619,7 @@ Answer the user's request using relevant tools (if they are available). Before c
         top_p: options?.topP,
         tools,
         tool_choice: toolChoice,
-      };
+      } as MessageCreateParams;
 
       let content = "";
       let toolCalls: ToolCallResult[] = [];

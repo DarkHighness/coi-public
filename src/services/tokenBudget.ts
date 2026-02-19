@@ -3,6 +3,12 @@ export const STORY_OUTLINE_MAX_OUTPUT_TOKENS = 64_000;
 
 export interface TokenBudgetConfig {
   /**
+   * When true (default), providers should omit explicit max-output-token
+   * request parameters and let the backend provider choose output limits.
+   * Set to false to enable app-side max output token injection/clamping.
+   */
+  providerManagedMaxTokens?: boolean;
+  /**
    * Optional fallback output cap for unknown models.
    * Used only when model-specific max output tokens cannot be resolved.
    */

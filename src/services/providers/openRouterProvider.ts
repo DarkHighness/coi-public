@@ -738,7 +738,7 @@ export async function generateContent(
         }
       }
 
-      const maxTokens = resolveTokenBudget({
+      const tokenBudgetResolution = resolveTokenBudget({
         providerProtocol: "openrouter",
         modelId: model,
         tokenBudget: options?.tokenBudget,
@@ -746,13 +746,15 @@ export async function generateContent(
         messages: contents,
         tools: options?.tools,
         schema,
-      }).maxOutputTokens;
+      });
 
       // Build request parameters
       const requestParams: OpenRouterGenerationParams = {
         model,
         messages,
-        maxTokens,
+        ...(tokenBudgetResolution.shouldInjectMaxOutputTokens
+          ? { maxTokens: tokenBudgetResolution.maxOutputTokens }
+          : {}),
         temperature: options?.temperature,
         topP: options?.topP,
         topK: options?.topK,
@@ -820,10 +822,12 @@ export async function generateContent(
         return await executeRequest();
       } catch (error) {
         let finalError: unknown = error;
-        const retryMaxTokens = deriveOpenRouterOverflowRetryMaxTokens(
-          requestParams.maxTokens,
-          finalError,
-        );
+        const retryMaxTokens = tokenBudgetResolution.shouldInjectMaxOutputTokens
+          ? deriveOpenRouterOverflowRetryMaxTokens(
+              requestParams.maxTokens,
+              finalError,
+            )
+          : undefined;
         if (
           typeof retryMaxTokens === "number" &&
           Number.isFinite(requestParams.maxTokens) &&

@@ -107,6 +107,8 @@ export async function handleAICall(
         topK: storyCfg?.topK,
         minP: storyCfg?.minP,
         tokenBudget: {
+          providerManagedMaxTokens:
+            settings.extra?.providerManagedMaxTokens ?? true,
           maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
           contextWindowTokens,
           maxOutputTokensHardCap: NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS,

@@ -394,7 +394,7 @@ describe("openaiProvider helper conversions", () => {
     expect(converted[1]).toEqual({ role: "user", content: "hello" });
   });
 
-  it("applies max_tokens by default for non-reasoning models", async () => {
+  it("omits max token params by default for non-reasoning models", async () => {
     const { generateContent } = await import("./openaiProvider");
 
     await generateContent(
@@ -411,11 +411,11 @@ describe("openaiProvider helper conversions", () => {
       undefined,
     );
 
-    expect(lastCreateParams?.max_tokens).toBe(16384);
+    expect(lastCreateParams?.max_tokens).toBeUndefined();
     expect(lastCreateParams?.max_completion_tokens).toBeUndefined();
   });
 
-  it("applies max_completion_tokens for reasoning models", async () => {
+  it("omits max token params by default for reasoning models", async () => {
     const { generateContent } = await import("./openaiProvider");
 
     await generateContent(
@@ -432,11 +432,11 @@ describe("openaiProvider helper conversions", () => {
       undefined,
     );
 
-    expect(lastCreateParams?.max_completion_tokens).toBe(100000);
+    expect(lastCreateParams?.max_completion_tokens).toBeUndefined();
     expect(lastCreateParams?.max_tokens).toBeUndefined();
   });
 
-  it("caps max_tokens to remaining context budget when estimates are provided", async () => {
+  it("caps max_tokens when provider-managed mode is disabled", async () => {
     const { generateContent } = await import("./openaiProvider");
 
     await generateContent(
@@ -452,6 +452,7 @@ describe("openaiProvider helper conversions", () => {
       undefined,
       {
         tokenBudget: {
+          providerManagedMaxTokens: false,
           contextWindowTokens: 204800,
           promptTokenEstimate: 82000,
         },

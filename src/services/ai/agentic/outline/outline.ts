@@ -1127,6 +1127,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         topK: settings.story?.topK,
         minP: settings.story?.minP,
         tokenBudget: {
+          providerManagedMaxTokens:
+            settings.extra?.providerManagedMaxTokens ?? true,
           maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
           contextWindowTokens,
           maxOutputTokensHardCap: STORY_OUTLINE_MAX_OUTPUT_TOKENS,

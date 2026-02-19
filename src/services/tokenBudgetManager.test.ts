@@ -11,6 +11,7 @@ describe("resolveTokenBudget", () => {
     expect(claudeCompat.resolvedProviderProtocol).toBe("claude");
     expect(claudeCompat.modelMaxOutputTokens).toBe(64000);
     expect(claudeCompat.maxOutputTokens).toBe(64000);
+    expect(claudeCompat.shouldInjectMaxOutputTokens).toBe(false);
   });
 
   it("routes OpenRouter vendor prefixes to provider-specific caps", () => {
@@ -74,5 +75,26 @@ describe("resolveTokenBudget", () => {
 
     expect(budget.modelMaxOutputTokens).toBe(32768);
     expect(budget.maxOutputTokens).toBe(32768);
+  });
+
+  it("defaults to provider-managed max tokens (no injection)", () => {
+    const budget = resolveTokenBudget({
+      providerProtocol: "openai",
+      modelId: "gpt-4o-mini",
+    });
+
+    expect(budget.shouldInjectMaxOutputTokens).toBe(false);
+  });
+
+  it("enables injection when provider-managed toggle is turned off", () => {
+    const budget = resolveTokenBudget({
+      providerProtocol: "openai",
+      modelId: "gpt-4o-mini",
+      tokenBudget: {
+        providerManagedMaxTokens: false,
+      },
+    });
+
+    expect(budget.shouldInjectMaxOutputTokens).toBe(true);
   });
 });

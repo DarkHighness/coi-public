@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import type { AISettings } from "../../types";
 import { useSettings } from "../../hooks/useSettings";
-import { MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS } from "../../services/modelOutputTokens";
 
 export const SettingsExtra: React.FC = () => {
   const { t } = useTranslation();
@@ -41,15 +40,6 @@ export const SettingsExtra: React.FC = () => {
     typeof customInstructionRaw === "string" ? customInstructionRaw.trim() : "";
   const customInstructionEnabled =
     extra.customInstructionEnabled ?? Boolean(customInstructionTrimmed);
-  const outputFallbackValue =
-    typeof extra.maxOutputTokensFallback === "number" &&
-    Number.isFinite(extra.maxOutputTokensFallback) &&
-    extra.maxOutputTokensFallback > 0
-      ? Math.floor(extra.maxOutputTokensFallback)
-      : null;
-  const showLowOutputFallbackWarning =
-    outputFallbackValue !== null &&
-    outputFallbackValue < MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS;
 
   const updateExtra = <K extends keyof ExtraSettings>(
     field: K,
@@ -261,34 +251,6 @@ export const SettingsExtra: React.FC = () => {
           </div>
         </div>
 
-        {/* Force Auto Tool Choice Toggle */}
-        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
-          <div>
-            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.forceAutoToolChoice") ||
-                "Force Auto Tool Choice"}
-            </div>
-            <div className="text-[10px] text-theme-muted mt-1">
-              {t("settings.extra.forceAutoToolChoiceHelp") ||
-                "Always use 'auto' for tool choice, overriding 'required' requests."}
-            </div>
-          </div>
-          <button
-            onClick={() =>
-              updateExtra("forceAutoToolChoice", !extra.forceAutoToolChoice)
-            }
-            className={`w-10 h-5 rounded-full relative transition-colors ${
-              extra.forceAutoToolChoice ? "bg-green-500" : "bg-theme-border"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                extra.forceAutoToolChoice ? "translate-x-5" : ""
-              }`}
-            />
-          </button>
-        </div>
-
         {/* Custom Instruction Toggle */}
         <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>
@@ -379,219 +341,6 @@ export const SettingsExtra: React.FC = () => {
             <div className="text-[10px] text-theme-warning">
               {t("settings.extra.customPromptInjectionWarning") ||
                 "Custom instruction is active."}
-            </div>
-          )}
-        </div>
-
-        {/* Agentic Loop Settings */}
-        <div className="py-4 border-b border-theme-border/25 space-y-4">
-          <div>
-            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
-              {t("settings.extra.agenticLoop") || "Agentic Loop Settings"}
-            </div>
-            <div className="text-[10px] text-theme-muted mt-1">
-              {t("settings.extra.agenticLoopHelp") ||
-                "Configure the behavior of AI agentic loop execution."}
-            </div>
-          </div>
-
-          {/* Max Rounds */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-theme-text">
-                {t("settings.extra.maxAgenticRounds") || "Max Rounds"}
-              </div>
-              <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.maxAgenticRoundsHelp") ||
-                  "Maximum number of rounds for agentic loop (default: 10)"}
-              </div>
-            </div>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={extra.maxAgenticRounds ?? 20}
-              onChange={(e) =>
-                updateExtra(
-                  "maxAgenticRounds",
-                  Math.max(1, Math.min(100, parseInt(e.target.value) || 20)),
-                )
-              }
-              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
-            />
-          </div>
-
-          {/* Turn Retry Limit */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-theme-text">
-                {t("settings.extra.turnRetryLimit") || "Turn Retry Limit"}
-              </div>
-              <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.turnRetryLimitHelp") ||
-                  "Retry limit for normal turn loops (default: 3)"}
-              </div>
-            </div>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              value={extra.turnRetryLimit ?? 3}
-              onChange={(e) =>
-                updateExtra(
-                  "turnRetryLimit",
-                  Math.max(0, Math.min(20, parseInt(e.target.value) || 3)),
-                )
-              }
-              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
-            />
-          </div>
-
-          {/* Outline Phase Retry Limit */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-theme-text">
-                {t("settings.extra.outlinePhaseRetryLimit") ||
-                  "Outline Phase Retry Limit"}
-              </div>
-              <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.outlinePhaseRetryLimitHelp") ||
-                  "Retry limit for each outline phase (default: 3)"}
-              </div>
-            </div>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              value={extra.outlinePhaseRetryLimit ?? 3}
-              onChange={(e) =>
-                updateExtra(
-                  "outlinePhaseRetryLimit",
-                  Math.max(0, Math.min(20, parseInt(e.target.value) || 3)),
-                )
-              }
-              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
-            />
-          </div>
-
-          {/* Cleanup Retry Limit */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-theme-text">
-                {t("settings.extra.cleanupRetryLimit") || "Cleanup Retry Limit"}
-              </div>
-              <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.cleanupRetryLimitHelp") ||
-                  "Retry limit for cleanup loops (default: 5)"}
-              </div>
-            </div>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              value={extra.cleanupRetryLimit ?? 5}
-              onChange={(e) =>
-                updateExtra(
-                  "cleanupRetryLimit",
-                  Math.max(0, Math.min(20, parseInt(e.target.value) || 5)),
-                )
-              }
-              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
-            />
-          </div>
-
-          {/* Summary Retry Limit */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-theme-text">
-                {t("settings.extra.summaryRetryLimit") || "Summary Retry Limit"}
-              </div>
-              <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.summaryRetryLimitHelp") ||
-                  "Retry limit for summary loops (default: 5)"}
-              </div>
-            </div>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              value={extra.summaryRetryLimit ?? 5}
-              onChange={(e) =>
-                updateExtra(
-                  "summaryRetryLimit",
-                  Math.max(0, Math.min(20, parseInt(e.target.value) || 5)),
-                )
-              }
-              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
-            />
-          </div>
-
-          {/* Max Tool Calls */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-theme-text">
-                {t("settings.extra.maxToolCalls") || "Max Tool Calls"}
-              </div>
-              <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.maxToolCallsHelp") ||
-                  "Maximum total tool calls per agentic loop (default: 50)"}
-              </div>
-            </div>
-            <input
-              type="number"
-              min={5}
-              max={200}
-              value={extra.maxToolCalls ?? 50}
-              onChange={(e) =>
-                updateExtra(
-                  "maxToolCalls",
-                  Math.max(5, Math.min(200, parseInt(e.target.value) || 50)),
-                )
-              }
-              className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
-            />
-          </div>
-
-          {/* Max Output Fallback Tokens */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-theme-text">
-                {t("settings.extra.maxOutputTokensFallback") ||
-                  "Max Output Fallback Tokens"}
-              </div>
-              <div className="text-[10px] text-theme-muted">
-                {t("settings.extra.maxOutputTokensFallbackHelp") ||
-                  "Used only when model-specific output cap is unknown. Leave empty to use provider defaults."}
-              </div>
-            </div>
-            <input
-              type="number"
-              min={1024}
-              max={1048576}
-              value={outputFallbackValue ?? ""}
-              placeholder="auto"
-              onChange={(e) => {
-                const raw = e.target.value.trim();
-                if (!raw) {
-                  updateExtra("maxOutputTokensFallback", undefined);
-                  return;
-                }
-                const parsed = Number.parseInt(raw, 10);
-                if (!Number.isFinite(parsed)) {
-                  return;
-                }
-                updateExtra(
-                  "maxOutputTokensFallback",
-                  Math.max(1024, Math.min(1048576, parsed)),
-                );
-              }}
-              className="w-28 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center placeholder:text-theme-muted/60"
-            />
-          </div>
-          {showLowOutputFallbackWarning && (
-            <div className="text-[10px] text-theme-warning">
-              {t("settings.extra.maxOutputTokensFallbackWarning") ||
-                `Warning: values below ${MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS} may truncate output and break gameplay.`}
             </div>
           )}
         </div>
