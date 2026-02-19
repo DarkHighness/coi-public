@@ -49,6 +49,10 @@ const createLoopState = () =>
       loopIterationsMax: 10,
     },
     finishToolName: "vfs_finish_turn",
+    promptTokenBudgetContext: {
+      get: () => null,
+      set: () => {},
+    },
     requiredPresetSkillPaths: [],
   }) as any;
 

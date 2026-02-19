@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { callWithAgenticRetry } from "../retry";
+import { callWithAgenticRetry, createPromptTokenBudgetContext } from "../retry";
 import { createUserMessage } from "../../../messageTypes";
 
 const toolSchema = z.object({ foo: z.string() });
@@ -134,6 +134,58 @@ describe("callWithAgenticRetry behavior", () => {
     expect(result.usage.totalTokens).toBeGreaterThanOrEqual(
       result.usage.promptTokens,
     );
+  });
+
+  it("keeps previous+appended prompt reference inside provided context only", async () => {
+    const provider = createProvider([
+      {
+        result: { content: "one" },
+        usage: makeUsage(300, 2),
+        raw: null,
+      },
+      {
+        result: { content: "two" },
+        usage: makeUsage(320, 2),
+        raw: null,
+      },
+      {
+        result: { content: "three" },
+        usage: makeUsage(10, 1),
+        raw: null,
+      },
+    ]);
+
+    const sharedContext = createPromptTokenBudgetContext();
+    const isolatedContext = createPromptTokenBudgetContext();
+    const history = [createUserMessage("seed")];
+
+    await callWithAgenticRetry(provider, makeRequest() as any, history, {
+      maxRetries: 0,
+      promptTokenBudgetContext: sharedContext,
+    });
+
+    history.push(createUserMessage("new turn delta"));
+
+    await callWithAgenticRetry(provider, makeRequest() as any, history, {
+      maxRetries: 0,
+      promptTokenBudgetContext: sharedContext,
+    });
+
+    await callWithAgenticRetry(provider, makeRequest() as any, [], {
+      maxRetries: 0,
+      promptTokenBudgetContext: isolatedContext,
+    });
+
+    const firstEstimate = (provider.generateChat as any).mock.calls[0][0]
+      ?.tokenBudget?.promptTokenEstimate;
+    const secondEstimate = (provider.generateChat as any).mock.calls[1][0]
+      ?.tokenBudget?.promptTokenEstimate;
+    const isolatedEstimate = (provider.generateChat as any).mock.calls[2][0]
+      ?.tokenBudget?.promptTokenEstimate;
+
+    expect(firstEstimate).toBeGreaterThan(0);
+    expect(secondEstimate).toBeGreaterThan(firstEstimate);
+    expect(isolatedEstimate).toBeLessThan(secondEstimate);
   });
 
   it("allows partial execution for mixed valid/invalid calls in one batch", async () => {

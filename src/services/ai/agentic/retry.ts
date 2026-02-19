@@ -13,6 +13,10 @@ import {
 } from "../../messageTypes";
 import { ToolCallResult } from "../../providers/types";
 import { extractJson } from "../utils";
+import { createProviderConfig } from "../provider/registry";
+import type { GeminiConfig, ClaudeConfig } from "../../providers/types";
+import { countTokens as countGeminiTokens } from "../../providers/geminiProvider";
+import { countTokens as countClaudeTokens } from "../../providers/claudeProvider";
 import {
   AgenticErrorKind,
   buildMalformedToolCallFeedback,
@@ -20,11 +24,51 @@ import {
 } from "./errorPolicy";
 import type { ZodError } from "zod";
 
+interface PromptTokenReferenceRecord {
+  promptTokens: number;
+  historyLength: number;
+  requestFingerprint: string;
+}
+
+export interface PromptTokenBudgetContext {
+  get(providerModelKey: string): {
+    promptTokens: number;
+    historyLength: number;
+    requestFingerprint: string;
+  } | null;
+  set(
+    providerModelKey: string,
+    reference: {
+      promptTokens: number;
+      historyLength: number;
+      requestFingerprint: string;
+    },
+  ): void;
+}
+
+export const createPromptTokenBudgetContext = (): PromptTokenBudgetContext => {
+  const references = new Map<string, PromptTokenReferenceRecord>();
+
+  return {
+    get(providerModelKey) {
+      return references.get(providerModelKey) ?? null;
+    },
+    set(providerModelKey, reference) {
+      references.set(providerModelKey, {
+        promptTokens: Math.max(0, Math.floor(reference.promptTokens)),
+        historyLength: Math.max(0, Math.floor(reference.historyLength)),
+        requestFingerprint: reference.requestFingerprint,
+      });
+    },
+  };
+};
+
 export interface RetryOptions {
   maxRetries?: number;
   requiredToolName?: string;
   finishToolName?: string;
   schema?: ZodSchema; // Root schema for direct output or forced tool
+  promptTokenBudgetContext?: PromptTokenBudgetContext;
   onRetry?: (
     error: string,
     attempt: number,
@@ -168,13 +212,174 @@ const stringifyForEstimation = (value: unknown): string => {
   }
 };
 
+const normalizeErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const promptTokenReferenceKey = (
+  provider: ProviderBase,
+  modelId: string,
+): string | null => {
+  const providerId = provider?.instanceId?.trim?.();
+  const model = modelId?.trim?.().toLowerCase();
+  if (!providerId || !model) {
+    return null;
+  }
+  return `${providerId}::${model}`;
+};
+
+const buildPromptReferenceFingerprint = (
+  request: ChatGenerateRequest,
+): string => {
+  const toolsFingerprint = stringifyForEstimation(
+    request.tools?.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parametersHint: stringifyForEstimation(tool.parameters),
+    })) || [],
+  );
+  const schemaFingerprint =
+    request.schema && typeof request.schema === "object"
+      ? "zod_schema_present"
+      : "no_schema";
+  return [
+    request.systemInstruction || "",
+    stringifyForEstimation(request.toolChoice || "auto"),
+    toolsFingerprint,
+    schemaFingerprint,
+  ].join("::");
+};
+
+const toPromptTokenCountPayload = (
+  request: ChatGenerateRequest,
+  history: UnifiedMessage[],
+): string => {
+  try {
+    return JSON.stringify(
+      {
+        systemInstruction: request.systemInstruction,
+        history,
+        tools: request.tools?.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          parametersHint: stringifyForEstimation(tool.parameters),
+        })),
+        toolChoice: request.toolChoice,
+        schemaHint:
+          request.schema && typeof request.schema === "object"
+            ? "zod_schema_present"
+            : undefined,
+      },
+      null,
+      0,
+    );
+  } catch {
+    return [
+      request.systemInstruction || "",
+      stringifyForEstimation(history),
+      stringifyForEstimation(
+        request.tools?.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          parametersHint: stringifyForEstimation(tool.parameters),
+        })) || [],
+      ),
+    ].join("\n");
+  }
+};
+
+const resolveProviderPromptTokenEstimate = async (
+  provider: ProviderBase,
+  request: ChatGenerateRequest,
+  history: UnifiedMessage[],
+): Promise<number | null> => {
+  const protocol = provider?.protocol;
+  if (protocol !== "gemini" && protocol !== "claude") {
+    return null;
+  }
+
+  const instance = provider?.instance;
+  const apiKey = instance?.apiKey;
+  if (typeof apiKey !== "string" || apiKey.trim().length === 0) {
+    return null;
+  }
+
+  const modelId = request.modelId?.trim();
+  if (!modelId) {
+    return null;
+  }
+
+  const payload = toPromptTokenCountPayload(request, history);
+  const config = createProviderConfig(instance as any);
+
+  try {
+    const counted =
+      protocol === "gemini"
+        ? await countGeminiTokens(config as GeminiConfig, modelId, payload)
+        : await countClaudeTokens(config as ClaudeConfig, modelId, payload);
+    if (!Number.isFinite(counted)) {
+      return null;
+    }
+    return Math.max(1, Math.floor(counted));
+  } catch (error) {
+    console.warn(
+      `[AgenticRetry] ${protocol} countTokens preflight failed, fallback to local estimate: ${normalizeErrorMessage(error)}`,
+    );
+    return null;
+  }
+};
+
 export const estimatePromptTokens = (
   request: ChatGenerateRequest,
   history: UnifiedMessage[],
 ): number => {
+  const estimateHistoryTokens = (messages: UnifiedMessage[]): number => {
+    let chars = 0;
+    for (const message of messages) {
+      chars += message.role.length;
+      for (const part of message.content) {
+        if (part.type === "text") {
+          chars += part.text.length;
+        } else if (part.type === "tool_use") {
+          chars += part.toolUse.name.length;
+          chars += stringifyForEstimation(part.toolUse.args).length;
+        } else if (part.type === "tool_result") {
+          chars += part.toolResult.id.length;
+          chars += stringifyForEstimation(part.toolResult.content).length;
+        } else {
+          chars += stringifyForEstimation(part).length;
+        }
+      }
+    }
+    const base = estimateTokensFromChars(chars);
+    const perMessageOverhead = messages.length * 8;
+    return Math.max(0, base + perMessageOverhead);
+  };
+
   let chars = request.systemInstruction.length;
 
-  for (const message of history) {
+  if (Array.isArray(request.tools)) {
+    for (const tool of request.tools) {
+      chars += tool.name.length;
+      chars += tool.description.length;
+      chars += stringifyForEstimation(tool.parameters).length;
+    }
+  }
+
+  const envelopeBase = estimateTokensFromChars(chars);
+  const historyTokens = estimateHistoryTokens(history);
+  return Math.max(1, envelopeBase + historyTokens);
+};
+
+const estimateAppendedHistoryTokens = (
+  history: UnifiedMessage[],
+  fromIndex: number,
+): number => {
+  if (!Number.isFinite(fromIndex)) return 0;
+  const safeIndex = Math.max(0, Math.floor(fromIndex));
+  if (safeIndex >= history.length) return 0;
+  const appended = history.slice(safeIndex);
+  let chars = 0;
+  for (const message of appended) {
     chars += message.role.length;
     for (const part of message.content) {
       if (part.type === "text") {
@@ -190,18 +395,25 @@ export const estimatePromptTokens = (
       }
     }
   }
-
-  if (Array.isArray(request.tools)) {
-    for (const tool of request.tools) {
-      chars += tool.name.length;
-      chars += tool.description.length;
-      chars += stringifyForEstimation(tool.parameters).length;
-    }
-  }
-
   const base = estimateTokensFromChars(chars);
-  const perMessageOverhead = history.length * 8;
-  return Math.max(1, base + perMessageOverhead);
+  const perMessageOverhead = appended.length * 8;
+  return Math.max(0, base + perMessageOverhead);
+};
+
+const resolvePromptTokenEstimate = async (
+  provider: ProviderBase,
+  request: ChatGenerateRequest,
+  history: UnifiedMessage[],
+): Promise<number> => {
+  const remote = await resolveProviderPromptTokenEstimate(
+    provider,
+    request,
+    history,
+  );
+  if (remote && remote > 0) {
+    return remote;
+  }
+  return estimatePromptTokens(request, history);
 };
 
 const estimateCompletionTokens = (
@@ -337,6 +549,7 @@ export async function callWithAgenticRetry(
     requiredToolName,
     finishToolName,
     schema: rootSchema,
+    promptTokenBudgetContext,
     onRetry,
   } = options;
 
@@ -350,13 +563,48 @@ export async function callWithAgenticRetry(
   let forceInternalStreaming = false;
   let sawExplicitUnknownUsage = false;
   const schemaGuidanceShownByTool = new Set<string>();
+  const effectivePromptTokenBudgetContext =
+    promptTokenBudgetContext ?? createPromptTokenBudgetContext();
+  const tokenReferenceKey = promptTokenReferenceKey(provider, request.modelId);
+  const requestFingerprint = buildPromptReferenceFingerprint(request);
 
   while (attempt <= maxRetries) {
     let response: ChatGenerateResponse;
     try {
+      const basePromptTokenEstimate = await resolvePromptTokenEstimate(
+        provider,
+        request,
+        history,
+      );
+      const previousReference = tokenReferenceKey
+        ? effectivePromptTokenBudgetContext.get(tokenReferenceKey)
+        : undefined;
+      const previousPromptTokensHint = previousReference?.promptTokens;
+      const additionalPromptTokensHint =
+        previousReference &&
+        previousReference.requestFingerprint === requestFingerprint &&
+        history.length >= previousReference.historyLength
+          ? estimateAppendedHistoryTokens(
+              history,
+              previousReference.historyLength,
+            )
+          : undefined;
+      const promptTokenEstimate =
+        typeof previousPromptTokensHint === "number" &&
+        typeof additionalPromptTokensHint === "number"
+          ? Math.max(
+              basePromptTokenEstimate,
+              previousPromptTokensHint + additionalPromptTokensHint,
+            )
+          : basePromptTokenEstimate;
+      const tokenBudget = {
+        ...(request.tokenBudget || {}),
+        promptTokenEstimate,
+      };
       response = await provider.generateChat({
         ...request,
         messages: history as unknown[],
+        tokenBudget,
         ...(forceInternalStreaming && !request.onChunk
           ? { onChunk: INTERNAL_STREAM_NOOP_CHUNK }
           : {}),
@@ -445,6 +693,17 @@ export async function callWithAgenticRetry(
       history,
       response.result,
     );
+    if (
+      tokenReferenceKey &&
+      normalizedUsage.reported !== false &&
+      normalizedUsage.promptTokens > 0
+    ) {
+      effectivePromptTokenBudgetContext.set(tokenReferenceKey, {
+        promptTokens: normalizedUsage.promptTokens,
+        historyLength: history.length,
+        requestFingerprint,
+      });
+    }
 
     // Accumulate usage
     totalUsage.promptTokens += normalizedUsage.promptTokens || 0;

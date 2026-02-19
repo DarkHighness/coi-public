@@ -57,15 +57,9 @@ import {
   createGeminiTool,
   createOpenRouterTool,
   isGeminiModel,
-  isClaudeModel,
 } from "../zodCompiler";
-import {
-  DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS,
-  MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS,
-  getDefaultModelMaxOutputTokens,
-  isLowOutputFallbackSetting,
-  sanitizePositiveOutputTokens,
-} from "../modelOutputTokens";
+import { parseContextOverflowDiagnostics } from "../modelContextWindows";
+import { resolveTokenBudget } from "../tokenBudgetManager";
 import type { ZodTypeAny } from "zod";
 import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 // ============================================================================
@@ -253,80 +247,6 @@ const buildMissingToolPayloadDetail = (
   return `${base}; hinted tools: ${hintedToolNames.join(", ")}`;
 };
 
-type OpenRouterResolvedProviderProtocol = "openai" | "gemini" | "claude";
-const OPENROUTER_PROTOCOL_MAX_OUTPUT_FALLBACK: Record<
-  OpenRouterResolvedProviderProtocol,
-  number
-> = {
-  openai: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.openai,
-  claude: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.claude,
-  gemini: DEFAULT_PROTOCOL_MAX_OUTPUT_FALLBACK_TOKENS.gemini,
-};
-const WARNED_LOW_OPENROUTER_FALLBACKS = new Set<string>();
-
-const normalizeOpenRouterModelId = (model: string): string => {
-  const trimmed = model.trim().toLowerCase();
-  if (!trimmed) {
-    return trimmed;
-  }
-  const slashIndex = trimmed.lastIndexOf("/");
-  return slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : trimmed;
-};
-
-const resolveOpenRouterProviderProtocol = (
-  model: string,
-): OpenRouterResolvedProviderProtocol => {
-  const normalizedModel = normalizeOpenRouterModelId(model);
-  const lower = model.trim().toLowerCase();
-  if (
-    lower.startsWith("anthropic/") ||
-    isClaudeModel(model) ||
-    isClaudeModel(normalizedModel)
-  ) {
-    return "claude";
-  }
-  if (
-    lower.startsWith("google/") ||
-    isGeminiModel(model) ||
-    isGeminiModel(normalizedModel)
-  ) {
-    return "gemini";
-  }
-  return "openai";
-};
-
-export const resolveOpenRouterMaxTokens = (
-  model: string,
-  options?: GenerateContentOptions,
-): number => {
-  const protocol = resolveOpenRouterProviderProtocol(model);
-  const normalizedModel = normalizeOpenRouterModelId(model);
-  const mapped =
-    getDefaultModelMaxOutputTokens(protocol, normalizedModel) ||
-    getDefaultModelMaxOutputTokens(protocol, model);
-  if (mapped) {
-    return mapped;
-  }
-
-  const configuredFallback = sanitizePositiveOutputTokens(
-    options?.maxOutputTokensFallback,
-  );
-  if (configuredFallback) {
-    if (isLowOutputFallbackSetting(configuredFallback)) {
-      const warningKey = `${protocol}:${normalizedModel}:${configuredFallback}`;
-      if (!WARNED_LOW_OPENROUTER_FALLBACKS.has(warningKey)) {
-        WARNED_LOW_OPENROUTER_FALLBACKS.add(warningKey);
-        console.warn(
-          `[OpenRouter] maxOutputTokensFallback=${configuredFallback} is below recommended ${MIN_RECOMMENDED_OUTPUT_FALLBACK_TOKENS}; low values can truncate responses and break game flow.`,
-        );
-      }
-    }
-    return configuredFallback;
-  }
-
-  return OPENROUTER_PROTOCOL_MAX_OUTPUT_FALLBACK[protocol];
-};
-
 const readNumber = (value: unknown): number | undefined => {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -346,6 +266,85 @@ const readString = (value: unknown): string | undefined =>
 const readStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string");
+};
+
+const OPENROUTER_OVERFLOW_RETRY_MARGIN_TOKENS = 512;
+const OPENROUTER_OUTPUT_TOKEN_PATTERN = /(\d[\d,._\s]*)\s+in\s+the\s+output/i;
+const OPENROUTER_REQUESTED_TOKEN_PATTERN =
+  /requested(?:\s+about)?\s+(\d[\d,._\s]*)\s+tokens?/i;
+
+const normalizeErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (isRecord(error)) {
+    const nested = error.error;
+    if (isRecord(nested) && typeof nested.message === "string") {
+      return nested.message;
+    }
+    if (typeof error.message === "string") {
+      return error.message;
+    }
+  }
+  return String(error || "");
+};
+
+const parseTokenCount = (raw: string | undefined): number | undefined => {
+  if (!raw) return undefined;
+  const normalized = raw.replace(/[,_\s]/g, "");
+  if (!/^\d+$/.test(normalized)) return undefined;
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
+
+const parseOutputTokensFromOverflow = (message: string): number | undefined => {
+  const matched = message.match(OPENROUTER_OUTPUT_TOKEN_PATTERN);
+  return parseTokenCount(matched?.[1]);
+};
+
+const parseRequestedTokensFromOverflow = (
+  message: string,
+): number | undefined => {
+  const matched = message.match(OPENROUTER_REQUESTED_TOKEN_PATTERN);
+  return parseTokenCount(matched?.[1]);
+};
+
+const deriveOpenRouterOverflowRetryMaxTokens = (
+  currentMaxTokens: number | undefined,
+  error: unknown,
+): number | undefined => {
+  if (!Number.isFinite(currentMaxTokens) || (currentMaxTokens || 0) <= 1) {
+    return undefined;
+  }
+
+  const safeCurrent = Math.max(1, Math.floor(currentMaxTokens || 0));
+  const message = normalizeErrorMessage(error);
+  const diagnostics = parseContextOverflowDiagnostics(message);
+  const requestedTokens =
+    diagnostics.requestedTokens || parseRequestedTokensFromOverflow(message);
+  const outputTokens = parseOutputTokensFromOverflow(message);
+
+  if (
+    requestedTokens &&
+    diagnostics.limitTokens &&
+    requestedTokens > diagnostics.limitTokens
+  ) {
+    const overflow = requestedTokens - diagnostics.limitTokens;
+    const base = outputTokens && outputTokens > 0 ? outputTokens : safeCurrent;
+    const candidate = base - overflow - OPENROUTER_OVERFLOW_RETRY_MARGIN_TOKENS;
+    return Math.max(1, Math.min(safeCurrent, candidate));
+  }
+
+  if (
+    diagnostics.limitTokens &&
+    diagnostics.limitTokens > OPENROUTER_OVERFLOW_RETRY_MARGIN_TOKENS
+  ) {
+    const candidate =
+      diagnostics.limitTokens - OPENROUTER_OVERFLOW_RETRY_MARGIN_TOKENS;
+    return Math.max(1, Math.min(safeCurrent, candidate));
+  }
+
+  return undefined;
 };
 
 const getReasoningContent = (value: unknown): string => {
@@ -739,11 +738,21 @@ export async function generateContent(
         }
       }
 
+      const maxTokens = resolveTokenBudget({
+        providerProtocol: "openrouter",
+        modelId: model,
+        tokenBudget: options?.tokenBudget,
+        systemInstruction,
+        messages: contents,
+        tools: options?.tools,
+        schema,
+      }).maxOutputTokens;
+
       // Build request parameters
       const requestParams: OpenRouterGenerationParams = {
         model,
         messages,
-        maxTokens: resolveOpenRouterMaxTokens(model, options),
+        maxTokens,
         temperature: options?.temperature,
         topP: options?.topP,
         topK: options?.topK,
@@ -796,32 +805,49 @@ export async function generateContent(
           JSON.stringify(requestParams.responseFormat, null, 2),
         );
       }
+      const executeRequest =
+        async (): Promise<OpenRouterContentGenerationResponse> =>
+          options?.onChunk
+            ? await handleStreamingResponse(
+                client,
+                requestParams,
+                options.onChunk,
+                schema,
+              )
+            : await handleNonStreamingResponse(client, requestParams, schema);
+
       try {
-        if (options?.onChunk) {
-          // Streaming response
-          return await handleStreamingResponse(
-            client,
-            requestParams,
-            options.onChunk,
-            schema,
-          );
-        } else {
-          // Non-streaming response
-          return await handleNonStreamingResponse(
-            client,
-            requestParams,
-            schema,
-          );
-        }
+        return await executeRequest();
       } catch (error) {
-        if (error instanceof AIProviderError) throw error;
-        const message =
-          error instanceof Error ? error.message : "Unknown error";
+        let finalError: unknown = error;
+        const retryMaxTokens = deriveOpenRouterOverflowRetryMaxTokens(
+          requestParams.maxTokens,
+          finalError,
+        );
+        if (
+          typeof retryMaxTokens === "number" &&
+          Number.isFinite(requestParams.maxTokens) &&
+          retryMaxTokens < (requestParams.maxTokens || 0)
+        ) {
+          const previous = requestParams.maxTokens;
+          requestParams.maxTokens = retryMaxTokens;
+          console.warn(
+            `[OpenRouter] Context overflow detected. Retrying once with maxTokens clamped ${previous} -> ${retryMaxTokens}.`,
+          );
+          try {
+            return await executeRequest();
+          } catch (retryError) {
+            finalError = retryError;
+          }
+        }
+
+        if (finalError instanceof AIProviderError) throw finalError;
+        const message = normalizeErrorMessage(finalError);
         throw new AIProviderError(
           `OpenRouter generation failed: ${message}`,
           "openrouter",
           undefined,
-          error,
+          finalError,
         );
       }
     },

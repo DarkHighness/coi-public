@@ -39,6 +39,10 @@ import { getSceneImagePrompt, getVeoScriptPrompt } from "../prompts/index";
 import { createProvider } from "./provider/createProvider";
 
 import { getProviderConfig, createLogEntry } from "./utils";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextWindowTokens,
+} from "../modelContextWindows";
 
 // ============================================================================
 // Image/Video/Speech Generation
@@ -343,6 +347,13 @@ export const generateVeoScript = async (
     topK,
     minP,
   } = providerInfo;
+  const contextWindowTokens = resolveModelContextWindowTokens({
+    settings,
+    providerId: instance.id,
+    providerProtocol: instance.protocol,
+    modelId,
+    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  }).value;
   const sys =
     "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.";
   const contents: unknown[] =
@@ -368,7 +379,10 @@ export const generateVeoScript = async (
       topP,
       topK,
       minP,
-      maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+      tokenBudget: {
+        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+        contextWindowTokens,
+      },
     });
 
     const script = typeof result === "string" ? result : JSON.stringify(result);

@@ -13,6 +13,7 @@ import type {
   JsonValue,
   ToolArguments,
 } from "../../types";
+import type { TokenBudgetConfig } from "../tokenBudget";
 
 // ============================================================================
 // Provider Configuration Types
@@ -101,11 +102,8 @@ export interface GenerateContentOptions {
   topK?: number;
   /** Min-P 采样 (OpenRouter) */
   minP?: number;
-  /**
-   * Optional player-configured fallback cap.
-   * Used only when the model-specific max output limit is unknown.
-   */
-  maxOutputTokensFallback?: number;
+  /** Unified token-budget controls (context/output/estimate). */
+  tokenBudget?: TokenBudgetConfig;
   /** 流式输出回调 */
   onChunk?: (text: string) => void;
   /** 工具定义列表 (使用 Zod Schema) */

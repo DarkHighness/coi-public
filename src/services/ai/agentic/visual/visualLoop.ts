@@ -12,7 +12,11 @@ import {
   createToolCallMessage,
   createToolResponseMessage,
 } from "../../../messageTypes";
-import { callWithAgenticRetry } from "../retry";
+import { callWithAgenticRetry, createPromptTokenBudgetContext } from "../retry";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextWindowTokens,
+} from "../../../modelContextWindows";
 import {
   buildVisualContextMessages,
   getVisualSystemInstruction,
@@ -72,6 +76,13 @@ export async function runVisualLoop(
   }
 
   const { instance, modelId } = providerInfo;
+  const contextWindowTokens = resolveModelContextWindowTokens({
+    settings,
+    providerId: instance.id,
+    providerProtocol: instance.protocol,
+    modelId,
+    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  }).value;
 
   const visualSession = await sessionManager.getOrCreateSession({
     slotId: `visual-${segment.id}`,
@@ -87,6 +98,7 @@ export async function runVisualLoop(
   const allLogs: LogEntry[] = [];
   let imagePrompt: string | undefined;
   let veoScript: string | undefined;
+  const promptTokenBudgetContext = createPromptTokenBudgetContext();
 
   // Visual loop iterations
   const totalIterations = 3;
@@ -111,10 +123,13 @@ export async function runVisualLoop(
         tools: visualTools,
         toolChoice: "required",
         temperature: 1.0,
-        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+        tokenBudget: {
+          maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+          contextWindowTokens,
+        },
       },
       conversationHistory,
-      { maxRetries: 3 },
+      { maxRetries: 3, promptTokenBudgetContext },
     );
 
     allLogs.push(

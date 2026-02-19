@@ -8,7 +8,7 @@ import {
   createToolResponseMessage,
   createUserMessage,
 } from "../../../messageTypes";
-import { callWithAgenticRetry } from "../retry";
+import { callWithAgenticRetry, createPromptTokenBudgetContext } from "../retry";
 import {
   checkBudgetExhaustion,
   generateBudgetPrompt,
@@ -20,6 +20,10 @@ import {
 import { dispatchToolCallAsync } from "../../../tools/handlers";
 import { readConversationIndex } from "../../../vfs/conversation";
 import { vfsToolRegistry } from "../../../vfs/tools";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextWindowTokens,
+} from "../../../modelContextWindows";
 import {
   accumulateSummaryUsage,
   createSummaryLoopState,
@@ -212,6 +216,13 @@ export async function runSummaryLoopCore(options: {
 
   const { settings } = input;
   const finishToolName = vfsToolRegistry.getToolset("summary").finishToolName;
+  const contextWindowTokens = resolveModelContextWindowTokens({
+    settings,
+    providerId: provider.instanceId,
+    providerProtocol: provider.protocol,
+    modelId,
+    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  }).value;
 
   const loopState = createSummaryLoopState(input);
 
@@ -266,6 +277,7 @@ export async function runSummaryLoopCore(options: {
 
   const allLogs: LogEntry[] = [];
   let finalSummary: StorySummary | null = null;
+  const promptTokenBudgetContext = createPromptTokenBudgetContext();
 
   while (
     loopState.budgetState.loopIterationsUsed <
@@ -326,13 +338,17 @@ export async function runSummaryLoopCore(options: {
           settings.extra?.forceAutoToolChoice,
         ),
         temperature: settings.story?.temperature,
-        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+        tokenBudget: {
+          maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+          contextWindowTokens,
+        },
       },
       conversationHistory,
       {
         maxRetries: remainingRetries,
         requiredToolName: mustFinishNow ? finishToolName : undefined,
         finishToolName,
+        promptTokenBudgetContext,
         onRetry: (msg, count, meta) => {
           console.warn(`[SummaryLoop] Retry ${count}: ${msg}`);
           if (!meta?.silent) {

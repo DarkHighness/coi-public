@@ -15,6 +15,10 @@ import type { VfsElevationIntent, VfsMode } from "../../../vfs/core/types";
 import type { VfsElevationScopeTemplateIds } from "../../../vfs/core/elevation";
 import type { ZodToolDefinition } from "../../../providers/types";
 import { BudgetState, createBudgetState } from "../budgetUtils";
+import {
+  createPromptTokenBudgetContext,
+  type PromptTokenBudgetContext,
+} from "../retry";
 import { vfsToolRegistry } from "../../../vfs/tools";
 import {
   getConversationMarker,
@@ -40,6 +44,8 @@ export interface LoopState {
   conversationMarker: ConversationMarker | null;
   /** Budget tracking state */
   budgetState: BudgetState;
+  /** Session-local token budget references (no global shared cache) */
+  promptTokenBudgetContext: PromptTokenBudgetContext;
   /** Accumulated response being built */
   accumulatedResponse: GameResponse;
   /** Map of changed entities (id -> type) */
@@ -176,6 +182,7 @@ export function createLoopState(
     vfsSession,
     conversationMarker,
     budgetState,
+    promptTokenBudgetContext: createPromptTokenBudgetContext(),
     accumulatedResponse,
     changedEntities: new Map(),
     totalUsage: {

@@ -8,7 +8,6 @@ import {
   getEmbeddingModels,
   getModels,
   parseClaudeUsage,
-  resolveClaudeMaxTokens,
   validateConnection,
 } from "./claudeProvider";
 
@@ -80,36 +79,6 @@ describe("claudeProvider usage parsing", () => {
       totalTokens: 20,
       reported: true,
     });
-  });
-});
-
-describe("resolveClaudeMaxTokens", () => {
-  it("defaults to the model max output for known Claude model ids", () => {
-    expect(resolveClaudeMaxTokens("claude-sonnet-4-5")).toBe(64000);
-  });
-
-  it("supports provider-prefixed Claude model ids", () => {
-    expect(resolveClaudeMaxTokens("anthropic/claude-sonnet-4-5")).toBe(64000);
-  });
-
-  it("falls back to Claude default output cap for unknown model ids", () => {
-    expect(resolveClaudeMaxTokens("claude-custom-model")).toBe(64000);
-  });
-
-  it("keeps the same default when thinking mode is enabled", () => {
-    expect(
-      resolveClaudeMaxTokens("claude-sonnet-4-5", {
-        thinkingEffort: "high",
-      }),
-    ).toBe(64000);
-  });
-
-  it("uses player-configured fallback for unknown models", () => {
-    expect(
-      resolveClaudeMaxTokens("claude-custom-model", {
-        maxOutputTokensFallback: 32000,
-      }),
-    ).toBe(32000);
   });
 });
 

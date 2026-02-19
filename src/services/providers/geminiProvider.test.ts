@@ -7,7 +7,6 @@ import {
   fromUnifiedMessages,
   getModels,
   parseGeminiUsageMetadata,
-  resolveGeminiMaxOutputTokens,
   validateConnection,
 } from "./geminiProvider";
 
@@ -233,20 +232,6 @@ describe("geminiProvider helpers", () => {
         },
       ],
     });
-  });
-
-  it("resolves default max output tokens from model defaults", () => {
-    expect(resolveGeminiMaxOutputTokens("gemini-2.5-pro")).toBe(65536);
-    expect(resolveGeminiMaxOutputTokens("google/gemini-2.5-flash")).toBe(65536);
-    expect(resolveGeminiMaxOutputTokens("gemini-unknown-model")).toBe(65536);
-  });
-
-  it("uses player-configured fallback for unknown models", () => {
-    expect(
-      resolveGeminiMaxOutputTokens("gemini-unknown-model", {
-        maxOutputTokensFallback: 36000,
-      }),
-    ).toBe(36000);
   });
 });
 

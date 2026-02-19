@@ -16,6 +16,10 @@ import {
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import { writeOutlineProgress } from "../../../vfs/outline";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextWindowTokens,
+} from "../../../modelContextWindows";
 
 import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import {
@@ -85,7 +89,7 @@ import {
 import { sessionManager } from "../../sessionManager";
 
 import { buildCacheHint } from "../../provider/cacheHint";
-import { callWithAgenticRetry } from "../retry";
+import { callWithAgenticRetry, createPromptTokenBudgetContext } from "../retry";
 import {
   BudgetState,
   createBudgetState,
@@ -639,6 +643,13 @@ export const generateStoryOutlinePhased = async (
     throw new Error("Lore provider not configured");
   }
   const { instance, modelId } = providerInfo;
+  const contextWindowTokens = resolveModelContextWindowTokens({
+    settings,
+    providerId: instance.id,
+    providerProtocol: instance.protocol,
+    modelId,
+    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  }).value;
   const logs: LogEntry[] = [];
 
   // Image-based flow can be:
@@ -1080,6 +1091,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   }
 
   // Helper to make API call with retry
+  const promptTokenBudgetContext = createPromptTokenBudgetContext();
   const callAIWithRetry = async (
     phaseNum: number,
     tools: ZodToolDefinition[],
@@ -1113,7 +1125,10 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         topP: settings.story?.topP,
         topK: settings.story?.topK,
         minP: settings.story?.minP,
-        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+        tokenBudget: {
+          maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+          contextWindowTokens,
+        },
         thinkingEffort: settings.story?.thinkingEffort,
       },
       conversationHistory,
@@ -1121,6 +1136,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         maxRetries: opts?.maxRetries ?? budgetState.retriesMax,
         requiredToolName: opts?.requiredToolName,
         finishToolName: submitToolNameByPhase(phaseNum),
+        promptTokenBudgetContext,
         onRetry: (err, count, meta) => {
           console.warn(
             `[OutlineAgentic] Retry ${count}/${opts?.maxRetries ?? budgetState.retriesMax} due to: ${err}`,

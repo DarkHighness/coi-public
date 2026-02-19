@@ -14,6 +14,7 @@ import type {
   ChatGenerateResponse,
   ProviderBase,
 } from "../../provider/interfaces";
+import type { TokenBudgetConfig } from "../../../tokenBudget";
 import {
   isContextLengthError,
   isInvalidArgumentError,
@@ -41,7 +42,7 @@ export interface AICallConfig {
   topP?: number;
   topK?: number;
   minP?: number;
-  maxOutputTokensFallback?: number;
+  tokenBudget?: TokenBudgetConfig;
   mediaResolution?: ChatGenerateRequest["mediaResolution"];
   thinkingEffort?: ChatGenerateRequest["thinkingEffort"];
 }
@@ -91,7 +92,7 @@ export async function invokeAI(
         topP: config.topP,
         topK: config.topK,
         minP: config.minP,
-        maxOutputTokensFallback: config.maxOutputTokensFallback,
+        tokenBudget: config.tokenBudget,
         thinkingEffort: config.thinkingEffort,
       },
       history,

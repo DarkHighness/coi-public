@@ -6,6 +6,7 @@ import type {
 import type { ZodTypeAny } from "zod";
 
 import type { ZodToolDefinition } from "../../providers/types";
+import type { TokenBudgetConfig } from "../../tokenBudget";
 
 export interface ProviderModelCapabilities {
   supportsTools: boolean;
@@ -34,7 +35,7 @@ export interface ChatGenerateRequest {
   topP?: number;
   topK?: number;
   minP?: number;
-  maxOutputTokensFallback?: number;
+  tokenBudget?: TokenBudgetConfig;
   thinkingEffort?:
     | "xhigh"
     | "high"

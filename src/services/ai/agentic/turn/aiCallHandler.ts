@@ -23,6 +23,10 @@ import {
   HistoryCorruptedError,
 } from "../../contextCompressor";
 import { sessionManager } from "../../sessionManager";
+import {
+  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextWindowTokens,
+} from "../../../modelContextWindows";
 
 // ============================================================================
 // Types
@@ -81,6 +85,13 @@ export async function handleAICall(
       0,
       loopState.budgetState.retriesMax - loopState.budgetState.retriesUsed,
     );
+    const contextWindowTokens = resolveModelContextWindowTokens({
+      settings,
+      providerId: provider.instanceId,
+      providerProtocol: provider.protocol,
+      modelId,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    }).value;
     const resp = await callWithAgenticRetry(
       provider,
       {
@@ -94,7 +105,10 @@ export async function handleAICall(
         topP: storyCfg?.topP,
         topK: storyCfg?.topK,
         minP: storyCfg?.minP,
-        maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+        tokenBudget: {
+          maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
+          contextWindowTokens,
+        },
         thinkingEffort: storyCfg?.thinkingEffort,
       },
       conversationHistory,
@@ -102,6 +116,7 @@ export async function handleAICall(
         maxRetries: remainingRetries,
         requiredToolName,
         finishToolName: loopState.finishToolName,
+        promptTokenBudgetContext: loopState.promptTokenBudgetContext,
         onRetry: (err, count, meta) => {
           console.warn(`[AICall] Retry ${count}/${remainingRetries}: ${err}`);
           if (!meta?.silent) {

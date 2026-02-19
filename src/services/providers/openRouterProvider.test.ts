@@ -38,7 +38,6 @@ import {
   getEmbeddingModels,
   getModels,
   parseOpenRouterUsage,
-  resolveOpenRouterMaxTokens,
   validateConnection,
 } from "./openRouterProvider";
 
@@ -150,25 +149,92 @@ describe("openRouterProvider usage parsing", () => {
   });
 });
 
-describe("resolveOpenRouterMaxTokens", () => {
-  it("resolves model caps across provider namespaces", () => {
-    expect(resolveOpenRouterMaxTokens("openai/gpt-4o-mini")).toBe(16384);
-    expect(resolveOpenRouterMaxTokens("anthropic/claude-sonnet-4-5")).toBe(
-      64000,
+describe("openRouterProvider dynamic output budget", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("caps maxTokens to remaining context budget when prompt estimate is provided", async () => {
+    sdkMocks.chatSend.mockResolvedValueOnce({
+      choices: [
+        {
+          finish_reason: "stop",
+          native_finish_reason: "stop",
+          message: { content: "ok" },
+        },
+      ],
+      usage: {
+        prompt_tokens: 10,
+        completion_tokens: 2,
+        total_tokens: 12,
+      },
+    });
+
+    await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+      undefined,
+      {
+        tokenBudget: {
+          contextWindowTokens: 204800,
+          promptTokenEstimate: 82000,
+        },
+      } as any,
     );
-    expect(resolveOpenRouterMaxTokens("google/gemini-2.5-pro")).toBe(65536);
+
+    const requestParams = sdkMocks.chatSend.mock.calls[0]?.[0] as {
+      maxTokens?: number;
+    };
+    expect(requestParams?.maxTokens).toBe(120752);
   });
 
-  it("falls back when model id is unknown", () => {
-    expect(resolveOpenRouterMaxTokens("unknown/vendor-model")).toBe(128000);
-  });
+  it("retries once with clamped maxTokens after explicit context overflow error", async () => {
+    const sentMaxTokens: number[] = [];
+    let sendAttempt = 0;
+    sdkMocks.chatSend.mockImplementation(async (params: any) => {
+      sentMaxTokens.push(params?.maxTokens);
+      sendAttempt += 1;
+      if (sendAttempt === 1) {
+        throw new Error(
+          "This endpoint's maximum context length is 204800 tokens. However, you requested about 209555 tokens (79688 of text input, 1867 of tool input, 128000 in the output). Please reduce the length of either one.",
+        );
+      }
+      return {
+        choices: [
+          {
+            finish_reason: "stop",
+            native_finish_reason: "stop",
+            message: { content: "ok" },
+          },
+        ],
+        usage: {
+          prompt_tokens: 20,
+          completion_tokens: 5,
+          total_tokens: 25,
+        },
+      };
+    });
 
-  it("uses player-configured fallback for unknown model ids", () => {
-    expect(
-      resolveOpenRouterMaxTokens("unknown/vendor-model", {
-        maxOutputTokensFallback: 56000,
-      }),
-    ).toBe(56000);
+    await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+      undefined,
+      {
+        tokenBudget: {
+          maxOutputTokensFallback: 128000,
+          contextWindowTokens: 1_000_000,
+          promptTokenEstimate: 1,
+        },
+      } as any,
+    );
+
+    expect(sdkMocks.chatSend).toHaveBeenCalledTimes(2);
+    expect(sentMaxTokens[0]).toBe(128000);
+    expect(sentMaxTokens[1]).toBe(122733);
   });
 });
 
@@ -588,12 +654,9 @@ describe("openRouterProvider tool-call handling", () => {
     });
 
     await expect(
-      generateContent(
-        { apiKey: "k" } as any,
-        "z-ai/glm-5",
-        "sys",
-        [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
-      ),
+      generateContent({ apiKey: "k" } as any, "z-ai/glm-5", "sys", [
+        { role: "user", content: [{ type: "text", text: "phase1" }] },
+      ] as any),
     ).rejects.toMatchObject({ code: "MALFORMED_TOOL_CALL" });
   });
 
