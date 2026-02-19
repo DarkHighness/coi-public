@@ -63,6 +63,7 @@ import {
   buildToolCallContextUsageSnapshot,
   AUTO_QUERY_DANGER_THRESHOLD,
   recordPromptTokenCalibrationSample,
+  resolveProviderReportedPromptTokens,
 } from "../../contextUsage";
 import { ContextOverflowError } from "../../contextCompressor";
 import { estimatePromptTokens } from "../retry";
@@ -379,6 +380,7 @@ export async function runAgenticLoopRefactored(
   const allLogs: LogEntry[] = [];
   let didFinishTurn = false;
   let autoCompactTriggeredByContextPressure = false;
+  let skippedThresholdRoutingDueToUnknownUsage = false;
 
   try {
     // Inject ready consequences
@@ -505,30 +507,53 @@ export async function runAgenticLoopRefactored(
         usageReported: aiResult.usage?.reported,
       });
 
+      const providerReportedPromptTokens = resolveProviderReportedPromptTokens(
+        aiResult.usage,
+      );
+
       // Accumulate usage
       accumulateUsage(loopState.totalUsage, aiResult.usage);
-      const contextUsageSnapshot = buildToolCallContextUsageSnapshot({
-        settings,
-        promptTokens: aiResult.usage?.promptTokens ?? 0,
-        autoCompactThreshold: settings.extra?.autoCompactThreshold,
-      });
+      const contextUsageSnapshot =
+        providerReportedPromptTokens !== null
+          ? buildToolCallContextUsageSnapshot({
+              settings,
+              promptTokens: providerReportedPromptTokens,
+              autoCompactThreshold: settings.extra?.autoCompactThreshold,
+            })
+          : null;
       const autoCompactEnabled = settings.extra?.autoCompactEnabled ?? true;
       const hasFinishCall = (aiResult.functionCalls || []).some(
         (call) => call.name === loopState.finishToolName,
       );
-      const inDangerZone =
-        contextUsageSnapshot.usageRatio >= AUTO_QUERY_DANGER_THRESHOLD;
+      const inDangerZone = Boolean(
+        contextUsageSnapshot &&
+        contextUsageSnapshot.usageRatio >= AUTO_QUERY_DANGER_THRESHOLD,
+      );
       const shouldUseDangerOnlyThreshold =
         loopState.turnKind === "session_cleanup" ||
         loopState.turnKind === "session_compact";
-      const shouldTriggerContextOverflow = shouldUseDangerOnlyThreshold
-        ? inDangerZone
-        : contextUsageSnapshot.usageRatio >=
-          contextUsageSnapshot.autoCompactThreshold;
+      const shouldTriggerContextOverflow =
+        contextUsageSnapshot !== null &&
+        (shouldUseDangerOnlyThreshold
+          ? inDangerZone
+          : contextUsageSnapshot.usageRatio >=
+            contextUsageSnapshot.autoCompactThreshold);
+      if (
+        autoCompactEnabled &&
+        !hasFinishCall &&
+        contextUsageSnapshot === null &&
+        !skippedThresholdRoutingDueToUnknownUsage
+      ) {
+        skippedThresholdRoutingDueToUnknownUsage = true;
+        console.warn(
+          `[AgenticLoop] Skipping context-threshold auto routing for turnKind=${loopState.turnKind}: provider-reported prompt token usage unavailable.`,
+        );
+      }
       if (
         autoCompactEnabled &&
         !autoCompactTriggeredByContextPressure &&
         !hasFinishCall &&
+        contextUsageSnapshot !== null &&
         shouldTriggerContextOverflow
       ) {
         autoCompactTriggeredByContextPressure = true;

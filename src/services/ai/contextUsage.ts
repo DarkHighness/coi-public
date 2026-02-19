@@ -1,5 +1,6 @@
 import type {
   AISettings,
+  TokenUsage,
   ToolCallContextUsageSnapshot,
   ToolCallRecord,
 } from "../../types";
@@ -405,6 +406,20 @@ export function getPromptTokenCalibrationSnapshot(params: {
 
 export function resetPromptTokenCalibrationForTests(): void {
   promptTokenCalibrationByModel.clear();
+}
+
+/**
+ * Threshold routing must only use provider-reported prompt tokens.
+ * Returns null when usage is estimated/unknown.
+ */
+export function resolveProviderReportedPromptTokens(
+  usage: Pick<TokenUsage, "promptTokens" | "reported"> | null | undefined,
+): number | null {
+  if (!usage || usage.reported !== true) {
+    return null;
+  }
+  const promptTokens = toNonNegativeInt(usage.promptTokens);
+  return promptTokens > 0 ? promptTokens : null;
 }
 
 export function buildToolCallContextUsageSnapshot(params: {

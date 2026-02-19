@@ -169,6 +169,7 @@ describe("agenticLoop context pressure recovery", () => {
         promptTokens: 80,
         completionTokens: 5,
         totalTokens: 85,
+        reported: true,
       },
       functionCalls: [
         {
@@ -207,6 +208,7 @@ describe("agenticLoop context pressure recovery", () => {
         promptTokens: 95,
         completionTokens: 3,
         totalTokens: 98,
+        reported: true,
       },
       functionCalls: [
         {
@@ -234,6 +236,75 @@ describe("agenticLoop context pressure recovery", () => {
     expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
   });
 
+  it("does not trigger threshold routing when usage is not provider-reported", async () => {
+    const vfsSession = createVfsSession();
+    checkpointVfsSession("session-1", vfsSession as any);
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 95,
+          completionTokens: 3,
+          totalTokens: 98,
+          reported: false,
+        },
+        functionCalls: [
+          {
+            id: "call-1",
+            name: "vfs_write_file",
+            args: { path: "current/world/notes.md", content: "ok" },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 20,
+          completionTokens: 3,
+          totalTokens: 23,
+          reported: true,
+        },
+        functionCalls: [
+          {
+            id: "call-finish",
+            name: "vfs_finish_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(2);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
+  });
+
   it("session cleanup prefers in-session execution below danger threshold", async () => {
     const vfsSession = createVfsSession();
     checkpointVfsSession("session-1", vfsSession as any);
@@ -244,6 +315,7 @@ describe("agenticLoop context pressure recovery", () => {
           promptTokens: 80,
           completionTokens: 4,
           totalTokens: 84,
+          reported: true,
         },
         functionCalls: [
           {
@@ -259,6 +331,7 @@ describe("agenticLoop context pressure recovery", () => {
           promptTokens: 80,
           completionTokens: 4,
           totalTokens: 84,
+          reported: true,
         },
         functionCalls: [
           {
@@ -309,6 +382,7 @@ describe("agenticLoop context pressure recovery", () => {
         promptTokens: 95,
         completionTokens: 2,
         totalTokens: 97,
+        reported: true,
       },
       functionCalls: [
         {
@@ -347,6 +421,7 @@ describe("agenticLoop context pressure recovery", () => {
         promptTokens: 95,
         completionTokens: 5,
         totalTokens: 100,
+        reported: true,
       },
       functionCalls: [
         {

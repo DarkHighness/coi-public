@@ -7,7 +7,8 @@ const getProviderConfigMock = vi.hoisted(() => vi.fn());
 const getOrCreateSessionMock = vi.hoisted(() => vi.fn());
 const getSystemInstructionMock = vi.hoisted(() => vi.fn());
 const getHistoryMock = vi.hoisted(() => vi.fn());
-const estimatePromptTokensMock = vi.hoisted(() => vi.fn());
+const getProviderMock = vi.hoisted(() => vi.fn());
+const countProviderPromptTokensMock = vi.hoisted(() => vi.fn());
 const buildToolCallContextUsageSnapshotMock = vi.hoisted(() => vi.fn());
 const getDefinitionsForToolsetMock = vi.hoisted(() => vi.fn());
 const fromGeminiFormatMock = vi.hoisted(() => vi.fn());
@@ -25,11 +26,12 @@ vi.mock("../../sessionManager", () => ({
     getOrCreateSession: getOrCreateSessionMock,
     getSystemInstruction: getSystemInstructionMock,
     getHistory: getHistoryMock,
+    getProvider: getProviderMock,
   },
 }));
 
 vi.mock("../retry", () => ({
-  estimatePromptTokens: estimatePromptTokensMock,
+  countProviderPromptTokens: countProviderPromptTokensMock,
 }));
 
 vi.mock("../../contextUsage", async (importOriginal) => {
@@ -63,7 +65,8 @@ describe("generateEntityCleanup", () => {
     getOrCreateSessionMock.mockResolvedValue({ id: "sess-1" });
     getSystemInstructionMock.mockReturnValue("sys");
     getHistoryMock.mockReturnValue([]);
-    estimatePromptTokensMock.mockReturnValue(50);
+    getProviderMock.mockReturnValue({ protocol: "openai" });
+    countProviderPromptTokensMock.mockResolvedValue(50);
     buildToolCallContextUsageSnapshotMock.mockReturnValue({
       usageRatio: 0.5,
     });
@@ -256,6 +259,47 @@ describe("generateEntityCleanup", () => {
       "auto",
     );
 
+    expect(mockedGenerateAdventureTurn).toHaveBeenCalledTimes(1);
+    const [, calledContext, calledOptions] = mockedGenerateAdventureTurn.mock
+      .calls[0] as any[];
+    expect(calledContext.slotId).toBe("slot-clean");
+    expect(calledOptions?.turnKind).toBe("session_cleanup");
+  });
+
+  it("auto mode skips pre-route when provider-reported token count is unavailable", async () => {
+    getProviderConfigMock.mockReturnValue({
+      instance: { id: "provider-1", protocol: "openai" },
+      modelId: "model-1",
+    });
+    countProviderPromptTokensMock.mockResolvedValue(null);
+
+    mockedGenerateAdventureTurn.mockResolvedValueOnce({
+      response: { narrative: "session cleanup ok", choices: [] },
+      logs: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      changedEntities: [],
+      _conversationHistory: [],
+    } as any);
+
+    await generateEntityCleanup(
+      { forkId: 5 } as any,
+      {
+        slotId: "slot-clean",
+        userAction: "ignored",
+        recentHistory: [],
+        settings: {
+          story: { providerId: "provider-1", modelId: "model-1" },
+          providers: {
+            instances: [{ id: "provider-1", protocol: "openai" }],
+          },
+          extra: { autoCompactThreshold: 0.7 },
+          embedding: { enabled: false },
+        },
+      } as any,
+      "auto",
+    );
+
+    expect(buildToolCallContextUsageSnapshotMock).not.toHaveBeenCalled();
     expect(mockedGenerateAdventureTurn).toHaveBeenCalledTimes(1);
     const [, calledContext, calledOptions] = mockedGenerateAdventureTurn.mock
       .calls[0] as any[];

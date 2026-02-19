@@ -287,7 +287,7 @@ const toPromptTokenCountPayload = (
   }
 };
 
-const resolveProviderPromptTokenEstimate = async (
+export const countProviderPromptTokens = async (
   provider: ProviderBase,
   request: ChatGenerateRequest,
   history: UnifiedMessage[],
@@ -322,7 +322,7 @@ const resolveProviderPromptTokenEstimate = async (
     return Math.max(1, Math.floor(counted));
   } catch (error) {
     console.warn(
-      `[AgenticRetry] ${protocol} countTokens preflight failed, fallback to local estimate: ${normalizeErrorMessage(error)}`,
+      `[AgenticRetry] ${protocol} countTokens preflight failed: ${normalizeErrorMessage(error)}`,
     );
     return null;
   }
@@ -405,11 +405,7 @@ const resolvePromptTokenEstimate = async (
   request: ChatGenerateRequest,
   history: UnifiedMessage[],
 ): Promise<number> => {
-  const remote = await resolveProviderPromptTokenEstimate(
-    provider,
-    request,
-    history,
-  );
+  const remote = await countProviderPromptTokens(provider, request, history);
   if (remote && remote > 0) {
     return remote;
   }

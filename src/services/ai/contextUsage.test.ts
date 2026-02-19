@@ -6,6 +6,7 @@ import {
   getPromptTokenCalibrationSnapshot,
   recordPromptTokenCalibrationSample,
   resetPromptTokenCalibrationForTests,
+  resolveProviderReportedPromptTokens,
   resolveVfsReadTokenBudget,
   resolveVfsReadHardCapChars,
 } from "./contextUsage";
@@ -179,5 +180,27 @@ describe("contextUsage", () => {
     expect(snapshot.thresholdTokens).toBe(35000);
     expect(snapshot.usageRatio).toBeCloseTo(0.52, 4);
     expect(snapshot.tokensToThreshold).toBe(9000);
+  });
+
+  it("accepts threshold input only from provider-reported usage", () => {
+    expect(
+      resolveProviderReportedPromptTokens({
+        promptTokens: 1200,
+        reported: true,
+      }),
+    ).toBe(1200);
+    expect(
+      resolveProviderReportedPromptTokens({
+        promptTokens: 1200,
+        reported: false,
+      }),
+    ).toBeNull();
+    expect(
+      resolveProviderReportedPromptTokens({
+        promptTokens: 0,
+        reported: true,
+      }),
+    ).toBeNull();
+    expect(resolveProviderReportedPromptTokens(undefined)).toBeNull();
   });
 });

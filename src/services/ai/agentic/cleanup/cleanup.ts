@@ -17,7 +17,7 @@ import {
 } from "../../contextUsage";
 import { sessionManager } from "../../sessionManager";
 import { getProviderConfig } from "../../utils";
-import { estimatePromptTokens } from "../retry";
+import { countProviderPromptTokens } from "../retry";
 import { fromGeminiFormat, createUserMessage } from "../../../messageTypes";
 import { vfsToolRegistry } from "../../../vfs/tools";
 import {
@@ -278,7 +278,7 @@ const isUnifiedMessageRecord = (value: unknown): value is UnifiedMessage =>
   typeof (value as { role?: unknown }).role === "string" &&
   Array.isArray((value as { content?: unknown }).content);
 
-const estimateCleanupContextUsage = async (
+const resolveCleanupContextUsageFromProviderCount = async (
   context: TurnContext,
   cleanupPrompt: string,
   forkId: number,
@@ -328,7 +328,9 @@ const estimateCleanupContextUsage = async (
       parameters: tool.parameters,
     }));
 
-  const promptTokens = estimatePromptTokens(
+  const provider = sessionManager.getProvider(session.id, instance);
+  const promptTokens = await countProviderPromptTokens(
+    provider,
     {
       modelId,
       systemInstruction,
@@ -337,6 +339,9 @@ const estimateCleanupContextUsage = async (
     },
     [...history, createUserMessage(cleanupPrompt)],
   );
+  if (typeof promptTokens !== "number" || promptTokens <= 0) {
+    return null;
+  }
 
   return buildToolCallContextUsageSnapshot({
     settings: context.settings,
@@ -422,7 +427,7 @@ export const generateEntityCleanup = async (
     }
 
     try {
-      const usageSnapshot = await estimateCleanupContextUsage(
+      const usageSnapshot = await resolveCleanupContextUsageFromProviderCount(
         cleanupContext,
         cleanupPrompt,
         typeof inputState.forkId === "number" ? inputState.forkId : 0,
@@ -440,7 +445,7 @@ export const generateEntityCleanup = async (
       }
     } catch (error) {
       console.warn(
-        "[Cleanup] Failed to estimate cleanup context pressure; defaulting to session cleanup first.",
+        "[Cleanup] Failed to resolve provider-reported cleanup context usage; defaulting to session cleanup first.",
         error,
       );
     }
