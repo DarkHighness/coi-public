@@ -580,7 +580,6 @@ export async function callWithAgenticRetry(
         ? effectivePromptTokenBudgetContext.get(tokenReferenceKey)
         : undefined;
       const previousTotalTokensHint = previousReference?.totalTokens;
-      const previousCompletionTokensHint = previousReference?.completionTokens;
       const additionalPromptTokensHint =
         previousReference &&
         previousReference.requestFingerprint === requestFingerprint &&
@@ -592,15 +591,10 @@ export async function callWithAgenticRetry(
           : undefined;
       const inputTokenEstimate =
         typeof previousTotalTokensHint === "number" &&
-        typeof previousCompletionTokensHint === "number" &&
         typeof additionalPromptTokensHint === "number"
           ? Math.max(
               basePromptTokenEstimate,
-              previousTotalTokensHint +
-                Math.max(
-                  0,
-                  additionalPromptTokensHint - previousCompletionTokensHint,
-                ),
+              previousTotalTokensHint + additionalPromptTokensHint,
             )
           : basePromptTokenEstimate;
       const tokenBudget = {
