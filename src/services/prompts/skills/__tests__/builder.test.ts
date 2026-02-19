@@ -23,8 +23,10 @@ describe("skills prompt builder hygiene", () => {
     expect(prompt).toContain("<theme_key>long_aotian</theme_key>");
     expect(prompt).toContain("<theme_skill_selection_protocol>");
     expect(prompt).toContain(
-      'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
+      'vfs_read_chars({ path: "current/skills/theme/fantasy/SKILL.md" })',
     );
+    expect(prompt).toContain("Read `current/skills/index.json`");
+    expect(prompt).toContain("Never assume `<theme_key>` equals");
     expect(prompt).toContain("catalog hierarchy above");
     expect(prompt).toContain(
       "Theme skills live under `current/skills/theme/**`",

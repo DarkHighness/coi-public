@@ -41,9 +41,13 @@ describe("outline tool instruction consistency", () => {
     expect(prompt).toContain("planningMetadata");
     expect(prompt).toContain("Runtime Adaptation Protocol");
     expect(prompt).toContain("forbidDeusExMachina");
-    expect(prompt).toContain("current/skills/theme/<genre>/SKILL.md");
+    expect(prompt).toContain("current/skills/index.json");
+    expect(prompt).toContain("current/skills/theme/**");
     expect(prompt).toContain(
-      'vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })',
+      "Do NOT assume `themeKey` is a valid `skills/theme/*` folder name.",
+    );
+    expect(prompt).toContain(
+      'vfs_read_chars({ path: "current/skills/theme/fantasy/SKILL.md" })',
     );
     expect(prompt).toContain("SKILL USAGE FOR GENRE DEPTH");
   });

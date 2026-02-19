@@ -99,6 +99,7 @@ import {
 
 import { getPhasePrompt } from "./outlinePrompts";
 import { mergeOutlinePhases } from "./outlineMerge";
+import { getOutlineDefaultReadOnlyAllowPrefixes } from "./readOnlyRoots";
 import {
   composeSystemInstruction,
   getOutlineRuntimeFloor,
@@ -175,17 +176,13 @@ const READ_ONLY_VFS_TOOL_DEFS: ZodToolDefinition[] = [
   vfsToolRegistry.getDefinition("vfs_read_chars"),
   vfsToolRegistry.getDefinition("vfs_read_lines"),
   vfsToolRegistry.getDefinition("vfs_read_json"),
+  vfsToolRegistry.getDefinition("vfs_read_markdown"),
   vfsToolRegistry.getDefinition("vfs_search"),
 ];
 
 const READ_ONLY_VFS_TOOL_NAMES = new Set(
   READ_ONLY_VFS_TOOL_DEFS.map((t) => t.name),
 );
-
-const OUTLINE_PHASE_READ_ROOTS = [
-  "outline/phases",
-  "shared/narrative/outline/phases",
-];
 
 const OUTLINE_SUBMIT_TOOL_NAMES: Set<string> = new Set(
   Array.from({ length: 10 }, (_, phase) =>
@@ -223,23 +220,6 @@ const isAllowedOutlineReadOnlyPath = (
       normalized.startsWith(`${normalizedPrefix}/`)
     );
   });
-};
-
-const getOutlineDefaultReadOnlyAllowPrefixes = (
-  theme: string,
-  isImageBasedFlow: boolean,
-): string[] => {
-  // Keep defaults simple and not overly strict:
-  // - `skills/**` is a built-in read-only library intended to improve generation quality.
-  // - `refs/**` is a read-only reference pack(s) seeded into VFS (e.g. atmosphere).
-  const prefixes: string[] = ["skills", "refs", ...OUTLINE_PHASE_READ_ROOTS];
-
-  // Theme skills are optional and only useful when we have a stable theme key.
-  if (!isImageBasedFlow && theme && theme !== IMAGE_BASED_THEME) {
-    prefixes.push(`skills/theme/${theme}`);
-  }
-
-  return prefixes;
 };
 
 const OUTLINE_RESUME_ANCHOR_MARKER = "[OUTLINE RESUME ANCHOR]";
@@ -521,7 +501,8 @@ const validateOutlineReadOnlyVfsArgs = (
   if (
     toolName === "vfs_read_chars" ||
     toolName === "vfs_read_lines" ||
-    toolName === "vfs_read_json"
+    toolName === "vfs_read_json" ||
+    toolName === "vfs_read_markdown"
   ) {
     const path = getStringArg(args, "path");
     if (!path) return reject(`${toolName} requires a path`);
@@ -908,7 +889,7 @@ export const generateStoryOutlinePhased = async (
       .join("\n");
 
     const vfsReadOnlyHint = readOnlyVfsEnabled
-      ? `- OPTIONAL: You may use read-only VFS tools (e.g. \`vfs_ls\`, \`vfs_read_lines\`, \`vfs_read_json\`) to inspect reference files.\n- Allowed roots:\n${allowedRootsForPrompt}\n- Do NOT combine the current phase submit tool with other tools in the same message. Use separate rounds: read first, then submit.\n`
+      ? `- OPTIONAL: You may use read-only VFS tools (e.g. \`vfs_ls\`, \`vfs_read_lines\`, \`vfs_read_json\`, \`vfs_read_markdown\`) to inspect reference files.\n- Allowed roots:\n${allowedRootsForPrompt}\n- Do NOT combine the current phase submit tool with other tools in the same message. Use separate rounds: read first, then submit.\n`
       : "";
 
     // Create the initial task instruction

@@ -101,6 +101,10 @@ describe("export-loop-prompts-jsonl script", () => {
     ) as { text: string };
     expect(outlinePhasePrompt.text).toContain("<phase_context>");
     expect(outlinePhasePrompt.text).toContain("[PHASE 1 OF 9");
+    expect(outlinePhasePrompt.text).toContain("current/outline/phases");
+    expect(outlinePhasePrompt.text).toContain(
+      "current/shared/narrative/outline/phases",
+    );
 
     const turnAtoms = JSON.parse(
       readFileSync(join(loopsRoot, "turn", "atoms.json"), "utf8"),

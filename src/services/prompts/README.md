@@ -22,7 +22,8 @@ This directory contains the modularized prompt generation logic for the AI Game 
 
 ## Theme Skills Policy
 
-- Turn/Outline prompts include an optional theme-skill selection protocol: use `vfs_read_chars({ path: "current/skills/index.json" })` first, then selectively `vfs_read_chars({ path: "current/skills/theme/<genre>/SKILL.md" })` for `0~2` entries when needed.
+- Turn/Outline prompts include an optional theme-skill selection protocol: inspect `current/skills/index.json` first, resolve real paths under `current/skills/theme/**`, then selectively read those exact files (for example `current/skills/theme/fantasy/SKILL.md`).
+- Do not assume `themeKey` equals a `skills/theme/*` folder name.
 - Theme archetype skills (e.g. `face-slapping-reversal`, `tragic-angst`, `healing-redemption`) are optional enhancement layers for pacing/conflict/tone.
 - Theme skills are soft guidance only (no hard blocking gate).
 - This differs from command/preset runtime constraints, which can still enforce strict read-before-write behavior in their own flows.
