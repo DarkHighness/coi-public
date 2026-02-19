@@ -1,4 +1,5 @@
 export const NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS = 32_768;
+export const STORY_OUTLINE_MAX_OUTPUT_TOKENS = 64_000;
 
 export interface TokenBudgetConfig {
   /**

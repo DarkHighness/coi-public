@@ -20,6 +20,7 @@ import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   resolveModelContextWindowTokens,
 } from "../../../modelContextWindows";
+import { STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../../../tokenBudget";
 
 import { ToolCallResult, ZodToolDefinition } from "../../../providers/types";
 import {
@@ -1128,6 +1129,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         tokenBudget: {
           maxOutputTokensFallback: settings.extra?.maxOutputTokensFallback,
           contextWindowTokens,
+          maxOutputTokensHardCap: STORY_OUTLINE_MAX_OUTPUT_TOKENS,
         },
         thinkingEffort: settings.story?.thinkingEffort,
       },

@@ -19,4 +19,13 @@ describe("outline retry budget semantics", () => {
       /while \(!phaseSubmitted\) \{\s*if \(budgetState\.retriesUsed !== 0\) \{\s*budgetState\.retriesUsed = 0;/s,
     );
   });
+
+  it("hard-caps StoryOutline single-round output at 64k", () => {
+    const outlineDriverPath = path.resolve(__dirname, "../outline.ts");
+    const source = fs.readFileSync(outlineDriverPath, "utf8");
+
+    expect(source).toMatch(
+      /maxOutputTokensHardCap:\s*STORY_OUTLINE_MAX_OUTPUT_TOKENS/,
+    );
+  });
 });
