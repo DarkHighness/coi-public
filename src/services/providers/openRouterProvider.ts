@@ -183,6 +183,11 @@ interface OpenRouterStreamingDeltaCompat
   tool_calls?: models.ChatStreamingMessageToolCall[];
 }
 
+type OpenRouterStreamingToolCallCompat = models.ChatStreamingMessageToolCall & {
+  name?: string;
+  arguments?: string;
+};
+
 interface OpenRouterImageGenerationParams extends OpenRouterGenerationParams {
   modalities: string[];
   imageConfig: {
@@ -960,9 +965,7 @@ async function handleStreamingResponse(
         nativeFinishReason = chunkNativeFinishReason;
       }
 
-      const delta = choice?.delta as
-        | OpenRouterStreamingDeltaCompat
-        | undefined;
+      const delta = choice?.delta as OpenRouterStreamingDeltaCompat | undefined;
       if (delta?.content) {
         content += delta.content;
         onChunk(delta.content);
@@ -975,18 +978,21 @@ async function handleStreamingResponse(
       const deltaToolCalls = delta?.toolCalls || delta?.tool_calls;
       if (deltaToolCalls) {
         for (const tc of deltaToolCalls) {
-          const tcRecord = isRecord(tc) ? tc : null;
+          const tcCompat = tc as OpenRouterStreamingToolCallCompat;
+          const tcRecord = isRecord(tcCompat) ? tcCompat : null;
           const functionRecord =
             tcRecord && isRecord(tcRecord.function)
               ? tcRecord.function
               : undefined;
           const index =
-            typeof tc.index === "number" ? tc.index : readNumber(tcRecord?.index) || 0;
+            typeof tc.index === "number"
+              ? tc.index
+              : readNumber(tcRecord?.index) || 0;
           const toolName =
-            readString(functionRecord?.name) || readString(tcRecord?.name) || "";
+            readString(functionRecord?.name) || readString(tcCompat.name) || "";
           const toolArguments =
             readString(functionRecord?.arguments) ||
-            readString(tcRecord?.arguments) ||
+            readString(tcCompat.arguments) ||
             "";
           const toolId = readString(tcRecord?.id) || `tool_${index}`;
           const thoughtSignature = getThoughtSignature(tc);

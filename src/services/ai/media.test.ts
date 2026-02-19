@@ -232,7 +232,7 @@ describe("media service", () => {
 
     getVeoScriptPrompt.mockReturnValueOnce("<veo_context/>");
 
-    const generateChat = vi.fn(async () => ({
+    const generateChat = vi.fn(async (_request: { messages?: unknown[] }) => ({
       result: "veo script",
       usage: { promptTokens: 12, completionTokens: 34, totalTokens: 46 },
       raw: { ok: true },
@@ -264,8 +264,10 @@ describe("media service", () => {
         ],
       }),
     );
-    expect(
-      generateChat.mock.calls[0]?.[0]?.messages[0]?.content[0]?.text,
-    ).not.toContain("AWARD-WINNING cinematographer");
+    const firstPromptText = generateChat.mock.calls.at(0)?.at(0)
+      ?.messages?.[0] as { content?: Array<{ text?: string }> } | undefined;
+    expect(firstPromptText?.content?.[0]?.text).not.toContain(
+      "AWARD-WINNING cinematographer",
+    );
   });
 });

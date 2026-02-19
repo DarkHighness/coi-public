@@ -15,6 +15,11 @@ import { getThemeKeyForAtmosphere } from "./utils/constants/atmosphere";
 import { isCriticalAppError } from "./utils/appErrorClassifier";
 import { type OutlinePhaseProgress } from "./services/aiService";
 import { importSave } from "./services/saveExportService";
+import {
+  normalizeAtmosphere,
+  type AtmosphereObject,
+  type EnvThemeKey,
+} from "./utils/constants/atmosphere";
 import { GlobalStyles } from "./components/GlobalStyles";
 import {
   ErrorBoundary,
@@ -60,11 +65,8 @@ const GamePage = React.lazy(() =>
 );
 
 type ThemeVisualMeta = {
-  envTheme: string;
-  defaultAtmosphere: {
-    envTheme: string;
-    ambience: string;
-  };
+  envTheme: EnvThemeKey;
+  defaultAtmosphere: AtmosphereObject;
 };
 
 const FALLBACK_THEME_VISUAL_META: ThemeVisualMeta = {
@@ -82,13 +84,18 @@ const loadThemeVisualMeta = async (): Promise<
     themeVisualMetaPromise = import("./utils/constants/themes").then(
       ({ THEMES }) =>
         Object.fromEntries(
-          Object.entries(THEMES).map(([key, theme]) => [
-            key,
-            {
-              envTheme: theme.envTheme,
-              defaultAtmosphere: theme.defaultAtmosphere,
-            },
-          ]),
+          Object.entries(THEMES).map(([key, theme]) => {
+            const defaultAtmosphere = normalizeAtmosphere(
+              theme.defaultAtmosphere,
+            );
+            return [
+              key,
+              {
+                envTheme: defaultAtmosphere.envTheme,
+                defaultAtmosphere,
+              },
+            ];
+          }),
         ),
     );
   }
