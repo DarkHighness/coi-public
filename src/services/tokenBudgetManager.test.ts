@@ -24,14 +24,14 @@ describe("resolveTokenBudget", () => {
     expect(geminiRouted.maxOutputTokens).toBe(65536);
   });
 
-  it("clamps output cap using context window and prompt estimate", () => {
+  it("clamps output cap using context window and total estimate", () => {
     const budget = resolveTokenBudget({
       providerProtocol: "openrouter",
       modelId: "unknown/vendor-model",
       tokenBudget: {
         maxOutputTokensFallback: 128000,
         contextWindowTokens: 204800,
-        promptTokenEstimate: 82000,
+        totalTokenEstimate: 82000,
       },
     });
 

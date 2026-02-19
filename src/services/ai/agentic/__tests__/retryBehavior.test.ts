@@ -177,11 +177,11 @@ describe("callWithAgenticRetry behavior", () => {
     });
 
     const firstEstimate = (provider.generateChat as any).mock.calls[0][0]
-      ?.tokenBudget?.promptTokenEstimate;
+      ?.tokenBudget?.totalTokenEstimate;
     const secondEstimate = (provider.generateChat as any).mock.calls[1][0]
-      ?.tokenBudget?.promptTokenEstimate;
+      ?.tokenBudget?.totalTokenEstimate;
     const isolatedEstimate = (provider.generateChat as any).mock.calls[2][0]
-      ?.tokenBudget?.promptTokenEstimate;
+      ?.tokenBudget?.totalTokenEstimate;
 
     expect(firstEstimate).toBeGreaterThan(0);
     expect(secondEstimate).toBeGreaterThan(firstEstimate);

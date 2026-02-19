@@ -132,17 +132,20 @@ export const resolveContextBoundMaxOutputTokens = (
 ): number => {
   const resolvedMaxOutputTokens =
     sanitizePositiveInt(params.maxOutputTokens) || 1;
-  const estimatedPromptTokensFromPayload =
-    sanitizePositiveInt(params.tokenBudget?.promptTokenEstimate) ||
+  const estimatedInputTokensFromBudget =
+    sanitizePositiveInt(params.tokenBudget?.totalTokenEstimate) ||
+    sanitizePositiveInt(params.tokenBudget?.promptTokenEstimate);
+  const estimatedInputTokensFromPayload =
+    estimatedInputTokensFromBudget ||
     estimatePromptTokensFromPayload({
       systemInstruction: params.systemInstruction,
       messages: params.messages,
       tools: params.tools,
       schema: params.schema,
     });
-  const promptTokens = sanitizePositiveInt(estimatedPromptTokensFromPayload);
+  const inputTokens = sanitizePositiveInt(estimatedInputTokensFromPayload);
 
-  if (!promptTokens) {
+  if (!inputTokens) {
     return resolvedMaxOutputTokens;
   }
 
@@ -155,7 +158,7 @@ export const resolveContextBoundMaxOutputTokens = (
     sanitizePositiveInt(params.safetyMarginTokens) ||
     DEFAULT_OUTPUT_TOKEN_SAFETY_MARGIN;
   const availableOutputTokens =
-    contextWindowTokens - promptTokens - safetyMarginTokens;
+    contextWindowTokens - inputTokens - safetyMarginTokens;
 
   return Math.max(1, Math.min(resolvedMaxOutputTokens, availableOutputTokens));
 };

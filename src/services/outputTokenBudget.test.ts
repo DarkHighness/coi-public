@@ -12,7 +12,7 @@ describe("resolveContextBoundMaxOutputTokens", () => {
     ).toBe(128000);
   });
 
-  it("caps output tokens to remaining context window", () => {
+  it("caps output tokens to remaining context window from total estimate", () => {
     expect(
       resolveContextBoundMaxOutputTokens({
         providerProtocol: "openai",
@@ -20,7 +20,7 @@ describe("resolveContextBoundMaxOutputTokens", () => {
         maxOutputTokens: 128000,
         tokenBudget: {
           contextWindowTokens: 204800,
-          promptTokenEstimate: 82000,
+          totalTokenEstimate: 82000,
         },
       }),
     ).toBe(120752);
@@ -58,6 +58,21 @@ describe("resolveContextBoundMaxOutputTokens", () => {
         },
         systemInstruction: "x".repeat(500),
         messages: [{ role: "user", content: [{ type: "text", text: "y" }] }],
+      }),
+    ).toBe(120752);
+  });
+
+  it("prefers total estimate over prompt estimate when both are provided", () => {
+    expect(
+      resolveContextBoundMaxOutputTokens({
+        providerProtocol: "openai",
+        modelId: "openai/unknown-model",
+        maxOutputTokens: 128000,
+        tokenBudget: {
+          contextWindowTokens: 204800,
+          promptTokenEstimate: 1000,
+          totalTokenEstimate: 82000,
+        },
       }),
     ).toBe(120752);
   });

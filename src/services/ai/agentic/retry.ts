@@ -25,21 +25,24 @@ import {
 import type { ZodError } from "zod";
 
 interface PromptTokenReferenceRecord {
-  promptTokens: number;
+  totalTokens: number;
+  completionTokens: number;
   historyLength: number;
   requestFingerprint: string;
 }
 
 export interface PromptTokenBudgetContext {
   get(providerModelKey: string): {
-    promptTokens: number;
+    totalTokens: number;
+    completionTokens: number;
     historyLength: number;
     requestFingerprint: string;
   } | null;
   set(
     providerModelKey: string,
     reference: {
-      promptTokens: number;
+      totalTokens: number;
+      completionTokens: number;
       historyLength: number;
       requestFingerprint: string;
     },
@@ -55,7 +58,8 @@ export const createPromptTokenBudgetContext = (): PromptTokenBudgetContext => {
     },
     set(providerModelKey, reference) {
       references.set(providerModelKey, {
-        promptTokens: Math.max(0, Math.floor(reference.promptTokens)),
+        totalTokens: Math.max(0, Math.floor(reference.totalTokens)),
+        completionTokens: Math.max(0, Math.floor(reference.completionTokens)),
         historyLength: Math.max(0, Math.floor(reference.historyLength)),
         requestFingerprint: reference.requestFingerprint,
       });
@@ -575,7 +579,8 @@ export async function callWithAgenticRetry(
       const previousReference = tokenReferenceKey
         ? effectivePromptTokenBudgetContext.get(tokenReferenceKey)
         : undefined;
-      const previousPromptTokensHint = previousReference?.promptTokens;
+      const previousTotalTokensHint = previousReference?.totalTokens;
+      const previousCompletionTokensHint = previousReference?.completionTokens;
       const additionalPromptTokensHint =
         previousReference &&
         previousReference.requestFingerprint === requestFingerprint &&
@@ -585,17 +590,23 @@ export async function callWithAgenticRetry(
               previousReference.historyLength,
             )
           : undefined;
-      const promptTokenEstimate =
-        typeof previousPromptTokensHint === "number" &&
+      const inputTokenEstimate =
+        typeof previousTotalTokensHint === "number" &&
+        typeof previousCompletionTokensHint === "number" &&
         typeof additionalPromptTokensHint === "number"
           ? Math.max(
               basePromptTokenEstimate,
-              previousPromptTokensHint + additionalPromptTokensHint,
+              previousTotalTokensHint +
+                Math.max(
+                  0,
+                  additionalPromptTokensHint - previousCompletionTokensHint,
+                ),
             )
           : basePromptTokenEstimate;
       const tokenBudget = {
         ...(request.tokenBudget || {}),
-        promptTokenEstimate,
+        totalTokenEstimate: inputTokenEstimate,
+        promptTokenEstimate: inputTokenEstimate,
       };
       response = await provider.generateChat({
         ...request,
@@ -692,10 +703,11 @@ export async function callWithAgenticRetry(
     if (
       tokenReferenceKey &&
       normalizedUsage.reported !== false &&
-      normalizedUsage.promptTokens > 0
+      normalizedUsage.totalTokens > 0
     ) {
       effectivePromptTokenBudgetContext.set(tokenReferenceKey, {
-        promptTokens: normalizedUsage.promptTokens,
+        totalTokens: normalizedUsage.totalTokens,
+        completionTokens: normalizedUsage.completionTokens,
         historyLength: history.length,
         requestFingerprint,
       });

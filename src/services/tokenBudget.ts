@@ -9,7 +9,13 @@ export interface TokenBudgetConfig {
    */
   contextWindowTokens?: number;
   /**
-   * Optional prompt token estimate for the current request.
+   * Optional total token estimate for the current request input budget.
+   * This should prefer provider-reported `total_tokens` from prior rounds.
+   */
+  totalTokenEstimate?: number;
+  /**
+   * Legacy alias for input estimate.
+   * Prefer `totalTokenEstimate` when available.
    */
   promptTokenEstimate?: number;
 }
