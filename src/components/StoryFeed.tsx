@@ -56,6 +56,48 @@ interface StoryFeedProps {
   timelineCollapsed?: boolean;
 }
 
+const SCROLL_VIRTUALIZATION_THRESHOLD = 28;
+const SCROLL_VIRTUAL_OVERSCAN = 4;
+const DEFAULT_SEGMENT_ESTIMATED_HEIGHT = 520;
+
+const estimateSegmentHeight = (segment: StorySegment): number => {
+  if (segment.role === "user") {
+    return 150;
+  }
+  if (segment.role === "system" || segment.role === "command") {
+    return 220;
+  }
+
+  const textLength = segment.text?.length ?? 0;
+  const textDelta = Math.min(360, Math.ceil(textLength / 240) * 24);
+  const imageDelta =
+    segment.imageUrl || segment.imageId || segment.imagePrompt ? 220 : 0;
+  return DEFAULT_SEGMENT_ESTIMATED_HEIGHT + textDelta + imageDelta;
+};
+
+const findSegmentIndexByOffset = (
+  prefixHeights: readonly number[],
+  targetOffset: number,
+): number => {
+  if (prefixHeights.length <= 1) return 0;
+
+  let low = 0;
+  let high = prefixHeights.length - 2;
+  let answer = 0;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (prefixHeights[mid] <= targetOffset) {
+      answer = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return answer;
+};
+
 export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
   (
     {
@@ -91,6 +133,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     } = state;
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
+    const preludeRef = useRef<HTMLDivElement>(null);
 
     // Stack pagination state
     const stackItemsPerPage = settings.stackItemsPerPage ?? 10;
@@ -103,34 +146,199 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
     // Track played animations to prevent re-typing
     const playedAnimations = useRef<Set<string>>(new Set());
+    const historicalSegmentsRef = useRef<StorySegment[]>([]);
+    const historicalSegmentsVersionRef = useRef(0);
+    const latestSegmentRef = useRef<StorySegment | null>(null);
     // Track which segment IDs existed when component first mounted with content
     // This allows new segments (like openingNarrative) to animate even if they arrive after mount
     const mountedSegmentIds = useRef<Set<string> | null>(null);
 
     // Disable content-visibility during initial load for accurate scrollHeight
     const [disableVirtualization, setDisableVirtualization] = useState(true);
+    const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
+    const [preludeHeight, setPreludeHeight] = useState(0);
+    const [virtualScrollTop, setVirtualScrollTop] = useState(0);
+    const [measuredHeightsVersion, setMeasuredHeightsVersion] = useState(0);
+
+    const measuredHeightBySegmentIdRef = useRef<Record<string, number>>({});
+    const segmentNodeMapRef = useRef<Map<string, HTMLElement>>(new Map());
+    const segmentResizeObserverRef = useRef<ResizeObserver | null>(null);
+    const shouldMeasureSegmentsRef = useRef(false);
+    const pendingVirtualScrollTopRef = useRef(0);
+    const virtualScrollRafRef = useRef<number | null>(null);
+    const scrollVirtualMetaRef = useRef<{
+      enabled: boolean;
+      prefixHeights: number[];
+      preludeHeight: number;
+      idToIndex: Map<string, number>;
+    }>({
+      enabled: false,
+      prefixHeights: [0],
+      preludeHeight: 0,
+      idToIndex: new Map(),
+    });
 
     const { t } = useTranslation();
+    const storyCardLabels = useMemo(
+      () => ({
+        decided: t("decided"),
+        vision: t("vision"),
+        unavailable: t("unavailable"),
+      }),
+      [t],
+    );
+    const gameStateRef = useRef(gameState);
+    const settingsRef = useRef(settings);
+
+    useEffect(() => {
+      gameStateRef.current = gameState;
+    }, [gameState]);
+
+    useEffect(() => {
+      settingsRef.current = settings;
+    }, [settings]);
+
+    useEffect(() => {
+      const container = scrollContainerRef.current;
+      const prelude = preludeRef.current;
+      if (!container) return;
+
+      const syncSizes = () => {
+        setScrollViewportHeight(container.clientHeight);
+        setPreludeHeight(prelude?.offsetHeight ?? 0);
+        pendingVirtualScrollTopRef.current = container.scrollTop;
+        setVirtualScrollTop(container.scrollTop);
+      };
+
+      syncSizes();
+
+      if (typeof ResizeObserver === "undefined") {
+        return;
+      }
+
+      const observer = new ResizeObserver(syncSizes);
+      observer.observe(container);
+      if (prelude) {
+        observer.observe(prelude);
+      }
+
+      return () => {
+        observer.disconnect();
+      };
+    }, [
+      layout,
+      currentHistory.length,
+      gameState.outline,
+      gameState.isProcessing,
+    ]);
+
+    useEffect(() => {
+      if (typeof ResizeObserver === "undefined") {
+        return;
+      }
+      const observer = new ResizeObserver((entries) => {
+        let hasChanged = false;
+        for (const entry of entries) {
+          const target = entry.target as HTMLElement;
+          const segmentId = target.getAttribute("data-segment-id");
+          if (!segmentId) continue;
+          const height = Math.ceil(entry.contentRect.height);
+          if (height <= 0) continue;
+
+          const prev = measuredHeightBySegmentIdRef.current[segmentId];
+          if (prev !== height) {
+            measuredHeightBySegmentIdRef.current[segmentId] = height;
+            hasChanged = true;
+          }
+        }
+        if (hasChanged) {
+          setMeasuredHeightsVersion((prev) => prev + 1);
+        }
+      });
+      segmentResizeObserverRef.current = observer;
+      return () => {
+        observer.disconnect();
+        segmentResizeObserverRef.current = null;
+      };
+    }, []);
+
+    useEffect(() => {
+      return () => {
+        if (
+          virtualScrollRafRef.current !== null &&
+          typeof cancelAnimationFrame === "function"
+        ) {
+          cancelAnimationFrame(virtualScrollRafRef.current);
+        }
+      };
+    }, []);
 
     // Keep a fast lookup for segment id -> segment without forcing observer recreation
     // on every streaming text update.
     const segmentByIdRef = useRef<Map<string, StorySegment>>(new Map());
-    useEffect(() => {
-      const map = new Map<string, StorySegment>();
-      for (const segment of currentHistory) {
-        map.set(segment.id, segment);
-      }
-      segmentByIdRef.current = map;
-    }, [currentHistory]);
+    const mapSyncMetaRef = useRef<{
+      idsSignature: string;
+      lastSegmentRef: StorySegment | null;
+    }>({
+      idsSignature: "",
+      lastSegmentRef: null,
+    });
 
     // Rebuild IntersectionObserver only when segment identity changes
     // (add/remove/reorder), not for every content mutation.
     const historyIdsSignature = useMemo(
       () => currentHistory.map((segment) => segment.id).join("|"),
-      [currentHistory],
+      [
+        currentHistory.length,
+        currentHistory[0]?.id,
+        currentHistory[currentHistory.length - 1]?.id,
+        gameState.activeNodeId,
+      ],
     );
+    useEffect(() => {
+      const previous = mapSyncMetaRef.current;
+      const latestSegment =
+        currentHistory.length > 0
+          ? currentHistory[currentHistory.length - 1]
+          : null;
+      if (previous.idsSignature !== historyIdsSignature) {
+        const map = new Map<string, StorySegment>();
+        for (const segment of currentHistory) {
+          map.set(segment.id, segment);
+        }
+        segmentByIdRef.current = map;
+      } else if (previous.lastSegmentRef !== latestSegment && latestSegment) {
+        segmentByIdRef.current.set(latestSegment.id, latestSegment);
+      }
+
+      mapSyncMetaRef.current = {
+        idsSignature: historyIdsSignature,
+        lastSegmentRef: latestSegment,
+      };
+    }, [currentHistory, historyIdsSignature]);
     const getSegmentById = useCallback(
       (segmentId: string) => segmentByIdRef.current.get(segmentId),
+      [],
+    );
+    const setSegmentWrapperRef = useCallback(
+      (segmentId: string, element: HTMLDivElement | null) => {
+        const observer = segmentResizeObserverRef.current;
+        const previous = segmentNodeMapRef.current.get(segmentId);
+
+        if (previous && previous !== element && observer) {
+          observer.unobserve(previous);
+        }
+
+        if (!element) {
+          segmentNodeMapRef.current.delete(segmentId);
+          return;
+        }
+
+        segmentNodeMapRef.current.set(segmentId, element);
+        if (observer && shouldMeasureSegmentsRef.current) {
+          observer.observe(element);
+        }
+      },
       [],
     );
 
@@ -166,13 +374,23 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
               });
             } else if (container) {
               // Fallback: estimate scroll position
-              const targetIndex = currentHistory.findIndex(
-                (s) => s.id === segmentId,
-              );
-              if (targetIndex !== -1) {
-                const estimatedPosition = targetIndex * 300;
+              const virtualMeta = scrollVirtualMetaRef.current;
+              const targetIndex = virtualMeta.idToIndex.get(segmentId);
+              if (typeof targetIndex === "number") {
+                const estimatedPosition =
+                  virtualMeta.preludeHeight +
+                  (virtualMeta.prefixHeights[targetIndex] ?? targetIndex * 300);
                 container.scrollTo({
                   top: estimatedPosition,
+                  behavior: "smooth",
+                });
+              } else {
+                const fallbackIndex = currentHistory.findIndex(
+                  (s) => s.id === segmentId,
+                );
+                if (fallbackIndex === -1) return;
+                container.scrollTo({
+                  top: fallbackIndex * 300,
                   behavior: "smooth",
                 });
               }
@@ -337,16 +555,58 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
     // Track if we should auto-scroll (sticky bottom behavior)
     const shouldAutoScroll = useRef(true);
+    const shouldTrackVirtualScroll =
+      layout === "scroll" &&
+      !disableVirtualization &&
+      currentHistory.length >= SCROLL_VIRTUALIZATION_THRESHOLD;
+    const virtualScrollBucket = shouldTrackVirtualScroll
+      ? Math.floor(virtualScrollTop / 320)
+      : 0;
 
-    const handleScroll = () => {
-      if (layout === "scroll" && scrollContainerRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } =
-          scrollContainerRef.current;
-        const dist = scrollHeight - scrollTop - clientHeight;
-        // User is "at bottom" if within 50px
-        shouldAutoScroll.current = dist < 50;
+    useEffect(() => {
+      shouldMeasureSegmentsRef.current = shouldTrackVirtualScroll;
+    }, [shouldTrackVirtualScroll]);
+
+    useEffect(() => {
+      const observer = segmentResizeObserverRef.current;
+      if (!observer) return;
+
+      observer.disconnect();
+      if (!shouldTrackVirtualScroll) {
+        return;
       }
-    };
+
+      for (const element of segmentNodeMapRef.current.values()) {
+        observer.observe(element);
+      }
+    }, [historyIdsSignature, shouldTrackVirtualScroll]);
+
+    const handleScroll = useCallback(() => {
+      if (layout !== "scroll" || !scrollContainerRef.current) return;
+
+      const { scrollTop, scrollHeight, clientHeight } =
+        scrollContainerRef.current;
+      const dist = scrollHeight - scrollTop - clientHeight;
+      // User is "at bottom" if within 50px
+      shouldAutoScroll.current = dist < 50;
+
+      if (!shouldTrackVirtualScroll) {
+        return;
+      }
+
+      pendingVirtualScrollTopRef.current = scrollTop;
+      if (virtualScrollRafRef.current !== null) return;
+
+      if (typeof requestAnimationFrame !== "function") {
+        setVirtualScrollTop(scrollTop);
+        return;
+      }
+
+      virtualScrollRafRef.current = requestAnimationFrame(() => {
+        virtualScrollRafRef.current = null;
+        setVirtualScrollTop(pendingVirtualScrollTopRef.current);
+      });
+    }, [layout, shouldTrackVirtualScroll]);
 
     // Auto-scroll for Scroll Layout
     useEffect(() => {
@@ -412,7 +672,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       elements.forEach((el) => observer.observe(el));
 
       return () => observer.disconnect();
-    }, [layout, onViewedSegmentChange, historyIdsSignature]);
+    }, [
+      historyIdsSignature,
+      layout,
+      onViewedSegmentChange,
+      shouldTrackVirtualScroll,
+      virtualScrollBucket,
+    ]);
 
     // Notify for Stack Layout
     useEffect(() => {
@@ -515,114 +781,377 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     // Dynamic text scaling
     const textScaleClass = bothCollapsed ? "scale-content-expanded" : "";
 
-    const handleGeneratePrompt = async (id: string) => {
-      const segment = getSegmentById(id);
-      if (!segment) return;
+    const handleGeneratePrompt = useCallback(
+      async (id: string) => {
+        const segment = getSegmentById(id);
+        if (!segment) return;
 
-      setVisualTarget("image_prompt");
-      setIsVisualModalOpen(true);
-      setVisualProgress(null);
+        setVisualTarget("image_prompt");
+        setIsVisualModalOpen(true);
+        setVisualProgress(null);
 
-      try {
-        const result = await runVisualLoop({
-          gameState,
-          segment,
-          settings,
-          target: "image_prompt",
-          language: settings.language || "English",
-          onProgress: (p) => setVisualProgress(p),
-        });
+        try {
+          const activeSettings = settingsRef.current;
+          const result = await runVisualLoop({
+            gameState: gameStateRef.current,
+            segment,
+            settings: activeSettings,
+            target: "image_prompt",
+            language: activeSettings.language || "English",
+            onProgress: (p) => setVisualProgress(p),
+          });
 
-        if (result.imagePrompt) {
-          updateNodeMeta(
-            id,
-            { imagePrompt: result.imagePrompt },
-            { reason: "storyFeed.generatePrompt", persist: false },
-          );
+          if (result.imagePrompt) {
+            updateNodeMeta(
+              id,
+              { imagePrompt: result.imagePrompt },
+              { reason: "storyFeed.generatePrompt", persist: false },
+            );
+          }
+        } catch (error) {
+          console.error("Failed to generate prompt:", error);
+        } finally {
+          setIsVisualModalOpen(false);
         }
-      } catch (error) {
-        console.error("Failed to generate prompt:", error);
-      } finally {
-        setIsVisualModalOpen(false);
+      },
+      [getSegmentById, updateNodeMeta],
+    );
+
+    const handleGenerateImageFull = useCallback(
+      async (id: string) => {
+        const segment = getSegmentById(id);
+        if (!segment) return;
+
+        // If prompt already exists, just trigger image generation directly without modal
+        if (segment.imagePrompt && segment.imagePrompt.trim().length > 0) {
+          onGenerateImage(id);
+          return;
+        }
+
+        setVisualTarget("image_prompt"); // We start with prompt generation
+        setIsVisualModalOpen(true);
+        setVisualProgress(null);
+
+        try {
+          const activeSettings = settingsRef.current;
+          const result = await runVisualLoop({
+            gameState: gameStateRef.current,
+            segment,
+            settings: activeSettings,
+            target: "image_prompt",
+            language: activeSettings.language || "English",
+            onProgress: (p) => setVisualProgress(p),
+          });
+
+          if (result.imagePrompt) {
+            updateNodeMeta(
+              id,
+              { imagePrompt: result.imagePrompt },
+              { reason: "storyFeed.generateImageFull", persist: false },
+            );
+
+            // Step 2: Trigger image generation using the prompt
+            onGenerateImage(id);
+          }
+        } catch (error) {
+          console.error("Failed to generate image:", error);
+        } finally {
+          setIsVisualModalOpen(false);
+        }
+      },
+      [getSegmentById, onGenerateImage, updateNodeMeta],
+    );
+
+    const handleGenerateCinematic = useCallback(
+      async (id: string) => {
+        const segment = getSegmentById(id);
+        if (!segment || !segment.imageUrl) return;
+
+        setVisualTarget("veo_script");
+        setIsVisualModalOpen(true);
+        setVisualProgress(null);
+
+        try {
+          const activeSettings = settingsRef.current;
+          const result = await runVisualLoop({
+            gameState: gameStateRef.current,
+            segment,
+            settings: activeSettings,
+            target: "veo_script",
+            language: activeSettings.language || "English",
+            onProgress: (p) => setVisualProgress(p),
+          });
+
+          if (result.veoScript) {
+            updateNodeMeta(
+              id,
+              { veoScript: result.veoScript },
+              { reason: "storyFeed.generateCinematic", persist: false },
+            );
+
+            // Trigger animation with the script
+            onAnimate(segment.imageUrl || "");
+          }
+        } catch (error) {
+          console.error("Failed to generate cinematic:", error);
+        } finally {
+          setIsVisualModalOpen(false);
+        }
+      },
+      [getSegmentById, onAnimate, updateNodeMeta],
+    );
+
+    const totalSegments = currentHistory.length;
+    const latestSegment =
+      totalSegments > 0 ? currentHistory[totalSegments - 1] : null;
+    const enableScrollWindowing =
+      layout === "scroll" &&
+      !disableVirtualization &&
+      totalSegments >= SCROLL_VIRTUALIZATION_THRESHOLD;
+
+    const scrollVirtualWindow = useMemo(() => {
+      if (!enableScrollWindowing || totalSegments === 0) {
+        return null;
       }
-    };
 
-    const handleGenerateImageFull = async (id: string) => {
-      const segment = getSegmentById(id);
-      if (!segment) return;
+      const prefixHeights: number[] = [0];
+      const idToIndex = new Map<string, number>();
 
-      // If prompt already exists, just trigger image generation directly without modal
-      if (segment.imagePrompt && segment.imagePrompt.trim().length > 0) {
-        onGenerateImage(id);
+      for (let index = 0; index < currentHistory.length; index += 1) {
+        const segment = currentHistory[index];
+        idToIndex.set(segment.id, index);
+        const measured = measuredHeightBySegmentIdRef.current[segment.id];
+        const estimated = estimateSegmentHeight(segment);
+        const height = measured ?? estimated;
+        prefixHeights.push(prefixHeights[index] + height);
+      }
+
+      const totalHeight = prefixHeights[prefixHeights.length - 1];
+      const listViewportTop = Math.max(0, virtualScrollTop - preludeHeight);
+      const listViewportBottom = Math.max(
+        listViewportTop,
+        virtualScrollTop - preludeHeight + scrollViewportHeight,
+      );
+
+      const firstVisibleIndex = findSegmentIndexByOffset(
+        prefixHeights,
+        listViewportTop,
+      );
+      const lastVisibleIndex = findSegmentIndexByOffset(
+        prefixHeights,
+        listViewportBottom,
+      );
+
+      const startIndex = Math.max(
+        0,
+        firstVisibleIndex - SCROLL_VIRTUAL_OVERSCAN,
+      );
+      const endIndex = Math.min(
+        currentHistory.length - 1,
+        lastVisibleIndex + SCROLL_VIRTUAL_OVERSCAN,
+      );
+
+      return {
+        startIndex,
+        endIndex,
+        topSpacerHeight: prefixHeights[startIndex],
+        bottomSpacerHeight: Math.max(
+          0,
+          totalHeight - prefixHeights[endIndex + 1],
+        ),
+        prefixHeights,
+        idToIndex,
+      };
+    }, [
+      currentHistory,
+      enableScrollWindowing,
+      measuredHeightsVersion,
+      preludeHeight,
+      scrollViewportHeight,
+      totalSegments,
+      virtualScrollTop,
+    ]);
+
+    useEffect(() => {
+      if (!scrollVirtualWindow) {
+        scrollVirtualMetaRef.current = {
+          enabled: false,
+          prefixHeights: [0],
+          preludeHeight: 0,
+          idToIndex: new Map(
+            currentHistory.map((segment, index) => [segment.id, index]),
+          ),
+        };
         return;
       }
+      scrollVirtualMetaRef.current = {
+        enabled: true,
+        prefixHeights: scrollVirtualWindow.prefixHeights,
+        preludeHeight,
+        idToIndex: scrollVirtualWindow.idToIndex,
+      };
+    }, [currentHistory, preludeHeight, scrollVirtualWindow]);
 
-      setVisualTarget("image_prompt"); // We start with prompt generation
-      setIsVisualModalOpen(true);
-      setVisualProgress(null);
+    const didLatestSegmentChange = latestSegmentRef.current !== latestSegment;
+    const historicalCount = Math.max(0, totalSegments - 1);
+    let historicalSegmentsChanged =
+      historicalSegmentsRef.current.length !== historicalCount;
 
-      try {
-        // Step 1: Generate prompt
-        const result = await runVisualLoop({
-          gameState,
-          segment,
-          settings,
-          target: "image_prompt",
-          language: settings.language || "English",
-          onProgress: (p) => setVisualProgress(p),
-        });
-
-        if (result.imagePrompt) {
-          updateNodeMeta(
-            id,
-            { imagePrompt: result.imagePrompt },
-            { reason: "storyFeed.generateImageFull", persist: false },
-          );
-
-          // Step 2: Trigger image generation using the prompt
-          onGenerateImage(id);
+    if (!historicalSegmentsChanged) {
+      if (didLatestSegmentChange) {
+        if (
+          historicalCount > 0 &&
+          historicalSegmentsRef.current[historicalCount - 1] !==
+            currentHistory[historicalCount - 1]
+        ) {
+          historicalSegmentsChanged = true;
         }
-      } catch (error) {
-        console.error("Failed to generate image:", error);
-      } finally {
-        setIsVisualModalOpen(false);
-      }
-    };
-
-    const handleGenerateCinematic = async (id: string) => {
-      const segment = getSegmentById(id);
-      if (!segment || !segment.imageUrl) return;
-
-      setVisualTarget("veo_script");
-      setIsVisualModalOpen(true);
-      setVisualProgress(null);
-
-      try {
-        const result = await runVisualLoop({
-          gameState,
-          segment,
-          settings,
-          target: "veo_script",
-          language: settings.language || "English",
-          onProgress: (p) => setVisualProgress(p),
-        });
-
-        if (result.veoScript) {
-          updateNodeMeta(
-            id,
-            { veoScript: result.veoScript },
-            { reason: "storyFeed.generateCinematic", persist: false },
-          );
-
-          // Trigger animation with the script
-          onAnimate(segment.imageUrl || "");
+      } else {
+        for (let index = 0; index < historicalCount; index += 1) {
+          if (historicalSegmentsRef.current[index] !== currentHistory[index]) {
+            historicalSegmentsChanged = true;
+            break;
+          }
         }
-      } catch (error) {
-        console.error("Failed to generate cinematic:", error);
-      } finally {
-        setIsVisualModalOpen(false);
       }
-    };
+    }
+
+    if (historicalSegmentsChanged) {
+      historicalSegmentsRef.current = currentHistory.slice(0, historicalCount);
+      historicalSegmentsVersionRef.current += 1;
+    }
+    latestSegmentRef.current = latestSegment;
+
+    const historicalSegments = historicalSegmentsRef.current;
+    const historicalSegmentsVersion = historicalSegmentsVersionRef.current;
+
+    const renderScrollSegmentCard = useCallback(
+      (
+        segment: StorySegment,
+        index: number,
+        isLastSegment: boolean,
+        gameStateForCard: GameState,
+      ) => {
+        const shouldAnimate = !playedAnimations.current.has(segment.id);
+
+        return (
+          <React.Fragment key={segment.id}>
+            <div
+              ref={(element) => setSegmentWrapperRef(segment.id, element)}
+              className="relative group/wrapper story-card-wrapper"
+              data-segment-id={segment.id}
+              style={{
+                contentVisibility:
+                  disableVirtualization || index >= totalSegments - 10
+                    ? "visible"
+                    : "auto",
+                containIntrinsicSize:
+                  disableVirtualization || index >= totalSegments - 10
+                    ? "auto"
+                    : "auto 400px",
+              }}
+            >
+              {!isLastSegment && onFork && segment.role === "model" && (
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onFork(segment.id);
+                  }}
+                  className="absolute -left-4 md:-left-8 top-4 z-30 px-2 py-2 text-theme-text-secondary hover:text-theme-primary transition-all duration-200 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
+                  title={t("tree.fork")}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="h-8 w-px bg-theme-divider/60 group-hover/wrapper:bg-theme-primary/60 transition-colors" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      ></path>
+                    </svg>
+                  </span>
+                </button>
+              )}
+              <StoryCard
+                segment={segment}
+                isLast={isLastSegment}
+                isGenerating={
+                  gameStateForCard.isImageGenerating &&
+                  gameStateForCard.generatingNodeId === segment.id
+                }
+                labels={storyCardLabels}
+                onAnimate={segment.imageUrl ? onAnimate : undefined}
+                onGenerateImage={onGenerateImage}
+                disableImages={disableImages}
+                shouldAnimate={shouldAnimate}
+                aiSettings={aiSettings}
+                onTypingComplete={() => {
+                  if (shouldAnimate) {
+                    playedAnimations.current.add(segment.id);
+                  }
+                  if (isLastSegment && onTypingComplete) {
+                    onTypingComplete();
+                  }
+                }}
+                onAudioGenerated={onAudioGenerated}
+                onImageUpload={onImageUpload}
+                onImageDelete={onImageDelete}
+                onRate={onRate}
+                gameState={gameStateForCard}
+                saveId={saveId}
+                hasFailed={failedImageNodes?.has(segment.id)}
+                maxWidthClass={contentMaxWidth}
+                onGeneratePrompt={handleGeneratePrompt}
+                onGenerateImageFull={handleGenerateImageFull}
+                onGenerateCinematic={handleGenerateCinematic}
+                onFork={
+                  onFork && segment.role === "model" && !isLastSegment
+                    ? () => onFork(segment.id)
+                    : undefined
+                }
+              />
+            </div>
+          </React.Fragment>
+        );
+      },
+      [
+        aiSettings,
+        contentMaxWidth,
+        disableImages,
+        disableVirtualization,
+        failedImageNodes,
+        handleGenerateCinematic,
+        handleGenerateImageFull,
+        handleGeneratePrompt,
+        onAnimate,
+        onAudioGenerated,
+        onFork,
+        onGenerateImage,
+        onImageDelete,
+        onImageUpload,
+        onRate,
+        onTypingComplete,
+        saveId,
+        setSegmentWrapperRef,
+        storyCardLabels,
+        t,
+        totalSegments,
+      ],
+    );
+
+    const historicalScrollCards = useMemo(
+      () =>
+        historicalSegments.map((segment, index) =>
+          renderScrollSegmentCard(segment, index, false, gameStateRef.current),
+        ),
+      [historicalSegmentsVersion, historicalSegments, renderScrollSegmentCard],
+    );
 
     return (
       <div className="flex-1 flex flex-col relative overflow-hidden">
@@ -653,187 +1182,123 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-transparent to-theme-bg/60"></div>
 
           <div ref={contentRef} className="flex flex-col min-h-full">
-            {/* Outline Display */}
-            {gameState.outline && (
-              <section
-                className={`mb-10 mx-auto ${contentMaxWidth} animate-fade-in transition-all duration-300`}
-              >
-                <div className="flex items-center justify-center gap-4 mb-5 opacity-70">
-                  <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-theme-text-secondary">
-                    {t("outline.title", "Story Outline")}
-                  </span>
-                  <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
-                </div>
-
-                <h3 className="text-theme-primary font-fantasy text-2xl leading-tight text-center">
-                  {gameState.outline.title}
-                </h3>
-
-                <div className="mt-4 text-theme-text-secondary text-sm md:text-[15px] leading-7 text-center italic">
-                  <MarkdownText
-                    content={gameState.outline.premise}
-                    disableIndent
-                  />
-                </div>
-
-                {gameState.outline.mainGoal?.visible?.description && (
-                  <div className="mt-6 pt-6 border-t border-theme-divider/60">
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-theme-text-secondary text-center">
-                      {t("outline.currentGoal")}
-                    </div>
-                    <div className="mt-2 text-theme-text text-sm md:text-[15px] leading-7 text-center">
-                      <MarkdownText
-                        content={gameState.outline.mainGoal.visible.description}
-                        disableIndent
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-8 flex items-center justify-center gap-4 opacity-70">
-                  <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
-                </div>
-              </section>
-            )}
-
-            {/* Empty History State - Show retry when outline exists but no story generated yet */}
-            {gameState.outline &&
-              currentHistory.length === 0 &&
-              !gameState.isProcessing &&
-              !gameState.error && (
-                <div
-                  className={`mb-8 mx-auto ${contentMaxWidth} text-center animate-fade-in`}
+            <div ref={preludeRef}>
+              {/* Outline Display */}
+              {gameState.outline && (
+                <section
+                  className={`mb-10 mx-auto ${contentMaxWidth} animate-fade-in transition-all duration-300`}
                 >
-                  <p className="text-theme-text-secondary mb-5 text-sm md:text-[15px] leading-7">
-                    {t(
-                      "storyNotStarted",
-                      "The story hasn't started yet. Click below to begin your adventure.",
-                    )}
-                  </p>
-                  <button
-                    onClick={onRetry}
-                    className="px-6 py-2 bg-theme-primary text-theme-surface rounded-xl hover:bg-theme-primary-muted transition-colors shadow-sm"
-                  >
-                    {t("startAdventure", "Start Adventure")}
-                  </button>
-                </div>
-              )}
+                  <div className="flex items-center justify-center gap-4 mb-5 opacity-70">
+                    <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-theme-text-secondary">
+                      {t("outline.title", "Story Outline")}
+                    </span>
+                    <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
+                  </div>
 
-            {layout === "scroll" ? (
-              <>
-                {currentHistory.map((segment, index) => {
-                  // Check if we should animate this card
-                  const isAlreadyPlayed = playedAnimations.current.has(
-                    segment.id,
-                  );
-                  const shouldAnimate = !isAlreadyPlayed;
-                  const isLastSegment = index === currentHistory.length - 1;
+                  <h3 className="text-theme-primary font-fantasy text-2xl leading-tight text-center">
+                    {gameState.outline.title}
+                  </h3>
 
-                  return (
-                    <React.Fragment key={segment.id}>
-                      {/* SummarySnapshot renders its own divider/title; avoid duplicate headers */}
-                      <div
-                        className="relative group/wrapper story-card-wrapper"
-                        data-segment-id={segment.id}
-                        style={{
-                          // CSS content-visibility for native browser virtualization
-                          // Browser will skip rendering off-screen content but maintain layout
-                          // Disable content-visibility during initial load or for last 10 segments
-                          contentVisibility:
-                            disableVirtualization ||
-                            index >= currentHistory.length - 10
-                              ? "visible"
-                              : "auto",
-                          containIntrinsicSize:
-                            disableVirtualization ||
-                            index >= currentHistory.length - 10
-                              ? "auto"
-                              : "auto 400px",
-                        }}
-                      >
-                        {/* Fork Button visible on hover for past segments - Fixed Accessibility */}
-                        {index < currentHistory.length - 1 &&
-                          onFork &&
-                          segment.role === "model" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onFork(segment.id);
-                              }}
-                              className="absolute -left-4 md:-left-8 top-4 z-30 px-2 py-2 text-theme-text-secondary hover:text-theme-primary transition-all duration-200 cursor-pointer opacity-0 group-hover/wrapper:opacity-100"
-                              title={t("tree.fork")}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="h-8 w-px bg-theme-divider/60 group-hover/wrapper:bg-theme-primary/60 transition-colors" />
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                                  ></path>
-                                </svg>
-                              </span>
-                            </button>
-                          )}
-                        <StoryCard
-                          segment={segment}
-                          isLast={isLastSegment}
-                          isGenerating={
-                            gameState.isImageGenerating &&
-                            gameState.generatingNodeId === segment.id
+                  <div className="mt-4 text-theme-text-secondary text-sm md:text-[15px] leading-7 text-center italic">
+                    <MarkdownText
+                      content={gameState.outline.premise}
+                      disableIndent
+                    />
+                  </div>
+
+                  {gameState.outline.mainGoal?.visible?.description && (
+                    <div className="mt-6 pt-6 border-t border-theme-divider/60">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-theme-text-secondary text-center">
+                        {t("outline.currentGoal")}
+                      </div>
+                      <div className="mt-2 text-theme-text text-sm md:text-[15px] leading-7 text-center">
+                        <MarkdownText
+                          content={
+                            gameState.outline.mainGoal.visible.description
                           }
-                          labels={{
-                            decided: t("decided"),
-                            vision: t("vision"),
-                            unavailable: t("unavailable"),
-                          }}
-                          onAnimate={segment.imageUrl ? onAnimate : undefined}
-                          onGenerateImage={onGenerateImage}
-                          disableImages={disableImages}
-                          shouldAnimate={shouldAnimate}
-                          aiSettings={aiSettings}
-                          onTypingComplete={() => {
-                            if (shouldAnimate) {
-                              playedAnimations.current.add(segment.id);
-                            }
-                            if (
-                              index === currentHistory.length - 1 &&
-                              onTypingComplete
-                            ) {
-                              onTypingComplete();
-                            }
-                          }}
-                          onAudioGenerated={onAudioGenerated}
-                          onImageUpload={onImageUpload}
-                          onImageDelete={onImageDelete}
-                          onRate={onRate}
-                          gameState={gameState}
-                          saveId={saveId}
-                          hasFailed={failedImageNodes?.has(segment.id)}
-                          maxWidthClass={contentMaxWidth}
-                          onGeneratePrompt={handleGeneratePrompt}
-                          onGenerateImageFull={handleGenerateImageFull}
-                          onGenerateCinematic={handleGenerateCinematic}
-                          onFork={
-                            onFork &&
-                            segment.role === "model" &&
-                            index < currentHistory.length - 1
-                              ? () => onFork(segment.id)
-                              : undefined
-                          }
+                          disableIndent
                         />
                       </div>
-                    </React.Fragment>
-                  );
-                })}
-              </>
+                    </div>
+                  )}
+
+                  <div className="mt-8 flex items-center justify-center gap-4 opacity-70">
+                    <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent flex-1 max-w-48" />
+                  </div>
+                </section>
+              )}
+
+              {/* Empty History State - Show retry when outline exists but no story generated yet */}
+              {gameState.outline &&
+                currentHistory.length === 0 &&
+                !gameState.isProcessing &&
+                !gameState.error && (
+                  <div
+                    className={`mb-8 mx-auto ${contentMaxWidth} text-center animate-fade-in`}
+                  >
+                    <p className="text-theme-text-secondary mb-5 text-sm md:text-[15px] leading-7">
+                      {t(
+                        "storyNotStarted",
+                        "The story hasn't started yet. Click below to begin your adventure.",
+                      )}
+                    </p>
+                    <button
+                      onClick={onRetry}
+                      className="px-6 py-2 bg-theme-primary text-theme-surface rounded-xl hover:bg-theme-primary-muted transition-colors shadow-sm"
+                    >
+                      {t("startAdventure", "Start Adventure")}
+                    </button>
+                  </div>
+                )}
+            </div>
+
+            {layout === "scroll" ? (
+              enableScrollWindowing && scrollVirtualWindow ? (
+                <div className="flex flex-col">
+                  {scrollVirtualWindow.topSpacerHeight > 0 && (
+                    <div
+                      style={{
+                        height: scrollVirtualWindow.topSpacerHeight,
+                      }}
+                    />
+                  )}
+                  {currentHistory
+                    .slice(
+                      scrollVirtualWindow.startIndex,
+                      scrollVirtualWindow.endIndex + 1,
+                    )
+                    .map((segment, offset) => {
+                      const index = scrollVirtualWindow.startIndex + offset;
+                      const isLastSegment = index === totalSegments - 1;
+                      return renderScrollSegmentCard(
+                        segment,
+                        index,
+                        isLastSegment,
+                        isLastSegment ? gameState : gameStateRef.current,
+                      );
+                    })}
+                  {scrollVirtualWindow.bottomSpacerHeight > 0 && (
+                    <div
+                      style={{
+                        height: scrollVirtualWindow.bottomSpacerHeight,
+                      }}
+                    />
+                  )}
+                </div>
+              ) : (
+                <>
+                  {historicalScrollCards}
+                  {latestSegment
+                    ? renderScrollSegmentCard(
+                        latestSegment,
+                        totalSegments - 1,
+                        true,
+                        gameState,
+                      )
+                    : null}
+                </>
+              )
             ) : (
               // Stack Layout - Paginated View
               <div className="flex-1 flex flex-col justify-start items-center relative min-h-[400px] w-full overflow-y-auto">
