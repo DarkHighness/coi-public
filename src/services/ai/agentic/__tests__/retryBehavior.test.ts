@@ -97,6 +97,7 @@ describe("callWithAgenticRetry behavior", () => {
     expect(provider.generateChat).toHaveBeenCalledTimes(2);
     expect(result.retries).toBe(1);
     expect(result.usage).toEqual(makeUsage(4, 3));
+    expect(result.finalUsage).toEqual(makeUsage(3, 2));
     expect(history).toHaveLength(1);
     expect(
       ((result.result as any).functionCalls?.[0]?.id as string) || "",

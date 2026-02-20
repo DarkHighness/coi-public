@@ -305,6 +305,89 @@ describe("agenticLoop context pressure recovery", () => {
     ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
   });
 
+  it("uses final provider usage for threshold routing instead of accumulated retry usage", async () => {
+    const vfsSession = createVfsSession();
+    checkpointVfsSession("session-1", vfsSession as any);
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        // Aggregated retry usage can be much larger.
+        usage: {
+          promptTokens: 420,
+          completionTokens: 60,
+          totalTokens: 480,
+          reported: true,
+        },
+        // Final successful provider response stayed below threshold.
+        finalUsage: {
+          promptTokens: 30,
+          completionTokens: 5,
+          totalTokens: 35,
+          reported: true,
+        },
+        functionCalls: [
+          {
+            id: "call-write",
+            name: "vfs_write_file",
+            args: { path: "current/world/notes.md", content: "ok" },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 20,
+          completionTokens: 4,
+          totalTokens: 24,
+          reported: true,
+        },
+        finalUsage: {
+          promptTokens: 20,
+          completionTokens: 4,
+          totalTokens: 24,
+          reported: true,
+        },
+        functionCalls: [
+          {
+            id: "call-finish",
+            name: "vfs_finish_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "new narrative",
+                choices: [{ text: "A" }],
+              },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-1",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(toolProcessorMock.executeGenericTool).toHaveBeenCalledTimes(2);
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
+  });
+
   it("session cleanup prefers in-session execution below danger threshold", async () => {
     const vfsSession = createVfsSession();
     checkpointVfsSession("session-1", vfsSession as any);

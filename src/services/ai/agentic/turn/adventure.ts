@@ -8,6 +8,7 @@ import {
   TurnContext,
   GameResponse,
   ToolCallRecord,
+  ToolCallContextUsageSnapshot,
   CustomRulesAckPendingReason,
   TurnRecoveryKind,
   TurnRecoveryTrace,
@@ -79,6 +80,7 @@ export interface AgenticLoopResult {
   response: GameResponse;
   logs: LogEntry[];
   usage: TokenUsage;
+  lastContextUsage?: ToolCallContextUsageSnapshot | null;
   changedEntities: Array<{ id: string; type: string }>;
   _conversationHistory: UnifiedMessage[];
   recovery?: TurnRecoveryTrace;

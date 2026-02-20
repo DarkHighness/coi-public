@@ -48,6 +48,7 @@ export interface AICallResult {
   text: string;
   functionCalls: ToolCallResult[] | undefined;
   usage: TokenUsage;
+  finalUsage: TokenUsage;
 }
 
 // ============================================================================
@@ -153,6 +154,7 @@ export async function handleAICall(
       text: extractTextContent(result),
       functionCalls,
       usage: resp.usage,
+      finalUsage: resp.finalUsage ?? resp.usage,
     };
   } catch (e) {
     const error = e instanceof Error ? e : new Error(String(e));

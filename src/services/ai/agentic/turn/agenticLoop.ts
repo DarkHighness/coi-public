@@ -63,6 +63,7 @@ import {
   buildToolCallContextUsageSnapshot,
   AUTO_QUERY_DANGER_THRESHOLD,
   recordPromptTokenCalibrationSample,
+  resolveProviderReportedUsageTokens,
   resolveProviderReportedPromptTokens,
 } from "../../contextUsage";
 import { ContextOverflowError } from "../../contextCompressor";
@@ -126,6 +127,7 @@ export interface AgenticLoopResult {
   response: GameResponse;
   logs: LogEntry[];
   usage: TokenUsage;
+  lastContextUsage?: ToolCallContextUsageSnapshot | null;
   changedEntities: Array<{ id: string; type: string }>;
   _conversationHistory: UnifiedMessage[];
 }
@@ -381,6 +383,7 @@ export async function runAgenticLoopRefactored(
   let didFinishTurn = false;
   let autoCompactTriggeredByContextPressure = false;
   let skippedThresholdRoutingDueToUnknownUsage = false;
+  let lastContextUsage: ToolCallContextUsageSnapshot | null = null;
 
   try {
     // Inject ready consequences
@@ -499,28 +502,36 @@ export async function runAgenticLoopRefactored(
         },
         conversationHistory,
       );
+      const usageForContext = aiResult.finalUsage ?? aiResult.usage;
       recordPromptTokenCalibrationSample({
         providerProtocol: protocol,
         modelId,
-        reportedPromptTokens: aiResult.usage?.promptTokens ?? 0,
+        reportedPromptTokens: usageForContext?.promptTokens ?? 0,
         estimatedPromptTokens: estimatedPromptTokensForCalibration,
-        usageReported: aiResult.usage?.reported,
+        usageReported: usageForContext?.reported,
       });
 
-      const providerReportedPromptTokens = resolveProviderReportedPromptTokens(
-        aiResult.usage,
-      );
+      const providerReportedUsageTokens =
+        resolveProviderReportedUsageTokens(usageForContext);
+      const providerReportedPromptTokens =
+        resolveProviderReportedPromptTokens(usageForContext);
 
       // Accumulate usage
       accumulateUsage(loopState.totalUsage, aiResult.usage);
       const contextUsageSnapshot =
-        providerReportedPromptTokens !== null
+        providerReportedUsageTokens !== null
           ? buildToolCallContextUsageSnapshot({
               settings,
-              promptTokens: providerReportedPromptTokens,
+              usageTokens: providerReportedUsageTokens,
+              promptTokens: providerReportedPromptTokens ?? 0,
+              completionTokens: usageForContext?.completionTokens ?? 0,
+              totalTokens: usageForContext?.totalTokens ?? 0,
               autoCompactThreshold: settings.extra?.autoCompactThreshold,
             })
           : null;
+      if (contextUsageSnapshot) {
+        lastContextUsage = contextUsageSnapshot;
+      }
       const autoCompactEnabled = settings.extra?.autoCompactEnabled ?? true;
       const hasFinishCall = (aiResult.functionCalls || []).some(
         (call) => call.name === loopState.finishToolName,
@@ -546,7 +557,7 @@ export async function runAgenticLoopRefactored(
       ) {
         skippedThresholdRoutingDueToUnknownUsage = true;
         console.warn(
-          `[AgenticLoop] Skipping context-threshold auto routing for turnKind=${loopState.turnKind}: provider-reported prompt token usage unavailable.`,
+          `[AgenticLoop] Skipping context-threshold auto routing for turnKind=${loopState.turnKind}: provider-reported usage tokens unavailable.`,
         );
       }
       if (
@@ -567,7 +578,7 @@ export async function runAgenticLoopRefactored(
           : thresholdPercent;
         throw new ContextOverflowError(
           new Error(
-            `AUTO_COMPACT_THRESHOLD_REACHED: turnKind=${loopState.turnKind}, promptTokens=${contextUsageSnapshot.promptTokens}, contextWindow=${contextUsageSnapshot.contextWindowTokens}, ratio=${ratioPercent}% >= ${appliedThresholdPercent}%`,
+            `AUTO_COMPACT_THRESHOLD_REACHED: turnKind=${loopState.turnKind}, usageTokens=${contextUsageSnapshot.usageTokens}, totalTokens=${contextUsageSnapshot.totalTokens ?? 0}, contextWindow=${contextUsageSnapshot.contextWindowTokens}, ratio=${ratioPercent}% >= ${appliedThresholdPercent}%`,
           ),
           {
             turnKind: loopState.turnKind,
@@ -676,6 +687,7 @@ export async function runAgenticLoopRefactored(
     response: loopState.accumulatedResponse,
     logs: allLogs,
     usage: loopState.totalUsage,
+    lastContextUsage,
     changedEntities: getChangedEntitiesArray(loopState.changedEntities),
     _conversationHistory: conversationHistory,
   };

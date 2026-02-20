@@ -533,7 +533,17 @@ export interface TokenUsage {
 }
 
 export interface ToolCallContextUsageSnapshot {
+  /**
+   * Unified context-pressure usage basis.
+   * This should prefer provider-reported totalTokens for the request.
+   */
+  usageTokens: number;
+  /**
+   * Raw provider-reported token fields for diagnostics.
+   */
+  totalTokens?: number;
   promptTokens: number;
+  completionTokens?: number;
   contextWindowTokens: number;
   usageRatio: number;
   autoCompactThreshold: number;
@@ -732,6 +742,7 @@ export interface StorySegment {
   timestamp: number;
   summarySnapshot?: StorySummary; // If this node triggered a summary, store it here
   usage?: TokenUsage;
+  contextUsage?: ToolCallContextUsageSnapshot;
 
   // Segment index
   segmentIdx: number; // The index of this segment in the history chain of the current fork
@@ -1158,8 +1169,8 @@ export interface AISettings {
     autoCompactEnabled?: boolean;
     /**
      * Context window usage threshold (0.5 - 0.95) to trigger auto-compaction.
-     * Usage is computed from the last API call's promptTokens divided by the
-     * selected model's context length.
+     * Usage is computed from the last provider-reported request total
+     * (prefer `totalTokens`) divided by the request's context window.
      */
     autoCompactThreshold?: number;
     /**

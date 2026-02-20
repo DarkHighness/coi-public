@@ -119,6 +119,7 @@ describe("handleAICall", () => {
 
     expect(result.text).toBe("ok");
     expect(result.usage).toEqual(baseUsage);
+    expect(result.finalUsage).toEqual(baseUsage);
     expect(result.functionCalls?.[0].id).toMatch(/^call_/);
   });
 

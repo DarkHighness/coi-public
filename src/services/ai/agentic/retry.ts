@@ -85,6 +85,7 @@ export interface RetryOptions {
 
 export interface RetryResult extends ChatGenerateResponse {
   retries: number;
+  finalUsage?: TokenUsage;
 }
 
 const MAX_VALIDATION_ISSUES_IN_ERROR = 4;
@@ -560,6 +561,7 @@ export async function callWithAgenticRetry(
     completionTokens: 0,
     totalTokens: 0,
   };
+  let finalUsage: TokenUsage | undefined;
   let forceInternalStreaming = false;
   let sawExplicitUnknownUsage = false;
   const schemaGuidanceShownByTool = new Set<string>();
@@ -694,6 +696,7 @@ export async function callWithAgenticRetry(
       history,
       response.result,
     );
+    finalUsage = normalizedUsage;
     if (
       tokenReferenceKey &&
       normalizedUsage.reported !== false &&
@@ -925,6 +928,7 @@ export async function callWithAgenticRetry(
             : sawExplicitUnknownUsage
               ? { ...totalUsage, reported: false }
               : totalUsage,
+        ...(finalUsage ? { finalUsage } : {}),
         retries: attempt,
       };
     }

@@ -409,8 +409,35 @@ export function resetPromptTokenCalibrationForTests(): void {
 }
 
 /**
- * Threshold routing must only use provider-reported prompt tokens.
+ * Threshold routing must only use provider-reported usage.
  * Returns null when usage is estimated/unknown.
+ */
+export function resolveProviderReportedUsageTokens(
+  usage:
+    | Pick<
+        TokenUsage,
+        "promptTokens" | "completionTokens" | "totalTokens" | "reported"
+      >
+    | null
+    | undefined,
+): number | null {
+  if (!usage || usage.reported !== true) {
+    return null;
+  }
+
+  const totalTokens = toNonNegativeInt(usage.totalTokens);
+  if (totalTokens > 0) {
+    return totalTokens;
+  }
+
+  const promptTokens = toNonNegativeInt(usage.promptTokens);
+  const completionTokens = toNonNegativeInt(usage.completionTokens);
+  const recomputedTotal = promptTokens + completionTokens;
+  return recomputedTotal > 0 ? recomputedTotal : null;
+}
+
+/**
+ * Prompt-token calibration still keys off provider-reported prompt tokens.
  */
 export function resolveProviderReportedPromptTokens(
   usage: Pick<TokenUsage, "promptTokens" | "reported"> | null | undefined,
@@ -424,22 +451,33 @@ export function resolveProviderReportedPromptTokens(
 
 export function buildToolCallContextUsageSnapshot(params: {
   settings: AISettings | undefined;
-  promptTokens: number;
+  usageTokens: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
   autoCompactThreshold?: number;
 }): ToolCallContextUsageSnapshot {
   const resolution = resolveStoryContextWindow(params.settings);
   const contextWindowTokens = Math.max(1, resolution.contextWindowTokens);
-  const promptTokens = toNonNegativeInt(params.promptTokens);
+  const usageTokens = toNonNegativeInt(params.usageTokens);
+  const promptTokens = toNonNegativeInt(params.promptTokens ?? 0);
+  const completionTokens = toNonNegativeInt(params.completionTokens ?? 0);
+  const totalTokens = toNonNegativeInt(
+    params.totalTokens ?? promptTokens + completionTokens,
+  );
   const autoCompactThreshold = normalizeThreshold(params.autoCompactThreshold);
   const thresholdTokens = Math.max(
     1,
     Math.floor(contextWindowTokens * autoCompactThreshold),
   );
-  const usageRatio = promptTokens / contextWindowTokens;
-  const tokensToThreshold = Math.max(0, thresholdTokens - promptTokens);
+  const usageRatio = usageTokens / contextWindowTokens;
+  const tokensToThreshold = Math.max(0, thresholdTokens - usageTokens);
 
   return {
+    usageTokens,
+    ...(totalTokens > 0 ? { totalTokens } : {}),
     promptTokens,
+    ...(completionTokens > 0 ? { completionTokens } : {}),
     contextWindowTokens,
     usageRatio,
     autoCompactThreshold,

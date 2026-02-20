@@ -345,7 +345,9 @@ const resolveCleanupContextUsageFromProviderCount = async (
 
   return buildToolCallContextUsageSnapshot({
     settings: context.settings,
+    usageTokens: promptTokens,
     promptTokens,
+    totalTokens: promptTokens,
     autoCompactThreshold: context.settings.extra?.autoCompactThreshold,
   });
 };

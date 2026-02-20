@@ -6,6 +6,7 @@ import {
   getPromptTokenCalibrationSnapshot,
   recordPromptTokenCalibrationSample,
   resetPromptTokenCalibrationForTests,
+  resolveProviderReportedUsageTokens,
   resolveProviderReportedPromptTokens,
   resolveVfsReadTokenBudget,
   resolveVfsReadHardCapChars,
@@ -172,14 +173,46 @@ describe("contextUsage", () => {
         providers: { instances: [{ id: "provider-1", protocol: "openai" }] },
         modelContextWindows: { "provider-1::model-1": 50000 },
       } as any,
-      promptTokens: 26000,
+      usageTokens: 26000,
+      promptTokens: 25000,
+      completionTokens: 1000,
+      totalTokens: 26000,
       autoCompactThreshold: 0.7,
     });
 
+    expect(snapshot.usageTokens).toBe(26000);
+    expect(snapshot.totalTokens).toBe(26000);
     expect(snapshot.contextWindowTokens).toBe(50000);
     expect(snapshot.thresholdTokens).toBe(35000);
     expect(snapshot.usageRatio).toBeCloseTo(0.52, 4);
     expect(snapshot.tokensToThreshold).toBe(9000);
+  });
+
+  it("accepts context threshold usage only from provider-reported totals", () => {
+    expect(
+      resolveProviderReportedUsageTokens({
+        promptTokens: 1200,
+        completionTokens: 300,
+        totalTokens: 1500,
+        reported: true,
+      }),
+    ).toBe(1500);
+    expect(
+      resolveProviderReportedUsageTokens({
+        promptTokens: 1200,
+        completionTokens: 300,
+        totalTokens: 0,
+        reported: true,
+      }),
+    ).toBe(1500);
+    expect(
+      resolveProviderReportedUsageTokens({
+        promptTokens: 1200,
+        completionTokens: 300,
+        totalTokens: 1500,
+        reported: false,
+      }),
+    ).toBeNull();
   });
 
   it("accepts threshold input only from provider-reported usage", () => {
