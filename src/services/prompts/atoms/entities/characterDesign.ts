@@ -115,13 +115,14 @@ Give the protagonist at least ONE petty, human weakness:
 /**
  * Character design primer (system-prompt safe).
  */
-export const characterDesignPrimer: Atom<CharacterDesignInput> = defineAtom(
-  {
-    atomId: "atoms/entities/characterDesign#characterDesignPrimer",
-    source: "atoms/entities/characterDesign.ts",
-    exportName: "characterDesignPrimer",
-  },
-  ({ protagonistFeature }) => `
+export const characterDesignDescription: Atom<CharacterDesignInput> =
+  defineAtom(
+    {
+      atomId: "atoms/entities/characterDesign#characterDesignDescription",
+      source: "atoms/entities/characterDesign.ts",
+      exportName: "characterDesignDescription",
+    },
+    ({ protagonistFeature }) => `
 <game_system_context>
 **CHARACTER DESIGN**: Protagonist will be TESTED.
 ${protagonistFeature ? `- MUST fit "${protagonistFeature}" role` : ""}
@@ -132,7 +133,7 @@ ${protagonistFeature ? `- MUST fit "${protagonistFeature}" role` : ""}
 - Want vs Need, Fatal Flaw, The Lie They Believe
 </game_system_context>
 `,
-);
+  );
 
 export default characterDesign;
 
@@ -203,6 +204,68 @@ A scar across the left eye—he says it was a duel, but the angle suggests
 someone struck him while he was down."
 (History visible on the body.)`,
       },
+    ],
+  }),
+);
+
+// ============================================================================
+// Character Logic - Runtime behavior and progression constraints
+// ============================================================================
+
+export const characterLogic: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/characterDesign#characterLogic",
+    source: "atoms/entities/characterDesign.ts",
+    exportName: "characterLogic",
+  },
+  () => `
+<game_system_context>
+**CHARACTER LOGIC**: Character state must evolve through evidence and cost.
+- Progression is conditional: gains in skills/traits/attributes require training, events, or consequences.
+- Contradictions resolve through action: want/need tension should surface in decisions, not labels.
+- Condition coupling: wounds/fatigue/fear must alter available options and outcomes.
+- Continuity: no sudden personality flips without trigger events.
+- Cross-entity links: character logic should impact quest pressure, relationship shifts, and timeline ripples.
+</game_system_context>
+`,
+);
+
+export const characterLogicDescription: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/characterDesign#characterLogicDescription",
+    source: "atoms/entities/characterDesign.ts",
+    exportName: "characterLogicDescription",
+  },
+  () => `
+<game_system_context>
+**CHARACTER LOGIC**: Evolve through evidence, cost, and continuity.
+- Skill/attribute change requires cause
+- Conditions constrain choices
+- No untriggered personality reversals
+</game_system_context>
+`,
+);
+
+export const characterLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/characterDesign#characterLogicSkill",
+    source: "atoms/entities/characterDesign.ts",
+    exportName: "characterLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(characterLogic),
+    quickStart: `
+1. Identify trigger event (training, injury, revelation, pressure)
+2. Apply state delta (skills/traits/attributes/conditions) with explicit cause
+3. Reflect delta in choices, costs, and relationships
+4. Verify continuity against prior behavior
+`.trim(),
+    checklist: [
+      "Character change tied to a concrete trigger?",
+      "Condition effects reflected in available actions?",
+      "Growth arc preserves internal contradiction pressure?",
+      "No abrupt behavior flip without causal bridge?",
+      "Cross-entity consequences propagated (quest/NPC/timeline)?",
     ],
   }),
 );

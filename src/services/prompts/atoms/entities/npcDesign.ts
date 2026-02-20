@@ -390,11 +390,11 @@ NPCs leave behind writing that may contain literary adaptations. This is DISCOVE
 /**
  * NPC 设计上下文 - 精简版
  */
-export const npcDesignPrimer: Atom<void> = defineAtom(
+export const npcDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/npcDesign#npcDesignPrimer",
+    atomId: "atoms/entities/npcDesign#npcDesignDescription",
     source: "atoms/entities/npcDesign.ts",
-    exportName: "npcDesignPrimer",
+    exportName: "npcDesignDescription",
   },
   () => `
 <game_system_context>

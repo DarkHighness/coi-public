@@ -250,11 +250,11 @@ What happens when items are lost?
 /**
  * Item 设计上下文 - 精简版
  */
-export const itemDesignPrimer: Atom<void> = defineAtom(
+export const itemDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/itemDesign#itemDesignPrimer",
+    atomId: "atoms/entities/itemDesign#itemDesignDescription",
     source: "atoms/entities/itemDesign.ts",
-    exportName: "itemDesignPrimer",
+    exportName: "itemDesignDescription",
   },
   () => `
 <game_system_context>
@@ -342,6 +342,68 @@ But clarity follows you home. You see your wife's small deceptions,
 your children's innocent lies. Every imperfect thing becomes unbearable."
 (Clear power, clear cost, player must choose.)`,
       },
+    ],
+  }),
+);
+
+// ============================================================================
+// Item Logic - lifecycle, ownership, activation, and consequence rules
+// ============================================================================
+
+export const itemLogic: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/itemDesign#itemLogic",
+    source: "atoms/entities/itemDesign.ts",
+    exportName: "itemLogic",
+  },
+  () => `
+<game_system_context>
+**ITEM LOGIC**: Items are stateful entities, not static props.
+- Ownership transitions require explicit events (trade, theft, gift, loot, surrender).
+- Condition changes follow use/environment/time, and can unlock repair or failure branches.
+- Hidden properties need trigger conditions and verification signals.
+- Cursed/charged items escalate over repeated use and leave traces.
+- Loss/recovery updates must propagate to quests, relationships, and location context.
+</game_system_context>
+`,
+);
+
+export const itemLogicDescription: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/itemDesign#itemLogicDescription",
+    source: "atoms/entities/itemDesign.ts",
+    exportName: "itemLogicDescription",
+  },
+  () => `
+<game_system_context>
+**ITEM LOGIC**: Track ownership, condition, triggers, and consequences.
+- Ownership changes need cause
+- Condition changes need mechanism
+- Hidden effects need activation evidence
+</game_system_context>
+`,
+);
+
+export const itemLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/itemDesign#itemLogicSkill",
+    source: "atoms/entities/itemDesign.ts",
+    exportName: "itemLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(itemLogic),
+    quickStart: `
+1. Confirm ownership and custody chain
+2. Update condition and charges from use/environment
+3. Resolve hidden trigger activation and side effects
+4. Propagate effects to quests/NPCs/locations
+`.trim(),
+    checklist: [
+      "Ownership transition recorded with trigger event?",
+      "Condition state updated with concrete cause?",
+      "Hidden trigger conditions met and observable evidence defined?",
+      "Escalation costs (if cursed) applied consistently?",
+      "Downstream state updates propagated to linked entities?",
     ],
   }),
 );

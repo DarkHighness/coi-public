@@ -754,11 +754,11 @@ function getSocialContent(
   }
 }
 
-export const npcLogicPrimer: Atom<NpcLogicInput> = defineAtom(
+export const npcLogicDescription: Atom<NpcLogicInput> = defineAtom(
   {
-    atomId: "atoms/entities/npcLogic#npcLogicPrimer",
+    atomId: "atoms/entities/npcLogic#npcLogicDescription",
     source: "atoms/entities/npcLogic.ts",
-    exportName: "npcLogicPrimer",
+    exportName: "npcLogicDescription",
   },
   (input = {}) => {
     const autonomy = input.npcAutonomyLevel ?? "balanced";

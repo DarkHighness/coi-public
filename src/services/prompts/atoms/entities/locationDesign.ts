@@ -169,11 +169,11 @@ Who "owns" this space?
 /**
  * Location design primer (system-prompt safe).
  */
-export const locationDesignPrimer: Atom<void> = defineAtom(
+export const locationDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/locationDesign#locationDesignPrimer",
+    atomId: "atoms/entities/locationDesign#locationDesignDescription",
     source: "atoms/entities/locationDesign.ts",
-    exportName: "locationDesignPrimer",
+    exportName: "locationDesignDescription",
   },
   () => `
 <game_system_context>
@@ -261,6 +261,68 @@ The back room hosts illegal gambling every third night.
 The cellar connects to the thieves' guild tunnel network."
 (Surface hides underbelly.)`,
       },
+    ],
+  }),
+);
+
+// ============================================================================
+// Location Logic - access, control, hazard, and temporal progression rules
+// ============================================================================
+
+export const locationLogic: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/locationDesign#locationLogic",
+    source: "atoms/entities/locationDesign.ts",
+    exportName: "locationLogic",
+  },
+  () => `
+<game_system_context>
+**LOCATION LOGIC**: Locations should produce constraints and consequences.
+- Access model: gates, permissions, surveillance, and bypass routes are explicit.
+- Control model: legal owner vs practical controller vs contested actor.
+- Hazard model: visible and hidden dangers with trigger windows and mitigation paths.
+- Temporal model: dawn/noon/dusk/night and weather must alter utility and risk.
+- Persistence model: events leave marks; revisits must reflect prior actions.
+</game_system_context>
+`,
+);
+
+export const locationLogicDescription: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/locationDesign#locationLogicDescription",
+    source: "atoms/entities/locationDesign.ts",
+    exportName: "locationLogicDescription",
+  },
+  () => `
+<game_system_context>
+**LOCATION LOGIC**: Model access, control, hazards, and temporal change.
+- Who can enter and when
+- Who controls the space
+- How events alter revisit state
+</game_system_context>
+`,
+);
+
+export const locationLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/locationDesign#locationLogicSkill",
+    source: "atoms/entities/locationDesign.ts",
+    exportName: "locationLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(locationLogic),
+    quickStart: `
+1. Define access + surveillance gates
+2. Resolve control actors and contested zones
+3. Apply hazard triggers and mitigation options
+4. Advance time/weather state and persist scene marks
+`.trim(),
+    checklist: [
+      "Access constraints and bypasses defined?",
+      "Controller/owner distinctions explicit?",
+      "Hidden hazards linked to clear triggers?",
+      "Time/weather changes alter risk or options?",
+      "Revisit state reflects prior events?",
     ],
   }),
 );

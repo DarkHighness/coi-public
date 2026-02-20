@@ -7,7 +7,7 @@
  * 定义创建 Knowledge 时的设计哲学和质量要求。
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 /**
@@ -59,11 +59,11 @@ Hint at revelations the protagonist will discover later:
 /**
  * Knowledge design primer (system-prompt safe).
  */
-export const knowledgeDesignPrimer: Atom<void> = defineAtom(
+export const knowledgeDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/knowledgeDesign#knowledgeDesignPrimer",
+    atomId: "atoms/entities/knowledgeDesign#knowledgeDesignDescription",
     source: "atoms/entities/knowledgeDesign.ts",
-    exportName: "knowledgeDesignPrimer",
+    exportName: "knowledgeDesignDescription",
   },
   () => `
 <game_system_context>
@@ -77,3 +77,93 @@ export const knowledgeDesignPrimer: Atom<void> = defineAtom(
 );
 
 export default knowledgeDesign;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const knowledgeDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/knowledgeDesign#knowledgeDesignSkill",
+    source: "atoms/entities/knowledgeDesign.ts",
+    exportName: "knowledgeDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(knowledgeDesign),
+    quickStart: `
+1. Define visible belief and hidden truth contradiction
+2. Add misconception mechanics and propagation vectors
+3. Connect entry to at least one NPC/location/quest
+4. Plant foreshadowing that can be verified later
+`.trim(),
+    checklist: [
+      "Visible layer plausible but incomplete/wrong?",
+      "Hidden layer concretely explains visible error?",
+      "Misconception has source and spread mechanism?",
+      "Entry is linked to at least one other entity?",
+      "Foreshadowing hook can be paid off later?",
+    ],
+  }),
+);
+
+// ============================================================================
+// Knowledge Logic - belief propagation, verification, and contradiction rules
+// ============================================================================
+
+export const knowledgeLogic: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/knowledgeDesign#knowledgeLogic",
+    source: "atoms/entities/knowledgeDesign.ts",
+    exportName: "knowledgeLogic",
+  },
+  () => `
+<game_system_context>
+**KNOWLEDGE LOGIC**: Information is a contested, evolving system.
+- Beliefs spread through channels (rumor, records, institutions, propaganda).
+- Confidence levels change with evidence, authority, and contradiction pressure.
+- Contradictory knowledge can coexist by audience, class, faction, or location.
+- Verification has cost (time, risk, access), and failed verification can mislead.
+- Knowledge changes must ripple into quests, faction moves, and timeline interpretation.
+</game_system_context>
+`,
+);
+
+export const knowledgeLogicDescription: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/knowledgeDesign#knowledgeLogicDescription",
+    source: "atoms/entities/knowledgeDesign.ts",
+    exportName: "knowledgeLogicDescription",
+  },
+  () => `
+<game_system_context>
+**KNOWLEDGE LOGIC**: Model spread, confidence, and verification cost.
+- Who believes what and why
+- How evidence updates confidence
+- How contradictions persist by audience
+</game_system_context>
+`,
+);
+
+export const knowledgeLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/knowledgeDesign#knowledgeLogicSkill",
+    source: "atoms/entities/knowledgeDesign.ts",
+    exportName: "knowledgeLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(knowledgeLogic),
+    quickStart: `
+1. Identify active knowledge carriers and channels
+2. Apply evidence/confidence update
+3. Resolve audience-specific contradictions
+4. Propagate downstream effects to quest/faction/timeline state
+`.trim(),
+    checklist: [
+      "Knowledge update tied to channel and source?",
+      "Confidence shifts justified by evidence quality?",
+      "Audience segmentation handled (who knows/believes)?",
+      "Verification cost or risk represented?",
+      "Downstream entity impacts applied?",
+    ],
+  }),
+);

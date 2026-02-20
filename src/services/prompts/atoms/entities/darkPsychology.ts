@@ -12,11 +12,11 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const darkPsychologyPrimer: Atom<void> = defineAtom(
+export const darkPsychologyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/darkPsychology#darkPsychologyPrimer",
+    atomId: "atoms/entities/darkPsychology#darkPsychologyDescription",
     source: "atoms/entities/darkPsychology.ts",
-    exportName: "darkPsychologyPrimer",
+    exportName: "darkPsychologyDescription",
   },
   () => `
 <dark_psychology>

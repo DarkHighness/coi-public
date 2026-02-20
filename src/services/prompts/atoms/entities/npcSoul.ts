@@ -25,11 +25,11 @@ import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 // Primer — loaded into base system prompt (lean)
 // ---------------------------------------------------------------------------
 
-export const npcSoulPrimer: Atom<void> = defineAtom(
+export const npcSoulDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/npcSoul#npcSoulPrimer",
+    atomId: "atoms/entities/npcSoul#npcSoulDescription",
     source: "atoms/entities/npcSoul.ts",
-    exportName: "npcSoulPrimer",
+    exportName: "npcSoulDescription",
   },
   () => `
 <npc_soul>
@@ -40,7 +40,7 @@ export const npcSoulPrimer: Atom<void> = defineAtom(
   - **No absolute evil**: the fugitive is also a father. The invading army fights for survival. The scheming concubine fights for her life. Every NPC is the hero of their own story — show their reasons, even when their actions are monstrous.
   - **Private universe**: NPCs carry thoughts, fears, and small joys the player never sees — but these leak through word choice, hesitation, and the things they avoid saying.
 
-  For adaptive voice tables, growth mechanics, and perspective ethics, read \`npc/soul\` skill.
+  For adaptive voice tables, growth mechanics, and perspective ethics, read \`gm/actor-logic/npc-soul\` skill.
 </npc_soul>
 `,
 );

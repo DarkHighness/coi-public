@@ -262,11 +262,11 @@ The world doesn't pause when the player looks away. It accelerates.
 /**
  * Faction 设计上下文 - 精简版
  */
-export const factionDesignPrimer: Atom<void> = defineAtom(
+export const factionDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/factionDesign#factionDesignPrimer",
+    atomId: "atoms/entities/factionDesign#factionDesignDescription",
     source: "atoms/entities/factionDesign.ts",
-    exportName: "factionDesignPrimer",
+    exportName: "factionDesignDescription",
   },
   () => `
 <game_system_context>
@@ -355,6 +355,68 @@ If they could, we'd have a war." }
 Know where the bishop's bastard children live."
 (Specific leverage, playable hooks.)`,
       },
+    ],
+  }),
+);
+
+// ============================================================================
+// Faction Logic - power transitions, influence, and conflict propagation rules
+// ============================================================================
+
+export const factionLogic: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/factionDesign#factionLogic",
+    source: "atoms/entities/factionDesign.ts",
+    exportName: "factionLogic",
+  },
+  () => `
+<game_system_context>
+**FACTION LOGIC**: Factions are dynamic power systems.
+- Influence shifts by resource flow, legitimacy, and coercive capacity.
+- Internal schisms can trigger policy forks, purges, or splinter groups.
+- Inter-faction relations evolve from events, treaties, betrayals, and shared threats.
+- Off-screen operations advance with time and generate visible world traces.
+- Faction state deltas must update quest hooks, NPC agendas, and location control.
+</game_system_context>
+`,
+);
+
+export const factionLogicDescription: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/factionDesign#factionLogicDescription",
+    source: "atoms/entities/factionDesign.ts",
+    exportName: "factionLogicDescription",
+  },
+  () => `
+<game_system_context>
+**FACTION LOGIC**: Track influence, schisms, and systemic reactions.
+- Power follows resources and legitimacy
+- Schisms create branch behavior
+- Off-screen moves leave in-world effects
+</game_system_context>
+`,
+);
+
+export const factionLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/factionDesign#factionLogicSkill",
+    source: "atoms/entities/factionDesign.ts",
+    exportName: "factionLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(factionLogic),
+    quickStart: `
+1. Evaluate influence drivers (money, force, legitimacy, intel)
+2. Resolve internal schism pressure and leadership stability
+3. Apply inter-faction reaction chain
+4. Propagate effects to quests/NPCs/locations
+`.trim(),
+    checklist: [
+      "Influence change explained by concrete drivers?",
+      "Internal conflict state updated when pressure changed?",
+      "External relations updated from recent events?",
+      "Off-screen faction actions produced visible traces?",
+      "Linked entities synchronized with faction delta?",
     ],
   }),
 );

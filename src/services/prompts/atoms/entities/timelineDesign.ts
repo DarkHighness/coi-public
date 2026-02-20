@@ -7,7 +7,7 @@
  * 定义创建 Timeline 时的设计哲学和质量要求。
  */
 
-import type { Atom } from "../types";
+import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 /**
@@ -73,11 +73,11 @@ The LAST timeline event should set up why the story begins NOW:
 /**
  * Timeline 设计上下文 - 精简版
  */
-export const timelineDesignPrimer: Atom<void> = defineAtom(
+export const timelineDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/timelineDesign#timelineDesignPrimer",
+    atomId: "atoms/entities/timelineDesign#timelineDesignDescription",
     source: "atoms/entities/timelineDesign.ts",
-    exportName: "timelineDesignPrimer",
+    exportName: "timelineDesignDescription",
   },
   () => `
 <game_system_context>
@@ -92,3 +92,93 @@ export const timelineDesignPrimer: Atom<void> = defineAtom(
 );
 
 export default timelineDesign;
+
+// ============================================================================
+// Skill Version - Returns structured output for VFS multi-file generation
+// ============================================================================
+
+export const timelineDesignSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/timelineDesign#timelineDesignSkill",
+    source: "atoms/entities/timelineDesign.ts",
+    exportName: "timelineDesignSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(timelineDesign),
+    quickStart: `
+1. Build ordered cause→action→effect chain
+2. Anchor visible account vs hidden account
+3. Add off-screen progression pressure
+4. End with inciting incident relevance
+`.trim(),
+    checklist: [
+      "Events ordered oldest→newest?",
+      "Each event has explicit cause/action/effect?",
+      "Visible and hidden versions are meaningfully different?",
+      "Includes ancient + recent temporal anchors?",
+      "Final event supports current story ignition?",
+    ],
+  }),
+);
+
+// ============================================================================
+// Timeline Logic - causality maintenance and event propagation rules
+// ============================================================================
+
+export const timelineLogic: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/timelineDesign#timelineLogic",
+    source: "atoms/entities/timelineDesign.ts",
+    exportName: "timelineLogic",
+  },
+  () => `
+<game_system_context>
+**TIMELINE LOGIC**: Timeline is a causal ledger, not a list of lore cards.
+- Events mutate world state through explicit dependencies and aftereffects.
+- Parallel threads can converge/diverge; conflict resolution must preserve causality.
+- Retcons require reconciliation notes and downstream updates.
+- Delayed consequences should fire by trigger context, not arbitrary narration timing.
+- Timeline changes must update quests, knowledge confidence, and faction posture.
+</game_system_context>
+`,
+);
+
+export const timelineLogicDescription: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/timelineDesign#timelineLogicDescription",
+    source: "atoms/entities/timelineDesign.ts",
+    exportName: "timelineLogicDescription",
+  },
+  () => `
+<game_system_context>
+**TIMELINE LOGIC**: Maintain dependency-safe event progression.
+- Causality links are explicit
+- Delayed effects trigger by context
+- Retcons reconcile downstream state
+</game_system_context>
+`,
+);
+
+export const timelineLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/timelineDesign#timelineLogicSkill",
+    source: "atoms/entities/timelineDesign.ts",
+    exportName: "timelineLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(timelineLogic),
+    quickStart: `
+1. Resolve event dependencies and branch interactions
+2. Apply delayed consequences by trigger context
+3. Reconcile retcon adjustments through chain updates
+4. Sync quest/knowledge/faction outcomes
+`.trim(),
+    checklist: [
+      "Dependency links explicit for changed events?",
+      "Delayed consequences triggered by relevant context?",
+      "Retcon changes reconciled across dependent events?",
+      "No causal contradiction introduced?",
+      "Linked entities synchronized after timeline mutation?",
+    ],
+  }),
+);

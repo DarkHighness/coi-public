@@ -76,11 +76,11 @@ Avoid:
 /**
  * Quest 设计上下文 - 精简版
  */
-export const questDesignPrimer: Atom<void> = defineAtom(
+export const questDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/entities/questDesign#questDesignPrimer",
+    atomId: "atoms/entities/questDesign#questDesignDescription",
     source: "atoms/entities/questDesign.ts",
-    exportName: "questDesignPrimer",
+    exportName: "questDesignDescription",
   },
   () => `
 <game_system_context>
@@ -170,6 +170,68 @@ Approaches:
 - Violent: Raid the smuggler's den
 (Multiple paths, concrete actions.)`,
       },
+    ],
+  }),
+);
+
+// ============================================================================
+// Quest Logic - progression, gating, failure-forward, and dependency rules
+// ============================================================================
+
+export const questLogic: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/questDesign#questLogic",
+    source: "atoms/entities/questDesign.ts",
+    exportName: "questLogic",
+  },
+  () => `
+<game_system_context>
+**QUEST LOGIC**: Quests are state machines with pressure, branches, and cost.
+- Progress is evidence-based (artifacts, witnesses, actions), never vague intent.
+- Each phase has at least one alternate approach (social/physical/procedural/violent).
+- Deadlines and clocks advance off-screen and can invalidate paths.
+- Failure moves story forward with changed stakes, not silent reset.
+- Quest changes must sync to involved NPC/location/faction/timeline entities.
+</game_system_context>
+`,
+);
+
+export const questLogicDescription: Atom<void> = defineAtom(
+  {
+    atomId: "atoms/entities/questDesign#questLogicDescription",
+    source: "atoms/entities/questDesign.ts",
+    exportName: "questLogicDescription",
+  },
+  () => `
+<game_system_context>
+**QUEST LOGIC**: Drive progress by evidence, clocks, and fail-forward.
+- Actionable leads
+- Branchable approaches
+- Consequence-carrying failure
+</game_system_context>
+`,
+);
+
+export const questLogicSkill: SkillAtom<void> = defineSkillAtom(
+  {
+    atomId: "atoms/entities/questDesign#questLogicSkill",
+    source: "atoms/entities/questDesign.ts",
+    exportName: "questLogicSkill",
+  },
+  (_input, trace): SkillOutput => ({
+    main: trace.record(questLogic),
+    quickStart: `
+1. Set current objective + evidence gate
+2. Offer multi-approach progression routes
+3. Advance clocks/deadlines and resolve branch outcomes
+4. Propagate outcomes to linked entities
+`.trim(),
+    checklist: [
+      "Progress gate tied to concrete evidence?",
+      "At least two viable approaches preserved?",
+      "Deadline/clock advanced with clear impact?",
+      "Failure resulted in forward pressure (not reset)?",
+      "Linked entities updated for consequence continuity?",
     ],
   }),
 );
