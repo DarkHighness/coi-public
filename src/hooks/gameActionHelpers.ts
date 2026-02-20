@@ -8,6 +8,7 @@ import {
   LogEntry,
   GameResponse,
   TokenUsage,
+  ToolCallContextUsageSnapshot,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { createFork, createStateSnapshot } from "../utils/snapshotManager";
@@ -23,10 +24,6 @@ import {
   getProviderConfig,
   getProviderInstance,
 } from "../services/ai/provider/registry";
-import {
-  DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  resolveModelContextWindowTokens,
-} from "../services/modelContextWindows";
 import { summarizeContext } from "../services/aiService";
 let sessionManagerModulePromise: Promise<
   typeof import("../services/ai/sessionManager")
@@ -310,66 +307,51 @@ export const handleSummarization = async (
   const autoCompactEnabled = aiSettings.extra?.autoCompactEnabled ?? true;
   const autoCompactThreshold = aiSettings.extra?.autoCompactThreshold ?? 0.7;
 
-  const resolveContextLengthTokens = (): number | null => {
-    const startedAt = Date.now();
-
-    const storyProvider = getProviderInstance(
-      aiSettings,
-      aiSettings.story.providerId,
-    );
-    if (!storyProvider) {
-      console.debug("[Summarization] Context length resolved", {
-        source: "fallback.noProvider",
-        value: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-        elapsedMs: Date.now() - startedAt,
-      });
-      return DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS;
-    }
-
-    const resolution = resolveModelContextWindowTokens({
-      settings: aiSettings,
-      providerId: aiSettings.story.providerId,
-      providerProtocol: storyProvider.protocol,
-      modelId: aiSettings.story.modelId,
-      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-    });
-    console.debug("[Summarization] Context length resolved", {
-      source: resolution.source,
-      value: resolution.value,
-      providerId: storyProvider.id,
-      modelId: aiSettings.story.modelId,
-      elapsedMs: Date.now() - startedAt,
-    });
-    return resolution.value;
-  };
-
-  // Token-Usage Trigger: use last promptTokens from previous model response
-  // (provider-reported or retry-layer estimation fallback), divided by model context length.
+  // Token-Usage Trigger: use last provider-reported context usage from previous
+  // model response snapshot. Do not recompute with current settings/fallbacks.
   if (!shouldSummarize && autoCompactEnabled) {
     const parentNode =
       effectiveParentId && gameState.nodes[effectiveParentId]
         ? gameState.nodes[effectiveParentId]
         : null;
-    const parentUsage =
-      parentNode?.role === "model" ? parentNode.usage : undefined;
-    const lastPromptTokens =
-      typeof parentUsage?.promptTokens === "number" &&
-      parentUsage.promptTokens > 0
-        ? parentUsage.promptTokens
+    const parentContextUsage =
+      parentNode?.role === "model" ? parentNode.contextUsage : undefined;
+    const lastUsageTokens =
+      typeof parentContextUsage?.usageTokens === "number" &&
+      Number.isFinite(parentContextUsage.usageTokens) &&
+      parentContextUsage.usageTokens > 0
+        ? Math.floor(parentContextUsage.usageTokens)
+        : undefined;
+    const contextWindowTokens =
+      typeof parentContextUsage?.contextWindowTokens === "number" &&
+      Number.isFinite(parentContextUsage.contextWindowTokens) &&
+      parentContextUsage.contextWindowTokens > 0
+        ? Math.floor(parentContextUsage.contextWindowTokens)
+        : undefined;
+    const ratioFromSnapshot =
+      typeof parentContextUsage?.usageRatio === "number" &&
+      Number.isFinite(parentContextUsage.usageRatio) &&
+      parentContextUsage.usageRatio >= 0
+        ? parentContextUsage.usageRatio
         : undefined;
 
-    if (typeof lastPromptTokens === "number" && lastPromptTokens > 0) {
-      const contextLengthTokens = resolveContextLengthTokens();
-      if (contextLengthTokens && contextLengthTokens > 0) {
-        const ratio = lastPromptTokens / contextLengthTokens;
-        if (ratio >= autoCompactThreshold) {
-          console.log(
-            `[Summarization] Token threshold triggered: promptTokens=${lastPromptTokens}, contextLength=${contextLengthTokens}, ratio=${ratio.toFixed(
-              3,
-            )} >= ${autoCompactThreshold}`,
-          );
-          shouldSummarize = true;
-        }
+    if (
+      typeof lastUsageTokens === "number" &&
+      lastUsageTokens > 0 &&
+      typeof contextWindowTokens === "number" &&
+      contextWindowTokens > 0
+    ) {
+      const ratio =
+        typeof ratioFromSnapshot === "number"
+          ? ratioFromSnapshot
+          : lastUsageTokens / contextWindowTokens;
+      if (ratio >= autoCompactThreshold) {
+        console.log(
+          `[Summarization] Token threshold triggered: usageTokens=${lastUsageTokens}, contextWindow=${contextWindowTokens}, ratio=${ratio.toFixed(
+            3,
+          )} >= ${autoCompactThreshold}`,
+        );
+        shouldSummarize = true;
       }
     }
   }
@@ -451,6 +433,7 @@ export const createModelNode = (
   lastIndex: number,
   summarySnapshot: StorySummary | undefined,
   usage: TokenUsage,
+  contextUsage: ToolCallContextUsageSnapshot | null,
   newSegmentId: string,
   forceTheme?: string,
   options?: {
@@ -523,6 +506,7 @@ export const createModelNode = (
     timestamp: Date.now(),
     summarySnapshot: summarySnapshot || undefined,
     usage: usage,
+    ...(contextUsage ? { contextUsage } : {}),
     summaries: effectiveSummaries,
     summarizedIndex: lastIndex,
     atmosphere: responseAtmosphere,

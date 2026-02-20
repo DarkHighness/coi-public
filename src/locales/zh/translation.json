@@ -1009,7 +1009,7 @@
     "autoCompactEnabled": "自动压缩上下文",
     "autoCompactEnabledHelp": "当上下文用量超过阈值时自动进行会话压缩（推荐：更利于前缀缓存稳定命中）。",
     "autoCompactThreshold": "压缩触发阈值",
-    "autoCompactThresholdHelp": "当上一轮 promptTokens / 上下文窗口 >= 该阈值时触发压缩。",
+    "autoCompactThresholdHelp": "当上一轮 provider 返回的 totalTokens / 上下文窗口 >= 该阈值时触发压缩。",
     "vfsReadTokenBudgetPercent": "VFS 读取预算比例",
     "vfsReadTokenBudgetPercentHelp": "控制 vfs_read_* 单次读取预算占上下文窗口的百分比（默认 10%）。",
     "maxContextTokens": "上下文窗口（Tokens）",

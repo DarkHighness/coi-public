@@ -12,6 +12,7 @@ const runtimeState = vi.hoisted(() => ({
       summaries: [],
       godMode: false,
       unlockMode: false,
+      liveToolCalls: [],
     },
     currentHistory: [
       {
@@ -58,6 +59,19 @@ vi.mock("../contexts/SettingsContext", () => ({
 describe("ActionPanel", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    runtimeState.state.gameState = {
+      isProcessing: false,
+      summaries: [],
+      godMode: false,
+      unlockMode: false,
+      liveToolCalls: [],
+    };
+    runtimeState.state.currentHistory = [
+      {
+        role: "model",
+        choices: ["Go left", "Go right"],
+      },
+    ] as any;
     vi.stubGlobal(
       "matchMedia",
       vi.fn((query: string) => ({
@@ -76,5 +90,49 @@ describe("ActionPanel", () => {
     fireEvent.click(screen.getByText("Go left"));
 
     expect(onAction).toHaveBeenCalledWith("Go left");
+  });
+
+  it("renders historical context usage from per-turn context snapshot", () => {
+    runtimeState.state.currentHistory = [
+      {
+        role: "model",
+        choices: ["Continue"],
+        contextUsage: {
+          usageTokens: 70000,
+          totalTokens: 70000,
+          promptTokens: 65000,
+          completionTokens: 5000,
+          contextWindowTokens: 100000,
+          usageRatio: 0.7,
+          autoCompactThreshold: 0.7,
+          thresholdTokens: 70000,
+          tokensToThreshold: 0,
+          source: "settings.modelContextWindows",
+        },
+      },
+    ] as any;
+
+    render(React.createElement(ActionPanel, { onAction: vi.fn() }));
+
+    expect(screen.getByText(/70,000\/100,000 \(70%\)/i)).toBeTruthy();
+  });
+
+  it("ignores implausible legacy aggregate usage when no context snapshot exists", () => {
+    runtimeState.state.currentHistory = [
+      {
+        role: "model",
+        choices: ["Continue"],
+        usage: {
+          promptTokens: 600000,
+          completionTokens: 1000,
+          totalTokens: 601000,
+          reported: true,
+        },
+      },
+    ] as any;
+
+    render(React.createElement(ActionPanel, { onAction: vi.fn() }));
+
+    expect(screen.getByTitle(/contextUsage:\s*—\/128,?000/i)).toBeTruthy();
   });
 });

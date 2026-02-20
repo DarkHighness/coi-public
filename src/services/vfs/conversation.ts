@@ -5,7 +5,12 @@ import {
   canonicalToLogicalVfsPath,
   toCanonicalVfsPath,
 } from "./core/pathResolver";
-import type { ForkTree, PlayerRate, TokenUsage } from "@/types";
+import type {
+  ForkTree,
+  PlayerRate,
+  TokenUsage,
+  ToolCallContextUsageSnapshot,
+} from "@/types";
 
 export interface ConversationIndex {
   activeForkId: number;
@@ -30,6 +35,7 @@ export interface TurnFile {
     ending?: string;
     forceEnd?: boolean;
     usage?: TokenUsage;
+    contextUsage?: ToolCallContextUsageSnapshot;
   };
   media?: JsonObject;
   meta?: {

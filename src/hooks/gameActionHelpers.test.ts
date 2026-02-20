@@ -192,6 +192,7 @@ describe("createModelNode", () => {
         0,
         undefined,
         baseUsage,
+        null,
         "segment-1",
       ),
     ).toThrow("Missing final state for model node snapshot.");
@@ -224,6 +225,7 @@ describe("createModelNode", () => {
       3,
       undefined,
       baseUsage,
+      null,
       "segment-2",
     );
 
@@ -264,6 +266,7 @@ describe("createModelNode", () => {
       2,
       undefined,
       baseUsage,
+      null,
       "segment-3",
       "horror",
     );
@@ -421,6 +424,149 @@ describe("handleSummarization", () => {
     );
 
     expect(getModelsForInstanceMock).not.toHaveBeenCalled();
+  });
+
+  it("does not auto-compact from legacy aggregated usage without context snapshot", async () => {
+    const parentNode = {
+      id: "model-parent",
+      parentId: null,
+      role: "model",
+      text: "parent",
+      choices: [],
+      segmentIdx: 0,
+      summarizedIndex: 0,
+      summaries: [],
+      usage: { promptTokens: 600000, totalTokens: 600000, reported: true },
+      timestamp: 0,
+      ending: "continue",
+    } as any;
+    const gameState = createMinimalGameState({
+      nodes: { [parentNode.id]: parentNode },
+      activeNodeId: parentNode.id,
+      forkId: 0,
+    });
+
+    await handleSummarization(
+      gameState,
+      parentNode.id,
+      "user-temp",
+      "",
+      [],
+      0,
+      false,
+      aiSettings,
+      "en",
+      {} as any,
+      "slot-1",
+      0,
+      false,
+    );
+
+    expect(summarizeContextMock).not.toHaveBeenCalled();
+  });
+
+  it("does not auto-compact when snapshot ratio is below threshold", async () => {
+    const parentNode = {
+      id: "model-parent",
+      parentId: null,
+      role: "model",
+      text: "parent",
+      choices: [],
+      segmentIdx: 0,
+      summarizedIndex: 0,
+      summaries: [],
+      contextUsage: {
+        usageTokens: 100000,
+        totalTokens: 100000,
+        promptTokens: 96000,
+        completionTokens: 4000,
+        contextWindowTokens: 300000,
+        usageRatio: 100000 / 300000,
+        autoCompactThreshold: 0.7,
+        thresholdTokens: 210000,
+        tokensToThreshold: 110000,
+        source: "fallback.default",
+      },
+      timestamp: 0,
+      ending: "continue",
+    } as any;
+    const gameState = createMinimalGameState({
+      nodes: { [parentNode.id]: parentNode },
+      activeNodeId: parentNode.id,
+      forkId: 0,
+    });
+
+    await handleSummarization(
+      gameState,
+      parentNode.id,
+      "user-temp",
+      "",
+      [],
+      0,
+      false,
+      aiSettings,
+      "en",
+      {} as any,
+      "slot-1",
+      0,
+      false,
+    );
+
+    expect(summarizeContextMock).not.toHaveBeenCalled();
+  });
+
+  it("auto-compacts when parent context usage exceeds threshold", async () => {
+    const parentNode = {
+      id: "model-parent",
+      parentId: null,
+      role: "model",
+      text: "parent",
+      choices: [],
+      segmentIdx: 0,
+      summarizedIndex: 0,
+      summaries: [],
+      contextUsage: {
+        usageTokens: 90000,
+        totalTokens: 90000,
+        promptTokens: 85000,
+        completionTokens: 5000,
+        contextWindowTokens: 128000,
+        usageRatio: 0.703125,
+        autoCompactThreshold: 0.7,
+        thresholdTokens: 89600,
+        tokensToThreshold: 0,
+        source: "fallback.default",
+      },
+      timestamp: 0,
+      ending: "continue",
+    } as any;
+    const gameState = createMinimalGameState({
+      nodes: { [parentNode.id]: parentNode },
+      activeNodeId: parentNode.id,
+      forkId: 0,
+    });
+    summarizeContextMock.mockResolvedValue({
+      summary: createSummary("auto-compact", 0),
+      logs: [],
+    });
+
+    await handleSummarization(
+      gameState,
+      parentNode.id,
+      "user-temp",
+      "",
+      [],
+      0,
+      false,
+      aiSettings,
+      "en",
+      {} as any,
+      "slot-1",
+      0,
+      false,
+    );
+
+    expect(summarizeContextMock).toHaveBeenCalled();
   });
 });
 

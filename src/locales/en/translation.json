@@ -971,7 +971,7 @@
     "autoCompactEnabled": "Auto Compaction",
     "autoCompactEnabledHelp": "Automatically compact the session when context usage exceeds a threshold (recommended for prefix cache stability).",
     "autoCompactThreshold": "Compaction Threshold",
-    "autoCompactThresholdHelp": "Trigger compaction when last prompt token usage / context window >= this threshold.",
+    "autoCompactThresholdHelp": "Trigger compaction when last provider-reported total token usage / context window >= this threshold.",
     "vfsReadTokenBudgetPercent": "VFS Read Budget Ratio",
     "vfsReadTokenBudgetPercentHelp": "Controls single-read payload budget for vfs_read_* tools as a percentage of context window (default 10%).",
     "maxContextTokens": "Context Window (Tokens)",

@@ -158,7 +158,7 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
       {latestContextUsage && usageRatioPercent !== null && (
         <div className="mb-2 px-1">
           <div className="text-center text-[10px] font-mono text-theme-muted">
-            {`Context ${usageRatioPercent}% • ${formatTokenCount(latestContextUsage.promptTokens)}/${formatTokenCount(latestContextUsage.contextWindowTokens)} • auto ${thresholdPercent}%`}
+            {`Context ${usageRatioPercent}% • ${formatTokenCount(latestContextUsage.usageTokens)}/${formatTokenCount(latestContextUsage.contextWindowTokens)} • auto ${thresholdPercent}%`}
           </div>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-theme-divider/50">
             <div

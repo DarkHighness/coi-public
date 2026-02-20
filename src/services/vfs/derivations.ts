@@ -17,6 +17,7 @@ import type {
   SavePresetProfile,
   TimelineEvent,
   TokenUsage,
+  ToolCallContextUsageSnapshot,
 } from "@/types";
 import { DEFAULT_CHARACTER } from "@/utils/constants";
 import { deriveHistory } from "@/utils/storyUtils";
@@ -104,6 +105,64 @@ const normalizeTokenUsage = (usage: unknown): TokenUsage | undefined => {
     ...(typeof source.reported === "boolean"
       ? { reported: source.reported }
       : {}),
+  };
+};
+
+const normalizeContextUsage = (
+  usage: unknown,
+): ToolCallContextUsageSnapshot | undefined => {
+  if (!usage || typeof usage !== "object") {
+    return undefined;
+  }
+
+  const source = usage as JsonObject;
+  const normalizeNumber = (value: unknown): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return 0;
+    }
+    return Math.max(0, Math.floor(value));
+  };
+
+  const usageTokens = normalizeNumber(source.usageTokens);
+  const contextWindowTokens = normalizeNumber(source.contextWindowTokens);
+  const usageRatio =
+    typeof source.usageRatio === "number" && Number.isFinite(source.usageRatio)
+      ? Math.max(0, source.usageRatio)
+      : 0;
+  const autoCompactThreshold =
+    typeof source.autoCompactThreshold === "number" &&
+    Number.isFinite(source.autoCompactThreshold)
+      ? Math.min(0.99, Math.max(0.01, source.autoCompactThreshold))
+      : 0.7;
+  const thresholdTokens = normalizeNumber(source.thresholdTokens);
+  const tokensToThreshold = normalizeNumber(source.tokensToThreshold);
+
+  const sourceValue = source.source;
+  if (
+    typeof sourceValue !== "string" ||
+    sourceValue.length === 0 ||
+    contextWindowTokens <= 0
+  ) {
+    return undefined;
+  }
+
+  return {
+    usageTokens,
+    promptTokens: normalizeNumber(source.promptTokens),
+    ...(normalizeNumber(source.totalTokens) > 0
+      ? { totalTokens: normalizeNumber(source.totalTokens) }
+      : {}),
+    ...(normalizeNumber(source.completionTokens) > 0
+      ? { completionTokens: normalizeNumber(source.completionTokens) }
+      : {}),
+    contextWindowTokens,
+    usageRatio,
+    autoCompactThreshold,
+    thresholdTokens:
+      thresholdTokens ||
+      Math.max(1, Math.floor(contextWindowTokens * autoCompactThreshold)),
+    tokensToThreshold,
+    source: sourceValue as ToolCallContextUsageSnapshot["source"],
   };
 };
 
@@ -1110,6 +1169,7 @@ const deriveConversationNodes = (
       timestamp: turn.createdAt,
       segmentIdx,
       usage: normalizeTokenUsage(turn.assistant.usage),
+      contextUsage: normalizeContextUsage(turn.assistant.contextUsage),
       atmosphere: normalizeAtmosphere(turn.assistant.atmosphere),
       narrativeTone: turn.assistant.narrativeTone,
       ending: normalizeEnding(turn.assistant.ending),

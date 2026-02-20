@@ -11,6 +11,7 @@ import {
   ToolCallRecord,
   TurnRecoveryTrace,
   TokenUsage,
+  ToolCallContextUsageSnapshot,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { vfsElevationTokenManager } from "../services/vfs/core/elevation";
@@ -123,6 +124,42 @@ export const useGameAction = ({
     };
   };
 
+  const normalizeContextUsageForPersistence = (
+    usage: ToolCallContextUsageSnapshot,
+  ): ToolCallContextUsageSnapshot => {
+    const normalize = (value: unknown): number => {
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return 0;
+      }
+      return Math.max(0, Math.floor(value));
+    };
+
+    return {
+      usageTokens: normalize(usage.usageTokens),
+      promptTokens: normalize(usage.promptTokens),
+      ...(normalize(usage.totalTokens) > 0
+        ? { totalTokens: normalize(usage.totalTokens) }
+        : {}),
+      ...(normalize(usage.completionTokens) > 0
+        ? { completionTokens: normalize(usage.completionTokens) }
+        : {}),
+      contextWindowTokens: Math.max(1, normalize(usage.contextWindowTokens)),
+      usageRatio:
+        typeof usage.usageRatio === "number" &&
+        Number.isFinite(usage.usageRatio)
+          ? Math.max(0, usage.usageRatio)
+          : 0,
+      autoCompactThreshold:
+        typeof usage.autoCompactThreshold === "number" &&
+        Number.isFinite(usage.autoCompactThreshold)
+          ? Math.min(0.99, Math.max(0.01, usage.autoCompactThreshold))
+          : 0.7,
+      thresholdTokens: Math.max(1, normalize(usage.thresholdTokens)),
+      tokensToThreshold: normalize(usage.tokensToThreshold),
+      source: usage.source,
+    };
+  };
+
   const isSameUsage = (
     current: TokenUsage | undefined,
     next: TokenUsage,
@@ -140,7 +177,7 @@ export const useGameAction = ({
   };
 
   const persistUsageToActiveTurn = useCallback(
-    (usage: TokenUsage) => {
+    (usage: TokenUsage, contextUsage?: ToolCallContextUsageSnapshot | null) => {
       const snapshot = vfsSession.snapshot();
       const index = readConversationIndex(snapshot);
       if (!index?.activeTurnId) {
@@ -164,7 +201,17 @@ export const useGameAction = ({
       }
 
       const normalizedUsage = normalizeUsageForPersistence(usage);
-      if (isSameUsage(turn.assistant.usage, normalizedUsage)) {
+      const normalizedContextUsage =
+        contextUsage && typeof contextUsage === "object"
+          ? normalizeContextUsageForPersistence(contextUsage)
+          : undefined;
+      const contextUsageUnchanged =
+        JSON.stringify(turn.assistant.contextUsage ?? null) ===
+        JSON.stringify(normalizedContextUsage ?? null);
+      if (
+        isSameUsage(turn.assistant.usage, normalizedUsage) &&
+        contextUsageUnchanged
+      ) {
         return;
       }
 
@@ -173,6 +220,9 @@ export const useGameAction = ({
         assistant: {
           ...turn.assistant,
           usage: normalizedUsage,
+          ...(normalizedContextUsage
+            ? { contextUsage: normalizedContextUsage }
+            : { contextUsage: undefined }),
         },
       });
     },
@@ -671,6 +721,7 @@ export const useGameAction = ({
           response,
           logs: turnLogs,
           usage,
+          lastContextUsage,
           changedEntities,
           recovery,
         } = await generateAdventureTurn(effectiveGameState, {
@@ -692,7 +743,7 @@ export const useGameAction = ({
           confirmRecoveryAction,
         });
 
-        persistUsageToActiveTurn(usage);
+        persistUsageToActiveTurn(usage, lastContextUsage);
         maybeRelaxLearnedContextWindow();
 
         if (recovery?.recovered) {
@@ -870,6 +921,7 @@ export const useGameAction = ({
           lastIndex,
           summarySnapshot,
           usage,
+          lastContextUsage ?? null,
           newSegmentId,
           forceTheme,
           {

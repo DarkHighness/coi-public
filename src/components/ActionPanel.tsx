@@ -157,60 +157,89 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       ? pickLatestToolCallContextUsage(gameState.liveToolCalls)
       : null;
 
-  const displayContextWindowTokens =
-    liveContextUsage?.contextWindowTokens ?? contextWindowTokens;
-  const displayAutoCompactThreshold =
-    liveContextUsage?.autoCompactThreshold ?? autoCompactThreshold;
-  const thresholdTokens =
-    liveContextUsage?.thresholdTokens ??
-    Math.max(
-      1,
-      Math.floor(displayContextWindowTokens * displayAutoCompactThreshold),
-    );
-
-  const historicalPromptTokens = (() => {
+  const historicalContextUsage = (() => {
     for (let i = currentHistory.length - 1; i >= 0; i--) {
       const seg = currentHistory[i];
-      if (
-        seg?.role !== "model" ||
-        typeof seg.usage?.promptTokens !== "number"
-      ) {
+      if (seg?.role !== "model") {
         continue;
       }
 
+      if (
+        seg.contextUsage &&
+        typeof seg.contextUsage.usageTokens === "number" &&
+        seg.contextUsage.usageTokens > 0
+      ) {
+        return seg.contextUsage;
+      }
+
       const usage = seg.usage;
-      const hasLegacyPositiveSignal =
-        (usage.promptTokens || 0) > 0 ||
-        (usage.totalTokens || 0) > 0 ||
-        (usage.completionTokens || 0) > 0;
-
-      // Prefer any positive promptTokens (provider-reported or estimated fallback).
-      if ((usage.promptTokens || 0) > 0) {
-        return usage.promptTokens;
+      if (!usage || usage.reported !== true) {
+        continue;
       }
 
-      // Backward compatibility for older payloads without explicit reported flag.
-      if (usage.reported !== false && hasLegacyPositiveSignal) {
-        return usage.promptTokens;
+      const usageTokens =
+        typeof usage.totalTokens === "number" && usage.totalTokens > 0
+          ? Math.floor(usage.totalTokens)
+          : 0;
+      if (usageTokens <= 0) {
+        continue;
       }
+
+      const contextWindowForLegacy = Math.max(1, contextWindowTokens);
+      // Legacy segment.usage may contain aggregated multi-call totals.
+      // Ignore implausible values to avoid rendering misleading >100% spikes.
+      if (usageTokens > Math.floor(contextWindowForLegacy * 1.2)) {
+        continue;
+      }
+      const thresholdForLegacy = Math.max(
+        1,
+        Math.floor(contextWindowForLegacy * autoCompactThreshold),
+      );
+
+      return {
+        usageTokens,
+        totalTokens: usageTokens,
+        promptTokens:
+          typeof usage.promptTokens === "number" ? usage.promptTokens : 0,
+        completionTokens:
+          typeof usage.completionTokens === "number"
+            ? usage.completionTokens
+            : 0,
+        contextWindowTokens: contextWindowForLegacy,
+        usageRatio: usageTokens / contextWindowForLegacy,
+        autoCompactThreshold,
+        thresholdTokens: thresholdForLegacy,
+        tokensToThreshold: Math.max(0, thresholdForLegacy - usageTokens),
+        source: contextWindowResolution.source,
+      } as const;
     }
     return null;
   })();
 
-  const displayPromptTokens =
-    liveContextUsage?.promptTokens ?? historicalPromptTokens;
+  const displayContextUsage = liveContextUsage ?? historicalContextUsage;
+  const displayContextWindowTokens =
+    displayContextUsage?.contextWindowTokens ?? contextWindowTokens;
+  const displayAutoCompactThreshold =
+    displayContextUsage?.autoCompactThreshold ?? autoCompactThreshold;
+  const thresholdTokens =
+    displayContextUsage?.thresholdTokens ??
+    Math.max(
+      1,
+      Math.floor(displayContextWindowTokens * displayAutoCompactThreshold),
+    );
+  const displayUsageTokens = displayContextUsage?.usageTokens ?? null;
 
-  const hasPromptUsage =
-    typeof displayPromptTokens === "number" && displayPromptTokens >= 0;
+  const hasUsageTokens =
+    typeof displayUsageTokens === "number" && displayUsageTokens >= 0;
 
   const usageRatio =
-    liveContextUsage?.usageRatio ??
-    (hasPromptUsage ? displayPromptTokens / displayContextWindowTokens : null);
+    displayContextUsage?.usageRatio ??
+    (hasUsageTokens ? displayUsageTokens / displayContextWindowTokens : null);
 
   const tokensToThreshold =
-    liveContextUsage?.tokensToThreshold ??
-    (autoCompactEnabled && hasPromptUsage
-      ? Math.max(0, thresholdTokens - displayPromptTokens)
+    displayContextUsage?.tokensToThreshold ??
+    (autoCompactEnabled && hasUsageTokens
+      ? Math.max(0, thresholdTokens - displayUsageTokens)
       : null);
 
   const latestSummary: StorySummary | null =
@@ -915,7 +944,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               ].join(" ")}
               title={[
                 usageRatio !== null
-                  ? `${t("contextUsage") || "Context"}: ${displayPromptTokens?.toLocaleString()}/${displayContextWindowTokens.toLocaleString()} (${Math.round(
+                  ? `${t("contextUsage") || "Context"}: ${displayUsageTokens?.toLocaleString()}/${displayContextWindowTokens.toLocaleString()} (${Math.round(
                       usageRatio * 100,
                     )}%)`
                   : `${t("contextUsage") || "Context"}: —/${displayContextWindowTokens.toLocaleString()}`,
@@ -953,7 +982,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 {t("contextUsage") || "Context"}:{" "}
                 {usageRatio === null
                   ? `—/${formatTokens(displayContextWindowTokens, "full")}`
-                  : `${formatTokens(displayPromptTokens!, "full")}/${formatTokens(displayContextWindowTokens, "full")} (${Math.round(
+                  : `${formatTokens(displayUsageTokens!, "full")}/${formatTokens(displayContextWindowTokens, "full")} (${Math.round(
                       usageRatio * 100,
                     )}%)`}
                 {"  "}

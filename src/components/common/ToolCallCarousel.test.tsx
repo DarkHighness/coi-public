@@ -15,6 +15,8 @@ describe("ToolCallCarousel", () => {
             output: null,
             timestamp: Date.now(),
             contextUsage: {
+              usageTokens: 1000,
+              totalTokens: 1000,
               promptTokens: 1000,
               contextWindowTokens: 2000,
               usageRatio: 0.5,
