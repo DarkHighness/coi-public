@@ -48,7 +48,6 @@ type ThemeSkillDef = {
   title: string;
   description: string;
   aliases?: string[];
-  whenToLoad: string;
   coreConstraints: string[];
   pressureMechanisms: string[];
   level1: string[];
@@ -81,7 +80,6 @@ function buildThemeExampleContext(
 ): string[] {
   const context = [
     `Theme objective: ${def.description}`,
-    `Use trigger: ${def.whenToLoad}`,
     `Scenario focus: ${example.scenario}`,
     `Failure signal: ${summarizeThemeExampleText(example.wrong)}`,
     `Correction target: ${summarizeThemeExampleText(example.right)}`,
@@ -1458,7 +1456,6 @@ description: |
   ${escapeYamlBlock(def.description).replace(/\n/g, "\n  ")}
 tags: [${tags}]
 domain: theme
-priority: medium
 ---`;
 }
 
@@ -1598,10 +1595,6 @@ ${pitfalls.map((item) => `- ${item}`).join("\n")}
 
 ${def.description}
 
-## When to Use
-
-- ${def.whenToLoad}
-
 ## Core Constraints
 
 ${mdList(def.coreConstraints)}
@@ -1628,8 +1621,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Fantasy",
       description:
         "Fantasy is about power with costs: magic, institutions, myth, and material reality colliding. Make the supernatural meaningful by constraining it and letting society react.",
-      whenToLoad:
-        "When running a fantasy-genre adventure (magic, myth, ancient powers, feudal or guild institutions).",
       coreConstraints: [
         "Magic has **costs** and **limits** (no wish fulfillment).",
         "Power has **institutions** (guilds, courts, churches, academies).",
@@ -1698,8 +1689,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Noir",
       description:
         "Noir is about leverage: secrets, debts, compromises, and institutional rot. Information has a price, and victory often costs something you care about.",
-      whenToLoad:
-        "When running a noir-style mystery/crime story (corruption, leverage chains, moral compromises).",
       coreConstraints: [
         "Everyone has leverage (secrets, dependencies, debts).",
         "Information costs something (money, favors, exposure, blood).",
@@ -1760,8 +1749,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Horror",
       description:
         "Horror is managed fear: incomplete information, escalating exposure, and temporary safety. The threat is real and adapts; the world offers hard choices, not clean rescues.",
-      whenToLoad:
-        "When running horror or supernatural thriller content (dread, isolation, escalation, survival decisions).",
       coreConstraints: [
         "The threat is real (it can harm/kill; consequences persist).",
         "Information is incomplete (uncertainty fuels dread).",
@@ -1822,8 +1809,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Cyberpunk",
       description:
         "Cyberpunk is high tech with low trust: corporations, surveillance, debt, and body modification. Make tech social: every capability has access control, maintenance, and counterplay.",
-      whenToLoad:
-        "When running a cyberpunk or high-tech dystopia story (corps, surveillance, debt, cyberware).",
       coreConstraints: [
         "Corporations often outrank governments in practical power.",
         "Surveillance is pervasive; anonymity has a cost.",
@@ -1884,8 +1869,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Mystery",
       description:
         "Mystery is about discoverable truth under pressure. Clues must be obtainable; interpretation must be uncertain; time should change evidence and incentives.",
-      whenToLoad:
-        "When running investigation-focused scenarios (clues, suspects, evidence decay, revelations).",
       coreConstraints: [
         "Clues are discoverable (no unsolvable mysteries).",
         "Evidence requires interpretation (multiple readings possible).",
@@ -1946,8 +1929,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Romance",
       description:
         "Romance is a pressure engine for vulnerability, timing, and personal stakes. Chemistry emerges from connection plus conflict—not from declarations.",
-      whenToLoad:
-        "When romantic relationships are central or strongly influencing decisions and scenes.",
       coreConstraints: [
         "Vulnerability is required (emotional risk).",
         "Chemistry comes from conflict + connection (not perfection).",
@@ -2008,8 +1989,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Wuxia",
       description:
         "Wuxia is honor, lineage, and debt in the jianghu—an alternate legal order. Reputation is currency; techniques have sources; obligations and face create pressure.",
-      whenToLoad:
-        "When running martial arts / jianghu adventures with sect politics, blood debts, and honor codes.",
       coreConstraints: [
         "Honor and face function as currency (public reputation has cost).",
         "Lineage and school matter (techniques have sources and owners).",
@@ -2070,8 +2049,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Heist",
       description:
         "Heist is layered security under time pressure. Plans reveal through action; complications are inevitable; roles matter; exits are harder than entries.",
-      whenToLoad:
-        "When running heist/caper/infiltration scenarios (security layers, timing windows, complications).",
       coreConstraints: [
         "Security has layers (bypass one, face another).",
         "Roles matter (each specialist has unique value).",
@@ -2132,8 +2109,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Post-Apocalypse",
       description:
         "Post-apocalypse is survival under scarcity where safety is temporary. Communities extract obligations; the old world leaves residue; violence is logistical.",
-      whenToLoad:
-        "When running survival or post-collapse scenarios (scarcity, fragile communities, old-world residue).",
       coreConstraints: [
         "Resources are scarce (food, water, medicine, fuel, ammo).",
         "Safety is temporary (no permanent haven).",
@@ -2194,8 +2169,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Slice-of-Life",
       description:
         "Slice-of-life is about small stakes with real weight: routines, relationships, and incremental change. The drama comes from timing, obligations, and the texture of everyday consequences.",
-      whenToLoad:
-        "When running low-stakes, everyday-focused scenarios (community ties, routines, small conflicts).",
       coreConstraints: [
         "Small stakes feel big to the people living them.",
         "Routines create rhythm; disruption is dramatic.",
@@ -2257,8 +2230,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       aliases: ["shuangwen"],
       description:
         "Face-slapping reversal stories deliver earned status flips: the underestimated protagonist collects receipts, survives suppression, and reverses power in public view.",
-      whenToLoad:
-        "When the narrative needs high-satisfaction reversals, status humiliation payback, and momentum built from visible wins.",
       coreConstraints: [
         "Reversals must be earned through preparation, leverage, or receipts.",
         "Opposition uses realistic social/procedural power, not cartoon omnipotence.",
@@ -2320,8 +2291,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       aliases: ["nuewen"],
       description:
         "Tragic angst stories intensify emotional stakes through incompatible duties, delayed truths, and costly choices where everyone loses something meaningful.",
-      whenToLoad:
-        "When the core appeal is heartbreak, regret, and emotionally high-pressure decisions under social or moral constraints.",
       coreConstraints: [
         "Pain must connect to values and relationships, not random suffering.",
         "Misunderstandings need believable incentives for concealment.",
@@ -2383,8 +2352,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       aliases: ["zhiyu"],
       description:
         "Healing redemption stories focus on recovery with boundaries: gradual repair, accountable change, and renewed purpose built through repeated small actions.",
-      whenToLoad:
-        "When the narrative aims for comfort, growth, and credible redemption arcs instead of escalation-heavy conflict.",
       coreConstraints: [
         "Healing is incremental and behavior-based.",
         "Support systems have capacity limits and boundaries.",
@@ -2446,8 +2413,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       aliases: ["xuanyi"],
       description:
         "Mystery horror combines fair investigation with escalating dread: each clue increases understanding while narrowing safety.",
-      whenToLoad:
-        "When the story needs both clue-solving and fear escalation (unknown threat, unreliable safety, institutional coverups).",
       coreConstraints: [
         "Clues are discoverable and fair.",
         "Threat rules are consistent but partially revealed.",
@@ -2509,8 +2474,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       aliases: ["shishi"],
       description:
         "Epic worldbuilding scales from local scenes to civilizational forces: institutions, logistics, myths, and historical residue all push player choices.",
-      whenToLoad:
-        "When the campaign needs grand scope (empires, sects, wars, epochs) while keeping scenes playable and choice-driven.",
       coreConstraints: [
         "World-scale forces must manifest as local constraints.",
         "Institutions need procedures, capacity limits, and incentives.",
@@ -2572,8 +2535,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       aliases: ["ip"],
       description:
         "IP-faithful adaptation preserves source identity while enabling player-driven branches through continuity-aware invention.",
-      whenToLoad:
-        "When adapting known IP/worlds where tone, character logic, and canon pillars must remain recognizable.",
       coreConstraints: [
         "Canon pillars are explicit before divergence.",
         "Character voice/motivation remains source-legible.",
@@ -2638,8 +2599,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Modern Era",
       description:
         "Modern settings are run by systems: paperwork, registries, contracts, media, and institutional memory. Make 'the world remembers' a pressure engine (logs, witnesses, surveillance, audit trails).",
-      whenToLoad:
-        "When the story is modern/industrial/post-industrial: police, media, finance, bureaucracy, and fast rumor velocity.",
       coreConstraints: [
         "Institutions gate access (permits, IDs, credentials, property).",
         "Information leaves trails (logs, cameras, records, transactions).",
@@ -2700,8 +2659,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Feudal / Medieval",
       description:
         "Feudal settings are about obligations and distance: oaths, patronage, land, lineage, temple legitimacy, guild monopoly, and slow logistics. Power is personal, but enforced through institutions.",
-      whenToLoad:
-        "When the setting is pre-modern/feudal: nobles, vassals, guilds, temples, slow travel, and public reputation.",
       coreConstraints: [
         "Power is tied to land and oaths (fealty, tribute, service).",
         "Law is jurisdictional and personal (who you serve matters).",
@@ -2762,8 +2719,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Trade & Mercantilism",
       description:
         "Trade-focused stories run on routes, chokepoints, contracts, and fraud. Make commerce generate play: prices move, licenses gate, audits bite, and caravans create clocks.",
-      whenToLoad:
-        "When the story emphasizes trade, merchants, tariffs, supply chains, shipping, smuggling, and market politics.",
       coreConstraints: [
         "Goods move through routes with chokepoints (bridges, ports, passes).",
         "Permits/inspections gate legal trade; black markets fill gaps.",
@@ -2825,8 +2780,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Court Intrigue",
       description:
         "Court intrigue is politics under ceremony: status gates, face economy, appointment wars, and controlled information. Make every scene a leverage exchange, not just dialogue.",
-      whenToLoad:
-        "When the story is palace/court focused: ministers, nobles, succession, etiquette, scandals, faction wars.",
       coreConstraints: [
         "Status gates everything (who may speak, where you may stand).",
         "Information is controlled and weaponized (archives, gossip, censored reports).",
@@ -2887,8 +2840,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Suspense / Thriller",
       description:
         "Suspense is structured uncertainty under time pressure. Use clocks, partial information, and escalating exposure. Keep actions reversible early and irreversible late.",
-      whenToLoad:
-        "When the story should feel tense: chases, investigations under threat, conspiracies, ticking clocks, narrow escapes.",
       coreConstraints: [
         "Time pressure matters (deadlines, pursuit, decay of evidence).",
         "Information is partial; certainty is earned at a cost.",
@@ -2949,8 +2900,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Chinese Short Drama (Structure)",
       description:
         "Short-drama style emphasizes frequent reversals, cliffhangers, and high social leverage—without breaking causality. Use tight scenes, visible status swings, and institutional reactions.",
-      whenToLoad:
-        "When aiming for Chinese short-drama pacing: fast turns, social stakes, frequent reveals, cliffhangers (but still consistent and choice-driven).",
       coreConstraints: [
         "Reversals must follow incentives and evidence (no random twists).",
         "Status and reputation move quickly; gossip is fast.",
@@ -3015,8 +2964,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Ancient Era",
       description:
         "Ancient-era stories are powered by hierarchy, ritual legitimacy, slow logistics, and local law. Distance, seasonality, and face/obligation should be active constraints.",
-      whenToLoad:
-        "When the setting is ancient/classical: temples, clans, court rites, caravans, local magistrates, and slow information.",
       coreConstraints: [
         "Legitimacy is ritualized (rites, omens, lineage, divine approval).",
         "Law is local and personal (jurisdiction boundaries matter).",
@@ -3077,8 +3024,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Republican / Art Deco",
       description:
         "Republican-era (early modern) stories run on modern institutions layered over old social orders: police, newspapers, banks, warlords, guilds, and political clubs. Make surveillance partial and politics procedural.",
-      whenToLoad:
-        "When the setting resembles early 20th century: newspapers, banks, police, concessions, clubs, and competing factions.",
       coreConstraints: [
         "Institutions exist, but capacity is uneven (patchy enforcement, corruption).",
         "Media and rumor velocity are high; reputation swings quickly.",
@@ -3140,8 +3085,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Sci-Fi Style",
       description:
         "Sci-fi is about capability boundaries and second-order consequences. Make technology social: access control, maintenance, audit trails, and counterplay. Treat society as a system reacting to new capabilities.",
-      whenToLoad:
-        "When the story is sci-fi: advanced tech, space, AI, biotech, cybernetics, surveillance, or futuristic institutions.",
       coreConstraints: [
         "Capabilities have access + cost + counterplay (no free miracles).",
         "Infrastructure and logistics matter (power, comms, transport, maintenance).",
@@ -3203,8 +3146,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Supernatural Style",
       description:
         "Supernatural stories treat the unseen as a system: rules, costs, thresholds, and institutions that police it. Keep mysteries intact by gating knowledge and making rituals procedural.",
-      whenToLoad:
-        "When the story includes ghosts, curses, demons, occult agencies, exorcism, wards, or hidden-world institutions.",
       coreConstraints: [
         "The supernatural has rules and failure modes (no wish fulfillment).",
         "Knowledge is gated (archives, initiations, oaths, dangerous truths).",
@@ -3266,8 +3207,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "War (Element)",
       description:
         "War as an element should be driven by logistics, occupation costs, and political blowback. Depots and chokepoints are objectives; battles are consequences.",
-      whenToLoad:
-        "When adding war/campaign elements to any story: armies, sieges, occupations, raids, insurgency, wartime markets.",
       coreConstraints: [
         "Combat power is limited by supply lines and cohesion.",
         "Occupation is expensive: policing rules and insurgency are inevitable.",
@@ -3329,8 +3268,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Law & Procedure (Element)",
       description:
         "Law as an element is authority + enforcement capacity + corruption gates + appeal paths. Use it to create friction, leverage, and predictable reaction—not random punishment.",
-      whenToLoad:
-        "When adding legal/procedural elements: investigations, trials, permits, warrants, jurisdiction conflicts, corruption.",
       coreConstraints: [
         "Jurisdiction boundaries matter (authority stops somewhere).",
         "Enforcement capacity is finite (coverage, response time, detention limits).",
@@ -3392,8 +3329,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Academy / Institution (Element)",
       description:
         "Academy stories are about gates, schedules, and credential power: exams, patronage, discipline, and rivalries. Make education a pipeline with costs and audits.",
-      whenToLoad:
-        "When adding an academy/institution element: schools, guild training, magic academies, corporate training programs, exams.",
       coreConstraints: [
         "Credentials gate access and status (licenses, ranks, invitations).",
         "Schedules are power (deadlines, rotations, office hours, exams).",
@@ -3455,8 +3390,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Urban Pressure (Element)",
       description:
         "Urban stories run on density: surveillance, witnesses, traffic, permits, rent, and layered jurisdictions. Make cities act like machines with bottlenecks and hidden routes.",
-      whenToLoad:
-        "When adding an urban element: cities, megacities, districts, slums, corporate zones, dense social networks.",
       coreConstraints: [
         "Witness density is high; anonymity costs effort or money.",
         "Districts have gates: badges, curfews, permits, tariffs.",
@@ -3518,8 +3451,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Espionage & Counterintel (Element)",
       description:
         "Espionage as an element is a procedural system: sources, channels, verification costs, and traces—plus counterintelligence that reacts with capacity limits and ladders.",
-      whenToLoad:
-        "When adding spy/informant/infiltration/deception elements to any story: leaks, stings, covert operations, internal security, political policing.",
       coreConstraints: [
         "Every intel has a source with motive and constraints.",
         "Intel travels via channels with latency and traces.",
@@ -3581,8 +3512,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Medicine & Forensics (Element)",
       description:
         "Medicine as an element is harm + capacity + proof: injuries become clocks, treatment is gated, and evidence is processed through chain-of-custody with standards and tampering vectors.",
-      whenToLoad:
-        "When adding medical/forensic elements: injuries and recovery, poisons, clinics/temples, autopsies, evidence standards, and proof disputes.",
       coreConstraints: [
         "Injuries are persistent via clocks and recovery constraints.",
         "Care is gated by capacity and access rules (ID, sponsor, payment).",
@@ -3644,8 +3573,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Diplomacy & Treaties (Element)",
       description:
         "Diplomacy as an element is commitments with enforcement: treaties with verification, guarantees, breach definitions, and predictable retaliation ladders. Protocol is an access gate.",
-      whenToLoad:
-        "When adding negotiation/alliance elements: ceasefires, borders, trade pacts, safe corridors, embassies, hostage guarantees, protocol traps.",
       coreConstraints: [
         "Agreements require verification and enforcement mechanisms.",
         "Guarantees exist (hostages, escrow, guarantors, oaths) with failure modes.",
@@ -3707,8 +3634,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Finance & Banking (Element)",
       description:
         "Finance as an element is receipts and freeze power: ledgers, identity proof, audit cadence, debt ladders, and transfers that leave trails. Disputes are procedural.",
-      whenToLoad:
-        "When adding debt/payment/fraud elements: banks/temples/ledgers, asset freezes, letters of credit, accounting scandals, laundering.",
       coreConstraints: [
         "Value is recorded in ledgers with identity proof (seals/tokens/biometrics/witnesses).",
         "Transfers create receipts that can be audited later.",
@@ -3770,8 +3695,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Maritime & Ports (Element)",
       description:
         "Maritime as an element is ports-as-gates and season clocks: customs, quarantine, inspection, convoy protection, cargo disputes, and legal piracy.",
-      whenToLoad:
-        "When adding sea/port elements: smuggling through customs, blockades, piracy/privateering, convoy schedules, storm windows, cargo proofs.",
       coreConstraints: [
         "Ports are procedural gates (customs/quarantine/inspection).",
         "Routes have chokepoints and controllers with fees/bribes.",
@@ -3833,8 +3756,6 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
       title: "Media & Propaganda (Element)",
       description:
         "Media as an element is narratives with infrastructure: channels, gatekeepers, censorship, response ladders, proof standards by audience, and reputation marks that change access.",
-      whenToLoad:
-        "When adding publicity/rumor/censorship elements: press storms, scandal arcs, propaganda campaigns, takedowns, denials, smear and counter-smear.",
       coreConstraints: [
         "Channels exist with gatekeepers (publish/block).",
         "Proof standards differ by audience (public vs authority).",
@@ -3928,9 +3849,7 @@ const buildThemeCatalogEntries = (): SkillCatalogEntry[] => {
         tags: ["theme", def.slug, ...(def.aliases ?? [])],
         path: `current/skills/theme/${def.slug}/SKILL.md`,
         domain: "theme",
-        priority: "medium",
         description: def.description,
-        whenToLoad: def.whenToLoad,
         seeAlso: [],
       };
       return entry;

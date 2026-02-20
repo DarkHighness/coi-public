@@ -68,8 +68,8 @@ describe("VFS global skills generator", () => {
 
     expect(identitySkill).toContain("name: core-identity");
     expect(identitySkill).toContain("domain: core");
-    expect(identitySkill).toContain("priority: high");
-    expect(identitySkill).toContain("## When to Use");
+    expect(identitySkill).not.toContain("priority:");
+    expect(identitySkill).not.toContain("## When to Use");
     expect(identitySkill).toContain("## See Also");
     expect(identitySkill).toContain("`core/essence`");
 
@@ -183,7 +183,7 @@ describe("VFS global skills generator", () => {
     expect(commandSummary).toContain("## Error Recovery");
     expect(commandSummary).toContain("vfs_finish_summary");
     expect(commandCompact).toContain("name: commands-compact");
-    expect(commandCompact).toContain("session_compact");
+    expect(commandCompact).toContain("`compact` summarizes");
     expect(commandCompact).toContain("current session history in context");
     expect(commandCompact).toContain("## Error Recovery");
     expect(commandOutline).toContain("name: commands-outline");
@@ -221,6 +221,25 @@ describe("VFS global skills generator", () => {
     );
   });
 
+  it("publishes entity skills only under gm actor design/logic paths", () => {
+    const seeds = generateVfsSkillSeeds();
+    const seedPaths = seeds.map((seed) => seed.path);
+
+    expect(seedPaths).toContain("skills/gm/actor-design/location/SKILL.md");
+    expect(seedPaths).toContain("skills/gm/actor-design/faction/SKILL.md");
+    expect(seedPaths).toContain("skills/gm/actor-logic/npc/SKILL.md");
+    expect(seedPaths).toContain("skills/gm/actor-logic/npc-soul/SKILL.md");
+
+    expect(seedPaths.some((path) => path.startsWith("skills/npc/"))).toBe(
+      false,
+    );
+    expect(
+      seedPaths.some((path) =>
+        path.startsWith("skills/worldbuilding/actors-territory/"),
+      ),
+    ).toBe(false);
+  });
+
   it("expands all examples files with per-scenario context details", () => {
     const seeds = generateVfsSkillSeeds();
     const exampleSeeds = seeds.filter((seed) =>
@@ -243,31 +262,20 @@ describe("VFS global skills generator", () => {
 
   it("derives catalog metadata from SKILL.md frontmatter and sections", () => {
     const entries = getSkillCatalogEntries();
-    const seeds = generateVfsSkillSeeds();
 
     const identity = entries.find((entry) => entry.id === "core-identity");
     const commandSummary = entries.find(
       (entry) => entry.id === "commands-summary",
     );
-    const commandSummarySeed = seeds.find(
-      (seed) => seed.path === "skills/commands/runtime/summary/SKILL.md",
-    )?.content;
-    const commandSummaryFrontmatterPriority = commandSummarySeed?.match(
-      /^priority:\s*(high|medium|low)\s*$/m,
-    )?.[1];
 
     expect(identity).toBeDefined();
     expect(identity?.path).toBe("current/skills/core/identity/SKILL.md");
     expect(identity?.domain).toBe("core");
-    expect(identity?.priority).toBe("high");
     expect(identity?.description.length).toBeGreaterThan(20);
-    expect(identity?.whenToLoad.length).toBeGreaterThan(10);
     expect(identity?.tags.length).toBeGreaterThan(0);
 
     expect(commandSummary).toBeDefined();
-    expect(commandSummaryFrontmatterPriority).toBeDefined();
-    expect(commandSummary?.priority).toBe(commandSummaryFrontmatterPriority);
-    expect(commandSummary?.whenToLoad).toContain("summary");
+    expect(commandSummary?.description.length).toBeGreaterThan(10);
     expect(commandSummary?.seeAlso.length).toBeGreaterThan(0);
   });
 
