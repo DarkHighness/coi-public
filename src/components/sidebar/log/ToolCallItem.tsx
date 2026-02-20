@@ -25,7 +25,7 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
     "vfs_search",
   ]).has(call.name);
 
-  const isOutlineCommit = call.name.startsWith("vfs_finish_outline_phase_");
+  const isOutlineCommit = call.name.startsWith("vfs_finish_outline_");
 
   const isFinish =
     call.name === "vfs_finish_turn" ||

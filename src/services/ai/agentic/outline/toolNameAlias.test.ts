@@ -7,7 +7,7 @@ describe("resolveOutlineToolNameAlias", () => {
     "vfs_schema",
     "vfs_read_chars",
     "vfs_search",
-    "vfs_finish_outline_phase_0",
+    "vfs_finish_outline_master_plan",
   ];
 
   it("keeps exact tool name unchanged", () => {
@@ -25,10 +25,10 @@ describe("resolveOutlineToolNameAlias", () => {
     ).toBe("vfs_read_chars");
     expect(
       resolveOutlineToolNameAlias(
-        "default_api:functions.vfs_finish_outline_phase_0",
+        "default_api:functions.vfs_finish_outline_master_plan",
         allowed,
       ),
-    ).toBe("vfs_finish_outline_phase_0");
+    ).toBe("vfs_finish_outline_master_plan");
   });
 
   it("strips generic namespace prefixes when they wrap an allowed name", () => {

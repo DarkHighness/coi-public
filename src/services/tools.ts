@@ -55,35 +55,44 @@ export const VFS_DELETE_TOOL = getTool("vfs_delete");
 export const VFS_FINISH_TURN_TOOL = getTool("vfs_finish_turn");
 export const VFS_END_TURN_TOOL = getTool("vfs_end_turn");
 export const VFS_FINISH_SUMMARY_TOOL = getTool("vfs_finish_summary");
-export const VFS_FINISH_OUTLINE_PHASE_0_TOOL = getTool(
-  "vfs_finish_outline_phase_0",
+export const VFS_FINISH_OUTLINE_IMAGE_SEED_TOOL = getTool(
+  "vfs_finish_outline_image_seed",
 );
-export const VFS_FINISH_OUTLINE_PHASE_1_TOOL = getTool(
-  "vfs_finish_outline_phase_1",
+export const VFS_FINISH_OUTLINE_MASTER_PLAN_TOOL = getTool(
+  "vfs_finish_outline_master_plan",
 );
-export const VFS_FINISH_OUTLINE_PHASE_2_TOOL = getTool(
-  "vfs_finish_outline_phase_2",
+export const VFS_FINISH_OUTLINE_PLACEHOLDER_REGISTRY_TOOL = getTool(
+  "vfs_finish_outline_placeholder_registry",
 );
-export const VFS_FINISH_OUTLINE_PHASE_3_TOOL = getTool(
-  "vfs_finish_outline_phase_3",
+export const VFS_FINISH_OUTLINE_WORLD_FOUNDATION_TOOL = getTool(
+  "vfs_finish_outline_world_foundation",
 );
-export const VFS_FINISH_OUTLINE_PHASE_4_TOOL = getTool(
-  "vfs_finish_outline_phase_4",
+export const VFS_FINISH_OUTLINE_PLAYER_ACTOR_TOOL = getTool(
+  "vfs_finish_outline_player_actor",
 );
-export const VFS_FINISH_OUTLINE_PHASE_5_TOOL = getTool(
-  "vfs_finish_outline_phase_5",
+export const VFS_FINISH_OUTLINE_LOCATIONS_TOOL = getTool(
+  "vfs_finish_outline_locations",
 );
-export const VFS_FINISH_OUTLINE_PHASE_6_TOOL = getTool(
-  "vfs_finish_outline_phase_6",
+export const VFS_FINISH_OUTLINE_FACTIONS_TOOL = getTool(
+  "vfs_finish_outline_factions",
 );
-export const VFS_FINISH_OUTLINE_PHASE_7_TOOL = getTool(
-  "vfs_finish_outline_phase_7",
+export const VFS_FINISH_OUTLINE_NPCS_RELATIONSHIPS_TOOL = getTool(
+  "vfs_finish_outline_npcs_relationships",
 );
-export const VFS_FINISH_OUTLINE_PHASE_8_TOOL = getTool(
-  "vfs_finish_outline_phase_8",
+export const VFS_FINISH_OUTLINE_QUESTS_TOOL = getTool(
+  "vfs_finish_outline_quests",
 );
-export const VFS_FINISH_OUTLINE_PHASE_9_TOOL = getTool(
-  "vfs_finish_outline_phase_9",
+export const VFS_FINISH_OUTLINE_KNOWLEDGE_TOOL = getTool(
+  "vfs_finish_outline_knowledge",
+);
+export const VFS_FINISH_OUTLINE_TIMELINE_TOOL = getTool(
+  "vfs_finish_outline_timeline",
+);
+export const VFS_FINISH_OUTLINE_ATMOSPHERE_TOOL = getTool(
+  "vfs_finish_outline_atmosphere",
+);
+export const VFS_FINISH_OUTLINE_OPENING_NARRATIVE_TOOL = getTool(
+  "vfs_finish_outline_opening_narrative",
 );
 
 export const VFS_TOOLS = vfsToolRegistry.getDefinitions();

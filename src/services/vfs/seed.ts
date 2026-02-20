@@ -12,6 +12,11 @@ import {
   writeTurnFile,
 } from "./conversation";
 import {
+  buildPlaceholderDraftPath,
+  inferPlaceholderDomainFromEntityId,
+  PLACEHOLDER_PATH_REGEX,
+} from "./placeholders";
+import {
   buildCustomRulePackMarkdown,
   CUSTOM_RULES_README_CONTENT,
   CUSTOM_RULES_README_PATH,
@@ -183,8 +188,12 @@ const writePlaceholderArtifacts = (
   if (!placeholderId) {
     return;
   }
+  const placeholderPath = buildPlaceholderDraftPath(
+    inferPlaceholderDomainFromEntityId(placeholderId),
+    placeholderId,
+  );
   session.writeFile(
-    `world/placeholders/${placeholderId}.md`,
+    placeholderPath,
     buildPlaceholderDraftMarkdown(placeholderRecord),
     "text/markdown",
   );
@@ -199,19 +208,22 @@ const writePlaceholderDraftFile = (
     return;
   }
   const rawPath =
-    typeof draftRecord.path === "string" ? draftRecord.path.trim() : "";
+    typeof draftRecord.path === "string" ? draftRecord.path.trim() : undefined;
   const rawMarkdown =
     typeof draftRecord.markdown === "string" ? draftRecord.markdown.trim() : "";
-
-  if (!/^world\/placeholders\/[^/]+\.md$/.test(rawPath)) {
-    return;
-  }
 
   if (rawMarkdown.length === 0) {
     return;
   }
 
-  session.writeFile(rawPath, rawMarkdown, "text/markdown");
+  const normalizedPath = rawPath?.replace(/^\/+/, "") ?? "";
+  if (!PLACEHOLDER_PATH_REGEX.test(normalizedPath)) {
+    throw new Error(
+      `Invalid placeholder draft path: "${rawPath ?? ""}". Expected world/placeholders/<domain>/<id>.md.`,
+    );
+  }
+
+  session.writeFile(normalizedPath, rawMarkdown, "text/markdown");
 };
 
 const writeWorldInfoAndView = (

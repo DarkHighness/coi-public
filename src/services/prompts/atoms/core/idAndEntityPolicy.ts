@@ -28,6 +28,7 @@ const idUsage = `
       2) ONE bracket alias in the form \`[Display Name]\` when canonical ID does not exist yet.
     - \`[Display Name]\` is a special temporary name protocol for UI fallback display.
     - Placeholder promotion is mandatory once identity is known:
+      * Missing-reference decision order is STRICT: first decide promotion-to-canonical, then fallback to placeholder only when identity is still ambiguous.
       * If entity identity becomes explicit in-story (named mention, encounter, concrete interaction), resolve \`[Display Name]\` to canonical ID in the same turn whenever possible.
       * If canonical ID already exists, patch touched references to that ID immediately.
       * If canonical ID does not exist and the entity is now mechanically significant, create the entity with a stable ID and replace \`[Display Name]\`.
@@ -70,7 +71,7 @@ const idGeneration = `
 
     **BEST PRACTICES**:
     1. **Be Descriptive**: \`"sword_of_kings"\` is better than \`"item_42"\`
-    2. **Use Prefixes**: Start with entity type (Actors: \`char:\`, items: \`inv_\`, locations: \`loc_\`, quests: \`quest_\`, etc.)
+    2. **Use Prefixes**: Start with entity type (Actors: \`char:\`, items: \`item:\`, locations: \`loc:\`, quests: \`quest:\`, etc.)
     3. **Use snake_case**: \`"ancient_temple"\` not \`"AncientTemple"\`
     4. **Be Consistent**: If you use \`"char:marcus"\`, continue with \`"char:sara"\`, not \`"sara"\`
 
@@ -82,7 +83,7 @@ const idGeneration = `
     **EXAMPLES**:
     ✅ CORRECT:
     \`\`\`json
-    { "id": "inv_healing_potion", "name": "Minor Healing Potion", "visible": { "description": "A small vial of red liquid." } }
+    { "id": "item:healing_potion", "name": "Minor Healing Potion", "visible": { "description": "A small vial of red liquid." } }
     { "id": "char:marcus", "kind": "npc", "currentLocation": "loc_tavern", "visible": { "name": "Marcus", "description": "A grizzled veteran with a scar across his left eye." } }
     \`\`\`
 

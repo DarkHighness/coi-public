@@ -1,7 +1,7 @@
 import type {
-  OutlinePhase3,
-  OutlinePhase4,
-  OutlinePhase6,
+  OutlinePlayerActor,
+  OutlineLocations,
+  OutlineNpcsRelationships,
 } from "../../../schemas";
 
 type ValidationResult =
@@ -20,21 +20,21 @@ const uniqueIds = (items: Array<{ id?: string }>): string[] => {
   return ids;
 };
 
-export const validatePhase4LocationsIncludesPlayerCurrentLocation = (
-  phase3Player: OutlinePhase3["player"],
-  phase4Locations: OutlinePhase4["locations"],
+export const validatePlayerCurrentLocationInLocations = (
+  playerActor: OutlinePlayerActor["player"],
+  locations: OutlineLocations["locations"],
 ): ValidationResult => {
   const playerLocationId = String(
-    phase3Player?.profile?.currentLocation ?? "",
+    playerActor?.profile?.currentLocation ?? "",
   ).trim();
   if (!playerLocationId) {
     return {
       ok: false,
-      error: "Phase 3 player.profile.currentLocation is missing or empty.",
+      error: "player_actor.player.profile.currentLocation is missing or empty.",
     };
   }
 
-  const locationIds = new Set(uniqueIds(phase4Locations ?? []));
+  const locationIds = new Set(uniqueIds(locations ?? []));
   if (locationIds.has(playerLocationId)) {
     return { ok: true };
   }
@@ -43,26 +43,26 @@ export const validatePhase4LocationsIncludesPlayerCurrentLocation = (
   return {
     ok: false,
     error:
-      `Phase 4 locations must include the player's currentLocation id="${playerLocationId}". ` +
+      `locations must include the player's currentLocation id="${playerLocationId}". ` +
       `Provided location ids: ${sample.length > 0 ? sample.join(", ") : "(none)"}`,
   };
 };
 
-export const validatePhase6NpcLocationsExist = (
-  phase4Locations: OutlinePhase4["locations"],
-  phase6Npcs: OutlinePhase6["npcs"],
+export const validateNpcLocationsExist = (
+  locations: OutlineLocations["locations"],
+  npcs: OutlineNpcsRelationships["npcs"],
 ): ValidationResult => {
-  const locationIds = new Set(uniqueIds(phase4Locations ?? []));
+  const locationIds = new Set(uniqueIds(locations ?? []));
   if (locationIds.size === 0) {
     return {
       ok: false,
       error:
-        "Phase 4 locations list is empty; cannot validate NPC currentLocation references.",
+        "locations list is empty; cannot validate NPC currentLocation references.",
     };
   }
 
   const missing: Array<{ npcId: string; locationId: string }> = [];
-  for (const npc of phase6Npcs ?? []) {
+  for (const npc of npcs ?? []) {
     const npcId = String(npc?.profile?.id ?? "unknown").trim() || "unknown";
     const npcLocation = String(npc?.profile?.currentLocation ?? "").trim();
     if (!npcLocation || !locationIds.has(npcLocation)) {
@@ -82,7 +82,7 @@ export const validatePhase6NpcLocationsExist = (
   return {
     ok: false,
     error:
-      `Phase 6 NPC profile.currentLocation must reference an existing Phase 4 location id. ` +
+      `npcs_relationships profile.currentLocation must reference an existing location id. ` +
       `Invalid NPC locations: ${examples}. ` +
       `Valid location ids: ${sampleIds.join(", ")}`,
   };

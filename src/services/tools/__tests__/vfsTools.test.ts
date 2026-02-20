@@ -21,8 +21,8 @@ describe("VFS tools", () => {
     expect(names).toContain("vfs_merge_json");
     expect(names).toContain("vfs_move");
     expect(names).toContain("vfs_delete");
-    expect(names).toContain("vfs_finish_outline_phase_0");
-    expect(names).toContain("vfs_finish_outline_phase_9");
+    expect(names).toContain("vfs_finish_outline_master_plan");
+    expect(names).toContain("vfs_finish_outline_opening_narrative");
     expect(names).not.toContain("vfs_read");
     expect(names).not.toContain("vfs_mutate");
     expect(names).not.toContain("vfs_finish_outline");

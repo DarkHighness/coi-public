@@ -17,6 +17,10 @@ import {
   zodToOpenAIResponseFormat,
   zodToOpenAISchema,
 } from "./zodCompiler";
+import {
+  PLACEHOLDER_DOMAINS,
+  PLACEHOLDER_PATH_REGEX,
+} from "./vfs/placeholders";
 
 // ============================================================================
 // 基础类型 Schemas
@@ -1483,9 +1487,9 @@ export const placeholderSchema = z.object({
 export const placeholderDraftFileSchema = z.object({
   path: z
     .string()
-    .regex(/^world\/placeholders\/[^/]+\.md$/)
+    .regex(PLACEHOLDER_PATH_REGEX)
     .describe(
-      "REQUIRED. VFS markdown draft path under world/placeholders (for example `world/placeholders/ph:clockmaker.md`).",
+      `REQUIRED. VFS markdown draft path under world/placeholders/<domain>/<id>.md (domains: ${PLACEHOLDER_DOMAINS.join(", ")}).`,
     ),
   markdown: z
     .string()
@@ -1858,7 +1862,7 @@ export const storyOutlineSchema = z.object({
  * 分析用户上传的图片，生成与主题结构一致的世界背景数据
  * 输出将用于增强 Phase 1 的世界观构建
  */
-export const outlinePhase0Schema = z.object({
+export const outlineImageSeedSchema = z.object({
   // 核心世界观描述 - 与 themes.json 的 worldSetting 对应
   worldSetting: z
     .string()
@@ -1932,7 +1936,7 @@ export const outlinePhase0Schema = z.object({
  * Phase 1: 故事总纲（可演进）
  * 生成完整剧情大纲 markdown（指导性，不是硬约束）
  */
-export const outlinePhase1Schema = z.object({
+export const outlineMasterPlanSchema = z.object({
   storyPlanMarkdown: z
     .string()
     .describe(
@@ -1941,7 +1945,7 @@ export const outlinePhase1Schema = z.object({
   planningMetadata: z
     .object({
       structureVersion: z
-        .literal("v2")
+        .literal("v3")
         .describe("Story plan structure version."),
       branchStrategy: z
         .enum(["guided", "adaptive", "player-led"])
@@ -1972,10 +1976,23 @@ export const outlinePhase1Schema = z.object({
 });
 
 /**
+ * Placeholder Registry: 占位实体草稿
+ * 用于承载未来可激活实体线索（软覆盖，允许空数组）
+ */
+export const outlinePlaceholderRegistrySchema = z.object({
+  placeholders: z
+    .array(placeholderDraftFileSchema)
+    .default([])
+    .describe(
+      "Optional placeholder draft markdown files for deferred entities (soft coverage, may be empty).",
+    ),
+});
+
+/**
  * Phase 2: 世界基础设定
  * 包含故事的基本框架：标题、前提、世界观、时间、主要目标
  */
-export const outlinePhase2Schema = z.object({
+export const outlineWorldFoundationSchema = z.object({
   title: z.string().describe("A creative title for the adventure."),
   initialTime: z
     .string()
@@ -2000,7 +2017,7 @@ export const outlinePhase2Schema = z.object({
  * Phase 3: 主角角色
  * 完整的角色信息
  */
-export const outlinePhase3Schema = z.object({
+export const outlinePlayerActorSchema = z.object({
   player: strictPlayerBundleSchema.describe(
     "The player actor bundle (profile + skills/conditions/traits + inventory). Player id MUST be 'char:player'.",
   ),
@@ -2010,7 +2027,7 @@ export const outlinePhase3Schema = z.object({
  * Phase 4: 地点
  * 初始地点
  */
-export const outlinePhase4Schema = z.object({
+export const outlineLocationsSchema = z.object({
   locations: z
     .array(outlineLocationSchema)
     .describe(
@@ -2022,7 +2039,7 @@ export const outlinePhase4Schema = z.object({
  * Phase 5: 阵营
  * 主要势力
  */
-export const outlinePhase5Schema = z.object({
+export const outlineFactionsSchema = z.object({
   factions: z
     .array(factionSchema)
     .describe(
@@ -2034,17 +2051,11 @@ export const outlinePhase5Schema = z.object({
  * Phase 6: 关系 (NPC)
  * NPC关系
  */
-export const outlinePhase6Schema = z.object({
+export const outlineNpcsRelationshipsSchema = z.object({
   npcs: z
     .array(actorBundleSchema)
     .describe(
       "1-2 initial NPC actor bundles. Each profile.kind MUST be 'npc'. Each profile MUST include relations (NPC->player attitude, and optionally NPC<->NPC).",
-    ),
-  placeholders: z
-    .array(placeholderDraftFileSchema)
-    .default([])
-    .describe(
-      "Optional placeholder draft markdown files referenced by relations (unspawned entities).",
     ),
   playerPerceptions: z
     .array(relationPerceptionSchema)
@@ -2055,15 +2066,22 @@ export const outlinePhase6Schema = z.object({
 });
 
 /**
- * Phase 7: 任务 + 知识
- * 聚合任务图与初始知识图
+ * Phase 7: 任务
+ * 初始任务图
  */
-export const outlinePhase7Schema = z.object({
+export const outlineQuestsSchema = z.object({
   quests: z
     .array(questSchema)
     .describe(
       "1-2 initial quests (at least one main quest). Include visible and hidden objectives.",
     ),
+});
+
+/**
+ * Phase 8: 知识
+ * 初始知识图
+ */
+export const outlineKnowledgeSchema = z.object({
   knowledge: z
     .array(knowledgeEntrySchema)
     .describe(
@@ -2072,13 +2090,20 @@ export const outlinePhase7Schema = z.object({
 });
 
 /**
- * Phase 8: 时间线与氛围
- * 时间线事件和初始氛围
+ * Phase 9: 时间线
+ * 时间线事件
  */
-export const outlinePhase8Schema = z.object({
+export const outlineTimelineSchema = z.object({
   timeline: z
     .array(timelineEventSchema)
     .describe("3-5 backstory timeline events with visible and hidden layers."),
+});
+
+/**
+ * Phase 10: 氛围
+ * 初始氛围
+ */
+export const outlineAtmosphereSchema = z.object({
   initialAtmosphere: atmosphereSchema.describe(
     "Initial atmosphere with visual theme (envTheme) and audio ambience.",
   ),
@@ -2088,7 +2113,7 @@ export const outlinePhase8Schema = z.object({
  * Phase 9: Opening Narrative
  * The initial story segment that establishes the scene
  */
-export const outlinePhase9Schema = z.object({
+export const outlineOpeningNarrativeSchema = z.object({
   openingNarrative: z.object({
     narrative: z
       .string()
@@ -2119,16 +2144,27 @@ export const outlinePhase9Schema = z.object({
 });
 
 /** 分阶段 Schema 类型定义 */
-export type OutlinePhase0 = z.infer<typeof outlinePhase0Schema>;
-export type OutlinePhase1 = z.infer<typeof outlinePhase1Schema>;
-export type OutlinePhase2 = z.infer<typeof outlinePhase2Schema>;
-export type OutlinePhase3 = z.infer<typeof outlinePhase3Schema>;
-export type OutlinePhase4 = z.infer<typeof outlinePhase4Schema>;
-export type OutlinePhase5 = z.infer<typeof outlinePhase5Schema>;
-export type OutlinePhase6 = z.infer<typeof outlinePhase6Schema>;
-export type OutlinePhase7 = z.infer<typeof outlinePhase7Schema>;
-export type OutlinePhase8 = z.infer<typeof outlinePhase8Schema>;
-export type OutlinePhase9 = z.infer<typeof outlinePhase9Schema>;
+export type OutlineImageSeed = z.infer<typeof outlineImageSeedSchema>;
+export type OutlineMasterPlan = z.infer<typeof outlineMasterPlanSchema>;
+export type OutlinePlaceholderRegistry = z.infer<
+  typeof outlinePlaceholderRegistrySchema
+>;
+export type OutlineWorldFoundation = z.infer<
+  typeof outlineWorldFoundationSchema
+>;
+export type OutlinePlayerActor = z.infer<typeof outlinePlayerActorSchema>;
+export type OutlineLocations = z.infer<typeof outlineLocationsSchema>;
+export type OutlineFactions = z.infer<typeof outlineFactionsSchema>;
+export type OutlineNpcsRelationships = z.infer<
+  typeof outlineNpcsRelationshipsSchema
+>;
+export type OutlineQuests = z.infer<typeof outlineQuestsSchema>;
+export type OutlineKnowledge = z.infer<typeof outlineKnowledgeSchema>;
+export type OutlineTimeline = z.infer<typeof outlineTimelineSchema>;
+export type OutlineAtmosphere = z.infer<typeof outlineAtmosphereSchema>;
+export type OutlineOpeningNarrative = z.infer<
+  typeof outlineOpeningNarrativeSchema
+>;
 
 // Note: PartialStoryOutline is now defined in types.ts to support GameState integration
 // The phase types above are re-exported for type-safe phase result handling

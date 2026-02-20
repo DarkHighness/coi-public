@@ -269,7 +269,7 @@ const RULES: VfsSchemaRule[] = [
   },
   {
     templateId: "template.narrative.outline.phases",
-    logicalPathPattern: /^outline\/phases\/phase[0-9]\.json$/,
+    logicalPathPattern: /^outline\/phases\/[a-z_]+\.json$/,
     schema: jsonValueSchema,
   },
 ];

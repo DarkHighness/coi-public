@@ -52,6 +52,11 @@ You MUST follow these outline protocol constraints:
   - Never call write/move/delete tools in outline mode.
   - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\` + \`SCHEMA.md\`.
 - Submit ONLY with the phase-specific submit tool. Do NOT combine it with other tools.
+- Missing reference policy (hard rule):
+  - If a referenced entity/target does not exist, decide FIRST whether identity is already explicit.
+  - If identity is explicit, promote immediately: create/update canonical entity and backfill references.
+  - If identity is still ambiguous, create/update a placeholder draft under \`current/world/placeholders/**/*.md\`.
+  - Do NOT create placeholders by default when canonical promotion is clearly possible.
 - Quick-start (recommended):
   1) Read \`current/skills/commands/runtime/SKILL.md\` + \`current/skills/commands/runtime/outline/SKILL.md\`.
   2) Use read-only lookup if needed, then submit exactly one phase tool.

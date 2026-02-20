@@ -478,7 +478,7 @@ describe("callWithAgenticRetry behavior", () => {
           functionCalls: [
             {
               id: "call_outline_invalid",
-              name: "vfs_finish_outline_phase_0",
+              name: "vfs_finish_outline_master_plan",
               args: {
                 phase: "1",
                 data: { storyPlanMarkdown: "# x" },
@@ -497,7 +497,7 @@ describe("callWithAgenticRetry behavior", () => {
       messages: [],
       tools: [
         {
-          name: "vfs_finish_outline_phase_0",
+          name: "vfs_finish_outline_master_plan",
           description: "outline submit",
           parameters: z.discriminatedUnion("phase", [
             z

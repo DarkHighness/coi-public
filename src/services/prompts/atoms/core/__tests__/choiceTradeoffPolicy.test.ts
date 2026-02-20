@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { consequences, narrativePolicy, outputFormat } from "../index";
-import { getOutlinePhase9Prompt } from "../../../storyOutline";
+import { getOutlineOpeningNarrativePrompt } from "../../../storyOutline";
 
 describe("choice tradeoff policy", () => {
   it("prices player best-of-both-worlds attempts in consequence rules", () => {
@@ -26,7 +26,10 @@ describe("choice tradeoff policy", () => {
       language: "en",
       finishToolName: "vfs_finish_turn",
     });
-    const outlinePrompt = getOutlinePhase9Prompt(false, "submit_phase_9");
+    const outlinePrompt = getOutlineOpeningNarrativePrompt(
+      false,
+      "submit_phase_9",
+    );
 
     expect(turnPrompt).toContain("carry different tradeoffs");
     expect(turnPrompt).toContain("avoid strictly dominant all-upside options");

@@ -464,7 +464,7 @@ describe("deriveGameStateFromVfs", () => {
             customContext: "test",
             conversationHistory: [],
             partial: {},
-            currentPhase: 3,
+            currentPhaseId: "player_actor",
           },
           savedAt: 10,
         },
@@ -480,7 +480,7 @@ describe("deriveGameStateFromVfs", () => {
 
     const state = deriveGameStateFromVfs(files);
 
-    expect(state.outlineConversation?.currentPhase).toBe(3);
+    expect(state.outlineConversation?.currentPhaseId).toBe("player_actor");
     expect(state.outline?.title).toBe("Outline Title");
     expect(state.theme).toBe("cyberpunk");
     expect(state.language).toBe("en");

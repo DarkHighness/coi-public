@@ -1,5 +1,9 @@
 import type { ZodToolDefinition } from "../../providers/types";
 import { VFS_SEARCH_TOOL_NO_SEMANTIC, VFS_TOOL_CATALOG } from "./catalog";
+import {
+  getAllOutlinePhaseDefinitions,
+  getOutlineSubmitToolName,
+} from "../../ai/agentic/outline/phaseRegistry";
 import type {
   AnyVfsCatalogEntry,
   VfsToolCapabilityV2,
@@ -7,8 +11,7 @@ import type {
   VfsToolset,
   VfsToolsetId,
 } from "./types";
-
-const OUTLINE_PHASES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+import type { OutlinePhaseId } from "../../../types";
 
 const NON_OUTLINE_TOOLSETS: Exclude<VfsToolsetId, "outline">[] = [
   "turn",
@@ -61,9 +64,10 @@ export class VfsToolRegistry {
         entry.capability.toolsets.includes("outline") &&
         entry.capability.isFinishTool === true,
     );
-    if (outlineFinish.length !== OUTLINE_PHASES.length) {
+    const expectedOutlineFinishCount = getAllOutlinePhaseDefinitions().length;
+    if (outlineFinish.length !== expectedOutlineFinishCount) {
       throw new Error(
-        `Toolset "outline" must contain ${OUTLINE_PHASES.length} phase finish tools, got ${outlineFinish.length}`,
+        `Toolset "outline" must contain ${expectedOutlineFinishCount} phase finish tools, got ${outlineFinish.length}`,
       );
     }
   }
@@ -107,10 +111,12 @@ export class VfsToolRegistry {
 
   public getToolset(toolset: VfsToolsetId): VfsToolset {
     if (toolset === "outline") {
-      const phaseZeroTools = this.getOutlineToolsetByPhase(0);
+      const firstPhase =
+        getAllOutlinePhaseDefinitions()[0]?.id ?? "master_plan";
+      const phaseTools = this.getOutlineToolsetByPhase(firstPhase);
       return {
-        tools: phaseZeroTools,
-        finishToolName: this.getOutlineSubmitToolName(0),
+        tools: phaseTools,
+        finishToolName: this.getOutlineSubmitToolName(firstPhase),
       };
     }
 
@@ -135,8 +141,8 @@ export class VfsToolRegistry {
     };
   }
 
-  private getOutlineToolsetByPhase(phase: number): VfsToolName[] {
-    const submitTool = this.getOutlineSubmitToolName(phase);
+  private getOutlineToolsetByPhase(phaseId: OutlinePhaseId): VfsToolName[] {
+    const submitTool = this.getOutlineSubmitToolName(phaseId);
     const readTools = this.catalog
       .filter(
         (entry) =>
@@ -149,25 +155,22 @@ export class VfsToolRegistry {
     return [...readTools, submitTool];
   }
 
-  public getOutlineSubmitToolName(phase: number): VfsToolName {
-    if (!Number.isInteger(phase) || phase < 0 || phase > 9) {
-      throw new Error(`Outline phase must be integer in [0..9], got ${phase}`);
-    }
-    return `vfs_finish_outline_phase_${phase}` as VfsToolName;
+  public getOutlineSubmitToolName(phaseId: OutlinePhaseId): VfsToolName {
+    return getOutlineSubmitToolName(phaseId) as VfsToolName;
   }
 
   public getOutlineSubmitTool(
-    phase: number,
+    phaseId: OutlinePhaseId,
     options?: { ragEnabled?: boolean },
   ): ZodToolDefinition {
-    return this.getDefinition(this.getOutlineSubmitToolName(phase), options);
+    return this.getDefinition(this.getOutlineSubmitToolName(phaseId), options);
   }
 
   public getOutlineToolsForPhase(
-    phase: number,
+    phaseId: OutlinePhaseId,
     options?: { ragEnabled?: boolean },
   ): ZodToolDefinition[] {
-    return this.getOutlineToolsetByPhase(phase).map((name) =>
+    return this.getOutlineToolsetByPhase(phaseId).map((name) =>
       this.getDefinition(name, options),
     );
   }
@@ -177,7 +180,7 @@ export class VfsToolRegistry {
     options?: { ragEnabled?: boolean },
   ): ZodToolDefinition[] {
     if (toolset === "outline") {
-      return this.getOutlineToolsForPhase(0, options);
+      return this.getOutlineToolsForPhase("master_plan", options);
     }
     const toolsetInfo = this.getToolset(toolset);
     return toolsetInfo.tools.map((name) => this.getDefinition(name, options));

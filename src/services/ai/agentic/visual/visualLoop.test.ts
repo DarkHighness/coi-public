@@ -22,6 +22,10 @@ vi.mock("../../sessionManager", () => ({
 
 vi.mock("../retry", () => ({
   callWithAgenticRetry: vi.fn(),
+  createPromptTokenBudgetContext: () => ({
+    get: () => null,
+    set: () => {},
+  }),
 }));
 
 vi.mock("./visualContext", () => ({

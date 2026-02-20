@@ -23,16 +23,21 @@ import { handlePatchJson } from "./handlers/patchJson";
 import { handleMergeJson } from "./handlers/mergeJson";
 import { handleMove } from "./handlers/move";
 import { handleDelete } from "./handlers/delete";
-import { handleFinishOutlinePhase0 } from "./handlers/finishOutlinePhase0";
-import { handleFinishOutlinePhase1 } from "./handlers/finishOutlinePhase1";
-import { handleFinishOutlinePhase2 } from "./handlers/finishOutlinePhase2";
-import { handleFinishOutlinePhase3 } from "./handlers/finishOutlinePhase3";
-import { handleFinishOutlinePhase4 } from "./handlers/finishOutlinePhase4";
-import { handleFinishOutlinePhase5 } from "./handlers/finishOutlinePhase5";
-import { handleFinishOutlinePhase6 } from "./handlers/finishOutlinePhase6";
-import { handleFinishOutlinePhase7 } from "./handlers/finishOutlinePhase7";
-import { handleFinishOutlinePhase8 } from "./handlers/finishOutlinePhase8";
-import { handleFinishOutlinePhase9 } from "./handlers/finishOutlinePhase9";
+import {
+  handleFinishOutlineAtmosphere,
+  handleFinishOutlineFactions,
+  handleFinishOutlineImageSeed,
+  handleFinishOutlineKnowledge,
+  handleFinishOutlineLocations,
+  handleFinishOutlineMasterPlan,
+  handleFinishOutlineNpcsRelationships,
+  handleFinishOutlineOpeningNarrative,
+  handleFinishOutlinePlaceholderRegistry,
+  handleFinishOutlinePlayerActor,
+  handleFinishOutlineQuests,
+  handleFinishOutlineTimeline,
+  handleFinishOutlineWorldFoundation,
+} from "./handlers/finishOutlineHandlers";
 import { createVmHandler } from "./handlers/vm";
 
 const handleVm = createVmHandler((name, args, context) =>
@@ -62,16 +67,19 @@ const HANDLERS: Record<
   finish_turn: handleFinishTurn,
   end_turn: handleEndTurn,
   finish_summary: handleFinishSummary,
-  finish_outline_phase_0: handleFinishOutlinePhase0,
-  finish_outline_phase_1: handleFinishOutlinePhase1,
-  finish_outline_phase_2: handleFinishOutlinePhase2,
-  finish_outline_phase_3: handleFinishOutlinePhase3,
-  finish_outline_phase_4: handleFinishOutlinePhase4,
-  finish_outline_phase_5: handleFinishOutlinePhase5,
-  finish_outline_phase_6: handleFinishOutlinePhase6,
-  finish_outline_phase_7: handleFinishOutlinePhase7,
-  finish_outline_phase_8: handleFinishOutlinePhase8,
-  finish_outline_phase_9: handleFinishOutlinePhase9,
+  finish_outline_image_seed: handleFinishOutlineImageSeed,
+  finish_outline_master_plan: handleFinishOutlineMasterPlan,
+  finish_outline_placeholder_registry: handleFinishOutlinePlaceholderRegistry,
+  finish_outline_world_foundation: handleFinishOutlineWorldFoundation,
+  finish_outline_player_actor: handleFinishOutlinePlayerActor,
+  finish_outline_locations: handleFinishOutlineLocations,
+  finish_outline_factions: handleFinishOutlineFactions,
+  finish_outline_npcs_relationships: handleFinishOutlineNpcsRelationships,
+  finish_outline_quests: handleFinishOutlineQuests,
+  finish_outline_knowledge: handleFinishOutlineKnowledge,
+  finish_outline_timeline: handleFinishOutlineTimeline,
+  finish_outline_atmosphere: handleFinishOutlineAtmosphere,
+  finish_outline_opening_narrative: handleFinishOutlineOpeningNarrative,
 };
 
 const MAX_VALIDATION_ISSUES = 8;

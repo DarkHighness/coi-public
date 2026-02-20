@@ -44,8 +44,8 @@ describe("outlineGeneration", () => {
     const vfsSession = { id: "vfs" } as any;
 
     const checkpoint = {
-      currentPhase: 3,
-      liveToolCalls: [{ name: "submit_outline_phase_3" }],
+      currentPhaseId: "world_foundation",
+      liveToolCalls: [{ name: "vfs_finish_outline_world_foundation" }],
       conversationHistory: [],
     } as any;
 
@@ -59,7 +59,7 @@ describe("outlineGeneration", () => {
       ) => {
         callbacks.onToolCallsUpdate([{ name: "tool-a" }]);
         await callbacks.onSaveCheckpoint(checkpoint);
-        callbacks.onPhaseProgress?.({ phase: 3 });
+        callbacks.onPhaseProgress?.({ phaseOrder: 3, totalPhases: 12 } as any);
         return { outline: { title: "World" } };
       },
     );
@@ -76,7 +76,7 @@ describe("outlineGeneration", () => {
       gameStateRef,
       saveToSlot,
       onPhaseProgress,
-      resumeFrom: { currentPhase: 2 } as any,
+      resumeFrom: { currentPhaseId: "placeholder_registry" } as any,
       seedImageBase64: "seed",
       protagonistFeature: "scar",
       presetProfile: { id: "preset" } as any,
@@ -94,7 +94,7 @@ describe("outlineGeneration", () => {
         settings: expect.any(Object),
         slotId: "slot-1",
         vfsSession,
-        resumeFrom: { currentPhase: 2 },
+        resumeFrom: { currentPhaseId: "placeholder_registry" },
         seedImageBase64: "seed",
         protagonistFeature: "scar",
         presetProfile: { id: "preset" },
@@ -112,7 +112,10 @@ describe("outlineGeneration", () => {
       checkpoint,
     );
     expect(saveToSlot).toHaveBeenCalledWith("slot-1", gameStateRef.current);
-    expect(onPhaseProgress).toHaveBeenCalledWith({ phase: 3 });
+    expect(onPhaseProgress).toHaveBeenCalledWith({
+      phaseOrder: 3,
+      totalPhases: 12,
+    });
   });
 
   it("converts blob to data URL via FileReader", async () => {

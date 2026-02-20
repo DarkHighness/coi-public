@@ -30,7 +30,9 @@ describe("vfsToolsets", () => {
     expect(toolsets.playerRate.tools).not.toContain("vfs_delete");
     expect(toolsets.cleanup.tools).not.toContain("vfs_finish_summary");
     expect(toolsets.summary.tools).toContain("vfs_finish_summary");
-    expect(toolsets.outline.tools).toContain("vfs_finish_outline_phase_0");
+    expect(
+      toolsets.outline.finishToolName.startsWith("vfs_finish_outline_"),
+    ).toBe(true);
     expect(toolsets.outline.tools).not.toContain("vfs_finish_turn");
     expect(toolsets.outline.tools).not.toContain("vfs_finish_summary");
   });

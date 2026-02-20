@@ -94,11 +94,6 @@ import type {
   Ambience,
   Skill,
   Condition,
-  OutlinePhase1,
-  OutlinePhase2,
-  OutlinePhase3,
-  OutlinePhase4,
-  OutlinePhase5,
 } from "./services/zodSchemas";
 
 // ============================================================================
@@ -191,13 +186,6 @@ export type {
   Skill,
   Condition,
   AtmosphereObject,
-};
-export type {
-  OutlinePhase1,
-  OutlinePhase2,
-  OutlinePhase3,
-  OutlinePhase4,
-  OutlinePhase5,
 };
 
 // 导出 Zod 原始类型（用于 AI 生成验证，字段可选）
@@ -437,14 +425,14 @@ export interface GameState {
 
 /** State for resuming outline generation after failure */
 export interface OutlineConversationState {
-  /** Schema version for outline phase contracts. v2 is the reordered 1-9 pipeline. */
+  /** Schema version for outline phase contracts. */
   phaseSchemaVersion?: number;
   theme: string;
   language: string;
   customContext?: string;
   conversationHistory: UnifiedMessage[];
   partial: PartialStoryOutline;
-  currentPhase: number; // 0-9, indicates which phase to resume from
+  currentPhaseId: OutlinePhaseId;
   /** Model ID used for this outline generation (for mismatch detection) */
   modelId?: string;
   /** Provider ID used for this outline generation (for mismatch detection) */
@@ -453,19 +441,25 @@ export interface OutlineConversationState {
   liveToolCalls?: ToolCallRecord[];
 }
 
+export const OUTLINE_PHASE_SCHEMA_VERSION = 3;
+
+export type OutlinePhaseId =
+  | "image_seed"
+  | "master_plan"
+  | "placeholder_registry"
+  | "world_foundation"
+  | "player_actor"
+  | "locations"
+  | "factions"
+  | "npcs_relationships"
+  | "quests"
+  | "knowledge"
+  | "timeline"
+  | "atmosphere"
+  | "opening_narrative";
+
 /** Partial results from phased outline generation */
-export interface PartialStoryOutline {
-  phase0?: object; // Image interpretation (imageBased only)
-  phase1?: object;
-  phase2?: object;
-  phase3?: object;
-  phase4?: object;
-  phase5?: object;
-  phase6?: object;
-  phase7?: object;
-  phase8?: object;
-  phase9?: object;
-}
+export type PartialStoryOutline = Partial<Record<OutlinePhaseId, object>>;
 
 // --- World System Interfaces ---
 
@@ -1129,6 +1123,8 @@ export interface AISettings {
     toolCallCarousel?: boolean; // Show tool-call style carousel while AI is generating (default: true)
     maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
+    outlineMaxToolCalls?: number; // Maximum total tool calls for outline loops (default: 36)
+    outlineMaxAgenticRounds?: number; // Maximum rounds for outline loops (default: 32)
     turnRetryLimit?: number; // Retry limit for normal turn loops (default: 3)
     outlinePhaseRetryLimit?: number; // Retry limit for each outline phase (default: 3)
     cleanupRetryLimit?: number; // Retry limit for cleanup loops (default: 5)

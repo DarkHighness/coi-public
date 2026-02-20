@@ -225,8 +225,28 @@ function inferLogType(endpoint: string): LogEntry["type"] {
 
 /** Extract phase number from outline endpoint */
 function extractPhase(endpoint: string): number | undefined {
-  const match = endpoint.match(/outline-phase(\d+)/);
-  return match ? parseInt(match[1], 10) : undefined;
+  const prefix = "outline-phase-";
+  if (!endpoint.startsWith(prefix)) {
+    return undefined;
+  }
+  const phaseId = endpoint.slice(prefix.length);
+  const phaseOrder: string[] = [
+    "image_seed",
+    "master_plan",
+    "placeholder_registry",
+    "world_foundation",
+    "player_actor",
+    "locations",
+    "factions",
+    "npcs_relationships",
+    "quests",
+    "knowledge",
+    "timeline",
+    "atmosphere",
+    "opening_narrative",
+  ];
+  const index = phaseOrder.indexOf(phaseId);
+  return index >= 0 ? index + 1 : undefined;
 }
 
 /** Extract stage from summary endpoint */

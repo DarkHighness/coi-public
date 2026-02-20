@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  getOutlinePhase1Prompt,
+  getOutlineMasterPlanPrompt,
   getOutlinePhasePreludePrompt,
   getOutlineSystemInstruction,
 } from "../storyOutline";
@@ -9,8 +9,10 @@ describe("outline tool instruction consistency", () => {
   it("keeps system shell minimal and puts tool protocol in per-phase prelude", () => {
     const systemPrompt = getOutlineSystemInstruction({ language: "en" });
     const phasePrelude = getOutlinePhasePreludePrompt(
-      1,
-      "vfs_finish_outline_phase_0",
+      "master_plan",
+      2,
+      11,
+      "vfs_finish_outline_master_plan",
       {
         theme: "fantasy",
         language: "en",
@@ -23,32 +25,31 @@ describe("outline tool instruction consistency", () => {
     expect(systemPrompt).toContain("authoritative contract for this round");
     expect(systemPrompt).toContain("<language_target>en</language_target>");
 
-    expect(phasePrelude).toContain("[PHASE 1 PRELUDE: ROUND CONTRACT]");
+    expect(phasePrelude).toContain("[PHASE 2 OF 11 PRELUDE: ROUND CONTRACT]");
     expect(phasePrelude).toContain("Use native function/tool calling");
     expect(phasePrelude).toContain(
       "direct phase object schema (no `phase` wrapper, no `data` wrapper)",
     );
     expect(phasePrelude).toContain("Tool names are exact and unprefixed");
     expect(phasePrelude).toContain("vfs_read_lines");
-    expect(phasePrelude).toContain("vfs_finish_outline_phase_0");
+    expect(phasePrelude).toContain("vfs_finish_outline_master_plan");
   });
 
-  it("phase 1 prompt enforces master plan markdown and governance metadata", () => {
-    const prompt = getOutlinePhase1Prompt("fantasy", "en", "ctx", false);
+  it("master_plan prompt enforces markdown + metadata output contract", () => {
+    const prompt = getOutlineMasterPlanPrompt(
+      "fantasy",
+      "en",
+      "ctx",
+      false,
+      undefined,
+      "vfs_finish_outline_master_plan",
+      2,
+      10,
+    );
 
-    expect(prompt).toContain("[PHASE 1 OF 9: MASTER STORY PLAN]");
+    expect(prompt).toContain("[PHASE 2 OF 10: MASTER STORY PLAN]");
     expect(prompt).toContain("storyPlanMarkdown");
     expect(prompt).toContain("planningMetadata");
-    expect(prompt).toContain("Runtime Adaptation Protocol");
     expect(prompt).toContain("forbidDeusExMachina");
-    expect(prompt).toContain("current/skills/index.json");
-    expect(prompt).toContain("current/skills/theme/**");
-    expect(prompt).toContain(
-      "Do NOT assume `themeKey` is a valid `skills/theme/*` folder name.",
-    );
-    expect(prompt).toContain(
-      'vfs_read_chars({ path: "current/skills/theme/fantasy/SKILL.md" })',
-    );
-    expect(prompt).toContain("SKILL USAGE FOR GENRE DEPTH");
   });
 });

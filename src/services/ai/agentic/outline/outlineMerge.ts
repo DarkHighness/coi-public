@@ -6,15 +6,19 @@
 
 import type { StoryOutline, PartialStoryOutline } from "../../../../types";
 import type {
-  OutlinePhase2,
-  OutlinePhase3,
-  OutlinePhase4,
-  OutlinePhase5,
-  OutlinePhase6,
-  OutlinePhase7,
-  OutlinePhase8,
-  OutlinePhase9,
+  OutlinePlaceholderRegistry,
+  OutlineWorldFoundation,
+  OutlinePlayerActor,
+  OutlineLocations,
+  OutlineFactions,
+  OutlineNpcsRelationships,
+  OutlineQuests,
+  OutlineKnowledge,
+  OutlineTimeline,
+  OutlineAtmosphere,
+  OutlineOpeningNarrative,
 } from "../../../schemas";
+import { normalizePlaceholderDraftPath } from "../../../vfs/placeholders";
 
 // ============================================================================
 // Merge Phases
@@ -26,30 +30,6 @@ interface PrepareEntitiesOptions {
 
 const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
-
-const normalizePlaceholderDraftPath = (
-  value: unknown,
-  fallbackIndex: number,
-): string => {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (/^world\/placeholders\/[^/]+\.md$/.test(trimmed)) {
-      return trimmed;
-    }
-
-    if (trimmed.length > 0) {
-      const normalized = trimmed.replace(/^\/+/, "").replace(/\.md$/i, "");
-      if (normalized.length > 0) {
-        const filename = normalized.split("/").filter(Boolean).pop();
-        if (filename && filename.length > 0) {
-          return `world/placeholders/${filename}.md`;
-        }
-      }
-    }
-  }
-
-  return `world/placeholders/ph:${fallbackIndex}.md`;
-};
 
 const normalizePlaceholderDraftMarkdown = (
   value: unknown,
@@ -239,9 +219,9 @@ const asArray = <T>(value: unknown): T[] =>
 
 const getPlaceholderPath = (draft: unknown, index: number): string => {
   if (!isRecord(draft)) {
-    return normalizePlaceholderDraftPath(undefined, index);
+    return normalizePlaceholderDraftPath(undefined, `ph:${index}`);
   }
-  return normalizePlaceholderDraftPath(draft.path, index);
+  return normalizePlaceholderDraftPath(draft.path, `ph:${index}`);
 };
 
 const getPlaceholderMarkdown = (
@@ -270,7 +250,9 @@ const getBundleProfileId = (bundle: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const getPlayerPerceptions = (phase6: OutlinePhase6): StoryActorRelation[] =>
+const getPlayerPerceptions = (
+  phase6: OutlineNpcsRelationships,
+): StoryActorRelation[] =>
   asArray<StoryActorRelation>(phase6.playerPerceptions);
 
 const mergeProfileRelations = (
@@ -290,7 +272,7 @@ const mergeProfileRelations = (
   };
 };
 
-const toNpcs = (phase6: OutlinePhase6): StoryOutline["npcs"] =>
+const toNpcs = (phase6: OutlineNpcsRelationships): StoryOutline["npcs"] =>
   asArray<unknown>(phase6.npcs).map((bundle, idx) =>
     prepareActorBundle(bundle, {
       requiredKind: "npc",
@@ -299,8 +281,10 @@ const toNpcs = (phase6: OutlinePhase6): StoryOutline["npcs"] =>
     }),
   );
 
-const toPlaceholders = (phase6: OutlinePhase6): StoryOutline["placeholders"] =>
-  asArray<unknown>(phase6.placeholders).map((draft, idx) => {
+const toPlaceholders = (
+  placeholderRegistry: OutlinePlaceholderRegistry,
+): StoryOutline["placeholders"] =>
+  asArray<unknown>(placeholderRegistry.placeholders).map((draft, idx) => {
     const path = getPlaceholderPath(draft, idx + 1);
     return {
       path,
@@ -318,27 +302,34 @@ const toPreparedEntities = <T extends { id?: string }>(
  */
 export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
   if (
-    !partial.phase1 ||
-    !partial.phase2 ||
-    !partial.phase3 ||
-    !partial.phase4 ||
-    !partial.phase5 ||
-    !partial.phase6 ||
-    !partial.phase7 ||
-    !partial.phase8 ||
-    !partial.phase9
+    !partial.master_plan ||
+    !partial.placeholder_registry ||
+    !partial.world_foundation ||
+    !partial.player_actor ||
+    !partial.locations ||
+    !partial.factions ||
+    !partial.npcs_relationships ||
+    !partial.quests ||
+    !partial.knowledge ||
+    !partial.timeline ||
+    !partial.atmosphere ||
+    !partial.opening_narrative
   ) {
     throw new Error("Cannot merge incomplete outline phases");
   }
 
-  const p2 = partial.phase2 as OutlinePhase2;
-  const p3 = partial.phase3 as OutlinePhase3;
-  const p4 = partial.phase4 as OutlinePhase4;
-  const p5 = partial.phase5 as OutlinePhase5;
-  const p6 = partial.phase6 as OutlinePhase6;
-  const p7 = partial.phase7 as OutlinePhase7;
-  const p8 = partial.phase8 as OutlinePhase8;
-  const p9 = partial.phase9 as OutlinePhase9;
+  const placeholderRegistry =
+    partial.placeholder_registry as OutlinePlaceholderRegistry;
+  const p2 = partial.world_foundation as OutlineWorldFoundation;
+  const p3 = partial.player_actor as OutlinePlayerActor;
+  const p4 = partial.locations as OutlineLocations;
+  const p5 = partial.factions as OutlineFactions;
+  const p6 = partial.npcs_relationships as OutlineNpcsRelationships;
+  const p7 = partial.quests as OutlineQuests;
+  const p8 = partial.knowledge as OutlineKnowledge;
+  const p9 = partial.timeline as OutlineTimeline;
+  const p10 = partial.atmosphere as OutlineAtmosphere;
+  const p11 = partial.opening_narrative as OutlineOpeningNarrative;
 
   const preparedPlayer = prepareActorBundle(p3.player, {
     requiredKind: "player",
@@ -366,16 +357,16 @@ export function mergeOutlinePhases(partial: PartialStoryOutline): StoryOutline {
     locations: toPreparedEntities(p4.locations, "loc"),
     factions: toPreparedEntities(p5.factions, "fac"),
     quests: toPreparedEntities(p7.quests, "quest"),
-    knowledge: toPreparedEntities(p7.knowledge, "know"),
-    timeline: toPreparedEntities(p8.timeline, "evt"),
-    initialAtmosphere: p8.initialAtmosphere,
+    knowledge: toPreparedEntities(p8.knowledge, "know"),
+    timeline: toPreparedEntities(p9.timeline, "evt"),
+    initialAtmosphere: p10.initialAtmosphere,
 
-    // Phase 6: NPCs + placeholders
+    // npcs_relationships + placeholder_registry
     npcs: toNpcs(p6),
-    placeholders: toPlaceholders(p6),
+    placeholders: toPlaceholders(placeholderRegistry),
 
-    // Phase 9: Opening Narrative
-    openingNarrative: p9.openingNarrative,
+    // opening_narrative
+    openingNarrative: p11.openingNarrative,
   };
 
   return outline;

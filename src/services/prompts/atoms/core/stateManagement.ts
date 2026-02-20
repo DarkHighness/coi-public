@@ -47,6 +47,7 @@ export const stateManagement: Atom<void> = defineAtom(
       * **Placeholder promotion (MANDATORY)**:
         - \`[Display Name]\` is temporary only; do not keep it once canonical identity is known.
         - Unresolved draft notes belong in \`current/world/placeholders/**/*.md\` (markdown, free-form notes).
+        - Missing-reference decision order is mandatory: promote to canonical entity first when identity is explicit; only create/keep placeholder draft when identity is not explicit yet.
         - Promotion triggers: explicit named mention, direct encounter, or any mechanical consequence tied to that entity.
         - Promotion workflow:
           1) Search existing canonical IDs first (\`vfs_search\` + \`vfs_ls\`).

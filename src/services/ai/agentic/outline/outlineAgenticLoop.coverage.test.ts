@@ -37,6 +37,10 @@ vi.mock("../../sessionManager", () => ({
 const mockCallWithAgenticRetry = vi.fn();
 vi.mock("../retry", () => ({
   callWithAgenticRetry: (...args: any[]) => mockCallWithAgenticRetry(...args),
+  createPromptTokenBudgetContext: () => ({
+    get: () => null,
+    set: () => {},
+  }),
 }));
 
 const mockDispatchToolCallAsync = vi.fn();
@@ -46,6 +50,7 @@ vi.mock("../../../tools/handlers", () => ({
 
 // Import after mocks are registered
 import { generateStoryOutlinePhased } from "./outline";
+import { getActiveOutlinePhases } from "./phaseRegistry";
 
 describe("generateStoryOutlinePhased (coverage)", () => {
   beforeEach(() => {
@@ -73,10 +78,10 @@ describe("generateStoryOutlinePhased (coverage)", () => {
 
     mockDispatchToolCallAsync.mockResolvedValue({ success: true });
 
-    const phase1 = {
+    const phaseMasterPlan = {
       storyPlanMarkdown: "# Plan\n\n- Setup\n- Complications\n- Resolution",
       planningMetadata: {
-        structureVersion: "v2",
+        structureVersion: "v3",
         branchStrategy: "adaptive",
         endingFlexibility: "high",
         recoveryPolicy: {
@@ -87,7 +92,11 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       },
     };
 
-    const phase2 = {
+    const phasePlaceholderRegistry = {
+      placeholders: [],
+    };
+
+    const phaseWorldFoundation = {
       title: "Demo Adventure",
       initialTime: "Day 1",
       premise: "A quiet place is no longer quiet.",
@@ -110,7 +119,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       },
     };
 
-    const phase3 = {
+    const phasePlayerActor = {
       player: {
         profile: {
           id: "char:player",
@@ -137,7 +146,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       },
     };
 
-    const phase4 = {
+    const phaseLocations = {
       locations: [
         {
           id: "loc:start",
@@ -152,7 +161,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       ],
     };
 
-    const phase5 = {
+    const phaseFactions = {
       factions: [
         {
           id: "fac:order",
@@ -164,7 +173,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       ],
     };
 
-    const phase6 = {
+    const phaseNpcsRelationships = {
       npcs: [
         {
           profile: {
@@ -180,11 +189,10 @@ describe("generateStoryOutlinePhased (coverage)", () => {
           inventory: [],
         },
       ],
-      placeholders: [],
       playerPerceptions: [],
     };
 
-    const phase7 = {
+    const phaseQuests = {
       quests: [
         {
           id: "quest:1",
@@ -197,6 +205,9 @@ describe("generateStoryOutlinePhased (coverage)", () => {
           },
         },
       ],
+    };
+
+    const phaseKnowledge = {
       knowledge: [
         {
           id: "know:1",
@@ -211,7 +222,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       ],
     };
 
-    const phase8 = {
+    const phaseTimeline = {
       timeline: [
         {
           id: "evt:1",
@@ -222,13 +233,16 @@ describe("generateStoryOutlinePhased (coverage)", () => {
           visible: { description: "The chapel bell stopped without warning." },
         },
       ],
+    };
+
+    const phaseAtmosphere = {
       initialAtmosphere: {
         envTheme: "fantasy",
         ambience: "quiet",
       },
     };
 
-    const phase9 = {
+    const phaseOpeningNarrative = {
       openingNarrative: {
         narrative:
           "The bell tower looms above you. The rope is still, yet the air feels heavy.",
@@ -240,24 +254,29 @@ describe("generateStoryOutlinePhased (coverage)", () => {
     };
 
     const phasePayloads = [
-      phase1,
-      phase2,
-      phase3,
-      phase4,
-      phase5,
-      phase6,
-      phase7,
-      phase8,
-      phase9,
+      phaseMasterPlan,
+      phasePlaceholderRegistry,
+      phaseWorldFoundation,
+      phasePlayerActor,
+      phaseLocations,
+      phaseFactions,
+      phaseNpcsRelationships,
+      phaseQuests,
+      phaseKnowledge,
+      phaseTimeline,
+      phaseAtmosphere,
+      phaseOpeningNarrative,
     ];
+    const expectedToolNames = getActiveOutlinePhases({
+      hasImageContext: false,
+    }).map((phase) => phase.submitToolName);
     let submitCount = 0;
 
     mockCallWithAgenticRetry.mockImplementation(
       async (_provider: any, _request: any, _history: any, opts: any) => {
         const toolName = String(opts?.finishToolName ?? "");
         const data = phasePayloads[submitCount];
-        const phase = submitCount + 1;
-        const expectedToolName = `vfs_finish_outline_phase_${phase}`;
+        const expectedToolName = expectedToolNames[submitCount];
         submitCount += 1;
         if (!toolName || !data || toolName !== expectedToolName) {
           throw new Error(
@@ -282,7 +301,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
     );
   });
 
-  it("runs phases 1-9 with single-shot submits", async () => {
+  it("runs phases 1-12 with single-shot submits", async () => {
     const vfsSession = new VfsSession();
 
     const result = await generateStoryOutlinePhased(
@@ -303,6 +322,6 @@ describe("generateStoryOutlinePhased (coverage)", () => {
     expect(result.outline.locations.some((l) => l.id === "loc:start")).toBe(
       true,
     );
-    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(9);
+    expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(12);
   });
 });

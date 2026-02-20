@@ -23,6 +23,10 @@ vi.mock("../../sessionManager", () => ({
 const mockCallWithAgenticRetry = vi.fn();
 vi.mock("../retry", () => ({
   callWithAgenticRetry: (...args: any[]) => mockCallWithAgenticRetry(...args),
+  createPromptTokenBudgetContext: () => ({
+    get: () => null,
+    set: () => {},
+  }),
 }));
 
 const mockDispatchToolCallAsync = vi.fn();

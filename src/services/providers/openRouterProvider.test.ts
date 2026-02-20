@@ -570,7 +570,7 @@ describe("openRouterProvider tool-call handling", () => {
               {
                 id: "call_1",
                 function: {
-                  name: "vfs_finish_outline_phase_1",
+                  name: "vfs_finish_outline_master_plan",
                   arguments: JSON.stringify({
                     storyPlanMarkdown: "# test plan",
                   }),
@@ -598,7 +598,7 @@ describe("openRouterProvider tool-call handling", () => {
     expect(result.functionCalls).toHaveLength(1);
     expect(result.functionCalls?.[0]).toMatchObject({
       id: "call_1",
-      name: "vfs_finish_outline_phase_1",
+      name: "vfs_finish_outline_master_plan",
       args: { storyPlanMarkdown: "# test plan" },
     });
   });

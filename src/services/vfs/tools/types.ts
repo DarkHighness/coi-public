@@ -4,6 +4,7 @@ import type {
   ZodToolDefinition,
 } from "../../providers/types";
 import type { VfsPermissionClass } from "../core/types";
+import type { OutlinePhaseId } from "../../../types";
 
 export type VfsToolsetId =
   | "turn"
@@ -11,6 +12,9 @@ export type VfsToolsetId =
   | "cleanup"
   | "summary"
   | "outline";
+
+export type OutlineFinishToolName = `vfs_finish_outline_${OutlinePhaseId}`;
+export type OutlineFinishHandlerKey = `finish_outline_${OutlinePhaseId}`;
 
 export type VfsToolName =
   | "vfs_ls"
@@ -32,16 +36,7 @@ export type VfsToolName =
   | "vfs_finish_turn"
   | "vfs_end_turn"
   | "vfs_finish_summary"
-  | "vfs_finish_outline_phase_0"
-  | "vfs_finish_outline_phase_1"
-  | "vfs_finish_outline_phase_2"
-  | "vfs_finish_outline_phase_3"
-  | "vfs_finish_outline_phase_4"
-  | "vfs_finish_outline_phase_5"
-  | "vfs_finish_outline_phase_6"
-  | "vfs_finish_outline_phase_7"
-  | "vfs_finish_outline_phase_8"
-  | "vfs_finish_outline_phase_9";
+  | OutlineFinishToolName;
 
 export type VfsToolHandlerKey =
   | "inspect_ls"
@@ -63,16 +58,7 @@ export type VfsToolHandlerKey =
   | "finish_turn"
   | "end_turn"
   | "finish_summary"
-  | "finish_outline_phase_0"
-  | "finish_outline_phase_1"
-  | "finish_outline_phase_2"
-  | "finish_outline_phase_3"
-  | "finish_outline_phase_4"
-  | "finish_outline_phase_5"
-  | "finish_outline_phase_6"
-  | "finish_outline_phase_7"
-  | "finish_outline_phase_8"
-  | "finish_outline_phase_9";
+  | OutlineFinishHandlerKey;
 
 export interface VfsToolCapabilityV2 {
   summary: string;

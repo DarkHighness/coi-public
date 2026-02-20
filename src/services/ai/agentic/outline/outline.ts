@@ -13,6 +13,8 @@ import {
   ResolvedThemeConfig,
   ToolCallRecord,
   SavePresetProfile,
+  OutlinePhaseId,
+  OUTLINE_PHASE_SCHEMA_VERSION,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import { writeOutlineProgress } from "../../../vfs/outline";
@@ -29,10 +31,10 @@ import {
 } from "../../contextCompressor";
 
 import type {
-  OutlinePhase0,
-  OutlinePhase3,
-  OutlinePhase4,
-  OutlinePhase6,
+  OutlineImageSeed,
+  OutlinePlayerActor,
+  OutlineLocations,
+  OutlineNpcsRelationships,
 } from "../../../schemas";
 
 import {
@@ -52,18 +54,6 @@ import {
   getWorkspaceMemoryLogicalPath,
   readWorkspaceMemoryDoc,
 } from "../../../vfs/memoryTemplates";
-import {
-  outlinePhase0Schema,
-  outlinePhase1Schema,
-  outlinePhase2Schema,
-  outlinePhase3Schema,
-  outlinePhase4Schema,
-  outlinePhase5Schema,
-  outlinePhase6Schema,
-  outlinePhase7Schema,
-  outlinePhase8Schema,
-  outlinePhase9Schema,
-} from "../../../schemas";
 
 import {
   getProviderConfig,
@@ -112,22 +102,16 @@ import {
 import { validateGenderPreferencePhase3 } from "./genderValidation";
 import { resolveOutlineToolNameAlias } from "./toolNameAlias";
 import {
-  validatePhase4LocationsIncludesPlayerCurrentLocation,
-  validatePhase6NpcLocationsExist,
+  validateNpcLocationsExist,
+  validatePlayerCurrentLocationInLocations,
 } from "./outlineCrossPhaseValidation";
-
-const OUTLINE_PHASE_SCHEMAS = [
-  outlinePhase0Schema,
-  outlinePhase1Schema,
-  outlinePhase2Schema,
-  outlinePhase3Schema,
-  outlinePhase4Schema,
-  outlinePhase5Schema,
-  outlinePhase6Schema,
-  outlinePhase7Schema,
-  outlinePhase8Schema,
-  outlinePhase9Schema,
-] as const;
+import {
+  getActiveOutlinePhases,
+  getAllOutlinePhaseDefinitions,
+  getOutlinePhaseArtifactCurrentPath,
+  getOutlinePhaseArtifactSharedPath,
+  type ActiveOutlinePhaseDefinition,
+} from "./phaseRegistry";
 
 // ============================================================================
 // Phased Story Outline Generation
@@ -136,6 +120,8 @@ const OUTLINE_PHASE_SCHEMAS = [
 /** Progress callback for phased generation */
 export interface OutlinePhaseProgress {
   phase: number;
+  phaseId: OutlinePhaseId;
+  phaseOrder: number;
   totalPhases: number;
   phaseName: string;
   status: "starting" | "generating" | "completed" | "error";
@@ -197,17 +183,12 @@ const READ_ONLY_VFS_TOOL_NAMES = new Set(
 );
 
 const OUTLINE_SUBMIT_TOOL_NAMES: Set<string> = new Set(
-  Array.from({ length: 10 }, (_, phase) =>
-    vfsToolRegistry.getOutlineSubmitToolName(phase),
-  ),
+  getAllOutlinePhaseDefinitions().map((phase) => phase.submitToolName),
 );
 
-const getOutlineSubmitToolByPhase = (phase: number): ZodToolDefinition => {
-  return vfsToolRegistry.getOutlineSubmitTool(phase);
-};
-
-const submitToolNameByPhase = (phase: number): string =>
-  getOutlineSubmitToolByPhase(phase).name;
+const getOutlineSubmitToolByPhaseId = (
+  phaseId: OutlinePhaseId,
+): ZodToolDefinition => vfsToolRegistry.getOutlineSubmitTool(phaseId);
 
 const stripOutlineCurrentPrefix = (path?: string): string => {
   const normalized = normalizeVfsPath(path ?? "");
@@ -250,25 +231,20 @@ const getWorkspaceMemoryMessageMarkers = (): string[] =>
     (doc) => `<file path="${getWorkspaceMemoryLogicalPath(doc)}">`,
   );
 
-type PartialPhaseKey = keyof PartialStoryOutline;
-
 const isRecordObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null;
 
-const getPartialPhaseKey = (phaseNum: number): PartialPhaseKey =>
-  `phase${Math.max(0, Math.min(9, Math.floor(phaseNum)))}` as PartialPhaseKey;
-
 const getPartialPhase = (
   partial: PartialStoryOutline,
-  phaseNum: number,
-): object | undefined => partial[getPartialPhaseKey(phaseNum)];
+  phaseId: OutlinePhaseId,
+): object | undefined => partial[phaseId];
 
 const setPartialPhase = (
   partial: PartialStoryOutline,
-  phaseNum: number,
+  phaseId: OutlinePhaseId,
   value: object,
 ): void => {
-  partial[getPartialPhaseKey(phaseNum)] = value;
+  partial[phaseId] = value;
 };
 
 const getStringArg = (args: JsonObject, key: string): string => {
@@ -337,77 +313,84 @@ const truncateText = (value: string, maxChars: number): string => {
   return `${value.slice(0, maxChars)}…`;
 };
 
-const getOutlinePhaseArtifactPaths = (phaseNum: number) => ({
-  currentPath: `current/outline/phases/phase${phaseNum}.json`,
-  sharedPath: `shared/narrative/outline/phases/phase${phaseNum}.json`,
+const getOutlinePhaseArtifactPaths = (phaseId: OutlinePhaseId) => ({
+  currentPath: getOutlinePhaseArtifactCurrentPath(phaseId),
+  sharedPath: getOutlinePhaseArtifactSharedPath(phaseId),
 });
 
 const formatOutlinePhaseArtifactChecklist = (
-  phaseNumbers: number[],
+  phases: ActiveOutlinePhaseDefinition[],
 ): string => {
-  if (phaseNumbers.length === 0) return "- none";
-  return phaseNumbers
-    .map((phaseNum) => {
-      const { currentPath, sharedPath } =
-        getOutlinePhaseArtifactPaths(phaseNum);
-      return `- Phase ${phaseNum}: \`${currentPath}\` (fallback: \`${sharedPath}\`)`;
+  if (phases.length === 0) return "- none";
+  return phases
+    .map((phase) => {
+      const { currentPath, sharedPath } = getOutlinePhaseArtifactPaths(
+        phase.id,
+      );
+      return `- Phase ${phase.phaseOrder} (${phase.id}): \`${currentPath}\` (fallback: \`${sharedPath}\`)`;
     })
     .join("\n");
 };
 
 const buildOutlineResumeAnchor = (
-  currentPhase: number,
+  activePhases: ActiveOutlinePhaseDefinition[],
+  currentPhaseId: OutlinePhaseId,
   partial: PartialStoryOutline,
 ): string => {
-  const safeCurrentPhase = Math.max(0, Math.min(9, Math.floor(currentPhase)));
-  const currentSubmitTool = submitToolNameByPhase(safeCurrentPhase);
-  const currentArtifactPaths = getOutlinePhaseArtifactPaths(safeCurrentPhase);
+  if (activePhases.length === 0) {
+    return `${OUTLINE_RESUME_ANCHOR_MARKER}
+You are RESUMING an interrupted outline generation session.
+No active phases are available in the current flow.`;
+  }
 
-  const completedPhaseNumbers = Array.from(
-    { length: 10 },
-    (_, idx) => idx,
-  ).filter(
-    (phaseNum) =>
-      phaseNum < safeCurrentPhase &&
-      getPartialPhase(partial, phaseNum) !== undefined,
+  const activePhaseIndex = activePhases.findIndex(
+    (p) => p.id === currentPhaseId,
   );
+  const safeCurrentPhaseIndex = activePhaseIndex >= 0 ? activePhaseIndex : 0;
+  const currentPhase = activePhases[safeCurrentPhaseIndex];
+  const currentSubmitTool = currentPhase.submitToolName;
+  const currentArtifactPaths = getOutlinePhaseArtifactPaths(currentPhase.id);
 
-  const missingCompletedPhases = Array.from(
-    { length: safeCurrentPhase },
-    (_, idx) => idx,
-  ).filter((phaseNum) => getPartialPhase(partial, phaseNum) === undefined);
+  const completedPhases = activePhases
+    .slice(0, safeCurrentPhaseIndex)
+    .filter((phase) => getPartialPhase(partial, phase.id) !== undefined);
 
-  const remainingPhases = Array.from(
-    { length: Math.max(0, 10 - safeCurrentPhase) },
-    (_, idx) => safeCurrentPhase + idx,
-  );
+  const missingCompletedPhases = activePhases
+    .slice(0, safeCurrentPhaseIndex)
+    .filter((phase) => getPartialPhase(partial, phase.id) === undefined);
 
-  const completedPhasePreview = completedPhaseNumbers
-    .map((phaseNum) => {
-      const raw = safeJsonStringify(getPartialPhase(partial, phaseNum));
-      return `<phase_${phaseNum}>${truncateText(raw, 1400)}</phase_${phaseNum}>`;
+  const remainingPhases = activePhases.slice(safeCurrentPhaseIndex);
+
+  const completedPhasePreview = completedPhases
+    .map((phase) => {
+      const raw = safeJsonStringify(getPartialPhase(partial, phase.id));
+      return `<phase_${phase.id}>${truncateText(raw, 1400)}</phase_${phase.id}>`;
     })
     .join("\n");
 
   return `${OUTLINE_RESUME_ANCHOR_MARKER}
 You are RESUMING an interrupted outline generation session.
 
-Current phase: ${safeCurrentPhase}
+Current phase: ${currentPhase.phaseOrder} (${currentPhase.id})
 Current submit tool: ${currentSubmitTool}
-Current submit payload shape: \`{ ...phase ${safeCurrentPhase} schema fields... }\`
-Completed phases: ${completedPhaseNumbers.length > 0 ? completedPhaseNumbers.join(", ") : "none"}
+Current submit payload shape: \`{ ...${currentPhase.id} schema fields... }\`
+Completed phases: ${completedPhases.length > 0 ? completedPhases.map((phase) => `${phase.phaseOrder}:${phase.id}`).join(", ") : "none"}
 Missing completed artifacts (should re-read/repair before submit): ${
     missingCompletedPhases.length > 0
-      ? missingCompletedPhases.join(", ")
+      ? missingCompletedPhases
+          .map((phase) => `${phase.phaseOrder}:${phase.id}`)
+          .join(", ")
       : "none"
   }
-Remaining phases (including current): ${remainingPhases.join(", ")}
+Remaining phases (including current): ${remainingPhases
+    .map((phase) => `${phase.phaseOrder}:${phase.id}`)
+    .join(", ")}
 
 Authoritative progress checkpoint:
 - \`current/outline/progress.json\`
 
 Phase artifact lookup (completed):
-${formatOutlinePhaseArtifactChecklist(completedPhaseNumbers)}
+${formatOutlinePhaseArtifactChecklist(completedPhases)}
 
 Current-phase artifact targets:
 - \`${currentArtifactPaths.currentPath}\`
@@ -614,10 +597,10 @@ const ensureWorkspaceMemoryMessagePrefix = (
 
 const hasRecentPhasePromptMarker = (
   history: UnifiedMessage[],
-  phase: number,
+  phaseOrder: number,
   lookback: number,
 ): boolean => {
-  const marker = `[PHASE ${phase} `;
+  const marker = `[PHASE ${phaseOrder} `;
   const window = lookback > 0 ? history.slice(-lookback) : history;
   return window.some((message) => userMessageContainsText(message, marker));
 };
@@ -669,8 +652,14 @@ export const generateStoryOutlinePhased = async (
     if (!resume) return false;
     if (theme === IMAGE_BASED_THEME) return true;
     if (theme) return false;
-    return resume.currentPhase === 0 || Boolean(resume.partial.phase0);
+    return (
+      resume.currentPhaseId === "image_seed" ||
+      Boolean(resume.partial.image_seed)
+    );
   })();
+  const activePhases = getActiveOutlinePhases({
+    hasImageContext: isImageBasedFlow,
+  });
 
   const readOnlyVfsAllowPrefixes =
     options.readOnlyVfsAllowPrefixes ??
@@ -790,7 +779,7 @@ export const generateStoryOutlinePhased = async (
     language,
     theme,
     customContext,
-    hasImageContext: Boolean(options.seedImageBase64),
+    hasImageContext: isImageBasedFlow,
     isRestricted,
     narrativeStyle: resolvedNarrativeStyle,
     backgroundTemplate: themeDataBackgroundTemplate,
@@ -862,7 +851,8 @@ export const generateStoryOutlinePhased = async (
   // Initialize or restore from checkpoint
   let conversationHistory: UnifiedMessage[];
   let partial: PartialStoryOutline;
-  let currentPhase: number;
+  let currentPhaseId: OutlinePhaseId;
+  let currentPhaseIndex: number;
   let liveToolCalls: ToolCallRecord[] = [];
 
   if (options.resumeFrom) {
@@ -873,16 +863,27 @@ export const generateStoryOutlinePhased = async (
       vfsSession,
     );
     partial = { ...options.resumeFrom.partial };
-    currentPhase = options.resumeFrom.currentPhase;
+    const resolvedPhaseIndex = activePhases.findIndex(
+      (phase) => phase.id === options.resumeFrom!.currentPhaseId,
+    );
+    currentPhaseIndex = resolvedPhaseIndex >= 0 ? resolvedPhaseIndex : 0;
+    currentPhaseId =
+      activePhases[currentPhaseIndex]?.id ??
+      activePhases[0]?.id ??
+      "master_plan";
     liveToolCalls = [...(options.resumeFrom.liveToolCalls || [])];
-    console.log(`[OutlineAgentic] Resuming from phase ${currentPhase}`);
+    console.log(
+      `[OutlineAgentic] Resuming from phase ${currentPhaseIndex + 1} (${currentPhaseId})`,
+    );
 
     const hasResumeAnchor = conversationHistory.some((msg) =>
       userMessageContainsText(msg, OUTLINE_RESUME_ANCHOR_MARKER),
     );
     if (!hasResumeAnchor) {
       conversationHistory.push(
-        createUserMessage(buildOutlineResumeAnchor(currentPhase, partial)),
+        createUserMessage(
+          buildOutlineResumeAnchor(activePhases, currentPhaseId, partial),
+        ),
       );
     }
 
@@ -894,14 +895,12 @@ export const generateStoryOutlinePhased = async (
     liveToolCalls = [];
     options.onToolCallsUpdate?.([]);
 
-    // If seedImage provided, start at Phase 0 (image interpretation)
-    // Otherwise start at Phase 1 (normal flow)
-    const hasImage = !!options.seedImageBase64;
-    currentPhase = hasImage ? 0 : 1;
+    currentPhaseIndex = 0;
+    currentPhaseId = activePhases[0]?.id ?? "master_plan";
 
     // Build initial task message
-    const totalPhases = hasImage ? 10 : 9; // Phase 0 + 1-9 or just 1-9
-    const phaseRange = hasImage ? "0-9" : "1-9";
+    const totalPhases = activePhases.length;
+    const phaseSequence = activePhases.map((phase) => phase.id).join(" -> ");
 
     const allowedRootsForPrompt = readOnlyVfsAllowPrefixes
       .map((p) => `  - \`current/${normalizeVfsPath(p)}\``)
@@ -913,13 +912,14 @@ export const generateStoryOutlinePhased = async (
 
     // Create the initial task instruction
     const taskText = `[OUTLINE GENERATION TASK]
-Generate a story outline in ${totalPhases} phases (Phases ${phaseRange}). Each phase builds upon the previous ones.
+Generate a story outline in ${totalPhases} phases. Each phase builds upon the previous ones.
+Phase sequence: ${phaseSequence}
 
 Theme: ${theme}
 Language: ${language}
 ${customContext ? `Custom Context: ${customContext}` : ""}
 ${options.protagonistFeature ? `User Selected Protagonist Role: ${options.protagonistFeature}` : ""}
-${hasImage ? `\n**An image has been provided by the user.** This image should inspire the story world and atmosphere. Start with Phase 0 to analyze the image.` : ""}
+${isImageBasedFlow ? `\n**An image has been provided by the user.** This image should inspire the story world and atmosphere. Start with image_seed analysis.` : ""}
 
 **PROCESS:**
 - You will receive one phase instruction at a time
@@ -929,7 +929,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 `;
 
     // If we have an image, create a message with both image and text
-    if (hasImage && options.seedImageBase64) {
+    if (isImageBasedFlow && options.seedImageBase64) {
       // Parse the data URL to extract mimeType and base64 data
       // Format: data:image/jpeg;base64,/9j/4AAQ...
       const dataUrlMatch = options.seedImageBase64.match(
@@ -968,14 +968,15 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   }
 
   // Helper to save checkpoint
-  const saveCheckpoint = async (phase: number) => {
+  const saveCheckpoint = async (phaseId: OutlinePhaseId) => {
     const checkpoint: OutlineConversationState = {
+      phaseSchemaVersion: OUTLINE_PHASE_SCHEMA_VERSION,
       theme,
       language,
       customContext,
       conversationHistory: [...conversationHistory],
       partial: { ...partial },
-      currentPhase: phase,
+      currentPhaseId: phaseId,
       modelId, // Track which model was used
       providerId: instance.id, // Track which provider was used
       liveToolCalls: [...liveToolCalls],
@@ -1004,16 +1005,17 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
   // Helper to report progress
   const reportProgress = (
-    phase: number,
+    phase: ActiveOutlinePhaseDefinition,
     status: OutlinePhaseProgress["status"],
     error?: string,
   ) => {
     if (options?.onPhaseProgress) {
-      const totalPhases = isImageBasedFlow ? 11 : 10;
       options.onPhaseProgress({
-        phase,
-        totalPhases,
-        phaseName: `initializing.outline.phase.${phase}.name`,
+        phase: phase.phaseOrder,
+        phaseId: phase.id,
+        phaseOrder: phase.phaseOrder,
+        totalPhases: phase.totalPhases,
+        phaseName: phase.progressNameKey,
         status,
         partialOutline: partial,
         error,
@@ -1097,15 +1099,15 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   // before completing and producing a checkpoint.
   if (!options.resumeFrom) {
     console.log(
-      `[OutlineAgentic] Saving initial checkpoint at phase ${currentPhase}`,
+      `[OutlineAgentic] Saving initial checkpoint at phase ${currentPhaseIndex + 1} (${currentPhaseId})`,
     );
-    await saveCheckpoint(currentPhase);
+    await saveCheckpoint(currentPhaseId);
   }
 
   // Helper to make API call with retry
   const promptTokenBudgetContext = createPromptTokenBudgetContext();
   const callAIWithRetry = async (
-    phaseNum: number,
+    phase: ActiveOutlinePhaseDefinition,
     tools: ZodToolDefinition[],
     opts?: {
       requiredToolName?: string;
@@ -1150,7 +1152,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
       {
         maxRetries: opts?.maxRetries ?? budgetState.retriesMax,
         requiredToolName: opts?.requiredToolName,
-        finishToolName: submitToolNameByPhase(phaseNum),
+        finishToolName: phase.submitToolName,
         promptTokenBudgetContext,
         onRetry: (err, count, meta) => {
           console.warn(
@@ -1179,8 +1181,8 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
     const logEntry = createLogEntry({
       provider: instance.protocol,
       model: modelId,
-      endpoint: `outline-phase${phaseNum}${endpointSuffix}`,
-      phase: phaseNum,
+      endpoint: `${phase.endpointKey}${endpointSuffix}`,
+      phase: phase.phaseOrder,
       toolName:
         opts?.requiredToolName ?? tools[tools.length - 1]?.name ?? "unknown",
       response: resp.raw,
@@ -1211,20 +1213,24 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   };
 
   // Agentic loop for each phase
-  // Phase 0 is at index 0, Phase 1 at index 1, etc.
-  while (currentPhase <= 9) {
-    const phaseNum = currentPhase;
-    const phaseSchema = OUTLINE_PHASE_SCHEMAS[phaseNum];
-    const submitTool = getOutlineSubmitToolByPhase(phaseNum);
+  while (currentPhaseIndex < activePhases.length) {
+    const phase = activePhases[currentPhaseIndex];
+    currentPhaseId = phase.id;
+    const phaseSchema = phase.schema;
+    const submitTool = getOutlineSubmitToolByPhaseId(phase.id);
 
     console.log(
-      `[OutlineAgentic] Starting Phase ${phaseNum}. Budget: ${getBudgetSummary(budgetState)}`,
+      `[OutlineAgentic] Starting Phase ${phase.phaseOrder}/${phase.totalPhases} (${phase.id}). Budget: ${getBudgetSummary(
+        budgetState,
+      )}`,
     );
-    reportProgress(phaseNum, "starting");
+    reportProgress(phase, "starting");
 
     // Add phase-specific prompt
     let phasePrompt = getPhasePrompt(
-      phaseNum,
+      phase.id,
+      phase.phaseOrder,
+      phase.totalPhases,
       submitTool.name,
       outlinePhaseSharedContext,
     );
@@ -1233,7 +1239,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
       // Re-anchor the active phase prompt so the model keeps the correct submit tool.
       const hasRecentMarker = hasRecentPhasePromptMarker(
         conversationHistory,
-        phaseNum,
+        phase.phaseOrder,
         12,
       );
       const shouldInjectPrompt =
@@ -1244,7 +1250,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
     }
 
     try {
-      reportProgress(phaseNum, "generating");
+      reportProgress(phase, "generating");
 
       let phaseSubmitted = false;
       if (budgetState.retriesUsed !== 0) {
@@ -1278,7 +1284,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
           ),
         );
 
-        const { result, log } = await callAIWithRetry(phaseNum, activeTools, {
+        const { result, log } = await callAIWithRetry(phase, activeTools, {
           requiredToolName: mustFinishNow ? submitTool.name : undefined,
           endpointSuffix: `iter-${budgetState.loopIterationsUsed + 1}`,
           maxRetries: Math.max(
@@ -1294,7 +1300,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         const textContent = (result as { content?: string }).content;
 
         if (!toolCalls || toolCalls.length === 0) {
-          throw new Error(`Phase ${phaseNum}: No function calls in response`);
+          throw new Error(`Phase ${phase.id}: No function calls in response`);
         }
 
         // Ensure all tool calls have IDs (OpenAI requirement)
@@ -1412,8 +1418,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
             const validatedData = validatedDataParsed.data;
 
-            // Phase 3: Additional protagonist gender validation
-            if (phaseNum === 3 && settings.extra?.genderPreference) {
+            // player_actor: Additional protagonist gender validation
+            if (
+              phase.id === "player_actor" &&
+              settings.extra?.genderPreference
+            ) {
               const genderPref = settings.extra.genderPreference;
               if (
                 genderPref === "male" ||
@@ -1439,9 +1448,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               }
             }
 
-            // Phase 4/6: Cross-phase location reference validation
-            if (phaseNum === 4) {
-              const priorPhase3 = partial.phase3 as OutlinePhase3 | undefined;
+            // locations / npcs_relationships: cross-phase location reference validation
+            if (phase.id === "locations") {
+              const priorPhase3 = partial.player_actor as
+                | OutlinePlayerActor
+                | undefined;
               if (!priorPhase3?.player) {
                 toolResponses.push({
                   toolCallId: tc.id!,
@@ -1449,51 +1460,16 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
                   content: {
                     success: false,
                     error:
-                      "Phase 4 requires Phase 3 player bundle, but prior phase data is missing. Retry submission after Phase 3 is completed.",
+                      "locations phase requires player_actor data, but prior phase data is missing. Retry submission after player_actor is completed.",
                     code: "INVALID_DATA",
                   },
                 });
                 continue;
               }
 
-              const cross =
-                validatePhase4LocationsIncludesPlayerCurrentLocation(
-                  priorPhase3.player,
-                  (validatedData as OutlinePhase4).locations,
-                );
-              if (!cross.ok) {
-                toolResponses.push({
-                  toolCallId: tc.id!,
-                  name: tc.name,
-                  content: {
-                    success: false,
-                    error: `Phase 4: ${cross.error}`,
-                    code: "INVALID_DATA",
-                  },
-                });
-                continue;
-              }
-            }
-
-            if (phaseNum === 6) {
-              const priorPhase4 = partial.phase4 as OutlinePhase4 | undefined;
-              if (!priorPhase4?.locations) {
-                toolResponses.push({
-                  toolCallId: tc.id!,
-                  name: tc.name,
-                  content: {
-                    success: false,
-                    error:
-                      "Phase 6 requires Phase 4 locations, but prior phase data is missing. Retry submission after Phase 4 is completed.",
-                    code: "INVALID_DATA",
-                  },
-                });
-                continue;
-              }
-
-              const cross = validatePhase6NpcLocationsExist(
-                priorPhase4.locations,
-                (validatedData as OutlinePhase6).npcs,
+              const cross = validatePlayerCurrentLocationInLocations(
+                priorPhase3.player,
+                (validatedData as OutlineLocations).locations,
               );
               if (!cross.ok) {
                 toolResponses.push({
@@ -1501,7 +1477,43 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
                   name: tc.name,
                   content: {
                     success: false,
-                    error: `Phase 6: ${cross.error}`,
+                    error: `locations: ${cross.error}`,
+                    code: "INVALID_DATA",
+                  },
+                });
+                continue;
+              }
+            }
+
+            if (phase.id === "npcs_relationships") {
+              const priorPhase4 = partial.locations as
+                | OutlineLocations
+                | undefined;
+              if (!priorPhase4?.locations) {
+                toolResponses.push({
+                  toolCallId: tc.id!,
+                  name: tc.name,
+                  content: {
+                    success: false,
+                    error:
+                      "npcs_relationships phase requires locations data, but prior phase data is missing. Retry submission after locations is completed.",
+                    code: "INVALID_DATA",
+                  },
+                });
+                continue;
+              }
+
+              const cross = validateNpcLocationsExist(
+                priorPhase4.locations,
+                (validatedData as OutlineNpcsRelationships).npcs,
+              );
+              if (!cross.ok) {
+                toolResponses.push({
+                  toolCallId: tc.id!,
+                  name: tc.name,
+                  content: {
+                    success: false,
+                    error: `npcs_relationships: ${cross.error}`,
                     code: "INVALID_DATA",
                   },
                 });
@@ -1530,7 +1542,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
             );
 
             if (isToolSuccessResult(output)) {
-              setPartialPhase(partial, phaseNum, validatedData);
+              setPartialPhase(partial, phase.id, validatedData);
               phaseSubmitted = true;
             }
             toolResponses.push({
@@ -1611,23 +1623,31 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
         options.onToolCallsUpdate?.([...liveToolCalls]);
 
         // Persist progress for breakpoint-resume (mid-phase tool rounds).
-        await saveCheckpoint(phaseNum);
+        await saveCheckpoint(phase.id);
       }
 
-      console.log(`[OutlineAgentic] Phase ${phaseNum} completed`);
+      console.log(
+        `[OutlineAgentic] Phase ${phase.phaseOrder} (${phase.id}) completed`,
+      );
       liveToolCalls = [];
       options.onToolCallsUpdate?.([]);
-      reportProgress(phaseNum, "completed");
+      reportProgress(phase, "completed");
 
       // Move to next phase and save checkpoint
-      currentPhase++;
-      await saveCheckpoint(currentPhase);
+      const nextPhase = activePhases[currentPhaseIndex + 1];
+      currentPhaseIndex += 1;
+      if (nextPhase) {
+        currentPhaseId = nextPhase.id;
+        await saveCheckpoint(currentPhaseId);
+      } else {
+        await saveCheckpoint(phase.id);
+      }
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
-      console.error(`[OutlineAgentic] Phase ${phaseNum} failed:`, error);
+      console.error(`[OutlineAgentic] Phase ${phase.id} failed:`, error);
       liveToolCalls = [];
       options.onToolCallsUpdate?.([]);
-      reportProgress(phaseNum, "error", error);
+      reportProgress(phase, "error", error);
 
       // Check for invalid argument error (likely corrupted conversation history)
       if (isInvalidArgumentError(e)) {
@@ -1643,12 +1663,14 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
 
   // Merge all phases into complete outline
   console.log("[OutlineAgentic] All phases completed, merging outline");
-  const phase3 = partial.phase3 as OutlinePhase3 | undefined;
-  const phase4 = partial.phase4 as OutlinePhase4 | undefined;
-  const phase6 = partial.phase6 as OutlinePhase6 | undefined;
+  const phase3 = partial.player_actor as OutlinePlayerActor | undefined;
+  const phase4 = partial.locations as OutlineLocations | undefined;
+  const phase6 = partial.npcs_relationships as
+    | OutlineNpcsRelationships
+    | undefined;
 
   if (phase3?.player && phase4?.locations) {
-    const cross = validatePhase4LocationsIncludesPlayerCurrentLocation(
+    const cross = validatePlayerCurrentLocationInLocations(
       phase3.player,
       phase4.locations,
     );
@@ -1660,10 +1682,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   }
 
   if (phase4?.locations && phase6?.npcs) {
-    const cross = validatePhase6NpcLocationsExist(
-      phase4.locations,
-      phase6.npcs,
-    );
+    const cross = validateNpcLocationsExist(phase4.locations, phase6.npcs);
     if (!cross.ok) {
       throw new Error(
         `[OutlineAgentic] Cross-phase invariant failed before merge: ${cross.error}`,
@@ -1677,7 +1696,7 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   // For imageBased: use Phase 0 generated data; for normal themes: use i18n
   let resolvedThemeConfig: ResolvedThemeConfig;
   const isImageStart = !theme || theme === IMAGE_BASED_THEME;
-  const phase0Data = partial.phase0 as OutlinePhase0 | undefined;
+  const phase0Data = partial.image_seed as OutlineImageSeed | undefined;
 
   if (isImageStart && phase0Data && tFunc) {
     // imageBased: use Phase 0 generated context

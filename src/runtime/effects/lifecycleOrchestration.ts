@@ -501,7 +501,7 @@ export function createLifecycleActions({
 
       const savedConversation = gameStateRef.current.outlineConversation;
       const hasProgress = Boolean(
-        savedConversation && savedConversation.currentPhase > 0,
+        savedConversation && savedConversation.currentPhaseId,
       );
       const contextOverflow = isContextOverflowFailure(outlineError);
 
@@ -510,7 +510,7 @@ export function createLifecycleActions({
             contextOverflow
               ? "initializing.errors.retryWithProgressContextOverflow"
               : "initializing.errors.retryWithProgressReuseSession",
-            { phase: savedConversation.currentPhase },
+            { phase: savedConversation.currentPhaseId },
           )}`
         : `${outlineFailedMessage}\n\n${t("initializing.errors.retryOutline")}`;
 
@@ -519,7 +519,7 @@ export function createLifecycleActions({
       if (shouldRetry) {
         if (hasProgress) {
           console.log(
-            `[StartNewGame] Resuming from saved conversation at phase ${savedConversation.currentPhase}`,
+            `[StartNewGame] Resuming from saved conversation at phase ${savedConversation.currentPhaseId}`,
           );
           setGameState((prev) => ({
             ...prev,
@@ -652,7 +652,7 @@ export function createLifecycleActions({
     }
 
     console.log(
-      `[ResumeOutline] Resuming from phase ${savedConversation.currentPhase} for theme ${theme}`,
+      `[ResumeOutline] Resuming from phase ${savedConversation.currentPhaseId} for theme ${theme}`,
     );
 
     setGameState((prev) => ({
@@ -746,7 +746,7 @@ export function createLifecycleActions({
 
         if (recoveryConversation) {
           console.log(
-            `[ResumeOutline] Retrying with ${recoveryKind} recovery checkpoint (phase ${recoveryConversation.currentPhase}, messages ${savedConversation.conversationHistory.length} -> ${recoveryConversation.conversationHistory.length})`,
+            `[ResumeOutline] Retrying with ${recoveryKind} recovery checkpoint (phase ${recoveryConversation.currentPhaseId}, messages ${savedConversation.conversationHistory.length} -> ${recoveryConversation.conversationHistory.length})`,
           );
 
           const recoveryState = {

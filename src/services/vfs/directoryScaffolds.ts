@@ -1,6 +1,7 @@
 import type { RuleCategory } from "@/types";
 import type { VfsSession } from "./vfsSession";
 import { normalizeVfsPath } from "./utils";
+import { PLACEHOLDER_DOMAINS } from "./placeholders";
 
 export interface CustomRuleCategoryPreset {
   category: RuleCategory;
@@ -359,7 +360,8 @@ const ROOT_CATEGORY_DIRECTORIES: readonly RootCategoryDirectoryDefinition[] = [
     purpose:
       "Markdown draft notes for unresolved entities across all domains before canonical promotion.",
     whatBelongs: [
-      "Draft notes only: `world/placeholders/<entityId>.md`.",
+      "Draft notes only: `world/placeholders/<domain>/<entityId>.md`.",
+      "Allowed domains: `characters`, `locations`, `quests`, `knowledge`, `factions`, `timeline`, `causal_chains`, `items`, `skills`, `conditions`, `traits`, `misc`.",
       "Each draft should include at minimum `- id:` and a `## Notes` section.",
       "Cross-domain unresolved entities are all valid here (character/location/item/skill/quest/knowledge/faction/timeline/causal chain).",
     ],
@@ -503,6 +505,27 @@ const SCAFFOLD_DEFINITIONS: readonly DirectoryScaffoldDefinition[] = [
     title: item.title,
     purpose: item.purpose,
     readme: buildReadme(item),
+  })),
+  ...PLACEHOLDER_DOMAINS.map((domain) => ({
+    path: `world/placeholders/${domain}`,
+    title: `Placeholder ${toTitleCase(domain)}`,
+    purpose: `Placeholder drafts for ${domain} entities.`,
+    readme: buildReadme({
+      title: `Placeholder ${toTitleCase(domain)}`,
+      purpose: `Draft markdown placeholders scoped to ${domain}.`,
+      whatBelongs: [
+        `Draft files at \`world/placeholders/${domain}/<entityId>.md\`.`,
+      ],
+      writeProtocol: [
+        "Use this draft only while identity/details are unresolved.",
+        "Promote to canonical entity JSON once identity is explicit.",
+        "Delete draft in the same response after successful promotion.",
+      ],
+      guardrails: [
+        "Markdown only; never store canonical JSON in placeholder folders.",
+        "Do not keep stale drafts after canonical entity creation.",
+      ],
+    }),
   })),
   ...CUSTOM_RULE_CATEGORY_PRESETS.map((preset) => {
     const path = toCustomRulesDirectoryPath(preset);

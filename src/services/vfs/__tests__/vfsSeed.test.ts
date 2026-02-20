@@ -212,11 +212,12 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(locationView.highlight).toBeUndefined();
 
     expect(
-      session.readFile("world/placeholders/ph:clockmaker.json"),
+      session.readFile("world/placeholders/misc/ph:clockmaker.json"),
     ).toBeNull();
 
     const placeholderDraft =
-      session.readFile("world/placeholders/ph:clockmaker.md")?.content ?? "";
+      session.readFile("world/placeholders/misc/ph:clockmaker.md")?.content ??
+      "";
     expect(placeholderDraft).toContain("# Placeholder Draft");
     expect(placeholderDraft).toContain("- id: ph:clockmaker");
   });
@@ -254,7 +255,7 @@ describe("seedVfsSessionFromDefaults", () => {
         npcs: [],
         placeholders: [
           {
-            path: "world/placeholders/ph:buried_archive.md",
+            path: "world/placeholders/misc/ph:buried_archive.md",
             markdown: [
               "# Placeholder Draft",
               "",
@@ -310,13 +311,83 @@ describe("seedVfsSessionFromDefaults", () => {
     expect(location.lastAccess).toBeUndefined();
 
     expect(
-      session.readFile("world/placeholders/ph:buried_archive.json"),
+      session.readFile("world/placeholders/misc/ph:buried_archive.json"),
     ).toBeNull();
 
     const placeholderDraft =
-      session.readFile("world/placeholders/ph:buried_archive.md")?.content ??
-      "";
+      session.readFile("world/placeholders/misc/ph:buried_archive.md")
+        ?.content ?? "";
     expect(placeholderDraft).toContain("# Placeholder Draft");
     expect(placeholderDraft).toContain("- id: ph:buried_archive");
+  });
+
+  it("rejects non-domain placeholder draft paths when seeding from outline", () => {
+    const session = new VfsSession();
+
+    expect(() =>
+      seedVfsSessionFromOutline(
+        session,
+        {
+          title: "Outline",
+          initialTime: "Day 1",
+          premise: "Premise",
+          worldSetting: {
+            visible: { description: "Visible" },
+            hidden: { truth: "Hidden" },
+          },
+          mainGoal: {
+            visible: {
+              objective: "Goal",
+              stakes: "Stakes",
+              urgency: "Urgent",
+            },
+            hidden: { trueObjective: "True goal" },
+          },
+          player: {
+            profile: {
+              id: "char:player",
+              kind: "player",
+              visible: { name: "Hero" },
+              relations: [],
+              currentLocation: "loc:town",
+            },
+            skills: [],
+            conditions: [],
+            traits: [],
+            inventory: [],
+          },
+          npcs: [],
+          placeholders: [
+            {
+              path: "world/placeholders/ph:legacy.md",
+              markdown: "# Placeholder Draft\n\n- id: ph:legacy\n",
+            },
+          ],
+          locations: [
+            {
+              id: "loc:town",
+              knownBy: ["char:player"],
+              name: "Town",
+              visible: { description: "Town", knownFeatures: [] },
+              hidden: { fullDescription: "Hidden town" },
+            },
+          ],
+          factions: [],
+          quests: [],
+          knowledge: [],
+          timeline: [],
+          openingNarrative: {
+            narrative: "Start",
+            choices: [{ text: "Go" }],
+          },
+        } as any,
+        {
+          theme: "fantasy",
+          time: "Day 1, 08:00",
+          currentLocation: "loc:town",
+          atmosphere: { envTheme: "fantasy", ambience: "quiet" },
+        },
+      ),
+    ).toThrow("Invalid placeholder draft path");
   });
 });

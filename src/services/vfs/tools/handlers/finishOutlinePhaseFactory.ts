@@ -2,6 +2,7 @@ import type { ZodTypeAny } from "zod";
 import { createError, createSuccess } from "../../../tools/toolResult";
 import { toCurrentPath } from "../../currentAlias";
 import { writeOutlineStoryPlan } from "../../outline";
+import type { OutlinePhaseId } from "../../../../types";
 import {
   formatOutlineCommitValidationError,
   resolveAiWriteContext,
@@ -18,7 +19,7 @@ const toObjectRecord = (value: unknown): JsonObject | null => {
 };
 
 export const createFinishOutlinePhaseHandler = (
-  phase: number,
+  phaseId: OutlinePhaseId,
   toolName: string,
   schema: ZodTypeAny,
 ): VfsToolHandler => {
@@ -35,7 +36,7 @@ export const createFinishOutlinePhaseHandler = (
       return withAtomicSession(
         ctx,
         (draft) => {
-          const path = `outline/phases/phase${phase}.json`;
+          const path = `outline/phases/${phaseId}.json`;
           draft.writeFile(
             path,
             JSON.stringify(parsedData.data),
@@ -43,7 +44,7 @@ export const createFinishOutlinePhaseHandler = (
           );
 
           let planPath: string | undefined;
-          if (phase === 1) {
+          if (phaseId === "master_plan") {
             const payload = toObjectRecord(parsedData.data);
             const storyPlanMarkdown = payload?.storyPlanMarkdown;
             if (typeof storyPlanMarkdown === "string") {
@@ -54,9 +55,9 @@ export const createFinishOutlinePhaseHandler = (
 
           return createSuccess(
             planPath
-              ? { phase, path: toCurrentPath(path), planPath }
-              : { phase, path: toCurrentPath(path) },
-            `Outline phase ${phase} committed`,
+              ? { phaseId, path: toCurrentPath(path), planPath }
+              : { phaseId, path: toCurrentPath(path) },
+            `Outline phase ${phaseId} committed`,
           );
         },
         {

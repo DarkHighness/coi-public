@@ -14,6 +14,12 @@ import { deepMergeJson } from "./merge";
 import { toCurrentPath } from "./currentAlias";
 import { buildGlobalVfsSkills } from "./globalSkills";
 import { buildGlobalVfsRefs } from "./globalRefs";
+import {
+  buildPlaceholderDraftPath,
+  inferPlaceholderDomainFromEntityId,
+  isPlaceholderDomain,
+  type PlaceholderDomain,
+} from "./placeholders";
 import { vfsPathRegistry } from "./core/pathRegistry";
 import { vfsPolicyEngine } from "./core/policyEngine";
 import {
@@ -191,17 +197,10 @@ const toPlaceholderDraftLogicalCandidates = (
   }
 
   const rest = normalized.slice("world/".length, -".json".length);
-  const candidates = new Set<string>([`world/placeholders/${rest}.md`]);
+  const candidates = new Set<string>();
   const segments = rest.split("/").filter(Boolean);
   if (segments.length === 0) {
     return Array.from(candidates);
-  }
-
-  if (rest.endsWith("/profile")) {
-    const withoutProfile = rest.slice(0, -"/profile".length);
-    if (withoutProfile.length > 0) {
-      candidates.add(`world/placeholders/${withoutProfile}.md`);
-    }
   }
 
   let entityId = segments[segments.length - 1] ?? "";
@@ -209,10 +208,37 @@ const toPlaceholderDraftLogicalCandidates = (
     entityId = segments[segments.length - 2] ?? "";
   }
 
+  const inferDomain = (): PlaceholderDomain => {
+    const root = segments[0] ?? "";
+    if (root === "characters") {
+      const nested = segments[2] ?? "";
+      if (nested === "inventory") return "items";
+      if (nested === "skills") return "skills";
+      if (nested === "conditions") return "conditions";
+      if (nested === "traits") return "traits";
+      return "characters";
+    }
+    if (root === "locations") {
+      const nested = segments[2] ?? "";
+      if (nested === "items") return "items";
+      return "locations";
+    }
+    if (
+      root === "quests" ||
+      root === "knowledge" ||
+      root === "factions" ||
+      root === "timeline" ||
+      root === "causal_chains"
+    ) {
+      return root;
+    }
+    return inferPlaceholderDomainFromEntityId(entityId);
+  };
+
   if (entityId.length > 0) {
-    candidates.add(`world/placeholders/${entityId}.md`);
-    if (segments.length >= 2) {
-      candidates.add(`world/placeholders/${segments[0]}/${entityId}.md`);
+    const domain = inferDomain();
+    if (isPlaceholderDomain(domain)) {
+      candidates.add(buildPlaceholderDraftPath(domain, entityId));
     }
   }
 

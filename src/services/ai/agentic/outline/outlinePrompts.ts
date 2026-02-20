@@ -6,24 +6,30 @@
 
 import {
   getOutlinePhasePreludePrompt,
-  getOutlinePhase0Prompt,
-  getOutlinePhase1Prompt,
-  getOutlinePhase2WorldFoundationPrompt,
-  getOutlinePhase2Prompt,
-  getOutlinePhase3Prompt,
-  getOutlinePhase4Prompt,
-  getOutlinePhase5Prompt,
-  getOutlinePhase7Prompt,
-  getOutlinePhase8Prompt,
-  getOutlinePhase9Prompt,
+  getOutlineImageSeedPrompt,
+  getOutlineMasterPlanPrompt,
+  getOutlinePlaceholderRegistryPrompt,
+  getOutlineWorldFoundationPrompt,
+  getOutlinePlayerActorPrompt,
+  getOutlineLocationsPrompt,
+  getOutlineFactionsPrompt,
+  getOutlineNpcsRelationshipsPrompt,
+  getOutlineQuestsPrompt,
+  getOutlineKnowledgePrompt,
+  getOutlineTimelinePrompt,
+  getOutlineAtmospherePrompt,
+  getOutlineOpeningNarrativePrompt,
 } from "../../../prompts/index";
 import type { OutlinePhaseSharedContext } from "../../../prompts/index";
+import type { OutlinePhaseId } from "../../../../types";
 
 /**
  * Get the prompt for a specific outline phase
  */
 export function getPhasePrompt(
-  phase: number,
+  phaseId: OutlinePhaseId,
+  phaseOrder: number,
+  phaseTotal: number,
   submitToolName: string,
   sharedContext?: OutlinePhaseSharedContext,
 ): string | null {
@@ -38,18 +44,25 @@ export function getPhasePrompt(
   } = sharedContext;
 
   let phaseBody: string | null = null;
-  switch (phase) {
-    case 0:
-      phaseBody = getOutlinePhase0Prompt(language, submitToolName);
+  switch (phaseId) {
+    case "image_seed":
+      phaseBody = getOutlineImageSeedPrompt(
+        language,
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
       break;
-    case 1:
-      phaseBody = getOutlinePhase1Prompt(
+    case "master_plan":
+      phaseBody = getOutlineMasterPlanPrompt(
         theme,
         language,
         customContext,
         Boolean(hasImageContext),
         protagonistFeature,
         submitToolName,
+        phaseOrder,
+        phaseTotal,
         {
           genderPreference: sharedContext.genderPreference,
           culturePreference: sharedContext.culturePreference,
@@ -61,42 +74,89 @@ export function getPhasePrompt(
         },
       );
       break;
-    case 2:
-      phaseBody = getOutlinePhase2WorldFoundationPrompt(
+    case "placeholder_registry":
+      phaseBody = getOutlinePlaceholderRegistryPrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
+      break;
+    case "world_foundation":
+      phaseBody = getOutlineWorldFoundationPrompt(
         theme,
         language,
         customContext,
         Boolean(hasImageContext),
         protagonistFeature,
         submitToolName,
+        phaseOrder,
+        phaseTotal,
       );
       break;
-    case 3:
-      phaseBody = getOutlinePhase2Prompt(
+    case "player_actor":
+      phaseBody = getOutlinePlayerActorPrompt(
         protagonistFeature,
         submitToolName,
+        phaseOrder,
+        phaseTotal,
         sharedContext.genderPreference,
       );
       break;
-    case 4:
-      phaseBody = getOutlinePhase3Prompt(submitToolName);
+    case "locations":
+      phaseBody = getOutlineLocationsPrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
       break;
-    case 5:
-      phaseBody = getOutlinePhase4Prompt(submitToolName);
+    case "factions":
+      phaseBody = getOutlineFactionsPrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
       break;
-    case 6:
-      phaseBody = getOutlinePhase5Prompt(submitToolName);
+    case "npcs_relationships":
+      phaseBody = getOutlineNpcsRelationshipsPrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
       break;
-    case 7:
-      phaseBody = getOutlinePhase7Prompt(submitToolName);
+    case "quests":
+      phaseBody = getOutlineQuestsPrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
       break;
-    case 8:
-      phaseBody = getOutlinePhase8Prompt(submitToolName);
+    case "knowledge":
+      phaseBody = getOutlineKnowledgePrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
       break;
-    case 9:
-      phaseBody = getOutlinePhase9Prompt(
+    case "timeline":
+      phaseBody = getOutlineTimelinePrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
+      break;
+    case "atmosphere":
+      phaseBody = getOutlineAtmospherePrompt(
+        submitToolName,
+        phaseOrder,
+        phaseTotal,
+      );
+      break;
+    case "opening_narrative":
+      phaseBody = getOutlineOpeningNarrativePrompt(
         Boolean(hasImageContext),
         submitToolName,
+        phaseOrder,
+        phaseTotal,
       );
       break;
     default:
@@ -104,7 +164,9 @@ export function getPhasePrompt(
   }
 
   const phasePrelude = getOutlinePhasePreludePrompt(
-    phase,
+    phaseId,
+    phaseOrder,
+    phaseTotal,
     submitToolName,
     sharedContext,
   );

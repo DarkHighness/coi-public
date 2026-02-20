@@ -7,75 +7,97 @@ import { useWakeLock } from "../../hooks/useWakeLock";
 import { GenerationTimer } from "../common/GenerationTimer";
 import { InitializingButterflies } from "../effects/InitializingButterflies";
 import { ToolCallCarousel } from "../common/ToolCallCarousel";
-import type { ToolCallRecord } from "../../types";
+import type { OutlinePhaseId, ToolCallRecord } from "../../types";
 import type { OutlinePhaseProgress } from "../../services/aiService";
 
 // Phase descriptions for animated display
-const PHASE_DESCRIPTIONS: Record<number, string[]> = {
-  0: [
+const PHASE_DESCRIPTIONS: Record<OutlinePhaseId, string[]> = {
+  image_seed: [
     "Reading visual clues from the seed image...",
     "Extracting atmosphere, motifs, and world texture...",
     "Translating composition into narrative signals...",
     "Converting imagery into playable story seeds...",
     "Preparing image-based continuity anchors...",
   ],
-  1: [
+  master_plan: [
     "Drafting the master story plan...",
     "Designing branch corridors and ending lanes...",
     "Setting continuity anchors for long-form play...",
     "Balancing structure with player freedom...",
     "Building the campaign-level plot backbone...",
   ],
-  2: [
+  placeholder_registry: [
+    "Extracting high-confidence unresolved references...",
+    "Drafting soft-coverage placeholders where needed...",
+    "Skipping low-confidence or non-essential placeholders...",
+    "Preparing promotion-ready placeholder notes...",
+    "Keeping canonical entities and placeholders cleanly separated...",
+  ],
+  world_foundation: [
     "Locking in world foundation and premise...",
     "Defining timeline start and core objective...",
     "Aligning baseline truth with the story plan...",
     "Establishing the world’s hidden fault lines...",
     "Turning concept into playable world rules...",
   ],
-  3: [
+  player_actor: [
     "Shaping the player actor bundle...",
     "Finalizing profile, skills, and initial state...",
     "Grounding identity in world constraints...",
     "Preparing first-turn playable agency...",
     "Linking character setup to long-term arcs...",
   ],
-  4: [
+  locations: [
     "Building the location network...",
     "Placing traversal routes and constraints...",
     "Seeding visible and hidden spatial truths...",
     "Defining where conflicts can unfold...",
     "Connecting geography to mission flow...",
   ],
-  5: [
+  factions: [
     "Establishing factions and power structures...",
     "Mapping public goals and hidden agendas...",
     "Planting future alliance and conflict pressure...",
     "Balancing institutions against player intent...",
     "Linking faction motives to world stakes...",
   ],
-  6: [
+  npcs_relationships: [
     "Introducing key NPCs and tensions...",
     "Binding relational signals and hidden affinity...",
     "Preparing social friction for branching play...",
     "Encoding trust, suspicion, and leverage...",
     "Grounding personalities in systemic pressure...",
   ],
-  7: [
-    "Composing quests and knowledge graph...",
+  quests: [
+    "Composing the quest graph...",
     "Pairing objectives with reveal ladders...",
-    "Aligning missions with plan branch corridors...",
+    "Aligning missions with branch corridors...",
     "Setting discovery paths and uncertainty...",
     "Preparing actionable hooks for early turns...",
   ],
-  8: [
-    "Assembling timeline and atmosphere baseline...",
-    "Pinning historical anchors and urgency pressure...",
-    "Defining sensory tone for scene continuity...",
+  knowledge: [
+    "Building the starter knowledge graph...",
+    "Separating public belief from hidden truth...",
+    "Linking clues to future revelations...",
+    "Connecting records, rumors, and evidence...",
+    "Preparing reusable world intelligence...",
+  ],
+  timeline: [
+    "Assembling historical timeline anchors...",
+    "Pinning causality and urgency pressure...",
+    "Linking past events to present momentum...",
+    "Setting event-level reveal progression...",
+    "Preparing backstory for opening impact...",
+  ],
+  atmosphere: [
+    "Defining baseline atmosphere...",
+    "Selecting visual and audio tone...",
+    "Aligning mood with timeline pressure...",
     "Linking past events to present momentum...",
     "Preparing emotional cadence for opening...",
+    "Stabilizing scene continuity defaults...",
   ],
-  9: [
+  opening_narrative: [
     "Writing the opening narrative scene...",
     "Presenting meaningful first-turn choices...",
     "Aligning launch tone with world and plan...",
@@ -127,20 +149,13 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
 
   // Get current phase texts - using i18n translations
   const currentPhaseTexts = useMemo(() => {
-    if (!phaseProgress) {
-      return (
-        (t("initializing.phaseDescriptions.1", {
-          returnObjects: true,
-        }) as string[]) || PHASE_DESCRIPTIONS[1]
-      );
-    }
-    const phaseKey = `initializing.phaseDescriptions.${phaseProgress.phase}`;
+    const phaseId = phaseProgress?.phaseId ?? "master_plan";
+    const fallbackTexts =
+      PHASE_DESCRIPTIONS[phaseId] ?? PHASE_DESCRIPTIONS.master_plan;
+    const phaseKey = `initializing.phaseDescriptions.${phaseId}`;
     const translatedTexts = t(phaseKey, { returnObjects: true }) as string[];
-    // Fallback to English if translation not available
-    return Array.isArray(translatedTexts)
-      ? translatedTexts
-      : PHASE_DESCRIPTIONS[phaseProgress.phase] || PHASE_DESCRIPTIONS[1];
-  }, [phaseProgress?.phase, t]);
+    return Array.isArray(translatedTexts) ? translatedTexts : fallbackTexts;
+  }, [phaseProgress?.phaseId, t]);
 
   // Typewriter effect for phase descriptions
   useEffect(() => {
@@ -174,7 +189,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
     setTextIndex(0);
     setCharIndex(0);
     setDisplayedText("");
-  }, [phaseProgress?.phase]);
+  }, [phaseProgress?.phaseId]);
 
   useEffect(() => {
     preloadAudio(setAudioProgress);
@@ -204,7 +219,7 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
   // Each phase contributes: starting = +0.3, generating = +0.6, completed = +1.0
   const progressPercent = phaseProgress
     ? (() => {
-        const baseProgress = phaseProgress.phase; // completed phases
+        const baseProgress = phaseProgress.phaseOrder; // completed phases
         let phaseContribution = 0;
         if (phaseProgress.status === "starting") {
           phaseContribution = 0.3;
@@ -294,8 +309,8 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
 
       {/* Butterflies - increase with phase progress */}
       <InitializingButterflies
-        currentPhase={phaseProgress?.phase ?? 1}
-        totalPhases={phaseProgress?.totalPhases ?? 9}
+        currentPhase={phaseProgress?.phaseOrder ?? 1}
+        totalPhases={phaseProgress?.totalPhases ?? 10}
         isComplete={progressPercent >= 100}
       />
 
@@ -415,8 +430,8 @@ export const InitializingPage: React.FC<InitializingPageProps> = ({
                 <div className="text-sm text-theme-text/80 font-mono flex flex-wrap items-center justify-center gap-2 backdrop-blur-sm bg-theme-surface/30 px-4 py-2 rounded-full">
                   <span className="text-theme-primary font-bold">
                     {phaseProgress.status === "completed"
-                      ? phaseProgress.phase
-                      : Math.max(0, phaseProgress.phase - 1)}
+                      ? phaseProgress.phaseOrder
+                      : Math.max(0, phaseProgress.phaseOrder - 1)}
                   </span>
                   <span className="text-theme-muted/60">/</span>
                   <span className="text-theme-muted">

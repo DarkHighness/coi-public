@@ -182,7 +182,7 @@ describe("VfsSession", () => {
     const session = new VfsSession();
 
     session.writeFile(
-      "world/placeholders/char:npc_guard.md",
+      "world/placeholders/characters/char:npc_guard.md",
       "# Placeholder Draft\n\n- id: char:npc_guard\n",
       "text/markdown",
     );
@@ -201,19 +201,21 @@ describe("VfsSession", () => {
       "application/json",
     );
 
-    expect(session.readFile("world/placeholders/char:npc_guard.md")).toBeNull();
+    expect(
+      session.readFile("world/placeholders/characters/char:npc_guard.md"),
+    ).toBeNull();
   });
 
   it("removes world placeholder draft markdown after non-character entity promotion write", () => {
     const session = new VfsSession();
 
     session.writeFile(
-      "world/placeholders/quest:signal.md",
+      "world/placeholders/quests/quest:signal.md",
       "# Placeholder Draft\n\n- id: quest:signal\n",
       "text/markdown",
     );
     session.writeFile(
-      "world/placeholders/quest:untouched.md",
+      "world/placeholders/quests/quest:untouched.md",
       "# Placeholder Draft\n\n- id: quest:untouched\n",
       "text/markdown",
     );
@@ -239,9 +241,11 @@ describe("VfsSession", () => {
       "application/json",
     );
 
-    expect(session.readFile("world/placeholders/quest:signal.md")).toBeNull();
     expect(
-      session.readFile("world/placeholders/quest:untouched.md"),
+      session.readFile("world/placeholders/quests/quest:signal.md"),
+    ).toBeNull();
+    expect(
+      session.readFile("world/placeholders/quests/quest:untouched.md"),
     ).toBeTruthy();
   });
 
@@ -284,11 +288,6 @@ describe("VfsSession", () => {
     const session = new VfsSession();
 
     session.writeFile(
-      "world/placeholders/quest:signal.md",
-      "# Placeholder Draft\n\n- id: quest:signal\n",
-      "text/markdown",
-    );
-    session.writeFile(
       "world/placeholders/quests/quest:signal.md",
       "# Placeholder Draft\n\n- id: quest:signal\n",
       "text/markdown",
@@ -320,7 +319,6 @@ describe("VfsSession", () => {
       "world/quests/quest:signal.json",
     );
 
-    expect(session.readFile("world/placeholders/quest:signal.md")).toBeNull();
     expect(
       session.readFile("world/placeholders/quests/quest:signal.md"),
     ).toBeNull();
@@ -330,7 +328,7 @@ describe("VfsSession", () => {
     const session = new VfsSession();
 
     session.writeFile(
-      "world/placeholders/quest:signal.md",
+      "world/placeholders/quests/quest:signal.md",
       "# Placeholder Draft\n\n- id: quest:signal\n",
       "text/markdown",
     );
@@ -343,7 +341,9 @@ describe("VfsSession", () => {
       ),
     ).toThrow("Invalid JSON content");
 
-    expect(session.readFile("world/placeholders/quest:signal.md")).toBeTruthy();
+    expect(
+      session.readFile("world/placeholders/quests/quest:signal.md"),
+    ).toBeTruthy();
   });
 
   it("keeps placeholder draft when canonical promotion write fails unlock regression checks", () => {
@@ -357,7 +357,7 @@ describe("VfsSession", () => {
       "application/json",
     );
     session.writeFile(
-      "world/placeholders/char:npc_guard.md",
+      "world/placeholders/characters/char:npc_guard.md",
       "# Placeholder Draft\n\n- id: char:npc_guard\n",
       "text/markdown",
     );
@@ -375,7 +375,7 @@ describe("VfsSession", () => {
     ).toThrow("Unlock regression is not allowed");
 
     expect(
-      session.readFile("world/placeholders/char:npc_guard.md"),
+      session.readFile("world/placeholders/characters/char:npc_guard.md"),
     ).toBeTruthy();
   });
 

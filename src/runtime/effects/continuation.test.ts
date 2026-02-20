@@ -59,7 +59,9 @@ describe("runContinueGame", () => {
     const stream = vi.fn();
     const phase = vi.fn();
     const deps = createContinueDeps({
-      gameState: createGameState({ outlineConversation: { phase: 2 } }),
+      gameState: createGameState({
+        outlineConversation: { currentPhaseId: "placeholder_registry" },
+      }),
     });
 
     const result = await runContinueGame(deps as any, {

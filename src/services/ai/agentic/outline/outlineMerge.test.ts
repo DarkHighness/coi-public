@@ -5,17 +5,17 @@ describe("outlineMerge", () => {
   it("throws when required phases are incomplete", () => {
     expect(() =>
       mergeOutlinePhases({
-        phase1: {},
+        master_plan: {},
       } as any),
     ).toThrow("Cannot merge incomplete outline phases");
   });
 
   it("merges reordered phases with ids and relation hydration", () => {
     const partial = {
-      phase1: {
+      master_plan: {
         storyPlanMarkdown: "# Plan",
         planningMetadata: {
-          structureVersion: "v2",
+          structureVersion: "v3",
           branchStrategy: "adaptive",
           endingFlexibility: "high",
           recoveryPolicy: {
@@ -25,47 +25,7 @@ describe("outlineMerge", () => {
           },
         },
       },
-      phase2: {
-        title: "Demo",
-        initialTime: "Dawn",
-        premise: "Premise",
-        narrativeScale: "balanced",
-        worldSetting: {
-          visible: { description: "World visible" },
-          hidden: { truth: "World truth" },
-          history: "Ancient history",
-        },
-        mainGoal: {
-          visible: { objective: "goal", stakes: "stakes", urgency: "urgent" },
-          hidden: { trueObjective: "true goal" },
-        },
-      },
-      phase3: {
-        player: {
-          profile: { name: "Hero" },
-          skills: [{ name: "Sword" }, { id: "skill:4", name: "Archery" }],
-          conditions: [{ name: "Hungry" }],
-          traits: [{ name: "Brave" }],
-          inventory: [{ name: "Potion" }],
-        },
-      },
-      phase4: {
-        locations: [{ id: "loc:5", name: "Gate" }, { name: "Square" }],
-      },
-      phase5: {
-        factions: [{ name: "Guild" }],
-      },
-      phase6: {
-        playerPerceptions: [{ targetId: "npc:1", attitude: "neutral" }],
-        npcs: [
-          {
-            profile: { name: "Guide" },
-            skills: [{ name: "Talk" }],
-            conditions: [],
-            traits: [],
-            inventory: [],
-          },
-        ],
+      placeholder_registry: {
         placeholders: [
           {
             path: "world/placeholders/ph:mysterious_stranger.md",
@@ -81,19 +41,65 @@ describe("outlineMerge", () => {
           },
         ],
       },
-      phase7: {
+      world_foundation: {
+        title: "Demo",
+        initialTime: "Dawn",
+        premise: "Premise",
+        narrativeScale: "balanced",
+        worldSetting: {
+          visible: { description: "World visible" },
+          hidden: { truth: "World truth" },
+          history: "Ancient history",
+        },
+        mainGoal: {
+          visible: { objective: "goal", stakes: "stakes", urgency: "urgent" },
+          hidden: { trueObjective: "true goal" },
+        },
+      },
+      player_actor: {
+        player: {
+          profile: { name: "Hero" },
+          skills: [{ name: "Sword" }, { id: "skill:4", name: "Archery" }],
+          conditions: [{ name: "Hungry" }],
+          traits: [{ name: "Brave" }],
+          inventory: [{ name: "Potion" }],
+        },
+      },
+      locations: {
+        locations: [{ id: "loc:5", name: "Gate" }, { name: "Square" }],
+      },
+      factions: {
+        factions: [{ name: "Guild" }],
+      },
+      npcs_relationships: {
+        playerPerceptions: [{ targetId: "npc:1", attitude: "neutral" }],
+        npcs: [
+          {
+            profile: { name: "Guide" },
+            skills: [{ name: "Talk" }],
+            conditions: [],
+            traits: [],
+            inventory: [],
+          },
+        ],
+      },
+      quests: {
         quests: [{ name: "Find Map" }],
+      },
+      knowledge: {
         knowledge: [{ title: "Secret Passage" }],
       },
-      phase8: {
+      timeline: {
         timeline: [{ title: "Bell rings" }],
+      },
+      atmosphere: {
         initialAtmosphere: {
           envTheme: "dark",
           ambience: "quiet",
           weather: "fog",
         },
       },
-      phase9: {
+      opening_narrative: {
         openingNarrative: {
           narrative: "The story begins.",
           choices: [{ text: "Look around" }, { text: "Move forward" }],
@@ -132,7 +138,7 @@ describe("outlineMerge", () => {
     expect(merged.npcs[0]?.skills?.[0]?.unlocked).toBe(false);
 
     expect((merged.placeholders[0] as any)?.path).toBe(
-      "world/placeholders/ph:mysterious_stranger.md",
+      "world/placeholders/misc/ph:mysterious_stranger.md",
     );
     expect((merged.placeholders[0] as any)?.markdown).toContain(
       "- id: ph:mysterious_stranger",

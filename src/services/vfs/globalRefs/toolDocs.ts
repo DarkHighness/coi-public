@@ -235,7 +235,7 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
       },
     },
   ],
-  vfs_finish_outline_phase_6: [
+  vfs_finish_outline_npcs_relationships: [
     {
       npcs: [
         {
@@ -256,13 +256,6 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
           inventory: [],
         },
       ],
-      placeholders: [
-        {
-          path: "world/placeholders/ph:mysterious_informant.md",
-          markdown:
-            "# Placeholder Draft\\n\\n- id: ph:mysterious_informant\\n- label: [Mysterious Informant]\\n\\n## Notes\\nSeen near the old gate at dusk.",
-        },
-      ],
       playerPerceptions: [
         {
           id: "rel:player_to_gatekeeper",
@@ -277,6 +270,17 @@ const TOOL_EXAMPLE_OVERRIDES: Record<string, JsonValue[]> = {
               "The gatekeeper checks every response before speaking.",
             evidence: ["Hesitated before answering", "Keeps one hand on spear"],
           },
+        },
+      ],
+    },
+  ],
+  vfs_finish_outline_placeholder_registry: [
+    {
+      placeholders: [
+        {
+          path: "world/placeholders/characters/ph:mysterious_informant.md",
+          markdown:
+            "# Placeholder Draft\\n\\n- id: ph:mysterious_informant\\n- label: [Mysterious Informant]\\n\\n## Notes\\nSeen near the old gate at dusk.",
         },
       ],
     },

@@ -36,16 +36,19 @@ import {
   WORKSPACE_USER_LOGICAL_PATH,
 } from "../../memoryTemplates";
 import {
-  outlinePhase0Schema,
-  outlinePhase1Schema,
-  outlinePhase2Schema,
-  outlinePhase3Schema,
-  outlinePhase4Schema,
-  outlinePhase5Schema,
-  outlinePhase6Schema,
-  outlinePhase7Schema,
-  outlinePhase8Schema,
-  outlinePhase9Schema,
+  outlineImageSeedSchema,
+  outlineMasterPlanSchema,
+  outlinePlaceholderRegistrySchema,
+  outlineWorldFoundationSchema,
+  outlinePlayerActorSchema,
+  outlineLocationsSchema,
+  outlineFactionsSchema,
+  outlineNpcsRelationshipsSchema,
+  outlineQuestsSchema,
+  outlineKnowledgeSchema,
+  outlineTimelineSchema,
+  outlineAtmosphereSchema,
+  outlineOpeningNarrativeSchema,
 } from "../../../schemas";
 
 export interface VfsMatch {
@@ -76,16 +79,19 @@ export const VFS_READ_HARD_TOKEN_BUDGET =
   );
 
 export const OUTLINE_PHASE_SCHEMAS = [
-  outlinePhase0Schema,
-  outlinePhase1Schema,
-  outlinePhase2Schema,
-  outlinePhase3Schema,
-  outlinePhase4Schema,
-  outlinePhase5Schema,
-  outlinePhase6Schema,
-  outlinePhase7Schema,
-  outlinePhase8Schema,
-  outlinePhase9Schema,
+  outlineImageSeedSchema,
+  outlineMasterPlanSchema,
+  outlinePlaceholderRegistrySchema,
+  outlineWorldFoundationSchema,
+  outlinePlayerActorSchema,
+  outlineLocationsSchema,
+  outlineFactionsSchema,
+  outlineNpcsRelationshipsSchema,
+  outlineQuestsSchema,
+  outlineKnowledgeSchema,
+  outlineTimelineSchema,
+  outlineAtmosphereSchema,
+  outlineOpeningNarrativeSchema,
 ] as const;
 
 export const normalizeToolDocName = (toolName: string): string => {

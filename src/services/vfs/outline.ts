@@ -104,15 +104,9 @@ export const writeOutlineProgress = (
 export const readOutlineProgress = (
   files: VfsFileMap,
 ): OutlineConversationState | null => {
-  const payload = parseJson<OutlineProgressFile | OutlineConversationState>(
-    files,
-    OUTLINE_PROGRESS_PATH,
-  );
+  const payload = parseJson<OutlineProgressFile>(files, OUTLINE_PROGRESS_PATH);
   if (!payload) return null;
-  if ("conversation" in payload) {
-    return payload.conversation ?? null;
-  }
-  return payload;
+  return payload.conversation ?? null;
 };
 
 export const clearOutlineProgress = (session: VfsSession): void => {

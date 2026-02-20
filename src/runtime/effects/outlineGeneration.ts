@@ -82,7 +82,7 @@ export async function runOutlineGenerationPhased({
       writeOutlineProgress(vfsSession, conversationState);
       await saveToSlot(slotId, updatedState);
       console.log(
-        `[${logPrefix}] Saved conversation state at phase ${conversationState.currentPhase}`,
+        `[${logPrefix}] Saved conversation state at phase ${conversationState.currentPhaseId}`,
       );
     },
   });

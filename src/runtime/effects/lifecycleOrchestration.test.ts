@@ -48,7 +48,7 @@ function createBaseDeps() {
       theme: "fantasy",
       language: "en",
       customContext: "ctx",
-      currentPhase: 3,
+      currentPhaseId: "world_foundation",
       conversationHistory: [],
       partial: {},
       modelId: "model-a",
@@ -503,7 +503,7 @@ describe("createLifecycleActions", () => {
       theme: "fantasy",
       language: "en",
       customContext: "ctx",
-      currentPhase: 3,
+      currentPhaseId: "world_foundation",
       conversationHistory: [
         {
           role: "user",
@@ -550,7 +550,7 @@ describe("createLifecycleActions", () => {
       theme: "fantasy",
       language: "en",
       customContext: "ctx",
-      currentPhase: 3,
+      currentPhaseId: "world_foundation",
       conversationHistory: [
         {
           role: "user",
@@ -621,7 +621,7 @@ describe("createLifecycleActions", () => {
       theme: "fantasy",
       language: "en",
       customContext: "ctx",
-      currentPhase: 4,
+      currentPhaseId: "player_actor",
       conversationHistory: [],
       partial: {},
       modelId: "model-a",

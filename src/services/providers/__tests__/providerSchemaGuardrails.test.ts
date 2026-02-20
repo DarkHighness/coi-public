@@ -129,9 +129,9 @@ describe("provider schema guardrails", () => {
     }
   });
 
-  it("keeps vfs_finish_outline_phase_4 location schema free of system timestamp fields", () => {
+  it("keeps vfs_finish_outline_locations schema free of system timestamp fields", () => {
     const tool = ALL_DEFINED_TOOLS.find(
-      (item) => item.name === "vfs_finish_outline_phase_4",
+      (item) => item.name === "vfs_finish_outline_locations",
     );
     expect(tool).toBeDefined();
     if (!tool) return;

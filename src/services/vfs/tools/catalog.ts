@@ -1,18 +1,7 @@
 import { z, type ZodTypeAny } from "zod";
 import type { TypedToolDefinition } from "../../providers/types";
-import {
-  atmosphereSchema,
-  outlinePhase0Schema,
-  outlinePhase1Schema,
-  outlinePhase2Schema,
-  outlinePhase3Schema,
-  outlinePhase4Schema,
-  outlinePhase5Schema,
-  outlinePhase6Schema,
-  outlinePhase7Schema,
-  outlinePhase8Schema,
-  outlinePhase9Schema,
-} from "../../schemas";
+import { atmosphereSchema } from "../../schemas";
+import { getAllOutlinePhaseDefinitions } from "../../ai/agentic/outline/phaseRegistry";
 import type {
   AnyVfsCatalogEntry,
   VfsToolCapabilityV2,
@@ -316,68 +305,13 @@ const ordered = (
   ...input,
 });
 
-const OUTLINE_PHASE_TOOLS = [
-  {
-    phase: 0 as const,
-    name: "vfs_finish_outline_phase_0" as const,
-    handlerKey: "finish_outline_phase_0" as const,
-    schema: outlinePhase0Schema,
-  },
-  {
-    phase: 1 as const,
-    name: "vfs_finish_outline_phase_1" as const,
-    handlerKey: "finish_outline_phase_1" as const,
-    schema: outlinePhase1Schema,
-  },
-  {
-    phase: 2 as const,
-    name: "vfs_finish_outline_phase_2" as const,
-    handlerKey: "finish_outline_phase_2" as const,
-    schema: outlinePhase2Schema,
-  },
-  {
-    phase: 3 as const,
-    name: "vfs_finish_outline_phase_3" as const,
-    handlerKey: "finish_outline_phase_3" as const,
-    schema: outlinePhase3Schema,
-  },
-  {
-    phase: 4 as const,
-    name: "vfs_finish_outline_phase_4" as const,
-    handlerKey: "finish_outline_phase_4" as const,
-    schema: outlinePhase4Schema,
-  },
-  {
-    phase: 5 as const,
-    name: "vfs_finish_outline_phase_5" as const,
-    handlerKey: "finish_outline_phase_5" as const,
-    schema: outlinePhase5Schema,
-  },
-  {
-    phase: 6 as const,
-    name: "vfs_finish_outline_phase_6" as const,
-    handlerKey: "finish_outline_phase_6" as const,
-    schema: outlinePhase6Schema,
-  },
-  {
-    phase: 7 as const,
-    name: "vfs_finish_outline_phase_7" as const,
-    handlerKey: "finish_outline_phase_7" as const,
-    schema: outlinePhase7Schema,
-  },
-  {
-    phase: 8 as const,
-    name: "vfs_finish_outline_phase_8" as const,
-    handlerKey: "finish_outline_phase_8" as const,
-    schema: outlinePhase8Schema,
-  },
-  {
-    phase: 9 as const,
-    name: "vfs_finish_outline_phase_9" as const,
-    handlerKey: "finish_outline_phase_9" as const,
-    schema: outlinePhase9Schema,
-  },
-] as const;
+const OUTLINE_PHASE_TOOLS = getAllOutlinePhaseDefinitions().map((phase) => ({
+  id: phase.id,
+  order: phase.order,
+  name: phase.submitToolName,
+  handlerKey: `finish_outline_${phase.id}` as const,
+  schema: phase.schema,
+}));
 
 export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
@@ -1038,13 +972,13 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   ...OUTLINE_PHASE_TOOLS.map((entry) =>
     defineCatalogTool({
       name: entry.name,
-      description: `Commit outline phase ${entry.phase} payload. Validates and writes to shared/narrative/outline/phases/phase${entry.phase}.json. MUST be the LAST tool call for this phase.`,
+      description: `Commit outline phase "${entry.id}" payload. Validates and writes to shared/narrative/outline/phases/${entry.id}.json. MUST be the LAST tool call for this phase.`,
       parameters: entry.schema.describe(
-        `Outline phase ${entry.phase} payload JSON object.`,
+        `Outline phase ${entry.id} payload JSON object.`,
       ),
       handlerKey: entry.handlerKey,
       capability: {
-        summary: `Validate and write outline phase ${entry.phase}.`,
+        summary: `Validate and write outline phase ${entry.id}.`,
         readOnly: false,
         mayWriteClasses: ["elevated_editable"],
         needsElevationFor: ["elevated_editable"],
@@ -1053,7 +987,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
         isFinishTool: true,
       },
       toolsetOrder: ordered({
-        outline: 90 + entry.phase,
+        outline: 90 + entry.order,
       }),
     }),
   ),

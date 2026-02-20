@@ -14,20 +14,20 @@ describe("vfs outline helpers", () => {
   it("writes and reads outline progress", () => {
     const session = new VfsSession();
     const progress = {
-      phaseSchemaVersion: 2,
+      phaseSchemaVersion: 3,
       theme: "fantasy",
       language: "en",
       customContext: "test",
       conversationHistory: [],
       partial: {},
-      currentPhase: 2,
+      currentPhaseId: "world_foundation",
     } as any;
 
     writeOutlineProgress(session, progress);
 
     const loaded = readOutlineProgress(session.snapshot());
-    expect(loaded?.currentPhase).toBe(2);
-    expect(loaded?.phaseSchemaVersion).toBe(2);
+    expect(loaded?.currentPhaseId).toBe("world_foundation");
+    expect(loaded?.phaseSchemaVersion).toBe(3);
   });
 
   it("writes and reads outline file", () => {
@@ -56,20 +56,20 @@ describe("vfs outline helpers", () => {
     expect(
       shouldRestartOutlineFromPhase1(
         {
-          phaseSchemaVersion: 1,
-          currentPhase: 5,
+          phaseSchemaVersion: 2,
+          currentPhaseId: "factions",
         } as any,
-        2,
+        3,
       ),
     ).toBe(true);
 
     expect(
       shouldRestartOutlineFromPhase1(
         {
-          phaseSchemaVersion: 2,
-          currentPhase: 5,
+          phaseSchemaVersion: 3,
+          currentPhaseId: "factions",
         } as any,
-        2,
+        3,
       ),
     ).toBe(false);
   });

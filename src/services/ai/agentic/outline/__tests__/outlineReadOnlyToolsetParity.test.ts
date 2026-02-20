@@ -7,7 +7,7 @@ import { vfsToolRegistry } from "../../../../vfs/tools";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const OUTLINE_FINISH_TOOL_PREFIX = "vfs_finish_outline_phase_";
+const OUTLINE_FINISH_TOOL_PREFIX = "vfs_finish_outline_";
 
 describe("outline read-only toolset parity", () => {
   it("keeps outline read-only allowlist aligned with registry", () => {
@@ -26,7 +26,9 @@ describe("outline read-only toolset parity", () => {
     ).sort();
     const registryReadOnlyAllowlist = vfsToolRegistry
       .getToolset("outline")
-      .tools.filter((toolName) => !toolName.startsWith(OUTLINE_FINISH_TOOL_PREFIX))
+      .tools.filter(
+        (toolName) => !toolName.startsWith(OUTLINE_FINISH_TOOL_PREFIX),
+      )
       .sort();
 
     expect(manualAllowlist).toEqual(registryReadOnlyAllowlist);

@@ -107,7 +107,7 @@ const validateAgainstOpenAISchema = (
 
 describe("tool schema parity guardrails", () => {
   it("keeps outline phase tools as direct-object schemas across compiled schemas", () => {
-    const outlineTool = getToolByName("vfs_finish_outline_phase_1");
+    const outlineTool = getToolByName("vfs_finish_outline_master_plan");
 
     const openaiSchema = zodToOpenAISchema(outlineTool.parameters, true);
     const geminiCompatSchema = zodToGeminiCompatibleSchema(
@@ -139,13 +139,13 @@ describe("tool schema parity guardrails", () => {
   });
 
   it("keeps pass/fail parity with zod for targeted outline + mutate payloads", () => {
-    const outlineTool = getToolByName("vfs_finish_outline_phase_1");
+    const outlineTool = getToolByName("vfs_finish_outline_master_plan");
     const mutateTool = getToolByName("vfs_append_text");
 
     const outlineValid = {
       storyPlanMarkdown: "# Plan",
       planningMetadata: {
-        structureVersion: "v2",
+        structureVersion: "v3",
         branchStrategy: "guided",
         endingFlexibility: "high",
         recoveryPolicy: {
@@ -160,7 +160,7 @@ describe("tool schema parity guardrails", () => {
       ...outlineValid,
       planningMetadata: {
         ...outlineValid.planningMetadata,
-        structureVersion: "v3",
+        structureVersion: "v2",
       },
     };
 
