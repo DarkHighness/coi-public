@@ -1001,9 +1001,9 @@ function checkPresetSkillReadGate(
  * Skipped in sudo/cleanup/player-rate modes (focused tasks, not storytelling).
  */
 const DOMAIN_SKILL_INDICATOR_PATHS = [
-  "skills/npc/logic/SKILL.md",
-  "skills/npc/soul/SKILL.md",
-  "skills/npc/dialogue/SKILL.md",
+  "skills/gm/actor-logic/npc/SKILL.md",
+  "skills/gm/actor-logic/npc-soul/SKILL.md",
+  "skills/gm/actor-design/location/SKILL.md",
   "skills/craft/emotional-empathy/SKILL.md",
   "skills/gm/moral-complexity/SKILL.md",
   "skills/gm/knowledge/SKILL.md",
@@ -1052,7 +1052,8 @@ function checkDomainSkillSoftGate(
       error:
         `[ERROR: DOMAIN_SKILL_MISSING] No domain skill loaded. ` +
         `Read at least 1 before mutations. Pick the most relevant:\n` +
-        `- NPC scene → vfs_read_chars({ path: "current/skills/npc/logic/SKILL.md" })\n` +
+        `- NPC scene → vfs_read_chars({ path: "current/skills/gm/actor-logic/npc/SKILL.md" })\n` +
+        `- NPC growth scene → vfs_read_chars({ path: "current/skills/gm/actor-logic/npc-soul/SKILL.md" })\n` +
         `- Emotional scene → vfs_read_chars({ path: "current/skills/craft/emotional-empathy/SKILL.md" })\n` +
         `- Moral dilemma → vfs_read_chars({ path: "current/skills/gm/moral-complexity/SKILL.md" })\n` +
         `This reminder fires once per session.`,

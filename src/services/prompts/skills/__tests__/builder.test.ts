@@ -27,10 +27,8 @@ describe("skills prompt builder hygiene", () => {
     );
     expect(prompt).toContain("Read `current/skills/index.json`");
     expect(prompt).toContain("Never assume `<theme_key>` equals");
-    expect(prompt).toContain("catalog hierarchy above");
-    expect(prompt).toContain(
-      "Theme skills live under `current/skills/theme/**`",
-    );
+    expect(prompt).toContain("catalog below");
+    expect(prompt).toContain("collect entries under `current/skills/theme/**`");
   });
 
   it("includes culture skill protocol and resolved circle path", () => {
@@ -75,16 +73,19 @@ describe("skills prompt builder hygiene", () => {
     );
   });
 
-  it("renders a compact hierarchical skills navigation map", () => {
+  it("renders standardized skills directory structure", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
-    expect(prompt).toContain("<skills_catalog>");
-    expect(prompt).toContain("<hierarchy>");
-    expect(prompt).toContain("`commands/runtime`");
-    expect(prompt).toContain("`commands/runtime/turn`");
-    expect(prompt).toContain("`presets/runtime`");
-    expect(prompt).toContain("`worldbuilding`");
-    expect(prompt).toContain("`core/id-and-entities`");
-    expect(prompt).toContain("</skills_catalog>");
+    expect(prompt).toContain("<skills>");
+    expect(prompt).toContain("<skill>");
+    expect(prompt).toContain("<name>");
+    expect(prompt).toContain("<description>");
+    expect(prompt).toContain(
+      "<path>current/skills/commands/runtime/SKILL.md</path>",
+    );
+    expect(prompt).toContain(
+      "<path>current/skills/gm/actor-logic/npc/SKILL.md</path>",
+    );
+    expect(prompt).toContain("</skills>");
   });
 
   it("keeps index entries aligned with catalog metadata source", () => {
@@ -100,13 +101,12 @@ describe("skills prompt builder hygiene", () => {
     }
   });
 
-  it("includes priority metadata and explicit load protocol in catalog", () => {
+  it("uses new actor logic paths and removes legacy npc paths", () => {
     const prompt = buildCoreSystemInstructionWithSkills({ language: "en" });
 
-    expect(prompt).toContain(
-      "Hierarchy below is the navigation map (hubs + entry points).",
-    );
-    expect(prompt).toContain("before first game mutation each session");
-    expect(prompt).toContain("Convert loaded skills into explicit constraints");
+    expect(prompt).toContain("gm/actor-logic/npc");
+    expect(prompt).toContain("gm/actor-logic/npc-soul");
+    expect(prompt).not.toContain("npc/logic");
+    expect(prompt).not.toContain("npc/soul");
   });
 });

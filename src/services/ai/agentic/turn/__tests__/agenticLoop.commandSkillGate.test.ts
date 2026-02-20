@@ -146,7 +146,7 @@ const createVfsSession = (hasSeenSkill: boolean, seenSkillPaths?: string[]) => {
     "workspace/SOUL.md",
     "workspace/USER.md",
     "skills/presets/runtime/narrative-style/SKILL.md",
-    "skills/npc/logic/SKILL.md",
+    "skills/gm/actor-logic/npc/SKILL.md",
   ];
 
   return {
@@ -615,7 +615,7 @@ describe("agenticLoop command skill gate", () => {
       "skills/commands/runtime/turn/SKILL.md",
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
-      "skills/npc/logic/SKILL.md",
+      "skills/gm/actor-logic/npc/SKILL.md",
     ];
     const vfsSession = createVfsSession(true, seenPaths);
 
