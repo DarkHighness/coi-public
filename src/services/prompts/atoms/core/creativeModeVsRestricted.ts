@@ -15,13 +15,13 @@ export type CreativeModeInput = {
   isRestrictedTheme?: boolean;
 };
 
-export const creativeModeVsRestrictedPrimer: Atom<CreativeModeInput> =
+export const creativeModeVsRestrictedDescription: Atom<CreativeModeInput> =
   defineAtom(
     {
       atomId:
-        "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedPrimer",
+        "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedDescription",
       source: "atoms/core/creativeModeVsRestricted.ts",
-      exportName: "creativeModeVsRestrictedPrimer",
+      exportName: "creativeModeVsRestrictedDescription",
     },
     ({ isRestricted, isRestrictedTheme }) => {
       if (isRestrictedTheme) {

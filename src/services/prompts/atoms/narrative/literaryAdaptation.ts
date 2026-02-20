@@ -10,11 +10,11 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const literaryAdaptationPrimer: Atom<void> = defineAtom(
+export const literaryAdaptationDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationPrimer",
+    atomId: "atoms/narrative/literaryAdaptation#literaryAdaptationDescription",
     source: "atoms/narrative/literaryAdaptation.ts",
-    exportName: "literaryAdaptationPrimer",
+    exportName: "literaryAdaptationDescription",
   },
   () => `
 <literary_adaptation>

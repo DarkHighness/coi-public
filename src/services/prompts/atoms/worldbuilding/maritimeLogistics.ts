@@ -92,11 +92,12 @@ War pressure:
 `,
 );
 
-export const maritimeLogisticsPrimer: Atom<void> = defineAtom(
+export const maritimeLogisticsDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsPrimer",
+    atomId:
+      "atoms/worldbuilding/maritimeLogistics#maritimeLogisticsDescription",
     source: "atoms/worldbuilding/maritimeLogistics.ts",
-    exportName: "maritimeLogisticsPrimer",
+    exportName: "maritimeLogisticsDescription",
   },
   () =>
     `

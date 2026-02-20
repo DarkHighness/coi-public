@@ -115,11 +115,11 @@ Make at least one of these a *plot clock*.
 `,
 );
 
-export const warLogisticsPrimer: Atom<void> = defineAtom(
+export const warLogisticsDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/warLogistics#warLogisticsPrimer",
+    atomId: "atoms/worldbuilding/warLogistics#warLogisticsDescription",
     source: "atoms/worldbuilding/warLogistics.ts",
-    exportName: "warLogisticsPrimer",
+    exportName: "warLogisticsDescription",
   },
   () =>
     `

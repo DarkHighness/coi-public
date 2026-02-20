@@ -16,11 +16,12 @@ export interface ConflictingEmotionsInput {
   // (no inputs yet)
 }
 
-export const conflictingEmotionsPrimer: Atom<void> = defineAtom(
+export const conflictingEmotionsDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/conflictingEmotions#conflictingEmotionsPrimer",
+    atomId:
+      "atoms/narrative/conflictingEmotions#conflictingEmotionsDescription",
     source: "atoms/narrative/conflictingEmotions.ts",
-    exportName: "conflictingEmotionsPrimer",
+    exportName: "conflictingEmotionsDescription",
   },
   () => `
 <conflicting_emotions>

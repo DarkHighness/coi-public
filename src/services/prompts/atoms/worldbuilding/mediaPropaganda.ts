@@ -93,11 +93,11 @@ Reputation changes access over time:
 `,
 );
 
-export const mediaPropagandaPrimer: Atom<void> = defineAtom(
+export const mediaPropagandaDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaPrimer",
+    atomId: "atoms/worldbuilding/mediaPropaganda#mediaPropagandaDescription",
     source: "atoms/worldbuilding/mediaPropaganda.ts",
-    exportName: "mediaPropagandaPrimer",
+    exportName: "mediaPropagandaDescription",
   },
   () =>
     `

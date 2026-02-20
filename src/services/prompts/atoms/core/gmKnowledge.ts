@@ -181,11 +181,11 @@ const temporalEpistemology = `
   </temporal_epistemology>
 `;
 
-export const gmKnowledgePrimer: Atom<void> = defineAtom(
+export const gmKnowledgeDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/gmKnowledge#gmKnowledgePrimer",
+    atomId: "atoms/core/gmKnowledge#gmKnowledgeDescription",
     source: "atoms/core/gmKnowledge.ts",
-    exportName: "gmKnowledgePrimer",
+    exportName: "gmKnowledgeDescription",
   },
   () => `
 <gm_knowledge>

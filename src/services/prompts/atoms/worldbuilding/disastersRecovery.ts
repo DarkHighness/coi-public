@@ -99,11 +99,12 @@ The path chosen defines the political landscape for the next arc.
 `,
 );
 
-export const disastersRecoveryPrimer: Atom<void> = defineAtom(
+export const disastersRecoveryDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/disastersRecovery#disastersRecoveryPrimer",
+    atomId:
+      "atoms/worldbuilding/disastersRecovery#disastersRecoveryDescription",
     source: "atoms/worldbuilding/disastersRecovery.ts",
-    exportName: "disastersRecoveryPrimer",
+    exportName: "disastersRecoveryDescription",
   },
   () =>
     `

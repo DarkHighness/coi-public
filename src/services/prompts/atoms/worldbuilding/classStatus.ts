@@ -90,11 +90,11 @@ Mobility always has gatekeepers and costs.
 `,
 );
 
-export const classStatusPrimer: Atom<void> = defineAtom(
+export const classStatusDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/classStatus#classStatusPrimer",
+    atomId: "atoms/worldbuilding/classStatus#classStatusDescription",
     source: "atoms/worldbuilding/classStatus.ts",
-    exportName: "classStatusPrimer",
+    exportName: "classStatusDescription",
   },
   () =>
     `

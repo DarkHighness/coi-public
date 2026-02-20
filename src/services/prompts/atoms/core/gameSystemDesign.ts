@@ -13,11 +13,11 @@ import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 /**
  * 游戏系统设计上下文 - 无参数
  */
-export const gameSystemDesignPrimer: Atom<void> = defineAtom(
+export const gameSystemDesignDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/gameSystemDesign#gameSystemDesignPrimer",
+    atomId: "atoms/core/gameSystemDesign#gameSystemDesignDescription",
     source: "atoms/core/gameSystemDesign.ts",
-    exportName: "gameSystemDesignPrimer",
+    exportName: "gameSystemDesignDescription",
   },
   () => `
 <game_system_design_primer>

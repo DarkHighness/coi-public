@@ -5,11 +5,11 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const essencePrimer: Atom<void> = defineAtom(
+export const essenceDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/essence#essencePrimer",
+    atomId: "atoms/core/essence#essenceDescription",
     source: "atoms/core/essence.ts",
-    exportName: "essencePrimer",
+    exportName: "essenceDescription",
   },
   () => `
 <essence>

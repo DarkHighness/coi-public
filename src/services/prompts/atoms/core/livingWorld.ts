@@ -17,11 +17,11 @@ export interface ThemeLivingWorldParams {
   economicComplexity?: "primitive" | "standard" | "advanced";
 }
 
-export const livingWorldPrimer: Atom<void> = defineAtom(
+export const livingWorldDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/livingWorld#livingWorldPrimer",
+    atomId: "atoms/core/livingWorld#livingWorldDescription",
     source: "atoms/core/livingWorld.ts",
-    exportName: "livingWorldPrimer",
+    exportName: "livingWorldDescription",
   },
   () => `
 <living_world_primer>

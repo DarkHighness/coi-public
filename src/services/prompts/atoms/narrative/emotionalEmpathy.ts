@@ -21,11 +21,11 @@ import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 // Primer — loaded into base system prompt (lean)
 // ---------------------------------------------------------------------------
 
-export const emotionalEmpathyPrimer: Atom<void> = defineAtom(
+export const emotionalEmpathyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/emotionalEmpathy#emotionalEmpathyPrimer",
+    atomId: "atoms/narrative/emotionalEmpathy#emotionalEmpathyDescription",
     source: "atoms/narrative/emotionalEmpathy.ts",
-    exportName: "emotionalEmpathyPrimer",
+    exportName: "emotionalEmpathyDescription",
   },
   () => `
 <emotional_empathy>

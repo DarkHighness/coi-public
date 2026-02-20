@@ -259,13 +259,13 @@ export const narrativeScaleRuntime: Atom<NarrativeScaleRuntimeInput> =
 /**
  * Narrative scale runtime primer (system-prompt safe).
  */
-export const narrativeScaleRuntimePrimer: Atom<NarrativeScaleRuntimeInput> =
+export const narrativeScaleRuntimeDescription: Atom<NarrativeScaleRuntimeInput> =
   defineAtom(
     {
       atomId:
-        "atoms/narrative/narrativeScaleRuntime#narrativeScaleRuntimePrimer",
+        "atoms/narrative/narrativeScaleRuntime#narrativeScaleRuntimeDescription",
       source: "atoms/narrative/narrativeScaleRuntime.ts",
-      exportName: "narrativeScaleRuntimePrimer",
+      exportName: "narrativeScaleRuntimeDescription",
     },
     ({ scale }, trace) => {
       switch (scale) {

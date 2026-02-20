@@ -7,13 +7,13 @@ import type {
 
 const REQUIRED_ATOMS: Record<string, string[]> = {
   "turn.system": [
-    "atoms/core/hiddenLayerQuality#hiddenLayerQualityPrimer",
+    "atoms/core/hiddenLayerQuality#hiddenLayerQualityDescription",
     "atoms/core/dualLayerReality#dualLayerReality",
     "atoms/core/depthEnforcement#depthEnforcement",
-    "atoms/core/gameSystemDesign#gameSystemDesignPrimer",
-    "atoms/core/worldConsistency#worldConsistencyPrimer",
-    "atoms/core/livingWorld#livingWorldPrimer",
-    "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedPrimer",
+    "atoms/core/gameSystemDesign#gameSystemDesignDescription",
+    "atoms/core/worldConsistency#worldConsistencyDescription",
+    "atoms/core/livingWorld#livingWorldDescription",
+    "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedDescription",
   ],
   "outline.system": ["atoms/outline/system#getOutlineSystemInstruction"],
   "outline.image_seed": [
@@ -22,7 +22,7 @@ const REQUIRED_ATOMS: Record<string, string[]> = {
   "outline.master_plan": [
     "atoms/core/gameSystemDesign#gameSystemDesign",
     "atoms/cultural/adaptation#culturalAdaptation",
-    "atoms/cultural/languageEnforcement#languageEnforcementPrimer",
+    "atoms/cultural/languageEnforcement#languageEnforcementDescription",
     "atoms/narrative/narrativeScaleSelection#narrativeScaleSelection",
   ],
   "outline.world_foundation": [

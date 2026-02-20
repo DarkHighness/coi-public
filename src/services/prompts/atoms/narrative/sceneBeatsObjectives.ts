@@ -123,11 +123,12 @@ If fewer than 3 are true, the scene is too thin. Add a complication.
 `,
 );
 
-export const sceneBeatsObjectivesPrimer: Atom<void> = defineAtom(
+export const sceneBeatsObjectivesDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesPrimer",
+    atomId:
+      "atoms/narrative/sceneBeatsObjectives#sceneBeatsObjectivesDescription",
     source: "atoms/narrative/sceneBeatsObjectives.ts",
-    exportName: "sceneBeatsObjectivesPrimer",
+    exportName: "sceneBeatsObjectivesDescription",
   },
   () =>
     `

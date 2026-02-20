@@ -25,7 +25,7 @@ const noProtagonistMindReading = `
   </no_protagonist_mind_reading>
 `;
 
-const storyEnginePrimer = `
+const storyEngineDescription = `
   <story_engine>
     **WRITE SCENES, NOT SUMMARIES**
     - Each turn: (1) immediate objective, (2) present pressure, (3) concrete consequence + state delta,
@@ -78,7 +78,7 @@ const storyEngine = `
   </story_engine>
 `;
 
-const humanizerTonePrimer = `
+const humanizerToneDescription = `
   <humanizer_tone>
     **HUMANIZER / 去 AI 化（简版，默认启用）**
     - Style polish must NOT alter canonical state.
@@ -107,7 +107,7 @@ const humanizerToneFull = `
   </humanizer_tone>
 `;
 
-const temperatureDialPrimer = `
+const temperatureDialDescription = `
   <temperature_dial>
     **TEMPERATURE DIAL（温度拨盘）**
     - Pick a base temperature per scene: **Cold** (克制: short, precise, what isn't said) / **Hot** (狠: verbs first, impact close) / **Warm** (生活化: ordinary objects carry weight) / **Poetic** (诗: imagery at threshold moments)
@@ -976,11 +976,11 @@ const sceneEndings = `
   </scene_endings>
 `;
 
-export const writingCraftPrimer: Atom<void> = defineAtom(
+export const writingCraftDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/writingCraft#writingCraftPrimer",
+    atomId: "atoms/narrative/writingCraft#writingCraftDescription",
     source: "atoms/narrative/writingCraft.ts",
-    exportName: "writingCraftPrimer",
+    exportName: "writingCraftDescription",
   },
   () => `
 <writing_craft>
@@ -994,9 +994,9 @@ export const writingCraftPrimer: Atom<void> = defineAtom(
   <rule>**Anti-AI scaffolding**: no "Firstly/Secondly/Finally", no "Not only...but also", no inflated significance claims.</rule>
   <rule>**No meta voice**: no policy lecture, no self-reference, no apology preamble.</rule>
   <rule>**Precision over padding.** If detail is unknown, stay precise and partial. One concrete detail beats three vague ones.</rule>
-${storyEnginePrimer}
-${humanizerTonePrimer}
-${temperatureDialPrimer}
+${storyEngineDescription}
+${humanizerToneDescription}
+${temperatureDialDescription}
 
   <prohibited_vocabulary>
     ❌ BANNED: "Tapestry", "Symphony", "Delve", "Beacon", "Testament", "Intertwined", "Resonated", "Pivotal", "Unveiled".

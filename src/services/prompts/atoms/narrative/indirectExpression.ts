@@ -10,11 +10,11 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const indirectExpressionPrimer: Atom<void> = defineAtom(
+export const indirectExpressionDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/indirectExpression#indirectExpressionPrimer",
+    atomId: "atoms/narrative/indirectExpression#indirectExpressionDescription",
     source: "atoms/narrative/indirectExpression.ts",
-    exportName: "indirectExpressionPrimer",
+    exportName: "indirectExpressionDescription",
   },
   () => `
 <indirect_expression>

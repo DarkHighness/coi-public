@@ -115,11 +115,11 @@ export const sessionContinuity = defineAtom(
 `,
 );
 
-export const sessionContinuityPrimer = defineAtom(
+export const sessionContinuityDescription = defineAtom(
   {
-    atomId: "atoms/narrative/sessionContinuity#sessionContinuityPrimer",
+    atomId: "atoms/narrative/sessionContinuity#sessionContinuityDescription",
     source: "atoms/narrative/sessionContinuity.ts",
-    exportName: "sessionContinuityPrimer",
+    exportName: "sessionContinuityDescription",
   },
   () =>
     `

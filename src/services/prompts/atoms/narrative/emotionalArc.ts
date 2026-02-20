@@ -11,11 +11,11 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const emotionalArcPrimer: Atom<void> = defineAtom(
+export const emotionalArcDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/emotionalArc#emotionalArcPrimer",
+    atomId: "atoms/narrative/emotionalArc#emotionalArcDescription",
     source: "atoms/narrative/emotionalArc.ts",
-    exportName: "emotionalArcPrimer",
+    exportName: "emotionalArcDescription",
   },
   () => `
 <emotional_arc>

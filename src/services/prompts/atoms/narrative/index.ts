@@ -6,13 +6,13 @@
 
 export {
   narrativeScaleSelection,
-  narrativeScaleSelectionPrimer,
+  narrativeScaleSelectionDescription,
   type NarrativeScaleSelectionInput,
 } from "./narrativeScaleSelection";
 
 export {
   narrativeScaleRuntime,
-  narrativeScaleRuntimePrimer,
+  narrativeScaleRuntimeDescription,
   narrativeScaleIntimate,
   narrativeScaleEpic,
   narrativeScaleBalanced,
@@ -21,7 +21,7 @@ export {
 
 export {
   temporalPhilosophy,
-  temporalPhilosophyPrimer,
+  temporalPhilosophyDescription,
 } from "./temporalPhilosophy";
 export { openingScene } from "./openingScene";
 export { narrativeCausality } from "./causality";
@@ -54,36 +54,36 @@ export {
 
 export {
   literaryAdaptation,
-  literaryAdaptationPrimer,
+  literaryAdaptationDescription,
   literaryAdaptationSkill,
 } from "./literaryAdaptation";
 
 export {
   indirectExpression,
-  indirectExpressionPrimer,
+  indirectExpressionDescription,
   indirectExpressionSkill,
 } from "./indirectExpression";
 
 export {
   negotiationMechanics,
-  negotiationMechanicsPrimer,
+  negotiationMechanicsDescription,
   negotiationMechanicsSkill,
 } from "./negotiation";
 
 export {
   pacingTensionControl,
-  pacingTensionPrimer,
+  pacingTensionDescription,
   pacingTensionSkill,
 } from "./pacingTension";
 
 export {
   sessionContinuity,
-  sessionContinuityPrimer,
+  sessionContinuityDescription,
   sessionContinuitySkill,
 } from "./sessionContinuity";
 
 export {
   emotionalEmpathy,
-  emotionalEmpathyPrimer,
+  emotionalEmpathyDescription,
   emotionalEmpathySkill,
 } from "./emotionalEmpathy";

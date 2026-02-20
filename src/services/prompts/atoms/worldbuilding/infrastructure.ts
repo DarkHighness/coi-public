@@ -103,11 +103,11 @@ Play hooks:
 `,
 );
 
-export const infrastructurePrimer: Atom<void> = defineAtom(
+export const infrastructureDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/infrastructure#infrastructurePrimer",
+    atomId: "atoms/worldbuilding/infrastructure#infrastructureDescription",
     source: "atoms/worldbuilding/infrastructure.ts",
-    exportName: "infrastructurePrimer",
+    exportName: "infrastructureDescription",
   },
   () =>
     `

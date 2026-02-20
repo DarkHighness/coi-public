@@ -245,11 +245,11 @@ Good answers:
 /**
  * Magic systems primer (system-prompt safe).
  */
-export const magicSystemPrimer: Atom<void> = defineAtom(
+export const magicSystemDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/magic#magicSystemPrimer",
+    atomId: "atoms/worldbuilding/magic#magicSystemDescription",
     source: "atoms/worldbuilding/magic.ts",
-    exportName: "magicSystemPrimer",
+    exportName: "magicSystemDescription",
   },
   () => `
 <worldbuilding_context>

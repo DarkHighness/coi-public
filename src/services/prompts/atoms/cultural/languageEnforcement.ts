@@ -205,12 +205,13 @@ export const languageEnforcement: Atom<LanguageEnforcementInput> = defineAtom(
  *
  * This is intentionally short and non-optional. It replaces the old short-form export.
  */
-export const languageEnforcementPrimer: Atom<LanguageEnforcementInput> =
+export const languageEnforcementDescription: Atom<LanguageEnforcementInput> =
   defineAtom(
     {
-      atomId: "atoms/cultural/languageEnforcement#languageEnforcementPrimer",
+      atomId:
+        "atoms/cultural/languageEnforcement#languageEnforcementDescription",
       source: "atoms/cultural/languageEnforcement.ts",
-      exportName: "languageEnforcementPrimer",
+      exportName: "languageEnforcementDescription",
     },
     ({ language }) => {
       const ex = getExamples(language);

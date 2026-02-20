@@ -137,11 +137,11 @@ const terminology = `
 </terminology>
 `;
 
-export const protocolsPrimer: Atom<void> = defineAtom(
+export const protocolsDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/protocols#protocolsPrimer",
+    atomId: "atoms/core/protocols#protocolsDescription",
     source: "atoms/core/protocols.ts",
-    exportName: "protocolsPrimer",
+    exportName: "protocolsDescription",
   },
   () => `
 <protocols>

@@ -101,11 +101,11 @@ Rule: counterplay exists, but it has costs and failure modes on both sides.
 `,
 );
 
-export const technologyPrimer: Atom<void> = defineAtom(
+export const technologyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/technology#technologyPrimer",
+    atomId: "atoms/worldbuilding/technology#technologyDescription",
     source: "atoms/worldbuilding/technology.ts",
-    exportName: "technologyPrimer",
+    exportName: "technologyDescription",
   },
   () =>
     `

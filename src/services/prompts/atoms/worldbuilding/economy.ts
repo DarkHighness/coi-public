@@ -92,11 +92,11 @@ Simple model per settlement:
 `,
 );
 
-export const economyPrimer: Atom<void> = defineAtom(
+export const economyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/economy#economyPrimer",
+    atomId: "atoms/worldbuilding/economy#economyDescription",
     source: "atoms/worldbuilding/economy.ts",
-    exportName: "economyPrimer",
+    exportName: "economyDescription",
   },
   () =>
     `

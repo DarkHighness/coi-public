@@ -105,11 +105,11 @@ Religion often becomes:
 `,
 );
 
-export const religionPrimer: Atom<void> = defineAtom(
+export const religionDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/religion#religionPrimer",
+    atomId: "atoms/worldbuilding/religion#religionDescription",
     source: "atoms/worldbuilding/religion.ts",
-    exportName: "religionPrimer",
+    exportName: "religionDescription",
   },
   () =>
     `

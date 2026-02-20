@@ -120,11 +120,11 @@ Design one ritual that:
 `,
 );
 
-export const cultureRitualPrimer: Atom<void> = defineAtom(
+export const cultureRitualDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/cultureRitual#cultureRitualPrimer",
+    atomId: "atoms/worldbuilding/cultureRitual#cultureRitualDescription",
     source: "atoms/worldbuilding/cultureRitual.ts",
-    exportName: "cultureRitualPrimer",
+    exportName: "cultureRitualDescription",
   },
   () =>
     `

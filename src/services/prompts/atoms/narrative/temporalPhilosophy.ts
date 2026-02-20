@@ -109,11 +109,11 @@ export const temporalPhilosophy: Atom<void> = defineAtom(
 `,
 );
 
-export const temporalPhilosophyPrimer: Atom<void> = defineAtom(
+export const temporalPhilosophyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophyPrimer",
+    atomId: "atoms/narrative/temporalPhilosophy#temporalPhilosophyDescription",
     source: "atoms/narrative/temporalPhilosophy.ts",
-    exportName: "temporalPhilosophyPrimer",
+    exportName: "temporalPhilosophyDescription",
   },
   () => `
 <temporal_philosophy>

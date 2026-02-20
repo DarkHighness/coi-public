@@ -106,11 +106,11 @@ Rule: the environment responds on a timeline (days/weeks/seasons). It does not h
 `,
 );
 
-export const ecologyPrimer: Atom<void> = defineAtom(
+export const ecologyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/ecology#ecologyPrimer",
+    atomId: "atoms/worldbuilding/ecology#ecologyDescription",
     source: "atoms/worldbuilding/ecology.ts",
-    exportName: "ecologyPrimer",
+    exportName: "ecologyDescription",
   },
   () =>
     `

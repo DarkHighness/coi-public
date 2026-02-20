@@ -126,11 +126,11 @@ export const pacingTensionControl = defineAtom(
 `,
 );
 
-export const pacingTensionPrimer = defineAtom(
+export const pacingTensionDescription = defineAtom(
   {
-    atomId: "atoms/narrative/pacingTension#pacingTensionPrimer",
+    atomId: "atoms/narrative/pacingTension#pacingTensionDescription",
     source: "atoms/narrative/pacingTension.ts",
-    exportName: "pacingTensionPrimer",
+    exportName: "pacingTensionDescription",
   },
   () =>
     `

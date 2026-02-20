@@ -23,11 +23,11 @@ const humanizerTone = `
 </humanizer_tone>
 `;
 
-export const styleGuidePrimer: Atom<StyleGuideInput> = defineAtom(
+export const styleGuideDescription: Atom<StyleGuideInput> = defineAtom(
   {
-    atomId: "atoms/core/styleGuide#styleGuidePrimer",
+    atomId: "atoms/core/styleGuide#styleGuideDescription",
     source: "atoms/core/styleGuide.ts",
-    exportName: "styleGuidePrimer",
+    exportName: "styleGuideDescription",
   },
   ({ themeStyle }) => {
     const toneSection = themeStyle

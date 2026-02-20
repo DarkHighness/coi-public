@@ -97,12 +97,12 @@ Tradeoffs:
 `,
 );
 
-export const espionageCounterintelPrimer: Atom<void> = defineAtom(
+export const espionageCounterintelDescription: Atom<void> = defineAtom(
   {
     atomId:
-      "atoms/worldbuilding/espionageCounterintel#espionageCounterintelPrimer",
+      "atoms/worldbuilding/espionageCounterintel#espionageCounterintelDescription",
     source: "atoms/worldbuilding/espionageCounterintel.ts",
-    exportName: "espionageCounterintelPrimer",
+    exportName: "espionageCounterintelDescription",
   },
   () =>
     `

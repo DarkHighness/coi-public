@@ -10,11 +10,11 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const narrativeEchoPrimer: Atom<void> = defineAtom(
+export const narrativeEchoDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/narrativeEcho#narrativeEchoPrimer",
+    atomId: "atoms/narrative/narrativeEcho#narrativeEchoDescription",
     source: "atoms/narrative/narrativeEcho.ts",
-    exportName: "narrativeEchoPrimer",
+    exportName: "narrativeEchoDescription",
   },
   () => `
 <narrative_echo>

@@ -7,16 +7,16 @@
  */
 
 // Magic System
-export { magicSystem, magicSystemPrimer, magicSystemSkill } from "./magic";
+export { magicSystem, magicSystemDescription, magicSystemSkill } from "./magic";
 
 // Economy System
-export { economy, economyPrimer, economySkill } from "./economy";
+export { economy, economyDescription, economySkill } from "./economy";
 
 // Law & Justice
 export { lawSystem, lawSystemLite, lawSystemSkill } from "./law";
 
 // Travel & Distance
-export { travel, travelPrimer, travelSkill } from "./travel";
+export { travel, travelDescription, travelSkill } from "./travel";
 
 // Culture & Customs
 export {
@@ -28,7 +28,7 @@ export {
 // Infrastructure
 export {
   infrastructure,
-  infrastructurePrimer,
+  infrastructureDescription,
   infrastructureSkill,
 } from "./infrastructure";
 

@@ -96,12 +96,12 @@ export const culturalAdaptation: Atom<CulturalAdaptationInput> = defineAtom(
 /**
  * Cultural adaptation primer (system-prompt safe).
  */
-export const culturalAdaptationPrimer: Atom<CulturalAdaptationInput> =
+export const culturalAdaptationDescription: Atom<CulturalAdaptationInput> =
   defineAtom(
     {
-      atomId: "atoms/cultural/adaptation#culturalAdaptationPrimer",
+      atomId: "atoms/cultural/adaptation#culturalAdaptationDescription",
       source: "atoms/cultural/adaptation.ts",
-      exportName: "culturalAdaptationPrimer",
+      exportName: "culturalAdaptationDescription",
     },
     ({ language }) => `<cultural_adaptation>
 - Write in natural ${language} fluency.

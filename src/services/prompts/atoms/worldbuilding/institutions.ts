@@ -115,11 +115,11 @@ This creates insider-leverage and negotiation scenes.
 `,
 );
 
-export const institutionsPrimer: Atom<void> = defineAtom(
+export const institutionsDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/institutions#institutionsPrimer",
+    atomId: "atoms/worldbuilding/institutions#institutionsDescription",
     source: "atoms/worldbuilding/institutions.ts",
-    exportName: "institutionsPrimer",
+    exportName: "institutionsDescription",
   },
   () =>
     `

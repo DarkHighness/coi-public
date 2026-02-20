@@ -176,13 +176,13 @@ Read the theme's worldSetting and narrativeStyle carefully:
 /**
  * Narrative scale selection primer (system-prompt safe).
  */
-export const narrativeScaleSelectionPrimer: Atom<NarrativeScaleSelectionInput> =
+export const narrativeScaleSelectionDescription: Atom<NarrativeScaleSelectionInput> =
   defineAtom(
     {
       atomId:
-        "atoms/narrative/narrativeScaleSelection#narrativeScaleSelectionPrimer",
+        "atoms/narrative/narrativeScaleSelection#narrativeScaleSelectionDescription",
       source: "atoms/narrative/narrativeScaleSelection.ts",
-      exportName: "narrativeScaleSelectionPrimer",
+      exportName: "narrativeScaleSelectionDescription",
     },
     () => `
 <narrative_scale_philosophy>

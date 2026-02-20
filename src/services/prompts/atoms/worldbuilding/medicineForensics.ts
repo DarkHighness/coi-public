@@ -110,11 +110,12 @@ Counterfeit medicine circulates when: high demand + scarce supply + weak enforce
 `,
 );
 
-export const medicineForensicsPrimer: Atom<void> = defineAtom(
+export const medicineForensicsDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/medicineForensics#medicineForensicsPrimer",
+    atomId:
+      "atoms/worldbuilding/medicineForensics#medicineForensicsDescription",
     source: "atoms/worldbuilding/medicineForensics.ts",
-    exportName: "medicineForensicsPrimer",
+    exportName: "medicineForensicsDescription",
   },
   () =>
     `

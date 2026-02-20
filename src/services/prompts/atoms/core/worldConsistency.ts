@@ -24,11 +24,11 @@ export interface ThemeWorldParams {
   culturalHint?: string;
 }
 
-export const worldConsistencyPrimer: Atom<void> = defineAtom(
+export const worldConsistencyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/worldConsistency#worldConsistencyPrimer",
+    atomId: "atoms/core/worldConsistency#worldConsistencyDescription",
     source: "atoms/core/worldConsistency.ts",
-    exportName: "worldConsistencyPrimer",
+    exportName: "worldConsistencyDescription",
   },
   () => `
 <world_consistency_primer>

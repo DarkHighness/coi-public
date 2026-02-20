@@ -4,19 +4,19 @@ import * as worldbuilding from "../index";
 describe("worldbuilding index export contract", () => {
   it("exports canonical names from each atom module", () => {
     expect(typeof worldbuilding.magicSystem).toBe("function");
-    expect(typeof worldbuilding.magicSystemPrimer).toBe("function");
+    expect(typeof worldbuilding.magicSystemDescription).toBe("function");
     expect(typeof worldbuilding.magicSystemSkill).toBe("function");
 
     expect(typeof worldbuilding.economy).toBe("function");
-    expect(typeof worldbuilding.economyPrimer).toBe("function");
+    expect(typeof worldbuilding.economyDescription).toBe("function");
     expect(typeof worldbuilding.economySkill).toBe("function");
 
     expect(typeof worldbuilding.travel).toBe("function");
-    expect(typeof worldbuilding.travelPrimer).toBe("function");
+    expect(typeof worldbuilding.travelDescription).toBe("function");
     expect(typeof worldbuilding.travelSkill).toBe("function");
 
     expect(typeof worldbuilding.infrastructure).toBe("function");
-    expect(typeof worldbuilding.infrastructurePrimer).toBe("function");
+    expect(typeof worldbuilding.infrastructureDescription).toBe("function");
     expect(typeof worldbuilding.infrastructureSkill).toBe("function");
   });
 

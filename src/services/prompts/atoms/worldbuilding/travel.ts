@@ -82,11 +82,11 @@ Question:
 `,
 );
 
-export const travelPrimer: Atom<void> = defineAtom(
+export const travelDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/travel#travelPrimer",
+    atomId: "atoms/worldbuilding/travel#travelDescription",
     source: "atoms/worldbuilding/travel.ts",
-    exportName: "travelPrimer",
+    exportName: "travelDescription",
   },
   () =>
     `

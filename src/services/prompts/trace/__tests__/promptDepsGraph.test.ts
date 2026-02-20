@@ -34,7 +34,7 @@ describe("prompt atom dependency graph", () => {
     expect(entry.direct.length).toBeGreaterThan(0);
     expect(entry.transitive.length).toBeGreaterThan(0);
     expect(entry.transitive).toContain(
-      "atoms/core/hiddenLayerQuality#hiddenLayerQualityPrimer",
+      "atoms/core/hiddenLayerQuality#hiddenLayerQualityDescription",
     );
   });
 });

@@ -102,11 +102,12 @@ When the player does a political act (exposes corruption, kills an official, smu
 `,
 );
 
-export const governancePoliticsPrimer: Atom<void> = defineAtom(
+export const governancePoliticsDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/governancePolitics#governancePoliticsPrimer",
+    atomId:
+      "atoms/worldbuilding/governancePolitics#governancePoliticsDescription",
     source: "atoms/worldbuilding/governancePolitics.ts",
-    exportName: "governancePoliticsPrimer",
+    exportName: "governancePoliticsDescription",
   },
   () =>
     `

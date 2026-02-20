@@ -5,11 +5,11 @@
 import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const glossaryPrimer: Atom<void> = defineAtom(
+export const glossaryDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/glossary#glossaryPrimer",
+    atomId: "atoms/core/glossary#glossaryDescription",
     source: "atoms/core/glossary.ts",
-    exportName: "glossaryPrimer",
+    exportName: "glossaryDescription",
   },
   () => `
 <glossary>

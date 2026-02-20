@@ -187,16 +187,17 @@ export const protagonistLens: Atom<ProtagonistLensInput> = defineAtom(
 // Primer (compact, for system-prompt budget)
 // ---------------------------------------------------------------------------
 
-export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom(
-  {
-    atomId: "atoms/core/protagonistLens#protagonistLensPrimer",
-    source: "atoms/core/protagonistLens.ts",
-    exportName: "protagonistLensPrimer",
-  },
-  ({ protagonistFeature }) => {
-    if (!protagonistFeature) return "";
+export const protagonistLensDescription: Atom<ProtagonistLensInput> =
+  defineAtom(
+    {
+      atomId: "atoms/core/protagonistLens#protagonistLensDescription",
+      source: "atoms/core/protagonistLens.ts",
+      exportName: "protagonistLensDescription",
+    },
+    ({ protagonistFeature }) => {
+      if (!protagonistFeature) return "";
 
-    return `
+      return `
 <protagonist_lens identity="${protagonistFeature}">
   The narrative camera is calibrated to "${protagonistFeature}".
   1. **Detail Selection**: Domain-specific details gain precision — a merchant sees prices; a soldier sees exits; a healer sees pallor.
@@ -207,8 +208,8 @@ export const protagonistLensPrimer: Atom<ProtagonistLensInput> = defineAtom(
   For full rendering directives, read \`core/protagonist-lens\` skill.
 </protagonist_lens>
 `;
-  },
-);
+    },
+  );
 
 export default protagonistLens;
 

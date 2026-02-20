@@ -99,11 +99,11 @@ Pick defaults:
 `,
 );
 
-export const lawJurisdictionPrimer: Atom<void> = defineAtom(
+export const lawJurisdictionDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdictionPrimer",
+    atomId: "atoms/worldbuilding/lawJurisdiction#lawJurisdictionDescription",
     source: "atoms/worldbuilding/lawJurisdiction.ts",
-    exportName: "lawJurisdictionPrimer",
+    exportName: "lawJurisdictionDescription",
   },
   () =>
     `

@@ -98,11 +98,12 @@ Expert archetypes (pick 1-2):
 `,
 );
 
-export const knowledgeEducationPrimer: Atom<void> = defineAtom(
+export const knowledgeEducationDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/knowledgeEducation#knowledgeEducationPrimer",
+    atomId:
+      "atoms/worldbuilding/knowledgeEducation#knowledgeEducationDescription",
     source: "atoms/worldbuilding/knowledgeEducation.ts",
-    exportName: "knowledgeEducationPrimer",
+    exportName: "knowledgeEducationDescription",
   },
   () =>
     `

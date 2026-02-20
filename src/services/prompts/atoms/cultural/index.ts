@@ -6,12 +6,12 @@
 
 export {
   culturalAdaptation,
-  culturalAdaptationPrimer,
+  culturalAdaptationDescription,
   type CulturalAdaptationInput,
 } from "./adaptation";
 
 export {
   languageEnforcement,
-  languageEnforcementPrimer,
+  languageEnforcementDescription,
   type LanguageEnforcementInput,
 } from "./languageEnforcement";

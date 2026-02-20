@@ -251,11 +251,11 @@ export const iconsAtom: Atom<void> = defineAtom(
   () => icons,
 );
 
-export const idAndEntityPolicyPrimer: Atom<void> = defineAtom(
+export const idAndEntityPolicyDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/idAndEntityPolicy#idAndEntityPolicyPrimer",
+    atomId: "atoms/core/idAndEntityPolicy#idAndEntityPolicyDescription",
     source: "atoms/core/idAndEntityPolicy.ts",
-    exportName: "idAndEntityPolicyPrimer",
+    exportName: "idAndEntityPolicyDescription",
   },
   () => `
 <id_and_entity_policy>

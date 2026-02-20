@@ -96,11 +96,11 @@ Reveals should change **actions**, not just lore. A truth that doesn't alter wha
 `,
 );
 
-export const historyResiduePrimer: Atom<void> = defineAtom(
+export const historyResidueDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/historyResidue#historyResiduePrimer",
+    atomId: "atoms/worldbuilding/historyResidue#historyResidueDescription",
     source: "atoms/worldbuilding/historyResidue.ts",
-    exportName: "historyResiduePrimer",
+    exportName: "historyResidueDescription",
   },
   () =>
     `

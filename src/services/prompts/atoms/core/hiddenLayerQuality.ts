@@ -13,11 +13,11 @@ import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 /**
  * Hidden 层质量要求 - 无参数
  */
-export const hiddenLayerQualityPrimer: Atom<void> = defineAtom(
+export const hiddenLayerQualityDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/hiddenLayerQuality#hiddenLayerQualityPrimer",
+    atomId: "atoms/core/hiddenLayerQuality#hiddenLayerQualityDescription",
     source: "atoms/core/hiddenLayerQuality.ts",
-    exportName: "hiddenLayerQualityPrimer",
+    exportName: "hiddenLayerQualityDescription",
   },
   () => `
 <hidden_layer_quality_primer>

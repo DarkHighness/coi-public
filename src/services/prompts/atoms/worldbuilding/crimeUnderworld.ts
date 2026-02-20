@@ -85,11 +85,11 @@ Always define:
 `,
 );
 
-export const crimeUnderworldPrimer: Atom<void> = defineAtom(
+export const crimeUnderworldDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldPrimer",
+    atomId: "atoms/worldbuilding/crimeUnderworld#crimeUnderworldDescription",
     source: "atoms/worldbuilding/crimeUnderworld.ts",
-    exportName: "crimeUnderworldPrimer",
+    exportName: "crimeUnderworldDescription",
   },
   () =>
     `

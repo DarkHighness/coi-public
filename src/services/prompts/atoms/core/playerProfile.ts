@@ -164,11 +164,11 @@ ${criticalDistinction}
   },
 );
 
-export const playerProfilePrimer: Atom<void> = defineAtom(
+export const playerProfileDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/playerProfile#playerProfilePrimer",
+    atomId: "atoms/core/playerProfile#playerProfileDescription",
     source: "atoms/core/playerProfile.ts",
-    exportName: "playerProfilePrimer",
+    exportName: "playerProfileDescription",
   },
   () => {
     return `

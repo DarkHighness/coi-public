@@ -5,7 +5,7 @@ import {
   memoryPolicy,
   outputFormat,
   protocols,
-  protocolsPrimer,
+  protocolsDescription,
   roleInstruction,
   styleGuide,
   stateManagement,
@@ -17,7 +17,7 @@ describe("core prompt hygiene", () => {
   it("removes deprecated tool references and keeps VFS contract aligned", () => {
     const content = [
       roleInstruction(),
-      protocolsPrimer(),
+      protocolsDescription(),
       protocols(),
       outputFormat({ language: "en" }),
       toolUsage({ finishToolName: "vfs_finish_turn" }),

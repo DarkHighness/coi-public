@@ -55,11 +55,11 @@ ${trace.record(informationRevelation)}
 /**
  * Primer version of core rules (minimal, system-prompt safe)
  */
-export const coreRulesPrimer: Atom<void> = defineAtom(
+export const coreRulesDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/coreRulesComposite#coreRulesPrimer",
+    atomId: "atoms/core/coreRulesComposite#coreRulesDescription",
     source: "atoms/core/coreRulesComposite.ts",
-    exportName: "coreRulesPrimer",
+    exportName: "coreRulesDescription",
   },
   () => `
 <core_rules>

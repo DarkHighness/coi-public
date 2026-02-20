@@ -12,11 +12,11 @@
 import type { Atom, SkillAtom, SkillOutput } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
-export const maliceAndAntagonismPrimer: Atom<void> = defineAtom(
+export const maliceAndAntagonismDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/maliceAndAntagonism#maliceAndAntagonismPrimer",
+    atomId: "atoms/core/maliceAndAntagonism#maliceAndAntagonismDescription",
     source: "atoms/core/maliceAndAntagonism.ts",
-    exportName: "maliceAndAntagonismPrimer",
+    exportName: "maliceAndAntagonismDescription",
   },
   () => `
 <malice_and_antagonism>

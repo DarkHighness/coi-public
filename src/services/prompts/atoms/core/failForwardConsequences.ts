@@ -81,11 +81,12 @@ When unsure, answer:
 `,
 );
 
-export const failForwardConsequencesPrimer: Atom<void> = defineAtom(
+export const failForwardConsequencesDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/core/failForwardConsequences#failForwardConsequencesPrimer",
+    atomId:
+      "atoms/core/failForwardConsequences#failForwardConsequencesDescription",
     source: "atoms/core/failForwardConsequences.ts",
-    exportName: "failForwardConsequencesPrimer",
+    exportName: "failForwardConsequencesDescription",
   },
   () =>
     `

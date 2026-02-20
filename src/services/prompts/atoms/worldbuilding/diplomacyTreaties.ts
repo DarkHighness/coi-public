@@ -92,11 +92,12 @@ Keep it legible:
 `,
 );
 
-export const diplomacyTreatiesPrimer: Atom<void> = defineAtom(
+export const diplomacyTreatiesDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesPrimer",
+    atomId:
+      "atoms/worldbuilding/diplomacyTreaties#diplomacyTreatiesDescription",
     source: "atoms/worldbuilding/diplomacyTreaties.ts",
-    exportName: "diplomacyTreatiesPrimer",
+    exportName: "diplomacyTreatiesDescription",
   },
   () =>
     `

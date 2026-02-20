@@ -101,11 +101,11 @@ Use a response ladder:
 `,
 );
 
-export const financeBankingPrimer: Atom<void> = defineAtom(
+export const financeBankingDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/worldbuilding/financeBanking#financeBankingPrimer",
+    atomId: "atoms/worldbuilding/financeBanking#financeBankingDescription",
     source: "atoms/worldbuilding/financeBanking.ts",
-    exportName: "financeBankingPrimer",
+    exportName: "financeBankingDescription",
   },
   () =>
     `

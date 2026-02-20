@@ -111,11 +111,11 @@ export const negotiationMechanics = defineAtom(
 `,
 );
 
-export const negotiationMechanicsPrimer = defineAtom(
+export const negotiationMechanicsDescription = defineAtom(
   {
-    atomId: "atoms/narrative/negotiation#negotiationMechanicsPrimer",
+    atomId: "atoms/narrative/negotiation#negotiationMechanicsDescription",
     source: "atoms/narrative/negotiation.ts",
-    exportName: "negotiationMechanicsPrimer",
+    exportName: "negotiationMechanicsDescription",
   },
   () =>
     `

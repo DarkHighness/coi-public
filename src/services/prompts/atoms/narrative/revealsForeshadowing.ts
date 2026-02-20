@@ -111,11 +111,12 @@ Setup (public or procedural gate) → Signal (background detail) → Misread (pl
 `,
 );
 
-export const revealsForeshadowingPrimer: Atom<void> = defineAtom(
+export const revealsForeshadowingDescription: Atom<void> = defineAtom(
   {
-    atomId: "atoms/narrative/revealsForeshadowing#revealsForeshadowingPrimer",
+    atomId:
+      "atoms/narrative/revealsForeshadowing#revealsForeshadowingDescription",
     source: "atoms/narrative/revealsForeshadowing.ts",
-    exportName: "revealsForeshadowingPrimer",
+    exportName: "revealsForeshadowingDescription",
   },
   () =>
     `
