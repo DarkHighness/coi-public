@@ -122,6 +122,7 @@ export function createLifecycleActions({
 }: LifecycleActionsDeps) {
   const confirmAction: Confirm =
     confirm ?? ((message?: string) => window.confirm(message));
+  let pendingResumeSessionNamespace: "new" | "resume" | null = null;
 
   const sanitizeOutlineConversationForRecovery = (
     conversation: OutlineConversationState,
@@ -196,6 +197,9 @@ export function createLifecycleActions({
     }
     return null;
   };
+
+  const isContextOverflowFailure = (error: unknown): boolean =>
+    error instanceof ContextOverflowError || isContextLengthError(error);
 
   const trimConversationForContextRecovery = (
     conversation: OutlineConversationState,
@@ -499,9 +503,15 @@ export function createLifecycleActions({
       const hasProgress = Boolean(
         savedConversation && savedConversation.currentPhase > 0,
       );
+      const contextOverflow = isContextOverflowFailure(outlineError);
 
       const retryMessage = hasProgress
-        ? `${outlineFailedMessage}\n\n${t("initializing.errors.retryWithProgress", { phase: savedConversation.currentPhase })}`
+        ? `${outlineFailedMessage}\n\n${t(
+            contextOverflow
+              ? "initializing.errors.retryWithProgressContextOverflow"
+              : "initializing.errors.retryWithProgressReuseSession",
+            { phase: savedConversation.currentPhase },
+          )}`
         : `${outlineFailedMessage}\n\n${t("initializing.errors.retryOutline")}`;
 
       const shouldRetry = confirmAction(retryMessage);
@@ -517,6 +527,7 @@ export function createLifecycleActions({
             liveToolCalls:
               gameStateRef.current.outlineConversation?.liveToolCalls || [],
           }));
+          pendingResumeSessionNamespace = contextOverflow ? "resume" : "new";
           return resumeOutlineGeneration(onStream, onPhaseProgress);
         }
 
@@ -655,6 +666,7 @@ export function createLifecycleActions({
     const runResumeAttempt = async (
       resumeFrom: OutlineConversationState,
       logPrefix: string,
+      sessionNamespace: "new" | "resume" | undefined,
       sessionTag?: string,
     ) => {
       const { outline, logs, themeConfig } = await runOutlineGenerationPhased({
@@ -671,6 +683,7 @@ export function createLifecycleActions({
         onPhaseProgress,
         resumeFrom,
         presetProfile: gameStateRef.current.presetProfile,
+        sessionNamespace,
         sessionTag,
         logPrefix,
       });
@@ -710,9 +723,15 @@ export function createLifecycleActions({
     };
 
     let finalError: unknown;
+    const preferredSessionNamespace = pendingResumeSessionNamespace;
+    pendingResumeSessionNamespace = null;
 
     try {
-      await runResumeAttempt(savedConversation, "ResumeOutline");
+      await runResumeAttempt(
+        savedConversation,
+        "ResumeOutline",
+        preferredSessionNamespace ?? "resume",
+      );
       return;
     } catch (resumeError) {
       console.error("[ResumeOutline] Resume failed", resumeError);
@@ -741,10 +760,17 @@ export function createLifecycleActions({
           writeOutlineProgress(vfsSession, recoveryConversation);
 
           try {
+            const recoverySessionTag =
+              recoveryKind === "context"
+                ? `${recoveryKind}-recovery-${Date.now()}`
+                : undefined;
             await runResumeAttempt(
               recoveryConversation,
               "ResumeOutlineRecovery",
-              `${recoveryKind}-recovery-${Date.now()}`,
+              recoveryKind === "context"
+                ? "resume"
+                : (preferredSessionNamespace ?? "resume"),
+              recoverySessionTag,
             );
             return;
           } catch (recoveryError) {

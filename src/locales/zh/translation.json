@@ -229,7 +229,8 @@
       ]
     },
     "errors": {
-      "retryWithProgress": "你已从第 {{phase}} 阶段保存了进度。是否要从中断处继续？",
+      "retryWithProgressReuseSession": "你已从第 {{phase}} 阶段保存了进度。将复用当前 Session 对话历史继续重试。是否继续？",
+      "retryWithProgressContextOverflow": "你已从第 {{phase}} 阶段保存了进度。检测到上下文可能超限，继续后将压缩并重建上下文再重试。是否继续？",
       "retryOutline": "是否要重新生成故事大纲？",
       "historyCacheCorrupted": "历史缓存已损坏，已清空缓存。请重试。",
       "historyCacheCorruptedResume": "历史缓存已损坏，已清空缓存。请从头重试。",

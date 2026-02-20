@@ -171,6 +171,13 @@ export interface PhasedOutlineOptions {
   presetProfile?: SavePresetProfile;
   /** Optional suffix to force a fresh session namespace (e.g. recovery retry). */
   sessionTag?: string;
+  /**
+   * Optional session namespace selector.
+   * - "new": reuse the outline-new namespace (typically for retrying the same failed run)
+   * - "resume": use the dedicated resume namespace
+   * Defaults to "resume" when `resumeFrom` is provided, otherwise "new".
+   */
+  sessionNamespace?: "new" | "resume";
   /** Real-time hook for current round tool calls */
   onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
@@ -1015,7 +1022,11 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
   };
 
   // Determine session ID with slotId for isolation if provided
-  const baseSessionId = options.resumeFrom ? "outline-resume" : "outline-new";
+  const sessionNamespace =
+    options.sessionNamespace ??
+    (options.resumeFrom ? ("resume" as const) : ("new" as const));
+  const baseSessionId =
+    sessionNamespace === "resume" ? "outline-resume" : "outline-new";
   const normalizedSessionTag = options.sessionTag
     ? options.sessionTag.replace(/[^a-zA-Z0-9_-]/g, "-")
     : "";

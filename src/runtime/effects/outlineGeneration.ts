@@ -30,6 +30,7 @@ interface RunOutlineGenerationParams {
   protagonistFeature?: string;
   presetProfile?: SavePresetProfile;
   sessionTag?: string;
+  sessionNamespace?: "new" | "resume";
   logPrefix: string;
 }
 
@@ -50,6 +51,7 @@ export async function runOutlineGenerationPhased({
   protagonistFeature,
   presetProfile,
   sessionTag,
+  sessionNamespace,
   logPrefix,
 }: RunOutlineGenerationParams) {
   return generateStoryOutlinePhased(theme, language, customContext, t, {
@@ -62,6 +64,7 @@ export async function runOutlineGenerationPhased({
     protagonistFeature,
     presetProfile,
     sessionTag,
+    sessionNamespace,
     onToolCallsUpdate: (toolCalls) => {
       setGameState((prev) => ({
         ...prev,

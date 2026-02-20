@@ -228,7 +228,8 @@
       ]
     },
     "errors": {
-      "retryWithProgress": "You have progress saved from phase {{phase}}. Would you like to resume from where you left off?",
+      "retryWithProgressReuseSession": "You have progress saved from phase {{phase}}. Retry will continue using the current session history. Continue?",
+      "retryWithProgressContextOverflow": "You have progress saved from phase {{phase}}. Context likely overflowed, so retry will compress and rebuild context first. Continue?",
       "retryOutline": "Would you like to retry generating the story outline?",
       "historyCacheCorrupted": "History cache corrupted. The cache has been cleared. Please retry.",
       "historyCacheCorruptedResume": "History cache corrupted. The cache has been cleared. Please retry from the beginning.",

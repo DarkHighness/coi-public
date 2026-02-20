@@ -369,7 +369,8 @@ describe("createLifecycleActions", () => {
 
     expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
     const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
-    expect(retryCall?.sessionTag).toContain("history-recovery-");
+    expect(retryCall?.sessionTag).toBeUndefined();
+    expect(retryCall?.sessionNamespace).toBe("resume");
     expect(retryCall?.logPrefix).toBe("ResumeOutlineRecovery");
     expect(retryCall?.resumeFrom?.liveToolCalls).toEqual([]);
     expect(retryCall?.resumeFrom?.conversationHistory).toEqual([
@@ -440,6 +441,7 @@ describe("createLifecycleActions", () => {
     expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
     const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
     expect(retryCall?.sessionTag).toContain("context-recovery-");
+    expect(retryCall?.sessionNamespace).toBe("resume");
     expect(retryCall?.resumeFrom?.liveToolCalls).toEqual([]);
     expect(
       retryCall?.resumeFrom?.conversationHistory.length,
@@ -485,12 +487,107 @@ describe("createLifecycleActions", () => {
 
     expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
     const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
-    expect(retryCall?.sessionTag).toContain("transient-recovery-");
+    expect(retryCall?.sessionTag).toBeUndefined();
+    expect(retryCall?.sessionNamespace).toBe("resume");
     expect(retryCall?.resumeFrom?.conversationHistory).toEqual(
       deps.gameStateRef.current.outlineConversation.conversationHistory,
     );
     expect(retryCall?.resumeFrom?.liveToolCalls).toEqual([]);
     expect(deps.navigate).toHaveBeenCalledWith("/game");
+  });
+
+  it("reuses outline-new session namespace when retrying saved progress after non-context failure", async () => {
+    const deps = createBaseDeps();
+    const confirmSpy = vi.fn().mockReturnValueOnce(true);
+    const savedConversation = {
+      theme: "fantasy",
+      language: "en",
+      customContext: "ctx",
+      currentPhase: 3,
+      conversationHistory: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "[OUTLINE GENERATION TASK]" }],
+        },
+      ],
+      partial: {},
+      modelId: "model-a",
+      providerId: "provider-a",
+      liveToolCalls: [],
+    };
+
+    runOutlineGenerationPhasedMock
+      .mockImplementationOnce(async (params: any) => {
+        params.setGameState((prev: any) => ({
+          ...prev,
+          outlineConversation: savedConversation,
+        }));
+        throw new Error("network timeout");
+      })
+      .mockResolvedValueOnce(makeOutlineResult());
+
+    const actions = createLifecycleActions({
+      ...deps,
+      confirm: confirmSpy,
+    } as any);
+    await actions.startNewGame("fantasy", "ctx");
+
+    expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
+    const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
+    expect(retryCall?.resumeFrom).toEqual(savedConversation);
+    expect(retryCall?.sessionNamespace).toBe("new");
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "initializing.errors.retryWithProgressReuseSession",
+      ),
+    );
+  });
+
+  it("switches to resume namespace when retrying saved progress after context overflow", async () => {
+    const deps = createBaseDeps();
+    const confirmSpy = vi.fn().mockReturnValueOnce(true);
+    const savedConversation = {
+      theme: "fantasy",
+      language: "en",
+      customContext: "ctx",
+      currentPhase: 3,
+      conversationHistory: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "[OUTLINE GENERATION TASK]" }],
+        },
+      ],
+      partial: {},
+      modelId: "model-a",
+      providerId: "provider-a",
+      liveToolCalls: [],
+    };
+
+    runOutlineGenerationPhasedMock
+      .mockImplementationOnce(async (params: any) => {
+        params.setGameState((prev: any) => ({
+          ...prev,
+          outlineConversation: savedConversation,
+        }));
+        throw new Error("context_length_exceeded: too many tokens");
+      })
+      .mockResolvedValueOnce(makeOutlineResult());
+
+    const actions = createLifecycleActions({
+      ...deps,
+      confirm: confirmSpy,
+    } as any);
+    await actions.startNewGame("fantasy", "ctx");
+
+    expect(runOutlineGenerationPhasedMock).toHaveBeenCalledTimes(2);
+    const retryCall = runOutlineGenerationPhasedMock.mock.calls[1]?.[0] as any;
+    expect(retryCall?.resumeFrom).toEqual(savedConversation);
+    expect(retryCall?.sessionNamespace).toBe("resume");
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "initializing.errors.retryWithProgressContextOverflow",
+      ),
+    );
   });
 
   it("retries startNewGame from scratch when no saved progress", async () => {
