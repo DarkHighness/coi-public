@@ -3,16 +3,18 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   getOutlineSystemInstruction,
-  getOutlinePhase0Prompt,
-  getOutlinePhase1Prompt,
-  getOutlinePhase2WorldFoundationPrompt,
-  getOutlinePhase2Prompt,
-  getOutlinePhase3Prompt,
-  getOutlinePhase4Prompt,
-  getOutlinePhase5Prompt,
-  getOutlinePhase7Prompt,
-  getOutlinePhase8Prompt,
-  getOutlinePhase9Prompt,
+  getOutlineImageSeedPrompt,
+  getOutlineMasterPlanPrompt,
+  getOutlineWorldFoundationPrompt,
+  getOutlinePlayerActorPrompt,
+  getOutlineLocationsPrompt,
+  getOutlineFactionsPrompt,
+  getOutlineNpcsRelationshipsPrompt,
+  getOutlineQuestsPrompt,
+  getOutlineKnowledgePrompt,
+  getOutlineTimelinePrompt,
+  getOutlineAtmospherePrompt,
+  getOutlineOpeningNarrativePrompt,
 } from "../../storyOutline";
 import {
   clearPromptTraceRegistry,
@@ -51,62 +53,81 @@ describe("prompt trace coverage - outline", () => {
           }),
       },
       {
-        promptId: "outline.phase0",
-        build: () => getOutlinePhase0Prompt("en", "vfs_finish_outline_phase_0"),
+        promptId: "outline.image_seed",
+        build: () =>
+          getOutlineImageSeedPrompt("en", "vfs_finish_outline_image_seed"),
       },
       {
-        promptId: "outline.phase1",
+        promptId: "outline.master_plan",
         build: () =>
-          getOutlinePhase1Prompt(
+          getOutlineMasterPlanPrompt(
             "fantasy",
             "en",
             "ctx",
             false,
             "wanderer",
-            "vfs_finish_outline_phase_0",
+            "vfs_finish_outline_master_plan",
           ),
       },
       {
-        promptId: "outline.phase2.worldFoundation",
+        promptId: "outline.world_foundation",
         build: () =>
-          getOutlinePhase2WorldFoundationPrompt(
+          getOutlineWorldFoundationPrompt(
             "fantasy",
             "en",
             "ctx",
             false,
             "wanderer",
-            "vfs_finish_outline_phase_0",
+            "vfs_finish_outline_world_foundation",
           ),
       },
       {
-        promptId: "outline.phase3.playerActor",
+        promptId: "outline.player_actor",
         build: () =>
-          getOutlinePhase2Prompt("wanderer", "vfs_finish_outline_phase_0"),
+          getOutlinePlayerActorPrompt(
+            "wanderer",
+            "vfs_finish_outline_player_actor",
+          ),
       },
       {
-        promptId: "outline.phase4.locations",
-        build: () => getOutlinePhase3Prompt("vfs_finish_outline_phase_0"),
+        promptId: "outline.locations",
+        build: () => getOutlineLocationsPrompt("vfs_finish_outline_locations"),
       },
       {
-        promptId: "outline.phase5.factions",
-        build: () => getOutlinePhase4Prompt("vfs_finish_outline_phase_0"),
+        promptId: "outline.factions",
+        build: () => getOutlineFactionsPrompt("vfs_finish_outline_factions"),
       },
       {
-        promptId: "outline.phase6.npcs",
-        build: () => getOutlinePhase5Prompt("vfs_finish_outline_phase_0"),
-      },
-      {
-        promptId: "outline.phase7.questsKnowledge",
-        build: () => getOutlinePhase7Prompt("vfs_finish_outline_phase_0"),
-      },
-      {
-        promptId: "outline.phase8.timelineAtmosphere",
-        build: () => getOutlinePhase8Prompt("vfs_finish_outline_phase_0"),
-      },
-      {
-        promptId: "outline.phase9.openingNarrative",
+        promptId: "outline.npcs_relationships",
         build: () =>
-          getOutlinePhase9Prompt(false, "vfs_finish_outline_phase_0"),
+          getOutlineNpcsRelationshipsPrompt(
+            "vfs_finish_outline_npcs_relationships",
+          ),
+      },
+      {
+        promptId: "outline.quests",
+        build: () => getOutlineQuestsPrompt("vfs_finish_outline_quests"),
+      },
+      {
+        promptId: "outline.knowledge",
+        build: () => getOutlineKnowledgePrompt("vfs_finish_outline_knowledge"),
+      },
+      {
+        promptId: "outline.timeline",
+        build: () => getOutlineTimelinePrompt("vfs_finish_outline_timeline"),
+      },
+      {
+        promptId: "outline.atmosphere",
+        build: () =>
+          getOutlineAtmospherePrompt("vfs_finish_outline_atmosphere"),
+      },
+      {
+        promptId: "outline.opening_narrative",
+        build: () =>
+          getOutlineOpeningNarrativePrompt(
+            false,
+            "vfs_finish_outline_opening_narrative",
+          ),
       },
     ] as const;
 

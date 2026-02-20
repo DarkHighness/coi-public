@@ -30,10 +30,10 @@ describe("export-loop-prompts-jsonl script", () => {
       join(loopsRoot, "summary_query"),
       join(loopsRoot, "summary_compact"),
       join(loopsRoot, "outline"),
-      join(loopsRoot, "outline_phase_0"),
-      join(loopsRoot, "outline_phase_9"),
-      join(loopsRoot, "outline_phase_0_prelude"),
-      join(loopsRoot, "outline_phase_9_prelude"),
+      join(loopsRoot, "outline_phase_master_plan"),
+      join(loopsRoot, "outline_phase_opening_narrative"),
+      join(loopsRoot, "outline_phase_master_plan_prelude"),
+      join(loopsRoot, "outline_phase_opening_narrative_prelude"),
     ];
 
     requiredDirs.forEach((dir) => {
@@ -95,12 +95,15 @@ describe("export-loop-prompts-jsonl script", () => {
     ).toBe(true);
 
     const outlinePhasePrompt = JSON.parse(
-      readFileSync(join(loopsRoot, "outline_phase_1", "prompts.jsonl"), "utf8")
+      readFileSync(
+        join(loopsRoot, "outline_phase_master_plan", "prompts.jsonl"),
+        "utf8",
+      )
         .trim()
         .split("\n")[0]!,
     ) as { text: string };
     expect(outlinePhasePrompt.text).toContain("<phase_context>");
-    expect(outlinePhasePrompt.text).toContain("[PHASE 1 OF 9");
+    expect(outlinePhasePrompt.text).toContain("[PHASE 2 OF");
     expect(outlinePhasePrompt.text).toContain("current/outline/phases");
     expect(outlinePhasePrompt.text).toContain(
       "current/shared/narrative/outline/phases",
@@ -131,7 +134,9 @@ describe("export-loop-prompts-jsonl script", () => {
     expect(catalogJson.kind).toBe("loops");
     expect(catalogJson.items.length).toBeGreaterThanOrEqual(25);
     expect(
-      catalogJson.items.some((item) => item.id === "outline_phase_9"),
+      catalogJson.items.some(
+        (item) => item.id === "outline_phase_opening_narrative",
+      ),
     ).toBe(true);
 
     const catalogMd = readFileSync(join(outDir, "catalog.md"), "utf8");

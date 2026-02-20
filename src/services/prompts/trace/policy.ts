@@ -16,33 +16,30 @@ const REQUIRED_ATOMS: Record<string, string[]> = {
     "atoms/core/creativeModeVsRestricted#creativeModeVsRestrictedPrimer",
   ],
   "outline.system": ["atoms/outline/system#getOutlineSystemInstruction"],
-  "outline.phase0": ["atoms/cultural/languageEnforcement#languageEnforcement"],
-  "outline.phase1": [
+  "outline.image_seed": [
+    "atoms/cultural/languageEnforcement#languageEnforcement",
+  ],
+  "outline.master_plan": [
     "atoms/core/gameSystemDesign#gameSystemDesign",
     "atoms/cultural/adaptation#culturalAdaptation",
     "atoms/cultural/languageEnforcement#languageEnforcementPrimer",
     "atoms/narrative/narrativeScaleSelection#narrativeScaleSelection",
   ],
-  "outline.phase2.worldFoundation": [
-    "atoms/outline/phase2#getOutlinePhase2WorldFoundationPrompt",
+  "outline.world_foundation": [
+    "atoms/outline/world_foundation#getOutlineWorldFoundationPrompt",
   ],
-  "outline.phase3.playerActor": [
-    "atoms/entities/characterDesign#characterDesign",
-  ],
-  "outline.phase4.locations": ["atoms/entities/locationDesign#locationDesign"],
-  "outline.phase5.factions": ["atoms/entities/factionDesign#factionDesign"],
-  "outline.phase6.npcs": ["atoms/entities/npcDesign#npcDesign"],
-  "outline.phase7.questsKnowledge": [
-    "atoms/entities/questDesign#questDesign",
-    "atoms/entities/knowledgeDesign#knowledgeDesign",
-  ],
-  "outline.phase8.timelineAtmosphere": [
+  "outline.player_actor": ["atoms/entities/characterDesign#characterDesign"],
+  "outline.locations": ["atoms/entities/locationDesign#locationDesign"],
+  "outline.factions": ["atoms/entities/factionDesign#factionDesign"],
+  "outline.npcs_relationships": ["atoms/entities/npcDesign#npcDesign"],
+  "outline.quests": ["atoms/entities/questDesign#questDesign"],
+  "outline.knowledge": ["atoms/entities/knowledgeDesign#knowledgeDesign"],
+  "outline.timeline": [
     "atoms/narrative/temporalPhilosophy#temporalPhilosophy",
     "atoms/entities/timelineDesign#timelineDesign",
   ],
-  "outline.phase9.openingNarrative": [
-    "atoms/narrative/openingScene#openingScene",
-  ],
+  "outline.atmosphere": ["atoms/outline/atmosphere#getOutlineAtmospherePrompt"],
+  "outline.opening_narrative": ["atoms/narrative/openingScene#openingScene"],
   "summary.system": [
     "atoms/core/gmKnowledge#gmKnowledge",
     "atoms/core/entityDefinitions#entityDefinitions",
