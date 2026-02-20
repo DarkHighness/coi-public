@@ -113,118 +113,151 @@
     "waitingToolCalls": "Waiting for tool calls...",
     "outline": {
       "phase": {
-        "0": {
+        "image_seed": {
           "name": "Interpreting Image",
           "desc": "Analyzing the uploaded image to derive world seeds"
         },
-        "1": {
+        "master_plan": {
           "name": "Master Story Plan",
           "desc": "Creating the full campaign-scale story plan in Markdown"
         },
-        "2": {
+        "placeholder_registry": {
+          "name": "Placeholder Registry",
+          "desc": "Drafting high-confidence placeholder files with soft coverage"
+        },
+        "world_foundation": {
           "name": "World Foundation",
           "desc": "Defining title, premise, timeline anchor, and core goal"
         },
-        "3": {
+        "player_actor": {
           "name": "Player Actor",
           "desc": "Building the protagonist actor bundle"
         },
-        "4": {
+        "locations": {
           "name": "Locations",
           "desc": "Building initial location network and constraints"
         },
-        "5": {
+        "factions": {
           "name": "Factions",
           "desc": "Defining faction structures and agendas"
         },
-        "6": {
+        "npcs_relationships": {
           "name": "NPCs & Relationships",
           "desc": "Creating key NPC bundles and relation tension"
         },
-        "7": {
-          "name": "Quests & Knowledge",
-          "desc": "Generating initial quests and knowledge graph together"
+        "quests": {
+          "name": "Quests",
+          "desc": "Generating initial quest graph and objective pressure"
         },
-        "8": {
-          "name": "Timeline & Atmosphere",
-          "desc": "Setting historical anchors, pressure, and mood"
+        "knowledge": {
+          "name": "Knowledge",
+          "desc": "Generating initial knowledge graph and reveal routes"
         },
-        "9": {
+        "timeline": {
+          "name": "Timeline",
+          "desc": "Setting historical anchors and causality pressure"
+        },
+        "atmosphere": {
+          "name": "Atmosphere",
+          "desc": "Setting baseline visual/audio mood"
+        },
+        "opening_narrative": {
           "name": "Opening Narrative",
           "desc": "Generating opening scene and first choices"
         }
       }
     },
     "phaseDescriptions": {
-      "0": [
+      "image_seed": [
         "Init[0]: Loading seed image...",
         "Init[0]: Detecting key entities...",
         "Init[0]: Parsing scene mood and light...",
         "Init[0]: Locking visual continuity markers...",
         "Init[0]: Saving image analysis..."
       ],
-      "1": [
+      "master_plan": [
         "Init[1]: Building main plot skeleton...",
         "Init[1]: Placing branch checkpoints...",
         "Init[1]: Registering ending routes...",
         "Init[1]: Verifying route pacing...",
         "Init[1]: Saving outline core..."
       ],
-      "2": [
+      "placeholder_registry": [
+        "Init[2]: Checking unresolved references...",
+        "Init[2]: Drafting high-confidence placeholders...",
+        "Init[2]: Skipping low-confidence placeholder noise...",
+        "Init[2]: Preparing promotion-ready placeholder notes...",
+        "Init[2]: Saving placeholder registry..."
+      ],
+      "world_foundation": [
         "Init[2]: Loading world baseline...",
         "Init[2]: Setting start time and objective...",
         "Init[2]: Validating world rules...",
         "Init[2]: Seeding hidden world conflicts...",
         "Init[2]: Saving world setup..."
       ],
-      "3": [
+      "player_actor": [
         "Init[3]: Creating player profile...",
         "Init[3]: Assigning starting skills and traits...",
         "Init[3]: Setting status and location...",
         "Init[3]: Verifying turn-1 playability...",
         "Init[3]: Saving player setup..."
       ],
-      "4": [
+      "locations": [
         "Init[4]: Generating location graph...",
         "Init[4]: Linking movement routes...",
         "Init[4]: Writing visible location data...",
         "Init[4]: Writing hidden location data...",
         "Init[4]: Saving location network..."
       ],
-      "5": [
+      "factions": [
         "Init[5]: Creating faction set...",
         "Init[5]: Setting public faction goals...",
         "Init[5]: Setting hidden faction motives...",
         "Init[5]: Linking factions to world state...",
         "Init[5]: Saving faction setup..."
       ],
-      "6": [
+      "npcs_relationships": [
         "Init[6]: Creating key NPCs...",
         "Init[6]: Writing first-contact profiles...",
         "Init[6]: Building relationship graph...",
         "Init[6]: Injecting hidden NPC stances...",
         "Init[6]: Saving NPC setup..."
       ],
-      "7": [
+      "quests": [
         "Init[7]: Creating starter quests...",
-        "Init[7]: Adding clues and knowledge nodes...",
+        "Init[7]: Mapping objective chains...",
         "Init[7]: Linking quests to NPCs and locations...",
         "Init[7]: Ordering reveal sequence...",
-        "Init[7]: Saving quest/knowledge data..."
+        "Init[7]: Saving quest data..."
       ],
-      "8": [
-        "Init[8]: Building timeline baseline...",
-        "Init[8]: Registering key past events...",
-        "Init[8]: Setting current pressure and mood...",
-        "Init[8]: Validating scene tone consistency...",
-        "Init[8]: Saving timeline/atmosphere..."
+      "knowledge": [
+        "Init[8]: Creating starter knowledge...",
+        "Init[8]: Defining public belief vs hidden truth...",
+        "Init[8]: Linking clues to world entities...",
+        "Init[8]: Preparing reveal routes...",
+        "Init[8]: Saving knowledge data..."
       ],
-      "9": [
-        "Init[9]: Writing opening scene...",
-        "Init[9]: Generating first-turn options...",
-        "Init[9]: Checking tone against outline...",
-        "Init[9]: Validating option trade-offs...",
-        "Init[9]: Finalizing start state..."
+      "timeline": [
+        "Init[9]: Building timeline baseline...",
+        "Init[9]: Registering key past events...",
+        "Init[9]: Validating causality consistency...",
+        "Init[9]: Linking history to current pressure...",
+        "Init[9]: Saving timeline data..."
+      ],
+      "atmosphere": [
+        "Init[10]: Defining atmosphere baseline...",
+        "Init[10]: Selecting visual theme...",
+        "Init[10]: Selecting audio ambience...",
+        "Init[10]: Validating mood continuity...",
+        "Init[10]: Saving atmosphere setup..."
+      ],
+      "opening_narrative": [
+        "Init[11]: Writing opening scene...",
+        "Init[11]: Generating first-turn options...",
+        "Init[11]: Checking tone against outline...",
+        "Init[11]: Validating option trade-offs...",
+        "Init[11]: Finalizing start state..."
       ]
     },
     "errors": {
@@ -701,6 +734,8 @@
       "agenticLoopHelp": "Configure the behavior of AI agentic loop execution.",
       "maxAgenticRounds": "Max Rounds",
       "maxAgenticRoundsHelp": "Maximum number of rounds for agentic loop (default: 20)",
+      "outlineMaxAgenticRounds": "Outline Max Rounds",
+      "outlineMaxAgenticRoundsHelp": "Maximum rounds for outline loops (default: 32)",
       "turnRetryLimit": "Turn Retry Limit",
       "turnRetryLimitHelp": "Retry limit for normal turn loops (default: 3)",
       "outlinePhaseRetryLimit": "Outline Phase Retry Limit",
@@ -711,6 +746,8 @@
       "summaryRetryLimitHelp": "Retry limit for summary loops (default: 5)",
       "maxToolCalls": "Max Tool Calls",
       "maxToolCallsHelp": "Maximum total tool calls per agentic loop (default: 50)",
+      "outlineMaxToolCalls": "Outline Max Tool Calls",
+      "outlineMaxToolCallsHelp": "Maximum tool calls for outline loops (default: 36)",
       "maxOutputTokensFallback": "Max Output Fallback Tokens",
       "maxOutputTokensFallbackHelp": "Used only when model-specific output cap is unknown. Leave empty to use provider defaults.",
       "providerManagedMaxTokens": "Provider-managed Max Tokens",
@@ -1829,16 +1866,19 @@
       "summary-query": "Summary - Query",
       "summary-complete": "Summary - Complete",
       "summary-error": "Summary - Error",
-      "outline-phase0": "Outline - Image Based",
-      "outline-phase1": "Outline - Master Story Plan",
-      "outline-phase2": "Outline - World Foundation",
-      "outline-phase3": "Outline - Player Actor",
-      "outline-phase4": "Outline - Locations",
-      "outline-phase5": "Outline - Factions",
-      "outline-phase6": "Outline - NPCs & Relationships",
-      "outline-phase7": "Outline - Quests & Knowledge",
-      "outline-phase8": "Outline - Timeline & Atmosphere",
-      "outline-phase9": "Outline - Opening Narrative"
+      "outline-phase-image_seed": "Outline - Image Based",
+      "outline-phase-master_plan": "Outline - Master Story Plan",
+      "outline-phase-placeholder_registry": "Outline - Placeholder Registry",
+      "outline-phase-world_foundation": "Outline - World Foundation",
+      "outline-phase-player_actor": "Outline - Player Actor",
+      "outline-phase-locations": "Outline - Locations",
+      "outline-phase-factions": "Outline - Factions",
+      "outline-phase-npcs_relationships": "Outline - NPCs & Relationships",
+      "outline-phase-quests": "Outline - Quests",
+      "outline-phase-knowledge": "Outline - Knowledge",
+      "outline-phase-timeline": "Outline - Timeline",
+      "outline-phase-atmosphere": "Outline - Atmosphere",
+      "outline-phase-opening_narrative": "Outline - Opening Narrative"
     },
     "newest": "Newest",
     "oldest": "Oldest",

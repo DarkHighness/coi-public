@@ -533,6 +533,33 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           />
         </div>
 
+        {/* Outline Max Rounds */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-theme-text">
+              {t("settings.extra.outlineMaxAgenticRounds") ||
+                "Outline Max Rounds"}
+            </div>
+            <div className="text-[10px] text-theme-muted">
+              {t("settings.extra.outlineMaxAgenticRoundsHelp") ||
+                "Maximum rounds for outline loops (default: 32)"}
+            </div>
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={extra.outlineMaxAgenticRounds ?? 32}
+            onChange={(e) =>
+              updateExtra(
+                "outlineMaxAgenticRounds",
+                Math.max(1, Math.min(100, parseInt(e.target.value) || 32)),
+              )
+            }
+            className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+          />
+        </div>
+
         {/* Turn Retry Limit */}
         <div className="flex items-center justify-between">
           <div>
@@ -658,6 +685,33 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
               updateExtra(
                 "maxToolCalls",
                 Math.max(5, Math.min(200, parseInt(e.target.value) || 50)),
+              )
+            }
+            className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+          />
+        </div>
+
+        {/* Outline Max Tool Calls */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-theme-text">
+              {t("settings.extra.outlineMaxToolCalls") ||
+                "Outline Max Tool Calls"}
+            </div>
+            <div className="text-[10px] text-theme-muted">
+              {t("settings.extra.outlineMaxToolCallsHelp") ||
+                "Maximum tool calls for outline loops (default: 36)"}
+            </div>
+          </div>
+          <input
+            type="number"
+            min={5}
+            max={200}
+            value={extra.outlineMaxToolCalls ?? 36}
+            onChange={(e) =>
+              updateExtra(
+                "outlineMaxToolCalls",
+                Math.max(5, Math.min(200, parseInt(e.target.value) || 36)),
               )
             }
             className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"

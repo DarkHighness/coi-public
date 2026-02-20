@@ -22,7 +22,7 @@ const DEFAULT_BUDGETS: Record<AgenticLoopType, BudgetDefaults> = {
   turn: { maxToolCalls: 50, maxRetries: 3, maxAgenticRounds: 20 },
   cleanup: { maxToolCalls: 90, maxRetries: 5, maxAgenticRounds: 25 },
   summary: { maxToolCalls: 90, maxRetries: 5, maxAgenticRounds: 25 },
-  outline: { maxToolCalls: 18, maxRetries: 3, maxAgenticRounds: 18 },
+  outline: { maxToolCalls: 36, maxRetries: 3, maxAgenticRounds: 32 },
 };
 
 function resolveRetryLimit(
@@ -62,14 +62,22 @@ export function createBudgetState(
 ): BudgetState {
   const loopType: AgenticLoopType = options?.loopType ?? "turn";
   const defaults = DEFAULT_BUDGETS[loopType];
+  const extra = settings.extra;
+  const outlineToolCallsOverride =
+    loopType === "outline" ? extra?.outlineMaxToolCalls : undefined;
+  const outlineRoundsOverride =
+    loopType === "outline" ? extra?.outlineMaxAgenticRounds : undefined;
   return {
     toolCallsUsed: 0,
-    toolCallsMax: settings.extra?.maxToolCalls ?? defaults.maxToolCalls,
+    toolCallsMax:
+      outlineToolCallsOverride ?? extra?.maxToolCalls ?? defaults.maxToolCalls,
     retriesUsed: 0,
     retriesMax: resolveRetryLimit(settings, loopType, defaults),
     loopIterationsUsed: 0,
     loopIterationsMax:
-      settings.extra?.maxAgenticRounds ?? defaults.maxAgenticRounds,
+      outlineRoundsOverride ??
+      extra?.maxAgenticRounds ??
+      defaults.maxAgenticRounds,
   };
 }
 
