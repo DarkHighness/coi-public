@@ -1,17 +1,32 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../../types";
 import { CategoryKey } from "../../utils/constants/themeCategories";
 import { ENV_THEMES } from "../../utils/constants/envThemes";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { ThemeFilters } from "./ThemeFilters";
-import { buildFilteredThemeKeys } from "./themeSort";
+import { buildFilteredThemeKeys, buildThemeFilterIndex } from "./themeSort";
 import { MarkdownText } from "../render/MarkdownText";
 import { RoleSelectionModal } from "./RoleSelectionModal";
 import { useThemePreferences } from "./useThemePreferences";
+import {
+  VirtualizedThemeList,
+  VirtualizedThemeListViewport,
+} from "./VirtualizedThemeList";
+import {
+  THEME_LIST_OVERSCAN_DESKTOP,
+  THEME_LIST_ROW_HEIGHT_DESKTOP,
+} from "./themeListMetrics";
 
 const RANDOM_THEME_KEY = "__random_theme__";
 const CUSTOM_THEME_KEY = "custom";
+const getThemeSelectorItemKey = (themeKey: string) => themeKey;
 
 interface ThemeSelectorDesktopProps {
   themes: Record<string, StoryThemeConfig>;
@@ -20,12 +35,12 @@ interface ThemeSelectorDesktopProps {
   onBack?: () => void;
 }
 
-const stripMarkdown = (text: string) =>
-  text
-    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
-    .replace(/[*_`>#~]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+const EMPTY_VIEWPORT: VirtualizedThemeListViewport = {
+  firstVisibleIndex: 0,
+  lastVisibleIndex: 0,
+  totalCount: 0,
+  progressRatio: 0,
+};
 
 export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
   themes,
@@ -37,6 +52,8 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("all");
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [listViewport, setListViewport] =
+    useState<VirtualizedThemeListViewport>(EMPTY_VIEWPORT);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [roleSelectionTheme, setRoleSelectionTheme] = useState<string | null>(
     null,
@@ -49,30 +66,40 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
     usageByTheme,
     markThemeUsed,
   } = useThemePreferences();
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const themeFilterIndex = useMemo(
+    () => buildThemeFilterIndex({ themes, t }),
+    [themes, t],
+  );
+
+  const themeIndexByKey = useMemo(
+    () => new Map(themeFilterIndex.map((item) => [item.key, item])),
+    [themeFilterIndex],
+  );
 
   const filteredThemes = useMemo(
     () =>
       buildFilteredThemeKeys({
-        themes,
+        themeIndex: themeFilterIndex,
         selectedCategory,
-        searchQuery,
+        searchQuery: deferredSearchQuery,
         sortMode,
         favoriteThemeKeys: favoriteSet,
         usageByTheme,
-        t,
       }),
     [
-      themes,
+      themeFilterIndex,
       selectedCategory,
-      searchQuery,
+      deferredSearchQuery,
       sortMode,
       favoriteSet,
       usageByTheme,
-      t,
     ],
   );
 
-  const showRandomOption = selectedCategory === "all" && !searchQuery.trim();
+  const showRandomOption =
+    selectedCategory === "all" && !deferredSearchQuery.trim();
 
   const selectorItems = useMemo(
     () =>
@@ -81,6 +108,48 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
         : [...filteredThemes],
     [showRandomOption, filteredThemes],
   );
+
+  const handleViewportChange = useCallback(
+    (nextViewport: VirtualizedThemeListViewport) => {
+      setListViewport((previous) => {
+        if (
+          previous.firstVisibleIndex === nextViewport.firstVisibleIndex &&
+          previous.lastVisibleIndex === nextViewport.lastVisibleIndex &&
+          previous.totalCount === nextViewport.totalCount
+        ) {
+          return previous;
+        }
+        return nextViewport;
+      });
+    },
+    [],
+  );
+
+  const listProgressLabel = useMemo(() => {
+    const totalCount = selectorItems.length;
+    if (totalCount === 0) {
+      return "0";
+    }
+
+    const firstVisible = Math.min(
+      totalCount,
+      Math.max(1, listViewport.firstVisibleIndex + 1),
+    );
+    const lastVisible = Math.min(
+      totalCount,
+      Math.max(firstVisible, listViewport.lastVisibleIndex + 1),
+    );
+    const progressPercent = Math.round(
+      (Math.min(Math.max(listViewport.progressRatio, 0), 1) || 0) * 100,
+    );
+
+    return `${firstVisible}-${lastVisible}/${totalCount} · ${progressPercent}%`;
+  }, [
+    listViewport.firstVisibleIndex,
+    listViewport.lastVisibleIndex,
+    listViewport.progressRatio,
+    selectorItems.length,
+  ]);
 
   useEffect(() => {
     if (selectorItems.length === 0) {
@@ -177,88 +246,90 @@ export const ThemeSelectorDesktop: React.FC<ThemeSelectorDesktopProps> = ({
           <section className="min-h-0 overflow-hidden flex flex-col">
             <div className="shrink-0 px-3 md:px-4 py-2 border-b border-theme-divider/60 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary">
               <span>{t("selectTheme")}</span>
-              <span>{selectorItems.length}</span>
+              <span className="tabular-nums whitespace-nowrap">
+                {listProgressLabel}
+              </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {selectorItems.length === 0 ? (
+            <VirtualizedThemeList
+              items={selectorItems}
+              itemHeight={THEME_LIST_ROW_HEIGHT_DESKTOP}
+              overscan={THEME_LIST_OVERSCAN_DESKTOP}
+              className="flex-1 custom-scrollbar"
+              emptyState={
                 <div className="px-4 py-8 text-sm text-theme-text-secondary">
                   {t("noThemesFound", "No themes found")}
                 </div>
-              ) : (
-                <div className="divide-y divide-theme-divider/60">
-                  {selectorItems.map((themeKey) => {
-                    const isRandom = themeKey === RANDOM_THEME_KEY;
-                    const isActive = selectedTheme === themeKey;
-                    const isFavorite = !isRandom && favoriteSet.has(themeKey);
-                    const icon = isRandom
-                      ? "🎲"
-                      : getValidIcon(themes[themeKey]?.icon, "📖");
-                    const name = isRandom
-                      ? t("randomTheme")
-                      : t(`${themeKey}.name`, { ns: "themes" });
-                    const description = isRandom
-                      ? t("randomThemeDesc")
-                      : stripMarkdown(
-                          t(`${themeKey}.narrativeStyle`, {
-                            ns: "themes",
-                          }) as string,
-                        );
+              }
+              getKey={getThemeSelectorItemKey}
+              onViewportChange={handleViewportChange}
+              renderItem={(themeKey) => {
+                const isRandom = themeKey === RANDOM_THEME_KEY;
+                const isActive = selectedTheme === themeKey;
+                const isFavorite = !isRandom && favoriteSet.has(themeKey);
+                const themeMeta = isRandom
+                  ? null
+                  : themeIndexByKey.get(themeKey);
+                const icon = isRandom
+                  ? "🎲"
+                  : getValidIcon(themes[themeKey]?.icon, "📖");
+                const name = isRandom
+                  ? t("randomTheme")
+                  : themeMeta?.name || themeKey;
+                const description = isRandom
+                  ? t("randomThemeDesc")
+                  : themeMeta?.narrativePreview || "";
 
-                    return (
-                      <button
-                        key={themeKey}
-                        onClick={() => setSelectedTheme(themeKey)}
-                        className={`group relative w-full text-left px-3 md:px-4 py-3.5 flex items-start gap-3 transition-colors ${
+                return (
+                  <div className="h-full border-b border-theme-divider/60">
+                    <button
+                      onClick={() => setSelectedTheme(themeKey)}
+                      className={`group relative w-full h-full text-left px-3 md:px-4 py-3.5 flex items-start gap-3 transition-colors theme-card-virtual ${
+                        isActive
+                          ? "bg-theme-surface-highlight/15 text-theme-primary before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-theme-primary"
+                          : "text-theme-text hover:text-theme-primary hover:bg-theme-surface-highlight/10"
+                      }`}
+                    >
+                      <div className="mt-0.5 h-8 w-8 shrink-0 grid place-items-center text-[18px] leading-none">
+                        {icon}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold tracking-[0.01em] truncate flex items-center gap-1">
+                          {name}
+                          {isFavorite && (
+                            <span className="text-theme-primary/90" aria-hidden>
+                              ★
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-theme-text-secondary leading-[1.45] line-clamp-2">
+                          {description}
+                        </div>
+                      </div>
+
+                      <svg
+                        className={`w-4 h-4 shrink-0 mt-1 transition-all ${
                           isActive
-                            ? "bg-theme-surface-highlight/15 text-theme-primary before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-theme-primary"
-                            : "text-theme-text hover:text-theme-primary hover:bg-theme-surface-highlight/10"
+                            ? "opacity-100 text-theme-primary"
+                            : "opacity-35 text-theme-text-secondary group-hover:opacity-70 group-hover:translate-x-0.5"
                         }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <div className="mt-0.5 h-8 w-8 shrink-0 grid place-items-center text-[18px] leading-none">
-                          {icon}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold tracking-[0.01em] truncate flex items-center gap-1">
-                            {name}
-                            {isFavorite && (
-                              <span
-                                className="text-theme-primary/90"
-                                aria-hidden
-                              >
-                                ★
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 text-xs text-theme-text-secondary leading-[1.45] line-clamp-2">
-                            {description}
-                          </div>
-                        </div>
-
-                        <svg
-                          className={`w-4 h-4 shrink-0 mt-1 transition-all ${
-                            isActive
-                              ? "opacity-100 text-theme-primary"
-                              : "opacity-35 text-theme-text-secondary group-hover:opacity-70 group-hover:translate-x-0.5"
-                          }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              }}
+            />
           </section>
 
           <aside className="min-h-0 overflow-hidden flex flex-col border-t lg:border-t-0 lg:border-l border-theme-divider/60">

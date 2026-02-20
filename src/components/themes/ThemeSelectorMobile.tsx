@@ -1,16 +1,31 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { StoryThemeConfig } from "../../types";
 import { CategoryKey } from "../../utils/constants/themeCategories";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { ThemeFilters } from "./ThemeFilters";
-import { buildFilteredThemeKeys } from "./themeSort";
+import { buildFilteredThemeKeys, buildThemeFilterIndex } from "./themeSort";
 import { MarkdownText } from "../render/MarkdownText";
 import { RoleSelectionModal } from "./RoleSelectionModal";
 import { useThemePreferences } from "./useThemePreferences";
+import {
+  VirtualizedThemeList,
+  VirtualizedThemeListViewport,
+} from "./VirtualizedThemeList";
+import {
+  THEME_LIST_OVERSCAN_MOBILE,
+  THEME_LIST_ROW_HEIGHT_MOBILE,
+} from "./themeListMetrics";
 
 const RANDOM_THEME_KEY = "__random_theme__";
 const CUSTOM_THEME_KEY = "custom";
+const getThemeSelectorItemKey = (themeKey: string) => themeKey;
 
 type MobileMode = "list" | "detail";
 
@@ -20,12 +35,12 @@ interface ThemeSelectorMobileProps {
   onPreviewTheme?: (theme: string | null) => void;
 }
 
-const stripMarkdown = (text: string) =>
-  text
-    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
-    .replace(/[*_`>#~]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+const EMPTY_VIEWPORT: VirtualizedThemeListViewport = {
+  firstVisibleIndex: 0,
+  lastVisibleIndex: 0,
+  totalCount: 0,
+  progressRatio: 0,
+};
 
 export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
   themes,
@@ -36,6 +51,8 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("all");
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
+  const [listViewport, setListViewport] =
+    useState<VirtualizedThemeListViewport>(EMPTY_VIEWPORT);
   const [mode, setMode] = useState<MobileMode>("list");
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [roleSelectionTheme, setRoleSelectionTheme] = useState<string | null>(
@@ -49,30 +66,40 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
     usageByTheme,
     markThemeUsed,
   } = useThemePreferences();
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const themeFilterIndex = useMemo(
+    () => buildThemeFilterIndex({ themes, t }),
+    [themes, t],
+  );
+
+  const themeIndexByKey = useMemo(
+    () => new Map(themeFilterIndex.map((item) => [item.key, item])),
+    [themeFilterIndex],
+  );
 
   const filteredThemes = useMemo(
     () =>
       buildFilteredThemeKeys({
-        themes,
+        themeIndex: themeFilterIndex,
         selectedCategory,
-        searchQuery,
+        searchQuery: deferredSearchQuery,
         sortMode,
         favoriteThemeKeys: favoriteSet,
         usageByTheme,
-        t,
       }),
     [
-      themes,
+      themeFilterIndex,
       selectedCategory,
-      searchQuery,
+      deferredSearchQuery,
       sortMode,
       favoriteSet,
       usageByTheme,
-      t,
     ],
   );
 
-  const showRandomOption = selectedCategory === "all" && !searchQuery.trim();
+  const showRandomOption =
+    selectedCategory === "all" && !deferredSearchQuery.trim();
 
   const selectorItems = useMemo(
     () =>
@@ -81,6 +108,48 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
         : [...filteredThemes],
     [showRandomOption, filteredThemes],
   );
+
+  const handleViewportChange = useCallback(
+    (nextViewport: VirtualizedThemeListViewport) => {
+      setListViewport((previous) => {
+        if (
+          previous.firstVisibleIndex === nextViewport.firstVisibleIndex &&
+          previous.lastVisibleIndex === nextViewport.lastVisibleIndex &&
+          previous.totalCount === nextViewport.totalCount
+        ) {
+          return previous;
+        }
+        return nextViewport;
+      });
+    },
+    [],
+  );
+
+  const listProgressLabel = useMemo(() => {
+    const totalCount = selectorItems.length;
+    if (totalCount === 0) {
+      return "0";
+    }
+
+    const firstVisible = Math.min(
+      totalCount,
+      Math.max(1, listViewport.firstVisibleIndex + 1),
+    );
+    const lastVisible = Math.min(
+      totalCount,
+      Math.max(firstVisible, listViewport.lastVisibleIndex + 1),
+    );
+    const progressPercent = Math.round(
+      (Math.min(Math.max(listViewport.progressRatio, 0), 1) || 0) * 100,
+    );
+
+    return `${firstVisible}-${lastVisible}/${totalCount} · ${progressPercent}%`;
+  }, [
+    listViewport.firstVisibleIndex,
+    listViewport.lastVisibleIndex,
+    listViewport.progressRatio,
+    selectorItems.length,
+  ]);
 
   useEffect(() => {
     if (selectorItems.length === 0) {
@@ -156,40 +225,47 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-3">
+          <div className="flex-1 min-h-0 px-2 pb-3 flex flex-col">
             <div className="py-2 border-b border-theme-divider/60 text-[11px] uppercase tracking-[0.12em] text-theme-text-secondary flex items-center justify-between">
               <span>{t("selectTheme")}</span>
-              <span>{selectorItems.length}</span>
+              <span className="tabular-nums whitespace-nowrap">
+                {listProgressLabel}
+              </span>
             </div>
 
-            {selectorItems.length === 0 ? (
-              <div className="py-8 text-sm text-theme-text-secondary border-b border-theme-divider/60">
-                {t("noThemesFound", "No themes found")}
-              </div>
-            ) : (
-              <div className="divide-y divide-theme-divider/60">
-                {selectorItems.map((themeKey) => {
-                  const isRandom = themeKey === RANDOM_THEME_KEY;
-                  const isFavorite = !isRandom && favoriteSet.has(themeKey);
-                  const icon = isRandom
-                    ? "🎲"
-                    : getValidIcon(themes[themeKey]?.icon, "📖");
-                  const name = isRandom
-                    ? t("randomTheme")
-                    : t(`${themeKey}.name`, { ns: "themes" });
-                  const description = isRandom
-                    ? t("randomThemeDesc")
-                    : stripMarkdown(
-                        t(`${themeKey}.narrativeStyle`, {
-                          ns: "themes",
-                        }) as string,
-                      );
+            <VirtualizedThemeList
+              items={selectorItems}
+              itemHeight={THEME_LIST_ROW_HEIGHT_MOBILE}
+              overscan={THEME_LIST_OVERSCAN_MOBILE}
+              className="flex-1 custom-scrollbar"
+              emptyState={
+                <div className="py-8 text-sm text-theme-text-secondary border-b border-theme-divider/60">
+                  {t("noThemesFound", "No themes found")}
+                </div>
+              }
+              getKey={getThemeSelectorItemKey}
+              onViewportChange={handleViewportChange}
+              renderItem={(themeKey) => {
+                const isRandom = themeKey === RANDOM_THEME_KEY;
+                const isFavorite = !isRandom && favoriteSet.has(themeKey);
+                const themeMeta = isRandom
+                  ? null
+                  : themeIndexByKey.get(themeKey);
+                const icon = isRandom
+                  ? "🎲"
+                  : getValidIcon(themes[themeKey]?.icon, "📖");
+                const name = isRandom
+                  ? t("randomTheme")
+                  : themeMeta?.name || themeKey;
+                const description = isRandom
+                  ? t("randomThemeDesc")
+                  : themeMeta?.narrativePreview || "";
 
-                  return (
+                return (
+                  <div className="h-full border-b border-theme-divider/60">
                     <button
-                      key={themeKey}
                       onClick={() => openThemeDetail(themeKey)}
-                      className="group w-full py-3.5 px-0 text-left flex items-start gap-3 hover:text-theme-primary hover:bg-theme-surface-highlight/10 transition-colors"
+                      className="group w-full h-full py-3.5 px-0 text-left flex items-start gap-3 hover:text-theme-primary hover:bg-theme-surface-highlight/10 transition-colors theme-card-virtual-mobile"
                     >
                       <div className="mt-0.5 h-8 w-8 shrink-0 grid place-items-center text-[18px] leading-none">
                         {icon}
@@ -221,10 +297,10 @@ export const ThemeSelectorMobile: React.FC<ThemeSelectorMobileProps> = ({
                         />
                       </svg>
                     </button>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                );
+              }}
+            />
           </div>
         </>
       ) : (

@@ -27,6 +27,18 @@ export interface ThemeUsageStats {
   lastUsedAt: number;
 }
 
+export interface ThemeFilterIndexItem {
+  key: string;
+  index: number;
+  name: string;
+  nameLower: string;
+  narrativeStyleLower: string;
+  narrativePreview: string;
+  categories: readonly string[];
+  primaryCategoryRank: number;
+  isIpTheme: boolean;
+}
+
 const CATEGORY_PRIORITY: CategoryKey[] = [
   "all",
   "ancient",
@@ -46,29 +58,38 @@ const CATEGORY_RANK = new Map<string, number>(
 );
 
 const IP_THEME_PATTERN = /《[^》]+》/;
+const THEME_NAME_COLLATOR = new Intl.Collator(undefined, {
+  sensitivity: "base",
+  numeric: true,
+});
+const NARRATIVE_PREVIEW_MAX_CHARS = 220;
 
-interface ThemeListItem {
-  key: string;
-  index: number;
-  name: string;
-  nameLower: string;
-  narrativeStyleLower: string;
-  primaryCategoryRank: number;
+const stripMarkdown = (text: string) =>
+  text
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/[*_`>#~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+interface ThemeListItem extends ThemeFilterIndexItem {
   isFavorite: boolean;
-  isIpTheme: boolean;
   usageCount: number;
   lastUsedAt: number;
   relevanceScore: number;
 }
 
-interface BuildThemeKeysOptions {
+interface BuildThemeFilterIndexOptions {
   themes: Record<string, StoryThemeConfig>;
+  t: (key: string, options?: JsonObject) => string;
+}
+
+interface BuildThemeKeysOptions {
+  themeIndex: readonly ThemeFilterIndexItem[];
   selectedCategory: CategoryKey;
   searchQuery: string;
   sortMode: ThemeSortMode;
   favoriteThemeKeys?: Set<string> | string[];
   usageByTheme?: Record<string, ThemeUsageStats | undefined>;
-  t: (key: string, options?: JsonObject) => string;
 }
 
 const getCategoryRank = (category?: string): number => {
@@ -94,12 +115,11 @@ const getRelevanceScore = (item: ThemeListItem, queryLower: string): number => {
 const compareByCategoryThenName = (
   left: ThemeListItem,
   right: ThemeListItem,
-  collator: Intl.Collator,
 ): number => {
   const categoryDiff = left.primaryCategoryRank - right.primaryCategoryRank;
   if (categoryDiff !== 0) return categoryDiff;
 
-  return collator.compare(left.name, right.name);
+  return THEME_NAME_COLLATOR.compare(left.name, right.name);
 };
 
 const withStableFallback = (
@@ -112,27 +132,11 @@ const withStableFallback = (
   };
 };
 
-export const buildFilteredThemeKeys = ({
+export const buildThemeFilterIndex = ({
   themes,
-  selectedCategory,
-  searchQuery,
-  sortMode,
-  favoriteThemeKeys,
-  usageByTheme,
   t,
-}: BuildThemeKeysOptions): string[] => {
-  const queryLower = searchQuery.trim().toLowerCase();
-  const favoriteSet =
-    favoriteThemeKeys instanceof Set
-      ? favoriteThemeKeys
-      : new Set(favoriteThemeKeys ?? []);
-  const usageMap = usageByTheme ?? {};
-  const collator = new Intl.Collator(undefined, {
-    sensitivity: "base",
-    numeric: true,
-  });
-
-  let items: ThemeListItem[] = Object.keys(themes).map((key, index) => {
+}: BuildThemeFilterIndexOptions): ThemeFilterIndexItem[] => {
+  return Object.keys(themes).map((key, index) => {
     const nameRaw = t(`${key}.name`, { ns: "themes" });
     const narrativeStyleRaw = t(`${key}.narrativeStyle`, {
       ns: "themes",
@@ -140,15 +144,10 @@ export const buildFilteredThemeKeys = ({
     const name = typeof nameRaw === "string" ? nameRaw : key;
     const narrativeStyle =
       typeof narrativeStyleRaw === "string" ? narrativeStyleRaw : "";
-    const usage = usageMap[key];
-    const usageCount =
-      typeof usage?.count === "number" && usage.count > 0 ? usage.count : 0;
-    const lastUsedAt =
-      typeof usage?.lastUsedAt === "number" && usage.lastUsedAt > 0
-        ? usage.lastUsedAt
-        : 0;
-    const isIpTheme =
-      Boolean(themes[key].restricted) || IP_THEME_PATTERN.test(name);
+    const narrativePreview = stripMarkdown(narrativeStyle).slice(
+      0,
+      NARRATIVE_PREVIEW_MAX_CHARS,
+    );
 
     return {
       key,
@@ -156,9 +155,40 @@ export const buildFilteredThemeKeys = ({
       name,
       nameLower: name.toLowerCase(),
       narrativeStyleLower: narrativeStyle.toLowerCase(),
+      narrativePreview,
+      categories: themes[key].categories ?? [],
       primaryCategoryRank: getCategoryRank(themes[key].categories?.[0]),
-      isFavorite: favoriteSet.has(key),
-      isIpTheme,
+      isIpTheme: Boolean(themes[key].restricted) || IP_THEME_PATTERN.test(name),
+    };
+  });
+};
+
+export const buildFilteredThemeKeys = ({
+  themeIndex,
+  selectedCategory,
+  searchQuery,
+  sortMode,
+  favoriteThemeKeys,
+  usageByTheme,
+}: BuildThemeKeysOptions): string[] => {
+  const queryLower = searchQuery.trim().toLowerCase();
+  const favoriteSet =
+    favoriteThemeKeys instanceof Set
+      ? favoriteThemeKeys
+      : new Set(favoriteThemeKeys ?? []);
+  const usageMap = usageByTheme ?? {};
+
+  let items: ThemeListItem[] = themeIndex.map((item) => {
+    const usage = usageMap[item.key];
+    const usageCount =
+      typeof usage?.count === "number" && usage.count > 0 ? usage.count : 0;
+    const lastUsedAt =
+      typeof usage?.lastUsedAt === "number" && usage.lastUsedAt > 0
+        ? usage.lastUsedAt
+        : 0;
+    return {
+      ...item,
+      isFavorite: favoriteSet.has(item.key),
       usageCount,
       lastUsedAt,
       relevanceScore: 0,
@@ -166,9 +196,7 @@ export const buildFilteredThemeKeys = ({
   });
 
   if (selectedCategory !== "all") {
-    items = items.filter((item) =>
-      themes[item.key].categories?.includes(selectedCategory),
-    );
+    items = items.filter((item) => item.categories.includes(selectedCategory));
   }
 
   if (queryLower) {
@@ -187,9 +215,9 @@ export const buildFilteredThemeKeys = ({
   const sortComparator = withStableFallback((left, right) => {
     switch (sortMode) {
       case "nameAsc":
-        return collator.compare(left.name, right.name);
+        return THEME_NAME_COLLATOR.compare(left.name, right.name);
       case "nameDesc":
-        return collator.compare(right.name, left.name);
+        return THEME_NAME_COLLATOR.compare(right.name, left.name);
       case "favoritesFirst":
         if (left.isFavorite !== right.isFavorite) {
           return left.isFavorite ? -1 : 1;
@@ -197,7 +225,7 @@ export const buildFilteredThemeKeys = ({
         if (left.lastUsedAt !== right.lastUsedAt) {
           return right.lastUsedAt - left.lastUsedAt;
         }
-        return compareByCategoryThenName(left, right, collator);
+        return compareByCategoryThenName(left, right);
       case "recentFirst":
         if (left.lastUsedAt !== right.lastUsedAt) {
           return right.lastUsedAt - left.lastUsedAt;
@@ -205,25 +233,25 @@ export const buildFilteredThemeKeys = ({
         if (left.usageCount !== right.usageCount) {
           return right.usageCount - left.usageCount;
         }
-        return compareByCategoryThenName(left, right, collator);
+        return compareByCategoryThenName(left, right);
       case "ipFirst":
         if (left.isIpTheme !== right.isIpTheme) {
           return left.isIpTheme ? -1 : 1;
         }
-        return collator.compare(left.name, right.name);
+        return THEME_NAME_COLLATOR.compare(left.name, right.name);
       case "nonIpFirst":
         if (left.isIpTheme !== right.isIpTheme) {
           return left.isIpTheme ? 1 : -1;
         }
-        return collator.compare(left.name, right.name);
+        return THEME_NAME_COLLATOR.compare(left.name, right.name);
       case "relevance":
         if (queryLower && left.relevanceScore !== right.relevanceScore) {
           return right.relevanceScore - left.relevanceScore;
         }
-        return compareByCategoryThenName(left, right, collator);
+        return compareByCategoryThenName(left, right);
       case "category":
       default:
-        return compareByCategoryThenName(left, right, collator);
+        return compareByCategoryThenName(left, right);
     }
   });
 
