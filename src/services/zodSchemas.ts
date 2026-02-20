@@ -72,91 +72,73 @@ export const knownBySchema = z
 
 /** 物品可见层 */
 export const inventoryItemVisibleSchema = z.object({
-  description: z.string().describe("Visual description of the item."),
-  usage: z.string().nullish().describe("How to use the item."),
+  description: z.string().describe("Observable appearance and features."),
+  usage: z.string().nullish().describe("Known usage or function."),
   observation: z
     .string()
     .nullish()
-    .describe("Player's personal notes or observations about the item."),
+    .describe("Actor's personal observations about the item."),
   sensory: z
     .object({
-      texture: z.string().nullish().describe("Tactile feel of the item."),
+      texture: z.string().nullish().describe("Tactile feel."),
       weight: z.string().nullish().describe("Perceived weight."),
-      smell: z.string().nullish().describe("Scent of the item."),
+      smell: z.string().nullish().describe("Scent, if any."),
     })
     .nullish()
-    .describe("Sensory details."),
+    .describe("Multi-sense impression."),
   condition: z
     .string()
     .nullish()
     .describe(
-      "Physical state/wear (e.g. 'rusty', 'pristine'). Must be in target language.",
+      "Physical wear state (e.g. 'rusty', 'pristine'). Target language.",
     ),
 });
 
 /** 物品隐藏层 */
 export const inventoryItemHiddenSchema = z.object({
-  truth: z.string().describe("True nature/power of the item."),
-  secrets: z
-    .array(z.string())
-    .nullish()
-    .describe("Hidden secrets about the item."),
+  truth: z.string().describe("True nature or hidden power."),
+  secrets: z.array(z.string()).nullish().describe("Hidden secrets (GM-only)."),
 });
 
 /** 完整物品 Schema */
 export const inventoryItemSchema = z.object({
   id: z
     .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'rusty_sword', 'healing_potion_1'.",
-    ),
+    .describe("Unique item ID (e.g. 'rusty_sword', 'healing_potion_1')."),
   knownBy: knownBySchema.describe(
     "Existence visibility: which actors know this item exists.",
   ),
-  name: z.string().describe("Name of the item."),
+  name: z.string().describe("Item name."),
   visible: inventoryItemVisibleSchema,
   hidden: inventoryItemHiddenSchema.nullish(),
-  lore: z.string().nullish().describe("Brief lore or history of the item."),
+  lore: z.string().nullish().describe("Brief origin or history."),
   emotionalWeight: z
     .string()
     .nullish()
-    .describe(
-      "Sentimental significance: Why does this item matter emotionally? A burden, a memory, a gift?",
-    ),
-  icon: z.string().nullish().describe("A single emoji representing this item."),
+    .describe("Sentimental significance to its owner."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   unlocked: z
     .boolean()
     .nullish()
-    .describe(
-      "AI DECISION: Set true when hidden truth discovered (examination, analysis, witnessing power). Default false.",
-    ),
+    .describe("AI DECISION: true when hidden truth discovered. Default false."),
   unlockReason: z
     .string()
     .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Justification for why the hidden truth was revealed.",
-    ),
+    .describe("REQUIRED when unlocked=true. Evidence for revelation."),
   highlight: z
     .boolean()
     .nullish()
-    .describe("True when updated in current turn (for UI). INVISIBLE to AI."),
-  createdAt: z
-    .number()
-    .nullish()
-    .describe("Creation timestamp. INVISIBLE to AI."),
+    .describe("Updated this turn (UI-only). INVISIBLE to AI."),
+  createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
     .nullish()
-    .describe("Version-aware modification timestamp {forkId, turnNumber}."),
-  lastAccess: accessTimestampSchema
-    .nullish()
-    .describe(
-      "Last access timestamp {forkId, turnNumber, timestamp}. INVISIBLE to AI.",
-    ),
+    .describe("Version-aware modification timestamp."),
+  lastAccess: accessTimestampSchema.nullish().describe("INVISIBLE to AI."),
   notes: z
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
@@ -295,37 +277,27 @@ export const atmosphereSchema = z.object({
 
 /** 地点可见层 */
 export const locationVisibleSchema = z.object({
-  description: z.string().describe("Visual description of the location."),
+  description: z.string().describe("Observable scene description."),
   environment: z
     .string()
     .nullish()
-    .describe(
-      "Natural language description of the general environment/atmosphere (e.g., 'A dense, foggy forest with towering obsidian trees').",
-    ),
+    .describe("General environment/atmosphere in natural language."),
   ambience: z
     .string()
     .nullish()
-    .describe(
-      "Natural language description of the audio background and mood (e.g., 'The constant drip of water and distant, echoing whispers').",
-    ),
+    .describe("Audio landscape and mood in natural language."),
   weather: z
     .string()
     .nullish()
-    .describe(
-      "Natural language description of current weather conditions (e.g., 'A light, shimmering rain that glows in the dark').",
-    ),
-  knownFeatures: z
-    .array(z.string())
-    .describe("Known features of the location."),
+    .describe("Current weather conditions in natural language."),
+  knownFeatures: z.array(z.string()).describe("Notable visible features."),
   resources: z
     .array(z.string())
     .nullish()
     .describe("Gatherable resources or items."),
   atmosphere: atmosphereSchema
     .nullish()
-    .describe(
-      "System UI atmosphere override (Enums only). AI: MUST ensure consistency with environment/ambience/weather descriptions.",
-    ),
+    .describe("UI atmosphere override (enum values only)."),
   sensory: z
     .object({
       smell: z.string().nullish(),
@@ -334,7 +306,7 @@ export const locationVisibleSchema = z.object({
       temperature: z.string().nullish(),
     })
     .nullish()
-    .describe("Sensory details of the location."),
+    .describe("Multi-sense impression."),
   interactables: z
     .array(z.string())
     .nullish()
@@ -343,32 +315,25 @@ export const locationVisibleSchema = z.object({
 
 /** 地点隐藏层 */
 export const locationHiddenSchema = z.object({
-  fullDescription: z.string().describe("True nature of the location."),
+  fullDescription: z
+    .string()
+    .describe("True nature of the location (GM-only)."),
   dangers: z.array(z.string()).nullish().describe("Hidden dangers or traps."),
-  hiddenFeatures: z
-    .array(z.string())
-    .describe("Hidden features not yet discovered."),
-  secrets: z.array(z.string()).describe("Location secrets."),
+  hiddenFeatures: z.array(z.string()).describe("Undiscovered features."),
+  secrets: z.array(z.string()).describe("Location secrets (GM-only)."),
 });
 
 /** 完整地点 Schema */
 export const locationSchema = z.object({
   id: z
     .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'cave_entrance', 'royal_palace'.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this location exists.",
-  ),
+    .describe("Unique location ID (e.g. 'cave_entrance', 'royal_palace')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this location."),
   name: z.string().describe("Location name."),
   visible: locationVisibleSchema,
   hidden: locationHiddenSchema.nullish(),
-  lore: z.string().nullish().describe("Location history or lore."),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this location."),
+  lore: z.string().nullish().describe("Brief history or origin."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
     .nullish()
@@ -377,7 +342,7 @@ export const locationSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
@@ -420,8 +385,8 @@ export const locationViewModelSchema = locationSchema.extend({
 
 /** 任务可见层 */
 export const questVisibleSchema = z.object({
-  description: z.string().describe("The apparent objective."),
-  objectives: z.array(z.string()).describe("Visible quest objectives."),
+  description: z.string().describe("Apparent objective as understood."),
+  objectives: z.array(z.string()).describe("Visible task objectives."),
 });
 
 /** 任务隐藏层 */
@@ -429,21 +394,16 @@ export const questHiddenSchema = z.object({
   trueDescription: z
     .string()
     .nullish()
-    .describe("The hidden truth or real purpose."),
+    .describe("Real purpose behind the quest (GM-only)."),
   trueObjectives: z
     .array(z.string())
     .nullish()
-    .describe("True hidden objectives."),
+    .describe("Actual hidden objectives."),
   secretOutcome: z
     .string()
     .nullish()
-    .describe("Secret outcome if quest is completed."),
-  twist: z
-    .string()
-    .nullish()
-    .describe(
-      "Hidden complication or moral dilemma. The quest is never what it seems.",
-    ),
+    .describe("Outcome revealed only upon completion."),
+  twist: z.string().nullish().describe("Hidden complication or moral dilemma."),
 });
 
 /** 任务类型 */
@@ -454,22 +414,13 @@ export const questStatusSchema = z.enum(["active", "completed", "failed"]);
 
 /** 完整任务 Schema */
 export const questSchema = z.object({
-  id: z
-    .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'find_missing_heir', 'defeat_dragon'.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this quest exists.",
-  ),
+  id: z.string().describe("Unique quest ID (e.g. 'find_missing_heir')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this quest."),
   title: z.string().describe("Quest title."),
-  type: questTypeSchema.describe("Quest type: main, side, or hidden."),
+  type: questTypeSchema.describe("main, side, or hidden."),
   visible: questVisibleSchema,
   hidden: questHiddenSchema.nullish(),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this quest."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
     .nullish()
@@ -479,7 +430,7 @@ export const questSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
@@ -507,59 +458,44 @@ export const questViewModelSchema = questSchema.extend({
 
 /** 技能可见层 */
 export const skillVisibleSchema = z.object({
-  description: z.string().describe("Publicly known description."),
-  knownEffects: z.array(z.string()).describe("Known effects of the skill."),
+  description: z.string().describe("Known description of the skill."),
+  knownEffects: z.array(z.string()).describe("Observable effects."),
 });
 
 /** 技能隐藏层 */
 export const skillHiddenSchema = z.object({
-  trueDescription: z.string().describe("True nature/power of the skill."),
-  hiddenEffects: z
-    .array(z.string())
-    .describe("Hidden effects not yet discovered."),
+  trueDescription: z.string().describe("True nature/power (GM-only)."),
+  hiddenEffects: z.array(z.string()).describe("Undiscovered effects."),
   drawbacks: z
     .array(z.string())
     .nullish()
-    .describe("Hidden drawbacks or costs."),
+    .describe("Hidden costs or drawbacks."),
 });
 
 /** 完整技能 Schema */
 export const skillSchema = z.object({
-  id: z
-    .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'master_swordplay', 'arcane_knowledge'.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this skill exists.",
-  ),
+  id: z.string().describe("Unique skill ID (e.g. 'master_swordplay')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this skill."),
   name: z.string().describe("Skill name."),
-  level: z.string().describe("Skill level (e.g. Novice, Master)."),
+  level: z.string().describe("Proficiency level (e.g. Novice, Master)."),
   visible: skillVisibleSchema,
   hidden: skillHiddenSchema.nullish(),
   category: z.string().nullish().describe("Skill category."),
   unlocked: z
     .boolean()
     .nullish()
-    .describe(
-      "AI DECISION: Set true when skill's hidden nature is understood.",
-    ),
+    .describe("AI DECISION: true when hidden nature understood."),
   unlockReason: z
     .string()
     .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why skill's hidden nature was understood.",
-    ),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this skill."),
+    .describe("REQUIRED when unlocked=true. Evidence for revelation."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   highlight: z.boolean().nullish(),
   notes: z
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
@@ -569,28 +505,28 @@ export const skillSchema = z.object({
 
 /** 条件可见层 */
 export const conditionVisibleSchema = z.object({
-  description: z.string().describe("Visible description of the condition."),
+  description: z.string().describe("Observable symptoms or manifestation."),
   perceivedSeverity: z
     .string()
     .nullish()
-    .describe("How severe it appears to be. Must be in target language."),
+    .describe("Apparent severity. Target language."),
 });
 
 /** 条件隐藏层 */
 export const conditionHiddenSchema = z.object({
-  trueCause: z.string().describe("The true cause of this condition."),
-  actualSeverity: z.string().nullish().describe("Actual severity level."),
+  trueCause: z.string().describe("Actual cause (GM-only)."),
+  actualSeverity: z.string().nullish().describe("True severity level."),
   progression: z
     .string()
     .nullish()
-    .describe("How the condition will progress."),
-  cure: z.string().nullish().describe("How to cure or remove this condition."),
+    .describe("How the condition will evolve over time."),
+  cure: z.string().nullish().describe("How to cure or remove it."),
 });
 
 /** 条件效果 */
 export const conditionEffectsSchema = z.object({
-  visible: z.array(z.string()).describe("Effects the player can see."),
-  hidden: z.array(z.string()).describe("Hidden effects only GM knows."),
+  visible: z.array(z.string()).describe("Effects the actor can observe."),
+  hidden: z.array(z.string()).describe("Effects only GM knows."),
 });
 
 /** 条件类型 */
@@ -613,38 +549,27 @@ export const conditionTypeSchema = z.enum([
 export const conditionSchema = z.object({
   id: z
     .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'poisoned', 'blessed_by_goddess'.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this condition exists.",
-  ),
+    .describe("Unique condition ID (e.g. 'poisoned', 'blessed_by_goddess')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this condition."),
   name: z.string().describe("Condition name."),
-  type: conditionTypeSchema.describe(
-    "Condition type (e.g. wound, poison, buff, debuff, etc.).",
-  ),
+  type: conditionTypeSchema.describe("Category (wound, poison, buff, etc.)."),
   visible: conditionVisibleSchema,
   hidden: conditionHiddenSchema.nullish(),
   effects: conditionEffectsSchema,
   severity: z
     .string()
     .nullish()
-    .describe("Severity level (e.g. Mild, Severe). Must in target language."),
+    .describe("Severity level (e.g. Mild, Severe). Target language."),
   startTime: z.string().nullish().describe("When the condition started."),
   unlocked: z
     .boolean()
     .nullish()
-    .describe("AI DECISION: Set true when true cause/cure revealed."),
+    .describe("AI DECISION: true when true cause/cure revealed."),
   unlockReason: z
     .string()
     .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why true cause/cure was revealed.",
-    ),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this condition."),
+    .describe("REQUIRED when unlocked=true. Evidence for revelation."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   highlight: z.boolean().nullish(),
 });
 
@@ -667,42 +592,33 @@ export const knowledgeCategorySchema = z.enum([
 
 /** 知识可见层 */
 export const knowledgeVisibleSchema = z.object({
-  description: z.string().describe("What is commonly known about this topic."),
-  details: z.string().nullish().describe("Additional details or context."),
+  description: z.string().describe("What is commonly known."),
+  details: z.string().nullish().describe("Additional context or specifics."),
 });
 
 /** 知识隐藏层 */
 export const knowledgeHiddenSchema = z.object({
-  fullTruth: z.string().describe("The complete truth (GM knowledge)."),
+  fullTruth: z.string().describe("Complete truth (GM-only)."),
   misconceptions: z
     .array(z.string())
     .nullish()
-    .describe("Common misconceptions."),
+    .describe("Common false beliefs about this topic."),
   toBeRevealed: z
     .array(z.string())
     .nullish()
-    .describe("Info to be revealed later."),
+    .describe("Information reserved for future revelation."),
 });
 
 /** 完整知识条目 Schema */
 export const knowledgeEntrySchema = z.object({
-  id: z
-    .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'ancient_prophecy', 'local_folklore'.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this knowledge entry exists.",
-  ),
-  title: z.string().describe("Title of the knowledge entry."),
-  category: knowledgeCategorySchema.describe("Category for organization."),
+  id: z.string().describe("Unique knowledge ID (e.g. 'ancient_prophecy')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this knowledge."),
+  title: z.string().describe("Knowledge entry title."),
+  category: knowledgeCategorySchema.describe("Organizational category."),
   visible: knowledgeVisibleSchema,
   hidden: knowledgeHiddenSchema.nullish(),
   relatedTo: z.array(z.string()).nullish().describe("Related entity IDs."),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this knowledge entry."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
     .nullish()
@@ -711,7 +627,7 @@ export const knowledgeEntrySchema = z.object({
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
@@ -750,42 +666,27 @@ export const timelineEventCategorySchema = z.enum([
 
 /** 时间线事件可见层 */
 export const timelineEventVisibleSchema = z.object({
-  description: z.string().describe("Publicly known description of the event."),
-  causedBy: z
-    .string()
-    .nullish()
-    .describe("Publicly known cause or instigator."),
+  description: z.string().describe("Publicly known account of the event."),
+  causedBy: z.string().nullish().describe("Known cause or instigator."),
 });
 
 /** 时间线事件隐藏层 */
 export const timelineEventHiddenSchema = z.object({
-  trueDescription: z
-    .string()
-    .describe("The true nature of the event (GM knowledge)."),
-  trueCausedBy: z.string().nullish().describe("The real instigator or cause."),
+  trueDescription: z.string().describe("What actually happened (GM-only)."),
+  trueCausedBy: z.string().nullish().describe("Real instigator or cause."),
   consequences: z
     .array(z.string())
     .nullish()
-    .describe("Hidden consequences or future implications."),
+    .describe("Hidden future implications."),
 });
 
 /** 完整时间线事件 Schema */
 export const timelineEventSchema = z.object({
-  id: z
-    .string()
-    .describe(
-      "Unique ID for the event. Use descriptive snake_case (e.g., great_flood_start, ancient_pact_sealing).",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this timeline event exists.",
-  ),
-  name: z
-    .string()
-    .describe(
-      "Short, memorable name for the event (e.g. 'The Great Fire', 'First Encounter'). Used for display and reference.",
-    ),
-  gameTime: z.string().describe("When the event happened in game time."),
-  category: timelineEventCategorySchema.describe("Category of the event."),
+  id: z.string().describe("Unique event ID (e.g. 'great_flood_start')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this event."),
+  name: z.string().describe("Short memorable event name."),
+  gameTime: z.string().describe("When the event occurred in game time."),
+  category: timelineEventCategorySchema.describe("Event category."),
   visible: timelineEventVisibleSchema,
   hidden: timelineEventHiddenSchema.nullish(),
   involvedEntities: z
@@ -793,10 +694,7 @@ export const timelineEventSchema = z.object({
     .nullish()
     .describe("IDs of involved entities."),
   chainId: z.string().nullish().describe("Link to a CausalChain."),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this event."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   range: z
     .object({
       start: z.number(),
@@ -811,7 +709,7 @@ export const timelineEventSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
@@ -838,40 +736,29 @@ export const timelineEventViewModelSchema = timelineEventSchema.extend({
 
 /** 待触发的后果 */
 export const pendingConsequenceSchema = z.object({
-  id: z.string().describe("Unique ID for tracking."),
-  description: z.string().describe("What could happen if triggered."),
+  id: z.string().describe("Unique tracking ID."),
+  description: z.string().describe("What happens if triggered."),
   triggerCondition: z
     .string()
     .nullish()
-    .describe(
-      "WHEN to trigger this consequence. Use narrative conditions (e.g., 'when the player is alone at night', 'during the next combat', 'when player returns to the tavern', 'after player learns the secret'). AI judges when condition is met and fires the consequence. NOT a turn counter.",
-    ),
+    .describe("Narrative condition for triggering (not a turn counter)."),
   severity: z
     .string()
     .nullish()
-    .describe(
-      "How severe/urgent is this consequence? Options: 'imminent' (trigger ASAP when condition met), 'delayed' (can wait for dramatic moment), 'background' (ambient pressure, no rush).",
-    ),
-  triggered: z
-    .boolean()
-    .nullish()
-    .describe("True once consequence has been triggered."),
+    .describe("Urgency: 'imminent', 'delayed', or 'background'."),
+  triggered: z.boolean().nullish().describe("True once fired."),
   triggeredAtTurn: z
     .number()
     .int()
     .nullish()
-    .describe(
-      "Turn number when triggered (for logging, not for triggering logic).",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this consequence exists (e.g., only GM/NPCs until revealed).",
-  ),
+    .describe("Turn number when triggered (logging only)."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this consequence."),
 });
 
 /** 根本原因 */
 export const rootCauseSchema = z.object({
-  eventId: z.string().describe("ID of the root cause event."),
-  description: z.string().describe("Description of the root cause."),
+  eventId: z.string().describe("ID of the originating event."),
+  description: z.string().describe("What caused the chain."),
 });
 
 /** 因果链状态 */
@@ -884,21 +771,17 @@ export const causalChainStatusSchema = z.enum([
 /** 完整因果链 Schema */
 export const causalChainSchema = z.object({
   chainId: z.string().describe("Format: chain:N"),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this causal chain exists.",
-  ),
+  knownBy: knownBySchema.describe("Actor IDs aware of this chain."),
   rootCause: rootCauseSchema,
   events: z
     .array(timelineEventSchema)
     .nullish()
     .describe("Events in this chain."),
-  status: causalChainStatusSchema.describe("Current status of the chain."),
+  status: causalChainStatusSchema.describe("active, resolved, or interrupted."),
   pendingConsequences: z
     .array(pendingConsequenceSchema)
     .nullish()
-    .describe(
-      "Future consequences. AI decides when to trigger them based on story.",
-    ),
+    .describe("Future consequences awaiting trigger."),
 });
 
 // ============================================================================
@@ -907,28 +790,26 @@ export const causalChainSchema = z.object({
 
 /** 阵营成员 */
 export const factionMemberSchema = z.object({
-  name: z.string().describe("Name of the member."),
-  title: z.string().nullish().describe("Optional title or role."),
+  name: z.string().describe("Member name."),
+  title: z.string().nullish().describe("Title or role."),
 });
 
 /** 阵营关系 */
 export const factionRelationSchema = z.object({
   target: z
     .string()
-    .describe(
-      "Target faction ID (faction.id). If unresolved, temporary bracket alias [Faction Name] is allowed.",
-    ),
-  status: z.string().describe("NPC status."),
+    .describe("Target faction ID. Bracket alias [Name] if unresolved."),
+  status: z.string().describe("Relationship status."),
 });
 
 /** 阵营可见层 */
 export const factionVisibleSchema = z.object({
-  agenda: z.string().describe("Public agenda/reputation."),
+  agenda: z.string().describe("Public goals and reputation."),
   members: z
     .array(factionMemberSchema)
     .nullish()
     .describe("Publicly known members."),
-  influence: z.string().nullish().describe("Perceived influence description."),
+  influence: z.string().nullish().describe("Perceived power level."),
   relations: z
     .array(factionRelationSchema)
     .nullish()
@@ -937,18 +818,16 @@ export const factionVisibleSchema = z.object({
 
 /** 阵营隐藏层 */
 export const factionHiddenSchema = z.object({
-  agenda: z.string().describe("Secret agenda/corruption."),
+  agenda: z.string().describe("Secret goals or corruption (GM-only)."),
   members: z
     .array(factionMemberSchema)
     .nullish()
-    .describe("Secret members/leaders."),
-  influence: z.string().nullish().describe("True influence description."),
+    .describe("Secret members or shadow leaders."),
+  influence: z.string().nullish().describe("True power level (GM-only)."),
   internalConflict: z
     .string()
     .nullish()
-    .describe(
-      "Schisms, rivalries, or rotting foundations within the faction. No group is monolithic.",
-    ),
+    .describe("Internal schisms or power struggles."),
   relations: z
     .array(factionRelationSchema)
     .nullish()
@@ -957,26 +836,17 @@ export const factionHiddenSchema = z.object({
 
 /** 完整阵营 Schema */
 export const factionSchema = z.object({
-  id: z
-    .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'thieves_guild', 'royal_court', 'fac_3'.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this faction exists.",
-  ),
+  id: z.string().describe("Unique faction ID (e.g. 'thieves_guild')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this faction."),
   name: z.string().describe("Faction name."),
   visible: factionVisibleSchema,
   hidden: factionHiddenSchema,
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this faction."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   notes: z
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
@@ -1010,26 +880,16 @@ export const factionViewModelSchema = factionSchema.extend({
  */
 export const actorEntityViewBaseSchema = z
   .object({
-    entityId: z
-      .string()
-      .describe("Canonical entity id (e.g. 'quest:foo' -> 'foo')."),
-    unlocked: z
-      .boolean()
-      .nullish()
-      .describe("Per-actor revelation: whether hidden truth is revealed."),
+    entityId: z.string().describe("Canonical entity ID."),
+    unlocked: z.boolean().nullish().describe("Hidden truth revealed?"),
     unlockReason: z.string().nullish().describe("REQUIRED when unlocked=true."),
     evidence: z
       .array(z.string())
       .nullish()
-      .describe("Evidence supporting unlocked or belief updates."),
-    notes: z
-      .string()
-      .nullish()
-      .describe("Per-actor notes (player view must be objective)."),
-    highlight: z.boolean().nullish().describe("UI-only highlight flag."),
-    lastAccess: accessTimestampSchema
-      .nullish()
-      .describe("UI-only last access timestamp."),
+      .describe("Evidence supporting unlock or belief."),
+    notes: z.string().nullish().describe("Per-actor notes."),
+    highlight: z.boolean().nullish().describe("UI-only."),
+    lastAccess: accessTimestampSchema.nullish().describe("UI-only."),
   })
   .strict();
 
@@ -1141,50 +1001,30 @@ export const attributeColorSchema = z.enum([
 
 /** 角色属性 */
 export const characterAttributeSchema = z.object({
-  label: z
-    .string()
-    .describe("Name of attribute (e.g. Health, Sanity, Credits)."),
+  label: z.string().describe("Attribute name (e.g. Health, Sanity)."),
   value: z.number().int().describe("Current value."),
   maxValue: z.number().int().describe("Maximum value."),
   color: attributeColorSchema.describe("Visual color hint."),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this attribute."),
+  icon: z.string().nullish().describe("Single emoji icon."),
 });
 
 /** 隐藏特质 */
 export const hiddenTraitSchema = z.object({
-  id: z
-    .string()
-    .describe(
-      "REQUIRED. AI-generated unique ID (any unique string). Examples: 'fear_of_darkness', 'hidden_nobility', 'trait_1'.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this trait exists.",
-  ),
+  id: z.string().describe("Unique trait ID (e.g. 'fear_of_darkness')."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this trait."),
   name: z.string().describe("Trait name."),
-  description: z.string().describe("Description of the trait."),
+  description: z.string().describe("What the trait represents."),
   effects: z.array(z.string()).describe("Effects when triggered."),
   triggerConditions: z
     .array(z.string())
     .nullish()
-    .describe("Conditions to trigger the trait."),
-  unlocked: z
-    .boolean()
-    .describe(
-      "Set to true when the triggerConditions are met and the trait is revealed to the player.",
-    ),
+    .describe("Conditions that activate the trait."),
+  unlocked: z.boolean().describe("True when triggered and revealed to actor."),
   unlockReason: z
     .string()
     .nullish()
-    .describe(
-      "REQUIRED when unlocked=true. Evidence for why the hidden trait was revealed.",
-    ),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this trait."),
+    .describe("REQUIRED when unlocked=true. Evidence for revelation."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   highlight: z.boolean().nullish(),
 });
 
@@ -1204,11 +1044,7 @@ export const entityRefSchema = z.object({
 });
 
 const relationBaseSchema = z.object({
-  id: z
-    .string()
-    .describe(
-      "REQUIRED. AI-generated unique relation ID scoped to the owning actor (any unique string).",
-    ),
+  id: z.string().describe("Unique relation ID scoped to the owning actor."),
   to: entityRefSchema.describe("Directed edge target."),
   knownBy: knownBySchema.describe(
     "Existence visibility: which actors know this relationship exists.",
@@ -1217,7 +1053,7 @@ const relationBaseSchema = z.object({
     .boolean()
     .nullish()
     .describe(
-      "AI DECISION: Set true only when the player has definitive proof of the hidden truth (e.g., confession, mind-reading, hard evidence). Default false.",
+      "AI DECISION: Set true only when the actor has definitive proof of the hidden truth (e.g., confession, mind-reading, hard evidence). Default false.",
     ),
   unlockReason: z
     .string()
@@ -1233,16 +1069,14 @@ export const relationPerceptionSchema = relationBaseSchema.extend({
     .object({
       description: z
         .string()
-        .describe(
-          "Objective, observable impression (NO protagonist mind-reading). Must be evidence-based.",
-        ),
+        .describe("Objective, evidence-based impression (no mind-reading)."),
       evidence: z
         .array(z.string())
         .nullish()
         .describe("Concrete observations supporting the impression."),
     })
     .strict()
-    .describe("Player-visible perception record."),
+    .describe("Actor-visible perception."),
   // Perception MUST NOT include affinity numbers; hidden layer is omitted by design.
 });
 
@@ -1253,22 +1087,18 @@ export const relationAttitudeSchema = relationBaseSchema.extend({
       signals: z
         .array(z.string())
         .nullish()
-        .describe(
-          "Observable surface signals the protagonist can notice (tone, distance, actions). No numeric affinity.",
-        ),
+        .describe("Observable surface cues (tone, distance, actions)."),
       reputationTag: z
         .string()
         .nullish()
-        .describe(
-          "Coarse-grained surface tag like '友好/疏远/警惕' (optional).",
-        ),
+        .describe("Coarse surface tag (e.g. friendly/wary/hostile)."),
       claimedIntent: z
         .string()
         .nullish()
-        .describe("What the NPC claims or performs publicly (may be false)."),
+        .describe("What the NPC claims publicly (may be false)."),
     })
     .strict()
-    .describe("Player-visible surface attitude signals."),
+    .describe("Actor-visible surface signals."),
   hidden: z
     .object({
       affinity: z
@@ -1277,9 +1107,7 @@ export const relationAttitudeSchema = relationBaseSchema.extend({
         .min(0)
         .max(100)
         .nullish()
-        .describe(
-          "TRUE affinity score (0-100). MUST be in hidden by default; do not mirror to visible.",
-        ),
+        .describe("TRUE affinity 0-100 (GM-only, never expose)."),
       impression: z
         .string()
         .nullish()
@@ -1287,25 +1115,20 @@ export const relationAttitudeSchema = relationBaseSchema.extend({
       observation: z
         .string()
         .nullish()
-        .describe(
-          "NPC's observations of the protagonist's behavior/knowledge.",
-        ),
+        .describe("NPC's observations of target's behavior."),
       ambivalence: z
         .string()
         .nullish()
-        .describe("Why they might hate AND love the target."),
+        .describe("Conflicting feelings (hate AND love reasons)."),
       transactionalBenefit: z
         .string()
         .nullish()
-        .describe("What do they objectively gain from the relationship?"),
-      motives: z
-        .string()
-        .nullish()
-        .describe("True motives driving their behavior."),
+        .describe("Objective gain from the relationship."),
+      motives: z.string().nullish().describe("True motives driving behavior."),
       currentThought: z
         .string()
         .nullish()
-        .describe("Inner monologue (GM truth)."),
+        .describe("Inner monologue (GM-only)."),
     })
     .strict()
     .nullish()
@@ -1341,134 +1164,93 @@ const isMissingRequiredVisibleField = (value: unknown): boolean => {
 };
 
 export const actorVisibleSchema = z.object({
-  name: z.string().describe("Name the protagonist knows."),
-  title: z.string().nullish().describe("Surface title/role (player-facing)."),
-  age: z.string().nullish().describe("Apparent age (player-facing)."),
-  gender: z
-    .string()
-    .nullish()
-    .describe("Surface-presented gender (player-facing)."),
-  profession: z.string().nullish().describe("Surface profession/role."),
-  background: z
-    .string()
-    .nullish()
-    .describe("Surface background (player-facing)."),
-  race: z
-    .string()
-    .nullish()
-    .describe(
-      "Surface race/species only (player-facing; do not include gender).",
-    ),
+  name: z.string().describe("Known name."),
+  title: z.string().nullish().describe("Surface title or role."),
+  age: z.string().nullish().describe("Apparent age."),
+  gender: z.string().nullish().describe("Presented gender."),
+  profession: z.string().nullish().describe("Surface profession."),
+  background: z.string().nullish().describe("Public background."),
+  race: z.string().nullish().describe("Surface race/species (no gender)."),
   attributes: z
     .array(characterAttributeSchema)
     .nullish()
-    .describe("Player-facing attributes/stats (optional)."),
+    .describe("Actor-facing stats."),
   description: z
     .string()
     .nullish()
-    .describe("Public perception / observable description."),
-  appearance: z.string().nullish().describe("Observable appearance details."),
-  status: z
-    .string()
-    .nullish()
-    .describe("What the protagonist believes they are doing (surface)."),
-  roleTag: z
-    .string()
-    .nullish()
-    .describe("Role tag (e.g. Merchant, Rival, Guard Captain)."),
+    .describe("Public perception or reputation."),
+  appearance: z.string().nullish().describe("Observable appearance."),
+  status: z.string().nullish().describe("What they appear to be doing."),
+  roleTag: z.string().nullish().describe("Role tag (e.g. Merchant, Guard)."),
   voice: z.string().nullish(),
   mannerism: z.string().nullish(),
   mood: z.string().nullish(),
 });
 
 export const actorHiddenSchema = z.object({
-  trueName: z.string().nullish().describe("True name (GM truth)."),
-  race: z
-    .string()
-    .nullish()
-    .describe("True race/species (GM truth; may differ from visible race)."),
-  gender: z
-    .string()
-    .nullish()
-    .describe(
-      "True gender identity (GM truth; may differ from visible presentation).",
-    ),
-  realPersonality: z
-    .string()
-    .nullish()
-    .describe("True personality (GM truth)."),
-  realMotives: z.string().nullish().describe("True motives (GM truth)."),
-  routine: z.string().nullish().describe("Daily routine (GM truth)."),
-  currentThought: z.string().nullish().describe("Inner monologue (GM truth)."),
-  secrets: z.array(z.string()).nullish().describe("Secrets (GM truth)."),
+  trueName: z.string().nullish().describe("True name (GM-only)."),
+  race: z.string().nullish().describe("True race/species (GM-only)."),
+  gender: z.string().nullish().describe("True gender identity (GM-only)."),
+  realPersonality: z.string().nullish().describe("True personality (GM-only)."),
+  realMotives: z.string().nullish().describe("True motives (GM-only)."),
+  routine: z.string().nullish().describe("Daily routine (GM-only)."),
+  currentThought: z.string().nullish().describe("Inner monologue (GM-only)."),
+  secrets: z.array(z.string()).nullish().describe("Hidden secrets (GM-only)."),
   status: z
     .string()
     .nullish()
-    .describe("What they are ACTUALLY doing right now (GM truth)."),
+    .describe("What they are actually doing (GM-only)."),
 });
 
 export const actorProfileSchema = z.object({
   id: z
     .string()
-    .describe(
-      "REQUIRED. Unique actor ID. Player must be 'char:player'. NPC IDs should be stable.",
-    ),
-  kind: actorKindSchema.describe("Actor kind: player or npc."),
+    .describe("Unique actor ID. Player='char:player'. NPC IDs must be stable."),
+  kind: actorKindSchema.describe("player or npc."),
   currentLocation: z
     .string()
-    .describe(
-      "Current location ID. If unresolved, temporary bracket alias [Location Name] is allowed.",
-    ),
-  knownBy: knownBySchema.describe(
-    "Existence visibility: which actors know this character exists.",
-  ),
+    .describe("Current location ID. Bracket alias [Name] if unresolved."),
+  knownBy: knownBySchema.describe("Actor IDs aware of this character."),
   visible: actorVisibleSchema,
   hidden: actorHiddenSchema.nullish(),
   relations: z
     .array(relationEdgeSchema)
     .default([])
-    .describe("Directed relationships originating from this actor."),
+    .describe("Directed relationships from this actor."),
   unlocked: z
     .boolean()
     .nullish()
-    .describe(
-      "AI DECISION: Set true only when the player's view is allowed to see hidden fields for this actor.",
-    ),
+    .describe("AI DECISION: true when actor may see hidden fields."),
   unlockReason: z.string().nullish().describe("REQUIRED when unlocked=true."),
-  icon: z
-    .string()
-    .nullish()
-    .describe("A single emoji representing this actor."),
+  icon: z.string().nullish().describe("Single emoji icon."),
   highlight: z.boolean().nullish().describe("INVISIBLE to AI."),
   createdAt: z.number().nullish().describe("INVISIBLE to AI."),
   modifiedAt: versionedTimestampSchema
     .nullish()
     .describe("Version-aware modification timestamp."),
-  lastAccess: accessTimestampSchema
-    .nullish()
-    .describe("Last access timestamp. INVISIBLE to AI."),
+  lastAccess: accessTimestampSchema.nullish().describe("INVISIBLE to AI."),
   notes: z
     .string()
     .nullish()
     .describe(
-      "Writer's notes for consistency, key details, and prompts. AI must ALWAYS query this before writing.",
+      "AI self-notes for consistency and planning. Read before writing.",
     ),
 });
 
 export const placeholderSchema = z.object({
   id: z
     .string()
-    .describe("REQUIRED. Unique placeholder ID (any unique string)."),
+    .describe("Unique placeholder ID (e.g. 'ph_mysterious_artifact')."),
   label: z
     .string()
-    .describe("A short label the protagonist can reference (surface name)."),
+    .describe("A short label the actor can reference (surface name)."),
   knownBy: knownBySchema.describe(
     "Existence visibility: which actors know this placeholder exists.",
   ),
   visible: z.object({
     description: z
       .string()
-      .describe("Player-visible description (objective, evidence-based)."),
+      .describe("Actor-visible description (objective, evidence-based)."),
   }),
   hidden: z
     .object({
@@ -1597,50 +1379,38 @@ export const worldSettingVisibleSchema = z.object({
   rules: z
     .string()
     .nullish()
-    .describe("Known rules or laws of the world (magic, physics, society)."),
+    .describe("Known rules (magic, physics, society)."),
 });
 
 /** 世界设定隐藏层 */
 export const worldSettingHiddenSchema = z.object({
-  hiddenRules: z
-    .string()
-    .nullish()
-    .describe("Secret rules or laws unknown to most."),
-  secrets: z
-    .array(z.string())
-    .nullish()
-    .describe("World-level secrets and hidden truths."),
+  hiddenRules: z.string().nullish().describe("Secret rules unknown to most."),
+  secrets: z.array(z.string()).nullish().describe("World-level hidden truths."),
 });
 
 /** 世界设定 */
 export const worldSettingSchema = z.object({
-  visible: worldSettingVisibleSchema.describe(
-    "Publicly known world information.",
-  ),
-  hidden: worldSettingHiddenSchema.describe("Secret truths about the world."),
-  history: z.string().describe("Ancient events that shape the present."),
+  visible: worldSettingVisibleSchema.describe("Publicly known world info."),
+  hidden: worldSettingHiddenSchema.describe("Secret truths (GM-only)."),
+  history: z.string().describe("Formative past events."),
 });
 
 /** 主要目标可见层 */
 export const mainGoalVisibleSchema = z.object({
-  description: z.string().describe("The apparent main motivation or task."),
-  conditions: z.string().describe("Known conditions for achieving the goal."),
+  description: z.string().describe("Apparent main motivation."),
+  conditions: z.string().describe("Known conditions for success."),
 });
 
 /** 主要目标隐藏层 */
 export const mainGoalHiddenSchema = z.object({
-  trueDescription: z
-    .string()
-    .describe("The hidden true nature or purpose of the goal."),
-  trueConditions: z.string().describe("Secret conditions for the true goal."),
+  trueDescription: z.string().describe("Hidden true purpose (GM-only)."),
+  trueConditions: z.string().describe("Secret conditions for the real goal."),
 });
 
 /** 主要目标 */
 export const mainGoalSchema = z.object({
-  visible: mainGoalVisibleSchema.describe("The apparent goal."),
-  hidden: mainGoalHiddenSchema.describe(
-    "The hidden event logic or true nature.",
-  ),
+  visible: mainGoalVisibleSchema.describe("Apparent goal."),
+  hidden: mainGoalHiddenSchema.describe("Hidden true nature (GM-only)."),
 });
 
 // ============================================================================
@@ -1842,7 +1612,7 @@ export const storyOutlineSchema = z.object({
               .describe("Brief consequence hint."),
           }),
         )
-        .describe("Initial choices for the player."),
+        .describe("Initial choices for the protagonist."),
       atmosphere: atmosphereSchema.nullish().describe("Override atmosphere."),
       imagePrompt: z
         .string()
@@ -1867,42 +1637,38 @@ export const outlineImageSeedSchema = z.object({
   worldSetting: z
     .string()
     .describe(
-      "A rich description of the world suggested by the image (3-5 sentences). Include: geography, era/technology level, social structure, and any magical/supernatural elements. This should read like a theme's worldSetting.",
+      "World description from image: geography, era, social structure, supernatural elements (3-5 sentences).",
     ),
 
   // 叙事风格 - 与 themes.json 的 narrativeStyle 对应
   narrativeStyle: z
     .string()
     .describe(
-      "The narrative tone and style suggested by the image (2-3 sentences). Example: 'Dark and atmospheric. Focus on cosmic horror and the insignificance of humanity. Describe environments with oppressive detail.'",
+      "Narrative tone and style inferred from the image (2-3 sentences).",
     ),
 
   // 背景模板 - 与 themes.json 的 backgroundTemplate 对应
   backgroundTemplate: z
     .string()
     .describe(
-      "A story background template with [placeholders] inspired by the image (2-3 sentences). Example: 'In the ruins of [Ancient Kingdom], you are a [Role] seeking [Goal]. The [Threat] looms on the horizon.'",
+      "Story background template with [placeholders] inspired by the image (2-3 sentences).",
     ),
 
   // 建议的故事标题
   suggestedTitle: z
     .string()
-    .describe(
-      "A creative, evocative title for the adventure inspired by the image. Should hint at the themes and atmosphere.",
-    ),
+    .describe("Evocative adventure title hinting at themes and atmosphere."),
 
   // 开场场景描述 - 将作为 Phase 9 的参考
   openingSceneDescription: z
     .string()
-    .describe(
-      "A vivid description of the opening scene based on the image (2-3 sentences). This will inform the opening narrative in Phase 9.",
-    ),
+    .describe("Vivid opening scene based on the image (2-3 sentences)."),
 
   // 主要视觉元素
   visualElements: z
     .array(z.string())
     .describe(
-      "Key visual elements from the image that should appear in the story (e.g., 'crumbling Gothic cathedral', 'blood-red moon', 'figure in tattered robes').",
+      "Key visual elements to carry into the story (e.g. 'crumbling cathedral', 'blood-red moon').",
     ),
 
   // 建议的环境主题
@@ -1920,7 +1686,7 @@ export const outlineImageSeedSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "If a character is visible in the image, describe their apparent role, situation, or state. This will inform Phase 2.",
+      "Apparent role/situation of any visible character. Informs Phase 2.",
     ),
 
   // 时间设定提示
@@ -1928,7 +1694,7 @@ export const outlineImageSeedSchema = z.object({
     .string()
     .nullish()
     .describe(
-      "The time period or era suggested by the image (e.g., 'Ancient medieval', 'Post-apocalyptic future', 'Year 3024').",
+      "Era or time period suggested by the image (e.g. 'Ancient medieval', 'Post-apocalyptic').",
     ),
 });
 
@@ -2132,7 +1898,7 @@ export const outlineOpeningNarrativeSchema = z.object({
       )
       .min(2)
       .max(4)
-      .describe("2-4 initial choices for the player's first action."),
+      .describe("2-4 initial choices for the protagonist's first action."),
     atmosphere: atmosphereSchema
       .nullish()
       .describe("Override initial atmosphere if the opening scene differs."),
@@ -2175,14 +1941,16 @@ export type OutlineOpeningNarrative = z.infer<
 
 /** 摘要可见层 */
 export const summaryVisibleSchema = z.object({
-  narrative: z.string().describe("Narrative summary from player perspective."),
+  narrative: z
+    .string()
+    .describe("Narrative summary from protagonist's perspective."),
   majorEvents: z
     .array(z.string())
-    .describe("List of major events player witnessed."),
+    .describe("Major events the protagonist witnessed."),
   characterDevelopment: z
     .string()
-    .describe("Character development from player's view."),
-  worldState: z.string().describe("World state as player understands it."),
+    .describe("Character development from protagonist's view."),
+  worldState: z.string().describe("World state as protagonist understands it."),
 });
 
 /** 摘要隐藏层 */
@@ -2195,11 +1963,11 @@ export const summaryHiddenSchema = z.object({
     .describe("Hidden plots developing in the background."),
   npcActions: z
     .array(z.string())
-    .describe("NPC actions player didn't witness."),
+    .describe("NPC actions protagonist didn't witness."),
   worldTruth: z.string().describe("Real state of the world."),
   unrevealed: z
     .array(z.string())
-    .describe("Secrets not yet revealed to player."),
+    .describe("Secrets not yet revealed to protagonist."),
 });
 
 /** 故事摘要 Schema */
@@ -2262,7 +2030,7 @@ export const gameResponseSchema = z.object({
     )
     .min(2)
     .max(4)
-    .describe("2-4 options for the player's next action."),
+    .describe("2-4 options for the protagonist's next action."),
   atmosphere: atmosphereSchema
     .nullish()
     .describe("Atmosphere settings (envTheme and ambience)."),
@@ -2280,7 +2048,7 @@ export const gameResponseSchema = z.object({
           .string()
           .nullish()
           .describe(
-            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the item (CANNOT change existing ID).",
+            "New unique ID on 'add'; existing ID on 'update'/'remove' (immutable).",
           ),
         name: z.string(),
         visible: inventoryItemVisibleSchema.nullish(),
@@ -2300,7 +2068,7 @@ export const gameResponseSchema = z.object({
           .string()
           .nullish()
           .describe(
-            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the NPC (CANNOT change existing ID).",
+            "New unique ID on 'add'; existing ID on 'update'/'remove' (immutable).",
           ),
         knownBy: knownBySchema
           .nullish()
@@ -2332,7 +2100,7 @@ export const gameResponseSchema = z.object({
           .string()
           .nullish()
           .describe(
-            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the location (CANNOT change existing ID).",
+            "New unique ID on 'add'; existing ID on 'update'/'remove' (immutable).",
           ),
         name: z.string().nullish(),
         visible: locationVisibleSchema.partial().nullish(),
@@ -2352,7 +2120,7 @@ export const gameResponseSchema = z.object({
         id: z
           .string()
           .describe(
-            "For 'add': REQUIRED, AI-generated unique ID. For other actions: ID to identify the quest (CANNOT change existing ID).",
+            "New unique ID on 'add'; existing ID on other actions (immutable).",
           ),
         title: z.string().nullish(),
         type: questTypeSchema.nullish(),
@@ -2372,7 +2140,7 @@ export const gameResponseSchema = z.object({
           .string()
           .nullish()
           .describe(
-            "For 'add': REQUIRED, AI-generated unique ID. For 'update': ID to identify the knowledge (CANNOT change existing ID).",
+            "New unique ID on 'add'; existing ID on 'update' (immutable).",
           ),
         title: z.string().nullish(),
         category: knowledgeCategorySchema.nullish(),
@@ -2393,7 +2161,7 @@ export const gameResponseSchema = z.object({
         id: z
           .string()
           .describe(
-            "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify the faction (CANNOT change existing ID).",
+            "New unique ID on 'add'; existing ID on 'update'/'remove' (immutable).",
           ),
         name: z.string(),
         visible: z.string().nullish(),
@@ -2437,7 +2205,7 @@ export const gameResponseSchema = z.object({
               .string()
               .nullish()
               .describe(
-                "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify (CANNOT change).",
+                "New unique ID on 'add'; existing ID on 'update'/'remove' (immutable).",
               ),
             name: z.string(),
             type: conditionTypeSchema.nullish(),
@@ -2458,7 +2226,7 @@ export const gameResponseSchema = z.object({
               .string()
               .nullish()
               .describe(
-                "For 'add': REQUIRED, AI-generated unique ID. For 'update'/'remove': ID to identify (CANNOT change).",
+                "New unique ID on 'add'; existing ID on 'update'/'remove' (immutable).",
               ),
             name: z.string(),
             description: z.string().nullish(),
@@ -2738,7 +2506,7 @@ Do NOT use direct titles. Instead, use explanatory narrative:
 - ✅ CORRECT: "You witnessed the event with your own eyes..."
 Use varied phrasings: "You remember reading...", "Your oath compels you to...", "You witnessed...", "You heard that...", "A memory surfaces—..."
 
-**3. Character Attributes, Conditions, Skills (Player Status):**
+**3. Character Attributes, Conditions, Skills (Actor Status):**
 Do NOT directly reference field names. Use descriptive sensations:
 - ❌ WRONG: "Your 'Curse of Shadows' condition activates..."
 - ✅ CORRECT: "A faint, dark mist coils around your form..."
@@ -2772,7 +2540,7 @@ In settings with magic/superpowers where "incantations" or "calling out names" a
       .min(2)
       .max(4)
       .describe(
-        "2-4 options for the player's next action after the force update.",
+        "2-4 options for the protagonist's next action after the force update.",
       ),
     atmosphere: atmosphereSchema
       .nullish()

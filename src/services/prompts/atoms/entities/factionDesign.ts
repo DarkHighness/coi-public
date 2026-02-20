@@ -7,7 +7,7 @@
  * 定义创建 Faction 时的设计哲学和质量要求。
  *
  * Enriched with: power structure, lifecycle, resources/leverage, recruitment,
- * inter-faction dynamics, player interaction patterns
+ * inter-faction dynamics, actor interaction patterns
  */
 
 import type { Atom, SkillAtom, SkillOutput } from "../types";
@@ -215,10 +215,12 @@ Every faction has at least ONE schism:
 ❌ BAD hidden.relations: "{ target: 'merchant_guild', status: 'enemies' }"
 </inter_faction_dynamics>
 
-<player_interaction>
-**PLAYER INTERACTION PATTERNS:**
+<actor_interaction>
+**ACTOR INTERACTION PATTERNS:**
 
-**HOW FACTIONS REACT TO PLAYER ACTIONS:**
+Factions interact with ALL actors — player AND NPCs. NPCs have their own faction standing, favors, debts, and betrayals.
+
+**HOW FACTIONS REACT TO ACTOR ACTIONS:**
 
 **FAVOR GAINED**:
 - First: Small rewards, minor access
@@ -231,16 +233,16 @@ Every faction has at least ONE schism:
 - Finally: Active hostility, contracts on head, enemies everywhere
 
 **FACTION PRESSURE:**
-- What does the faction want from the player?
+- What does the faction want from this actor?
 - What will they offer?
 - What will they threaten?
 - At what point do they give up—or escalate to violence?
 
 **PLAYING FACTIONS AGAINST EACH OTHER:**
-- What happens when the player aids rival factions?
+- What happens when an actor aids rival factions?
 - How do factions discover betrayal?
 - What are the consequences of being caught?
-</player_interaction>
+</actor_interaction>
 
 <offscreen_progression>
 **FACTION PROGRESSION OFF-SCREEN:**

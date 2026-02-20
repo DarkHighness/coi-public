@@ -128,4 +128,8 @@ export {
   gossipNetworkAtom,
 } from "./npcLogic";
 export { npcSoul, npcSoulDescription, npcSoulSkill } from "./npcSoul";
-export { darkPsychology, darkPsychologySkill } from "./darkPsychology";
+export {
+  darkPsychology,
+  darkPsychologyDescription,
+  darkPsychologySkill,
+} from "./darkPsychology";

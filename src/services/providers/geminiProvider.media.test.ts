@@ -327,12 +327,9 @@ describe("geminiProvider media and embedding branches", () => {
     });
 
     try {
-      await generateContent(
-        { apiKey: "k" } as any,
-        "gemini-2.5-flash",
-        "sys",
-        [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
-      );
+      await generateContent({ apiKey: "k" } as any, "gemini-2.5-flash", "sys", [
+        { role: "user", content: [{ type: "text", text: "hello" }] },
+      ] as any);
       throw new Error("expected non-stream malformed tool-call rejection");
     } catch (error) {
       expect(error).toMatchObject({ code: "MALFORMED_TOOL_CALL" });

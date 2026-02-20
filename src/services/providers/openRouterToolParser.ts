@@ -43,9 +43,7 @@ const readNonEmptyString = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const getRawToolCalls = (
-  message: JsonObject | null | undefined,
-): unknown[] => {
+const getRawToolCalls = (message: JsonObject | null | undefined): unknown[] => {
   if (!message) {
     return [];
   }

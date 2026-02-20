@@ -52,6 +52,23 @@ Hint at revelations the protagonist will discover later:
   - Hidden truth should EXPLAIN the visible layer's mistakes
   - Each entry should connect to at least one other story element (NPC, location, quest)
 </quality_guidelines>
+
+<schema_field_mapping>
+**WHERE TO WRITE — Knowledge Schema Field Paths:**
+| Design Concept | → Schema Field |
+|---|---|
+| What is commonly known | \`visible.description\` |
+| Additional context | \`visible.details\` |
+| Complete truth (GM-only) | \`hidden.fullTruth\` |
+| Common false beliefs | \`hidden.misconceptions[]\` |
+| Reserved for future reveal | \`hidden.toBeRevealed[]\` |
+| Category | \`category\` (landscape, history, item, legend, etc.) |
+| Cross-entity links | \`relatedTo[]\` (entity IDs) |
+| Visibility scope | \`knownBy[]\` |
+| Internal planning notes | \`notes\` — or entity \`notes.md\` for extended context |
+
+**FALLBACK**: Confidence levels, spread models, verification costs, or contradiction resolution logic → write to knowledge \`notes\` or \`notes.md\`.
+</schema_field_mapping>
 </game_system_context>
 `,
 );
@@ -119,11 +136,30 @@ export const knowledgeLogic: Atom<void> = defineAtom(
   () => `
 <game_system_context>
 **KNOWLEDGE LOGIC**: Information is a contested, evolving system.
-- Beliefs spread through channels (rumor, records, institutions, propaganda).
-- Confidence levels change with evidence, authority, and contradiction pressure.
-- Contradictory knowledge can coexist by audience, class, faction, or location.
-- Verification has cost (time, risk, access), and failed verification can mislead.
-- Knowledge changes must ripple into quests, faction moves, and timeline interpretation.
+
+**INFORMATION UNLOCK TIMING:**
+- Knowledge becomes available through specific CHANNELS: direct observation, NPC testimony, documents, eavesdropping, investigation, deduction
+- Each channel has a RELIABILITY profile: direct observation is hard to dispute; testimony is colored by motive; documents can be forged or incomplete
+- DISCOVERY TIMING is narratively critical: a truth learned too early is confusing; too late is tragic; at the right moment, it is a revelation
+- The protagonist should EARN knowledge through action, not receive it through exposition dumps
+
+**MISCONCEPTION CLEARANCE:**
+- Misconceptions are not simply "overwritten" — they are CONTESTED
+- When new evidence contradicts a held belief, the character (and player) must weigh: Is the evidence trustworthy? Is the source reliable? Could the old belief still be correct?
+- Clearance stages: DOUBT (evidence suggests the belief is wrong) → INVESTIGATION (active testing of the old belief) → CONFIRMATION (decisive evidence) → INTEGRATION (the new truth reshapes understanding)
+- Some misconceptions are DEFENDED by powerful interests — clearing them has social and political cost
+- Partially cleared misconceptions create nuanced states: "I'm not sure the king was murdered, but I'm not sure he wasn't, and that uncertainty changes how I deal with the prince"
+
+**KNOWLEDGE PROPAGATION MODEL:**
+- Information spreads through social networks with MUTATION: the original fact degrades or transforms as it passes through each intermediary
+- Rumors are partial, biased, time-delayed versions of truths (or fictions)
+- Institutional knowledge (guild records, church archives, government ledgers) is more stable but access-gated
+- The protagonist can CHOOSE to propagate knowledge: sharing a secret with an NPC has consequences (alliance, betrayal, cascade)
+- Knowledge can be WEAPONIZED: releasing information at the right moment to the right audience can destabilize factions, expose enemies, or force allies' hands
+
+**KNOWLEDGE-ENTITY COUPLING:**
+- Knowledge state changes propagate to: quest availability (you can't investigate what you don't know exists), NPC trust levels (sharing or withholding knowledge affects relationships), faction strategies (what a faction believes determines how it acts), timeline interpretation (new knowledge recontextualizes past events)
+- A single knowledge revelation can cascade through the entire game state: learning the duke is the murderer changes EVERY interaction with the duke's faction, allies, and enemies
 </game_system_context>
 `,
 );
@@ -153,17 +189,22 @@ export const knowledgeLogicSkill: SkillAtom<void> = defineSkillAtom(
   (_input, trace): SkillOutput => ({
     main: trace.record(knowledgeLogic),
     quickStart: `
-1. Identify active knowledge carriers and channels
-2. Apply evidence/confidence update
-3. Resolve audience-specific contradictions
-4. Propagate downstream effects to quest/faction/timeline state
+1. Identify knowledge channel and reliability (observation, testimony, document, rumor)
+2. Apply evidence to confidence level: does this confirm, contradict, or complicate?
+3. If contradicting held belief: progress through clearance stages (doubt → investigation → confirmation)
+4. Resolve audience-specific contradictions (who believes the old version? who has updated?)
+5. Propagate knowledge state changes to quests, NPCs, factions, timeline
+6. If protagonist shares knowledge: compute social/political consequences
 `.trim(),
     checklist: [
-      "Knowledge update tied to channel and source?",
-      "Confidence shifts justified by evidence quality?",
-      "Audience segmentation handled (who knows/believes)?",
-      "Verification cost or risk represented?",
-      "Downstream entity impacts applied?",
+      "Knowledge source channel and reliability identified?",
+      "Confidence shift justified by evidence quality?",
+      "Misconception clearance is gradual (not instant overwrite)?",
+      "Audience segmentation handled (different groups believe different versions)?",
+      "Verification cost or risk represented (time, danger, access)?",
+      "Knowledge propagation mutations modeled (rumor ≠ fact)?",
+      "Downstream entity impacts applied (quest/NPC/faction/timeline)?",
+      "Knowledge sharing consequences computed (alliance, betrayal, cascade)?",
     ],
   }),
 );

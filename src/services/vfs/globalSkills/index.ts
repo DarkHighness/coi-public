@@ -1682,6 +1682,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "The spell works, but it burns the caster’s hands black. He can cast twice more before losing all feeling. The guild healer offers treatment—for a favor.",
         },
+        {
+          scenario: "Institutional gate",
+          wrong: `The hero enters the enchanted forest and finds the artifact.`,
+          right:
+            "The forest is warded by the Temple of Echoes. Entry requires a signed writ from the Prior, who issues three per season. The Prior’s clerk hints that a \u2018donation\u2019 accelerates paperwork—but the Prior despises bribery. The last petitioner who tried was stripped of guild rank.",
+        },
       ],
     },
     {
@@ -1741,6 +1747,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: `The bartender tells you everything for free.`,
           right:
             "The bartender knows—but only after closing. He wants you to move a package first, and he warns: if the cops see you here again, he loses his license.",
+        },
+        {
+          scenario: "Leverage chain",
+          wrong: `The detective finds the evidence and arrests the villain.`,
+          right:
+            "You find the ledger—but it names the judge’s brother. Expose it and the case gets reassigned to a friendly court. Keep it and the judge owes you a favor. Burn it and the accountant who leaked it pays the price. Every option has a cost and a beneficiary.",
         },
       ],
     },
@@ -1802,6 +1814,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "You hide in the pantry—until the banging stops. Then the scratching begins, slow and patient, right where the boards are thinnest.",
         },
+        {
+          scenario: "Dread from normalcy",
+          wrong: `A monster jumps out and attacks. The hero fights it.`,
+          right:
+            "The children’s drawings on the refrigerator are dated three years ago. The milk in the fridge is fresh. Someone has been living here—washing dishes, watering plants, sleeping in the bed—for three years after the family vanished. The house is warm and the curtains are clean.",
+        },
       ],
     },
     {
@@ -1861,6 +1879,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: `You spoof your badge and walk in.`,
           right:
             "You spoof your badge and walk in—then the system logs a badge used in two zones at once. Security doesn't pounce now; it schedules an audit tomorrow. You have a clock.",
+        },
+        {
+          scenario: "Access stratification",
+          wrong: `The hacker breaks into the system easily.`,
+          right:
+            "The hospital’s trauma bay runs on a subscription model: Bronze gets painkillers and wound closure, Silver gets imaging and surgery, Gold gets organ printing. Your friend is bleeding out on a Bronze gurney. You have a stolen Gold credential—but using it flags the biometric audit in 47 minutes.",
         },
       ],
     },
@@ -1922,6 +1946,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "The 'suspect' lied because they were smuggling medicine. That explains the hidden ledger and the late-night trips—but not the murder. Now the clue has value without being the solution.",
         },
+        {
+          scenario: "Misleading evidence",
+          wrong: `Each clue points clearly to the killer.`,
+          right:
+            "The murder weapon has fingerprints—but the prints belong to the victim. The neighbor heard screaming at 2 AM—but the coroner says death occurred at noon. Every piece of evidence makes perfect sense individually and contradicts every other piece. Someone has been very careful, or very lucky.",
+        },
       ],
     },
     {
@@ -1981,6 +2011,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: `He says he loves her.`,
           right:
             "He changes his plan to keep her safe—then admits it costs him something. She notices the lie he told for her and asks what it will cost later.",
+        },
+        {
+          scenario: "Intimacy through specificity",
+          wrong: `They fell in love because they were destined for each other.`,
+          right:
+            "She orders her coffee wrong every time—two sugars in black espresso—and he stopped correcting her three months ago. He doesn’t know when it happened, but now he orders the same way. The barista noticed before either of them did.",
         },
       ],
     },
@@ -2042,6 +2078,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "He considers it—then sees the crowd. If he strikes, he wins the fight but loses the jianghu. He chooses a different tactic: forcing the rival to admit wrongdoing publicly.",
         },
+        {
+          scenario: "Martial honor as constraint",
+          wrong: `The hero defeats the villain with a stronger technique.`,
+          right:
+            "The Jade Crane style can shatter his guard—but it belongs to a school your master was expelled from. Using it publicly proves your master taught forbidden arts. Win the duel and destroy your master’s reputation; lose it and your school’s disciples starve when patrons withdraw.",
+        },
       ],
     },
     {
@@ -2101,6 +2143,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: `You steal it and leave.`,
           right:
             "You steal it—and the building doesn't chase you. It locks down the district. Cameras don't stop you; they record you. Tomorrow the audit begins. Your exit is now a week-long problem.",
+        },
+        {
+          scenario: "Plan decay",
+          wrong: `The plan works perfectly and everyone gets away clean.`,
+          right:
+            "Step 3 assumed the guard rotation was 12 minutes. It’s 11. The safecracker needs 90 more seconds. The lookout can buy time by triggering a false alarm on the east wing—but that locks down the extraction route. Now the driver has to improvise, and he hates improvising.",
         },
       ],
     },
@@ -2162,6 +2210,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "The settlement welcomes you—then assigns you to the pump crew. Refuse and you lose ration priority. Accept and you learn the pump is failing, and the foreman sells spare parts on the side.",
         },
+        {
+          scenario: "Scarcity as social pressure",
+          wrong: `Resources are scarce but the hero always finds what they need.`,
+          right:
+            "The settlement has enough antibiotics for two people. Three are infected. The doctor is one of them. If she treats herself, she can save one more—but the community votes on who. If she refuses treatment, both others survive but the settlement loses its only medic by winter.",
+        },
       ],
     },
     {
@@ -2221,6 +2275,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: `You help your neighbor and everyone is happy.`,
           right:
             "You help your neighbor—so you miss your shift. The manager docks your pay. Now you must choose: apologize and swallow pride, ask for a favor, or take a second job that costs time with friends.",
+        },
+        {
+          scenario: "Weight in small things",
+          wrong: `Nothing happens. The character has a normal day.`,
+          right:
+            "She finds his bookmark three months after the move. It’s a receipt from a restaurant they never went to, dated the Tuesday she worked late. She puts it back in the book, on the shelf, in the room they now share. She doesn’t ask. The receipt stays.",
         },
       ],
     },
@@ -2283,6 +2343,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "The board mocks your proposal—until you produce signed shipment logs and a live vendor call. One director switches sides immediately; two others open an audit instead of conceding. You win access, not total victory.",
         },
+        {
+          scenario: "Earned reversal",
+          wrong: `The protagonist suddenly reveals a hidden power and destroys the bully.`,
+          right:
+            "He’s been counting the merchant’s shipments for three months—not because he was told to, but because the numbers never added up. When the merchant accuses him of theft at the banquet, he recites the real ledger from memory. Every guest heard. The merchant’s face goes white because the discrepancy points to HIS patron’s embezzlement.",
+        },
       ],
     },
     {
@@ -2344,6 +2410,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "She forges his discharge papers to save him from conscription, but the forgery implicates her brother's unit. By the time he learns the truth, the tribunal date is tomorrow and testifying can save only one of them.",
         },
+        {
+          scenario: "Loss that compounds",
+          wrong: `The character is sad because bad things happened.`,
+          right:
+            "She saved the child by giving up the antidote—and the child grew up believing it was the doctor who saved her. Twenty years later, the child, now a magistrate, sentences her for the theft she committed to buy that antidote. The magistrate will never know the connection. Neither will ask.",
+        },
       ],
     },
     {
@@ -2404,6 +2476,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: `He apologizes once and everything is fine.`,
           right:
             "He apologizes, then volunteers the night shift for a month to cover the losses he caused, attends every review meeting, and accepts that trust returns in stages. His friend helps—but still keeps account access revoked.",
+        },
+        {
+          scenario: "Trust rebuilt through action",
+          wrong: `The character apologizes and everyone forgives them.`,
+          right:
+            "He shows up every morning at 6 AM to repair the wall he burned down. He doesn’t speak. He doesn’t explain. By the third week, the baker leaves a cup of water on the post. By the fifth week, someone hands him a better trowel. The wall is nearly done. No one has said the word ‘forgive.’",
         },
       ],
     },
@@ -2652,6 +2730,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "You do it and leave—and it works. Tomorrow the review team notices the anomaly in the log. You have a 24-hour window to shape the narrative or burn the trail.",
         },
+        {
+          scenario: "Institutional cascade",
+          wrong: "The character commits a crime and gets away with it.",
+          right:
+            "The break-in was clean—no witnesses, no alarms. But the building’s insurance company flags the claim. The adjuster requests access logs. The logs show the maintenance contractor badge was cloned. The contractor’s HR department starts an internal audit. In two weeks, the contractor’s employee who sold the badge data is looking for someone to blame.",
+        },
       ],
     },
     {
@@ -2711,6 +2795,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: "The guards arrest anyone anywhere.",
           right:
             "The duke’s guards stop at the temple steps. Inside, only the clerics can judge. The player can force a choice: risk sacrilege or take the slow legal route.",
+        },
+        {
+          scenario: "Obligation as weapon",
+          wrong: "The lord demands taxes and the peasants pay.",
+          right:
+            "The lord’s harvest tithe is due—but the river bridge collapsed, and only his vassal’s ferry can move the grain. The vassal offers transport in exchange for a hunting charter in the lord’s forest. The forest is where the temple gathers its sacred herbs. Now the lord must choose which obligation to break: the vassal’s loyalty, the temple’s blessing, or the crown’s tax deadline.",
         },
       ],
     },
@@ -3017,6 +3107,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "You can enter the sacred hall only after cleansing and a witness-signature. Skip it and you may enter—but your name is recorded as 'unclean,' changing how guards and merchants treat you tomorrow.",
         },
+        {
+          scenario: "Ritual as law",
+          wrong: "The king declares war and the army marches.",
+          right:
+            "War requires the blessing of the River Priestess. She demands the king fast for three days and present his grievance at the water temple. The enemy ambassador is already there—offering the priestess two cartloads of lapis lazuli for her new shrine. The blessing is religious, but the negotiation is entirely political.",
+        },
       ],
     },
     {
@@ -3077,6 +3173,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: "You expose the official and he disappears.",
           right:
             "You expose the official. The next day, permits freeze under an 'anti-corruption audit.' Your bank account is flagged. The official doesn't vanish—he weaponizes procedure.",
+        },
+        {
+          scenario: "Paperwork as gatekeeping",
+          wrong: "The detective investigates the case freely.",
+          right:
+            "The investigation requires a warrant from the district magistrate—who was appointed by the very party the suspect belongs to. The magistrate won’t refuse outright (that’s auditable), but he’ll require three notarized witness statements, a filing fee, and a two-week processing period. The suspect’s ship leaves in four days.",
         },
       ],
     },
@@ -3139,6 +3241,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "You use the tech and it works—then it changes the world: regulators tighten licenses, corporations start audits, and smugglers sell counterfeit keys. You solved one problem and created three.",
         },
+        {
+          scenario: "Tech as social stratifier",
+          wrong: "Everyone has access to the same technology.",
+          right:
+            "The neural interface is free—the basic tier. It shows ads in your peripheral vision and logs your location. The premium tier costs a year’s salary but gives clean cognition and privacy. The black-market tier strips all logging but voids your citizenship insurance. Three tiers, three classes, three different cities inside the same city.",
+        },
       ],
     },
     {
@@ -3200,6 +3308,13 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           right:
             "You seal it for three nights. The seal requires incense and a witness mark. The third night, the incense runs out. Now you must find more, negotiate with a temple clerk, or improvise—with consequences.",
         },
+        {
+          scenario: "Knowledge as danger",
+          wrong:
+            "The character learns the truth about the supernatural and uses it freely.",
+          right:
+            "The warding sigil works—you tested it. But the librarian who taught you the sigil is now asking questions you don’t want to answer. Knowledge of the ward implies knowledge of what’s being warded against, and that knowledge is precisely what the Bureau of Unseen Affairs investigates. You can protect yourself from the thing in the walls, or you can protect yourself from the Bureau. Not both.",
+        },
       ],
     },
     {
@@ -3260,6 +3375,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: "You win the war by winning a big battle.",
           right:
             "You win by burning the depot that feeds the front. The battle never happens—because the enemy retreats when rations run out. Then you inherit refugees and riots. Victory has paperwork.",
+        },
+        {
+          scenario: "Victory’s cost",
+          wrong: "The battle is won and peace returns.",
+          right:
+            "The siege is broken. The granaries are ash. Twelve thousand civilians have nowhere to sleep and nothing to eat. The liberating army must now feed a city with supply lines stretched across hostile territory—while the enemy’s retreating cavalry burns every bridge behind them. Liberation was the easy part.",
         },
       ],
     },
@@ -3504,6 +3625,12 @@ function buildResolvedThemeSkillDefs(): ThemeSkillResolvedDef[] {
           wrong: "You know it's true because a spy told you.",
           right:
             "You can confirm it quickly by querying a clerk (leaves a log) or slowly by observing movement (info may stale). Either way, you create traces counterintel can review tomorrow.",
+        },
+        {
+          scenario: "Trust as currency",
+          wrong: "The spy gathers intel without consequences.",
+          right:
+            "Your asset in the ministry just handed you the deployment schedule—in exchange for a promise that his family will be relocated. If you burn the asset after extraction, you save resources but word spreads: no one will trust your agency’s promises again. If you honor the deal, it costs three months’ budget and creates a paper trail. Your handler wants results. Your conscience wants a receipt.",
         },
       ],
     },

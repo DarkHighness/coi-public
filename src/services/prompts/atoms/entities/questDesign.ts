@@ -69,6 +69,23 @@ Avoid:
 - Clues that require mind-reading (“You sense he’s lying”).
 - Single-point-of-failure design (one roll/NPC or nothing).
 </quest_playability>
+
+<schema_field_mapping>
+**WHERE TO WRITE — Quest Schema Field Paths:**
+| Design Concept | → Schema Field |
+|---|---|
+| Apparent objective | \`visible.description\` |
+| Known task steps | \`visible.objectives[]\` |
+| True purpose (GM-only) | \`hidden.trueDescription\` |
+| Real hidden objectives | \`hidden.trueObjectives[]\` |
+| Hidden complication or moral dilemma | \`hidden.twist\` |
+| Outcome revealed on completion | \`hidden.secretOutcome\` |
+| Quest type | \`type\` (main / side / hidden) |
+| Visibility scope | \`knownBy[]\` |
+| Internal planning notes | \`notes\` — or entity \`notes.md\` for extended context |
+
+**FALLBACK**: Lead chains, approach matrices, "do nothing" timelines, or fail-forward branching → write to quest \`notes\` field or \`notes.md\`.
+</schema_field_mapping>
 </game_system_context>
 `,
 );
@@ -187,11 +204,35 @@ export const questLogic: Atom<void> = defineAtom(
   () => `
 <game_system_context>
 **QUEST LOGIC**: Quests are state machines with pressure, branches, and cost.
-- Progress is evidence-based (artifacts, witnesses, actions), never vague intent.
-- Each phase has at least one alternate approach (social/physical/procedural/violent).
-- Deadlines and clocks advance off-screen and can invalidate paths.
-- Failure moves story forward with changed stakes, not silent reset.
-- Quest changes must sync to involved NPC/location/faction/timeline entities.
+
+**STATE MACHINE MECHANICS:**
+- Quests exist in states: UNDISCOVERED → AVAILABLE → ACTIVE → (COMPLETED | FAILED | ABANDONED | TRANSFORMED)
+- State transitions require EVIDENCE: an artifact found, a conversation overheard, an action taken
+- Transitions can be triggered by player action OR world events (the quest clock expires, an NPC acts independently)
+- TRANSFORMED means the quest mutated into something else (the rescue mission becomes an escape; the investigation becomes a cover-up)
+
+**FAIL-FORWARD DESIGN:**
+- Quest failure is NEVER a dead end. It is a fork to a different path with different costs.
+- Failed rescue → survivor's guilt + enemy emboldened + potential revenge arc
+- Missed deadline → opportunity lost forever + the world moved on without you + new problems from the gap
+- Botched negotiation → relationship damaged + harder path still available + NPC remembers
+- The CONSEQUENCES of failure should be more narratively interesting than the rewards of success
+
+**DISCOVERY CHAIN TRIGGERS:**
+- Completing or advancing one quest should reveal breadcrumbs to others
+- The merchant's ledger reveals a name → the name connects to a faction → the faction is running a parallel operation
+- Discovery feels earned when each link requires ACTION, not just information receipt
+- "Show, don't tell" applies to quest hooks: the player should STUMBLE ONTO leads, not be handed briefings
+
+**PRESSURE ESCALATION:**
+- Quest clocks advance whether the player is paying attention or not
+- Each clock tick should produce VISIBLE consequences: the kidnap victim is moved further away; the plague spreads to another district; the enemy fortifies their position
+- Escalation should compress the protagonist's options: early in the quest, many approaches are viable; late in the quest, only desperate measures remain
+- The protagonist's OWN delays should be the cause of escalation, creating genuine regret
+
+**CROSS-ENTITY SYNCHRONIZATION:**
+- Quest state changes ripple to: NPC attitudes (allies lose patience, enemies prepare), location states (the hideout is abandoned, the bridge is destroyed), faction postures (support withdrawn, counter-operations launched), timeline events (new entries created from quest outcomes)
+- Abandoned quests don't disappear — their unresolved consequences continue to develop off-screen
 </game_system_context>
 `,
 );
@@ -221,17 +262,22 @@ export const questLogicSkill: SkillAtom<void> = defineSkillAtom(
   (_input, trace): SkillOutput => ({
     main: trace.record(questLogic),
     quickStart: `
-1. Set current objective + evidence gate
-2. Offer multi-approach progression routes
-3. Advance clocks/deadlines and resolve branch outcomes
-4. Propagate outcomes to linked entities
+1. Identify current quest state and available transitions
+2. Validate transition evidence (artifact, witness, action, or world event)
+3. Advance quest clocks and resolve deadline consequences
+4. If failed: apply fail-forward (new path, not dead end)
+5. Check for discovery chain triggers to other quests
+6. Synchronize changes to NPC/location/faction/timeline entities
 `.trim(),
     checklist: [
-      "Progress gate tied to concrete evidence?",
-      "At least two viable approaches preserved?",
-      "Deadline/clock advanced with clear impact?",
-      "Failure resulted in forward pressure (not reset)?",
-      "Linked entities updated for consequence continuity?",
+      "Quest state transition backed by concrete evidence?",
+      "At least two viable approaches preserved at current stage?",
+      "Quest clock advanced with visible consequences?",
+      "Failure results in forward pressure (not reset or dead end)?",
+      "Discovery chain checked (does this step reveal new leads)?",
+      "Linked entities updated (NPC attitudes, location states, faction posture)?",
+      "Abandoned quest consequences continue off-screen?",
+      "Pressure escalation compresses options over time?",
     ],
   }),
 );
