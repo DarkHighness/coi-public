@@ -20,10 +20,7 @@ import { getProviderConfig } from "../../utils";
 import { countProviderPromptTokens } from "../retry";
 import { fromGeminiFormat, createUserMessage } from "../../../messageTypes";
 import { vfsToolRegistry } from "../../../vfs/tools";
-import {
-  generateAdventureTurn,
-  type AgenticLoopResult,
-} from "../turn/adventure";
+import type { AgenticLoopResult } from "../turn/adventure";
 import { defineAtom, runPromptWithTrace } from "../../../prompts/trace/runtime";
 
 // ============================================================================
@@ -46,6 +43,9 @@ export type CleanupMode = "auto" | "session_cleanup" | "query_cleanup";
 type CleanupPromptInput = {
   state: GameState;
 };
+
+const loadGenerateAdventureTurn = async () =>
+  (await import("../turn/adventure")).generateAdventureTurn;
 
 const cleanupPromptAtom = defineAtom(
   {
@@ -381,8 +381,10 @@ export const generateEntityCleanup = async (
   const runCleanup = async (
     cleanupTurnContext: TurnContext,
     turnKind: "session_cleanup" | "query_cleanup",
-  ): Promise<AgenticLoopResult> =>
-    generateAdventureTurn(inputState, cleanupTurnContext, { turnKind });
+  ): Promise<AgenticLoopResult> => {
+    const generateAdventureTurn = await loadGenerateAdventureTurn();
+    return generateAdventureTurn(inputState, cleanupTurnContext, { turnKind });
+  };
 
   const queryCleanupSlotId = (slotId?: string): string => {
     const normalizedSlotId =
