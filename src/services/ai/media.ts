@@ -41,7 +41,7 @@ import { createProvider } from "./provider/createProvider";
 import { getProviderConfig, createLogEntry } from "./utils";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  resolveModelContextWindowTokens,
+  resolveModelContextWindowTokensWithLookup,
 } from "../modelContextWindows";
 import { NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../tokenBudget";
 
@@ -348,13 +348,16 @@ export const generateVeoScript = async (
     topK,
     minP,
   } = providerInfo;
-  const contextWindowTokens = resolveModelContextWindowTokens({
-    settings,
-    providerId: instance.id,
-    providerProtocol: instance.protocol,
-    modelId,
-    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  }).value;
+  const contextWindowTokens = (
+    await resolveModelContextWindowTokensWithLookup({
+      settings,
+      providerId: instance.id,
+      providerProtocol: instance.protocol,
+      modelId,
+      providerApiKey: instance.apiKey,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    })
+  ).value;
   const sys =
     "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.";
   const contents: unknown[] =

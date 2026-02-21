@@ -15,7 +15,7 @@ import {
 import { callWithAgenticRetry, createPromptTokenBudgetContext } from "../retry";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  resolveModelContextWindowTokens,
+  resolveModelContextWindowTokensWithLookup,
 } from "../../../modelContextWindows";
 import { NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../../../tokenBudget";
 import {
@@ -77,13 +77,16 @@ export async function runVisualLoop(
   }
 
   const { instance, modelId } = providerInfo;
-  const contextWindowTokens = resolveModelContextWindowTokens({
-    settings,
-    providerId: instance.id,
-    providerProtocol: instance.protocol,
-    modelId,
-    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  }).value;
+  const contextWindowTokens = (
+    await resolveModelContextWindowTokensWithLookup({
+      settings,
+      providerId: instance.id,
+      providerProtocol: instance.protocol,
+      modelId,
+      providerApiKey: instance.apiKey,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    })
+  ).value;
 
   const visualSession = await sessionManager.getOrCreateSession({
     slotId: `visual-${segment.id}`,

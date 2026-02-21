@@ -108,6 +108,15 @@ interface OpenRouterRequestOptions {
 type OpenRouterModelWithFallback = models.Model & {
   slug?: string;
   context_length?: number;
+  canonical_slug?: string;
+  top_provider?: {
+    context_length?: number;
+    contextLength?: number;
+  };
+  topProvider?: {
+    context_length?: number;
+    contextLength?: number;
+  };
 };
 
 interface OpenRouterReasoningOption {
@@ -612,6 +621,69 @@ export async function getCredits(
 // ============================================================================
 // Model Listing
 // ============================================================================
+const OPENROUTER_MODELS_ENDPOINT = "https://openrouter.ai/api/v1/models";
+const OPENROUTER_MODELS_STATIC_RESOURCE = "/resources/openrouter_models.json";
+
+const readOpenRouterModelContextLength = (
+  rawModel: OpenRouterModelWithFallback,
+): number | undefined => {
+  const topProvider = isRecord(rawModel.top_provider)
+    ? rawModel.top_provider
+    : isRecord(rawModel.topProvider)
+      ? rawModel.topProvider
+      : undefined;
+
+  return (
+    readNumber(rawModel.contextLength) ??
+    readNumber(rawModel.context_length) ??
+    (topProvider
+      ? (readNumber(topProvider.context_length) ??
+        readNumber(topProvider.contextLength))
+      : undefined)
+  );
+};
+
+const toModelInfoList = (rawModels: unknown[]): ModelInfo[] => {
+  const models: ModelInfo[] = [];
+
+  for (const rawModel of rawModels) {
+    if (!isRecord(rawModel)) {
+      continue;
+    }
+
+    const m = rawModel as OpenRouterModelWithFallback;
+    const id =
+      readString(m.id) ||
+      readString(m.slug) ||
+      readString(m.canonical_slug) ||
+      "";
+    if (!id) {
+      continue;
+    }
+
+    const name =
+      readString(m.name) ||
+      readString(m.id) ||
+      readString(m.slug) ||
+      readString(m.canonical_slug) ||
+      id;
+    const capabilities = inferModelCapabilities({
+      id,
+      name,
+      ...m,
+    });
+
+    models.push({
+      id,
+      name,
+      contextLength: readOpenRouterModelContextLength(m),
+      capabilities,
+    });
+  }
+
+  return models;
+};
+
 /**
  * Get available OpenRouter models using SDK
  */
@@ -624,26 +696,60 @@ export async function getModels(
     if (!response.data || !Array.isArray(response.data)) {
       throw new Error("Invalid response format from models.list()");
     }
-    return response.data.map((rawModel) => {
-      const m = rawModel as OpenRouterModelWithFallback;
-      const id = m.id || m.slug || "";
-      const name = m.name || m.id || m.slug || "";
-      const capabilities = inferModelCapabilities({
-        id,
-        name,
-        ...m,
-      });
-      return {
-        id,
-        name,
-        contextLength: m.contextLength ?? m.context_length ?? undefined,
-        capabilities,
-      };
-    });
+    const models = toModelInfoList(response.data);
+    if (models.length > 0) {
+      return models;
+    }
+    throw new Error("Empty SDK model list");
   } catch (error) {
     console.warn("Failed to list OpenRouter models via SDK:", error);
-    return [];
   }
+
+  try {
+    const requestOptions = createRequestOptions();
+    const response = await fetch(OPENROUTER_MODELS_ENDPOINT, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        ...requestOptions.fetchOptions.headers,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`OpenRouter /v1/models HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    const payloadRecord = isRecord(payload) ? payload : {};
+    const rows = Array.isArray(payloadRecord.data) ? payloadRecord.data : [];
+    const models = toModelInfoList(rows);
+    if (models.length > 0) {
+      return models;
+    }
+    throw new Error("Empty OpenRouter /v1/models payload");
+  } catch (error) {
+    console.warn("Failed to list OpenRouter models via /v1/models:", error);
+  }
+
+  try {
+    const response = await fetch(OPENROUTER_MODELS_STATIC_RESOURCE);
+    if (!response.ok) {
+      throw new Error(`Static model catalog HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    const payloadRecord = isRecord(payload) ? payload : {};
+    const rows = Array.isArray(payloadRecord.data) ? payloadRecord.data : [];
+    const models = toModelInfoList(rows);
+    if (models.length > 0) {
+      return models;
+    }
+    throw new Error("Empty static OpenRouter model catalog");
+  } catch (error) {
+    console.warn(
+      "Failed to list OpenRouter models via static fallback catalog:",
+      error,
+    );
+  }
+
+  return [];
 }
 /**
  * Infer model capabilities

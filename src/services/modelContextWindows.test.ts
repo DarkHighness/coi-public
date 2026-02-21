@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AISettings, ModelInfo } from "../types";
 import {
+  __resetOpenRouterContextLookupCacheForTests,
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   applyDefaultContextWindowsToModels,
   buildModelContextWindowKey,
@@ -9,6 +10,7 @@ import {
   parseContextOverflowDiagnostics,
   relaxLearnedContextWindowOnSuccess,
   resolveModelContextWindowTokens,
+  resolveModelContextWindowTokensWithLookup,
   upsertLearnedModelContextWindow,
 } from "./modelContextWindows";
 
@@ -26,6 +28,14 @@ describe("modelContextWindows", () => {
     expect(buildModelContextWindowKey("provider-1", "GPT-4.1")).toBe(
       "provider-1::gpt-4.1",
     );
+  });
+
+  beforeEach(() => {
+    __resetOpenRouterContextLookupCacheForTests();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("caps learned value by current system upper bound", () => {
@@ -241,5 +251,138 @@ describe("modelContextWindows", () => {
     // floor(1,047,576 * 0.95) = 995,197
     expect(capped.nextLearned).toBe(995197);
     expect(capped.relaxed).toBe(true);
+  });
+
+  it("preserves provider metadata priority over OpenRouter lookup", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        data: [{ id: "openai/gpt-5", context_length: 400000 }],
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock as any);
+
+    const resolved = await resolveModelContextWindowTokensWithLookup({
+      settings: withContextWindows({}),
+      providerId: "provider-1",
+      providerProtocol: "openrouter",
+      modelId: "openai/gpt-5",
+      providerReportedContextLength: 222222,
+      providerApiKey: "or-key",
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+
+    expect(resolved).toEqual({
+      value: 222222,
+      source: "provider.modelMetadata",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("prioritizes user override before any OpenRouter lookup", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        data: [{ id: "openai/gpt-5", context_length: 400000 }],
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock as any);
+
+    const resolved = await resolveModelContextWindowTokensWithLookup({
+      settings: withContextWindows({ "provider-1::openai/gpt-5": 333333 }),
+      providerId: "provider-1",
+      providerProtocol: "openrouter",
+      modelId: "openai/gpt-5",
+      providerApiKey: "or-key",
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+
+    expect(resolved).toEqual({
+      value: 333333,
+      source: "settings.modelContextWindows",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("matches OpenRouter /v1/models with fuzzy best-match selection", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "https://openrouter.ai/api/v1/models") {
+          return {
+            ok: true,
+            json: async () => ({
+              data: [
+                {
+                  id: "openai/gpt-4o-mini-latest",
+                  context_length: 128000,
+                },
+                {
+                  id: "openai/gpt-4o-latest-2026-01-17",
+                  context_length: 262144,
+                },
+              ],
+            }),
+          };
+        }
+        return { ok: false, status: 404 };
+      }) as any,
+    );
+
+    const resolved = await resolveModelContextWindowTokensWithLookup({
+      settings: withContextWindows({}),
+      providerId: "provider-1",
+      providerProtocol: "openrouter",
+      modelId: "openai/gpt-4o-latest",
+      providerApiKey: "or-key",
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+
+    expect(resolved).toEqual({
+      value: 262144,
+      source: "provider.modelMetadata",
+    });
+  });
+
+  it("falls back to static OpenRouter catalog when /v1/models is unavailable", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "https://openrouter.ai/api/v1/models") {
+        return { ok: false, status: 503 };
+      }
+      if (url === "/resources/openrouter_models.json") {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: "anthropic/claude-sonnet-4-5-20250929",
+                context_length: 200000,
+              },
+            ],
+          }),
+        };
+      }
+      return { ok: false, status: 404 };
+    });
+    vi.stubGlobal("fetch", fetchMock as any);
+
+    const resolved = await resolveModelContextWindowTokensWithLookup({
+      settings: withContextWindows({}),
+      providerId: "provider-1",
+      providerProtocol: "openrouter",
+      modelId: "anthropic/claude-sonnet-4-5",
+      providerApiKey: "or-key",
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+
+    expect(resolved).toEqual({
+      value: 200000,
+      source: "provider.modelMetadata",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://openrouter.ai/api/v1/models",
+      expect.any(Object),
+    );
+    expect(fetchMock).toHaveBeenCalledWith("/resources/openrouter_models.json");
   });
 });

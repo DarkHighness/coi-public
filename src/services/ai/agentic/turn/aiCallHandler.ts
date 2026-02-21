@@ -26,7 +26,7 @@ import {
 import { sessionManager } from "../../sessionManager";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  resolveModelContextWindowTokens,
+  resolveModelContextWindowTokensWithLookup,
 } from "../../../modelContextWindows";
 
 // ============================================================================
@@ -87,13 +87,19 @@ export async function handleAICall(
       0,
       loopState.budgetState.retriesMax - loopState.budgetState.retriesUsed,
     );
-    const contextWindowTokens = resolveModelContextWindowTokens({
-      settings,
-      providerId: provider.instanceId,
-      providerProtocol: provider.protocol,
-      modelId,
-      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-    }).value;
+    const providerApiKey = settings.providers?.instances?.find(
+      (instance) => instance.id === provider.instanceId,
+    )?.apiKey;
+    const contextWindowTokens = (
+      await resolveModelContextWindowTokensWithLookup({
+        settings,
+        providerId: provider.instanceId,
+        providerProtocol: provider.protocol,
+        modelId,
+        providerApiKey,
+        fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+      })
+    ).value;
     const resp = await callWithAgenticRetry(
       provider,
       {

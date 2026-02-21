@@ -27,7 +27,7 @@ import { readConversationIndex } from "../../../vfs/conversation";
 import { vfsToolRegistry } from "../../../vfs/tools";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  resolveModelContextWindowTokens,
+  resolveModelContextWindowTokensWithLookup,
 } from "../../../modelContextWindows";
 import { NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../../../tokenBudget";
 import {
@@ -227,13 +227,19 @@ export async function runSummaryLoopCore(options: {
 
   const { settings } = input;
   const finishToolName = vfsToolRegistry.getToolset("summary").finishToolName;
-  const contextWindowTokens = resolveModelContextWindowTokens({
-    settings,
-    providerId: provider.instanceId,
-    providerProtocol: provider.protocol,
-    modelId,
-    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  }).value;
+  const providerApiKey = settings.providers?.instances?.find(
+    (instance) => instance.id === provider.instanceId,
+  )?.apiKey;
+  const contextWindowTokens = (
+    await resolveModelContextWindowTokensWithLookup({
+      settings,
+      providerId: provider.instanceId,
+      providerProtocol: provider.protocol,
+      modelId,
+      providerApiKey,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    })
+  ).value;
 
   const loopState = createSummaryLoopState(input);
 

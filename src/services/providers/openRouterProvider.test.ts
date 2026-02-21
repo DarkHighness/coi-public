@@ -329,13 +329,13 @@ describe("openRouterProvider exports", () => {
     );
   });
 
-  it("maps listed models and returns [] on sdk failures", async () => {
+  it("maps listed models and reads context from top_provider fallback", async () => {
     sdkMocks.modelsList.mockResolvedValueOnce({
       data: [
         {
           id: "openai/gpt-4-vision-preview",
           name: "GPT-4 Vision",
-          context_length: 128000,
+          top_provider: { context_length: 128000 },
         },
       ],
     });
@@ -345,9 +345,57 @@ describe("openRouterProvider exports", () => {
     expect(models[0].id).toBe("openai/gpt-4-vision-preview");
     expect(models[0].contextLength).toBe(128000);
     expect(models[0].capabilities.image).toBe(true);
+  });
+
+  it("falls back to /v1/models and then static catalog when sdk fails", async () => {
+    sdkMocks.modelsList.mockRejectedValueOnce(new Error("model list down"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "https://openrouter.ai/api/v1/models") {
+          return {
+            ok: true,
+            json: async () => ({
+              data: [{ id: "openai/gpt-5", context_length: 400000 }],
+            }),
+          };
+        }
+        return { ok: false, status: 404 };
+      }) as any,
+    );
+
+    await expect(getModels({ apiKey: "k" } as any)).resolves.toEqual([
+      expect.objectContaining({
+        id: "openai/gpt-5",
+        contextLength: 400000,
+      }),
+    ]);
 
     sdkMocks.modelsList.mockRejectedValueOnce(new Error("model list down"));
-    await expect(getModels({ apiKey: "k" } as any)).resolves.toEqual([]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "https://openrouter.ai/api/v1/models") {
+          return { ok: false, status: 503 };
+        }
+        if (url === "/resources/openrouter_models.json") {
+          return {
+            ok: true,
+            json: async () => ({
+              data: [{ id: "google/gemini-2.5-pro", context_length: 1048576 }],
+            }),
+          };
+        }
+        return { ok: false, status: 404 };
+      }) as any,
+    );
+
+    await expect(getModels({ apiKey: "k" } as any)).resolves.toEqual([
+      expect.objectContaining({
+        id: "google/gemini-2.5-pro",
+        contextLength: 1048576,
+      }),
+    ]);
   });
 
   it("generates images via legacy fetch endpoint", async () => {

@@ -20,7 +20,7 @@ import type { VfsSession } from "../../../vfs/vfsSession";
 import { writeOutlineProgress } from "../../../vfs/outline";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  resolveModelContextWindowTokens,
+  resolveModelContextWindowTokensWithLookup,
 } from "../../../modelContextWindows";
 import { STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../../../tokenBudget";
 
@@ -634,13 +634,16 @@ export const generateStoryOutlinePhased = async (
     throw new Error("Lore provider not configured");
   }
   const { instance, modelId } = providerInfo;
-  const contextWindowTokens = resolveModelContextWindowTokens({
-    settings,
-    providerId: instance.id,
-    providerProtocol: instance.protocol,
-    modelId,
-    fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
-  }).value;
+  const contextWindowTokens = (
+    await resolveModelContextWindowTokensWithLookup({
+      settings,
+      providerId: instance.id,
+      providerProtocol: instance.protocol,
+      modelId,
+      providerApiKey: instance.apiKey,
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    })
+  ).value;
   const logs: LogEntry[] = [];
 
   // Image-based flow can be:

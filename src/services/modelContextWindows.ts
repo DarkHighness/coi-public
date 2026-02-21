@@ -312,6 +312,10 @@ const CONTEXT_WINDOW_BY_MODEL = new Map<string, number>(
   ]),
 );
 
+const OPENROUTER_MODELS_API_URL = "https://openrouter.ai/api/v1/models";
+const OPENROUTER_STATIC_MODELS_URL = "/resources/openrouter_models.json";
+const OPENROUTER_MODELS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 function sanitizePositiveContextWindow(value: unknown): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
@@ -322,6 +326,385 @@ function sanitizePositiveContextWindow(value: unknown): number | undefined {
 
 function normalizeModelId(modelId: string): string {
   return modelId.trim().toLowerCase();
+}
+
+type JsonRecord = Record<string, unknown>;
+
+interface OpenRouterContextCandidate {
+  id: string;
+  canonicalSlug?: string;
+  name?: string;
+  contextLength: number;
+}
+
+interface OpenRouterCatalogCacheEntry {
+  timestamp: number;
+  candidates: OpenRouterContextCandidate[];
+}
+
+const openRouterRemoteCatalogCache = new Map<
+  string,
+  OpenRouterCatalogCacheEntry
+>();
+const openRouterRemoteCatalogInFlight = new Map<
+  string,
+  Promise<OpenRouterContextCandidate[]>
+>();
+let openRouterStaticCatalogCache: OpenRouterContextCandidate[] | null = null;
+let openRouterStaticCatalogInFlight: Promise<
+  OpenRouterContextCandidate[]
+> | null = null;
+
+const isJsonRecord = (value: unknown): value is JsonRecord =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readStringField = (value: unknown): string | undefined =>
+  typeof value === "string" && value.trim().length > 0 ? value : undefined;
+
+const readNumericField = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
+
+function tokenizeModelIdentifier(value: string): string[] {
+  return normalizeModelId(value)
+    .replaceAll("_", "-")
+    .split(/[^a-z0-9]+/g)
+    .filter((token) => token.length > 0);
+}
+
+function stripProviderPrefix(value: string): string {
+  const normalized = normalizeModelId(value).replaceAll("_", "-");
+  const slashIndex = normalized.lastIndexOf("/");
+  return slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
+}
+
+function modelPrefix(value: string): string | undefined {
+  const normalized = normalizeModelId(value);
+  const slashIndex = normalized.indexOf("/");
+  if (slashIndex <= 0) return undefined;
+  return normalized.slice(0, slashIndex);
+}
+
+function readOpenRouterCandidateContextLength(
+  modelRecord: JsonRecord,
+): number | undefined {
+  const topProvider = isJsonRecord(modelRecord.top_provider)
+    ? modelRecord.top_provider
+    : isJsonRecord(modelRecord.topProvider)
+      ? modelRecord.topProvider
+      : undefined;
+  return sanitizePositiveContextWindow(
+    readNumericField(modelRecord.context_length) ??
+      readNumericField(modelRecord.contextLength) ??
+      (topProvider
+        ? (readNumericField(topProvider.context_length) ??
+          readNumericField(topProvider.contextLength))
+        : undefined),
+  );
+}
+
+function mapOpenRouterCatalogCandidates(
+  payload: unknown,
+): OpenRouterContextCandidate[] {
+  const root = isJsonRecord(payload) ? payload : {};
+  const rows = Array.isArray(root.data) ? root.data : [];
+  const candidates: OpenRouterContextCandidate[] = [];
+
+  for (const row of rows) {
+    if (!isJsonRecord(row)) continue;
+
+    const id =
+      readStringField(row.id) ||
+      readStringField(row.slug) ||
+      readStringField(row.canonical_slug) ||
+      readStringField(row.canonicalSlug);
+    if (!id) continue;
+
+    const contextLength = readOpenRouterCandidateContextLength(row);
+    if (!contextLength) continue;
+
+    candidates.push({
+      id,
+      canonicalSlug:
+        readStringField(row.canonical_slug) ||
+        readStringField(row.canonicalSlug),
+      name: readStringField(row.name),
+      contextLength,
+    });
+  }
+
+  return candidates;
+}
+
+interface OpenRouterMatchScore {
+  score: number;
+  overlap: number;
+  lengthDelta: number;
+}
+
+function scoreOpenRouterIdentifier(
+  targetModelId: string,
+  candidateIdentifier: string,
+): OpenRouterMatchScore {
+  const targetNormalized = normalizeModelId(targetModelId).replaceAll("_", "-");
+  const candidateNormalized = normalizeModelId(candidateIdentifier).replaceAll(
+    "_",
+    "-",
+  );
+  const targetShort = stripProviderPrefix(targetNormalized);
+  const candidateShort = stripProviderPrefix(candidateNormalized);
+
+  const targetTokens = tokenizeModelIdentifier(targetNormalized);
+  const candidateTokens = tokenizeModelIdentifier(candidateNormalized);
+  const targetTokenSet = new Set(targetTokens);
+  const overlap = candidateTokens.reduce((count, token) => {
+    return targetTokenSet.has(token) ? count + 1 : count;
+  }, 0);
+
+  let score = 0;
+
+  if (candidateNormalized === targetNormalized) {
+    score += 10_000;
+  }
+  if (
+    candidateShort === targetShort ||
+    candidateNormalized === targetShort ||
+    candidateShort === targetNormalized
+  ) {
+    score += 8_500;
+  }
+  if (
+    candidateNormalized.startsWith(targetNormalized) ||
+    targetNormalized.startsWith(candidateNormalized)
+  ) {
+    score += 2_800;
+  }
+  if (
+    candidateShort.startsWith(targetShort) ||
+    targetShort.startsWith(candidateShort)
+  ) {
+    score += 2_400;
+  }
+  if (
+    candidateNormalized.includes(targetNormalized) ||
+    targetNormalized.includes(candidateNormalized)
+  ) {
+    score += 1_200;
+  }
+  if (
+    candidateShort.includes(targetShort) ||
+    targetShort.includes(candidateShort)
+  ) {
+    score += 900;
+  }
+
+  if (targetTokens.length > 0 && candidateTokens.length > 0) {
+    score += overlap * 200;
+    score += Math.round((overlap / targetTokens.length) * 1_000);
+    score += Math.round((overlap / candidateTokens.length) * 400);
+  }
+
+  const targetPrefix = modelPrefix(targetNormalized);
+  const candidatePrefix = modelPrefix(candidateNormalized);
+  if (targetPrefix && candidatePrefix) {
+    score += targetPrefix === candidatePrefix ? 150 : -150;
+  }
+
+  return {
+    score,
+    overlap,
+    lengthDelta: Math.abs(candidateShort.length - targetShort.length),
+  };
+}
+
+function findBestOpenRouterContextCandidate(
+  modelId: string,
+  candidates: OpenRouterContextCandidate[],
+): OpenRouterContextCandidate | undefined {
+  const target = modelId.trim();
+  if (!target || candidates.length === 0) {
+    return undefined;
+  }
+
+  const ranked = candidates
+    .map((candidate) => {
+      const idScore = scoreOpenRouterIdentifier(target, candidate.id);
+      const canonicalScore = candidate.canonicalSlug
+        ? scoreOpenRouterIdentifier(target, candidate.canonicalSlug)
+        : null;
+      const nameScore = candidate.name
+        ? scoreOpenRouterIdentifier(target, candidate.name)
+        : null;
+
+      const scores = [idScore, canonicalScore, nameScore].filter(
+        (item): item is OpenRouterMatchScore => item !== null,
+      );
+      scores.sort((a, b) => b.score - a.score);
+      const bestScore = scores[0];
+
+      return { candidate, score: bestScore };
+    })
+    .filter((item) => item.score.score > 0);
+
+  ranked.sort((a, b) => {
+    if (b.score.score !== a.score.score) {
+      return b.score.score - a.score.score;
+    }
+    if (b.score.overlap !== a.score.overlap) {
+      return b.score.overlap - a.score.overlap;
+    }
+    if (a.score.lengthDelta !== b.score.lengthDelta) {
+      return a.score.lengthDelta - b.score.lengthDelta;
+    }
+    return a.candidate.id.localeCompare(b.candidate.id);
+  });
+
+  return ranked[0]?.candidate;
+}
+
+function getOpenRouterRemoteCacheKey(apiKey: string | undefined): string {
+  return apiKey?.trim() || "";
+}
+
+async function loadOpenRouterRemoteCandidates(
+  apiKey: string | undefined,
+): Promise<OpenRouterContextCandidate[]> {
+  const cacheKey = getOpenRouterRemoteCacheKey(apiKey);
+  if (!cacheKey || typeof fetch !== "function") {
+    return [];
+  }
+
+  const cached = openRouterRemoteCatalogCache.get(cacheKey);
+  if (
+    cached &&
+    Date.now() - cached.timestamp < OPENROUTER_MODELS_CACHE_TTL_MS
+  ) {
+    return cached.candidates;
+  }
+
+  const inFlight = openRouterRemoteCatalogInFlight.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const requestPromise = (async (): Promise<OpenRouterContextCandidate[]> => {
+    try {
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${cacheKey}`,
+      };
+      if (typeof window !== "undefined" && window.location?.origin) {
+        headers["HTTP-Referer"] = window.location.origin;
+      }
+      headers["X-Title"] = "CoI Game";
+
+      const response = await fetch(OPENROUTER_MODELS_API_URL, {
+        method: "GET",
+        headers,
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      const candidates = mapOpenRouterCatalogCandidates(payload);
+      if (candidates.length > 0) {
+        openRouterRemoteCatalogCache.set(cacheKey, {
+          timestamp: Date.now(),
+          candidates,
+        });
+      }
+      return candidates;
+    } catch (error) {
+      console.warn(
+        "[ContextWindow] Failed to load OpenRouter /v1/models:",
+        error,
+      );
+      return [];
+    } finally {
+      openRouterRemoteCatalogInFlight.delete(cacheKey);
+    }
+  })();
+
+  openRouterRemoteCatalogInFlight.set(cacheKey, requestPromise);
+  return requestPromise;
+}
+
+async function loadOpenRouterStaticCandidates(): Promise<
+  OpenRouterContextCandidate[]
+> {
+  if (openRouterStaticCatalogCache) {
+    return openRouterStaticCatalogCache;
+  }
+  if (openRouterStaticCatalogInFlight) {
+    return openRouterStaticCatalogInFlight;
+  }
+  if (typeof fetch !== "function") {
+    return [];
+  }
+
+  openRouterStaticCatalogInFlight = (async (): Promise<
+    OpenRouterContextCandidate[]
+  > => {
+    try {
+      const response = await fetch(OPENROUTER_STATIC_MODELS_URL);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      const candidates = mapOpenRouterCatalogCandidates(payload);
+      openRouterStaticCatalogCache = candidates;
+      return candidates;
+    } catch (error) {
+      console.warn(
+        "[ContextWindow] Failed to load static OpenRouter model catalog:",
+        error,
+      );
+      openRouterStaticCatalogCache = [];
+      return [];
+    } finally {
+      openRouterStaticCatalogInFlight = null;
+    }
+  })();
+
+  return openRouterStaticCatalogInFlight;
+}
+
+interface ResolveOpenRouterCatalogContextWindowParams {
+  modelId: string;
+  apiKey?: string;
+}
+
+export async function resolveOpenRouterCatalogContextWindow(
+  params: ResolveOpenRouterCatalogContextWindowParams,
+): Promise<number | undefined> {
+  const targetModelId = params.modelId?.trim();
+  if (!targetModelId) {
+    return undefined;
+  }
+
+  const remoteCandidates = await loadOpenRouterRemoteCandidates(params.apiKey);
+  const remoteMatch = findBestOpenRouterContextCandidate(
+    targetModelId,
+    remoteCandidates,
+  );
+  if (remoteMatch) {
+    return remoteMatch.contextLength;
+  }
+
+  const staticCandidates = await loadOpenRouterStaticCandidates();
+  const staticMatch = findBestOpenRouterContextCandidate(
+    targetModelId,
+    staticCandidates,
+  );
+  return staticMatch?.contextLength;
 }
 
 export function buildModelContextWindowKey(
@@ -747,6 +1130,60 @@ export function resolveModelContextWindowTokens(params: {
     value: upperBound,
     source: "fallback.default",
   };
+}
+
+export interface ResolveModelContextWindowTokensWithLookupParams {
+  settings: AISettings;
+  providerId: string;
+  providerProtocol?: ProviderProtocol;
+  modelId: string;
+  providerReportedContextLength?: number;
+  providerApiKey?: string;
+  fallback: number;
+}
+
+export async function resolveModelContextWindowTokensWithLookup(
+  params: ResolveModelContextWindowTokensWithLookupParams,
+): Promise<ResolveContextWindowResult> {
+  const override = getPerModelContextWindowOverride(
+    params.settings,
+    params.providerId,
+    params.modelId,
+  );
+  if (override) {
+    return {
+      value: override,
+      source: "settings.modelContextWindows",
+    };
+  }
+
+  const providerValue = sanitizePositiveContextWindow(
+    params.providerReportedContextLength,
+  );
+
+  let openRouterCatalogValue: number | undefined;
+  if (!providerValue && params.providerProtocol === "openrouter") {
+    openRouterCatalogValue = await resolveOpenRouterCatalogContextWindow({
+      modelId: params.modelId,
+      apiKey: params.providerApiKey,
+    });
+  }
+
+  return resolveModelContextWindowTokens({
+    settings: params.settings,
+    providerId: params.providerId,
+    providerProtocol: params.providerProtocol,
+    modelId: params.modelId,
+    providerReportedContextLength: providerValue ?? openRouterCatalogValue,
+    fallback: params.fallback,
+  });
+}
+
+export function __resetOpenRouterContextLookupCacheForTests(): void {
+  openRouterRemoteCatalogCache.clear();
+  openRouterRemoteCatalogInFlight.clear();
+  openRouterStaticCatalogCache = null;
+  openRouterStaticCatalogInFlight = null;
 }
 
 export function getCopyableModelContextWindowDefaults(): Record<
