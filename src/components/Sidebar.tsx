@@ -260,19 +260,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           <section className="py-3">
-            <QuestPanel
-              quests={gameState.quests || []}
-              themeFont={currentThemeConfig.fontClass}
-              listState={gameState.uiState?.quests}
-              onUpdateList={handleQuestListUpdate}
-              listManagementEnabled={listManagementEnabled}
-              globalEditMode={globalEditMode}
-              expandedItemId={expandedByPanel.quests ?? null}
-              onExpandItem={(itemId) => handleExpandInPanel("quests", itemId)}
-            />
-          </section>
-
-          <section className="py-3">
             <InventoryPanel
               inventory={gameState.inventory || []}
               themeFont={currentThemeConfig.fontClass}
@@ -285,6 +272,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onExpandItem={(itemId) =>
                 handleExpandInPanel("inventory", itemId)
               }
+            />
+          </section>
+
+          <section className="py-3">
+            <NPCPanel
+              npcs={gameState.npcs || []}
+              actors={gameState.actors || []}
+              playerActorId={gameState.playerActorId}
+              locations={gameState.locations || []}
+              themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.npcs}
+              onUpdateList={handleNpcListUpdate}
+              unlockMode={gameState.unlockMode}
+              listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.npcs ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("npcs", itemId)}
+            />
+          </section>
+
+          <section className="py-3">
+            <QuestPanel
+              quests={gameState.quests || []}
+              themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.quests}
+              onUpdateList={handleQuestListUpdate}
+              listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.quests ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("quests", itemId)}
             />
           </section>
 
@@ -322,6 +339,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </section>
 
           <section className="py-3">
+            <TimelineEventsPanel
+              events={gameState.timeline}
+              gameState={timelineGameState}
+              themeFont={currentThemeConfig.fontClass}
+              expandedItemId={expandedByPanel.timeline ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("timeline", itemId)}
+            />
+          </section>
+
+          <section className="py-3">
             <WorldInfoPanel
               history={gameState.worldInfo?.worldSetting?.history}
               factions={gameState.factions}
@@ -330,33 +357,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               themeFont={currentThemeConfig.fontClass}
               worldInfo={gameState.worldInfo}
               unlockMode={gameState.unlockMode}
-            />
-          </section>
-
-          <section className="py-3">
-            <NPCPanel
-              npcs={gameState.npcs || []}
-              actors={gameState.actors || []}
-              playerActorId={gameState.playerActorId}
-              locations={gameState.locations || []}
-              themeFont={currentThemeConfig.fontClass}
-              listState={gameState.uiState?.npcs}
-              onUpdateList={handleNpcListUpdate}
-              unlockMode={gameState.unlockMode}
-              listManagementEnabled={listManagementEnabled}
-              globalEditMode={globalEditMode}
-              expandedItemId={expandedByPanel.npcs ?? null}
-              onExpandItem={(itemId) => handleExpandInPanel("npcs", itemId)}
-            />
-          </section>
-
-          <section className="py-3">
-            <TimelineEventsPanel
-              events={gameState.timeline}
-              gameState={timelineGameState}
-              themeFont={currentThemeConfig.fontClass}
-              expandedItemId={expandedByPanel.timeline ?? null}
-              onExpandItem={(itemId) => handleExpandInPanel("timeline", itemId)}
             />
           </section>
 

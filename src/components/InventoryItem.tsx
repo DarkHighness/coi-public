@@ -160,7 +160,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
               {/* Sensory Details */}
               {item.visible?.sensory && (
-                <div className="mt-2 pl-2 border-l-2 border-theme-divider/60 space-y-1">
+                <div className="mt-2 space-y-1">
                   {item.visible.sensory.texture && (
                     <div className="flex gap-1 text-xs">
                       <span className="text-theme-primary/70">
@@ -195,7 +195,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
               )}
 
               {item.visible?.condition && (
-                <div className="mt-2 pl-2 border-l-2 border-theme-divider/60 text-xs">
+                <div className="mt-2 text-xs">
                   <span className="text-theme-primary/70">
                     {t("sidebar.inventory.condition")}:{" "}
                   </span>
@@ -207,10 +207,10 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
               {item.visible?.usage && (
                 <div className="mt-2">
-                  <div className="text-[10px] uppercase tracking-wider text-theme-primary/70 mb-1">
+                  <div className="sidebar-description-label">
                     {t("sidebar.inventory.usage")}
                   </div>
-                  <div className="text-xs text-theme-text/90 pl-2 border-l-2 border-theme-divider/60">
+                  <div className="text-xs text-theme-text/90">
                     <MarkdownText content={item.visible.usage} />
                   </div>
                 </div>
@@ -218,10 +218,10 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
               {item.emotionalWeight && (
                 <div className="mt-2">
-                  <div className="text-[10px] uppercase tracking-wider text-amber-500/70 mb-1">
+                  <div className="sidebar-description-label text-amber-500/80">
                     ✨ {t("emotionalWeight") || "Significance"}
                   </div>
-                  <div className="text-xs text-theme-text/90 pl-2 border-l-2 border-amber-500/30">
+                  <div className="text-xs text-theme-text/90">
                     <MarkdownText content={item.emotionalWeight} />
                   </div>
                 </div>

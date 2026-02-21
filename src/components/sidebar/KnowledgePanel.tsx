@@ -217,7 +217,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                   </svg>
                   {t("hidden.truth")}
                 </span>
-                <div className="text-theme-text/90 pl-2 border-l-2 border-theme-unlocked/30">
+                <div className="text-theme-text/90">
                   <MarkdownText content={k.hidden.fullTruth} indentSize={2} />
 
                   {k.hidden.misconceptions &&

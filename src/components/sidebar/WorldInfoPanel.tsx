@@ -132,7 +132,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
               >
                 {t("worldInfo.history") || "History"}
               </h4>
-              <div className="text-xs text-theme-text/90 leading-relaxed pl-2 border-l-2 border-theme-divider/60">
+              <div className="text-xs text-theme-text/90 leading-relaxed">
                 <MarkdownText content={history} indentSize={2} />
               </div>
             </div>
@@ -146,7 +146,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
               >
                 {t("worldInfo.setting") || "Setting"}
               </h4>
-              <div className="text-xs text-theme-text/90 leading-relaxed pl-2 border-l-2 border-theme-divider/60">
+              <div className="text-xs text-theme-text/90 leading-relaxed">
                 <MarkdownText
                   content={worldSetting.visible.description}
                   indentSize={2}
@@ -157,7 +157,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                   <div className="text-[10px] uppercase tracking-wider text-theme-text-secondary mb-1">
                     📜 {t("rules.short") || "Rules"}
                   </div>
-                  <div className="text-xs text-theme-text/85 leading-relaxed pl-2 border-l border-theme-divider/60">
+                  <div className="text-xs text-theme-text/85 leading-relaxed">
                     <MarkdownText
                       content={worldSetting.visible.rules}
                       indentSize={2}
@@ -184,7 +184,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                     {t("worldInfo.hiddenTruth") || "Hidden Truth"}
                   </div>
                   {worldSetting.hidden?.hiddenRules && (
-                    <div className="text-xs text-theme-danger/90 leading-relaxed pl-2 border-l border-theme-divider/60">
+                    <div className="text-xs text-theme-danger/90 leading-relaxed">
                       <MarkdownText
                         content={worldSetting.hidden.hiddenRules}
                         indentSize={2}
@@ -234,7 +234,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                 </svg>
                 {t("worldInfo.secretObjective") || "Secret Objective"}
               </h4>
-              <div className="text-xs text-theme-danger/90 leading-relaxed pl-2 border-l-2 border-theme-divider/60">
+              <div className="text-xs text-theme-danger/90 leading-relaxed">
                 {outline.mainGoal.hidden?.trueDescription && (
                   <MarkdownText
                     content={outline.mainGoal.hidden.trueDescription}
@@ -246,7 +246,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                     <div className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 mb-1">
                       📝 {t("worldInfo.conditions") || "Conditions"}
                     </div>
-                    <div className="text-xs text-theme-danger/80 leading-relaxed pl-2 border-l border-theme-divider/60">
+                    <div className="text-xs text-theme-danger/80 leading-relaxed">
                       <MarkdownText
                         content={outline.mainGoal.hidden.trueConditions}
                         indentSize={2}
@@ -324,7 +324,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                                 <div className="text-[10px] uppercase tracking-wider text-theme-text-secondary mb-1">
                                   {t("faction.members") || "Members"}
                                 </div>
-                                <ul className="text-xs text-theme-text/80 space-y-1 pl-3 border-l border-theme-divider/60">
+                                <ul className="text-xs text-theme-text/80 space-y-1 pl-1">
                                   {faction.visible.members.map(
                                     (member, idx) => (
                                       <li key={idx}>
@@ -349,7 +349,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                               <span className="text-[10px] uppercase tracking-wider block mb-1">
                                 {t("faction.influence") || "Influence"}
                               </span>
-                              <div className="text-xs text-theme-text/80 pl-3 border-l border-theme-divider/60">
+                              <div className="text-xs text-theme-text/80 pl-1">
                                 {faction.visible.influence}
                               </div>
                             </div>
@@ -361,7 +361,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                                 <span className="text-[10px] uppercase tracking-wider block mb-1">
                                   {t("faction.relations") || "Relations"}
                                 </span>
-                                <div className="pl-3 border-l border-theme-divider/60 divide-y divide-theme-divider/60">
+                                <div className="pl-1 divide-y divide-theme-divider/60">
                                   {faction.visible.relations.map((rel, idx) => (
                                     <div
                                       key={idx}
@@ -398,7 +398,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                             </svg>
                             {t("secretAgenda") || "Secret Agenda"}
                           </div>
-                          <div className="text-xs text-theme-danger/90 leading-relaxed pl-2 border-l border-theme-divider/60">
+                          <div className="text-xs text-theme-danger/90 leading-relaxed">
                             <MarkdownText
                               content={faction.hidden?.agenda || ""}
                               indentSize={2}
@@ -413,7 +413,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                                   <span className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                     {t("faction.members") || "Members"}
                                   </span>
-                                  <ul className="text-xs text-theme-danger/80 space-y-1 pl-3 border-l border-theme-divider/60">
+                                  <ul className="text-xs text-theme-danger/80 space-y-1 pl-1">
                                     {faction.hidden.members.map(
                                       (member, idx) => (
                                         <li key={idx}>
@@ -437,7 +437,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                                 <span className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                   {t("faction.influence") || "Influence"}
                                 </span>
-                                <div className="text-xs text-theme-danger/80 pl-3 border-l border-theme-divider/60">
+                                <div className="text-xs text-theme-danger/80 pl-1">
                                   {faction.hidden.influence}
                                 </div>
                               </div>
@@ -448,7 +448,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
                                   <span className="text-[10px] uppercase tracking-wider text-theme-unlocked/80 block mb-1">
                                     {t("faction.relations") || "Relations"}
                                   </span>
-                                  <div className="pl-3 border-l border-theme-divider/60 divide-y divide-theme-divider/60">
+                                  <div className="pl-1 divide-y divide-theme-divider/60">
                                     {faction.hidden.relations.map(
                                       (rel, idx) => (
                                         <div

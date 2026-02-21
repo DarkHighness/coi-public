@@ -188,7 +188,7 @@ const TimelineEventCard: React.FC<{
       {/* Expanded Hidden Truth */}
       {isExpanded && (
         <div className="overflow-hidden animate-sidebar-expand">
-          <div className="border-t border-theme-divider/60 pt-2 pl-3 border-l border-theme-divider/60 pr-2">
+          <div className="border-t border-theme-divider/60 pt-2 pl-2 pr-1">
             <div className="flex items-center gap-1.5 mb-2">
               <svg
                 className="w-3 h-3 text-theme-primary"

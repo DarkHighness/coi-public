@@ -542,9 +542,7 @@ input:disabled {
 }
 
 .sidebar-description-body {
-  border-left: 2px solid
-    color-mix(in srgb, var(--theme-primary) 45%, transparent);
-  padding-left: 0.75rem;
+  padding-left: 0;
   color: var(--theme-text);
   line-height: 1.7;
 }

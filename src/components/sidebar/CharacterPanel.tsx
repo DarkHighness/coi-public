@@ -356,19 +356,6 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
             </SidebarTag>
           )}
           {skill.level && <SidebarTag>{skill.level}</SidebarTag>}
-          <svg
-            className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
         </div>
       </div>
 
@@ -393,7 +380,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
             {/* Unlocked Hidden Truth - Outer Layer */}
             {skill.unlocked && skill.hidden?.trueDescription && (
-              <div className="pt-2 border-l border-theme-divider/60 pl-3">
+              <div className="pt-2">
                 <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
                   <svg
                     className="w-3 h-3"
@@ -493,7 +480,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
     <div
       className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 cursor-pointer
         ${accentBorder} ${accentText}
-        ${isExpanded ? "bg-theme-surface-highlight/15" : "hover:bg-theme-surface-highlight/20"}
+        hover:bg-theme-surface-highlight/10
         ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
@@ -536,35 +523,27 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
                 {condition.severity}
               </SidebarTag>
             )}
-            <svg
-              className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
           </div>
         </div>
 
         {condition.visible?.description && (
           <div className="text-xs leading-relaxed opacity-90 text-theme-text-secondary mt-1">
-            <MarkdownText
-              content={condition.visible.description}
-              indentSize={2}
-            />
+            <span className="sidebar-description-label block">
+              {t("description") || "Description"}
+            </span>
+            <div className="sidebar-description-body">
+              <MarkdownText
+                content={condition.visible.description}
+                indentSize={2}
+              />
+            </div>
           </div>
         )}
 
         {/* Expanded content */}
         {isExpanded && (
           <div className="overflow-hidden animate-sidebar-expand">
-            <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-3 border-l border-theme-divider/60">
+            <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-1">
               {condition.visible?.perceivedSeverity && (
                 <p className="text-xs opacity-80">
                   <span className="font-semibold uppercase tracking-wider text-[10px]">
@@ -709,7 +688,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
   return (
     <div
       className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 cursor-pointer
-        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-divider/60 hover:bg-theme-surface-highlight/20"}
+        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:bg-theme-surface-highlight/10"}
         ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
@@ -724,21 +703,6 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
             )}
             <span className="break-words whitespace-normal">{trait.name}</span>
           </span>
-          <svg
-            className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${
-              isExpanded ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            ></path>
-          </svg>
         </div>
 
         {trait.description && (
@@ -749,7 +713,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
 
         {isExpanded && (
           <div className="overflow-hidden animate-sidebar-expand">
-            <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-3 border-l border-theme-divider/60">
+            <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-1">
               {trait.effects && trait.effects.length > 0 && (
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-theme-primary block mb-1">
@@ -883,7 +847,7 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
       {expanded && (
         <div className="space-y-6 animate-[fade-in_0.3s_ease-in]">
           {/* Header Info */}
-          <div className="border-l-2 border-theme-divider/60 border-b border-theme-divider/60 pb-2">
+          <div className="border-b border-theme-divider/60 pb-2">
             <div className="py-3 pl-2 pr-1 space-y-3">
               <h3
                 className={`text-sm font-bold text-theme-primary leading-snug break-words whitespace-normal ${themeFont}`}
