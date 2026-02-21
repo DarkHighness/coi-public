@@ -1453,6 +1453,27 @@ ${vfsReadOnlyHint}- **CRITICAL**: You must invoke the tool function directly. Us
               }
             }
 
+            if (phase.id === "player_actor") {
+              const playerActor = validatedData as OutlinePlayerActor;
+              const playerProfileId = playerActor?.player?.profile?.id;
+              if (
+                typeof playerProfileId !== "string" ||
+                playerProfileId.trim() !== "char:player"
+              ) {
+                toolResponses.push({
+                  toolCallId: tc.id!,
+                  name: tc.name,
+                  content: {
+                    success: false,
+                    error:
+                      'player_actor.player.profile.id must be "char:player".',
+                    code: "INVALID_DATA",
+                  },
+                });
+                continue;
+              }
+            }
+
             // locations / npcs_relationships: cross-phase location reference validation
             if (phase.id === "locations") {
               const priorPhase3 = partial.player_actor as

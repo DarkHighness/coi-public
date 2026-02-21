@@ -64,6 +64,9 @@ const messageContainsText = (message: any, text: string): boolean => {
 };
 
 describe("generateStoryOutlinePhased (coverage)", () => {
+  let phasePlayerActor: any;
+  let phasePayloads: any[];
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -130,7 +133,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       },
     };
 
-    const phasePlayerActor = {
+    phasePlayerActor = {
       player: {
         profile: {
           id: "char:player",
@@ -264,7 +267,7 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       },
     };
 
-    const phasePayloads = [
+    phasePayloads = [
       phaseMasterPlan,
       phasePlaceholderRegistry,
       phaseWorldFoundation,
@@ -278,18 +281,19 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       phaseAtmosphere,
       phaseOpeningNarrative,
     ];
-    const expectedToolNames = getActiveOutlinePhases({
-      hasImageContext: false,
-    }).map((phase) => phase.submitToolName);
+    const phaseDefs = getActiveOutlinePhases({ hasImageContext: false });
+    const payloadByToolName = new Map<string, unknown>();
+    for (let i = 0; i < phaseDefs.length; i += 1) {
+      payloadByToolName.set(phaseDefs[i].submitToolName, phasePayloads[i]);
+    }
     let submitCount = 0;
 
     mockCallWithAgenticRetry.mockImplementation(
       async (_provider: any, _request: any, _history: any, opts: any) => {
         const toolName = String(opts?.finishToolName ?? "");
-        const data = phasePayloads[submitCount];
-        const expectedToolName = expectedToolNames[submitCount];
+        const data = payloadByToolName.get(toolName);
         submitCount += 1;
-        if (!toolName || !data || toolName !== expectedToolName) {
+        if (!toolName || !data) {
           throw new Error(
             `Unexpected finishToolName in test: "${toolName}" (${submitCount})`,
           );
@@ -376,5 +380,80 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       ),
     ).toBe(false);
     expect(result.outline.title).toBe("Demo Adventure");
+  });
+
+  it('rejects player_actor submit when player profile id is not "char:player"', async () => {
+    phasePlayerActor.player.profile.id = "char:npc_bad";
+    const phaseDefs = getActiveOutlinePhases({ hasImageContext: false });
+    const payloadByToolName = new Map<string, unknown>();
+    for (let i = 0; i < phaseDefs.length; i += 1) {
+      payloadByToolName.set(phaseDefs[i].submitToolName, phasePayloads[i]);
+    }
+    let playerActorAttempts = 0;
+    let sawValidationError = false;
+
+    mockCallWithAgenticRetry.mockImplementation(
+      async (_provider: any, _request: any, history: any, opts: any) => {
+        const toolName = String(opts?.finishToolName ?? "");
+
+        if (toolName === "vfs_finish_outline_player_actor") {
+          playerActorAttempts += 1;
+          if (playerActorAttempts === 1) {
+            return {
+              result: {
+                functionCalls: [
+                  {
+                    id: `call_${toolName}`,
+                    name: toolName,
+                    args: phasePlayerActor,
+                  },
+                ],
+              },
+              usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+              raw: {},
+              retries: 0,
+            };
+          }
+
+          const historyText = JSON.stringify(history);
+          sawValidationError =
+            historyText.includes("player.profile.id") &&
+            historyText.includes("char:player");
+          throw new Error("STOP_AFTER_VALIDATION");
+        }
+
+        const data = payloadByToolName.get(toolName);
+        if (!toolName || !data) {
+          throw new Error(`Unexpected finishToolName in test: "${toolName}"`);
+        }
+
+        return {
+          result: {
+            functionCalls: [
+              {
+                id: `call_${toolName}`,
+                name: toolName,
+                args: data,
+              },
+            ],
+          },
+          usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+          raw: {},
+          retries: 0,
+        };
+      },
+    );
+
+    const vfsSession = new VfsSession();
+
+    await expect(
+      generateStoryOutlinePhased("fantasy", "English", undefined, undefined, {
+        slotId: "slot-1",
+        settings: { extra: {} } as any,
+        vfsSession,
+        enableReadOnlyVfsTools: false,
+      }),
+    ).rejects.toThrow("STOP_AFTER_VALIDATION");
+    expect(sawValidationError).toBe(true);
   });
 });
