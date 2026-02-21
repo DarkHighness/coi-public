@@ -52,6 +52,17 @@ vi.mock("../../../tools/handlers", () => ({
 import { generateStoryOutlinePhased } from "./outline";
 import { getActiveOutlinePhases } from "./phaseRegistry";
 
+const messageContainsText = (message: any, text: string): boolean => {
+  if (!message || message.role !== "user") return false;
+  if (typeof message.content === "string") {
+    return message.content.includes(text);
+  }
+  if (!Array.isArray(message.content)) return false;
+  return message.content.some(
+    (part: any) => part?.type === "text" && String(part?.text).includes(text),
+  );
+};
+
 describe("generateStoryOutlinePhased (coverage)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -323,5 +334,47 @@ describe("generateStoryOutlinePhased (coverage)", () => {
       true,
     );
     expect(mockDispatchToolCallAsync).toHaveBeenCalledTimes(12);
+  });
+
+  it("does not inject resume anchor when resume history already has messages", async () => {
+    const vfsSession = new VfsSession();
+
+    const result = await generateStoryOutlinePhased(
+      "fantasy",
+      "English",
+      undefined,
+      undefined,
+      {
+        slotId: "slot-1",
+        settings: { extra: {} } as any,
+        vfsSession,
+        enableReadOnlyVfsTools: false,
+        resumeFrom: {
+          theme: "fantasy",
+          language: "English",
+          customContext: undefined,
+          conversationHistory: [
+            {
+              role: "user",
+              content:
+                "Continuing an interrupted outline run with existing history.",
+            },
+          ] as any[],
+          partial: {},
+          currentPhaseId: "master_plan",
+        },
+      },
+    );
+
+    const firstCallHistory = mockCallWithAgenticRetry.mock.calls[0]?.[2] as
+      | any[]
+      | undefined;
+    expect(firstCallHistory).toBeDefined();
+    expect(
+      firstCallHistory?.some((message) =>
+        messageContainsText(message, "[OUTLINE RESUME ANCHOR]"),
+      ),
+    ).toBe(false);
+    expect(result.outline.title).toBe("Demo Adventure");
   });
 });

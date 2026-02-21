@@ -858,6 +858,8 @@ export const generateStoryOutlinePhased = async (
   if (options.resumeFrom) {
     // Resume from checkpoint
     conversationHistory = [...options.resumeFrom.conversationHistory];
+    const resumeConversationHistoryIsEmpty =
+      options.resumeFrom.conversationHistory.length === 0;
     conversationHistory = ensureWorkspaceMemoryMessagePrefix(
       conversationHistory,
       vfsSession,
@@ -879,7 +881,7 @@ export const generateStoryOutlinePhased = async (
     const hasResumeAnchor = conversationHistory.some((msg) =>
       userMessageContainsText(msg, OUTLINE_RESUME_ANCHOR_MARKER),
     );
-    if (!hasResumeAnchor) {
+    if (!hasResumeAnchor && resumeConversationHistoryIsEmpty) {
       conversationHistory.push(
         createUserMessage(
           buildOutlineResumeAnchor(activePhases, currentPhaseId, partial),
