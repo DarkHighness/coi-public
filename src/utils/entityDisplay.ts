@@ -16,15 +16,21 @@ type DisplayState = Pick<
 
 const ENTITY_PREFIXES = [
   "char",
+  "character",
   "loc",
+  "location",
   "quest",
   "knowledge",
+  "fac",
   "faction",
+  "npc",
+  "actor",
   "timeline",
   "inv",
   "item",
 ] as const;
 const BRACKET_SPECIAL_NAME_PATTERN = /^\[(.+)\]$/;
+const HUMANIZE_SEPARATOR_PATTERN = /[_:-]+/g;
 
 const normalizeText = (value: unknown): string | null => {
   if (typeof value === "string") {
@@ -61,13 +67,46 @@ const normalizeEntityRef = (value: string): string => {
   }
 
   const lower = trimmed.toLowerCase();
+  if (lower.startsWith("fac:")) {
+    return `faction:${lower.slice("fac:".length)}`;
+  }
   for (const prefix of ENTITY_PREFIXES) {
     const underscorePrefix = `${prefix}_`;
     if (lower.startsWith(underscorePrefix)) {
+      if (prefix === "fac") {
+        return `faction:${lower.slice(underscorePrefix.length)}`;
+      }
       return `${prefix}:${lower.slice(underscorePrefix.length)}`;
     }
   }
   return lower;
+};
+
+const toTitleCase = (value: string): string =>
+  value.replace(/\b\w/g, (char) => char.toUpperCase());
+
+const toHumanReadableEntityLabel = (value: string): string | null => {
+  const normalized = normalizeEntityRef(value);
+  const separatorIndex = normalized.indexOf(":");
+  if (separatorIndex <= 0) {
+    return null;
+  }
+  const prefix = normalized.slice(0, separatorIndex);
+  if (!ENTITY_PREFIXES.includes(prefix as (typeof ENTITY_PREFIXES)[number])) {
+    return null;
+  }
+  const rawId = normalized.slice(separatorIndex + 1).trim();
+  if (!rawId) {
+    return null;
+  }
+  const label = rawId
+    .replace(HUMANIZE_SEPARATOR_PATTERN, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!label) {
+    return null;
+  }
+  return toTitleCase(label);
 };
 
 export const isSameEntityRef = (left: unknown, right: unknown): boolean => {
@@ -112,7 +151,10 @@ export const resolveLocationDisplayName = (
   const locationMatch = (gameState.locations || []).find(
     (loc) => isSameEntityRef(loc.id, raw) || loc.name === raw,
   );
-  return locationMatch?.name || raw;
+  if (locationMatch?.name) {
+    return locationMatch.name;
+  }
+  return toHumanReadableEntityLabel(raw) || raw;
 };
 
 /**
@@ -202,5 +244,5 @@ export const resolveEntityDisplayName = (
     return inventoryMatch.name;
   }
 
-  return raw;
+  return toHumanReadableEntityLabel(raw) || raw;
 };

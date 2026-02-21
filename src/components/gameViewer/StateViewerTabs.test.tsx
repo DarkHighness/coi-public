@@ -89,12 +89,23 @@ describe("GameViewer non-player field coverage", () => {
           visible: {
             agenda: "Protect trade",
             members: [{ name: "Vera", title: "Captain" }],
-            relations: [{ target: "fac:veil", status: "Hostile" }],
+            relations: [
+              { target: "fac:veil", status: "Hostile" },
+              { target: "fac:unknown_militant", status: "Uneasy" },
+            ],
           },
           hidden: {
             agenda: "Control smuggling routes",
             members: [{ name: "Nox", title: "Mole" }],
             relations: [{ target: "fac:veil", status: "Secret pact" }],
+          },
+        },
+        {
+          id: "fac:veil",
+          name: "Veil Syndicate",
+          icon: "⚔️",
+          visible: {
+            agenda: "Stay hidden",
           },
         },
       ],
@@ -112,8 +123,9 @@ describe("GameViewer non-player field coverage", () => {
     expect(screen.getByText("Decoded archive")).toBeTruthy();
     expect(screen.getByText("cyberpunk")).toBeTruthy();
     expect(screen.getAllByText(/Members/i).length).toBeGreaterThan(1);
-    expect(screen.getByText("fac:veil: Hostile")).toBeTruthy();
-    expect(screen.getByText("fac:veil: Secret pact")).toBeTruthy();
+    expect(screen.getByText("Veil Syndicate: Hostile")).toBeTruthy();
+    expect(screen.getByText("Unknown Militant: Uneasy")).toBeTruthy();
+    expect(screen.getByText("Veil Syndicate: Secret pact")).toBeTruthy();
   });
 
   it("renders quest type badge and hidden unlock reason", () => {
@@ -165,6 +177,20 @@ describe("GameViewer non-player field coverage", () => {
   it("renders knowledge/timeline/inventory extended fields", () => {
     const gameState = {
       ...baseState,
+      locations: [
+        {
+          id: "loc:market",
+          name: "Sky Market",
+          visible: { description: "Stub" },
+        },
+      ],
+      factions: [
+        {
+          id: "fac:iron",
+          name: "Iron Circle",
+          visible: { agenda: "Stub" },
+        },
+      ],
       knowledge: [
         {
           id: "know:1",
@@ -238,12 +264,12 @@ describe("GameViewer non-player field coverage", () => {
     );
 
     expect(screen.getByText("Mentions a sky war")).toBeTruthy();
-    expect(screen.getAllByText("loc:market").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Sky Market").length).toBeGreaterThan(0);
     expect(screen.getByText("Signer identity")).toBeTruthy();
     expect(screen.getByText(/Caused By/i)).toBeTruthy();
     expect(screen.getByText("Unknown jammer")).toBeTruthy();
     expect(screen.getByText(/True Cause/i)).toBeTruthy();
-    expect(screen.getAllByText("fac:iron").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Iron Circle").length).toBeGreaterThan(0);
     expect(screen.getByText("chain:7")).toBeTruthy();
     expect(screen.getByText(/Observation/i)).toBeTruthy();
     expect(screen.getByText("Pattern resembles gate sigil")).toBeTruthy();

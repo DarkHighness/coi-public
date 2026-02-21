@@ -6,12 +6,17 @@ import { GameState } from "../../types";
 
 // Tabs for different views
 export type ViewTab =
-  | "overview"
-  | "world"
+  | "story"
+  | "atmosphere"
+  | "worldInfo"
+  | "locations"
+  | "factions"
   | "character"
   | "npcs"
   | "quests"
-  | "lore"
+  | "knowledge"
+  | "timeline"
+  | "inventory"
   | "memory"
   | "embedding";
 
@@ -21,12 +26,17 @@ export interface TabConfig {
 }
 
 export const TAB_CONFIGS: Record<ViewTab, TabConfig> = {
-  overview: { icon: "📖", labelKey: "gameViewer.overview" },
-  world: { icon: "🌍", labelKey: "gameViewer.world" },
+  story: { icon: "📖", labelKey: "gameViewer.storyBasics" },
+  atmosphere: { icon: "🌤️", labelKey: "gameViewer.atmosphere" },
+  worldInfo: { icon: "🌍", labelKey: "gameViewer.worldSetting" },
+  locations: { icon: "📍", labelKey: "gameViewer.locations" },
+  factions: { icon: "⚔️", labelKey: "gameViewer.factions" },
   character: { icon: "👤", labelKey: "gameViewer.character" },
   npcs: { icon: "👥", labelKey: "gameViewer.npcs" },
   quests: { icon: "📜", labelKey: "gameViewer.quests" },
-  lore: { icon: "📚", labelKey: "gameViewer.lore" },
+  knowledge: { icon: "📚", labelKey: "gameViewer.knowledge" },
+  timeline: { icon: "⏳", labelKey: "gameViewer.timeline" },
+  inventory: { icon: "🎒", labelKey: "gameViewer.inventory" },
   memory: { icon: "🧾", labelKey: "gameViewer.memory" },
   embedding: { icon: "🧠", labelKey: "gameViewer.embedding" },
 };

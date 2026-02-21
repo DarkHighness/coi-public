@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { KnowledgeEntry, ListState } from "../../types";
+import { GameState, KnowledgeEntry, ListState } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
@@ -25,6 +25,19 @@ interface KnowledgePanelProps {
   globalEditMode?: boolean;
   expandedItemId?: string | null;
   onExpandItem?: (itemId: string | null) => void;
+  entityDisplayState?: Pick<
+    GameState,
+    | "playerActorId"
+    | "character"
+    | "actors"
+    | "npcs"
+    | "locations"
+    | "quests"
+    | "knowledge"
+    | "factions"
+    | "timeline"
+    | "inventory"
+  >;
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -48,6 +61,7 @@ interface KnowledgeItemProps {
   isModal: boolean;
   onToggle: (id: string | number, isModal: boolean) => void;
   t: TFunction;
+  entityDisplayState?: KnowledgePanelProps["entityDisplayState"];
   isPinned?: boolean;
   onPin?: () => void;
   onDragStart?: (e: React.DragEvent) => void;
@@ -65,6 +79,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   isModal,
   onToggle,
   t,
+  entityDisplayState,
   isPinned,
   onPin,
   onDragStart,
@@ -78,6 +93,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
   const runtimeGameState = engine?.state.gameState;
+  const resolvedDisplayState = runtimeGameState ?? entityDisplayState;
   const [isHighlight, setIsHighlight] = useState(entry.highlight || false);
 
   React.useEffect(() => {
@@ -202,8 +218,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                       className="text-theme-text-secondary border-theme-divider/70 text-[10px] normal-case tracking-normal"
                       title={related}
                     >
-                      {runtimeGameState
-                        ? resolveEntityDisplayName(related, runtimeGameState)
+                      {resolvedDisplayState
+                        ? resolveEntityDisplayName(
+                            related,
+                            resolvedDisplayState,
+                          )
                         : related}
                     </SidebarTag>
                   ))}
@@ -289,6 +308,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
   globalEditMode,
   expandedItemId,
   onExpandItem,
+  entityDisplayState,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
@@ -467,6 +487,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
                   isModal={false}
                   onToggle={toggleKnowledge}
                   t={t}
+                  entityDisplayState={entityDisplayState}
                   isPinned={isPinned(entry.id)}
                   onPin={() => togglePin(entry.id)}
                   onDragStart={
@@ -522,6 +543,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
             isModal={true}
             onToggle={toggleKnowledge}
             t={t}
+            entityDisplayState={entityDisplayState}
             isEditMode={dragOptions?.isEditMode}
             isDragging={dragOptions?.isDragging}
             onDragStart={dragOptions?.onDragStart}

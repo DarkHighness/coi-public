@@ -42,11 +42,9 @@ describe("entity display resolver", () => {
     expect(resolveLocationDisplayName("loc:tavern", state)).toBe("Silver Inn");
   });
 
-  it("returns raw location ref when no mapping exists", () => {
+  it("humanizes location ref when no mapping exists", () => {
     const state = buildState();
-    expect(resolveLocationDisplayName("loc:unknown", state)).toBe(
-      "loc:unknown",
-    );
+    expect(resolveLocationDisplayName("loc:unknown", state)).toBe("Unknown");
   });
 
   it("uses bracket alias as direct display name", () => {
@@ -65,8 +63,9 @@ describe("entity display resolver", () => {
   it("keeps entity resolver fallback behavior", () => {
     const state = buildState();
     expect(resolveEntityDisplayName("char:npc_marcus", state)).toBe("Marcus");
-    expect(resolveEntityDisplayName("char:missing", state)).toBe(
-      "char:missing",
+    expect(resolveEntityDisplayName("char:missing", state)).toBe("Missing");
+    expect(resolveEntityDisplayName("raw-non-entity-value", state)).toBe(
+      "raw-non-entity-value",
     );
   });
 
@@ -82,6 +81,25 @@ describe("entity display resolver", () => {
     expect(resolveEntityDisplayName("char:player", state)).toBe("Arin");
     expect(resolveEntityDisplayName("faction_surface_alliance", state)).toBe(
       "Surface Alliance",
+    );
+    expect(resolveEntityDisplayName("fac:surface_alliance", state)).toBe(
+      "Surface Alliance",
+    );
+    expect(resolveEntityDisplayName("fac_surface_alliance", state)).toBe(
+      "Surface Alliance",
+    );
+  });
+
+  it("humanizes unresolved entity IDs for viewer/sidebar fallback", () => {
+    const state = buildState();
+    expect(resolveEntityDisplayName("fac:underground_network", state)).toBe(
+      "Underground Network",
+    );
+    expect(resolveEntityDisplayName("faction:inner-circle", state)).toBe(
+      "Inner Circle",
+    );
+    expect(resolveEntityDisplayName("npc:shadow_watcher", state)).toBe(
+      "Shadow Watcher",
     );
   });
 });

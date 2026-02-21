@@ -379,6 +379,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               themeFont={currentThemeConfig.fontClass}
               listState={gameState.uiState?.knowledge}
               onUpdateList={handleKnowledgeListUpdate}
+              entityDisplayState={timelineGameState}
               listManagementEnabled={listManagementEnabled}
               globalEditMode={globalEditMode}
               expandedItemId={expandedByPanel.knowledge ?? null}
@@ -403,6 +404,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               factions={gameState.factions}
               unlockMode={gameState.unlockMode}
               themeFont={currentThemeConfig.fontClass}
+              entityDisplayState={timelineGameState}
             />
           </section>
 

@@ -8,7 +8,14 @@ import type { TFunction } from "i18next";
 import { GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
-import { Section, InfoRow, EmptyState, HiddenContent } from "./helpers";
+import {
+  Section,
+  InfoRow,
+  EmptyState,
+  HiddenContent,
+  SubsectionLabel,
+  EntityBlock,
+} from "./helpers";
 
 interface CharacterTabProps {
   gameState: GameState;
@@ -16,6 +23,16 @@ interface CharacterTabProps {
   toggleSection: (section: string) => void;
   t: TFunction;
 }
+
+const renderMarkdownList = (items: string[]) => (
+  <ul className="list-disc list-inside space-y-1">
+    {items.map((item, idx) => (
+      <li key={`${item}-${idx}`}>
+        <MarkdownText content={item} inline />
+      </li>
+    ))}
+  </ul>
+);
 
 export const CharacterTab: React.FC<CharacterTabProps> = ({
   gameState,
@@ -48,7 +65,6 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Basic Info */}
       <Section
         id="charBasic"
         title={t("gameViewer.basicInfo")}
@@ -84,21 +100,21 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
           label={t("gameViewer.gender")}
           value={visible?.gender || char.gender || unknownText}
         />
-        {visible?.roleTag && (
+        {visible?.roleTag ? (
           <InfoRow label={t("gameViewer.roleTag")} value={visible.roleTag} />
-        )}
-        {visible?.voice && (
+        ) : null}
+        {visible?.voice ? (
           <InfoRow label={t("gameViewer.voice")} value={visible.voice} />
-        )}
-        {visible?.mannerism && (
+        ) : null}
+        {visible?.mannerism ? (
           <InfoRow
             label={t("gameViewer.mannerism")}
             value={visible.mannerism}
           />
-        )}
-        {visible?.mood && (
+        ) : null}
+        {visible?.mood ? (
           <InfoRow label={t("gameViewer.mood")} value={visible.mood} />
-        )}
+        ) : null}
         <InfoRow
           label={t("gameViewer.background")}
           value={visible?.background || char.background || unknownText}
@@ -107,107 +123,103 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
           label={t("gameViewer.appearance")}
           value={visible?.appearance || char.appearance || unknownText}
         />
-        {visible?.description && (
+        {visible?.description ? (
           <InfoRow
             label={t("description") || "Description"}
-            value={visible.description}
+            value={<MarkdownText content={visible.description} />}
           />
-        )}
-        {showHiddenBlock && hidden && (
+        ) : null}
+
+        {char.psychology ? (
+          <div className="pt-2 mt-2">
+            <SubsectionLabel>
+              {`🧠 ${t("gameViewer.psychology") || "Psychology"}`}
+            </SubsectionLabel>
+            {char.psychology.coreTrauma ? (
+              <InfoRow
+                label={t("gameViewer.coreTrauma") || "Core Trauma"}
+                value={char.psychology.coreTrauma}
+              />
+            ) : null}
+            {char.psychology.copingMechanism ? (
+              <InfoRow
+                label={t("gameViewer.copingMechanism") || "Coping"}
+                value={char.psychology.copingMechanism}
+              />
+            ) : null}
+            {char.psychology.internalContradiction ? (
+              <InfoRow
+                label={t("gameViewer.internalContradiction") || "Contradiction"}
+                value={char.psychology.internalContradiction}
+              />
+            ) : null}
+          </div>
+        ) : null}
+
+        {showHiddenBlock && hidden ? (
           <HiddenContent
             t={t}
             label={t("gameViewer.hiddenLabel") || "Hidden"}
             content={
-              <div className="space-y-2">
-                {hidden.trueName && (
+              <>
+                {hidden.trueName ? (
                   <InfoRow
                     label={t("gameViewer.trueName")}
                     value={hidden.trueName}
                   />
-                )}
-                {hidden.race && (
+                ) : null}
+                {hidden.race ? (
                   <InfoRow label={t("gameViewer.race")} value={hidden.race} />
-                )}
-                {hidden.gender && (
+                ) : null}
+                {hidden.gender ? (
                   <InfoRow
                     label={t("gameViewer.gender")}
                     value={hidden.gender}
                   />
-                )}
-                {hidden.status && (
+                ) : null}
+                {hidden.status ? (
                   <InfoRow
                     label={t("gameViewer.trueStatus")}
                     value={hidden.status}
                   />
-                )}
-                {hidden.realPersonality && (
+                ) : null}
+                {hidden.realPersonality ? (
                   <InfoRow
                     label={t("gameViewer.realPersonality")}
                     value={hidden.realPersonality}
                   />
-                )}
-                {hidden.realMotives && (
+                ) : null}
+                {hidden.realMotives ? (
                   <InfoRow
                     label={t("gameViewer.realMotives")}
                     value={hidden.realMotives}
                   />
-                )}
-                {hidden.routine && (
+                ) : null}
+                {hidden.routine ? (
                   <InfoRow
                     label={t("gameViewer.routine")}
                     value={hidden.routine}
                   />
-                )}
-                {hidden.currentThought && (
+                ) : null}
+                {hidden.currentThought ? (
                   <InfoRow
                     label={t("gameViewer.currentThought")}
                     value={hidden.currentThought}
                   />
-                )}
-                {Array.isArray(hidden.secrets) && hidden.secrets.length > 0 && (
+                ) : null}
+                {Array.isArray(hidden.secrets) && hidden.secrets.length > 0 ? (
                   <InfoRow
                     label={t("gameViewer.secrets")}
-                    value={hidden.secrets.join(" / ")}
+                    value={renderMarkdownList(hidden.secrets)}
                   />
-                )}
-              </div>
+                ) : null}
+              </>
             }
           />
-        )}
-        {/* Psychology - top-level, always visible */}
-        {char.psychology && (
-          <div className="mt-3 pt-3 border-t border-theme-border/30">
-            <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-2">
-              🧠 {t("gameViewer.psychology") || "Psychology"}
-            </span>
-            <div className="space-y-1 pl-2 border-l-2 border-theme-border/30 text-sm">
-              {char.psychology.coreTrauma && (
-                <InfoRow
-                  label={t("gameViewer.coreTrauma") || "Core Trauma"}
-                  value={char.psychology.coreTrauma}
-                />
-              )}
-              {char.psychology.copingMechanism && (
-                <InfoRow
-                  label={t("gameViewer.copingMechanism") || "Coping"}
-                  value={char.psychology.copingMechanism}
-                />
-              )}
-              {char.psychology.internalContradiction && (
-                <InfoRow
-                  label={
-                    t("gameViewer.internalContradiction") || "Contradiction"
-                  }
-                  value={char.psychology.internalContradiction}
-                />
-              )}
-            </div>
-          </div>
-        )}
+        ) : null}
       </Section>
 
-      {/* Skills */}
-      {char.skills.length > 0 && (
+      {char.skills.length > 0 ? (
         <Section
           id="charSkills"
           title={t("gameViewer.skills")}
@@ -217,99 +229,84 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
         >
           <div className="space-y-3">
             {char.skills.map((skill, idx) => (
-              <div
+              <EntityBlock
                 key={skill.id || idx}
-                className={`p-4 rounded-none border ${
-                  skill.highlight
-                    ? "bg-theme-primary/5 border-theme-primary/40"
-                    : "bg-theme-bg border-theme-border/40"
-                }`}
+                className={`border-b ${skill.highlight ? "border-theme-primary/45" : "border-theme-divider/70"}`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-theme-primary text-sm flex items-center gap-2">
+                  <span className="font-semibold text-theme-text text-xs flex items-center gap-2">
                     <span>{getValidIcon(skill.icon, "⚡")}</span>
                     {skill.name}
                   </span>
-                  <span className="text-xs px-2 py-0.5 bg-theme-surface rounded text-theme-muted border border-theme-border/50">
+                  <span className="text-[10px] px-2 py-0.5 text-theme-text-secondary border border-theme-divider/70">
                     {skill.level}
                   </span>
                 </div>
-                <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
-                  <MarkdownText content={skill.visible.description} />
-                </div>
-                {skill.visible.knownEffects &&
-                  skill.visible.knownEffects.length > 0 && (
-                    <div className="mt-2 text-xs">
-                      <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                        {t("gameViewer.knownEffects") || "Known Effects"}:
-                      </span>
-                      <ul className="list-disc list-inside pl-2 text-theme-muted">
-                        {skill.visible.knownEffects.map((effect, i) => (
-                          <li key={i}>{effect}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                {skill.category && (
-                  <div className="mt-2 text-xs text-theme-muted">
-                    <span className="uppercase tracking-wider text-theme-primary/80">
-                      {t("gameViewer.category") || "Category"}:
-                    </span>{" "}
-                    {skill.category}
-                  </div>
-                )}
-                {(skill.unlocked || gameState.unlockMode) && skill.hidden && (
+
+                <InfoRow
+                  label={t("description") || "Description"}
+                  value={<MarkdownText content={skill.visible.description} />}
+                />
+
+                {skill.category ? (
+                  <InfoRow
+                    label={t("gameViewer.category") || "Category"}
+                    value={skill.category}
+                  />
+                ) : null}
+
+                {Array.isArray(skill.visible.knownEffects) &&
+                skill.visible.knownEffects.length > 0 ? (
+                  <InfoRow
+                    label={t("gameViewer.knownEffects") || "Known Effects"}
+                    value={renderMarkdownList(skill.visible.knownEffects)}
+                  />
+                ) : null}
+
+                {(skill.unlocked || gameState.unlockMode) && skill.hidden ? (
                   <HiddenContent
                     t={t}
                     content={
-                      <div className="space-y-2">
-                        {skill.hidden.trueDescription && (
-                          <MarkdownText
-                            content={skill.hidden.trueDescription}
+                      <>
+                        {skill.hidden.trueDescription ? (
+                          <InfoRow
+                            label={t("gameViewer.trueDescription", {
+                              defaultValue: "True Description",
+                            })}
+                            value={
+                              <MarkdownText
+                                content={skill.hidden.trueDescription}
+                              />
+                            }
                           />
-                        )}
-                        {skill.hidden.hiddenEffects &&
-                          skill.hidden.hiddenEffects.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.hiddenEffects")}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2">
-                                {skill.hidden.hiddenEffects.map((effect, i) => (
-                                  <li key={i}>
-                                    <MarkdownText content={effect} inline />
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        {skill.hidden.drawbacks &&
-                          skill.hidden.drawbacks.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-danger/80 block mb-1">
-                                {t("gameViewer.drawbacks")}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2 text-theme-danger/80">
-                                {skill.hidden.drawbacks.map((drawback, i) => (
-                                  <li key={i}>
-                                    <MarkdownText content={drawback} inline />
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                      </div>
+                        ) : null}
+                        {Array.isArray(skill.hidden.hiddenEffects) &&
+                        skill.hidden.hiddenEffects.length > 0 ? (
+                          <InfoRow
+                            label={t("gameViewer.hiddenEffects")}
+                            value={renderMarkdownList(
+                              skill.hidden.hiddenEffects,
+                            )}
+                          />
+                        ) : null}
+                        {Array.isArray(skill.hidden.drawbacks) &&
+                        skill.hidden.drawbacks.length > 0 ? (
+                          <InfoRow
+                            label={t("gameViewer.drawbacks")}
+                            value={renderMarkdownList(skill.hidden.drawbacks)}
+                          />
+                        ) : null}
+                      </>
                     }
                   />
-                )}
-              </div>
+                ) : null}
+              </EntityBlock>
             ))}
           </div>
         </Section>
-      )}
+      ) : null}
 
-      {/* Conditions */}
-      {char.conditions.length > 0 && (
+      {char.conditions.length > 0 ? (
         <Section
           id="charConditions"
           title={t("gameViewer.conditions")}
@@ -319,135 +316,108 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
         >
           <div className="space-y-3">
             {char.conditions.map((cond, idx) => (
-              <div
+              <EntityBlock
                 key={cond.id || idx}
-                className={`p-4 rounded-none border ${
-                  cond.type === "buff"
-                    ? "bg-green-500/10 border-green-500/30"
-                    : cond.type === "debuff"
-                      ? "bg-red-500/10 border-red-500/30"
-                      : "bg-theme-bg border-theme-border/40"
+                className={`border-b ${
+                  cond.type === "buff" || cond.type === "debuff"
+                    ? "border-theme-primary/45"
+                    : "border-theme-divider/70"
                 }`}
               >
-                <span className="font-bold text-theme-text text-sm flex items-center gap-2 mb-2">
+                <div className="font-semibold text-theme-text text-xs flex items-center gap-2 mb-2">
                   <span>{getValidIcon(cond.icon, "💫")}</span>
-                  {cond.name}
-                  {cond.type && (
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                        cond.type === "buff"
-                          ? "bg-green-500/20 text-green-400"
-                          : cond.type === "debuff"
-                            ? "bg-red-500/20 text-red-400"
-                            : cond.type === "wound"
-                              ? "bg-orange-500/20 text-orange-400"
-                              : cond.type === "poison"
-                                ? "bg-purple-500/20 text-purple-400"
-                                : cond.type === "curse"
-                                  ? "bg-violet-500/20 text-violet-400"
-                                  : "bg-theme-surface text-theme-muted"
-                      }`}
-                    >
+                  <span>{cond.name}</span>
+                  {cond.type ? (
+                    <span className="text-[10px] px-1.5 py-0.5 border border-theme-divider/70 uppercase tracking-[0.08em] text-theme-text-secondary">
                       {t(`sidebar.conditionType.${cond.type}`, {
                         defaultValue: cond.type,
                       })}
                     </span>
-                  )}
-                  {cond.severity && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-theme-surface text-theme-muted">
+                  ) : null}
+                  {cond.severity ? (
+                    <span className="text-[10px] px-1.5 py-0.5 border border-theme-divider/70 text-theme-text-secondary">
                       {cond.severity}
                     </span>
-                  )}
-                </span>
-                <div className="text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50">
-                  <MarkdownText content={cond.visible.description} />
+                  ) : null}
                 </div>
-                {cond.visible?.perceivedSeverity && (
-                  <div className="mt-2 text-xs text-theme-muted">
-                    <span className="uppercase tracking-wider text-theme-primary/80">
-                      {t("gameViewer.perceivedSeverity") ||
-                        "Perceived Severity"}
-                      :
-                    </span>{" "}
-                    {cond.visible.perceivedSeverity}
-                  </div>
-                )}
-                {cond.effects?.visible && cond.effects.visible.length > 0 && (
-                  <div className="mt-2 text-xs">
-                    <span className="uppercase tracking-wider text-theme-primary/80 block mb-1">
-                      {t("gameViewer.visibleEffects") || "Effects"}:
-                    </span>
-                    <ul className="list-disc list-inside pl-2 text-theme-muted">
-                      {cond.effects.visible.map((effect, i) => (
-                        <li key={i}>{effect}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {(cond.unlocked || gameState.unlockMode) && cond.hidden && (
+
+                <InfoRow
+                  label={t("description") || "Description"}
+                  value={<MarkdownText content={cond.visible.description} />}
+                />
+
+                {cond.visible?.perceivedSeverity ? (
+                  <InfoRow
+                    label={
+                      t("gameViewer.perceivedSeverity") || "Perceived Severity"
+                    }
+                    value={cond.visible.perceivedSeverity}
+                  />
+                ) : null}
+
+                {Array.isArray(cond.effects?.visible) &&
+                cond.effects.visible.length > 0 ? (
+                  <InfoRow
+                    label={t("gameViewer.visibleEffects") || "Effects"}
+                    value={renderMarkdownList(cond.effects.visible)}
+                  />
+                ) : null}
+
+                {(cond.unlocked || gameState.unlockMode) && cond.hidden ? (
                   <HiddenContent
                     t={t}
                     content={
-                      <div className="space-y-2">
-                        {cond.hidden.trueCause && (
-                          <div>
-                            <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                              {t("gameViewer.trueCause")}:
-                            </span>
-                            <MarkdownText content={cond.hidden.trueCause} />
-                          </div>
-                        )}
-                        {cond.hidden.progression && (
-                          <div>
-                            <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                              {t("gameViewer.progression")}:
-                            </span>
-                            <MarkdownText content={cond.hidden.progression} />
-                          </div>
-                        )}
-                        {cond.hidden.cure && (
-                          <div>
-                            <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                              {t("gameViewer.cure")}:
-                            </span>
-                            <MarkdownText content={cond.hidden.cure} />
-                          </div>
-                        )}
-                        {cond.hidden.actualSeverity && (
-                          <div>
-                            <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                              {t("hidden.severity")}:
-                            </span>
-                            <MarkdownText
-                              content={cond.hidden.actualSeverity}
-                            />
-                          </div>
-                        )}
-                        {cond.effects?.hidden &&
-                          cond.effects.hidden.length > 0 && (
-                            <div>
-                              <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                                {t("gameViewer.hiddenEffects")}:
-                              </span>
-                              <ul className="list-disc list-inside pl-2">
-                                {cond.effects.hidden.map((effect, i) => (
-                                  <li key={i}>{effect}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                      </div>
+                      <>
+                        {cond.hidden.trueCause ? (
+                          <InfoRow
+                            label={t("gameViewer.trueCause")}
+                            value={
+                              <MarkdownText content={cond.hidden.trueCause} />
+                            }
+                          />
+                        ) : null}
+                        {cond.hidden.progression ? (
+                          <InfoRow
+                            label={t("gameViewer.progression")}
+                            value={
+                              <MarkdownText content={cond.hidden.progression} />
+                            }
+                          />
+                        ) : null}
+                        {cond.hidden.cure ? (
+                          <InfoRow
+                            label={t("gameViewer.cure")}
+                            value={<MarkdownText content={cond.hidden.cure} />}
+                          />
+                        ) : null}
+                        {cond.hidden.actualSeverity ? (
+                          <InfoRow
+                            label={t("hidden.severity")}
+                            value={
+                              <MarkdownText
+                                content={cond.hidden.actualSeverity}
+                              />
+                            }
+                          />
+                        ) : null}
+                        {Array.isArray(cond.effects?.hidden) &&
+                        cond.effects.hidden.length > 0 ? (
+                          <InfoRow
+                            label={t("gameViewer.hiddenEffects")}
+                            value={renderMarkdownList(cond.effects.hidden)}
+                          />
+                        ) : null}
+                      </>
                     }
                   />
-                )}
-              </div>
+                ) : null}
+              </EntityBlock>
             ))}
           </div>
         </Section>
-      )}
+      ) : null}
 
-      {/* Hidden Traits */}
-      {char.hiddenTraits && char.hiddenTraits.length > 0 && (
+      {Array.isArray(char.hiddenTraits) && char.hiddenTraits.length > 0 ? (
         <Section
           id="charHiddenTraits"
           title={t("gameViewer.hiddenTraits") || "Hidden Traits"}
@@ -461,52 +431,48 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
               if (!isRevealed) return null;
 
               return (
-                <div
+                <EntityBlock
                   key={trait.id || trait.name || idx}
-                  className="p-4 rounded-none border bg-theme-unlocked/5 border-theme-unlocked/20"
+                  className="border-b border-theme-primary/45"
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="font-bold text-theme-text text-sm flex items-center gap-2">
+                    <span className="font-semibold text-theme-text text-xs flex items-center gap-2">
                       <span>{getValidIcon(trait.icon, "🎭")}</span>
                       {trait.name}
                     </span>
-                    <span className="text-xs px-2 py-0.5 bg-theme-unlocked/10 text-theme-unlocked rounded border border-theme-unlocked/20 uppercase tracking-wider font-bold">
+                    <span className="text-[10px] px-2 py-0.5 border border-theme-divider/70 text-theme-text-secondary uppercase tracking-[0.08em] font-semibold">
                       {t("gameViewer.hiddenLabel")}
                     </span>
                   </div>
-                  <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-unlocked/30 leading-relaxed">
-                    <MarkdownText content={trait.description} />
-                  </div>
-                  {trait.effects && trait.effects.length > 0 && (
-                    <div className="mt-2">
-                      <span className="text-theme-unlocked/80 text-xs uppercase tracking-wider font-bold block mb-1">
-                        {t("gameViewer.effects")}:
-                      </span>
-                      <ul className="list-disc list-inside text-sm text-theme-text/80 pl-2">
-                        {trait.effects.map((effect, i) => (
-                          <li key={i}>
-                            <MarkdownText content={effect} inline />
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+
+                  <InfoRow
+                    label={t("description") || "Description"}
+                    value={<MarkdownText content={trait.description} />}
+                  />
+
+                  {Array.isArray(trait.effects) && trait.effects.length > 0 ? (
+                    <InfoRow
+                      label={t("gameViewer.effects")}
+                      value={renderMarkdownList(trait.effects)}
+                    />
+                  ) : null}
+                </EntityBlock>
               );
             })}
+
             {char.hiddenTraits.every(
               (tr) => !(tr.unlocked || gameState.unlockMode),
-            ) && (
+            ) ? (
               <EmptyState
                 message={
                   t("gameViewer.noHiddenTraitsRevealed") ||
                   "No hidden traits revealed."
                 }
               />
-            )}
+            ) : null}
           </div>
         </Section>
-      )}
+      ) : null}
     </div>
   );
 };

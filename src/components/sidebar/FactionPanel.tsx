@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Faction } from "../../types";
+import { Faction, GameState } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import {
   extractBracketDisplayName,
   resolveEntityDisplayName,
-  isSameEntityRef,
 } from "../../utils/entityDisplay";
 import { MarkdownText } from "../render/MarkdownText";
 import { SidebarTag } from "./SidebarTag";
@@ -18,12 +17,26 @@ interface FactionPanelProps {
   factions?: Faction[];
   themeFont: string;
   unlockMode?: boolean;
+  entityDisplayState?: Pick<
+    GameState,
+    | "playerActorId"
+    | "character"
+    | "actors"
+    | "npcs"
+    | "locations"
+    | "quests"
+    | "knowledge"
+    | "factions"
+    | "timeline"
+    | "inventory"
+  >;
 }
 
 const FactionPanelComponent: React.FC<FactionPanelProps> = ({
   factions = [],
   themeFont,
   unlockMode,
+  entityDisplayState,
 }) => {
   const { t } = useTranslation();
   const runtime = useOptionalRuntimeContext();
@@ -32,6 +45,23 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
     null,
   );
   const runtimeGameState = runtime?.state.gameState;
+  const fallbackDisplayState = React.useMemo(
+    () => ({
+      playerActorId: "char:player",
+      character: {},
+      actors: [],
+      npcs: [],
+      locations: [],
+      quests: [],
+      knowledge: [],
+      factions,
+      timeline: [],
+      inventory: [],
+    }),
+    [factions],
+  );
+  const displayState =
+    runtimeGameState ?? entityDisplayState ?? fallbackDisplayState;
 
   const resolveFactionTarget = (target: unknown): string => {
     if (typeof target !== "string") {
@@ -45,16 +75,8 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
     if (specialDisplayName) {
       return specialDisplayName;
     }
-    if (runtimeGameState) {
-      const resolved = resolveEntityDisplayName(raw, runtimeGameState);
-      if (resolved) {
-        return resolved;
-      }
-    }
-    const matchedFaction = factions.find(
-      (faction) => isSameEntityRef(faction.id, raw) || faction.name === raw,
-    );
-    return matchedFaction?.name || raw;
+    const resolved = resolveEntityDisplayName(raw, displayState);
+    return resolved || raw;
   };
 
   return (

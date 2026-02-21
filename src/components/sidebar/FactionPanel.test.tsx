@@ -46,17 +46,25 @@ describe("FactionPanel", () => {
               agenda: "Control trade lanes",
               influence: "High",
               members: [],
-              relations: [],
+              relations: [
+                { target: "fac:beta", status: "Hostile" },
+                { target: "fac:rogue_network", status: "Tense" },
+              ],
             },
             hidden: {
               agenda: "Corner the black market",
               internalConflict: "Leaders disagree on alliance with Beta",
               influence: "Very High",
               members: [],
-              relations: [],
+              relations: [{ target: "fac:beta", status: "Secret pact" }],
             },
             unlocked: true,
             unlockReason: "Captured encrypted leadership briefing",
+          },
+          {
+            id: "fac:beta",
+            name: "Beta Council",
+            visible: { agenda: "Hold borders" },
           },
         ],
       }),
@@ -70,5 +78,7 @@ describe("FactionPanel", () => {
     expect(
       screen.getByText("Captured encrypted leadership briefing"),
     ).toBeTruthy();
+    expect(screen.getAllByText("Beta Council").length).toBeGreaterThan(0);
+    expect(screen.getByText("Rogue Network")).toBeTruthy();
   });
 });

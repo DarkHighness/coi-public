@@ -6,7 +6,7 @@
 import React from "react";
 import type { TFunction } from "i18next";
 import { EmbeddingProgress } from "../../hooks/useEmbeddingStatus";
-import { Section, InfoRow } from "./helpers";
+import { Section, InfoRow, EntityBlock, SubsectionLabel } from "./helpers";
 
 interface EmbeddingTabProps {
   embeddingProgress: EmbeddingProgress | null;
@@ -24,19 +24,26 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
   const progressMessage = embeddingProgress?.messageKey
     ? t(embeddingProgress.messageKey, embeddingProgress.messageParams || {})
     : embeddingProgress?.message;
+  const progressPercent =
+    embeddingProgress && embeddingProgress.total > 0
+      ? Math.round((embeddingProgress.current / embeddingProgress.total) * 100)
+      : 0;
 
   return (
-    <div className="space-y-4">
-      <div className="p-6 bg-theme-bg rounded-none border border-theme-border/40 text-center">
-        <div className="text-5xl mb-3">🧠</div>
-        <h3 className="text-lg sm:text-xl font-[var(--font-fantasy)] text-theme-primary mb-2 uppercase tracking-[0.22em]">
+    <div className="space-y-3">
+      <EntityBlock className="border-b border-theme-divider/70">
+        <div className="font-semibold text-theme-text text-xs flex items-center gap-2 mb-2">
+          <span className="ui-emoji-slot">🧠</span>
           {t("gameViewer.embeddingStatus") || "Embedding Status"}
-        </h3>
-        <p className="text-theme-muted text-sm max-w-md mx-auto">
-          {t("gameViewer.embeddingDescription") ||
-            "View the status of the RAG (Retrieval-Augmented Generation) system."}
-        </p>
-      </div>
+        </div>
+        <InfoRow
+          label={t("gameViewer.description", { defaultValue: "Description" })}
+          value={
+            t("gameViewer.embeddingDescription") ||
+            "View the status of the RAG (Retrieval-Augmented Generation) system."
+          }
+        />
+      </EntityBlock>
 
       {embeddingProgress ? (
         <Section
@@ -46,37 +53,45 @@ export const EmbeddingTab: React.FC<EmbeddingTabProps> = ({
           isExpanded={expandedSections.has("embeddingStats")}
           onToggle={toggleSection}
         >
-          <div className="space-y-3">
+          <InfoRow
+            label={t("embedding.phaseLabel") || "Phase"}
+            value={
+              t(`embedding.phase.${embeddingProgress.stage}`) ||
+              embeddingProgress.stage
+            }
+          />
+          <InfoRow
+            label={t("embedding.progress") || "Progress"}
+            value={`${embeddingProgress.current} / ${embeddingProgress.total} (${progressPercent}%)`}
+          />
+          {progressMessage ? (
             <InfoRow
-              label={t("embedding.phaseLabel") || "Phase"}
-              value={
-                t(`embedding.phase.${embeddingProgress.stage}`) ||
-                embeddingProgress.stage
-              }
+              label={t("gameViewer.message", { defaultValue: "Message" })}
+              value={progressMessage}
             />
-            <InfoRow
-              label={t("embedding.progress") || "Progress"}
-              value={`${embeddingProgress.current} / ${embeddingProgress.total}`}
+          ) : null}
+          <SubsectionLabel>
+            {t("gameViewer.progressBar", { defaultValue: "Progress Bar" })}
+          </SubsectionLabel>
+          <div className="h-2 bg-theme-bg/50 overflow-hidden border border-theme-divider/60">
+            <div
+              className="h-full bg-theme-primary transition-all duration-300"
+              style={{
+                width: `${progressPercent}%`,
+              }}
             />
-            {progressMessage && (
-              <div className="text-xs text-theme-muted italic mt-2 p-2 bg-theme-bg rounded-none border border-theme-border/30">
-                {progressMessage}
-              </div>
-            )}
-            <div className="mt-3 h-3 bg-theme-bg/50 rounded-full overflow-hidden border border-theme-border/30">
-              <div
-                className="h-full bg-gradient-to-r from-theme-primary to-theme-primary-hover transition-all duration-300"
-                style={{
-                  width: `${embeddingProgress.total > 0 ? (embeddingProgress.current / embeddingProgress.total) * 100 : 0}%`,
-                }}
-              />
-            </div>
           </div>
         </Section>
       ) : (
-        <div className="p-6 text-center text-theme-muted italic border border-dashed border-theme-border/40 rounded-none bg-theme-bg">
-          {t("gameViewer.noEmbeddingActivity") || "No active embedding tasks."}
-        </div>
+        <EntityBlock className="border-b border-theme-divider/70">
+          <InfoRow
+            label={t("gameViewer.status") || "Status"}
+            value={
+              t("gameViewer.noEmbeddingActivity") ||
+              "No active embedding tasks."
+            }
+          />
+        </EntityBlock>
       )}
     </div>
   );

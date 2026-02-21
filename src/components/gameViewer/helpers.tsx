@@ -5,9 +5,14 @@
 
 import React from "react";
 import { MarkdownText } from "../render/MarkdownText";
+import {
+  SIDEBAR_BODY_TEXT_CLASS,
+  SIDEBAR_PANEL_TITLE_CLASS,
+  SIDEBAR_SECTION_TITLE_CLASS,
+} from "../sidebar/sidebarTokens";
 
 // ============================================================================
-// Section - Collapsible section with toggle
+// Section - Always-expanded section block
 // ============================================================================
 
 interface SectionProps {
@@ -19,52 +24,17 @@ interface SectionProps {
   onToggle: (id: string) => void;
 }
 
-export const Section = ({
-  id,
-  title,
-  icon,
-  children,
-  isExpanded,
-  onToggle,
-}: SectionProps) => {
+export const Section = ({ title, icon, children }: SectionProps) => {
   return (
-    <div className="border border-theme-border/50 rounded-none overflow-hidden mb-6 bg-theme-bg">
-      <button
-        onClick={() => onToggle(id)}
-        className="w-full px-4 py-3 bg-transparent flex items-center justify-between hover:bg-theme-bg/10 transition-colors"
-      >
+    <div className="pb-1 mb-1">
+      <div className="w-full py-2 pl-1 pr-1 sm:pr-0 bg-transparent flex items-center justify-between text-left">
         <span className="flex items-center gap-3">
-          <span className="text-xl">{icon}</span>
-          <span className="font-[var(--font-fantasy)] text-theme-primary uppercase tracking-[0.22em] text-[12px] sm:text-sm">
-            {title}
-          </span>
+          <span className="ui-emoji-slot">{icon}</span>
+          <span className={SIDEBAR_PANEL_TITLE_CLASS}>{title}</span>
         </span>
-        <svg
-          className={`w-5 h-5 text-theme-muted transition-transform duration-300 ${
-            isExpanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="p-4 border-t border-theme-border/40 bg-transparent">
-            {children}
-          </div>
-        </div>
+      </div>
+      <div className="animate-sidebar-expand pl-2 sm:pl-2.5 pr-1 sm:pr-1.5 pb-1 ml-1 mt-1 space-y-1.5">
+        {children}
       </div>
     </div>
   );
@@ -81,18 +51,16 @@ interface HiddenContentProps {
 }
 
 export const HiddenContent = ({ content, label, t }: HiddenContentProps) => (
-  <div className="mt-3 p-3 bg-theme-bg border border-theme-unlocked/20 border-l-2 border-l-theme-unlocked/50 rounded-none">
-    <span className="text-theme-unlocked text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2">
-      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-        <path
-          fillRule="evenodd"
-          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-          clipRule="evenodd"
-        />
-      </svg>
-      {label || t("gameViewer.hiddenRevealed")}
-    </span>
-    <div className="story-text text-theme-text/90 text-sm leading-relaxed">
+  <div className="pt-2 mt-2 border-t border-theme-primary/25 sidebar-hidden-divider">
+    <div className="flex items-center gap-2">
+      <div
+        className={`${SIDEBAR_SECTION_TITLE_CLASS} normal-case tracking-[0.06em] text-theme-primary/90`}
+      >
+        {label || t("gameViewer.hiddenRevealed")}
+      </div>
+      <div className="flex-1 h-px bg-theme-primary/45" />
+    </div>
+    <div className="mt-2 pl-2 text-xs text-theme-text leading-relaxed space-y-1">
       {content}
     </div>
   </div>
@@ -109,30 +77,38 @@ interface InfoRowProps {
 }
 
 export const InfoRow = ({ label, value, hidden = false }: InfoRowProps) => {
-  let valueStr: string;
-  if (typeof value === "string") {
-    valueStr = value;
-  } else if (typeof value === "number") {
-    valueStr = value.toString();
-  } else {
-    valueStr = JSON.stringify(value);
-  }
-
+  const valueIsPrimitive =
+    typeof value === "string" || typeof value === "number";
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 py-2 border-b border-theme-border/30 last:border-0">
-      <span className="text-theme-primary text-[11px] uppercase tracking-[0.22em] font-bold min-w-[120px] shrink-0 pt-0.5 font-[var(--font-fantasy)]">
-        {label}:
-      </span>
+    <div className="grid grid-cols-1 sm:grid-cols-[minmax(72px,104px)_minmax(0,1fr)] lg:grid-cols-[minmax(80px,112px)_minmax(0,1fr)] gap-y-1 sm:gap-y-0 gap-x-1.5 sm:gap-x-2 py-2 border-b border-theme-divider/20 last:border-b-0">
+      <div className="pt-0.5 text-[9px] sm:text-[10px] normal-case sm:uppercase tracking-[0.03em] sm:tracking-[0.09em] text-theme-text-secondary font-medium sm:font-semibold break-words">
+        {label}
+      </div>
       <div
-        className={`story-text text-[13px] sm:text-sm flex-1 leading-relaxed break-words ${
-          hidden ? "text-theme-unlocked" : "text-theme-text"
-        }`}
+        className={`${SIDEBAR_BODY_TEXT_CLASS} min-w-0 break-words leading-relaxed sm:pt-0.5 [&_.markdown-content_p]:mb-0 [&_.markdown-content_p]:leading-relaxed [&_.markdown-content_ul]:my-1 [&_.markdown-content_ol]:my-1 [&_ul]:my-1 [&_ol]:my-1 ${hidden ? "text-theme-primary" : "text-theme-text"}`}
       >
-        <MarkdownText content={valueStr} />
+        {valueIsPrimitive ? <MarkdownText content={String(value)} /> : value}
       </div>
     </div>
   );
 };
+
+// ============================================================================
+// EntityBlock - Flat entity container with sidebar-like separators
+// ============================================================================
+
+interface EntityBlockProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const EntityBlock = ({ children, className = "" }: EntityBlockProps) => (
+  <div
+    className={`py-2 pl-2.5 sm:pl-3 pr-1 sm:pr-1.5 border-l border-theme-divider/45 text-xs text-theme-text ${className}`.trim()}
+  >
+    {children}
+  </div>
+);
 
 // ============================================================================
 // SubsectionLabel - Subsection header styling
@@ -148,16 +124,19 @@ export const SubsectionLabel = ({
   variant = "primary",
 }: SubsectionLabelProps) => {
   const colorMap = {
-    primary: "text-theme-primary/80",
-    unlocked: "text-theme-unlocked/80",
-    danger: "text-theme-danger/80",
+    primary: "text-theme-primary",
+    unlocked: "text-theme-primary",
+    danger: "text-theme-primary",
   };
   return (
-    <span
-      className={`text-xs uppercase tracking-wider font-bold block mb-1 ${colorMap[variant]}`}
-    >
-      {children}
-    </span>
+    <div className="flex items-center gap-2 py-2 mt-1">
+      <span
+        className={`${SIDEBAR_SECTION_TITLE_CLASS} normal-case tracking-[0.06em] text-[11px] sm:text-xs ${colorMap[variant]}`.trim()}
+      >
+        {children}
+      </span>
+      <div className="flex-1 h-px bg-theme-divider/60" />
+    </div>
   );
 };
 
@@ -175,7 +154,7 @@ export const ContentBlock = ({
   className = "",
 }: ContentBlockProps) => (
   <div
-    className={`text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 ${className}`}
+    className={`py-2 pl-2 text-xs text-theme-text leading-relaxed border-b border-theme-divider/20 last:border-b-0 ${className}`.trim()}
   >
     {children}
   </div>
@@ -190,7 +169,5 @@ interface EmptyStateProps {
 }
 
 export const EmptyState = ({ message }: EmptyStateProps) => (
-  <p className="text-theme-muted text-sm italic p-3 border border-dashed border-theme-border/40 rounded-none text-center bg-theme-bg">
-    {message}
-  </p>
+  <div className="py-3 text-theme-text-secondary text-xs italic">{message}</div>
 );

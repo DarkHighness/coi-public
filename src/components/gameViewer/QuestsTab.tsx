@@ -8,7 +8,13 @@ import type { TFunction } from "i18next";
 import { GameState, Quest } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
-import { Section, EmptyState, HiddenContent, InfoRow } from "./helpers";
+import {
+  Section,
+  EmptyState,
+  HiddenContent,
+  InfoRow,
+  EntityBlock,
+} from "./helpers";
 
 interface QuestsTabProps {
   gameState: GameState;
@@ -17,96 +23,92 @@ interface QuestsTabProps {
   t: TFunction;
 }
 
-// Quest card component for active quests
+const renderMarkdownList = (items: string[]) => (
+  <ul className="list-disc list-inside space-y-1">
+    {items.map((item, idx) => (
+      <li key={`${item}-${idx}`}>
+        <MarkdownText content={item} inline />
+      </li>
+    ))}
+  </ul>
+);
+
 const QuestCard: React.FC<{
   quest: Quest;
   gameState: GameState;
   t: TFunction;
 }> = ({ quest, gameState, t }) => (
-  <div className="p-4 bg-theme-bg rounded-none border border-theme-border/40">
+  <EntityBlock className="border-b border-theme-divider/70">
     <div className="flex items-center justify-between gap-2 mb-2">
-      <div className="font-bold text-theme-primary text-sm flex items-center gap-2">
+      <div className="font-semibold text-theme-text text-xs flex items-center gap-2">
         <span>{getValidIcon(quest.icon, "📜")}</span>
         {quest.title}
       </div>
-      <span className="text-[10px] uppercase tracking-wider text-theme-muted px-2 py-0.5 border border-theme-border/50 bg-theme-surface rounded">
+      <span className="text-[10px] uppercase tracking-[0.08em] text-theme-text-secondary px-2 py-0.5 border border-theme-divider/70">
         {t(`questType.${quest.type}`, {
           defaultValue: quest.type,
         })}
       </span>
     </div>
-    <div className="story-text text-theme-text/90 text-sm pl-2 border-l-2 border-theme-border/50 leading-relaxed">
-      <MarkdownText content={quest.visible.description} />
-    </div>
-    {quest.visible.objectives && quest.visible.objectives.length > 0 && (
-      <div className="mt-3 pt-2 border-t border-theme-border/30">
-        <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
-          {t("gameViewer.objectives") || "Objectives"}
-        </span>
-        <div className="space-y-1">
-          {quest.visible.objectives.map((obj, idx) => (
-            <div key={idx} className="flex items-start gap-2 text-sm">
-              <span className="text-theme-muted mt-1">○</span>
-              <span className="text-theme-text">
-                <MarkdownText content={obj} />
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-    {(quest.unlocked || gameState.unlockMode) && quest.hidden && (
+
+    <InfoRow
+      label={t("description") || "Description"}
+      value={<MarkdownText content={quest.visible.description} />}
+    />
+
+    {Array.isArray(quest.visible.objectives) &&
+    quest.visible.objectives.length > 0 ? (
+      <InfoRow
+        label={t("gameViewer.objectives") || "Objectives"}
+        value={renderMarkdownList(quest.visible.objectives)}
+      />
+    ) : null}
+
+    {(quest.unlocked || gameState.unlockMode) && quest.hidden ? (
       <HiddenContent
         t={t}
         content={
-          <div className="space-y-2">
-            {quest.unlockReason && (
+          <>
+            {quest.unlockReason ? (
               <InfoRow
                 label={t("gameViewer.unlockReason", {
                   defaultValue: "Unlock Reason",
                 })}
                 value={quest.unlockReason}
               />
-            )}
-            {quest.hidden.trueDescription && (
-              <MarkdownText content={quest.hidden.trueDescription} />
-            )}
-            {quest.hidden.trueObjectives &&
-              quest.hidden.trueObjectives.length > 0 && (
-                <div>
-                  <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                    {t("gameViewer.trueObjectives")}:
-                  </span>
-                  <ul className="list-disc list-inside pl-2">
-                    {quest.hidden.trueObjectives.map((obj, i) => (
-                      <li key={i}>
-                        <MarkdownText content={obj} inline />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            {quest.hidden.secretOutcome && (
-              <div>
-                <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                  {t("gameViewer.secretOutcome")}:
-                </span>
-                <MarkdownText content={quest.hidden.secretOutcome} />
-              </div>
-            )}
-            {quest.hidden.twist && (
-              <div>
-                <span className="text-xs uppercase tracking-wider text-amber-500/80 block mb-1">
-                  ⚠️ {t("gameViewer.twist") || "Twist"}:
-                </span>
-                <MarkdownText content={quest.hidden.twist} />
-              </div>
-            )}
-          </div>
+            ) : null}
+            {quest.hidden.trueDescription ? (
+              <InfoRow
+                label={t("gameViewer.trueDescription", {
+                  defaultValue: "True Description",
+                })}
+                value={<MarkdownText content={quest.hidden.trueDescription} />}
+              />
+            ) : null}
+            {Array.isArray(quest.hidden.trueObjectives) &&
+            quest.hidden.trueObjectives.length > 0 ? (
+              <InfoRow
+                label={t("gameViewer.trueObjectives")}
+                value={renderMarkdownList(quest.hidden.trueObjectives)}
+              />
+            ) : null}
+            {quest.hidden.secretOutcome ? (
+              <InfoRow
+                label={t("gameViewer.secretOutcome")}
+                value={<MarkdownText content={quest.hidden.secretOutcome} />}
+              />
+            ) : null}
+            {quest.hidden.twist ? (
+              <InfoRow
+                label={t("gameViewer.twist") || "Twist"}
+                value={<MarkdownText content={quest.hidden.twist} />}
+              />
+            ) : null}
+          </>
         }
       />
-    )}
-  </div>
+    ) : null}
+  </EntityBlock>
 );
 
 export const QuestsTab: React.FC<QuestsTabProps> = ({
@@ -123,8 +125,7 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Main Goal */}
-      {gameState.worldInfo?.mainGoal && (
+      {gameState.worldInfo?.mainGoal ? (
         <Section
           id="mainGoal"
           title={t("gameViewer.mainGoal")}
@@ -132,64 +133,77 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
           isExpanded={expandedSections.has("mainGoal")}
           onToggle={toggleSection}
         >
-          <div className="text-theme-text text-sm leading-relaxed">
-            <MarkdownText
-              content={gameState.worldInfo.mainGoal.visible?.description || ""}
-            />
-          </div>
-          {gameState.worldInfo.mainGoal.visible?.conditions && (
-            <div className="mt-3 pt-2 border-t border-theme-border/30">
-              <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                {t("gameViewer.conditions") || "Conditions"}
-              </span>
-              <div className="text-theme-muted text-sm pl-2 border-l-2 border-theme-border/50">
+          <InfoRow
+            label={t("description") || "Description"}
+            value={
+              <MarkdownText
+                content={
+                  gameState.worldInfo.mainGoal.visible?.description || ""
+                }
+              />
+            }
+          />
+
+          {gameState.worldInfo.mainGoal.visible?.conditions ? (
+            <InfoRow
+              label={t("gameViewer.conditions") || "Conditions"}
+              value={
                 <MarkdownText
                   content={gameState.worldInfo.mainGoal.visible.conditions}
                 />
-              </div>
-            </div>
-          )}
+              }
+            />
+          ) : null}
+
           {(gameState.worldInfo.mainGoalUnlocked || gameState.unlockMode) &&
-            gameState.worldInfo.mainGoal.hidden && (
-              <HiddenContent
-                t={t}
-                content={
-                  <div className="space-y-2">
-                    {gameState.worldInfo.mainGoalUnlockReason && (
-                      <InfoRow
-                        label={t("gameViewer.unlockReason", {
-                          defaultValue: "Unlock Reason",
-                        })}
-                        value={gameState.worldInfo.mainGoalUnlockReason}
-                      />
-                    )}
-                    {gameState.worldInfo.mainGoal.hidden.trueDescription && (
-                      <MarkdownText
-                        content={
-                          gameState.worldInfo.mainGoal.hidden.trueDescription
-                        }
-                      />
-                    )}
-                    {gameState.worldInfo.mainGoal.hidden.trueConditions && (
-                      <div>
-                        <span className="text-xs uppercase tracking-wider text-theme-unlocked/80 block mb-1">
-                          {t("gameViewer.trueConditions") || "True Conditions"}:
-                        </span>
+          gameState.worldInfo.mainGoal.hidden ? (
+            <HiddenContent
+              t={t}
+              content={
+                <>
+                  {gameState.worldInfo.mainGoalUnlockReason ? (
+                    <InfoRow
+                      label={t("gameViewer.unlockReason", {
+                        defaultValue: "Unlock Reason",
+                      })}
+                      value={gameState.worldInfo.mainGoalUnlockReason}
+                    />
+                  ) : null}
+                  {gameState.worldInfo.mainGoal.hidden.trueDescription ? (
+                    <InfoRow
+                      label={t("gameViewer.trueDescription", {
+                        defaultValue: "True Description",
+                      })}
+                      value={
+                        <MarkdownText
+                          content={
+                            gameState.worldInfo.mainGoal.hidden.trueDescription
+                          }
+                        />
+                      }
+                    />
+                  ) : null}
+                  {gameState.worldInfo.mainGoal.hidden.trueConditions ? (
+                    <InfoRow
+                      label={
+                        t("gameViewer.trueConditions") || "True Conditions"
+                      }
+                      value={
                         <MarkdownText
                           content={
                             gameState.worldInfo.mainGoal.hidden.trueConditions
                           }
                         />
-                      </div>
-                    )}
-                  </div>
-                }
-              />
-            )}
+                      }
+                    />
+                  ) : null}
+                </>
+              }
+            />
+          ) : null}
         </Section>
-      )}
+      ) : null}
 
-      {/* Active Quests */}
       <Section
         id="activeQuests2"
         title={`${t("gameViewer.activeQuests")} (${activeQuests.length})`}
@@ -213,8 +227,7 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
         )}
       </Section>
 
-      {/* Completed Quests */}
-      {completedQuests.length > 0 && (
+      {completedQuests.length > 0 ? (
         <Section
           id="completedQuests"
           title={`${t("gameViewer.completedQuests")} (${completedQuests.length})`}
@@ -224,22 +237,18 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
         >
           <div className="space-y-2">
             {completedQuests.map((quest, idx) => (
-              <div
-                key={quest.id || idx}
-                className="p-3 bg-green-500/5 rounded-none border border-green-500/20"
-              >
-                <span className="text-theme-text text-sm flex items-center gap-2 font-medium">
+              <EntityBlock key={quest.id || idx}>
+                <span className="text-theme-text text-xs flex items-center gap-2 font-medium">
                   <span>{getValidIcon(quest.icon, "✅")}</span>
                   {quest.title}
                 </span>
-              </div>
+              </EntityBlock>
             ))}
           </div>
         </Section>
-      )}
+      ) : null}
 
-      {/* Failed Quests */}
-      {failedQuests.length > 0 && (
+      {failedQuests.length > 0 ? (
         <Section
           id="failedQuests"
           title={`${t("gameViewer.failedQuests")} (${failedQuests.length})`}
@@ -249,19 +258,16 @@ export const QuestsTab: React.FC<QuestsTabProps> = ({
         >
           <div className="space-y-2">
             {failedQuests.map((quest, idx) => (
-              <div
-                key={quest.id || idx}
-                className="p-3 bg-red-500/5 rounded-none border border-red-500/20"
-              >
-                <span className="text-theme-text text-sm line-through opacity-70 flex items-center gap-2 font-medium">
+              <EntityBlock key={quest.id || idx}>
+                <span className="text-theme-text text-xs line-through opacity-70 flex items-center gap-2 font-medium">
                   <span>{getValidIcon(quest.icon, "❌")}</span>
                   {quest.title}
                 </span>
-              </div>
+              </EntityBlock>
             ))}
           </div>
         </Section>
-      )}
+      ) : null}
     </div>
   );
 };
