@@ -540,7 +540,7 @@ export async function generateContent(
           JSON.stringify(tools.slice(0, 2), null, 2),
         );
         // Log full request for debugging
-        console.log("[Claude] Full tools count:", tools.length);
+        // console.log("[Claude] Full tools count:", tools.length);
       }
 
       // 计算 thinking budget
@@ -637,10 +637,10 @@ Answer the user's request using relevant tools (if they are available). Before c
       );
 
       // Debug: 打印完整请求参数
-      console.log(
-        "[Claude] Full request params:",
-        JSON.stringify(requestParams, null, 2),
-      );
+      // console.log(
+      //   "[Claude] Full request params:",
+      //   JSON.stringify(requestParams, null, 2),
+      // );
 
       if (options?.onChunk) {
         // 流式生成
