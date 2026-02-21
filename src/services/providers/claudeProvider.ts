@@ -163,12 +163,12 @@ const parseStreamTimeoutMs = (
   return Math.max(minMs, Math.min(maxMs, normalized));
 };
 
-const CLAUDE_STREAM_MAX_DURATION_MS = 15 * 60_000;
+const CLAUDE_STREAM_MAX_DURATION_MS = 30 * 60_000; // 30 minutes
 const CLAUDE_STREAM_IDLE_TIMEOUT_MS = parseStreamTimeoutMs(
   process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS,
-  180_000,
-  60_000,
-  CLAUDE_STREAM_MAX_DURATION_MS - 30_000,
+  15 * 60_000, // 15 minutes
+  5 * 60_000, // minimum 5 minute
+  CLAUDE_STREAM_MAX_DURATION_MS - 30_000, // maximum just under max duration to allow for graceful shutdown
 );
 const CLAUDE_STREAM_REQUEST_TIMEOUT_MS = CLAUDE_STREAM_MAX_DURATION_MS + 30_000;
 
