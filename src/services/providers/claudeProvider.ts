@@ -534,15 +534,6 @@ export async function generateContent(
         ? convertToolsForClaude(options.tools)
         : undefined;
 
-      if (tools && tools.length > 0) {
-        console.log(
-          "[Claude] Tool definitions:",
-          JSON.stringify(tools.slice(0, 2), null, 2),
-        );
-        // Log full request for debugging
-        // console.log("[Claude] Full tools count:", tools.length);
-      }
-
       // 计算 thinking budget
       let thinking: { type: "enabled"; budget_tokens: number } | undefined;
       // Enable thinking if specified and not "none"
