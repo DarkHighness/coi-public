@@ -4,9 +4,9 @@ import { InventoryItem } from "../InventoryItem";
 import { LANG_MAP } from "../../utils/constants";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
-import { SidebarTag } from "./SidebarTag";
 import { useProgressiveRender } from "../../hooks/useProgressiveRender";
 import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
+import { SidebarPanelHeader } from "./SidebarPanelHeader";
 
 import { InventoryItem as InventoryItemType, ListState } from "../../types";
 
@@ -105,125 +105,100 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
 
   return (
     <div>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-3" : "mb-0"
-        }`}
-      >
-        <div
-          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
-        >
-          <span className="flex items-center gap-2">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-              ></path>
-            </svg>
-            {t("inventory") || "Inventory"}
-            <SidebarTag className="ml-2 text-theme-text-secondary bg-theme-surface-highlight">
-              {inventory.length}
-            </SidebarTag>
-          </span>
-        </div>
-
-        <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          {allowPanelEditToggle && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsLocalEditMode(!isEditMode);
-              }}
-              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-                isEditMode
-                  ? "bg-theme-primary text-theme-bg"
-                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-              }`}
-              title={isEditMode ? t("done") : t("edit")}
-            >
-              {isEditMode ? (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              )}
-            </button>
-          )}
-          {isEditMode && safeInventory.length > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsModalOpen(true);
-              }}
-              className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
-              title={t("viewAll")}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+      <SidebarPanelHeader
+        title={t("inventory") || "Inventory"}
+        icon={
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+            ></path>
+          </svg>
+        }
+        count={allItems.length}
+        isOpen={isOpen}
+        onToggle={() => setIsOpen(!isOpen)}
+        themeFont={themeFont}
+        actions={
+          <>
+            {allowPanelEditToggle ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLocalEditMode(!isEditMode);
+                }}
+                className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                  isEditMode
+                    ? "bg-theme-primary text-theme-bg"
+                    : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+                }`}
+                title={isEditMode ? t("done") : t("edit")}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          )}
-
-          <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
-            <svg
-              className={`w-5 h-5 transition-transform duration-300 ${
-                isOpen ? "rotate-180" : ""
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </div>
-        </div>
-      </div>
+                {isEditMode ? (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                )}
+              </button>
+            ) : null}
+            {isEditMode && safeInventory.length > 0 ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsModalOpen(true);
+                }}
+                className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+                title={t("viewAll")}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+            ) : null}
+          </>
+        }
+      />
 
       {isOpen && (
         <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">

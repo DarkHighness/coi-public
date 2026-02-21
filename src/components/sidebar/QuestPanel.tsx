@@ -11,7 +11,7 @@ import { SidebarTag } from "./SidebarTag";
 import { SidebarField, SidebarSection } from "./SidebarSections";
 import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
 import { pickFirstText } from "./panelText";
-import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
+import { SidebarPanelHeader } from "./SidebarPanelHeader";
 
 interface QuestPanelProps {
   quests: Quest[];
@@ -77,11 +77,8 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
   const expandedQuestId =
     expandedItemId !== undefined ? expandedItemId : localExpandedQuestId;
 
-  const activeQuests = useMemo(
-    () =>
-      quests.filter(
-        (quest) => quest.status === "active" && quest.type !== "hidden",
-      ),
+  const visibleQuests = useMemo(
+    () => quests.filter((quest) => quest.type !== "hidden"),
     [quests],
   );
 
@@ -93,7 +90,7 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(activeQuests, listState, onUpdateList, {
+  } = useListManagement(visibleQuests, listState, onUpdateList, {
     enabled: listManagementActive,
   });
 
@@ -292,110 +289,86 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
 
   return (
     <div>
-      <div
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-3" : "mb-0"
-        }`}
-      >
-        <div
-          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
-        >
-          <span className="w-2 h-2 bg-theme-primary rounded-full"></span>
-          <span>{t("questPanel.title")}</span>
-          <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
-            {allItems.length}
-          </SidebarTag>
-        </div>
-
-        <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          {allowPanelEditToggle ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsLocalEditMode((prev) => !prev);
-              }}
-              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-                isEditMode
-                  ? "bg-theme-primary text-theme-bg"
-                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-              }`}
-              title={isEditMode ? t("done") : t("edit")}
-            >
-              {isEditMode ? (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              )}
-            </button>
-          ) : null}
-
-          {isEditMode && activeQuests.length > 0 ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsModalOpen(true);
-              }}
-              className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
-              title={t("viewAll")}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+      <SidebarPanelHeader
+        title={t("questPanel.title")}
+        icon={<span className="w-2 h-2 bg-theme-primary rounded-full" />}
+        count={allItems.length}
+        isOpen={isOpen}
+        onToggle={() => setIsOpen((prev) => !prev)}
+        themeFont={themeFont}
+        actions={
+          <>
+            {allowPanelEditToggle ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLocalEditMode((prev) => !prev);
+                }}
+                className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                  isEditMode
+                    ? "bg-theme-primary text-theme-bg"
+                    : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+                }`}
+                title={isEditMode ? t("done") : t("edit")}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          ) : null}
-
-          <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
-            <svg
-              className={`w-5 h-5 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </div>
-        </div>
-      </div>
+                {isEditMode ? (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                )}
+              </button>
+            ) : null}
+            {isEditMode && visibleQuests.length > 0 ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsModalOpen(true);
+                }}
+                className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+                title={t("viewAll")}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+            ) : null}
+          </>
+        }
+      />
 
       {isOpen ? (
         <div className="space-y-2 animate-sidebar-expand">

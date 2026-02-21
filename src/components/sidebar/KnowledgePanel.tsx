@@ -13,7 +13,7 @@ import { SidebarEntityRow } from "./SidebarEntityRow";
 import { SidebarField, SidebarSection } from "./SidebarSections";
 import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
 import { pickFirstText } from "./panelText";
-import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
+import { SidebarPanelHeader } from "./SidebarPanelHeader";
 
 interface KnowledgePanelProps {
   knowledge: KnowledgeEntry[];
@@ -364,112 +364,87 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
 
   return (
     <div>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-4" : "mb-0"
-        }`}
-      >
-        <div
-          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
-        >
-          <span className="w-2 h-2 bg-theme-primary rounded-full"></span>
-          {t("knowledgePanel.title")}
-          <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
-            {knowledge.length}
-          </SidebarTag>
-        </div>
-
-        <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          {allowPanelEditToggle ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsLocalEditMode(!isEditMode);
-              }}
-              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-                isEditMode
-                  ? "bg-theme-primary text-theme-bg"
-                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-              }`}
-              title={isEditMode ? t("done") : t("edit")}
-            >
-              {isEditMode ? (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              )}
-            </button>
-          ) : null}
-
-          {isEditMode && knowledge.length > 0 ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsModalOpen(true);
-              }}
-              className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
-              title={t("viewAll")}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+      <SidebarPanelHeader
+        title={t("knowledgePanel.title")}
+        icon={<span className="w-2 h-2 bg-theme-primary rounded-full" />}
+        count={allItems.length}
+        isOpen={isOpen}
+        onToggle={() => setIsOpen(!isOpen)}
+        themeFont={themeFont}
+        openMarginClassName="mb-4"
+        actions={
+          <>
+            {allowPanelEditToggle ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLocalEditMode(!isEditMode);
+                }}
+                className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                  isEditMode
+                    ? "bg-theme-primary text-theme-bg"
+                    : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+                }`}
+                title={isEditMode ? t("done") : t("edit")}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          ) : null}
-
-          <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
-            <svg
-              className={`w-5 h-5 transition-transform duration-300 ${
-                isOpen ? "rotate-180" : ""
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </div>
-        </div>
-      </div>
+                {isEditMode ? (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                )}
+              </button>
+            ) : null}
+            {isEditMode && allItems.length > 0 ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsModalOpen(true);
+                }}
+                className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+                title={t("viewAll")}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+            ) : null}
+          </>
+        }
+      />
 
       {isOpen && (
         <div className="space-y-2 animate-sidebar-expand">

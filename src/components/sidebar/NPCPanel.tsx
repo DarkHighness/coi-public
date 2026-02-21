@@ -19,7 +19,7 @@ import { SidebarEntityRow } from "./SidebarEntityRow";
 import { SidebarField, SidebarSection } from "./SidebarSections";
 import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
 import { pickFirstText } from "./panelText";
-import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
+import { SidebarPanelHeader } from "./SidebarPanelHeader";
 
 interface NpcPanelProps {
   npcs: NPC[];
@@ -637,15 +637,9 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
 
   return (
     <div>
-      <div
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-4" : "mb-0"
-        }`}
-      >
-        <div
-          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
-        >
+      <SidebarPanelHeader
+        title={t("npcs") || "NPCs"}
+        icon={
           <svg
             className="w-5 h-5"
             fill="none"
@@ -659,102 +653,85 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
               d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"
             ></path>
           </svg>
-          {t("npcs") || "NPCs"}
-          <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
-            {npcsWithId.length}
-          </SidebarTag>
-        </div>
-
-        <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          {allowPanelEditToggle ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsLocalEditMode((prev) => !prev);
-              }}
-              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-                isEditMode
-                  ? "bg-theme-primary text-theme-bg"
-                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-              }`}
-              title={isEditMode ? t("done") : t("edit")}
-            >
-              {isEditMode ? (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              )}
-            </button>
-          ) : null}
-
-          {isEditMode && npcsWithId.length > 0 ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsModalOpen(true);
-              }}
-              className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
-              title={t("viewAll")}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        }
+        count={npcsWithId.length}
+        isOpen={isOpen}
+        onToggle={() => setIsOpen((prev) => !prev)}
+        themeFont={themeFont}
+        openMarginClassName="mb-4"
+        actions={
+          <>
+            {allowPanelEditToggle ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLocalEditMode((prev) => !prev);
+                }}
+                className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                  isEditMode
+                    ? "bg-theme-primary text-theme-bg"
+                    : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+                }`}
+                title={isEditMode ? t("done") : t("edit")}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          ) : null}
-
-          <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
-            <svg
-              className={`w-5 h-5 transition-transform duration-300 ${
-                isOpen ? "rotate-180" : ""
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              ></path>
-            </svg>
-          </div>
-        </div>
-      </div>
+                {isEditMode ? (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                )}
+              </button>
+            ) : null}
+            {isEditMode && npcsWithId.length > 0 ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsModalOpen(true);
+                }}
+                className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
+                title={t("viewAll")}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+            ) : null}
+          </>
+        }
+      />
 
       {isOpen && (
         <div className="space-y-2 animate-sidebar-expand">

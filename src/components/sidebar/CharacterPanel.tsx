@@ -15,7 +15,7 @@ import { SidebarTag } from "./SidebarTag";
 import { SidebarEntityRow } from "./SidebarEntityRow";
 import { SidebarField, SidebarSection } from "./SidebarSections";
 import { pickFirstText } from "./panelText";
-import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
+import { SidebarPanelHeader } from "./SidebarPanelHeader";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -429,15 +429,9 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
 
   return (
     <div>
-      <div
-        onClick={() => setExpanded((prev) => !prev)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          expanded ? "mb-4" : "mb-0"
-        }`}
-      >
-        <div
-          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
-        >
+      <SidebarPanelHeader
+        title={t("gameViewer.character") || "Character"}
+        icon={
           <svg
             className="w-5 h-5"
             fill="none"
@@ -451,27 +445,12 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             ></path>
           </svg>
-          {t("gameViewer.character") || "Character"}
-        </div>
-
-        <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
-          <svg
-            className={`w-5 h-5 transition-transform duration-300 ${
-              expanded ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            ></path>
-          </svg>
-        </div>
-      </div>
+        }
+        isOpen={expanded}
+        onToggle={() => setExpanded((prev) => !prev)}
+        themeFont={themeFont}
+        openMarginClassName="mb-4"
+      />
 
       {expanded ? (
         <div className="space-y-3 animate-sidebar-expand">

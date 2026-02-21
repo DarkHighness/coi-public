@@ -9,7 +9,7 @@ import { SidebarTag } from "./SidebarTag";
 import { SidebarEntityRow } from "./SidebarEntityRow";
 import { SidebarField, SidebarSection } from "./SidebarSections";
 import { pickFirstText } from "./panelText";
-import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
+import { SidebarPanelHeader } from "./SidebarPanelHeader";
 
 interface TimelineEventsPanelProps {
   events?: TimelineEvent[];
@@ -216,15 +216,9 @@ const TimelineEventsPanelComponent: React.FC<TimelineEventsPanelProps> = ({
 
   return (
     <div className="space-y-2">
-      <div
-        onClick={() => setExpanded((prev) => !prev)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          expanded ? "mb-3" : "mb-0"
-        }`}
-      >
-        <div
-          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
-        >
+      <SidebarPanelHeader
+        title={t("timeline.title") || "Timeline Events"}
+        icon={
           <svg
             className="w-4 h-4"
             fill="none"
@@ -238,30 +232,12 @@ const TimelineEventsPanelComponent: React.FC<TimelineEventsPanelProps> = ({
               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
             ></path>
           </svg>
-          <span>{t("timeline.title") || "Timeline Events"}</span>
-          <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
-            {events?.length || 0}
-          </SidebarTag>
-        </div>
-
-        <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
-          <svg
-            className={`w-5 h-5 transition-transform duration-300 ${
-              expanded ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            ></path>
-          </svg>
-        </div>
-      </div>
+        }
+        count={events?.length || 0}
+        isOpen={expanded}
+        onToggle={() => setExpanded((prev) => !prev)}
+        themeFont={themeFont}
+      />
 
       {expanded ? (
         <div className="space-y-2 animate-sidebar-expand">

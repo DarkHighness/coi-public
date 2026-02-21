@@ -62,4 +62,31 @@ describe("QuestPanel", () => {
     expect(screen.getByText("Reach the station")).toBeTruthy();
     expect(screen.getByText("Recover the keycard")).toBeTruthy();
   });
+
+  it("shows non-hidden quests even when status is not active", () => {
+    render(
+      React.createElement(QuestPanel, {
+        quests: [
+          {
+            id: "quest:2",
+            title: "Report to the Council",
+            type: "side",
+            status: "in_progress",
+            knownBy: ["char:player"],
+            createdAt: 1,
+            lastModified: 1,
+            visible: {
+              description: "Deliver the decoded message",
+              objectives: ["Meet the council envoy"],
+            },
+          } as any,
+        ],
+        themeFont: "font-theme",
+        listState: { pinnedIds: [], customOrder: [], hiddenIds: [] },
+        onUpdateList: vi.fn(),
+      }),
+    );
+
+    expect(screen.getByText("Report to the Council")).toBeTruthy();
+  });
 });

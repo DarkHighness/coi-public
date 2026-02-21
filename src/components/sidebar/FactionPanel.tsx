@@ -10,7 +10,7 @@ import { MarkdownText } from "../render/MarkdownText";
 import { SidebarTag } from "./SidebarTag";
 import { SidebarEntityRow } from "./SidebarEntityRow";
 import { SidebarField, SidebarSection } from "./SidebarSections";
-import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
+import { SidebarPanelHeader } from "./SidebarPanelHeader";
 
 interface FactionPanelProps {
   factions?: Faction[];
@@ -49,15 +49,9 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
 
   return (
     <div>
-      <div
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center justify-between cursor-pointer group ${
-          isOpen ? "mb-4" : "mb-0"
-        }`}
-      >
-        <div
-          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
-        >
+      <SidebarPanelHeader
+        title={t("worldInfo.factions") || "Factions"}
+        icon={
           <svg
             className="w-5 h-5"
             fill="none"
@@ -71,30 +65,13 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
               d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"
             />
           </svg>
-          <span>{t("worldInfo.factions") || "Factions"}</span>
-          <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
-            {factions.length}
-          </SidebarTag>
-        </div>
-
-        <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
-          <svg
-            className={`w-5 h-5 transition-transform duration-300 ${
-              isOpen ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            ></path>
-          </svg>
-        </div>
-      </div>
+        }
+        count={factions.length}
+        isOpen={isOpen}
+        onToggle={() => setIsOpen((prev) => !prev)}
+        themeFont={themeFont}
+        openMarginClassName="mb-4"
+      />
 
       {isOpen ? (
         <div className="space-y-2 animate-sidebar-expand">

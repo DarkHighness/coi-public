@@ -20,10 +20,13 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
 }) => {
   return (
     <section
-      className={`${withDivider ? "pt-3 mt-3 border-t border-theme-divider/60" : "pt-2"} ${className}`.trim()}
+      className={`${withDivider ? "pt-3 mt-3" : "pt-2"} ${className}`.trim()}
     >
-      <div className={SIDEBAR_SECTION_TITLE_CLASS}>{title}</div>
-      <div className="mt-2 space-y-2">{children}</div>
+      <div className="flex items-center gap-2">
+        <div className={SIDEBAR_SECTION_TITLE_CLASS}>{title}</div>
+        <div className="sidebar-section-title-line" />
+      </div>
+      <div className="mt-2.5 space-y-2">{children}</div>
     </section>
   );
 };

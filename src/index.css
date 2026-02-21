@@ -549,19 +549,14 @@ input:disabled {
   line-height: 1.6;
 }
 
-.sidebar-section-divider {
-  border-top: 1px solid
-    color-mix(in srgb, var(--theme-divider) 65%, transparent);
+.sidebar-section-title-line {
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--theme-divider) 65%, transparent);
 }
 
-.sidebar-field-divider {
-  border-top: 1px solid
-    color-mix(in srgb, var(--theme-divider) 55%, transparent);
-}
-
-.sidebar-hidden-divider {
-  border-top: 1px solid
-    color-mix(in srgb, var(--theme-primary) 30%, transparent);
+.sidebar-hidden-divider .sidebar-section-title-line {
+  background: color-mix(in srgb, var(--theme-primary) 35%, transparent);
 }
 
 .scale-content-expanded .story-text {
