@@ -54,9 +54,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { gameState, currentThemeConfig } = state;
   const ragEnabled = state.aiSettings.embedding?.enabled === true;
   const { setLanguage } = actions;
+  const isMobileViewport =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(max-width: 767px)").matches;
 
   const { character } = gameState;
   const showDesktopMenu = gameState.uiState?.showSystemFooter !== false;
+  const listManagementEnabled =
+    isMobileViewport || gameState.uiState?.sidebarCollapsed !== true;
 
   const activeQuest = gameState.quests?.find((q) => q.status === "active");
   const locationContext = resolveLocationDisplayName(
@@ -64,6 +70,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
     gameState,
   );
   const itemContext = `Theme: ${gameState.theme}. Quest: ${activeQuest?.title || "None"}. Location: ${locationContext}.`;
+  const playerProfile = React.useMemo(
+    () =>
+      gameState.actors?.find(
+        (bundle) => bundle.profile.id === gameState.playerActorId,
+      )?.profile ?? null,
+    [gameState.actors, gameState.playerActorId],
+  );
+  const timelineGameState = React.useMemo(
+    () => ({
+      playerActorId: gameState.playerActorId,
+      character: gameState.character,
+      actors: gameState.actors,
+      npcs: gameState.npcs,
+      locations: gameState.locations,
+      quests: gameState.quests,
+      knowledge: gameState.knowledge,
+      factions: gameState.factions,
+      timeline: gameState.timeline,
+      inventory: gameState.inventory,
+    }),
+    [
+      gameState.playerActorId,
+      gameState.character,
+      gameState.actors,
+      gameState.npcs,
+      gameState.locations,
+      gameState.quests,
+      gameState.knowledge,
+      gameState.factions,
+      gameState.timeline,
+      gameState.inventory,
+    ],
+  );
+
+  const handleLocationListUpdate = React.useCallback(
+    (newState: UIState["locations"]) => onUpdateUIState("locations", newState),
+    [onUpdateUIState],
+  );
+  const handleQuestListUpdate = React.useCallback(
+    (newState: UIState["quests"]) => onUpdateUIState("quests", newState),
+    [onUpdateUIState],
+  );
+  const handleNpcListUpdate = React.useCallback(
+    (newState: UIState["npcs"]) => onUpdateUIState("npcs", newState),
+    [onUpdateUIState],
+  );
+  const handleInventoryListUpdate = React.useCallback(
+    (newState: UIState["inventory"]) => onUpdateUIState("inventory", newState),
+    [onUpdateUIState],
+  );
+  const handleKnowledgeListUpdate = React.useCallback(
+    (newState: UIState["knowledge"]) => onUpdateUIState("knowledge", newState),
+    [onUpdateUIState],
+  );
+  const handleToggleSystemFooter = React.useCallback(
+    () => onUpdateUIState("showSystemFooter", !showDesktopMenu),
+    [onUpdateUIState, showDesktopMenu],
+  );
 
   const embeddingProgress = useEmbeddingStatus();
 
@@ -167,11 +231,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <section className="py-3">
               <CharacterPanel
                 character={character}
-                playerProfile={
-                  gameState.actors?.find(
-                    (bundle) => bundle.profile.id === gameState.playerActorId,
-                  )?.profile ?? null
-                }
+                playerProfile={playerProfile}
                 unlockMode={gameState.unlockMode}
                 locations={gameState.locations || []}
                 themeFont={currentThemeConfig.fontClass}
@@ -182,7 +242,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <section className="py-3">
             <TimelineEventsPanel
               events={gameState.timeline}
-              gameState={gameState}
+              gameState={timelineGameState}
               themeFont={currentThemeConfig.fontClass}
             />
           </section>
@@ -195,9 +255,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               themeFont={currentThemeConfig.fontClass}
               itemContext={itemContext}
               listState={gameState.uiState?.locations}
-              onUpdateList={(newState) =>
-                onUpdateUIState("locations", newState)
-              }
+              onUpdateList={handleLocationListUpdate}
+              listManagementEnabled={listManagementEnabled}
             />
           </section>
           <section className="py-3">
@@ -205,7 +264,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               quests={gameState.quests || []}
               themeFont={currentThemeConfig.fontClass}
               listState={gameState.uiState?.quests}
-              onUpdateList={(newState) => onUpdateUIState("quests", newState)}
+              onUpdateList={handleQuestListUpdate}
+              listManagementEnabled={listManagementEnabled}
             />
           </section>
           <section className="py-3">
@@ -216,8 +276,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               locations={gameState.locations || []}
               themeFont={currentThemeConfig.fontClass}
               listState={gameState.uiState?.npcs}
-              onUpdateList={(newState) => onUpdateUIState("npcs", newState)}
+              onUpdateList={handleNpcListUpdate}
               unlockMode={gameState.unlockMode}
+              listManagementEnabled={listManagementEnabled}
             />
           </section>
           <section className="py-3">
@@ -226,9 +287,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               themeFont={currentThemeConfig.fontClass}
               itemContext={itemContext}
               listState={gameState.uiState?.inventory}
-              onUpdateList={(newState) =>
-                onUpdateUIState("inventory", newState)
-              }
+              onUpdateList={handleInventoryListUpdate}
+              listManagementEnabled={listManagementEnabled}
             />
           </section>
           <section className="py-3">
@@ -236,9 +296,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               knowledge={gameState.knowledge || []}
               themeFont={currentThemeConfig.fontClass}
               listState={gameState.uiState?.knowledge}
-              onUpdateList={(newState) =>
-                onUpdateUIState("knowledge", newState)
-              }
+              onUpdateList={handleKnowledgeListUpdate}
+              listManagementEnabled={listManagementEnabled}
             />
           </section>
 
@@ -297,9 +356,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </span>
         <div className="flex items-center divide-x divide-theme-divider/60">
           <button
-            onClick={() =>
-              onUpdateUIState("showSystemFooter", !showDesktopMenu)
-            }
+            onClick={handleToggleSystemFooter}
             className="hidden md:grid h-8 w-8 place-items-center text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors"
             title={showDesktopMenu ? t("hideSystem") : t("showSystem")}
             aria-label={showDesktopMenu ? t("hideSystem") : t("showSystem")}

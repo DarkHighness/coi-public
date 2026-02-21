@@ -1,21 +1,34 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { ListState } from "../types";
+
+interface UseListManagementOptions {
+  enabled?: boolean;
+}
+
+const FALLBACK_LIST_STATE: ListState = {
+  pinnedIds: [],
+  customOrder: [],
+  hiddenIds: [],
+};
 
 export function useListManagement<T extends { id: string | number }>(
   items: T[],
-  listState: ListState,
+  listState: ListState | undefined,
   onUpdate: (newState: ListState) => void,
+  options?: UseListManagementOptions,
 ) {
+  const enabled = options?.enabled ?? true;
+
   // Fallback for initial load or missing state
-  const safeListState = listState || {
-    pinnedIds: [],
-    customOrder: [],
-    hiddenIds: [],
-  };
+  const safeListState = useMemo(
+    () => listState || FALLBACK_LIST_STATE,
+    [listState],
+  );
   const { pinnedIds, customOrder, hiddenIds = [] } = safeListState;
 
   const togglePin = useCallback(
     (id: string | number) => {
+      if (!enabled) return;
       const idStr = id.toString();
       const newPinnedIds = pinnedIds.includes(idStr)
         ? pinnedIds.filter((p) => p !== idStr)
@@ -26,11 +39,12 @@ export function useListManagement<T extends { id: string | number }>(
         pinnedIds: newPinnedIds,
       });
     },
-    [pinnedIds, safeListState, onUpdate],
+    [enabled, pinnedIds, safeListState, onUpdate],
   );
 
   const toggleHide = useCallback(
     (id: string | number) => {
+      if (!enabled) return;
       const idStr = id.toString();
       const newHiddenIds = hiddenIds.includes(idStr)
         ? hiddenIds.filter((h) => h !== idStr)
@@ -41,11 +55,12 @@ export function useListManagement<T extends { id: string | number }>(
         hiddenIds: newHiddenIds,
       });
     },
-    [hiddenIds, safeListState, onUpdate],
+    [enabled, hiddenIds, safeListState, onUpdate],
   );
 
   const reorderItem = useCallback(
     (dragId: string | number, hoverId: string | number) => {
+      if (!enabled) return;
       const dragIdStr = dragId.toString();
       const hoverIdStr = hoverId.toString();
 
@@ -68,58 +83,83 @@ export function useListManagement<T extends { id: string | number }>(
         customOrder: newOrder,
       });
     },
-    [customOrder, safeListState, onUpdate],
+    [enabled, customOrder, safeListState, onUpdate],
   );
+
+  const itemIds = useMemo(() => {
+    if (!enabled) return [];
+    return items
+      .filter((i) => i.id !== undefined && i.id !== null)
+      .map((i) => i.id.toString());
+  }, [enabled, items]);
 
   // Initialize customOrder with new items
   useEffect(() => {
-    const newIds = items
-      .filter((i) => i.id !== undefined && i.id !== null)
-      .map((i) => i.id.toString())
-      .filter((id) => !customOrder.includes(id));
+    if (!enabled) return;
+    const newIds = itemIds.filter((id) => !customOrder.includes(id));
     if (newIds.length > 0) {
       onUpdate({
         ...safeListState,
         customOrder: [...customOrder, ...newIds],
       });
     }
-  }, [items, customOrder, onUpdate, safeListState]);
+  }, [enabled, itemIds, customOrder, onUpdate, safeListState]);
 
-  const processedItems = items
-    .filter((item) => item.id !== undefined && item.id !== null)
-    .map((item) => ({
-      ...item,
-      isPinned: pinnedIds.includes(item.id.toString()),
-    }));
+  const orderIndexById = useMemo(() => {
+    const indexMap = new Map<string, number>();
+    customOrder.forEach((id, index) => {
+      indexMap.set(id, index);
+    });
+    return indexMap;
+  }, [customOrder]);
 
-  const sortedItems = processedItems.sort((a, b) => {
-    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+  const processedItems = useMemo(() => {
+    if (!enabled) return [] as Array<T & { isPinned: boolean }>;
+    return items
+      .filter((item) => item.id !== undefined && item.id !== null)
+      .map((item) => ({
+        ...item,
+        isPinned: pinnedIds.includes(item.id.toString()),
+      }));
+  }, [enabled, items, pinnedIds]);
 
-    const indexA = customOrder.indexOf(a.id.toString());
-    const indexB = customOrder.indexOf(b.id.toString());
+  const sortedItems = useMemo(() => {
+    if (!enabled) return [] as Array<T & { isPinned: boolean }>;
+    const next = [...processedItems];
+    next.sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
 
-    // If both are in customOrder, sort by index
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-    // If one is missing, put it at the end
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-    return 0;
-  });
+      const indexA = orderIndexById.get(a.id.toString());
+      const indexB = orderIndexById.get(b.id.toString());
+
+      // If both are in customOrder, sort by index
+      if (indexA !== undefined && indexB !== undefined) return indexA - indexB;
+      // If one is missing, put it at the end
+      if (indexA === undefined) return 1;
+      if (indexB === undefined) return -1;
+      return 0;
+    });
+    return next;
+  }, [enabled, processedItems, orderIndexById]);
 
   // Filter out hidden items for sidebar display
-  const visibleItems = sortedItems.filter(
-    (item) => !hiddenIds.includes(item.id.toString()),
+  const visibleItems = useMemo(
+    () =>
+      enabled
+        ? sortedItems.filter((item) => !hiddenIds.includes(item.id.toString()))
+        : ([] as Array<T & { isPinned: boolean }>),
+    [enabled, sortedItems, hiddenIds],
   );
   const allItems = sortedItems;
 
   const isPinned = useCallback(
-    (id: string | number) => pinnedIds.includes(id.toString()),
-    [pinnedIds],
+    (id: string | number) => enabled && pinnedIds.includes(id.toString()),
+    [enabled, pinnedIds],
   );
 
   const isHidden = useCallback(
-    (id: string | number) => hiddenIds.includes(id.toString()),
-    [hiddenIds],
+    (id: string | number) => enabled && hiddenIds.includes(id.toString()),
+    [enabled, hiddenIds],
   );
 
   return {

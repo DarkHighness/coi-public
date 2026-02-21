@@ -789,7 +789,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
   );
 };
 
-export const CharacterPanel: React.FC<CharacterPanelProps> = ({
+const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
   character,
   playerProfile,
   unlockMode,
@@ -1212,3 +1212,5 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
     </div>
   );
 };
+
+export const CharacterPanel = React.memo(CharacterPanelComponent);

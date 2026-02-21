@@ -13,6 +13,7 @@ interface KnowledgePanelProps {
   themeFont: string;
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
+  listManagementEnabled?: boolean;
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -277,11 +278,12 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   );
 };
 
-export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
+const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
   knowledge,
   themeFont,
   listState,
   onUpdateList,
+  listManagementEnabled = true,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
@@ -294,6 +296,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
   >(new Set());
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
 
   const safeKnowledge = Array.isArray(knowledge) ? knowledge : [];
 
@@ -305,7 +308,9 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(safeKnowledge, listState, onUpdateList);
+  } = useListManagement(safeKnowledge, listState, onUpdateList, {
+    enabled: listManagementActive,
+  });
 
   const toggleKnowledge = (
     knowledgeId: string | number,
@@ -415,7 +420,7 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
             )}
           </button>
 
-          {allItems.length > 0 && (
+          {safeKnowledge.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -530,3 +535,5 @@ export const KnowledgePanel: React.FC<KnowledgePanelProps> = ({
     </div>
   );
 };
+
+export const KnowledgePanel = React.memo(KnowledgePanelComponent);

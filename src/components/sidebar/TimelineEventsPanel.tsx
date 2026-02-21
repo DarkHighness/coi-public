@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GameState, TimelineEvent } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
@@ -259,7 +259,7 @@ const TimelineEventCard: React.FC<{
   );
 };
 
-export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
+const TimelineEventsPanelComponent: React.FC<TimelineEventsPanelProps> = ({
   events,
   gameState,
   themeFont,
@@ -269,15 +269,20 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
 
   // Show only the last 5 known events reversed (newest first)
   const playerId = "char:player";
-  const recentEvents = events
-    ? [...events]
-        .filter(
-          (event) =>
-            !Array.isArray(event.knownBy) || event.knownBy.includes(playerId),
-        )
-        .reverse()
-        .slice(0, 5)
-    : [];
+  const recentEvents = useMemo(
+    () =>
+      events
+        ? [...events]
+            .filter(
+              (event) =>
+                !Array.isArray(event.knownBy) ||
+                event.knownBy.includes(playerId),
+            )
+            .reverse()
+            .slice(0, 5)
+        : [],
+    [events],
+  );
 
   return (
     <div className="space-y-2">
@@ -352,3 +357,5 @@ export const TimelineEventsPanel: React.FC<TimelineEventsPanelProps> = ({
     </div>
   );
 };
+
+export const TimelineEventsPanel = React.memo(TimelineEventsPanelComponent);

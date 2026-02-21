@@ -8,7 +8,10 @@ interface RAGPanelProps {
   themeFont: string;
 }
 
-export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
+const RAGPanelComponent: React.FC<RAGPanelProps> = ({
+  progress,
+  themeFont,
+}) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const isIndexing = Boolean(progress && progress.current < progress.total);
@@ -196,3 +199,5 @@ export const RAGPanel: React.FC<RAGPanelProps> = ({ progress, themeFont }) => {
     </div>
   );
 };
+
+export const RAGPanel = React.memo(RAGPanelComponent);

@@ -17,6 +17,7 @@ interface LocationPanelProps {
   itemContext: string;
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
+  listManagementEnabled?: boolean;
 }
 
 interface LocationItemProps {
@@ -537,13 +538,14 @@ const LocationItem: React.FC<LocationItemProps> = ({
   );
 };
 
-export const LocationPanel: React.FC<LocationPanelProps> = ({
+const LocationPanelComponent: React.FC<LocationPanelProps> = ({
   currentLocation,
   locations = [],
   locationItemsByLocationId,
   themeFont,
   listState,
   onUpdateList,
+  listManagementEnabled = true,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
@@ -556,6 +558,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   const [modalExpandedLocations, setModalExpandedLocations] = useState<
     Set<string>
   >(new Set());
+  const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
 
   // Filter known locations and map to objects with ID for list management
   const locationItems = useMemo(() => {
@@ -578,7 +581,9 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(locationItems, listState, onUpdateList);
+  } = useListManagement(locationItems, listState, onUpdateList, {
+    enabled: listManagementActive,
+  });
 
   const handleLocationClick = (locationId: string) => {
     if (isEditMode) return;
@@ -688,7 +693,7 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
             )}
           </button>
 
-          {allItems.length > 0 && (
+          {locationItems.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -815,3 +820,5 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
     </div>
   );
 };
+
+export const LocationPanel = React.memo(LocationPanelComponent);

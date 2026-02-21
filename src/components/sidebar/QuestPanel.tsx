@@ -11,13 +11,15 @@ interface QuestPanelProps {
   themeFont: string;
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
+  listManagementEnabled?: boolean;
 }
 
-export const QuestPanel: React.FC<QuestPanelProps> = ({
+const QuestPanelComponent: React.FC<QuestPanelProps> = ({
   quests,
   themeFont,
   listState,
   onUpdateList,
+  listManagementEnabled = true,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
@@ -28,6 +30,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
   );
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
 
   const activeQuests = quests.filter(
     (q) => q.status === "active" && q.type !== "hidden",
@@ -42,7 +45,9 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(safeQuests, listState, onUpdateList);
+  } = useListManagement(safeQuests, listState, onUpdateList, {
+    enabled: listManagementActive,
+  });
 
   const toggleQuest = (questId: string | number, isModal: boolean = false) => {
     const idStr = questId.toString();
@@ -388,7 +393,7 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
             )}
           </button>
 
-          {allItems.length > 0 && (
+          {safeQuests.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -494,3 +499,5 @@ export const QuestPanel: React.FC<QuestPanelProps> = ({
     </div>
   );
 };
+
+export const QuestPanel = React.memo(QuestPanelComponent);

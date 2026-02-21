@@ -124,4 +124,36 @@ describe("useListManagement", () => {
     expect(api!.isPinned("b")).toBe(true);
     expect(api!.isHidden("a")).toBe(true);
   });
+
+  it("skips list management updates when disabled", () => {
+    const onUpdate = vi.fn();
+    const listState = {
+      pinnedIds: ["b"],
+      customOrder: ["a", "b", "c"],
+      hiddenIds: ["a"],
+    };
+
+    let api: ReturnType<typeof useListManagement<any>> | null = null;
+    const Harness = () => {
+      api = useListManagement(items, listState as any, onUpdate, {
+        enabled: false,
+      });
+      return React.createElement("div");
+    };
+
+    render(React.createElement(Harness));
+
+    expect(api!.visibleItems).toEqual([]);
+    expect(api!.allItems).toEqual([]);
+    expect(api!.isPinned("b")).toBe(false);
+    expect(api!.isHidden("a")).toBe(false);
+
+    act(() => {
+      api!.togglePin("a");
+      api!.toggleHide("b");
+      api!.reorderItem("c", "a");
+    });
+
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
 });

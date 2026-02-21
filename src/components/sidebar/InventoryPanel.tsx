@@ -13,20 +13,23 @@ interface InventoryPanelProps {
   itemContext: string;
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
+  listManagementEnabled?: boolean;
 }
 
-export const InventoryPanel: React.FC<InventoryPanelProps> = ({
+const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
   inventory = [],
   themeFont,
   itemContext,
   listState,
   onUpdateList,
+  listManagementEnabled = true,
 }) => {
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
 
   const safeInventory = Array.isArray(inventory) ? inventory : [];
 
@@ -38,7 +41,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(safeInventory, listState, onUpdateList);
+  } = useListManagement(safeInventory, listState, onUpdateList, {
+    enabled: listManagementActive,
+  });
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
     const idStr = id.toString();
@@ -144,7 +149,7 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
             )}
           </button>
 
-          {allItems.length > 0 && (
+          {safeInventory.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -254,3 +259,5 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({
     </div>
   );
 };
+
+export const InventoryPanel = React.memo(InventoryPanelComponent);

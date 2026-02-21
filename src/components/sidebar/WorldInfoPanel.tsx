@@ -28,7 +28,7 @@ interface WorldInfoPanelProps {
   unlockMode?: boolean; // Whether unlock mode is active
 }
 
-export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
+const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
   history,
   factions = [],
   outline,
@@ -481,3 +481,5 @@ export const WorldInfoPanel: React.FC<WorldInfoPanelProps> = ({
     </div>
   );
 };
+
+export const WorldInfoPanel = React.memo(WorldInfoPanelComponent);

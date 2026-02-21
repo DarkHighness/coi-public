@@ -24,6 +24,7 @@ interface NpcPanelProps {
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
   unlockMode?: boolean;
+  listManagementEnabled?: boolean;
 }
 
 export const buildNpcList = (
@@ -651,7 +652,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
   );
 };
 
-export const NPCPanel: React.FC<NpcPanelProps> = ({
+const NPCPanelComponent: React.FC<NpcPanelProps> = ({
   npcs = [],
   actors,
   playerActorId,
@@ -660,6 +661,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
   listState,
   onUpdateList,
   unlockMode = false,
+  listManagementEnabled = true,
 }) => {
   const { t } = useTranslation();
   const resolvedPlayerActorId = playerActorId || "char:player";
@@ -693,6 +695,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | number | null>(null);
+  const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
 
   const {
     visibleItems,
@@ -702,7 +705,9 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(npcsWithId, listState, onUpdateList);
+  } = useListManagement(npcsWithId, listState, onUpdateList, {
+    enabled: listManagementActive,
+  });
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
     setDraggedId(id);
@@ -810,7 +815,7 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
             )}
           </button>
 
-          {allItems.length > 0 && (
+          {npcsWithId.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -936,3 +941,5 @@ export const NPCPanel: React.FC<NpcPanelProps> = ({
     </div>
   );
 };
+
+export const NPCPanel = React.memo(NPCPanelComponent);
