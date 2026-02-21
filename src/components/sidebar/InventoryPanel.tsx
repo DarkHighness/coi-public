@@ -4,6 +4,7 @@ import { InventoryItem } from "../InventoryItem";
 import { LANG_MAP } from "../../utils/constants";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
+import { SidebarTag } from "./SidebarTag";
 
 import { InventoryItem as InventoryItemType, ListState } from "../../types";
 
@@ -14,6 +15,9 @@ interface InventoryPanelProps {
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
   listManagementEnabled?: boolean;
+  globalEditMode?: boolean;
+  expandedItemId?: string | null;
+  onExpandItem?: (itemId: string | null) => void;
 }
 
 const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
@@ -23,13 +27,23 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
   listState,
   onUpdateList,
   listManagementEnabled = true,
+  globalEditMode,
+  expandedItemId,
+  onExpandItem,
 }) => {
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isLocalEditMode, setIsLocalEditMode] = useState(false);
+  const [localExpandedItemId, setLocalExpandedItemId] = useState<string | null>(
+    null,
+  );
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
+  const isEditMode = globalEditMode ?? isLocalEditMode;
+  const allowPanelEditToggle = globalEditMode === undefined;
+  const resolvedExpandedItemId =
+    expandedItemId !== undefined ? expandedItemId : localExpandedItemId;
 
   const safeInventory = Array.isArray(inventory) ? inventory : [];
 
@@ -72,6 +86,15 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
     // Final reorder is already done by dragEnter, just clear state
     setDraggedId(null);
   };
+  const handleToggleItem = (id: string | number) => {
+    const next =
+      resolvedExpandedItemId === id.toString() ? null : id.toString();
+    if (onExpandItem) {
+      onExpandItem(next);
+      return;
+    }
+    setLocalExpandedItemId(next);
+  };
 
   return (
     <div>
@@ -99,57 +122,58 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
               ></path>
             </svg>
             {t("inventory") || "Inventory"}
-            <span className="ml-2 text-[10px] text-theme-text-secondary bg-theme-surface-highlight px-1.5 rounded border border-theme-divider/60">
+            <SidebarTag className="ml-2 text-theme-text-secondary bg-theme-surface-highlight">
               {inventory.length}
-            </span>
+            </SidebarTag>
           </span>
         </div>
 
         <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditMode(!isEditMode);
-            }}
-            className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-              isEditMode
-                ? "bg-theme-primary text-theme-bg"
-                : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-            }`}
-            title={isEditMode ? t("done") : t("edit")}
-          >
-            {isEditMode ? (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            )}
-          </button>
-
-          {safeInventory.length > 0 && (
+          {allowPanelEditToggle && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLocalEditMode(!isEditMode);
+              }}
+              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                isEditMode
+                  ? "bg-theme-primary text-theme-bg"
+                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+              }`}
+              title={isEditMode ? t("done") : t("edit")}
+            >
+              {isEditMode ? (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+          {isEditMode && safeInventory.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -217,6 +241,8 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
                 onDrop={isEditMode ? (e) => handleDrop(e, item.id) : undefined}
                 isEditMode={isEditMode}
                 isDragging={draggedId === item.id.toString()}
+                isExpanded={resolvedExpandedItemId === item.id.toString()}
+                onToggleExpand={handleToggleItem}
               />
             ))
           )}
@@ -253,6 +279,8 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
             onDragEnter={dragOptions?.onDragEnter}
             onDragOver={dragOptions?.onDragOver}
             onDrop={dragOptions?.onDrop}
+            isExpanded={resolvedExpandedItemId === item.id.toString()}
+            onToggleExpand={handleToggleItem}
           />
         )}
       />

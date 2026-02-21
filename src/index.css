@@ -518,6 +518,21 @@ input:disabled {
   font-size: 1.05em;
 }
 
+@keyframes sidebar-expand-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sidebar-expand {
+  animation: sidebar-expand-in 160ms ease-out;
+}
+
 .scale-content-expanded .story-text {
   font-size: 1.1em;
   line-height: 1.8;

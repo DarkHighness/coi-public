@@ -14,6 +14,8 @@ import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { resolveLocationDisplayName } from "../../utils/entityDisplay";
+import { SidebarTag } from "./SidebarTag";
+import { pickFirstText } from "./panelText";
 
 interface NpcPanelProps {
   npcs: NPC[];
@@ -25,6 +27,9 @@ interface NpcPanelProps {
   onUpdateList: (newState: ListState) => void;
   unlockMode?: boolean;
   listManagementEnabled?: boolean;
+  globalEditMode?: boolean;
+  expandedItemId?: string | null;
+  onExpandItem?: (itemId: string | null) => void;
 }
 
 export const buildNpcList = (
@@ -77,7 +82,7 @@ interface NpcItemProps {
   playerRelations: RelationEdge[];
   locations?: Location[];
   enableDrag: boolean;
-  expandedItems: Set<string | number>;
+  expandedId: string | number | null;
   isEditMode: boolean;
   draggedId: string | number | null;
   onToggle: (id: string | number) => void;
@@ -98,7 +103,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
   playerRelations,
   locations,
   enableDrag,
-  expandedItems,
+  expandedId,
   isEditMode,
   draggedId,
   onToggle,
@@ -116,7 +121,10 @@ const NpcItem: React.FC<NpcItemProps> = ({
   const clearHighlight = engine?.actions.clearHighlight;
   const pinned = isPinned?.(rel.id) ?? false;
   const isDragging = draggedId === rel.id;
-  const isExpanded = expandedItems.has(rel.id);
+  const isExpanded =
+    expandedId !== null &&
+    expandedId !== undefined &&
+    expandedId.toString() === rel.id.toString();
   const [isHighlight, setIsHighlight] = useState(rel.highlight || false);
 
   useEffect(() => {
@@ -226,8 +234,8 @@ const NpcItem: React.FC<NpcItemProps> = ({
                 </svg>
               )}
             </span>
-            <span
-              className="text-[10px] uppercase tracking-wider bg-theme-bg/40 px-2 py-0.5 rounded text-theme-primary border border-theme-divider/60 max-w-[120px] truncate cursor-help shrink-0"
+            <SidebarTag
+              className="max-w-[120px] truncate cursor-help shrink-0"
               title={
                 rel.visible?.roleTag ||
                 rel.visible?.profession ||
@@ -239,16 +247,23 @@ const NpcItem: React.FC<NpcItemProps> = ({
                 rel.visible?.profession ||
                 rel.visible?.title ||
                 "Unknown"}
-            </span>
+            </SidebarTag>
           </div>
         </div>
+        {!isExpanded && (
+          <div className="pl-5 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+            {pickFirstText(
+              rel.visible?.description,
+              rel.visible?.status,
+              rel.hidden?.realMotives,
+            ) ||
+              t("noDescription") ||
+              "No description available."}
+          </div>
+        )}
 
-        <div
-          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
+        {isExpanded && (
+          <div className="overflow-hidden animate-sidebar-expand">
             <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
               <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
                 <div>
@@ -371,7 +386,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                     <div className="text-theme-text-secondary text-xs space-y-1">
                       {attitude?.visible?.reputationTag && (
                         <div>
-                          <span className="uppercase tracking-wider text-[9px] opacity-70">
+                          <span className="uppercase tracking-wider text-[10px] opacity-70">
                             {t("gameViewer.reputationTag", {
                               defaultValue: "Tag",
                             })}
@@ -382,7 +397,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                       )}
                       {attitude?.visible?.claimedIntent && (
                         <div>
-                          <span className="uppercase tracking-wider text-[9px] opacity-70">
+                          <span className="uppercase tracking-wider text-[10px] opacity-70">
                             {t("gameViewer.claimedIntent", {
                               defaultValue: "Claims",
                             })}
@@ -426,7 +441,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
                       {Array.isArray(perception.visible.evidence) &&
                         perception.visible.evidence.length > 0 && (
                           <div className="mt-2">
-                            <span className="text-[9px] uppercase tracking-wider text-theme-primary/70 block mb-0.5">
+                            <span className="text-[10px] uppercase tracking-wider text-theme-primary/70 block mb-0.5">
                               {t("gameViewer.evidence", {
                                 defaultValue: "Evidence",
                               })}
@@ -496,7 +511,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
                     {rel.hidden?.realPersonality && (
                       <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("hidden.personality")}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
@@ -510,7 +525,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
                     {rel.hidden?.realMotives && (
                       <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("hidden.motives")}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
@@ -524,7 +539,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
                     {rel.hidden?.race && (
                       <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("gameViewer.race") || "Race"}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
@@ -538,7 +553,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
                     {rel.hidden?.gender && (
                       <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("gameViewer.gender") || "Gender"}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
@@ -552,7 +567,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
                     {rel.hidden?.routine && (
                       <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("hidden.routine") || "Routine"}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
@@ -566,7 +581,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
                     {rel.hidden?.secrets && rel.hidden.secrets.length > 0 && (
                       <div className="mt-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("hidden.secrets")}:
                         </span>
                         <ul className="list-disc list-inside text-theme-text space-y-0.5">
@@ -606,7 +621,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
                     {rel.hidden?.status && (
                       <div className="mb-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("hidden.actualStatus") || "Actually Doing"}:
                         </span>
                         <div className="leading-relaxed text-theme-text">
@@ -622,7 +637,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {isEditMode && (
@@ -662,6 +677,9 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
   onUpdateList,
   unlockMode = false,
   listManagementEnabled = true,
+  globalEditMode,
+  expandedItemId,
+  onExpandItem,
 }) => {
   const { t } = useTranslation();
   const resolvedPlayerActorId = playerActorId || "char:player";
@@ -674,28 +692,41 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
   }, [actors, resolvedPlayerActorId]);
   const [isOpen, setIsOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<Set<string | number>>(
-    new Set(),
-  );
+  const [localExpandedItemId, setLocalExpandedItemId] = useState<
+    string | number | null
+  >(null);
+  const resolvedExpandedItemId =
+    expandedItemId !== undefined ? expandedItemId : localExpandedItemId;
 
   const toggleItem = (id: string | number) => {
-    const newSet = new Set(expandedItems);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
+    const targetId = id.toString();
+    const next =
+      resolvedExpandedItemId?.toString() === targetId ? null : targetId;
+    if (onExpandItem) {
+      onExpandItem(next);
+      return;
     }
-    setExpandedItems(newSet);
+    setLocalExpandedItemId(next);
   };
+
+  useEffect(() => {
+    if (onExpandItem) {
+      onExpandItem(null);
+      return;
+    }
+    setLocalExpandedItemId(null);
+  }, [unlockMode, resolvedPlayerActorId]);
 
   // Map NPCs to include ID for useListManagement
   const npcsWithId = useMemo(() => {
     return buildNpcList(npcs, resolvedPlayerActorId, unlockMode);
   }, [npcs, resolvedPlayerActorId, unlockMode]);
 
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isLocalEditMode, setIsLocalEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | number | null>(null);
   const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
+  const isEditMode = globalEditMode ?? isLocalEditMode;
+  const allowPanelEditToggle = globalEditMode === undefined;
 
   const {
     visibleItems,
@@ -765,57 +796,58 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
               ></path>
             </svg>
             {t("npcs") || "NPCs"}
-            <span className="ml-2 text-[10px] text-theme-text-secondary bg-theme-surface-highlight px-1.5 rounded border border-theme-divider/60">
+            <SidebarTag className="ml-2 text-theme-text-secondary bg-theme-surface-highlight">
               {npcsWithId.length}
-            </span>
+            </SidebarTag>
           </span>
         </div>
 
         <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditMode(!isEditMode);
-            }}
-            className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-              isEditMode
-                ? "bg-theme-primary text-theme-bg"
-                : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-            }`}
-            title={isEditMode ? t("done") : t("edit")}
-          >
-            {isEditMode ? (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            )}
-          </button>
-
-          {npcsWithId.length > 0 && (
+          {allowPanelEditToggle && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLocalEditMode(!isEditMode);
+              }}
+              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                isEditMode
+                  ? "bg-theme-primary text-theme-bg"
+                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+              }`}
+              title={isEditMode ? t("done") : t("edit")}
+            >
+              {isEditMode ? (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+          {isEditMode && npcsWithId.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -859,43 +891,37 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
           </div>
         </div>
       </div>
-      <div
-        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
-          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="space-y-2 pt-1">
-            {visibleItems.length === 0 ? (
-              <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
-                {t("emptyNpcs")}
-              </div>
-            ) : (
-              visibleItems.map((rel, idx) => (
-                <NpcItem
-                  key={rel.id}
-                  npc={rel}
-                  playerActorId={resolvedPlayerActorId}
-                  playerRelations={playerRelations}
-                  locations={locations}
-                  enableDrag={true}
-                  expandedItems={expandedItems}
-                  isEditMode={isEditMode}
-                  draggedId={draggedId}
-                  onToggle={toggleItem}
-                  onDragStart={handleDragStart}
-                  onDragEnter={handleDragEnter}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  onDrop={handleDrop}
-                  t={t}
-                  unlockMode={unlockMode}
-                />
-              ))
-            )}
-          </div>
+      {isOpen && (
+        <div className="space-y-2 pt-1 animate-sidebar-expand">
+          {visibleItems.length === 0 ? (
+            <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
+              {t("emptyNpcs")}
+            </div>
+          ) : (
+            visibleItems.map((rel) => (
+              <NpcItem
+                key={rel.id}
+                npc={rel}
+                playerActorId={resolvedPlayerActorId}
+                playerRelations={playerRelations}
+                locations={locations}
+                enableDrag={true}
+                expandedId={resolvedExpandedItemId}
+                isEditMode={isEditMode}
+                draggedId={draggedId}
+                onToggle={toggleItem}
+                onDragStart={handleDragStart}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDrop={handleDrop}
+                t={t}
+                unlockMode={unlockMode}
+              />
+            ))
+          )}
         </div>
-      </div>{" "}
+      )}{" "}
       <DetailedListModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -924,7 +950,7 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
             playerRelations={playerRelations}
             locations={locations}
             enableDrag={dragOptions?.isEditMode || false}
-            expandedItems={expandedItems}
+            expandedId={resolvedExpandedItemId}
             isEditMode={dragOptions?.isEditMode || false}
             draggedId={dragOptions?.isDragging ? item.id.toString() : null}
             onToggle={toggleItem}

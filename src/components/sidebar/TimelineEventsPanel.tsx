@@ -5,6 +5,8 @@ import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { resolveEntityDisplayName } from "../../utils/entityDisplay";
+import { SidebarTag } from "./SidebarTag";
+import { pickFirstText } from "./panelText";
 
 interface TimelineEventsPanelProps {
   events?: TimelineEvent[];
@@ -22,17 +24,20 @@ interface TimelineEventsPanelProps {
     | "inventory"
   >;
   themeFont: string;
+  expandedItemId?: string | null;
+  onExpandItem?: (itemId: string | null) => void;
 }
 
 // Sub-component for individual timeline events
 const TimelineEventCard: React.FC<{
   event: TimelineEvent;
   gameState: TimelineEventsPanelProps["gameState"];
-}> = ({ event, gameState }) => {
+  isExpanded: boolean;
+  onToggle: () => void;
+}> = ({ event, gameState, isExpanded, onToggle }) => {
   const { t } = useTranslation();
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isHighlight, setIsHighlight] = useState(event.highlight || false);
 
   useEffect(() => {
@@ -41,7 +46,7 @@ const TimelineEventCard: React.FC<{
 
   const handleClick = () => {
     if (event.unlocked) {
-      setIsExpanded(!isExpanded);
+      onToggle();
     }
     if (isHighlight) {
       setIsHighlight(false);
@@ -76,14 +81,14 @@ const TimelineEventCard: React.FC<{
               {event.gameTime}
             </span>
             {event.category && (
-              <span className="text-[9px] uppercase tracking-wider text-theme-text-secondary">
+              <SidebarTag className="text-theme-text-secondary">
                 {t(`timeline.categories.${event.category}`, {
                   defaultValue: event.category.replace("_", " "),
                 })}
-              </span>
+              </SidebarTag>
             )}
             {event.unlocked && (
-              <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-theme-primary font-bold">
+              <SidebarTag className="gap-1">
                 <svg
                   className="w-2.5 h-2.5"
                   fill="currentColor"
@@ -92,7 +97,7 @@ const TimelineEventCard: React.FC<{
                   <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
                 </svg>
                 {t("insight") || "Insight"}
-              </div>
+              </SidebarTag>
             )}
           </div>
           {event.unlocked && (
@@ -124,22 +129,38 @@ const TimelineEventCard: React.FC<{
           </div>
         )}
 
-        <div className="text-xs text-theme-text/90 leading-relaxed">
-          {!event.name && (
-            <span className="ui-emoji-slot mr-1.5 align-middle">
-              {getValidIcon(event.icon, "📅")}
-            </span>
-          )}
-          <MarkdownText
-            content={event.visible.description}
-            inline
-            className="inline"
-          />
-        </div>
+        {!isExpanded && (
+          <div className="text-xs text-theme-text/90 leading-relaxed line-clamp-2">
+            {!event.name && (
+              <span className="ui-emoji-slot mr-1.5 align-middle">
+                {getValidIcon(event.icon, "📅")}
+              </span>
+            )}
+            {pickFirstText(
+              event.visible.description,
+              event.hidden?.trueDescription,
+            )}
+          </div>
+        )}
+
+        {isExpanded && (
+          <div className="text-xs text-theme-text/90 leading-relaxed">
+            {!event.name && (
+              <span className="ui-emoji-slot mr-1.5 align-middle">
+                {getValidIcon(event.icon, "📅")}
+              </span>
+            )}
+            <MarkdownText
+              content={event.visible.description}
+              inline
+              className="inline"
+            />
+          </div>
+        )}
 
         {resolvedCausedBy && (
           <div className="mt-2 pt-2 border-t border-theme-divider/60 flex items-center gap-1.5">
-            <span className="text-[9px] uppercase tracking-wider text-theme-text-secondary">
+            <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary">
               {t("worldInfo.causedBy")}:
             </span>
             <span className="text-[10px] text-theme-text/80 italic">
@@ -155,7 +176,7 @@ const TimelineEventCard: React.FC<{
         {/* Involved Entities */}
         {event.involvedEntities && event.involvedEntities.length > 0 && (
           <div className="mt-2 pt-2 border-t border-theme-divider/60">
-            <span className="text-[9px] uppercase tracking-wider text-theme-text-secondary block mb-1">
+            <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary block mb-1">
               {t("timeline.involved") || "Involved"}:
             </span>
             <div className="flex flex-wrap gap-1">
@@ -171,7 +192,7 @@ const TimelineEventCard: React.FC<{
         {/* Chain ID */}
         {event.chainId && (
           <div className="mt-1 flex items-center gap-1.5">
-            <span className="text-[9px] uppercase tracking-wider text-theme-text-secondary">
+            <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary">
               {t("timeline.chain") || "Chain"}:
             </span>
             <span className="text-[10px] text-theme-primary/70 font-mono">
@@ -182,12 +203,8 @@ const TimelineEventCard: React.FC<{
       </div>
 
       {/* Expanded Hidden Truth */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
+      {isExpanded && (
+        <div className="overflow-hidden animate-sidebar-expand">
           <div className="border-t border-theme-divider/60 pt-2 pl-3 border-l border-theme-divider/60 pr-2">
             <div className="flex items-center gap-1.5 mb-2">
               <svg
@@ -235,7 +252,7 @@ const TimelineEventCard: React.FC<{
                 Array.isArray(event.hidden.consequences) &&
                 event.hidden.consequences.length > 0 && (
                   <div>
-                    <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-1">
                       {t("hidden.consequences")}:
                     </span>
                     <ul className="list-disc list-inside text-theme-text/80 space-y-0.5 text-[10px]">
@@ -254,7 +271,7 @@ const TimelineEventCard: React.FC<{
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -263,9 +280,16 @@ const TimelineEventsPanelComponent: React.FC<TimelineEventsPanelProps> = ({
   events,
   gameState,
   themeFont,
+  expandedItemId,
+  onExpandItem,
 }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+  const [localExpandedEventId, setLocalExpandedEventId] = useState<
+    string | null
+  >(null);
+  const expandedEventId =
+    expandedItemId !== undefined ? expandedItemId : localExpandedEventId;
 
   // Show only the last 5 known events reversed (newest first)
   const playerId = "char:player";
@@ -349,6 +373,15 @@ const TimelineEventsPanelComponent: React.FC<TimelineEventsPanelProps> = ({
                 key={event.id}
                 event={event}
                 gameState={gameState}
+                isExpanded={expandedEventId === event.id}
+                onToggle={() => {
+                  const next = expandedEventId === event.id ? null : event.id;
+                  if (onExpandItem) {
+                    onExpandItem(next);
+                    return;
+                  }
+                  setLocalExpandedEventId(next);
+                }}
               />
             ))
           )}

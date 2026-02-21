@@ -706,6 +706,7 @@ export interface UIState {
   embeddingExpanded?: boolean; // Persisted state for embedding panel expansion
   feedLayout?: FeedLayout; // Persisted layout preference (scroll/stack)
   viewedSegmentId?: string; // Last viewed segment ID for continue game
+  sidebarGlobalEditMode?: boolean; // Global sidebar edit mode toggle
 }
 
 // Relationship 从 zodSchemas.ts 导入

@@ -7,6 +7,8 @@ import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useListManagement } from "../../hooks/useListManagement";
 import { useOptionalRuntimeContext } from "../../runtime/context";
+import { SidebarTag } from "./SidebarTag";
+import { pickFirstText } from "./panelText";
 
 interface KnowledgePanelProps {
   knowledge: KnowledgeEntry[];
@@ -14,6 +16,9 @@ interface KnowledgePanelProps {
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
   listManagementEnabled?: boolean;
+  globalEditMode?: boolean;
+  expandedItemId?: string | null;
+  onExpandItem?: (itemId: string | null) => void;
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -33,7 +38,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 interface KnowledgeItemProps {
   k: KnowledgeEntry;
-  expandedSet: Set<string | number>;
+  expandedId: string | number | null;
   isModal: boolean;
   onToggle: (id: string | number, isModal: boolean) => void;
   t: TFunction;
@@ -49,7 +54,7 @@ interface KnowledgeItemProps {
 
 const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   k,
-  expandedSet,
+  expandedId,
   isModal,
   onToggle,
   t,
@@ -83,6 +88,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
     // Cleanup is handled by parent
   };
 
+  const isExpanded =
+    expandedId !== null &&
+    expandedId !== undefined &&
+    expandedId.toString() === k.id.toString();
+
   return (
     <div
       className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2
@@ -101,8 +111,8 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         className="py-2 pl-2 pr-1 min-h-[2.25rem] cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-center justify-between gap-3"
         onClick={handleToggle}
       >
-        {/* Pin button - only show in edit mode or if pinned */}
-        {(isEditMode || isPinned) && onPin && (
+        {/* Pin button - edit mode only */}
+        {isEditMode && onPin && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -151,9 +161,20 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
             </h4>
           </div>
         </div>
+        {!isExpanded && (
+          <div className="pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+            {pickFirstText(
+              k.visible?.description,
+              k.visible?.details,
+              k.hidden?.fullTruth,
+            ) ||
+              t("noDescription") ||
+              "No description"}
+          </div>
+        )}
         <svg
           className={`w-5 h-5 text-theme-text-secondary shrink-0 transition-transform duration-300 ${
-            expandedSet.has(k.id) ? "rotate-180" : ""
+            isExpanded ? "rotate-180" : ""
           }`}
           fill="none"
           stroke="currentColor"
@@ -168,15 +189,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
         </svg>
       </div>
 
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-          expandedSet.has(k.id) ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
+      {isExpanded && (
+        <div className="overflow-hidden animate-sidebar-expand">
           <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 mt-1">
             <div className="mt-3">
-              <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
+              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                 {t("description") || "Description"}
               </span>
               <div className="pl-2 border-l-2 border-theme-divider/60 text-theme-text/90">
@@ -189,7 +206,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
             {k.visible?.details && (
               <div className="mt-4 pt-3 border-t border-theme-divider/60">
-                <span className="text-xs uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
                   {t("details") || "Details"}
                 </span>
                 <div className="pl-2 border-l-2 border-theme-divider/60 text-theme-text/90">
@@ -201,7 +218,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
             {/* Unlocked Hidden Truth - Outer Layer */}
             {k.unlocked && k.hidden?.fullTruth && (
               <div className="mt-4 pt-3 border-t border-theme-unlocked/20">
-                <span className="text-xs uppercase tracking-wider text-theme-unlocked font-bold flex items-center gap-1.5 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-theme-unlocked font-bold flex items-center gap-1.5 mb-2">
                   <svg
                     className="w-3.5 h-3.5"
                     fill="currentColor"
@@ -221,7 +238,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                   {k.hidden.misconceptions &&
                     k.hidden.misconceptions.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-theme-unlocked/10">
-                        <span className="text-xs uppercase tracking-wider text-theme-danger/90 block mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-danger/90 block mb-1">
                           {t("hidden.misconceptions")}:
                         </span>
                         <ul className="list-disc list-inside text-theme-danger/80 space-y-1 pl-2">
@@ -241,7 +258,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                   {k.hidden.toBeRevealed &&
                     k.hidden.toBeRevealed.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-theme-unlocked/10">
-                        <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-1">
                           {t("hidden.future")}:
                         </span>
                         <ul className="list-disc list-inside text-theme-primary/80 space-y-1 pl-2">
@@ -263,7 +280,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
             {k.discoveredAt && (
               <div className="mt-3 pt-2 border-t border-theme-divider/60 flex justify-between items-center">
-                <span className="text-xs uppercase tracking-wider text-theme-primary font-bold">
+                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">
                   {t("knowledgePanel.discovered") || "Discovered"}
                 </span>
                 <span className="text-xs text-theme-text-secondary">
@@ -273,7 +290,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -284,19 +301,26 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
   listState,
   onUpdateList,
   listManagementEnabled = true,
+  globalEditMode,
+  expandedItemId,
+  onExpandItem,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedKnowledge, setExpandedKnowledge] = useState<
-    Set<string | number>
-  >(new Set());
+  const [localExpandedKnowledgeId, setLocalExpandedKnowledgeId] = useState<
+    string | number | null
+  >(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalExpandedKnowledge, setModalExpandedKnowledge] = useState<
-    Set<string | number>
-  >(new Set());
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [modalExpandedKnowledgeId, setModalExpandedKnowledgeId] = useState<
+    string | number | null
+  >(null);
+  const [isLocalEditMode, setIsLocalEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
+  const isEditMode = globalEditMode ?? isLocalEditMode;
+  const allowPanelEditToggle = globalEditMode === undefined;
+  const expandedKnowledgeId =
+    expandedItemId !== undefined ? expandedItemId : localExpandedKnowledgeId;
 
   const safeKnowledge = Array.isArray(knowledge) ? knowledge : [];
 
@@ -316,16 +340,23 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
     knowledgeId: string | number,
     isModal: boolean = false,
   ) => {
-    const setter = isModal ? setModalExpandedKnowledge : setExpandedKnowledge;
-    setter((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(knowledgeId)) {
-        newSet.delete(knowledgeId);
-      } else {
-        newSet.add(knowledgeId);
-      }
-      return newSet;
-    });
+    const targetId = knowledgeId.toString();
+    if (isModal) {
+      setModalExpandedKnowledgeId((prev) =>
+        prev?.toString() === targetId ? null : targetId,
+      );
+      return;
+    }
+    const currentId =
+      expandedKnowledgeId === null || expandedKnowledgeId === undefined
+        ? null
+        : expandedKnowledgeId.toString();
+    const next = currentId === targetId ? null : targetId;
+    if (onExpandItem) {
+      onExpandItem(next);
+      return;
+    }
+    setLocalExpandedKnowledgeId(next);
   };
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
@@ -370,57 +401,58 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
           <span className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-theme-primary rounded-full animate-pulse"></span>
             {t("knowledgePanel.title")}
-            <span className="ml-2 text-xs text-theme-text-secondary bg-theme-surface-highlight px-2 py-0.5 rounded border border-theme-divider/60">
+            <SidebarTag className="ml-2 text-theme-text-secondary bg-theme-surface-highlight">
               {knowledge.length}
-            </span>
+            </SidebarTag>
           </span>
         </div>
 
         <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditMode(!isEditMode);
-            }}
-            className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-              isEditMode
-                ? "bg-theme-primary text-theme-bg"
-                : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-            }`}
-            title={isEditMode ? t("done") : t("edit")}
-          >
-            {isEditMode ? (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            )}
-          </button>
-
-          {safeKnowledge.length > 0 && (
+          {allowPanelEditToggle && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLocalEditMode(!isEditMode);
+              }}
+              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                isEditMode
+                  ? "bg-theme-primary text-theme-bg"
+                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+              }`}
+              title={isEditMode ? t("done") : t("edit")}
+            >
+              {isEditMode ? (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+          {isEditMode && safeKnowledge.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -466,7 +498,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
       </div>
 
       {isOpen && (
-        <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
+        <div className="space-y-2 animate-sidebar-expand">
           {visibleItems.length === 0 ? (
             <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
               {t("knowledgePanel.empty")}
@@ -476,7 +508,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
               <KnowledgeItem
                 key={k.id}
                 k={k}
-                expandedSet={expandedKnowledge}
+                expandedId={expandedKnowledgeId}
                 isModal={false}
                 onToggle={toggleKnowledge}
                 t={t}
@@ -519,7 +551,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
           <KnowledgeItem
             key={item.id}
             k={item}
-            expandedSet={modalExpandedKnowledge}
+            expandedId={modalExpandedKnowledgeId}
             isModal={true}
             onToggle={toggleKnowledge}
             t={t}

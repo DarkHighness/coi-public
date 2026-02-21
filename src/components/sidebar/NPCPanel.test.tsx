@@ -136,6 +136,7 @@ describe("NPCPanel", () => {
       }),
     );
 
+    fireEvent.click(screen.getByTitle("edit"));
     fireEvent.click(screen.getByTitle("viewAll"));
     expect(screen.getByText("detailed-modal")).toBeTruthy();
   });

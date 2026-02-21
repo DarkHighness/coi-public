@@ -16,6 +16,14 @@ import { useRuntimeContext } from "../runtime/context";
 import { resolveLocationDisplayName } from "../utils/entityDisplay";
 import { BUILD_INFO } from "../utils/constants";
 
+type ExpandableSidebarPanel =
+  | "quests"
+  | "timeline"
+  | "locations"
+  | "npcs"
+  | "inventory"
+  | "knowledge";
+
 interface SidebarProps {
   // Callbacks only - state comes from context
   onCloseMobile: () => void;
@@ -63,6 +71,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const showDesktopMenu = gameState.uiState?.showSystemFooter !== false;
   const listManagementEnabled =
     isMobileViewport || gameState.uiState?.sidebarCollapsed !== true;
+  const [globalEditMode, setGlobalEditMode] = React.useState(
+    gameState.uiState?.sidebarGlobalEditMode ?? false,
+  );
+  const [expandedByPanel, setExpandedByPanel] = React.useState<
+    Partial<Record<ExpandableSidebarPanel, string | null>>
+  >({});
+
+  React.useEffect(() => {
+    setGlobalEditMode(gameState.uiState?.sidebarGlobalEditMode ?? false);
+  }, [gameState.uiState?.sidebarGlobalEditMode]);
 
   const activeQuest = gameState.quests?.find((q) => q.status === "active");
   const locationContext = resolveLocationDisplayName(
@@ -128,6 +146,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
     () => onUpdateUIState("showSystemFooter", !showDesktopMenu),
     [onUpdateUIState, showDesktopMenu],
   );
+  const handleToggleGlobalEditMode = React.useCallback(() => {
+    const next = !globalEditMode;
+    setGlobalEditMode(next);
+    onUpdateUIState("sidebarGlobalEditMode", next);
+  }, [globalEditMode, onUpdateUIState]);
+  const handleExpandInPanel = React.useCallback(
+    (panel: ExpandableSidebarPanel, itemId: string | null) => {
+      setExpandedByPanel((prev) => ({
+        ...prev,
+        [panel]: itemId,
+      }));
+    },
+    [],
+  );
 
   const embeddingProgress = useEmbeddingStatus();
 
@@ -188,44 +220,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto pb-32 md:pb-6 scroll-smooth custom-scrollbar">
-        <div className="px-4 pt-4 divide-y divide-theme-divider/60">
-          {/* Time Display */}
-          <div className="pb-3">
-            <div className="border-l-2 border-theme-divider/60 border-b border-theme-divider/60 pb-2">
-              <div className="py-2 pl-2 pr-1 flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-wide text-theme-text-secondary">
-                    {t("gameViewer.time") || "Time"}
-                  </div>
-                  <div className="text-xs font-mono text-theme-text-secondary truncate flex items-center gap-1.5">
-                    <svg
-                      className="w-3.5 h-3.5 text-theme-primary shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span className="truncate">{gameState.time}</span>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <div className="text-[11px] uppercase tracking-wide text-theme-text-secondary">
-                    {t("turn")}
-                  </div>
-                  <div className="text-xs font-mono text-theme-text">
-                    {gameState.turnNumber ?? 0}
-                  </div>
-                </div>
+        <div className="px-4 divide-y divide-theme-divider/45">
+          <section className="py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex items-center gap-2.5 text-xs">
+                <span
+                  className={`text-theme-primary uppercase tracking-widest font-bold ${currentThemeConfig.fontClass}`}
+                >
+                  {t("gameViewer.time") || "Time"}
+                </span>
+                <span className="font-mono text-theme-text-secondary truncate">
+                  {gameState.time}
+                </span>
               </div>
+              <button
+                onClick={handleToggleGlobalEditMode}
+                className={`h-8 px-2.5 border border-theme-divider/70 text-xs uppercase tracking-wide transition-colors ${
+                  globalEditMode
+                    ? "bg-theme-primary/15 text-theme-primary"
+                    : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+                }`}
+                title={globalEditMode ? t("done") : t("edit")}
+              >
+                {globalEditMode ? t("done") : t("edit")}
+              </button>
             </div>
-          </div>
+          </section>
 
           {character && (
             <section className="py-3">
@@ -240,10 +260,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           <section className="py-3">
-            <TimelineEventsPanel
-              events={gameState.timeline}
-              gameState={timelineGameState}
+            <QuestPanel
+              quests={gameState.quests || []}
               themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.quests}
+              onUpdateList={handleQuestListUpdate}
+              listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.quests ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("quests", itemId)}
+            />
+          </section>
+
+          <section className="py-3">
+            <NPCPanel
+              npcs={gameState.npcs || []}
+              actors={gameState.actors || []}
+              playerActorId={gameState.playerActorId}
+              locations={gameState.locations || []}
+              themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.npcs}
+              onUpdateList={handleNpcListUpdate}
+              unlockMode={gameState.unlockMode}
+              listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.npcs ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("npcs", itemId)}
             />
           </section>
 
@@ -257,30 +299,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               listState={gameState.uiState?.locations}
               onUpdateList={handleLocationListUpdate}
               listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.locations ?? null}
+              onExpandItem={(itemId) =>
+                handleExpandInPanel("locations", itemId)
+              }
             />
           </section>
-          <section className="py-3">
-            <QuestPanel
-              quests={gameState.quests || []}
-              themeFont={currentThemeConfig.fontClass}
-              listState={gameState.uiState?.quests}
-              onUpdateList={handleQuestListUpdate}
-              listManagementEnabled={listManagementEnabled}
-            />
-          </section>
-          <section className="py-3">
-            <NPCPanel
-              npcs={gameState.npcs || []}
-              actors={gameState.actors || []}
-              playerActorId={gameState.playerActorId}
-              locations={gameState.locations || []}
-              themeFont={currentThemeConfig.fontClass}
-              listState={gameState.uiState?.npcs}
-              onUpdateList={handleNpcListUpdate}
-              unlockMode={gameState.unlockMode}
-              listManagementEnabled={listManagementEnabled}
-            />
-          </section>
+
           <section className="py-3">
             <InventoryPanel
               inventory={gameState.inventory || []}
@@ -289,8 +315,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               listState={gameState.uiState?.inventory}
               onUpdateList={handleInventoryListUpdate}
               listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.inventory ?? null}
+              onExpandItem={(itemId) =>
+                handleExpandInPanel("inventory", itemId)
+              }
             />
           </section>
+
           <section className="py-3">
             <KnowledgePanel
               knowledge={gameState.knowledge || []}
@@ -298,6 +330,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
               listState={gameState.uiState?.knowledge}
               onUpdateList={handleKnowledgeListUpdate}
               listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.knowledge ?? null}
+              onExpandItem={(itemId) =>
+                handleExpandInPanel("knowledge", itemId)
+              }
+            />
+          </section>
+
+          <section className="py-3">
+            <TimelineEventsPanel
+              events={gameState.timeline}
+              gameState={timelineGameState}
+              themeFont={currentThemeConfig.fontClass}
+              expandedItemId={expandedByPanel.timeline ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("timeline", itemId)}
             />
           </section>
 

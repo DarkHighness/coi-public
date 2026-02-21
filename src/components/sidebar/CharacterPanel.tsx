@@ -12,6 +12,7 @@ import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { resolveLocationDisplayName } from "../../utils/entityDisplay";
+import { SidebarTag } from "./SidebarTag";
 
 interface CharacterPanelProps {
   character: CharacterStatus;
@@ -350,15 +351,11 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {skill.category && (
-            <span className="text-[10px] text-theme-text-secondary uppercase tracking-wider whitespace-nowrap">
+            <SidebarTag className="text-theme-text-secondary">
               {skill.category}
-            </span>
+            </SidebarTag>
           )}
-          {skill.level && (
-            <span className="text-[10px] text-theme-primary uppercase tracking-wider whitespace-nowrap">
-              {skill.level}
-            </span>
-          )}
+          {skill.level && <SidebarTag>{skill.level}</SidebarTag>}
           <svg
             className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
@@ -375,12 +372,8 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
         </div>
       </div>
 
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ${
-          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
+      {isExpanded && (
+        <div className="overflow-hidden animate-sidebar-expand">
           <div className="pl-3 pr-2 pb-3 pt-0 space-y-3">
             <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
               <MarkdownText
@@ -458,7 +451,7 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -527,9 +520,17 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
             )}
           </span>
 
-          <div className="flex items-center gap-2 text-[10px] text-theme-text-secondary uppercase tracking-wider whitespace-nowrap shrink-0">
-            {condition.startTime && <span>{condition.startTime}</span>}
-            {condition.severity && <span>{condition.severity}</span>}
+          <div className="flex items-center gap-2 whitespace-nowrap shrink-0">
+            {condition.startTime && (
+              <SidebarTag className="text-theme-text-secondary">
+                {condition.startTime}
+              </SidebarTag>
+            )}
+            {condition.severity && (
+              <SidebarTag className="text-theme-text-secondary">
+                {condition.severity}
+              </SidebarTag>
+            )}
             <svg
               className={`w-4 h-4 text-theme-text-secondary transition-transform duration-200 mt-0.5 ${isExpanded ? "rotate-180" : ""}`}
               fill="none"
@@ -556,12 +557,8 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
         )}
 
         {/* Expanded content */}
-        <div
-          className={`grid transition-[grid-template-rows] duration-300 ${
-            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
+        {isExpanded && (
+          <div className="overflow-hidden animate-sidebar-expand">
             <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-3 border-l border-theme-divider/60">
               {condition.visible?.perceivedSeverity && (
                 <p className="text-xs opacity-80">
@@ -674,7 +671,7 @@ const ConditionItem: React.FC<{ condition: CharacterCondition }> = ({
               )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -745,12 +742,8 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
           </div>
         )}
 
-        <div
-          className={`grid transition-[grid-template-rows] duration-300 ${
-            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
+        {isExpanded && (
+          <div className="overflow-hidden animate-sidebar-expand">
             <div className="pt-2 border-t border-theme-divider/60 mt-2 space-y-3 pl-3 border-l border-theme-divider/60">
               {trait.effects && trait.effects.length > 0 && (
                 <div>
@@ -783,7 +776,7 @@ const TraitItem: React.FC<{ trait: HiddenTrait }> = ({ trait }) => {
                 )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -814,6 +807,9 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
   );
   const ageText = normalizeDisplayText(character.age) ?? "";
   const statusText = pickDisplayValue([character.status], unknownText);
+  const activeConditions = Array.isArray(character.conditions)
+    ? character.conditions
+    : [];
   const hiddenRaceText =
     normalizeDisplayText(playerProfile?.hidden?.race) ?? "";
   const hiddenGenderText =
@@ -885,7 +881,7 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
           <div className="border-l-2 border-theme-divider/60 border-b border-theme-divider/60 pb-2">
             <div className="py-3 pl-2 pr-1 space-y-3">
               <h3
-                className={`text-sm font-bold text-theme-text leading-snug break-words whitespace-normal ${themeFont}`}
+                className={`text-sm font-bold text-theme-primary leading-snug break-words whitespace-normal ${themeFont}`}
               >
                 {character.name}
               </h3>
@@ -936,13 +932,29 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                   </span>
                 </div>
 
-                <div className="py-2 flex items-start justify-between gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0">
+                <div className="py-2">
+                  <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0 block">
                     {t("gameViewer.status") || t("status") || "Status"}
                   </span>
-                  <span className="text-xs text-theme-primary font-medium text-right break-words whitespace-normal">
-                    {statusText}
-                  </span>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <SidebarTag className="text-theme-primary border-theme-primary/40 bg-theme-primary/10">
+                      {statusText}
+                    </SidebarTag>
+                    {activeConditions.slice(0, 3).map((condition) => (
+                      <SidebarTag
+                        key={condition.id || condition.name}
+                        className="text-theme-text-secondary normal-case tracking-normal"
+                        title={condition.visible?.description}
+                      >
+                        {condition.name}
+                      </SidebarTag>
+                    ))}
+                    {activeConditions.length > 3 && (
+                      <SidebarTag className="text-theme-text-secondary">
+                        +{activeConditions.length - 3}
+                      </SidebarTag>
+                    )}
+                  </div>
                 </div>
 
                 {currentLocationText && (
@@ -1130,82 +1142,50 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
               </div>
             )}
 
-          {/* Appearance (Collapsible) */}
           {character.appearance && (
-            <details className="group text-xs pt-4 border-t border-theme-divider/60">
-              <summary className="cursor-pointer text-theme-text-secondary hover:text-theme-primary transition-colors list-none flex items-center gap-2">
-                <span className="uppercase tracking-wider text-xs font-bold">
-                  🧐 {t("appearance") || "Appearance"}
-                </span>
-                <svg
-                  className="w-4 h-4 transition-transform group-open:rotate-90"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </summary>
-              <div className="mt-3 text-theme-text-secondary leading-relaxed pl-3 border-l-2 border-theme-divider/60">
+            <div className="pt-4 border-t border-theme-divider/60">
+              <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-2 font-bold">
+                {t("appearance") || "Appearance"}
+              </h4>
+              <div className="text-xs text-theme-text leading-relaxed pl-3 border-l border-theme-divider/60">
                 <MarkdownText content={character.appearance} indentSize={2} />
               </div>
-            </details>
+            </div>
           )}
 
-          {/* Psychology (Collapsible) - Always visible as it's a top-level field */}
           {character.psychology && (
-            <details className="group text-xs pt-4 border-t border-theme-divider/60">
-              <summary className="cursor-pointer text-theme-text-secondary hover:text-theme-primary transition-colors list-none flex items-center gap-2">
-                <span className="uppercase tracking-wider text-xs font-bold">
-                  🧠 {t("gameViewer.psychology") || "Psychology"}
-                </span>
-                <svg
-                  className="w-4 h-4 transition-transform group-open:rotate-90"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </summary>
-              <div className="mt-3 space-y-2 pl-3 border-l-2 border-theme-border">
+            <div className="pt-4 border-t border-theme-divider/60">
+              <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-2 font-bold">
+                {t("gameViewer.psychology") || "Psychology"}
+              </h4>
+              <div className="space-y-2 pl-3 border-l border-theme-divider/60 text-xs text-theme-text">
                 {character.psychology.coreTrauma && (
-                  <div className="text-xs text-theme-text">
-                    <span className="font-semibold text-theme-primary">
+                  <div>
+                    <span className="font-bold text-theme-primary">
                       {t("gameViewer.coreTrauma") || "Core Trauma"}:
                     </span>{" "}
-                    {character.psychology.coreTrauma}
+                    <span>{character.psychology.coreTrauma}</span>
                   </div>
                 )}
                 {character.psychology.copingMechanism && (
-                  <div className="text-xs text-theme-text">
-                    <span className="font-semibold text-theme-primary">
+                  <div>
+                    <span className="font-bold text-theme-primary">
                       {t("gameViewer.copingMechanism") || "Coping"}:
                     </span>{" "}
-                    {character.psychology.copingMechanism}
+                    <span>{character.psychology.copingMechanism}</span>
                   </div>
                 )}
                 {character.psychology.internalContradiction && (
-                  <div className="text-xs text-theme-text">
-                    <span className="font-semibold text-amber-500">
+                  <div>
+                    <span className="font-bold text-theme-primary">
                       {t("gameViewer.internalContradiction") || "Contradiction"}
                       :
                     </span>{" "}
-                    {character.psychology.internalContradiction}
+                    <span>{character.psychology.internalContradiction}</span>
                   </div>
                 )}
               </div>
-            </details>
+            </div>
           )}
         </div>
       )}

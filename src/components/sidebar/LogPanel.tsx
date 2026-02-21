@@ -51,7 +51,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({ logs, onClose }) => {
   return (
     <div className="fixed inset-0 z-100 bg-theme-surface backdrop-blur-md flex flex-col animate-fade-in text-theme-text font-mono">
       {/* Header */}
-      <div className="flex-none p-4 md:p-6 border-b border-theme-border bg-theme-surface flex justify-between items-center shadow-md">
+      <div className="flex-none p-4 md:p-6 border-b border-theme-border bg-theme-surface flex justify-between items-center">
         <div>
           <h2 className="text-lg md:text-2xl font-bold text-theme-primary flex items-center gap-3">
             <svg

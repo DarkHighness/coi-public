@@ -4,6 +4,7 @@ import { InventoryItem as InventoryItemType } from "../types";
 import { getValidIcon } from "../utils/emojiValidator";
 import { MarkdownText } from "./render/MarkdownText";
 import { useOptionalRuntimeContext } from "../runtime/context";
+import { pickFirstText } from "./sidebar/panelText";
 
 interface InventoryItemProps {
   item: InventoryItemType;
@@ -17,6 +18,8 @@ interface InventoryItemProps {
   onDrop?: (e: React.DragEvent) => void;
   isEditMode?: boolean;
   isDragging?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: (id: string | number) => void;
 }
 
 export const InventoryItem: React.FC<InventoryItemProps> = ({
@@ -31,12 +34,15 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
   onDrop,
   isEditMode,
   isDragging,
+  isExpanded,
+  onToggleExpand,
 }) => {
   const { t } = useTranslation();
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
-  const [isOpen, setIsOpen] = useState(false);
+  const [localIsOpen, setLocalIsOpen] = useState(false);
   const [isHighlight, setIsHighlight] = useState(item.highlight || false);
+  const open = isExpanded !== undefined ? isExpanded : localIsOpen;
 
   useEffect(() => {
     if (item.highlight) {
@@ -52,7 +58,11 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
 
   const handleClick = () => {
     if (!isEditMode) {
-      setIsOpen(!isOpen);
+      if (onToggleExpand) {
+        onToggleExpand(item.id);
+      } else {
+        setLocalIsOpen((prev) => !prev);
+      }
       if (isHighlight || item.highlight) {
         setIsHighlight(false);
         clearHighlight?.({ kind: "inventory", id: item.id });
@@ -64,7 +74,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
     <div
       className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2 group
         ${isDragging ? "opacity-60" : "opacity-100"}
-        ${isOpen ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
+        ${open ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
         ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
       `}
       onDragOver={onDragOver}
@@ -80,7 +90,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <svg
             className={`w-3.5 h-3.5 text-theme-text-secondary transition-transform duration-200 ${
-              isOpen ? "rotate-90" : ""
+              open ? "rotate-90" : ""
             }`}
             fill="none"
             stroke="currentColor"
@@ -93,7 +103,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
               d="M9 5l7 7-7 7"
             />
           </svg>
-          <span className="font-bold text-theme-text text-sm flex items-center gap-1.5 leading-tight break-words whitespace-normal">
+          <span className="font-bold text-theme-text text-xs flex items-center gap-1.5 leading-tight break-words whitespace-normal">
             <span className="ui-emoji-slot">
               {getValidIcon(item.icon, "📦")}
             </span>
@@ -102,7 +112,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
         </div>
 
         <div className="flex items-center justify-end gap-2 shrink-0 min-w-8">
-          {onPin && (
+          {isEditMode && onPin && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -111,7 +121,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
               className={`p-1 rounded hover:bg-theme-surface-highlight/20 transition-colors ${
                 isPinned
                   ? "text-theme-primary"
-                  : "text-theme-text-secondary hover:text-theme-text opacity-0 group-hover:opacity-100"
+                  : "text-theme-text-secondary hover:text-theme-text"
               }`}
               title={isPinned ? "Unpin" : "Pin to top"}
             >
@@ -132,13 +142,18 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
           )}
         </div>
       </div>
+      {!open && (
+        <div className="pl-7 pr-2 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+          {pickFirstText(
+            item.visible?.description,
+            item.visible?.usage,
+            item.hidden?.truth,
+          )}
+        </div>
+      )}
 
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
+      {open && (
+        <div className="overflow-hidden animate-sidebar-expand">
           <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
             <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
               <div>
@@ -281,7 +296,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {isEditMode && (
         <div

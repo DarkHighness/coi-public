@@ -8,6 +8,8 @@ import { MarkdownText } from "../render/MarkdownText";
 import { DetailedListModal } from "../DetailedListModal";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { isSameEntityRef } from "../../utils/entityDisplay";
+import { SidebarTag } from "./SidebarTag";
+import { pickFirstText } from "./panelText";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -18,6 +20,9 @@ interface LocationPanelProps {
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
   listManagementEnabled?: boolean;
+  globalEditMode?: boolean;
+  expandedItemId?: string | null;
+  onExpandItem?: (itemId: string | null) => void;
 }
 
 interface LocationItemProps {
@@ -28,7 +33,7 @@ interface LocationItemProps {
     data: Location;
     itemsHere?: InventoryItem[];
   };
-  expandedLocations: Set<string>;
+  expandedLocationId: string | null;
   isEditMode: boolean;
   draggedId: string | null;
   onLocationClick: (id: string) => void;
@@ -43,7 +48,7 @@ interface LocationItemProps {
 
 const LocationItem: React.FC<LocationItemProps> = ({
   item,
-  expandedLocations,
+  expandedLocationId,
   isEditMode,
   draggedId,
   onLocationClick,
@@ -57,7 +62,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
 }) => {
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
-  const isExpanded = expandedLocations.has(item.id);
+  const isExpanded = expandedLocationId === item.id;
   const locationData = item.data;
   const isCurrent = item.isCurrent;
   const pinned = isPinned?.(item.id) ?? false;
@@ -125,14 +130,21 @@ const LocationItem: React.FC<LocationItemProps> = ({
             </span>
           </div>
         </button>
+        {!isExpanded && (
+          <div className="pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+            {pickFirstText(
+              locationData.visible?.description,
+              locationData.visible?.environment,
+              locationData.hidden?.fullDescription,
+            ) ||
+              t("noDescription") ||
+              "No description available."}
+          </div>
+        )}
 
         {/* Inline Details */}
-        <div
-          className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
-            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
+        {isExpanded && (
+          <div className="overflow-hidden animate-sidebar-expand">
             <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
               {locationData ? (
                 <div className="text-xs animate-fade-in border-t border-theme-divider/60 pt-2">
@@ -155,7 +167,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   {/* Textual descriptions */}
                   {locationData.visible?.environment && (
                     <div className="mt-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                         {t("sidebar.location.environment") || "Environment"}:
                       </span>
                       <div className="text-theme-text leading-relaxed pl-1">
@@ -169,7 +181,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
 
                   {locationData.visible?.ambience && (
                     <div className="mt-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                         {t("sidebar.location.ambience") || "Ambience"}:
                       </span>
                       <div className="text-theme-text leading-relaxed pl-1">
@@ -183,7 +195,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
 
                   {locationData.visible?.weather && (
                     <div className="mt-2">
-                      <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                      <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                         {t("sidebar.location.weather") || "Weather"}:
                       </span>
                       <div className="text-theme-text leading-relaxed pl-1">
@@ -316,12 +328,12 @@ const LocationItem: React.FC<LocationItemProps> = ({
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {locationData.visible.interactables.map((item, i) => (
-                            <span
+                            <SidebarTag
                               key={i}
-                              className="text-xs px-2 py-0.5 bg-theme-bg/50 rounded border border-theme-divider/60 text-theme-text-secondary"
+                              className="normal-case tracking-normal text-theme-text-secondary bg-theme-bg/50"
                             >
                               {item}
-                            </span>
+                            </SidebarTag>
                           ))}
                         </div>
                       </div>
@@ -330,7 +342,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   {locationData.visible?.knownFeatures &&
                     locationData.visible.knownFeatures.length > 0 && (
                       <div className="mt-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("sidebar.location.knownFeatures") ||
                             "Known Features"}
                           :
@@ -353,7 +365,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                   {locationData.visible?.resources &&
                     locationData.visible.resources.length > 0 && (
                       <div className="mt-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                           {t("resources") || "Resources"}:
                         </span>
                         <ul className="list-disc list-inside text-theme-text space-y-0.5">
@@ -399,7 +411,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       {locationData.hidden?.dangers &&
                         locationData.hidden.dangers.length > 0 && (
                           <div className="mt-2 text-theme-error/90">
-                            <span className="text-[9px] uppercase tracking-wider font-bold block mb-0.5 flex items-center gap-1">
+                            <span className="text-[10px] uppercase tracking-wider font-bold block mb-0.5 flex items-center gap-1">
                               <svg
                                 className="w-3 h-3"
                                 fill="none"
@@ -432,7 +444,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       {locationData.hidden?.hiddenFeatures &&
                         locationData.hidden.hiddenFeatures.length > 0 && (
                           <div className="mt-2">
-                            <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                            <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                               {t("hidden.features")}:
                             </span>
                             <ul className="list-disc list-inside text-theme-text space-y-0.5">
@@ -454,7 +466,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
                       {locationData.hidden?.secrets &&
                         locationData.hidden.secrets.length > 0 && (
                           <div className="mt-2">
-                            <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                            <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
                               {t("hidden.secrets")}:
                             </span>
                             <ul className="list-disc list-inside text-theme-text space-y-0.5">
@@ -508,7 +520,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
               )}
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {isEditMode && (
@@ -546,19 +558,26 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
   listState,
   onUpdateList,
   listManagementEnabled = true,
+  globalEditMode,
+  expandedItemId,
+  onExpandItem,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(
-    new Set(),
-  );
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [localExpandedLocationId, setLocalExpandedLocationId] = useState<
+    string | null
+  >(null);
+  const [isLocalEditMode, setIsLocalEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalExpandedLocations, setModalExpandedLocations] = useState<
-    Set<string>
-  >(new Set());
+  const [modalExpandedLocationId, setModalExpandedLocationId] = useState<
+    string | null
+  >(null);
   const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
+  const isEditMode = globalEditMode ?? isLocalEditMode;
+  const allowPanelEditToggle = globalEditMode === undefined;
+  const expandedLocationId =
+    expandedItemId !== undefined ? expandedItemId : localExpandedLocationId;
 
   // Filter known locations and map to objects with ID for list management
   const locationItems = useMemo(() => {
@@ -587,15 +606,12 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
 
   const handleLocationClick = (locationId: string) => {
     if (isEditMode) return;
-    setExpandedLocations((prev) => {
-      const next = new Set(prev);
-      if (next.has(locationId)) {
-        next.delete(locationId);
-      } else {
-        next.add(locationId);
-      }
-      return next;
-    });
+    const next = expandedLocationId === locationId ? null : locationId;
+    if (onExpandItem) {
+      onExpandItem(next);
+      return;
+    }
+    setLocalExpandedLocationId(next);
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -650,50 +666,51 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
         </div>
 
         <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditMode(!isEditMode);
-            }}
-            className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-              isEditMode
-                ? "bg-theme-primary text-theme-bg"
-                : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-            }`}
-            title={isEditMode ? t("done") : t("edit")}
-          >
-            {isEditMode ? (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            )}
-          </button>
-
-          {locationItems.length > 0 && (
+          {allowPanelEditToggle && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLocalEditMode(!isEditMode);
+              }}
+              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                isEditMode
+                  ? "bg-theme-primary text-theme-bg"
+                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+              }`}
+              title={isEditMode ? t("done") : t("edit")}
+            >
+              {isEditMode ? (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+          {isEditMode && locationItems.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -741,37 +758,31 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
         </div>
       </div>
 
-      <div
-        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
-          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="space-y-2">
-            {visibleItems.length === 0 ? (
-              <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
-                {t("noKnownLocations")}
-              </div>
-            ) : (
-              visibleItems.map((item) => (
-                <LocationItem
-                  key={item.id}
-                  item={item}
-                  expandedLocations={expandedLocations}
-                  isEditMode={isEditMode}
-                  draggedId={draggedId}
-                  onLocationClick={handleLocationClick}
-                  onDragStart={handleDragStart}
-                  onDragEnter={handleDragEnter}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  t={t}
-                />
-              ))
-            )}
-          </div>
+      {isOpen && (
+        <div className="space-y-2 animate-sidebar-expand">
+          {visibleItems.length === 0 ? (
+            <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
+              {t("noKnownLocations")}
+            </div>
+          ) : (
+            visibleItems.map((item) => (
+              <LocationItem
+                key={item.id}
+                item={item}
+                expandedLocationId={expandedLocationId}
+                isEditMode={isEditMode}
+                draggedId={draggedId}
+                onLocationClick={handleLocationClick}
+                onDragStart={handleDragStart}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                t={t}
+              />
+            ))
+          )}
         </div>
-      </div>
+      )}
 
       <DetailedListModal
         isOpen={isModalOpen}
@@ -795,19 +806,11 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
           <LocationItem
             key={item.id}
             item={item}
-            expandedLocations={modalExpandedLocations}
+            expandedLocationId={modalExpandedLocationId}
             isEditMode={dragOptions?.isEditMode || false}
             draggedId={dragOptions?.isDragging ? item.id : null}
             onLocationClick={(id) => {
-              setModalExpandedLocations((prev) => {
-                const next = new Set(prev);
-                if (next.has(id)) {
-                  next.delete(id);
-                } else {
-                  next.add(id);
-                }
-                return next;
-              });
+              setModalExpandedLocationId((prev) => (prev === id ? null : id));
             }}
             onDragStart={(e, id) => dragOptions?.onDragStart?.(e)}
             onDragEnter={(e, id) => dragOptions?.onDragEnter?.(e)}

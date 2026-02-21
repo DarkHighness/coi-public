@@ -5,6 +5,8 @@ import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useListManagement } from "../../hooks/useListManagement";
+import { SidebarTag } from "./SidebarTag";
+import { pickFirstText } from "./panelText";
 
 interface QuestPanelProps {
   quests: Quest[];
@@ -12,6 +14,9 @@ interface QuestPanelProps {
   listState: ListState;
   onUpdateList: (newState: ListState) => void;
   listManagementEnabled?: boolean;
+  globalEditMode?: boolean;
+  expandedItemId?: string | null;
+  onExpandItem?: (itemId: string | null) => void;
 }
 
 const QuestPanelComponent: React.FC<QuestPanelProps> = ({
@@ -20,17 +25,26 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
   listState,
   onUpdateList,
   listManagementEnabled = true,
+  globalEditMode,
+  expandedItemId,
+  onExpandItem,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedQuests, setExpandedQuests] = useState<Set<string>>(new Set());
+  const [localExpandedQuestId, setLocalExpandedQuestId] = useState<
+    string | null
+  >(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalExpandedQuests, setModalExpandedQuests] = useState<Set<string>>(
-    new Set(),
-  );
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [modalExpandedQuestId, setModalExpandedQuestId] = useState<
+    string | null
+  >(null);
+  const [isLocalEditMode, setIsLocalEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
+  const isEditMode = globalEditMode ?? isLocalEditMode;
+  const allowPanelEditToggle = globalEditMode === undefined;
+  const expandedQuestId =
+    expandedItemId !== undefined ? expandedItemId : localExpandedQuestId;
 
   const activeQuests = quests.filter(
     (q) => q.status === "active" && q.type !== "hidden",
@@ -51,16 +65,16 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
 
   const toggleQuest = (questId: string | number, isModal: boolean = false) => {
     const idStr = questId.toString();
-    const setter = isModal ? setModalExpandedQuests : setExpandedQuests;
-    setter((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(idStr)) {
-        newSet.delete(idStr);
-      } else {
-        newSet.add(idStr);
-      }
-      return newSet;
-    });
+    if (isModal) {
+      setModalExpandedQuestId((prev) => (prev === idStr ? null : idStr));
+      return;
+    }
+    const next = expandedQuestId === idStr ? null : idStr;
+    if (onExpandItem) {
+      onExpandItem(next);
+      return;
+    }
+    setLocalExpandedQuestId(next);
   };
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
@@ -93,7 +107,7 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
 
   const renderQuest = (
     q: Quest,
-    expandedSet: Set<string>,
+    expandedId: string | null,
     isModal: boolean,
     options?: {
       isPinned?: boolean;
@@ -108,6 +122,14 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
   ) => {
     // Use options.isEditMode for modal, component-level isEditMode for sidebar
     const effectiveEditMode = isModal ? options?.isEditMode : isEditMode;
+
+    const isExpanded = expandedId === q.id.toString();
+    const previewText = pickFirstText(
+      q.visible?.description,
+      q.hidden?.trueDescription,
+      q.hidden?.secretOutcome,
+      q.hidden?.twist,
+    );
 
     return (
       <div
@@ -130,8 +152,8 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
           className="py-2 pl-2 pr-1 min-h-[2.25rem] cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-center justify-between gap-3"
           onClick={() => toggleQuest(q.id, isModal)}
         >
-          {/* Pin button - only show in edit mode or if pinned */}
-          {(effectiveEditMode || options?.isPinned) && options?.onPin && (
+          {/* Pin button - edit mode only */}
+          {effectiveEditMode && options?.onPin && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -161,16 +183,18 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span
-                className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
-                  q.type === "main"
-                    ? "bg-theme-primary/10 text-theme-primary border-theme-primary/30"
-                    : "bg-theme-muted/10 text-theme-muted border-theme-muted/30"
-                }`}
-              >
-                {q.type === "main"
-                  ? t("mainQuest") || "Main"
-                  : t("sideQuest") || "Side"}
+              <span className="shrink-0">
+                <SidebarTag
+                  className={
+                    q.type === "main"
+                      ? "bg-theme-primary/10 border-theme-primary/30 text-theme-primary"
+                      : "bg-theme-muted/10 border-theme-muted/30 text-theme-muted"
+                  }
+                >
+                  {q.type === "main"
+                    ? t("mainQuest") || "Main"
+                    : t("sideQuest") || "Side"}
+                </SidebarTag>
               </span>
               <span
                 className="font-bold text-theme-text text-xs flex items-center gap-1.5 min-w-0"
@@ -201,9 +225,14 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
                 </span>
               )}
             </div>
+            {!isExpanded && previewText && (
+              <div className="pl-6 pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+                {previewText}
+              </div>
+            )}
           </div>
           <svg
-            className={`w-4 h-4 text-theme-text-secondary shrink-0 transition-transform duration-200 ${expandedSet.has(q.id.toString()) ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-theme-text-secondary shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -217,14 +246,8 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
           </svg>
         </div>
 
-        <div
-          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-            expandedSet.has(q.id.toString())
-              ? "grid-rows-[1fr]"
-              : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
+        {isExpanded && (
+          <div className="overflow-hidden animate-sidebar-expand">
             <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 mt-1">
               <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
                 {t("questPanel.description") || "Description"}
@@ -324,7 +347,7 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
               )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -343,57 +366,58 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 bg-theme-primary rounded-full animate-pulse"></span>
             {t("questPanel.title")}
-            <span className="ml-2 text-[10px] text-theme-text-secondary bg-theme-surface-highlight px-1.5 rounded border border-theme-divider/60">
+            <SidebarTag className="ml-2 text-theme-text-secondary bg-theme-surface-highlight">
               {allItems.length}
-            </span>
+            </SidebarTag>
           </span>
         </div>
 
         <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditMode(!isEditMode);
-            }}
-            className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-              isEditMode
-                ? "bg-theme-primary text-theme-bg"
-                : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-            }`}
-            title={isEditMode ? t("done") : t("edit")}
-          >
-            {isEditMode ? (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            )}
-          </button>
-
-          {safeQuests.length > 0 && (
+          {allowPanelEditToggle && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLocalEditMode(!isEditMode);
+              }}
+              className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                isEditMode
+                  ? "bg-theme-primary text-theme-bg"
+                  : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+              }`}
+              title={isEditMode ? t("done") : t("edit")}
+            >
+              {isEditMode ? (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+          {isEditMode && safeQuests.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -437,35 +461,29 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
         </div>
       </div>
 
-      <div
-        className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${
-          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="space-y-3">
-            {visibleItems.length === 0 ? (
-              <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
-                {t("questPanel.empty")}
-              </div>
-            ) : (
-              visibleItems.map((q) =>
-                renderQuest(q, expandedQuests, false, {
-                  onDragStart: isEditMode
-                    ? (e) => handleDragStart(e, q.id)
-                    : undefined,
-                  onDragEnter: isEditMode
-                    ? (e) => handleDragEnter(e, q.id)
-                    : undefined,
-                  onDragOver: isEditMode ? handleDragOver : undefined,
-                  onDrop: isEditMode ? (e) => handleDrop(e, q.id) : undefined,
-                  isDragging: draggedId === q.id.toString(),
-                }),
-              )
-            )}
-          </div>
+      {isOpen && (
+        <div className="space-y-3 animate-sidebar-expand">
+          {visibleItems.length === 0 ? (
+            <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
+              {t("questPanel.empty")}
+            </div>
+          ) : (
+            visibleItems.map((q) =>
+              renderQuest(q, expandedQuestId, false, {
+                onDragStart: isEditMode
+                  ? (e) => handleDragStart(e, q.id)
+                  : undefined,
+                onDragEnter: isEditMode
+                  ? (e) => handleDragEnter(e, q.id)
+                  : undefined,
+                onDragOver: isEditMode ? handleDragOver : undefined,
+                onDrop: isEditMode ? (e) => handleDrop(e, q.id) : undefined,
+                isDragging: draggedId === q.id.toString(),
+              }),
+            )
+          )}
         </div>
-      </div>
+      )}
 
       <DetailedListModal
         isOpen={isModalOpen}
@@ -486,7 +504,7 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
             .includes(query.toLowerCase())
         }
         renderItem={(item, dragOptions) =>
-          renderQuest(item, modalExpandedQuests, true, {
+          renderQuest(item, modalExpandedQuestId, true, {
             onDragStart: dragOptions?.onDragStart,
             onDragEnter: dragOptions?.onDragEnter,
             onDragOver: dragOptions?.onDragOver,

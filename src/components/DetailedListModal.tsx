@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useProgressiveRender } from "../hooks/useProgressiveRender";
 
 interface DetailedListModalProps<T extends { id: string | number }> {
   isOpen: boolean;
@@ -52,11 +54,18 @@ export function DetailedListModal<T extends { id: string | number }>({
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
+  const debouncedQuery = useDebouncedValue(searchQuery, 150);
 
   const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) return items;
-    return items.filter((item) => searchFilter(item, searchQuery));
-  }, [items, searchQuery, searchFilter]);
+    if (!debouncedQuery.trim()) return items;
+    return items.filter((item) => searchFilter(item, debouncedQuery));
+  }, [items, debouncedQuery, searchFilter]);
+
+  const { visibleItems, hasMore, loadMore } = useProgressiveRender(
+    filteredItems,
+    30,
+    true,
+  );
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
     const idStr = id.toString();
@@ -88,6 +97,18 @@ export function DetailedListModal<T extends { id: string | number }>({
   const handleItemClick = (id: string | number) => {
     if (!isEditMode) return;
     setSelectedId(selectedId === id ? null : id);
+  };
+
+  const handleListScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore) {
+      return;
+    }
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+    if (distanceToBottom <= 120) {
+      loadMore();
+    }
   };
 
   if (!isOpen) return null;
@@ -196,9 +217,12 @@ export function DetailedListModal<T extends { id: string | number }>({
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar overscroll-contain">
-          {filteredItems.length > 0 ? (
-            filteredItems.map((item) => {
+        <div
+          className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar overscroll-contain"
+          onScroll={handleListScroll}
+        >
+          {visibleItems.length > 0 ? (
+            visibleItems.map((item) => {
               const itemPinned = isPinned?.(item.id);
               const itemHidden = isHidden?.(item.id);
               const isSelected = selectedId === item.id;
@@ -358,6 +382,17 @@ export function DetailedListModal<T extends { id: string | number }>({
           ) : (
             <div className="text-center text-theme-muted py-8 italic">
               {t("noResults") || "No results found."}
+            </div>
+          )}
+          {hasMore && (
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                className="text-xs text-theme-primary hover:text-theme-primary-hover transition-colors"
+              >
+                {t("loadMore") || "Load more"}
+              </button>
             </div>
           )}
         </div>
