@@ -53,10 +53,13 @@ import {
 export type { OpenRouterConfig } from "./types";
 import {
   zodToOpenAIResponseFormat,
-  zodToGemini,
+  zodToGeminiCompatibleSchema,
+  zodToClaudeCompatibleSchema,
   createOpenRouterTool,
   createOpenRouterGeminiTool,
+  createClaudeCompatibleTool,
   isGeminiModel,
+  isClaudeModel,
 } from "../zodCompiler";
 import { parseContextOverflowDiagnostics } from "../modelContextWindows";
 import { resolveTokenBudget } from "../tokenBudgetManager";
@@ -813,12 +816,14 @@ export async function generateContent(
     async () => {
       const client = createClient(config);
       const isGemini = isGeminiModel(model);
+      const isClaude = isClaudeModel(model);
       // Convert messages
       const messages = convertToOpenAIMessages(systemInstruction, contents);
       // Convert tools
       const tools = options?.tools
         ? convertToOpenRouterTools(options.tools, {
             geminiCompatibility: isGemini,
+            claudeCompatibility: isClaude,
           })
         : undefined;
 
@@ -894,20 +899,49 @@ export async function generateContent(
       // Add schema for structured output (only when no tools are present)
       if (schema && (!tools || tools.length === 0)) {
         const openAIFormat = zodToOpenAIResponseFormat(schema);
-        requestParams.responseFormat = isGemini
-          ? { type: "json_schema", schema: zodToGemini(schema) }
-          : {
-              type: openAIFormat.type,
-              jsonSchema: openAIFormat.json_schema, // Convert to camelCase for SDK
-            };
+        if (isGemini) {
+          // Use Gemini-compatible schema (lowercase types, nullable:true)
+          // OpenRouter expects standard JSON Schema format, not Google SDK native format
+          const geminiSchema = zodToGeminiCompatibleSchema(schema);
+          requestParams.responseFormat = {
+            type: "json_schema",
+            jsonSchema: {
+              name: "response",
+              schema: geminiSchema,
+              strict: false,
+            },
+          };
+        } else if (isClaude) {
+          // Use Claude-compatible schema (no additionalProperties, nullable handling)
+          const claudeSchema = zodToClaudeCompatibleSchema(schema);
+          requestParams.responseFormat = {
+            type: "json_schema",
+            jsonSchema: {
+              name: "response",
+              schema: claudeSchema,
+              strict: false,
+            },
+          };
+        } else {
+          requestParams.responseFormat = {
+            type: openAIFormat.type,
+            jsonSchema: openAIFormat.json_schema, // Convert to camelCase for SDK
+          };
+        }
       }
 
       console.log(
-        `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${requestParams.tools ? "yes" : "no"}, isGemini: ${isGemini}`,
+        `[OpenRouter] Starting generation with model: ${model}, stream: ${!!options?.onChunk}, tools: ${requestParams.tools ? "yes" : "no"}, isGemini: ${isGemini}, isClaude: ${isClaude}`,
       );
       if (isGemini && schema && !tools && requestParams.responseFormat) {
         console.log(
-          "[OpenRouter] Detected Gemini model, using Gemini schema format:",
+          "[OpenRouter] Detected Gemini model, using Gemini-compatible schema format:",
+          JSON.stringify(requestParams.responseFormat, null, 2),
+        );
+      }
+      if (isClaude && schema && !tools && requestParams.responseFormat) {
+        console.log(
+          "[OpenRouter] Detected Claude model, using Claude-compatible schema format:",
           JSON.stringify(requestParams.responseFormat, null, 2),
         );
       }
@@ -1363,22 +1397,29 @@ function convertToOpenAIMessages(
  */
 function convertToOpenRouterTools(
   tools: GenerateContentOptions["tools"],
-  options?: { geminiCompatibility?: boolean },
+  options?: { geminiCompatibility?: boolean; claudeCompatibility?: boolean },
 ): models.ToolDefinitionJson[] {
   const useGeminiCompat = !!options?.geminiCompatibility;
+  const useClaudeCompat = !!options?.claudeCompatibility;
   return (tools || []).map(
     (tool) =>
-      (useGeminiCompat
-        ? createOpenRouterGeminiTool(
+      (useClaudeCompat
+        ? createClaudeCompatibleTool(
             tool.name,
             tool.description,
             tool.parameters,
           )
-        : createOpenRouterTool(
-            tool.name,
-            tool.description,
-            tool.parameters,
-          )) as models.ToolDefinitionJson,
+        : useGeminiCompat
+          ? createOpenRouterGeminiTool(
+              tool.name,
+              tool.description,
+              tool.parameters,
+            )
+          : createOpenRouterTool(
+              tool.name,
+              tool.description,
+              tool.parameters,
+            )) as models.ToolDefinitionJson,
   );
 }
 // ============================================================================

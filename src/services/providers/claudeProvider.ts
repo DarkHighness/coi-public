@@ -568,12 +568,13 @@ Answer the user's request using relevant tools (if they are available). Before c
 
       // Convert toolChoice to Claude format
       let toolChoice: MessageCreateParams["tool_choice"] = undefined;
+      let removeTools = false;
       if (tools && tools.length > 0) {
         if (options?.toolChoice === "required") {
           toolChoice = { type: "any" };
         } else if (options?.toolChoice === "none") {
-          // Claude doesn't have a "none" option, just don't pass tools
-          // But we keep tools in case model needs them for context
+          // Claude doesn't have a "none" option, remove tools entirely
+          removeTools = true;
         } else if (
           options?.toolChoice &&
           typeof options.toolChoice === "object"
@@ -608,7 +609,7 @@ Answer the user's request using relevant tools (if they are available). Before c
           ? { thinking }
           : { temperature: options?.temperature ?? 1.0 }),
         top_p: options?.topP,
-        tools,
+        tools: removeTools ? undefined : tools,
         tool_choice: toolChoice,
       } as MessageCreateParams;
 
@@ -1181,28 +1182,6 @@ function convertToolsForClaude(
       input_schema: inputSchema,
     };
   });
-}
-
-/**
- * 递归移除 schema 中的 additionalProperties 字段
- */
-function removeAdditionalProperties(schema: JsonObject): JsonObject {
-  const result: JsonObject = {};
-  for (const [key, value] of Object.entries(schema)) {
-    if (key === "additionalProperties") {
-      continue; // 跳过 additionalProperties
-    }
-    if (isJsonObject(value)) {
-      result[key] = removeAdditionalProperties(value);
-    } else if (Array.isArray(value)) {
-      result[key] = value.map((item) =>
-        isJsonObject(item) ? removeAdditionalProperties(item) : item,
-      );
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
 }
 
 // ============================================================================

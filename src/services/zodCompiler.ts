@@ -32,10 +32,15 @@ import {
   ZodAny,
   ZodRecord,
   ZodUnknown,
+  ZodTuple,
+  ZodNativeEnum,
 } from "zod";
 import type { ZodTypeAny } from "zod";
 import { Type } from "@google/genai";
 import type { Schema } from "@google/genai";
+
+// Guard against infinite recursion when expanding z.lazy() schemas
+const _lazyExpansionStack = new WeakSet<ZodTypeAny>();
 
 // ============================================================================
 // OpenAI Schema Types
@@ -149,17 +154,23 @@ function mergeGeminiSchemas(existing: Schema, incoming: Schema): Schema {
     ...expandGeminiAnyOf(incoming),
   ]);
   if (variants.length === 1) return variants[0];
-  return {
+
+  const firstType = variants[0]?.type;
+  const result: Schema = {
     anyOf: variants,
   };
+  if (firstType) result.type = firstType;
+  return result;
 }
+
+const _anyOfWarned = new Set<string>();
 
 function buildAnyOfSchema(
   options: ZodTypeAny[],
-  compiler: (schema: ZodTypeAny, isOptionalField?: boolean) => OpenAISchema,
+  compiler: (schema: ZodTypeAny) => OpenAISchema,
   label: string,
 ): OpenAISchema {
-  const variants = dedupeSchemas(options.map((opt) => compiler(opt, false)));
+  const variants = dedupeSchemas(options.map((opt) => compiler(opt)));
 
   if (variants.length === 0) {
     return { type: "string" };
@@ -169,9 +180,12 @@ function buildAnyOfSchema(
     return variants[0];
   }
 
-  console.warn(
-    `${label} schema encountered generic union; converting to anyOf for better fidelity.`,
-  );
+  if (!_anyOfWarned.has(label)) {
+    _anyOfWarned.add(label);
+    console.warn(
+      `${label} schema encountered generic union; converting to anyOf for better fidelity.`,
+    );
+  }
 
   return {
     type: "object",
@@ -303,14 +317,22 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle effects (refinements, transforms, etc.)
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
-    return processZodToGemini((schema as ZodEffects<ZodTypeAny>)._def.schema);
+    const result = processZodToGemini(
+      (schema as ZodEffects<ZodTypeAny>)._def.schema,
+    );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle optional - Gemini doesn't have optional, we handle via required array
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
-    return processZodToGemini(
+    const result = processZodToGemini(
       (schema as ZodOptional<ZodTypeAny>)._def.innerType,
     );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle nullable
@@ -318,28 +340,45 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     const innerSchema = processZodToGemini(
       (schema as ZodNullable<ZodTypeAny>)._def.innerType,
     );
-    // Create a clean copy to avoid polluting with extra properties
     const result: Schema = {
-      type: innerSchema.type,
+      ...innerSchema,
       nullable: true,
     };
-    if (innerSchema.description) result.description = innerSchema.description;
-    if (innerSchema.properties) result.properties = innerSchema.properties;
-    if (innerSchema.required) result.required = innerSchema.required;
-    if (innerSchema.items) result.items = innerSchema.items;
-    if (innerSchema.enum) result.enum = innerSchema.enum;
+    if (schema.description && !result.description)
+      result.description = schema.description;
     return result;
   }
 
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
-    return processZodToGemini(
+    const result = processZodToGemini(
       (schema as ZodDefault<ZodTypeAny>)._def.innerType,
     );
+    const defaultVal = (schema as ZodDefault<ZodTypeAny>)._def.defaultValue();
+    if (defaultVal !== undefined) {
+      (result as Record<string, unknown>).default = defaultVal;
+    }
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle lazy
   if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    if (!_lazyExpansionStack.has(schema)) {
+      try {
+        _lazyExpansionStack.add(schema);
+        const innerSchema = (schema as ZodLazy<ZodTypeAny>)._def.getter();
+        if (!(innerSchema instanceof ZodLazy)) {
+          const result = processZodToGemini(innerSchema);
+          _lazyExpansionStack.delete(schema);
+          return result;
+        }
+        _lazyExpansionStack.delete(schema);
+      } catch {
+        _lazyExpansionStack.delete(schema);
+      }
+    }
     return createGeminiJsonValueSchema(schema.description || "Any JSON value");
   }
 
@@ -391,11 +430,78 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     return result;
   }
 
-  // Handle union - Gemini doesn't support union, throw error
+  // Handle union - Gemini doesn't support anyOf, merge if possible
   if (schema instanceof ZodUnion || typeName === "ZodUnion") {
-    throw new Error(
-      "Gemini Schema does not support union types. Please flatten your schema.",
+    const options = (schema as ZodUnion<[ZodTypeAny, ...ZodTypeAny[]]>)._def
+      .options;
+
+    // Try to merge if all options are objects
+    const allObjects = options.every(
+      (opt) => opt instanceof ZodObject || opt._def.typeName === "ZodObject",
     );
+
+    if (allObjects && options.length > 0) {
+      const mergedProperties: Record<string, Schema> = {};
+      const requiredByAll = new Set<string>();
+      let first = true;
+
+      for (const opt of options) {
+        const shape = (opt as ZodObject<Record<string, ZodTypeAny>>).shape;
+        const currentRequired = new Set<string>();
+
+        for (const [key, value] of Object.entries(shape)) {
+          const fieldTypeName = (value as ZodTypeAny)._def.typeName;
+          if (
+            fieldTypeName !== "ZodOptional" &&
+            fieldTypeName !== "ZodDefault"
+          ) {
+            currentRequired.add(key);
+          }
+
+          if (!mergedProperties[key]) {
+            mergedProperties[key] = processZodToGemini(value as ZodTypeAny);
+          }
+        }
+
+        if (first) {
+          currentRequired.forEach((k) => requiredByAll.add(k));
+          first = false;
+        } else {
+          for (const k of requiredByAll) {
+            if (!currentRequired.has(k)) requiredByAll.delete(k);
+          }
+        }
+      }
+
+      const result: Schema = {
+        type: Type.OBJECT,
+        properties: mergedProperties,
+      };
+      if (requiredByAll.size > 0) result.required = Array.from(requiredByAll);
+      if (schema.description) result.description = schema.description;
+      return result;
+    }
+
+    // Mixed types: create a string with description listing possible types
+    if (options.length > 0) {
+      const typeDescriptions = options.map((opt) => {
+        const tn = opt._def.typeName as string;
+        if (opt instanceof ZodLiteral)
+          return `literal(${JSON.stringify(getLiteralValue(opt as ZodLiteral<LiteralValue>))})`;
+        if (opt instanceof ZodString || tn === "ZodString") return "string";
+        if (opt instanceof ZodNumber || tn === "ZodNumber") return "number";
+        if (opt instanceof ZodBoolean || tn === "ZodBoolean") return "boolean";
+        if (opt instanceof ZodNull || tn === "ZodNull") return "null";
+        return tn.replace("Zod", "").toLowerCase();
+      });
+      return {
+        type: Type.STRING,
+        description:
+          (schema.description || "Union type") +
+          ` (possible types: ${typeDescriptions.join(", ")})`,
+      };
+    }
+    return { type: Type.STRING };
   }
 
   // Handle discriminated union - convert to merged object with all possible properties
@@ -554,9 +660,44 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
 
   // Handle record
   if (schema instanceof ZodRecord || typeName === "ZodRecord") {
-    const result: Schema = { type: Type.OBJECT };
-    if (schema.description) result.description = schema.description;
+    const valueSchema = (schema as ZodRecord<ZodString, ZodTypeAny>)._def
+      .valueType;
+    const compiledValue = processZodToGemini(valueSchema);
+    const typeHint = compiledValue.type || "STRING";
+    const result: Schema = {
+      type: Type.OBJECT,
+      description:
+        (schema.description || "") + ` (key-value map, values: ${typeHint})`,
+    };
     return result;
+  }
+
+  // Handle intersection
+  if (schema instanceof ZodIntersection || typeName === "ZodIntersection") {
+    const left = processZodToGemini(
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.left,
+    );
+    const right = processZodToGemini(
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.right,
+    );
+
+    if (left.type === Type.OBJECT && right.type === Type.OBJECT) {
+      const result: Schema = {
+        type: Type.OBJECT,
+        properties: { ...left.properties, ...right.properties },
+        required: Array.from(
+          new Set([...(left.required || []), ...(right.required || [])]),
+        ),
+      };
+      if (schema.description) result.description = schema.description;
+      return result;
+    }
+    return left;
+  }
+
+  // Handle null
+  if (schema instanceof ZodNull || typeName === "ZodNull") {
+    return { type: Type.STRING, nullable: true, description: "null value" };
   }
 
   // Handle any/unknown
@@ -567,6 +708,21 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
     typeName === "ZodUnknown"
   ) {
     return createGeminiJsonValueSchema(schema.description || "Any value");
+  }
+
+  // Handle tuple
+  if (schema instanceof ZodTuple || typeName === "ZodTuple") {
+    return { type: Type.ARRAY, items: { type: Type.STRING } };
+  }
+
+  // Handle native enum
+  if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
+    const values = Object.values(
+      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+    ).filter((v) => typeof v === "string");
+    if (values.length > 0)
+      return { type: Type.STRING, enum: values as string[] };
+    return { type: Type.STRING };
   }
 
   // Fallback
@@ -605,29 +761,29 @@ export function zodToOpenAIResponseFormat(
   };
 }
 
-function processZodToOpenAI(
-  schema: ZodTypeAny,
-  strict: boolean,
-  isOptionalField: boolean = false,
-): OpenAISchema {
+function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
   const typeName = schema._def.typeName;
 
   // Handle effects
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
-    return processZodToOpenAI(
+    const result = processZodToOpenAI(
       (schema as ZodEffects<ZodTypeAny>)._def.schema,
       strict,
-      isOptionalField,
     );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle optional
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
-    return processZodToOpenAI(
+    const result = processZodToOpenAI(
       (schema as ZodOptional<ZodTypeAny>)._def.innerType,
       strict,
-      true,
     );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle nullable
@@ -635,7 +791,6 @@ function processZodToOpenAI(
     const innerSchema = processZodToOpenAI(
       (schema as ZodNullable<ZodTypeAny>)._def.innerType,
       strict,
-      isOptionalField,
     );
     // Add null to type array
     if (Array.isArray(innerSchema.type)) {
@@ -645,20 +800,42 @@ function processZodToOpenAI(
     } else {
       innerSchema.type = [innerSchema.type, "null"];
     }
+    if (schema.description && !innerSchema.description)
+      innerSchema.description = schema.description;
     return innerSchema;
   }
 
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
-    return processZodToOpenAI(
+    const result = processZodToOpenAI(
       (schema as ZodDefault<ZodTypeAny>)._def.innerType,
       strict,
-      true,
     );
+    const defaultVal = (schema as ZodDefault<ZodTypeAny>)._def.defaultValue();
+    if (defaultVal !== undefined) {
+      result.default = defaultVal;
+    }
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle lazy
   if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    if (!_lazyExpansionStack.has(schema)) {
+      try {
+        _lazyExpansionStack.add(schema);
+        const innerSchema = (schema as ZodLazy<ZodTypeAny>)._def.getter();
+        if (!(innerSchema instanceof ZodLazy)) {
+          const result = processZodToOpenAI(innerSchema, strict);
+          _lazyExpansionStack.delete(schema);
+          return result;
+        }
+        _lazyExpansionStack.delete(schema);
+      } catch {
+        _lazyExpansionStack.delete(schema);
+      }
+    }
     return createOpenAIJsonValueSchema(schema.description || "Any JSON value");
   }
 
@@ -666,6 +843,13 @@ function processZodToOpenAI(
   if (schema instanceof ZodString || typeName === "ZodString") {
     const result: OpenAISchema = { type: "string" };
     if (schema.description) result.description = schema.description;
+    const checks = (schema as ZodString)._def.checks || [];
+    for (const check of checks) {
+      if (check.kind === "min")
+        (result as Record<string, unknown>).minLength = check.value;
+      else if (check.kind === "max")
+        (result as Record<string, unknown>).maxLength = check.value;
+    }
     return result;
   }
 
@@ -676,6 +860,17 @@ function processZodToOpenAI(
     const baseType = isInt ? "integer" : "number";
     const result: OpenAISchema = { type: baseType };
     if (schema.description) result.description = schema.description;
+    for (const check of checks) {
+      if (check.kind === "min") {
+        (result as Record<string, unknown>).minimum = check.value;
+        if (check.inclusive === false)
+          (result as Record<string, unknown>).exclusiveMinimum = true;
+      } else if (check.kind === "max") {
+        (result as Record<string, unknown>).maximum = check.value;
+        if (check.inclusive === false)
+          (result as Record<string, unknown>).exclusiveMaximum = true;
+      }
+    }
     return result;
   }
 
@@ -825,6 +1020,12 @@ function processZodToOpenAI(
       items: itemSchema,
     };
     if (schema.description) result.description = schema.description;
+    const minLen = (schema as ZodArray<ZodTypeAny>)._def.minLength;
+    const maxLen = (schema as ZodArray<ZodTypeAny>)._def.maxLength;
+    if (minLen != null)
+      (result as Record<string, unknown>).minItems = minLen.value;
+    if (maxLen != null)
+      (result as Record<string, unknown>).maxItems = maxLen.value;
     return result;
   }
 
@@ -874,12 +1075,57 @@ function processZodToOpenAI(
   if (schema instanceof ZodRecord || typeName === "ZodRecord") {
     const valueSchema = (schema as ZodRecord<ZodString, ZodTypeAny>)._def
       .valueType;
+    if (strict) {
+      // OpenAI strict mode only allows additionalProperties: false
+      // Degrade to a plain object with a descriptive hint
+      const innerDesc = processZodToOpenAI(valueSchema, strict, false);
+      const typeHint = innerDesc.type || "any";
+      const result: OpenAISchema = {
+        type: "object",
+        description:
+          (schema.description || "") + ` (key-value map, values: ${typeHint})`,
+      };
+      return result;
+    }
     const result: OpenAISchema = {
       type: "object",
       additionalProperties: processZodToOpenAI(valueSchema, strict, false),
     };
     if (schema.description) result.description = schema.description;
     return result;
+  }
+
+  // Handle intersection
+  if (schema instanceof ZodIntersection || typeName === "ZodIntersection") {
+    const left = processZodToOpenAI(
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.left,
+      strict,
+      false,
+    );
+    const right = processZodToOpenAI(
+      (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.right,
+      strict,
+      false,
+    );
+
+    if (left.type === "object" && right.type === "object") {
+      const result: OpenAISchema = {
+        type: "object",
+        properties: { ...left.properties, ...right.properties },
+        required: Array.from(
+          new Set([...(left.required || []), ...(right.required || [])]),
+        ),
+      };
+      if (strict) result.additionalProperties = false;
+      if (schema.description) result.description = schema.description;
+      return result;
+    }
+    return left;
+  }
+
+  // Handle null
+  if (schema instanceof ZodNull || typeName === "ZodNull") {
+    return { type: ["string", "null"], description: "null value" };
   }
 
   // Handle any/unknown
@@ -890,6 +1136,20 @@ function processZodToOpenAI(
     typeName === "ZodUnknown"
   ) {
     return createOpenAIJsonValueSchema(schema.description || "Any value");
+  }
+
+  // Handle tuple
+  if (schema instanceof ZodTuple || typeName === "ZodTuple") {
+    return { type: "array" };
+  }
+
+  // Handle native enum
+  if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
+    const values = Object.values(
+      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+    ).filter((v) => typeof v === "string");
+    if (values.length > 0) return { type: "string", enum: values as string[] };
+    return { type: "string" };
   }
 
   // Fallback
@@ -915,51 +1175,73 @@ export function zodToGeminiCompatibleSchema(schema: ZodTypeAny): OpenAISchema {
   return processZodToGeminiCompatible(schema);
 }
 
-function processZodToGeminiCompatible(
-  schema: ZodTypeAny,
-  isOptionalField: boolean = false,
-): OpenAISchema {
+function processZodToGeminiCompatible(schema: ZodTypeAny): OpenAISchema {
   const typeName = schema._def.typeName;
 
   // Handle effects
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
-    return processZodToGeminiCompatible(
+    const result = processZodToGeminiCompatible(
       (schema as ZodEffects<ZodTypeAny>)._def.schema,
-      isOptionalField,
     );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle optional
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
-    return processZodToGeminiCompatible(
+    const result = processZodToGeminiCompatible(
       (schema as ZodOptional<ZodTypeAny>)._def.innerType,
-      true,
     );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle nullable
   if (schema instanceof ZodNullable || typeName === "ZodNullable") {
     const innerSchema = processZodToGeminiCompatible(
       (schema as ZodNullable<ZodTypeAny>)._def.innerType,
-      isOptionalField,
     );
     // Use nullable: true property
     // Make sure we don't duplicate or overwrite if it's already there
     // We create a new object to ensure we don't mutate shared references if any
     const result = { ...innerSchema, nullable: true };
+    if (schema.description && !result.description)
+      result.description = schema.description;
     return result;
   }
 
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
-    return processZodToGeminiCompatible(
+    const result = processZodToGeminiCompatible(
       (schema as ZodDefault<ZodTypeAny>)._def.innerType,
-      true,
     );
+    const defaultVal = (schema as ZodDefault<ZodTypeAny>)._def.defaultValue();
+    if (defaultVal !== undefined) {
+      result.default = defaultVal;
+    }
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle lazy
   if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    if (!_lazyExpansionStack.has(schema)) {
+      try {
+        _lazyExpansionStack.add(schema);
+        const innerSchema = (schema as ZodLazy<ZodTypeAny>)._def.getter();
+        if (!(innerSchema instanceof ZodLazy)) {
+          const result = processZodToGeminiCompatible(innerSchema);
+          _lazyExpansionStack.delete(schema);
+          return result;
+        }
+        _lazyExpansionStack.delete(schema);
+      } catch {
+        _lazyExpansionStack.delete(schema);
+      }
+    }
     return createOpenAIJsonValueSchema(schema.description || "Any JSON value");
   }
 
@@ -967,6 +1249,13 @@ function processZodToGeminiCompatible(
   if (schema instanceof ZodString || typeName === "ZodString") {
     const result: OpenAISchema = { type: "string" };
     if (schema.description) result.description = schema.description;
+    const checks = (schema as ZodString)._def.checks || [];
+    for (const check of checks) {
+      if (check.kind === "min")
+        (result as Record<string, unknown>).minLength = check.value;
+      else if (check.kind === "max")
+        (result as Record<string, unknown>).maxLength = check.value;
+    }
     return result;
   }
 
@@ -978,6 +1267,21 @@ function processZodToGeminiCompatible(
     const isInt = checks.some((c) => c.kind === "int");
     const result: OpenAISchema = { type: isInt ? "integer" : "number" };
     if (schema.description) result.description = schema.description;
+    for (const check of checks) {
+      if (check.kind === "min") {
+        (result as Record<string, unknown>).minimum = (
+          check as Record<string, unknown>
+        ).value;
+        if ((check as Record<string, unknown>).inclusive === false)
+          (result as Record<string, unknown>).exclusiveMinimum = true;
+      } else if (check.kind === "max") {
+        (result as Record<string, unknown>).maximum = (
+          check as Record<string, unknown>
+        ).value;
+        if ((check as Record<string, unknown>).inclusive === false)
+          (result as Record<string, unknown>).exclusiveMaximum = true;
+      }
+    }
     return result;
   }
 
@@ -1161,7 +1465,7 @@ function processZodToGeminiCompatible(
         if (isRequired) currentRequired.add(key);
 
         const compiledFieldSchema = processZodToGeminiCompatible(
-          value as ZodTypeAny,
+          stripOptionalDefaultWrappers(value as ZodTypeAny),
         );
         if (!allProperties[key]) {
           allProperties[key] = compiledFieldSchema;
@@ -1215,6 +1519,12 @@ function processZodToGeminiCompatible(
       items: itemSchema,
     };
     if (schema.description) result.description = schema.description;
+    const minLen = (schema as ZodArray<ZodTypeAny>)._def.minLength;
+    const maxLen = (schema as ZodArray<ZodTypeAny>)._def.maxLength;
+    if (minLen != null)
+      (result as Record<string, unknown>).minItems = minLen.value;
+    if (maxLen != null)
+      (result as Record<string, unknown>).maxItems = maxLen.value;
     return result;
   }
 
@@ -1273,6 +1583,20 @@ function processZodToGeminiCompatible(
     };
     if (schema.description) result.description = schema.description;
     return result;
+  }
+
+  // Handle tuple
+  if (schema instanceof ZodTuple || typeName === "ZodTuple") {
+    return { type: "array" };
+  }
+
+  // Handle native enum
+  if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
+    const values = Object.values(
+      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+    ).filter((v) => typeof v === "string");
+    if (values.length > 0) return { type: "string", enum: values as string[] };
+    return { type: "string" };
   }
 
   // Fallback
@@ -1352,15 +1676,7 @@ export function createOpenRouterTool(
   description: string,
   parameters: ZodTypeAny,
 ): OpenRouterToolDefinition {
-  return {
-    type: "function",
-    function: {
-      name,
-      description,
-      strict: true,
-      parameters: zodToOpenAISchema(parameters, true),
-    },
-  };
+  return createOpenAITool(name, description, parameters);
 }
 
 const GEMINI_OPENROUTER_TYPE_PRIORITY = [
@@ -1375,21 +1691,29 @@ const GEMINI_OPENROUTER_TYPE_PRIORITY = [
 
 const pickGeminiOpenRouterType = (
   type: OpenAISchema["type"] | undefined,
-): string | undefined => {
-  if (!type) return undefined;
-  if (typeof type === "string") return type;
+): { type: string | undefined; addNullable: boolean } => {
+  if (!type) return { type: undefined, addNullable: false };
+  if (typeof type === "string") return { type, addNullable: false };
+  // When collapsing type array, detect if "null" was present
+  const hasNull = type.includes("null");
   for (const candidate of GEMINI_OPENROUTER_TYPE_PRIORITY) {
-    if (type.includes(candidate)) return candidate;
+    if (candidate !== "null" && type.includes(candidate))
+      return { type: candidate, addNullable: hasNull };
   }
-  return type[0];
+  return { type: type[0], addNullable: hasNull };
 };
 
 const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
   const result: OpenAISchema = { type: "string" };
 
-  const normalizedType = pickGeminiOpenRouterType(schema.type);
+  const { type: normalizedType, addNullable } = pickGeminiOpenRouterType(
+    schema.type,
+  );
   if (normalizedType) {
     result.type = normalizedType;
+  }
+  if (addNullable) {
+    (result as { nullable?: boolean }).nullable = true;
   }
 
   if (schema.description) {
@@ -1409,6 +1733,58 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
     }
   }
 
+  // Handle anyOf: flatten all variant properties into the result
+  const anyOf = (schema as { anyOf?: OpenAISchema[] }).anyOf;
+  if (Array.isArray(anyOf) && anyOf.length > 0) {
+    const mergedProperties: Record<string, OpenAISchema> = {};
+    const allRequired = new Set<string>();
+    let allVariantsHaveRequired = true;
+
+    for (const variant of anyOf) {
+      const sanitizedVariant = sanitizeOpenRouterGeminiSchema(variant);
+      if (sanitizedVariant.properties) {
+        for (const [key, value] of Object.entries(
+          sanitizedVariant.properties,
+        )) {
+          if (!mergedProperties[key]) {
+            mergedProperties[key] = value;
+          }
+        }
+      }
+      if (Array.isArray(sanitizedVariant.required)) {
+        for (const key of sanitizedVariant.required) {
+          allRequired.add(key);
+        }
+      } else {
+        allVariantsHaveRequired = false;
+      }
+    }
+
+    if (Object.keys(mergedProperties).length > 0) {
+      result.properties = {
+        ...(result.properties || {}),
+        ...mergedProperties,
+      };
+      if (!result.type || result.type === "string") {
+        result.type = "object";
+      }
+      // Only include required keys that exist in merged properties
+      if (allVariantsHaveRequired && allRequired.size > 0) {
+        const existingRequired = new Set(
+          Array.isArray(result.required) ? result.required : [],
+        );
+        for (const key of allRequired) {
+          if (Object.prototype.hasOwnProperty.call(result.properties, key)) {
+            existingRequired.add(key);
+          }
+        }
+        if (existingRequired.size > 0) {
+          result.required = [...existingRequired];
+        }
+      }
+    }
+  }
+
   const rawProperties = schema.properties;
   if (rawProperties && typeof rawProperties === "object") {
     const properties: Record<string, OpenAISchema> = {};
@@ -1417,7 +1793,7 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
       properties[key] = sanitizeOpenRouterGeminiSchema(value);
     }
 
-    result.properties = properties;
+    result.properties = { ...properties, ...(result.properties || {}) };
     if (!result.type) {
       result.type = "object";
     }
@@ -1426,11 +1802,18 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
       ? schema.required.filter(
           (key): key is string =>
             typeof key === "string" &&
-            Object.prototype.hasOwnProperty.call(properties, key),
+            Object.prototype.hasOwnProperty.call(result.properties, key),
         )
       : [];
     if (required.length > 0) {
-      result.required = required;
+      // Merge with any required from anyOf
+      const existingRequired = new Set(
+        Array.isArray(result.required) ? result.required : [],
+      );
+      for (const key of required) {
+        existingRequired.add(key);
+      }
+      result.required = [...existingRequired];
     }
   }
 
@@ -1480,49 +1863,71 @@ export function createOpenRouterGeminiTool(
  * 独立的 Claude 兼容 Schema 处理器
  * 与 Gemini 处理器逻辑相似但完全独立维护，便于未来差异化
  */
-function processZodToClaudeCompatible(
-  schema: ZodTypeAny,
-  isOptionalField: boolean = false,
-): OpenAISchema {
+function processZodToClaudeCompatible(schema: ZodTypeAny): OpenAISchema {
   const typeName = schema._def.typeName;
 
   // Handle effects
   if (schema instanceof ZodEffects || typeName === "ZodEffects") {
-    return processZodToClaudeCompatible(
+    const result = processZodToClaudeCompatible(
       (schema as ZodEffects<ZodTypeAny>)._def.schema,
-      isOptionalField,
     );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle optional
   if (schema instanceof ZodOptional || typeName === "ZodOptional") {
-    return processZodToClaudeCompatible(
+    const result = processZodToClaudeCompatible(
       (schema as ZodOptional<ZodTypeAny>)._def.innerType,
-      true,
     );
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle nullable
   if (schema instanceof ZodNullable || typeName === "ZodNullable") {
     const innerSchema = processZodToClaudeCompatible(
       (schema as ZodNullable<ZodTypeAny>)._def.innerType,
-      isOptionalField,
     );
     // Use nullable: true property
     const result = { ...innerSchema, nullable: true };
+    if (schema.description && !result.description)
+      result.description = schema.description;
     return result;
   }
 
   // Handle default
   if (schema instanceof ZodDefault || typeName === "ZodDefault") {
-    return processZodToClaudeCompatible(
+    const result = processZodToClaudeCompatible(
       (schema as ZodDefault<ZodTypeAny>)._def.innerType,
-      true,
     );
+    const defaultVal = (schema as ZodDefault<ZodTypeAny>)._def.defaultValue();
+    if (defaultVal !== undefined) {
+      result.default = defaultVal;
+    }
+    if (schema.description && !result.description)
+      result.description = schema.description;
+    return result;
   }
 
   // Handle lazy
   if (schema instanceof ZodLazy || typeName === "ZodLazy") {
+    if (!_lazyExpansionStack.has(schema)) {
+      try {
+        _lazyExpansionStack.add(schema);
+        const innerSchema = (schema as ZodLazy<ZodTypeAny>)._def.getter();
+        if (!(innerSchema instanceof ZodLazy)) {
+          const result = processZodToClaudeCompatible(innerSchema);
+          _lazyExpansionStack.delete(schema);
+          return result;
+        }
+        _lazyExpansionStack.delete(schema);
+      } catch {
+        _lazyExpansionStack.delete(schema);
+      }
+    }
     return createOpenAIJsonValueSchema(schema.description || "Any JSON value");
   }
 
@@ -1530,6 +1935,13 @@ function processZodToClaudeCompatible(
   if (schema instanceof ZodString || typeName === "ZodString") {
     const result: OpenAISchema = { type: "string" };
     if (schema.description) result.description = schema.description;
+    const checks = (schema as ZodString)._def.checks || [];
+    for (const check of checks) {
+      if (check.kind === "min")
+        (result as Record<string, unknown>).minLength = check.value;
+      else if (check.kind === "max")
+        (result as Record<string, unknown>).maxLength = check.value;
+    }
     return result;
   }
 
@@ -1541,6 +1953,21 @@ function processZodToClaudeCompatible(
     const isInt = checks.some((c) => c.kind === "int");
     const result: OpenAISchema = { type: isInt ? "integer" : "number" };
     if (schema.description) result.description = schema.description;
+    for (const check of checks) {
+      if (check.kind === "min") {
+        (result as Record<string, unknown>).minimum = (
+          check as Record<string, unknown>
+        ).value;
+        if ((check as Record<string, unknown>).inclusive === false)
+          (result as Record<string, unknown>).exclusiveMinimum = true;
+      } else if (check.kind === "max") {
+        (result as Record<string, unknown>).maximum = (
+          check as Record<string, unknown>
+        ).value;
+        if ((check as Record<string, unknown>).inclusive === false)
+          (result as Record<string, unknown>).exclusiveMaximum = true;
+      }
+    }
     return result;
   }
 
@@ -1724,7 +2151,7 @@ function processZodToClaudeCompatible(
         if (isRequired) currentRequired.add(key);
 
         const compiledFieldSchema = processZodToClaudeCompatible(
-          value as ZodTypeAny,
+          stripOptionalDefaultWrappers(value as ZodTypeAny),
         );
         if (!allProperties[key]) {
           allProperties[key] = compiledFieldSchema;
@@ -1778,6 +2205,12 @@ function processZodToClaudeCompatible(
       items: itemSchema,
     };
     if (schema.description) result.description = schema.description;
+    const minLen = (schema as ZodArray<ZodTypeAny>)._def.minLength;
+    const maxLen = (schema as ZodArray<ZodTypeAny>)._def.maxLength;
+    if (minLen != null)
+      (result as Record<string, unknown>).minItems = minLen.value;
+    if (maxLen != null)
+      (result as Record<string, unknown>).maxItems = maxLen.value;
     return result;
   }
 
@@ -1835,6 +2268,20 @@ function processZodToClaudeCompatible(
     return result;
   }
 
+  // Handle tuple
+  if (schema instanceof ZodTuple || typeName === "ZodTuple") {
+    return { type: "array" };
+  }
+
+  // Handle native enum
+  if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
+    const values = Object.values(
+      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+    ).filter((v) => typeof v === "string");
+    if (values.length > 0) return { type: "string", enum: values as string[] };
+    return { type: "string" };
+  }
+
   // Fallback
   console.warn(`Unknown Zod type for Claude Compatible: ${typeName}`);
   return { type: "string" };
@@ -1875,15 +2322,7 @@ export function createGeminiCompatibleTool(
   description: string,
   parameters: ZodTypeAny,
 ): OpenAIToolDefinition {
-  return {
-    type: "function",
-    function: {
-      name,
-      description,
-      strict: false, // Gemini almost never claims strict support in this channel
-      parameters: zodToGeminiToolCompatibleSchema(parameters),
-    },
-  };
+  return createOpenRouterGeminiTool(name, description, parameters);
 }
 
 // ============================================================================
@@ -1894,33 +2333,14 @@ export function createGeminiCompatibleTool(
  * 检测模型 ID 是否为 Gemini 模型
  */
 export function isGeminiModel(modelId: string): boolean {
-  const lower = modelId.toLowerCase();
-  return (
-    lower.includes("gemini") ||
-    lower.includes("google/") ||
-    lower.includes("vertex/") ||
-    lower.startsWith("google-") ||
-    lower.includes("palm-") ||
-    // Catch common patterns in proxies like OpenRouter
-    (lower.includes("flash") &&
-      (lower.includes("1.5") || lower.includes("2.0"))) ||
-    (lower.includes("pro") && (lower.includes("1.5") || lower.includes("1.0")))
-  );
+  return /\bgemini\b/i.test(modelId);
 }
 
 /**
  * 检测模型 ID 是否为 Claude 模型
  */
 export function isClaudeModel(modelId: string): boolean {
-  const lower = modelId.toLowerCase();
-  return (
-    lower.includes("claude") ||
-    lower.includes("anthropic/") ||
-    lower.startsWith("anthropic-") ||
-    lower.includes("sonnet") ||
-    lower.includes("opus") ||
-    lower.includes("haiku")
-  );
+  return /\bclaude\b/i.test(modelId);
 }
 
 // ============================================================================

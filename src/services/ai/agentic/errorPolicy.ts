@@ -49,7 +49,10 @@ export function classifyAgenticError(
   const isJsonParseFailure =
     providerCode === "JSON_PARSE_ERROR" || JSON_PARSE_PATTERN.test(rawMessage);
 
-  if (isContextLengthError(error) || isInvalidArgumentError(error)) {
+  if (
+    isContextLengthError(error) ||
+    (isInvalidArgumentError(error) && !MODEL_FIXABLE_PATTERN.test(rawMessage))
+  ) {
     return {
       kind: "rebuild_required",
       rawMessage,
