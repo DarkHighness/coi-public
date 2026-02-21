@@ -189,8 +189,8 @@ export function injectNormalTurnInstruction(
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
   modeSkillLines.push(
     "Do not skip required skill preflight above. Non-read tools are hard-blocked until those reads are done.",
-    "**DOMAIN SKILL LOADING — DO THIS before first game mutation**:",
-    "Your system prompt contains the full skill catalog. Pick 1-2 skills matching this turn and read them now:",
+    "**DOMAIN SKILL LOADING — OPTIONAL (quality recommendation)**:",
+    "Your system prompt contains the full skill catalog. Pick 1-2 skills matching this turn when scene depth requires it:",
     '- NPC interaction/dialogue → `vfs_read_chars({ path: "current/skills/gm/actor-logic/npc/SKILL.md" })`',
     '- Emotional/dramatic scene → `vfs_read_chars({ path: "current/skills/craft/emotional-empathy/SKILL.md" })`',
     '- Complex NPC growth/psychology → `vfs_read_chars({ path: "current/skills/gm/actor-logic/npc-soul/SKILL.md" })`',
