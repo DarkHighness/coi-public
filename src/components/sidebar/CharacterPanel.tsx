@@ -68,12 +68,12 @@ const pickDisplayValue = (candidates: unknown[], fallback: string): string => {
 };
 
 const colorMap: Record<string, string> = {
-  red: "from-red-600 to-red-500",
-  blue: "from-blue-600 to-blue-400",
-  green: "from-green-600 to-green-400",
-  yellow: "from-yellow-600 to-yellow-400",
-  purple: "from-purple-600 to-purple-400",
-  gray: "from-gray-600 to-gray-400",
+  red: "#ef4444",
+  blue: "#3b82f6",
+  green: "#22c55e",
+  yellow: "#eab308",
+  purple: "#8b5cf6",
+  gray: "#94a3b8",
 };
 
 const getStatusConfig = (condition: CharacterCondition) => {
@@ -318,13 +318,13 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors mb-2 pb-2 group w-full cursor-pointer
-        ${isExpanded ? "border-l-theme-primary/70 bg-theme-surface-highlight/15" : "border-l-theme-divider/60 hover:bg-theme-surface-highlight/20"}
+      className={`relative border-l border-b border-theme-divider/60 transition-colors w-full cursor-pointer
+        ${isExpanded ? "border-l-theme-primary/60" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
         ${isHighlight ? "border-l-theme-primary animate-pulse" : ""}
       `}
       onClick={handleClick}
     >
-      <div className="py-2 pl-2 pr-1 flex items-center justify-between gap-2">
+      <div className="py-2 pl-2 pr-1 flex items-center justify-between gap-2 hover:bg-theme-surface-highlight/10">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="ui-emoji-slot">
@@ -374,16 +374,21 @@ const SkillItem: React.FC<{ skill: CharacterSkill }> = ({ skill }) => {
 
       {isExpanded && (
         <div className="overflow-hidden animate-sidebar-expand">
-          <div className="pl-3 pr-2 pb-3 pt-0 space-y-3">
+          <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
             <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
-              <MarkdownText
-                content={
-                  skill.visible?.description ||
-                  t("noDescription") ||
-                  "No description"
-                }
-                indentSize={2}
-              />
+              <span className="sidebar-description-label block">
+                {t("description") || "Description"}
+              </span>
+              <div className="sidebar-description-body">
+                <MarkdownText
+                  content={
+                    skill.visible?.description ||
+                    t("noDescription") ||
+                    "No description"
+                  }
+                  indentSize={2}
+                />
+              </div>
             </div>
 
             {/* Unlocked Hidden Truth - Outer Layer */}
@@ -936,26 +941,73 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                   <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0 block">
                     {t("gameViewer.status") || t("status") || "Status"}
                   </span>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <SidebarTag className="text-theme-primary border-theme-primary/40 bg-theme-primary/10">
-                      {statusText}
-                    </SidebarTag>
-                    {activeConditions.slice(0, 3).map((condition) => (
-                      <SidebarTag
-                        key={condition.id || condition.name}
-                        className="text-theme-text-secondary normal-case tracking-normal"
-                        title={condition.visible?.description}
-                      >
-                        {condition.name}
-                      </SidebarTag>
-                    ))}
-                    {activeConditions.length > 3 && (
-                      <SidebarTag className="text-theme-text-secondary">
-                        +{activeConditions.length - 3}
-                      </SidebarTag>
-                    )}
+                  <div className="mt-1 text-xs text-theme-text font-semibold break-words whitespace-normal">
+                    {statusText}
                   </div>
+                  {activeConditions.length > 0 && (
+                    <div className="mt-1 text-[11px] text-theme-text-secondary break-words whitespace-normal">
+                      {activeConditions
+                        .slice(0, 4)
+                        .map((condition) => condition.name)
+                        .join(" · ")}
+                      {activeConditions.length > 4
+                        ? ` +${activeConditions.length - 4}`
+                        : ""}
+                    </div>
+                  )}
                 </div>
+
+                {character.appearance && (
+                  <div className="py-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0 block">
+                      {t("appearance") || "Appearance"}
+                    </span>
+                    <div className="mt-1 sidebar-description-body">
+                      <MarkdownText
+                        content={character.appearance}
+                        indentSize={2}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {character.psychology && (
+                  <div className="py-2">
+                    <span className="text-[10px] uppercase tracking-wider text-theme-text-secondary shrink-0 block">
+                      {t("gameViewer.psychology") || "Psychology"}
+                    </span>
+                    <div className="mt-1 space-y-1.5 sidebar-description-body text-xs text-theme-text">
+                      {character.psychology.coreTrauma && (
+                        <div>
+                          <span className="font-bold text-theme-primary">
+                            {t("gameViewer.coreTrauma") || "Core Trauma"}:
+                          </span>{" "}
+                          <span>{character.psychology.coreTrauma}</span>
+                        </div>
+                      )}
+                      {character.psychology.copingMechanism && (
+                        <div>
+                          <span className="font-bold text-theme-primary">
+                            {t("gameViewer.copingMechanism") || "Coping"}:
+                          </span>{" "}
+                          <span>{character.psychology.copingMechanism}</span>
+                        </div>
+                      )}
+                      {character.psychology.internalContradiction && (
+                        <div>
+                          <span className="font-bold text-theme-primary">
+                            {t("gameViewer.internalContradiction") ||
+                              "Contradiction"}
+                            :
+                          </span>{" "}
+                          <span>
+                            {character.psychology.internalContradiction}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {currentLocationText && (
                   <div className="py-2 flex items-start justify-between gap-3">
@@ -1028,60 +1080,50 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                 {character.attributes.map((attr, idx) => (
                   <div
                     key={attr.label || `attr-${idx}`}
-                    className="py-2.5 flex items-center gap-3 border-b border-theme-divider/60"
+                    className="py-3 border-b border-theme-divider/60"
                   >
-                    <span className="text-sm leading-none shrink-0 w-4 text-center opacity-90">
-                      {getValidIcon(attr.icon, "📊")}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-theme-text-secondary uppercase tracking-wider truncate">
-                          {attr.label}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-theme-text-secondary flex items-center gap-1.5 min-w-0">
+                        <span className="ui-emoji-slot">
+                          {getValidIcon(attr.icon, "📊")}
                         </span>
-                        <span className="text-xs font-bold text-theme-text whitespace-nowrap">
-                          {attr.value}
-                          {attr.maxValue ? `/${attr.maxValue}` : ""}
-                        </span>
-                      </div>
-                      {attr.maxValue && (
-                        <div className="mt-1 h-1 w-full bg-theme-divider/60 overflow-hidden">
-                          <div
-                            className={`h-full ${
-                              colorMap[attr.color || "gray"]
-                                ? `bg-linear-to-r ${colorMap[attr.color || "gray"]}`
-                                : "bg-gray-500"
-                            }`}
-                            style={{
-                              width: `${Math.min(100, Math.max(0, (attr.value / attr.maxValue) * 100))}%`,
-                            }}
-                          />
-                        </div>
-                      )}
+                        <span className="truncate">{attr.label}</span>
+                      </span>
+                      <span className="text-[0.62rem] font-bold text-theme-text whitespace-nowrap tabular-nums">
+                        {attr.maxValue ? (
+                          <>
+                            {attr.value}
+                            <span className="text-theme-text-secondary">
+                              /{attr.maxValue}
+                            </span>
+                          </>
+                        ) : (
+                          attr.value
+                        )}
+                      </span>
                     </div>
+                    {attr.maxValue && (
+                      <div className="mt-2 h-1.5 w-full bg-theme-divider/60 overflow-hidden">
+                        <div
+                          className="h-full"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(0, (attr.value / attr.maxValue) * 100),
+                            )}%`,
+                            backgroundColor:
+                              colorMap[attr.color || "gray"] || colorMap.gray,
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Skills List */}
-          {character.skills && character.skills.length > 0 && (
-            <div className="pt-4 border-t border-theme-divider/60">
-              <h4 className="text-xs text-theme-text-secondary uppercase tracking-wider mb-3 font-bold">
-                {t("gameViewer.skills") || t("skills")}
-              </h4>
-              <div className="flex flex-col">
-                {character.skills.map((skill, idx) => (
-                  <SkillItem
-                    key={skill.id || skill.name || `skill-${idx}`}
-                    skill={skill}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Conditions List */}
+          {/* Status Effects */}
           <div className="pt-4 border-t border-theme-divider/60">
             <h4 className="text-xs text-theme-text-secondary uppercase tracking-wider mb-3 font-bold">
               {t("gameViewer.conditions") || t("conditions") || "Conditions"}
@@ -1101,6 +1143,23 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
               </div>
             )}
           </div>
+
+          {/* Skills */}
+          {character.skills && character.skills.length > 0 && (
+            <div className="pt-4 border-t border-theme-divider/60">
+              <h4 className="text-xs text-theme-text-secondary uppercase tracking-wider mb-3 font-bold">
+                {t("gameViewer.skills") || t("skills")}
+              </h4>
+              <div className="flex flex-col">
+                {character.skills.map((skill, idx) => (
+                  <SkillItem
+                    key={skill.id || skill.name || `skill-${idx}`}
+                    skill={skill}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Hidden Traits (Only Unlocked) */}
           {character.hiddenTraits &&
@@ -1141,52 +1200,6 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                 </div>
               </div>
             )}
-
-          {character.appearance && (
-            <div className="pt-4 border-t border-theme-divider/60">
-              <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-2 font-bold">
-                {t("appearance") || "Appearance"}
-              </h4>
-              <div className="text-xs text-theme-text leading-relaxed pl-3 border-l border-theme-divider/60">
-                <MarkdownText content={character.appearance} indentSize={2} />
-              </div>
-            </div>
-          )}
-
-          {character.psychology && (
-            <div className="pt-4 border-t border-theme-divider/60">
-              <h4 className="text-xs text-theme-primary uppercase tracking-wider mb-2 font-bold">
-                {t("gameViewer.psychology") || "Psychology"}
-              </h4>
-              <div className="space-y-2 pl-3 border-l border-theme-divider/60 text-xs text-theme-text">
-                {character.psychology.coreTrauma && (
-                  <div>
-                    <span className="font-bold text-theme-primary">
-                      {t("gameViewer.coreTrauma") || "Core Trauma"}:
-                    </span>{" "}
-                    <span>{character.psychology.coreTrauma}</span>
-                  </div>
-                )}
-                {character.psychology.copingMechanism && (
-                  <div>
-                    <span className="font-bold text-theme-primary">
-                      {t("gameViewer.copingMechanism") || "Coping"}:
-                    </span>{" "}
-                    <span>{character.psychology.copingMechanism}</span>
-                  </div>
-                )}
-                {character.psychology.internalContradiction && (
-                  <div>
-                    <span className="font-bold text-theme-primary">
-                      {t("gameViewer.internalContradiction") || "Contradiction"}
-                      :
-                    </span>{" "}
-                    <span>{character.psychology.internalContradiction}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

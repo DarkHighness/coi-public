@@ -88,21 +88,6 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
         onClick={handleClick}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <svg
-            className={`w-3.5 h-3.5 text-theme-text-secondary transition-transform duration-200 ${
-              open ? "rotate-90" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
           <span className="font-bold text-theme-text text-xs flex items-center gap-1.5 leading-tight break-words whitespace-normal">
             <span className="ui-emoji-slot">
               {getValidIcon(item.icon, "📦")}
@@ -143,7 +128,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
         </div>
       </div>
       {!open && (
-        <div className="pl-7 pr-2 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+        <div className="pr-2 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
           {pickFirstText(
             item.visible?.description,
             item.visible?.usage,
@@ -157,16 +142,16 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
           <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
             <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
               <div>
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                <span className="sidebar-description-label block">
                   {t("description") || "Description"}
                 </span>
-                <div className="pl-1">
+                <div className="sidebar-description-body">
                   {item.visible?.description ? (
-                    <div className="text-xs text-theme-text/90 mt-2 pl-2 border-l-2 border-theme-divider/60">
+                    <div className="text-xs text-theme-text/90">
                       <MarkdownText content={item.visible.description} />
                     </div>
                   ) : (
-                    <div className="text-xs text-theme-text-secondary mt-2 pl-2 border-l-2 border-theme-divider/60">
+                    <div className="text-xs text-theme-text-secondary">
                       {t("noDescription") || "No description available."}
                     </div>
                   )}

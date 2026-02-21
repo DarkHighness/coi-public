@@ -226,33 +226,20 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
               )}
             </div>
             {!isExpanded && previewText && (
-              <div className="pl-6 pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+              <div className="pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
                 {previewText}
               </div>
             )}
           </div>
-          <svg
-            className={`w-4 h-4 text-theme-text-secondary shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
         </div>
 
         {isExpanded && (
           <div className="overflow-hidden animate-sidebar-expand">
             <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 mt-1">
-              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-0.5">
+              <span className="sidebar-description-label block">
                 {t("questPanel.description") || "Description"}
               </span>
-              <div className="pl-1 text-theme-text/90">
+              <div className="sidebar-description-body">
                 <MarkdownText
                   content={
                     q.visible?.description ||

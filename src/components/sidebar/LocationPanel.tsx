@@ -131,7 +131,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
           </div>
         </button>
         {!isExpanded && (
-          <div className="pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
+          <div className="pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
             {pickFirstText(
               locationData.visible?.description,
               locationData.visible?.environment,
@@ -149,10 +149,10 @@ const LocationItem: React.FC<LocationItemProps> = ({
               {locationData ? (
                 <div className="text-xs animate-fade-in border-t border-theme-divider/60 pt-2">
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                    <span className="sidebar-description-label block">
                       {t("description") || "Description"}
                     </span>
-                    <div className="text-theme-text leading-relaxed pl-1">
+                    <div className="sidebar-description-body">
                       <MarkdownText
                         content={
                           locationData.visible?.description ||

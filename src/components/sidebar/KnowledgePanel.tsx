@@ -172,31 +172,16 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
               "No description"}
           </div>
         )}
-        <svg
-          className={`w-5 h-5 text-theme-text-secondary shrink-0 transition-transform duration-300 ${
-            isExpanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
       </div>
 
       {isExpanded && (
         <div className="overflow-hidden animate-sidebar-expand">
           <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 mt-1">
             <div className="mt-3">
-              <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+              <span className="sidebar-description-label block">
                 {t("description") || "Description"}
               </span>
-              <div className="pl-2 border-l-2 border-theme-divider/60 text-theme-text/90">
+              <div className="sidebar-description-body">
                 <MarkdownText
                   content={k.visible?.description || ""}
                   indentSize={2}
@@ -206,10 +191,10 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 
             {k.visible?.details && (
               <div className="mt-4 pt-3 border-t border-theme-divider/60">
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
+                <span className="sidebar-description-label block">
                   {t("details") || "Details"}
                 </span>
-                <div className="pl-2 border-l-2 border-theme-divider/60 text-theme-text/90">
+                <div className="sidebar-description-body">
                   <MarkdownText content={k.visible.details} indentSize={2} />
                 </div>
               </div>

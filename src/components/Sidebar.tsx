@@ -273,19 +273,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </section>
 
           <section className="py-3">
-            <NPCPanel
-              npcs={gameState.npcs || []}
-              actors={gameState.actors || []}
-              playerActorId={gameState.playerActorId}
-              locations={gameState.locations || []}
+            <InventoryPanel
+              inventory={gameState.inventory || []}
               themeFont={currentThemeConfig.fontClass}
-              listState={gameState.uiState?.npcs}
-              onUpdateList={handleNpcListUpdate}
-              unlockMode={gameState.unlockMode}
+              itemContext={itemContext}
+              listState={gameState.uiState?.inventory}
+              onUpdateList={handleInventoryListUpdate}
               listManagementEnabled={listManagementEnabled}
               globalEditMode={globalEditMode}
-              expandedItemId={expandedByPanel.npcs ?? null}
-              onExpandItem={(itemId) => handleExpandInPanel("npcs", itemId)}
+              expandedItemId={expandedByPanel.inventory ?? null}
+              onExpandItem={(itemId) =>
+                handleExpandInPanel("inventory", itemId)
+              }
             />
           </section>
 
@@ -308,22 +307,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </section>
 
           <section className="py-3">
-            <InventoryPanel
-              inventory={gameState.inventory || []}
-              themeFont={currentThemeConfig.fontClass}
-              itemContext={itemContext}
-              listState={gameState.uiState?.inventory}
-              onUpdateList={handleInventoryListUpdate}
-              listManagementEnabled={listManagementEnabled}
-              globalEditMode={globalEditMode}
-              expandedItemId={expandedByPanel.inventory ?? null}
-              onExpandItem={(itemId) =>
-                handleExpandInPanel("inventory", itemId)
-              }
-            />
-          </section>
-
-          <section className="py-3">
             <KnowledgePanel
               knowledge={gameState.knowledge || []}
               themeFont={currentThemeConfig.fontClass}
@@ -339,16 +322,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </section>
 
           <section className="py-3">
-            <TimelineEventsPanel
-              events={gameState.timeline}
-              gameState={timelineGameState}
-              themeFont={currentThemeConfig.fontClass}
-              expandedItemId={expandedByPanel.timeline ?? null}
-              onExpandItem={(itemId) => handleExpandInPanel("timeline", itemId)}
-            />
-          </section>
-
-          <section className="py-3">
             <WorldInfoPanel
               history={gameState.worldInfo?.worldSetting?.history}
               factions={gameState.factions}
@@ -357,6 +330,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
               themeFont={currentThemeConfig.fontClass}
               worldInfo={gameState.worldInfo}
               unlockMode={gameState.unlockMode}
+            />
+          </section>
+
+          <section className="py-3">
+            <NPCPanel
+              npcs={gameState.npcs || []}
+              actors={gameState.actors || []}
+              playerActorId={gameState.playerActorId}
+              locations={gameState.locations || []}
+              themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.npcs}
+              onUpdateList={handleNpcListUpdate}
+              unlockMode={gameState.unlockMode}
+              listManagementEnabled={listManagementEnabled}
+              globalEditMode={globalEditMode}
+              expandedItemId={expandedByPanel.npcs ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("npcs", itemId)}
+            />
+          </section>
+
+          <section className="py-3">
+            <TimelineEventsPanel
+              events={gameState.timeline}
+              gameState={timelineGameState}
+              themeFont={currentThemeConfig.fontClass}
+              expandedItemId={expandedByPanel.timeline ?? null}
+              onExpandItem={(itemId) => handleExpandInPanel("timeline", itemId)}
             />
           </section>
 

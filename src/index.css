@@ -533,6 +533,22 @@ input:disabled {
   animation: sidebar-expand-in 160ms ease-out;
 }
 
+.sidebar-description-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--theme-primary);
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-description-body {
+  border-left: 2px solid
+    color-mix(in srgb, var(--theme-primary) 45%, transparent);
+  padding-left: 0.75rem;
+  color: var(--theme-text);
+  line-height: 1.7;
+}
+
 .scale-content-expanded .story-text {
   font-size: 1.1em;
   line-height: 1.8;
