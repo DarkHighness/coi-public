@@ -11,6 +11,8 @@ import { Sidebar } from "../Sidebar";
 import { StoryTimeline } from "../StoryTimeline";
 import { useRuntimeContext } from "../../runtime/context";
 
+const PANEL_CONTENT_MOUNT_DELAY_MS = 140;
+
 interface DesktopGameLayoutProps {
   // Local UI state (managed by GamePage)
   feedLayout: FeedLayout;
@@ -88,6 +90,12 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
 
+  // Mount heavy panel content after expand animation starts to keep transition smooth.
+  const [sidebarContentMounted, setSidebarContentMounted] =
+    React.useState(!sidebarCollapsed);
+  const [timelineContentMounted, setTimelineContentMounted] =
+    React.useState(!timelineCollapsed);
+
   // State for widths - initialize from persisted state or defaults
   const [sidebarWidth, setSidebarWidth] = React.useState(
     gameState.uiState.sidebarWidth || 320,
@@ -113,6 +121,32 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
   React.useEffect(() => {
     timelineWidthRef.current = timelineWidth;
   }, [timelineWidth]);
+
+  React.useEffect(() => {
+    if (sidebarCollapsed) {
+      setSidebarContentMounted(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setSidebarContentMounted(true);
+    }, PANEL_CONTENT_MOUNT_DELAY_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [sidebarCollapsed]);
+
+  React.useEffect(() => {
+    if (timelineCollapsed) {
+      setTimelineContentMounted(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setTimelineContentMounted(true);
+    }, PANEL_CONTENT_MOUNT_DELAY_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [timelineCollapsed]);
 
   // Global resize handlers
   React.useEffect(() => {
@@ -233,28 +267,33 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       {/* Desktop Sidebar */}
       <div
         data-tutorial-id="left-sidebar"
-        className={`border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20 transition-all duration-300 ease-in-out`}
+        className={`border-r border-theme-border bg-theme-surface/70 backdrop-blur-md shrink-0 relative z-20 ${
+          isResizing === "sidebar"
+            ? ""
+            : "transition-[width] duration-300 ease-out motion-reduce:transition-none"
+        }`}
         style={{
           width: sidebarCollapsed ? 0 : sidebarWidth,
+          willChange: "width",
         }}
       >
-        {/* Sidebar Content - hidden when collapsed */}
-        <div
-          className={`h-full w-full ${sidebarCollapsed ? "hidden" : "block"}`}
-        >
-          <Sidebar
-            onCloseMobile={() => {}}
-            onMagicMirror={onMagicMirror}
-            onNewGame={onNewGame}
-            onSettings={onSettings}
-            onOpenSaves={onOpenSaves}
-            onOpenMap={onOpenMap}
-            onOpenLogs={onOpenLogs}
-            onOpenViewer={onOpenViewer}
-            onOpenGallery={onOpenGallery}
-            onUpdateUIState={onUpdateUIState}
-            onVeoScript={onVeoScript}
-          />
+        <div className="h-full w-full overflow-hidden">
+          {/* Sidebar Content - delay mount on expand to reduce animation stutter */}
+          {sidebarContentMounted && (
+            <Sidebar
+              onCloseMobile={() => {}}
+              onMagicMirror={onMagicMirror}
+              onNewGame={onNewGame}
+              onSettings={onSettings}
+              onOpenSaves={onOpenSaves}
+              onOpenMap={onOpenMap}
+              onOpenLogs={onOpenLogs}
+              onOpenViewer={onOpenViewer}
+              onOpenGallery={onOpenGallery}
+              onUpdateUIState={onUpdateUIState}
+              onVeoScript={onVeoScript}
+            />
+          )}
         </div>
 
         {/* Resize Handle */}
@@ -337,9 +376,14 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
       {/* Desktop Timeline */}
       <div
         data-tutorial-id="right-timeline"
-        className={`hidden xl:flex shrink-0 z-10 border-l border-theme-border bg-theme-surface/60 backdrop-blur-md relative transition-all duration-300 ease-in-out`}
+        className={`hidden xl:flex shrink-0 z-10 border-l border-theme-border bg-theme-surface/60 backdrop-blur-md relative ${
+          isResizing === "timeline"
+            ? ""
+            : "transition-[width] duration-300 ease-out motion-reduce:transition-none"
+        }`}
         style={{
           width: timelineCollapsed ? 0 : timelineWidth,
+          willChange: "width",
         }}
       >
         {/* Resize Handle */}
@@ -350,20 +394,20 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
           />
         )}
 
-        {/* Timeline Content - hidden when collapsed */}
-        <div
-          className={`w-full h-full ${timelineCollapsed ? "hidden" : "block"}`}
-        >
-          <Suspense
-            fallback={
-              <div className="w-full h-full bg-theme-surface/30 animate-pulse"></div>
-            }
-          >
-            <StoryTimeline
-              onNavigateToSegment={handleNavigateToSegment}
-              onFork={onFork}
-            />
-          </Suspense>
+        <div className="w-full h-full overflow-hidden">
+          {/* Timeline Content - delay mount on expand to reduce animation stutter */}
+          {timelineContentMounted && (
+            <Suspense
+              fallback={
+                <div className="w-full h-full bg-theme-surface/30 animate-pulse"></div>
+              }
+            >
+              <StoryTimeline
+                onNavigateToSegment={handleNavigateToSegment}
+                onFork={onFork}
+              />
+            </Suspense>
+          )}
         </div>
 
         {/* Toggle Button */}

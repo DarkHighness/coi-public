@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FeedLayout,
   UIState,
@@ -53,6 +53,8 @@ interface MobileGameLayoutProps {
   onRate?: (id: string, rate: PlayerRateInput) => void;
 }
 
+const MOBILE_PANEL_EXIT_MS = 300;
+
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   mobileTab,
   setMobileTab,
@@ -94,6 +96,41 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 
   // Ref for StoryFeed to enable navigation
   const storyFeedRef = useRef<StoryFeedRef>(null);
+  const [renderTimelinePanel, setRenderTimelinePanel] = useState(
+    mobileTab === "timeline",
+  );
+  const [renderStatusPanel, setRenderStatusPanel] = useState(
+    mobileTab === "status",
+  );
+
+  useEffect(() => {
+    if (mobileTab === "timeline") {
+      setRenderTimelinePanel(true);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setRenderTimelinePanel(false);
+    }, MOBILE_PANEL_EXIT_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [mobileTab]);
+
+  useEffect(() => {
+    if (mobileTab === "status") {
+      setRenderStatusPanel(true);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setRenderStatusPanel(false);
+    }, MOBILE_PANEL_EXIT_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [mobileTab]);
+
+  const showTimelineContent = renderTimelinePanel || mobileTab === "timeline";
+  const showStatusContent = renderStatusPanel || mobileTab === "status";
 
   // Compute current theme configuration
   // - If lockEnvTheme is enabled:
@@ -196,32 +233,36 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 
       {/* 2. Timeline View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 motion-reduce:transition-none will-change-transform ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
       >
-        <StoryTimeline
-          onNavigateToSegment={handleNavigateToSegment}
-          onFork={onFork}
-        />
+        {showTimelineContent && (
+          <StoryTimeline
+            onNavigateToSegment={handleNavigateToSegment}
+            onFork={onFork}
+          />
+        )}
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>
       </div>
 
       {/* 3. Status/Sidebar View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 ${mobileTab === "status" ? "translate-x-0" : "translate-x-full"}`}
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 motion-reduce:transition-none will-change-transform ${mobileTab === "status" ? "translate-x-0" : "translate-x-full"}`}
       >
-        <Sidebar
-          onCloseMobile={() => setMobileTab("story")}
-          onMagicMirror={onMagicMirror}
-          onNewGame={onNewGame}
-          onSettings={onSettings}
-          onOpenSaves={onOpenSaves}
-          onOpenMap={onOpenMap}
-          onOpenLogs={onOpenLogs}
-          onOpenViewer={onOpenViewer}
-          onUpdateUIState={onUpdateUIState}
-          onVeoScript={onVeoScript}
-        />
+        {showStatusContent && (
+          <Sidebar
+            onCloseMobile={() => setMobileTab("story")}
+            onMagicMirror={onMagicMirror}
+            onNewGame={onNewGame}
+            onSettings={onSettings}
+            onOpenSaves={onOpenSaves}
+            onOpenMap={onOpenMap}
+            onOpenLogs={onOpenLogs}
+            onOpenViewer={onOpenViewer}
+            onUpdateUIState={onUpdateUIState}
+            onVeoScript={onVeoScript}
+          />
+        )}
         <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
         <div className="flex-none"></div>
       </div>
