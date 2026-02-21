@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "orientation": "any",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -16,6 +16,21 @@
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa-screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Chronicles of Infinity desktop gameplay"
+    },
+    {
+      "src": "/pwa-screenshot-mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "label": "Chronicles of Infinity mobile gameplay"
     }
   ]
 }

@@ -13,7 +13,23 @@
       "type": "image/png"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/pwa-screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Chronicles of Infinity desktop gameplay"
+    },
+    {
+      "src": "/pwa-screenshot-mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "label": "Chronicles of Infinity mobile gameplay"
+    }
+  ],
   "theme_color": "#ffffff",
   "background_color": "#ffffff",
-  "display": "standalone"
+  "display": "standalone",
+  "orientation": "portrait"
 }
