@@ -551,6 +551,14 @@ export interface ToolCallContextUsageSnapshot {
     | "fallback.default";
 }
 
+export type ToolCallRuntimeStage =
+  | "turn"
+  | "summary"
+  | "force_update"
+  | "cleanup"
+  | "player_rate"
+  | "outline";
+
 // Individual tool call record
 export interface ToolCallRecord {
   name: string;
@@ -558,6 +566,7 @@ export interface ToolCallRecord {
   output: JsonValue;
   timestamp: number;
   contextUsage?: ToolCallContextUsageSnapshot;
+  runtimeStage?: ToolCallRuntimeStage;
 }
 
 /** Log entry types for display categorization */

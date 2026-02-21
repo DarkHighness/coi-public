@@ -860,6 +860,17 @@
     "toolCallCarouselLabel": "实时工具调用",
     "waitingToolCalls": "等待工具调用中..."
   },
+  "toolCallCarousel": {
+    "stage": "循环"
+  },
+  "toolCallStage": {
+    "turn": "回合",
+    "summary": "摘要",
+    "force_update": "强制更新",
+    "cleanup": "清理",
+    "player_rate": "玩家评分",
+    "outline": "大纲"
+  },
   "viewAll": "全部",
   "modes": {
     "day": "日间",

@@ -18,6 +18,7 @@ import {
   LogEntry,
   TokenUsage,
   StorySummary,
+  ToolCallRecord,
 } from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 
@@ -53,6 +54,8 @@ export interface SummaryLoopInput {
   settings: AISettings;
   /** Optional pending player action not yet written to VFS */
   pendingPlayerAction?: { segmentIdx: number; text: string } | null;
+  /** Optional live tool callback for UI progress */
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }
 
 // ============================================================================

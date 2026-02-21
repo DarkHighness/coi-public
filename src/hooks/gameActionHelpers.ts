@@ -9,6 +9,7 @@ import {
   GameResponse,
   TokenUsage,
   ToolCallContextUsageSnapshot,
+  ToolCallRecord,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { createFork, createStateSnapshot } from "../utils/snapshotManager";
@@ -262,6 +263,7 @@ export const handleSummarization = async (
   slotId: string | null,
   currentForkId: number,
   forceSummarize: boolean = false,
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void,
 ): Promise<{
   effectiveSummaries: StorySummary[];
   lastIndex: number;
@@ -381,6 +383,7 @@ export const handleSummarization = async (
         settings: aiSettings,
         pendingPlayerAction,
         mode: forceSummarize ? "session_compact" : "auto",
+        onToolCallsUpdate,
       });
 
       if (sumResult.summary) {

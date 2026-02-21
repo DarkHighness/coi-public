@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ToolCallItemProps } from "./types";
+import { formatToolCallSummary } from "../../../utils/toolCallPresentation";
 
 const isToolErrorOutput = (value: unknown): value is { success: false } => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -15,6 +16,8 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
   const isError = isToolErrorOutput(call.output);
   const [isExpanded, setIsExpanded] = useState(isError); // Auto-expand errors
   const { t } = useTranslation();
+  const displayName = formatToolCallSummary(call);
+  const showRawName = displayName !== call.name;
 
   const isQuery = new Set([
     "vfs_ls",
@@ -56,8 +59,13 @@ export const ToolCallItem: React.FC<ToolCallItemProps> = ({ call, index }) => {
           <span
             className={`text-sm font-mono font-bold ${isFinish ? "text-theme-primary" : isQuery ? "text-blue-400" : "text-theme-text"}`}
           >
-            {call.name}
+            {displayName}
           </span>
+          {showRawName && (
+            <span className="text-[10px] text-theme-muted font-mono">
+              ({call.name})
+            </span>
+          )}
           <span className={`text-xs ${statusColor}`}>
             {isSuccess ? "✓" : "✗"}
           </span>

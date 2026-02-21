@@ -1,4 +1,9 @@
-import { AISettings, LogEntry, StorySummary } from "../../../../types";
+import {
+  AISettings,
+  LogEntry,
+  StorySummary,
+  ToolCallRecord,
+} from "../../../../types";
 import type { VfsSession } from "../../../vfs/vfsSession";
 import { createLogEntry, getProviderConfig } from "../../utils";
 import { runSummaryAgenticLoop } from "./summary";
@@ -15,6 +20,7 @@ export const summarizeContext = async (input: {
   settings: AISettings;
   pendingPlayerAction?: { segmentIdx: number; text: string } | null;
   mode?: SummaryLoopMode;
+  onToolCallsUpdate?: (calls: ToolCallRecord[]) => void;
 }): Promise<{
   summary: StorySummary | null;
   logs: LogEntry[];
@@ -32,6 +38,7 @@ export const summarizeContext = async (input: {
         language: input.language,
         settings: input.settings,
         pendingPlayerAction: input.pendingPlayerAction,
+        onToolCallsUpdate: input.onToolCallsUpdate,
       },
       { mode: input.mode },
     );

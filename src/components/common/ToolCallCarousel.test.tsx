@@ -49,6 +49,7 @@ describe("ToolCallCarousel", () => {
     );
 
     expect(screen.queryByText(/Context \d+%/i)).toBeNull();
-    expect(screen.getByText(/vfs_write_file\(\.\.\.\)/i)).toBeTruthy();
+    expect(screen.getByText(/write-file/i)).toBeTruthy();
+    expect(screen.getByText(/world\/notes\.md/i)).toBeTruthy();
   });
 });

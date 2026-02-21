@@ -42,6 +42,7 @@ import {
   generateEntityCleanup,
   generateForceUpdate,
 } from "../../services/aiService";
+import { annotateToolCallsWithStage } from "../../utils/toolCallPresentation";
 
 type ShowToast = (
   message: string,
@@ -541,7 +542,10 @@ export function createCommandActions({
         onToolCallsUpdate: (toolCalls) => {
           setGameState((prev) => ({
             ...prev,
-            liveToolCalls: toolCalls,
+            liveToolCalls: annotateToolCallsWithStage(
+              toolCalls,
+              "force_update",
+            ),
           }));
         },
         vfsMode: "sudo",
@@ -717,7 +721,7 @@ export function createCommandActions({
         onToolCallsUpdate: (toolCalls) => {
           setGameState((prev) => ({
             ...prev,
-            liveToolCalls: toolCalls,
+            liveToolCalls: annotateToolCallsWithStage(toolCalls, "cleanup"),
           }));
         },
         vfsMode: "normal",
@@ -925,7 +929,7 @@ export function createCommandActions({
         onToolCallsUpdate: (toolCalls) => {
           setGameState((prev) => ({
             ...prev,
-            liveToolCalls: toolCalls,
+            liveToolCalls: annotateToolCallsWithStage(toolCalls, "player_rate"),
           }));
         },
         vfsMode: "normal",

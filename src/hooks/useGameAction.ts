@@ -12,6 +12,7 @@ import {
   TurnRecoveryTrace,
   TokenUsage,
   ToolCallContextUsageSnapshot,
+  ToolCallRuntimeStage,
 } from "../types";
 import type { VfsSession } from "../services/vfs/vfsSession";
 import { vfsElevationTokenManager } from "../services/vfs/core/elevation";
@@ -42,6 +43,7 @@ import {
   upsertLearnedModelContextWindow,
 } from "../services/modelContextWindows";
 import { generateAdventureTurn } from "../services/aiService";
+import { annotateToolCallsWithStage } from "../utils/toolCallPresentation";
 
 let sessionManagerModulePromise: Promise<
   typeof import("../services/ai/sessionManager")
@@ -94,6 +96,13 @@ export const useGameAction = ({
     if (!error || typeof error !== "object") return undefined;
     return (error as { recoveryKind?: string }).recoveryKind;
   };
+
+  const publishLiveToolCalls = useCallback(
+    (calls: ToolCallRecord[], runtimeStage: ToolCallRuntimeStage) => {
+      onLiveToolCallsUpdate?.(annotateToolCallsWithStage(calls, runtimeStage));
+    },
+    [onLiveToolCallsUpdate],
+  );
 
   const normalizeUsageForPersistence = (usage: TokenUsage): TokenUsage => {
     const normalize = (value: unknown): number => {
@@ -564,6 +573,8 @@ export const useGameAction = ({
           vfsSession,
           currentSlotId,
           currentForkId,
+          false,
+          (toolCalls) => publishLiveToolCalls(toolCalls, "summary"),
         );
 
         // Update logs if summarization occurred
@@ -727,7 +738,8 @@ export const useGameAction = ({
           slotId: currentSlotId || "default",
           isInit: isInit,
           vfsSession,
-          onToolCallsUpdate: onLiveToolCallsUpdate,
+          onToolCallsUpdate: (toolCalls) =>
+            publishLiveToolCalls(toolCalls, "turn"),
           vfsMode: runtimeVfsMode,
           vfsElevationToken,
           vfsElevationIntent,
@@ -1135,11 +1147,17 @@ export const useGameAction = ({
       maybeRelaxLearnedContextWindow,
       recordLearnedOverflow,
       persistUsageToActiveTurn,
+      publishLiveToolCalls,
       handleSaveSettings,
       language,
       setGameState,
       t,
       currentSlotId,
+      generateImageForNode,
+      showToast,
+      triggerSave,
+      vfsSession,
+      onLiveToolCallsUpdate,
     ],
   );
 
@@ -1208,6 +1226,7 @@ export const useGameAction = ({
           currentSlotId,
           gameStateRef.current.forkId ?? 0,
           true, // FORCE SUMMARIZE
+          (toolCalls) => publishLiveToolCalls(toolCalls, "summary"),
         );
 
       if (logs && logs.length > 0) {
@@ -1338,6 +1357,7 @@ export const useGameAction = ({
     setGameState,
     triggerSave,
     vfsSession,
+    publishLiveToolCalls,
   ]);
 
   return { handleAction, handleRebuildContext, handleInvalidateSession };

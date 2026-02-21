@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ToolCallRecord } from "../../types";
 import { pickLatestToolCallContextUsage } from "../../services/ai/contextUsage";
+import {
+  formatToolCallSummary,
+  getToolCallRuntimeStageFallbackLabel,
+  pickLatestToolCallRuntimeStage,
+} from "../../utils/toolCallPresentation";
 
 interface ToolCallCarouselProps {
   calls: ToolCallRecord[];
@@ -22,10 +28,8 @@ const LINE_STEP_PX = 24;
 
 const formatTokenCount = (value: number): string => value.toLocaleString();
 
-const formatCall = (call: ToolCallRecord): string => {
-  // Hide detailed params to avoid leaking story details
-  return `${call.name}(...)`;
-};
+const formatCall = (call: ToolCallRecord): string =>
+  formatToolCallSummary(call);
 
 const getCallStatus = (call: ToolCallRecord): ToolCallStatus => {
   if (call.output == null) return "running";
@@ -74,6 +78,8 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
   intervalMs = 1700,
   emptyText = "Waiting for tool calls...",
 }) => {
+  const { t } = useTranslation();
+
   const emptyItem = useMemo<CarouselItem>(
     () => ({
       key: "empty",
@@ -101,6 +107,16 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
     () => pickLatestToolCallContextUsage(calls),
     [calls],
   );
+  const runtimeStage = useMemo(
+    () => pickLatestToolCallRuntimeStage(calls),
+    [calls],
+  );
+  const runtimeStageLabel = runtimeStage
+    ? t(
+        `toolCallStage.${runtimeStage}`,
+        getToolCallRuntimeStageFallbackLabel(runtimeStage),
+      )
+    : null;
   const usageRatioPercent = latestContextUsage
     ? Math.max(
         0,
@@ -154,6 +170,13 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
         <span className="text-[10px] uppercase tracking-[0.2em] text-theme-muted font-medium">
           {label || "Agent Tool Calls"}
         </span>
+        {runtimeStageLabel && (
+          <div className="text-[10px] text-theme-primary/80 font-mono mt-0.5">
+            {(t("toolCallCarousel.stage", "Loop") || "Loop") +
+              ": " +
+              runtimeStageLabel}
+          </div>
+        )}
       </div>
       {latestContextUsage && usageRatioPercent !== null && (
         <div className="mb-2 px-1">

@@ -1,4 +1,9 @@
-import type { LogEntry, StorySummary, UnifiedMessage } from "../../../../types";
+import type {
+  LogEntry,
+  StorySummary,
+  ToolCallRecord,
+  UnifiedMessage,
+} from "../../../../types";
 import type { ToolCallResult } from "../../../providers/types";
 
 import { sessionManager } from "../../sessionManager";
@@ -25,6 +30,11 @@ import {
   resolveModelContextWindowTokens,
 } from "../../../modelContextWindows";
 import { NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../../../tokenBudget";
+import {
+  buildToolCallContextUsageSnapshot,
+  resolveProviderReportedUsageTokens,
+} from "../../contextUsage";
+import { toJsonValue } from "../../../jsonValue";
 import {
   accumulateSummaryUsage,
   createSummaryLoopState,
@@ -382,7 +392,7 @@ export async function runSummaryLoopCore(options: {
     const functionCalls = (result as { functionCalls?: ToolCallResult[] })
       .functionCalls;
 
-    if (functionCalls) {
+    if (functionCalls && functionCalls.length > 0) {
       for (const fc of functionCalls) {
         if (!fc.id) {
           fc.id = `call_${Math.random().toString(36).slice(2, 11)}`;
@@ -410,6 +420,30 @@ export async function runSummaryLoopCore(options: {
         .map(({ index }) => index);
 
       incrementToolCalls(loopState.budgetState, functionCalls.length);
+
+      const providerUsageTokens = resolveProviderReportedUsageTokens(usage);
+      const usageTokensForSnapshot =
+        providerUsageTokens ?? Math.max(0, usage?.totalTokens || 0);
+      const contextUsageSnapshot =
+        usageTokensForSnapshot > 0
+          ? buildToolCallContextUsageSnapshot({
+              settings,
+              usageTokens: usageTokensForSnapshot,
+              promptTokens: usage?.promptTokens || 0,
+              completionTokens: usage?.completionTokens || 0,
+              totalTokens: usage?.totalTokens || 0,
+              autoCompactThreshold: settings.extra?.autoCompactThreshold,
+            })
+          : undefined;
+
+      const liveToolCalls: ToolCallRecord[] = functionCalls.map((call) => ({
+        name: call.name,
+        input: call.args,
+        output: null,
+        timestamp: Date.now(),
+        contextUsage: contextUsageSnapshot,
+      }));
+      input.onToolCallsUpdate?.([...liveToolCalls]);
 
       const toolResponses: Array<{
         toolCallId: string;
@@ -448,7 +482,9 @@ export async function runSummaryLoopCore(options: {
         vfsSummaryNodeRange: input.nodeRange,
       };
 
+      let callIndex = -1;
       for (const call of functionCalls) {
+        callIndex += 1;
         if (mustOnlyFinish && call.name !== finishToolName) {
           toolResponses.push({
             toolCallId: call.id,
@@ -607,15 +643,28 @@ export async function runSummaryLoopCore(options: {
             toolOutput: output,
           }),
         );
+
+        liveToolCalls[callIndex] = {
+          ...liveToolCalls[callIndex],
+          output: toJsonValue(output),
+        };
+        input.onToolCallsUpdate?.([...liveToolCalls]);
       }
 
       conversationHistory.push(createToolResponseMessage(toolResponses));
 
-      if (loopFinished) break;
+      if (loopFinished) {
+        input.onToolCallsUpdate?.([]);
+        break;
+      }
+    } else {
+      input.onToolCallsUpdate?.([]);
     }
 
     incrementIterations(loopState.budgetState);
   }
+
+  input.onToolCallsUpdate?.([]);
 
   return {
     summary: finalSummary,

@@ -982,6 +982,17 @@
     "toolCallCarouselLabel": "Live Tool Calls",
     "waitingToolCalls": "Waiting for tool calls..."
   },
+  "toolCallCarousel": {
+    "stage": "Loop"
+  },
+  "toolCallStage": {
+    "turn": "Turn",
+    "summary": "Summary",
+    "force_update": "Force Update",
+    "cleanup": "Cleanup",
+    "player_rate": "Player Rate",
+    "outline": "Outline"
+  },
   "viewAll": "View All",
   "clickToCycle": "Click to Cycle",
   "models": {
