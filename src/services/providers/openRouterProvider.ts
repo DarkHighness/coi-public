@@ -54,7 +54,6 @@ export type { OpenRouterConfig } from "./types";
 import {
   zodToOpenAIResponseFormat,
   zodToGemini,
-  createGeminiTool,
   createOpenRouterTool,
   isGeminiModel,
 } from "../zodCompiler";
@@ -711,11 +710,7 @@ export async function generateContent(
       const messages = convertToOpenAIMessages(systemInstruction, contents);
       // Convert tools
       const tools = options?.tools
-        ? isGemini
-          ? options.tools.map((t) =>
-              createGeminiTool(t.name, t.description, t.parameters),
-            )
-          : convertToOpenRouterTools(options.tools)
+        ? convertToOpenRouterTools(options.tools)
         : undefined;
 
       // Convert toolChoice
