@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { ToolCallRecord } from "../../types";
 import { pickLatestToolCallContextUsage } from "../../services/ai/contextUsage";
 import {
-  formatToolCallSummary,
+  getToolCallSummaryParts,
   getToolCallRuntimeStageFallbackLabel,
   pickLatestToolCallRuntimeStage,
 } from "../../utils/toolCallPresentation";
@@ -20,6 +20,8 @@ type ToolCallStatus = "running" | "success" | "failed";
 
 interface CarouselItem {
   key: string;
+  action: string | null;
+  detail: string | null;
   text: string;
   status: ToolCallStatus;
 }
@@ -27,9 +29,6 @@ interface CarouselItem {
 const LINE_STEP_PX = 24;
 
 const formatTokenCount = (value: number): string => value.toLocaleString();
-
-const formatCall = (call: ToolCallRecord): string =>
-  formatToolCallSummary(call);
 
 const getCallStatus = (call: ToolCallRecord): ToolCallStatus => {
   if (call.output == null) return "running";
@@ -65,11 +64,16 @@ const getStatusClass = (status: ToolCallStatus, active: boolean): string => {
   return active ? "text-theme-primary/90" : "text-theme-muted/70";
 };
 
-const toCarouselItem = (call: ToolCallRecord, index: number): CarouselItem => ({
-  key: `${call.timestamp}-${call.name}-${index}`,
-  text: formatCall(call),
-  status: getCallStatus(call),
-});
+const toCarouselItem = (call: ToolCallRecord, index: number): CarouselItem => {
+  const summary = getToolCallSummaryParts(call);
+  return {
+    key: `${call.timestamp}-${call.name}-${index}`,
+    action: summary.action,
+    detail: summary.detail,
+    text: summary.text,
+    status: getCallStatus(call),
+  };
+};
 
 export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
   calls,
@@ -83,6 +87,8 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
   const emptyItem = useMemo<CarouselItem>(
     () => ({
       key: "empty",
+      action: null,
+      detail: null,
       text: emptyText,
       status: "running",
     }),
@@ -171,10 +177,13 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
           {label || "Agent Tool Calls"}
         </span>
         {runtimeStageLabel && (
-          <div className="text-[10px] text-theme-primary/80 font-mono mt-0.5">
-            {(t("toolCallCarousel.stage", "Loop") || "Loop") +
-              ": " +
-              runtimeStageLabel}
+          <div className="text-[10px] font-mono mt-0.5">
+            <span className="text-theme-primary font-bold">
+              {(t("toolCallCarousel.stage", "Loop") || "Loop") + ":"}
+            </span>
+            <span className="ml-1 text-theme-primary font-semibold">
+              {runtimeStageLabel}
+            </span>
           </div>
         )}
       </div>
@@ -219,7 +228,20 @@ export const ToolCallCarousel: React.FC<ToolCallCarouselProps> = ({
                 <span className={getStatusClass(item.status, isActive)}>
                   {getStatusPrefix(item.status)}
                 </span>
-                <span className="ml-2 text-theme-text/90">{item.text}</span>
+                {item.action ? (
+                  <>
+                    <span className="ml-2 text-theme-primary font-bold">
+                      {item.action}
+                    </span>
+                    {item.detail && (
+                      <span className="ml-1 text-theme-text/90">
+                        {item.detail}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="ml-2 text-theme-text/90">{item.text}</span>
+                )}
               </div>
             </div>
           );

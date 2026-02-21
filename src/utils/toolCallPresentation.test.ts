@@ -18,7 +18,7 @@ describe("toolCallPresentation", () => {
       timestamp: Date.now(),
     } as any);
 
-    expect(label).toContain("read-lines");
+    expect(label).toContain("read");
     expect(label).toContain("world/notes.md");
     expect(label).toContain("L10+20");
   });

@@ -1,26 +1,30 @@
 import type { ToolCallRecord, ToolCallRuntimeStage } from "../types";
 
-const TOOL_ACTION_LABELS: Record<string, string> = {
-  vfs_ls: "list",
-  vfs_schema: "schema",
-  vfs_search: "search",
-  vfs_read_chars: "read-chars",
-  vfs_read_lines: "read-lines",
-  vfs_read_json: "read-json",
-  vfs_read_markdown: "read-md",
-  vfs_write_file: "write-file",
-  vfs_write_markdown: "write-md",
-  vfs_append_text: "append",
-  vfs_edit_lines: "edit-lines",
-  vfs_patch_json: "patch-json",
-  vfs_merge_json: "merge-json",
-  vfs_move: "move",
-  vfs_delete: "delete",
-  vfs_vm: "vm-script",
-  vfs_finish_turn: "finish-turn",
-  vfs_end_turn: "end-turn",
-  vfs_finish_summary: "finish-summary",
-};
+const READ_TOOL_NAMES = new Set([
+  "vfs_ls",
+  "vfs_schema",
+  "vfs_read_chars",
+  "vfs_read_lines",
+  "vfs_read_json",
+  "vfs_read_markdown",
+]);
+
+const SEARCH_TOOL_NAMES = new Set(["vfs_search"]);
+const VM_TOOL_NAMES = new Set(["vfs_vm"]);
+
+const WRITE_TOOL_NAMES = new Set([
+  "vfs_write_file",
+  "vfs_write_markdown",
+  "vfs_append_text",
+  "vfs_edit_lines",
+  "vfs_patch_json",
+  "vfs_merge_json",
+  "vfs_move",
+  "vfs_delete",
+  "vfs_finish_turn",
+  "vfs_end_turn",
+  "vfs_finish_summary",
+]);
 
 const STAGE_FALLBACK_LABELS: Record<ToolCallRuntimeStage, string> = {
   turn: "Turn",
@@ -126,24 +130,44 @@ const toReadRangeHint = (name: string, input: unknown): string | null => {
 
 const resolveActionLabel = (name: string): string => {
   if (name.startsWith("vfs_finish_outline_")) {
-    return "finish-outline";
+    return "write";
   }
-  const known = TOOL_ACTION_LABELS[name];
-  if (known) return known;
+  if (READ_TOOL_NAMES.has(name)) return "read";
+  if (SEARCH_TOOL_NAMES.has(name)) return "search";
+  if (VM_TOOL_NAMES.has(name)) return "vm";
+  if (WRITE_TOOL_NAMES.has(name)) return "write";
   if (name.startsWith("vfs_")) {
-    return name.slice(4).replace(/_/g, "-");
+    return "write";
   }
   return name;
 };
 
-export const formatToolCallSummary = (call: ToolCallRecord): string => {
+export interface ToolCallSummaryParts {
+  action: string;
+  detail: string | null;
+  text: string;
+}
+
+export const getToolCallSummaryParts = (
+  call: ToolCallRecord,
+): ToolCallSummaryParts => {
   const action = resolveActionLabel(call.name);
   const pathHint = toPathHint(call.input);
   const rangeHint = toReadRangeHint(call.name, call.input);
   const hints = [pathHint, rangeHint].filter(
     (hint): hint is string => typeof hint === "string" && hint.length > 0,
   );
-  return hints.length > 0 ? `${action} ${hints.join(" • ")}` : action;
+  const detail = hints.length > 0 ? hints.join(" • ") : null;
+
+  return {
+    action,
+    detail,
+    text: detail ? `${action} ${detail}` : action,
+  };
+};
+
+export const formatToolCallSummary = (call: ToolCallRecord): string => {
+  return getToolCallSummaryParts(call).text;
 };
 
 export const annotateToolCallsWithStage = (
