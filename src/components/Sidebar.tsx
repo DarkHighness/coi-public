@@ -52,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Get state from context
   const { state, actions } = useRuntimeContext();
   const { gameState, currentThemeConfig } = state;
+  const ragEnabled = state.aiSettings.embedding?.enabled === true;
   const { setLanguage } = actions;
 
   const { character } = gameState;
@@ -253,12 +254,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             />
           </section>
 
-          <section className="py-3">
-            <RAGPanel
-              progress={embeddingProgress}
-              themeFont={currentThemeConfig.fontClass}
-            />
-          </section>
+          {ragEnabled && (
+            <section className="py-3">
+              <RAGPanel
+                progress={embeddingProgress}
+                themeFont={currentThemeConfig.fontClass}
+              />
+            </section>
+          )}
 
           {/* Token Usage Panel - Mobile Only */}
           <section className="py-3 md:hidden">
