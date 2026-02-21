@@ -2,7 +2,15 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { UIState } from "../types";
 import { LanguageSelector } from "./LanguageSelector";
-import { MemoizedSidebarPanelsWorkspace } from "./sidebar/SidebarPanelsWorkspace";
+import { CharacterPanel } from "./sidebar/CharacterPanel";
+import { QuestPanel } from "./sidebar/QuestPanel";
+import { InventoryPanel } from "./sidebar/InventoryPanel";
+import { NPCPanel } from "./sidebar/NPCPanel";
+import { LocationPanel } from "./sidebar/LocationPanel";
+import { KnowledgePanel } from "./sidebar/KnowledgePanel";
+import { WorldInfoPanel } from "./sidebar/WorldInfoPanel";
+import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
+import { RAGPanel } from "./sidebar/RAGPanel";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
 import { useRuntimeContext } from "../runtime/context";
 import { resolveLocationDisplayName } from "../utils/entityDisplay";
@@ -51,6 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     typeof window.matchMedia === "function" &&
     window.matchMedia("(max-width: 767px)").matches;
 
+  const { character } = gameState;
   const showDesktopMenu = gameState.uiState?.showSystemFooter !== false;
   const listManagementEnabled =
     isMobileViewport || gameState.uiState?.sidebarCollapsed !== true;
@@ -67,6 +76,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
         (bundle) => bundle.profile.id === gameState.playerActorId,
       )?.profile ?? null,
     [gameState.actors, gameState.playerActorId],
+  );
+  const timelineGameState = React.useMemo(
+    () => ({
+      playerActorId: gameState.playerActorId,
+      character: gameState.character,
+      actors: gameState.actors,
+      npcs: gameState.npcs,
+      locations: gameState.locations,
+      quests: gameState.quests,
+      knowledge: gameState.knowledge,
+      factions: gameState.factions,
+      timeline: gameState.timeline,
+      inventory: gameState.inventory,
+    }),
+    [
+      gameState.playerActorId,
+      gameState.character,
+      gameState.actors,
+      gameState.npcs,
+      gameState.locations,
+      gameState.quests,
+      gameState.knowledge,
+      gameState.factions,
+      gameState.timeline,
+      gameState.inventory,
+    ],
+  );
+
+  const handleLocationListUpdate = React.useCallback(
+    (newState: UIState["locations"]) => onUpdateUIState("locations", newState),
+    [onUpdateUIState],
+  );
+  const handleQuestListUpdate = React.useCallback(
+    (newState: UIState["quests"]) => onUpdateUIState("quests", newState),
+    [onUpdateUIState],
+  );
+  const handleNpcListUpdate = React.useCallback(
+    (newState: UIState["npcs"]) => onUpdateUIState("npcs", newState),
+    [onUpdateUIState],
+  );
+  const handleInventoryListUpdate = React.useCallback(
+    (newState: UIState["inventory"]) => onUpdateUIState("inventory", newState),
+    [onUpdateUIState],
+  );
+  const handleKnowledgeListUpdate = React.useCallback(
+    (newState: UIState["knowledge"]) => onUpdateUIState("knowledge", newState),
+    [onUpdateUIState],
   );
   const handleToggleSystemFooter = React.useCallback(
     () => onUpdateUIState("showSystemFooter", !showDesktopMenu),
@@ -171,18 +227,100 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
+          {character && (
+            <section className="py-3">
+              <CharacterPanel
+                character={character}
+                playerProfile={playerProfile}
+                unlockMode={gameState.unlockMode}
+                locations={gameState.locations || []}
+                themeFont={currentThemeConfig.fontClass}
+              />
+            </section>
+          )}
+
           <section className="py-3">
-            <MemoizedSidebarPanelsWorkspace
-              gameState={gameState}
+            <TimelineEventsPanel
+              events={gameState.timeline}
+              gameState={timelineGameState}
+              themeFont={currentThemeConfig.fontClass}
+            />
+          </section>
+
+          <section className="py-3">
+            <LocationPanel
+              currentLocation={gameState.currentLocation}
+              locations={gameState.locations || []}
+              locationItemsByLocationId={gameState.locationItemsByLocationId}
               themeFont={currentThemeConfig.fontClass}
               itemContext={itemContext}
-              playerProfile={playerProfile}
-              ragEnabled={ragEnabled}
-              embeddingProgress={embeddingProgress}
-              onUpdateUIState={onUpdateUIState}
+              listState={gameState.uiState?.locations}
+              onUpdateList={handleLocationListUpdate}
               listManagementEnabled={listManagementEnabled}
             />
           </section>
+          <section className="py-3">
+            <QuestPanel
+              quests={gameState.quests || []}
+              themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.quests}
+              onUpdateList={handleQuestListUpdate}
+              listManagementEnabled={listManagementEnabled}
+            />
+          </section>
+          <section className="py-3">
+            <NPCPanel
+              npcs={gameState.npcs || []}
+              actors={gameState.actors || []}
+              playerActorId={gameState.playerActorId}
+              locations={gameState.locations || []}
+              themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.npcs}
+              onUpdateList={handleNpcListUpdate}
+              unlockMode={gameState.unlockMode}
+              listManagementEnabled={listManagementEnabled}
+            />
+          </section>
+          <section className="py-3">
+            <InventoryPanel
+              inventory={gameState.inventory || []}
+              themeFont={currentThemeConfig.fontClass}
+              itemContext={itemContext}
+              listState={gameState.uiState?.inventory}
+              onUpdateList={handleInventoryListUpdate}
+              listManagementEnabled={listManagementEnabled}
+            />
+          </section>
+          <section className="py-3">
+            <KnowledgePanel
+              knowledge={gameState.knowledge || []}
+              themeFont={currentThemeConfig.fontClass}
+              listState={gameState.uiState?.knowledge}
+              onUpdateList={handleKnowledgeListUpdate}
+              listManagementEnabled={listManagementEnabled}
+            />
+          </section>
+
+          <section className="py-3">
+            <WorldInfoPanel
+              history={gameState.worldInfo?.worldSetting?.history}
+              factions={gameState.factions}
+              outline={gameState.outline}
+              worldSetting={gameState.worldInfo?.worldSetting}
+              themeFont={currentThemeConfig.fontClass}
+              worldInfo={gameState.worldInfo}
+              unlockMode={gameState.unlockMode}
+            />
+          </section>
+
+          {ragEnabled && (
+            <section className="py-3">
+              <RAGPanel
+                progress={embeddingProgress}
+                themeFont={currentThemeConfig.fontClass}
+              />
+            </section>
+          )}
 
           {/* Token Usage Panel - Mobile Only */}
           <section className="py-3 md:hidden">
