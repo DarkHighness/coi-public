@@ -8,8 +8,8 @@ import {
 import { StoryFeed, StoryFeedRef } from "../StoryFeed";
 import { StoryTimeline } from "../StoryTimeline";
 import { ActionPanel } from "../ActionPanel";
-import { Sidebar } from "../Sidebar";
-import { MobileNav, MobileTab } from "../MobileNav";
+import { MobileTab } from "../MobileNav";
+import { MobileStatusSheet } from "../sidebar/MobileStatusSheet";
 import { THEMES, ENV_THEMES, BUILD_INFO } from "../../utils/constants";
 import { getThemeKeyForAtmosphere } from "../../utils/constants/atmosphere";
 import { useTranslation } from "react-i18next";
@@ -54,6 +54,7 @@ interface MobileGameLayoutProps {
 }
 
 const MOBILE_PANEL_EXIT_MS = 300;
+type ContentMobileTab = Exclude<MobileTab, "status">;
 
 export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   mobileTab,
@@ -96,15 +97,25 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 
   // Ref for StoryFeed to enable navigation
   const storyFeedRef = useRef<StoryFeedRef>(null);
-  const [renderTimelinePanel, setRenderTimelinePanel] = useState(
-    mobileTab === "timeline",
+  const [lastContentTab, setLastContentTab] = useState<ContentMobileTab>(
+    mobileTab === "status" ? "story" : mobileTab,
   );
-  const [renderStatusPanel, setRenderStatusPanel] = useState(
-    mobileTab === "status",
+  const activeContentTab: ContentMobileTab =
+    mobileTab === "status" ? lastContentTab : mobileTab;
+  const statusSheetOpen = mobileTab === "status";
+  const [renderTimelinePanel, setRenderTimelinePanel] = useState(
+    activeContentTab === "timeline",
   );
 
   useEffect(() => {
-    if (mobileTab === "timeline") {
+    if (mobileTab === "status") {
+      return;
+    }
+    setLastContentTab(mobileTab);
+  }, [mobileTab]);
+
+  useEffect(() => {
+    if (activeContentTab === "timeline") {
       setRenderTimelinePanel(true);
       return;
     }
@@ -114,23 +125,10 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
     }, MOBILE_PANEL_EXIT_MS);
 
     return () => clearTimeout(timeoutId);
-  }, [mobileTab]);
+  }, [activeContentTab]);
 
-  useEffect(() => {
-    if (mobileTab === "status") {
-      setRenderStatusPanel(true);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      setRenderStatusPanel(false);
-    }, MOBILE_PANEL_EXIT_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [mobileTab]);
-
-  const showTimelineContent = renderTimelinePanel || mobileTab === "timeline";
-  const showStatusContent = renderStatusPanel || mobileTab === "status";
+  const showTimelineContent =
+    renderTimelinePanel || activeContentTab === "timeline";
 
   // Compute current theme configuration
   // - If lockEnvTheme is enabled:
@@ -189,11 +187,15 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
     }
   };
 
+  const handleCloseStatusSheet = React.useCallback(() => {
+    setMobileTab(lastContentTab);
+  }, [lastContentTab, setMobileTab]);
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative md:hidden">
       {/* 1. Story Feed View */}
       <div
-        className={`flex flex-col w-full absolute inset-0 overflow-hidden transition-opacity duration-300 ${mobileTab === "story" ? "z-10 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`flex flex-col w-full absolute inset-0 overflow-hidden transition-opacity duration-300 ${activeContentTab === "story" ? "z-10 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
         <StoryFeed
           ref={storyFeedRef}
@@ -233,7 +235,7 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
 
       {/* 2. Timeline View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 motion-reduce:transition-none will-change-transform ${mobileTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 motion-reduce:transition-none will-change-transform ${activeContentTab === "timeline" ? "translate-x-0" : "translate-x-full"}`}
       >
         {showTimelineContent && (
           <StoryTimeline
@@ -245,31 +247,9 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         <div className="h-[env(safe-area-inset-bottom)] flex-none"></div>
       </div>
 
-      {/* 3. Status/Sidebar View */}
-      <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 motion-reduce:transition-none will-change-transform ${mobileTab === "status" ? "translate-x-0" : "translate-x-full"}`}
-      >
-        {showStatusContent && (
-          <Sidebar
-            onCloseMobile={() => setMobileTab("story")}
-            onMagicMirror={onMagicMirror}
-            onNewGame={onNewGame}
-            onSettings={onSettings}
-            onOpenSaves={onOpenSaves}
-            onOpenMap={onOpenMap}
-            onOpenLogs={onOpenLogs}
-            onOpenViewer={onOpenViewer}
-            onUpdateUIState={onUpdateUIState}
-            onVeoScript={onVeoScript}
-          />
-        )}
-        <div className="h-16 flex-none"></div> {/* Spacer for Mobile Nav */}
-        <div className="flex-none"></div>
-      </div>
-
       {/* 4. Menu Grid View */}
       <div
-        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 overflow-y-auto ${mobileTab === "menu" ? "translate-x-0" : "translate-x-full"}`}
+        className={`flex-1 flex flex-col h-full w-full absolute inset-0 bg-theme-bg/90 backdrop-blur-md z-20 transition-transform duration-300 overflow-y-auto ${activeContentTab === "menu" ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="p-6 pb-24">
           <div className="flex items-center justify-between gap-3 mb-6">
@@ -610,8 +590,11 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileNav currentTab={mobileTab} setTab={setMobileTab} />
+      <MobileStatusSheet
+        isOpen={statusSheetOpen}
+        onClose={handleCloseStatusSheet}
+        onUpdateUIState={onUpdateUIState}
+      />
     </div>
   );
 };

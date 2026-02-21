@@ -589,7 +589,13 @@ export const GamePage: React.FC<GamePageProps> = ({
         )}
 
         {/* Mobile Bottom Navigation */}
-        {isMobile && <MobileNav currentTab={mobileTab} setTab={setMobileTab} />}
+        {isMobile && (
+          <MobileNav
+            currentTab={mobileTab}
+            setTab={setMobileTab}
+            onStatusTap={() => setMobileTab("status")}
+          />
+        )}
 
         {/* Modals */}
         <MagicMirror

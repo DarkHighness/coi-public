@@ -690,6 +690,17 @@ export interface EntityPresentationState {
 
 export type EntityPresentationMap = Record<string, EntityPresentationState>;
 
+export type SidebarPanelType =
+  | "character"
+  | "timeline"
+  | "location"
+  | "quest"
+  | "npc"
+  | "inventory"
+  | "knowledge"
+  | "worldInfo"
+  | "rag";
+
 export interface UIState {
   inventory: ListState;
   locations: ListState;
@@ -706,6 +717,9 @@ export interface UIState {
   embeddingExpanded?: boolean; // Persisted state for embedding panel expansion
   feedLayout?: FeedLayout; // Persisted layout preference (scroll/stack)
   viewedSegmentId?: string; // Last viewed segment ID for continue game
+  sidebarActivePanel?: SidebarPanelType; // Active detail panel in sidebar
+  sidebarActiveItemId?: string; // Active item id for panel details
+  sidebarDetailOpen?: boolean; // Whether sidebar detail layer is open
 }
 
 // Relationship 从 zodSchemas.ts 导入
