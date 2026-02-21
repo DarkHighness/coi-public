@@ -1,5 +1,7 @@
 {
   "title": "Chronicles of Infinity",
+  "name": "Name",
+  "id": "ID",
   "age": "Age",
   "realAge": "Real Age",
   "apparentAge": "Apparent Age",
@@ -21,6 +23,7 @@
     "secretOutcome": "Secret Outcome"
   },
   "questType": {
+    "title": "Type",
     "main": "Main",
     "side": "Side",
     "hidden": "Hidden"
@@ -30,6 +33,7 @@
     "empty": "No knowledge discovered yet.",
     "discovered": "Discovered",
     "category": {
+      "title": "Category",
       "landscape": "Landscape",
       "history": "History",
       "item": "Item",
@@ -56,6 +60,13 @@
   "background": "Background",
   "emotionalWeight": "Significance",
   "details": "Details",
+  "visible": "Visible",
+  "meta": "Meta",
+  "objectives": "Objectives",
+  "noObjectives": "No objectives",
+  "relatedTo": "Related",
+  "knownEffects": "Known Effects",
+  "unlockReason": "Unlock Reason",
   "emptyInventory": "Your inventory is empty.",
   "npcs": "NPCs",
   "emptyNpcs": "You haven't met anyone significant yet.",
@@ -410,6 +421,8 @@
   "themeExample": "Example Content",
   "timeline": {
     "title": "Journey Timeline",
+    "event": "Event",
+    "time": "Time",
     "moment": "Moment",
     "turn": "Turn",
     "empty": "The chronicle awaits...",
@@ -1623,6 +1636,7 @@
     "overview": "Overview",
     "world": "World",
     "character": "Character",
+    "profile": "Profile",
     "npcs": "NPCs",
     "quests": "Quests",
     "lore": "Lore",
@@ -1666,6 +1680,7 @@
     "noHiddenTraitsRevealed": "No hidden traits revealed",
     "personality": "Personality",
     "myImpression": "My Impression",
+    "impression": "Impression",
     "myPerception": "My Perception",
     "perceivedStatus": "Currently (Perceived)",
     "dialogueStyle": "Speech Style",
@@ -1783,19 +1798,28 @@
   "secretAgenda": "Secret Agenda",
   "worldInfo": {
     "title": "World Info",
+    "premise": "Premise",
+    "narrativeScale": "Narrative Scale",
     "history": "History",
     "setting": "Setting",
+    "goal": "Goal",
     "factions": "Factions",
+    "noFactions": "No known factions yet",
     "empty": "No world information recorded yet.",
     "recentEvents": "Recent Events",
     "causedBy": "Caused by",
     "noEvents": "No recent events recorded.",
     "hiddenTruth": "Hidden Truth",
+    "hiddenRules": "Hidden Rules",
     "secretObjective": "Secret Objective",
-    "conditions": "Conditions:"
+    "conditions": "Conditions:",
+    "worldSettingUnlockReason": "World Setting Unlock Reason",
+    "mainGoalUnlockReason": "Main Goal Unlock Reason"
   },
   "confirm": "Confirm",
   "faction": {
+    "agenda": "Agenda",
+    "internalConflict": "Internal Conflict",
     "members": "Members",
     "influence": "Influence",
     "relations": "Relations"
@@ -2012,7 +2036,9 @@
       "weight": "Weight",
       "smell": "Smell",
       "condition": "Condition",
-      "usage": "Usage"
+      "usage": "Usage",
+      "observation": "Observation",
+      "sensory": "Sensory"
     },
     "conditionType": {
       "normal": "Normal",

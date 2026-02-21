@@ -534,17 +534,34 @@ input:disabled {
 }
 
 .sidebar-description-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.35;
   color: var(--theme-primary);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .sidebar-description-body {
   padding-left: 0;
   color: var(--theme-text);
-  line-height: 1.7;
+  line-height: 1.6;
+}
+
+.sidebar-section-divider {
+  border-top: 1px solid
+    color-mix(in srgb, var(--theme-divider) 65%, transparent);
+}
+
+.sidebar-field-divider {
+  border-top: 1px solid
+    color-mix(in srgb, var(--theme-divider) 55%, transparent);
+}
+
+.sidebar-hidden-divider {
+  border-top: 1px solid
+    color-mix(in srgb, var(--theme-primary) 30%, transparent);
 }
 
 .scale-content-expanded .story-text {

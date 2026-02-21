@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { InventoryItem as InventoryItemType } from "../types";
 import { getValidIcon } from "../utils/emojiValidator";
 import { MarkdownText } from "./render/MarkdownText";
 import { useOptionalRuntimeContext } from "../runtime/context";
+import { SidebarEntityRow } from "./sidebar/SidebarEntityRow";
+import { SidebarTag } from "./sidebar/SidebarTag";
+import { SidebarField, SidebarSection } from "./sidebar/SidebarSections";
 import { pickFirstText } from "./sidebar/panelText";
 
 interface InventoryItemProps {
@@ -24,8 +27,8 @@ interface InventoryItemProps {
 
 export const InventoryItem: React.FC<InventoryItemProps> = ({
   item,
-  language,
-  context,
+  language: _language,
+  context: _context,
   isPinned,
   onPin,
   onDragStart,
@@ -56,236 +59,207 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
     setIsHighlight(false);
   }, [clearHighlight, item.highlight, item.id]);
 
-  const handleClick = () => {
-    if (!isEditMode) {
-      if (onToggleExpand) {
-        onToggleExpand(item.id);
-      } else {
-        setLocalIsOpen((prev) => !prev);
-      }
-      if (isHighlight || item.highlight) {
-        setIsHighlight(false);
-        clearHighlight?.({ kind: "inventory", id: item.id });
-      }
+  const handleToggle = () => {
+    if (isEditMode) {
+      return;
+    }
+    if (onToggleExpand) {
+      onToggleExpand(item.id);
+    } else {
+      setLocalIsOpen((prev) => !prev);
+    }
+    if (isHighlight || item.highlight) {
+      setIsHighlight(false);
+      clearHighlight?.({ kind: "inventory", id: item.id });
     }
   };
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2 group
-        ${isDragging ? "opacity-60" : "opacity-100"}
-        ${open ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
-        ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
-      `}
+      className={`relative ${isDragging ? "opacity-60" : "opacity-100"} ${
+        isHighlight ? "ring-1 ring-theme-primary/40" : ""
+      }`}
       onDragOver={onDragOver}
       onDragEnter={onDragEnter}
       onDrop={onDrop}
-      draggable={isEditMode}
+      draggable={Boolean(isEditMode)}
       onDragStart={isEditMode && onDragStart ? onDragStart : undefined}
     >
-      <div
-        className="flex justify-between items-center min-h-[2.25rem] py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors"
-        onClick={handleClick}
+      {isEditMode && onPin ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPin();
+          }}
+          className={`absolute right-8 top-2 z-10 p-1 rounded transition-colors ${
+            isPinned
+              ? "text-theme-primary"
+              : "text-theme-text-secondary hover:text-theme-primary"
+          }`}
+          title={isPinned ? t("unpin") || "Unpin" : t("pin") || "Pin"}
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill={isPinned ? "currentColor" : "none"}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+            ></path>
+          </svg>
+        </button>
+      ) : null}
+
+      <SidebarEntityRow
+        title={item.name}
+        icon={getValidIcon(item.icon, "📦")}
+        tags={
+          <>
+            {item.visible?.condition ? (
+              <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
+                {item.visible.condition}
+              </SidebarTag>
+            ) : null}
+            {item.visible?.usage ? (
+              <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
+                {t("usage") || "Usage"}
+              </SidebarTag>
+            ) : null}
+            {item.unlocked ? (
+              <SidebarTag className="text-theme-primary border-theme-primary/60">
+                {t("unlocked") || "Unlocked"}
+              </SidebarTag>
+            ) : null}
+          </>
+        }
+        summary={pickFirstText(
+          item.visible?.description,
+          item.visible?.usage,
+          item.visible?.observation,
+          item.hidden?.truth,
+        )}
+        isExpanded={open}
+        onToggle={handleToggle}
+        accentClassName={
+          open ? "border-l-theme-primary/70" : "border-l-theme-divider/70"
+        }
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="font-bold text-theme-text text-xs flex items-center gap-1.5 leading-tight break-words whitespace-normal">
-            <span className="ui-emoji-slot">
-              {getValidIcon(item.icon, "📦")}
-            </span>
-            {item.name}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-end gap-2 shrink-0 min-w-8">
-          {isEditMode && onPin && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPin();
-              }}
-              className={`p-1 rounded hover:bg-theme-surface-highlight/20 transition-colors ${
-                isPinned
-                  ? "text-theme-primary"
-                  : "text-theme-text-secondary hover:text-theme-text"
-              }`}
-              title={isPinned ? "Unpin" : "Pin to top"}
-            >
-              <svg
-                className="w-4 h-4"
-                fill={isPinned ? "currentColor" : "none"}
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                ></path>
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-      {!open && (
-        <div className="pr-2 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
-          {pickFirstText(
-            item.visible?.description,
-            item.visible?.usage,
-            item.hidden?.truth,
-          )}
-        </div>
-      )}
-
-      {open && (
-        <div className="overflow-hidden animate-sidebar-expand">
-          <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
-            <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
-              <div>
-                <span className="sidebar-description-label block">
-                  {t("description") || "Description"}
+        <div className="pl-2 pr-1 pb-3 text-xs text-theme-text">
+          <SidebarSection title={t("visible") || "Visible"} withDivider={false}>
+            <SidebarField label={t("description") || "Description"}>
+              {item.visible?.description ? (
+                <MarkdownText
+                  content={item.visible.description}
+                  indentSize={2}
+                />
+              ) : (
+                <span className="text-theme-text-secondary">
+                  {t("noDescription") || "No description available."}
                 </span>
-                <div className="sidebar-description-body">
-                  {item.visible?.description ? (
-                    <div className="text-xs text-theme-text/90">
-                      <MarkdownText content={item.visible.description} />
-                    </div>
-                  ) : (
-                    <div className="text-xs text-theme-text-secondary">
-                      {t("noDescription") || "No description available."}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Sensory Details */}
-              {item.visible?.sensory && (
-                <div className="mt-2 space-y-1">
-                  {item.visible.sensory.texture && (
-                    <div className="flex gap-1 text-xs">
-                      <span className="text-theme-primary/70">
-                        {t("sidebar.inventory.texture")}:
-                      </span>
-                      <span className="text-theme-text-secondary">
-                        {item.visible.sensory.texture}
-                      </span>
-                    </div>
-                  )}
-                  {item.visible.sensory.weight && (
-                    <div className="flex gap-1 text-xs">
-                      <span className="text-theme-primary/70">
-                        {t("sidebar.inventory.weight")}:
-                      </span>
-                      <span className="text-theme-text-secondary">
-                        {item.visible.sensory.weight}
-                      </span>
-                    </div>
-                  )}
-                  {item.visible.sensory.smell && (
-                    <div className="flex gap-1 text-xs">
-                      <span className="text-theme-primary/70">
-                        {t("sidebar.inventory.smell")}:
-                      </span>
-                      <span className="text-theme-text-secondary">
-                        {item.visible.sensory.smell}
-                      </span>
-                    </div>
-                  )}
-                </div>
               )}
+            </SidebarField>
 
-              {item.visible?.condition && (
-                <div className="mt-2 text-xs">
-                  <span className="text-theme-primary/70">
-                    {t("sidebar.inventory.condition")}:{" "}
-                  </span>
-                  <span className="text-theme-text-secondary">
-                    {item.visible.condition}
-                  </span>
+            {item.visible?.usage ? (
+              <SidebarField
+                label={t("sidebar.inventory.usage") || t("usage") || "Usage"}
+              >
+                <MarkdownText content={item.visible.usage} indentSize={2} />
+              </SidebarField>
+            ) : null}
+
+            {item.visible?.observation ? (
+              <SidebarField
+                label={t("sidebar.inventory.observation") || "Observation"}
+              >
+                <MarkdownText
+                  content={item.visible.observation}
+                  indentSize={2}
+                />
+              </SidebarField>
+            ) : null}
+
+            {item.visible?.condition ? (
+              <SidebarField
+                label={t("sidebar.inventory.condition") || "Condition"}
+              >
+                {item.visible.condition}
+              </SidebarField>
+            ) : null}
+
+            {item.visible?.sensory ? (
+              <SidebarField label={t("sidebar.inventory.sensory") || "Sensory"}>
+                <div className="space-y-1 text-theme-text-secondary">
+                  {item.visible.sensory.texture ? (
+                    <div>
+                      {t("sidebar.inventory.texture") || "Texture"}:{" "}
+                      {item.visible.sensory.texture}
+                    </div>
+                  ) : null}
+                  {item.visible.sensory.weight ? (
+                    <div>
+                      {t("sidebar.inventory.weight") || "Weight"}:{" "}
+                      {item.visible.sensory.weight}
+                    </div>
+                  ) : null}
+                  {item.visible.sensory.smell ? (
+                    <div>
+                      {t("sidebar.inventory.smell") || "Smell"}:{" "}
+                      {item.visible.sensory.smell}
+                    </div>
+                  ) : null}
                 </div>
-              )}
+              </SidebarField>
+            ) : null}
+          </SidebarSection>
 
-              {item.visible?.usage && (
-                <div className="mt-2">
-                  <div className="sidebar-description-label">
-                    {t("sidebar.inventory.usage")}
-                  </div>
-                  <div className="text-xs text-theme-text/90">
-                    <MarkdownText content={item.visible.usage} />
-                  </div>
-                </div>
-              )}
+          {item.unlocked &&
+          (item.hidden?.truth || item.hidden?.secrets?.length) ? (
+            <SidebarSection
+              title={t("hidden.truth") || "Hidden"}
+              className="sidebar-hidden-divider"
+            >
+              {item.hidden?.truth ? (
+                <SidebarField label={t("hidden.truth") || "Truth"}>
+                  <MarkdownText content={item.hidden.truth} indentSize={2} />
+                </SidebarField>
+              ) : null}
 
-              {item.emotionalWeight && (
-                <div className="mt-2">
-                  <div className="sidebar-description-label text-amber-500/80">
-                    ✨ {t("emotionalWeight") || "Significance"}
-                  </div>
-                  <div className="text-xs text-theme-text/90">
-                    <MarkdownText content={item.emotionalWeight} />
-                  </div>
-                </div>
-              )}
+              {item.hidden?.secrets?.length ? (
+                <SidebarField label={t("hidden.secrets") || "Secrets"}>
+                  <ul className="list-disc list-inside space-y-1">
+                    {item.hidden.secrets.map((secret, index) => (
+                      <li key={`${secret}-${index}`}>
+                        <MarkdownText content={secret} indentSize={2} inline />
+                      </li>
+                    ))}
+                  </ul>
+                </SidebarField>
+              ) : null}
+            </SidebarSection>
+          ) : null}
 
-              {/* Unlocked Hidden Truth - Outer Layer */}
-              {item.unlocked &&
-                (item.hidden?.truth ||
-                  (item.hidden?.secrets && item.hidden.secrets.length > 0)) && (
-                  <div className="pt-2 mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
-                      <svg
-                        className="w-3 h-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {t("hidden.truth")}
-                    </span>
-                    {item.hidden?.truth && (
-                      <div className="leading-relaxed text-theme-text mb-2">
-                        <MarkdownText content={item.hidden.truth} />
-                      </div>
-                    )}
-                    {item.hidden?.secrets && item.hidden.secrets.length > 0 && (
-                      <div className="mt-2">
-                        <span className="text-[9px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("hidden.secrets")}:
-                        </span>
-                        <ul className="list-disc list-inside text-theme-text space-y-0.5">
-                          {item.hidden.secrets.map((secret, i) => (
-                            <li key={i}>
-                              <MarkdownText content={secret} />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-              {item.lore && (
-                <div className="pt-2 border-t border-theme-divider/60 mt-2">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                    {t("history")}
-                  </span>
-                  <div className="text-theme-text-secondary pl-1">
-                    <MarkdownText content={item.lore} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <SidebarSection title={t("meta") || "Meta"}>
+            {item.lore ? (
+              <SidebarField label={t("history") || "History"}>
+                <MarkdownText content={item.lore} indentSize={2} />
+              </SidebarField>
+            ) : null}
+            {item.emotionalWeight ? (
+              <SidebarField label={t("emotionalWeight") || "Significance"}>
+                <MarkdownText content={item.emotionalWeight} indentSize={2} />
+              </SidebarField>
+            ) : null}
+          </SidebarSection>
         </div>
-      )}
+      </SidebarEntityRow>
 
-      {isEditMode && (
+      {isEditMode ? (
         <div
-          className="cursor-grab active:cursor-grabbing text-theme-text-secondary hover:text-theme-primary p-2 bg-theme-surface/10 border-l border-theme-divider/60 rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
+          className="cursor-grab active:cursor-grabbing text-theme-text-secondary hover:text-theme-primary p-2 border-l border-theme-divider/60 touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
           title={t("dragToReorder") || "Drag to reorder"}
         >
           <svg
@@ -302,7 +276,7 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
             />
           </svg>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

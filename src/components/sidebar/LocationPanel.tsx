@@ -10,6 +10,8 @@ import { useOptionalRuntimeContext } from "../../runtime/context";
 import { isSameEntityRef } from "../../utils/entityDisplay";
 import { SidebarTag } from "./SidebarTag";
 import { pickFirstText } from "./panelText";
+import { useProgressiveRender } from "../../hooks/useProgressiveRender";
+import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
 
 interface LocationPanelProps {
   currentLocation: string;
@@ -603,6 +605,11 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
   } = useListManagement(locationItems, listState, onUpdateList, {
     enabled: listManagementActive,
   });
+  const {
+    visibleItems: progressiveItems,
+    hasMore,
+    loadMore,
+  } = useProgressiveRender(visibleItems, 30, isOpen);
 
   const handleLocationClick = (locationId: string) => {
     if (isEditMode) return;
@@ -760,26 +767,29 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
 
       {isOpen && (
         <div className="space-y-2 animate-sidebar-expand">
-          {visibleItems.length === 0 ? (
+          {progressiveItems.length === 0 ? (
             <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
               {t("noKnownLocations")}
             </div>
           ) : (
-            visibleItems.map((item) => (
-              <LocationItem
-                key={item.id}
-                item={item}
-                expandedLocationId={expandedLocationId}
-                isEditMode={isEditMode}
-                draggedId={draggedId}
-                onLocationClick={handleLocationClick}
-                onDragStart={handleDragStart}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-                t={t}
-              />
-            ))
+            <>
+              {progressiveItems.map((item) => (
+                <LocationItem
+                  key={item.id}
+                  item={item}
+                  expandedLocationId={expandedLocationId}
+                  isEditMode={isEditMode}
+                  draggedId={draggedId}
+                  onLocationClick={handleLocationClick}
+                  onDragStart={handleDragStart}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
+                  t={t}
+                />
+              ))}
+              <SidebarLoadMoreSentinel enabled={hasMore} onVisible={loadMore} />
+            </>
           )}
         </div>
       )}

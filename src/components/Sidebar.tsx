@@ -10,6 +10,7 @@ import { LocationPanel } from "./sidebar/LocationPanel";
 import { KnowledgePanel } from "./sidebar/KnowledgePanel";
 import { WorldInfoPanel } from "./sidebar/WorldInfoPanel";
 import { TimelineEventsPanel } from "./sidebar/TimelineEventsPanel";
+import { FactionPanel } from "./sidebar/FactionPanel";
 import { RAGPanel } from "./sidebar/RAGPanel";
 import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
 import { useRuntimeContext } from "../runtime/context";
@@ -223,13 +224,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="px-4 divide-y divide-theme-divider/45">
           <section className="py-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex items-center gap-2.5 text-xs">
-                <span
-                  className={`text-theme-primary uppercase tracking-widest font-bold ${currentThemeConfig.fontClass}`}
-                >
+              <div className="min-w-0 flex items-center gap-2 text-[11px] text-theme-text-secondary">
+                <span className="uppercase tracking-[0.12em] opacity-75">
                   {t("gameViewer.time") || "Time"}
                 </span>
-                <span className="font-mono text-theme-text-secondary truncate">
+                <span className="h-1 w-1 rounded-full bg-theme-divider/80 shrink-0"></span>
+                <span className="font-mono text-theme-text truncate">
                   {gameState.time}
                 </span>
               </div>
@@ -349,9 +349,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </section>
 
           <section className="py-3">
+            <FactionPanel
+              factions={gameState.factions}
+              unlockMode={gameState.unlockMode}
+              themeFont={currentThemeConfig.fontClass}
+            />
+          </section>
+
+          <section className="py-3">
             <WorldInfoPanel
               history={gameState.worldInfo?.worldSetting?.history}
-              factions={gameState.factions}
               outline={gameState.outline}
               worldSetting={gameState.worldInfo?.worldSetting}
               themeFont={currentThemeConfig.fontClass}

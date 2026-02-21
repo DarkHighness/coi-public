@@ -82,6 +82,10 @@ vi.mock("./sidebar/TimelineEventsPanel", () => ({
   TimelineEventsPanel: () => null,
 }));
 
+vi.mock("./sidebar/FactionPanel", () => ({
+  FactionPanel: () => null,
+}));
+
 vi.mock("./sidebar/RAGPanel", () => ({
   RAGPanel: () =>
     React.createElement("div", { "data-testid": "rag-panel" }, "rag-panel"),

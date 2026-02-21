@@ -1,5 +1,7 @@
 {
   "title": "无尽编年史",
+  "name": "名字",
+  "id": "ID",
   "titlePart1": "无尽",
   "titlePart2": "编年史",
   "titleShort": "CoI",
@@ -21,6 +23,7 @@
     "secretOutcome": "隐藏收获"
   },
   "questType": {
+    "title": "类型",
     "main": "主线",
     "side": "支线",
     "hidden": "隐藏"
@@ -33,6 +36,7 @@
     "empty": "尚未发现任何知识。",
     "discovered": "发现于",
     "category": {
+      "title": "分类",
       "landscape": "景观",
       "history": "历史",
       "item": "物品",
@@ -56,6 +60,13 @@
   "background": "背景",
   "emotionalWeight": "特殊意义",
   "details": "详情",
+  "visible": "可见信息",
+  "meta": "元信息",
+  "objectives": "目标",
+  "noObjectives": "暂无目标",
+  "relatedTo": "关联对象",
+  "knownEffects": "已知效果",
+  "unlockReason": "解锁原因",
   "inventory": "物品栏",
   "emptyInventory": "你的物品栏是空的。",
   "npcs": "人物角色",
@@ -411,6 +422,8 @@
   "validate-connection": "正在尝试与世界连接...",
   "timeline": {
     "title": "旅程时间轴",
+    "event": "事件",
+    "time": "时间",
     "moment": "时刻",
     "turn": "回合",
     "unknown_time": "未知时间",
@@ -1387,18 +1400,27 @@
   "layoutToggleTip": "提示：使用面板边缘的箭头按钮快速切换显示",
   "worldInfo": {
     "title": "世界信息",
+    "premise": "前提",
+    "narrativeScale": "叙事尺度",
     "history": "历史",
     "setting": "设定",
+    "goal": "目标",
     "factions": "派系",
+    "noFactions": "暂无已知势力。",
     "empty": "暂无世界信息记录。",
     "recentEvents": "近期事件",
     "causedBy": "起因",
     "noEvents": "暂无近期事件记录。",
     "hiddenTruth": "隐藏真相",
+    "hiddenRules": "隐藏规则",
     "secretObjective": "隐藏目标",
-    "conditions": "状态条件"
+    "conditions": "状态条件",
+    "worldSettingUnlockReason": "世界设定解锁原因",
+    "mainGoalUnlockReason": "主目标解锁原因"
   },
   "faction": {
+    "agenda": "议程",
+    "internalConflict": "内部冲突",
     "members": "成员",
     "influence": "影响力",
     "relations": "关系"
@@ -1661,6 +1683,7 @@
     "overview": "概览",
     "world": "世界",
     "character": "角色",
+    "profile": "档案",
     "npcs": "NPC",
     "quests": "任务",
     "lore": "见闻",
@@ -1773,6 +1796,7 @@
     "perceivedSeverity": "感知严重程度",
     "visibleEffects": "可见效果",
     "myImpression": "我的印象",
+    "impression": "印象",
     "myPerception": "我的判断",
     "perceivedStatus": "近况（你的认知）",
     "dialogueStyle": "说话风格",
@@ -2026,7 +2050,9 @@
       "weight": "重量",
       "smell": "气味",
       "condition": "状况",
-      "usage": "用途"
+      "usage": "用途",
+      "observation": "观察",
+      "sensory": "感官"
     },
     "conditionType": {
       "normal": "正常",

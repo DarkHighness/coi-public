@@ -1,21 +1,25 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { TFunction } from "i18next";
 import {
   ActorBundle,
-  NPC,
   ListState,
   Location,
+  NPC,
   RelationEdge,
 } from "../../types";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
+import { useProgressiveRender } from "../../hooks/useProgressiveRender";
 import { getValidIcon } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { resolveLocationDisplayName } from "../../utils/entityDisplay";
 import { SidebarTag } from "./SidebarTag";
+import { SidebarEntityRow } from "./SidebarEntityRow";
+import { SidebarField, SidebarSection } from "./SidebarSections";
+import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
 import { pickFirstText } from "./panelText";
+import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
 
 interface NpcPanelProps {
   npcs: NPC[];
@@ -81,95 +85,67 @@ interface NpcItemProps {
   playerActorId: string;
   playerRelations: RelationEdge[];
   locations?: Location[];
-  enableDrag: boolean;
   expandedId: string | number | null;
   isEditMode: boolean;
-  draggedId: string | number | null;
+  isDragging: boolean;
   onToggle: (id: string | number) => void;
-  onDragStart: (e: React.DragEvent, id: string | number) => void;
-  onDragEnter: (e: React.DragEvent, id: string | number) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
-  onDrop: (e: React.DragEvent, id: string | number) => void;
-  onTogglePin?: (id: string | number) => void;
-  isPinned?: (id: string | number) => boolean;
-  t: TFunction;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  onTogglePin?: () => void;
+  isPinned?: boolean;
   unlockMode?: boolean;
 }
 
 const NpcItem: React.FC<NpcItemProps> = ({
-  npc: rel,
+  npc,
   playerActorId,
   playerRelations,
   locations,
-  enableDrag,
   expandedId,
   isEditMode,
-  draggedId,
+  isDragging,
   onToggle,
   onDragStart,
   onDragEnter,
   onDragOver,
-  onDragEnd,
   onDrop,
+  onDragEnd,
   onTogglePin,
   isPinned,
-  t,
   unlockMode,
 }) => {
+  const { t } = useTranslation();
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
-  const pinned = isPinned?.(rel.id) ?? false;
-  const isDragging = draggedId === rel.id;
-  const isExpanded =
-    expandedId !== null &&
-    expandedId !== undefined &&
-    expandedId.toString() === rel.id.toString();
-  const [isHighlight, setIsHighlight] = useState(rel.highlight || false);
+  const isExpanded = expandedId?.toString() === npc.id.toString();
+  const [isHighlight, setIsHighlight] = useState(npc.highlight || false);
 
   useEffect(() => {
-    setIsHighlight(rel.highlight || false);
-  }, [rel.highlight]);
+    setIsHighlight(npc.highlight || false);
+  }, [npc.highlight]);
 
-  const handleToggle = () => {
-    onToggle(rel.id);
-    if (isHighlight) {
-      setIsHighlight(false);
-      clearHighlight?.({ kind: "npcs", id: rel.id.toString() });
-    }
-  };
-
-  const getLocationName = (locId?: string) => {
-    const normalized = typeof locId === "string" ? locId.trim() : "";
-    if (!normalized || normalized.toLowerCase() === "unknown") {
-      return t("unknown") || "Unknown";
-    }
-    return (
-      resolveLocationDisplayName(normalized, {
-        locations: locations || [],
-      }) || normalized
-    );
-  };
-
-  const npcRelations = Array.isArray(rel.relations) ? rel.relations : [];
+  const npcRelations = Array.isArray(npc.relations) ? npc.relations : [];
   const attitude = npcRelations.find(
-    (r): r is NpcAttitudeRelation =>
-      r.kind === "attitude" &&
-      r.to.kind === "character" &&
-      r.to.id === playerActorId,
+    (relation): relation is NpcAttitudeRelation =>
+      relation.kind === "attitude" &&
+      relation.to.kind === "character" &&
+      relation.to.id === playerActorId,
   );
 
   const perception = playerRelations.find(
-    (r): r is NpcPerceptionRelation =>
-      r.kind === "perception" &&
-      r.to.kind === "character" &&
-      r.to.id === String(rel.id),
+    (relation): relation is NpcPerceptionRelation =>
+      relation.kind === "perception" &&
+      relation.to.kind === "character" &&
+      relation.to.id === String(npc.id),
   );
 
-  const playerKnowsNpc = Array.isArray(rel.knownBy)
-    ? rel.knownBy.includes(playerActorId)
+  const playerKnowsNpc = Array.isArray(npc.knownBy)
+    ? npc.knownBy.includes(playerActorId)
     : false;
-  const npcUnlockedForPlayer = Boolean(rel.unlocked === true && playerKnowsNpc);
+  const npcUnlockedForPlayer = Boolean(npc.unlocked === true && playerKnowsNpc);
   const playerKnowsAttitude = Array.isArray(attitude?.knownBy)
     ? attitude.knownBy.includes(playerActorId)
     : false;
@@ -182,460 +158,44 @@ const NpcItem: React.FC<NpcItemProps> = ({
       ? attitude.hidden.affinity
       : null;
 
+  const getLocationName = (locationId?: string) => {
+    const normalized = typeof locationId === "string" ? locationId.trim() : "";
+    if (!normalized || normalized.toLowerCase() === "unknown") {
+      return t("unknown") || "Unknown";
+    }
+    return (
+      resolveLocationDisplayName(normalized, {
+        locations: locations || [],
+      }) || normalized
+    );
+  };
+
   return (
     <div
-      key={rel.id}
-      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2 group/item
-        ${isDragging ? "opacity-60" : "opacity-100"}
-        ${isExpanded ? "border-l-theme-primary/70" : "border-l-theme-divider/60 hover:border-l-theme-primary/40"}
-        ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
-      `}
-      draggable={isEditMode}
-      onDragStart={isEditMode ? (e) => onDragStart(e, rel.id) : undefined}
-      onDragEnter={isEditMode ? (e) => onDragEnter(e, rel.id) : undefined}
-      onDragOver={isEditMode ? onDragOver : undefined}
+      className={`${isDragging ? "opacity-60" : ""}`.trim()}
+      draggable={Boolean(isEditMode)}
+      onDragStart={onDragStart}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       onDragEnd={onDragEnd}
-      onDrop={isEditMode ? (e) => onDrop(e, rel.id) : undefined}
-      onClick={handleToggle}
     >
-      <div className="flex-1 min-w-0 py-2 pl-2 pr-1 cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors">
-        <div className="flex justify-between items-center min-h-[1.75rem] mb-1">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span
-              className="font-bold text-theme-text text-xs flex items-center gap-1.5 leading-tight min-w-0 break-words whitespace-normal"
-              title={rel.visible?.name || t("unknown") || "Unknown"}
-            >
-              <span className="ui-emoji-slot">
-                {getValidIcon(rel.icon, "👤")}
-              </span>
-              {rel.visible?.name || t("unknown") || "Unknown"}
-              {npcUnlockedForPlayer && (
-                <svg
-                  className="w-3.5 h-3.5 text-yellow-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-                </svg>
-              )}
-            </span>
-            <SidebarTag
-              className="max-w-[120px] truncate cursor-help shrink-0"
-              title={
-                rel.visible?.roleTag ||
-                rel.visible?.profession ||
-                rel.visible?.title ||
-                "Unknown"
-              }
-            >
-              {rel.visible?.roleTag ||
-                rel.visible?.profession ||
-                rel.visible?.title ||
-                "Unknown"}
-            </SidebarTag>
-          </div>
-        </div>
-        {!isExpanded && (
-          <div className="text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
-            {pickFirstText(
-              rel.visible?.description,
-              rel.visible?.status,
-              rel.hidden?.realMotives,
-            ) ||
-              t("noDescription") ||
-              "No description available."}
-          </div>
-        )}
-
-        {isExpanded && (
-          <div className="overflow-hidden animate-sidebar-expand">
-            <div className="pl-2 pr-1 pb-3 pt-0 space-y-3">
-              <div className="text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 pt-2">
-                <div>
-                  <span className="sidebar-description-label block">
-                    {t("description") || "Description"}
-                  </span>
-                  <div className="sidebar-description-body">
-                    <MarkdownText
-                      content={
-                        rel.visible?.description ||
-                        t("noDescription") ||
-                        "No description available."
-                      }
-                      indentSize={2}
-                    />
-                  </div>
-                </div>
-                {rel.visible?.appearance && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("appearance") || "Appearance"}
-                    </span>
-                    <div className="text-theme-text/90">
-                      <MarkdownText
-                        content={rel.visible.appearance}
-                        indentSize={2}
-                      />
-                    </div>
-                  </div>
-                )}
-                {rel.visible?.age && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("apparentAge") || "Apparent Age"}
-                    </span>
-                    <div className="text-theme-text-secondary text-xs">
-                      {rel.visible.age}
-                    </div>
-                  </div>
-                )}
-                <div className="mt-2">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                    {t("gameViewer.race") || "Race"}
-                  </span>
-                  <div className="text-theme-text-secondary text-xs">
-                    {rel.visible?.race || t("unknown") || "Unknown"}
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                    {t("gameViewer.gender") || "Gender"}
-                  </span>
-                  <div className="text-theme-text-secondary text-xs">
-                    {rel.visible?.gender || t("unknown") || "Unknown"}
-                  </div>
-                </div>
-                {rel.visible.voice && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.npc.voice")}
-                    </span>
-                    <span className="text-theme-text-secondary text-xs">
-                      {rel.visible.voice}
-                    </span>
-                  </div>
-                )}
-                {rel.visible.mannerism && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.npc.mannerism")}
-                    </span>
-                    <span className="text-theme-text-secondary text-xs">
-                      {rel.visible.mannerism}
-                    </span>
-                  </div>
-                )}
-                {rel.visible.mood && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("sidebar.npc.mood")}
-                    </span>
-                    <span className="text-theme-text-secondary text-xs">
-                      {rel.visible.mood}
-                    </span>
-                  </div>
-                )}
-
-                {/* Perceived Status - What protagonist thinks NPC is doing */}
-                {rel.visible?.status && (
-                  <div className="mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("perceivedStatus") || "Currently (Your Perception)"}
-                    </span>
-                    <p className="text-theme-text-secondary">
-                      {rel.visible.status}
-                    </p>
-                  </div>
-                )}
-
-                {/* Location Display */}
-                <div className="mt-2">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                    {t("gameViewer.currentLocation") || "Location"}
-                  </span>
-                  <p className="text-theme-text-secondary">
-                    {getLocationName(rel.currentLocation)}
-                  </p>
-                </div>
-
-                {/* NPC -> Player attitude signals (surface, always visible) */}
-                {(attitude?.visible?.signals?.length ||
-                  attitude?.visible?.reputationTag ||
-                  attitude?.visible?.claimedIntent) && (
-                  <div className="mt-3">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("gameViewer.attitudeSignals", {
-                        defaultValue: "Attitude (Signals)",
-                      })}
-                    </span>
-                    <div className="text-theme-text-secondary text-xs space-y-1">
-                      {attitude?.visible?.reputationTag && (
-                        <div>
-                          <span className="uppercase tracking-wider text-[10px] opacity-70">
-                            {t("gameViewer.reputationTag", {
-                              defaultValue: "Tag",
-                            })}
-                            :
-                          </span>{" "}
-                          {attitude.visible.reputationTag}
-                        </div>
-                      )}
-                      {attitude?.visible?.claimedIntent && (
-                        <div>
-                          <span className="uppercase tracking-wider text-[10px] opacity-70">
-                            {t("gameViewer.claimedIntent", {
-                              defaultValue: "Claims",
-                            })}
-                            :
-                          </span>{" "}
-                          <MarkdownText
-                            content={attitude.visible.claimedIntent}
-                            inline
-                          />
-                        </div>
-                      )}
-                      {Array.isArray(attitude?.visible?.signals) &&
-                        attitude.visible.signals.length > 0 && (
-                          <ul className="list-disc list-inside space-y-0.5">
-                            {attitude.visible.signals.map(
-                              (s: string, i: number) => (
-                                <li key={i}>
-                                  <MarkdownText content={s} inline />
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                        )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Player -> NPC perception (objective) */}
-                {perception?.visible?.description && (
-                  <div className="mt-3">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                      {t("gameViewer.myPerception", {
-                        defaultValue: "My Perception",
-                      })}
-                    </span>
-                    <div className="text-theme-text/90 text-xs">
-                      <MarkdownText
-                        content={perception.visible.description}
-                        indentSize={2}
-                      />
-                      {Array.isArray(perception.visible.evidence) &&
-                        perception.visible.evidence.length > 0 && (
-                          <div className="mt-2">
-                            <span className="text-[10px] uppercase tracking-wider text-theme-primary/70 block mb-0.5">
-                              {t("gameViewer.evidence", {
-                                defaultValue: "Evidence",
-                              })}
-                              :
-                            </span>
-                            <ul className="list-disc list-inside space-y-0.5">
-                              {perception.visible.evidence.map(
-                                (e: string, i: number) => (
-                                  <li key={i}>
-                                    <MarkdownText content={e} inline />
-                                  </li>
-                                ),
-                              )}
-                            </ul>
-                          </div>
-                        )}
-                    </div>
-                  </div>
-                )}
-
-                {/* True affinity (hidden by default; shown only if unlockMode or relation.unlocked) */}
-                <div className="mt-3">
-                  <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold block mb-1">
-                    {t("affinity") || "Affinity"}
-                  </span>
-                  {showTrueAttitude && trueAffinity !== null ? (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-mono font-bold text-theme-text">
-                        {Math.round(trueAffinity)}/100
-                      </span>
-                      {attitude?.hidden?.impression && (
-                        <span className="text-theme-text-secondary">
-                          <MarkdownText
-                            content={attitude.hidden.impression}
-                            inline
-                          />
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-theme-text-secondary text-xs italic">
-                      {t("gameViewer.affinityHidden", {
-                        defaultValue:
-                          "True attitude is hidden unless confirmed.",
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Unlocked Hidden Truth - Outer Layer */}
-                {(unlockMode || npcUnlockedForPlayer) && (
-                  <div className="pt-2 mt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold flex items-center gap-1 mb-1">
-                      <svg
-                        className="w-3 h-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {t("hidden.truth")}
-                    </span>
-
-                    {rel.hidden?.realPersonality && (
-                      <div className="mb-2">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("hidden.personality")}:
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.realPersonality}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.realMotives && (
-                      <div className="mb-2">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("hidden.motives")}:
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.realMotives}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.race && (
-                      <div className="mb-2">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("gameViewer.race") || "Race"}:
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.race}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.gender && (
-                      <div className="mb-2">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("gameViewer.gender") || "Gender"}:
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.gender}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.routine && (
-                      <div className="mb-2">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("hidden.routine") || "Routine"}:
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.routine}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {rel.hidden?.secrets && rel.hidden.secrets.length > 0 && (
-                      <div className="mt-2">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("hidden.secrets")}:
-                        </span>
-                        <ul className="list-disc list-inside text-theme-text space-y-0.5">
-                          {rel.hidden.secrets.map((secret, i) => (
-                            <li key={i}>
-                              <MarkdownText
-                                content={secret}
-                                indentSize={2}
-                                inline
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      {rel.hidden?.currentThought && (
-                        <div className="mb-2">
-                          <div className="text-[10px] uppercase tracking-wider text-theme-primary/50 mb-0.5 flex items-center gap-1">
-                            <span>💭</span> {t("sidebar.npc.currentThought")}
-                          </div>
-                          <div className="italic text-theme-primary/70 text-xs">
-                            "{rel.hidden.currentThought}"
-                          </div>
-                        </div>
-                      )}
-                      {rel.hidden?.trueName && (
-                        <div className="flex items-center gap-2 text-xs text-theme-unlocked">
-                          <span className="uppercase tracking-wider text-[10px] opacity-70">
-                            {t("sidebar.npc.trueName")}:
-                          </span>
-                          <span>{rel.hidden.trueName}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {rel.hidden?.status && (
-                      <div className="mb-2">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
-                          {t("hidden.actualStatus") || "Actually Doing"}:
-                        </span>
-                        <div className="leading-relaxed text-theme-text">
-                          <MarkdownText
-                            content={rel.hidden.status}
-                            indentSize={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {isEditMode && (
-        <div
-          className="cursor-grab active:cursor-grabbing text-theme-text-secondary hover:text-theme-primary p-2 bg-theme-surface-highlight border-l border-theme-divider/60 rounded-r touch-none absolute right-0 top-0 bottom-0 flex items-center justify-center w-8"
-          title={t("dragToReorder") || "Drag to reorder"}
-          draggable={true}
-          onDragStart={(e) => onDragStart(e, rel.id)}
-          onClick={(e) => e.stopPropagation()}
+      {isEditMode && onTogglePin ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePin();
+          }}
+          className={`absolute right-8 mt-2 z-10 p-1 rounded transition-colors ${
+            isPinned
+              ? "text-theme-primary"
+              : "text-theme-text-secondary hover:text-theme-primary"
+          }`}
+          title={isPinned ? t("unpin") : t("pin")}
         >
           <svg
-            className="w-4 h-4"
-            fill="none"
+            className="w-3.5 h-3.5"
+            fill={isPinned ? "currentColor" : "none"}
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
@@ -643,11 +203,330 @@ const NpcItem: React.FC<NpcItemProps> = ({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="2"
-              d="M4 6h16M4 12h16M4 18h16"
+              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
             />
           </svg>
+        </button>
+      ) : null}
+
+      <SidebarEntityRow
+        title={npc.visible?.name || t("unknown") || "Unknown"}
+        icon={getValidIcon(npc.icon, "👤")}
+        tags={
+          <>
+            {npc.visible?.roleTag ||
+            npc.visible?.profession ||
+            npc.visible?.title ? (
+              <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
+                {npc.visible?.roleTag ||
+                  npc.visible?.profession ||
+                  npc.visible?.title}
+              </SidebarTag>
+            ) : null}
+            {npcUnlockedForPlayer || unlockMode ? (
+              <SidebarTag className="text-theme-primary border-theme-primary/60">
+                {t("unlocked") || "Unlocked"}
+              </SidebarTag>
+            ) : null}
+          </>
+        }
+        summary={pickFirstText(
+          npc.visible?.description,
+          npc.visible?.status,
+          npc.hidden?.realMotives,
+        )}
+        isExpanded={isExpanded}
+        onToggle={() => {
+          if (isEditMode) {
+            return;
+          }
+          onToggle(npc.id);
+          if (isHighlight) {
+            setIsHighlight(false);
+            clearHighlight?.({ kind: "npcs", id: npc.id.toString() });
+          }
+        }}
+        className={isHighlight ? "ring-1 ring-theme-primary/40" : ""}
+        accentClassName={
+          isExpanded ? "border-l-theme-primary/70" : "border-l-theme-divider/70"
+        }
+      >
+        <div className="pl-2 pr-1 pb-3 text-xs text-theme-text">
+          <SidebarSection title={t("visible") || "Visible"} withDivider={false}>
+            <SidebarField label={t("description") || "Description"}>
+              <MarkdownText
+                content={
+                  npc.visible?.description ||
+                  t("noDescription") ||
+                  "No description available."
+                }
+                indentSize={2}
+              />
+            </SidebarField>
+
+            {npc.visible?.appearance ? (
+              <SidebarField label={t("appearance") || "Appearance"}>
+                <MarkdownText content={npc.visible.appearance} indentSize={2} />
+              </SidebarField>
+            ) : null}
+
+            {npc.visible?.age ? (
+              <SidebarField label={t("apparentAge") || "Apparent Age"}>
+                {npc.visible.age}
+              </SidebarField>
+            ) : null}
+
+            <SidebarField label={t("gameViewer.race") || "Race"}>
+              {npc.visible?.race || t("unknown") || "Unknown"}
+            </SidebarField>
+
+            <SidebarField label={t("gameViewer.gender") || "Gender"}>
+              {npc.visible?.gender || t("unknown") || "Unknown"}
+            </SidebarField>
+
+            {npc.visible?.status ? (
+              <SidebarField label={t("perceivedStatus") || "Status"}>
+                <MarkdownText content={npc.visible.status} indentSize={2} />
+              </SidebarField>
+            ) : null}
+
+            {npc.visible?.profession ? (
+              <SidebarField label={t("profession") || "Profession"}>
+                {npc.visible.profession}
+              </SidebarField>
+            ) : null}
+
+            {npc.visible?.title ? (
+              <SidebarField label={t("title") || "Title"}>
+                {npc.visible.title}
+              </SidebarField>
+            ) : null}
+
+            {npc.visible?.background ? (
+              <SidebarField label={t("background") || "Background"}>
+                <MarkdownText content={npc.visible.background} indentSize={2} />
+              </SidebarField>
+            ) : null}
+
+            {Array.isArray(npc.visible?.attributes) &&
+            npc.visible.attributes.length > 0 ? (
+              <SidebarField label={t("attributes") || "Attributes"}>
+                <div className="space-y-1">
+                  {npc.visible.attributes.map((attr, index) => (
+                    <div
+                      key={`${attr.label}-${index}`}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <span>{attr.label}</span>
+                      <span className="text-theme-text-secondary font-mono">
+                        {attr.value}
+                        {attr.maxValue ? `/${attr.maxValue}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </SidebarField>
+            ) : null}
+
+            {npc.visible?.voice ? (
+              <SidebarField label={t("sidebar.npc.voice") || "Voice"}>
+                {npc.visible.voice}
+              </SidebarField>
+            ) : null}
+
+            {npc.visible?.mannerism ? (
+              <SidebarField label={t("sidebar.npc.mannerism") || "Mannerism"}>
+                {npc.visible.mannerism}
+              </SidebarField>
+            ) : null}
+
+            {npc.visible?.mood ? (
+              <SidebarField label={t("sidebar.npc.mood") || "Mood"}>
+                {npc.visible.mood}
+              </SidebarField>
+            ) : null}
+
+            <SidebarField label={t("gameViewer.currentLocation") || "Location"}>
+              {getLocationName(npc.currentLocation)}
+            </SidebarField>
+
+            {attitude?.visible?.signals?.length ||
+            attitude?.visible?.reputationTag ||
+            attitude?.visible?.claimedIntent ? (
+              <SidebarField
+                label={t("gameViewer.attitudeSignals", {
+                  defaultValue: "Attitude (Signals)",
+                })}
+              >
+                <div className="space-y-1">
+                  {attitude?.visible?.reputationTag ? (
+                    <div>
+                      <span className="text-theme-text-secondary mr-1">
+                        {t("gameViewer.reputationTag", { defaultValue: "Tag" })}
+                        :
+                      </span>
+                      {attitude.visible.reputationTag}
+                    </div>
+                  ) : null}
+                  {attitude?.visible?.claimedIntent ? (
+                    <div>
+                      <span className="text-theme-text-secondary mr-1">
+                        {t("gameViewer.claimedIntent", {
+                          defaultValue: "Claims",
+                        })}
+                        :
+                      </span>
+                      <MarkdownText
+                        content={attitude.visible.claimedIntent}
+                        indentSize={2}
+                        inline
+                      />
+                    </div>
+                  ) : null}
+                  {attitude?.visible?.signals?.length ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {attitude.visible.signals.map((signal, index) => (
+                        <li key={`${signal}-${index}`}>
+                          <MarkdownText content={signal} inline />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              </SidebarField>
+            ) : null}
+
+            {perception?.visible?.description ? (
+              <SidebarField
+                label={t("gameViewer.myPerception", {
+                  defaultValue: "My Perception",
+                })}
+              >
+                <div className="space-y-1">
+                  <MarkdownText
+                    content={perception.visible.description}
+                    indentSize={2}
+                  />
+                  {perception.visible.evidence?.length ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {perception.visible.evidence.map((evidence, index) => (
+                        <li key={`${evidence}-${index}`}>
+                          <MarkdownText content={evidence} inline />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              </SidebarField>
+            ) : null}
+          </SidebarSection>
+
+          {(unlockMode || npcUnlockedForPlayer) && npc.hidden ? (
+            <SidebarSection
+              title={t("hidden.truth") || "Hidden"}
+              className="sidebar-hidden-divider"
+            >
+              {npc.hidden.realPersonality ? (
+                <SidebarField label={t("hidden.personality") || "Personality"}>
+                  <MarkdownText
+                    content={npc.hidden.realPersonality}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.realMotives ? (
+                <SidebarField label={t("hidden.motives") || "Motives"}>
+                  <MarkdownText
+                    content={npc.hidden.realMotives}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.routine ? (
+                <SidebarField label={t("hidden.routine") || "Routine"}>
+                  <MarkdownText content={npc.hidden.routine} indentSize={2} />
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.currentThought ? (
+                <SidebarField
+                  label={t("sidebar.npc.currentThought") || "Current Thought"}
+                >
+                  <MarkdownText
+                    content={npc.hidden.currentThought}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.status ? (
+                <SidebarField
+                  label={t("hidden.actualStatus") || "Actual Status"}
+                >
+                  <MarkdownText content={npc.hidden.status} indentSize={2} />
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.race ? (
+                <SidebarField label={t("gameViewer.race") || "Race"}>
+                  {npc.hidden.race}
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.gender ? (
+                <SidebarField label={t("gameViewer.gender") || "Gender"}>
+                  {npc.hidden.gender}
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.trueName ? (
+                <SidebarField label={t("sidebar.npc.trueName") || "True Name"}>
+                  {npc.hidden.trueName}
+                </SidebarField>
+              ) : null}
+
+              {npc.hidden.secrets?.length ? (
+                <SidebarField label={t("hidden.secrets") || "Secrets"}>
+                  <ul className="list-disc list-inside space-y-1">
+                    {npc.hidden.secrets.map((secret, index) => (
+                      <li key={`${secret}-${index}`}>
+                        <MarkdownText content={secret} indentSize={2} inline />
+                      </li>
+                    ))}
+                  </ul>
+                </SidebarField>
+              ) : null}
+            </SidebarSection>
+          ) : null}
+
+          <SidebarSection title={t("meta") || "Meta"}>
+            <SidebarField label={t("affinity") || "Affinity"}>
+              {showTrueAttitude && trueAffinity !== null ? (
+                <span className="font-mono">
+                  {Math.round(trueAffinity)}/100
+                </span>
+              ) : (
+                <span className="italic text-theme-text-secondary">
+                  {t("gameViewer.affinityHidden", {
+                    defaultValue: "True attitude is hidden unless confirmed.",
+                  })}
+                </span>
+              )}
+            </SidebarField>
+
+            {showTrueAttitude && attitude?.hidden?.impression ? (
+              <SidebarField label={t("gameViewer.impression") || "Impression"}>
+                <MarkdownText
+                  content={attitude.hidden.impression}
+                  indentSize={2}
+                />
+              </SidebarField>
+            ) : null}
+          </SidebarSection>
         </div>
-      )}
+      </SidebarEntityRow>
     </div>
   );
 };
@@ -668,13 +547,6 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const resolvedPlayerActorId = playerActorId || "char:player";
-  const playerRelations = useMemo(() => {
-    const bundle = (actors || []).find(
-      (b) => b?.profile?.id === resolvedPlayerActorId,
-    );
-    const rels = bundle?.profile?.relations;
-    return Array.isArray(rels) ? rels : [];
-  }, [actors, resolvedPlayerActorId]);
   const [isOpen, setIsOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [localExpandedItemId, setLocalExpandedItemId] = useState<
@@ -682,6 +554,51 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
   >(null);
   const resolvedExpandedItemId =
     expandedItemId !== undefined ? expandedItemId : localExpandedItemId;
+  const [isLocalEditMode, setIsLocalEditMode] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | number | null>(null);
+
+  const playerRelations = useMemo(() => {
+    const bundle = (actors || []).find(
+      (item) => item?.profile?.id === resolvedPlayerActorId,
+    );
+    const relations = bundle?.profile?.relations;
+    return Array.isArray(relations) ? relations : [];
+  }, [actors, resolvedPlayerActorId]);
+
+  const npcsWithId = useMemo(
+    () => buildNpcList(npcs, resolvedPlayerActorId, unlockMode),
+    [npcs, resolvedPlayerActorId, unlockMode],
+  );
+
+  useEffect(() => {
+    if (onExpandItem) {
+      onExpandItem(null);
+      return;
+    }
+    setLocalExpandedItemId(null);
+  }, [unlockMode, resolvedPlayerActorId]);
+
+  const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
+  const isEditMode = globalEditMode ?? isLocalEditMode;
+  const allowPanelEditToggle = globalEditMode === undefined;
+
+  const {
+    visibleItems: managedVisibleItems,
+    allItems,
+    togglePin,
+    toggleHide,
+    reorderItem,
+    isPinned,
+    isHidden,
+  } = useListManagement(npcsWithId, listState, onUpdateList, {
+    enabled: listManagementActive,
+  });
+
+  const { visibleItems, hasMore, loadMore } = useProgressiveRender(
+    managedVisibleItems,
+    30,
+    isOpen,
+  );
 
   const toggleItem = (id: string | number) => {
     const targetId = id.toString();
@@ -694,105 +611,66 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
     setLocalExpandedItemId(next);
   };
 
-  useEffect(() => {
-    if (onExpandItem) {
-      onExpandItem(null);
-      return;
-    }
-    setLocalExpandedItemId(null);
-  }, [unlockMode, resolvedPlayerActorId]);
-
-  // Map NPCs to include ID for useListManagement
-  const npcsWithId = useMemo(() => {
-    return buildNpcList(npcs, resolvedPlayerActorId, unlockMode);
-  }, [npcs, resolvedPlayerActorId, unlockMode]);
-
-  const [isLocalEditMode, setIsLocalEditMode] = useState(false);
-  const [draggedId, setDraggedId] = useState<string | number | null>(null);
-  const listManagementActive = listManagementEnabled && (isOpen || isModalOpen);
-  const isEditMode = globalEditMode ?? isLocalEditMode;
-  const allowPanelEditToggle = globalEditMode === undefined;
-
-  const {
-    visibleItems,
-    allItems,
-    togglePin,
-    toggleHide,
-    reorderItem,
-    isPinned,
-    isHidden,
-  } = useListManagement(npcsWithId, listState, onUpdateList, {
-    enabled: listManagementActive,
-  });
-
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
     setDraggedId(id);
     e.dataTransfer.setData("text/plain", id.toString());
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragEnter = (e: React.DragEvent, targetId: string | number) => {
+  const handleDragEnter = (_e: React.DragEvent, targetId: string | number) => {
     if (
       !isEditMode ||
       !draggedId ||
       draggedId.toString() === targetId.toString()
-    )
+    ) {
       return;
+    }
     reorderItem(draggedId, targetId);
   };
 
-  const handleDragEnd = () => {
-    setDraggedId(null);
-  };
+  const clearDragState = () => setDraggedId(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, targetId: string | number) => {
-    e.preventDefault();
-    setDraggedId(null);
-  };
-
   return (
     <div>
       <div
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
         className={`flex items-center justify-between cursor-pointer group ${
           isOpen ? "mb-4" : "mb-0"
         }`}
       >
         <div
-          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
+          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
         >
-          <span className="flex items-center gap-2">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              ></path>
-            </svg>
-            {t("npcs") || "NPCs"}
-            <SidebarTag className="ml-2 text-theme-text-secondary bg-theme-surface-highlight">
-              {npcsWithId.length}
-            </SidebarTag>
-          </span>
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"
+            ></path>
+          </svg>
+          {t("npcs") || "NPCs"}
+          <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
+            {npcsWithId.length}
+          </SidebarTag>
         </div>
 
         <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          {allowPanelEditToggle && (
+          {allowPanelEditToggle ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setIsLocalEditMode(!isEditMode);
+                setIsLocalEditMode((prev) => !prev);
               }}
               className={`h-8 w-8 grid place-items-center rounded transition-colors ${
                 isEditMode
@@ -831,8 +709,9 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
                 </svg>
               )}
             </button>
-          )}
-          {isEditMode && npcsWithId.length > 0 && (
+          ) : null}
+
+          {isEditMode && npcsWithId.length > 0 ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -855,7 +734,7 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
                 />
               </svg>
             </button>
-          )}
+          ) : null}
 
           <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
             <svg
@@ -876,41 +755,57 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
           </div>
         </div>
       </div>
+
       {isOpen && (
-        <div className="space-y-2 pt-1 animate-sidebar-expand">
+        <div className="space-y-2 animate-sidebar-expand">
           {visibleItems.length === 0 ? (
             <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
               {t("emptyNpcs")}
             </div>
           ) : (
-            visibleItems.map((rel) => (
-              <NpcItem
-                key={rel.id}
-                npc={rel}
-                playerActorId={resolvedPlayerActorId}
-                playerRelations={playerRelations}
-                locations={locations}
-                enableDrag={true}
-                expandedId={resolvedExpandedItemId}
-                isEditMode={isEditMode}
-                draggedId={draggedId}
-                onToggle={toggleItem}
-                onDragStart={handleDragStart}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-                onDrop={handleDrop}
-                t={t}
-                unlockMode={unlockMode}
-              />
-            ))
+            <>
+              {visibleItems.map((npc) => (
+                <NpcItem
+                  key={npc.id}
+                  npc={npc}
+                  playerActorId={resolvedPlayerActorId}
+                  playerRelations={playerRelations}
+                  locations={locations}
+                  expandedId={resolvedExpandedItemId}
+                  isEditMode={isEditMode}
+                  isDragging={draggedId?.toString() === npc.id.toString()}
+                  onToggle={toggleItem}
+                  onDragStart={
+                    isEditMode ? (e) => handleDragStart(e, npc.id) : undefined
+                  }
+                  onDragEnter={
+                    isEditMode ? (e) => handleDragEnter(e, npc.id) : undefined
+                  }
+                  onDragOver={isEditMode ? handleDragOver : undefined}
+                  onDrop={
+                    isEditMode
+                      ? (e) => {
+                          e.preventDefault();
+                          clearDragState();
+                        }
+                      : undefined
+                  }
+                  onDragEnd={clearDragState}
+                  onTogglePin={() => togglePin(npc.id)}
+                  isPinned={isPinned(npc.id)}
+                  unlockMode={unlockMode}
+                />
+              ))}
+              <SidebarLoadMoreSentinel enabled={hasMore} onVisible={loadMore} />
+            </>
           )}
         </div>
-      )}{" "}
+      )}
+
       <DetailedListModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={t("npcs")}
+        title={t("npcs") || "NPCs"}
         items={allItems}
         themeFont={themeFont}
         enableEditMode={true}
@@ -934,17 +829,15 @@ const NPCPanelComponent: React.FC<NpcPanelProps> = ({
             playerActorId={resolvedPlayerActorId}
             playerRelations={playerRelations}
             locations={locations}
-            enableDrag={dragOptions?.isEditMode || false}
             expandedId={resolvedExpandedItemId}
-            isEditMode={dragOptions?.isEditMode || false}
-            draggedId={dragOptions?.isDragging ? item.id.toString() : null}
+            isEditMode={Boolean(dragOptions?.isEditMode)}
+            isDragging={Boolean(dragOptions?.isDragging)}
             onToggle={toggleItem}
-            onDragStart={dragOptions?.onDragStart || (() => {})}
-            onDragEnter={dragOptions?.onDragEnter || (() => {})}
-            onDragOver={dragOptions?.onDragOver || (() => {})}
-            onDragEnd={dragOptions?.onDragEnd || (() => {})}
-            onDrop={dragOptions?.onDrop || (() => {})}
-            t={t}
+            onDragStart={dragOptions?.onDragStart}
+            onDragEnter={dragOptions?.onDragEnter}
+            onDragOver={dragOptions?.onDragOver}
+            onDrop={dragOptions?.onDrop}
+            onDragEnd={dragOptions?.onDragEnd}
             unlockMode={unlockMode}
           />
         )}

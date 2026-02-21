@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { KnowledgeEntry, ListState } from "../../types";
@@ -6,9 +6,14 @@ import { DetailedListModal } from "../DetailedListModal";
 import { getValidIcon, isValidEmoji } from "../../utils/emojiValidator";
 import { MarkdownText } from "../render/MarkdownText";
 import { useListManagement } from "../../hooks/useListManagement";
+import { useProgressiveRender } from "../../hooks/useProgressiveRender";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { SidebarTag } from "./SidebarTag";
+import { SidebarEntityRow } from "./SidebarEntityRow";
+import { SidebarField, SidebarSection } from "./SidebarSections";
+import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
 import { pickFirstText } from "./panelText";
+import { SIDEBAR_PANEL_TITLE_CLASS } from "./sidebarTokens";
 
 interface KnowledgePanelProps {
   knowledge: KnowledgeEntry[];
@@ -37,7 +42,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 interface KnowledgeItemProps {
-  k: KnowledgeEntry;
+  entry: KnowledgeEntry;
   expandedId: string | number | null;
   isModal: boolean;
   onToggle: (id: string | number, isModal: boolean) => void;
@@ -48,12 +53,13 @@ interface KnowledgeItemProps {
   onDragEnter?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
   isEditMode?: boolean;
   isDragging?: boolean;
 }
 
 const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
-  k,
+  entry,
   expandedId,
   isModal,
   onToggle,
@@ -64,218 +70,207 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
   onDragEnter,
   onDragOver,
   onDrop,
+  onDragEnd,
   isEditMode,
   isDragging,
 }) => {
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
-  const [isHighlight, setIsHighlight] = useState(k.highlight || false);
+  const [isHighlight, setIsHighlight] = useState(entry.highlight || false);
 
-  useEffect(() => {
-    setIsHighlight(k.highlight || false);
-  }, [k.highlight]);
+  React.useEffect(() => {
+    setIsHighlight(entry.highlight || false);
+  }, [entry.highlight]);
 
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggle(k.id, isModal);
+  const handleToggle = () => {
+    if (isEditMode) {
+      return;
+    }
+    onToggle(entry.id, isModal);
     if (isHighlight) {
       setIsHighlight(false);
-      clearHighlight?.({ kind: "knowledge", id: k.id.toString() });
+      clearHighlight?.({ kind: "knowledge", id: entry.id.toString() });
     }
-  };
-
-  const handleDragEnd = () => {
-    // Cleanup is handled by parent
   };
 
   const isExpanded =
     expandedId !== null &&
     expandedId !== undefined &&
-    expandedId.toString() === k.id.toString();
+    expandedId.toString() === entry.id.toString();
+
+  const categoryLabel = t(`knowledgePanel.category.${entry.category}`, {
+    defaultValue: entry.category,
+  });
 
   return (
     <div
-      className={`relative border-l-2 border-b border-theme-divider/60 transition-colors pb-2
-        ${isHighlight ? "animate-pulse ring-1 ring-theme-primary/40" : ""}
-        ${isDragging ? "opacity-60" : ""}
-        ${isEditMode ? "cursor-grab active:cursor-grabbing" : ""}
-      `}
-      draggable={isEditMode}
+      className={`${isDragging ? "opacity-60" : ""}`.trim()}
+      draggable={Boolean(isEditMode)}
       onDragStart={onDragStart}
       onDragEnter={onDragEnter}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      onDragEnd={handleDragEnd}
+      onDragEnd={onDragEnd}
     >
-      <div
-        className="py-2 pl-2 pr-1 min-h-[2.25rem] cursor-pointer hover:bg-theme-surface-highlight/20 transition-colors flex items-center justify-between gap-3"
-        onClick={handleToggle}
-      >
-        {/* Pin button - edit mode only */}
-        {isEditMode && onPin && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onPin();
-            }}
-            className={`p-1 rounded transition-colors shrink-0 ${
-              isPinned
-                ? "text-theme-primary"
-                : "text-theme-text-secondary hover:text-theme-primary"
-            }`}
-            title={isPinned ? t("unpin") : t("pin")}
+      {isEditMode && onPin ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPin();
+          }}
+          className={`absolute right-8 mt-2 z-10 p-1 rounded transition-colors ${
+            isPinned
+              ? "text-theme-primary"
+              : "text-theme-text-secondary hover:text-theme-primary"
+          }`}
+          title={isPinned ? t("unpin") : t("pin")}
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill={isPinned ? "currentColor" : "none"}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <svg
-              className="w-4 h-4"
-              fill={isPinned ? "currentColor" : "none"}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+            />
+          </svg>
+        </button>
+      ) : null}
+
+      <SidebarEntityRow
+        title={entry.title}
+        icon={
+          isValidEmoji(entry.icon)
+            ? entry.icon
+            : getValidIcon(CATEGORY_ICONS[entry.category], "📖")
+        }
+        tags={
+          <>
+            <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
+              {categoryLabel}
+            </SidebarTag>
+            {entry.unlocked ? (
+              <SidebarTag className="text-theme-primary border-theme-primary/60">
+                {t("unlocked") || "Unlocked"}
+              </SidebarTag>
+            ) : null}
+          </>
+        }
+        summary={pickFirstText(
+          entry.visible?.description,
+          entry.visible?.details,
+          entry.hidden?.fullTruth,
+        )}
+        isExpanded={isExpanded}
+        onToggle={handleToggle}
+        className={isHighlight ? "ring-1 ring-theme-primary/40" : ""}
+        accentClassName={
+          isExpanded ? "border-l-theme-primary/70" : "border-l-theme-divider/70"
+        }
+      >
+        <div className="pl-2 pr-1 pb-3 text-xs text-theme-text">
+          <SidebarSection title={t("visible") || "Visible"} withDivider={false}>
+            <SidebarField label={t("description") || "Description"}>
+              <MarkdownText
+                content={
+                  entry.visible?.description ||
+                  t("noDescription") ||
+                  "No description"
+                }
+                indentSize={2}
               />
-            </svg>
-          </button>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <span className="ui-emoji-slot">
-              {isValidEmoji(k.icon)
-                ? k.icon
-                : CATEGORY_ICONS[k.category] || "📖"}
-            </span>
-            <h4 className="text-xs font-bold text-theme-primary flex items-center gap-2 min-w-0">
-              <span className="truncate">{k.title}</span>
-              {k.unlocked && (
-                <svg
-                  className="w-3.5 h-3.5 text-theme-primary"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+            </SidebarField>
+
+            {entry.visible?.details ? (
+              <SidebarField label={t("details") || "Details"}>
+                <MarkdownText content={entry.visible.details} indentSize={2} />
+              </SidebarField>
+            ) : null}
+
+            {entry.relatedTo?.length ? (
+              <SidebarField label={t("relatedTo") || "Related"}>
+                <div className="flex flex-wrap gap-1.5">
+                  {entry.relatedTo.map((related) => (
+                    <SidebarTag
+                      key={related}
+                      className="text-theme-text-secondary border-theme-divider/70 text-[10px] normal-case tracking-normal"
+                    >
+                      {related}
+                    </SidebarTag>
+                  ))}
+                </div>
+              </SidebarField>
+            ) : null}
+          </SidebarSection>
+
+          {entry.unlocked && entry.hidden ? (
+            <SidebarSection
+              title={t("hidden.truth") || "Hidden"}
+              className="sidebar-hidden-divider"
+            >
+              {entry.hidden.fullTruth ? (
+                <SidebarField label={t("hidden.truth") || "Truth"}>
+                  <MarkdownText
+                    content={entry.hidden.fullTruth}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {entry.hidden.misconceptions?.length ? (
+                <SidebarField
+                  label={t("hidden.misconceptions") || "Misconceptions"}
                 >
-                  <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-                </svg>
-              )}
-            </h4>
-          </div>
+                  <ul className="list-disc list-inside space-y-1">
+                    {entry.hidden.misconceptions.map((item, index) => (
+                      <li key={`${item}-${index}`}>
+                        <MarkdownText content={item} indentSize={2} inline />
+                      </li>
+                    ))}
+                  </ul>
+                </SidebarField>
+              ) : null}
+
+              {entry.hidden.toBeRevealed?.length ? (
+                <SidebarField label={t("hidden.future") || "To Be Revealed"}>
+                  <ul className="list-disc list-inside space-y-1">
+                    {entry.hidden.toBeRevealed.map((item, index) => (
+                      <li key={`${item}-${index}`}>
+                        <MarkdownText content={item} indentSize={2} inline />
+                      </li>
+                    ))}
+                  </ul>
+                </SidebarField>
+              ) : null}
+
+              {entry.unlockReason ? (
+                <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+                  <MarkdownText content={entry.unlockReason} indentSize={2} />
+                </SidebarField>
+              ) : null}
+            </SidebarSection>
+          ) : null}
+
+          <SidebarSection title={t("meta") || "Meta"}>
+            {entry.discoveredAt ? (
+              <SidebarField
+                label={t("knowledgePanel.discovered") || "Discovered"}
+              >
+                {entry.discoveredAt}
+              </SidebarField>
+            ) : null}
+            <SidebarField
+              label={t("knowledgePanel.category.title") || "Category"}
+            >
+              {categoryLabel}
+            </SidebarField>
+          </SidebarSection>
         </div>
-        {!isExpanded && (
-          <div className="pr-1 text-xs text-theme-text-secondary leading-relaxed line-clamp-2">
-            {pickFirstText(
-              k.visible?.description,
-              k.visible?.details,
-              k.hidden?.fullTruth,
-            ) ||
-              t("noDescription") ||
-              "No description"}
-          </div>
-        )}
-      </div>
-
-      {isExpanded && (
-        <div className="overflow-hidden animate-sidebar-expand">
-          <div className="pt-2 pb-3 pl-2 pr-1 text-xs text-theme-text-secondary leading-relaxed border-t border-theme-divider/60 mt-1">
-            <div className="mt-3">
-              <span className="sidebar-description-label block">
-                {t("description") || "Description"}
-              </span>
-              <div className="sidebar-description-body">
-                <MarkdownText
-                  content={k.visible?.description || ""}
-                  indentSize={2}
-                />
-              </div>
-            </div>
-
-            {k.visible?.details && (
-              <div className="mt-4 pt-3 border-t border-theme-divider/60">
-                <span className="sidebar-description-label block">
-                  {t("details") || "Details"}
-                </span>
-                <div className="sidebar-description-body">
-                  <MarkdownText content={k.visible.details} indentSize={2} />
-                </div>
-              </div>
-            )}
-
-            {/* Unlocked Hidden Truth - Outer Layer */}
-            {k.unlocked && k.hidden?.fullTruth && (
-              <div className="mt-4 pt-3 border-t border-theme-unlocked/20">
-                <span className="text-[10px] uppercase tracking-wider text-theme-unlocked font-bold flex items-center gap-1.5 mb-2">
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {t("hidden.truth")}
-                </span>
-                <div className="text-theme-text/90">
-                  <MarkdownText content={k.hidden.fullTruth} indentSize={2} />
-
-                  {k.hidden.misconceptions &&
-                    k.hidden.misconceptions.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-theme-unlocked/10">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-danger/90 block mb-1">
-                          {t("hidden.misconceptions")}:
-                        </span>
-                        <ul className="list-disc list-inside text-theme-danger/80 space-y-1 pl-2">
-                          {k.hidden.misconceptions.map((misc, i) => (
-                            <li key={i}>
-                              <MarkdownText
-                                content={misc}
-                                indentSize={2}
-                                inline
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                  {k.hidden.toBeRevealed &&
-                    k.hidden.toBeRevealed.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-theme-unlocked/10">
-                        <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-1">
-                          {t("hidden.future")}:
-                        </span>
-                        <ul className="list-disc list-inside text-theme-primary/80 space-y-1 pl-2">
-                          {k.hidden.toBeRevealed.map((mystery, i) => (
-                            <li key={i}>
-                              <MarkdownText
-                                content={mystery}
-                                indentSize={2}
-                                inline
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                </div>
-              </div>
-            )}
-
-            {k.discoveredAt && (
-              <div className="mt-3 pt-2 border-t border-theme-divider/60 flex justify-between items-center">
-                <span className="text-[10px] uppercase tracking-wider text-theme-primary font-bold">
-                  {t("knowledgePanel.discovered") || "Discovered"}
-                </span>
-                <span className="text-xs text-theme-text-secondary">
-                  {k.discoveredAt}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      </SidebarEntityRow>
     </div>
   );
 };
@@ -307,24 +302,25 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
   const expandedKnowledgeId =
     expandedItemId !== undefined ? expandedItemId : localExpandedKnowledgeId;
 
-  const safeKnowledge = Array.isArray(knowledge) ? knowledge : [];
-
   const {
-    visibleItems,
+    visibleItems: managedVisibleItems,
     allItems,
     togglePin,
     toggleHide,
     reorderItem,
     isPinned,
     isHidden,
-  } = useListManagement(safeKnowledge, listState, onUpdateList, {
+  } = useListManagement(knowledge, listState, onUpdateList, {
     enabled: listManagementActive,
   });
 
-  const toggleKnowledge = (
-    knowledgeId: string | number,
-    isModal: boolean = false,
-  ) => {
+  const { visibleItems, hasMore, loadMore } = useProgressiveRender(
+    managedVisibleItems,
+    30,
+    isOpen,
+  );
+
+  const toggleKnowledge = (knowledgeId: string | number, isModal = false) => {
     const targetId = knowledgeId.toString();
     if (isModal) {
       setModalExpandedKnowledgeId((prev) =>
@@ -351,25 +347,19 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragEnter = (e: React.DragEvent, targetId: string | number) => {
+  const handleDragEnter = (_e: React.DragEvent, targetId: string | number) => {
     const targetIdStr = targetId.toString();
     if (!isEditMode || !draggedId || draggedId === targetIdStr) return;
     reorderItem(draggedId, targetIdStr);
   };
 
-  const handleDragEnd = () => {
+  const clearDragState = () => {
     setDraggedId(null);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e: React.DragEvent, targetId: string | number) => {
-    e.preventDefault();
-    // Final reorder is already done by dragEnter, just clear state
-    setDraggedId(null);
   };
 
   return (
@@ -381,19 +371,17 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
         }`}
       >
         <div
-          className={`flex items-center text-theme-primary uppercase text-xs font-bold tracking-widest ${themeFont}`}
+          className={`${SIDEBAR_PANEL_TITLE_CLASS} ${themeFont} flex items-center gap-2`}
         >
-          <span className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-theme-primary rounded-full animate-pulse"></span>
-            {t("knowledgePanel.title")}
-            <SidebarTag className="ml-2 text-theme-text-secondary bg-theme-surface-highlight">
-              {knowledge.length}
-            </SidebarTag>
-          </span>
+          <span className="w-2 h-2 bg-theme-primary rounded-full"></span>
+          {t("knowledgePanel.title")}
+          <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
+            {knowledge.length}
+          </SidebarTag>
         </div>
 
         <div className="flex items-center justify-end gap-1 shrink-0 min-w-[6.5rem]">
-          {allowPanelEditToggle && (
+          {allowPanelEditToggle ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -436,8 +424,9 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
                 </svg>
               )}
             </button>
-          )}
-          {isEditMode && safeKnowledge.length > 0 && (
+          ) : null}
+
+          {isEditMode && knowledge.length > 0 ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -460,7 +449,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
                 />
               </svg>
             </button>
-          )}
+          ) : null}
 
           <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
             <svg
@@ -489,26 +478,39 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
               {t("knowledgePanel.empty")}
             </div>
           ) : (
-            visibleItems.map((k) => (
-              <KnowledgeItem
-                key={k.id}
-                k={k}
-                expandedId={expandedKnowledgeId}
-                isModal={false}
-                onToggle={toggleKnowledge}
-                t={t}
-                onDragStart={
-                  isEditMode ? (e) => handleDragStart(e, k.id) : undefined
-                }
-                onDragEnter={
-                  isEditMode ? (e) => handleDragEnter(e, k.id) : undefined
-                }
-                onDragOver={isEditMode ? handleDragOver : undefined}
-                onDrop={isEditMode ? (e) => handleDrop(e, k.id) : undefined}
-                isEditMode={isEditMode}
-                isDragging={draggedId === k.id.toString()}
-              />
-            ))
+            <>
+              {visibleItems.map((entry) => (
+                <KnowledgeItem
+                  key={entry.id}
+                  entry={entry}
+                  expandedId={expandedKnowledgeId}
+                  isModal={false}
+                  onToggle={toggleKnowledge}
+                  t={t}
+                  isPinned={isPinned(entry.id)}
+                  onPin={() => togglePin(entry.id)}
+                  onDragStart={
+                    isEditMode ? (e) => handleDragStart(e, entry.id) : undefined
+                  }
+                  onDragEnter={
+                    isEditMode ? (e) => handleDragEnter(e, entry.id) : undefined
+                  }
+                  onDragOver={isEditMode ? handleDragOver : undefined}
+                  onDrop={
+                    isEditMode
+                      ? (e) => {
+                          e.preventDefault();
+                          clearDragState();
+                        }
+                      : undefined
+                  }
+                  onDragEnd={clearDragState}
+                  isEditMode={isEditMode}
+                  isDragging={draggedId === entry.id.toString()}
+                />
+              ))}
+              <SidebarLoadMoreSentinel enabled={hasMore} onVisible={loadMore} />
+            </>
           )}
         </div>
       )}
@@ -535,7 +537,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
         renderItem={(item, dragOptions) => (
           <KnowledgeItem
             key={item.id}
-            k={item}
+            entry={item}
             expandedId={modalExpandedKnowledgeId}
             isModal={true}
             onToggle={toggleKnowledge}
@@ -546,6 +548,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
             onDragEnter={dragOptions?.onDragEnter}
             onDragOver={dragOptions?.onDragOver}
             onDrop={dragOptions?.onDrop}
+            onDragEnd={dragOptions?.onDragEnd}
           />
         )}
       />

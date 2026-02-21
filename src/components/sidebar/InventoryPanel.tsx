@@ -5,6 +5,8 @@ import { LANG_MAP } from "../../utils/constants";
 import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { SidebarTag } from "./SidebarTag";
+import { useProgressiveRender } from "../../hooks/useProgressiveRender";
+import { SidebarLoadMoreSentinel } from "./SidebarLoadMoreSentinel";
 
 import { InventoryItem as InventoryItemType, ListState } from "../../types";
 
@@ -58,6 +60,11 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
   } = useListManagement(safeInventory, listState, onUpdateList, {
     enabled: listManagementActive,
   });
+  const {
+    visibleItems: progressiveItems,
+    hasMore,
+    loadMore,
+  } = useProgressiveRender(visibleItems, 30, isOpen);
 
   const handleDragStart = (e: React.DragEvent, id: string | number) => {
     const idStr = id.toString();
@@ -220,31 +227,36 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
 
       {isOpen && (
         <div className="space-y-2 animate-[fade-in_0.3s_ease-in]">
-          {visibleItems.length === 0 ? (
+          {progressiveItems.length === 0 ? (
             <div className="text-theme-text-secondary text-xs italic py-3 text-center border-t border-theme-divider/60">
               {t("emptyInventory")}
             </div>
           ) : (
-            visibleItems.map((item) => (
-              <InventoryItem
-                key={item.id}
-                item={item}
-                language={LANG_MAP[i18n.language as "en" | "zh"]}
-                context={itemContext}
-                onDragStart={
-                  isEditMode ? (e) => handleDragStart(e, item.id) : undefined
-                }
-                onDragEnter={
-                  isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
-                }
-                onDragOver={isEditMode ? handleDragOver : undefined}
-                onDrop={isEditMode ? (e) => handleDrop(e, item.id) : undefined}
-                isEditMode={isEditMode}
-                isDragging={draggedId === item.id.toString()}
-                isExpanded={resolvedExpandedItemId === item.id.toString()}
-                onToggleExpand={handleToggleItem}
-              />
-            ))
+            <>
+              {progressiveItems.map((item) => (
+                <InventoryItem
+                  key={item.id}
+                  item={item}
+                  language={LANG_MAP[i18n.language as "en" | "zh"]}
+                  context={itemContext}
+                  onDragStart={
+                    isEditMode ? (e) => handleDragStart(e, item.id) : undefined
+                  }
+                  onDragEnter={
+                    isEditMode ? (e) => handleDragEnter(e, item.id) : undefined
+                  }
+                  onDragOver={isEditMode ? handleDragOver : undefined}
+                  onDrop={
+                    isEditMode ? (e) => handleDrop(e, item.id) : undefined
+                  }
+                  isEditMode={isEditMode}
+                  isDragging={draggedId === item.id.toString()}
+                  isExpanded={resolvedExpandedItemId === item.id.toString()}
+                  onToggleExpand={handleToggleItem}
+                />
+              ))}
+              <SidebarLoadMoreSentinel enabled={hasMore} onVisible={loadMore} />
+            </>
           )}
         </div>
       )}
