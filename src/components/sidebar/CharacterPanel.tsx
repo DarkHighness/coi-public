@@ -78,10 +78,14 @@ const colorMap: Record<string, string> = {
 
 const ConditionRow: React.FC<{
   condition: CharacterCondition;
+  unlockMode?: boolean;
   isExpanded: boolean;
   onToggle: () => void;
-}> = ({ condition, isExpanded, onToggle }) => {
+}> = ({ condition, unlockMode, isExpanded, onToggle }) => {
   const { t } = useTranslation();
+  const canRevealHidden = Boolean(
+    (unlockMode || condition.unlocked) && condition.hidden,
+  );
   return (
     <SidebarEntityRow
       title={condition.name}
@@ -150,7 +154,7 @@ const ConditionRow: React.FC<{
           ) : null}
         </SidebarSection>
 
-        {condition.unlocked && condition.hidden ? (
+        {canRevealHidden ? (
           <SidebarSection
             title={t("hidden.truth") || "Hidden"}
             className="sidebar-hidden-divider"
@@ -194,6 +198,15 @@ const ConditionRow: React.FC<{
             ) : null}
           </SidebarSection>
         ) : null}
+
+        <SidebarSection title={t("meta") || "Meta"}>
+          <SidebarField label={t("id") || "ID"}>{condition.id}</SidebarField>
+          {condition.unlockReason ? (
+            <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+              <MarkdownText content={condition.unlockReason} indentSize={2} />
+            </SidebarField>
+          ) : null}
+        </SidebarSection>
       </div>
     </SidebarEntityRow>
   );
@@ -201,10 +214,14 @@ const ConditionRow: React.FC<{
 
 const SkillRow: React.FC<{
   skill: CharacterSkill;
+  unlockMode?: boolean;
   isExpanded: boolean;
   onToggle: () => void;
-}> = ({ skill, isExpanded, onToggle }) => {
+}> = ({ skill, unlockMode, isExpanded, onToggle }) => {
   const { t } = useTranslation();
+  const canRevealHidden = Boolean(
+    (unlockMode || skill.unlocked) && skill.hidden,
+  );
   return (
     <SidebarEntityRow
       title={skill.name}
@@ -266,7 +283,7 @@ const SkillRow: React.FC<{
           ) : null}
         </SidebarSection>
 
-        {skill.unlocked && skill.hidden ? (
+        {canRevealHidden ? (
           <SidebarSection
             title={t("hidden.truth") || "Hidden"}
             className="sidebar-hidden-divider"
@@ -303,6 +320,15 @@ const SkillRow: React.FC<{
             ) : null}
           </SidebarSection>
         ) : null}
+
+        <SidebarSection title={t("meta") || "Meta"}>
+          <SidebarField label={t("id") || "ID"}>{skill.id}</SidebarField>
+          {skill.unlockReason ? (
+            <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+              <MarkdownText content={skill.unlockReason} indentSize={2} />
+            </SidebarField>
+          ) : null}
+        </SidebarSection>
       </div>
     </SidebarEntityRow>
   );
@@ -367,6 +393,18 @@ const TraitRow: React.FC<{
             </SidebarField>
           ) : null}
         </SidebarSection>
+
+        <SidebarSection title={t("meta") || "Meta"}>
+          <SidebarField label={t("id") || "ID"}>{trait.id}</SidebarField>
+          <SidebarField label={t("status") || "Status"}>
+            {trait.unlocked ? t("unlocked") || "Unlocked" : "Locked"}
+          </SidebarField>
+          {trait.unlockReason ? (
+            <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+              <MarkdownText content={trait.unlockReason} indentSize={2} />
+            </SidebarField>
+          ) : null}
+        </SidebarSection>
       </div>
     </SidebarEntityRow>
   );
@@ -392,8 +430,14 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
   }
 
   const unknownText = t("unknown") || "Unknown";
-  const titleText = pickDisplayValue([character.title], unknownText);
-  const professionText = pickDisplayValue([character.profession], unknownText);
+  const titleText = pickDisplayValue(
+    [character.title, playerProfile?.visible?.title],
+    unknownText,
+  );
+  const professionText = pickDisplayValue(
+    [character.profession, playerProfile?.visible?.profession],
+    unknownText,
+  );
   const raceText = pickDisplayValue(
     [character.race, playerProfile?.visible?.race],
     unknownText,
@@ -402,16 +446,63 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
     [character.gender, playerProfile?.visible?.gender],
     unknownText,
   );
-  const ageText = normalizeDisplayText(character.age) ?? unknownText;
-  const statusText = pickDisplayValue([character.status], unknownText);
+  const ageText = pickDisplayValue(
+    [character.age, playerProfile?.visible?.age],
+    unknownText,
+  );
+  const statusText = pickDisplayValue(
+    [character.status, playerProfile?.visible?.status],
+    unknownText,
+  );
+  const roleTagText =
+    normalizeDisplayText(playerProfile?.visible?.roleTag) ?? "";
+  const voiceText = normalizeDisplayText(playerProfile?.visible?.voice) ?? "";
+  const mannerismText =
+    normalizeDisplayText(playerProfile?.visible?.mannerism) ?? "";
+  const moodText = normalizeDisplayText(playerProfile?.visible?.mood) ?? "";
+  const visibleDescriptionText =
+    normalizeDisplayText(playerProfile?.visible?.description) ?? "";
+  const profileAppearance = pickFirstText(
+    character.appearance,
+    playerProfile?.visible?.appearance,
+  );
+  const profileBackground = pickFirstText(
+    character.background,
+    playerProfile?.visible?.background,
+  );
 
   const hiddenRaceText =
     normalizeDisplayText(playerProfile?.hidden?.race) ?? "";
   const hiddenGenderText =
     normalizeDisplayText(playerProfile?.hidden?.gender) ?? "";
+  const hiddenTrueNameText =
+    normalizeDisplayText(playerProfile?.hidden?.trueName) ?? "";
+  const hiddenRealPersonalityText =
+    normalizeDisplayText(playerProfile?.hidden?.realPersonality) ?? "";
+  const hiddenRealMotivesText =
+    normalizeDisplayText(playerProfile?.hidden?.realMotives) ?? "";
+  const hiddenRoutineText =
+    normalizeDisplayText(playerProfile?.hidden?.routine) ?? "";
+  const hiddenCurrentThoughtText =
+    normalizeDisplayText(playerProfile?.hidden?.currentThought) ?? "";
+  const hiddenStatusText =
+    normalizeDisplayText(playerProfile?.hidden?.status) ?? "";
+  const hiddenSecrets = Array.isArray(playerProfile?.hidden?.secrets)
+    ? playerProfile.hidden.secrets
+    : [];
+  const playerUnlockReason =
+    normalizeDisplayText(playerProfile?.unlockReason) ?? "";
   const showHiddenIdentity = Boolean(
     (unlockMode || playerProfile?.unlocked) &&
-    (hiddenRaceText || hiddenGenderText),
+    (hiddenTrueNameText ||
+      hiddenRaceText ||
+      hiddenGenderText ||
+      hiddenRealPersonalityText ||
+      hiddenRealMotivesText ||
+      hiddenRoutineText ||
+      hiddenCurrentThoughtText ||
+      hiddenStatusText ||
+      hiddenSecrets.length > 0),
   );
 
   const currentLocationText = useMemo(() => {
@@ -423,9 +514,13 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
     });
   }, [character.currentLocation, locations]);
 
-  const unlockedTraits = (character.hiddenTraits || []).filter(
-    (trait) => trait.unlocked,
-  );
+  const allTraits = character.hiddenTraits || [];
+  const profileAttributes =
+    Array.isArray(character.attributes) && character.attributes.length > 0
+      ? character.attributes
+      : Array.isArray(playerProfile?.visible?.attributes)
+        ? playerProfile.visible.attributes
+        : [];
 
   return (
     <div>
@@ -472,6 +567,13 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
             >
               {statusText}
             </SidebarField>
+            {roleTagText ? (
+              <SidebarField
+                label={t("gameViewer.roleTag") || t("role") || "Role"}
+              >
+                {roleTagText}
+              </SidebarField>
+            ) : null}
             <SidebarField label={t("gameViewer.race") || t("race") || "Race"}>
               {raceText}
             </SidebarField>
@@ -489,15 +591,39 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
               </SidebarField>
             ) : null}
 
-            {character.appearance ? (
+            {profileAppearance ? (
               <SidebarField label={t("appearance") || "Appearance"}>
-                <MarkdownText content={character.appearance} indentSize={2} />
+                <MarkdownText content={profileAppearance} indentSize={2} />
               </SidebarField>
             ) : null}
 
-            {character.background ? (
+            {profileBackground ? (
               <SidebarField label={t("background") || "Background"}>
-                <MarkdownText content={character.background} indentSize={2} />
+                <MarkdownText content={profileBackground} indentSize={2} />
+              </SidebarField>
+            ) : null}
+
+            {visibleDescriptionText ? (
+              <SidebarField label={t("description") || "Description"}>
+                <MarkdownText content={visibleDescriptionText} indentSize={2} />
+              </SidebarField>
+            ) : null}
+
+            {voiceText ? (
+              <SidebarField label={t("gameViewer.voice") || "Voice"}>
+                {voiceText}
+              </SidebarField>
+            ) : null}
+
+            {mannerismText ? (
+              <SidebarField label={t("gameViewer.mannerism") || "Mannerism"}>
+                {mannerismText}
+              </SidebarField>
+            ) : null}
+
+            {moodText ? (
+              <SidebarField label={t("gameViewer.mood") || "Mood"}>
+                {moodText}
               </SidebarField>
             ) : null}
 
@@ -539,6 +665,17 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                 <div className="text-[10px] uppercase tracking-[0.14em] text-theme-primary font-semibold">
                   {t("gameViewer.hiddenLabel") || "Hidden"}
                 </div>
+                {hiddenTrueNameText ? (
+                  <SidebarField
+                    label={
+                      t("gameViewer.trueName") ||
+                      t("sidebar.npc.trueName") ||
+                      "True Name"
+                    }
+                  >
+                    {hiddenTrueNameText}
+                  </SidebarField>
+                ) : null}
                 {hiddenRaceText ? (
                   <SidebarField label={t("gameViewer.race") || "Race"}>
                     {hiddenRaceText}
@@ -549,18 +686,92 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                     {hiddenGenderText}
                   </SidebarField>
                 ) : null}
+                {hiddenStatusText ? (
+                  <SidebarField
+                    label={t("hidden.actualStatus") || "Actual Status"}
+                  >
+                    {hiddenStatusText}
+                  </SidebarField>
+                ) : null}
+                {hiddenRealPersonalityText ? (
+                  <SidebarField
+                    label={
+                      t("hidden.personality") ||
+                      t("gameViewer.realPersonality") ||
+                      "Personality"
+                    }
+                  >
+                    <MarkdownText
+                      content={hiddenRealPersonalityText}
+                      indentSize={2}
+                    />
+                  </SidebarField>
+                ) : null}
+                {hiddenRealMotivesText ? (
+                  <SidebarField
+                    label={
+                      t("hidden.motives") ||
+                      t("gameViewer.realMotives") ||
+                      "Motives"
+                    }
+                  >
+                    <MarkdownText
+                      content={hiddenRealMotivesText}
+                      indentSize={2}
+                    />
+                  </SidebarField>
+                ) : null}
+                {hiddenRoutineText ? (
+                  <SidebarField label={t("hidden.routine") || "Routine"}>
+                    <MarkdownText content={hiddenRoutineText} indentSize={2} />
+                  </SidebarField>
+                ) : null}
+                {hiddenCurrentThoughtText ? (
+                  <SidebarField
+                    label={
+                      t("gameViewer.currentThought") ||
+                      t("sidebar.npc.currentThought") ||
+                      "Current Thought"
+                    }
+                  >
+                    <MarkdownText
+                      content={hiddenCurrentThoughtText}
+                      indentSize={2}
+                    />
+                  </SidebarField>
+                ) : null}
+                {hiddenSecrets.length ? (
+                  <SidebarField label={t("hidden.secrets") || "Secrets"}>
+                    <ul className="list-disc list-inside space-y-1">
+                      {hiddenSecrets.map((secret, index) => (
+                        <li key={`${secret}-${index}`}>
+                          <MarkdownText
+                            content={secret}
+                            indentSize={2}
+                            inline
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </SidebarField>
+                ) : null}
+                {playerUnlockReason ? (
+                  <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+                    <MarkdownText content={playerUnlockReason} indentSize={2} />
+                  </SidebarField>
+                ) : null}
               </div>
             ) : null}
           </SidebarSection>
 
-          {character.attributes?.length ? (
+          {profileAttributes.length ? (
             <SidebarSection
               title={
                 t("gameViewer.attributes") || t("attributes") || "Attributes"
               }
             >
               <div className="space-y-2">
-                {character.attributes.map((attr, idx) => (
+                {profileAttributes.map((attr, idx) => (
                   <div key={`${attr.label}-${idx}`} className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-theme-text flex items-center gap-1.5 min-w-0">
@@ -606,6 +817,7 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                   <ConditionRow
                     key={condition.id || condition.name}
                     condition={condition}
+                    unlockMode={unlockMode}
                     isExpanded={expandedConditionId === condition.id}
                     onToggle={() =>
                       setExpandedConditionId((prev) =>
@@ -631,6 +843,7 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
                   <SkillRow
                     key={skill.id || skill.name}
                     skill={skill}
+                    unlockMode={unlockMode}
                     isExpanded={expandedSkillId === skill.id}
                     onToggle={() =>
                       setExpandedSkillId((prev) =>
@@ -643,10 +856,10 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
             </SidebarSection>
           ) : null}
 
-          {unlockedTraits.length ? (
+          {allTraits.length ? (
             <SidebarSection title={t("traits") || "Traits"}>
               <div className="space-y-2">
-                {unlockedTraits.map((trait) => (
+                {allTraits.map((trait) => (
                   <TraitRow
                     key={trait.id || trait.name}
                     trait={trait}

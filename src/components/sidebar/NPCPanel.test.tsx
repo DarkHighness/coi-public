@@ -202,4 +202,55 @@ describe("NPCPanel", () => {
     expect(screen.queryByText("NPC-only unlock")).toBeNull();
     expect(screen.queryByText("Secret impression")).toBeNull();
   });
+
+  it("reveals attitude hidden fields and unlock reason for player-visible unlock", () => {
+    const npc = makeNpc({
+      knownBy: ["char:player"],
+      unlocked: true,
+      unlockReason: "Player confirmed real identity",
+      hidden: { realMotives: "Player-unlocked NPC truth" },
+      relations: [
+        {
+          id: "rel:attitude-2",
+          kind: "attitude",
+          to: { kind: "character", id: "char:player" },
+          knownBy: ["char:player"],
+          unlocked: true,
+          unlockReason: "Observed contradiction",
+          visible: { signals: ["Calculated smile"] },
+          hidden: {
+            affinity: 70,
+            impression: "Secret impression",
+            observation: "Keeps testing boundaries",
+            ambivalence: "Trusts but fears betrayal",
+            transactionalBenefit: "Needs player influence",
+            motives: "Wants access to core archive",
+            currentThought: "Not yet time to disclose all",
+          },
+        },
+      ],
+    });
+
+    render(
+      React.createElement(NPCPanel, {
+        npcs: [npc],
+        actors: [],
+        playerActorId: "char:player",
+        locations: [],
+        themeFont: "font-theme",
+        listState: { pinnedIds: [], customOrder: [], hiddenIds: [] },
+        onUpdateList: vi.fn(),
+      }),
+    );
+
+    fireEvent.click(screen.getByText("NPC One"));
+    expect(screen.getByText("Secret impression")).toBeTruthy();
+    expect(screen.getByText("Keeps testing boundaries")).toBeTruthy();
+    expect(screen.getByText("Trusts but fears betrayal")).toBeTruthy();
+    expect(screen.getByText("Needs player influence")).toBeTruthy();
+    expect(screen.getByText("Wants access to core archive")).toBeTruthy();
+    expect(screen.getByText("Not yet time to disclose all")).toBeTruthy();
+    expect(screen.getByText("Player confirmed real identity")).toBeTruthy();
+    expect(screen.getByText("Observed contradiction")).toBeTruthy();
+  });
 });

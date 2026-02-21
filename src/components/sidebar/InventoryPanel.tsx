@@ -122,7 +122,7 @@ const InventoryPanelComponent: React.FC<InventoryPanelProps> = ({
             ></path>
           </svg>
         }
-        count={allItems.length}
+        count={safeInventory.length}
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
         themeFont={themeFont}

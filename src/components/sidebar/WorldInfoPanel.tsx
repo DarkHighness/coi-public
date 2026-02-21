@@ -74,7 +74,7 @@ const WorldInfoPanelComponent: React.FC<WorldInfoPanelProps> = ({
         <div className="space-y-3 animate-sidebar-expand">
           <SidebarSection title={t("visible") || "Visible"} withDivider={false}>
             {worldInfo?.title ? (
-              <SidebarField label={t("title") || "Title"}>
+              <SidebarField label={t("worldInfo.titleLabel") || "Title"}>
                 {worldInfo.title}
               </SidebarField>
             ) : null}

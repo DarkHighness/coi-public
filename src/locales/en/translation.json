@@ -1798,6 +1798,7 @@
   "secretAgenda": "Secret Agenda",
   "worldInfo": {
     "title": "World Info",
+    "titleLabel": "Title",
     "premise": "Premise",
     "narrativeScale": "Narrative Scale",
     "history": "History",

@@ -44,15 +44,15 @@ export const SidebarPanelHeader: React.FC<SidebarPanelHeaderProps> = ({
       >
         <span className={SIDEBAR_PANEL_HEADER_ICON_CLASS}>{icon}</span>
         <span className="truncate">{title}</span>
+      </div>
+
+      <div className="flex items-center justify-end gap-1 shrink-0 min-w-[5.5rem]">
+        {actions}
         {count !== undefined && count !== null ? (
           <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
             {count}
           </SidebarTag>
         ) : null}
-      </div>
-
-      <div className="flex items-center justify-end gap-1 shrink-0 min-w-[5.5rem]">
-        {actions}
         {showChevron ? (
           <div className="h-8 w-8 grid place-items-center rounded text-theme-text-secondary group-hover:text-theme-primary hover:bg-theme-surface-highlight/15 transition-colors">
             <svg

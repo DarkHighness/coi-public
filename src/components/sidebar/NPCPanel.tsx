@@ -67,8 +67,14 @@ type NpcAttitudeRelation = RelationEdge & {
   hidden?: {
     affinity?: number;
     impression?: string;
+    observation?: string;
+    ambivalence?: string;
+    transactionalBenefit?: string;
+    motives?: string;
+    currentThought?: string;
   };
   unlocked?: boolean;
+  unlockReason?: string;
 };
 
 type NpcPerceptionRelation = RelationEdge & {
@@ -286,7 +292,7 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
             {npc.visible?.status ? (
               <SidebarField label={t("perceivedStatus") || "Status"}>
-                <MarkdownText content={npc.visible.status} indentSize={2} />
+                {npc.visible.status}
               </SidebarField>
             ) : null}
 
@@ -498,6 +504,76 @@ const NpcItem: React.FC<NpcItemProps> = ({
                   </ul>
                 </SidebarField>
               ) : null}
+
+              {npc.unlockReason ? (
+                <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+                  <MarkdownText content={npc.unlockReason} indentSize={2} />
+                </SidebarField>
+              ) : null}
+
+              {showTrueAttitude && attitude?.hidden?.observation ? (
+                <SidebarField
+                  label={
+                    t("sidebar.npc.observation") ||
+                    t("observation") ||
+                    "Observation"
+                  }
+                >
+                  <MarkdownText
+                    content={attitude.hidden.observation}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {showTrueAttitude && attitude?.hidden?.ambivalence ? (
+                <SidebarField
+                  label={t("gameViewer.ambivalence") || "Ambivalence"}
+                >
+                  <MarkdownText
+                    content={attitude.hidden.ambivalence}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {showTrueAttitude && attitude?.hidden?.transactionalBenefit ? (
+                <SidebarField
+                  label={
+                    t("gameViewer.transactionalBenefit") ||
+                    "Transactional Benefit"
+                  }
+                >
+                  <MarkdownText
+                    content={attitude.hidden.transactionalBenefit}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {showTrueAttitude && attitude?.hidden?.motives ? (
+                <SidebarField label={t("hidden.motives") || "Motives"}>
+                  <MarkdownText
+                    content={attitude.hidden.motives}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
+
+              {showTrueAttitude && attitude?.hidden?.currentThought ? (
+                <SidebarField
+                  label={
+                    t("gameViewer.currentThought") ||
+                    t("sidebar.npc.currentThought") ||
+                    "Current Thought"
+                  }
+                >
+                  <MarkdownText
+                    content={attitude.hidden.currentThought}
+                    indentSize={2}
+                  />
+                </SidebarField>
+              ) : null}
             </SidebarSection>
           ) : null}
 
@@ -522,6 +598,12 @@ const NpcItem: React.FC<NpcItemProps> = ({
                   content={attitude.hidden.impression}
                   indentSize={2}
                 />
+              </SidebarField>
+            ) : null}
+
+            {showTrueAttitude && attitude?.unlockReason ? (
+              <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+                <MarkdownText content={attitude.unlockReason} indentSize={2} />
               </SidebarField>
             ) : null}
           </SidebarSection>

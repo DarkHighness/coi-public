@@ -239,6 +239,12 @@ export const InventoryItem: React.FC<InventoryItemProps> = ({
                   </ul>
                 </SidebarField>
               ) : null}
+
+              {item.unlockReason ? (
+                <SidebarField label={t("unlockReason") || "Unlock Reason"}>
+                  <MarkdownText content={item.unlockReason} indentSize={2} />
+                </SidebarField>
+              ) : null}
             </SidebarSection>
           ) : null}
 

@@ -292,7 +292,7 @@ const QuestPanelComponent: React.FC<QuestPanelProps> = ({
       <SidebarPanelHeader
         title={t("questPanel.title")}
         icon={<span className="w-2 h-2 bg-theme-primary rounded-full" />}
-        count={allItems.length}
+        count={visibleQuests.length}
         isOpen={isOpen}
         onToggle={() => setIsOpen((prev) => !prev)}
         themeFont={themeFont}

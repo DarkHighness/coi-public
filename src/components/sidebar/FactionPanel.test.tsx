@@ -27,6 +27,10 @@ vi.mock("../render/MarkdownText", () => ({
     React.createElement("span", null, content),
 }));
 
+vi.mock("../../runtime/context", () => ({
+  useOptionalRuntimeContext: () => null,
+}));
+
 describe("FactionPanel", () => {
   it("reveals hidden internal conflict when unlocked", () => {
     render(
@@ -52,6 +56,7 @@ describe("FactionPanel", () => {
               relations: [],
             },
             unlocked: true,
+            unlockReason: "Captured encrypted leadership briefing",
           },
         ],
       }),
@@ -61,6 +66,9 @@ describe("FactionPanel", () => {
 
     expect(
       screen.getByText("Leaders disagree on alliance with Beta"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Captured encrypted leadership briefing"),
     ).toBeTruthy();
   });
 });

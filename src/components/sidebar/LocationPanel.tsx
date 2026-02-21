@@ -485,6 +485,20 @@ const LocationItem: React.FC<LocationItemProps> = ({
                             </ul>
                           </div>
                         )}
+
+                      {locationData.unlockReason ? (
+                        <div className="mt-2">
+                          <span className="text-[10px] uppercase tracking-wider text-theme-primary/80 block mb-0.5">
+                            {t("unlockReason") || "Unlock Reason"}:
+                          </span>
+                          <div className="text-theme-text leading-relaxed pl-1">
+                            <MarkdownText
+                              content={locationData.unlockReason}
+                              indentSize={2}
+                            />
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   )}
 
@@ -667,7 +681,7 @@ const LocationPanelComponent: React.FC<LocationPanelProps> = ({
             ></path>
           </svg>
         }
-        count={allItems.length}
+        count={locationItems.length}
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
         themeFont={themeFont}

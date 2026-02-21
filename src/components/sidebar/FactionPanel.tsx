@@ -4,6 +4,7 @@ import { Faction } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
 import {
   extractBracketDisplayName,
+  resolveEntityDisplayName,
   isSameEntityRef,
 } from "../../utils/entityDisplay";
 import { MarkdownText } from "../render/MarkdownText";
@@ -11,6 +12,7 @@ import { SidebarTag } from "./SidebarTag";
 import { SidebarEntityRow } from "./SidebarEntityRow";
 import { SidebarField, SidebarSection } from "./SidebarSections";
 import { SidebarPanelHeader } from "./SidebarPanelHeader";
+import { useOptionalRuntimeContext } from "../../runtime/context";
 
 interface FactionPanelProps {
   factions?: Faction[];
@@ -24,10 +26,12 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
   unlockMode,
 }) => {
   const { t } = useTranslation();
+  const runtime = useOptionalRuntimeContext();
   const [isOpen, setIsOpen] = useState(true);
   const [expandedFactionId, setExpandedFactionId] = useState<string | null>(
     null,
   );
+  const runtimeGameState = runtime?.state.gameState;
 
   const resolveFactionTarget = (target: unknown): string => {
     if (typeof target !== "string") {
@@ -40,6 +44,12 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
     const specialDisplayName = extractBracketDisplayName(raw);
     if (specialDisplayName) {
       return specialDisplayName;
+    }
+    if (runtimeGameState) {
+      const resolved = resolveEntityDisplayName(raw, runtimeGameState);
+      if (resolved) {
+        return resolved;
+      }
     }
     const matchedFaction = factions.find(
       (faction) => isSameEntityRef(faction.id, raw) || faction.name === raw,
@@ -250,6 +260,17 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
                                 ),
                               )}
                             </div>
+                          </SidebarField>
+                        ) : null}
+
+                        {faction.unlockReason ? (
+                          <SidebarField
+                            label={t("unlockReason") || "Unlock Reason"}
+                          >
+                            <MarkdownText
+                              content={faction.unlockReason}
+                              indentSize={2}
+                            />
                           </SidebarField>
                         ) : null}
                       </SidebarSection>

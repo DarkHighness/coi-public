@@ -59,9 +59,17 @@ const playerProfile = {
     gender: "Female",
   },
   hidden: {
+    trueName: "Alias Zero",
+    realPersonality: "Cold strategist",
+    realMotives: "Protect the timeline core",
+    routine: "Tracks paradox activity nightly",
+    currentThought: "Need one more clue",
+    status: "Operating undercover",
+    secrets: ["Knows the forbidden protocol"],
     race: "High Dimension",
     gender: "Male",
   },
+  unlockReason: "Mind-link established",
   relations: [],
 } as any;
 
@@ -81,6 +89,9 @@ describe("CharacterPanel", () => {
     expect(screen.getByText("Female")).toBeTruthy();
     expect(screen.queryByText("High Dimension")).toBeNull();
     expect(screen.queryByText("Male")).toBeNull();
+    expect(screen.queryByText("Alias Zero")).toBeNull();
+    expect(screen.queryByText("Cold strategist")).toBeNull();
+    expect(screen.queryByText("Mind-link established")).toBeNull();
 
     view.rerender(
       React.createElement(CharacterPanel, {
@@ -94,5 +105,8 @@ describe("CharacterPanel", () => {
 
     expect(screen.getByText("High Dimension")).toBeTruthy();
     expect(screen.getByText("Male")).toBeTruthy();
+    expect(screen.getByText("Alias Zero")).toBeTruthy();
+    expect(screen.getByText("Cold strategist")).toBeTruthy();
+    expect(screen.getByText("Mind-link established")).toBeTruthy();
   });
 });

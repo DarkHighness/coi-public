@@ -16,10 +16,7 @@ import { useEmbeddingStatus } from "../hooks/useEmbeddingStatus";
 import { useRuntimeContext } from "../runtime/context";
 import { resolveLocationDisplayName } from "../utils/entityDisplay";
 import { BUILD_INFO } from "../utils/constants";
-import {
-  SIDEBAR_PANEL_HEADER_ICON_CLASS,
-  SIDEBAR_PANEL_TITLE_CLASS,
-} from "./sidebar/sidebarTokens";
+import { SidebarPanelHeader } from "./sidebar/SidebarPanelHeader";
 
 type ExpandableSidebarPanel =
   | "quests"
@@ -227,70 +224,74 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto pb-32 md:pb-6 scroll-smooth custom-scrollbar">
         <div className="px-4 divide-y divide-theme-divider/45">
           <section className="py-3">
-            <div className="border-l border-theme-divider/70 pb-2">
-              <div className="flex items-center justify-between gap-2 py-2 pl-2 pr-1">
-                <div
-                  className={`${SIDEBAR_PANEL_TITLE_CLASS} ${currentThemeConfig.fontClass} flex items-center gap-2 min-w-0`}
-                >
-                  <span className={SIDEBAR_PANEL_HEADER_ICON_CLASS}>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
-                    </svg>
-                  </span>
-                  <span>{t("gameViewer.time") || "Time"}</span>
-                </div>
-                <button
-                  onClick={handleToggleGlobalEditMode}
-                  className={`h-8 w-8 grid place-items-center rounded transition-colors ${
-                    globalEditMode
-                      ? "bg-theme-primary text-theme-bg"
-                      : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
-                  }`}
-                  title={globalEditMode ? t("done") : t("edit")}
-                  aria-label={globalEditMode ? t("done") : t("edit")}
-                >
-                  {globalEditMode ? (
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              <div className="pl-9 pr-1 text-xs text-theme-text leading-relaxed line-clamp-2">
+            <div>
+              <SidebarPanelHeader
+                title={t("gameViewer.time") || "Time"}
+                icon={
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                }
+                isOpen={false}
+                themeFont={currentThemeConfig.fontClass}
+                showChevron={false}
+                actions={
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleToggleGlobalEditMode();
+                    }}
+                    className={`h-8 w-8 grid place-items-center rounded transition-colors ${
+                      globalEditMode
+                        ? "bg-theme-primary text-theme-bg"
+                        : "text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface-highlight/15"
+                    }`}
+                    title={globalEditMode ? t("done") : t("edit")}
+                    aria-label={globalEditMode ? t("done") : t("edit")}
+                  >
+                    {globalEditMode ? (
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                }
+              />
+              <div className="pl-7 pr-1 text-xs text-theme-text leading-relaxed line-clamp-2">
                 {gameState.time}
               </div>
             </div>

@@ -8,6 +8,7 @@ import { MarkdownText } from "../render/MarkdownText";
 import { useListManagement } from "../../hooks/useListManagement";
 import { useProgressiveRender } from "../../hooks/useProgressiveRender";
 import { useOptionalRuntimeContext } from "../../runtime/context";
+import { resolveEntityDisplayName } from "../../utils/entityDisplay";
 import { SidebarTag } from "./SidebarTag";
 import { SidebarEntityRow } from "./SidebarEntityRow";
 import { SidebarField, SidebarSection } from "./SidebarSections";
@@ -76,6 +77,7 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
 }) => {
   const engine = useOptionalRuntimeContext();
   const clearHighlight = engine?.actions.clearHighlight;
+  const runtimeGameState = engine?.state.gameState;
   const [isHighlight, setIsHighlight] = useState(entry.highlight || false);
 
   React.useEffect(() => {
@@ -198,8 +200,11 @@ const KnowledgeItem: React.FC<KnowledgeItemProps> = ({
                     <SidebarTag
                       key={related}
                       className="text-theme-text-secondary border-theme-divider/70 text-[10px] normal-case tracking-normal"
+                      title={related}
                     >
-                      {related}
+                      {runtimeGameState
+                        ? resolveEntityDisplayName(related, runtimeGameState)
+                        : related}
                     </SidebarTag>
                   ))}
                 </div>
@@ -367,7 +372,7 @@ const KnowledgePanelComponent: React.FC<KnowledgePanelProps> = ({
       <SidebarPanelHeader
         title={t("knowledgePanel.title")}
         icon={<span className="w-2 h-2 bg-theme-primary rounded-full" />}
-        count={allItems.length}
+        count={knowledge.length}
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
         themeFont={themeFont}

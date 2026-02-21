@@ -1400,6 +1400,7 @@
   "layoutToggleTip": "提示：使用面板边缘的箭头按钮快速切换显示",
   "worldInfo": {
     "title": "世界信息",
+    "titleLabel": "标题",
     "premise": "前提",
     "narrativeScale": "叙事尺度",
     "history": "历史",
