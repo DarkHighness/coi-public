@@ -6,14 +6,9 @@ export type MobileTab = "story" | "status" | "menu" | "timeline";
 interface MobileNavProps {
   currentTab: MobileTab;
   setTab: (tab: MobileTab) => void;
-  onStatusTap?: () => void;
 }
 
-export const MobileNav: React.FC<MobileNavProps> = ({
-  currentTab,
-  setTab,
-  onStatusTap,
-}) => {
+export const MobileNav: React.FC<MobileNavProps> = ({ currentTab, setTab }) => {
   const { t } = useTranslation();
 
   const tabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
@@ -100,21 +95,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
       <div className="flex justify-around items-center h-16">
         {tabs.map((tab) => {
           const isActive = currentTab === tab.id;
-          const handleClick = () => {
-            if (tab.id === "status") {
-              if (onStatusTap) {
-                onStatusTap();
-                return;
-              }
-              setTab("status");
-              return;
-            }
-            setTab(tab.id);
-          };
           return (
             <button
               key={tab.id}
-              onClick={handleClick}
+              onClick={() => setTab(tab.id)}
               className={`flex-1 flex flex-col items-center justify-center h-full transition-colors ${isActive ? "text-theme-primary" : "text-theme-muted hover:text-theme-text"}`}
             >
               {tab.icon}
