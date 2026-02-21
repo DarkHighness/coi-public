@@ -67,15 +67,6 @@ const pickDisplayValue = (candidates: unknown[], fallback: string): string => {
   return fallback;
 };
 
-const colorMap: Record<string, string> = {
-  red: "#ef4444",
-  blue: "#3b82f6",
-  green: "#22c55e",
-  yellow: "#eab308",
-  purple: "#8b5cf6",
-  gray: "#94a3b8",
-};
-
 const ConditionRow: React.FC<{
   condition: CharacterCondition;
   unlockMode?: boolean;
@@ -515,12 +506,6 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
   }, [character.currentLocation, locations]);
 
   const allTraits = character.hiddenTraits || [];
-  const profileAttributes =
-    Array.isArray(character.attributes) && character.attributes.length > 0
-      ? character.attributes
-      : Array.isArray(playerProfile?.visible?.attributes)
-        ? playerProfile.visible.attributes
-        : [];
 
   return (
     <div>
@@ -763,48 +748,6 @@ const CharacterPanelComponent: React.FC<CharacterPanelProps> = ({
               </div>
             ) : null}
           </SidebarSection>
-
-          {profileAttributes.length ? (
-            <SidebarSection
-              title={
-                t("gameViewer.attributes") || t("attributes") || "Attributes"
-              }
-            >
-              <div className="space-y-2">
-                {profileAttributes.map((attr, idx) => (
-                  <div key={`${attr.label}-${idx}`} className="space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-theme-text flex items-center gap-1.5 min-w-0">
-                        <span className="ui-emoji-slot">
-                          {getValidIcon(attr.icon, "📊")}
-                        </span>
-                        <span className="truncate">{attr.label}</span>
-                      </span>
-                      <span className="text-[11px] font-mono text-theme-text-secondary">
-                        {attr.value}
-                        {attr.maxValue ? `/${attr.maxValue}` : ""}
-                      </span>
-                    </div>
-                    {attr.maxValue ? (
-                      <div className="h-1.5 w-full bg-theme-divider/60 overflow-hidden">
-                        <div
-                          className="h-full"
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              Math.max(0, (attr.value / attr.maxValue) * 100),
-                            )}%`,
-                            backgroundColor:
-                              colorMap[attr.color || "gray"] || colorMap.gray,
-                          }}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </SidebarSection>
-          ) : null}
 
           <SidebarSection
             title={

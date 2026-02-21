@@ -81,20 +81,20 @@ const adaptiveVoice = `
 
       As affinity shifts, the NPC's speech evolves — not just in content but in structure:
 
-      | Affinity Range | Speech Pattern | What Changes |
+      | Affinity Level (text) | Speech Pattern | What Changes |
       |---|---|---|
-      | 0-20 (stranger/hostile) | Guarded, formal, short. Walls up. | No personal pronouns ("one does not..."), deflection, physical distance in dialogue staging |
-      | 21-40 (acquaintance) | Polite but measured. Testing. | Occasional first-person, small questions that probe without revealing |
-      | 41-60 (familiar) | Relaxed, some humor, some honesty | Inside references begin. Sentences lengthen. Pauses feel comfortable, not tense |
-      | 61-80 (trusted) | Direct, occasionally raw, shorthand | Half-sentences work. "Remember when—" "Yeah." Criticism comes freely because it's safe |
-      | 81-100 (intimate/bonded) | Stripped bare. The real voice. | The mask is off. What remains may be softer or harder than the public face — often both |
+      | hostile / guarded | Guarded, formal, short. Walls up. | No personal pronouns ("one does not..."), deflection, physical distance in dialogue staging |
+      | cautious / testing | Polite but measured. Testing. | Occasional first-person, small questions that probe without revealing |
+      | familiar | Relaxed, some humor, some honesty | Inside references begin. Sentences lengthen. Pauses feel comfortable, not tense |
+      | trusted | Direct, occasionally raw, shorthand | Half-sentences work. "Remember when—" "Yeah." Criticism comes freely because it's safe |
+      | devoted / intimate | Stripped bare. The real voice. | The mask is off. What remains may be softer or harder than the public face — often both |
 
-      **CRITICAL**: Affinity is NOT linear. A sudden betrayal can drop 80→20 in one turn.
-      The speech pattern after a betrayal is WORSE than natural 20 — it carries the weight
+      **CRITICAL**: Affinity is NOT linear. A sudden betrayal can drop from "devoted" to "hostile" in one turn.
+      The speech pattern after a betrayal is WORSE than baseline hostility — it carries the weight
       of what was lost. A stranger says "I don't trust you." A betrayed friend says nothing.
       The silence is heavier than any words.
 
-      **VFS IMPLEMENTATION**: On affinity shift > 15 points in a single turn, update
+      **VFS IMPLEMENTATION**: When \`hidden.affinity\` shifts sharply between labels in a single turn, update
       \`hidden.impression\` and let the next dialogue reflect the shift through changed register,
       not through exposition ("I'm disappointed in you" — too on-the-nose).
     </voice_by_affinity>

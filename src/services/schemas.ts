@@ -65,7 +65,6 @@ export type {
   TimelineEvent,
   CausalChain,
   Faction,
-  CharacterAttribute,
   HiddenTrait,
   CharacterStatus,
   StoryOutline,

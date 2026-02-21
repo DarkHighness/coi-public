@@ -117,7 +117,7 @@ export const stateManagement: Atom<void> = defineAtom(
       * **Player → NPC** MUST be \`kind="perception"\`: objective, evidence-based, NO affinity numbers.
       * **NPC → Player / NPC → NPC** MUST be \`kind="attitude"\`:
         - \`visible\`: ONLY observable surface signals and public stance (no numeric affinity).
-        - \`hidden.affinity\` (0-100): TRUE attitude score, DEFAULT HIDDEN.
+        - \`hidden.affinity\` (text): TRUE attitude description, DEFAULT HIDDEN (e.g. "wary", "guarded trust", "devoted").
       * Two independent switches:
         - \`knownBy\`: who knows this relation/entity exists
         - \`unlocked\`: whether a specific observer actor has definitive proof of hidden truth

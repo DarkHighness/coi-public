@@ -107,7 +107,6 @@ describe("outlineHydration builders", () => {
             name: "Hero",
             title: "Champion",
             status: "Ready",
-            attributes: ["brave"],
             appearance: "Armored",
             age: "24",
             profession: "Knight",

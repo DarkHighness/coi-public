@@ -129,13 +129,11 @@ const readUsageValue = (
 
 const getCharacterVisible = (
   player: StoryOutline["player"] | null | undefined,
-): Partial<GameState["character"]> & { attributes?: unknown } => {
+): Partial<GameState["character"]> => {
   if (!isRecord(player?.profile?.visible)) {
     return {};
   }
-  return player.profile.visible as Partial<GameState["character"]> & {
-    attributes?: unknown;
-  };
+  return player.profile.visible as Partial<GameState["character"]>;
 };
 
 const getPlayerCurrentLocation = (
@@ -155,11 +153,6 @@ const toPlayerActorId = (
   isNonEmptyString(player?.profile?.id)
     ? player.profile.id.trim()
     : "char:player";
-
-const toCharacterAttributes = (
-  value: unknown,
-): GameState["character"]["attributes"] =>
-  Array.isArray(value) ? (value as GameState["character"]["attributes"]) : [];
 
 const ensureEntityId = (
   value: unknown,
@@ -444,7 +437,6 @@ export function buildOutlineHydratedState({
       name: visible.name ?? baseState.character.name,
       title: visible.title ?? baseState.character.title,
       status: visible.status ?? baseState.character.status,
-      attributes: toCharacterAttributes(visible.attributes),
       appearance: visible.appearance ?? baseState.character.appearance,
       age: visible.age ?? baseState.character.age ?? "Unknown",
       gender: visible.gender ?? baseState.character.gender ?? "Unspecified",

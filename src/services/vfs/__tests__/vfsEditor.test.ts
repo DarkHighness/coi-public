@@ -93,7 +93,6 @@ describe("vfs editor helper", () => {
           name: "Ari",
           title: "Warden",
           status: "Ready",
-          attributes: ["Calm"],
         },
         relations: [],
       },

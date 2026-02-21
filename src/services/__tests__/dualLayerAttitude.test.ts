@@ -6,7 +6,7 @@ import {
 } from "../zodSchemas";
 
 describe("Dual-layer relations (attitude vs perception)", () => {
-  it("allows NPC→player true affinity only in hidden.affinity", () => {
+  it("allows NPC→player true affinity text only in hidden.affinity", () => {
     const rel = relationAttitudeSchema.strict().parse({
       id: "rel:1",
       kind: "attitude",
@@ -14,20 +14,23 @@ describe("Dual-layer relations (attitude vs perception)", () => {
       knownBy: ["char:player"],
       unlocked: false,
       visible: { signals: ["Polite words, guarded eyes"] },
-      hidden: { affinity: 42, impression: "Cautiously optimistic" },
+      hidden: {
+        affinity: "Guarded trust",
+        impression: "Cautiously optimistic",
+      },
     });
-    expect(rel.hidden?.affinity).toBe(42);
+    expect(rel.hidden?.affinity).toBe("Guarded trust");
   });
 
-  it("rejects placing numeric affinity in attitude.visible", () => {
+  it("rejects placing affinity in attitude.visible", () => {
     expect(() =>
       relationAttitudeSchema.strict().parse({
         id: "rel:1",
         kind: "attitude",
         to: { kind: "character", id: "char:player" },
         knownBy: ["char:player"],
-        visible: { signals: ["Cold stare"], affinity: 12 },
-        hidden: { affinity: 12 },
+        visible: { signals: ["Cold stare"], affinity: "Guarded trust" },
+        hidden: { affinity: "Guarded trust" },
       }),
     ).toThrow();
   });
@@ -39,7 +42,7 @@ describe("Dual-layer relations (attitude vs perception)", () => {
         kind: "perception",
         to: { kind: "character", id: "char:npc_1" },
         knownBy: ["char:player"],
-        visible: { description: "Seems uneasy", affinity: 10 },
+        visible: { description: "Seems uneasy", affinity: "Wary" },
       }),
     ).toThrow();
   });
@@ -58,7 +61,7 @@ describe("Dual-layer relations (attitude vs perception)", () => {
           to: { kind: "character", id: "char:player" },
           knownBy: ["char:player"],
           visible: { signals: ["Keeps distance"] },
-          hidden: { affinity: 12 },
+          hidden: { affinity: "Guarded" },
         },
       ],
     });

@@ -150,7 +150,6 @@ describe("generateStoryOutlinePhased (coverage)", () => {
             race: "Human",
             appearance: "Lean, weathered, sharp-eyed.",
             status: "Searching for answers.",
-            attributes: [],
           },
         },
         skills: [],

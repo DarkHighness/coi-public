@@ -8,7 +8,6 @@ import {
 export const DEFAULT_CHARACTER: CharacterStatus = {
   name: "Initializing...",
   title: "Loading...",
-  attributes: [],
   skills: [],
   conditions: [],
   hiddenTraits: [],

@@ -36,7 +36,6 @@ const baseCharacter = {
   title: "Scout",
   status: "Ready",
   appearance: "Lean",
-  attributes: [],
   skills: [],
   conditions: [],
   hiddenTraits: [],

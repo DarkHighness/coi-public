@@ -39,7 +39,7 @@ ${
 - You MUST design the character to fit this "${protagonistFeature}" role.
 - **character.title** MUST match or be a variation of this role.
 - **character.profession** MUST reflect this role.
-- **character.attributes** and **character.skills** MUST be appropriate for a "${protagonistFeature}".
+- **character.skills** MUST be appropriate for a "${protagonistFeature}".
 
 <identity_as_lens>
 **"${protagonistFeature}" IS NOT JUST A TITLE — IT IS A WAY OF SEEING THE WORLD.**
@@ -222,6 +222,7 @@ export const characterLogic: Atom<void> = defineAtom(
 <game_system_context>
 **CHARACTER LOGIC**: Character state must evolve through evidence and cost.
 - Progression is conditional: gains in skills/traits/attributes require training, events, or consequences.
+- Progression is conditional: gains in skills/traits require training, events, or consequences.
 - Contradictions resolve through action: want/need tension should surface in decisions, not labels.
 - Condition coupling: wounds/fatigue/fear must alter available options and outcomes.
 - Continuity: no sudden personality flips without trigger events.
@@ -256,7 +257,7 @@ export const characterLogicSkill: SkillAtom<void> = defineSkillAtom(
     main: trace.record(characterLogic),
     quickStart: `
 1. Identify trigger event (training, injury, revelation, pressure)
-2. Apply state delta (skills/traits/attributes/conditions) with explicit cause
+2. Apply state delta (skills/traits/conditions) with explicit cause
 3. Reflect delta in choices, costs, and relationships
 4. Verify continuity against prior behavior
 `.trim(),

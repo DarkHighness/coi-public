@@ -78,7 +78,6 @@ import type {
   FactionViewModel as ZodFactionViewModel,
   WorldInfo as ZodWorldInfoDefinition,
   WorldInfoView as ZodWorldInfoView,
-  CharacterAttribute as ZodCharacterAttribute,
   HiddenTrait as ZodHiddenTrait,
   CharacterStatus as ZodCharacterStatus,
   ActorProfile as ZodActorProfile,
@@ -170,7 +169,6 @@ export type PlaceholderDraftFile = ZodPlaceholderDraftFile;
 export type NPC = ActorProfile;
 
 // 以下类型直接使用 Zod 类型（不需要额外的必需字段）
-export type CharacterAttribute = ZodCharacterAttribute;
 export type HiddenTrait = ZodHiddenTrait;
 export type CharacterStatus = ZodCharacterStatus;
 export type StoryOutline = ZodStoryOutline;
@@ -228,7 +226,7 @@ export type {
  *
  * MIXED FIELDS (AI sets initial, system may override):
  * - status: AI updates, but system may have constraints
- * - affinity: AI updates based on story, system validates range (0-100)
+ * - affinity: AI updates based on story as textual true-attitude description
  * ============================================================================
  */
 
@@ -670,7 +668,7 @@ export interface SaveSlot {
   // No need to store full state here, just metadata
 }
 
-// CharacterAttribute, CharacterSkill (as Skill), CharacterCondition (as Condition),
+// CharacterSkill (as Skill), CharacterCondition (as Condition),
 // HiddenTrait, CharacterStatus 从 zodSchemas.ts 导入
 
 // 为兼容性保留别名

@@ -65,7 +65,7 @@ type NpcAttitudeRelation = RelationEdge & {
     claimedIntent?: string;
   };
   hidden?: {
-    affinity?: number;
+    affinity?: string;
     impression?: string;
     observation?: string;
     ambivalence?: string;
@@ -160,8 +160,9 @@ const NpcItem: React.FC<NpcItemProps> = ({
   );
   const showTrueAttitude = Boolean(unlockMode || attitudeUnlockedForPlayer);
   const trueAffinity =
-    typeof attitude?.hidden?.affinity === "number"
-      ? attitude.hidden.affinity
+    typeof attitude?.hidden?.affinity === "string" &&
+    attitude.hidden.affinity.trim().length > 0
+      ? attitude.hidden.affinity.trim()
       : null;
 
   const getLocationName = (locationId?: string) => {
@@ -311,26 +312,6 @@ const NpcItem: React.FC<NpcItemProps> = ({
             {npc.visible?.background ? (
               <SidebarField label={t("background") || "Background"}>
                 <MarkdownText content={npc.visible.background} indentSize={2} />
-              </SidebarField>
-            ) : null}
-
-            {Array.isArray(npc.visible?.attributes) &&
-            npc.visible.attributes.length > 0 ? (
-              <SidebarField label={t("attributes") || "Attributes"}>
-                <div className="space-y-1">
-                  {npc.visible.attributes.map((attr, index) => (
-                    <div
-                      key={`${attr.label}-${index}`}
-                      className="flex items-center justify-between gap-2"
-                    >
-                      <span>{attr.label}</span>
-                      <span className="text-theme-text-secondary font-mono">
-                        {attr.value}
-                        {attr.maxValue ? `/${attr.maxValue}` : ""}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </SidebarField>
             ) : null}
 
@@ -579,10 +560,8 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
           <SidebarSection title={t("meta") || "Meta"}>
             <SidebarField label={t("affinity") || "Affinity"}>
-              {showTrueAttitude && trueAffinity !== null ? (
-                <span className="font-mono">
-                  {Math.round(trueAffinity)}/100
-                </span>
+              {showTrueAttitude && trueAffinity ? (
+                <MarkdownText content={trueAffinity} indentSize={2} />
               ) : (
                 <span className="italic text-theme-text-secondary">
                   {t("gameViewer.affinityHidden", {

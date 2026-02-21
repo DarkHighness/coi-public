@@ -180,7 +180,10 @@ describe("NPCPanel", () => {
           unlocked: true,
           unlockReason: "NPC-only unlock",
           visible: { signals: ["Cold smile"] },
-          hidden: { affinity: 70, impression: "Secret impression" },
+          hidden: {
+            affinity: "Guarded trust",
+            impression: "Secret impression",
+          },
         },
       ],
     });
@@ -219,7 +222,7 @@ describe("NPCPanel", () => {
           unlockReason: "Observed contradiction",
           visible: { signals: ["Calculated smile"] },
           hidden: {
-            affinity: 70,
+            affinity: "Guarded trust",
             impression: "Secret impression",
             observation: "Keeps testing boundaries",
             ambivalence: "Trusts but fears betrayal",

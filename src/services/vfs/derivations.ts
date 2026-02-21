@@ -1944,7 +1944,6 @@ export const deriveGameStateFromVfs = (files: VfsFileMap): GameState => {
       title,
       status,
       appearance,
-      attributes: Array.isArray(visible.attributes) ? visible.attributes : [],
       skills: Array.isArray(playerBundle.skills) ? playerBundle.skills : [],
       conditions: Array.isArray(playerBundle.conditions)
         ? playerBundle.conditions

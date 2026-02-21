@@ -552,7 +552,6 @@ export const seedVfsSessionFromDefaults = (session: VfsSession): void => {
         title: DEFAULT_CHARACTER.title,
         status: DEFAULT_CHARACTER.status,
         appearance: DEFAULT_CHARACTER.appearance,
-        attributes: DEFAULT_CHARACTER.attributes,
         age: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.age,
         gender: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.gender,
         profession: DEFAULT_REQUIRED_PLAYER_VISIBLE_FIELDS.profession,

@@ -130,24 +130,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             )}
           </div>
         )}
-        {char.attributes.length > 0 && (
-          <div className="mt-3 pt-2 border-t border-theme-border/30">
-            <SubsectionLabel>{t("gameViewer.attributes")}:</SubsectionLabel>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {char.attributes.map((attr, idx) => (
-                <div
-                  key={attr.label || idx}
-                  className="flex items-center justify-between p-2 bg-theme-bg rounded-none border border-theme-border/30 text-sm"
-                >
-                  <span className="text-theme-muted">{attr.label}:</span>
-                  <span className="text-theme-text font-medium">
-                    {attr.value}/{attr.maxValue}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </Section>
 
       {/* Active Quests */}

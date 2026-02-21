@@ -985,29 +985,6 @@ export const causalChainViewSchema = withUnlockReasonRequirement(
     .strict(),
 );
 
-// ============================================================================
-// 角色属性 Schemas
-// ============================================================================
-
-/** 角色属性颜色 */
-export const attributeColorSchema = z.enum([
-  "red",
-  "blue",
-  "green",
-  "yellow",
-  "purple",
-  "gray",
-]);
-
-/** 角色属性 */
-export const characterAttributeSchema = z.object({
-  label: z.string().describe("Attribute name (e.g. Health, Sanity)."),
-  value: z.number().int().describe("Current value."),
-  maxValue: z.number().int().describe("Maximum value."),
-  color: attributeColorSchema.describe("Visual color hint."),
-  icon: z.string().nullish().describe("Single emoji icon."),
-});
-
 /** 隐藏特质 */
 export const hiddenTraitSchema = z.object({
   id: z.string().describe("Unique trait ID (e.g. 'fear_of_darkness')."),
@@ -1102,12 +1079,11 @@ export const relationAttitudeSchema = relationBaseSchema.extend({
   hidden: z
     .object({
       affinity: z
-        .number()
-        .int()
-        .min(0)
-        .max(100)
+        .string()
         .nullish()
-        .describe("TRUE affinity 0-100 (GM-only, never expose)."),
+        .describe(
+          "TRUE affinity text label (GM-only, never expose), e.g. 'wary', 'guarded trust', 'devoted'.",
+        ),
       impression: z
         .string()
         .nullish()
@@ -1171,10 +1147,6 @@ export const actorVisibleSchema = z.object({
   profession: z.string().nullish().describe("Surface profession."),
   background: z.string().nullish().describe("Public background."),
   race: z.string().nullish().describe("Surface race/species (no gender)."),
-  attributes: z
-    .array(characterAttributeSchema)
-    .nullish()
-    .describe("Actor-facing stats."),
   description: z
     .string()
     .nullish()
@@ -1289,10 +1261,6 @@ export const characterProfileSchema = z.object({
     .string()
     .nullish()
     .describe("Initial condition (e.g. Healthy, Amnesiac)."),
-  attributes: z
-    .array(characterAttributeSchema)
-    .default([])
-    .describe("Character attributes."),
   appearance: z.string().nullish().describe("Detailed physical appearance."),
   age: z
     .string()
@@ -1331,9 +1299,6 @@ export const characterStatusSchema = z.object({
   name: z.string().describe("Name of the protagonist."),
   title: z.string().describe("Starting Class/Role/Title."),
   status: z.string().describe("Initial condition (e.g. Healthy, Amnesiac)."),
-  attributes: z
-    .array(characterAttributeSchema)
-    .describe("Character attributes."),
   skills: z.array(skillSchema).describe("Character skills."),
   conditions: z.array(conditionSchema).describe("Active conditions."),
   hiddenTraits: z
@@ -1522,9 +1487,6 @@ export const strictPlayerVisibleSchema = actorVisibleSchema.extend({
   race: requiredConcretePlayerString("player.profile.visible.race"),
   appearance: requiredConcretePlayerString("player.profile.visible.appearance"),
   status: requiredConcretePlayerString("player.profile.visible.status"),
-  attributes: z
-    .array(characterAttributeSchema)
-    .describe("Player-facing attributes/stats (required; can be empty)."),
 });
 
 export const strictPlayerProfileSchema = actorProfileSchema.extend({
@@ -2172,17 +2134,6 @@ export const gameResponseSchema = z.object({
     .describe("Background actions taken by factions this turn."),
   characterUpdates: z
     .object({
-      attributes: z
-        .array(
-          z.object({
-            action: z.enum(["add", "update", "remove"]),
-            name: z.string(),
-            value: z.number().int().nullish(),
-            maxValue: z.number().int().nullish(),
-            color: attributeColorSchema.nullish(),
-          }),
-        )
-        .nullish(),
       skills: z
         .array(
           z.object({
@@ -2631,7 +2582,6 @@ export type TimelineEventView = z.infer<typeof timelineEventViewSchema>;
 export type LocationView = z.infer<typeof locationViewSchema>;
 export type FactionView = z.infer<typeof factionViewSchema>;
 export type CausalChainView = z.infer<typeof causalChainViewSchema>;
-export type CharacterAttribute = z.infer<typeof characterAttributeSchema>;
 export type HiddenTrait = z.infer<typeof hiddenTraitSchema>;
 export type CharacterProfile = z.infer<typeof characterProfileSchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;

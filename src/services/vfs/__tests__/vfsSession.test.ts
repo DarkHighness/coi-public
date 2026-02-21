@@ -26,7 +26,7 @@ const createProfileWithRelationUnlock = () => ({
         signals: ["keeps distance"],
       },
       hidden: {
-        affinity: 70,
+        affinity: "Guarded trust",
         privateIntent: "protect from threat",
       },
     },

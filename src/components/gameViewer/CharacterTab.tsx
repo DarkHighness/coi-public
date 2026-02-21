@@ -1,6 +1,6 @@
 /**
  * CharacterTab - Character details display
- * Shows basic info, attributes, skills, conditions, and hidden traits
+ * Shows basic info, skills, conditions, and hidden traits
  */
 
 import React from "react";
@@ -205,43 +205,6 @@ export const CharacterTab: React.FC<CharacterTabProps> = ({
           </div>
         )}
       </Section>
-
-      {/* Attributes */}
-      {char.attributes.length > 0 && (
-        <Section
-          id="charAttrs"
-          title={t("gameViewer.attributes")}
-          icon="📊"
-          isExpanded={expandedSections.has("charAttrs")}
-          onToggle={toggleSection}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {char.attributes.map((attr, idx) => (
-              <div
-                key={attr.label || idx}
-                className="flex items-center gap-3 p-3 bg-theme-bg rounded-none border border-theme-border/40"
-              >
-                <span className="text-theme-primary text-sm font-bold uppercase tracking-wider min-w-[80px]">
-                  {attr.label}:
-                </span>
-                <div className="flex-1 flex items-center gap-3">
-                  <div className="flex-1 h-2.5 bg-theme-bg/50 rounded-full overflow-hidden border border-theme-border/30">
-                    <div
-                      className={`h-full rounded-full bg-${attr.color}-500`}
-                      style={{
-                        width: `${(attr.value / attr.maxValue) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-theme-text text-sm font-mono font-bold min-w-[50px] text-right">
-                    {attr.value}/{attr.maxValue}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
 
       {/* Skills */}
       {char.skills.length > 0 && (

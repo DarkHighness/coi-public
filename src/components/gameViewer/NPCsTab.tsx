@@ -1,7 +1,7 @@
 /**
  * NpcsTab - Known characters and NPCs display
  * Actor-first + Dual Layer:
- * - NPC → Player true affinity is stored only in relation.attitude.hidden.affinity (default hidden)
+ * - NPC → Player true affinity is stored only in relation.attitude.hidden.affinity as text (default hidden)
  * - Player → NPC perception is objective (relation.perception)
  */
 
@@ -67,14 +67,6 @@ const isPerceptionRelationTo = (
   edge.to?.kind === "character" &&
   edge.to?.id === targetId;
 
-const getAffinityBadgeClass = (val: number): string => {
-  if (val >= 80) return "bg-green-500/20 text-green-400";
-  if (val >= 60) return "bg-blue-500/20 text-blue-400";
-  if (val >= 40) return "bg-yellow-500/20 text-yellow-400";
-  if (val >= 20) return "bg-orange-500/20 text-orange-400";
-  return "bg-red-500/20 text-red-400";
-};
-
 export const NPCsTab: React.FC<NpcsTabProps> = ({
   gameState,
   expandedSections,
@@ -130,8 +122,10 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                 gameState.unlockMode || attitudeUnlockedForPlayer,
               );
               const affinity =
-                showTrueAttitude && typeof attitudeHidden?.affinity === "number"
-                  ? attitudeHidden.affinity
+                showTrueAttitude &&
+                typeof attitudeHidden?.affinity === "string" &&
+                attitudeHidden.affinity.trim().length > 0
+                  ? attitudeHidden.affinity.trim()
                   : null;
 
               const perception = playerRelations.find(
@@ -159,7 +153,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                       className={`text-xs px-2 py-0.5 rounded font-bold ${
                         affinity === null
                           ? "bg-theme-surface text-theme-muted"
-                          : getAffinityBadgeClass(affinity)
+                          : "bg-theme-primary/15 text-theme-primary border border-theme-primary/30"
                       }`}
                       title={
                         affinity === null
@@ -170,7 +164,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                           : undefined
                       }
                     >
-                      {affinity === null ? "?" : `${Math.round(affinity)}/100`}
+                      {affinity === null ? "?" : affinity}
                     </span>
                   </div>
 
@@ -273,26 +267,6 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                         value={npc.visible.background}
                       />
                     )}
-                    {Array.isArray(npc.visible?.attributes) &&
-                      npc.visible.attributes.length > 0 && (
-                        <div>
-                          <span className="text-xs uppercase tracking-wider text-theme-primary/80 block mb-1">
-                            {t("gameViewer.attributes", {
-                              defaultValue: "Attributes",
-                            })}
-                            :
-                          </span>
-                          <ul className="list-disc list-inside pl-2 text-theme-text/80 space-y-1">
-                            {npc.visible.attributes.map((attr, i) => (
-                              <li key={`${attr.label}-${i}`}>
-                                {attr.icon ? `${attr.icon} ` : ""}
-                                {attr.label}: {attr.value}/{attr.maxValue}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
                     {(readString(attitudeVisible?.reputationTag) ||
                       readString(attitudeVisible?.claimedIntent) ||
                       readStringArray(attitudeVisible?.signals).length > 0) && (

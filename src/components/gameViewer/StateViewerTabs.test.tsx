@@ -250,7 +250,7 @@ describe("GameViewer non-player field coverage", () => {
     expect(screen.getByText(/Emotional Weight/i)).toBeTruthy();
   });
 
-  it("renders NPC visible attributes and relation hidden details", () => {
+  it("renders NPC visible details and relation hidden details", () => {
     const gameState = {
       ...baseState,
       actors: [
@@ -286,7 +286,6 @@ describe("GameViewer non-player field coverage", () => {
             name: "Watcher",
             race: "Human",
             gender: "Female",
-            attributes: [{ label: "HP", value: 7, maxValue: 10, color: "red" }],
           },
           relations: [
             {
@@ -298,7 +297,7 @@ describe("GameViewer non-player field coverage", () => {
               unlockReason: "Mind link opened",
               visible: { signals: ["Cold smile"] },
               hidden: {
-                affinity: 62,
+                affinity: "Guarded trust",
                 observation: "Testing every response",
                 ambivalence: "Needs the player but fears betrayal",
                 transactionalBenefit: "Access to vault routes",
@@ -320,7 +319,6 @@ describe("GameViewer non-player field coverage", () => {
       }),
     );
 
-    expect(screen.getByText("HP: 7/10")).toBeTruthy();
     expect(screen.getByText("Avoids eye contact")).toBeTruthy();
     expect(screen.getByText("Mind link opened")).toBeTruthy();
     expect(screen.getByText("Protects own secret")).toBeTruthy();
@@ -358,7 +356,7 @@ describe("GameViewer non-player field coverage", () => {
               unlockReason: "Mind link opened",
               visible: { signals: ["Cold smile"] },
               hidden: {
-                affinity: 62,
+                affinity: "Guarded trust",
                 motives: "Protects own secret",
               },
             },
