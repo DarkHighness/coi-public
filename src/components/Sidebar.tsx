@@ -51,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Get state from context
   const { state, actions } = useRuntimeContext();
-  const { gameState, isTranslating, currentThemeConfig } = state;
+  const { gameState, currentThemeConfig } = state;
   const { setLanguage } = actions;
 
   const { character } = gameState;
@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="hidden md:flex shrink-0 items-center">
             <LanguageSelector
               variant="compact"
-              disabled={isTranslating || gameState.isProcessing}
+              disabled={gameState.isProcessing}
               onChange={setLanguage}
             />
           </div>
@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="absolute right-3 top-3 md:hidden flex items-center gap-1">
           <LanguageSelector
             variant="compact"
-            disabled={isTranslating || gameState.isProcessing}
+            disabled={gameState.isProcessing}
             onChange={setLanguage}
           />
           <button

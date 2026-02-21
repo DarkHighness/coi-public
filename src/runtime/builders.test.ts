@@ -43,7 +43,6 @@ describe("runtime state builders", () => {
     const engineState = buildRuntimeEngineState(
       {
         language: "en",
-        isTranslating: false,
         gameState: {} as any,
         vfsSession: {} as any,
         isAutoSaving: false,
@@ -74,7 +73,6 @@ describe("runtime state builders", () => {
   it("builds runtime slices from engine, rag, and meta state", () => {
     const engineState = {
       language: "en",
-      isTranslating: false,
       gameState: { id: "g1" },
       vfsSession: { id: "v1" },
       isAutoSaving: false,

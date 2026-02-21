@@ -60,7 +60,6 @@ interface UseGameActionProps {
   aiSettings: AISettings;
   handleSaveSettings: (settings: AISettings) => void;
   language: LanguageCode;
-  isTranslating: boolean;
   currentSlotId: string | null;
   generateImageForNode: (
     nodeId: string,
@@ -77,7 +76,6 @@ export const useGameAction = ({
   aiSettings,
   handleSaveSettings,
   language,
-  isTranslating,
   currentSlotId,
   generateImageForNode,
   triggerSave,
@@ -381,17 +379,11 @@ export const useGameAction = ({
       const blockedByProcessingRef = processingRef.current && !isInit;
       const blockedByGameStateProcessing =
         gameStateRef.current.isProcessing && !isInit;
-      const blockedByTranslating = isTranslating;
-      if (
-        blockedByProcessingRef ||
-        blockedByGameStateProcessing ||
-        blockedByTranslating
-      ) {
+      if (blockedByProcessingRef || blockedByGameStateProcessing) {
         console.warn("[useGameAction] handleAction ignored", {
           reason: {
             processingRef: blockedByProcessingRef,
             gameStateProcessing: blockedByGameStateProcessing,
-            translating: blockedByTranslating,
           },
           isInit,
           turnNumber: gameStateRef.current.turnNumber,
@@ -1079,13 +1071,55 @@ export const useGameAction = ({
               ? t("game.errors.unknownProviderManualRetry")
               : t("game.errors.turnGenerationFailed");
 
-        setGameState((prev) => ({
-          ...prev,
-          isProcessing: false,
-          liveToolCalls: [],
-          error: userFacingErrorMessage,
-          // History clearing handled by session manager
-        }));
+        setGameState((prev) => {
+          const shouldRollbackOptimisticUserNode =
+            !isInit &&
+            !reuseExistingNode &&
+            Boolean(
+              effectiveUserNodeId &&
+              prev.nodes[effectiveUserNodeId]?.role === "user",
+            );
+
+          if (!shouldRollbackOptimisticUserNode) {
+            const nextState = {
+              ...prev,
+              isProcessing: false,
+              liveToolCalls: [],
+              error: userFacingErrorMessage,
+              // History clearing handled by session manager
+            };
+            gameStateRef.current = nextState;
+            return nextState;
+          }
+
+          const nextNodes = { ...prev.nodes };
+          delete nextNodes[effectiveUserNodeId];
+
+          const fallbackActiveNodeId =
+            (effectiveParentId && nextNodes[effectiveParentId]
+              ? effectiveParentId
+              : null) ||
+            (prev.activeNodeId && nextNodes[prev.activeNodeId]
+              ? prev.activeNodeId
+              : null) ||
+            (prev.rootNodeId && nextNodes[prev.rootNodeId]
+              ? prev.rootNodeId
+              : null);
+
+          const nextState = {
+            ...prev,
+            nodes: nextNodes,
+            activeNodeId: fallbackActiveNodeId,
+            currentFork: fallbackActiveNodeId
+              ? deriveHistory(nextNodes, fallbackActiveNodeId)
+              : [],
+            isProcessing: false,
+            liveToolCalls: [],
+            error: userFacingErrorMessage,
+          };
+          gameStateRef.current = nextState;
+          return nextState;
+        });
         processingRef.current = false;
         return {
           success: false,
@@ -1103,7 +1137,6 @@ export const useGameAction = ({
       persistUsageToActiveTurn,
       handleSaveSettings,
       language,
-      isTranslating,
       setGameState,
       t,
       currentSlotId,

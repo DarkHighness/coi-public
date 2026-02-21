@@ -104,7 +104,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onJumpToSegment,
 }) => {
   const { state, actions } = useRuntimeContext();
-  const { gameState, currentHistory, isTranslating, aiSettings } = state;
+  const { gameState, currentHistory, aiSettings } = state;
   const { toggleGodMode, setUnlockMode } = actions;
   const { providerModels } = useSettingsContext();
   const [isJumpOpen, setIsJumpOpen] = useState(false);
@@ -126,7 +126,8 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     .filter((s) => s.role === "model" || s.role === "system")
     .slice(-1)[0];
   const availableChoices = lastSegment?.choices || [];
-  const isDisabled = gameState.isProcessing || isTranslating;
+  const hasTurnError = Boolean(gameState.error);
+  const isDisabled = gameState.isProcessing || hasTurnError;
   const hasChoices = availableChoices.length > 0;
   const customChoiceIndex = availableChoices.length + 1;
   const showCommandHints = customInput.startsWith("/");
@@ -327,6 +328,10 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   // Keyboard shortcuts for choices (1-4)
   useEffect(() => {
+    if (hasTurnError) {
+      return;
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isDisabled) return;
       // Only trigger if not typing in an input
@@ -352,6 +357,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   }, [
     availableChoices,
     customChoiceIndex,
+    hasTurnError,
     hasChoices,
     isDisabled,
     onAction,
@@ -934,75 +940,111 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
       <div className="bg-theme-bg/80 backdrop-blur-md px-3 py-3 md:px-8 md:py-4 border-t border-theme-divider/60">
         <div className="max-w-4xl mx-auto space-y-2 md:space-y-4">
-          <div className="flex justify-center">
-            <div
-              className={[
-                "text-[10px] uppercase tracking-widest font-bold select-none",
-                usageRatio !== null && usageRatio >= displayAutoCompactThreshold
-                  ? "text-theme-warning"
-                  : "text-theme-muted",
-              ].join(" ")}
-              title={[
-                usageRatio !== null
-                  ? `${t("contextUsage") || "Context"}: ${displayUsageTokens?.toLocaleString()}/${displayContextWindowTokens.toLocaleString()} (${Math.round(
-                      usageRatio * 100,
-                    )}%)`
-                  : `${t("contextUsage") || "Context"}: —/${displayContextWindowTokens.toLocaleString()}`,
-                autoCompactEnabled
-                  ? `Auto: ${Math.round(displayAutoCompactThreshold * 100)}% (${thresholdTokens.toLocaleString()})`
-                  : "Auto: off",
-                tokensToThreshold !== null
-                  ? `${t("tokensToCompact") || "To compact"}: ${tokensToThreshold.toLocaleString()}`
-                  : "",
-                lastCompactId !== null
-                  ? `${t("lastCompact") || "Last"}: #${lastCompactId}${lastCompactAt ? ` (${new Date(lastCompactAt).toLocaleString()})` : ""}`
-                  : "",
-              ]
-                .filter(Boolean)
-                .join("\n")}
-            >
-              {/* Mobile: short + glanceable */}
-              <span className="sm:hidden">
-                {t("contextUsage") || "Context"}:{" "}
-                {usageRatio === null
-                  ? `—/${formatTokens(displayContextWindowTokens, "compact")}`
-                  : [
-                      `${Math.round(usageRatio * 100)}%`,
-                      tokensToThreshold !== null
-                        ? `${t("tokensToCompact") || "To compact"} ${formatTokens(tokensToThreshold, "compact")}`
-                        : "",
-                      lastCompactId !== null ? `#${lastCompactId}` : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" • ")}
-              </span>
+          {!hasTurnError && (
+            <div className="flex justify-center">
+              <div
+                className={[
+                  "text-[10px] uppercase tracking-widest font-bold select-none",
+                  usageRatio !== null &&
+                  usageRatio >= displayAutoCompactThreshold
+                    ? "text-theme-warning"
+                    : "text-theme-muted",
+                ].join(" ")}
+                title={[
+                  usageRatio !== null
+                    ? `${t("contextUsage") || "Context"}: ${displayUsageTokens?.toLocaleString()}/${displayContextWindowTokens.toLocaleString()} (${Math.round(
+                        usageRatio * 100,
+                      )}%)`
+                    : `${t("contextUsage") || "Context"}: —/${displayContextWindowTokens.toLocaleString()}`,
+                  autoCompactEnabled
+                    ? `Auto: ${Math.round(displayAutoCompactThreshold * 100)}% (${thresholdTokens.toLocaleString()})`
+                    : "Auto: off",
+                  tokensToThreshold !== null
+                    ? `${t("tokensToCompact") || "To compact"}: ${tokensToThreshold.toLocaleString()}`
+                    : "",
+                  lastCompactId !== null
+                    ? `${t("lastCompact") || "Last"}: #${lastCompactId}${lastCompactAt ? ` (${new Date(lastCompactAt).toLocaleString()})` : ""}`
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join("\n")}
+              >
+                {/* Mobile: short + glanceable */}
+                <span className="sm:hidden">
+                  {t("contextUsage") || "Context"}:{" "}
+                  {usageRatio === null
+                    ? `—/${formatTokens(displayContextWindowTokens, "compact")}`
+                    : [
+                        `${Math.round(usageRatio * 100)}%`,
+                        tokensToThreshold !== null
+                          ? `${t("tokensToCompact") || "To compact"} ${formatTokens(tokensToThreshold, "compact")}`
+                          : "",
+                        lastCompactId !== null ? `#${lastCompactId}` : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" • ")}
+                </span>
 
-              {/* Desktop: full breakdown */}
-              <span className="hidden sm:inline">
-                {t("contextUsage") || "Context"}:{" "}
-                {usageRatio === null
-                  ? `—/${formatTokens(displayContextWindowTokens, "full")}`
-                  : `${formatTokens(displayUsageTokens!, "full")}/${formatTokens(displayContextWindowTokens, "full")} (${Math.round(
-                      usageRatio * 100,
-                    )}%)`}
-                {"  "}
-                {autoCompactEnabled
-                  ? `• auto ${Math.round(displayAutoCompactThreshold * 100)}% (${formatTokens(thresholdTokens, "full")})`
-                  : "• auto off"}
-                {"  "}
-                {tokensToThreshold !== null
-                  ? `• ${t("tokensToCompact") || "To compact"} ${formatTokens(tokensToThreshold, "full")}`
-                  : ""}
-                {"  "}
-                {lastCompactId !== null
-                  ? `• ${t("lastCompact") || "Last"} #${lastCompactId}${lastCompactAt ? ` ${formatAgo(lastCompactAt)}` : ""}`
-                  : ""}
-              </span>
+                {/* Desktop: full breakdown */}
+                <span className="hidden sm:inline">
+                  {t("contextUsage") || "Context"}:{" "}
+                  {usageRatio === null
+                    ? `—/${formatTokens(displayContextWindowTokens, "full")}`
+                    : `${formatTokens(displayUsageTokens!, "full")}/${formatTokens(displayContextWindowTokens, "full")} (${Math.round(
+                        usageRatio * 100,
+                      )}%)`}
+                  {"  "}
+                  {autoCompactEnabled
+                    ? `• auto ${Math.round(displayAutoCompactThreshold * 100)}% (${formatTokens(thresholdTokens, "full")})`
+                    : "• auto off"}
+                  {"  "}
+                  {tokensToThreshold !== null
+                    ? `• ${t("tokensToCompact") || "To compact"} ${formatTokens(tokensToThreshold, "full")}`
+                    : ""}
+                  {"  "}
+                  {lastCompactId !== null
+                    ? `• ${t("lastCompact") || "Last"} #${lastCompactId}${lastCompactAt ? ` ${formatAgo(lastCompactAt)}` : ""}`
+                    : ""}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Error State - lock actions and only allow retry */}
+          {hasTurnError && !gameState.isProcessing && (
+            <div className="animate-fade-in-up">
+              <div className="mx-auto max-w-[72ch] rounded-lg border border-theme-error/35 bg-theme-error/10 px-3 py-3 text-center">
+                <div className="text-[11px] uppercase tracking-widest text-theme-error mb-2">
+                  {t("game.errors.turnGenerationFailed")}
+                </div>
+                {onRetry && (
+                  <button
+                    onClick={() => setPendingAction("retry")}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-bold text-theme-primary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25"
+                    title={t("retryGeneration")}
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      ></path>
+                    </svg>
+                    <span>{t("retryGeneration")}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Action Controls - Always show retry/jump buttons when not processing */}
-          {!gameState.isProcessing && !isTranslating && (
+          {!hasTurnError && !gameState.isProcessing && (
             <div className="animate-fade-in-up">
               {/* Retry + Jump Buttons - Always visible */}
               <div className="flex justify-center items-center gap-1.5 mb-2 flex-wrap">
@@ -1292,7 +1334,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           )}
 
           {/* Command Hints - Only show when user starts with / */}
-          {showCommandHints && !hasChoices && (
+          {showCommandHints && !hasChoices && !hasTurnError && (
             <div
               className={`flex flex-wrap gap-x-3 gap-y-1 px-2 text-[11px] text-theme-text-secondary/80 ${hasChoices ? "mx-auto max-w-[72ch]" : "justify-center"}`}
             >
@@ -1312,7 +1354,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
           {/* Input Bar */}
           <div className="relative">
-            {hasChoices ? null : (
+            {hasChoices || hasTurnError ? null : (
               <form
                 onSubmit={handleCustomSubmit}
                 className="relative flex items-end gap-2 bg-theme-bg/60 backdrop-blur-sm border border-theme-divider/60 border-t border-t-theme-divider/60 rounded-none px-1.5 py-2 transition-colors focus-within:border-t-theme-primary/50"

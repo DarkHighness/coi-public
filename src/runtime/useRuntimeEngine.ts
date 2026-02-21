@@ -59,7 +59,6 @@ export const useRuntimeEngine = () => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
-  const [isTranslating, setIsTranslating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Use settings hook for all settings management
@@ -169,7 +168,6 @@ export const useRuntimeEngine = () => {
       aiSettings,
       handleSaveSettings,
       language,
-      isTranslating,
       currentSlotId,
       generateImageForNode: async (
         nodeId: string,
@@ -325,7 +323,6 @@ export const useRuntimeEngine = () => {
   return {
     language,
     setLanguage,
-    isTranslating,
     gameState,
     handleAction,
     startNewGame,

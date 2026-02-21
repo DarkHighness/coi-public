@@ -67,7 +67,6 @@ export function buildRuntimeState(
       themeFont: engineState.themeFont,
     },
     async: {
-      isTranslating: engineState.isTranslating,
       isAutoSaving: engineState.isAutoSaving,
       persistenceError: engineState.persistenceError,
     },

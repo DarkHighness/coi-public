@@ -102,7 +102,6 @@ export const GamePage: React.FC<GamePageProps> = ({
     gameState,
     currentHistory,
     language,
-    isTranslating,
     aiSettings,
     saveSlots,
     currentSlotId,
@@ -363,7 +362,6 @@ export const GamePage: React.FC<GamePageProps> = ({
       console.warn("[GamePage] Player action returned null (ignored)", {
         turnNumber: gameState.turnNumber,
         isProcessing: gameState.isProcessing,
-        isTranslating,
         actionPreview:
           typeof action === "string"
             ? action.slice(0, 120)

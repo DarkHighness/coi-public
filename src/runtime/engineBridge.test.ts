@@ -7,7 +7,6 @@ import {
 function createEngineSource() {
   return {
     language: "en",
-    isTranslating: false,
     gameState: { id: "game-1" },
     vfsSession: { id: "vfs-1" },
     isAutoSaving: false,

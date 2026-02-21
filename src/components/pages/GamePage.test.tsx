@@ -23,7 +23,6 @@ const runtimeState = vi.hoisted(() => ({
     },
     currentHistory: [],
     language: "en",
-    isTranslating: false,
     aiSettings: {
       audioVolume: {
         bgmVolume: 0.5,

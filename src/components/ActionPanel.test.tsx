@@ -13,6 +13,7 @@ const runtimeState = vi.hoisted(() => ({
       godMode: false,
       unlockMode: false,
       liveToolCalls: [],
+      error: null as string | null,
     },
     currentHistory: [
       {
@@ -20,7 +21,6 @@ const runtimeState = vi.hoisted(() => ({
         choices: ["Go left", "Go right"],
       },
     ],
-    isTranslating: false,
     aiSettings: {
       providers: {
         instances: [{ id: "provider-1", protocol: "openai" }],
@@ -65,6 +65,7 @@ describe("ActionPanel", () => {
       godMode: false,
       unlockMode: false,
       liveToolCalls: [],
+      error: null,
     };
     runtimeState.state.currentHistory = [
       {
@@ -134,5 +135,23 @@ describe("ActionPanel", () => {
     render(React.createElement(ActionPanel, { onAction: vi.fn() }));
 
     expect(screen.getByTitle(/contextUsage:\s*—\/128,?000/i)).toBeTruthy();
+  });
+
+  it("locks action input after turn error and keeps retry only", () => {
+    runtimeState.state.gameState = {
+      ...runtimeState.state.gameState,
+      error: "Turn failed",
+    };
+
+    const onAction = vi.fn();
+    render(React.createElement(ActionPanel, { onAction, onRetry: vi.fn() }));
+
+    expect(screen.queryByText("Go left")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /retryGeneration/i }),
+    ).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "1" });
+    expect(onAction).not.toHaveBeenCalled();
   });
 });

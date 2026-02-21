@@ -71,7 +71,6 @@ export interface RuntimeRagActions {
 
 export interface RuntimeEngineState {
   language: LanguageCode;
-  isTranslating: boolean;
   gameState: GameState;
   vfsSession: VfsSession;
   isAutoSaving: boolean;
@@ -187,7 +186,6 @@ export interface RuntimeUiState {
 }
 
 export interface RuntimeAsyncState {
-  isTranslating: boolean;
   isAutoSaving: boolean;
   persistenceError: string | null;
 }

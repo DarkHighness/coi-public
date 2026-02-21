@@ -122,7 +122,6 @@ function AppContent() {
   const { state: engineState, actions: engineActions } = useRuntimeContext();
   const {
     language,
-    isTranslating,
     gameState,
     aiSettings,
     currentHistory,

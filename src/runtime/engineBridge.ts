@@ -24,7 +24,6 @@ export function buildRuntimeEngineBaseStateFromSource(
 ): RuntimeEngineBaseState {
   return {
     language: engine.language,
-    isTranslating: engine.isTranslating,
     gameState: engine.gameState,
     vfsSession: engine.vfsSession,
     isAutoSaving: engine.isAutoSaving,
