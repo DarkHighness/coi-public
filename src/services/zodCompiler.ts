@@ -1363,6 +1363,115 @@ export function createOpenRouterTool(
   };
 }
 
+const GEMINI_OPENROUTER_TYPE_PRIORITY = [
+  "object",
+  "array",
+  "string",
+  "number",
+  "integer",
+  "boolean",
+  "null",
+] as const;
+
+const pickGeminiOpenRouterType = (
+  type: OpenAISchema["type"] | undefined,
+): string | undefined => {
+  if (!type) return undefined;
+  if (typeof type === "string") return type;
+  for (const candidate of GEMINI_OPENROUTER_TYPE_PRIORITY) {
+    if (type.includes(candidate)) return candidate;
+  }
+  return type[0];
+};
+
+const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
+  const result: OpenAISchema = { type: "string" };
+
+  const normalizedType = pickGeminiOpenRouterType(schema.type);
+  if (normalizedType) {
+    result.type = normalizedType;
+  }
+
+  if (schema.description) {
+    result.description = schema.description;
+  }
+  if (Array.isArray(schema.enum)) {
+    result.enum = schema.enum;
+  }
+  if ((schema as { nullable?: boolean }).nullable === true) {
+    (result as { nullable?: boolean }).nullable = true;
+  }
+
+  if (schema.items && typeof schema.items === "object") {
+    result.items = sanitizeOpenRouterGeminiSchema(schema.items);
+    if (!result.type) {
+      result.type = "array";
+    }
+  }
+
+  const rawProperties = schema.properties;
+  if (rawProperties && typeof rawProperties === "object") {
+    const properties: Record<string, OpenAISchema> = {};
+
+    for (const [key, value] of Object.entries(rawProperties)) {
+      properties[key] = sanitizeOpenRouterGeminiSchema(value);
+    }
+
+    result.properties = properties;
+    if (!result.type) {
+      result.type = "object";
+    }
+
+    const required = Array.isArray(schema.required)
+      ? schema.required.filter(
+          (key): key is string =>
+            typeof key === "string" &&
+            Object.prototype.hasOwnProperty.call(properties, key),
+        )
+      : [];
+    if (required.length > 0) {
+      result.required = required;
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Compile Zod schema for Gemini-backed tool parameters on OpenAI-compatible channels.
+ * This profile intentionally avoids `anyOf` to reduce provider-side conversion failures.
+ */
+export function zodToGeminiToolCompatibleSchema(
+  schema: ZodTypeAny,
+): OpenAISchema {
+  return sanitizeOpenRouterGeminiSchema(zodToGeminiCompatibleSchema(schema));
+}
+
+/**
+ * Backward-compatible alias for existing OpenRouter callsites.
+ */
+export const zodToOpenRouterGeminiCompatibleSchema =
+  zodToGeminiToolCompatibleSchema;
+
+/**
+ * Create OpenRouter tool schema tuned for Gemini-backed models.
+ */
+export function createOpenRouterGeminiTool(
+  name: string,
+  description: string,
+  parameters: ZodTypeAny,
+): OpenRouterToolDefinition {
+  return {
+    type: "function",
+    function: {
+      name,
+      description,
+      strict: false,
+      parameters: zodToGeminiToolCompatibleSchema(parameters),
+    },
+  };
+}
+
 // ============================================================================
 // Zod to Claude Compatible Compiler (for OpenAI Channel)
 // ============================================================================
@@ -1772,7 +1881,7 @@ export function createGeminiCompatibleTool(
       name,
       description,
       strict: false, // Gemini almost never claims strict support in this channel
-      parameters: zodToGeminiCompatibleSchema(parameters),
+      parameters: zodToGeminiToolCompatibleSchema(parameters),
     },
   };
 }

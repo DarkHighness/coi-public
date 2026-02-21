@@ -55,6 +55,7 @@ import {
   zodToOpenAIResponseFormat,
   zodToGemini,
   createOpenRouterTool,
+  createOpenRouterGeminiTool,
   isGeminiModel,
 } from "../zodCompiler";
 import { parseContextOverflowDiagnostics } from "../modelContextWindows";
@@ -816,7 +817,9 @@ export async function generateContent(
       const messages = convertToOpenAIMessages(systemInstruction, contents);
       // Convert tools
       const tools = options?.tools
-        ? convertToOpenRouterTools(options.tools)
+        ? convertToOpenRouterTools(options.tools, {
+            geminiCompatibility: isGemini,
+          })
         : undefined;
 
       // Convert toolChoice
@@ -1360,14 +1363,22 @@ function convertToOpenAIMessages(
  */
 function convertToOpenRouterTools(
   tools: GenerateContentOptions["tools"],
+  options?: { geminiCompatibility?: boolean },
 ): models.ToolDefinitionJson[] {
+  const useGeminiCompat = !!options?.geminiCompatibility;
   return (tools || []).map(
     (tool) =>
-      createOpenRouterTool(
-        tool.name,
-        tool.description,
-        tool.parameters,
-      ) as models.ToolDefinitionJson,
+      (useGeminiCompat
+        ? createOpenRouterGeminiTool(
+            tool.name,
+            tool.description,
+            tool.parameters,
+          )
+        : createOpenRouterTool(
+            tool.name,
+            tool.description,
+            tool.parameters,
+          )) as models.ToolDefinitionJson,
   );
 }
 // ============================================================================
