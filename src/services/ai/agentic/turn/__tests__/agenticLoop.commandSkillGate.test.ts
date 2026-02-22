@@ -180,6 +180,21 @@ const getMessageText = (message: any): string =>
     (part: any) => part?.type === "text" && typeof part?.text === "string",
   )?.text ?? "";
 
+const extractSectionText = (text: string, sectionName: string): string => {
+  const startMarker = `[SECTION BEGIN: ${sectionName}]`;
+  const endMarker = `[SECTION END: ${sectionName}]`;
+  const startIndex = text.indexOf(startMarker);
+  if (startIndex < 0) {
+    return "";
+  }
+  const bodyStart = startIndex + startMarker.length;
+  const endIndex = text.indexOf(endMarker, bodyStart);
+  if (endIndex < 0) {
+    return text.slice(bodyStart).trim();
+  }
+  return text.slice(bodyStart, endIndex).trim();
+};
+
 describe("agenticLoop command skill gate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1487,7 +1502,7 @@ describe("agenticLoop command skill gate", () => {
     const firstAiCall = aiHandlerMock.handleAICall.mock.calls[0]?.[0] as any;
     const conversationHistory = (firstAiCall?.conversationHistory ??
       []) as any[];
-    const modeGuidanceText = conversationHistory
+    const turnBundleText = conversationHistory
       .map(
         (message: any) =>
           message?.content?.find(
@@ -1498,8 +1513,11 @@ describe("agenticLoop command skill gate", () => {
       .find(
         (text: unknown): text is string =>
           typeof text === "string" &&
-          text.includes("[SYSTEM: MODE SKILL GUIDANCE]"),
+          text.includes("[SYSTEM BUNDLE BEGIN: TURN_PRELOOP_INJECTION]"),
       );
+    const modeGuidanceText = turnBundleText
+      ? extractSectionText(turnBundleText, "MODE_SKILL_GUIDANCE")
+      : "";
 
     expect(modeGuidanceText).toContain(
       "filtered out from optional recommendations",

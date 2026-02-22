@@ -90,61 +90,68 @@ describe("contextInjector", () => {
       ],
     );
 
-    expect(history).toHaveLength(11);
+    expect(history).toHaveLength(3);
     expect(history.every((msg) => msg.role === "user")).toBe(true);
     expect(getText(history[0])).toContain("FORCE UPDATE MODE");
     expect(getText(history[0])).toContain("retconAck?: { summary:");
+    expect(getText(history[0])).toContain("COMMAND SKILL REQUIRED");
+    expect(getText(history[0])).toContain("commands/runtime/SKILL.md");
+    expect(getText(history[0])).toContain("commands/runtime/sudo/SKILL.md");
+    expect(getText(history[0])).toContain(
+      "[SYSTEM BUNDLE BEGIN: SUDO_PRELOOP_INJECTION]",
+    );
+    expect(getText(history[0])).toContain("[SECTION BEGIN: MODE_INSTRUCTION]");
+    expect(getText(history[0])).toContain(
+      "[SECTION BEGIN: COMMAND_SKILL_GATE]",
+    );
+    expect(getText(history[1])).toContain("[SYSTEM: TOOL USAGE INSTRUCTION]");
     expect(getText(history[1])).toContain("COMMAND SKILL REQUIRED");
-    expect(getText(history[1])).toContain("commands/runtime/SKILL.md");
-    expect(getText(history[1])).toContain("commands/runtime/sudo/SKILL.md");
-    expect(getText(history[2])).toContain("[SYSTEM: TOOL USAGE INSTRUCTION]");
-    expect(getText(history[3])).toContain("COMMAND SKILL REQUIRED");
-    expect(getText(history[3])).toContain("commands/runtime/turn/SKILL.md");
-    expect(getText(history[3])).toContain("commands/runtime/god/SKILL.md");
-    expect(getText(history[3])).toContain("commands/runtime/unlock/SKILL.md");
-    expect(getText(history[3])).toContain("skills/core/protocols/SKILL.md");
-    expect(getText(history[3])).toContain("skills/craft/writing/SKILL.md");
-    expect(getText(history[4])).toContain("MODE SKILL GUIDANCE");
-    expect(getText(history[4])).toContain(
+    expect(getText(history[1])).toContain("commands/runtime/turn/SKILL.md");
+    expect(getText(history[1])).toContain("commands/runtime/god/SKILL.md");
+    expect(getText(history[1])).toContain("commands/runtime/unlock/SKILL.md");
+    expect(getText(history[1])).toContain("skills/core/protocols/SKILL.md");
+    expect(getText(history[1])).toContain("skills/craft/writing/SKILL.md");
+    expect(getText(history[1])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[1])).toContain(
       "Do not skip runtime/preset skill preflight",
     );
-    expect(getText(history[4])).toContain("DOMAIN SKILL LOADING");
-    expect(getText(history[4])).toContain("gm/actor-logic/npc/SKILL.md");
-    expect(getText(history[4])).toContain("Reuse loaded skills across turns");
-    expect(getText(history[4])).toContain("You are currently in God mode.");
-    expect(getText(history[4])).toContain("Unlock mode is currently ON.");
-    expect(getText(history[5])).toContain("PRESET SKILLS ACTIVE");
-    expect(getText(history[5])).toContain("presets/runtime/SKILL.md");
-    expect(getText(history[5])).toContain(
+    expect(getText(history[1])).toContain("DOMAIN SKILL LOADING");
+    expect(getText(history[1])).toContain("gm/actor-logic/npc/SKILL.md");
+    expect(getText(history[1])).toContain("Reuse loaded skills across turns");
+    expect(getText(history[1])).toContain("You are currently in God mode.");
+    expect(getText(history[1])).toContain("Unlock mode is currently ON.");
+    expect(getText(history[1])).toContain("PRESET SKILLS ACTIVE");
+    expect(getText(history[1])).toContain("presets/runtime/SKILL.md");
+    expect(getText(history[1])).toContain(
       "skills/presets/runtime/narrative-style/SKILL.md",
     );
-    expect(getText(history[6])).toContain("PRESET PROFILES ACTIVE");
-    expect(getText(history[6])).toContain(
+    expect(getText(history[1])).toContain("PRESET PROFILES ACTIVE");
+    expect(getText(history[1])).toContain(
       "<narrative_style> profile=cinematic source=save_profile",
     );
-    expect(getText(history[7])).toContain(
+    expect(getText(history[2])).toContain(
       "[SYSTEM: CLEANUP MODE TOOL INSTRUCTION]",
     );
-    expect(getText(history[7])).toContain("vfs_finish_turn");
-    expect(getText(history[8])).toContain("COMMAND SKILL REQUIRED");
-    expect(getText(history[8])).toContain("commands/runtime/SKILL.md");
-    expect(getText(history[8])).toContain("commands/runtime/cleanup/SKILL.md");
-    expect(getText(history[8])).toContain("skills/core/protocols/SKILL.md");
-    expect(getText(history[8])).toContain("skills/craft/writing/SKILL.md");
-    expect(getText(history[9])).toContain("CLEANUP CONSISTENCY ANCHOR");
-    expect(getText(history[9])).toContain("Target forkId: 3");
-    expect(getText(history[9])).toContain("Target turnNumber: 27");
-    expect(getText(history[9])).toContain("Structured error recovery");
-    expect(getText(history[9])).toContain(
+    expect(getText(history[2])).toContain("vfs_finish_turn");
+    expect(getText(history[2])).toContain("COMMAND SKILL REQUIRED");
+    expect(getText(history[2])).toContain("commands/runtime/SKILL.md");
+    expect(getText(history[2])).toContain("commands/runtime/cleanup/SKILL.md");
+    expect(getText(history[2])).toContain("skills/core/protocols/SKILL.md");
+    expect(getText(history[2])).toContain("skills/craft/writing/SKILL.md");
+    expect(getText(history[2])).toContain("CLEANUP CONSISTENCY ANCHOR");
+    expect(getText(history[2])).toContain("Target forkId: 3");
+    expect(getText(history[2])).toContain("Target turnNumber: 27");
+    expect(getText(history[2])).toContain("Structured error recovery");
+    expect(getText(history[2])).toContain(
       "FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE",
     );
-    expect(getText(history[9])).toContain("current/conversation/index.json");
-    expect(getText(history[10])).toContain("MODE SKILL GUIDANCE");
-    expect(getText(history[10])).toContain(
+    expect(getText(history[2])).toContain("current/conversation/index.json");
+    expect(getText(history[2])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[2])).toContain(
       "Do not skip runtime/preset skill preflight",
     );
-    expect(getText(history[10])).toContain("DOMAIN SKILL LOADING");
-    expect(getText(history[10])).toContain("gm/actor-logic/npc/SKILL.md");
+    expect(getText(history[2])).toContain("DOMAIN SKILL LOADING");
+    expect(getText(history[2])).toContain("gm/actor-logic/npc/SKILL.md");
   });
 
   it("injects normal turn instruction without semantic hints when RAG is off", () => {
@@ -189,30 +196,30 @@ describe("contextInjector", () => {
       ],
     );
 
-    expect(history).toHaveLength(4);
-    expect(getText(history[1])).toContain("commands/runtime/SKILL.md");
-    expect(getText(history[1])).toContain(
+    expect(history).toHaveLength(1);
+    expect(getText(history[0])).toContain("commands/runtime/SKILL.md");
+    expect(getText(history[0])).toContain(
       "commands/runtime/player-rate/SKILL.md",
     );
-    expect(getText(history[1])).toContain("skills/core/protocols/SKILL.md");
-    expect(getText(history[1])).toContain("skills/craft/writing/SKILL.md");
+    expect(getText(history[0])).toContain("skills/core/protocols/SKILL.md");
+    expect(getText(history[0])).toContain("skills/craft/writing/SKILL.md");
     expect(getText(history[0])).toContain("vfs_end_turn");
-    expect(getText(history[1])).not.toContain("commands/runtime/god/SKILL.md");
-    expect(getText(history[1])).not.toContain(
+    expect(getText(history[0])).not.toContain("commands/runtime/god/SKILL.md");
+    expect(getText(history[0])).not.toContain(
       "commands/runtime/unlock/SKILL.md",
     );
-    expect(getText(history[2])).toContain("PLAYER RATE MODE");
-    expect(getText(history[2])).toContain("workspace/SOUL.md");
-    expect(getText(history[2])).toContain("workspace/USER.md");
-    expect(getText(history[2])).toContain("vfs_end_turn");
-    expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
-    expect(getText(history[3])).toContain(
+    expect(getText(history[0])).toContain("PLAYER RATE MODE");
+    expect(getText(history[0])).toContain("workspace/SOUL.md");
+    expect(getText(history[0])).toContain("workspace/USER.md");
+    expect(getText(history[0])).toContain("vfs_end_turn");
+    expect(getText(history[0])).toContain("MODE SKILL GUIDANCE");
+    expect(getText(history[0])).toContain(
       "Do not skip runtime/preset skill preflight",
     );
-    expect(getText(history[3])).toContain(
+    expect(getText(history[0])).toContain(
       "current/skills/gm/actor-logic/npc/SKILL.md",
     );
-    expect(getText(history[3])).toContain("DOMAIN SKILL LOADING");
+    expect(getText(history[0])).toContain("DOMAIN SKILL LOADING");
   });
 
   it("injects budget and no-tool-call messages", () => {

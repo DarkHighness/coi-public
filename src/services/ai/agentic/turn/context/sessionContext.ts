@@ -98,7 +98,7 @@ const buildSessionRequiredSkillMessages = (
     return [];
   }
 
-  const messages: UnifiedMessage[] = [];
+  const blocks: string[] = [];
   const seen = new Set<string>();
   for (const rawPath of requiredSkillPaths) {
     const canonicalPath = toCanonicalSkillPath(rawPath);
@@ -112,10 +112,8 @@ const buildSessionRequiredSkillMessages = (
       continue;
     }
 
-    messages.push(
-      createUserMessage(
-        `<file path="${toCurrentPath(canonicalPath)}">\n${file.content}\n</file>`,
-      ),
+    blocks.push(
+      `<file path="${toCurrentPath(canonicalPath)}">\n${file.content}\n</file>`,
     );
 
     if (typeof vfsSession.noteToolSeen === "function") {
@@ -123,13 +121,25 @@ const buildSessionRequiredSkillMessages = (
     }
   }
 
-  if (messages.length > 0) {
+  if (blocks.length > 0) {
     console.log(
-      `[SessionContext] Preloaded ${messages.length} required skills at session initialization.`,
+      `[SessionContext] Preloaded ${blocks.length} required skills at session initialization.`,
     );
   }
 
-  return messages;
+  if (blocks.length === 0) {
+    return [];
+  }
+
+  return [
+    createUserMessage(
+      [
+        "[SYSTEM BUNDLE BEGIN: SESSION_REQUIRED_SKILLS]",
+        ...blocks,
+        "[SYSTEM BUNDLE END: SESSION_REQUIRED_SKILLS]",
+      ].join("\n\n"),
+    ),
+  ];
 };
 
 const buildColdStartSkillHintMessage = (options?: {

@@ -79,6 +79,7 @@ describe("messageBuilder", () => {
     const messages = buildInitialContext(createGameState(), createSession());
     const texts = messages.map(getText);
 
+    expect(messages).toHaveLength(1);
     expect(
       texts.some((text) => text.includes("[CONTEXT: World Foundation]")),
     ).toBe(true);
@@ -88,11 +89,13 @@ describe("messageBuilder", () => {
     expect(texts.some((text) => text.includes("[CONTEXT: God Mode]"))).toBe(
       true,
     );
-    expect(texts[texts.length - 1]).toBe("[Awaiting player action.]");
-
-    expect(
-      texts.some((text) => text.includes("[Story summary acknowledged.]")),
-    ).toBe(true);
+    expect(texts[0]).toContain("[Awaiting player action.]");
+    expect(texts[0]).toContain(
+      "[SYSTEM BUNDLE BEGIN: SESSION_INITIAL_CONTEXT]",
+    );
+    expect(texts[0]).toContain("[SECTION BEGIN: WORLD_FOUNDATION]");
+    expect(texts[0]).toContain("[SECTION BEGIN: STORY_SUMMARY]");
+    expect(texts[0]).toContain("[SECTION BEGIN: TURN_HANDSHAKE]");
     expect(texts.join("\n")).toContain("&lt;unsafe&gt;");
     expect(texts.join("\n")).not.toContain("read-model");
     expect(texts.join("\n")).not.toContain("[CONTEXT: Current Entities]");
@@ -125,11 +128,7 @@ describe("messageBuilder", () => {
     );
     expect(hotStartBlock).toContain("current/session/session-a.jsonl");
     expect(hotStartBlock).toContain("current/skills/index.json");
-    expect(
-      texts.some((text) =>
-        text.includes("[Hot-start references acknowledged.]"),
-      ),
-    ).toBe(true);
+    expect(hotStartBlock).toContain("[SECTION BEGIN: HOT_START_REFERENCES]");
   });
 
   it("builds turn messages with player-action prefix and sudo passthrough", () => {

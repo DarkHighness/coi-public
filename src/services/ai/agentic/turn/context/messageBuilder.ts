@@ -26,14 +26,19 @@ const hasKnownUserMarker = (text: string): boolean =>
   text.startsWith("[SUDO]") ||
   text.startsWith("[Player Rate]");
 
-const buildWorkspaceMemoryFileMessage = (
+const buildWorkspaceMemoryFileBlock = (
   vfsSession: VfsSession,
   doc: (typeof WORKSPACE_MEMORY_DOC_ORDER)[number],
-): UnifiedMessage => {
+): string => {
   const path = getWorkspaceMemoryLogicalPath(doc);
   const content = readWorkspaceMemoryDoc(vfsSession, doc);
-  return createUserMessage(`<file path="${path}">\n${content}\n</file>`);
+  return `<file path="${path}">\n${content}\n</file>`;
 };
+
+const buildDelimitedSection = (name: string, body: string): string =>
+  [`[SECTION BEGIN: ${name}]`, body.trim(), `[SECTION END: ${name}]`].join(
+    "\n",
+  );
 
 function buildLatestSummaryContext(gameState: GameState): string {
   const summaries = gameState.summaries;
@@ -89,9 +94,18 @@ export function buildInitialContext(
   gameState: GameState,
   vfsSession: VfsSession,
 ): UnifiedMessage[] {
-  const messages: UnifiedMessage[] = WORKSPACE_MEMORY_DOC_ORDER.map((doc) =>
-    buildWorkspaceMemoryFileMessage(vfsSession, doc),
+  const sections: string[] = [];
+  const memoryBlocks = WORKSPACE_MEMORY_DOC_ORDER.map((doc) =>
+    buildWorkspaceMemoryFileBlock(vfsSession, doc),
   );
+  if (memoryBlocks.length > 0) {
+    sections.push(
+      buildDelimitedSection(
+        "WORKSPACE_MEMORY_FILES",
+        memoryBlocks.join("\n\n"),
+      ),
+    );
+  }
 
   // Mark injected workspace files as "seen" so read-before-write gates
   // don't require redundant vfs_read_* calls for files already in context.
@@ -107,57 +121,57 @@ export function buildInitialContext(
     .join("\n");
 
   if (staticContext) {
-    messages.push(
-      createUserMessage(
+    sections.push(
+      buildDelimitedSection(
+        "WORLD_FOUNDATION",
         ["[CONTEXT: World Foundation]", staticContext].join("\n"),
       ),
     );
-    messages.push({
-      role: "assistant",
-      content: [{ type: "text", text: "[World foundation acknowledged.]" }],
-    });
   }
 
   const latestSummary = buildLatestSummaryContext(gameState);
   if (latestSummary) {
-    messages.push(
-      createUserMessage(`[CONTEXT: Story Summary]\n${latestSummary}`),
+    sections.push(
+      buildDelimitedSection(
+        "STORY_SUMMARY",
+        `[CONTEXT: Story Summary]\n${latestSummary}`,
+      ),
     );
-    messages.push({
-      role: "assistant",
-      content: [{ type: "text", text: "[Story summary acknowledged.]" }],
-    });
   }
 
   const hotStartReferences = buildHotStartReferencesContext(gameState);
   if (hotStartReferences) {
-    messages.push(
-      createUserMessage(
+    sections.push(
+      buildDelimitedSection(
+        "HOT_START_REFERENCES",
         `[CONTEXT: Hot Start References]\n${hotStartReferences}`,
       ),
     );
-    messages.push({
-      role: "assistant",
-      content: [{ type: "text", text: "[Hot-start references acknowledged.]" }],
-    });
   }
 
   if (gameState.godMode) {
     const godModeContext = buildGodModeContext(vfsSession);
-    messages.push(createUserMessage(`[CONTEXT: God Mode]\n${godModeContext}`));
+    sections.push(
+      buildDelimitedSection(
+        "GOD_MODE",
+        `[CONTEXT: God Mode]\n${godModeContext}`,
+      ),
+    );
   }
 
-  messages.push({
-    role: "assistant",
-    content: [
-      {
-        type: "text",
-        text: "[Awaiting player action.]",
-      },
-    ],
-  });
+  sections.push(
+    buildDelimitedSection("TURN_HANDSHAKE", "[Awaiting player action.]"),
+  );
 
-  return messages;
+  return [
+    createUserMessage(
+      [
+        "[SYSTEM BUNDLE BEGIN: SESSION_INITIAL_CONTEXT]",
+        ...sections,
+        "[SYSTEM BUNDLE END: SESSION_INITIAL_CONTEXT]",
+      ].join("\n\n"),
+    ),
+  ];
 }
 
 export function buildTurnMessages(

@@ -79,6 +79,7 @@ const preloadRequiredSkills = (
   }
 
   const preloaded: string[] = [];
+  const injectedBlocks: string[] = [];
   const injectedInThisPass = new Set<string>();
   for (const skillPath of requiredPaths) {
     const currentPath = toCurrentReadablePath(skillPath);
@@ -95,15 +96,29 @@ const preloadRequiredSkills = (
 
     const file = vfsSession.readFile(skillPath);
     if (file && typeof file.content === "string" && file.content.trim()) {
-      history.push(
-        createUserMessage(
-          `<file path="${currentPath}">\n${file.content}\n</file>`,
-        ),
+      injectedBlocks.push(
+        `<file path="${currentPath}">\n${file.content}\n</file>`,
       );
       vfsSession.noteToolSeen(skillPath);
       injectedByHistory.add(currentPath);
       preloaded.push(skillPath);
     }
+  }
+
+  if (injectedBlocks.length > 0) {
+    const bundleName =
+      label === "command"
+        ? "PRELOADED_COMMAND_SKILLS"
+        : "PRELOADED_PRESET_SKILLS";
+    history.push(
+      createUserMessage(
+        [
+          `[SYSTEM BUNDLE BEGIN: ${bundleName}]`,
+          ...injectedBlocks,
+          `[SYSTEM BUNDLE END: ${bundleName}]`,
+        ].join("\n\n"),
+      ),
+    );
   }
 
   if (preloaded.length > 0) {
@@ -140,10 +155,38 @@ const formatSkillPolicyLines = (paths: string[]): string[] =>
       : `- \`${entry.currentPath}\` — ${entry.title}`;
   });
 
-const injectPlayerSkillPolicyStatus = (
+const buildDelimitedSection = (name: string, body: string): string =>
+  [`[SECTION BEGIN: ${name}]`, body.trim(), `[SECTION END: ${name}]`].join(
+    "\n",
+  );
+
+const pushStructuredBundleMessage = (
   history: UnifiedMessage[],
-  policy?: PlayerSkillPolicyStatus,
+  bundleName: string,
+  sections: Array<{ name: string; body: string | null }>,
 ): void => {
+  const renderedSections = sections
+    .filter((section) => typeof section.body === "string")
+    .map((section) => buildDelimitedSection(section.name, section.body || ""));
+
+  if (renderedSections.length === 0) {
+    return;
+  }
+
+  history.push(
+    createUserMessage(
+      [
+        `[SYSTEM BUNDLE BEGIN: ${bundleName}]`,
+        ...renderedSections,
+        `[SYSTEM BUNDLE END: ${bundleName}]`,
+      ].join("\n\n"),
+    ),
+  );
+};
+
+const buildPlayerSkillPolicyStatusText = (
+  policy?: PlayerSkillPolicyStatus,
+): string | null => {
   const required = policy?.requiredSkillPaths || [];
   const recommended = policy?.recommendedSkillPaths || [];
   const forbidden = policy?.forbiddenSkillPaths || [];
@@ -155,7 +198,7 @@ const injectPlayerSkillPolicyStatus = (
     forbidden.length === 0 &&
     ignoredForbidden.length === 0
   ) {
-    return;
+    return null;
   }
 
   const lines: string[] = [
@@ -189,7 +232,7 @@ const injectPlayerSkillPolicyStatus = (
     );
   }
 
-  history.push(createUserMessage(lines.join("\n")));
+  return lines.join("\n");
 };
 
 // ============================================================================
@@ -231,7 +274,16 @@ export function injectCommandSkillStatus(
   requiredPaths: string[],
   satisfiedPaths: string[],
 ): void {
-  if (requiredPaths.length === 0) return;
+  const text = buildCommandSkillStatusText(requiredPaths, satisfiedPaths);
+  if (!text) return;
+  history.push(createUserMessage(text));
+}
+
+const buildCommandSkillStatusText = (
+  requiredPaths: string[],
+  satisfiedPaths: string[],
+): string | null => {
+  if (requiredPaths.length === 0) return null;
 
   const satisfiedSet = new Set(satisfiedPaths.map(toCurrentReadablePath));
   const pending = requiredPaths
@@ -258,8 +310,8 @@ export function injectCommandSkillStatus(
     }
   }
 
-  history.push(createUserMessage(lines.join("\n")));
-}
+  return lines.join("\n");
+};
 
 // ============================================================================
 // System Message Injection
@@ -276,17 +328,32 @@ export function injectSudoModeInstruction(
   vfsVmEnabled: boolean = false,
   playerSkillPolicyStatus?: PlayerSkillPolicyStatus,
 ): void {
-  history.push(
-    createUserMessage(
-      sudoModeInstruction({ toolsetId: "turn", ragEnabled, vfsVmEnabled }),
-    ),
-  );
-  injectCommandSkillStatus(
-    history,
+  const commandSkillStatus = buildCommandSkillStatusText(
     requiredCommandSkillPaths,
     preloadedSkillPaths,
   );
-  injectPlayerSkillPolicyStatus(history, playerSkillPolicyStatus);
+  const playerSkillPolicy = buildPlayerSkillPolicyStatusText(
+    playerSkillPolicyStatus,
+  );
+
+  pushStructuredBundleMessage(history, "SUDO_PRELOOP_INJECTION", [
+    {
+      name: "MODE_INSTRUCTION",
+      body: sudoModeInstruction({
+        toolsetId: "turn",
+        ragEnabled,
+        vfsVmEnabled,
+      }),
+    },
+    {
+      name: "COMMAND_SKILL_GATE",
+      body: commandSkillStatus,
+    },
+    {
+      name: "PLAYER_SKILLS_POLICY",
+      body: playerSkillPolicy,
+    },
+  ]);
 }
 
 /**
@@ -312,78 +379,83 @@ export function injectNormalTurnInstruction(
   vfsVmEnabled: boolean = false,
   playerSkillPolicyStatus?: PlayerSkillPolicyStatus,
 ): void {
-  history.push(
-    createUserMessage(
-      (isCleanupMode ? cleanupTurnInstruction : normalTurnInstruction)({
-        finishToolName,
-        toolsetId: isCleanupMode
-          ? "cleanup"
-          : normalCommandProtocol === "player-rate"
-            ? "playerRate"
-            : "turn",
-        ragEnabled,
-        vfsVmEnabled,
-      }),
-    ),
-  );
+  const sections: Array<{ name: string; body: string | null }> = [];
 
-  // Use shared skill status (replaces hardcoded skill lists for cleanup/normal/player-rate)
-  injectCommandSkillStatus(
-    history,
-    requiredCommandSkillPaths,
-    satisfiedCommandSkillPaths,
-  );
-  injectPlayerSkillPolicyStatus(history, playerSkillPolicyStatus);
+  sections.push({
+    name: "MODE_INSTRUCTION",
+    body: (isCleanupMode ? cleanupTurnInstruction : normalTurnInstruction)({
+      finishToolName,
+      toolsetId: isCleanupMode
+        ? "cleanup"
+        : normalCommandProtocol === "player-rate"
+          ? "playerRate"
+          : "turn",
+      ragEnabled,
+      vfsVmEnabled,
+    }),
+  });
+
+  sections.push({
+    name: "COMMAND_SKILL_GATE",
+    body: buildCommandSkillStatusText(
+      requiredCommandSkillPaths,
+      satisfiedCommandSkillPaths,
+    ),
+  });
+  sections.push({
+    name: "PLAYER_SKILLS_POLICY",
+    body: buildPlayerSkillPolicyStatusText(playerSkillPolicyStatus),
+  });
 
   if (isCleanupMode) {
-    history.push(
-      createUserMessage(
-        [
-          "[SYSTEM: CLEANUP CONSISTENCY ANCHOR]",
-          "Cleanup is a maintenance turn, not a story rewrite.",
-          `- Target forkId: ${
-            typeof contextMeta?.forkId === "number"
-              ? contextMeta.forkId
-              : "unknown"
-          }`,
-          `- Target turnNumber: ${
-            typeof contextMeta?.turnNumber === "number"
-              ? contextMeta.turnNumber
-              : "unknown"
-          }`,
-          "- Read `current/conversation/index.json` first, then only read/write current fork conversation files.",
-          "- NEVER read from or mutate other forks while cleaning this fork.",
-          "- Preserve narrative continuity with existing world state and conversation files.",
-          "- Do NOT fabricate new lore/conflicts unrelated to deduplication/consolidation.",
-          "- Verify entities via read-only VFS tools before mutation (vfs_ls / vfs_search / vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json).",
-          "- Keep player-visible log narrative generic; do not leak hidden truths.",
-          "- Session efficiency: do not repeatedly read the same files across turns; reuse already-read context.",
-          "- Re-read only when the system explicitly provides `[SYSTEM: EXTERNAL_FILE_CHANGES]`, recovery explicitly requires it, or you now need a file section/pointer you have not read yet.",
-          "- If the file was edited by your own successful write in this session, do not re-read it by default.",
-          "- Structured error recovery (when tool returns { success:false, code, error }):",
-          "  1) Follow `details.recovery` steps — they are context-aware and safe to execute in order.",
-          "  2) Do NOT finish while blocking errors remain (WRITE_EXISTING_TARGET_RETRY_REQUIRED / FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE).",
-          "  3) If the same code repeats twice, narrow scope and report blocker instead of forcing progress.",
-        ].join("\n"),
-      ),
-    );
+    sections.push({
+      name: "CLEANUP_CONSISTENCY_ANCHOR",
+      body: [
+        "[SYSTEM: CLEANUP CONSISTENCY ANCHOR]",
+        "Cleanup is a maintenance turn, not a story rewrite.",
+        `- Target forkId: ${
+          typeof contextMeta?.forkId === "number"
+            ? contextMeta.forkId
+            : "unknown"
+        }`,
+        `- Target turnNumber: ${
+          typeof contextMeta?.turnNumber === "number"
+            ? contextMeta.turnNumber
+            : "unknown"
+        }`,
+        "- Read `current/conversation/index.json` first, then only read/write current fork conversation files.",
+        "- NEVER read from or mutate other forks while cleaning this fork.",
+        "- Preserve narrative continuity with existing world state and conversation files.",
+        "- Do NOT fabricate new lore/conflicts unrelated to deduplication/consolidation.",
+        "- Verify entities via read-only VFS tools before mutation (vfs_ls / vfs_search / vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json).",
+        "- Keep player-visible log narrative generic; do not leak hidden truths.",
+        "- Session efficiency: do not repeatedly read the same files across turns; reuse already-read context.",
+        "- Re-read only when the system explicitly provides `[SYSTEM: EXTERNAL_FILE_CHANGES]`, recovery explicitly requires it, or you now need a file section/pointer you have not read yet.",
+        "- If the file was edited by your own successful write in this session, do not re-read it by default.",
+        "- Structured error recovery (when tool returns { success:false, code, error }):",
+        "  1) Follow `details.recovery` steps — they are context-aware and safe to execute in order.",
+        "  2) Do NOT finish while blocking errors remain (WRITE_EXISTING_TARGET_RETRY_REQUIRED / FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE).",
+        "  3) If the same code repeats twice, narrow scope and report blocker instead of forcing progress.",
+      ].join("\n"),
+    });
   }
 
   if (!isCleanupMode && normalCommandProtocol === "player-rate") {
-    history.push(
-      createUserMessage(
-        [
-          "[SYSTEM: PLAYER RATE MODE]",
-          "This loop is triggered by `[Player Rate]` feedback.",
-          "- Treat payload as feedback ingestion, not protagonist action simulation.",
-          "- Update only `workspace/SOUL.md` and `workspace/USER.md` when evidence is meaningful.",
-          "- Player-rate is not `sudo` / `forceUpdate` / `godMode`.",
-          "- Do not rewrite established world facts or timeline outcomes from rating feedback.",
-          "- Finish this loop with `vfs_end_turn` as the LAST tool call (no arguments).",
-          "- Keep visible plot progression unchanged for this isolated feedback loop.",
-        ].join("\n"),
-      ),
-    );
+    sections.push({
+      name: "PLAYER_RATE_MODE",
+      body: [
+        "[SYSTEM: PLAYER RATE MODE]",
+        "This loop is triggered by `[Player Rate]` feedback.",
+        "- Treat payload as feedback ingestion, not protagonist action simulation.",
+        "- Update only `workspace/SOUL.md` and `workspace/USER.md` when evidence is meaningful.",
+        "- Memory write decision protocol: append net-new evidence, edit/refine existing statements, delete stale contradictions; keep section coherence.",
+        "- Do not default to blind tail append when in-place edit/cleanup is more correct.",
+        "- Player-rate is not `sudo` / `forceUpdate` / `godMode`.",
+        "- Do not rewrite established world facts or timeline outcomes from rating feedback.",
+        "- Finish this loop with `vfs_end_turn` as the LAST tool call (no arguments).",
+        "- Keep visible plot progression unchanged for this isolated feedback loop.",
+      ].join("\n"),
+    });
   }
 
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
@@ -473,7 +545,10 @@ export function injectNormalTurnInstruction(
   }
 
   if (modeSkillLines.length > 1) {
-    history.push(createUserMessage(modeSkillLines.join("\n")));
+    sections.push({
+      name: "MODE_SKILL_GUIDANCE",
+      body: modeSkillLines.join("\n"),
+    });
   }
 
   if (requiredPresetSkillPaths.length > 0) {
@@ -499,7 +574,10 @@ export function injectNormalTurnInstruction(
             "Before non-read tool calls, load active preset skills:",
             ...pendingPresetPaths.map((path) => `- \`${path}\``),
           ];
-    history.push(createUserMessage(lines.join("\n")));
+    sections.push({
+      name: "PRESET_SKILLS",
+      body: lines.join("\n"),
+    });
   }
 
   if (requiredPresetSkillRequirements.length > 0) {
@@ -511,8 +589,21 @@ export function injectNormalTurnInstruction(
           `- <${entry.tag}> profile=${entry.profile} source=${entry.source} skill=\`current/${entry.path}\``,
       ),
     ];
-    history.push(createUserMessage(lines.join("\n")));
+    sections.push({
+      name: "PRESET_PROFILES",
+      body: lines.join("\n"),
+    });
   }
+
+  pushStructuredBundleMessage(
+    history,
+    isCleanupMode
+      ? "CLEANUP_PRELOOP_INJECTION"
+      : normalCommandProtocol === "player-rate"
+        ? "PLAYER_RATE_PRELOOP_INJECTION"
+        : "TURN_PRELOOP_INJECTION",
+    sections,
+  );
 }
 
 /**
