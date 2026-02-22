@@ -59,9 +59,17 @@ const createGameState = () =>
         id: "char:npc_alice",
         visible: {
           name: "Alice",
+          title: "Scout Captain",
+          age: "27",
+          gender: "Female",
+          race: "Human",
+          profession: "Scout",
           description: "A wary scout",
           appearance: "Short red cloak and leather armor",
           status: "Watchful",
+          voice: "Low and steady",
+          mannerism: "Keeps one hand on dagger hilt",
+          mood: "Tense",
         },
         hidden: {
           realPersonality: "Secretive",
@@ -94,8 +102,12 @@ const createGameState = () =>
     currentLocation: "loc:1",
     character: {
       name: "Rin",
+      title: "Pathfinder",
+      age: "24",
+      gender: "Female",
       race: "Elf",
       profession: "Ranger",
+      background: "Former border patrol tracker",
       appearance: "Lean with silver braids",
       status: "Alert",
     },
@@ -139,6 +151,8 @@ describe("getSceneImagePrompt", () => {
     expect(result).toContain("Wet pine");
     expect(result).toContain("<protagonist>");
     expect(result).toContain("<name>Rin</name>");
+    expect(result).toContain("<age>24</age>");
+    expect(result).toContain("<gender>Female</gender>");
     expect(result).toContain('<lighting_context time="dusk" />');
     expect(result).toContain('<weather_effect weather="rain" />');
   });
@@ -153,6 +167,8 @@ describe("getSceneImagePrompt", () => {
 
     expect(result).toContain("<npcs_in_scene>");
     expect(result).toContain("<name>Alice</name>");
+    expect(result).toContain("<age>27</age>");
+    expect(result).toContain("<gender>Female</gender>");
     expect(result).toContain("Short red cloak and leather armor");
   });
 

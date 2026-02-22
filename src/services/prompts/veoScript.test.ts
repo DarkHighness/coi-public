@@ -44,8 +44,13 @@ describe("getVeoScriptPrompt", () => {
       },
     ],
     character: {
+      name: "Kael",
+      title: "Rift Courier",
+      age: "29",
+      gender: "Male",
       race: "Human",
       profession: "Navigator",
+      background: "Raised on smuggler routes",
       appearance: "Blue captain coat",
       status: "focused",
     },
@@ -69,11 +74,18 @@ describe("getVeoScriptPrompt", () => {
       {
         visible: {
           name: "Iris",
+          title: "Harbor Marshal",
+          age: "34",
+          gender: "Female",
+          race: "Human",
           description: "Harbor captain",
           appearance: "Scarred jaw",
           status: "alert",
           roleTag: "ally",
           profession: "Captain",
+          voice: "Gravelly",
+          mannerism: "Taps the map table",
+          mood: "Guarded",
         },
         hidden: {
           trueName: "Irisa",
@@ -104,7 +116,11 @@ describe("getVeoScriptPrompt", () => {
     expect(prompt).toContain("<name>Moon Harbor</name>");
     expect(prompt).toContain("<name>Aether Compass</name>");
     expect(prompt).toContain("<name>Iris</name>");
+    expect(prompt).toContain("<name>Kael</name>");
+    expect(prompt).toContain("<age>29</age>");
+    expect(prompt).toContain("<gender>Male</gender>");
     expect(prompt).toContain("The fog parts as the gate hums awake.");
+    expect(prompt).toContain("CHARACTER FIDELITY CONTRACT");
   });
 
   it("filters history to user/system roles and keeps only last 20", () => {

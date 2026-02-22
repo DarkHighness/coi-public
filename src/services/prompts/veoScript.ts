@@ -47,7 +47,12 @@ const veoScriptPromptAtom = defineAtom(
       locationObj?.name || gameState.currentLocation || "Unknown Location";
 
     const characterRace = gameState.character?.race || "Unknown";
+    const characterName = gameState.character?.name || "Unknown";
+    const characterTitle = gameState.character?.title || "Unknown";
+    const characterAge = gameState.character?.age || "Unknown";
+    const characterGender = gameState.character?.gender || "Unknown";
     const characterProfession = gameState.character?.profession || "Wanderer";
+    const characterBackground = gameState.character?.background || "";
     const characterAppearance =
       gameState.character?.appearance || "Mysterious figure";
     const characterStatus = gameState.character?.status || "Normal";
@@ -75,10 +80,18 @@ const veoScriptPromptAtom = defineAtom(
               (r) =>
                 `<npc>
                 <name>${r.visible.name}</name>
+                <title>${r.visible.title || ""}</title>
+                <age>${r.visible.age || ""}</age>
+                <gender>${r.visible.gender || ""}</gender>
+                <race>${r.visible.race || ""}</race>
+                <profession>${r.visible.profession || ""}</profession>
                 <true_name>${r.hidden?.trueName || ""}</true_name>
                 <description>${r.visible.description || ""}</description>
                 <appearance>${r.visible.appearance || "Unknown appearance"}</appearance>
                 <status>${r.visible.status || r.visible.roleTag || r.visible.profession || ""}</status>
+                <voice>${r.visible.voice || ""}</voice>
+                <mannerism>${r.visible.mannerism || ""}</mannerism>
+                <mood>${r.visible.mood || ""}</mood>
                 <notes>${r.notes || ""}</notes>
                 <hidden_truth>Real Personality: ${r.hidden?.realPersonality || ""}; True Motives: ${r.hidden?.realMotives || ""}; True Status: ${r.hidden?.status || ""}</hidden_truth>
               </npc>`,
@@ -102,8 +115,13 @@ const veoScriptPromptAtom = defineAtom(
       <sensory>${locationObj?.visible?.sensory ? `smell: ${locationObj.visible.sensory.smell || ""}, sound: ${locationObj.visible.sensory.sound || ""}, lighting: ${locationObj.visible.sensory.lighting || ""}, temperature: ${locationObj.visible.sensory.temperature || ""}` : ""}</sensory>
     </location>
     <protagonist>
+      <name>${characterName}</name>
+      <title>${characterTitle}</title>
+      <age>${characterAge}</age>
+      <gender>${characterGender}</gender>
       <race>${characterRace}</race>
       <profession>${characterProfession}</profession>
+      <background>${characterBackground}</background>
       <appearance>${characterAppearance}</appearance>
       <status>${characterStatus}</status>
     </protagonist>
@@ -143,6 +161,11 @@ Transform this narrative moment into a MASTERPIECE-LEVEL cinematic experience. E
 
 **CRITICAL: VISUAL CONTINUITY & COHERENCE**
 ${trace.record(visualContinuityRules)}
+
+**CHARACTER FIDELITY CONTRACT (MANDATORY)**
+- Keep each named character's canonical identity consistent: name, title, age, gender, race, profession.
+- Appearance must remain stable across shots (face, hair, body build, signature outfit/equipment).
+- If a field is missing in context, avoid inventing conflicting specifics; stay neutral and consistent.
 
 **REQUIRED OUTPUT STRUCTURE:**
 

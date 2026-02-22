@@ -29,6 +29,13 @@ const trimText = (text: string | undefined, maxLength: number): string => {
   return `${normalized.slice(0, maxLength)}...`;
 };
 
+const xmlField = (
+  tag: string,
+  value: string | undefined | null,
+  indent: string = "  ",
+): string =>
+  `${indent}<${tag}>${value && value.trim() ? value : "Unknown"}</${tag}>`;
+
 const buildRecentDialogueXml = (
   recentHistory: StorySegment[],
   anchorSegmentId: string,
@@ -81,6 +88,13 @@ export function getVisualSystemInstruction(
         ? VEO_SCRIPT_SUBMIT_TOOL_NAME
         : `${IMAGE_PROMPT_SUBMIT_TOOL_NAME} / ${VEO_SCRIPT_SUBMIT_TOOL_NAME}`;
 
+  const outputLanguageRule =
+    target === "image_prompt"
+      ? "Return `imagePrompt` in English only for model compatibility."
+      : target === "veo_script"
+        ? `Return \`veoScript\` in ${language}.`
+        : `Return \`imagePrompt\` in English and \`veoScript\` in ${language}.`;
+
   return `You are a Visual Director and Cinematographer. Your task is to generate ${targetDesc} based on the provided story context.
 
 <role>
@@ -108,9 +122,10 @@ You have the following tools:
 - Read-only tools are for retrieval only; never attempt mutations or unsupported tools.
 - Always gather concrete evidence from recent dialogue/world state before submitting.
 - Maintain IP fidelity: NPCs and Protagonist must match their physical descriptions exactly.
+- Character fidelity is non-negotiable: preserve canonical name/title/age/gender/race/profession and appearance.
+- If age/gender/race/profession is missing, retrieve authoritative values from VFS before submission.
 - Atmosphere must match the current game state (envTheme, ambience, weather).
-- If generating \`imagePrompt\`, keep it in English for image model compatibility.
-- Output in ${language}.
+- ${outputLanguageRule}
 </critical_rules>
 
 ${languageEnforcement({ language })}`;
@@ -141,8 +156,21 @@ export function buildVisualInitialContext(
 
   // 4. Protagonist
   if (gameState.character) {
+    const character = gameState.character;
     parts.push(
-      `<protagonist>\n  <name>${gameState.character.name}</name>\n  <appearance>${gameState.character.appearance}</appearance>\n</protagonist>`,
+      [
+        "<protagonist>",
+        xmlField("name", character.name),
+        xmlField("title", character.title),
+        xmlField("age", character.age),
+        xmlField("gender", character.gender),
+        xmlField("race", character.race),
+        xmlField("profession", character.profession),
+        xmlField("status", character.status),
+        xmlField("appearance", character.appearance),
+        xmlField("background", character.background),
+        "</protagonist>",
+      ].join("\n"),
     );
   }
 
@@ -152,7 +180,26 @@ export function buildVisualInitialContext(
   );
   if (mentionedNPCs.length > 0) {
     parts.push(
-      `<npcs_present>\n${mentionedNPCs.map((n) => `  <npc>\n    <name>${n.visible.name}</name>\n    <appearance>${n.visible.appearance}</appearance>\n  </npc>`).join("\n")}\n</npcs_present>`,
+      `<npcs_present>\n${mentionedNPCs
+        .map((n) =>
+          [
+            "  <npc>",
+            xmlField("name", n.visible.name, "    "),
+            xmlField("title", n.visible.title, "    "),
+            xmlField("age", n.visible.age, "    "),
+            xmlField("gender", n.visible.gender, "    "),
+            xmlField("race", n.visible.race, "    "),
+            xmlField("profession", n.visible.profession, "    "),
+            xmlField("description", n.visible.description, "    "),
+            xmlField("appearance", n.visible.appearance, "    "),
+            xmlField("status", n.visible.status, "    "),
+            xmlField("voice", n.visible.voice, "    "),
+            xmlField("mannerism", n.visible.mannerism, "    "),
+            xmlField("mood", n.visible.mood, "    "),
+            "  </npc>",
+          ].join("\n"),
+        )
+        .join("\n")}\n</npcs_present>`,
     );
   }
 

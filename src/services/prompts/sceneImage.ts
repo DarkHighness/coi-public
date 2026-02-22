@@ -25,9 +25,17 @@ import { defineAtom, runPromptWithTrace } from "./trace/runtime";
  */
 interface NPCInfo {
   name: string;
+  title?: string;
+  age?: string;
+  gender?: string;
+  race?: string;
+  profession?: string;
   description?: string;
   appearance?: string;
   status?: string;
+  voice?: string;
+  mannerism?: string;
+  mood?: string;
   notes?: string; // Writer's consistency notes
 }
 
@@ -43,8 +51,12 @@ interface ExtractedContext {
   currentLocationName?: string;
   character: {
     name: string;
+    title: string;
+    age: string;
+    gender: string;
     race: string;
     profession: string;
+    background: string;
     appearance: string;
     status: string;
   };
@@ -83,9 +95,17 @@ const extractContextFromGameState = (
     if (name) {
       knownNPCs.set(name.toLowerCase(), {
         name: r.visible.name,
+        title: r.visible?.title || "",
+        age: r.visible?.age || "",
+        gender: r.visible?.gender || "",
+        race: r.visible?.race || "",
+        profession: r.visible?.profession || "",
         description: `${r.visible?.description || ""} [True Nature: ${r.hidden?.realPersonality || "Unknown"}]`,
         appearance: r.visible?.appearance || "",
         status: `${r.visible?.status || ""} (Actual: ${r.hidden?.status || "Normal"})`,
+        voice: r.visible?.voice || "",
+        mannerism: r.visible?.mannerism || "",
+        mood: r.visible?.mood || "",
         notes: r.notes || "", // Writer's notes for consistency
       });
     }
@@ -120,8 +140,12 @@ const extractContextFromGameState = (
     currentLocationName: stateSnapshot.currentLocation,
     character: {
       name: stateSnapshot.character?.name || "Unknown",
+      title: stateSnapshot.character?.title || "Unknown",
+      age: stateSnapshot.character?.age || "Unknown",
+      gender: stateSnapshot.character?.gender || "Unknown",
       race: stateSnapshot.character?.race || "Unknown",
       profession: stateSnapshot.character?.profession || "",
+      background: stateSnapshot.character?.background || "",
       appearance: stateSnapshot.character?.appearance || "Not described",
       status: stateSnapshot.character?.status || "Normal",
     },
@@ -422,12 +446,22 @@ ${themeStyleRef}
 `;
       xmlPrompt += `      <name>${character.name || "Unknown"}</name>
 `;
+      xmlPrompt += `      <title>${character.title || "Unknown"}</title>
+`;
+      xmlPrompt += `      <age>${character.age || "Unknown"}</age>
+`;
+      xmlPrompt += `      <gender>${character.gender || "Unknown"}</gender>
+`;
       xmlPrompt += `      <race>${character.race || "Human"}</race>
 `;
       xmlPrompt += `      <profession>${character.profession || "Adventurer"}</profession>
 `;
       xmlPrompt += `    </identity>
 `;
+      if (character.background) {
+        xmlPrompt += `    <background>${character.background}</background>
+`;
+      }
       xmlPrompt += `    <physical_description>
 `;
       xmlPrompt += `      ${character.appearance || "A figure defined by their presence and gear"}
@@ -462,6 +496,26 @@ ${themeStyleRef}
 `;
         xmlPrompt += `      <name>${npc.name}</name>
 `;
+        if (npc.title) {
+          xmlPrompt += `      <title>${npc.title}</title>
+`;
+        }
+        if (npc.age) {
+          xmlPrompt += `      <age>${npc.age}</age>
+`;
+        }
+        if (npc.gender) {
+          xmlPrompt += `      <gender>${npc.gender}</gender>
+`;
+        }
+        if (npc.race) {
+          xmlPrompt += `      <race>${npc.race}</race>
+`;
+        }
+        if (npc.profession) {
+          xmlPrompt += `      <profession>${npc.profession}</profession>
+`;
+        }
         if (npc.description) {
           xmlPrompt += `      <description>${npc.description}</description>
 `;
@@ -472,6 +526,18 @@ ${themeStyleRef}
         }
         if (npc.status) {
           xmlPrompt += `      <status>${npc.status}</status>
+`;
+        }
+        if (npc.voice) {
+          xmlPrompt += `      <voice>${npc.voice}</voice>
+`;
+        }
+        if (npc.mannerism) {
+          xmlPrompt += `      <mannerism>${npc.mannerism}</mannerism>
+`;
+        }
+        if (npc.mood) {
+          xmlPrompt += `      <mood>${npc.mood}</mood>
 `;
         }
         xmlPrompt += `      <rendering>Position relative to protagonist as described in scene, body language and expression matching narrative context, physical details consistent with appearance data</rendering>
