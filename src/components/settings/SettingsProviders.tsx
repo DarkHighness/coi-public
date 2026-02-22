@@ -25,6 +25,7 @@ interface ProviderFormData {
   baseUrl: string;
   apiKey: string;
   enabled: boolean;
+  openaiApiMode?: "response" | "chat";
   isRestrictedChannel: boolean;
   geminiCompatibility?: boolean;
   geminiMessageFormat?: boolean;
@@ -57,6 +58,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
     baseUrl: "",
     apiKey: "",
     enabled: true,
+    openaiApiMode: "response",
     isRestrictedChannel: false,
     geminiCompatibility: false,
     geminiMessageFormat: false,
@@ -139,6 +141,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       baseUrl: DEFAULT_BASE_URLS["openai"],
       apiKey: "",
       enabled: true,
+      openaiApiMode: "response",
       isRestrictedChannel: false,
       geminiCompatibility: false,
       geminiMessageFormat: false,
@@ -165,6 +168,7 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       baseUrl: instance.baseUrl,
       apiKey: "", // Clear API key - leave empty to keep current
       enabled: instance.enabled,
+      openaiApiMode: instance.openaiApiMode || "response",
       isRestrictedChannel: instance.isRestrictedChannel || false,
       geminiCompatibility: instance.geminiCompatibility || false,
       geminiMessageFormat: instance.geminiMessageFormat || false,
@@ -210,6 +214,10 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
       baseUrl: finalBaseUrl,
       apiKey: formData.apiKey,
       enabled: formData.enabled,
+      openaiApiMode:
+        formData.protocol === "openai" || formData.protocol === "openrouter"
+          ? formData.openaiApiMode || "response"
+          : undefined,
       isRestrictedChannel: formData.isRestrictedChannel,
       geminiCompatibility: formData.geminiCompatibility,
       geminiMessageFormat: formData.geminiMessageFormat,
@@ -296,6 +304,11 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
             baseUrl: finalBaseUrl,
             apiKey: newApiKey,
             enabled: formData.enabled,
+            openaiApiMode:
+              formData.protocol === "openai" ||
+              formData.protocol === "openrouter"
+                ? formData.openaiApiMode || "response"
+                : undefined,
             isRestrictedChannel: formData.isRestrictedChannel,
             geminiCompatibility: formData.geminiCompatibility,
             geminiMessageFormat: formData.geminiMessageFormat,
@@ -768,6 +781,11 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                         baseUrl: currentIsDefault
                           ? DEFAULT_BASE_URLS[newProtocol]
                           : formData.baseUrl,
+                        openaiApiMode:
+                          newProtocol === "openai" ||
+                          newProtocol === "openrouter"
+                            ? formData.openaiApiMode || "response"
+                            : undefined,
                       });
                     }}
                     className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none focus:border-theme-primary"
@@ -870,6 +888,36 @@ export const SettingsProviders: React.FC<SettingsProvidersProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* OpenAI-compatible API Mode (OpenAI/OpenRouter only) */}
+                {(formData.protocol === "openai" ||
+                  formData.protocol === "openrouter") && (
+                  <div>
+                    <label className="block text-sm font-medium text-theme-text mb-1">
+                      {t("creds.openaiApiMode")}
+                    </label>
+                    <select
+                      value={formData.openaiApiMode || "response"}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          openaiApiMode: e.target.value as "response" | "chat",
+                        })
+                      }
+                      className="w-full bg-theme-bg border border-theme-border rounded p-2 text-theme-text text-sm outline-none focus:border-theme-primary"
+                    >
+                      <option value="response">
+                        {t("creds.openaiApiModeResponse")}
+                      </option>
+                      <option value="chat">
+                        {t("creds.openaiApiModeChat")}
+                      </option>
+                    </select>
+                    <p className="text-xs text-theme-muted mt-1">
+                      {t("creds.openaiApiModeHelp")}
+                    </p>
+                  </div>
+                )}
 
                 {/* Gemini Compatibility Mode (Only for OpenAI protocol) */}
                 {formData.protocol === "openai" && (

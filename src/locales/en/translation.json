@@ -1229,6 +1229,10 @@
     "claudeCompatibilityHelp": "Enable special handling for Claude models (e.g. third-party proxies) via OpenAI-compatible endpoints.",
     "claudeMessageFormat": "Claude Message Format Conversion",
     "claudeMessageFormatHelp": "Client-side message format conversion. Enable only if proxy doesn't convert automatically (e.g. OpenRouter doesn't need this).",
+    "openaiApiMode": "API Mode",
+    "openaiApiModeHelp": "Choose Responses API or Chat Completions API. Default is Responses; unsupported endpoints auto-fallback to Chat.",
+    "openaiApiModeResponse": "Responses API",
+    "openaiApiModeChat": "Chat API",
     "compatibleImageGeneration": "Compatible Image Generation",
     "compatibleImageGenerationHelp": "Use chat API for image generation (supports gemini-3-pro-image)."
   },

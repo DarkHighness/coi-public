@@ -201,7 +201,15 @@ describe("provider registry", () => {
 
     expect(
       createProviderConfig(createInstance({ protocol: "openrouter" })),
-    ).toEqual({ apiKey: "key" });
+    ).toEqual({ apiKey: "key", apiMode: "response" });
+    expect(
+      createProviderConfig(
+        createInstance({
+          protocol: "openrouter",
+          openaiApiMode: "chat",
+        }),
+      ),
+    ).toEqual({ apiKey: "key", apiMode: "chat" });
     expect(
       createProviderConfig(createInstance({ protocol: "claude" })),
     ).toMatchObject({

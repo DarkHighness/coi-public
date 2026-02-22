@@ -106,6 +106,7 @@ export function createProviderConfig(
         apiKey: instance.apiKey,
         baseUrl: instance.baseUrl,
         modelId: "",
+        apiMode: instance.openaiApiMode || "response",
         geminiCompatibility: instance.geminiCompatibility,
         geminiMessageFormat: instance.geminiMessageFormat,
         claudeCompatibility: instance.claudeCompatibility,
@@ -115,6 +116,7 @@ export function createProviderConfig(
     case "openrouter":
       return {
         apiKey: instance.apiKey,
+        apiMode: instance.openaiApiMode || "response",
       };
     case "claude":
       return {

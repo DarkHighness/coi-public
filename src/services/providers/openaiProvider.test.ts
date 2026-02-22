@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { OpenAIConfig } from "./types";
 
-let lastCreateParams: any = null;
+const sdkMocks = vi.hoisted(() => ({
+  chatCreate: vi.fn(),
+  responsesCreate: vi.fn(),
+  modelsList: vi.fn(),
+}));
+
+let lastChatCreateParams: any = null;
+let lastResponsesCreateParams: any = null;
 
 async function* fakeChatCompletionStream() {
   yield {
@@ -18,23 +25,50 @@ async function* fakeChatCompletionStream() {
   };
 }
 
+async function* fakeResponsesStream() {
+  yield {
+    type: "response.output_text.delta",
+    delta: "hi",
+  };
+  yield {
+    type: "response.completed",
+    response: {
+      output: [
+        {
+          type: "message",
+          content: [{ type: "output_text", text: "hi" }],
+        },
+      ],
+      usage: {
+        input_tokens: 3,
+        output_tokens: 2,
+        total_tokens: 5,
+        input_tokens_details: { cached_tokens: 1 },
+      },
+    },
+  };
+}
+
 vi.mock("openai", () => {
   class OpenAI {
     chat = {
       completions: {
         create: vi.fn(async (params: any) => {
-          lastCreateParams = params;
-          if (params?.stream) return fakeChatCompletionStream();
-          return {
-            choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
-            usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-          };
+          lastChatCreateParams = params;
+          return sdkMocks.chatCreate(params);
         }),
       },
     };
 
+    responses = {
+      create: vi.fn(async (params: any) => {
+        lastResponsesCreateParams = params;
+        return sdkMocks.responsesCreate(params);
+      }),
+    };
+
     models = {
-      list: vi.fn(async () => ({ data: [] })),
+      list: vi.fn(async () => sdkMocks.modelsList()),
     };
 
     constructor(_opts: any) {}
@@ -43,9 +77,38 @@ vi.mock("openai", () => {
   return { default: OpenAI };
 });
 
+const setDefaultOpenAIMockImplementations = () => {
+  sdkMocks.chatCreate.mockImplementation(async (params: any) => {
+    if (params?.stream) return fakeChatCompletionStream();
+    return {
+      choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    };
+  });
+  sdkMocks.responsesCreate.mockImplementation(async (params: any) => {
+    if (params?.stream) return fakeResponsesStream();
+    return {
+      output: [
+        {
+          type: "message",
+          content: [{ type: "output_text", text: "ok" }],
+        },
+      ],
+      usage: {
+        input_tokens: 1,
+        output_tokens: 1,
+        total_tokens: 2,
+      },
+    };
+  });
+  sdkMocks.modelsList.mockResolvedValue({ data: [] });
+};
+
 describe("openaiProvider streaming usage", () => {
   beforeEach(() => {
-    lastCreateParams = null;
+    lastChatCreateParams = null;
+    lastResponsesCreateParams = null;
+    setDefaultOpenAIMockImplementations();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
@@ -59,7 +122,11 @@ describe("openaiProvider streaming usage", () => {
 
     const onChunk = vi.fn();
     const res = await generateContent(
-      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      {
+        apiKey: "test",
+        baseUrl: "https://api.openai.com/v1",
+        apiMode: "chat",
+      } as any,
       "gpt-4o-mini",
       "",
       [
@@ -73,8 +140,10 @@ describe("openaiProvider streaming usage", () => {
     );
 
     expect(onChunk).toHaveBeenCalledWith("hi");
-    expect(lastCreateParams?.stream).toBe(true);
-    expect(lastCreateParams?.stream_options).toEqual({ include_usage: true });
+    expect(lastChatCreateParams?.stream).toBe(true);
+    expect(lastChatCreateParams?.stream_options).toEqual({
+      include_usage: true,
+    });
     expect(res.usage).toMatchObject({
       promptTokens: 3,
       completionTokens: 2,
@@ -89,6 +158,7 @@ describe("openaiProvider streaming usage", () => {
     const config: OpenAIConfig = {
       apiKey: "test",
       baseUrl: "https://api.openai.com/v1",
+      apiMode: "chat",
       geminiCompatibility: true,
       geminiMessageFormat: true,
     };
@@ -129,7 +199,7 @@ describe("openaiProvider streaming usage", () => {
       undefined,
     );
 
-    expect(lastCreateParams?.messages).toEqual([
+    expect(lastChatCreateParams?.messages).toEqual([
       { role: "system", content: "sys" },
       {
         role: "assistant",
@@ -162,6 +232,7 @@ describe("openaiProvider streaming usage", () => {
     const config: OpenAIConfig = {
       apiKey: "test",
       baseUrl: "https://api.openai.com/v1",
+      apiMode: "chat",
       claudeCompatibility: true,
       claudeMessageFormat: true,
     };
@@ -202,7 +273,7 @@ describe("openaiProvider streaming usage", () => {
       undefined,
     );
 
-    expect(lastCreateParams?.messages).toEqual([
+    expect(lastChatCreateParams?.messages).toEqual([
       { role: "system", content: "sys" },
       {
         role: "assistant",
@@ -232,7 +303,110 @@ describe("openaiProvider streaming usage", () => {
   });
 });
 
+describe("openaiProvider response mode", () => {
+  beforeEach(() => {
+    lastChatCreateParams = null;
+    lastResponsesCreateParams = null;
+    setDefaultOpenAIMockImplementations();
+  });
+
+  it("uses responses API by default", async () => {
+    const { generateContent } = await import("./openaiProvider");
+
+    await generateContent(
+      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      "gpt-4o-mini",
+      "",
+      [{ role: "user", content: [{ type: "text", text: "Hello" }] }] as any,
+    );
+
+    expect(lastResponsesCreateParams?.model).toBe("gpt-4o-mini");
+    expect(lastChatCreateParams).toBeNull();
+  });
+
+  it("uses chat API when apiMode=chat", async () => {
+    const { generateContent } = await import("./openaiProvider");
+
+    await generateContent(
+      {
+        apiKey: "test",
+        baseUrl: "https://api.openai.com/v1",
+        apiMode: "chat",
+      } as any,
+      "gpt-4o-mini",
+      "",
+      [{ role: "user", content: [{ type: "text", text: "Hello" }] }] as any,
+    );
+
+    expect(lastChatCreateParams?.model).toBe("gpt-4o-mini");
+    expect(lastResponsesCreateParams).toBeNull();
+  });
+
+  it("streams text deltas via responses API", async () => {
+    const { generateContent } = await import("./openaiProvider");
+    const onChunk = vi.fn();
+
+    const res = await generateContent(
+      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      "gpt-4o-mini",
+      "",
+      [{ role: "user", content: [{ type: "text", text: "Hello" }] }] as any,
+      undefined,
+      { onChunk } as any,
+    );
+
+    expect(lastResponsesCreateParams?.stream).toBe(true);
+    expect(onChunk).toHaveBeenCalledWith("hi");
+    expect(res.usage).toMatchObject({
+      promptTokens: 3,
+      completionTokens: 2,
+      totalTokens: 5,
+      cacheRead: 1,
+    });
+  });
+
+  it("parses function calls from responses API output", async () => {
+    const { generateContent } = await import("./openaiProvider");
+    sdkMocks.responsesCreate.mockResolvedValueOnce({
+      output: [
+        {
+          type: "function_call",
+          call_id: "call_1",
+          name: "vfs_read_chars",
+          arguments: JSON.stringify({ path: "a" }),
+        },
+      ],
+      usage: {
+        input_tokens: 2,
+        output_tokens: 1,
+        total_tokens: 3,
+      },
+    });
+
+    const res = await generateContent(
+      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      "gpt-4o-mini",
+      "",
+      [{ role: "user", content: [{ type: "text", text: "Hello" }] }] as any,
+    );
+
+    const result = res.result as { functionCalls?: Array<any> };
+    expect(result.functionCalls).toHaveLength(1);
+    expect(result.functionCalls?.[0]).toMatchObject({
+      id: "call_1",
+      name: "vfs_read_chars",
+      args: { path: "a" },
+    });
+  });
+});
+
 describe("openaiProvider helper conversions", () => {
+  beforeEach(() => {
+    lastChatCreateParams = null;
+    lastResponsesCreateParams = null;
+    setDefaultOpenAIMockImplementations();
+  });
+
   it("parses nested cache usage and derives completion from totals", async () => {
     const { parseOpenAIUsage } = await import("./openaiProvider");
 
@@ -398,7 +572,11 @@ describe("openaiProvider helper conversions", () => {
     const { generateContent } = await import("./openaiProvider");
 
     await generateContent(
-      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      {
+        apiKey: "test",
+        baseUrl: "https://api.openai.com/v1",
+        apiMode: "chat",
+      } as any,
       "gpt-4o-mini",
       "",
       [
@@ -411,15 +589,19 @@ describe("openaiProvider helper conversions", () => {
       undefined,
     );
 
-    expect(lastCreateParams?.max_tokens).toBeUndefined();
-    expect(lastCreateParams?.max_completion_tokens).toBeUndefined();
+    expect(lastChatCreateParams?.max_tokens).toBeUndefined();
+    expect(lastChatCreateParams?.max_completion_tokens).toBeUndefined();
   });
 
   it("omits max token params by default for reasoning models", async () => {
     const { generateContent } = await import("./openaiProvider");
 
     await generateContent(
-      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      {
+        apiKey: "test",
+        baseUrl: "https://api.openai.com/v1",
+        apiMode: "chat",
+      } as any,
       "o3",
       "",
       [
@@ -432,15 +614,19 @@ describe("openaiProvider helper conversions", () => {
       undefined,
     );
 
-    expect(lastCreateParams?.max_completion_tokens).toBeUndefined();
-    expect(lastCreateParams?.max_tokens).toBeUndefined();
+    expect(lastChatCreateParams?.max_completion_tokens).toBeUndefined();
+    expect(lastChatCreateParams?.max_tokens).toBeUndefined();
   });
 
   it("caps max_tokens when provider-managed mode is disabled", async () => {
     const { generateContent } = await import("./openaiProvider");
 
     await generateContent(
-      { apiKey: "test", baseUrl: "https://api.openai.com/v1" } as any,
+      {
+        apiKey: "test",
+        baseUrl: "https://api.openai.com/v1",
+        apiMode: "chat",
+      } as any,
       "openai/unknown-model",
       "",
       [
@@ -459,6 +645,6 @@ describe("openaiProvider helper conversions", () => {
       } as any,
     );
 
-    expect(lastCreateParams?.max_tokens).toBe(120752);
+    expect(lastChatCreateParams?.max_tokens).toBe(120752);
   });
 });

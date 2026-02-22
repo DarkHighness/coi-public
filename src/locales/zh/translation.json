@@ -933,6 +933,10 @@
     "claudeCompatibilityHelp": "通过 OpenAI 兼容接口调用 Claude 模型时启用特殊处理（如第三方代理）。",
     "claudeMessageFormat": "Claude 消息格式转换",
     "claudeMessageFormatHelp": "由客户端转换消息格式。仅当代理不自动转换时启用（如 OpenRouter 不需要）。",
+    "openaiApiMode": "API 模式",
+    "openaiApiModeHelp": "选择 Responses API 或 Chat Completions API。默认使用 Responses；若端点不支持会自动回退到 Chat。",
+    "openaiApiModeResponse": "Responses API",
+    "openaiApiModeChat": "Chat API",
     "compatibleImageGeneration": "兼容性图片生成",
     "compatibleImageGenerationHelp": "使用对话 API 生成图片 (支持 gemini-3-pro-image)。",
     "baseUrlPlaceholder": "基础 URL（可选）"

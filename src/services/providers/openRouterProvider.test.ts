@@ -5,6 +5,7 @@ const sdkMocks = vi.hoisted(() => ({
   creditsGet: vi.fn(),
   embeddingsListModels: vi.fn(),
   chatSend: vi.fn(),
+  responsesSend: vi.fn(),
 }));
 
 const generateOpenAISpeechMock = vi.hoisted(() => vi.fn());
@@ -15,6 +16,7 @@ vi.mock("@openrouter/sdk", () => {
     credits = { getCredits: sdkMocks.creditsGet };
     embeddings = { listModels: sdkMocks.embeddingsListModels };
     chat = { send: sdkMocks.chatSend };
+    beta = { responses: { send: sdkMocks.responsesSend } };
 
     constructor(_opts: any) {}
   }
@@ -40,6 +42,36 @@ import {
   parseOpenRouterUsage,
   validateConnection,
 } from "./openRouterProvider";
+
+const setDefaultGenerationMocks = () => {
+  sdkMocks.chatSend.mockResolvedValue({
+    choices: [
+      {
+        finish_reason: "stop",
+        native_finish_reason: "stop",
+        message: { content: "ok" },
+      },
+    ],
+    usage: {
+      prompt_tokens: 10,
+      completion_tokens: 2,
+      total_tokens: 12,
+    },
+  });
+  sdkMocks.responsesSend.mockResolvedValue({
+    output: [
+      {
+        type: "message",
+        content: [{ type: "output_text", text: "ok" }],
+      },
+    ],
+    usage: {
+      input_tokens: 10,
+      output_tokens: 2,
+      total_tokens: 12,
+    },
+  });
+};
 
 describe("openRouterProvider usage parsing", () => {
   it("reads nested cached tokens when direct cache key is missing", () => {
@@ -152,6 +184,7 @@ describe("openRouterProvider usage parsing", () => {
 describe("openRouterProvider dynamic output budget", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setDefaultGenerationMocks();
   });
 
   it("omits maxTokens by default", async () => {
@@ -171,7 +204,7 @@ describe("openRouterProvider dynamic output budget", () => {
     });
 
     await generateContent(
-      { apiKey: "k" } as any,
+      { apiKey: "k", apiMode: "chat" } as any,
       "unknown/vendor-model",
       "sys",
       [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
@@ -207,7 +240,7 @@ describe("openRouterProvider dynamic output budget", () => {
     });
 
     await generateContent(
-      { apiKey: "k" } as any,
+      { apiKey: "k", apiMode: "chat" } as any,
       "unknown/vendor-model",
       "sys",
       [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
@@ -255,7 +288,7 @@ describe("openRouterProvider dynamic output budget", () => {
     });
 
     await generateContent(
-      { apiKey: "k" } as any,
+      { apiKey: "k", apiMode: "chat" } as any,
       "unknown/vendor-model",
       "sys",
       [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
@@ -276,9 +309,150 @@ describe("openRouterProvider dynamic output budget", () => {
   });
 });
 
+describe("openRouterProvider response mode", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setDefaultGenerationMocks();
+  });
+
+  it("uses beta.responses.send by default", async () => {
+    await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+    );
+
+    expect(sdkMocks.responsesSend).toHaveBeenCalledTimes(1);
+    expect(sdkMocks.chatSend).not.toHaveBeenCalled();
+  });
+
+  it("uses chat.send when apiMode=chat", async () => {
+    await generateContent(
+      { apiKey: "k", apiMode: "chat" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+    );
+
+    expect(sdkMocks.chatSend).toHaveBeenCalledTimes(1);
+    expect(sdkMocks.responsesSend).not.toHaveBeenCalled();
+  });
+
+  it("falls back to chat when responses api is unsupported", async () => {
+    sdkMocks.responsesSend.mockRejectedValueOnce({
+      status: 404,
+      message: "responses endpoint not found",
+    });
+    sdkMocks.chatSend.mockResolvedValueOnce({
+      choices: [
+        {
+          finish_reason: "stop",
+          native_finish_reason: "stop",
+          message: { content: "chat-ok" },
+        },
+      ],
+      usage: {
+        prompt_tokens: 3,
+        completion_tokens: 1,
+        total_tokens: 4,
+      },
+    });
+
+    const res = await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+    );
+
+    expect(sdkMocks.responsesSend).toHaveBeenCalledTimes(1);
+    expect(sdkMocks.chatSend).toHaveBeenCalledTimes(1);
+    expect(res.result).toMatchObject({ content: "chat-ok" });
+  });
+
+  it("streams responses text deltas to onChunk", async () => {
+    async function* responseStream() {
+      yield { type: "response.output_text.delta", delta: "hel" };
+      yield { type: "response.output_text.delta", delta: "lo" };
+      yield {
+        type: "response.completed",
+        response: {
+          output: [
+            {
+              type: "message",
+              content: [{ type: "output_text", text: "hello" }],
+            },
+          ],
+          usage: {
+            input_tokens: 5,
+            output_tokens: 2,
+            total_tokens: 7,
+          },
+        },
+      };
+    }
+
+    sdkMocks.responsesSend.mockResolvedValueOnce(responseStream());
+
+    const onChunk = vi.fn();
+    const res = await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+      undefined,
+      { onChunk } as any,
+    );
+
+    expect(onChunk).toHaveBeenCalledWith("hel");
+    expect(onChunk).toHaveBeenCalledWith("lo");
+    expect(res.result).toMatchObject({ content: "hello" });
+    expect(res.usage).toMatchObject({
+      promptTokens: 5,
+      completionTokens: 2,
+      totalTokens: 7,
+    });
+  });
+
+  it("parses functionCalls from responses output", async () => {
+    sdkMocks.responsesSend.mockResolvedValueOnce({
+      output: [
+        {
+          type: "function_call",
+          call_id: "call_1",
+          name: "vfs_read_lines",
+          arguments: JSON.stringify({ path: "current/world/global.json" }),
+        },
+      ],
+      usage: {
+        input_tokens: 4,
+        output_tokens: 1,
+        total_tokens: 5,
+      },
+    });
+
+    const res = await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+    );
+
+    const result = res.result as { functionCalls?: Array<any> };
+    expect(result.functionCalls).toHaveLength(1);
+    expect(result.functionCalls?.[0]).toMatchObject({
+      id: "call_1",
+      name: "vfs_read_lines",
+      args: { path: "current/world/global.json" },
+    });
+  });
+});
+
 describe("openRouterProvider exports", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setDefaultGenerationMocks();
     vi.unstubAllGlobals();
   });
 
@@ -604,6 +778,7 @@ describe("openRouterProvider exports", () => {
 describe("openRouterProvider tool-call handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setDefaultGenerationMocks();
   });
 
   it("returns functionCalls for non-streaming snake_case tool_calls responses", async () => {
@@ -636,7 +811,7 @@ describe("openRouterProvider tool-call handling", () => {
     });
 
     const res = await generateContent(
-      { apiKey: "k" } as any,
+      { apiKey: "k", apiMode: "chat" } as any,
       "z-ai/glm-5",
       "sys",
       [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
@@ -693,7 +868,7 @@ describe("openRouterProvider tool-call handling", () => {
 
     const onChunk = vi.fn();
     const res = await generateContent(
-      { apiKey: "k" } as any,
+      { apiKey: "k", apiMode: "chat" } as any,
       "z-ai/glm-5",
       "sys",
       [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
@@ -740,9 +915,12 @@ describe("openRouterProvider tool-call handling", () => {
     });
 
     await expect(
-      generateContent({ apiKey: "k" } as any, "z-ai/glm-5", "sys", [
-        { role: "user", content: [{ type: "text", text: "phase1" }] },
-      ] as any),
+      generateContent(
+        { apiKey: "k", apiMode: "chat" } as any,
+        "z-ai/glm-5",
+        "sys",
+        [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+      ),
     ).rejects.toMatchObject({ code: "MALFORMED_TOOL_CALL" });
   });
 
@@ -768,7 +946,7 @@ describe("openRouterProvider tool-call handling", () => {
 
     await expect(
       generateContent(
-        { apiKey: "k" } as any,
+        { apiKey: "k", apiMode: "chat" } as any,
         "z-ai/glm-5",
         "sys",
         [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,

@@ -72,6 +72,10 @@ export function createProviderFromTemplate(
 ): ProviderInstance {
   const template = PROVIDER_TEMPLATES[templateKey];
   const now = Date.now();
+  const openaiApiMode =
+    template.protocol === "openai" || template.protocol === "openrouter"
+      ? "response"
+      : undefined;
 
   return {
     id: `provider-${nextId}`,
@@ -80,6 +84,7 @@ export function createProviderFromTemplate(
     baseUrl: template.baseUrl,
     apiKey,
     enabled: true,
+    openaiApiMode,
     createdAt: now,
     lastModified: now,
   };

@@ -998,6 +998,7 @@ export interface ProviderInstance {
   baseUrl: string; // API 基础 URL
   apiKey: string; // API 密钥
   enabled: boolean; // 是否启用
+  openaiApiMode?: "response" | "chat"; // OpenAI/OpenRouter protocol only: choose Responses API or Chat API
   isRestrictedChannel?: boolean; // 是否为受限渠道（不支持 system role）
   geminiCompatibility?: boolean; // 是否开启 Gemini 兼容模式 (OpenAI protocol only)
   geminiMessageFormat?: boolean; // 是否转换消息格式为 Gemini 原生格式 (当代理不自动转换时使用)

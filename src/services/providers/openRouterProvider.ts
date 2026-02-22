@@ -134,6 +134,8 @@ interface OpenRouterResponseFormatOption {
   jsonSchema?: unknown;
 }
 
+type OpenRouterApiMode = "response" | "chat";
+
 type OpenRouterToolChoiceOption =
   | "required"
   | "none"
@@ -159,6 +161,51 @@ interface OpenRouterGenerationParams {
   sort?: string;
   reasoning?: OpenRouterReasoningOption;
   responseFormat?: OpenRouterResponseFormatOption;
+}
+
+interface OpenRouterResponseFunctionTool {
+  type: "function";
+  name: string;
+  description?: string;
+  strict?: boolean;
+  parameters: JsonObject | null;
+}
+
+type OpenRouterResponseToolChoiceOption =
+  | "required"
+  | "none"
+  | "auto"
+  | {
+      type: "function";
+      name: string;
+    };
+
+interface OpenRouterResponseGenerationParams {
+  model: string;
+  input: JsonObject[];
+  maxOutputTokens?: number;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  stream?: boolean;
+  tools?: OpenRouterResponseFunctionTool[];
+  toolChoice?: OpenRouterResponseToolChoiceOption;
+  provider?: {
+    allowFallbacks?: boolean;
+    requireParameters?: boolean;
+    sort?: string;
+  };
+  reasoning?: {
+    effort: string;
+  };
+  text?: {
+    format: {
+      type: "json_schema";
+      name: string;
+      schema: JsonObject;
+      strict?: boolean;
+    };
+  };
 }
 
 interface OpenRouterGenerationToolResult extends JsonObject {
@@ -299,6 +346,474 @@ const normalizeErrorMessage = (error: unknown): string => {
     }
   }
   return String(error || "");
+};
+
+const resolveOpenRouterApiMode = (
+  config: OpenRouterConfig,
+): OpenRouterApiMode => (config.apiMode === "chat" ? "chat" : "response");
+
+const readErrorStatusCode = (error: unknown): number | undefined => {
+  if (!isRecord(error)) return undefined;
+  return (
+    readNumber(error.status) ||
+    readNumber(error.statusCode) ||
+    readNumber(error.code)
+  );
+};
+
+const isResponsesUnsupportedError = (error: unknown): boolean => {
+  const status = readErrorStatusCode(error);
+  const message = normalizeErrorMessage(error).toLowerCase();
+  const body = isRecord(error) ? readString(error.body)?.toLowerCase() : "";
+  const haystack = `${message} ${body || ""}`;
+
+  const mentionsResponses =
+    haystack.includes("/responses") ||
+    haystack.includes("responses api") ||
+    haystack.includes("responses endpoint") ||
+    haystack.includes("beta.responses") ||
+    (haystack.includes("responses") &&
+      (haystack.includes("unsupported") ||
+        haystack.includes("not support") ||
+        haystack.includes("not found") ||
+        haystack.includes("unknown")));
+
+  if (mentionsResponses) {
+    return true;
+  }
+
+  return (
+    (status === 404 || status === 405 || status === 501) &&
+    haystack.includes("responses")
+  );
+};
+
+const toOpenRouterResponsesFunctionTool = (
+  tool: unknown,
+): OpenRouterResponseFunctionTool | null => {
+  const toolRecord = isRecord(tool) ? tool : null;
+  const toolFunction =
+    toolRecord && isRecord(toolRecord.function) ? toolRecord.function : null;
+  const name = readString(toolFunction?.name);
+  if (!name) return null;
+
+  const description = readString(toolFunction?.description);
+  const strict =
+    typeof toolFunction?.strict === "boolean" ? toolFunction.strict : undefined;
+  const parameters = isRecord(toolFunction?.parameters)
+    ? (toolFunction.parameters as JsonObject)
+    : null;
+
+  return {
+    type: "function",
+    name,
+    ...(description ? { description } : {}),
+    ...(typeof strict === "boolean" ? { strict } : {}),
+    parameters,
+  };
+};
+
+const convertOpenRouterVisionPartsToResponseContent = (
+  content: unknown,
+): Array<JsonObject> => {
+  if (!Array.isArray(content)) return [];
+
+  const result: Array<JsonObject> = [];
+  for (const item of content) {
+    const record = isRecord(item) ? item : null;
+    if (!record) continue;
+    const type = readString(record.type);
+    if (type === "text") {
+      const text = readString(record.text);
+      if (text) {
+        result.push({
+          type: "input_text",
+          text,
+        });
+      }
+      continue;
+    }
+
+    if (type === "image_url") {
+      const imagePayload = isRecord(record.image_url)
+        ? record.image_url
+        : isRecord(record.imageUrl)
+          ? record.imageUrl
+          : null;
+      const imageUrl = readString(imagePayload?.url);
+      if (imageUrl) {
+        result.push({
+          type: "input_image",
+          image_url: imageUrl,
+        });
+      }
+    }
+  }
+
+  return result;
+};
+
+const convertOpenRouterMessagesToResponsesInput = (
+  messages: models.Message[],
+): JsonObject[] => {
+  const result: JsonObject[] = [];
+
+  for (const message of messages) {
+    const messageRecord = isRecord(message) ? (message as JsonObject) : null;
+    const role = readString(messageRecord?.role);
+    if (!role) continue;
+
+    if (role === "tool") {
+      const toolCallId =
+        readString(messageRecord?.toolCallId) ||
+        readString(messageRecord?.tool_call_id);
+      if (!toolCallId) continue;
+      const content = messageRecord?.content;
+      const output =
+        typeof content === "string" ? content : JSON.stringify(content ?? "");
+      result.push({
+        type: "function_call_output",
+        call_id: toolCallId,
+        output,
+      });
+      continue;
+    }
+
+    if (role === "assistant") {
+      const toolCalls = Array.isArray(messageRecord?.toolCalls)
+        ? messageRecord.toolCalls
+        : Array.isArray(messageRecord?.tool_calls)
+          ? messageRecord.tool_calls
+          : [];
+      const assistantContent = messageRecord?.content;
+
+      if (
+        typeof assistantContent === "string" &&
+        assistantContent.trim().length > 0
+      ) {
+        result.push({
+          type: "message",
+          role: "assistant",
+          content: assistantContent,
+        });
+      } else if (
+        Array.isArray(assistantContent) &&
+        assistantContent.length > 0
+      ) {
+        const responseContent =
+          convertOpenRouterVisionPartsToResponseContent(assistantContent);
+        if (responseContent.length > 0) {
+          result.push({
+            type: "message",
+            role: "assistant",
+            content: responseContent,
+          });
+        }
+      }
+
+      for (const toolCall of toolCalls) {
+        const toolCallRecord = isRecord(toolCall) ? toolCall : null;
+        if (!toolCallRecord) continue;
+        const functionRecord = isRecord(toolCallRecord.function)
+          ? toolCallRecord.function
+          : null;
+        const name =
+          readString(functionRecord?.name) || readString(toolCallRecord.name);
+        if (!name) continue;
+        const rawArgs =
+          readString(functionRecord?.arguments) ||
+          readString(toolCallRecord.arguments) ||
+          "{}";
+        const callId =
+          readString(toolCallRecord.callId) ||
+          readString(toolCallRecord.call_id) ||
+          readString(toolCallRecord.id) ||
+          `tool_${result.length + 1}`;
+
+        result.push({
+          type: "function_call",
+          id: callId,
+          call_id: callId,
+          name,
+          arguments: rawArgs,
+        });
+      }
+      continue;
+    }
+
+    if (role !== "system" && role !== "developer" && role !== "user") {
+      continue;
+    }
+
+    const content = messageRecord?.content;
+    if (typeof content === "string") {
+      result.push({
+        type: "message",
+        role,
+        content,
+      });
+      continue;
+    }
+
+    if (Array.isArray(content)) {
+      result.push({
+        type: "message",
+        role,
+        content: convertOpenRouterVisionPartsToResponseContent(content),
+      });
+      continue;
+    }
+
+    result.push({
+      type: "message",
+      role,
+      content: "",
+    });
+  }
+
+  return result;
+};
+
+const readOpenRouterResponsesIncompleteReason = (
+  response: unknown,
+): string | undefined => {
+  if (!isRecord(response)) return undefined;
+  const incomplete = isRecord(response.incompleteDetails)
+    ? response.incompleteDetails
+    : isRecord(response.incomplete_details)
+      ? response.incomplete_details
+      : null;
+  return readString(incomplete?.reason);
+};
+
+const extractOpenRouterResponsesText = (response: unknown): string => {
+  if (!isRecord(response)) return "";
+
+  const direct =
+    readString(response.outputText) || readString(response.output_text);
+  if (direct) return direct;
+
+  const output = Array.isArray(response.output) ? response.output : [];
+  const chunks: string[] = [];
+
+  for (const item of output) {
+    const itemRecord = isRecord(item) ? item : null;
+    if (!itemRecord || readString(itemRecord.type) !== "message") continue;
+    const content = Array.isArray(itemRecord.content) ? itemRecord.content : [];
+    for (const part of content) {
+      const partRecord = isRecord(part) ? part : null;
+      if (!partRecord) continue;
+      if (readString(partRecord.type) === "output_text") {
+        const text = readString(partRecord.text);
+        if (text) chunks.push(text);
+      }
+    }
+  }
+
+  return chunks.join("");
+};
+
+const extractOpenRouterResponsesToolCalls = (
+  response: unknown,
+): ToolCallResult[] => {
+  if (!isRecord(response)) return [];
+  const output = Array.isArray(response.output) ? response.output : [];
+  const toolCalls: ToolCallResult[] = [];
+
+  for (const item of output) {
+    const itemRecord = isRecord(item) ? item : null;
+    if (!itemRecord || readString(itemRecord.type) !== "function_call")
+      continue;
+    const name = readString(itemRecord.name);
+    if (!name) continue;
+    const rawArgs = readString(itemRecord.arguments) || "{}";
+    const callId =
+      readString(itemRecord.callId) ||
+      readString(itemRecord.call_id) ||
+      readString(itemRecord.id) ||
+      `tool_${toolCalls.length + 1}`;
+    toolCalls.push({
+      id: callId,
+      name,
+      args: parseToolArguments(rawArgs, name),
+    });
+  }
+
+  return toolCalls;
+};
+
+const collectOpenRouterResponsesToolNameHints = (
+  response: unknown,
+): string[] => {
+  if (!isRecord(response)) return [];
+  const output = Array.isArray(response.output) ? response.output : [];
+  const names = new Set<string>();
+
+  for (const item of output) {
+    const itemRecord = isRecord(item) ? item : null;
+    if (!itemRecord || readString(itemRecord.type) !== "function_call")
+      continue;
+    const name = readString(itemRecord.name)?.trim();
+    if (name) names.add(name);
+  }
+
+  return Array.from(names);
+};
+
+const extractOpenRouterResponsesReasoning = (response: unknown): string => {
+  if (!isRecord(response)) return "";
+  const output = Array.isArray(response.output) ? response.output : [];
+  const chunks: string[] = [];
+
+  for (const item of output) {
+    const itemRecord = isRecord(item) ? item : null;
+    if (!itemRecord || readString(itemRecord.type) !== "reasoning") continue;
+
+    const summary = Array.isArray(itemRecord.summary) ? itemRecord.summary : [];
+    for (const part of summary) {
+      const partRecord = isRecord(part) ? part : null;
+      const text = readString(partRecord?.text);
+      if (text) chunks.push(text);
+    }
+
+    const content = Array.isArray(itemRecord.content) ? itemRecord.content : [];
+    for (const part of content) {
+      const partRecord = isRecord(part) ? part : null;
+      const text = readString(partRecord?.text);
+      if (text) chunks.push(text);
+    }
+  }
+
+  return chunks.join("\n").trim();
+};
+
+const buildOpenRouterResponsesTextFormat = (
+  schema: ZodTypeAny,
+  isGemini: boolean,
+  isClaude: boolean,
+): {
+  format: {
+    type: "json_schema";
+    name: string;
+    schema: JsonObject;
+    strict?: boolean;
+  };
+} => {
+  if (isGemini) {
+    return {
+      format: {
+        type: "json_schema",
+        name: "response",
+        schema: zodToGeminiCompatibleSchema(schema) as JsonObject,
+        strict: false,
+      },
+    };
+  }
+
+  if (isClaude) {
+    return {
+      format: {
+        type: "json_schema",
+        name: "response",
+        schema: zodToClaudeCompatibleSchema(schema) as JsonObject,
+        strict: false,
+      },
+    };
+  }
+
+  const openAIFormat = zodToOpenAIResponseFormat(schema);
+  return {
+    format: {
+      type: "json_schema",
+      name: openAIFormat.json_schema.name,
+      schema: openAIFormat.json_schema.schema as JsonObject,
+      strict: openAIFormat.json_schema.strict,
+    },
+  };
+};
+
+const parseOpenRouterResponsesResult = (
+  response: unknown,
+  schema: ZodTypeAny | undefined,
+  raw: unknown,
+  streamedTextFallback: string = "",
+  streamedReasoningFallback: string = "",
+): OpenRouterContentGenerationResponse => {
+  const incompleteReason = readOpenRouterResponsesIncompleteReason(response);
+  if (incompleteReason === "content_filter") {
+    throw new SafetyFilterError("openrouter");
+  }
+
+  const usage = parseOpenRouterUsage(
+    isRecord(response) ? response.usage : undefined,
+  );
+  const toolCalls = extractOpenRouterResponsesToolCalls(response);
+  const hintedToolNames = collectOpenRouterResponsesToolNameHints(response);
+  if (hintedToolNames.length > 0 && toolCalls.length === 0) {
+    throw new MalformedToolCallError(
+      "openrouter",
+      buildMissingToolPayloadDetail(
+        "responses output included function_call items but no valid tool payload was parsed",
+        hintedToolNames,
+      ),
+    );
+  }
+
+  const text = extractOpenRouterResponsesText(response) || streamedTextFallback;
+  const reasoningContent =
+    extractOpenRouterResponsesReasoning(response) || streamedReasoningFallback;
+
+  if (toolCalls.length > 0) {
+    const toolResult: OpenRouterGenerationToolResult = {
+      functionCalls: toolCalls,
+      content: text || undefined,
+    };
+    if (reasoningContent) {
+      toolResult._reasoning = reasoningContent;
+    }
+    return {
+      result: toolResult,
+      usage,
+      raw,
+    };
+  }
+
+  if (!text) {
+    throw new AIProviderError(
+      "No content returned from OpenRouter",
+      "openrouter",
+    );
+  }
+
+  if (schema) {
+    try {
+      const cleanedContent = cleanJsonContent(text);
+      const result = JSON.parse(jsonrepair(cleanedContent));
+      validateSchema(result, schema, "openrouter");
+      return {
+        result: reasoningContent
+          ? ({ ...result, _reasoning: reasoningContent } as JsonObject)
+          : (result as JsonObject),
+        usage,
+        raw,
+      };
+    } catch (error) {
+      if (error instanceof AIProviderError) {
+        throw error;
+      }
+      throw new JSONParseError("openrouter", text.substring(0, 500), error);
+    }
+  }
+
+  const result: OpenRouterGenerationTextResult = { content: text };
+  if (reasoningContent) {
+    result._reasoning = reasoningContent;
+  }
+  return {
+    result,
+    usage,
+    raw,
+  };
 };
 
 const parseTokenCount = (raw: string | undefined): number | undefined => {
@@ -805,6 +1320,310 @@ function inferModelCapabilities(modelData: {
  * Generate content (chat/tool calls) using SDK
  */
 export async function generateContent(
+  config: OpenRouterConfig,
+  model: string,
+  systemInstruction: string,
+  contents: UnifiedMessage[],
+  schema?: ZodTypeAny,
+  options?: GenerateContentOptions,
+): Promise<OpenRouterContentGenerationResponse> {
+  const apiMode = resolveOpenRouterApiMode(config);
+  if (apiMode === "chat") {
+    return generateContentViaChat(
+      config,
+      model,
+      systemInstruction,
+      contents,
+      schema,
+      options,
+    );
+  }
+
+  try {
+    return await generateContentViaResponse(
+      config,
+      model,
+      systemInstruction,
+      contents,
+      schema,
+      options,
+    );
+  } catch (error) {
+    const shouldFallback =
+      (error instanceof AIProviderError && error.code === "UNSUPPORTED") ||
+      isResponsesUnsupportedError(error);
+
+    if (!shouldFallback) {
+      throw error;
+    }
+
+    console.warn(
+      "[OpenRouter] Responses API is unsupported by endpoint/model. Falling back to Chat API.",
+    );
+    return generateContentViaChat(
+      { ...config, apiMode: "chat" },
+      model,
+      systemInstruction,
+      contents,
+      schema,
+      options,
+    );
+  }
+}
+
+async function generateContentViaResponse(
+  config: OpenRouterConfig,
+  model: string,
+  systemInstruction: string,
+  contents: UnifiedMessage[],
+  schema?: ZodTypeAny,
+  options?: GenerateContentOptions,
+): Promise<OpenRouterContentGenerationResponse> {
+  return withRetry(
+    async () => {
+      const client = createClient(config);
+      const hasResponsesSender =
+        typeof (
+          client as unknown as { beta?: { responses?: { send?: unknown } } }
+        ).beta?.responses?.send === "function";
+
+      if (!hasResponsesSender) {
+        throw new AIProviderError(
+          "Responses API is not supported by this endpoint",
+          "openrouter",
+          "UNSUPPORTED",
+        );
+      }
+
+      const isGemini = isGeminiModel(model);
+      const isClaude = isClaudeModel(model);
+      const messages = convertToOpenAIMessages(systemInstruction, contents);
+      const toolsForChat = options?.tools
+        ? convertToOpenRouterTools(options.tools, {
+            geminiCompatibility: isGemini,
+            claudeCompatibility: isClaude,
+          })
+        : undefined;
+
+      const toolsForResponses =
+        toolsForChat
+          ?.map((tool) => toOpenRouterResponsesFunctionTool(tool))
+          .filter(
+            (tool): tool is OpenRouterResponseFunctionTool => tool !== null,
+          ) || [];
+
+      let toolChoice: OpenRouterResponseToolChoiceOption | undefined;
+      if (toolsForResponses.length > 0) {
+        if (options?.toolChoice === "required") {
+          toolChoice = "required";
+        } else if (options?.toolChoice === "none") {
+          toolChoice = "none";
+        } else if (
+          options?.toolChoice &&
+          typeof options.toolChoice === "object"
+        ) {
+          toolChoice = {
+            type: "function",
+            name: options.toolChoice.name,
+          };
+        } else {
+          toolChoice = "auto";
+        }
+      }
+
+      const tokenBudgetResolution = resolveTokenBudget({
+        providerProtocol: "openrouter",
+        modelId: model,
+        tokenBudget: options?.tokenBudget,
+        systemInstruction,
+        messages: contents,
+        tools: options?.tools,
+        schema,
+      });
+
+      const requestParams: OpenRouterResponseGenerationParams = {
+        model,
+        input: convertOpenRouterMessagesToResponsesInput(messages),
+        ...(tokenBudgetResolution.shouldInjectMaxOutputTokens
+          ? { maxOutputTokens: tokenBudgetResolution.maxOutputTokens }
+          : {}),
+        temperature: options?.temperature,
+        topP: options?.topP,
+        topK: options?.topK,
+        stream: !!options?.onChunk,
+        tools: toolsForResponses.length > 0 ? toolsForResponses : undefined,
+        toolChoice,
+        provider: {
+          allowFallbacks: true,
+          requireParameters: true,
+          sort: "price",
+        },
+      };
+
+      const effort = options?.thinkingEffort;
+      if (effort) {
+        requestParams.reasoning = { effort };
+      }
+
+      if (schema && toolsForResponses.length === 0) {
+        requestParams.text = buildOpenRouterResponsesTextFormat(
+          schema,
+          isGemini,
+          isClaude,
+        );
+      }
+
+      const executeRequest =
+        async (): Promise<OpenRouterContentGenerationResponse> => {
+          if (options?.onChunk) {
+            const stream = (await client.beta.responses.send(
+              {
+                ...requestParams,
+                stream: true,
+              } as models.OpenResponsesRequest & {
+                stream: true;
+              },
+              createRequestOptions(),
+            )) as AsyncIterable<JsonObject>;
+
+            let streamedText = "";
+            let streamedReasoning = "";
+            let completedResponse: unknown = null;
+
+            for await (const event of stream) {
+              const eventType = readString(event.type);
+              if (eventType === "response.output_text.delta") {
+                const delta = readString(event.delta);
+                if (delta) {
+                  streamedText += delta;
+                  options.onChunk(delta);
+                }
+                continue;
+              }
+
+              if (
+                eventType === "response.reasoning_text.delta" ||
+                eventType === "response.reasoning_summary_text.delta"
+              ) {
+                const delta = readString(event.delta);
+                if (delta) {
+                  streamedReasoning += delta;
+                }
+                continue;
+              }
+
+              if (
+                eventType === "response.completed" ||
+                eventType === "response.incomplete"
+              ) {
+                completedResponse = event.response;
+                continue;
+              }
+
+              if (eventType === "response.failed") {
+                const failed = isRecord(event.response) ? event.response : null;
+                const errorRecord =
+                  failed && isRecord(failed.error) ? failed.error : null;
+                const message =
+                  readString(errorRecord?.message) ||
+                  "OpenRouter responses stream failed";
+                throw new AIProviderError(message, "openrouter");
+              }
+
+              if (eventType === "error") {
+                const message =
+                  readString(event.message) ||
+                  "OpenRouter responses stream error";
+                throw new AIProviderError(message, "openrouter");
+              }
+            }
+
+            const finalResponse =
+              completedResponse ||
+              ({
+                outputText: streamedText,
+                output: [],
+                usage: undefined,
+              } as JsonObject);
+
+            return parseOpenRouterResponsesResult(
+              finalResponse,
+              schema,
+              stream,
+              streamedText,
+              streamedReasoning,
+            );
+          }
+
+          const response = await client.beta.responses.send(
+            requestParams as models.OpenResponsesRequest,
+            createRequestOptions(),
+          );
+          return parseOpenRouterResponsesResult(response, schema, response);
+        };
+
+      try {
+        return await executeRequest();
+      } catch (error) {
+        if (isResponsesUnsupportedError(error)) {
+          throw new AIProviderError(
+            "Responses API is not supported by this endpoint",
+            "openrouter",
+            "UNSUPPORTED",
+            error,
+          );
+        }
+
+        let finalError: unknown = error;
+        const retryMaxTokens = tokenBudgetResolution.shouldInjectMaxOutputTokens
+          ? deriveOpenRouterOverflowRetryMaxTokens(
+              requestParams.maxOutputTokens,
+              finalError,
+            )
+          : undefined;
+
+        if (
+          typeof retryMaxTokens === "number" &&
+          Number.isFinite(requestParams.maxOutputTokens) &&
+          retryMaxTokens < (requestParams.maxOutputTokens || 0)
+        ) {
+          const previous = requestParams.maxOutputTokens;
+          requestParams.maxOutputTokens = retryMaxTokens;
+          console.warn(
+            `[OpenRouter] Context overflow detected. Retrying once with maxOutputTokens clamped ${previous} -> ${retryMaxTokens}.`,
+          );
+          try {
+            return await executeRequest();
+          } catch (retryError) {
+            if (isResponsesUnsupportedError(retryError)) {
+              throw new AIProviderError(
+                "Responses API is not supported by this endpoint",
+                "openrouter",
+                "UNSUPPORTED",
+                retryError,
+              );
+            }
+            finalError = retryError;
+          }
+        }
+
+        if (finalError instanceof AIProviderError) throw finalError;
+        const message = normalizeErrorMessage(finalError);
+        throw new AIProviderError(
+          `OpenRouter generation failed: ${message}`,
+          "openrouter",
+          undefined,
+          finalError,
+        );
+      }
+    },
+    3,
+    1000,
+    "openrouter",
+  );
+}
+
+async function generateContentViaChat(
   config: OpenRouterConfig,
   model: string,
   systemInstruction: string,

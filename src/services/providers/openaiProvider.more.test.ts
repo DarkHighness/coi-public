@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 const sdkMocks = vi.hoisted(() => ({
   chatCreate: vi.fn(),
+  responsesCreate: vi.fn(),
   modelsList: vi.fn(),
   imagesGenerate: vi.fn(),
   audioSpeechCreate: vi.fn(),
@@ -11,6 +13,7 @@ const sdkMocks = vi.hoisted(() => ({
 vi.mock("openai", () => {
   class OpenAI {
     chat = { completions: { create: sdkMocks.chatCreate } };
+    responses = { create: sdkMocks.responsesCreate };
     models = { list: sdkMocks.modelsList };
     images = { generate: sdkMocks.imagesGenerate };
     audio = { speech: { create: sdkMocks.audioSpeechCreate } };
@@ -36,6 +39,16 @@ import {
 describe("openaiProvider additional branches", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sdkMocks.chatCreate.mockResolvedValue({
+      choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    });
+    sdkMocks.responsesCreate.mockResolvedValue({
+      output: [
+        { type: "message", content: [{ type: "output_text", text: "ok" }] },
+      ],
+      usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+    });
   });
 
   it("parses usage with direct cache preference and string totals", () => {
@@ -279,7 +292,11 @@ describe("openaiProvider additional branches", () => {
 
     try {
       await generateContent(
-        { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+        {
+          apiKey: "k",
+          baseUrl: "https://api.openai.com/v1",
+          apiMode: "chat",
+        } as any,
         "gpt-4o-mini",
         "sys",
         [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
@@ -305,7 +322,11 @@ describe("openaiProvider additional branches", () => {
 
     await expect(
       generateContent(
-        { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+        {
+          apiKey: "k",
+          baseUrl: "https://api.openai.com/v1",
+          apiMode: "chat",
+        } as any,
         "gpt-4o-mini",
         "sys",
         [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
@@ -357,7 +378,11 @@ describe("openaiProvider additional branches", () => {
     sdkMocks.chatCreate.mockResolvedValueOnce(toolCallStream());
 
     const res = await generateContent(
-      { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+      {
+        apiKey: "k",
+        baseUrl: "https://api.openai.com/v1",
+        apiMode: "chat",
+      } as any,
       "gpt-4o-mini",
       "sys",
       [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
@@ -385,7 +410,11 @@ describe("openaiProvider additional branches", () => {
 
     await expect(
       generateContent(
-        { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+        {
+          apiKey: "k",
+          baseUrl: "https://api.openai.com/v1",
+          apiMode: "chat",
+        } as any,
         "gpt-4o-mini",
         "sys",
         [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
@@ -393,5 +422,90 @@ describe("openaiProvider additional branches", () => {
         { onChunk: vi.fn() } as any,
       ),
     ).rejects.toMatchObject({ code: "MALFORMED_TOOL_CALL" });
+  });
+
+  it("falls back to chat api when responses api is unsupported", async () => {
+    sdkMocks.responsesCreate.mockRejectedValueOnce({
+      status: 404,
+      message: "responses endpoint not found",
+    });
+    sdkMocks.chatCreate.mockResolvedValueOnce({
+      choices: [
+        { message: { content: "chat-fallback" }, finish_reason: "stop" },
+      ],
+      usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+    });
+
+    const res = await generateContent(
+      { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+      "gpt-4o-mini",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+    );
+
+    expect(sdkMocks.responsesCreate).toHaveBeenCalledTimes(1);
+    expect(sdkMocks.chatCreate).toHaveBeenCalledTimes(1);
+    expect(res.result).toBe("chat-fallback");
+  });
+
+  it("keeps schema/tools mutual exclusion in responses mode", async () => {
+    const schema = z.object({ ok: z.boolean() });
+    sdkMocks.responsesCreate.mockResolvedValueOnce({
+      output: [
+        {
+          type: "function_call",
+          call_id: "call_1",
+          name: "vfs_read_chars",
+          arguments: JSON.stringify({ path: "current/world/story.json" }),
+        },
+      ],
+      usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+    });
+
+    await generateContent(
+      { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+      "gpt-4o-mini",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+      schema,
+      {
+        tools: [
+          {
+            name: "vfs_read_chars",
+            description: "Read chars",
+            parameters: z.object({ path: z.string() }),
+          },
+        ],
+      } as any,
+    );
+
+    const params = sdkMocks.responsesCreate.mock.calls[0]?.[0] as {
+      text?: unknown;
+      tools?: unknown[];
+    };
+    expect(params?.tools?.length).toBeGreaterThan(0);
+    expect(params?.text).toBeUndefined();
+  });
+
+  it("maps token budget to max_output_tokens in responses mode", async () => {
+    await generateContent(
+      { apiKey: "k", baseUrl: "https://api.openai.com/v1" } as any,
+      "openai/unknown-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "hello" }] }] as any,
+      undefined,
+      {
+        tokenBudget: {
+          providerManagedMaxTokens: false,
+          contextWindowTokens: 204800,
+          promptTokenEstimate: 82000,
+        },
+      } as any,
+    );
+
+    const params = sdkMocks.responsesCreate.mock.calls[0]?.[0] as {
+      max_output_tokens?: number;
+    };
+    expect(params.max_output_tokens).toBe(120752);
   });
 });

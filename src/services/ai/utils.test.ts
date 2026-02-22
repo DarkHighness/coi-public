@@ -43,9 +43,18 @@ describe("ai utils", () => {
       apiKey: "g",
       baseUrl: "https://g.example",
     } as any);
+    const openrouter = createProviderConfig({
+      protocol: "openrouter",
+      apiKey: "r",
+    } as any);
 
-    expect(openai).toMatchObject({ apiKey: "k", baseUrl: "https://example" });
+    expect(openai).toMatchObject({
+      apiKey: "k",
+      baseUrl: "https://example",
+      apiMode: "response",
+    });
     expect(gemini).toMatchObject({ apiKey: "g", baseUrl: "https://g.example" });
+    expect(openrouter).toMatchObject({ apiKey: "r", apiMode: "response" });
   });
 
   it("builds provider config result by function type", () => {

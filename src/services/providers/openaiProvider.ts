@@ -76,10 +76,7 @@ import { withRetry, validateSchema, cleanJsonContent } from "./utils";
 export interface OpenAIContentGenerationResponse {
   result: { functionCalls?: ToolCallResult[] } | JsonObject;
   usage: TokenUsage;
-  raw:
-    | ChatCompletion
-    | ChatCompletionChunk
-    | AsyncIterable<ChatCompletionChunk>;
+  raw: unknown;
 }
 
 interface OpenAIToolResultPayload {
@@ -88,12 +85,13 @@ interface OpenAIToolResultPayload {
   _reasoning?: string;
 }
 
-interface OpenAINarrativePayload {
+interface OpenAINarrativePayload extends JsonObject {
   narrative: string;
   _reasoning?: string;
 }
 
 type OpenAIReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh";
+type OpenAIApiMode = "response" | "chat";
 
 type OpenAIReasoningRequestParams =
   OpenAI.Chat.Completions.ChatCompletionCreateParams & {
@@ -201,6 +199,340 @@ const buildMissingToolPayloadDetail = (
     return base;
   }
   return `${base}; hinted tools: ${hintedToolNames.join(", ")}`;
+};
+
+const resolveOpenAIApiMode = (config: OpenAIConfig): OpenAIApiMode =>
+  config.apiMode === "chat" ? "chat" : "response";
+
+const normalizeErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (isJsonObject(error)) {
+    const nested = isJsonObject(error.error) ? error.error : null;
+    const nestedMessage = readString(nested?.message);
+    if (nestedMessage) return nestedMessage;
+    const ownMessage = readString(error.message);
+    if (ownMessage) return ownMessage;
+  }
+  return String(error ?? "");
+};
+
+const readErrorStatusCode = (error: unknown): number | undefined => {
+  if (!isJsonObject(error)) return undefined;
+  return (
+    readNumber(error.status) ||
+    readNumber(error.statusCode) ||
+    readNumber(error.code)
+  );
+};
+
+const isResponsesUnsupportedError = (error: unknown): boolean => {
+  const status = readErrorStatusCode(error);
+  const message = normalizeErrorMessage(error).toLowerCase();
+  const body = isJsonObject(error) ? readString(error.body)?.toLowerCase() : "";
+  const haystack = `${message} ${body || ""}`;
+
+  const mentionsResponses =
+    haystack.includes("/responses") ||
+    haystack.includes("responses api") ||
+    haystack.includes(" response api ") ||
+    haystack.includes("responses endpoint") ||
+    (haystack.includes("responses") &&
+      (haystack.includes("unsupported") ||
+        haystack.includes("not support") ||
+        haystack.includes("not found") ||
+        haystack.includes("unknown")));
+
+  if (mentionsResponses) {
+    return true;
+  }
+
+  return status === 404 && haystack.includes("responses");
+};
+
+type OpenAIResponseFunctionTool = {
+  type: "function";
+  name: string;
+  description?: string;
+  strict?: boolean | null;
+  parameters: JsonObject | null;
+};
+
+const toOpenAIResponsesFunctionTool = (
+  tool: ChatCompletionTool,
+): OpenAIResponseFunctionTool | null => {
+  const toolRecord = isJsonObject(tool) ? tool : null;
+  const toolFunction =
+    toolRecord && isJsonObject(toolRecord.function)
+      ? toolRecord.function
+      : null;
+  const name = readString(toolFunction?.name);
+  if (!name) return null;
+
+  const description = readString(toolFunction?.description);
+  const strict =
+    typeof toolFunction?.strict === "boolean" ? toolFunction.strict : undefined;
+  const parameters = isJsonObject(toolFunction?.parameters)
+    ? (toolFunction.parameters as JsonObject)
+    : null;
+
+  return {
+    type: "function",
+    name,
+    ...(description ? { description } : {}),
+    ...(typeof strict === "boolean" ? { strict } : {}),
+    parameters,
+  };
+};
+
+const convertVisionPartsToResponseContent = (
+  parts: ChatCompletionContentPart[],
+): Array<JsonObject> => {
+  const result: Array<JsonObject> = [];
+  for (const part of parts) {
+    if (part.type === "text") {
+      result.push({
+        type: "input_text",
+        text: part.text,
+      });
+      continue;
+    }
+    if (part.type === "image_url") {
+      const imageUrl = readString(part.image_url?.url);
+      if (!imageUrl) continue;
+      result.push({
+        type: "input_image",
+        image_url: imageUrl,
+      });
+    }
+  }
+  return result;
+};
+
+const convertChatMessagesToResponsesInput = (
+  messages: ChatCompletionMessageParam[],
+): JsonObject[] => {
+  const result: JsonObject[] = [];
+
+  for (const message of messages) {
+    const messageRecord = isJsonObject(message) ? message : null;
+    const role = readString(messageRecord?.role);
+    if (!role) continue;
+
+    if (role === "tool") {
+      const toolCallId = readString(messageRecord?.tool_call_id);
+      if (!toolCallId) continue;
+      const content = messageRecord?.content;
+      const output =
+        typeof content === "string" ? content : JSON.stringify(content ?? "");
+      result.push({
+        type: "function_call_output",
+        call_id: toolCallId,
+        output,
+      });
+      continue;
+    }
+
+    if (role === "assistant") {
+      const toolCalls = Array.isArray(messageRecord?.tool_calls)
+        ? messageRecord.tool_calls
+        : [];
+      const assistantContent = messageRecord?.content;
+
+      if (typeof assistantContent === "string" && assistantContent.length > 0) {
+        result.push({
+          type: "message",
+          role: "assistant",
+          content: assistantContent,
+        });
+      } else if (
+        Array.isArray(assistantContent) &&
+        assistantContent.length > 0
+      ) {
+        const responseContent = convertVisionPartsToResponseContent(
+          assistantContent as ChatCompletionContentPart[],
+        );
+        if (responseContent.length > 0) {
+          result.push({
+            type: "message",
+            role: "assistant",
+            content: responseContent,
+          });
+        }
+      }
+
+      for (const toolCall of toolCalls) {
+        const toolCallRecord = isJsonObject(toolCall) ? toolCall : null;
+        const functionRecord =
+          toolCallRecord && isJsonObject(toolCallRecord.function)
+            ? toolCallRecord.function
+            : null;
+        const name = readString(functionRecord?.name);
+        if (!name) continue;
+        const argumentsJson = readString(functionRecord?.arguments) || "{}";
+        const callId =
+          readString(toolCallRecord?.id) || `tool_${result.length + 1}`;
+        result.push({
+          type: "function_call",
+          id: callId,
+          call_id: callId,
+          name,
+          arguments: argumentsJson,
+        });
+      }
+      continue;
+    }
+
+    if (
+      role !== "system" &&
+      role !== "developer" &&
+      role !== "user" &&
+      role !== "assistant"
+    ) {
+      continue;
+    }
+
+    const content = messageRecord?.content;
+    if (typeof content === "string") {
+      result.push({
+        type: "message",
+        role,
+        content,
+      });
+      continue;
+    }
+
+    if (Array.isArray(content)) {
+      const responseContent = convertVisionPartsToResponseContent(
+        content as ChatCompletionContentPart[],
+      );
+      result.push({
+        type: "message",
+        role,
+        content: responseContent,
+      });
+      continue;
+    }
+
+    result.push({
+      type: "message",
+      role,
+      content: "",
+    });
+  }
+
+  return result;
+};
+
+const readResponseIncompleteReason = (
+  response: unknown,
+): string | undefined => {
+  if (!isJsonObject(response)) return undefined;
+  const incomplete = isJsonObject(response.incomplete_details)
+    ? response.incomplete_details
+    : isJsonObject(response.incompleteDetails)
+      ? response.incompleteDetails
+      : null;
+  return readString(incomplete?.reason);
+};
+
+const extractOpenAIResponsesText = (response: unknown): string => {
+  if (!isJsonObject(response)) return "";
+
+  const direct =
+    readString(response.output_text) || readString(response.outputText);
+  if (direct) return direct;
+
+  const output = Array.isArray(response.output) ? response.output : [];
+  const textParts: string[] = [];
+
+  for (const item of output) {
+    const itemRecord = isJsonObject(item) ? item : null;
+    if (!itemRecord || readString(itemRecord.type) !== "message") continue;
+    const content = Array.isArray(itemRecord.content) ? itemRecord.content : [];
+    for (const part of content) {
+      const partRecord = isJsonObject(part) ? part : null;
+      if (!partRecord) continue;
+      if (readString(partRecord.type) === "output_text") {
+        const text = readString(partRecord.text);
+        if (text) textParts.push(text);
+      }
+    }
+  }
+
+  return textParts.join("");
+};
+
+const extractOpenAIResponsesToolCalls = (
+  response: unknown,
+): ToolCallResult[] => {
+  if (!isJsonObject(response)) return [];
+  const output = Array.isArray(response.output) ? response.output : [];
+  const toolCalls: ToolCallResult[] = [];
+
+  for (const item of output) {
+    const itemRecord = isJsonObject(item) ? item : null;
+    if (!itemRecord) continue;
+    if (readString(itemRecord.type) !== "function_call") continue;
+    const name = readString(itemRecord.name);
+    if (!name) continue;
+    const rawArgs = readString(itemRecord.arguments) || "{}";
+    const callId =
+      readString(itemRecord.call_id) ||
+      readString(itemRecord.callId) ||
+      readString(itemRecord.id) ||
+      `tool_${toolCalls.length + 1}`;
+    toolCalls.push({
+      id: callId,
+      name,
+      args: parseToolArguments(rawArgs, name),
+    });
+  }
+
+  return toolCalls;
+};
+
+const collectOpenAIResponsesToolNameHints = (response: unknown): string[] => {
+  if (!isJsonObject(response)) return [];
+  const output = Array.isArray(response.output) ? response.output : [];
+  const names = new Set<string>();
+  for (const item of output) {
+    const itemRecord = isJsonObject(item) ? item : null;
+    if (!itemRecord) continue;
+    if (readString(itemRecord.type) !== "function_call") continue;
+    const name = readString(itemRecord.name)?.trim();
+    if (name) names.add(name);
+  }
+  return Array.from(names);
+};
+
+const extractOpenAIResponsesReasoning = (response: unknown): string => {
+  if (!isJsonObject(response)) return "";
+  const output = Array.isArray(response.output) ? response.output : [];
+  const chunks: string[] = [];
+
+  for (const item of output) {
+    const itemRecord = isJsonObject(item) ? item : null;
+    if (!itemRecord) continue;
+    if (readString(itemRecord.type) !== "reasoning") continue;
+
+    const summary = Array.isArray(itemRecord.summary) ? itemRecord.summary : [];
+    for (const part of summary) {
+      const partRecord = isJsonObject(part) ? part : null;
+      const text = readString(partRecord?.text);
+      if (text) chunks.push(text);
+    }
+
+    const content = Array.isArray(itemRecord.content) ? itemRecord.content : [];
+    for (const part of content) {
+      const partRecord = isJsonObject(part) ? part : null;
+      const text = readString(partRecord?.text);
+      if (text) chunks.push(text);
+    }
+  }
+
+  return chunks.join("\n").trim();
 };
 
 // ============================================================================
@@ -553,10 +885,438 @@ function getDefaultModels(): ModelInfo[] {
 /**
  * 生成内容（对话/工具调用）
  */
-/**
- * 生成内容（对话/工具调用）
- */
 export async function generateContent(
+  config: OpenAIConfig,
+  model: string,
+  systemInstruction: string,
+  contents: UnifiedMessage[],
+  schema?: ZodTypeAny,
+  options?: GenerateContentOptions,
+): Promise<OpenAIContentGenerationResponse> {
+  const apiMode = resolveOpenAIApiMode(config);
+  if (apiMode === "chat") {
+    return generateContentViaChat(
+      config,
+      model,
+      systemInstruction,
+      contents,
+      schema,
+      options,
+    );
+  }
+
+  try {
+    return await generateContentViaResponse(
+      config,
+      model,
+      systemInstruction,
+      contents,
+      schema,
+      options,
+    );
+  } catch (error) {
+    const shouldFallback =
+      (error instanceof AIProviderError && error.code === "UNSUPPORTED") ||
+      isResponsesUnsupportedError(error);
+
+    if (!shouldFallback) {
+      throw error;
+    }
+
+    console.warn(
+      "[OpenAI] Responses API is unsupported by endpoint/model. Falling back to Chat Completions API.",
+    );
+    return generateContentViaChat(
+      { ...config, apiMode: "chat" },
+      model,
+      systemInstruction,
+      contents,
+      schema,
+      options,
+    );
+  }
+}
+
+const buildOpenAIResponsesTextFormat = (
+  schema: ZodTypeAny,
+  isGemini: boolean,
+  isClaude: boolean,
+): JsonObject => {
+  if (isGemini) {
+    return {
+      format: {
+        type: "json_schema",
+        name: "response",
+        schema: zodToGeminiCompatibleSchema(schema),
+        strict: false,
+      },
+    };
+  }
+
+  if (isClaude) {
+    return {
+      format: {
+        type: "json_schema",
+        name: "response",
+        schema: zodToClaudeCompatibleSchema(schema),
+        strict: false,
+      },
+    };
+  }
+
+  const openAIFormat = zodToOpenAIResponseFormat(schema);
+  return {
+    format: {
+      type: "json_schema",
+      name: openAIFormat.json_schema.name,
+      schema: openAIFormat.json_schema.schema,
+      strict: openAIFormat.json_schema.strict,
+    },
+  };
+};
+
+const parseOpenAIResponsesResult = (
+  response: unknown,
+  schema: ZodTypeAny | undefined,
+  raw: unknown,
+  streamedTextFallback: string = "",
+  streamedReasoningFallback: string = "",
+): OpenAIContentGenerationResponse => {
+  const incompleteReason = readResponseIncompleteReason(response);
+  if (incompleteReason === "content_filter") {
+    throw new SafetyFilterError("openai");
+  }
+
+  const usage = parseOpenAIUsage(
+    isJsonObject(response) ? response.usage : undefined,
+  );
+
+  const toolCalls = extractOpenAIResponsesToolCalls(response);
+  const hintedToolNames = collectOpenAIResponsesToolNameHints(response);
+  if (hintedToolNames.length > 0 && toolCalls.length === 0) {
+    throw new MalformedToolCallError(
+      "openai",
+      buildMissingToolPayloadDetail(
+        "responses output included function_call items but no valid tool payload was parsed",
+        hintedToolNames,
+      ),
+    );
+  }
+
+  const text = extractOpenAIResponsesText(response) || streamedTextFallback;
+  const reasoningContent =
+    extractOpenAIResponsesReasoning(response) || streamedReasoningFallback;
+
+  if (toolCalls.length > 0) {
+    const toolResult: OpenAIToolResultPayload = {
+      functionCalls: toolCalls,
+      content: text || undefined,
+      ...(reasoningContent ? { _reasoning: reasoningContent } : {}),
+    };
+    return {
+      result: toolResult,
+      usage,
+      raw,
+    };
+  }
+
+  if (!text) {
+    throw new AIProviderError("No content returned from OpenAI", "openai");
+  }
+
+  if (schema) {
+    try {
+      const cleanedContent = cleanJsonContent(text);
+      const result = JSON.parse(jsonrepair(cleanedContent));
+      validateSchema(result, schema, "openai");
+      return {
+        result: reasoningContent
+          ? ({ ...result, _reasoning: reasoningContent } as JsonObject)
+          : (result as JsonObject),
+        usage,
+        raw,
+      };
+    } catch (error) {
+      if (error instanceof AIProviderError) {
+        throw error;
+      }
+      throw new JSONParseError("openai", text.substring(0, 500), error);
+    }
+  }
+
+  const narrative: OpenAINarrativePayload = {
+    narrative: text,
+    ...(reasoningContent ? { _reasoning: reasoningContent } : {}),
+  };
+  return {
+    result: narrative,
+    usage,
+    raw,
+  };
+};
+
+async function generateContentViaResponse(
+  config: OpenAIConfig,
+  model: string,
+  systemInstruction: string,
+  contents: UnifiedMessage[],
+  schema?: ZodTypeAny,
+  options?: GenerateContentOptions,
+): Promise<OpenAIContentGenerationResponse> {
+  return withRetry(
+    async () => {
+      const client = createOpenAIClient(config);
+      const hasResponsesCreate =
+        typeof (client as unknown as { responses?: { create?: unknown } })
+          .responses?.create === "function";
+      if (!hasResponsesCreate) {
+        throw new AIProviderError(
+          "Responses API is not supported by this endpoint",
+          "openai",
+          "UNSUPPORTED",
+        );
+      }
+
+      const isGemini = config.geminiCompatibility && isGeminiModel(model);
+      const isClaude = config.claudeCompatibility && isClaudeModel(model);
+      const isReasoning = isReasoningModel(model);
+
+      if (
+        config.compatibleImageGeneration &&
+        (model.toLowerCase().includes("image") ||
+          model.toLowerCase().includes("imagen")) &&
+        !model.toLowerCase().includes("dall-e")
+      ) {
+        const prompt =
+          contents
+            .filter((msg) => msg.role === "user")
+            .slice(-1)[0]
+            ?.content.filter((p) => p.type === "text")
+            .map((p) => (p as TextContentPart).text)
+            .join("\n") || "";
+        const imageRes = await generateImage(config, model, prompt);
+        if (imageRes.url) {
+          return {
+            result: { narrative: `![image](${imageRes.url})` },
+            usage: imageRes.usage || {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              reported: false,
+            },
+            raw: imageRes.raw,
+          };
+        }
+      }
+
+      const useGeminiMessageFormat =
+        !!config.geminiMessageFormat && isGemini && !isReasoning;
+      const useClaudeMessageFormat =
+        !!config.claudeMessageFormat && isClaude && !isReasoning;
+
+      const chatMessages = isReasoning
+        ? convertToReasoningMessages(systemInstruction, contents)
+        : useClaudeMessageFormat
+          ? convertToClaudeCompatibleMessages(systemInstruction, contents)
+          : useGeminiMessageFormat
+            ? convertToGeminiCompatibleMessages(systemInstruction, contents)
+            : convertToOpenAIMessages(systemInstruction, contents);
+
+      let chatTools: ChatCompletionTool[] | undefined;
+      if (options?.tools) {
+        if (isGemini) {
+          chatTools = options.tools.map((t) =>
+            createGeminiCompatibleTool(t.name, t.description, t.parameters),
+          );
+        } else if (isClaude) {
+          chatTools = options.tools.map((t) =>
+            createClaudeCompatibleTool(t.name, t.description, t.parameters),
+          );
+        } else {
+          chatTools = compileToolsForOpenAI(options.tools);
+        }
+      }
+
+      const responseTools =
+        chatTools
+          ?.map((tool) => toOpenAIResponsesFunctionTool(tool))
+          .filter(
+            (tool): tool is OpenAIResponseFunctionTool => tool !== null,
+          ) || [];
+
+      let responseToolChoice:
+        | "required"
+        | "none"
+        | "auto"
+        | { type: "function"; name: string }
+        | undefined;
+      if (responseTools.length > 0) {
+        if (options?.toolChoice === "required") {
+          responseToolChoice = "required";
+        } else if (options?.toolChoice === "none") {
+          responseToolChoice = "none";
+        } else if (
+          options?.toolChoice &&
+          typeof options.toolChoice === "object"
+        ) {
+          responseToolChoice = {
+            type: "function",
+            name: options.toolChoice.name,
+          };
+        } else {
+          responseToolChoice = "auto";
+        }
+      }
+
+      const tokenBudgetResolution = resolveTokenBudget({
+        providerProtocol: "openai",
+        modelId: model,
+        tokenBudget: options?.tokenBudget,
+        systemInstruction,
+        messages: contents,
+        tools: options?.tools,
+        schema,
+      });
+
+      const requestParams: JsonObject = {
+        model,
+        input: convertChatMessagesToResponsesInput(chatMessages),
+        stream: !!options?.onChunk,
+      };
+
+      if (responseTools.length > 0) {
+        requestParams.tools = responseTools;
+      }
+
+      if (responseToolChoice) {
+        requestParams.tool_choice = responseToolChoice;
+      }
+
+      if (schema && responseTools.length === 0) {
+        requestParams.text = buildOpenAIResponsesTextFormat(
+          schema,
+          isGemini,
+          isClaude,
+        );
+      }
+
+      if (tokenBudgetResolution.shouldInjectMaxOutputTokens) {
+        requestParams.max_output_tokens = tokenBudgetResolution.maxOutputTokens;
+      }
+
+      const effort = options?.thinkingEffort;
+      if (effort) {
+        requestParams.reasoning = { effort };
+      }
+
+      if (typeof options?.temperature === "number") {
+        requestParams.temperature = options.temperature;
+      }
+
+      if (typeof options?.topP === "number") {
+        requestParams.top_p = options.topP;
+      }
+
+      try {
+        if (options?.onChunk) {
+          const stream = (await client.responses.create({
+            ...(requestParams as OpenAI.Responses.ResponseCreateParams),
+            stream: true,
+          })) as AsyncIterable<JsonObject>;
+
+          let streamedText = "";
+          let streamedReasoning = "";
+          let completedResponse: unknown = null;
+
+          for await (const event of stream) {
+            const eventType = readString(event.type);
+            if (eventType === "response.output_text.delta") {
+              const delta = readString(event.delta);
+              if (delta) {
+                streamedText += delta;
+                options.onChunk(delta);
+              }
+              continue;
+            }
+
+            if (eventType === "response.reasoning_text.delta") {
+              const delta = readString(event.delta);
+              if (delta) {
+                streamedReasoning += delta;
+              }
+              continue;
+            }
+
+            if (eventType === "response.completed") {
+              completedResponse = event.response;
+              continue;
+            }
+
+            if (eventType === "response.incomplete") {
+              completedResponse = event.response;
+              continue;
+            }
+
+            if (eventType === "response.failed") {
+              const failed = isJsonObject(event.response)
+                ? event.response
+                : null;
+              const errorRecord =
+                failed && isJsonObject(failed.error) ? failed.error : null;
+              const message =
+                readString(errorRecord?.message) ||
+                "OpenAI response stream failed";
+              throw new AIProviderError(message, "openai");
+            }
+
+            if (eventType === "error") {
+              const message =
+                readString(event.message) || "OpenAI response stream error";
+              throw new AIProviderError(message, "openai");
+            }
+          }
+
+          const finalResponse =
+            completedResponse ||
+            ({
+              output_text: streamedText,
+              output: [],
+              usage: undefined,
+            } as JsonObject);
+
+          return parseOpenAIResponsesResult(
+            finalResponse,
+            schema,
+            stream,
+            streamedText,
+            streamedReasoning,
+          );
+        }
+
+        const response = await client.responses.create(
+          requestParams as OpenAI.Responses.ResponseCreateParams,
+        );
+
+        return parseOpenAIResponsesResult(response, schema, response);
+      } catch (error) {
+        if (isResponsesUnsupportedError(error)) {
+          throw new AIProviderError(
+            "Responses API is not supported by this endpoint",
+            "openai",
+            "UNSUPPORTED",
+            error,
+          );
+        }
+        throw error;
+      }
+    },
+    3,
+    1000,
+    "openai",
+  );
+}
+
+async function generateContentViaChat(
   config: OpenAIConfig,
   model: string,
   systemInstruction: string,

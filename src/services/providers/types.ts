@@ -31,6 +31,7 @@ export interface OpenAIConfig {
   apiKey: string;
   baseUrl: string;
   modelId?: string;
+  apiMode?: "response" | "chat";
   geminiCompatibility?: boolean;
   geminiMessageFormat?: boolean; // 是否转换消息格式为 Gemini 原生格式
   claudeCompatibility?: boolean;
@@ -41,6 +42,7 @@ export interface OpenAIConfig {
 /** OpenRouter Provider 配置 */
 export interface OpenRouterConfig {
   apiKey: string;
+  apiMode?: "response" | "chat";
 }
 
 /** Claude Provider 配置 */
