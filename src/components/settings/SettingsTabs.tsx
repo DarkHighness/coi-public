@@ -18,6 +18,7 @@ export const SettingsTabs: React.FC<SettingsTabProps> = ({
     "appearance",
     "data",
     "memory",
+    "skills",
     "extra",
   ];
 

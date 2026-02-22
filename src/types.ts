@@ -1049,6 +1049,12 @@ export interface FunctionConfig {
   minP?: number;
 }
 
+export type SkillReadPolicy =
+  | "default"
+  | "required"
+  | "recommended"
+  | "forbidden";
+
 export interface AISettings {
   // Multi-Provider Management
   providers: ProviderManagement;
@@ -1132,6 +1138,16 @@ export interface AISettings {
      * Effective order: RuntimeFloor -> systemDefaultInjection -> customInstruction -> baseSystemInstruction.
      */
     systemDefaultInjectionEnabled?: boolean;
+    /**
+     * Per-skill read policy overrides for VFS skills.
+     * Key: canonical skill file path (`skills/.../SKILL.md`).
+     * Value:
+     * - default: clear override / fallback behavior
+     * - required: hard-gate read before non-read tools
+     * - recommended: soft preference in prompt guidance
+     * - forbidden: hard-gate against read calls on this skill
+     */
+    skillReadPolicies?: Record<string, SkillReadPolicy>;
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"
     toolCallCarousel?: boolean; // Show tool-call style carousel while AI is generating (default: true)

@@ -106,7 +106,7 @@ describe("contextInjector", () => {
     expect(getText(history[3])).toContain("skills/craft/writing/SKILL.md");
     expect(getText(history[4])).toContain("MODE SKILL GUIDANCE");
     expect(getText(history[4])).toContain(
-      "Do not skip required skill preflight",
+      "Do not skip runtime/preset skill preflight",
     );
     expect(getText(history[4])).toContain("DOMAIN SKILL LOADING");
     expect(getText(history[4])).toContain("gm/actor-logic/npc/SKILL.md");
@@ -141,7 +141,7 @@ describe("contextInjector", () => {
     expect(getText(history[9])).toContain("current/conversation/index.json");
     expect(getText(history[10])).toContain("MODE SKILL GUIDANCE");
     expect(getText(history[10])).toContain(
-      "Do not skip required skill preflight",
+      "Do not skip runtime/preset skill preflight",
     );
     expect(getText(history[10])).toContain("DOMAIN SKILL LOADING");
     expect(getText(history[10])).toContain("gm/actor-logic/npc/SKILL.md");
@@ -207,7 +207,7 @@ describe("contextInjector", () => {
     expect(getText(history[2])).toContain("vfs_end_turn");
     expect(getText(history[3])).toContain("MODE SKILL GUIDANCE");
     expect(getText(history[3])).toContain(
-      "Do not skip required skill preflight",
+      "Do not skip runtime/preset skill preflight",
     );
     expect(getText(history[3])).toContain(
       "current/skills/gm/actor-logic/npc/SKILL.md",

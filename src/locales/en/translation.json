@@ -563,6 +563,7 @@
     "appearance": "Appearance",
     "data": "Data",
     "memory": "Memory",
+    "skills": "SKILLS",
     "extra": "Extra"
   },
   "embedding": {
@@ -683,6 +684,24 @@
     "providerNotFound": "Provider not found",
     "providerDisabled": "Provider disabled",
     "providerNoApiKey": "Provider missing API key",
+    "skills": {
+      "description": "Set per-skill read policy for AI runtime gates and prompt guidance.",
+      "searchPlaceholder": "Search skill by name/path/tag...",
+      "resetAll": "Reset All",
+      "empty": "No skills match current filter.",
+      "systemProtected": "System Protected",
+      "policy": {
+        "default": "Default",
+        "required": "Must Read",
+        "recommended": "Recommended",
+        "forbidden": "Forbidden"
+      },
+      "summary": {
+        "required": "Must Read",
+        "recommended": "Recommended",
+        "forbidden": "Forbidden"
+      }
+    },
     "extra": {
       "title": "Extra Settings",
       "description": "Additional configuration options",

@@ -565,6 +565,7 @@
     "appearance": "外观",
     "data": "数据",
     "memory": "记忆",
+    "skills": "SKILLS",
     "extra": "额外"
   },
   "embedding": {
@@ -711,6 +712,24 @@
     "providerNotFound": "未找到提供商",
     "providerDisabled": "提供商已禁用",
     "providerNoApiKey": "提供商缺少 API Key",
+    "skills": {
+      "description": "为每个技能设置读取策略，影响运行时 Gate 与提示词注入。",
+      "searchPlaceholder": "按技能名/路径/标签搜索...",
+      "resetAll": "全部重置",
+      "empty": "当前筛选没有匹配技能。",
+      "systemProtected": "系统保护",
+      "policy": {
+        "default": "默认",
+        "required": "必读",
+        "recommended": "推荐读取",
+        "forbidden": "禁止读取"
+      },
+      "summary": {
+        "required": "必读",
+        "recommended": "推荐读取",
+        "forbidden": "禁止读取"
+      }
+    },
     "extra": {
       "title": "额外设置",
       "description": "其他配置选项",

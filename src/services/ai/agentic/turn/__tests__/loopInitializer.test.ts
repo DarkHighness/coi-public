@@ -307,6 +307,72 @@ describe("loopInitializer", () => {
     ]);
   });
 
+  it("keeps player required skills separate from command gate list", () => {
+    const vfsSession = new VfsSession();
+
+    const state = createLoopState(
+      {} as any,
+      {
+        embedding: { enabled: false },
+        extra: {
+          skillReadPolicies: {
+            "skills/gm/moral-complexity/SKILL.md": "required",
+            "skills/npc/soul/SKILL.md": "recommended",
+            "skills/theme/fantasy/SKILL.md": "forbidden",
+          },
+        },
+      } as any,
+      false,
+      false,
+      vfsSession,
+      [],
+    );
+
+    expect(state.requiredCommandSkillPaths).not.toContain(
+      "skills/gm/moral-complexity/SKILL.md",
+    );
+    expect(state.userRequiredSkillPaths).toEqual([
+      "skills/gm/moral-complexity/SKILL.md",
+    ]);
+    expect(state.userRecommendedSkillPaths).toEqual([
+      "skills/npc/soul/SKILL.md",
+    ]);
+    expect(state.userForbiddenSkillPaths).toEqual([
+      "skills/theme/fantasy/SKILL.md",
+    ]);
+    expect(state.userForbiddenIgnoredByHardGate).toEqual([]);
+  });
+
+  it("ignores forbidden policy on protected system-level skills", () => {
+    const vfsSession = new VfsSession();
+
+    const state = createLoopState(
+      {} as any,
+      {
+        embedding: { enabled: false },
+        extra: {
+          skillReadPolicies: {
+            "skills/commands/runtime/turn/SKILL.md": "forbidden",
+            "skills/presets/runtime/culture/SKILL.md": "forbidden",
+          },
+        },
+      } as any,
+      false,
+      false,
+      vfsSession,
+      [],
+    );
+
+    expect(state.userForbiddenSkillPaths).toEqual([]);
+    expect(state.userForbiddenIgnoredByHardGate).toEqual([
+      "skills/commands/runtime/turn/SKILL.md",
+      "skills/presets/runtime/culture/SKILL.md",
+    ]);
+    expect(state.requiredCommandSkillPaths).toContain(
+      "skills/commands/runtime/turn/SKILL.md",
+    );
+  });
+
   it("supports explicit turnKind override", () => {
     const vfsSession = new VfsSession();
 

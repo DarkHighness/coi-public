@@ -20,6 +20,7 @@ import {
   noToolCallError,
   retconAckRequiredMessage,
 } from "../../../prompts/atoms/core";
+import { describeSkillPolicyPaths } from "../../../skills/skillPolicies";
 
 const toCurrentReadablePath = (path: string): string => {
   const normalized = path.trim().replace(/^\/+/, "");
@@ -64,13 +65,34 @@ const preloadRequiredSkills = (
 ): string[] => {
   if (requiredPaths.length === 0) return [];
 
+  const injectedByHistory = new Set<string>();
+  for (const message of history) {
+    const text = message.content.find((part) => part.type === "text")?.text;
+    if (!text || !text.includes('<file path="')) continue;
+    const matches = text.matchAll(/<file path="([^"]+)">/g);
+    for (const match of matches) {
+      const path = match[1]?.trim();
+      if (path) {
+        injectedByHistory.add(path);
+      }
+    }
+  }
+
   const preloaded: string[] = [];
+  const injectedInThisPass = new Set<string>();
   for (const skillPath of requiredPaths) {
-    if (hasPathSeenInCurrentEpoch(vfsSession, skillPath)) {
+    const currentPath = toCurrentReadablePath(skillPath);
+    if (injectedInThisPass.has(currentPath)) {
       continue;
     }
+    if (
+      hasPathSeenInCurrentEpoch(vfsSession, skillPath) &&
+      injectedByHistory.has(currentPath)
+    ) {
+      continue;
+    }
+    injectedInThisPass.add(currentPath);
 
-    const currentPath = toCurrentReadablePath(skillPath);
     const file = vfsSession.readFile(skillPath);
     if (file && typeof file.content === "string" && file.content.trim()) {
       history.push(
@@ -79,6 +101,7 @@ const preloadRequiredSkills = (
         ),
       );
       vfsSession.noteToolSeen(skillPath);
+      injectedByHistory.add(currentPath);
       preloaded.push(skillPath);
     }
   }
@@ -90,6 +113,83 @@ const preloadRequiredSkills = (
   }
 
   return preloaded;
+};
+
+interface PlayerSkillPolicyStatus {
+  requiredSkillPaths?: string[];
+  recommendedSkillPaths?: string[];
+  forbiddenSkillPaths?: string[];
+  ignoredForbiddenSkillPaths?: string[];
+}
+
+const compactSkillDescription = (
+  description: string,
+  maxLength: number = 96,
+): string => {
+  const normalized = description.trim().replace(/\s+/g, " ");
+  if (!normalized) return "";
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}...`;
+};
+
+const formatSkillPolicyLines = (paths: string[]): string[] =>
+  describeSkillPolicyPaths(paths).map((entry) => {
+    const compactDescription = compactSkillDescription(entry.description);
+    return compactDescription
+      ? `- \`${entry.currentPath}\` — ${entry.title} (${compactDescription})`
+      : `- \`${entry.currentPath}\` — ${entry.title}`;
+  });
+
+const injectPlayerSkillPolicyStatus = (
+  history: UnifiedMessage[],
+  policy?: PlayerSkillPolicyStatus,
+): void => {
+  const required = policy?.requiredSkillPaths || [];
+  const recommended = policy?.recommendedSkillPaths || [];
+  const forbidden = policy?.forbiddenSkillPaths || [];
+  const ignoredForbidden = policy?.ignoredForbiddenSkillPaths || [];
+
+  if (
+    required.length === 0 &&
+    recommended.length === 0 &&
+    forbidden.length === 0 &&
+    ignoredForbidden.length === 0
+  ) {
+    return;
+  }
+
+  const lines: string[] = [
+    "[SYSTEM: PLAYER SKILLS POLICY]",
+    "Apply player-configured SKILLS policy for this session:",
+  ];
+
+  if (required.length > 0) {
+    lines.push(
+      "- REQUIRED (auto-preloaded at session start):",
+      ...formatSkillPolicyLines(required),
+      "  (Do not spend extra read calls unless you need additional sections beyond injected context.)",
+    );
+  }
+  if (recommended.length > 0) {
+    lines.push(
+      "- RECOMMENDED (soft guidance, read when scene context matches):",
+      ...formatSkillPolicyLines(recommended),
+    );
+  }
+  if (forbidden.length > 0) {
+    lines.push(
+      "- FORBIDDEN (hard gate): never call read tools on these skill files in this session:",
+      ...formatSkillPolicyLines(forbidden),
+    );
+  }
+  if (ignoredForbidden.length > 0) {
+    lines.push(
+      "- NOTE: These forbidden entries are ignored because hard runtime/preset gates require them:",
+      ...formatSkillPolicyLines(ignoredForbidden),
+    );
+  }
+
+  history.push(createUserMessage(lines.join("\n")));
 };
 
 // ============================================================================
@@ -143,17 +243,17 @@ export function injectCommandSkillStatus(
   if (pending.length === 0) {
     lines.push(
       "[SYSTEM: COMMAND SKILLS READY]",
-      "All required command skills are pre-loaded in context above. This only satisfies the command-skill gate; preset/read-before-write gates may still require explicit reads in the current epoch.",
+      "All required command skills are pre-loaded in context above. This only satisfies the command-skill gate; preset/read-before-write gates may still require explicit reads in this session.",
     );
   } else {
     lines.push(
       "[SYSTEM: COMMAND SKILL REQUIRED]",
-      "Hard gate (enforced): before any non-read tool call in this epoch, read:",
+      "Hard gate (enforced): before any non-read tool call in this session, read:",
       ...pending.map((p) => `- \`${p}\``),
     );
     if (satisfiedPaths.length > 0) {
       lines.push(
-        `(${satisfiedPaths.length} other skill(s) already satisfied in current epoch.)`,
+        `(${satisfiedPaths.length} other skill(s) already satisfied in this session.)`,
       );
     }
   }
@@ -174,6 +274,7 @@ export function injectSudoModeInstruction(
   preloadedSkillPaths: string[] = [],
   requiredCommandSkillPaths: string[] = [],
   vfsVmEnabled: boolean = false,
+  playerSkillPolicyStatus?: PlayerSkillPolicyStatus,
 ): void {
   history.push(
     createUserMessage(
@@ -185,6 +286,7 @@ export function injectSudoModeInstruction(
     requiredCommandSkillPaths,
     preloadedSkillPaths,
   );
+  injectPlayerSkillPolicyStatus(history, playerSkillPolicyStatus);
 }
 
 /**
@@ -208,6 +310,7 @@ export function injectNormalTurnInstruction(
   requiredCommandSkillPaths: string[] = [],
   satisfiedPresetSkillPaths: string[] = [],
   vfsVmEnabled: boolean = false,
+  playerSkillPolicyStatus?: PlayerSkillPolicyStatus,
 ): void {
   history.push(
     createUserMessage(
@@ -230,6 +333,7 @@ export function injectNormalTurnInstruction(
     requiredCommandSkillPaths,
     satisfiedCommandSkillPaths,
   );
+  injectPlayerSkillPolicyStatus(history, playerSkillPolicyStatus);
 
   if (isCleanupMode) {
     history.push(
@@ -283,14 +387,75 @@ export function injectNormalTurnInstruction(
   }
 
   const modeSkillLines: string[] = ["[SYSTEM: MODE SKILL GUIDANCE]"];
+  const forbiddenSkillSet = new Set(
+    playerSkillPolicyStatus?.forbiddenSkillPaths || [],
+  );
+  const builtInRecommendations = [
+    {
+      path: "skills/gm/actor-logic/npc/SKILL.md",
+      hint: "NPC interaction/dialogue",
+    },
+    {
+      path: "skills/craft/emotional-empathy/SKILL.md",
+      hint: "Emotional/dramatic scene",
+    },
+    {
+      path: "skills/gm/actor-logic/npc-soul/SKILL.md",
+      hint: "Complex NPC growth/psychology",
+    },
+    {
+      path: "skills/gm/moral-complexity/SKILL.md",
+      hint: "Moral dilemma/gray ethics",
+    },
+  ];
+  const allowedBuiltInRecommendations = builtInRecommendations.filter(
+    (entry) => !forbiddenSkillSet.has(entry.path),
+  );
+  const playerRecommendedPaths = (
+    playerSkillPolicyStatus?.recommendedSkillPaths || []
+  ).filter((path) => !forbiddenSkillSet.has(path));
+
   modeSkillLines.push(
-    "Do not skip required skill preflight above. Non-read tools are hard-blocked until those reads are done.",
+    "Do not skip runtime/preset skill preflight above. Non-read tools are hard-blocked until those reads are done.",
     "**DOMAIN SKILL LOADING — OPTIONAL (quality recommendation)**:",
-    "Your system prompt contains the full skill catalog. Pick 1-2 skills matching this turn when scene depth requires it:",
-    '- NPC interaction/dialogue → `vfs_read_chars({ path: "current/skills/gm/actor-logic/npc/SKILL.md" })`',
-    '- Emotional/dramatic scene → `vfs_read_chars({ path: "current/skills/craft/emotional-empathy/SKILL.md" })`',
-    '- Complex NPC growth/psychology → `vfs_read_chars({ path: "current/skills/gm/actor-logic/npc-soul/SKILL.md" })`',
-    '- Moral dilemma/gray ethics → `vfs_read_chars({ path: "current/skills/gm/moral-complexity/SKILL.md" })`',
+    "Merge AI recommendations + player recommendations below, then read only what is relevant this turn:",
+  );
+
+  if (allowedBuiltInRecommendations.length > 0) {
+    modeSkillLines.push(
+      "- AI recommended reads:",
+      ...allowedBuiltInRecommendations.map(
+        (entry) =>
+          `  - ${entry.hint} → \`vfs_read_chars({ path: "current/${entry.path}" })\``,
+      ),
+    );
+  }
+
+  if (playerRecommendedPaths.length > 0) {
+    modeSkillLines.push(
+      "- Player recommended reads:",
+      ...formatSkillPolicyLines(playerRecommendedPaths).map(
+        (line) => `  ${line}`,
+      ),
+    );
+  }
+
+  if (
+    allowedBuiltInRecommendations.length === 0 &&
+    playerRecommendedPaths.length === 0
+  ) {
+    modeSkillLines.push(
+      "- No optional skill recommendations remain after applying forbidden filters.",
+    );
+  }
+
+  if (forbiddenSkillSet.size > 0) {
+    modeSkillLines.push(
+      "- Forbidden skills from player policy are always filtered out from optional recommendations.",
+    );
+  }
+
+  modeSkillLines.push(
     "Reuse loaded skills across turns; re-read only on `[SYSTEM: EXTERNAL_FILE_CHANGES]` or insufficient scope.",
     "Skip domain skills only for purely mechanical actions (inventory check, simple movement).",
   );
@@ -326,7 +491,7 @@ export function injectNormalTurnInstruction(
         ? [
             "[SYSTEM: PRESET SKILLS READY]",
             "Hub reference: `current/skills/presets/runtime/SKILL.md`",
-            "All active preset skills are already satisfied in current epoch; reuse them and re-read only if scope is insufficient.",
+            "All active preset skills are already satisfied in this session; reuse them and re-read only if scope is insufficient.",
           ]
         : [
             "[SYSTEM: PRESET SKILLS ACTIVE]",
@@ -385,7 +550,7 @@ export function injectColdStartRequiredReads(
 
   const lines = [
     "[SYSTEM: COLD START REQUIRED READS]",
-    "Before any non-read tool call in this loop, perform these read calls once in current read-epoch (use vfs_read_markdown when section selectors are known):",
+    "Before any non-read tool call in this session, perform these read calls once in current session lifecycle (use vfs_read_markdown when section selectors are known):",
     ...uniquePaths.map(
       (path, index) => `${index + 1}. \`${formatPreloadCall(path)}\``,
     ),

@@ -172,6 +172,7 @@ export const DEFAULTS: AISettings = {
     customInstructionEnabled: false,
     customInstruction: "",
     systemDefaultInjectionEnabled: true,
+    skillReadPolicies: {},
     narrativeStylePreset: "theme",
     worldDispositionPreset: "theme",
     playerMalicePreset: "theme",

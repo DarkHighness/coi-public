@@ -29,6 +29,11 @@ import {
   checkpointVfsSession,
   rollbackVfsSessionToCheckpoint,
 } from "@/services/vfs/runtimeCheckpoints";
+import {
+  getLoopCommandProtocolSkillPath,
+  getLoopSkillBaselinePaths,
+  type LoopSkillBaselineKey,
+} from "@/services/prompts/skills/loopSkillBaseline";
 
 // ============================================================================
 // Types
@@ -62,9 +67,6 @@ export interface SessionSetupResult {
   activeHistory: UnifiedMessage[];
 }
 
-const DEFAULT_COMMAND_PROTOCOL_SKILL_PATH =
-  "current/skills/commands/runtime/turn/SKILL.md";
-
 const toCurrentPath = (path: string): string => {
   const normalized = path.replace(/^current\//, "").replace(/^\/+/, "");
   return `current/${normalized}`;
@@ -77,28 +79,36 @@ const buildColdStartSkillHintMessage = (options?: {
   sessionHistoryPath?: string;
   parentSessionHistoryPath?: string | null;
 }): UnifiedMessage => {
+  const startupBaselineKey: LoopSkillBaselineKey =
+    options?.startupMode === "player-rate"
+      ? "player-rate"
+      : options?.startupMode === "sudo"
+        ? "sudo"
+        : options?.startupMode === "cleanup"
+          ? "cleanup"
+          : "turn";
+  const baselineMandatoryPaths = getLoopSkillBaselinePaths(startupBaselineKey);
+  const defaultCommandProtocolSkillPath =
+    getLoopCommandProtocolSkillPath(startupBaselineKey);
   const commandProtocolSkillPath =
-    options?.commandProtocolSkillPath ?? DEFAULT_COMMAND_PROTOCOL_SKILL_PATH;
+    options?.commandProtocolSkillPath ?? defaultCommandProtocolSkillPath;
+  const mandatoryReadPaths = baselineMandatoryPaths.map((path) =>
+    path === defaultCommandProtocolSkillPath ? commandProtocolSkillPath : path,
+  );
 
   const startupProfile = buildSessionStartupProfile({
     mode: options?.startupMode ?? "turn",
     latestSummaryReferencesMarkdown: options?.hotStartReferencesMarkdown ?? "",
-    mandatoryReadPaths: [
-      "current/skills/commands/runtime/SKILL.md",
-      commandProtocolSkillPath,
-      "current/skills/core/protocols/SKILL.md",
-      "current/skills/craft/writing/SKILL.md",
-    ],
+    mandatoryReadPaths,
     maxOptionalRefs: 3,
   });
+  const mandatoryReadPathSet = new Set(mandatoryReadPaths);
 
   const recommendedSkillPaths = startupProfile.recommendedReadPaths.filter(
     (path) =>
       path.startsWith("current/skills/") &&
       path.endsWith("/SKILL.md") &&
-      path !== "current/skills/commands/runtime/SKILL.md" &&
-      path !== "current/skills/core/protocols/SKILL.md" &&
-      path !== "current/skills/craft/writing/SKILL.md",
+      !mandatoryReadPathSet.has(path),
   );
   const recommendedAnchorPaths = startupProfile.recommendedReadPaths.filter(
     (path) => !recommendedSkillPaths.includes(path),
@@ -140,12 +150,10 @@ const buildColdStartSkillHintMessage = (options?: {
       "[SYSTEM: COLD_START_SOFT_GUIDANCE]",
       "",
       "[SECTION: MANDATORY_SKILL_PREFLIGHT]",
-      "Hard gate (enforced): before first non-read tool call this turn, read:",
-      "- `current/skills/commands/runtime/SKILL.md`",
-      `- \`${commandProtocolSkillPath}\``,
-      "Also mandatory before first non-read tool call:",
-      "- `current/skills/core/protocols/SKILL.md`",
-      "- `current/skills/craft/writing/SKILL.md`",
+      "Required runtime skills are auto-injected by the system at session start (and after explicit session invalidation/rebuild flows).",
+      "Injected baseline skill paths:",
+      ...mandatoryReadPaths.map((path) => `- \`${path}\``),
+      "If you need additional sections beyond injected context, issue targeted read calls.",
       ...hotStartPriorityLines,
       ...diagnosticsLines,
       "",

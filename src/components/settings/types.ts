@@ -6,6 +6,7 @@ export type Tab =
   | "appearance"
   | "data"
   | "memory"
+  | "skills"
   | "extra";
 
 export type FunctionKey =

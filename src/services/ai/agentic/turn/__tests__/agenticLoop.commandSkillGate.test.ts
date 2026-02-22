@@ -1141,4 +1141,279 @@ describe("agenticLoop command skill gate", () => {
     expect(result.response.narrative).toBe("new narrative");
     expect(toolProcessorMock.executeGenericTool).toHaveBeenCalled();
   });
+
+  it("auto-preloads player required skills instead of waiting for AI read calls", async () => {
+    const seenPaths = [
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
+    ];
+    const vfsSession = createVfsSession(true, seenPaths);
+    const settings = createSettings();
+    settings.extra.skillReadPolicies = {
+      "skills/gm/moral-complexity/SKILL.md": "required",
+    };
+
+    (vfsSession.noteToolSeen as any).mockImplementation((path: string) => {
+      const normalized = String(path || "").replace(/^current\//, "");
+      if (!seenPaths.includes(normalized)) {
+        seenPaths.push(normalized);
+      }
+    });
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-write",
+          name: "vfs_write_file",
+          args: { ops: [] },
+        },
+        {
+          id: "call-finish",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings,
+      sessionId: "session-policy-required-preload",
+      vfsSession,
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
+    expect(vfsSession.noteToolSeen).toHaveBeenCalledWith(
+      "skills/gm/moral-complexity/SKILL.md",
+    );
+
+    const firstAiCall = aiHandlerMock.handleAICall.mock.calls[0]?.[0] as any;
+    const conversationHistory = (firstAiCall?.conversationHistory ??
+      []) as any[];
+    const requiredSkillFileMessage = conversationHistory.find((message) => {
+      const text = message?.content?.find(
+        (part: any) => part?.type === "text" && typeof part?.text === "string",
+      )?.text;
+      return (
+        typeof text === "string" &&
+        text.includes('path="current/skills/gm/moral-complexity/SKILL.md"')
+      );
+    });
+    expect(requiredSkillFileMessage).toBeDefined();
+  });
+
+  it("preloads required skills once per session and reuses persisted context", async () => {
+    const seenPaths: string[] = [];
+    const vfsSession = createVfsSession(true, seenPaths);
+
+    (vfsSession.noteToolSeen as any).mockImplementation((path: string) => {
+      const normalized = String(path || "").replace(/^current\//, "");
+      if (!seenPaths.includes(normalized)) {
+        seenPaths.push(normalized);
+      }
+    });
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-finish",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "done",
+              choices: [],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const first = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-skill-preload-1",
+      vfsSession,
+    });
+
+    const second = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: first._conversationHistory,
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-skill-preload-2",
+      vfsSession,
+    });
+
+    const getPathCount = (history: any[], path: string): number =>
+      history
+        .map(
+          (message) =>
+            message?.content?.find(
+              (part: any) =>
+                part?.type === "text" && typeof part?.text === "string",
+            )?.text ?? "",
+        )
+        .join("\n")
+        .split(`path="${path}"`).length - 1;
+
+    const firstAiCall = aiHandlerMock.handleAICall.mock.calls[0]?.[0] as any;
+    const secondAiCall = aiHandlerMock.handleAICall.mock.calls[1]?.[0] as any;
+    const firstHistory = (firstAiCall?.conversationHistory ?? []) as any[];
+    const secondHistory = (secondAiCall?.conversationHistory ?? []) as any[];
+
+    expect(
+      getPathCount(firstHistory, "current/skills/commands/runtime/SKILL.md"),
+    ).toBe(1);
+    expect(
+      getPathCount(secondHistory, "current/skills/commands/runtime/SKILL.md"),
+    ).toBe(1);
+    expect(first.response).toBeDefined();
+    expect(second.response).toBeDefined();
+  });
+
+  it("blocks read calls for skills forbidden by player policy even when AI recommends them", async () => {
+    const vfsSession = createVfsSession(true);
+    const settings = createSettings();
+    settings.extra.skillReadPolicies = {
+      "skills/gm/actor-logic/npc/SKILL.md": "forbidden",
+    };
+
+    aiHandlerMock.handleAICall
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-forbidden-read",
+            name: "vfs_read_chars",
+            args: { path: "current/skills/gm/actor-logic/npc/SKILL.md" },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        usage: {
+          promptTokens: 5,
+          completionTokens: 3,
+          totalTokens: 8,
+        },
+        functionCalls: [
+          {
+            id: "call-finish",
+            name: "vfs_finish_turn",
+            args: {
+              userAction: "next",
+              assistant: {
+                narrative: "done",
+                choices: [],
+              },
+            },
+          },
+        ],
+      });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings,
+      sessionId: "session-forbidden-skill-read",
+      vfsSession,
+    });
+
+    expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalledWith(
+      "vfs_read_chars",
+      expect.anything(),
+      expect.anything(),
+    );
+
+    const firstAiCall = aiHandlerMock.handleAICall.mock.calls[0]?.[0] as any;
+    const conversationHistory = (firstAiCall?.conversationHistory ??
+      []) as any[];
+    const modeGuidanceText = conversationHistory
+      .map(
+        (message: any) =>
+          message?.content?.find(
+            (part: any) =>
+              part?.type === "text" && typeof part?.text === "string",
+          )?.text,
+      )
+      .find(
+        (text: unknown): text is string =>
+          typeof text === "string" &&
+          text.includes("[SYSTEM: MODE SKILL GUIDANCE]"),
+      );
+
+    expect(modeGuidanceText).toContain(
+      "filtered out from optional recommendations",
+    );
+    expect(modeGuidanceText).not.toContain(
+      "current/skills/gm/actor-logic/npc/SKILL.md",
+    );
+  });
 });

@@ -26,6 +26,13 @@ import {
 } from "./resultAccumulator";
 import type { ActivePresetSkillRequirement } from "../../utils";
 import { isExperimentalVfsVmEnabled } from "../../../vfs/experimentalFlags";
+import { resolveSkillPolicyGateConfig } from "../../../skills/skillPolicies";
+import {
+  getLoopSkillBaselineCanonicalPaths,
+  LOOP_RUNTIME_OPTIONAL_SKILLS,
+  resolveRuntimeLoopBaselineKey,
+  toCanonicalSkillPath,
+} from "../../../prompts/skills/loopSkillBaseline";
 
 // ============================================================================
 // Types
@@ -73,6 +80,14 @@ export interface LoopState {
   requiredCommandSkillPaths: string[];
   /** Required preset skill paths for this loop */
   requiredPresetSkillPaths: string[];
+  /** Player-configured must-read skill paths (auto-preloaded into context) */
+  userRequiredSkillPaths: string[];
+  /** Player-configured recommended skill paths (soft guidance only) */
+  userRecommendedSkillPaths: string[];
+  /** Player-configured forbidden skill paths (read tools blocked) */
+  userForbiddenSkillPaths: string[];
+  /** Forbidden entries ignored because hard runtime/preset gates require them */
+  userForbiddenIgnoredByHardGate: string[];
   /** Active preset requirements with source metadata */
   requiredPresetSkillRequirements?: ActivePresetSkillRequirement[];
   /** Active VFS mode for policy checks */
@@ -139,31 +154,33 @@ export function createLoopState(
   const resolvedVfsMode: VfsMode =
     vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
   const conversationMarker = getConversationMarker(vfsSession);
+  const runtimeBaselineKey = resolveRuntimeLoopBaselineKey({
+    isCleanupMode,
+    isSudoMode,
+    isPlayerRateMode,
+  });
+  const optionalRuntimeSkillPaths: string[] = [];
+  if (
+    !isCleanupMode &&
+    !isSudoMode &&
+    !isPlayerRateMode &&
+    gameState.godMode === true
+  ) {
+    optionalRuntimeSkillPaths.push(LOOP_RUNTIME_OPTIONAL_SKILLS.god);
+  }
+  if (
+    !isCleanupMode &&
+    !isSudoMode &&
+    !isPlayerRateMode &&
+    gameState.unlockMode === true
+  ) {
+    optionalRuntimeSkillPaths.push(LOOP_RUNTIME_OPTIONAL_SKILLS.unlock);
+  }
   const requiredCommandSkillPaths = Array.from(
     new Set(
       [
-        "skills/commands/runtime/SKILL.md",
-        isCleanupMode
-          ? "skills/commands/runtime/cleanup/SKILL.md"
-          : isSudoMode
-            ? "skills/commands/runtime/sudo/SKILL.md"
-            : isPlayerRateMode
-              ? "skills/commands/runtime/player-rate/SKILL.md"
-              : "skills/commands/runtime/turn/SKILL.md",
-        "skills/core/protocols/SKILL.md",
-        "skills/craft/writing/SKILL.md",
-        !isCleanupMode &&
-        !isSudoMode &&
-        !isPlayerRateMode &&
-        gameState.godMode === true
-          ? "skills/commands/runtime/god/SKILL.md"
-          : null,
-        !isCleanupMode &&
-        !isSudoMode &&
-        !isPlayerRateMode &&
-        gameState.unlockMode === true
-          ? "skills/commands/runtime/unlock/SKILL.md"
-          : null,
+        ...getLoopSkillBaselineCanonicalPaths(runtimeBaselineKey),
+        ...optionalRuntimeSkillPaths.map(toCanonicalSkillPath),
       ].filter((path): path is string => typeof path === "string"),
     ),
   );
@@ -184,6 +201,11 @@ export function createLoopState(
         ]),
     ).values(),
   );
+  const skillPolicyGateConfig = resolveSkillPolicyGateConfig({
+    settings,
+    hardRequiredPaths: requiredCommandSkillPaths,
+    hardPresetRequiredPaths: uniqueRequiredPresetSkillPaths,
+  });
   return {
     vfsSession,
     conversationMarker,
@@ -206,6 +228,10 @@ export function createLoopState(
     isRAGEnabled,
     requiredCommandSkillPaths,
     requiredPresetSkillPaths: uniqueRequiredPresetSkillPaths,
+    userRequiredSkillPaths: skillPolicyGateConfig.required,
+    userRecommendedSkillPaths: skillPolicyGateConfig.recommended,
+    userForbiddenSkillPaths: skillPolicyGateConfig.forbidden,
+    userForbiddenIgnoredByHardGate: skillPolicyGateConfig.ignoredForbidden,
     requiredPresetSkillRequirements: uniqueRequiredPresetSkillRequirements,
     vfsMode: resolvedVfsMode,
     vfsElevationToken: vfsElevationToken ?? null,

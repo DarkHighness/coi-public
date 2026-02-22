@@ -81,6 +81,7 @@ import {
   UNRECOVERABLE_WRITE_ERROR_CODES,
   UNKNOWN_WRITE_TARGET,
 } from "../common/toolCallPolicies";
+import { normalizeSkillPolicyPath } from "../../../skills/skillPolicies";
 
 // Import tool handling
 import { executeGenericTool, ToolCallContext } from "./toolCallProcessor";
@@ -422,11 +423,44 @@ export async function runAgenticLoopRefactored(
   let lastContextUsage: ToolCallContextUsageSnapshot | null = null;
 
   // Track where ephemeral pre-loop injections start so we can strip them
-  // from the persisted history (they are re-injected fresh each turn).
-  const ephemeralStart = conversationHistory.length;
+  // from persisted history. Skill preload file injections are session-level
+  // and intentionally remain in persisted history.
+  let ephemeralStart = conversationHistory.length;
   let ephemeralEnd = ephemeralStart;
 
   try {
+    const seenCommandSkillPaths = loopState.requiredCommandSkillPaths.filter(
+      (path) => hasPathSeenInCurrentEpoch(config.vfsSession, path),
+    );
+    const preloadedCommandSkillPaths = preloadCommandSkills(
+      conversationHistory,
+      config.vfsSession,
+      loopState.requiredCommandSkillPaths,
+    );
+    const satisfiedCommandSkillPaths = Array.from(
+      new Set([...seenCommandSkillPaths, ...preloadedCommandSkillPaths]),
+    );
+    const preloadedUserRequiredSkillPaths = preloadCommandSkills(
+      conversationHistory,
+      config.vfsSession,
+      loopState.userRequiredSkillPaths,
+    );
+    const seenPresetSkillPaths = loopState.requiredPresetSkillPaths.filter(
+      (path) => hasPathSeenInCurrentEpoch(config.vfsSession, path),
+    );
+    const preloadedPresetSkillPaths = preloadPresetSkills(
+      conversationHistory,
+      config.vfsSession,
+      loopState.requiredPresetSkillPaths,
+    );
+    const satisfiedPresetSkillPaths = Array.from(
+      new Set([...seenPresetSkillPaths, ...preloadedPresetSkillPaths]),
+    );
+
+    // Skill preload file injections above should persist for session reuse.
+    // Everything below this line is ephemeral and re-injected each loop.
+    ephemeralStart = conversationHistory.length;
+
     // Inject ready consequences
     injectReadyConsequences(conversationHistory);
 
@@ -447,29 +481,6 @@ export async function runAgenticLoopRefactored(
       );
     }
 
-    const seenCommandSkillPaths = loopState.requiredCommandSkillPaths.filter(
-      (path) => hasPathSeenInCurrentEpoch(config.vfsSession, path),
-    );
-    const preloadedCommandSkillPaths = preloadCommandSkills(
-      conversationHistory,
-      config.vfsSession,
-      loopState.requiredCommandSkillPaths,
-    );
-    const satisfiedCommandSkillPaths = Array.from(
-      new Set([...seenCommandSkillPaths, ...preloadedCommandSkillPaths]),
-    );
-    const seenPresetSkillPaths = loopState.requiredPresetSkillPaths.filter(
-      (path) => hasPathSeenInCurrentEpoch(config.vfsSession, path),
-    );
-    const preloadedPresetSkillPaths = preloadPresetSkills(
-      conversationHistory,
-      config.vfsSession,
-      loopState.requiredPresetSkillPaths,
-    );
-    const satisfiedPresetSkillPaths = Array.from(
-      new Set([...seenPresetSkillPaths, ...preloadedPresetSkillPaths]),
-    );
-
     // Inject mode-specific instruction
     if (isSudoMode) {
       injectSudoModeInstruction(
@@ -478,6 +489,12 @@ export async function runAgenticLoopRefactored(
         satisfiedCommandSkillPaths,
         loopState.requiredCommandSkillPaths,
         loopState.vfsVmExperimentalEnabled,
+        {
+          requiredSkillPaths: loopState.userRequiredSkillPaths,
+          recommendedSkillPaths: loopState.userRecommendedSkillPaths,
+          forbiddenSkillPaths: loopState.userForbiddenSkillPaths,
+          ignoredForbiddenSkillPaths: loopState.userForbiddenIgnoredByHardGate,
+        },
       );
     } else {
       injectNormalTurnInstruction(
@@ -505,18 +522,34 @@ export async function runAgenticLoopRefactored(
         loopState.requiredCommandSkillPaths,
         satisfiedPresetSkillPaths,
         loopState.vfsVmExperimentalEnabled,
+        {
+          requiredSkillPaths: loopState.userRequiredSkillPaths,
+          recommendedSkillPaths: loopState.userRecommendedSkillPaths,
+          forbiddenSkillPaths: loopState.userForbiddenSkillPaths,
+          ignoredForbiddenSkillPaths: loopState.userForbiddenIgnoredByHardGate,
+        },
       );
     }
 
     // Cold-start reads: exclude already pre-loaded skill paths
     const preloadedSet = new Set(
-      [...preloadedCommandSkillPaths, ...preloadedPresetSkillPaths].map(
-        (path) => toCurrentReadablePath(path),
-      ),
+      [
+        ...preloadedCommandSkillPaths,
+        ...preloadedUserRequiredSkillPaths,
+        ...preloadedPresetSkillPaths,
+      ].map((path) => toCurrentReadablePath(path)),
+    );
+    const forbiddenSkillCurrentPathSet = new Set(
+      (loopState.userForbiddenSkillPaths || [])
+        .map((path) => `current/${path}`)
+        .map((path) => toCurrentReadablePath(path)),
     );
     const remainingPreloadPaths = startupProfile.preloadReadPaths.filter(
       (path) => {
         const currentPath = toCurrentReadablePath(path);
+        if (forbiddenSkillCurrentPathSet.has(currentPath)) {
+          return false;
+        }
         if (preloadedSet.has(currentPath)) {
           return false;
         }
@@ -783,8 +816,8 @@ export async function runAgenticLoopRefactored(
   }
 
   // Strip ephemeral pre-loop injections from persisted history.
-  // These (skill preloads, mode instructions, cold-start guidance) are
-  // re-injected fresh each turn and must not accumulate across turns.
+  // Mode/tool guidance is re-injected each loop; skill preload file injections
+  // are session-level and intentionally retained.
   const persistedHistory =
     ephemeralStart < ephemeralEnd
       ? [
@@ -1058,10 +1091,69 @@ function checkCommandSkillReadGate(
     ok: false,
     error: {
       success: false,
-      error: `[ERROR: COMMAND_SKILL_NOT_READ] You must read required command skill file(s) in current epoch before non-read tools: ${
+      error: `[ERROR: COMMAND_SKILL_NOT_READ] You must read required command skill file(s) for this session before non-read tools: ${
         missing.length > 0 ? formatPathPreview(missing) : "(none)"
       }.\nAction: call a read tool on each missing file first (prefer vfs_read_markdown for markdown sections; otherwise vfs_read_lines/vfs_read_json/vfs_read_chars).`,
       code: "SKILL_NOT_READ",
+    },
+  };
+}
+
+const extractSkillReadTargetsFromCall = (call: ToolCallResult): string[] => {
+  if (!isReadOnlyInspectionToolName(call.name)) {
+    return [];
+  }
+
+  const candidates = extractTurnPathCandidates(call.args);
+  const resolved = new Set<string>();
+
+  for (const candidate of candidates) {
+    const normalized = normalizeSkillPolicyPath(candidate);
+    if (!normalized) continue;
+    resolved.add(normalized);
+  }
+
+  return Array.from(resolved.values());
+};
+
+function checkForbiddenSkillReadGate(
+  functionCalls: ToolCallResult[],
+  loopState: LoopState,
+):
+  | { ok: true }
+  | { ok: false; error: { success: false; error: string; code: string } } {
+  const forbidden = loopState.userForbiddenSkillPaths;
+  if (!forbidden || forbidden.length === 0) {
+    return { ok: true };
+  }
+
+  const forbiddenSet = new Set(forbidden);
+  const blocked = new Set<string>();
+
+  for (const call of functionCalls) {
+    for (const path of extractSkillReadTargetsFromCall(call)) {
+      if (forbiddenSet.has(path)) {
+        blocked.add(path);
+      }
+    }
+  }
+
+  if (blocked.size === 0) {
+    return { ok: true };
+  }
+
+  const blockedPaths = Array.from(blocked.values()).sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  return {
+    ok: false,
+    error: {
+      success: false,
+      error: `[ERROR: SKILL_READ_FORBIDDEN] Player SKILLS policy forbids reading these skill files in this session: ${formatPathPreview(
+        blockedPaths,
+      )}.\nAction: skip these reads or change policy in Settings -> SKILLS.`,
+      code: "SKILL_FORBIDDEN",
     },
   };
 }
@@ -1096,7 +1188,7 @@ function checkPresetSkillReadGate(
     ok: false,
     error: {
       success: false,
-      error: `[ERROR: PRESET_SKILL_NOT_READ] Active preset skill file(s) must be read in current epoch before non-read tools: ${
+      error: `[ERROR: PRESET_SKILL_NOT_READ] Active preset skill file(s) must be read for this session before non-read tools: ${
         missing.length > 0 ? formatPathPreview(missing) : "(none)"
       }.\nAction: call a read tool on each missing file first (prefer vfs_read_markdown for markdown sections; otherwise vfs_read_lines/vfs_read_json/vfs_read_chars).`,
       code: "PRESET_SKILL_NOT_READ",
@@ -1168,6 +1260,11 @@ async function processToolCalls(
   const getGateErrorForCall = (
     call: ToolCallResult,
   ): { success: false; error: string; code: string } | null => {
+    const forbiddenSkillGate = checkForbiddenSkillReadGate([call], loopState);
+    if ("error" in forbiddenSkillGate) {
+      return forbiddenSkillGate.error;
+    }
+
     const commandGate = checkCommandSkillReadGate([call], loopState);
     if ("error" in commandGate) {
       return commandGate.error;

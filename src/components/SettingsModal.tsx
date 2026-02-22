@@ -11,6 +11,7 @@ import { SettingsEmbedding } from "./settings/SettingsEmbedding";
 import { SettingsExtra } from "./settings/SettingsExtra";
 import { SettingsMemory } from "./settings/SettingsMemory";
 import { SettingsProviders } from "./settings/SettingsProviders";
+import { SettingsSkills } from "./settings/SettingsSkills";
 import { useToast } from "./Toast";
 import { useTutorialContextOptional } from "../contexts/TutorialContext";
 import { useTutorialTarget } from "../hooks/useTutorial";
@@ -111,6 +112,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
 
           {activeTab === "memory" && <SettingsMemory />}
+
+          {activeTab === "skills" && <SettingsSkills />}
 
           {activeTab === "models" && <SettingsModels showToast={showToast} />}
 

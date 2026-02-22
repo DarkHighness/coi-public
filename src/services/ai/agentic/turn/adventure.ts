@@ -72,6 +72,7 @@ import {
   getRecoveryTrace,
 } from "./turnRecoveryRunner";
 import { summarizeContext } from "../summary/summaryAdapter";
+import { getLoopCommandProtocolSkillPath } from "../../../prompts/skills/loopSkillBaseline";
 
 // ============================================================================
 // Turn Context and Agentic Loop
@@ -343,13 +344,6 @@ export const generateAdventureTurn = async (
     nsfwEnabled,
   };
 
-  const commandProtocolSkillPath = isCleanupMode
-    ? "current/skills/commands/runtime/cleanup/SKILL.md"
-    : isSudoMode
-      ? "current/skills/commands/runtime/sudo/SKILL.md"
-      : isPlayerRateMode
-        ? "current/skills/commands/runtime/player-rate/SKILL.md"
-        : "current/skills/commands/runtime/turn/SKILL.md";
   const startupMode: SessionStartupMode = isCleanupMode
     ? "cleanup"
     : isSudoMode
@@ -357,6 +351,9 @@ export const generateAdventureTurn = async (
       : isPlayerRateMode
         ? "player-rate"
         : "turn";
+  const commandProtocolSkillPath = getLoopCommandProtocolSkillPath(
+    startupMode === "player-rate" ? "player-rate" : startupMode,
+  );
   const latestHotStartReferencesMarkdown =
     getLatestSummaryReferencesMarkdown(gameState);
 
