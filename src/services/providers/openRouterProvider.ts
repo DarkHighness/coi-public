@@ -388,6 +388,14 @@ const isResponsesUnsupportedError = (error: unknown): boolean => {
   );
 };
 
+const isNoEndpointsFoundError = (error: unknown): boolean => {
+  const message = normalizeErrorMessage(error).toLowerCase();
+  if (message.includes("no endpoints found")) {
+    return true;
+  }
+  return message.includes("can handle the requested parameters");
+};
+
 const toOpenRouterResponsesFunctionTool = (
   tool: unknown,
 ): OpenRouterResponseFunctionTool | null => {
@@ -1350,15 +1358,17 @@ export async function generateContent(
     );
   } catch (error) {
     const shouldFallback =
-      (error instanceof AIProviderError && error.code === "UNSUPPORTED") ||
-      isResponsesUnsupportedError(error);
+      (error instanceof AIProviderError &&
+        (error.code === "UNSUPPORTED" || error.code === "NO_ENDPOINTS")) ||
+      isResponsesUnsupportedError(error) ||
+      isNoEndpointsFoundError(error);
 
     if (!shouldFallback) {
       throw error;
     }
 
     console.warn(
-      "[OpenRouter] Responses API is unsupported by endpoint/model. Falling back to Chat API.",
+      "[OpenRouter] Responses path cannot be served by current endpoint. Falling back to Chat API.",
     );
     return generateContentViaChat(
       { ...config, apiMode: "chat" },
@@ -1573,6 +1583,14 @@ async function generateContentViaResponse(
             error,
           );
         }
+        if (isNoEndpointsFoundError(error)) {
+          throw new AIProviderError(
+            "No endpoints found that can handle the requested parameters",
+            "openrouter",
+            "NO_ENDPOINTS",
+            error,
+          );
+        }
 
         let finalError: unknown = error;
         const retryMaxTokens = tokenBudgetResolution.shouldInjectMaxOutputTokens
@@ -1600,6 +1618,14 @@ async function generateContentViaResponse(
                 "Responses API is not supported by this endpoint",
                 "openrouter",
                 "UNSUPPORTED",
+                retryError,
+              );
+            }
+            if (isNoEndpointsFoundError(retryError)) {
+              throw new AIProviderError(
+                "No endpoints found that can handle the requested parameters",
+                "openrouter",
+                "NO_ENDPOINTS",
                 retryError,
               );
             }
@@ -1779,6 +1805,45 @@ async function generateContentViaChat(
         return await executeRequest();
       } catch (error) {
         let finalError: unknown = error;
+
+        if (isNoEndpointsFoundError(finalError)) {
+          if (requestParams.require_parameters !== false) {
+            requestParams.require_parameters = false;
+            console.warn(
+              "[OpenRouter] No endpoints found. Retrying with require_parameters=false.",
+            );
+            try {
+              return await executeRequest();
+            } catch (retryError) {
+              finalError = retryError;
+            }
+          }
+
+          const hadAdvancedCompatibilityParams =
+            !!requestParams.responseFormat ||
+            !!requestParams.reasoning ||
+            typeof requestParams.topK === "number" ||
+            typeof requestParams.minP === "number";
+
+          if (
+            isNoEndpointsFoundError(finalError) &&
+            hadAdvancedCompatibilityParams
+          ) {
+            delete requestParams.responseFormat;
+            delete requestParams.reasoning;
+            delete requestParams.topK;
+            delete requestParams.minP;
+            console.warn(
+              "[OpenRouter] Still no endpoints after relax. Retrying without responseFormat/reasoning/topK/minP.",
+            );
+            try {
+              return await executeRequest();
+            } catch (retryError) {
+              finalError = retryError;
+            }
+          }
+        }
+
         const retryMaxTokens = tokenBudgetResolution.shouldInjectMaxOutputTokens
           ? deriveOpenRouterOverflowRetryMaxTokens(
               requestParams.maxTokens,

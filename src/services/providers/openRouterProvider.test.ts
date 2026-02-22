@@ -371,6 +371,49 @@ describe("openRouterProvider response mode", () => {
     expect(res.result).toMatchObject({ content: "chat-ok" });
   });
 
+  it("falls back and downgrades when responses path reports no compatible endpoints", async () => {
+    sdkMocks.responsesSend.mockRejectedValueOnce(
+      new Error("No endpoints found that can handle the requested parameters."),
+    );
+
+    const chatParamsSeen: Array<any> = [];
+    sdkMocks.chatSend.mockImplementation(async (params: any) => {
+      chatParamsSeen.push({ ...params });
+      if (chatParamsSeen.length === 1) {
+        throw new Error(
+          "No endpoints found that can handle the requested parameters.",
+        );
+      }
+      return {
+        choices: [
+          {
+            finish_reason: "stop",
+            native_finish_reason: "stop",
+            message: { content: "downgraded-ok" },
+          },
+        ],
+        usage: {
+          prompt_tokens: 3,
+          completion_tokens: 1,
+          total_tokens: 4,
+        },
+      };
+    });
+
+    const res = await generateContent(
+      { apiKey: "k" } as any,
+      "unknown/vendor-model",
+      "sys",
+      [{ role: "user", content: [{ type: "text", text: "phase1" }] }] as any,
+    );
+
+    expect(sdkMocks.responsesSend).toHaveBeenCalledTimes(1);
+    expect(sdkMocks.chatSend).toHaveBeenCalledTimes(2);
+    expect(chatParamsSeen[0]?.require_parameters).toBe(true);
+    expect(chatParamsSeen[1]?.require_parameters).toBe(false);
+    expect(res.result).toMatchObject({ content: "downgraded-ok" });
+  });
+
   it("streams responses text deltas to onChunk", async () => {
     async function* responseStream() {
       yield { type: "response.output_text.delta", delta: "hel" };

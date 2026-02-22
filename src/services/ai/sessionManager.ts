@@ -75,6 +75,8 @@ interface Session {
 
   /** 运行时缓存：固定 Provider 实例（不持久化） */
   runtimeProvider?: ProviderBase;
+  /** 运行时 Provider 对应的实例签名（用于检测设置变更并重建） */
+  runtimeProviderSignature?: string;
 
   /**
    * Checkpoint Stack (History Lengths)
@@ -92,6 +94,23 @@ type NativeHistoryMessage = {
 
 const toNativeHistoryMessage = (value: unknown): NativeHistoryMessage | null =>
   value && typeof value === "object" ? (value as NativeHistoryMessage) : null;
+
+const buildProviderRuntimeSignature = (instance: ProviderInstance): string =>
+  JSON.stringify({
+    id: instance.id,
+    protocol: instance.protocol,
+    baseUrl: instance.baseUrl || "",
+    apiKey: instance.apiKey || "",
+    enabled: instance.enabled === true,
+    openaiApiMode: instance.openaiApiMode || "response",
+    isRestrictedChannel: instance.isRestrictedChannel === true,
+    geminiCompatibility: instance.geminiCompatibility === true,
+    geminiMessageFormat: instance.geminiMessageFormat === true,
+    claudeCompatibility: instance.claudeCompatibility === true,
+    claudeMessageFormat: instance.claudeMessageFormat === true,
+    compatibleImageGeneration: instance.compatibleImageGeneration === true,
+    lastModified: instance.lastModified || 0,
+  });
 
 // =============================================================================
 // Session Manager
@@ -379,8 +398,13 @@ class HistorySessionManager {
         );
       }
 
-      if (!this.currentSession.runtimeProvider) {
+      const signature = buildProviderRuntimeSignature(instance);
+      if (
+        !this.currentSession.runtimeProvider ||
+        this.currentSession.runtimeProviderSignature !== signature
+      ) {
         this.currentSession.runtimeProvider = createProvider(instance);
+        this.currentSession.runtimeProviderSignature = signature;
       }
     }
 

@@ -118,6 +118,7 @@ function isRetryableError(error: unknown): boolean {
     if (
       error.code === "SAFETY" ||
       error.code === "UNSUPPORTED" ||
+      error.code === "NO_ENDPOINTS" ||
       error.code === "QUOTA_EXHAUSTED" ||
       error.code === "MALFORMED_TOOL_CALL" ||
       error.code === "STREAM_TIMEOUT" ||

@@ -191,6 +191,33 @@ describe("sessionManager", () => {
     expect(createProviderMock).toHaveBeenCalledTimes(1);
   });
 
+  it("rebuilds cached provider when instance settings change", async () => {
+    const session = await sessionManager.getOrCreateSession(configA as any);
+    createProviderMock
+      .mockReturnValueOnce({ tag: "provider-v1" })
+      .mockReturnValueOnce({ tag: "provider-v2" });
+
+    const first = sessionManager.getProvider(session.id, {
+      id: "provider-1",
+      protocol: "openai",
+      apiKey: "k",
+      openaiApiMode: "response",
+      lastModified: 1,
+    } as any);
+    const second = sessionManager.getProvider(session.id, {
+      id: "provider-1",
+      protocol: "openai",
+      apiKey: "k",
+      openaiApiMode: "chat",
+      lastModified: 2,
+    } as any);
+
+    expect(first).toEqual({ tag: "provider-v1" });
+    expect(second).toEqual({ tag: "provider-v2" });
+    expect(second).not.toBe(first);
+    expect(createProviderMock).toHaveBeenCalledTimes(2);
+  });
+
   it("supports history helpers and rollback safeguards", async () => {
     const session = await sessionManager.getOrCreateSession(configA as any);
 
