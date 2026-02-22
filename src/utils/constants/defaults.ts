@@ -158,7 +158,7 @@ export const DEFAULTS: AISettings = {
   },
   extra: {
     autoCompactEnabled: true,
-    autoCompactThreshold: 0.7,
+    autoCompactThreshold: 0.8, // Compact when 80% of token budget is used
     vfsReadTokenBudgetPercent: 0.1,
     sessionHistoryLruLimit: 64,
     providerManagedMaxTokens: true,
