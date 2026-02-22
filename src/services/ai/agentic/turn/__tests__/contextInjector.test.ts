@@ -18,7 +18,17 @@ describe("contextInjector", () => {
   it("injects sudo and turn instructions as user messages", () => {
     const history: any[] = [];
 
-    injectSudoModeInstruction(history);
+    injectSudoModeInstruction(
+      history,
+      true,
+      [],
+      [
+        "skills/commands/runtime/SKILL.md",
+        "skills/commands/runtime/sudo/SKILL.md",
+        "skills/core/protocols/SKILL.md",
+        "skills/craft/writing/SKILL.md",
+      ],
+    );
     injectNormalTurnInstruction(
       history,
       "vfs_end_turn",
@@ -41,6 +51,17 @@ describe("contextInjector", () => {
         turnNumber: 12,
         mode: "normal",
       },
+      true,
+      "turn",
+      [],
+      [
+        "skills/commands/runtime/SKILL.md",
+        "skills/commands/runtime/turn/SKILL.md",
+        "skills/core/protocols/SKILL.md",
+        "skills/craft/writing/SKILL.md",
+        "skills/commands/runtime/god/SKILL.md",
+        "skills/commands/runtime/unlock/SKILL.md",
+      ],
     );
     injectNormalTurnInstruction(
       history,
@@ -57,6 +78,15 @@ describe("contextInjector", () => {
         turnNumber: 27,
         mode: "cleanup",
       },
+      true,
+      "turn",
+      [],
+      [
+        "skills/commands/runtime/SKILL.md",
+        "skills/commands/runtime/cleanup/SKILL.md",
+        "skills/core/protocols/SKILL.md",
+        "skills/craft/writing/SKILL.md",
+      ],
     );
 
     expect(history).toHaveLength(11);
@@ -149,6 +179,13 @@ describe("contextInjector", () => {
       undefined,
       true,
       "player-rate",
+      [],
+      [
+        "skills/commands/runtime/SKILL.md",
+        "skills/commands/runtime/player-rate/SKILL.md",
+        "skills/core/protocols/SKILL.md",
+        "skills/craft/writing/SKILL.md",
+      ],
     );
 
     expect(history).toHaveLength(4);

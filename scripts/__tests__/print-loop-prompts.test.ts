@@ -32,7 +32,7 @@ describe("print-loop-prompts script", () => {
     expect(content).toContain("## turn (effective)");
     expect(content).toContain("## cleanup (effective)");
     expect(content).toContain("[CONTEXT: Summary Task]");
-    expect(content).toContain("(god mode active)");
+    expect(content).toContain("You are currently in God mode.");
   }, 20000);
 
   it("prints static-only view when requested", () => {
@@ -51,6 +51,6 @@ describe("print-loop-prompts script", () => {
 
   it("supports disabling all-options toggles", () => {
     const content = runSnapshotScript("effective", ["--no-all-options"]);
-    expect(content).not.toContain("(god mode active)");
+    expect(content).not.toContain("You are currently in God mode.");
   }, 20000);
 });

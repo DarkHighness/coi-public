@@ -9,6 +9,7 @@ import type {
   UnifiedMessage,
 } from "../../../../types";
 import type { ActivePresetSkillRequirement } from "../../utils";
+import type { VfsSession } from "../../../vfs/vfsSession";
 import { createUserMessage } from "../../../messageTypes";
 import { generateBudgetPrompt, BudgetState } from "../budgetUtils";
 import {
@@ -37,6 +38,86 @@ const isSessionMirrorPath = (path: string): boolean =>
   /^current\/session\/[^/]+\.jsonl$/i.test(path);
 
 // ============================================================================
+// Skill Pre-injection
+// ============================================================================
+
+/**
+ * Pre-load required command skill files into conversation context.
+ * Reads each skill from VFS, injects content as `<file>` messages,
+ * and marks them as "seen" so gates are satisfied without explicit reads.
+ * Returns the list of paths that were successfully pre-loaded.
+ */
+export function preloadCommandSkills(
+  history: UnifiedMessage[],
+  vfsSession: VfsSession,
+  requiredPaths: string[],
+): string[] {
+  if (requiredPaths.length === 0) return [];
+
+  const preloaded: string[] = [];
+  for (const skillPath of requiredPaths) {
+    const currentPath = toCurrentReadablePath(skillPath);
+    const file = vfsSession.readFile(skillPath);
+    if (file && typeof file.content === "string" && file.content.trim()) {
+      history.push(
+        createUserMessage(
+          `<file path="${currentPath}">\n${file.content}\n</file>`,
+        ),
+      );
+      vfsSession.noteToolSeen(skillPath);
+      preloaded.push(skillPath);
+    }
+  }
+
+  if (preloaded.length > 0) {
+    console.log(
+      `[SkillPreload] Pre-injected ${preloaded.length}/${requiredPaths.length} command skills`,
+    );
+  }
+
+  return preloaded;
+}
+
+/**
+ * Inject command skill gate status. If all skills are pre-loaded, tells the AI
+ * they are already available. If some are missing, lists remaining reads.
+ */
+export function injectCommandSkillStatus(
+  history: UnifiedMessage[],
+  requiredPaths: string[],
+  preloadedPaths: string[],
+): void {
+  if (requiredPaths.length === 0) return;
+
+  const preloadedSet = new Set(preloadedPaths.map(toCurrentReadablePath));
+  const pending = requiredPaths
+    .map(toCurrentReadablePath)
+    .filter((p) => !preloadedSet.has(p));
+
+  const lines: string[] = [];
+
+  if (pending.length === 0) {
+    lines.push(
+      "[SYSTEM: COMMAND SKILLS READY]",
+      "All required command skills are pre-loaded in context above. Gate satisfied — you may proceed to write tools directly.",
+    );
+  } else {
+    lines.push(
+      "[SYSTEM: COMMAND SKILL REQUIRED]",
+      "Hard gate (enforced): before any non-read tool call in this epoch, read:",
+      ...pending.map((p) => `- \`${p}\``),
+    );
+    if (preloadedPaths.length > 0) {
+      lines.push(
+        `(${preloadedPaths.length} other skill(s) already pre-loaded in context.)`,
+      );
+    }
+  }
+
+  history.push(createUserMessage(lines.join("\n")));
+}
+
+// ============================================================================
 // System Message Injection
 // ============================================================================
 
@@ -46,21 +127,16 @@ const isSessionMirrorPath = (path: string): boolean =>
 export function injectSudoModeInstruction(
   history: UnifiedMessage[],
   ragEnabled: boolean = true,
+  preloadedSkillPaths: string[] = [],
+  requiredCommandSkillPaths: string[] = [],
 ): void {
   history.push(
     createUserMessage(sudoModeInstruction({ toolsetId: "turn", ragEnabled })),
   );
-  history.push(
-    createUserMessage(
-      [
-        "[SYSTEM: COMMAND SKILL REQUIRED]",
-        "Hard gate (enforced): before any non-read tool call in this epoch, read:",
-        "- `current/skills/commands/runtime/SKILL.md`",
-        "- `current/skills/commands/runtime/sudo/SKILL.md`",
-        "- `current/skills/core/protocols/SKILL.md`",
-        "- `current/skills/craft/writing/SKILL.md`",
-      ].join("\n"),
-    ),
+  injectCommandSkillStatus(
+    history,
+    requiredCommandSkillPaths,
+    preloadedSkillPaths,
   );
 }
 
@@ -81,6 +157,8 @@ export function injectNormalTurnInstruction(
   },
   ragEnabled: boolean = true,
   normalCommandProtocol: "turn" | "player-rate" = "turn",
+  preloadedSkillPaths: string[] = [],
+  requiredCommandSkillPaths: string[] = [],
 ): void {
   history.push(
     createUserMessage(
@@ -96,20 +174,14 @@ export function injectNormalTurnInstruction(
     ),
   );
 
-  if (isCleanupMode) {
-    history.push(
-      createUserMessage(
-        [
-          "[SYSTEM: COMMAND SKILL REQUIRED]",
-          "Hard gate (enforced): before any non-read tool call in this epoch, read:",
-          "- `current/skills/commands/runtime/SKILL.md`",
-          "- `current/skills/commands/runtime/cleanup/SKILL.md`",
-          "- `current/skills/core/protocols/SKILL.md`",
-          "- `current/skills/craft/writing/SKILL.md`",
-        ].join("\n"),
-      ),
-    );
+  // Use shared skill status (replaces hardcoded skill lists for cleanup/normal/player-rate)
+  injectCommandSkillStatus(
+    history,
+    requiredCommandSkillPaths,
+    preloadedSkillPaths,
+  );
 
+  if (isCleanupMode) {
     history.push(
       createUserMessage(
         [
@@ -141,32 +213,6 @@ export function injectNormalTurnInstruction(
         ].join("\n"),
       ),
     );
-  }
-
-  if (!isCleanupMode) {
-    const activeCommandSkillPath =
-      normalCommandProtocol === "player-rate"
-        ? "current/skills/commands/runtime/player-rate/SKILL.md"
-        : "current/skills/commands/runtime/turn/SKILL.md";
-    const commandSkillLines: string[] = [
-      "[SYSTEM: COMMAND SKILL REQUIRED]",
-      "Hard gate (enforced): before any non-read tool call in this epoch, read:",
-      "- `current/skills/commands/runtime/SKILL.md`",
-      `- \`${activeCommandSkillPath}\``,
-      "- `current/skills/core/protocols/SKILL.md`",
-      "- `current/skills/craft/writing/SKILL.md`",
-    ];
-    if (modeFlags?.godMode && normalCommandProtocol !== "player-rate") {
-      commandSkillLines.push(
-        "- `current/skills/commands/runtime/god/SKILL.md` (god mode active)",
-      );
-    }
-    if (modeFlags?.unlockMode && normalCommandProtocol !== "player-rate") {
-      commandSkillLines.push(
-        "- `current/skills/commands/runtime/unlock/SKILL.md` (unlock mode active)",
-      );
-    }
-    history.push(createUserMessage(commandSkillLines.join("\n")));
   }
 
   if (!isCleanupMode && normalCommandProtocol === "player-rate") {

@@ -42,6 +42,15 @@ import type { Schema } from "@google/genai";
 // Guard against infinite recursion when expanding z.lazy() schemas
 const _lazyExpansionStack = new WeakSet<ZodTypeAny>();
 
+// Schema compilation caches: keyed by Zod schema identity (WeakMap).
+// Tool schemas don't change during a session, so this avoids redundant
+// recompilation on every API call (100+ compilations → <20 per session).
+const _geminiSchemaCache = new WeakMap<ZodTypeAny, Schema>();
+const _openAIStrictSchemaCache = new WeakMap<ZodTypeAny, OpenAISchema>();
+const _geminiCompatSchemaCache = new WeakMap<ZodTypeAny, OpenAISchema>();
+const _claudeCompatSchemaCache = new WeakMap<ZodTypeAny, OpenAISchema>();
+const _geminiToolCompatSchemaCache = new WeakMap<ZodTypeAny, OpenAISchema>();
+
 // ============================================================================
 // OpenAI Schema Types
 // ============================================================================
@@ -309,7 +318,11 @@ const buildGeminiDiscriminatorSchema = (
  * 将 Zod Schema 直接编译为 Google Gemini Schema 格式
  */
 export function zodToGemini(schema: ZodTypeAny): Schema {
-  return processZodToGemini(schema);
+  const cached = _geminiSchemaCache.get(schema);
+  if (cached) return cached;
+  const result = processZodToGemini(schema);
+  _geminiSchemaCache.set(schema, result);
+  return result;
 }
 
 function processZodToGemini(schema: ZodTypeAny): Schema {
@@ -741,7 +754,14 @@ export function zodToOpenAISchema(
   schema: ZodTypeAny,
   strict: boolean = true,
 ): OpenAISchema {
-  return processZodToOpenAI(schema, strict);
+  if (strict) {
+    const cached = _openAIStrictSchemaCache.get(schema);
+    if (cached) return cached;
+    const result = processZodToOpenAI(schema, true);
+    _openAIStrictSchemaCache.set(schema, result);
+    return result;
+  }
+  return processZodToOpenAI(schema, false);
 }
 
 /**
@@ -1172,7 +1192,11 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
  * - 使用 nullable: true 代替 union type null
  */
 export function zodToGeminiCompatibleSchema(schema: ZodTypeAny): OpenAISchema {
-  return processZodToGeminiCompatible(schema);
+  const cached = _geminiCompatSchemaCache.get(schema);
+  if (cached) return cached;
+  const result = processZodToGeminiCompatible(schema);
+  _geminiCompatSchemaCache.set(schema, result);
+  return result;
 }
 
 function processZodToGeminiCompatible(schema: ZodTypeAny): OpenAISchema {
@@ -1732,9 +1756,17 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
   }
 
   if (schema.items && typeof schema.items === "object") {
-    result.items = sanitizeOpenRouterGeminiSchema(schema.items);
-    if (!result.type) {
-      result.type = "array";
+    const sanitizedItems = sanitizeOpenRouterGeminiSchema(schema.items);
+    // Only include items if the sanitized result has meaningful content
+    if (
+      sanitizedItems.type ||
+      sanitizedItems.properties ||
+      sanitizedItems.enum
+    ) {
+      result.items = sanitizedItems;
+      if (!result.type) {
+        result.type = "array";
+      }
     }
   }
 
@@ -1775,12 +1807,19 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
       if (!result.type || result.type === "string") {
         result.type = "object";
       }
-      // Only include required keys that exist in merged properties
+      // Only mark keys as required if they are required in EVERY variant that
+      // has a required array. Keys from some-but-not-all variants stay optional.
       if (allVariantsHaveRequired && allRequired.size > 0) {
+        const variantsWithReq = anyOf.filter((v) => Array.isArray(v.required));
+        const universallyRequired = [...allRequired].filter((key) =>
+          variantsWithReq.every(
+            (v) => Array.isArray(v.required) && v.required.includes(key),
+          ),
+        );
         const existingRequired = new Set(
           Array.isArray(result.required) ? result.required : [],
         );
-        for (const key of allRequired) {
+        for (const key of universallyRequired) {
           if (Object.prototype.hasOwnProperty.call(result.properties, key)) {
             existingRequired.add(key);
           }
@@ -1790,9 +1829,17 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
         }
       }
     } else if (!anyVariantHasProperties) {
-      // All variants are primitives — drop type constraint, keep description
-      // This avoids degrading mixed-type unions (e.g. string|number|boolean|null) to {type:"object"}
-      delete result.type;
+      // All variants are primitives (e.g. string|number|boolean|null).
+      // Keep the first valid non-null type rather than deleting all type info.
+      const primitiveTypes = anyOf
+        .map((v) => v.type)
+        .filter(
+          (t): t is string =>
+            typeof t === "string" && t !== "null" && t !== "object",
+        );
+      if (primitiveTypes.length > 0) {
+        result.type = primitiveTypes[0];
+      }
     }
   }
 
@@ -1838,7 +1885,13 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
 export function zodToGeminiToolCompatibleSchema(
   schema: ZodTypeAny,
 ): OpenAISchema {
-  return sanitizeOpenRouterGeminiSchema(zodToGeminiCompatibleSchema(schema));
+  const cached = _geminiToolCompatSchemaCache.get(schema);
+  if (cached) return cached;
+  const result = sanitizeOpenRouterGeminiSchema(
+    zodToGeminiCompatibleSchema(schema),
+  );
+  _geminiToolCompatSchemaCache.set(schema, result);
+  return result;
 }
 
 /**
@@ -2303,7 +2356,11 @@ function processZodToClaudeCompatible(schema: ZodTypeAny): OpenAISchema {
  * 使用独立的 Claude 处理器，与 Gemini 处理器完全分离
  */
 export function zodToClaudeCompatibleSchema(schema: ZodTypeAny): OpenAISchema {
-  return processZodToClaudeCompatible(schema);
+  const cached = _claudeCompatSchemaCache.get(schema);
+  if (cached) return cached;
+  const result = processZodToClaudeCompatible(schema);
+  _claudeCompatSchemaCache.set(schema, result);
+  return result;
 }
 
 /**

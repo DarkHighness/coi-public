@@ -157,6 +157,14 @@ const createVfsSession = (hasSeenSkill: boolean, seenSkillPaths?: string[]) => {
     bindConversationSession: vi.fn(),
     drainOutOfBandReadInvalidations: vi.fn(() => []),
     noteToolSeen: vi.fn(),
+    readFile: vi.fn((path: string) =>
+      path.endsWith("SKILL.md")
+        ? {
+            content: `# Skill\nMock skill content for ${path}`,
+            contentType: "text/markdown",
+          }
+        : null,
+    ),
     hasToolSeenInCurrentEpoch: vi.fn((path: string) => {
       if (!hasSeenSkill) return false;
       return new Set(seenSkillPaths ?? defaultSeenPaths).has(path);

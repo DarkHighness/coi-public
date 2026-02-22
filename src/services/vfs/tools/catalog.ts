@@ -114,43 +114,49 @@ const vfsJsonPatchOpToolSchema = z
     value: jsonValueToolSchema
       .optional()
       .describe(
-        "Value for add/replace/test. Any JSON type (string, number, boolean, null, array, object). Omit for remove/move/copy.",
+        "REQUIRED for add/replace/test (any JSON type). Omit for remove/move/copy.",
       ),
     from: z
       .string()
       .optional()
-      .describe("Source JSON Pointer path. Required for move/copy only."),
+      .describe(
+        "REQUIRED for move/copy (source JSON Pointer). Omit otherwise.",
+      ),
   })
-  .describe("RFC 6902 JSON Patch operation.");
+  .describe(
+    "RFC 6902 JSON Patch operation. Rules: add/replace/test need `value`; move/copy need `from`; remove needs only `path`.",
+  );
 
 const vfsLineEditSchema = z
   .object({
     kind: z
       .enum(["insert_before", "insert_after", "replace_range"])
-      .describe(
-        "Edit type: insert_before/insert_after (require `line`), replace_range (requires `startLine`+`endLine`).",
-      ),
+      .describe("Edit type."),
     content: z.string().describe("Text content to insert or replace with."),
     line: z
       .number()
       .int()
       .positive()
       .optional()
-      .describe("1-based line number for insert_before/insert_after."),
+      .describe(
+        "REQUIRED for insert_before/insert_after: 1-based target line number.",
+      ),
     startLine: z
       .number()
       .int()
       .positive()
       .optional()
-      .describe("1-based start line for replace_range."),
+      .describe("REQUIRED for replace_range: 1-based start line."),
     endLine: z
       .number()
       .int()
       .positive()
       .optional()
-      .describe("1-based end line (inclusive) for replace_range."),
+      .describe("REQUIRED for replace_range: 1-based end line (inclusive)."),
   })
-  .describe("Line edit operation.");
+  .describe(
+    "Line edit operation. insert_before/insert_after use `line`+`content`; replace_range uses `startLine`+`endLine`+`content`.",
+  );
 
 const markdownSelectorSchema = z
   .object({

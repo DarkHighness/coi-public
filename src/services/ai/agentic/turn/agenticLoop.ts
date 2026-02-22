@@ -45,6 +45,7 @@ import {
   injectNoToolCallError,
   injectRetconAckRequired,
   injectOutOfBandReadInvalidations,
+  preloadCommandSkills,
 } from "./contextInjector";
 import {
   checkBudgetExhaustion,
@@ -406,9 +407,21 @@ export async function runAgenticLoopRefactored(
       );
     }
 
+    // Pre-load command skill files into context (satisfies gate without explicit reads)
+    const preloadedSkillPaths = preloadCommandSkills(
+      conversationHistory,
+      config.vfsSession,
+      loopState.requiredCommandSkillPaths,
+    );
+
     // Inject mode-specific instruction
     if (isSudoMode) {
-      injectSudoModeInstruction(conversationHistory, loopState.isRAGEnabled);
+      injectSudoModeInstruction(
+        conversationHistory,
+        loopState.isRAGEnabled,
+        preloadedSkillPaths,
+        loopState.requiredCommandSkillPaths,
+      );
     } else {
       injectNormalTurnInstruction(
         conversationHistory,
@@ -431,13 +444,17 @@ export async function runAgenticLoopRefactored(
         },
         loopState.isRAGEnabled,
         isPlayerRateMode ? "player-rate" : "turn",
+        preloadedSkillPaths,
+        loopState.requiredCommandSkillPaths,
       );
     }
 
-    injectColdStartRequiredReads(
-      conversationHistory,
-      startupProfile.preloadReadPaths,
+    // Cold-start reads: exclude already pre-loaded skill paths
+    const preloadedSet = new Set(preloadedSkillPaths);
+    const remainingPreloadPaths = startupProfile.preloadReadPaths.filter(
+      (p) => !preloadedSet.has(p),
     );
+    injectColdStartRequiredReads(conversationHistory, remainingPreloadPaths);
 
     // Main loop
     while (
