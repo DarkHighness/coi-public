@@ -13,6 +13,10 @@ const idUsage = `
     - The \`id\` field exists ONLY for **file-based storage** and entity references.
     - **NEVER** include IDs in ANY narrative or descriptive content.
     - IDs are **backend identifiers**, NOT player-facing information.
+    - Localization contract alignment:
+      * \`id\` fields/references MAY keep canonical tokens.
+      * Enum-typed fields MAY keep schema-defined enum tokens.
+      * ALL other non-enum descriptive/content fields MUST follow the active target language (do NOT output English fallback text there).
 
     **WHERE IDs BELONG (ONLY THESE PLACES)**:
     ✅ VFS file paths: \`vfs_write_file(...)\` at \`current/world/characters/char:player/inventory/inv_sword_of_kings.json\`

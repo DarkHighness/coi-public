@@ -78,6 +78,7 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
         ? "Skip choice generation in `[Player Rate]` loops."
         : "For `assistant.choices`, avoid strictly dominant all-upside options. Render proportional cost for best-of-both-worlds attempts."
     }</rule>
+    <rule>Language contract: EXCEPT \`id\` fields/references and enum-typed fields, ALL other field values (including assistant narrative/choices text) must be in ${language}.</rule>
     <rule>Field deletions use JSON Patch \`remove\` via \`vfs_patch_json\`.</rule>
     <rule>\`${resolvedFinishToolName}\` MUST be your LAST tool call.</rule>
     <rule>Double-check JSON syntax before calling any tool.</rule>

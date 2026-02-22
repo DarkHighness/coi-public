@@ -114,7 +114,12 @@ export const languageEnforcement: Atom<LanguageEnforcementInput> = defineAtom(
   </critical_directive>
 
   <strict_field_rules>
-    **EVERY text field in JSON output must be PURE ${language}:**
+    **ALL field values in JSON output must follow this rule:**
+    - EXCEPTION A: \`id\` fields and ID-reference fields may use canonical ID tokens
+    - EXCEPTION B: enum-typed fields may use schema-defined enum tokens (do NOT translate enum values)
+    - ALL other field values MUST be PURE ${language}
+
+    **Examples of fields that MUST be PURE ${language}:**
     - "name" fields: PURE ${language} only
     - "title" fields: PURE ${language} only
     - "description" fields: PURE ${language} only
@@ -179,18 +184,20 @@ export const languageEnforcement: Atom<LanguageEnforcementInput> = defineAtom(
   </common_violations>
 
   <exceptions>
-    **ONLY these may be in English (regardless of target language):**
+    **ONLY these may keep canonical non-localized tokens (regardless of target language):**
     - JSON field KEYS (e.g., "name", "description", "visible", "hidden")
-    - Entity IDs (e.g., "saint_monk_fahai", "black_dragon_pool")
+    - \`id\` fields and entity ID references (e.g., "saint_monk_fahai", "black_dragon_pool")
+    - Enum-typed fields defined by schema (use canonical enum token; do NOT translate enum value)
     - Technical code terms strictly required by system
 
-    **NEVER put translations or alternative languages in field VALUES (the content).**
+    **All non-id, non-enum field VALUES are user-facing content and MUST be PURE ${language}.**
+    **NEVER put translations or alternative languages in field VALUES.**
   </exceptions>
 
   <enforcement>
     Before outputting ANY text field value, verify:
-    1. Is this an ID field or JSON key? → English is allowed
-    2. Is this a content/narrative field? → Must be PURE ${language}
+    1. Is this a JSON key, \`id\` field/reference, or enum-typed field? → keep canonical token
+    2. Otherwise it is content/narrative text → Must be PURE ${language}
     3. Does it have parentheses containing an alternative-language translation?
     4. Does it have slashes or dashes separating two languages?
     If #3 or #4 is YES → REWRITE in PURE ${language}.
@@ -218,8 +225,9 @@ export const languageEnforcementDescription: Atom<LanguageEnforcementInput> =
 
       return `
 <language_enforcement>
-⚠️ LANGUAGE PURITY: ALL field VALUES must be in ${language}.
-ONLY JSON keys and entity IDs may be in English.
+⚠️ LANGUAGE PURITY:
+- EXCEPTIONS: \`id\` fields/references and enum-typed fields may keep canonical tokens.
+- ALL other field VALUES must be in ${language}.
 ❌ FORBIDDEN: ${ex.liteForbidden}
 ✅ CORRECT: ${ex.liteCorrect}
 NO parenthetical translations. NO slash-separated alternatives. PURE ${language} only.
