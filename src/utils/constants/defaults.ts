@@ -113,7 +113,6 @@ export const DEFAULTS: AISettings = {
   },
   language: "zh",
   imageTimeout: 60, // 60 seconds
-  enableFallbackBackground: true,
   lockEnvTheme: false,
   fixedEnvTheme: undefined, // No fixed theme by default
   disableEnvironmentalEffects: false,

@@ -1325,8 +1325,6 @@
   "apiConsoleDescription": "Trace raw API requests and token usage.",
   "version": "Version",
   "visualEffects": "Visual Effects",
-  "enableFallbackBackground": "Enable Fallback Background",
-  "enableFallbackBackgroundDesc": "Enable fallback background images",
   "lockEnvTheme": "Lock UI Theme",
   "lockEnvThemeDesc": "Lock the visual theme to the current envTheme, ignoring story atmosphere changes",
   "fixedEnvTheme": "Fixed Theme",

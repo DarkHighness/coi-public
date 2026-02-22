@@ -563,7 +563,6 @@ function AppContent() {
           <EnvironmentalEffects
             atmosphere={currentAtmosphere}
             backgroundImage={stickyBackground}
-            fallbackEnabled={aiSettings.enableFallbackBackground}
           />
         </Suspense>
       </div>

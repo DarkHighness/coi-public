@@ -1359,8 +1359,6 @@
   "apiConsoleDescription": "追踪原始 API 请求和令牌使用情况。",
   "version": "版本",
   "visualEffects": "视觉效果",
-  "enableFallbackBackground": "启用 Fallback 的背景",
-  "enableFallbackBackgroundDesc": "启用 Fallback 的背景图片",
   "lockEnvTheme": "锁定界面主题",
   "lockEnvThemeDesc": "锁定视觉主题为当前 envTheme，忽略剧情氛围变化",
   "fixedEnvTheme": "固定主题",

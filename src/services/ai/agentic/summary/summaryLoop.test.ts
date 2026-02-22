@@ -85,7 +85,6 @@ function makeInput(overrides?: Partial<SummaryLoopInput>): SummaryLoopInput {
       },
       language: "en" as any,
       imageTimeout: 30,
-      enableFallbackBackground: true,
       lockEnvTheme: false,
       typewriterSpeed: 50,
     } as any,

@@ -1085,7 +1085,6 @@ export interface AISettings {
 
   // Image Generation Settings
   imageTimeout: number; // Timeout in seconds
-  enableFallbackBackground: boolean; // Enable fallback background images
 
   // Visual Theme Settings
   lockEnvTheme: boolean; // Lock UI theme to story's envTheme, ignoring atmosphere changes

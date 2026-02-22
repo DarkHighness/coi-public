@@ -1,4 +1,3 @@
-import { BACKGROUND_IMAGES } from "../utils/constants";
 import {
   getEffectForAtmosphere,
   normalizeAtmosphere,
@@ -13,7 +12,6 @@ interface EnvironmentalEffectsProps {
   /** Unified atmosphere object */
   atmosphere?: AtmosphereObject;
   backgroundImage?: string;
-  fallbackEnabled?: boolean;
 }
 
 type EffectType = VisualEffect;
@@ -22,8 +20,6 @@ interface StyleItem {
   id: string;
   style: React.CSSProperties;
 }
-
-const FALLBACK_BACKGROUND_KEYS = Object.keys(BACKGROUND_IMAGES);
 
 const rand = (min: number, max: number): number =>
   min + Math.random() * (max - min);
@@ -90,7 +86,6 @@ const areAtmospheresEquivalent = (
 const EnvironmentalEffectsComponent: React.FC<EnvironmentalEffectsProps> = ({
   atmosphere,
   backgroundImage,
-  fallbackEnabled = true,
 }) => {
   const { settings } = useSettings();
   const effectsDisabled = settings.disableEnvironmentalEffects;
@@ -106,26 +101,7 @@ const EnvironmentalEffectsComponent: React.FC<EnvironmentalEffectsProps> = ({
     [resolvedAtmosphere],
   );
 
-  const loadedBgSource = useMemo(() => {
-    let bgSource = backgroundImage;
-
-    const ambienceKey = resolvedAtmosphere.ambience;
-    if (!bgSource && fallbackEnabled && ambienceKey) {
-      if (BACKGROUND_IMAGES[ambienceKey]) {
-        bgSource = BACKGROUND_IMAGES[ambienceKey];
-      } else {
-        const ambienceLower = ambienceKey.toLowerCase();
-        const foundKey = FALLBACK_BACKGROUND_KEYS.find((key) =>
-          ambienceLower.includes(key),
-        );
-        if (foundKey) {
-          bgSource = BACKGROUND_IMAGES[foundKey];
-        }
-      }
-    }
-
-    return bgSource ?? null;
-  }, [backgroundImage, fallbackEnabled, resolvedAtmosphere.ambience]);
+  const loadedBgSource = backgroundImage ?? null;
 
   const [backgroundLayers, setBackgroundLayers] = useState<{
     bg1: string | null;
@@ -388,7 +364,6 @@ export const EnvironmentalEffects = React.memo(
   EnvironmentalEffectsComponent,
   (prevProps, nextProps) =>
     prevProps.backgroundImage === nextProps.backgroundImage &&
-    prevProps.fallbackEnabled === nextProps.fallbackEnabled &&
     areAtmospheresEquivalent(prevProps.atmosphere, nextProps.atmosphere),
 );
 

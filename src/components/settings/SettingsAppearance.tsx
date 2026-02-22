@@ -53,37 +53,6 @@ export const SettingsAppearance: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-theme-text">
-                {t("enableFallbackBackground")}
-              </div>
-              <div className="text-xs text-theme-muted">
-                {t("enableFallbackBackgroundDesc")}
-              </div>
-            </div>
-            <button
-              onClick={() =>
-                onUpdateSettings({
-                  ...currentSettings,
-                  enableFallbackBackground:
-                    !currentSettings.enableFallbackBackground,
-                })
-              }
-              className={`w-12 h-6 rounded-full transition-colors relative ${
-                currentSettings.enableFallbackBackground
-                  ? "bg-theme-primary"
-                  : "bg-theme-border"
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                  currentSettings.enableFallbackBackground ? "left-7" : "left-1"
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-theme-border/50">
-            <div>
-              <div className="font-bold text-theme-text">
                 {t("lockEnvTheme")}
               </div>
               <div className="text-xs text-theme-muted">

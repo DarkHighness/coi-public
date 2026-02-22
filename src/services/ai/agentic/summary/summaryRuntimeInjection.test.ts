@@ -73,7 +73,6 @@ const makeInput = (): SummaryLoopInput => ({
     },
     language: "en" as any,
     imageTimeout: 30,
-    enableFallbackBackground: true,
     lockEnvTheme: false,
     typewriterSpeed: 50,
     extra: {
