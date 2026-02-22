@@ -17,7 +17,11 @@ vi.mock("../../utils/imageStorage", () => ({
 
 import { useImageGenerationQueue } from "./imageGeneration";
 
-const createHarness = (node: any, aiSettings: any = {}) => {
+const createHarness = (
+  node: any,
+  aiSettings: any = {},
+  onGenerationIssue = vi.fn(),
+) => {
   let state = {
     nodes: { n1: node },
     forkId: 2,
@@ -55,6 +59,7 @@ const createHarness = (node: any, aiSettings: any = {}) => {
       gameStateRef,
       setGameState,
       triggerSave,
+      onGenerationIssue,
     });
     return React.createElement("div");
   };
@@ -71,6 +76,7 @@ const createHarness = (node: any, aiSettings: any = {}) => {
     getState: () => state,
     setGameState,
     triggerSave,
+    onGenerationIssue,
   };
 };
 
@@ -92,6 +98,10 @@ describe("useImageGenerationQueue", () => {
 
     expect(generateSceneImageMock).not.toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalled();
+    expect(harness.onGenerationIssue).toHaveBeenCalledWith({
+      code: "missing_prompt",
+      nodeId: "n1",
+    });
   });
 
   it("generates image blob, stores image id, and triggers save", async () => {
@@ -207,6 +217,10 @@ describe("useImageGenerationQueue", () => {
       expect(harness.api.failedImageNodes.has("n1")).toBe(true);
     });
     expect(harness.triggerSave).not.toHaveBeenCalled();
+    expect(harness.onGenerationIssue).toHaveBeenCalledWith({
+      code: "empty_result",
+      nodeId: "n1",
+    });
   });
 
   it("marks node as failed on generation exception", async () => {
@@ -227,6 +241,11 @@ describe("useImageGenerationQueue", () => {
       expect(harness.api.failedImageNodes.has("n1")).toBe(true);
       expect(harness.getState().isImageGenerating).toBe(false);
       expect(harness.getState().generatingNodeId).toBeNull();
+    });
+    expect(harness.onGenerationIssue).toHaveBeenCalledWith({
+      code: "generation_error",
+      nodeId: "n1",
+      error: "generation failed",
     });
   });
 });

@@ -564,6 +564,33 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           />
         </div>
 
+        {/* Visual Max Rounds */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-theme-text">
+              {t("settings.extra.visualMaxAgenticRounds") ||
+                "Visual Max Rounds"}
+            </div>
+            <div className="text-[10px] text-theme-muted">
+              {t("settings.extra.visualMaxAgenticRoundsHelp") ||
+                "Maximum rounds for visual loops (default: 3)"}
+            </div>
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={extra.visualMaxAgenticRounds ?? 3}
+            onChange={(e) =>
+              updateExtra(
+                "visualMaxAgenticRounds",
+                Math.max(1, Math.min(100, parseInt(e.target.value) || 3)),
+              )
+            }
+            className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+          />
+        </div>
+
         {/* Turn Retry Limit */}
         <div className="flex items-center justify-between">
           <div>
@@ -669,6 +696,32 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
           />
         </div>
 
+        {/* Visual Retry Limit */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-theme-text">
+              {t("settings.extra.visualRetryLimit") || "Visual Retry Limit"}
+            </div>
+            <div className="text-[10px] text-theme-muted">
+              {t("settings.extra.visualRetryLimitHelp") ||
+                "Retry limit for visual loops (default: 3)"}
+            </div>
+          </div>
+          <input
+            type="number"
+            min={0}
+            max={20}
+            value={extra.visualRetryLimit ?? 3}
+            onChange={(e) =>
+              updateExtra(
+                "visualRetryLimit",
+                Math.max(0, Math.min(20, parseInt(e.target.value) || 3)),
+              )
+            }
+            className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+          />
+        </div>
+
         {/* Max Tool Calls */}
         <div className="flex items-center justify-between">
           <div>
@@ -716,6 +769,33 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
               updateExtra(
                 "outlineMaxToolCalls",
                 Math.max(5, Math.min(200, parseInt(e.target.value) || 36)),
+              )
+            }
+            className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"
+          />
+        </div>
+
+        {/* Visual Max Tool Calls */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-theme-text">
+              {t("settings.extra.visualMaxToolCalls") ||
+                "Visual Max Tool Calls"}
+            </div>
+            <div className="text-[10px] text-theme-muted">
+              {t("settings.extra.visualMaxToolCallsHelp") ||
+                "Maximum tool calls for visual loops (default: 24)"}
+            </div>
+          </div>
+          <input
+            type="number"
+            min={5}
+            max={200}
+            value={extra.visualMaxToolCalls ?? 24}
+            onChange={(e) =>
+              updateExtra(
+                "visualMaxToolCalls",
+                Math.max(5, Math.min(200, parseInt(e.target.value) || 24)),
               )
             }
             className="w-20 p-1.5 text-xs bg-theme-surface border border-theme-border rounded focus:outline-none focus:ring-1 focus:ring-theme-primary text-theme-text text-center"

@@ -16,12 +16,22 @@ import {
 import {
   createToolCallMessage,
   createToolResponseMessage,
+  createUserMessage,
 } from "../../../messageTypes";
 import {
   dispatchToolCallAsync,
   type ToolContext,
 } from "../../../tools/handlers";
 import { callWithAgenticRetry, createPromptTokenBudgetContext } from "../retry";
+import {
+  checkBudgetExhaustion,
+  createBudgetState,
+  generateBudgetPrompt,
+  getBudgetSummary,
+  incrementIterations,
+  incrementRetries,
+  incrementToolCalls,
+} from "../budgetUtils";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
   resolveModelContextWindowTokensWithLookup,
@@ -155,6 +165,7 @@ const runVisualLoopStage = async (
   let veoScript: string | undefined;
   let totalUsage: TokenUsage | undefined;
   const promptTokenBudgetContext = createPromptTokenBudgetContext();
+  const budgetState = createBudgetState(settings, { loopType: "visual" });
   const toolContext: ToolContext = {
     gameState,
     settings,
@@ -165,9 +176,35 @@ const runVisualLoopStage = async (
     vfsMode: "normal",
   };
 
-  // Visual loop iterations
-  const totalIterations = 3;
-  for (let iteration = 0; iteration < totalIterations; iteration++) {
+  // Visual loop iterations (budget-driven)
+  while (budgetState.loopIterationsUsed < budgetState.loopIterationsMax) {
+    const budgetCheck = checkBudgetExhaustion(budgetState);
+    if (budgetCheck.exhausted) {
+      console.warn(`[VisualLoop] ${budgetCheck.message}`);
+      break;
+    }
+
+    const iteration = budgetState.loopIterationsUsed;
+    const totalIterations = budgetState.loopIterationsMax;
+    const toolCallsRemaining =
+      budgetState.toolCallsMax - budgetState.toolCallsUsed;
+    const iterationsRemaining =
+      budgetState.loopIterationsMax - budgetState.loopIterationsUsed;
+    const mustFinishNow = toolCallsRemaining <= 2 || iterationsRemaining <= 1;
+    const activeTools = mustFinishNow
+      ? stageTools.filter((tool) => tool.name === submitToolName)
+      : stageTools;
+
+    conversationHistory.push(
+      createUserMessage(
+        `[SYSTEM: BUDGET STATUS]\n${generateBudgetPrompt(budgetState, submitToolName)}`,
+      ),
+    );
+
+    console.log(
+      `[VisualLoop:${target}] Iteration ${iteration + 1}/${totalIterations}, Budget: ${getBudgetSummary(budgetState)}`,
+    );
+
     if (input.onProgress) {
       input.onProgress({
         status:
@@ -185,7 +222,7 @@ const runVisualLoopStage = async (
         modelId,
         systemInstruction,
         messages: [],
-        tools: stageTools,
+        tools: activeTools,
         toolChoice: "required",
         temperature: 1.0,
         tokenBudget: {
@@ -197,7 +234,26 @@ const runVisualLoopStage = async (
         },
       },
       conversationHistory,
-      { maxRetries: 3, promptTokenBudgetContext },
+      {
+        maxRetries: Math.max(
+          0,
+          budgetState.retriesMax - budgetState.retriesUsed,
+        ),
+        requiredToolName: mustFinishNow ? submitToolName : undefined,
+        finishToolName: submitToolName,
+        promptTokenBudgetContext,
+        onRetry: (error, count, meta) => {
+          console.warn(`[VisualLoop:${target}] Retry ${count}: ${error}`);
+          if (!meta?.silent) {
+            incrementRetries(budgetState);
+          }
+          conversationHistory.push(
+            createUserMessage(
+              `[SYSTEM: BUDGET UPDATE]\n${generateBudgetPrompt(budgetState, submitToolName)}`,
+            ),
+          );
+        },
+      },
     );
 
     allLogs.push(
@@ -220,6 +276,7 @@ const runVisualLoopStage = async (
       : [];
 
     if (parsedCalls.length > 0) {
+      incrementToolCalls(budgetState, parsedCalls.length);
       conversationHistory.push(
         createToolCallMessage(
           parsedCalls.map((call) => ({
@@ -309,8 +366,14 @@ const runVisualLoopStage = async (
       }
 
       conversationHistory.push(createToolResponseMessage(toolResponses));
-      if (finished) break;
+      incrementIterations(budgetState);
+      if (finished) {
+        break;
+      }
+      continue;
     }
+
+    incrementIterations(budgetState);
   }
 
   return { imagePrompt, veoScript, logs: allLogs, usage: totalUsage };

@@ -55,6 +55,8 @@ describe("SettingsModels", () => {
   });
 
   it("toggles force auto tool choice in models tab", () => {
+    const nextValue = !(settingsState.extra?.forceAutoToolChoice ?? false);
+
     render(React.createElement(SettingsModels, { showToast }));
 
     fireEvent.click(
@@ -65,7 +67,7 @@ describe("SettingsModels", () => {
 
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        extra: expect.objectContaining({ forceAutoToolChoice: true }),
+        extra: expect.objectContaining({ forceAutoToolChoice: nextValue }),
       }),
     );
   });

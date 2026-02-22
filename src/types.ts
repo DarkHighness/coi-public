@@ -1132,10 +1132,13 @@ export interface AISettings {
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
     outlineMaxToolCalls?: number; // Maximum total tool calls for outline loops (default: 36)
     outlineMaxAgenticRounds?: number; // Maximum rounds for outline loops (default: 32)
+    visualMaxToolCalls?: number; // Maximum total tool calls for visual loops (default: 24)
+    visualMaxAgenticRounds?: number; // Maximum rounds for visual loops (default: 3)
     turnRetryLimit?: number; // Retry limit for normal turn loops (default: 3)
     outlinePhaseRetryLimit?: number; // Retry limit for each outline phase (default: 3)
     cleanupRetryLimit?: number; // Retry limit for cleanup loops (default: 5)
     summaryRetryLimit?: number; // Retry limit for summary/compact/query loops (default: 5)
+    visualRetryLimit?: number; // Retry limit for visual loops (default: 3)
     /**
      * Narrative style preset. Applies a concise, model-robust style override on top of theme defaults.
      * If customContext includes <narrative_style>, that takes priority.

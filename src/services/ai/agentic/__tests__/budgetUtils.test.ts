@@ -14,11 +14,22 @@ describe("budgetUtils", () => {
     const summaryDefaults = createBudgetState({ extra: {} } as any, {
       loopType: "summary",
     });
+    const visualDefaults = createBudgetState({ extra: {} } as any, {
+      loopType: "visual",
+    });
 
     expect(summaryDefaults).toMatchObject({
       toolCallsMax: 90,
       retriesMax: 5,
       loopIterationsMax: 25,
+      toolCallsUsed: 0,
+      retriesUsed: 0,
+      loopIterationsUsed: 0,
+    });
+    expect(visualDefaults).toMatchObject({
+      toolCallsMax: 24,
+      retriesMax: 3,
+      loopIterationsMax: 3,
       toolCallsUsed: 0,
       retriesUsed: 0,
       loopIterationsUsed: 0,
@@ -39,6 +50,23 @@ describe("budgetUtils", () => {
       toolCallsMax: 7,
       retriesMax: 2,
       loopIterationsMax: 5,
+    });
+
+    const visualOverrides = createBudgetState(
+      {
+        extra: {
+          visualMaxToolCalls: 11,
+          visualMaxAgenticRounds: 4,
+          visualRetryLimit: 1,
+        },
+      } as any,
+      { loopType: "visual" },
+    );
+
+    expect(visualOverrides).toMatchObject({
+      toolCallsMax: 11,
+      retriesMax: 1,
+      loopIterationsMax: 4,
     });
   });
 

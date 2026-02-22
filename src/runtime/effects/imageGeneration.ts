@@ -9,12 +9,25 @@ import { saveImage } from "../../utils/imageStorage";
 import type { AISettings, GameState, StorySegment } from "../../types";
 import { generateSceneImage } from "../../services/aiService";
 
+export type ImageGenerationIssueCode =
+  | "missing_prompt"
+  | "timeout"
+  | "empty_result"
+  | "generation_error";
+
+export interface ImageGenerationIssue {
+  code: ImageGenerationIssueCode;
+  nodeId: string;
+  error?: string;
+}
+
 interface UseImageGenerationQueueParams {
   aiSettings: AISettings;
   currentSlotId: string | null;
   gameStateRef: MutableRefObject<GameState>;
   setGameState: Dispatch<SetStateAction<GameState>>;
   triggerSave: () => void;
+  onGenerationIssue?: (issue: ImageGenerationIssue) => void;
 }
 
 export function useImageGenerationQueue({
@@ -23,6 +36,7 @@ export function useImageGenerationQueue({
   gameStateRef,
   setGameState,
   triggerSave,
+  onGenerationIssue,
 }: UseImageGenerationQueueParams) {
   const [imageQueue, setImageQueue] = useState<string[]>([]);
   const [failedImageNodes, setFailedImageNodes] = useState<Set<string>>(
@@ -62,11 +76,17 @@ export function useImageGenerationQueue({
         imageQueue.length - 1,
       );
 
+      let timedOut = false;
       const imageTimeout = setTimeout(
         () => {
           setGameState((prev) => {
             if (prev.isImageGenerating && prev.generatingNodeId === nodeId) {
               console.warn("Image generation timeout for node:", nodeId);
+              timedOut = true;
+              onGenerationIssue?.({
+                code: "timeout",
+                nodeId,
+              });
               return {
                 ...prev,
                 isImageGenerating: false,
@@ -162,6 +182,12 @@ export function useImageGenerationQueue({
           triggerSave();
         } else {
           console.warn("Image generation returned empty URL for node:", nodeId);
+          if (!timedOut) {
+            onGenerationIssue?.({
+              code: "empty_result",
+              nodeId,
+            });
+          }
           setGameState((prev) => ({
             ...prev,
             isImageGenerating: false,
@@ -194,6 +220,13 @@ export function useImageGenerationQueue({
           "Error:",
           e,
         );
+        if (!timedOut) {
+          onGenerationIssue?.({
+            code: "generation_error",
+            nodeId,
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
         setGameState((prev) => ({
           ...prev,
           isImageGenerating: false,
@@ -215,6 +248,7 @@ export function useImageGenerationQueue({
     triggerSave,
     setGameState,
     gameStateRef,
+    onGenerationIssue,
   ]);
 
   const generateImageForNode = async (
@@ -228,6 +262,10 @@ export function useImageGenerationQueue({
         "Cannot generate image: missing node or imagePrompt for nodeId:",
         nodeId,
       );
+      onGenerationIssue?.({
+        code: "missing_prompt",
+        nodeId,
+      });
       return;
     }
 

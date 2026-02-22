@@ -140,4 +140,42 @@ describe("runVisualLoop", () => {
       totalIterations: 3,
     });
   });
+
+  it("respects visual loop budget overrides from settings", async () => {
+    mockedGetProviderConfig.mockReturnValue({
+      instance: { id: "provider-1", protocol: "openai" },
+      modelId: "model-1",
+    } as any);
+
+    mockedCallWithAgenticRetry.mockResolvedValue({
+      result: { functionCalls: [] },
+      usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+      raw: { raw: true },
+    } as any);
+
+    const onProgress = vi.fn();
+
+    await runVisualLoop({
+      gameState: { forkId: 2 } as any,
+      segment: { id: 100, text: "Fog rolls in" } as any,
+      vfsSession: {} as any,
+      settings: {
+        extra: {
+          visualMaxAgenticRounds: 1,
+          visualMaxToolCalls: 8,
+          visualRetryLimit: 1,
+        },
+      } as any,
+      target: "image_prompt",
+      language: "en",
+      onProgress,
+    });
+
+    expect(mockedCallWithAgenticRetry).toHaveBeenCalledTimes(1);
+    expect(onProgress).toHaveBeenCalledWith({
+      status: "visual.analyzingStoryContext",
+      iteration: 1,
+      totalIterations: 1,
+    });
+  });
 });

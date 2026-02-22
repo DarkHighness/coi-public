@@ -37,6 +37,7 @@ const createDomainMutationActionsMock = vi.hoisted(() => vi.fn());
 const deriveHistoryMock = vi.hoisted(() => vi.fn());
 const getThemeKeyForAtmosphereMock = vi.hoisted(() => vi.fn());
 const deriveThemeVarsMock = vi.hoisted(() => vi.fn());
+const showToastSpy = vi.hoisted(() => vi.fn());
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => routerState.navigate,
@@ -221,7 +222,7 @@ describe("useRuntimeEngine", () => {
       toggleThemeMode: vi.fn(),
     });
 
-    useToastMock.mockReturnValue({ showToast: vi.fn() });
+    useToastMock.mockReturnValue({ showToast: showToastSpy });
 
     useGameActionMock.mockImplementation((params: any) => ({
       handleAction: vi.fn(),
@@ -438,6 +439,43 @@ describe("useRuntimeEngine", () => {
     );
     expect(document.documentElement.style.getPropertyValue("--bg-rgb")).toBe(
       "170 187 204",
+    );
+  });
+
+  it("shows localized toasts for image generation issues", () => {
+    mount();
+
+    const queueArgs = useImageGenerationQueueMock.mock.calls[0]?.[0];
+    expect(queueArgs).toBeTruthy();
+
+    queueArgs.onGenerationIssue({ code: "missing_prompt", nodeId: "node-1" });
+    queueArgs.onGenerationIssue({ code: "timeout", nodeId: "node-1" });
+    queueArgs.onGenerationIssue({ code: "empty_result", nodeId: "node-1" });
+    queueArgs.onGenerationIssue({
+      code: "generation_error",
+      nodeId: "node-1",
+      error: "boom",
+    });
+
+    expect(showToastSpy).toHaveBeenNthCalledWith(
+      1,
+      "game.errors.imagePromptMissing",
+      "error",
+    );
+    expect(showToastSpy).toHaveBeenNthCalledWith(
+      2,
+      "game.errors.imageGenerationTimedOut",
+      "error",
+    );
+    expect(showToastSpy).toHaveBeenNthCalledWith(
+      3,
+      "game.errors.imageGenerationEmpty",
+      "error",
+    );
+    expect(showToastSpy).toHaveBeenNthCalledWith(
+      4,
+      "game.errors.imageGenerationFailed",
+      "error",
     );
   });
 });

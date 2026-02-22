@@ -39,7 +39,7 @@ interface StoryFeedProps {
   layout: FeedLayout;
   setLayout: (layout: FeedLayout) => void;
   onAnimate: (imageUrl: string) => void;
-  onGenerateImage: (id: string) => void;
+  onGenerateImage: (id: string, nodeOverride?: StorySegment) => void;
   onRetry: () => void;
   disableImages?: boolean;
   onFork?: (id: string) => void;
@@ -841,7 +841,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
         // If prompt already exists, just trigger image generation directly without modal
         if (segment.imagePrompt && segment.imagePrompt.trim().length > 0) {
-          onGenerateImage(id);
+          onGenerateImage(id, segment);
           return;
         }
 
@@ -870,7 +870,10 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
             );
 
             // Step 2: Trigger image generation using the prompt
-            onGenerateImage(id);
+            onGenerateImage(id, {
+              ...segment,
+              imagePrompt: result.imagePrompt,
+            });
           }
         } catch (error) {
           console.error("Failed to generate image:", error);

@@ -9,7 +9,12 @@
 
 import { AISettings } from "../../../types";
 
-export type AgenticLoopType = "turn" | "cleanup" | "summary" | "outline";
+export type AgenticLoopType =
+  | "turn"
+  | "cleanup"
+  | "summary"
+  | "outline"
+  | "visual";
 
 type BudgetDefaults = {
   maxToolCalls: number;
@@ -23,6 +28,7 @@ const DEFAULT_BUDGETS: Record<AgenticLoopType, BudgetDefaults> = {
   cleanup: { maxToolCalls: 90, maxRetries: 5, maxAgenticRounds: 25 },
   summary: { maxToolCalls: 90, maxRetries: 5, maxAgenticRounds: 25 },
   outline: { maxToolCalls: 36, maxRetries: 3, maxAgenticRounds: 32 },
+  visual: { maxToolCalls: 24, maxRetries: 3, maxAgenticRounds: 3 },
 };
 
 function resolveRetryLimit(
@@ -41,6 +47,9 @@ function resolveRetryLimit(
   }
   if (loopType === "summary") {
     return extra.summaryRetryLimit ?? defaults.maxRetries;
+  }
+  if (loopType === "visual") {
+    return extra.visualRetryLimit ?? defaults.maxRetries;
   }
   return extra.outlinePhaseRetryLimit ?? defaults.maxRetries;
 }
@@ -67,15 +76,23 @@ export function createBudgetState(
     loopType === "outline" ? extra?.outlineMaxToolCalls : undefined;
   const outlineRoundsOverride =
     loopType === "outline" ? extra?.outlineMaxAgenticRounds : undefined;
+  const visualToolCallsOverride =
+    loopType === "visual" ? extra?.visualMaxToolCalls : undefined;
+  const visualRoundsOverride =
+    loopType === "visual" ? extra?.visualMaxAgenticRounds : undefined;
   return {
     toolCallsUsed: 0,
     toolCallsMax:
-      outlineToolCallsOverride ?? extra?.maxToolCalls ?? defaults.maxToolCalls,
+      outlineToolCallsOverride ??
+      visualToolCallsOverride ??
+      extra?.maxToolCalls ??
+      defaults.maxToolCalls,
     retriesUsed: 0,
     retriesMax: resolveRetryLimit(settings, loopType, defaults),
     loopIterationsUsed: 0,
     loopIterationsMax:
       outlineRoundsOverride ??
+      visualRoundsOverride ??
       extra?.maxAgenticRounds ??
       defaults.maxAgenticRounds,
   };

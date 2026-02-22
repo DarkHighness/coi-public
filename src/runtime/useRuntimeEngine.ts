@@ -14,7 +14,10 @@ import { useGameAction } from "../hooks/useGameAction";
 import { useToast } from "../contexts/ToastContext";
 import { createDomainMutationActions } from "./effects/domainMutations";
 import { createCommandActions } from "./effects/commandActions";
-import { useImageGenerationQueue } from "./effects/imageGeneration";
+import {
+  useImageGenerationQueue,
+  type ImageGenerationIssue,
+} from "./effects/imageGeneration";
 import { createDomainUiActions } from "./effects/domainUiActions";
 import { createLifecycleActions } from "./effects/lifecycleOrchestration";
 
@@ -264,12 +267,28 @@ export const useRuntimeEngine = () => {
     [commandActions],
   );
 
+  const handleImageGenerationIssue = useCallback(
+    (issue: ImageGenerationIssue) => {
+      let messageKey = "game.errors.imageGenerationFailed";
+      if (issue.code === "missing_prompt") {
+        messageKey = "game.errors.imagePromptMissing";
+      } else if (issue.code === "timeout") {
+        messageKey = "game.errors.imageGenerationTimedOut";
+      } else if (issue.code === "empty_result") {
+        messageKey = "game.errors.imageGenerationEmpty";
+      }
+      showToast(t(messageKey), "error");
+    },
+    [showToast, t],
+  );
+
   const { failedImageNodes, generateImageForNode } = useImageGenerationQueue({
     aiSettings,
     currentSlotId,
     gameStateRef,
     setGameState,
     triggerSave,
+    onGenerationIssue: handleImageGenerationIssue,
   });
 
   const domainUiActions = useMemo(
