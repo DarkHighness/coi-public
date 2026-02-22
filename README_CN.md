@@ -20,24 +20,56 @@
 ## 视觉预览
 
 <p align="center">
-  <img alt="Chronicles of Infinity 游戏实机预览" src="assets/game.webp" width="960" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/game_dark.webp" />
+    <source media="(prefers-color-scheme: light)" srcset="assets/game_light.webp" />
+    <img alt="Chronicles of Infinity 游戏实机预览" src="assets/game.webp" width="960" />
+  </picture>
 </p>
 
 <p align="center">
-  <sub>主游玩界面</sub>
+  <sub>主游玩界面（自动适配浅色/深色）</sub>
 </p>
 
 <table align="center">
   <tr>
     <td align="center" width="50%">
-      <img alt="Chronicles of Infinity 开始界面" src="assets/start_screen.webp" width="100%" />
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/start_screen_dark.webp" />
+        <source media="(prefers-color-scheme: light)" srcset="assets/start_screen_light.webp" />
+        <img alt="Chronicles of Infinity 开始界面" src="assets/start_screen.webp" width="100%" />
+      </picture>
       <br />
-      <sub>开始界面</sub>
+      <sub>开始界面（浅色/深色）</sub>
     </td>
     <td align="center" width="50%">
       <img alt="Chronicles of Infinity 题材选择界面" src="assets/theme.webp" width="100%" />
       <br />
       <sub>题材选择</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <sub>更多游戏示例</sub>
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center" width="33.33%">
+      <img alt="Chronicles of Infinity 规划界面" src="assets/plan.webp" width="100%" />
+      <br />
+      <sub>规划界面</sub>
+    </td>
+    <td align="center" width="33.33%">
+      <img alt="Chronicles of Infinity 技能界面" src="assets/skill.webp" width="100%" />
+      <br />
+      <sub>技能界面</sub>
+    </td>
+    <td align="center" width="33.33%">
+      <img alt="Chronicles of Infinity 灵魂界面" src="assets/soul.webp" width="100%" />
+      <br />
+      <sub>灵魂界面</sub>
     </td>
   </tr>
 </table>

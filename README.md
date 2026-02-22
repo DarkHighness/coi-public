@@ -20,24 +20,56 @@
 ## Visual Preview
 
 <p align="center">
-  <img alt="Chronicles of Infinity gameplay preview" src="assets/game.webp" width="960" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/game_dark.webp" />
+    <source media="(prefers-color-scheme: light)" srcset="assets/game_light.webp" />
+    <img alt="Chronicles of Infinity gameplay preview" src="assets/game.webp" width="960" />
+  </picture>
 </p>
 
 <p align="center">
-  <sub>Main gameplay view</sub>
+  <sub>Main gameplay view (auto adapts to light/dark)</sub>
 </p>
 
 <table align="center">
   <tr>
     <td align="center" width="50%">
-      <img alt="Chronicles of Infinity start screen" src="assets/start_screen.webp" width="100%" />
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/start_screen_dark.webp" />
+        <source media="(prefers-color-scheme: light)" srcset="assets/start_screen_light.webp" />
+        <img alt="Chronicles of Infinity start screen" src="assets/start_screen.webp" width="100%" />
+      </picture>
       <br />
-      <sub>Start Screen</sub>
+      <sub>Start Screen (light/dark)</sub>
     </td>
     <td align="center" width="50%">
       <img alt="Chronicles of Infinity theme selection" src="assets/theme.webp" width="100%" />
       <br />
       <sub>Theme Selection</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <sub>More gameplay samples</sub>
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center" width="33.33%">
+      <img alt="Chronicles of Infinity plan interface" src="assets/plan.webp" width="100%" />
+      <br />
+      <sub>Plan Interface</sub>
+    </td>
+    <td align="center" width="33.33%">
+      <img alt="Chronicles of Infinity skill interface" src="assets/skill.webp" width="100%" />
+      <br />
+      <sub>Skill Interface</sub>
+    </td>
+    <td align="center" width="33.33%">
+      <img alt="Chronicles of Infinity soul interface" src="assets/soul.webp" width="100%" />
+      <br />
+      <sub>Soul Interface</sub>
     </td>
   </tr>
 </table>
