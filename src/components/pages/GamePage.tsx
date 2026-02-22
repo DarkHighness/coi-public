@@ -29,6 +29,7 @@ import { useSettings } from "../../hooks/useSettings";
 import { useTutorialContextOptional } from "../../contexts/TutorialContext";
 import { createGamePageTutorialFlow } from "../tutorial/tutorialFlows";
 import { vfsElevationTokenManager } from "../../services/vfs/core/elevation";
+import { patchTurnMediaForNode } from "../../services/vfs/turnMedia";
 
 // Lazy Load Components
 const MagicMirror = React.lazy(() =>
@@ -435,6 +436,17 @@ export const GamePage: React.FC<GamePageProps> = ({
   };
 
   const handleImageUpload = (nodeId: string, imageId: string) => {
+    const patched = patchTurnMediaForNode(vfsSession, nodeId, {
+      imageId,
+      imageUrl: null,
+    });
+    if (!patched) {
+      console.warn("[GamePage] Failed to persist uploaded image to VFS", {
+        nodeId,
+        imageId,
+      });
+    }
+
     updateNodeMeta(
       nodeId,
       { imageId, imageUrl: undefined },
@@ -447,6 +459,16 @@ export const GamePage: React.FC<GamePageProps> = ({
   };
 
   const handleImageDelete = (nodeId: string) => {
+    const patched = patchTurnMediaForNode(vfsSession, nodeId, {
+      imageId: null,
+      imageUrl: null,
+    });
+    if (!patched) {
+      console.warn("[GamePage] Failed to persist image deletion to VFS", {
+        nodeId,
+      });
+    }
+
     updateNodeMeta(
       nodeId,
       { imageId: undefined, imageUrl: undefined },

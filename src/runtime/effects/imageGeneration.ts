@@ -8,7 +8,10 @@ import {
 import { saveImage } from "../../utils/imageStorage";
 import type { AISettings, GameState, StorySegment } from "../../types";
 import { generateSceneImage } from "../../services/aiService";
-import { readTurnFile, writeTurnFile } from "../../services/vfs/conversation";
+import {
+  patchTurnMediaForNode,
+  type TurnMediaPatch,
+} from "../../services/vfs/turnMedia";
 import type { VfsSession } from "../../services/vfs/vfsSession";
 
 export type ImageGenerationIssueCode =
@@ -37,79 +40,6 @@ interface QueuedImageGeneration {
   nodeId: string;
   imagePrompt?: string;
 }
-
-type TurnMediaPatch = {
-  imagePrompt?: string | null;
-  imageId?: string | null;
-  imageUrl?: string | null;
-  veoScript?: string | null;
-};
-
-const parseTurnFromModelNodeId = (
-  nodeId: string,
-): { forkId: number; turnNumber: number } | null => {
-  const match = /^model-fork-(\d+)\/turn-(\d+)$/.exec(nodeId);
-  if (!match) return null;
-
-  const forkId = Number(match[1]);
-  const turnNumber = Number(match[2]);
-  if (!Number.isFinite(forkId) || !Number.isFinite(turnNumber)) {
-    return null;
-  }
-
-  return { forkId, turnNumber };
-};
-
-const patchTurnMedia = (
-  vfsSession: VfsSession,
-  nodeId: string,
-  patch: TurnMediaPatch,
-): void => {
-  const parsed = parseTurnFromModelNodeId(nodeId);
-  if (!parsed) return;
-
-  const currentTurn = readTurnFile(
-    vfsSession.snapshot(),
-    parsed.forkId,
-    parsed.turnNumber,
-  );
-  if (!currentTurn) return;
-
-  const nextMedia: Record<string, unknown> =
-    currentTurn.media &&
-    typeof currentTurn.media === "object" &&
-    !Array.isArray(currentTurn.media)
-      ? { ...currentTurn.media }
-      : {};
-
-  const keys: Array<keyof TurnMediaPatch> = [
-    "imagePrompt",
-    "imageId",
-    "imageUrl",
-    "veoScript",
-  ];
-
-  for (const key of keys) {
-    if (!(key in patch)) continue;
-    const value = patch[key];
-    if (typeof value === "string") {
-      nextMedia[key] = value;
-    } else {
-      delete nextMedia[key];
-    }
-  }
-
-  const nextTurn = {
-    ...currentTurn,
-    ...(Object.keys(nextMedia).length > 0 ? { media: nextMedia } : {}),
-  };
-
-  if (Object.keys(nextMedia).length === 0) {
-    delete nextTurn.media;
-  }
-
-  writeTurnFile(vfsSession, parsed.forkId, parsed.turnNumber, nextTurn);
-};
 
 export function useImageGenerationQueue({
   aiSettings,
@@ -158,7 +88,7 @@ export function useImageGenerationQueue({
         return;
       }
 
-      patchTurnMedia(vfsSession, nodeId, {
+      patchTurnMediaForNode(vfsSession, nodeId, {
         imagePrompt: effectivePrompt,
       });
 
@@ -257,7 +187,7 @@ export function useImageGenerationQueue({
               },
             },
           }));
-          patchTurnMedia(vfsSession, nodeId, {
+          patchTurnMediaForNode(vfsSession, nodeId, {
             imagePrompt: effectivePrompt,
             imageId,
             imageUrl: null,
@@ -290,7 +220,7 @@ export function useImageGenerationQueue({
               [nodeId]: { ...prev.nodes[nodeId], imageUrl: url },
             },
           }));
-          patchTurnMedia(vfsSession, nodeId, {
+          patchTurnMediaForNode(vfsSession, nodeId, {
             imagePrompt: effectivePrompt,
             imageId: null,
             imageUrl: url,
