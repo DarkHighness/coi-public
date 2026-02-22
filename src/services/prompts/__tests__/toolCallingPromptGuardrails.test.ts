@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { getTurnRuntimeFloor } from "../runtimeFloor";
+import { normalTurnInstruction } from "../atoms/core";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,5 +73,20 @@ describe("tool-calling prompt guardrails", () => {
     }
 
     expect(findings).toEqual([]);
+  });
+
+  it("keeps anti-stringify and gate messaging aligned with runtime enforcement", () => {
+    const runtimeFloor = getTurnRuntimeFloor();
+    const turnInstruction = normalTurnInstruction({
+      finishToolName: "vfs_finish_turn",
+    });
+
+    expect(runtimeFloor).toContain("Do NOT stringify object/array fields");
+    expect(runtimeFloor).toContain(
+      "does NOT permanently bypass epoch read-before-write gates",
+    );
+    expect(turnInstruction).toContain("TOOL ARG SHAPE (STRICT)");
+    expect(turnInstruction).toContain("vfs_vm.scripts");
+    expect(turnInstruction).toContain("vfs_finish_turn.assistant");
   });
 });

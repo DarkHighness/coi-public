@@ -1,0 +1,33 @@
+{
+  "excerpt": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "vfs_vm-1771730332871088177-111",
+          "name": "vfs_vm",
+          "input": {
+            "scripts": "[\"async function main(ctx) { return { success: true }; }\"]"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "vfs_vm-1771730332871088177-111",
+          "content": "{\"success\":false,\"code\":\"INVALID_PARAMETERS\",\"error\":\"[ERROR: INVALID_PARAMETERS] The arguments you provided to \\\"vfs_vm\\\" were invalid.\\nTop issues:\\n- scripts: Expected array, received string\"}"
+        }
+      ]
+    }
+  ],
+  "expectedNormalizedToolCall": {
+    "name": "vfs_vm",
+    "args": {
+      "scripts": ["async function main(ctx) { return { success: true }; }"]
+    }
+  }
+}

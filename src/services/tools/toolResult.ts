@@ -5,6 +5,7 @@
  * Keep it small and generic so tool handlers (including VFS) don't depend on
  * legacy domain-specific modules.
  */
+import type { ToolArgCoercionRecord } from "../ai/agentic/toolArgs/types";
 
 export interface ToolCallSuccess<T = unknown> {
   success: true;
@@ -48,6 +49,7 @@ export interface ToolErrorDetails {
   category?: ToolErrorCategory;
   tool?: string;
   issues?: ToolErrorIssue[];
+  coercions?: ToolArgCoercionRecord[];
   recovery?: string[];
   refs?: string[];
   batch?: ToolErrorBatch;
@@ -126,6 +128,37 @@ const dedupeIssues = (
   return next;
 };
 
+const dedupeCoercions = (
+  coercions: Array<ToolArgCoercionRecord | undefined>,
+): ToolArgCoercionRecord[] => {
+  const seen = new Set<string>();
+  const next: ToolArgCoercionRecord[] = [];
+  for (const coercion of coercions) {
+    if (!coercion || typeof coercion.action !== "string") continue;
+    const action = coercion.action.trim();
+    const path =
+      typeof coercion.path === "string" ? coercion.path.trim() : "(root)";
+    if (!action || !path) continue;
+    const key = JSON.stringify({
+      path,
+      issueCode: coercion.issueCode ?? "",
+      action,
+      success: coercion.success === true,
+      beforeType: coercion.beforeType ?? "",
+      afterType: coercion.afterType ?? "",
+      note: coercion.note ?? "",
+    });
+    if (seen.has(key)) continue;
+    seen.add(key);
+    next.push({
+      ...coercion,
+      path,
+      action,
+    });
+  }
+  return next;
+};
+
 export const inferErrorCategoryFromCode = (
   code: ToolCallError["code"],
 ): ToolErrorCategory => {
@@ -156,6 +189,10 @@ const normalizeDetails = (
   if (Array.isArray(details.issues) && details.issues.length > 0) {
     const issues = dedupeIssues(details.issues);
     if (issues.length > 0) normalized.issues = issues;
+  }
+  if (Array.isArray(details.coercions) && details.coercions.length > 0) {
+    const coercions = dedupeCoercions(details.coercions);
+    if (coercions.length > 0) normalized.coercions = coercions;
   }
   if (Array.isArray(details.recovery) && details.recovery.length > 0) {
     const recovery = uniqueStrings(details.recovery);

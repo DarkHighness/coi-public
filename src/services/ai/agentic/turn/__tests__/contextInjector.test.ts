@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  injectCommandSkillStatus,
   injectBudgetStatus,
   injectColdStartRequiredReads,
   injectNoToolCallError,
@@ -280,6 +281,28 @@ describe("contextInjector", () => {
     expect(getText(history[0])).toContain("EXTERNAL_FILE_CHANGES");
     expect(getText(history[0])).toContain("current/world/notes.md");
     expect(getText(history[0])).toContain("re-read it first");
+  });
+
+  it("clarifies COMMAND SKILLS READY does not bypass preset/read-before-write gates", () => {
+    const history: any[] = [];
+
+    injectCommandSkillStatus(
+      history,
+      [
+        "skills/commands/runtime/SKILL.md",
+        "skills/commands/runtime/turn/SKILL.md",
+      ],
+      [
+        "skills/commands/runtime/SKILL.md",
+        "skills/commands/runtime/turn/SKILL.md",
+      ],
+    );
+
+    expect(history).toHaveLength(1);
+    const text = getText(history[0]);
+    expect(text).toContain("COMMAND SKILLS READY");
+    expect(text).toContain("only satisfies the command-skill gate");
+    expect(text).toContain("preset/read-before-write gates");
   });
 
   it("keeps ready consequences injection as no-op", () => {

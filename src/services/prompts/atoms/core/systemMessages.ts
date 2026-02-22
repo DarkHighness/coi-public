@@ -63,6 +63,9 @@ This is a **GM COMMAND**. The user action is already prefixed with **[SUDO]**. T
 **TOOLS**:
 ${capabilityText}
 - \`vfs_vm\` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining \`async function main(ctx)\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers inside. Forbidden: \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`/\`VFS.*\`.
+- **TOOL ARG SHAPE (STRICT)**: Never stringify nested JSON fields.
+- \`vfs_vm.scripts\` MUST be an array value (for example \`["async function main(ctx){...}"]\`), not a quoted JSON string.
+- \`vfs_finish_turn.assistant\` MUST be an object value, not a quoted JSON string.
 
 **SKILLS**:
 - **PREFLIGHT**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
@@ -106,6 +109,12 @@ ${
   isPlayerRateToolset
     ? "- `vfs_vm` is not available in `[Player Rate]` toolset."
     : "- `vfs_vm` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining `async function main(ctx)`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers inside. Forbidden: `import`/`eval`/`Function`/`globalThis`/`window`/`VFS.*`. Gate: skill-read gates are checked BEFORE vm runs — satisfy them with top-level reads first."
+}
+- **TOOL ARG SHAPE (STRICT)**: Never stringify nested JSON fields.
+${
+  isPlayerRateToolset
+    ? '- `vfs_end_turn` args must be the object `{}` (not the string `"{}"`).'
+    : '- `vfs_vm.scripts` MUST be an array value (for example `["async function main(ctx){...}"]`), not a quoted JSON string.\n- `vfs_finish_turn.assistant` MUST be an object value, not a quoted JSON string.'
 }
 
 **SKILLS**:
@@ -179,6 +188,9 @@ You are in CLEANUP MODE (VFS-only).
 **TOOLS**:
 ${capabilityText}
 - \`vfs_vm\` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining \`async function main(ctx)\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers inside. Forbidden: \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`/\`VFS.*\`.
+- **TOOL ARG SHAPE (STRICT)**: Never stringify nested JSON fields.
+- \`vfs_vm.scripts\` MUST be an array value (for example \`["async function main(ctx){...}"]\`), not a quoted JSON string.
+- \`vfs_finish_turn.assistant\` MUST be an object value, not a quoted JSON string.
 
 **SKILLS**:
 - **PREFLIGHT (ENFORCED)**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.

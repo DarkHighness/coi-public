@@ -8,6 +8,7 @@
 const TURN_RUNTIME_FLOOR = `<runtime_floor>
 You MUST follow these runtime protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
+- Tool args must be structured JSON values. Do NOT stringify object/array fields (for example, \`scripts\` must be an array, not a JSON string).
 - VFS primer:
   - Paths: \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
   - Read tools: \`vfs_read_markdown\` (prefer section selectors), \`vfs_read_chars\`, \`vfs_read_lines\` (use for large files with bounded ranges), \`vfs_read_json\` (requires \`pointers\`), \`vfs_ls\` (returns stats/hints), \`vfs_schema\`, \`vfs_search\`.
@@ -15,7 +16,7 @@ You MUST follow these runtime protocol constraints:
   - \`vfs_vm\`: multi-step batch orchestrator — see tool description for usage rules. Skill-read gates are checked BEFORE vm execution; satisfy them with top-level read calls first.
   - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\` + \`SCHEMA.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` → world turn, \`[Player Rate]\` → preference-ingestion only (NO plot progression), \`[SUDO]\` → elevated update.
-  - Workspace memory docs (\`workspace/IDENTITY.md\`, \`workspace/USER.md\`, \`workspace/SOUL.md\`, \`workspace/PLAN.md\`) are injected as leading user messages and pre-marked as read — you may append/write to SOUL/USER/PLAN without an explicit read call.
+  - Workspace memory docs (\`workspace/IDENTITY.md\`, \`workspace/USER.md\`, \`workspace/SOUL.md\`, \`workspace/PLAN.md\`) may be injected as leading user messages for context bootstrap. This does NOT permanently bypass epoch read-before-write gates; if a gate or recovery step asks for explicit reads in the current epoch, perform those read calls first.
   - SOUL/USER are writable AI self-notes; IDENTITY is read-only for AI; PLAN is save-scoped guidance.
   - In \`[Player Rate]\`: only SOUL/USER writes are allowed. Never treat feedback as \`sudo\`/\`forceUpdate\`/\`godMode\`.
   - \`**/notes.md\` files: optional AI self-notes, not mandatory pre-read anchors.
@@ -41,6 +42,7 @@ You MUST follow these runtime protocol constraints:
 const OUTLINE_RUNTIME_FLOOR = `<runtime_floor>
 You MUST follow these outline protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
+- Tool args must be structured JSON values. Do NOT stringify object/array fields in tool arguments.
 - VFS primer:
   - In OUTLINE MODE, use read-only tools (\`vfs_read_markdown\`/\`vfs_read_chars\`/\`vfs_read_lines\`/\`vfs_read_json\`, \`vfs_schema\`, \`vfs_ls\`, \`vfs_search\`) for schema/contract checks before submit.
   - Prefer \`vfs_read_markdown\` with section selectors; for large files, use bounded \`vfs_read_lines\`.

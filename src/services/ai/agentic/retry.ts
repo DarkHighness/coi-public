@@ -23,6 +23,12 @@ import {
   classifyAgenticError,
 } from "./errorPolicy";
 import type { ZodError } from "zod";
+import {
+  formatToolArgCoercionSummary,
+  normalizeToolArgs,
+} from "./toolArgs/normalize";
+import type { ToolArgNormalizationMode } from "./toolArgs/types";
+import { traceToolArgShape } from "./debug/toolArgShapeTrace";
 
 interface PromptTokenReferenceRecord {
   totalTokens: number;
@@ -92,6 +98,17 @@ const MAX_VALIDATION_ISSUES_IN_ERROR = 4;
 const LONG_REQUEST_STREAMING_REQUIRED_PATTERN =
   /streaming is required for operations that may take longer than 10 minutes|long-requests/i;
 const INTERNAL_STREAM_NOOP_CHUNK = () => {};
+const DEFAULT_TOOL_ARG_NORMALIZATION_MODE: ToolArgNormalizationMode = "safe";
+
+const resolveToolArgNormalizationMode = (
+  rawValue: string | undefined,
+): ToolArgNormalizationMode => {
+  const normalized = rawValue?.trim().toLowerCase();
+  return normalized === "off" ? "off" : DEFAULT_TOOL_ARG_NORMALIZATION_MODE;
+};
+
+const isToolArgTraceEnabled = (rawValue: string | undefined): boolean =>
+  rawValue === "1";
 
 const requiresStreamingTransportForLongRequest = (message: string): boolean =>
   LONG_REQUEST_STREAMING_REQUIRED_PATTERN.test(message);
@@ -149,6 +166,7 @@ const buildInvalidParametersMessage = (params: {
   toolSchemaRef: string;
   includeReadHint: boolean;
   repeatedGuidance: boolean;
+  normalizationSummary?: string;
 }): string => {
   const {
     toolName,
@@ -158,6 +176,7 @@ const buildInvalidParametersMessage = (params: {
     toolSchemaRef,
     includeReadHint,
     repeatedGuidance,
+    normalizationSummary,
   } = params;
   const issueSummary = summarizeZodIssues(validationError);
   const hints: string[] = [
@@ -188,6 +207,11 @@ const buildInvalidParametersMessage = (params: {
   return (
     `[ERROR: INVALID_PARAMETERS] The arguments you provided to "${toolName}" were invalid.\n` +
     `Top issues:\n${issueSummary}\n` +
+    `${
+      normalizationSummary
+        ? `Normalization attempts:\n${normalizationSummary}\n`
+        : ""
+    }` +
     `${hints.join("\n")}`
   );
 };
@@ -553,6 +577,12 @@ export async function callWithAgenticRetry(
     promptTokenBudgetContext,
     onRetry,
   } = options;
+  const toolArgNormalizationMode = resolveToolArgNormalizationMode(
+    process.env.AGENTIC_ARG_NORMALIZATION_MODE,
+  );
+  const toolArgTraceEnabled = isToolArgTraceEnabled(
+    process.env.AGENTIC_TOOL_ARG_TRACE,
+  );
 
   let attempt = 0;
   const initialHistoryLength = history.length;
@@ -867,12 +897,48 @@ export async function callWithAgenticRetry(
           (toolCall.name === requiredToolName ? rootSchema : null);
 
         if (schema) {
+          traceToolArgShape({
+            enabled: toolArgTraceEnabled,
+            stage: "provider_args",
+            toolName: toolCall.name,
+            attempt: attempt + 1,
+            args: toolCall.args,
+          });
+
+          const normalizationResult = normalizeToolArgs({
+            schema,
+            args: toolCall.args,
+            mode: toolArgNormalizationMode,
+          });
+
+          if (normalizationResult.changed) {
+            toolCall.args = normalizationResult.args as JsonObject;
+          }
+
+          traceToolArgShape({
+            enabled: toolArgTraceEnabled,
+            stage: "normalized_args",
+            toolName: toolCall.name,
+            attempt: attempt + 1,
+            args: toolCall.args,
+            coercions: normalizationResult.coercions,
+          });
+
           const validationResult = schema.safeParse(toolCall.args);
           if (validationResult.success) {
             continue;
           }
 
           if (!validationResult.success) {
+            traceToolArgShape({
+              enabled: toolArgTraceEnabled,
+              stage: "validation_failure",
+              toolName: toolCall.name,
+              attempt: attempt + 1,
+              args: toolCall.args,
+              issues: validationResult.error.issues,
+              coercions: normalizationResult.coercions,
+            });
             console.warn(`[ToolValidation] ${toolCall.name} invalid args`, {
               args: toolCall.args,
               issues: validationResult.error.issues,
@@ -882,6 +948,9 @@ export async function callWithAgenticRetry(
             const toolSchemaRef = `current/refs/tools/${toolCall.name}/SCHEMA.md`;
             const wasGuidanceShown = schemaGuidanceShownByTool.has(
               toolCall.name,
+            );
+            const normalizationSummary = formatToolArgCoercionSummary(
+              normalizationResult.coercions,
             );
 
             if (toolDef && !wasGuidanceShown) {
@@ -896,6 +965,10 @@ export async function callWithAgenticRetry(
               toolSchemaRef,
               includeReadHint: Boolean(toolDef && !wasGuidanceShown),
               repeatedGuidance: Boolean(toolDef && wasGuidanceShown),
+              normalizationSummary:
+                normalizationSummary.length > 0
+                  ? normalizationSummary
+                  : undefined,
             });
             invalidToolCallErrors.set(toolCall.id, {
               name: toolCall.name,

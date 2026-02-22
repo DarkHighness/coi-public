@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { callWithAgenticRetry, createPromptTokenBudgetContext } from "../retry";
@@ -296,6 +297,116 @@ describe("callWithAgenticRetry behavior", () => {
       ).map((call) => call.id),
     ).toEqual(["call_write", "call_commit"]);
     expect(provider.generateChat).toHaveBeenCalledTimes(1);
+  });
+
+  it("normalizes fixture stringified args in the same retry round", async () => {
+    const fixture = JSON.parse(
+      fs.readFileSync(
+        new URL("./fixtures/message.invalid-params.json", import.meta.url),
+        "utf8",
+      ),
+    ) as {
+      excerpt: Array<{
+        content: Array<{ input?: Record<string, unknown> }>;
+      }>;
+      expectedNormalizedToolCall: {
+        name: string;
+        args: Record<string, unknown>;
+      };
+    };
+
+    const provider = createProvider([
+      {
+        result: {
+          functionCalls: [
+            {
+              id: "call_vm",
+              name: fixture.expectedNormalizedToolCall.name,
+              args: fixture.excerpt[0]?.content?.[0]?.input || {},
+            },
+          ],
+        },
+        usage: makeUsage(2, 2),
+        raw: null,
+      },
+    ]);
+
+    const request = {
+      modelId: "model-1",
+      systemInstruction: "system",
+      messages: [],
+      tools: [
+        {
+          name: "vfs_vm",
+          description: "vm",
+          parameters: z
+            .object({
+              scripts: z.array(z.string()).length(1),
+            })
+            .strict(),
+        },
+      ],
+    };
+
+    const result = await callWithAgenticRetry(provider, request as any, [], {
+      maxRetries: 0,
+    });
+
+    const calls = (result.result as { functionCalls?: Array<any> })
+      .functionCalls;
+    expect(result.retries).toBe(0);
+    expect(calls?.[0]?.args).toEqual(fixture.expectedNormalizedToolCall.args);
+    expect(provider.generateChat).toHaveBeenCalledTimes(1);
+  });
+
+  it("includes normalization attempt summary when INVALID_PARAMETERS is not repairable", async () => {
+    const provider = createProvider([
+      {
+        result: {
+          functionCalls: [
+            {
+              id: "call_vm_invalid",
+              name: "vfs_vm",
+              args: {
+                scripts: "not-json",
+              },
+            },
+          ],
+        },
+        usage: makeUsage(1, 1),
+        raw: null,
+      },
+    ]);
+
+    const request = {
+      modelId: "model-1",
+      systemInstruction: "system",
+      messages: [],
+      tools: [
+        {
+          name: "vfs_vm",
+          description: "vm",
+          parameters: z
+            .object({
+              scripts: z.array(z.string()).min(2),
+            })
+            .strict(),
+        },
+      ],
+    };
+
+    let thrown: Error | null = null;
+    try {
+      await callWithAgenticRetry(provider, request as any, [], {
+        maxRetries: 0,
+      });
+    } catch (error) {
+      thrown = error as Error;
+    }
+
+    expect(thrown).toBeTruthy();
+    expect(thrown?.message).toContain("Normalization attempts:");
+    expect(thrown?.message).toContain("parse_json_string_to_array");
   });
 
   it("marks each invalid tool as INVALID_PARAMETERS in retry feedback", async () => {

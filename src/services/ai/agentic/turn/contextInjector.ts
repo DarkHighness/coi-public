@@ -99,7 +99,7 @@ export function injectCommandSkillStatus(
   if (pending.length === 0) {
     lines.push(
       "[SYSTEM: COMMAND SKILLS READY]",
-      "All required command skills are pre-loaded in context above. Gate satisfied — you may proceed to write tools directly.",
+      "All required command skills are pre-loaded in context above. This only satisfies the command-skill gate; preset/read-before-write gates may still require explicit reads in the current epoch.",
     );
   } else {
     lines.push(
