@@ -32,6 +32,35 @@ vi.mock("../../runtime/context", () => ({
 }));
 
 describe("FactionPanel", () => {
+  it("does not render visible influence as row tag", () => {
+    const influenceText =
+      "Controls court logistics and the entire supply chain.";
+
+    render(
+      React.createElement(FactionPanel, {
+        themeFont: "font-theme",
+        factions: [
+          {
+            id: "fac:gamma",
+            name: "Gamma Court",
+            knownBy: ["char:player"],
+            visible: {
+              agenda: "Stabilize inner palace operations",
+              influence: influenceText,
+              members: [],
+              relations: [],
+            },
+          },
+        ],
+      }),
+    );
+
+    expect(screen.queryByText(influenceText)).toBeNull();
+
+    fireEvent.click(screen.getByText("Gamma Court"));
+    expect(screen.getByText(influenceText)).toBeTruthy();
+  });
+
   it("reveals hidden internal conflict when unlocked", () => {
     render(
       React.createElement(FactionPanel, {

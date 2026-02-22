@@ -23,6 +23,7 @@ interface FactionPanelProps {
     | "character"
     | "actors"
     | "npcs"
+    | "placeholders"
     | "locations"
     | "quests"
     | "knowledge"
@@ -51,6 +52,7 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
       character: {},
       actors: [],
       npcs: [],
+      placeholders: [],
       locations: [],
       quests: [],
       knowledge: [],
@@ -123,11 +125,6 @@ const FactionPanelComponent: React.FC<FactionPanelProps> = ({
                   icon={getValidIcon(faction.icon, "⚔️")}
                   tags={
                     <>
-                      {faction.visible?.influence ? (
-                        <SidebarTag className="text-theme-text-secondary border-theme-divider/70 text-[10px]">
-                          {faction.visible.influence}
-                        </SidebarTag>
-                      ) : null}
                       {faction.unlocked || unlockMode ? (
                         <SidebarTag className="text-theme-primary border-theme-primary/60">
                           {t("unlocked") || "Unlocked"}

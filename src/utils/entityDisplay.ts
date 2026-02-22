@@ -6,6 +6,7 @@ type DisplayState = Pick<
   | "character"
   | "actors"
   | "npcs"
+  | "placeholders"
   | "locations"
   | "quests"
   | "knowledge"
@@ -28,6 +29,8 @@ const ENTITY_PREFIXES = [
   "timeline",
   "inv",
   "item",
+  "ph",
+  "placeholder",
 ] as const;
 const BRACKET_SPECIAL_NAME_PATTERN = /^\[(.+)\]$/;
 const HUMANIZE_SEPARATOR_PATTERN = /[_:-]+/g;
@@ -70,11 +73,17 @@ const normalizeEntityRef = (value: string): string => {
   if (lower.startsWith("fac:")) {
     return `faction:${lower.slice("fac:".length)}`;
   }
+  if (lower.startsWith("placeholder:")) {
+    return `ph:${lower.slice("placeholder:".length)}`;
+  }
   for (const prefix of ENTITY_PREFIXES) {
     const underscorePrefix = `${prefix}_`;
     if (lower.startsWith(underscorePrefix)) {
       if (prefix === "fac") {
         return `faction:${lower.slice(underscorePrefix.length)}`;
+      }
+      if (prefix === "placeholder") {
+        return `ph:${lower.slice(underscorePrefix.length)}`;
       }
       return `${prefix}:${lower.slice(underscorePrefix.length)}`;
     }
@@ -181,6 +190,21 @@ export const resolveEntityDisplayName = (
   );
   if (locationMatch?.name) {
     return locationMatch.name;
+  }
+
+  const placeholderMatch = (gameState.placeholders || []).find((placeholder) =>
+    isSameEntityRef(placeholder.id, raw),
+  );
+  if (placeholderMatch) {
+    const rawLabel = normalizeText(placeholderMatch.label);
+    if (rawLabel) {
+      const bracketDisplayName = extractBracketDisplayName(rawLabel);
+      return (
+        toHumanReadableEntityLabel(bracketDisplayName || rawLabel) ||
+        bracketDisplayName ||
+        rawLabel
+      );
+    }
   }
 
   if (isSameEntityRef(raw, playerId) || isSameEntityRef(raw, "char:player")) {

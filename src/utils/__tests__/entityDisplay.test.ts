@@ -22,6 +22,7 @@ const buildState = () =>
       },
     ],
     npcs: [],
+    placeholders: [],
     locations: [
       {
         id: "loc:tavern",
@@ -101,5 +102,22 @@ describe("entity display resolver", () => {
     expect(resolveEntityDisplayName("npc:shadow_watcher", state)).toBe(
       "Shadow Watcher",
     );
+  });
+
+  it("resolves placeholder IDs to placeholder labels when available", () => {
+    const state = buildState();
+    state.placeholders = [
+      {
+        id: "ph:xiao_military",
+        label: "小军系",
+        knownBy: ["char:player"],
+        visible: { description: "Pending concretization." },
+      },
+    ];
+
+    expect(resolveEntityDisplayName("placeholder_xiao_military", state)).toBe(
+      "小军系",
+    );
+    expect(resolveEntityDisplayName("ph:xiao_military", state)).toBe("小军系");
   });
 });
