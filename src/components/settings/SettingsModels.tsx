@@ -1248,7 +1248,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                   : ""
               }`}
             >
-              <div className="flex flex-col md:flex-row gap-3 col-span-1 md:col-span-3">
+              <div className="flex flex-col md:flex-row gap-3 col-span-1 md:col-span-3 min-w-0">
                 <div className="relative w-full md:w-1/3">
                   <select
                     value={config.providerId}
@@ -1286,8 +1286,8 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                   )}
                 </div>
 
-                <div className="relative w-full md:w-2/3">
-                  <div className="flex gap-2">
+                <div className="relative w-full md:w-2/3 min-w-0">
+                  <div className="flex gap-2 min-w-0">
                     {config.isCustomModel ? (
                       /* Custom model input mode */
                       <input
@@ -1300,7 +1300,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                           t("models.customModelPlaceholder") ||
                           "Enter model ID..."
                         }
-                        className="flex-1 bg-theme-bg border border-yellow-500/50 rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono"
+                        className="flex-1 min-w-0 max-w-full bg-theme-bg border border-yellow-500/50 rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono"
                       />
                     ) : (
                       /* Dropdown mode */
@@ -1309,7 +1309,7 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
                         onChange={(e) =>
                           updateFunction(sectionKey, "modelId", e.target.value)
                         }
-                        className={`flex-1 bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
+                        className={`flex-1 min-w-0 max-w-full bg-theme-bg border rounded p-2 text-theme-text text-xs focus:border-theme-primary outline-none font-mono appearance-none [&>option]:bg-theme-bg [&>option]:text-theme-text ${
                           !isModelValid && !loadingModels && config.modelId
                             ? "border-yellow-500/50"
                             : "border-theme-border"
