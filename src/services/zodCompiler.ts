@@ -160,7 +160,7 @@ function mergeGeminiSchemas(existing: Schema, incoming: Schema): Schema {
   // where both coexist ("type and anyOf cannot be both populated").
   return {
     anyOf: variants,
-  };
+  } as any;
 }
 
 const _anyOfWarned = new Set<string>();
@@ -191,7 +191,7 @@ function buildAnyOfSchema(
   // reject schemas where both coexist.
   return {
     anyOf: variants,
-  };
+  } as any;
 }
 
 function createGeminiJsonValueSchema(description?: string): Schema {
