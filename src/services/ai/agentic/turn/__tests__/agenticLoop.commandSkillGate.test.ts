@@ -180,6 +180,82 @@ describe("agenticLoop command skill gate", () => {
     vi.clearAllMocks();
   });
 
+  it("does not re-list preloaded command skills in cold-start read hints", async () => {
+    const vfsSession = createVfsSession(true);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-finish",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "done",
+              choices: [],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-cold-start-read-hints",
+      vfsSession,
+    });
+
+    const firstAiCall = aiHandlerMock.handleAICall.mock.calls[0]?.[0] as any;
+    const conversationHistory = (firstAiCall?.conversationHistory ??
+      []) as any[];
+    const coldStartMessage = conversationHistory.find((message) => {
+      const text = message?.content?.find(
+        (part: any) => part?.type === "text" && typeof part?.text === "string",
+      )?.text;
+      return (
+        typeof text === "string" &&
+        text.includes("[SYSTEM: COLD START REQUIRED READS]")
+      );
+    });
+
+    const coldStartText =
+      coldStartMessage?.content?.find((part: any) => part?.type === "text")
+        ?.text ?? "";
+
+    expect(coldStartText).toContain("current/session/lineage.json");
+    expect(coldStartText).not.toContain(
+      "current/skills/commands/runtime/SKILL.md",
+    );
+    expect(coldStartText).not.toContain(
+      "current/skills/commands/runtime/turn/SKILL.md",
+    );
+    expect(coldStartText).not.toContain(
+      "current/skills/core/protocols/SKILL.md",
+    );
+    expect(coldStartText).not.toContain(
+      "current/skills/craft/writing/SKILL.md",
+    );
+  });
+
   it("blocks non-read tools in sudo mode when required skill not read", async () => {
     const vfsSession = createVfsSession(false);
 
@@ -872,6 +948,92 @@ describe("agenticLoop command skill gate", () => {
 
     expect(aiHandlerMock.handleAICall).toHaveBeenCalledTimes(20);
     expect(toolProcessorMock.executeGenericTool).not.toHaveBeenCalled();
+  });
+
+  it("preloads unread preset skills and avoids preset gate retries", async () => {
+    const seenPaths = [
+      "skills/commands/runtime/SKILL.md",
+      "skills/commands/runtime/turn/SKILL.md",
+      "skills/core/protocols/SKILL.md",
+      "skills/craft/writing/SKILL.md",
+    ];
+    const vfsSession = createVfsSession(true, seenPaths);
+
+    (vfsSession.noteToolSeen as any).mockImplementation((path: string) => {
+      const normalized = String(path || "").replace(/^current\//, "");
+      if (!seenPaths.includes(normalized)) {
+        seenPaths.push(normalized);
+      }
+    });
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-write",
+          name: "vfs_write_file",
+          args: { ops: [] },
+        },
+        {
+          id: "call-finish",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "new narrative",
+              choices: [{ text: "A" }],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    const result = await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-preset-preload",
+      vfsSession,
+      requiredPresetSkillPaths: ["skills/presets/runtime/culture/SKILL.md"],
+    });
+
+    expect(result.response.narrative).toBe("new narrative");
+    expect(
+      toolProcessorMock.executeGenericTool.mock.calls.map((call) => call[0]),
+    ).toEqual(["vfs_write_file", "vfs_finish_turn"]);
+    expect(vfsSession.noteToolSeen).toHaveBeenCalledWith(
+      "skills/presets/runtime/culture/SKILL.md",
+    );
+
+    const firstAiCall = aiHandlerMock.handleAICall.mock.calls[0]?.[0] as any;
+    const conversationHistory = (firstAiCall?.conversationHistory ??
+      []) as any[];
+    const presetFileMessage = conversationHistory.find((message) => {
+      const text = message?.content?.find(
+        (part: any) => part?.type === "text" && typeof part?.text === "string",
+      )?.text;
+      return (
+        typeof text === "string" &&
+        text.includes('path="current/skills/presets/runtime/culture/SKILL.md"')
+      );
+    });
+    expect(presetFileMessage).toBeDefined();
   });
 
   it("blocks non-read tools when culture preset skill is required but unread", async () => {

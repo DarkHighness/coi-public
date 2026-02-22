@@ -46,6 +46,7 @@ import {
   injectRetconAckRequired,
   injectOutOfBandReadInvalidations,
   preloadCommandSkills,
+  preloadPresetSkills,
 } from "./contextInjector";
 import {
   checkBudgetExhaustion,
@@ -193,6 +194,40 @@ const formatPathPreview = (
       options?.prefixCurrent === false ? path : `current/${path}`,
     )
     .join(", ");
+};
+
+const toCurrentReadablePath = (path: string): string => {
+  const normalized = normalizeVfsPath(path.trim().replace(/^\/+/, ""));
+  if (!normalized) {
+    return "current";
+  }
+  if (
+    normalized.startsWith("current/") ||
+    normalized.startsWith("shared/") ||
+    normalized.startsWith("forks/")
+  ) {
+    return normalized;
+  }
+  return `current/${normalized}`;
+};
+
+const hasPathSeenInCurrentEpoch = (
+  vfsSession: VfsSession,
+  path: string,
+): boolean => {
+  const currentPath = toCurrentReadablePath(path);
+  if (vfsSession.hasToolSeenInCurrentEpoch(currentPath)) {
+    return true;
+  }
+
+  if (currentPath.startsWith("current/")) {
+    const relativePath = currentPath.slice("current/".length);
+    if (relativePath && vfsSession.hasToolSeenInCurrentEpoch(relativePath)) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 type WriteFailureDisposition =
@@ -412,11 +447,27 @@ export async function runAgenticLoopRefactored(
       );
     }
 
-    // Pre-load command skill files into context (satisfies gate without explicit reads)
-    const preloadedSkillPaths = preloadCommandSkills(
+    const seenCommandSkillPaths = loopState.requiredCommandSkillPaths.filter(
+      (path) => hasPathSeenInCurrentEpoch(config.vfsSession, path),
+    );
+    const preloadedCommandSkillPaths = preloadCommandSkills(
       conversationHistory,
       config.vfsSession,
       loopState.requiredCommandSkillPaths,
+    );
+    const satisfiedCommandSkillPaths = Array.from(
+      new Set([...seenCommandSkillPaths, ...preloadedCommandSkillPaths]),
+    );
+    const seenPresetSkillPaths = loopState.requiredPresetSkillPaths.filter(
+      (path) => hasPathSeenInCurrentEpoch(config.vfsSession, path),
+    );
+    const preloadedPresetSkillPaths = preloadPresetSkills(
+      conversationHistory,
+      config.vfsSession,
+      loopState.requiredPresetSkillPaths,
+    );
+    const satisfiedPresetSkillPaths = Array.from(
+      new Set([...seenPresetSkillPaths, ...preloadedPresetSkillPaths]),
     );
 
     // Inject mode-specific instruction
@@ -424,7 +475,7 @@ export async function runAgenticLoopRefactored(
       injectSudoModeInstruction(
         conversationHistory,
         loopState.isRAGEnabled,
-        preloadedSkillPaths,
+        satisfiedCommandSkillPaths,
         loopState.requiredCommandSkillPaths,
       );
     } else {
@@ -449,15 +500,26 @@ export async function runAgenticLoopRefactored(
         },
         loopState.isRAGEnabled,
         isPlayerRateMode ? "player-rate" : "turn",
-        preloadedSkillPaths,
+        satisfiedCommandSkillPaths,
         loopState.requiredCommandSkillPaths,
+        satisfiedPresetSkillPaths,
       );
     }
 
     // Cold-start reads: exclude already pre-loaded skill paths
-    const preloadedSet = new Set(preloadedSkillPaths);
+    const preloadedSet = new Set(
+      [...preloadedCommandSkillPaths, ...preloadedPresetSkillPaths].map(
+        (path) => toCurrentReadablePath(path),
+      ),
+    );
     const remainingPreloadPaths = startupProfile.preloadReadPaths.filter(
-      (p) => !preloadedSet.has(p),
+      (path) => {
+        const currentPath = toCurrentReadablePath(path);
+        if (preloadedSet.has(currentPath)) {
+          return false;
+        }
+        return !hasPathSeenInCurrentEpoch(config.vfsSession, currentPath);
+      },
     );
     injectColdStartRequiredReads(conversationHistory, remainingPreloadPaths);
 

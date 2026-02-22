@@ -37,25 +37,39 @@ const toCurrentReadablePath = (path: string): string => {
 const isSessionMirrorPath = (path: string): boolean =>
   /^current\/session\/[^/]+\.jsonl$/i.test(path);
 
-// ============================================================================
-// Skill Pre-injection
-// ============================================================================
+const hasPathSeenInCurrentEpoch = (
+  vfsSession: VfsSession,
+  path: string,
+): boolean => {
+  const currentPath = toCurrentReadablePath(path);
+  if (vfsSession.hasToolSeenInCurrentEpoch(currentPath)) {
+    return true;
+  }
 
-/**
- * Pre-load required command skill files into conversation context.
- * Reads each skill from VFS, injects content as `<file>` messages,
- * and marks them as "seen" so gates are satisfied without explicit reads.
- * Returns the list of paths that were successfully pre-loaded.
- */
-export function preloadCommandSkills(
+  if (currentPath.startsWith("current/")) {
+    const relativePath = currentPath.slice("current/".length);
+    if (relativePath && vfsSession.hasToolSeenInCurrentEpoch(relativePath)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const preloadRequiredSkills = (
   history: UnifiedMessage[],
   vfsSession: VfsSession,
   requiredPaths: string[],
-): string[] {
+  label: "command" | "preset",
+): string[] => {
   if (requiredPaths.length === 0) return [];
 
   const preloaded: string[] = [];
   for (const skillPath of requiredPaths) {
+    if (hasPathSeenInCurrentEpoch(vfsSession, skillPath)) {
+      continue;
+    }
+
     const currentPath = toCurrentReadablePath(skillPath);
     const file = vfsSession.readFile(skillPath);
     if (file && typeof file.content === "string" && file.content.trim()) {
@@ -71,11 +85,41 @@ export function preloadCommandSkills(
 
   if (preloaded.length > 0) {
     console.log(
-      `[SkillPreload] Pre-injected ${preloaded.length}/${requiredPaths.length} command skills`,
+      `[SkillPreload] Pre-injected ${preloaded.length}/${requiredPaths.length} ${label} skills`,
     );
   }
 
   return preloaded;
+};
+
+// ============================================================================
+// Skill Pre-injection
+// ============================================================================
+
+/**
+ * Pre-load required command skill files into conversation context.
+ * Reads each skill from VFS, injects content as `<file>` messages,
+ * and marks them as "seen" so gates are satisfied without explicit reads.
+ * Returns the list of paths that were successfully pre-loaded.
+ */
+export function preloadCommandSkills(
+  history: UnifiedMessage[],
+  vfsSession: VfsSession,
+  requiredPaths: string[],
+): string[] {
+  return preloadRequiredSkills(history, vfsSession, requiredPaths, "command");
+}
+
+/**
+ * Pre-load required preset skill files into conversation context.
+ * Same behavior as command skill preload, but for active preset profiles.
+ */
+export function preloadPresetSkills(
+  history: UnifiedMessage[],
+  vfsSession: VfsSession,
+  requiredPaths: string[],
+): string[] {
+  return preloadRequiredSkills(history, vfsSession, requiredPaths, "preset");
 }
 
 /**
@@ -85,14 +129,14 @@ export function preloadCommandSkills(
 export function injectCommandSkillStatus(
   history: UnifiedMessage[],
   requiredPaths: string[],
-  preloadedPaths: string[],
+  satisfiedPaths: string[],
 ): void {
   if (requiredPaths.length === 0) return;
 
-  const preloadedSet = new Set(preloadedPaths.map(toCurrentReadablePath));
+  const satisfiedSet = new Set(satisfiedPaths.map(toCurrentReadablePath));
   const pending = requiredPaths
     .map(toCurrentReadablePath)
-    .filter((p) => !preloadedSet.has(p));
+    .filter((p) => !satisfiedSet.has(p));
 
   const lines: string[] = [];
 
@@ -107,9 +151,9 @@ export function injectCommandSkillStatus(
       "Hard gate (enforced): before any non-read tool call in this epoch, read:",
       ...pending.map((p) => `- \`${p}\``),
     );
-    if (preloadedPaths.length > 0) {
+    if (satisfiedPaths.length > 0) {
       lines.push(
-        `(${preloadedPaths.length} other skill(s) already pre-loaded in context.)`,
+        `(${satisfiedPaths.length} other skill(s) already satisfied in current epoch.)`,
       );
     }
   }
@@ -157,8 +201,9 @@ export function injectNormalTurnInstruction(
   },
   ragEnabled: boolean = true,
   normalCommandProtocol: "turn" | "player-rate" = "turn",
-  preloadedSkillPaths: string[] = [],
+  satisfiedCommandSkillPaths: string[] = [],
   requiredCommandSkillPaths: string[] = [],
+  satisfiedPresetSkillPaths: string[] = [],
 ): void {
   history.push(
     createUserMessage(
@@ -178,7 +223,7 @@ export function injectNormalTurnInstruction(
   injectCommandSkillStatus(
     history,
     requiredCommandSkillPaths,
-    preloadedSkillPaths,
+    satisfiedCommandSkillPaths,
   );
 
   if (isCleanupMode) {
@@ -262,12 +307,28 @@ export function injectNormalTurnInstruction(
   }
 
   if (requiredPresetSkillPaths.length > 0) {
-    const lines = [
-      "[SYSTEM: PRESET SKILLS ACTIVE]",
-      "Hub first: `current/skills/presets/runtime/SKILL.md`",
-      "Before non-read tool calls, load active preset skills:",
-      ...requiredPresetSkillPaths.map((path) => `- \`current/${path}\``),
-    ];
+    const requiredPresetPaths = requiredPresetSkillPaths.map(
+      toCurrentReadablePath,
+    );
+    const satisfiedPresetSet = new Set(
+      satisfiedPresetSkillPaths.map(toCurrentReadablePath),
+    );
+    const pendingPresetPaths = requiredPresetPaths.filter(
+      (path) => !satisfiedPresetSet.has(path),
+    );
+    const lines =
+      pendingPresetPaths.length === 0
+        ? [
+            "[SYSTEM: PRESET SKILLS READY]",
+            "Hub reference: `current/skills/presets/runtime/SKILL.md`",
+            "All active preset skills are already satisfied in current epoch; reuse them and re-read only if scope is insufficient.",
+          ]
+        : [
+            "[SYSTEM: PRESET SKILLS ACTIVE]",
+            "Hub first: `current/skills/presets/runtime/SKILL.md`",
+            "Before non-read tool calls, load active preset skills:",
+            ...pendingPresetPaths.map((path) => `- \`${path}\``),
+          ];
     history.push(createUserMessage(lines.join("\n")));
   }
 
