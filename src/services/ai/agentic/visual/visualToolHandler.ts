@@ -15,23 +15,29 @@ export const VEO_SCRIPT_SUBMIT_TOOL_NAME = "submit_veo_script_result";
 
 const SUBMIT_IMAGE_PROMPT_TOOL: ZodToolDefinition = {
   name: IMAGE_PROMPT_SUBMIT_TOOL_NAME,
-  description: "Submit the final image prompt for the current segment.",
+  description:
+    "Submit the final image prompt for the current segment. The prompt MUST include canonical character identities (name, age, gender, race, appearance) matching game state exactly, and reflect the correct location and time of day.",
   parameters: z.object({
     imagePrompt: z
       .string()
       .min(1)
-      .describe("Visual scene prompt for the current segment."),
+      .describe(
+        "Vivid cinematographic scene description. Must anchor character identity (name, age, gender, race, appearance from game state), match current location and time. Write as a narrative paragraph, not keyword list.",
+      ),
   }),
 };
 
 const SUBMIT_VEO_SCRIPT_TOOL: ZodToolDefinition = {
   name: VEO_SCRIPT_SUBMIT_TOOL_NAME,
-  description: "Submit the final VEO script for the current segment.",
+  description:
+    "Submit the final VEO script for the current segment. The script MUST maintain character fidelity (canonical name, age, gender, race, appearance) and location/time consistency with game state.",
   parameters: z.object({
     veoScript: z
       .string()
       .min(1)
-      .describe("Cinematic script for the current segment."),
+      .describe(
+        "Cinematic video script maintaining character fidelity and location/time consistency with game state.",
+      ),
   }),
 };
 

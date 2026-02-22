@@ -246,10 +246,7 @@ const sceneImagePromptAtom = defineAtom(
   },
   ({ prompt, gameState, snapshot }: SceneImagePromptInput, trace) => {
     if (!gameState) {
-      return `<scene>
-  <description>${prompt}</description>
-  <quality>${trace.record(imageQualityPrefix)}</quality>
-</scene>`;
+      return `${prompt}\n\n${trace.record(imageQualityPrefix)}`;
     }
 
     const context = extractContextFromGameState(gameState, snapshot);
@@ -267,319 +264,142 @@ const sceneImagePromptAtom = defineAtom(
     } = context;
 
     const mentionedNPCs = extractMentionedNPCs(prompt, knownNPCs);
-
     const themeStyleRef = getThemeStyleReference(theme, storyTitle);
-    const styleBlock = themeStyleRef
-      ? `
-<style_reference>
-${themeStyleRef}
-</style_reference>
-`
-      : "";
 
-    let xmlPrompt = `${trace.record(imageQualityPrefix)}
+    const parts: string[] = [];
 
-<visual_context>
-`;
+    // 1. Scene description FIRST — this is the most important part
+    parts.push(prompt);
 
-    if (storyTitle || worldSetting || theme) {
-      xmlPrompt += `  <story_background>
-`;
-      if (storyTitle) {
-        xmlPrompt += `    <title>${storyTitle}</title>
-`;
+    // 2. Setting context (concise)
+    const settingParts: string[] = [];
+    if (currentLocation) {
+      const locName = currentLocation.name || currentLocationName;
+      const locDesc = currentLocation.visible?.description;
+      const locAtmo = currentLocation.visible?.atmosphere;
+      settingParts.push(
+        `Setting: ${locName}${locDesc ? ` — ${locDesc}` : ""}${locAtmo ? `. ${locAtmo}` : ""}`,
+      );
+
+      const sensory = currentLocation.visible?.sensory;
+      if (sensory) {
+        const sensoryDetails = [
+          sensory.lighting && `lighting: ${sensory.lighting}`,
+          sensory.smell && `smell of ${sensory.smell}`,
+          sensory.temperature && `${sensory.temperature} air`,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        if (sensoryDetails) {
+          settingParts.push(`Sensory: ${sensoryDetails}.`);
+        }
       }
-      if (theme) {
-        xmlPrompt += `    <theme>${theme}</theme>
-`;
-      }
-      if (worldSetting) {
-        xmlPrompt += `    <world_setting>
-      ${worldSetting}
-    </world_setting>
-`;
-      }
-
-      xmlPrompt += `    ${trace.record(ipFidelityRequirements)}
-`;
-
-      xmlPrompt += `    <narrative_context>Visual style should reinforce the story's themes and world-building, maintaining consistency with established lore and atmosphere</narrative_context>
-`;
-      xmlPrompt += `  </story_background>
-`;
+    } else if (currentLocationName) {
+      settingParts.push(`Setting: ${currentLocationName}.`);
+    }
+    if (settingParts.length > 0) {
+      parts.push(settingParts.join(" "));
     }
 
+    // 3. Lighting & weather (natural language from atoms)
     if (time) {
-      xmlPrompt += `  ${trace.record(lightingContext, { time })}
-`;
+      const lighting = trace.record(lightingContext, { time });
+      if (lighting) parts.push(lighting);
     }
-
     if (weather && weather !== "none") {
-      xmlPrompt += `  ${trace.record(weatherEffects, { weather })}
-`;
+      const weatherDesc = trace.record(weatherEffects, { weather });
+      if (weatherDesc) parts.push(weatherDesc);
     }
 
-    if (currentLocation || currentLocationName) {
-      xmlPrompt += `  <environment>
-`;
-
-      if (currentLocation) {
-        xmlPrompt += `    <location>
-`;
-        xmlPrompt += `      <name>${currentLocation.name || currentLocationName}</name>
-`;
-        if (currentLocation.visible?.environment) {
-          xmlPrompt += `      <type>${currentLocation.visible.environment}</type>
-`;
-        }
-        if (currentLocation.visible?.description) {
-          xmlPrompt += `      <description>${currentLocation.visible.description}</description>
-`;
-        }
-        if (currentLocation.visible?.atmosphere) {
-          xmlPrompt += `      <atmosphere>${currentLocation.visible.atmosphere}</atmosphere>
-`;
-        }
-        xmlPrompt += `    </location>
-`;
-
-        const sensory = currentLocation.visible?.sensory;
-        if (sensory) {
-          xmlPrompt += `    <sensory_details>
-`;
-          if (sensory.smell) {
-            xmlPrompt += `      <smell>${sensory.smell}</smell>
-`;
-          }
-          if (sensory.sound) {
-            xmlPrompt += `      <sound>${sensory.sound}</sound>
-`;
-          }
-          if (sensory.lighting) {
-            xmlPrompt += `      <lighting>${sensory.lighting}</lighting>
-`;
-          }
-          if (sensory.temperature) {
-            xmlPrompt += `      <temperature>${sensory.temperature}</temperature>
-`;
-          }
-          xmlPrompt += `    </sensory_details>
-`;
-        }
-
-        const knownFeatures = currentLocation.visible?.knownFeatures;
-        if (knownFeatures && knownFeatures.length > 0) {
-          xmlPrompt += `    <notable_features>
-`;
-          knownFeatures.forEach((feature: string) => {
-            xmlPrompt += `      <feature>${feature}</feature>
-`;
-          });
-          xmlPrompt += `    </notable_features>
-`;
-        }
-
-        const interactables = currentLocation.visible?.interactables;
-        if (interactables && interactables.length > 0) {
-          xmlPrompt += `    <interactables>
-`;
-          interactables.forEach((item: string) => {
-            xmlPrompt += `      <object>${item}</object>
-`;
-          });
-          xmlPrompt += `    </interactables>
-`;
-        }
-
-        const resources = currentLocation.visible?.resources;
-        if (resources && resources.length > 0) {
-          xmlPrompt += `    <visible_resources>
-`;
-          resources.forEach((resource: string) => {
-            xmlPrompt += `      <resource>${resource}</resource>
-`;
-          });
-          xmlPrompt += `    </visible_resources>
-`;
-        }
-
-        if (currentLocation.notes) {
-          xmlPrompt += `    <writer_notes>${currentLocation.notes}</writer_notes>
-`;
-        }
-      } else {
-        xmlPrompt += `    <location>${currentLocationName} (Unknown Environment)</location>
-`;
-      }
-
-      if (mood) {
-        const moodDetails: Record<string, string> = {
-          quiet:
-            "Serene and still environment, minimal movement, peaceful atmosphere, soft ambient sounds implied",
-          mystical:
-            "Magical energy visible in air, glowing particles, ethereal lighting, otherworldly atmosphere, fantastical elements",
-          horror:
-            "Oppressive and threatening atmosphere, ominous shadows, disturbing details, sense of dread, unsettling elements",
-          combat:
-            "Dynamic and chaotic environment, action debris, impact effects, tense atmosphere, dramatic motion blur",
-          tavern:
-            "Warm interior lighting, wooden textures, smoke or steam, crowded or cozy atmosphere, social setting details",
-          city: "Urban environment, architectural details, crowds or emptiness, ambient city lighting, modern or fantasy elements",
-        };
-        xmlPrompt += `    <atmosphere>${moodDetails[mood] || mood}</atmosphere>
-`;
-      }
-      xmlPrompt += `    <environmental_details>
-`;
-      xmlPrompt += `      Detailed background elements, textural variety (stone, wood, metal, fabric), environmental storytelling through props and setting, atmospheric perspective with depth, foreground/midground/background separation
-`;
-      xmlPrompt += `    </environmental_details>
-`;
-      xmlPrompt += `  </environment>
-`;
-    }
-
+    // 4. Protagonist — CANONICAL identity anchor (critical for cross-turn consistency)
     if (character) {
-      xmlPrompt += `  <protagonist>
-`;
-      xmlPrompt += `    <identity>
-`;
-      xmlPrompt += `      <name>${character.name || "Unknown"}</name>
-`;
-      xmlPrompt += `      <title>${character.title || "Unknown"}</title>
-`;
-      xmlPrompt += `      <age>${character.age || "Unknown"}</age>
-`;
-      xmlPrompt += `      <gender>${character.gender || "Unknown"}</gender>
-`;
-      xmlPrompt += `      <race>${character.race || "Human"}</race>
-`;
-      xmlPrompt += `      <profession>${character.profession || "Adventurer"}</profession>
-`;
-      xmlPrompt += `    </identity>
-`;
-      if (character.background) {
-        xmlPrompt += `    <background>${character.background}</background>
-`;
-      }
-      xmlPrompt += `    <physical_description>
-`;
-      xmlPrompt += `      ${character.appearance || "A figure defined by their presence and gear"}
-`;
-      xmlPrompt += `    </physical_description>
-`;
-      xmlPrompt += `    <current_state>
-`;
-      xmlPrompt += `      <status>${character.status || "Normal"}</status>
-`;
-      xmlPrompt += `      <emotional_state>Convey emotion through body language, facial expression, and posture</emotional_state>
-`;
-      xmlPrompt += `    </current_state>
-`;
-      xmlPrompt += `    <visual_priority>
-`;
-      xmlPrompt += `      Main focus of composition, positioned using rule of thirds, detailed facial features and expressions, realistic anatomy and proportions, high detail on clothing/armor/equipment, skin texture and imperfections visible, dynamic pose suggesting action or emotion
-`;
-      xmlPrompt += `    </visual_priority>
-`;
-      xmlPrompt += `  </protagonist>
-`;
+      const identityParts = [
+        character.name,
+        character.race !== "Unknown" && character.race,
+        character.gender !== "Unknown" && character.gender,
+        character.age !== "Unknown" && `age ${character.age}`,
+        character.profession && character.profession,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      const appearance = character.appearance ? ` ${character.appearance}` : "";
+      const status =
+        character.status && character.status !== "Normal"
+          ? ` Current condition: ${character.status.toLowerCase()}, visually reflected in posture and expression without altering base identity.`
+          : "";
+      parts.push(
+        `[PROTAGONIST — maintain exact appearance across all images] ${identityParts}.${appearance}${status}`,
+      );
     }
 
+    // 5. NPCs in scene — canonical identity anchored, max 4
     if (mentionedNPCs.length > 0) {
-      xmlPrompt += `  <npcs_in_scene>
-`;
-      xmlPrompt += `    <note>These NPCs were mentioned in the scene description. Use their appearance data to render them accurately.</note>
-`;
-      mentionedNPCs.slice(0, 4).forEach((npc, index) => {
-        xmlPrompt += `    <npc priority="${index === 0 ? "high" : "medium"}">
-`;
-        xmlPrompt += `      <name>${npc.name}</name>
-`;
-        if (npc.title) {
-          xmlPrompt += `      <title>${npc.title}</title>
-`;
-        }
-        if (npc.age) {
-          xmlPrompt += `      <age>${npc.age}</age>
-`;
-        }
-        if (npc.gender) {
-          xmlPrompt += `      <gender>${npc.gender}</gender>
-`;
-        }
-        if (npc.race) {
-          xmlPrompt += `      <race>${npc.race}</race>
-`;
-        }
-        if (npc.profession) {
-          xmlPrompt += `      <profession>${npc.profession}</profession>
-`;
-        }
-        if (npc.description) {
-          xmlPrompt += `      <description>${npc.description}</description>
-`;
-        }
-        if (npc.appearance) {
-          xmlPrompt += `      <appearance>${npc.appearance}</appearance>
-`;
-        }
-        if (npc.status) {
-          xmlPrompt += `      <status>${npc.status}</status>
-`;
-        }
-        if (npc.voice) {
-          xmlPrompt += `      <voice>${npc.voice}</voice>
-`;
-        }
-        if (npc.mannerism) {
-          xmlPrompt += `      <mannerism>${npc.mannerism}</mannerism>
-`;
-        }
-        if (npc.mood) {
-          xmlPrompt += `      <mood>${npc.mood}</mood>
-`;
-        }
-        xmlPrompt += `      <rendering>Position relative to protagonist as described in scene, body language and expression matching narrative context, physical details consistent with appearance data</rendering>
-`;
-        xmlPrompt += `    </npc>
-`;
+      const npcDescs = mentionedNPCs.slice(0, 4).map((npc) => {
+        const identity = [
+          npc.name,
+          npc.race,
+          npc.gender,
+          npc.age && `age ${npc.age}`,
+          npc.profession,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        const appearance = npc.appearance ? ` — ${npc.appearance}` : "";
+        const moodDetail =
+          npc.mood && npc.mood !== "Neutral"
+            ? `, appearing ${npc.mood.toLowerCase()}`
+            : "";
+        return `${identity}${appearance}${moodDetail}`;
       });
-      xmlPrompt += `  </npcs_in_scene>
-`;
+      parts.push(
+        `[NPCs — maintain consistent appearance matching descriptions] ${npcDescs.join(". ")}.`,
+      );
     }
 
-    xmlPrompt += `</visual_context>
-`;
+    // 6. Mood / atmosphere — rich cinematic descriptions
+    if (mood) {
+      const moodDescriptions: Record<string, string> = {
+        quiet:
+          "Serene and contemplative atmosphere, still air with soft ambient sounds implied through visual calm, gentle color palette with muted tones",
+        mystical:
+          "Magical energy permeating the air with visible ethereal particles, otherworldly glow from unseen sources, iridescent light refractions, dreamlike quality with slightly surreal color saturation",
+        horror:
+          "Oppressive, claustrophobic atmosphere with deep shadows encroaching from the edges, desaturated sickly color palette, unsettling asymmetry in composition, implied threat lurking just beyond the frame",
+        combat:
+          "Dynamic action scene with kinetic energy, slight motion blur on fast-moving elements, dramatic low-angle perspective, dust and debris in the air, intense contrast between highlight and shadow, adrenaline-charged atmosphere",
+        tavern:
+          "Warm interior bathed in golden candlelight and fireplace glow, rich wood grain textures, polished metal tankards, hazy atmosphere from hearth smoke, cozy intimate framing",
+        city: "Urban environment with detailed architecture and layered depth, ambient street lighting mixing warm and cool tones, crowd and activity implied through environmental details, atmospheric perspective showing distant structures",
+      };
+      const moodText = moodDescriptions[mood] || mood;
+      parts.push(`Atmosphere and mood: ${moodText}.`);
+    }
 
-    xmlPrompt += `
-${trace.record(compositionDirectives)}
-`;
+    // 7. Composition & rendering guidance (concise)
+    parts.push(trace.record(compositionDirectives));
+    parts.push(trace.record(renderingInstructions));
 
-    xmlPrompt += `
-${trace.record(renderingInstructions)}
-`;
+    // 8. Quality & technical
+    parts.push(trace.record(imageQualityPrefix));
+    parts.push(trace.record(imageTechnicalSpecs));
 
-    xmlPrompt += `
-<scene_description>
-`;
-    xmlPrompt += `  ${prompt}
-`;
-    xmlPrompt += `</scene_description>
-`;
+    // 9. IP fidelity (if applicable)
+    if (storyTitle || theme) {
+      parts.push(trace.record(ipFidelityRequirements));
+    }
 
-    xmlPrompt += `
-${trace.record(imageTechnicalSpecs)}`;
+    // 10. Style reference (theme-specific)
+    if (themeStyleRef) {
+      parts.push(`Style reference: ${themeStyleRef}`);
+    }
 
+    // 11. Custom style rules
     const customImageRules = formatImageStyleRules(gameState.customRules);
     if (customImageRules) {
-      xmlPrompt += `
-<custom_style_requirements>
-${customImageRules}
-</custom_style_requirements>`;
+      parts.push(customImageRules.trim());
     }
 
-    return styleBlock + xmlPrompt;
+    return parts.filter((p) => p.trim()).join("\n\n");
   },
 );
 

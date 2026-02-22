@@ -18,17 +18,15 @@ export const shotBreakdownTemplate: Atom<void> = defineAtom(
     source: "atoms/veo/shotBreakdown.ts",
     exportName: "shotBreakdownTemplate",
   },
-  () => `**PROFESSIONAL SHOT BREAKDOWN**
+  () => `For each shot, specify all visual parameters:
 
-Create AS MANY SHOTS AS NEEDED to tell the story (minimum 2, typically 3-5, more for complex scenes).
-For each shot, specify:
-
-SHOT N: [Shot Purpose/Type]
-- FRAME: (e.g., "Extreme Wide Shot (EWS)", "Medium Close-up (MCU)", "Over-the-shoulder")
-- LENS: (e.g., "14mm ultra-wide", "50mm standard", "Macro 105mm")
-- COMPOSITION: (e.g., "Rule of thirds", "Centered framing", "Negative space")
-- ACTION: [Precise description from <current_scene>]
-- CAMERA MOVE: (e.g., "Slow crane up", "Push-in dolly", "Handheld follow", "Static")`,
+SHOT N: [Narrative Purpose — what emotion or information this shot conveys]
+- FRAME: Shot size and angle (e.g., "Extreme Wide Shot establishing scale", "Medium Close-up capturing reaction", "Low-angle hero shot", "Over-the-shoulder dialogue framing", "Dutch angle for unease")
+- LENS: Focal length and characteristics (e.g., "14mm ultra-wide for environmental grandeur", "35mm standard for immersive perspective", "50mm for natural human-eye feel", "85mm telephoto for intimate portrait with bokeh separation", "macro for detail inserts")
+- LIGHTING: Key light source, direction, quality, and color temperature for this specific shot
+- ACTION: Specific physical action — what the subject does, facial expression, body language, interaction with environment
+- CAMERA MOVE: Precise movement with speed (e.g., "Slow crane up revealing the vista over 3 seconds", "Steady push-in dolly closing distance", "Handheld follow with slight shake for tension", "Static locked-off tripod for stillness", "Smooth arc orbit around subject")
+- ATMOSPHERE: Particles, depth haze, volumetric light, environmental effects in this shot`,
 );
 
 /**
@@ -40,12 +38,8 @@ export const mandatoryKeywords: Atom<void> = defineAtom(
     source: "atoms/veo/shotBreakdown.ts",
     exportName: "mandatoryKeywords",
   },
-  () => `**MANDATORY KEYWORDS:**
-- Quality: "Cinematic," "Hyper-realistic," "8K resolution," "High production value"
-- Detail: "Intricate details," "Photorealistic textures," "Volumetric rendering"
-- Atmosphere: "Atmospheric lighting," "Mood-driven," "Immersive"
-- Technical: "Depth of field," "Motion blur," "Color graded," "Professional cinematography"
-- Perspective: "First-person view," "Over-the-shoulder," "Immersive POV"`,
+  () =>
+    `Include these cinematography keywords naturally in descriptions: cinematic, highly detailed textures, atmospheric volumetric lighting, shallow depth of field with bokeh, professional cinematography, immersive spatial audio, film grain, motivated lighting, production design.`,
 );
 
 /**
@@ -57,13 +51,14 @@ export const avoidList: Atom<void> = defineAtom(
     source: "atoms/veo/shotBreakdown.ts",
     exportName: "avoidList",
   },
-  () => `**AVOID:**
-❌ Third-person descriptions ("The character sees...") -> USE "You see..."
-❌ Generic descriptions ("beautiful," "amazing," "epic" without specifics)
-❌ Mentioning items NOT in <game_state><inventory>
-❌ Including NPCs NOT in <game_state><npcs_present>
-❌ Contradictory visual elements
-❌ Missing technical details`,
+  () => `Avoid these in your script:
+- Third-person narration ("The character sees...") — always use "You see...", "You step forward..."
+- Empty superlatives without visual specifics ("beautiful", "amazing", "epic", "breathtaking") — instead describe WHAT makes it visually striking
+- Items not established in <game_state><inventory>
+- NPCs not listed in <game_state><npcs_present>
+- Contradictory visual elements (e.g., rain during "clear sky" weather)
+- Abstract or non-visual descriptions — every sentence must paint something the camera can capture
+- Jump cuts without spatial logic — camera moves must flow naturally`,
 );
 
 export default shotBreakdownTemplate;

@@ -13,15 +13,15 @@ vi.mock("./rulesInjector", () => ({
 }));
 
 vi.mock("./atoms/image", () => ({
-  imageQualityPrefix: () => "<quality_prefix />",
-  imageTechnicalSpecs: () => "<technical_specs />",
-  compositionDirectives: () => "<composition_directives />",
-  renderingInstructions: () => "<rendering_instructions />",
-  ipFidelityRequirements: () => "<ip_fidelity_rules />",
+  imageQualityPrefix: () => "quality-prefix-mock",
+  imageTechnicalSpecs: () => "technical-specs-mock",
+  compositionDirectives: () => "composition-mock",
+  renderingInstructions: () => "rendering-mock",
+  ipFidelityRequirements: () => "ip-fidelity-mock",
   lightingContext: ({ time }: { time: string }) =>
-    `<lighting_context time=\"${time}\" />`,
+    `Time: ${time}. Lighting details.`,
   weatherEffects: ({ weather }: { weather: string }) =>
-    `<weather_effect weather=\"${weather}\" />`,
+    `Weather: ${weather} effects.`,
 }));
 
 const createGameState = () =>
@@ -115,15 +115,14 @@ const createGameState = () =>
   }) as any;
 
 describe("getSceneImagePrompt", () => {
-  it("returns minimal fallback XML when game state is missing", () => {
+  it("returns minimal fallback when game state is missing", () => {
     const result = getSceneImagePrompt("A lone knight in the fog");
 
-    expect(result).toContain("<scene>");
     expect(result).toContain("A lone knight in the fog");
-    expect(result).toContain("<quality_prefix />");
+    expect(result).toContain("quality-prefix-mock");
   });
 
-  it("injects theme style reference and world context", () => {
+  it("injects theme style reference and IP fidelity", () => {
     const gameState = createGameState();
 
     const result = getSceneImagePrompt(
@@ -131,14 +130,13 @@ describe("getSceneImagePrompt", () => {
       gameState,
     );
 
-    expect(result).toContain("<style_reference>");
+    expect(result).toContain("Style reference:");
     expect(result).toContain("STYLE_REFERENCE");
-    expect(result).toContain("<story_background>");
-    expect(result).toContain("<ip_fidelity_rules />");
-    expect(result).toContain("<technical_specs />");
+    expect(result).toContain("ip-fidelity-mock");
+    expect(result).toContain("technical-specs-mock");
   });
 
-  it("enriches prompt with location sensory details and protagonist block", () => {
+  it("enriches prompt with location details and protagonist", () => {
     const gameState = createGameState();
 
     const result = getSceneImagePrompt(
@@ -146,15 +144,14 @@ describe("getSceneImagePrompt", () => {
       gameState,
     );
 
-    expect(result).toContain("<environment>");
-    expect(result).toContain("<sensory_details>");
+    expect(result).toContain("Setting: Moonlit Forest");
     expect(result).toContain("Wet pine");
-    expect(result).toContain("<protagonist>");
-    expect(result).toContain("<name>Rin</name>");
-    expect(result).toContain("<age>24</age>");
-    expect(result).toContain("<gender>Female</gender>");
-    expect(result).toContain('<lighting_context time="dusk" />');
-    expect(result).toContain('<weather_effect weather="rain" />');
+    expect(result).toContain("[PROTAGONIST");
+    expect(result).toContain("Rin");
+    expect(result).toContain("Elf");
+    expect(result).toContain("Female");
+    expect(result).toContain("Time: dusk. Lighting details.");
+    expect(result).toContain("Weather: rain effects.");
   });
 
   it("includes only NPCs mentioned in scene prompt", () => {
@@ -165,10 +162,10 @@ describe("getSceneImagePrompt", () => {
       gameState,
     );
 
-    expect(result).toContain("<npcs_in_scene>");
-    expect(result).toContain("<name>Alice</name>");
-    expect(result).toContain("<age>27</age>");
-    expect(result).toContain("<gender>Female</gender>");
+    expect(result).toContain("[NPCs");
+    expect(result).toContain("Alice");
+    expect(result).toContain("Human");
+    expect(result).toContain("Female");
     expect(result).toContain("Short red cloak and leather armor");
   });
 
@@ -178,8 +175,7 @@ describe("getSceneImagePrompt", () => {
 
     const result = getSceneImagePrompt("Silent ruins at night", gameState);
 
-    expect(result).not.toContain("<weather_effect");
-    expect(result).toContain("<custom_style_requirements>");
+    expect(result).not.toContain("Weather:");
     expect(result).toContain("Use watercolor brushwork");
   });
 });

@@ -359,7 +359,7 @@ export const generateVeoScript = async (
     })
   ).value;
   const sys =
-    "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.";
+    "You are an expert cinematographer and director with deep knowledge of lens choice, camera movement, lighting design, and visual storytelling. Transform the narrative into a precise, visually rich video generation script. Specify exact camera angles, focal lengths, movement speeds, lighting motivation, color temperature, and atmospheric effects. Every technical choice must serve the emotional core of the scene. Output the structured script directly.";
   const contents: unknown[] =
     instance.protocol === "gemini"
       ? ([{ role: "user", parts: [{ text: prompt }] }] as unknown[])

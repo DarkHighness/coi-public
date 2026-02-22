@@ -18,28 +18,19 @@ export const visualLanguageTemplate: Atom<void> = defineAtom(
     source: "atoms/veo/visualLanguage.ts",
     exportName: "visualLanguageTemplate",
   },
-  () => `**VISUAL LANGUAGE & CINEMATOGRAPHY**
+  () => `Lighting Design:
+- Primary light source, direction, and intensity (e.g., "harsh overhead sun casting deep shadows" or "soft diffused overcast light")
+- Color temperature specified (warm 3000K candlelight, neutral 5600K daylight, cool 7000K moonlight)
+- Shadow quality matching mood (hard-edged for tension, soft gradients for calm, dappled for mystery)
+- Motivated practical light sources from inventory or environment (lanterns, magic, fire, screens)
+- Rim light or backlight separation from background
 
-Lighting Design:
-- PRIMARY LIGHT: (e.g., "Harsh side-lighting creating deep shadows")
-- COLOR TEMPERATURE: (e.g., "Warm 3200K tungsten")
-- LIGHT QUALITY: (e.g., "Hard shadows for tension")
-- MOTIVATED SOURCES: Reference items from <game_state><inventory> (e.g., "Firelight flicker," "Glowing artifact")
-
-Color Grading & Palette:
-- PRIMARY COLORS: (e.g., "Teal shadows / Orange highlights")
-- SATURATION LEVEL: (e.g., "Hyper-saturated fantasy")
-- CONTRAST: (e.g., "High contrast noir")
-
-Atmospheric Elements:
-- MOOD: (e.g., "Oppressive dread")
-- WEATHER/EFFECTS: (e.g., "Heavy rain distortion")
-- DEPTH CUES: (e.g., "Layered fog planes")
-
-Film Language:
-- FORMAT: (e.g., "Anamorphic 2.39:1")
-- TEXTURE: (e.g., "35mm film grain")
-- MOTION QUALITY: (e.g., "180° shutter motion blur")`,
+Color & Atmosphere:
+- Primary and secondary color palette with specific hues
+- Saturation level (desaturated for bleakness, vibrant for wonder, selective color for focus)
+- Contrast ratio (high for drama, low for dreaminess)
+- Atmospheric depth effects: volumetric fog, dust motes, rain, particles, heat haze
+- Foreground/midground/background depth layers with atmospheric perspective`,
 );
 
 /**
@@ -51,14 +42,14 @@ export const characterVisualProfile: Atom<void> = defineAtom(
     source: "atoms/veo/visualLanguage.ts",
     exportName: "characterVisualProfile",
   },
-  () => `**CHARACTER VISUAL PROFILE**
-
-Describe the PROTAGONIST from <game_state><protagonist> in THIS SPECIFIC FRAME:
-- Physical State: <status> content (reflect in posture/movement)
-- Expression & Body Language: Micro-expressions, posture
-- Costume Details: <appearance> content
-- Visible Equipment: Items from <inventory> that should be visible
-- Spatial Position: Relationship to environment`,
+  () => `Describe the protagonist from <game_state><protagonist> with cinematic precision:
+- Physical state reflecting <status>: posture changes, visible injuries, fatigue in movement
+- Facial micro-expressions and eye direction conveying inner emotion
+- Body language and gesture that reveals character without dialogue
+- Costume and material details from <appearance>: fabric texture, armor wear, color and pattern
+- Visible equipment from <inventory> placed naturally on the body
+- Spatial relationship to environment: scale, position, facing direction
+- How light falls on the character: highlight on features, shadow on form`,
 );
 
 /**
@@ -70,25 +61,24 @@ export const veoOutputStructure: Atom<void> = defineAtom(
     source: "atoms/veo/visualLanguage.ts",
     exportName: "veoOutputStructure",
   },
-  () => `**REQUIRED OUTPUT STRUCTURE:**
+  () => `Output structure:
 
-**1. NARRATIVE ESSENCE & CONTINUITY**
-Distill the EMOTIONAL CORE and DRAMATIC STAKES of this moment from <game_state><current_scene>.
-Explicitly state how this scene connects visually to <recent_narrative_flow>.
-(2-3 sentences)
+1. NARRATIVE ESSENCE (2-3 sentences)
+   The emotional core of this moment. What dramatic stakes are at play? How does this scene connect visually and emotionally to recent events? What should the viewer FEEL?
 
-**2. VISUAL LANGUAGE & CINEMATOGRAPHY**
-(Use visual language template above)
+2. VISUAL LANGUAGE
+   Complete lighting design, color palette with specific hues, atmospheric effects, depth layering, and how these visual choices reinforce the narrative emotion.
 
-**3. CHARACTER VISUAL PROFILE**
-(Use character visual profile template above)
+3. CHARACTER PROFILE
+   Protagonist's physical appearance, current state, equipment, expression, and body language in this specific moment. How their visual presentation reflects their journey.
 
-**4. PROFESSIONAL SHOT BREAKDOWN**
-(Use shot breakdown template)
+4. SHOT BREAKDOWN (2-5 shots)
+   Each shot with frame size, lens focal length, specific action, camera movement with speed/direction, lighting for that shot, and atmospheric effects. Shots should flow with cinematic logic.
 
-**5. MASTER VEO VIDEO GENERATION PROMPT**
-**CRITICAL FORMULA:**
-[SECOND PERSON PERSPECTIVE] + [PRECISE SUBJECT/ACTION] + [RICH ENVIRONMENT] + [LIGHTING/ATMOSPHERE] + [CAMERA TECHNIQUE] + [STYLE MODIFIERS]`,
+5. VEO VIDEO PROMPT
+   Dense, vivid second-person description following this formula:
+   [You + action/sensation] + [Environment with specific details] + [Lighting with color and direction] + [Atmospheric effects] + [Camera technique with movement] + [Mood and style keywords]
+   Every noun should have a descriptive modifier. Every action should have physical grounding.`,
 );
 
 /**
@@ -100,15 +90,15 @@ export const veoPromptRequirements: Atom<void> = defineAtom(
     source: "atoms/veo/visualLanguage.ts",
     exportName: "veoPromptRequirements",
   },
-  () => `**PROMPT REQUIREMENTS:**
-- PERSPECTIVE: STRICTLY use SECOND PERSON ("You"). Focus on what protagonist SEES and DOES.
-- EQUIPMENT VISIBILITY: Mention visible items from <game_state><inventory> (e.g., "glowing sword in your hand," "potion vials on your belt")
-- SCENE FIDELITY: Base action on <game_state><current_scene> content
-- LENGTH: DETAILED and DENSE visual description
-- SPECIFICITY: Every noun needs adjective, every action needs context
-- TECHNICAL PRECISION: Use industry-standard cinematography terms
-- SENSORY RICHNESS: Describe not just what's seen, but how it FEELS
-- COHERENCE: Ensure all elements harmonize with <game_state><theme> AND <game_state>`,
+  () => `Requirements for the VEO prompt:
+- STRICTLY second person ("You") — the viewer IS the protagonist
+- Mention visible inventory items naturally integrated into action (not listed)
+- Ground all action in <game_state><current_scene> — do not invent situations
+- Dense, specific visual description — every noun needs a descriptive adjective, every verb needs physical context
+- Use professional cinematography terminology (focal length, camera movement, shot size)
+- Include multi-sensory richness: implied sound through visual cues, temperature through light color, texture through surface detail
+- All visual elements must harmonize with <game_state><theme> and current atmosphere
+- Describe spatial relationships precisely: distance, scale, depth, direction`,
 );
 
 /**
@@ -120,10 +110,8 @@ export const veoFinalDirective: Atom<void> = defineAtom(
     source: "atoms/veo/visualLanguage.ts",
     exportName: "veoFinalDirective",
   },
-  () => `**FINAL DIRECTIVE:**
-Channel the visual mastery of Blade Runner 2049, the intimate character work of The Revenant, and the epic scope of Lawrence of Arabia. This is NOT a draft—this is your FINAL CUT, ready for Cannes.
-
-Make it UNFORGETTABLE.`,
+  () =>
+    `Create a polished cinematic script worthy of professional production. Every visual detail must serve the narrative — no decorative elements without purpose. Each frame should feel like a deliberate directorial choice. The final VEO prompt should be a vivid, continuous paragraph that a video generation model can render into a cohesive, atmospheric, emotionally resonant scene.`,
 );
 
 export { visualLanguageTemplate as default };

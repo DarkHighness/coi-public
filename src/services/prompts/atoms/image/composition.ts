@@ -10,7 +10,7 @@ import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 /**
- * 构图指令
+ * 构图指令 — 电影级摄影构图与镜头引导
  */
 export const compositionDirectives: Atom<void> = defineAtom(
   {
@@ -18,27 +18,12 @@ export const compositionDirectives: Atom<void> = defineAtom(
     source: "atoms/image/composition.ts",
     exportName: "compositionDirectives",
   },
-  () => `<composition_directives>
-  <camera>
-    <angle>Third-person cinematic angle, dynamic perspective, appropriate depth of field with bokeh on background</angle>
-    <framing>Rule of thirds composition, balanced negative space, leading lines drawing eye to subject, frame within frame if applicable</framing>
-    <focus>Sharp focus on main subject (protagonist), soft focus on background for depth, selective focus emphasizing emotion or action</focus>
-  </camera>
-  <visual_elements>
-    <texture_details>
-      High fidelity surface details: visible skin pores, fabric weave patterns, metal scratches and patina, wood grain, leather creases, realistic material properties (roughness, metallicity, specular)
-    </texture_details>
-    <lighting_and_reflections>
-      Cinematic lighting setup, volumetric fog/lighting, screen space reflections, specular highlights on wet or shiny surfaces, caustics for water/glass, rim lighting to separate subjects from background, high dynamic range (HDR)
-    </lighting_and_reflections>
-    <color_grading>Cinematic color grading appropriate to mood and theme, color contrast for visual interest, color harmony, saturated where appropriate, desaturated for mood where needed</color_grading>
-    <details>Environmental particles (dust, mist, magic, snow, rain), atmospheric effects, motion blur on moving elements, depth haze, realistic shadows with soft penumbra</details>
-  </visual_elements>
-</composition_directives>`,
+  () =>
+    `Cinematic third-person camera angle with dynamic perspective. Rule of thirds framing, leading lines drawing the eye to the main subject. Appropriate depth of field with soft bokeh background separating subject from environment. Foreground, midground, and background layers creating atmospheric depth. Rim lighting to separate characters from the background. Environmental storytelling through props, textures, and setting details.`,
 );
 
 /**
- * 渲染指令
+ * 渲染指令 — 角色与场景渲染质量要求
  */
 export const renderingInstructions: Atom<void> = defineAtom(
   {
@@ -46,17 +31,8 @@ export const renderingInstructions: Atom<void> = defineAtom(
     source: "atoms/image/composition.ts",
     exportName: "renderingInstructions",
   },
-  () => `<rendering_instructions>
-  <character_rendering>
-    Realistic human anatomy and proportions, detailed facial features with micro-expressions, skin with visible texture (pores, imperfections, subsurface scattering), realistic hair with individual strands visible, believable clothing physics and draping, armor/equipment with wear and weathering, sweat or moisture where contextually appropriate
-  </character_rendering>
-  <realism_level>
-    Photorealistic rendering quality, physically based materials (PBR), accurate light behavior (ray tracing), realistic shadows and reflections, proper perspective and foreshortening, anatomically correct poses, believable weight and mass
-  </realism_level>
-  <artistic_direction>
-    Capture emotional intensity through visual storytelling, emphasize tension or intimacy through composition and framing, use lighting to guide viewer attention, create atmosphere that supports narrative, don't shy away from depicting scene's true nature (beauty, violence, intimacy, horror as contextually appropriate), aesthetic appeal and visual impact prioritized
-  </artistic_direction>
-</rendering_instructions>`,
+  () =>
+    `Realistic human anatomy with natural proportions. Detailed facial features showing micro-expressions and emotion through body language and posture. Skin with visible texture and subsurface scattering. Hair with fine individual strands. Clothing and equipment showing authentic wear, weathering, and fabric physics. Surface material variety — stone grain, metal patina, wood texture, leather creases. Environmental particles where appropriate: dust motes, mist, magical effects, rain droplets. Cinematic color grading matching the scene mood.`,
 );
 
 export default compositionDirectives;

@@ -10,7 +10,7 @@ import type { Atom } from "../types";
 import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 
 /**
- * 质量前缀标签
+ * 质量前缀 — 面向现代图像生成模型的摄影级质量引导
  */
 export const imageQualityPrefix: Atom<void> = defineAtom(
   {
@@ -19,11 +19,11 @@ export const imageQualityPrefix: Atom<void> = defineAtom(
     exportName: "imageQualityPrefix",
   },
   () =>
-    `(Masterpiece, Best Quality, 8K Resolution, Ultra-Detailed, Cinematic Lighting, Ray Tracing, Global Illumination, Unreal Engine 5 Render, Photorealistic, Professional Photography, High Fidelity, Hyperrealistic Textures)`,
+    `High quality, highly detailed, sharp focus, professional photography, cinematic color grading, rich textures, atmospheric depth, 4K.`,
 );
 
 /**
- * 技术规格
+ * 技术规格 — 摄影与渲染技术关键词
  */
 export const imageTechnicalSpecs: Atom<void> = defineAtom(
   {
@@ -31,9 +31,8 @@ export const imageTechnicalSpecs: Atom<void> = defineAtom(
     source: "atoms/image/quality.ts",
     exportName: "imageTechnicalSpecs",
   },
-  () => `<technical_specs>
-  masterpiece, best quality, 8k uhd, ultra detailed, highly detailed, professional photography, award winning composition, sharp focus, crystal clear, photorealistic, ray tracing, path tracing, lumen reflections, global illumination, subsurface scattering, ambient occlusion, physically based rendering, depth of field, bokeh, cinematic color grading, film grain (subtle), lens flare (if appropriate), chromatic aberration (minimal), vignette (subtle), ISO 100, f/1.8, high shutter speed
-</technical_specs>`,
+  () =>
+    `Photorealistic rendering, volumetric lighting, subsurface scattering on skin, physically based materials, subtle film grain, natural lens flare where appropriate, high dynamic range.`,
 );
 
 export default imageQualityPrefix;

@@ -19,10 +19,7 @@ export const perspectiveInstruction: Atom<void> = defineAtom(
     exportName: "perspectiveInstruction",
   },
   () =>
-    `**CRITICAL PERSPECTIVE INSTRUCTION:**
-The AI must write the video prompt in **SECOND PERSON ("You")** for the viewer/protagonist.
-In the output script, describe what "You" (the protagonist) see, do, and how the world reacts to "You" (the protagonist).
-Do NOT use "You" to address the AI itself in the script output.`,
+    `Write the video prompt in SECOND PERSON ("You") for the viewer/protagonist. Describe what "You" see, do, and experience — the camera is the protagonist's eyes and presence. Ground descriptions in physical sensations and spatial relationships. Do NOT use "You" to address the AI itself. Do NOT narrate in third person ("The character sees...").`,
 );
 
 export default perspectiveInstruction;

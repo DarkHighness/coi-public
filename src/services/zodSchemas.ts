@@ -1579,7 +1579,9 @@ export const storyOutlineSchema = z.object({
       imagePrompt: z
         .string()
         .nullish()
-        .describe("Optional opening scene image prompt in story language."),
+        .describe(
+          "Vivid cinematographic scene description in English. Write as a narrative paragraph: [shot type] of [subject], [action], in [environment]. [Lighting]. [Mood]. [Textures].",
+        ),
     })
     .nullish()
     .describe("Opening narrative generated in Phase 9."),
@@ -1867,7 +1869,9 @@ export const outlineOpeningNarrativeSchema = z.object({
     imagePrompt: z
       .string()
       .nullish()
-      .describe("Optional opening scene image prompt in story language."),
+      .describe(
+        "Vivid cinematographic scene description in English. Write as a narrative paragraph: [shot type] of [subject], [action], in [environment]. [Lighting]. [Mood]. [Textures].",
+      ),
   }),
 });
 

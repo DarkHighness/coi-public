@@ -18,13 +18,13 @@ export const visualContinuityRules: Atom<void> = defineAtom(
     source: "atoms/veo/visualContinuity.ts",
     exportName: "visualContinuityRules",
   },
-  () => `**CRITICAL: VISUAL CONTINUITY & COHERENCE**
-You must analyze <veo_context> to ensure visual consistency.
-- **Environment Fidelity**: The video MUST reflect environment details in <game_state><location><environment>.
-- **Character State**: If <game_state><protagonist><status> mentions injuries, camera movement should be heavy/shaky; if <game_state><inventory> has glowing items, they must be visible light sources.
-- **Item Visibility**: Items in <game_state><inventory> should be visible on character (weapons held, potions on belt, etc.)
-- **NPC Presence**: Only include NPCs listed in <game_state><npcs_present>.
-- **Lighting/Weather Continuity**: Maintain environmental consistency from <recent_narrative_flow>.`,
+  () => `Analyze <veo_context> to ensure visual consistency and continuity:
+- Environment must match <game_state><location> details — architecture, props, lighting, and atmosphere should be spatially coherent.
+- Character state (injuries, fatigue, status effects) should visually affect posture, movement speed, and expression throughout the shot sequence.
+- Visible items from <game_state><inventory> should appear on the character naturally (holstered weapons, worn armor, carried items).
+- Only include NPCs listed in <game_state><npcs_present> — maintain their established appearance, clothing, and distinguishing features.
+- Maintain lighting direction and weather continuity from <recent_narrative_flow> — light sources should remain consistent across cuts.
+- Color palette should stay coherent throughout the sequence, shifting only with motivated narrative changes.`,
 );
 
 export default visualContinuityRules;

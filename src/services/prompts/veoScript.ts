@@ -145,48 +145,45 @@ ${recentHistoryXml}
     trace.record(cinematographerRole);
 
     return `
-**CRITICAL PERSPECTIVE INSTRUCTION:**
 ${trace.record(perspectiveInstruction)}
 ${getCulturalAdaptationInstruction(language)}
 
-═══════════════════════════════════════════════════════════════
-
 ${fullContextXml}
 
-═══════════════════════════════════════════════════════════════
+---
 
-**YOUR CREATIVE MANDATE:**
+Transform this narrative moment into a cinematic video script.
 
-Transform this narrative moment into a MASTERPIECE-LEVEL cinematic experience. Every frame must be meticulously crafted with the precision of a Roger Deakins shot, the atmosphere of Denis Villeneuve's vision, and the dynamism of Christopher Nolan's storytelling.
-
-**CRITICAL: VISUAL CONTINUITY & COHERENCE**
+VISUAL CONTINUITY:
 ${trace.record(visualContinuityRules)}
 
-**CHARACTER FIDELITY CONTRACT (MANDATORY)**
-- Keep each named character's canonical identity consistent: name, title, age, gender, race, profession.
-- Appearance must remain stable across shots (face, hair, body build, signature outfit/equipment).
-- If a field is missing in context, avoid inventing conflicting specifics; stay neutral and consistent.
+CHARACTER FIDELITY CONTRACT — NON-NEGOTIABLE:
+- Every character MUST use their canonical identity from <game_state>: exact name, title, age, gender, race, profession.
+- Protagonist appearance (face, hair, build, skin tone, outfit) MUST remain identical to <protagonist><appearance> across ALL shots and ALL generated scripts. Never invent or alter physical traits.
+- NPC appearance MUST match their <npc><appearance> field exactly. Do not improvise NPC looks.
+- If any identity field is missing, stay neutral and consistent — NEVER guess or fabricate details.
+- A character's <status> (injured, empowered) should affect posture/movement but NOT alter their base physical identity.
+- Equipment visible on characters must match <inventory> — do not add or remove items.
 
-**REQUIRED OUTPUT STRUCTURE:**
+LOCATION & TIME CONSISTENCY:
+- Environment must precisely match <location><description> — architecture, props, scale, and spatial layout.
+- Time of day from <world_context> must be reflected in lighting direction, sky color, and shadow angles.
+- Weather from <atmosphere> must be visually consistent — no clear sky during rain, no sunshine during fog.
 
 ${trace.record(veoOutputStructure)}
 
-**4. PROFESSIONAL SHOT BREAKDOWN**
+SHOT BREAKDOWN (2-5 shots):
 ${trace.record(shotBreakdownTemplate)}
 
-**5. MASTER VEO VIDEO GENERATION PROMPT**
-
+VEO PROMPT:
 ${trace.record(veoPromptRequirements)}
 
-**MANDATORY KEYWORDS:**
 ${trace.record(mandatoryKeywords)}
 
-**AVOID:**
 ${trace.record(avoidList)}
 
-═══════════════════════════════════════════════════════════════
+---
 
-**FINAL DIRECTIVE:**
 ${trace.record(veoFinalDirective)}
 `;
   },

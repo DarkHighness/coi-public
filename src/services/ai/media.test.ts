@@ -250,7 +250,7 @@ describe("media service", () => {
     expect(generateChat).toHaveBeenCalledWith(
       expect.objectContaining({
         systemInstruction:
-          "You are an AWARD-WINNING cinematographer and visionary director. Transform the narrative into a publication-ready video generation script with professional cinematographic detail. Output the structured script directly.",
+          "You are an expert cinematographer and director with deep knowledge of lens choice, camera movement, lighting design, and visual storytelling. Transform the narrative into a precise, visually rich video generation script. Specify exact camera angles, focal lengths, movement speeds, lighting motivation, color temperature, and atmospheric effects. Every technical choice must serve the emotional core of the scene. Output the structured script directly.",
         messages: [
           {
             role: "user",
@@ -267,7 +267,7 @@ describe("media service", () => {
     const firstPromptText = generateChat.mock.calls.at(0)?.at(0)
       ?.messages?.[0] as { content?: Array<{ text?: string }> } | undefined;
     expect(firstPromptText?.content?.[0]?.text).not.toContain(
-      "AWARD-WINNING cinematographer",
+      "expert cinematographer",
     );
   });
 });

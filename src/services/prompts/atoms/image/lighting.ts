@@ -29,21 +29,16 @@ export const lightingContext: Atom<LightingContextInput> = defineAtom(
     let lightingDetails = "";
 
     if (timeLower.match(/night|midnight|晚|夜/)) {
-      lightingDetails = `Moonlight casting silver highlights, deep indigo and black shadows, stars visible in sky, artificial light sources (torches, lanterns, magical glows, neon signs) providing warm or colored accents, cold blue color temperature, high contrast between light and shadow, mysterious atmosphere, specular highlights on wet surfaces`;
+      lightingDetails = `Nighttime scene. Cool blue moonlight casting silver highlights and deep indigo shadows. Warm accent lighting from torches, lanterns, or magical glows providing orange-gold contrast. Stars visible in the sky. High contrast between light pools and shadow areas. Specular highlights on wet or metallic surfaces. Mysterious, atmospheric mood. Color temperature around 4500K moonlight mixed with 2700K warm practicals.`;
     } else if (timeLower.match(/dawn|sunrise|晨|黎明/)) {
-      lightingDetails = `Soft diffused morning light, golden hour warmth beginning to spread, pastel pink and orange sky, long gentle shadows, dew glistening on surfaces, cool-to-warm color transition, ethereal and peaceful atmosphere, rim lighting on characters, volumetric morning mist`;
+      lightingDetails = `Dawn scene. Soft diffused morning light with golden hour warmth beginning to spread. Pastel pink and orange sky gradients. Long, gentle shadows stretching across the ground. Dew glistening on surfaces catching the first light. Cool-to-warm color transition across the scene. Volumetric morning mist with visible light rays. Ethereal, peaceful atmosphere. Subtle rim lighting on characters from the rising sun.`;
     } else if (timeLower.match(/dusk|sunset|黄昏|傍晚/)) {
-      lightingDetails = `Dramatic golden hour lighting, vibrant orange and purple sky, long dramatic shadows, warm backlight creating silhouettes, rich color saturation, lens flare potential, romantic or melancholic atmosphere, strong rim lighting, subsurface scattering on skin`;
+      lightingDetails = `Dusk scene. Dramatic golden hour lighting with rich, warm tones. Vibrant orange and purple sky with long dramatic shadows. Strong backlight creating silhouettes and rim lighting on characters. Saturated warm color palette with deep purple shadows. Subsurface scattering visible on skin and translucent materials. Romantic or melancholic atmosphere. Sun low on the horizon creating lens flare potential.`;
     } else {
-      lightingDetails = `Balanced natural daylight, clear visibility, soft ambient shadows, realistic color rendering, even illumination, bright and open atmosphere, sharp shadows, high dynamic range`;
+      lightingDetails = `Daytime scene. Balanced natural sunlight with clear visibility. Soft ambient fill light with defined directional shadows. Realistic color rendering with high dynamic range. Bright, open atmosphere with natural color temperature around 5600K.`;
     }
 
-    return `<temporal_context>
-  <time>${time}</time>
-  <lighting>
-    ${lightingDetails}
-  </lighting>
-</temporal_context>`;
+    return `Time: ${time}. ${lightingDetails}`;
   },
 );
 

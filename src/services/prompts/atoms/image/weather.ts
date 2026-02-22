@@ -14,15 +14,15 @@ export type WeatherEffectsInput = {
 };
 
 const weatherDetails: Record<string, string> = {
-  rain: "Rain falling, wet surfaces with high reflectivity, water droplets on skin/clothing, puddles reflecting environment, misty atmosphere, cool color palette, dramatic contrast, screen space reflections",
-  snow: "Snow falling, accumulation on surfaces, cold breath visible, frost and ice details with subsurface scattering, muted white and blue tones, soft diffused light, peaceful yet cold atmosphere",
-  fog: "Dense volumetric fog obscuring background, limited visibility, mysterious atmosphere, soft focus on distant objects, diffused light, muted colors, ethereal quality, light shafts piercing through fog",
+  rain: "Heavy rain falling in visible sheets, wet surfaces with high reflectivity and mirror-like puddles reflecting the environment, water droplets beading on skin and clothing, misty atmosphere with reduced visibility in the distance, cool desaturated color palette with dramatic contrast, caustic light patterns on wet ground",
+  snow: "Snow falling in soft flurries, accumulation on surfaces and shoulders, visible cold breath from characters, frost and ice crystals with subsurface scattering catching the light, muted white and blue color tones, soft diffused lighting with no harsh shadows, peaceful yet cold atmosphere",
+  fog: "Dense volumetric fog obscuring the background and creating depth layers, limited visibility beyond midground, mysterious atmosphere with soft diffused light, muted desaturated colors, ethereal quality with visible light shafts piercing through the fog, foreground elements sharp while distant objects fade to silhouettes",
   embers:
-    "Glowing embers floating in air, warm orange light sources, fire glow, ash particles, heat haze distortion, warm color temperature, magical or destructive atmosphere",
+    "Glowing embers and sparks floating through the air, warm orange-red point light sources, fire glow illuminating nearby surfaces, ash particles drifting, heat haze distortion in the air, warm color temperature dominating the scene, magical or destructive atmosphere",
   flicker:
-    "Unstable lighting, flickering shadows, dramatic light changes, supernatural or electrical atmosphere, high contrast, tension and unease, strobe effects",
+    "Unstable flickering light sources creating shifting shadows, dramatic moment-to-moment light variation, high contrast between lit and unlit areas, supernatural or electrical atmosphere suggesting tension and unease, sharp shadow edges that seem alive",
   sunny:
-    "Bright sunlight, clear sky, strong shadows, vibrant colors, warm atmosphere, lens flare, high visibility, cheerful or harsh depending on intensity, caustic reflections",
+    "Bright direct sunlight with clear blue sky, strong well-defined shadows with crisp edges, vibrant saturated colors, warm cheerful atmosphere, potential for lens flare from the sun, caustic reflections on glass and water surfaces, high visibility with excellent color rendering",
 };
 
 /**
@@ -39,9 +39,7 @@ export const weatherEffects: Atom<WeatherEffectsInput> = defineAtom(
 
     const details = weatherDetails[weather] || weather;
 
-    return `<weather_effects>
-  ${details}
-</weather_effects>`;
+    return `Weather: ${details}`;
   },
 );
 
