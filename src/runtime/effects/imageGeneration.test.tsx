@@ -187,6 +187,48 @@ describe("useImageGenerationQueue", () => {
     expect(saveImageMock).not.toHaveBeenCalled();
   });
 
+  it("uses node override prompt when queueing image generation", async () => {
+    generateSceneImageMock.mockResolvedValue({
+      url: "https://cdn/override.png",
+      blob: null,
+      log: {
+        usage: {
+          promptTokens: 1,
+          completionTokens: 1,
+          totalTokens: 2,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
+      },
+    });
+
+    const harness = createHarness({
+      id: "n1",
+      imagePrompt: "",
+      segmentIdx: 3,
+      stateSnapshot: null,
+    });
+
+    await act(async () => {
+      await harness.api.generateImageForNode("n1", {
+        id: "n1",
+        imagePrompt: "override prompt",
+      } as any);
+    });
+
+    await waitFor(() => {
+      expect(generateSceneImageMock).toHaveBeenCalledWith(
+        "override prompt",
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(harness.getState().nodes.n1.imageUrl).toBe(
+        "https://cdn/override.png",
+      );
+    });
+  });
+
   it("marks node as failed when URL is empty", async () => {
     generateSceneImageMock.mockResolvedValue({
       url: "   ",

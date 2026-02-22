@@ -30,6 +30,11 @@ interface UseImageGenerationQueueParams {
   onGenerationIssue?: (issue: ImageGenerationIssue) => void;
 }
 
+interface QueuedImageGeneration {
+  nodeId: string;
+  imagePrompt?: string;
+}
+
 export function useImageGenerationQueue({
   aiSettings,
   currentSlotId,
@@ -38,7 +43,7 @@ export function useImageGenerationQueue({
   triggerSave,
   onGenerationIssue,
 }: UseImageGenerationQueueParams) {
-  const [imageQueue, setImageQueue] = useState<string[]>([]);
+  const [imageQueue, setImageQueue] = useState<QueuedImageGeneration[]>([]);
   const [failedImageNodes, setFailedImageNodes] = useState<Set<string>>(
     new Set(),
   );
@@ -48,10 +53,30 @@ export function useImageGenerationQueue({
     const processQueue = async () => {
       if (isQueueProcessing || imageQueue.length === 0) return;
 
-      const nodeId = imageQueue[0];
+      const queueItem = imageQueue[0];
+      const nodeId = queueItem.nodeId;
       const node = gameStateRef.current.nodes[nodeId];
+      const effectivePrompt =
+        typeof queueItem.imagePrompt === "string" &&
+        queueItem.imagePrompt.trim().length > 0
+          ? queueItem.imagePrompt
+          : node?.imagePrompt || "";
 
       if (!node) {
+        setImageQueue((prev) => prev.slice(1));
+        return;
+      }
+
+      if (!effectivePrompt.trim()) {
+        console.warn(
+          "Cannot generate image from queue: missing imagePrompt for nodeId:",
+          nodeId,
+        );
+        onGenerationIssue?.({
+          code: "missing_prompt",
+          nodeId,
+        });
+        setFailedImageNodes((prev) => new Set(prev).add(nodeId));
         setImageQueue((prev) => prev.slice(1));
         return;
       }
@@ -103,7 +128,7 @@ export function useImageGenerationQueue({
         const snapshot = node.stateSnapshot || gameStateRef.current;
 
         const { url, log, blob } = await generateSceneImage(
-          node.imagePrompt || "",
+          effectivePrompt,
           aiSettings,
           gameStateRef.current,
           snapshot,
@@ -115,7 +140,7 @@ export function useImageGenerationQueue({
             saveId: currentSlotId || "unsaved",
             forkId: gameStateRef.current.forkId,
             turnIdx: node.segmentIdx || gameStateRef.current.turnNumber,
-            imagePrompt: node.imagePrompt || "",
+            imagePrompt: effectivePrompt,
             storyTitle: gameStateRef.current.outline?.title || undefined,
             location: gameStateRef.current.currentLocation || undefined,
             storyTime: gameStateRef.current.time || undefined,
@@ -257,7 +282,9 @@ export function useImageGenerationQueue({
     _isManualClick: boolean = false,
   ) => {
     const node = nodeOverride || gameStateRef.current.nodes[nodeId];
-    if (!node || !node.imagePrompt) {
+    const imagePrompt =
+      typeof node?.imagePrompt === "string" ? node.imagePrompt.trim() : "";
+    if (!node || !imagePrompt) {
       console.warn(
         "Cannot generate image: missing node or imagePrompt for nodeId:",
         nodeId,
@@ -270,8 +297,8 @@ export function useImageGenerationQueue({
     }
 
     setImageQueue((prev) => {
-      if (prev.includes(nodeId)) return prev;
-      return [...prev, nodeId];
+      if (prev.some((item) => item.nodeId === nodeId)) return prev;
+      return [...prev, { nodeId, imagePrompt }];
     });
   };
 
