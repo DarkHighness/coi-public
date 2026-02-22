@@ -774,6 +774,7 @@ const createBaseGameState = (): GameState => ({
     entityPresentation: {},
     sidebarCollapsed: false,
     timelineCollapsed: false,
+    actionPanelCollapsed: false,
     feedLayout: "scroll",
     viewedSegmentId: undefined,
   },

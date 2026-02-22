@@ -90,6 +90,7 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
 
   const sidebarCollapsed = gameState.uiState.sidebarCollapsed ?? false;
   const timelineCollapsed = gameState.uiState.timelineCollapsed ?? false;
+  const actionPanelCollapsed = gameState.uiState.actionPanelCollapsed ?? false;
 
   // Mount heavy panel content after expand animation starts to keep transition smooth.
   const [sidebarContentMounted, setSidebarContentMounted] =
@@ -335,18 +336,68 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
 
           {/* Action Panel */}
           <div className="flex-none z-30" data-tutorial-id="action-input-area">
-            <ActionPanel
-              onAction={onAction}
-              onShowToast={onShowToast}
-              onOpenStateEditor={onOpenStateEditor}
-              onOpenViewer={onOpenViewer}
-              onTriggerSave={triggerSave}
-              onRetry={onRetry}
-              onRebuildContext={onRebuildContext}
-              onCleanupEntities={cleanupEntities}
-              onForceUpdate={onForceUpdate}
-              onJumpToSegment={handleJumpToSegment}
-            />
+            <div className="flex justify-end px-3 pb-1">
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateUIState("actionPanelCollapsed", !actionPanelCollapsed)
+                }
+                className="h-6 w-6 border border-theme-border bg-theme-surface/90 text-theme-text flex items-center justify-center transition-colors hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
+                title={
+                  actionPanelCollapsed
+                    ? "Expand Action Panel"
+                    : "Collapse Action Panel"
+                }
+                aria-label={
+                  actionPanelCollapsed
+                    ? "Expand Action Panel"
+                    : "Collapse Action Panel"
+                }
+              >
+                <svg
+                  className={`h-4 w-4 text-theme-text transition-transform ${
+                    actionPanelCollapsed ? "rotate-180" : "rotate-0"
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div
+              className={`grid transition-[grid-template-rows,opacity,transform] duration-300 ease-out motion-reduce:transition-none ${
+                actionPanelCollapsed
+                  ? "opacity-0 translate-y-4 pointer-events-none"
+                  : "opacity-100 translate-y-0"
+              }`}
+              style={{
+                gridTemplateRows: actionPanelCollapsed ? "0fr" : "1fr",
+              }}
+              aria-hidden={actionPanelCollapsed}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <ActionPanel
+                  onAction={onAction}
+                  onShowToast={onShowToast}
+                  onOpenStateEditor={onOpenStateEditor}
+                  onOpenViewer={onOpenViewer}
+                  onTriggerSave={triggerSave}
+                  onRetry={onRetry}
+                  onRebuildContext={onRebuildContext}
+                  onCleanupEntities={cleanupEntities}
+                  onForceUpdate={onForceUpdate}
+                  onJumpToSegment={handleJumpToSegment}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -701,6 +701,7 @@ export interface UIState {
   sidebarWidth?: number; // Persisted width for left sidebar
   timelineCollapsed?: boolean; // Persisted state for right timeline collapse
   timelineWidth?: number; // Persisted width for right timeline
+  actionPanelCollapsed?: boolean; // Persisted state for desktop action panel collapse
   embeddingExpanded?: boolean; // Persisted state for embedding panel expansion
   feedLayout?: FeedLayout; // Persisted layout preference (scroll/stack)
   viewedSegmentId?: string; // Last viewed segment ID for continue game
