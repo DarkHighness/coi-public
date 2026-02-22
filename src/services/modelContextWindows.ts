@@ -273,7 +273,8 @@ const MODEL_CONTEXT_WINDOW_RULES: ModelContextWindowRule[] = [
   // Gemini previews also frequently rev with date suffixes.
   {
     providerProtocol: "gemini",
-    pattern: /^gemini-3-(?:pro|flash)-preview(?:-[0-9]{2}-[0-9]{2})?$/,
+    pattern:
+      /^gemini-3-(?:pro|flash)-preview(?:-(?:[0-9]{2}-[0-9]{2}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2}))?$/,
     contextWindow: 1048576,
   },
   {
@@ -394,6 +395,31 @@ function modelPrefix(value: string): string | undefined {
   return normalized.slice(0, slashIndex);
 }
 
+const OPENROUTER_UPSTREAM_PROTOCOL_BY_PREFIX: Partial<
+  Record<string, ProviderProtocol>
+> = {
+  anthropic: "claude",
+  google: "gemini",
+  openai: "openai",
+};
+
+function resolveOpenRouterUpstreamContextWindow(
+  normalizedModelId: string,
+): number | undefined {
+  const slashIndex = normalizedModelId.indexOf("/");
+  if (slashIndex <= 0 || slashIndex >= normalizedModelId.length - 1) {
+    return undefined;
+  }
+  const upstreamPrefix = normalizedModelId.slice(0, slashIndex);
+  const upstreamModelId = normalizedModelId.slice(slashIndex + 1);
+  const upstreamProtocol =
+    OPENROUTER_UPSTREAM_PROTOCOL_BY_PREFIX[upstreamPrefix];
+  if (!upstreamProtocol) {
+    return undefined;
+  }
+  return getDefaultModelContextWindow(upstreamProtocol, upstreamModelId);
+}
+
 function readOpenRouterCandidateContextLength(
   modelRecord: JsonRecord,
 ): number | undefined {
@@ -450,6 +476,8 @@ interface OpenRouterMatchScore {
   overlap: number;
   lengthDelta: number;
 }
+
+const OPENROUTER_CONTEXT_MATCH_MIN_SCORE = 1_200;
 
 function scoreOpenRouterIdentifier(
   targetModelId: string,
@@ -553,7 +581,7 @@ function findBestOpenRouterContextCandidate(
 
       return { candidate, score: bestScore };
     })
-    .filter((item) => item.score.score > 0);
+    .filter((item) => item.score.score >= OPENROUTER_CONTEXT_MATCH_MIN_SCORE);
 
   ranked.sort((a, b) => {
     if (b.score.score !== a.score.score) {
@@ -569,6 +597,70 @@ function findBestOpenRouterContextCandidate(
   });
 
   return ranked[0]?.candidate;
+}
+
+export function resolveModelContextLengthFromModelInfos(
+  modelId: string,
+  models: ModelInfo[] | undefined,
+): number | undefined {
+  const target = modelId?.trim();
+  if (!target || !Array.isArray(models) || models.length === 0) {
+    return undefined;
+  }
+
+  const candidates: OpenRouterContextCandidate[] = [];
+  for (const model of models) {
+    if (!model?.id || typeof model.id !== "string") {
+      continue;
+    }
+    const contextLength = sanitizePositiveContextWindow(model.contextLength);
+    if (!contextLength) {
+      continue;
+    }
+    candidates.push({
+      id: model.id,
+      name: model.name,
+      contextLength,
+    });
+  }
+
+  if (candidates.length === 0) {
+    return undefined;
+  }
+
+  return findBestOpenRouterContextCandidate(target, candidates)?.contextLength;
+}
+
+export function resolveOpenRouterContextLengthFromModelInfos(
+  modelId: string,
+  models: ModelInfo[] | undefined,
+): number | undefined {
+  return resolveModelContextLengthFromModelInfos(modelId, models);
+}
+
+function resolveOpenRouterLookupApiKey(
+  params: ResolveModelContextWindowTokensWithLookupParams,
+): string | undefined {
+  if (
+    params.providerProtocol === "openrouter" &&
+    typeof params.providerApiKey === "string" &&
+    params.providerApiKey.trim().length > 0
+  ) {
+    return params.providerApiKey.trim();
+  }
+
+  const instances = params.settings?.providers?.instances;
+  if (!Array.isArray(instances)) {
+    return undefined;
+  }
+
+  const openRouterInstance = instances.find(
+    (instance) =>
+      instance?.protocol === "openrouter" &&
+      typeof instance.apiKey === "string" &&
+      instance.apiKey.trim().length > 0,
+  );
+  return openRouterInstance?.apiKey?.trim();
 }
 
 function getOpenRouterRemoteCacheKey(apiKey: string | undefined): string {
@@ -815,7 +907,15 @@ export function getDefaultModelContextWindow(
       item.providerProtocol === providerProtocol &&
       item.pattern.test(normalizedModel),
   );
-  return rule?.contextWindow;
+  if (rule?.contextWindow) {
+    return rule.contextWindow;
+  }
+
+  if (providerProtocol === "openrouter") {
+    return resolveOpenRouterUpstreamContextWindow(normalizedModel);
+  }
+
+  return undefined;
 }
 
 export function applyDefaultContextWindowsToModels(
@@ -1162,10 +1262,10 @@ export async function resolveModelContextWindowTokensWithLookup(
   );
 
   let openRouterCatalogValue: number | undefined;
-  if (!providerValue && params.providerProtocol === "openrouter") {
+  if (!providerValue) {
     openRouterCatalogValue = await resolveOpenRouterCatalogContextWindow({
       modelId: params.modelId,
-      apiKey: params.providerApiKey,
+      apiKey: resolveOpenRouterLookupApiKey(params),
     });
   }
 

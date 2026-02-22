@@ -76,4 +76,17 @@ describe("resolveContextBoundMaxOutputTokens", () => {
       }),
     ).toBe(120752);
   });
+
+  it("uses mapped OpenRouter upstream defaults instead of 128k fallback", () => {
+    expect(
+      resolveContextBoundMaxOutputTokens({
+        providerProtocol: "openrouter",
+        modelId: "google/gemini-3-flash-preview",
+        maxOutputTokens: 128000,
+        tokenBudget: {
+          totalTokenEstimate: 100000,
+        },
+      }),
+    ).toBe(128000);
+  });
 });

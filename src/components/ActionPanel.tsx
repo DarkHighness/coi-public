@@ -18,6 +18,7 @@ import { useRuntimeContext } from "../runtime/context";
 import { useSettingsContext } from "../contexts/SettingsContext";
 import {
   DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+  resolveModelContextLengthFromModelInfos,
   resolveModelContextWindowTokens,
 } from "../services/modelContextWindows";
 import { pickLatestToolCallContextUsage } from "../services/ai/contextUsage";
@@ -137,10 +138,11 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     const provider = aiSettings.providers.instances.find(
       (p) => p.id === aiSettings.story.providerId,
     );
-    const models = providerModels?.[aiSettings.story.providerId];
-    const ctx = models?.find(
-      (m) => m.id === aiSettings.story.modelId,
-    )?.contextLength;
+    const models = providerModels?.[aiSettings.story.providerId] || [];
+    const ctx = resolveModelContextLengthFromModelInfos(
+      aiSettings.story.modelId,
+      models,
+    );
     return resolveModelContextWindowTokens({
       settings: aiSettings,
       providerId: aiSettings.story.providerId,

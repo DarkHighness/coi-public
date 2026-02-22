@@ -16,6 +16,7 @@ import {
   getLearnedModelContextWindow,
   getModelContextWindowDefaultsMeta,
   getPerModelContextWindowOverride,
+  resolveModelContextLengthFromModelInfos,
   resolveModelContextWindowTokens,
   upsertPerModelContextWindowOverride,
 } from "../../services/modelContextWindows";
@@ -156,9 +157,12 @@ export const SettingsModels: React.FC<SettingsModelsProps> = ({
 
   const storyProvider = getProviderById(currentSettings.story.providerId);
   const storyModelId = currentSettings.story.modelId;
-  const storyProviderModelMetadata = providerModels[
-    currentSettings.story.providerId
-  ]?.find((m) => m.id === storyModelId)?.contextLength;
+  const storyProviderModels =
+    providerModels[currentSettings.story.providerId] || [];
+  const storyProviderModelMetadata = resolveModelContextLengthFromModelInfos(
+    storyModelId,
+    storyProviderModels,
+  );
   const currentContextOverride = getPerModelContextWindowOverride(
     currentSettings,
     currentSettings.story.providerId,

@@ -9,6 +9,8 @@ import {
   getCopyableModelContextWindowDefaults,
   parseContextOverflowDiagnostics,
   relaxLearnedContextWindowOnSuccess,
+  resolveModelContextLengthFromModelInfos,
+  resolveOpenRouterContextLengthFromModelInfos,
   resolveModelContextWindowTokens,
   resolveModelContextWindowTokensWithLookup,
   upsertLearnedModelContextWindow,
@@ -138,6 +140,76 @@ describe("modelContextWindows", () => {
 
     expect(patched[0].contextLength).toBe(1047576);
     expect(patched[1].contextLength).toBe(99999);
+  });
+
+  it("maps OpenRouter upstream Gemini defaults when provider metadata is missing", () => {
+    const resolved = resolveModelContextWindowTokens({
+      settings: withContextWindows({}),
+      providerId: "provider-1",
+      providerProtocol: "openrouter",
+      modelId: "google/gemini-3-flash-preview",
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+
+    expect(resolved).toEqual({
+      value: 1048576,
+      source: "defaults.modelMap",
+    });
+  });
+
+  it("supports OpenRouter canonical Gemini date-suffixed model IDs", () => {
+    const resolved = resolveModelContextWindowTokens({
+      settings: withContextWindows({}),
+      providerId: "provider-1",
+      providerProtocol: "openrouter",
+      modelId: "google/gemini-3-flash-preview-20251217",
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+
+    expect(resolved).toEqual({
+      value: 1048576,
+      source: "defaults.modelMap",
+    });
+  });
+
+  it("fuzzy-resolves OpenRouter context length from loaded model infos", () => {
+    const contextLength = resolveOpenRouterContextLengthFromModelInfos(
+      "google/gemini-3-flash-preview",
+      [
+        {
+          id: "google/gemini-3-flash-preview-20251217",
+          name: "Google: Gemini 3 Flash Preview",
+          contextLength: 1048576,
+        },
+        {
+          id: "google/gemini-2.5-flash-lite",
+          name: "Google: Gemini 2.5 Flash Lite",
+          contextLength: 1048576,
+        },
+      ],
+    );
+
+    expect(contextLength).toBe(1048576);
+  });
+
+  it("fuzzy-resolves context length from non-OpenRouter loaded model infos", () => {
+    const contextLength = resolveModelContextLengthFromModelInfos(
+      "gpt-4o-latest",
+      [
+        {
+          id: "gpt-4o-mini",
+          name: "gpt-4o-mini",
+          contextLength: 128000,
+        },
+        {
+          id: "gpt-4o-latest-2026-01-17",
+          name: "gpt-4o-latest",
+          contextLength: 262144,
+        },
+      ],
+    );
+
+    expect(contextLength).toBe(262144);
   });
 
   it("exposes copyable default mapping", () => {
@@ -384,5 +456,67 @@ describe("modelContextWindows", () => {
       expect.any(Object),
     );
     expect(fetchMock).toHaveBeenCalledWith("/resources/openrouter_models.json");
+  });
+
+  it("uses OpenRouter catalog lookup even when provider is not openrouter", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "https://openrouter.ai/api/v1/models") {
+        expect(init?.headers).toEqual(
+          expect.objectContaining({
+            Authorization: "Bearer or-key",
+          }),
+        );
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: "google/gemini-3-flash-preview-20251217",
+                context_length: 1048576,
+              },
+            ],
+          }),
+        };
+      }
+      return { ok: false, status: 404 };
+    });
+    vi.stubGlobal("fetch", fetchMock as any);
+
+    const settings = {
+      ...withContextWindows({}),
+      providers: {
+        instances: [
+          {
+            id: "provider-or",
+            name: "OpenRouter",
+            protocol: "openrouter",
+            baseUrl: "https://openrouter.ai/api/v1",
+            apiKey: "or-key",
+            enabled: true,
+            createdAt: 0,
+            lastModified: 0,
+          },
+        ],
+        nextId: 2,
+      },
+    } as unknown as AISettings;
+
+    const resolved = await resolveModelContextWindowTokensWithLookup({
+      settings,
+      providerId: "provider-1",
+      providerProtocol: "openai",
+      modelId: "google/gemini-3-flash-preview",
+      providerApiKey: "non-or-key",
+      fallback: DEFAULT_CONTEXT_WINDOW_FALLBACK_TOKENS,
+    });
+
+    expect(resolved).toEqual({
+      value: 1048576,
+      source: "provider.modelMetadata",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://openrouter.ai/api/v1/models",
+      expect.any(Object),
+    );
   });
 });
