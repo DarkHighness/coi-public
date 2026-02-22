@@ -62,12 +62,13 @@ describe("runVisualLoop", () => {
       runVisualLoop({
         gameState: { forkId: 0 } as any,
         segment: { id: 1, text: "scene" } as any,
+        vfsSession: {} as any,
         settings: {} as any,
         target: "image_prompt",
         language: "en",
       }),
     ).rejects.toThrow(
-      "No provider config found for image. Please check your model settings.",
+      "No provider config found for visual loop route (story). Please check your model settings.",
     );
   });
 
@@ -82,10 +83,9 @@ describe("runVisualLoop", () => {
         functionCalls: [
           {
             id: "call-1",
-            name: "submit_visual_result",
+            name: "submit_image_prompt_result",
             args: {
               imagePrompt: "a cinematic still",
-              veoScript: "shot 1",
             },
           },
         ],
@@ -99,15 +99,16 @@ describe("runVisualLoop", () => {
     const result = await runVisualLoop({
       gameState: { forkId: 2 } as any,
       segment: { id: 99, text: "Aria enters" } as any,
+      vfsSession: {} as any,
       settings: {} as any,
-      target: "both",
+      target: "image_prompt",
       language: "en",
       onProgress,
     });
 
     expect(mockedGetProviderConfig).toHaveBeenCalledWith(
       expect.anything(),
-      "image",
+      "story",
     );
     expect(mockedGetOrCreateSession).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -120,10 +121,16 @@ describe("runVisualLoop", () => {
     );
 
     expect(mockedCallWithAgenticRetry).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       imagePrompt: "a cinematic still",
-      veoScript: "shot 1",
       logs: [{ endpoint: "visual-iteration-1" }],
+      usage: {
+        promptTokens: 1,
+        completionTokens: 2,
+        totalTokens: 3,
+        cacheRead: 0,
+        cacheWrite: 0,
+      },
     });
 
     expect(onProgress).toHaveBeenCalledTimes(1);

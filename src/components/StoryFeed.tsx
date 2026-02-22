@@ -130,6 +130,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
       aiSettings,
       currentSlotId: saveId,
       failedImageNodes,
+      vfsSession,
     } = state;
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -781,6 +782,20 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     // Dynamic text scaling
     const textScaleClass = bothCollapsed ? "scale-content-expanded" : "";
 
+    const getVisualRecentHistory = useCallback(
+      (segmentId: string, maxSegments: number = 12): StorySegment[] => {
+        const anchorIndex = currentHistory.findIndex(
+          (item) => item.id === segmentId,
+        );
+        const scopedHistory =
+          anchorIndex >= 0
+            ? currentHistory.slice(0, anchorIndex + 1)
+            : currentHistory;
+        return scopedHistory.slice(-maxSegments);
+      },
+      [currentHistory],
+    );
+
     const handleGeneratePrompt = useCallback(
       async (id: string) => {
         const segment = getSegmentById(id);
@@ -795,6 +810,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           const result = await runVisualLoop({
             gameState: gameStateRef.current,
             segment,
+            vfsSession,
+            recentHistory: getVisualRecentHistory(id),
             settings: activeSettings,
             target: "image_prompt",
             language: activeSettings.language || "English",
@@ -814,7 +831,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           setIsVisualModalOpen(false);
         }
       },
-      [getSegmentById, updateNodeMeta],
+      [getSegmentById, getVisualRecentHistory, updateNodeMeta, vfsSession],
     );
 
     const handleGenerateImageFull = useCallback(
@@ -837,6 +854,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           const result = await runVisualLoop({
             gameState: gameStateRef.current,
             segment,
+            vfsSession,
+            recentHistory: getVisualRecentHistory(id),
             settings: activeSettings,
             target: "image_prompt",
             language: activeSettings.language || "English",
@@ -859,7 +878,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           setIsVisualModalOpen(false);
         }
       },
-      [getSegmentById, onGenerateImage, updateNodeMeta],
+      [
+        getSegmentById,
+        getVisualRecentHistory,
+        onGenerateImage,
+        updateNodeMeta,
+        vfsSession,
+      ],
     );
 
     const handleGenerateCinematic = useCallback(
@@ -876,6 +901,8 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           const result = await runVisualLoop({
             gameState: gameStateRef.current,
             segment,
+            vfsSession,
+            recentHistory: getVisualRecentHistory(id),
             settings: activeSettings,
             target: "veo_script",
             language: activeSettings.language || "English",
@@ -898,7 +925,13 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
           setIsVisualModalOpen(false);
         }
       },
-      [getSegmentById, onAnimate, updateNodeMeta],
+      [
+        getSegmentById,
+        getVisualRecentHistory,
+        onAnimate,
+        updateNodeMeta,
+        vfsSession,
+      ],
     );
 
     const totalSegments = currentHistory.length;

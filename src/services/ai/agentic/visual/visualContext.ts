@@ -15,6 +15,50 @@ import type {
 } from "../../../../types";
 import { createUserMessage } from "../../../messageTypes";
 import { languageEnforcement } from "../../../prompts/atoms/cultural";
+import {
+  IMAGE_PROMPT_SUBMIT_TOOL_NAME,
+  VEO_SCRIPT_SUBMIT_TOOL_NAME,
+} from "./visualToolHandler";
+
+const VISUAL_RECENT_HISTORY_LIMIT = 12;
+const VISUAL_CONTEXT_TEXT_PREVIEW = 260;
+
+const trimText = (text: string | undefined, maxLength: number): string => {
+  const normalized = (text || "").replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength)}...`;
+};
+
+const buildRecentDialogueXml = (
+  recentHistory: StorySegment[],
+  anchorSegmentId: string,
+): string => {
+  if (recentHistory.length === 0) {
+    return "<recent_dialogue><none>No recent dialogue provided.</none></recent_dialogue>";
+  }
+
+  const anchorIndex = recentHistory.findIndex(
+    (item) => item.id === anchorSegmentId,
+  );
+  const scopedHistory =
+    anchorIndex >= 0 ? recentHistory.slice(0, anchorIndex + 1) : recentHistory;
+  const windowed = scopedHistory.slice(-VISUAL_RECENT_HISTORY_LIMIT);
+
+  if (windowed.length === 0) {
+    return "<recent_dialogue><none>No recent dialogue provided.</none></recent_dialogue>";
+  }
+
+  const turns = windowed
+    .map(
+      (item) =>
+        `  <turn role="${item.role}" segmentIdx="${item.segmentIdx}" id="${item.id}">${trimText(item.text, VISUAL_CONTEXT_TEXT_PREVIEW)}</turn>`,
+    )
+    .join("\n");
+
+  return `<recent_dialogue count="${windowed.length}">
+${turns}
+</recent_dialogue>`;
+};
 
 /**
  * Get system instruction for visual generation
@@ -30,6 +74,13 @@ export function getVisualSystemInstruction(
         ? "a cinematic video script (VEO script)"
         : "both a detailed image prompt and a cinematic video script";
 
+  const submitToolName =
+    target === "image_prompt"
+      ? IMAGE_PROMPT_SUBMIT_TOOL_NAME
+      : target === "veo_script"
+        ? VEO_SCRIPT_SUBMIT_TOOL_NAME
+        : `${IMAGE_PROMPT_SUBMIT_TOOL_NAME} / ${VEO_SCRIPT_SUBMIT_TOOL_NAME}`;
+
   return `You are a Visual Director and Cinematographer. Your task is to generate ${targetDesc} based on the provided story context.
 
 <role>
@@ -41,19 +92,24 @@ Your goal is to translate the narrative into high-fidelity visual instructions.
 
 <tools>
 You have the following tools:
-1. \`submit_visual_result\`: Submit the final visual results.
+1. Read-only VFS tools:
+   - \`vfs_ls\`, \`vfs_schema\`, \`vfs_read_chars\`, \`vfs_read_lines\`, \`vfs_read_json\`, \`vfs_read_markdown\`, \`vfs_search\`
+2. Submit tool for this loop: \`${submitToolName}\`
 
 <examples>
 - Example:
-  Call \`submit_visual_result\` with:
-  - imagePrompt: "A cinematic description of the scene, composition, lighting, lens, style…"
-  - veoScript: "Shot-by-shot script with camera movement, beats, pacing…"
+  First call read-only VFS tools to gather evidence, then call \`${submitToolName}\`.
+  For image loop: submit \`imagePrompt\`.
+  For VEO loop: submit \`veoScript\`.
 </examples>
 </tools>
 
 <critical_rules>
+- Read-only tools are for retrieval only; never attempt mutations or unsupported tools.
+- Always gather concrete evidence from recent dialogue/world state before submitting.
 - Maintain IP fidelity: NPCs and Protagonist must match their physical descriptions exactly.
 - Atmosphere must match the current game state (envTheme, ambience, weather).
+- If generating \`imagePrompt\`, keep it in English for image model compatibility.
 - Output in ${language}.
 </critical_rules>
 
@@ -66,6 +122,7 @@ ${languageEnforcement({ language })}`;
 export function buildVisualInitialContext(
   gameState: GameState,
   segment: StorySegment,
+  recentHistory: StorySegment[] = [],
 ): string {
   const parts: string[] = [];
 
@@ -99,16 +156,19 @@ export function buildVisualInitialContext(
     );
   }
 
+  parts.push(buildRecentDialogueXml(recentHistory, segment.id));
+
   return parts.join("\n\n");
 }
 
 export function buildVisualContextMessages(
   gameState: GameState,
   segment: StorySegment,
+  recentHistory: StorySegment[] = [],
 ): UnifiedMessage[] {
   return [
     createUserMessage(
-      `[CONTEXT: Visual Generation Task]\n${buildVisualInitialContext(gameState, segment)}`,
+      `[CONTEXT: Visual Generation Task]\n${buildVisualInitialContext(gameState, segment, recentHistory)}\n\n[NOTE]\nRecent dialogue is provided as a compact seed. Use visual read-only tools for detailed retrieval before submitting final result.`,
     ),
   ];
 }
