@@ -114,38 +114,58 @@ const toDisplayFileMap = (
   return display;
 };
 
-const hasUnknownKeys = (input: unknown, parsed: unknown): boolean => {
+/**
+ * Collect JSON Pointer paths of keys present in `input` but stripped by Zod
+ * parsing in `parsed`. Returns an empty array when no unknown keys exist.
+ */
+const collectUnknownKeyPaths = (
+  input: unknown,
+  parsed: unknown,
+  prefix = "",
+): string[] => {
   if (input === null || typeof input !== "object") {
-    return false;
+    return [];
   }
 
   if (Array.isArray(input)) {
     if (!Array.isArray(parsed)) {
-      return true;
+      return [prefix || "/"];
     }
-    return input.some((item, index) => hasUnknownKeys(item, parsed[index]));
+    const paths: string[] = [];
+    for (let i = 0; i < input.length; i++) {
+      paths.push(
+        ...collectUnknownKeyPaths(input[i], parsed[i], `${prefix}/${i}`),
+      );
+    }
+    return paths;
   }
 
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return true;
+    return [prefix || "/"];
   }
 
+  const paths: string[] = [];
   for (const key of Object.keys(input as JsonObject)) {
     if (key === "__proto__" || key === "constructor" || key === "prototype") {
-      return true;
+      paths.push(`${prefix}/${key}`);
+      continue;
     }
 
+    const childPrefix = `${prefix}/${key}`;
     if (!Object.prototype.hasOwnProperty.call(parsed, key)) {
-      return true;
-    }
-    if (
-      hasUnknownKeys((input as JsonObject)[key], (parsed as JsonObject)[key])
-    ) {
-      return true;
+      paths.push(childPrefix);
+    } else {
+      paths.push(
+        ...collectUnknownKeyPaths(
+          (input as JsonObject)[key],
+          (parsed as JsonObject)[key],
+          childPrefix,
+        ),
+      );
     }
   }
 
-  return false;
+  return paths;
 };
 
 const VIEW_ENTITY_ID_PATH_PATTERN =
@@ -1275,8 +1295,14 @@ export class VfsSession {
       throw error;
     }
 
-    if (hasUnknownKeys(normalizedPatched, validated)) {
-      throw new Error(`Unknown keys found after validation: ${canonicalPath}`);
+    const unknownPaths = collectUnknownKeyPaths(normalizedPatched, validated);
+    if (unknownPaths.length > 0) {
+      const preview = unknownPaths.slice(0, 8).join(", ");
+      const suffix =
+        unknownPaths.length > 8 ? ` (and ${unknownPaths.length - 8} more)` : "";
+      throw new Error(
+        `Unknown keys found after validation: ${canonicalPath}. Keys not in schema: ${preview}${suffix}. Use vfs_schema to check allowed fields.`,
+      );
     }
 
     this.writeFile(canonicalPath, JSON.stringify(validated), file.contentType, {
@@ -1342,8 +1368,14 @@ export class VfsSession {
       throw error;
     }
 
-    if (hasUnknownKeys(normalizedMerged, validated)) {
-      throw new Error(`Unknown keys found after validation: ${canonicalPath}`);
+    const unknownPaths = collectUnknownKeyPaths(normalizedMerged, validated);
+    if (unknownPaths.length > 0) {
+      const preview = unknownPaths.slice(0, 8).join(", ");
+      const suffix =
+        unknownPaths.length > 8 ? ` (and ${unknownPaths.length - 8} more)` : "";
+      throw new Error(
+        `Unknown keys found after validation: ${canonicalPath}. Keys not in schema: ${preview}${suffix}. Use vfs_schema to check allowed fields.`,
+      );
     }
 
     this.writeFile(canonicalPath, JSON.stringify(validated), contentType, {

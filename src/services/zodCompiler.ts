@@ -1696,6 +1696,11 @@ const pickGeminiOpenRouterType = (
   if (typeof type === "string") return { type, addNullable: false };
   // When collapsing type array, detect if "null" was present
   const hasNull = type.includes("null");
+  // If the type array covers all JSON types (any value), drop type constraint
+  const nonNull = type.filter((t) => t !== "null");
+  if (nonNull.length >= 5) {
+    return { type: undefined, addNullable: hasNull };
+  }
   for (const candidate of GEMINI_OPENROUTER_TYPE_PRIORITY) {
     if (candidate !== "null" && type.includes(candidate))
       return { type: candidate, addNullable: hasNull };
@@ -1704,7 +1709,7 @@ const pickGeminiOpenRouterType = (
 };
 
 const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
-  const result: OpenAISchema = { type: "string" };
+  const result: OpenAISchema = {};
 
   const { type: normalizedType, addNullable } = pickGeminiOpenRouterType(
     schema.type,
@@ -1739,10 +1744,12 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
     const mergedProperties: Record<string, OpenAISchema> = {};
     const allRequired = new Set<string>();
     let allVariantsHaveRequired = true;
+    let anyVariantHasProperties = false;
 
     for (const variant of anyOf) {
       const sanitizedVariant = sanitizeOpenRouterGeminiSchema(variant);
       if (sanitizedVariant.properties) {
+        anyVariantHasProperties = true;
         for (const [key, value] of Object.entries(
           sanitizedVariant.properties,
         )) {
@@ -1760,7 +1767,7 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
       }
     }
 
-    if (Object.keys(mergedProperties).length > 0) {
+    if (anyVariantHasProperties && Object.keys(mergedProperties).length > 0) {
       result.properties = {
         ...(result.properties || {}),
         ...mergedProperties,
@@ -1782,6 +1789,10 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
           result.required = [...existingRequired];
         }
       }
+    } else if (!anyVariantHasProperties) {
+      // All variants are primitives — drop type constraint, keep description
+      // This avoids degrading mixed-type unions (e.g. string|number|boolean|null) to {type:"object"}
+      delete result.type;
     }
   }
 

@@ -199,33 +199,36 @@ export class VfsToolRegistry {
     if (capability.readOnly) {
       clauses.push("read-only");
     } else {
-      clauses.push(`writes: ${capability.mayWriteClasses.join(", ")}`);
-      clauses.push("resource-template operation contracts enforced");
+      clauses.push("write");
     }
 
     if (capability.needsElevationFor.includes("elevated_editable")) {
-      clauses.push(
-        "elevated_editable requires one-time user-confirmed token in /god or /sudo",
-      );
+      clauses.push("elevation for protected paths");
     }
 
     if (capability.isFinishTool) {
-      clauses.push("finish protocol tool");
-    } else if (capability.mayWriteClasses.includes("finish_guarded")) {
-      clauses.push("finish_guarded writable only via commit/finish protocol");
-    }
-
-    if (capability.immutableZones.length > 0) {
-      clauses.push(`immutable: ${capability.immutableZones.join(", ")}`);
+      clauses.push("finish protocol");
     }
 
     return `- \`${name}\`: ${capability.summary} (${clauses.join("; ")})`;
   }
 
   public formatCapabilitiesForPrompt(toolset: VfsToolsetId): string {
-    return this.getToolset(toolset)
-      .tools.map((name) => this.describeForPrompt(name))
-      .join("\n");
+    const lines = this.getToolset(toolset).tools.map((name) =>
+      this.describeForPrompt(name),
+    );
+
+    // Add shared write-tool constraints once instead of per-tool
+    const hasWriteTools = this.getToolset(toolset).tools.some(
+      (name) => !this.getCapability(name).readOnly,
+    );
+    if (hasWriteTools) {
+      lines.push(
+        "- All write tools enforce resource-template contracts and block immutable zones (skills/**/**, refs/**/**, shared/system/**).",
+      );
+    }
+
+    return lines.join("\n");
   }
 }
 

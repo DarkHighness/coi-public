@@ -93,6 +93,12 @@ export function buildInitialContext(
     buildWorkspaceMemoryFileMessage(vfsSession, doc),
   );
 
+  // Mark injected workspace files as "seen" so read-before-write gates
+  // don't require redundant vfs_read_* calls for files already in context.
+  vfsSession.noteToolSeenMany(
+    WORKSPACE_MEMORY_DOC_ORDER.map((doc) => getWorkspaceMemoryLogicalPath(doc)),
+  );
+
   const worldFoundation = buildWorldFoundation(vfsSession);
   const protagonist = buildProtagonist(vfsSession);
 

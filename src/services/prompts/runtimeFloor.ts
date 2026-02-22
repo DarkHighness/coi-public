@@ -12,29 +12,24 @@ You MUST follow these runtime protocol constraints:
   - Paths: \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
   - Read tools: \`vfs_read_markdown\` (prefer section selectors), \`vfs_read_chars\`, \`vfs_read_lines\` (use for large files with bounded ranges), \`vfs_read_json\` (requires \`pointers\`), \`vfs_ls\` (returns stats/hints), \`vfs_schema\`, \`vfs_search\`.
   - Write tools: \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`. Never use these on finish-guarded paths.
-  - \`vfs_vm\`: multi-step JavaScript orchestrator. MUST be the only top-level tool call. Exactly one JavaScript script per call and script must define \`async function main(ctx)\`; vm output is \`main\` return value. No recursion, no \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`. Inside \`main(ctx)\`, use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers (for example \`await ctx.vfs_read_chars({...})\`); NEVER use \`VFS.read(...)\` or any \`VFS.*\` namespace. Outside \`vfs_vm\`, call \`vfs_*\` tools directly as top-level tool calls; \`ctx.*\` is only available inside \`main(ctx)\`. Runtime enforces bounded inner tool calls/script length and returns bounded \`console.log\` logs. Finish at most once, last.
+  - \`vfs_vm\`: multi-step batch orchestrator — see tool description for usage rules. Skill-read gates are checked BEFORE vm execution; satisfy them with top-level read calls first.
   - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\` + \`SCHEMA.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` → world turn, \`[Player Rate]\` → preference-ingestion only (NO plot progression), \`[SUDO]\` → elevated update.
-  - Workspace memory docs are injected as leading user messages:
-    \`<file path="workspace/IDENTITY.md">...\`, \`<file path="workspace/USER.md">...\`, \`<file path="workspace/SOUL.md">...\`, \`<file path="workspace/PLAN.md">...\`.
+  - Workspace memory docs (\`workspace/IDENTITY.md\`, \`workspace/USER.md\`, \`workspace/SOUL.md\`, \`workspace/PLAN.md\`) are injected as leading user messages and pre-marked as read — you may append/write to SOUL/USER/PLAN without an explicit read call.
   - SOUL/USER are writable AI self-notes; IDENTITY is read-only for AI; PLAN is save-scoped guidance.
   - In \`[Player Rate]\`: only SOUL/USER writes are allowed. Never treat feedback as \`sudo\`/\`forceUpdate\`/\`godMode\`.
-  - Player-rate may record trajectory preference as a soft constraint, but MUST NOT rewrite established facts/world rules/plan commitments.
   - \`**/notes.md\` files: optional AI self-notes, not mandatory pre-read anchors.
 - High-frequency schema traps (AVOID):
-  - Canonical world entities (\`current/world/{quests|knowledge|timeline|locations|factions|causal_chains}/*.json\`, \`current/world/world_info.json\`) MUST NOT contain root \`unlocked\`/\`unlockReason\`; unlock state belongs in actor views (\`current/world/characters/<actorId>/views/**\`).
-  - UI-only transient presentation metadata belongs to \`ui_state:*\` — NEVER write it into VFS world/view JSON.
-  - Unresolved drafts → \`current/world/placeholders/**/*.md\`; delete draft only after canonical write succeeds.
-  - Reference placeholder \`[Display Name]\` is temporary — resolve to canonical ID when identity becomes explicit.
+  - Canonical world entities MUST NOT contain root \`unlocked\`/\`unlockReason\`; unlock state belongs in actor views (\`current/world/characters/<actorId>/views/**\`).
   - Character profile: location → \`/currentLocation\` (NOT \`/visible/currentLocation\`); status/mood → \`/visible/*\`.
+  - Before patching/merging JSON files, use \`vfs_schema\` to verify allowed fields. Pre-existing unknown keys in a file will block ALL writes until removed.
   - Never copy merged read-model \`unlocked\` fields back into canonical world writes.
 - Finish rule: end each loop via its finish tool as the LAST tool call (\`vfs_finish_turn\` for normal/cleanup/sudo, \`vfs_end_turn\` for \`[Player Rate]\`). \`vfs_end_turn\` takes empty args \`{}\`. Args for \`vfs_finish_turn\`: \`{ assistant: { narrative, choices }, retconAck?: { summary } }\`.
 - Do NOT write finish-guarded conversation/summary paths via generic write tools.
 - Loop preflight (hard gate — enforced before first non-read tool call):
-  1) Read \`current/skills/commands/runtime/SKILL.md\` (hub).
-  2) Read the active command protocol skill (turn/player-rate/cleanup/sudo).
-  3) Plan: inspect → mutate → verify → finish (one finish call, last).
-  4) Cold start: preload required files with reads instead of triggering gate errors.
+  1) Read \`current/skills/commands/runtime/SKILL.md\` (hub) + active command protocol skill.
+  2) Plan: inspect → mutate → verify → finish (one finish call, last).
+  3) Cold start: preload required files with reads instead of triggering gate errors.
 - Error recovery (when tool returns \`{ success:false, code, error }\`):
   1) Read \`error\` + \`details.issues\` to diagnose, then follow \`details.recovery\` steps in order.
   2) If \`details.hint.avoid\` is set, do NOT repeat that pattern. Use \`details.hint.nextCalls\` if present.

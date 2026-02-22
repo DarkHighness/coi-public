@@ -41,12 +41,6 @@ const gateSemanticCapabilityText = (
     .replaceAll("semantic, when available", "");
 };
 
-const formatToolListForPrompt = (toolsetId: VfsToolsetId): string =>
-  vfsToolRegistry
-    .getToolset(toolsetId)
-    .tools.map((name) => `- \`${name}\``)
-    .join("\n");
-
 /**
  * SUDO Mode Instruction
  */
@@ -67,9 +61,8 @@ export const sudoModeInstruction: Atom<SystemMessageInput> = defineAtom(
 This is a **GM COMMAND**. The user action is already prefixed with **[SUDO]**. Treat it as a forced elevated update payload, while still respecting immutable/finish policy constraints.
 
 **TOOLS**:
-${formatToolListForPrompt(toolsetId)}
 ${capabilityText}
-- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text) and define \`async function main(ctx)\`; vm output is the return value from \`main\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers (for example \`await ctx.vfs_read_chars({...})\`); do NOT use \`VFS.read(...)\` or any \`VFS.*\` namespace. Outside \`vfs_vm\`, call \`vfs_*\` tools directly as top-level tool calls; \`ctx.*\` is only available inside \`main(ctx)\`. Do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Runtime enforces bounded inner tool calls/script length and returns bounded \`console.log\` logs.
+- \`vfs_vm\` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining \`async function main(ctx)\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers inside. Forbidden: \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`/\`VFS.*\`.
 
 **SKILLS**:
 - **PREFLIGHT**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/sudo/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.
@@ -108,12 +101,11 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
 You are in AGENTIC MODE (VFS-only).
 
 **TOOLS**:
-${formatToolListForPrompt(resolvedToolsetId)}
 ${capabilityText}
 ${
   isPlayerRateToolset
     ? "- `vfs_vm` is not available in `[Player Rate]` toolset."
-    : "- `vfs_vm` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text) and define `async function main(ctx)`; vm output is the return value from `main`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers (for example `await ctx.vfs_read_chars({...})`); do NOT use `VFS.read(...)` or any `VFS.*` namespace. Outside `vfs_vm`, call `vfs_*` tools directly as top-level tool calls; `ctx.*` is only available inside `main(ctx)`. Do not use `globalThis`/`window`/`import`/`eval`/`Function`. Runtime enforces bounded inner tool calls/script length and returns bounded `console.log` logs."
+    : "- `vfs_vm` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining `async function main(ctx)`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers inside. Forbidden: `import`/`eval`/`Function`/`globalThis`/`window`/`VFS.*`. Gate: skill-read gates are checked BEFORE vm runs — satisfy them with top-level reads first."
 }
 
 **SKILLS**:
@@ -185,9 +177,8 @@ export const cleanupTurnInstruction: Atom<SystemMessageInput> = defineAtom(
 You are in CLEANUP MODE (VFS-only).
 
 **TOOLS**:
-${formatToolListForPrompt("cleanup")}
 ${capabilityText}
-- \`vfs_vm\` = batch orchestration. When used, it MUST be the only top-level tool call in that response. Use exactly one JavaScript script (not pseudo-tool JSON text) and define \`async function main(ctx)\`; vm output is the return value from \`main\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers (for example \`await ctx.vfs_read_chars({...})\`); do NOT use \`VFS.read(...)\` or any \`VFS.*\` namespace. Outside \`vfs_vm\`, call \`vfs_*\` tools directly as top-level tool calls; \`ctx.*\` is only available inside \`main(ctx)\`. Do not use \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`. Runtime enforces bounded inner tool calls/script length and returns bounded \`console.log\` logs.
+- \`vfs_vm\` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining \`async function main(ctx)\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers inside. Forbidden: \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`/\`VFS.*\`.
 
 **SKILLS**:
 - **PREFLIGHT (ENFORCED)**: Read: current/skills/commands/runtime/SKILL.md, current/skills/commands/runtime/cleanup/SKILL.md, current/skills/core/protocols/SKILL.md, current/skills/craft/writing/SKILL.md.

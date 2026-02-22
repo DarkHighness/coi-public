@@ -60,12 +60,7 @@ describe("vfsToolsets", () => {
   it("includes elevation and immutable notes in capability contract", () => {
     const output = formatVfsToolCapabilitiesForPrompt(["vfs_write_file"]);
 
-    expect(output).toContain(
-      "elevated_editable requires one-time user-confirmed token",
-    );
-    expect(output).toContain("resource-template operation contracts enforced");
-    expect(output).toContain("immutable: shared/system/skills/**");
-    expect(output).toContain("skills/**");
-    expect(output).toContain("refs/**");
+    expect(output).toContain("elevation for protected paths");
+    expect(output).toContain("write");
   });
 });

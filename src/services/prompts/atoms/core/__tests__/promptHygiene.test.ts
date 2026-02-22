@@ -74,10 +74,7 @@ describe("core prompt hygiene", () => {
     expect(content).not.toContain("retconAck?: { hash");
     expect(content).toContain("vfs_write_file");
     expect(content).toContain("vfs_vm");
-    expect(content).toContain("top-level tool call");
-    expect(content).toContain("JavaScript");
-    expect(content).toContain("globalThis");
-    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
+    expect(content).toContain("ONLY top-level tool call");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");
     expect(content).toContain("Blocking errors");
@@ -91,7 +88,7 @@ describe("core prompt hygiene", () => {
     expect(content).toContain("immutable_readonly");
     expect(content).toContain("default_editable");
     expect(content).toContain("elevated_editable");
-    expect(content).toContain("one-time user-confirmed token");
+    expect(content).toContain("elevation");
     expect(content).toContain("skills/**");
     expect(content).toContain("refs/**");
 

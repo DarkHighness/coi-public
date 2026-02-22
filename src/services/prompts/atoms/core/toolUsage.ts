@@ -74,10 +74,7 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
           "- Runtime state writes: `current/world/**`.",
           "- Plan continuity writes: `workspace/PLAN.md` (save-scoped).",
           "- Generic write/edit tools may include text + JSON mutations and file move/delete when allowlisted.",
-          "- If `vfs_vm` is available in this loop, it must be the ONLY top-level tool call.",
-          "- `vfs_vm` scripts must define `async function main(ctx)`; vm output is `main` return value.",
-          "- Inside `main(ctx)`, use `ctx.call(name,args)` or `ctx.vfs_*` helpers (e.g. `await ctx.vfs_read_chars({...})`), not `VFS.read(...)` or `VFS.*`.",
-          "- Outside `vfs_vm`, call `vfs_*` tools directly as top-level tool calls; `ctx.*` is only available inside `main(ctx)`.",
+          "- If `vfs_vm` is available, it must be the ONLY top-level tool call. See tool description for details.",
         ].join("\n")
   }
 

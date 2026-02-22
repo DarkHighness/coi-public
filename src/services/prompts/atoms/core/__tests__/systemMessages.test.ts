@@ -13,19 +13,18 @@ describe("systemMessages atoms", () => {
     const legacySearchTool = "search_tool";
     expect(content).toContain("vfs_write_file");
     expect(content).toContain("current/conversation/");
-    // Path model details (shared/**/forks/{forkId}/**) live in system prompt toolUsage atom
-    expect(content).toContain("shared/system/skills");
-    expect(content).toContain("shared/system/refs");
+    // Immutable zone referenced in shared capability line
+    expect(content).toContain("immutable zones");
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
     expect(content).toContain("NO COMMIT SPAM");
     expect(content).toContain("PREFLIGHT");
     expect(content).toContain("broad full-file");
     expect(content).toContain("vfs_vm");
-    expect(content).toContain("top-level tool call");
-    expect(content).toContain("JavaScript");
+    expect(content).toContain("ONLY top-level tool call");
+    expect(content).toContain("JS script");
     expect(content).toContain("globalThis");
-    expect(content).toContain("VFS.read");
-    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
+    expect(content).toContain("VFS.*");
+    expect(content).toContain("ctx.call");
     expect(content).toContain("workspace/PLAN.md");
     expect(content).toContain("major branch fracture");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
@@ -57,11 +56,11 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
     expect(content).toContain("PREFLIGHT");
     expect(content).toContain("vfs_vm");
-    expect(content).toContain("only top-level tool call");
-    expect(content).toContain("JavaScript");
+    expect(content).toContain("ONLY top-level tool call");
+    expect(content).toContain("JS script");
     expect(content).toContain("globalThis");
-    expect(content).toContain("VFS.read");
-    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
+    expect(content).toContain("VFS.*");
+    expect(content).toContain("ctx.call");
   });
 
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {
@@ -73,11 +72,11 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("immutable/finish policy constraints");
     expect(content).toContain("PREFLIGHT");
     expect(content).toContain("vfs_vm");
-    expect(content).toContain("only top-level tool call");
-    expect(content).toContain("JavaScript");
+    expect(content).toContain("ONLY top-level tool call");
+    expect(content).toContain("JS script");
     expect(content).toContain("globalThis");
-    expect(content).toContain("VFS.read");
-    expect(content).toContain("`ctx.*` is only available inside `main(ctx)`");
+    expect(content).toContain("VFS.*");
+    expect(content).toContain("ctx.call");
     expect(content).not.toContain("bypass normal simulation constraints");
     expect(content).not.toContain(legacyForceUpdateTool);
   });

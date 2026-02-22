@@ -229,21 +229,20 @@ describe("VFS tools", () => {
     for (const tool of definitions) {
       const capability = vfsToolCapabilityRegistry.get(tool.name);
       expect(capability, `missing capability for ${tool.name}`).toBeDefined();
-      expect(tool.description).toContain("Permission contract:");
       if (!capability) continue;
 
       if (capability.readOnly) {
         expect(tool.description).toContain("read-only");
+      } else {
+        expect(tool.description).toContain("write");
       }
 
       if (capability.needsElevationFor.includes("elevated_editable")) {
-        expect(tool.description).toContain(
-          "elevated_editable requires one-time user-confirmed token",
-        );
+        expect(tool.description).toContain("elevation");
       }
 
       if (capability.isFinishTool) {
-        expect(tool.description).toContain("finish protocol tool");
+        expect(tool.description).toContain("finish protocol");
       }
     }
   });

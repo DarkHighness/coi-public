@@ -16,48 +16,22 @@ const IMMUTABLE_ZONES = [
   "refs/**",
 ];
 
-const OPERATION_HINTS_BY_TOOL: Partial<Record<VfsToolName, string>> = {
-  vfs_write_file: "write",
-  vfs_append_text: "write",
-  vfs_edit_lines: "write",
-  vfs_patch_json: "json_patch",
-  vfs_merge_json: "json_merge",
-  vfs_move: "move",
-  vfs_delete: "delete",
-  vfs_finish_turn: "finish_commit",
-  vfs_end_turn: "finish_end",
-  vfs_finish_summary: "finish_summary",
-};
-
 const buildPermissionContract = (capability: VfsToolCapabilityV2): string => {
-  const clauses: string[] = [];
-
   if (capability.readOnly) {
-    clauses.push("read-only");
-  } else {
-    clauses.push(`writes ${capability.mayWriteClasses.join(", ")}`);
-    clauses.push("resource-template operation contracts enforced");
+    return "(read-only)";
   }
 
+  const clauses: string[] = [];
+
   if (capability.needsElevationFor.includes("elevated_editable")) {
-    clauses.push(
-      "elevated_editable requires one-time user-confirmed token in /god or /sudo",
-    );
+    clauses.push("elevation required for protected paths");
   }
 
   if (capability.isFinishTool) {
-    clauses.push("finish protocol tool");
-  } else if (capability.mayWriteClasses.includes("finish_guarded")) {
-    clauses.push("finish_guarded writable only via commit/finish protocol");
+    clauses.push("finish protocol");
   }
 
-  if (capability.immutableZones.length > 0) {
-    clauses.push(
-      `immutable zones blocked: ${capability.immutableZones.join(", ")}`,
-    );
-  }
-
-  return `Permission contract: ${clauses.join("; ")}.`;
+  return clauses.length > 0 ? `(write; ${clauses.join("; ")})` : "(write)";
 };
 
 const defineCatalogTool = <TParams extends ZodTypeAny>(
@@ -65,10 +39,8 @@ const defineCatalogTool = <TParams extends ZodTypeAny>(
     description: string;
   },
 ): VfsToolCatalogEntry<TParams> => {
-  const opHint = OPERATION_HINTS_BY_TOOL[entry.name];
-  const decoratedDescription = opHint
-    ? `${entry.description} Declared operation=${opHint}. ${buildPermissionContract(entry.capability)}`
-    : `${entry.description} ${buildPermissionContract(entry.capability)}`;
+  const contract = buildPermissionContract(entry.capability);
+  const decoratedDescription = `${entry.description} ${contract}`;
 
   return {
     ...entry,
@@ -119,89 +91,66 @@ const vfsVmScriptsSchema = z
     }
   });
 
-const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
-  z.union([
-    z.string(),
-    z.number(),
-    z.boolean(),
-    z.null(),
-    z.array(jsonValueSchema),
-    z.record(jsonValueSchema),
-  ]),
-);
+// Simplified schema for tool definitions (AI-facing).
+// Avoids recursive z.lazy() which produces bloated/incorrect compiled schemas.
+// Runtime validation uses strict schemas in schemaRegistry.ts.
+const jsonValueToolSchema: z.ZodType<unknown> = z
+  .any()
+  .describe(
+    "Any JSON value (string, number, boolean, null, array, or object).",
+  );
 
-const vfsJsonPatchOpSchema = z.discriminatedUnion("op", [
-  z
-    .object({
-      op: z.literal("add"),
-      path: z.string().describe("JSON Pointer path."),
-      value: jsonValueSchema.describe("JSON value for add."),
-      from: z.string().optional().describe("Ignored for add."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("replace"),
-      path: z.string().describe("JSON Pointer path."),
-      value: jsonValueSchema.describe("JSON value for replace."),
-      from: z.string().optional().describe("Ignored for replace."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("test"),
-      path: z.string().describe("JSON Pointer path."),
-      value: jsonValueSchema.describe("JSON value for test."),
-      from: z.string().optional().describe("Ignored for test."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("remove"),
-      path: z.string().describe("JSON Pointer path."),
-      from: z.string().optional().describe("Ignored for remove."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("move"),
-      path: z.string().describe("Destination path."),
-      from: z.string().describe("Source path."),
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("copy"),
-      path: z.string().describe("Destination path."),
-      from: z.string().describe("Source path."),
-    })
-    .strict(),
-]);
+// Simplified patch op schema for tool definitions.
+// The strict discriminated union compiles poorly (merged anyOf, description confusion).
+// Runtime validation of patch ops is handled by the handler, not the tool schema.
+const vfsJsonPatchOpToolSchema = z
+  .object({
+    op: z
+      .enum(["add", "replace", "test", "remove", "move", "copy"])
+      .describe("Patch operation type."),
+    path: z
+      .string()
+      .describe("JSON Pointer target path (e.g. '/visible/mood')."),
+    value: jsonValueToolSchema
+      .optional()
+      .describe(
+        "Value for add/replace/test. Any JSON type (string, number, boolean, null, array, object). Omit for remove/move/copy.",
+      ),
+    from: z
+      .string()
+      .optional()
+      .describe("Source JSON Pointer path. Required for move/copy only."),
+  })
+  .describe("RFC 6902 JSON Patch operation.");
 
-const vfsLineEditSchema = z.discriminatedUnion("kind", [
-  z
-    .object({
-      kind: z.literal("insert_before"),
-      line: z.number().int().positive(),
-      content: z.string(),
-    })
-    .strict(),
-  z
-    .object({
-      kind: z.literal("insert_after"),
-      line: z.number().int().positive(),
-      content: z.string(),
-    })
-    .strict(),
-  z
-    .object({
-      kind: z.literal("replace_range"),
-      startLine: z.number().int().positive(),
-      endLine: z.number().int().positive(),
-      content: z.string(),
-    })
-    .strict(),
-]);
+const vfsLineEditSchema = z
+  .object({
+    kind: z
+      .enum(["insert_before", "insert_after", "replace_range"])
+      .describe(
+        "Edit type: insert_before/insert_after (require `line`), replace_range (requires `startLine`+`endLine`).",
+      ),
+    content: z.string().describe("Text content to insert or replace with."),
+    line: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("1-based line number for insert_before/insert_after."),
+    startLine: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("1-based start line for replace_range."),
+    endLine: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("1-based end line (inclusive) for replace_range."),
+  })
+  .describe("Line edit operation.");
 
 const markdownSelectorSchema = z
   .object({
@@ -345,12 +294,6 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
           .positive()
           .optional()
           .describe("Optional max matches. Default: 200."),
-        stat: z
-          .boolean()
-          .optional()
-          .describe(
-            "Deprecated no-op for backward prompt examples. vfs_ls always returns stats metadata.",
-          ),
         includeExpected: z
           .boolean()
           .optional()
@@ -605,11 +548,11 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_vm",
     description:
-      "Execute one sandboxed JavaScript script that must define `async main(ctx)`. The vm result is `main` return value; only `console.log` output is surfaced as bounded logs.",
+      "Batch orchestrator: execute one sandboxed JS script defining `async function main(ctx)`. Returns `main` return value. MUST be the ONLY top-level tool call. GATE: skill-read gates are checked BEFORE vm runs — read required skills as top-level calls first.",
     parameters: z
       .object({
         scripts: vfsVmScriptsSchema.describe(
-          "Exactly one JavaScript script (not JSON/pseudo calls). Script must declare `async function main(ctx)` and return the final output from `main`. Inside `main`, use `ctx.call(name,args)` or `ctx.vfs_*` helper wrappers (for example `await ctx.vfs_read_chars({...})`); do NOT use `VFS.read(...)`/`VFS.*`. Outside `vfs_vm`, call `vfs_*` tools directly as top-level tool calls; `ctx.*` is only available inside `main(ctx)`. Runtime caps are system-injected: max 32 inner tool calls (bounded by current loop budget), script length max 16000 chars. Forbidden tokens: import/eval/Function/globalThis/window plus VFS namespace access. Top-level tool output returns `{ result, logs, vmMeta }`.",
+          "Exactly one JS script. Must declare `async function main(ctx)` and return a value. Inside main, use `ctx.call(name, args)` or `ctx.vfs_*()` helpers. Forbidden: import/eval/Function/globalThis/window/VFS.*. Max 32 inner calls, 16000 chars.",
         ),
       })
       .strict(),
@@ -660,7 +603,8 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   }),
   defineCatalogTool({
     name: "vfs_append_text",
-    description: "Append text to the end of an existing text or markdown file.",
+    description:
+      "Append text to the end of an existing text or markdown file. You MUST read the target file (vfs_read_chars/vfs_read_lines/vfs_read_markdown) in this session BEFORE appending. System prompt file injections do not count as reads.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path (text/markdown)."),
@@ -694,7 +638,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_edit_lines",
     description:
-      "Apply line-based insert/replace edits to a text or markdown file.",
+      "Apply line-based insert/replace edits to a text or markdown file. You must read the target file first to know correct line numbers.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("File path (text/markdown)."),
@@ -771,12 +715,12 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_patch_json",
     description:
-      "Apply RFC 6902 JSON Patch operations (add/replace/remove/move/copy/test) to a JSON file.",
+      "Apply RFC 6902 JSON Patch operations (add/replace/remove/move/copy/test) to a JSON file. Writes trigger full-file schema validation — if the existing file has schema violations (unknown keys, wrong types), even unrelated patches will be rejected. Use vfs_schema to check expected fields and vfs_read_json to inspect current content BEFORE patching.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
         patch: z
-          .array(vfsJsonPatchOpSchema)
+          .array(vfsJsonPatchOpToolSchema)
           .min(1)
           .describe("JSON Patch operations."),
       })
@@ -794,11 +738,13 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
   defineCatalogTool({
     name: "vfs_merge_json",
     description:
-      "Deep-merge a JSON object into an existing JSON file (arrays are replaced, not appended; deletions require vfs_patch_json).",
+      "Deep-merge a JSON object into an existing JSON file (arrays are replaced, not appended; deletions require vfs_patch_json). Writes trigger full-file schema validation — use vfs_schema to check expected fields BEFORE merging.",
     parameters: z
       .object({
         path: vfsFilePathSchema.describe("JSON file path."),
-        content: z.record(jsonValueSchema).describe("JSON object to merge."),
+        content: z
+          .record(jsonValueToolSchema)
+          .describe("JSON object to merge."),
       })
       .strict(),
     handlerKey: "merge_json",
