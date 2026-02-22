@@ -346,6 +346,7 @@
     "advanced": "Advanced (Optional)",
     "start": "Start Custom Game",
     "tip": "Leave anything blank — the AI will fill gaps and keep it consistent.",
+    "narrativeStyleOverrideHint": "If this game needs a special tone, write it here. This setting overrides your global Narrative Style preset for this run only.",
     "fields": {
       "title": "Adventure Title (Optional)",
       "worldSetting": "World Setting (Optional)",
@@ -381,6 +382,14 @@
         "horror": "Horror",
         "sliceOfLife": "Slice of Life"
       }
+    }
+  },
+  "presetProfile": {
+    "sectionTitle": "Preset Profile Priority",
+    "priorityHint": "These per-game presets take priority over global Extra Settings and apply only to this custom game.",
+    "modal": {
+      "title": "Preset Profile",
+      "subtitle": "Configure baseline style and behavior presets for future games."
     }
   },
   "imageUpload": {

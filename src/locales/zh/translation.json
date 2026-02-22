@@ -346,6 +346,7 @@
     "advanced": "高级（可选）",
     "start": "开始自定义游戏",
     "tip": "可留空任意字段——AI 会自动补全并保持一致。",
+    "narrativeStyleOverrideHint": "若本局需要特殊叙事口吻，可在此指定。该设置仅覆盖本次游戏的全局「叙事风格」预设。",
     "fields": {
       "title": "冒险标题（可选）",
       "worldSetting": "世界观 / 设定（可选）",
@@ -381,6 +382,14 @@
         "horror": "恐怖",
         "sliceOfLife": "日常"
       }
+    }
+  },
+  "presetProfile": {
+    "sectionTitle": "预设优先级",
+    "priorityHint": "这些“本局预设”会优先生效，覆盖全局「额外设置」，仅作用于当前自定义游戏。",
+    "modal": {
+      "title": "预设档",
+      "subtitle": "为后续新开游戏设置默认的风格与行为预设。"
     }
   },
   "imageUpload": {
