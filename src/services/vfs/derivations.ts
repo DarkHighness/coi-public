@@ -25,7 +25,11 @@ import type { StorySegment } from "@/types";
 import type { VfsFile, VfsFileMap } from "./types";
 import { normalizeVfsPath } from "./utils";
 import { canonicalToLogicalVfsPath } from "./core/pathResolver";
-import { readConversationIndex, readTurnFile } from "./conversation";
+import {
+  readConversationIndex,
+  readTurnFile,
+  type TurnFile,
+} from "./conversation";
 import { readOutlineFile, readOutlineProgress } from "./outline";
 import { deriveCustomRulesFromVfs } from "./customRules";
 import { sanitizeCanonicalWorldRecord } from "./stateLayering";
@@ -1099,6 +1103,28 @@ const parseTurnId = (
   };
 };
 
+type TurnMediaFields = {
+  imagePrompt?: string;
+  imageId?: string;
+  imageUrl?: string;
+  veoScript?: string;
+};
+
+const readTurnMediaFields = (turn: TurnFile): TurnMediaFields => {
+  const mediaRecord = isRecord(turn.media) ? turn.media : null;
+  const assistantRecord = isRecord(turn.assistant) ? turn.assistant : null;
+  const readField = (key: keyof TurnMediaFields): string | undefined =>
+    toStringOrUndefined(mediaRecord?.[key]) ??
+    toStringOrUndefined(assistantRecord?.[key]);
+
+  return {
+    imagePrompt: readField("imagePrompt"),
+    imageId: readField("imageId"),
+    imageUrl: readField("imageUrl"),
+    veoScript: readField("veoScript"),
+  };
+};
+
 const deriveConversationNodes = (
   files: VfsFileMap,
 ): {
@@ -1131,6 +1157,7 @@ const deriveConversationNodes = (
     if (!parsed) continue;
     const turn = readTurnFile(files, parsed.forkId, parsed.turnNumber);
     if (!turn) continue;
+    const turnMedia = readTurnMediaFields(turn);
 
     const userId = `user-${turn.turnId}`;
     const modelId = `model-${turn.turnId}`;
@@ -1164,7 +1191,10 @@ const deriveConversationNodes = (
       parentId: modelParentId,
       text: turn.assistant.narrative || "",
       choices: normalizeChoices(turn.assistant.choices),
-      imagePrompt: "",
+      imagePrompt: turnMedia.imagePrompt || "",
+      imageId: turnMedia.imageId,
+      imageUrl: turnMedia.imageUrl,
+      veoScript: turnMedia.veoScript,
       role: "model",
       timestamp: turn.createdAt,
       segmentIdx,

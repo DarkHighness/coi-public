@@ -150,8 +150,8 @@ export const MobileGameLayout: React.FC<MobileGameLayoutProps> = ({
   const currentThemeConfig =
     ENV_THEMES[currentEnvThemeKey] || ENV_THEMES.fantasy;
 
-  const handleGenerateImage = (nodeId: string) => {
-    generateImageForNode(nodeId, undefined, true);
+  const handleGenerateImage = (nodeId: string, nodeOverride?: StorySegment) => {
+    generateImageForNode(nodeId, nodeOverride, true);
   };
 
   // Handle navigation from timeline to story segment

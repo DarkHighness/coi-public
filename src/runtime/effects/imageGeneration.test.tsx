@@ -3,6 +3,8 @@
 import React from "react";
 import { act, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readTurnFile, writeTurnFile } from "../../services/vfs/conversation";
+import { VfsSession } from "../../services/vfs/vfsSession";
 
 const generateSceneImageMock = vi.hoisted(() => vi.fn());
 const saveImageMock = vi.hoisted(() => vi.fn());
@@ -21,9 +23,11 @@ const createHarness = (
   node: any,
   aiSettings: any = {},
   onGenerationIssue = vi.fn(),
+  vfsSession: VfsSession = new VfsSession(),
 ) => {
+  const nodeId = typeof node?.id === "string" ? node.id : "n1";
   let state = {
-    nodes: { n1: node },
+    nodes: { [nodeId]: node },
     forkId: 2,
     turnNumber: 9,
     logs: [],
@@ -56,6 +60,7 @@ const createHarness = (
     api = useImageGenerationQueue({
       aiSettings,
       currentSlotId: "slot-1",
+      vfsSession,
       gameStateRef,
       setGameState,
       triggerSave,
@@ -77,6 +82,7 @@ const createHarness = (
     setGameState,
     triggerSave,
     onGenerationIssue,
+    vfsSession,
   };
 };
 
@@ -149,6 +155,64 @@ describe("useImageGenerationQueue", () => {
       expect(harness.getState().tokenUsage.totalTokens).toBe(12);
       expect(harness.triggerSave).toHaveBeenCalled();
     });
+  });
+
+  it("persists generated image metadata to conversation turn media", async () => {
+    generateSceneImageMock.mockResolvedValue({
+      url: "",
+      blob: new Blob(["img"]),
+      log: {
+        usage: {
+          promptTokens: 1,
+          completionTokens: 1,
+          totalTokens: 2,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
+      },
+    });
+    saveImageMock.mockResolvedValue("img-123");
+
+    const vfsSession = new VfsSession();
+    writeTurnFile(vfsSession, 2, 7, {
+      turnId: "fork-2/turn-7",
+      forkId: 2,
+      turnNumber: 7,
+      parentTurnId: "fork-2/turn-6",
+      createdAt: 7,
+      userAction: "Inspect the harbor",
+      assistant: {
+        narrative: "Fog drifts over silent docks.",
+        choices: [],
+      },
+    });
+
+    const nodeId = "model-fork-2/turn-7";
+    const harness = createHarness(
+      {
+        id: nodeId,
+        imagePrompt: "moon harbor",
+        segmentIdx: 7,
+        stateSnapshot: { turnNumber: 7 },
+      },
+      {},
+      vi.fn(),
+      vfsSession,
+    );
+
+    await act(async () => {
+      await harness.api.generateImageForNode(nodeId);
+    });
+
+    await waitFor(() => {
+      expect(harness.getState().nodes[nodeId].imageId).toBe("img-123");
+    });
+
+    const storedTurn = readTurnFile(vfsSession.snapshot(), 2, 7);
+    const media = (storedTurn?.media || {}) as Record<string, unknown>;
+    expect(media.imagePrompt).toBe("moon harbor");
+    expect(media.imageId).toBe("img-123");
+    expect(media.imageUrl).toBeUndefined();
   });
 
   it("stores direct image URL when no blob is returned", async () => {

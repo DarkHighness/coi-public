@@ -225,8 +225,8 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
     };
 
   const handleGenerateImage = useCallback(
-    (nodeId: string) => {
-      generateImageForNode(nodeId, undefined, true);
+    (nodeId: string, nodeOverride?: StorySegment) => {
+      generateImageForNode(nodeId, nodeOverride, true);
     },
     [generateImageForNode],
   );

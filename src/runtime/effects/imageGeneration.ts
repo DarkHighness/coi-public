@@ -8,6 +8,8 @@ import {
 import { saveImage } from "../../utils/imageStorage";
 import type { AISettings, GameState, StorySegment } from "../../types";
 import { generateSceneImage } from "../../services/aiService";
+import { readTurnFile, writeTurnFile } from "../../services/vfs/conversation";
+import type { VfsSession } from "../../services/vfs/vfsSession";
 
 export type ImageGenerationIssueCode =
   | "missing_prompt"
@@ -24,6 +26,7 @@ export interface ImageGenerationIssue {
 interface UseImageGenerationQueueParams {
   aiSettings: AISettings;
   currentSlotId: string | null;
+  vfsSession: VfsSession;
   gameStateRef: MutableRefObject<GameState>;
   setGameState: Dispatch<SetStateAction<GameState>>;
   triggerSave: () => void;
@@ -35,9 +38,83 @@ interface QueuedImageGeneration {
   imagePrompt?: string;
 }
 
+type TurnMediaPatch = {
+  imagePrompt?: string | null;
+  imageId?: string | null;
+  imageUrl?: string | null;
+  veoScript?: string | null;
+};
+
+const parseTurnFromModelNodeId = (
+  nodeId: string,
+): { forkId: number; turnNumber: number } | null => {
+  const match = /^model-fork-(\d+)\/turn-(\d+)$/.exec(nodeId);
+  if (!match) return null;
+
+  const forkId = Number(match[1]);
+  const turnNumber = Number(match[2]);
+  if (!Number.isFinite(forkId) || !Number.isFinite(turnNumber)) {
+    return null;
+  }
+
+  return { forkId, turnNumber };
+};
+
+const patchTurnMedia = (
+  vfsSession: VfsSession,
+  nodeId: string,
+  patch: TurnMediaPatch,
+): void => {
+  const parsed = parseTurnFromModelNodeId(nodeId);
+  if (!parsed) return;
+
+  const currentTurn = readTurnFile(
+    vfsSession.snapshot(),
+    parsed.forkId,
+    parsed.turnNumber,
+  );
+  if (!currentTurn) return;
+
+  const nextMedia: Record<string, unknown> =
+    currentTurn.media &&
+    typeof currentTurn.media === "object" &&
+    !Array.isArray(currentTurn.media)
+      ? { ...currentTurn.media }
+      : {};
+
+  const keys: Array<keyof TurnMediaPatch> = [
+    "imagePrompt",
+    "imageId",
+    "imageUrl",
+    "veoScript",
+  ];
+
+  for (const key of keys) {
+    if (!(key in patch)) continue;
+    const value = patch[key];
+    if (typeof value === "string") {
+      nextMedia[key] = value;
+    } else {
+      delete nextMedia[key];
+    }
+  }
+
+  const nextTurn = {
+    ...currentTurn,
+    ...(Object.keys(nextMedia).length > 0 ? { media: nextMedia } : {}),
+  };
+
+  if (Object.keys(nextMedia).length === 0) {
+    delete nextTurn.media;
+  }
+
+  writeTurnFile(vfsSession, parsed.forkId, parsed.turnNumber, nextTurn);
+};
+
 export function useImageGenerationQueue({
   aiSettings,
   currentSlotId,
+  vfsSession,
   gameStateRef,
   setGameState,
   triggerSave,
@@ -80,6 +157,10 @@ export function useImageGenerationQueue({
         setImageQueue((prev) => prev.slice(1));
         return;
       }
+
+      patchTurnMedia(vfsSession, nodeId, {
+        imagePrompt: effectivePrompt,
+      });
 
       setIsQueueProcessing(true);
       setGameState((prev) => ({
@@ -176,6 +257,11 @@ export function useImageGenerationQueue({
               },
             },
           }));
+          patchTurnMedia(vfsSession, nodeId, {
+            imagePrompt: effectivePrompt,
+            imageId,
+            imageUrl: null,
+          });
           triggerSave();
         } else if (url && url.trim()) {
           setGameState((prev) => ({
@@ -204,6 +290,11 @@ export function useImageGenerationQueue({
               [nodeId]: { ...prev.nodes[nodeId], imageUrl: url },
             },
           }));
+          patchTurnMedia(vfsSession, nodeId, {
+            imagePrompt: effectivePrompt,
+            imageId: null,
+            imageUrl: url,
+          });
           triggerSave();
         } else {
           console.warn("Image generation returned empty URL for node:", nodeId);
@@ -270,6 +361,7 @@ export function useImageGenerationQueue({
     isQueueProcessing,
     aiSettings,
     currentSlotId,
+    vfsSession,
     triggerSave,
     setGameState,
     gameStateRef,

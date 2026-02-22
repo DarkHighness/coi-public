@@ -25,6 +25,47 @@ const makeMarkdownFile = (path: string, content: string) => ({
 });
 
 describe("deriveGameStateFromVfs", () => {
+  it("restores conversation media fields from turn files", () => {
+    const files: VfsFileMap = {
+      "conversation/index.json": makeJsonFile("conversation/index.json", {
+        activeForkId: 0,
+        activeTurnId: "fork-0/turn-0",
+        rootTurnIdByFork: { "0": "fork-0/turn-0" },
+        latestTurnNumberByFork: { "0": 0 },
+        turnOrderByFork: { "0": ["fork-0/turn-0"] },
+      }),
+      "conversation/turns/fork-0/turn-0.json": makeJsonFile(
+        "conversation/turns/fork-0/turn-0.json",
+        {
+          turnId: "fork-0/turn-0",
+          forkId: 0,
+          turnNumber: 0,
+          parentTurnId: null,
+          createdAt: 1234,
+          userAction: "Begin",
+          assistant: {
+            narrative: "A storm lashes the cliffside keep.",
+            choices: [{ text: "Advance" }],
+          },
+          media: {
+            imagePrompt: "cinematic storm over a cliffside keep",
+            imageId: "img-abc",
+            imageUrl: "https://cdn.example.com/img-abc.png",
+            veoScript: "opening sweep shot over the battlements",
+          },
+        },
+      ),
+    };
+
+    const state = deriveGameStateFromVfs(files);
+    const node = state.nodes["model-fork-0/turn-0"];
+
+    expect(node?.imagePrompt).toBe("cinematic storm over a cliffside keep");
+    expect(node?.imageId).toBe("img-abc");
+    expect(node?.imageUrl).toBe("https://cdn.example.com/img-abc.png");
+    expect(node?.veoScript).toBe("opening sweep shot over the battlements");
+  });
+
   it("derives global, actors, and player inventory state", () => {
     const files: VfsFileMap = {
       "world/global.json": makeJsonFile("world/global.json", {

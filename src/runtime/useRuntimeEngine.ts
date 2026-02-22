@@ -285,6 +285,7 @@ export const useRuntimeEngine = () => {
   const { failedImageNodes, generateImageForNode } = useImageGenerationQueue({
     aiSettings,
     currentSlotId,
+    vfsSession,
     gameStateRef,
     setGameState,
     triggerSave,
