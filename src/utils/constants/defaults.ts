@@ -116,7 +116,7 @@ export const DEFAULTS: AISettings = {
   lockEnvTheme: false,
   fixedEnvTheme: undefined, // No fixed theme by default
   disableEnvironmentalEffects: false,
-  typewriterSpeed: 15, // Default: 15ms per character
+  typewriterSpeed: 10, // Default: 10ms per character
   stackItemsPerPage: 10, // Default: 10 items per page in stack layout (must be even)
   stackShowOutline: true, // Default: show outline in stack mode
   exportIncludeUserActions: false, // Default: don't include user/command in export
@@ -158,7 +158,7 @@ export const DEFAULTS: AISettings = {
     vfsReadTokenBudgetPercent: 0.1,
     sessionHistoryLruLimit: 64,
     providerManagedMaxTokens: true,
-    forceAutoToolChoice: false,
+    forceAutoToolChoice: true,
     toolCallCarousel: true,
     culturePreference: "follow_story_setting",
     customInstructionEnabled: false,
