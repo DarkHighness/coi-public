@@ -72,6 +72,14 @@
   "npcs": "人物角色",
   "emptyNpcs": "暂无重要角色。",
   "affinity": "好感度",
+  "affinityLevels": {
+    "hostile": "敌对",
+    "neutral": "中立",
+    "friendly": "友好",
+    "wary": "戒备",
+    "guardedTrust": "戒备中的信任",
+    "devoted": "忠诚"
+  },
   "unknown": "未知",
   "decided": "你决定：",
   "dialogueStyle": "对话风格",

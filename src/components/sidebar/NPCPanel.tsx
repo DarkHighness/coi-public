@@ -11,6 +11,7 @@ import { DetailedListModal } from "../DetailedListModal";
 import { useListManagement } from "../../hooks/useListManagement";
 import { useProgressiveRender } from "../../hooks/useProgressiveRender";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { localizeAffinityLabel } from "../../utils/affinityLabel";
 import { MarkdownText } from "../render/MarkdownText";
 import { useOptionalRuntimeContext } from "../../runtime/context";
 import { resolveLocationDisplayName } from "../../utils/entityDisplay";
@@ -164,6 +165,9 @@ const NpcItem: React.FC<NpcItemProps> = ({
     attitude.hidden.affinity.trim().length > 0
       ? attitude.hidden.affinity.trim()
       : null;
+  const localizedTrueAffinity = trueAffinity
+    ? localizeAffinityLabel(trueAffinity, t)
+    : null;
 
   const getLocationName = (locationId?: string) => {
     const normalized = typeof locationId === "string" ? locationId.trim() : "";
@@ -560,8 +564,8 @@ const NpcItem: React.FC<NpcItemProps> = ({
 
           <SidebarSection title={t("meta") || "Meta"}>
             <SidebarField label={t("affinity") || "Affinity"}>
-              {showTrueAttitude && trueAffinity ? (
-                <MarkdownText content={trueAffinity} indentSize={2} />
+              {showTrueAttitude && localizedTrueAffinity ? (
+                <MarkdownText content={localizedTrueAffinity} indentSize={2} />
               ) : (
                 <span className="italic text-theme-text-secondary">
                   {t("gameViewer.affinityHidden", {

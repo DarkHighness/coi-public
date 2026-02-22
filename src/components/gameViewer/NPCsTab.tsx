@@ -9,6 +9,7 @@ import React from "react";
 import type { TFunction } from "i18next";
 import { GameState, RelationEdge } from "../../types";
 import { getValidIcon } from "../../utils/emojiValidator";
+import { localizeAffinityLabel } from "../../utils/affinityLabel";
 import { MarkdownText } from "../render/MarkdownText";
 import { resolveLocationDisplayName } from "../../utils/entityDisplay";
 import {
@@ -144,6 +145,9 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                 attitudeHidden.affinity.trim().length > 0
                   ? attitudeHidden.affinity.trim()
                   : null;
+              const localizedAffinity = affinity
+                ? localizeAffinityLabel(affinity, t)
+                : null;
 
               const perception = playerRelations.find(
                 (edge): edge is PerceptionRelation =>
@@ -181,7 +185,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                           : "bg-theme-primary/15 text-theme-primary border border-theme-primary/30"
                       }`}
                       title={
-                        affinity === null
+                        localizedAffinity === null
                           ? t(
                               "gameViewer.affinityHidden",
                               "True attitude is hidden unless confirmed.",
@@ -189,7 +193,7 @@ export const NPCsTab: React.FC<NpcsTabProps> = ({
                           : undefined
                       }
                     >
-                      {affinity === null ? "?" : affinity}
+                      {localizedAffinity === null ? "?" : localizedAffinity}
                     </span>
                   </div>
 

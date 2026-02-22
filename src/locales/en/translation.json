@@ -71,6 +71,14 @@
   "npcs": "NPCs",
   "emptyNpcs": "You haven't met anyone significant yet.",
   "affinity": "Affinity",
+  "affinityLevels": {
+    "hostile": "Hostile",
+    "neutral": "Neutral",
+    "friendly": "Friendly",
+    "wary": "Wary",
+    "guardedTrust": "Guarded Trust",
+    "devoted": "Devoted"
+  },
   "unknown": "???",
   "decided": "You decided to:",
   "dialogueStyle": "Dialogue Style",
