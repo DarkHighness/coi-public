@@ -386,6 +386,11 @@ export async function runAgenticLoopRefactored(
   let skippedThresholdRoutingDueToUnknownUsage = false;
   let lastContextUsage: ToolCallContextUsageSnapshot | null = null;
 
+  // Track where ephemeral pre-loop injections start so we can strip them
+  // from the persisted history (they are re-injected fresh each turn).
+  const ephemeralStart = conversationHistory.length;
+  let ephemeralEnd = ephemeralStart;
+
   try {
     // Inject ready consequences
     injectReadyConsequences(conversationHistory);
@@ -455,6 +460,9 @@ export async function runAgenticLoopRefactored(
       (p) => !preloadedSet.has(p),
     );
     injectColdStartRequiredReads(conversationHistory, remainingPreloadPaths);
+
+    // End of ephemeral injections — everything after this is persistent conversation
+    ephemeralEnd = conversationHistory.length;
 
     // Main loop
     while (
@@ -700,13 +708,24 @@ export async function runAgenticLoopRefactored(
     );
   }
 
+  // Strip ephemeral pre-loop injections from persisted history.
+  // These (skill preloads, mode instructions, cold-start guidance) are
+  // re-injected fresh each turn and must not accumulate across turns.
+  const persistedHistory =
+    ephemeralStart < ephemeralEnd
+      ? [
+          ...conversationHistory.slice(0, ephemeralStart),
+          ...conversationHistory.slice(ephemeralEnd),
+        ]
+      : conversationHistory;
+
   return {
     response: loopState.accumulatedResponse,
     logs: allLogs,
     usage: loopState.totalUsage,
     lastContextUsage,
     changedEntities: getChangedEntitiesArray(loopState.changedEntities),
-    _conversationHistory: conversationHistory,
+    _conversationHistory: persistedHistory,
   };
 }
 
