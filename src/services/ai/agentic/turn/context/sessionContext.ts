@@ -57,6 +57,8 @@ export interface SessionSetupOptions {
   hotStartReferencesMarkdown?: string | null;
   /** Startup mode for shaping cold-start guidance */
   startupMode?: SessionStartupMode;
+  /** Required skill paths to preload at session construction time */
+  sessionRequiredSkillPaths?: string[];
 }
 
 export interface SessionSetupResult {
@@ -72,12 +74,71 @@ const toCurrentPath = (path: string): string => {
   return `current/${normalized}`;
 };
 
+const toCanonicalSkillPath = (path: string): string | null => {
+  const normalized = path.trim().replace(/^\/+/, "");
+  if (!normalized) {
+    return null;
+  }
+  if (normalized.startsWith("current/")) {
+    return normalized.slice("current/".length);
+  }
+  return normalized;
+};
+
+const buildSessionRequiredSkillMessages = (
+  vfsSession: VfsSession | undefined,
+  requiredSkillPaths: string[] | undefined,
+): UnifiedMessage[] => {
+  if (
+    !vfsSession ||
+    typeof vfsSession.readFile !== "function" ||
+    !Array.isArray(requiredSkillPaths) ||
+    requiredSkillPaths.length === 0
+  ) {
+    return [];
+  }
+
+  const messages: UnifiedMessage[] = [];
+  const seen = new Set<string>();
+  for (const rawPath of requiredSkillPaths) {
+    const canonicalPath = toCanonicalSkillPath(rawPath);
+    if (!canonicalPath || seen.has(canonicalPath)) {
+      continue;
+    }
+    seen.add(canonicalPath);
+
+    const file = vfsSession.readFile(canonicalPath);
+    if (!file || typeof file.content !== "string" || !file.content.trim()) {
+      continue;
+    }
+
+    messages.push(
+      createUserMessage(
+        `<file path="${toCurrentPath(canonicalPath)}">\n${file.content}\n</file>`,
+      ),
+    );
+
+    if (typeof vfsSession.noteToolSeen === "function") {
+      vfsSession.noteToolSeen(canonicalPath);
+    }
+  }
+
+  if (messages.length > 0) {
+    console.log(
+      `[SessionContext] Preloaded ${messages.length} required skills at session initialization.`,
+    );
+  }
+
+  return messages;
+};
+
 const buildColdStartSkillHintMessage = (options?: {
   commandProtocolSkillPath?: string;
   hotStartReferencesMarkdown?: string | null;
   startupMode?: SessionStartupMode;
   sessionHistoryPath?: string;
   parentSessionHistoryPath?: string | null;
+  additionalMandatorySkillPaths?: string[];
 }): UnifiedMessage => {
   const startupBaselineKey: LoopSkillBaselineKey =
     options?.startupMode === "player-rate"
@@ -95,14 +156,24 @@ const buildColdStartSkillHintMessage = (options?: {
   const mandatoryReadPaths = baselineMandatoryPaths.map((path) =>
     path === defaultCommandProtocolSkillPath ? commandProtocolSkillPath : path,
   );
+  const extraMandatorySkillPaths = Array.from(
+    new Set(
+      (options?.additionalMandatorySkillPaths || [])
+        .map((path) => toCurrentPath(path))
+        .filter((path) => path.startsWith("current/skills/")),
+    ),
+  );
+  const mergedMandatoryReadPaths = Array.from(
+    new Set([...mandatoryReadPaths, ...extraMandatorySkillPaths]),
+  );
 
   const startupProfile = buildSessionStartupProfile({
     mode: options?.startupMode ?? "turn",
     latestSummaryReferencesMarkdown: options?.hotStartReferencesMarkdown ?? "",
-    mandatoryReadPaths,
+    mandatoryReadPaths: mergedMandatoryReadPaths,
     maxOptionalRefs: 3,
   });
-  const mandatoryReadPathSet = new Set(mandatoryReadPaths);
+  const mandatoryReadPathSet = new Set(mergedMandatoryReadPaths);
 
   const recommendedSkillPaths = startupProfile.recommendedReadPaths.filter(
     (path) =>
@@ -152,7 +223,7 @@ const buildColdStartSkillHintMessage = (options?: {
       "[SECTION: MANDATORY_SKILL_PREFLIGHT]",
       "Required runtime skills are auto-injected by the system at session start (and after explicit session invalidation/rebuild flows).",
       "Injected baseline skill paths:",
-      ...mandatoryReadPaths.map((path) => `- \`${path}\``),
+      ...mergedMandatoryReadPaths.map((path) => `- \`${path}\``),
       "If you need additional sections beyond injected context, issue targeted read calls.",
       ...hotStartPriorityLines,
       ...diagnosticsLines,
@@ -252,6 +323,7 @@ export async function setupSession(
     commandProtocolSkillPath,
     hotStartReferencesMarkdown,
     startupMode,
+    sessionRequiredSkillPaths,
   } = options;
 
   // Create session config
@@ -299,6 +371,8 @@ export async function setupSession(
         startupMode,
         sessionHistoryPath: mirrorState.currentPath,
         parentSessionHistoryPath: mirrorState.currentParentPath,
+        vfsSession,
+        sessionRequiredSkillPaths,
       },
     );
     sessionManager.setHistory(session.id, initialHistory);
@@ -339,9 +413,19 @@ function buildInitialHistory(
     startupMode?: SessionStartupMode;
     sessionHistoryPath?: string;
     parentSessionHistoryPath?: string | null;
+    vfsSession?: VfsSession;
+    sessionRequiredSkillPaths?: string[];
   },
 ): unknown[] {
   let initialHistory: UnifiedMessage[] = [...contextMessages];
+
+  const requiredSkillMessages = buildSessionRequiredSkillMessages(
+    options?.vfsSession,
+    options?.sessionRequiredSkillPaths,
+  );
+  if (requiredSkillMessages.length > 0) {
+    initialHistory = [...initialHistory, ...requiredSkillMessages];
+  }
 
   if (options?.includeColdStartGuidance) {
     initialHistory = [
@@ -352,6 +436,7 @@ function buildInitialHistory(
         startupMode: options.startupMode,
         sessionHistoryPath: options.sessionHistoryPath,
         parentSessionHistoryPath: options.parentSessionHistoryPath,
+        additionalMandatorySkillPaths: options.sessionRequiredSkillPaths,
       }),
     ];
   }

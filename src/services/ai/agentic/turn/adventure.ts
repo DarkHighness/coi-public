@@ -58,7 +58,10 @@ import {
 
 // Import refactored agentic loop
 import { runAgenticLoopRefactored } from "./agenticLoop";
-import type { AgenticTurnKind } from "./loopInitializer";
+import {
+  type AgenticTurnKind,
+  resolveLoopSkillPolicyState,
+} from "./loopInitializer";
 import {
   composeSystemInstruction,
   getTurnRuntimeFloor,
@@ -351,6 +354,35 @@ export const generateAdventureTurn = async (
       : isPlayerRateMode
         ? "player-rate"
         : "turn";
+  const requiredPresetSkillRequirements = resolveActivePresetSkillRequirements({
+    settings,
+    presetProfile: gameState.presetProfile,
+    customContext: gameState.customContext,
+    culturePreference: culturePreferenceContext.preference,
+    themeKey: context.themeKey,
+    worldSetting,
+  });
+  const requiredPresetSkillPaths = requiredPresetSkillRequirements.map(
+    (entry) => entry.path,
+  );
+  const startupSkillPolicyState = resolveLoopSkillPolicyState({
+    gameState: {
+      godMode: gameState.godMode === true,
+      unlockMode: gameState.unlockMode === true,
+    },
+    settings,
+    isSudoMode,
+    isCleanupMode,
+    isPlayerRateMode,
+    requiredPresetSkillPaths,
+  });
+  const sessionRequiredSkillPaths = Array.from(
+    new Set([
+      ...startupSkillPolicyState.requiredCommandSkillPaths,
+      ...startupSkillPolicyState.userRequiredSkillPaths,
+      ...requiredPresetSkillPaths,
+    ]),
+  );
   const commandProtocolSkillPath = getLoopCommandProtocolSkillPath(
     startupMode === "player-rate" ? "player-rate" : startupMode,
   );
@@ -372,6 +404,7 @@ export const generateAdventureTurn = async (
     commandProtocolSkillPath,
     hotStartReferencesMarkdown: latestHotStartReferencesMarkdown,
     startupMode,
+    sessionRequiredSkillPaths,
   };
 
   const {
@@ -395,17 +428,6 @@ export const generateAdventureTurn = async (
     );
   }
 
-  const requiredPresetSkillRequirements = resolveActivePresetSkillRequirements({
-    settings,
-    presetProfile: gameState.presetProfile,
-    customContext: gameState.customContext,
-    culturePreference: culturePreferenceContext.preference,
-    themeKey: context.themeKey,
-    worldSetting,
-  });
-  const requiredPresetSkillPaths = requiredPresetSkillRequirements.map(
-    (entry) => entry.path,
-  );
   let latestContextOverflowError: ContextOverflowError | null = null;
 
   const executeSingleAttempt = async (

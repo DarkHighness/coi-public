@@ -560,7 +560,6 @@ export async function runAgenticLoopRefactored(
 
     // End of ephemeral injections — everything after this is persistent conversation
     ephemeralEnd = conversationHistory.length;
-
     // Main loop
     while (
       loopState.budgetState.loopIterationsUsed <

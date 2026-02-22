@@ -175,6 +175,11 @@ const createVfsSession = (hasSeenSkill: boolean, seenSkillPaths?: string[]) => {
   } as any;
 };
 
+const getMessageText = (message: any): string =>
+  message?.content?.find(
+    (part: any) => part?.type === "text" && typeof part?.text === "string",
+  )?.text ?? "";
+
 describe("agenticLoop command skill gate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -254,6 +259,93 @@ describe("agenticLoop command skill gate", () => {
     expect(coldStartText).not.toContain(
       "current/skills/craft/writing/SKILL.md",
     );
+  });
+
+  it("keeps session-preloaded skill context ahead of carried history without duplicate reinjection", async () => {
+    const vfsSession = createVfsSession(true);
+
+    aiHandlerMock.handleAICall.mockResolvedValue({
+      text: "",
+      usage: {
+        promptTokens: 5,
+        completionTokens: 3,
+        totalTokens: 8,
+      },
+      functionCalls: [
+        {
+          id: "call-finish",
+          name: "vfs_finish_turn",
+          args: {
+            userAction: "next",
+            assistant: {
+              narrative: "done",
+              choices: [],
+            },
+          },
+        },
+      ],
+    });
+
+    toolProcessorMock.executeGenericTool.mockImplementation((name: string) => {
+      if (name === "vfs_finish_turn") {
+        vfsSession.markConversationTouched();
+      }
+      return { success: true };
+    });
+
+    await runAgenticLoopRefactored({
+      protocol: "openai",
+      instance: { id: "provider-1", protocol: "openai" } as any,
+      modelId: "model-1",
+      systemInstruction: "sys",
+      initialContents: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: '<file path="current/skills/commands/runtime/SKILL.md">\n# Runtime Skill\n</file>',
+            },
+          ],
+        } as any,
+        {
+          role: "assistant",
+          content: [{ type: "text", text: "past narrative" }],
+        } as any,
+        {
+          role: "user",
+          content: [{ type: "text", text: "[PLAYER_ACTION] old choice" }],
+        } as any,
+      ],
+      gameState: createGameState(),
+      settings: createSettings(),
+      sessionId: "session-preloop-ordering",
+      vfsSession,
+    });
+
+    const firstAiCall = aiHandlerMock.handleAICall.mock.calls[0]?.[0] as any;
+    const conversationHistory = (firstAiCall?.conversationHistory ??
+      []) as any[];
+    const texts = conversationHistory.map(getMessageText);
+    const injectedSkillIndex = texts.findIndex((text) =>
+      text.includes('<file path="current/skills/commands/runtime/SKILL.md">'),
+    );
+    const oldNarrativeIndex = texts.findIndex((text) =>
+      text.includes("past narrative"),
+    );
+    const oldChoiceIndex = texts.findIndex((text) =>
+      text.includes("[PLAYER_ACTION] old choice"),
+    );
+
+    expect(injectedSkillIndex).toBeGreaterThanOrEqual(0);
+    expect(oldNarrativeIndex).toBeGreaterThanOrEqual(0);
+    expect(oldChoiceIndex).toBeGreaterThanOrEqual(0);
+    expect(injectedSkillIndex).toBeLessThan(oldNarrativeIndex);
+    expect(injectedSkillIndex).toBeLessThan(oldChoiceIndex);
+    const injectedCount = texts.filter((text) =>
+      text.includes('<file path="current/skills/commands/runtime/SKILL.md">'),
+    ).length;
+    expect(injectedCount).toBe(1);
   });
 
   it("blocks non-read tools in sudo mode when required skill not read", async () => {

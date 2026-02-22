@@ -260,6 +260,68 @@ describe("sessionContext", () => {
     expect(result.activeHistory[0]?.role).toBe("user");
   });
 
+  it("preloads required skills during session init before hydrated history", async () => {
+    sessionManagerMock.isEmpty.mockReturnValue(true);
+    sessionManagerMock.getHistory.mockReturnValue([]);
+    const vfsSession = {
+      setActiveForkId: vi.fn(),
+      readFile: vi.fn((path: string) => {
+        if (path === "skills/commands/runtime/SKILL.md") {
+          return {
+            path,
+            contentType: "text/markdown",
+            content: "# runtime skill",
+          };
+        }
+        return null;
+      }),
+      noteToolSeen: vi.fn(),
+    } as any;
+
+    await setupSession({
+      slotId: "slot-preload",
+      forkId: 0,
+      vfsSession,
+      providerId: "provider-preload",
+      modelId: "model-preload",
+      protocol: "openai",
+      systemInstruction: "system-inst",
+      contextMessages: [createTextMessage("system", "seed")],
+      startupMode: "turn",
+      recentHistory: [
+        { role: "user", text: "inspect room" },
+        { role: "model", text: "You inspect the room." },
+      ] as any[],
+      sessionRequiredSkillPaths: ["skills/commands/runtime/SKILL.md"],
+    });
+
+    const initializedHistory = sessionManagerMock.setHistory.mock
+      .calls[0]?.[1] as UnifiedMessage[] | undefined;
+    const texts =
+      initializedHistory?.flatMap((msg) =>
+        msg.content
+          .filter(
+            (part): part is { type: "text"; text: string } =>
+              part.type === "text",
+          )
+          .map((part) => part.text),
+      ) ?? [];
+
+    const skillIndex = texts.findIndex((text) =>
+      text.includes('<file path="current/skills/commands/runtime/SKILL.md">'),
+    );
+    const actionIndex = texts.findIndex((text) =>
+      text.includes("[PLAYER_ACTION] inspect room"),
+    );
+
+    expect(skillIndex).toBeGreaterThanOrEqual(0);
+    expect(actionIndex).toBeGreaterThanOrEqual(0);
+    expect(skillIndex).toBeLessThan(actionIndex);
+    expect(vfsSession.noteToolSeen).toHaveBeenCalledWith(
+      "skills/commands/runtime/SKILL.md",
+    );
+  });
+
   it("uses player-rate command skill path in cold-start guidance when provided", async () => {
     sessionManagerMock.isEmpty.mockReturnValue(true);
     sessionManagerMock.getHistory.mockReturnValue([]);

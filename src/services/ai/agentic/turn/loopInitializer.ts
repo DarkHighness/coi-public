@@ -102,6 +102,87 @@ export interface LoopState {
   pendingWriteFailurePaths: Set<string>;
 }
 
+export interface ResolvedLoopSkillPolicyState {
+  requiredCommandSkillPaths: string[];
+  requiredPresetSkillPaths: string[];
+  userRequiredSkillPaths: string[];
+  userRecommendedSkillPaths: string[];
+  userForbiddenSkillPaths: string[];
+  userForbiddenIgnoredByHardGate: string[];
+}
+
+export function resolveLoopSkillPolicyState(params: {
+  gameState: Pick<GameState, "godMode" | "unlockMode">;
+  settings: AISettings;
+  isSudoMode: boolean;
+  isCleanupMode: boolean;
+  isPlayerRateMode?: boolean;
+  requiredPresetSkillPaths?: string[];
+}): ResolvedLoopSkillPolicyState {
+  const {
+    gameState,
+    settings,
+    isSudoMode,
+    isCleanupMode,
+    isPlayerRateMode = false,
+    requiredPresetSkillPaths = [],
+  } = params;
+
+  const runtimeBaselineKey = resolveRuntimeLoopBaselineKey({
+    isCleanupMode,
+    isSudoMode,
+    isPlayerRateMode,
+  });
+  const optionalRuntimeSkillPaths: string[] = [];
+  if (
+    !isCleanupMode &&
+    !isSudoMode &&
+    !isPlayerRateMode &&
+    gameState.godMode === true
+  ) {
+    optionalRuntimeSkillPaths.push(LOOP_RUNTIME_OPTIONAL_SKILLS.god);
+  }
+  if (
+    !isCleanupMode &&
+    !isSudoMode &&
+    !isPlayerRateMode &&
+    gameState.unlockMode === true
+  ) {
+    optionalRuntimeSkillPaths.push(LOOP_RUNTIME_OPTIONAL_SKILLS.unlock);
+  }
+
+  const resolvedRequiredCommandSkillPaths = Array.from(
+    new Set(
+      [
+        ...getLoopSkillBaselineCanonicalPaths(runtimeBaselineKey),
+        ...optionalRuntimeSkillPaths.map(toCanonicalSkillPath),
+      ].filter((path): path is string => typeof path === "string"),
+    ),
+  );
+  const resolvedRequiredPresetSkillPaths = Array.from(
+    new Set(
+      (requiredPresetSkillPaths || [])
+        .map((path) => path.trim())
+        .filter((path) => path.length > 0),
+    ),
+  );
+
+  const skillPolicyGateConfig = resolveSkillPolicyGateConfig({
+    settings,
+    hardRequiredPaths: resolvedRequiredCommandSkillPaths,
+    hardPresetRequiredPaths: resolvedRequiredPresetSkillPaths,
+  });
+
+  return {
+    requiredCommandSkillPaths: resolvedRequiredCommandSkillPaths,
+    requiredPresetSkillPaths: resolvedRequiredPresetSkillPaths,
+    userRequiredSkillPaths: skillPolicyGateConfig.required,
+    userRecommendedSkillPaths: skillPolicyGateConfig.recommended,
+    userForbiddenSkillPaths: skillPolicyGateConfig.forbidden,
+    userForbiddenIgnoredByHardGate: skillPolicyGateConfig.ignoredForbidden,
+  };
+}
+
 // ============================================================================
 // Initialization Functions
 // ============================================================================
@@ -154,43 +235,17 @@ export function createLoopState(
   const resolvedVfsMode: VfsMode =
     vfsMode ?? (isSudoMode ? "sudo" : gameState.godMode ? "god" : "normal");
   const conversationMarker = getConversationMarker(vfsSession);
-  const runtimeBaselineKey = resolveRuntimeLoopBaselineKey({
-    isCleanupMode,
+  const skillPolicyState = resolveLoopSkillPolicyState({
+    gameState: {
+      godMode: gameState.godMode === true,
+      unlockMode: gameState.unlockMode === true,
+    },
+    settings,
     isSudoMode,
+    isCleanupMode,
     isPlayerRateMode,
+    requiredPresetSkillPaths,
   });
-  const optionalRuntimeSkillPaths: string[] = [];
-  if (
-    !isCleanupMode &&
-    !isSudoMode &&
-    !isPlayerRateMode &&
-    gameState.godMode === true
-  ) {
-    optionalRuntimeSkillPaths.push(LOOP_RUNTIME_OPTIONAL_SKILLS.god);
-  }
-  if (
-    !isCleanupMode &&
-    !isSudoMode &&
-    !isPlayerRateMode &&
-    gameState.unlockMode === true
-  ) {
-    optionalRuntimeSkillPaths.push(LOOP_RUNTIME_OPTIONAL_SKILLS.unlock);
-  }
-  const requiredCommandSkillPaths = Array.from(
-    new Set(
-      [
-        ...getLoopSkillBaselineCanonicalPaths(runtimeBaselineKey),
-        ...optionalRuntimeSkillPaths.map(toCanonicalSkillPath),
-      ].filter((path): path is string => typeof path === "string"),
-    ),
-  );
-  const uniqueRequiredPresetSkillPaths = Array.from(
-    new Set(
-      (requiredPresetSkillPaths || [])
-        .map((path) => path.trim())
-        .filter((path) => path.length > 0),
-    ),
-  );
   const uniqueRequiredPresetSkillRequirements = Array.from(
     new Map(
       (requiredPresetSkillRequirements || [])
@@ -201,11 +256,6 @@ export function createLoopState(
         ]),
     ).values(),
   );
-  const skillPolicyGateConfig = resolveSkillPolicyGateConfig({
-    settings,
-    hardRequiredPaths: requiredCommandSkillPaths,
-    hardPresetRequiredPaths: uniqueRequiredPresetSkillPaths,
-  });
   return {
     vfsSession,
     conversationMarker,
@@ -226,12 +276,13 @@ export function createLoopState(
     isPlayerRateMode,
     finishToolName,
     isRAGEnabled,
-    requiredCommandSkillPaths,
-    requiredPresetSkillPaths: uniqueRequiredPresetSkillPaths,
-    userRequiredSkillPaths: skillPolicyGateConfig.required,
-    userRecommendedSkillPaths: skillPolicyGateConfig.recommended,
-    userForbiddenSkillPaths: skillPolicyGateConfig.forbidden,
-    userForbiddenIgnoredByHardGate: skillPolicyGateConfig.ignoredForbidden,
+    requiredCommandSkillPaths: skillPolicyState.requiredCommandSkillPaths,
+    requiredPresetSkillPaths: skillPolicyState.requiredPresetSkillPaths,
+    userRequiredSkillPaths: skillPolicyState.userRequiredSkillPaths,
+    userRecommendedSkillPaths: skillPolicyState.userRecommendedSkillPaths,
+    userForbiddenSkillPaths: skillPolicyState.userForbiddenSkillPaths,
+    userForbiddenIgnoredByHardGate:
+      skillPolicyState.userForbiddenIgnoredByHardGate,
     requiredPresetSkillRequirements: uniqueRequiredPresetSkillRequirements,
     vfsMode: resolvedVfsMode,
     vfsElevationToken: vfsElevationToken ?? null,
