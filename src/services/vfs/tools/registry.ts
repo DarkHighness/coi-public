@@ -1,9 +1,6 @@
 import type { ZodToolDefinition } from "../../providers/types";
 import { VFS_SEARCH_TOOL_NO_SEMANTIC, VFS_TOOL_CATALOG } from "./catalog";
-import {
-  getAllOutlinePhaseDefinitions,
-  getOutlineSubmitToolName,
-} from "../../ai/agentic/outline/phaseRegistry";
+import { getOutlineSubmitToolName, OUTLINE_PHASE_IDS } from "./outlinePhases";
 import type {
   AnyVfsCatalogEntry,
   VfsToolCapabilityV2,
@@ -64,7 +61,7 @@ export class VfsToolRegistry {
         entry.capability.toolsets.includes("outline") &&
         entry.capability.isFinishTool === true,
     );
-    const expectedOutlineFinishCount = getAllOutlinePhaseDefinitions().length;
+    const expectedOutlineFinishCount = OUTLINE_PHASE_IDS.length;
     if (outlineFinish.length !== expectedOutlineFinishCount) {
       throw new Error(
         `Toolset "outline" must contain ${expectedOutlineFinishCount} phase finish tools, got ${outlineFinish.length}`,
@@ -111,8 +108,7 @@ export class VfsToolRegistry {
 
   public getToolset(toolset: VfsToolsetId): VfsToolset {
     if (toolset === "outline") {
-      const firstPhase =
-        getAllOutlinePhaseDefinitions()[0]?.id ?? "master_plan";
+      const firstPhase = OUTLINE_PHASE_IDS[0] ?? "master_plan";
       const phaseTools = this.getOutlineToolsetByPhase(firstPhase);
       return {
         tools: phaseTools,

@@ -1,13 +1,29 @@
 import { z, type ZodTypeAny } from "zod";
 import type { TypedToolDefinition } from "../../providers/types";
-import { atmosphereSchema } from "../../schemas";
-import { getAllOutlinePhaseDefinitions } from "../../ai/agentic/outline/phaseRegistry";
+import {
+  atmosphereSchema,
+  outlineAtmosphereSchema,
+  outlineFactionsSchema,
+  outlineImageSeedSchema,
+  outlineKnowledgeSchema,
+  outlineLocationsSchema,
+  outlineMasterPlanSchema,
+  outlineNpcsRelationshipsSchema,
+  outlineOpeningNarrativeSchema,
+  outlinePlaceholderRegistrySchema,
+  outlinePlayerActorSchema,
+  outlineQuestsSchema,
+  outlineTimelineSchema,
+  outlineWorldFoundationSchema,
+} from "../../schemas";
+import { OUTLINE_PHASE_SEQUENCE } from "./outlinePhases";
 import type {
   AnyVfsCatalogEntry,
   VfsToolCapabilityV2,
   VfsToolCatalogEntry,
   VfsToolName,
 } from "./types";
+import type { OutlinePhaseId } from "../../../types";
 
 const IMMUTABLE_ZONES = [
   "shared/system/skills/**",
@@ -260,12 +276,28 @@ const ordered = (
   ...input,
 });
 
-const OUTLINE_PHASE_TOOLS = getAllOutlinePhaseDefinitions().map((phase) => ({
+const OUTLINE_PHASE_SCHEMAS: Record<OutlinePhaseId, ZodTypeAny> = {
+  image_seed: outlineImageSeedSchema,
+  master_plan: outlineMasterPlanSchema,
+  placeholder_registry: outlinePlaceholderRegistrySchema,
+  world_foundation: outlineWorldFoundationSchema,
+  player_actor: outlinePlayerActorSchema,
+  locations: outlineLocationsSchema,
+  factions: outlineFactionsSchema,
+  npcs_relationships: outlineNpcsRelationshipsSchema,
+  quests: outlineQuestsSchema,
+  knowledge: outlineKnowledgeSchema,
+  timeline: outlineTimelineSchema,
+  atmosphere: outlineAtmosphereSchema,
+  opening_narrative: outlineOpeningNarrativeSchema,
+};
+
+const OUTLINE_PHASE_TOOLS = OUTLINE_PHASE_SEQUENCE.map((phase) => ({
   id: phase.id,
   order: phase.order,
   name: phase.submitToolName,
   handlerKey: `finish_outline_${phase.id}` as const,
-  schema: phase.schema,
+  schema: OUTLINE_PHASE_SCHEMAS[phase.id],
 }));
 
 export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
