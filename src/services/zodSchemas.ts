@@ -1576,12 +1576,6 @@ export const storyOutlineSchema = z.object({
         )
         .describe("Initial choices for the protagonist."),
       atmosphere: atmosphereSchema.nullish().describe("Override atmosphere."),
-      imagePrompt: z
-        .string()
-        .nullish()
-        .describe(
-          "Vivid cinematographic scene description in English. Write as a narrative paragraph: [shot type] of [subject], [action], in [environment]. [Lighting]. [Mood]. [Textures].",
-        ),
     })
     .nullish()
     .describe("Opening narrative generated in Phase 9."),
@@ -1866,12 +1860,6 @@ export const outlineOpeningNarrativeSchema = z.object({
     atmosphere: atmosphereSchema
       .nullish()
       .describe("Override initial atmosphere if the opening scene differs."),
-    imagePrompt: z
-      .string()
-      .nullish()
-      .describe(
-        "Vivid cinematographic scene description in English. Write as a narrative paragraph: [shot type] of [subject], [action], in [environment]. [Lighting]. [Mood]. [Textures].",
-      ),
   }),
 });
 
