@@ -285,6 +285,32 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     : "hover:bg-slate-900/5";
   const iconToneClass = isNightMode ? "text-white/65" : "text-slate-500";
   const softSurfaceClass = isNightMode ? "bg-white/5" : "bg-slate-900/[0.03]";
+  const isMobileThemeSelect = !isDesktop && mode === "theme_select";
+  const themeSelectDividerClass = isMobileThemeSelect
+    ? "border-theme-divider/60"
+    : dividerClass;
+  const themeSelectTextSecondaryClass = isMobileThemeSelect
+    ? "text-theme-text-secondary"
+    : textSecondaryClass;
+  const themeSelectHoverRowClass = isMobileThemeSelect
+    ? "hover:bg-theme-surface-highlight/10"
+    : hoverRowClass;
+  const themeSelectSoftSurfaceClass = isMobileThemeSelect
+    ? "bg-theme-surface-highlight/10"
+    : softSurfaceClass;
+  const menuBorderClass = isMobileThemeSelect
+    ? "border-t-0 lg:border-t-0 lg:border-l"
+    : "border-t lg:border-t-0 lg:border-l";
+  const menuShellClass = isMobileThemeSelect
+    ? "bg-theme-bg border-theme-divider/60"
+    : `${dividerClass} ${panelToneClass}`;
+  const menuContentClass = isMobileThemeSelect ? "bg-theme-bg" : "";
+  const mobileThemeSelectTopInsetClass = isMobileThemeSelect
+    ? "pt-[calc(env(safe-area-inset-top)+1.5rem)]"
+    : "";
+  const footerClass = isMobileThemeSelect
+    ? "bg-theme-bg border-t border-theme-divider/60 text-theme-text-secondary"
+    : textMutedClass;
   const heroPrimaryTextClass = isNightMode ? "text-white" : "text-slate-900";
   const heroSecondaryTextClass = isNightMode
     ? "text-white/78"
@@ -438,63 +464,69 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         </div>
 
         <div
-          className={`relative z-20 lg:w-5/12 ${menuLayoutClass} lg:h-full border-t lg:border-t-0 lg:border-l ${dividerClass} ${panelToneClass} flex flex-col overflow-hidden transition-all duration-500`}
+          className={`relative z-20 lg:w-5/12 ${menuLayoutClass} lg:h-full ${menuBorderClass} ${menuShellClass} flex flex-col overflow-hidden transition-all duration-500`}
         >
           {latestSave?.previewImage && (
             <PreviewBackground imageId={latestSave.previewImage} />
           )}
 
-          <div
-            className={`pointer-events-none absolute inset-0 ${
-              isNightMode
-                ? "bg-gradient-to-b from-white/[0.03] via-transparent to-black/35"
-                : "bg-gradient-to-b from-white/30 via-transparent to-slate-200/25"
-            }`}
-          ></div>
+          {!isMobileThemeSelect && (
+            <div
+              className={`pointer-events-none absolute inset-0 ${
+                isNightMode
+                  ? "bg-gradient-to-b from-white/[0.03] via-transparent to-black/35"
+                  : "bg-gradient-to-b from-white/30 via-transparent to-slate-200/25"
+              }`}
+            ></div>
+          )}
 
           {/* Top Bar */}
-          <div className="relative z-10 flex justify-end items-center gap-3 p-6 lg:p-8">
-            <button
-              ref={settingsButtonRef}
-              onClick={() => {
-                if (
-                  tutorial?.isActive &&
-                  tutorial.currentStep?.id === "open-settings"
-                ) {
-                  tutorial.markStepActionComplete();
-                  tutorial.nextStep();
-                }
-                onSettings();
-              }}
-              data-tutorial-id="settings-button"
-              className={`p-2.5 transition-colors ${textMutedClass} ${hoverRowClass}`}
-              title={t("settings.title")}
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {!isMobileThemeSelect && (
+            <div className="relative z-10 flex justify-end items-center gap-3 p-6 lg:p-8">
+              <button
+                ref={settingsButtonRef}
+                onClick={() => {
+                  if (
+                    tutorial?.isActive &&
+                    tutorial.currentStep?.id === "open-settings"
+                  ) {
+                    tutorial.markStepActionComplete();
+                    tutorial.nextStep();
+                  }
+                  onSettings();
+                }}
+                data-tutorial-id="settings-button"
+                className={`p-2.5 transition-colors ${textMutedClass} ${hoverRowClass}`}
+                title={t("settings.title")}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                ></path>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                ></path>
-              </svg>
-            </button>
-            <LanguageSelector onChange={setLanguage} />
-          </div>
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  ></path>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  ></path>
+                </svg>
+              </button>
+              <LanguageSelector onChange={setLanguage} />
+            </div>
+          )}
 
           {/* Menu Content */}
-          <div className="relative z-10 flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full overflow-hidden">
+          <div
+            className={`relative z-10 flex-1 flex flex-col px-8 lg:px-16 max-w-xl mx-auto w-full overflow-hidden ${menuContentClass}`}
+          >
             {mode === "main" ? (
               <div className="space-y-4 animate-slide-in flex flex-col justify-center h-full overflow-y-auto custom-scrollbar px-2">
                 {latestSave && (
@@ -693,14 +725,16 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col h-full animate-slide-in">
+              <div
+                className={`flex flex-col h-full animate-slide-in bg-theme-bg text-theme-text ${mobileThemeSelectTopInsetClass}`}
+              >
                 <div
-                  className={`flex items-center justify-between mb-4 shrink-0 border-b pb-3.5 ${dividerClass}`}
+                  className={`flex items-center justify-between mb-4 shrink-0 border-b pb-3.5 ${themeSelectDividerClass}`}
                 >
                   <div className="flex items-center gap-4">
                     <button
                       onClick={exitThemeSelect}
-                      className={`h-9 w-9 grid place-items-center rounded-xl border ${dividerClass} ${textSecondaryClass} transition-colors ${hoverRowClass}`}
+                      className={`h-9 w-9 grid place-items-center rounded-xl border ${themeSelectDividerClass} ${themeSelectTextSecondaryClass} transition-colors ${themeSelectHoverRowClass}`}
                     >
                       <svg
                         className="w-5 h-5"
@@ -717,7 +751,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       </svg>
                     </button>
                     <h3
-                      className={`text-[11px] uppercase tracking-[0.14em] ${textSecondaryClass}`}
+                      className={`text-[11px] uppercase tracking-[0.14em] ${themeSelectTextSecondaryClass}`}
                     >
                       {t("selectTheme")}
                     </h3>
@@ -725,7 +759,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
                   <button
                     onClick={() => setIsCustomContextModalOpen(true)}
-                    className={`relative h-9 px-3.5 rounded-xl border ${dividerClass} ${softSurfaceClass} ${textSecondaryClass} transition-colors text-[11px] uppercase tracking-[0.1em] font-semibold flex items-center gap-2 ${hoverRowClass}`}
+                    className={`relative h-9 px-3.5 rounded-xl border ${themeSelectDividerClass} ${themeSelectSoftSurfaceClass} ${themeSelectTextSecondaryClass} transition-colors text-[11px] uppercase tracking-[0.1em] font-semibold flex items-center gap-2 ${themeSelectHoverRowClass}`}
                   >
                     <svg
                       className="w-4 h-4"
@@ -761,7 +795,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                         />
                       ) : (
                         <div
-                          className={`h-full flex flex-col items-center justify-center gap-3 ${textSecondaryClass}`}
+                          className={`h-full flex flex-col items-center justify-center gap-3 ${themeSelectTextSecondaryClass}`}
                         >
                           {themesLoading && (
                             <div className="animate-spin w-7 h-7 border-2 border-current/20 border-t-current rounded-full" />
@@ -786,7 +820,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
           {/* Footer */}
           <div
-            className={`relative z-10 p-6 text-center text-xs tracking-wide shrink-0 ${textMutedClass}`}
+            className={`relative z-10 p-6 text-center text-xs tracking-wide shrink-0 ${footerClass}`}
           >
             {t("version")} : {BUILD_INFO.buildTime} {BUILD_INFO.gitHash}
           </div>

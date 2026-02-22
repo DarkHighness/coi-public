@@ -84,7 +84,13 @@ export const ThemeFilters: React.FC<ThemeFiltersProps> = ({
           )}
         </div>
 
-        <div className="mt-1.5 flex items-center gap-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-theme-divider [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div
+          className={`mt-1.5 flex items-center gap-4 overflow-x-auto ${
+            isDesktop
+              ? "pb-1 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-theme-divider [&::-webkit-scrollbar-thumb]:rounded-full"
+              : "pb-0.5 scrollbar-hide"
+          }`}
+        >
           {CATEGORY_KEYS.map((category) => (
             <button
               key={category}
