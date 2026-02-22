@@ -15,6 +15,33 @@
 
 </div>
 
+<a id="visual-preview"></a>
+
+## 视觉预览
+
+<p align="center">
+  <img alt="Chronicles of Infinity 游戏实机预览" src="assets/game.webp" width="960" />
+</p>
+
+<p align="center">
+  <sub>主游玩界面</sub>
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img alt="Chronicles of Infinity 开始界面" src="assets/start_screen.webp" width="100%" />
+      <br />
+      <sub>开始界面</sub>
+    </td>
+    <td align="center" width="50%">
+      <img alt="Chronicles of Infinity 题材选择界面" src="assets/theme.webp" width="100%" />
+      <br />
+      <sub>题材选择</sub>
+    </td>
+  </tr>
+</table>
+
 <a id="document-metadata"></a>
 
 ## 文档元信息
@@ -30,25 +57,26 @@
 
 ## 目录
 
-1. [执行摘要](#executive-summary)
-2. [阅读导引](#reader-paths)
-3. [为什么它与常见 AI 剧情产品不同](#why-it-feels-different)
-4. [范围与非目标](#scope-and-non-goals)
-5. [设计目标](#design-objectives)
-6. [架构原则总览](#architecture-principles-at-a-glance)
-7. [方法论框架](#methodological-framework)
-8. [核心特色能力](#distinctive-capabilities)
-9. [治理与可信框架](#governance-and-trust-framework)
-10. [可信性与可靠性模型](#reliability-and-trust-model)
-11. [运行评估标准](#operational-evaluation-criteria)
-12. [重点叙事域](#core-narrative-domains)
-13. [一局体验循环](#one-session-experience-loop)
-14. [证据映射](#evidence-map)
-15. [给创作者与扩展者](#for-creators-and-extenders)
-16. [术语表](#glossary)
-17. [快速开始](#quick-start)
-18. [部署与文档](#deployment-and-documentation)
-19. [许可证](#license)
+1. [视觉预览](#visual-preview)
+2. [执行摘要](#executive-summary)
+3. [阅读导引](#reader-paths)
+4. [为什么它与常见 AI 剧情产品不同](#why-it-feels-different)
+5. [范围与非目标](#scope-and-non-goals)
+6. [设计目标](#design-objectives)
+7. [架构原则总览](#architecture-principles-at-a-glance)
+8. [方法论框架](#methodological-framework)
+9. [核心特色能力](#distinctive-capabilities)
+10. [治理与可信框架](#governance-and-trust-framework)
+11. [可信性与可靠性模型](#reliability-and-trust-model)
+12. [运行评估标准](#operational-evaluation-criteria)
+13. [重点叙事域](#core-narrative-domains)
+14. [一局体验循环](#one-session-experience-loop)
+15. [证据映射](#evidence-map)
+16. [给创作者与扩展者](#for-creators-and-extenders)
+17. [术语表](#glossary)
+18. [快速开始](#quick-start)
+19. [部署与文档](#deployment-and-documentation)
+20. [许可证](#license)
 
 <a id="executive-summary"></a>
 

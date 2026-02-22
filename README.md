@@ -15,6 +15,33 @@
 
 </div>
 
+<a id="visual-preview"></a>
+
+## Visual Preview
+
+<p align="center">
+  <img alt="Chronicles of Infinity gameplay preview" src="assets/game.webp" width="960" />
+</p>
+
+<p align="center">
+  <sub>Main gameplay view</sub>
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img alt="Chronicles of Infinity start screen" src="assets/start_screen.webp" width="100%" />
+      <br />
+      <sub>Start Screen</sub>
+    </td>
+    <td align="center" width="50%">
+      <img alt="Chronicles of Infinity theme selection" src="assets/theme.webp" width="100%" />
+      <br />
+      <sub>Theme Selection</sub>
+    </td>
+  </tr>
+</table>
+
 <a id="document-metadata"></a>
 
 ## Document Metadata
@@ -30,25 +57,26 @@
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [Reader Paths](#reader-paths)
-3. [Why It Feels Different](#why-it-feels-different)
-4. [Scope and Non-Goals](#scope-and-non-goals)
-5. [Design Objectives](#design-objectives)
-6. [Architecture Principles at a Glance](#architecture-principles-at-a-glance)
-7. [Methodological Framework](#methodological-framework)
-8. [Distinctive Capabilities](#distinctive-capabilities)
-9. [Governance and Trust Framework](#governance-and-trust-framework)
-10. [Reliability and Trust Model](#reliability-and-trust-model)
-11. [Operational Evaluation Criteria](#operational-evaluation-criteria)
-12. [Core Narrative Domains](#core-narrative-domains)
-13. [One-Session Experience Loop](#one-session-experience-loop)
-14. [Evidence Map](#evidence-map)
-15. [For Creators and Extenders](#for-creators-and-extenders)
-16. [Glossary](#glossary)
-17. [Quick Start](#quick-start)
-18. [Deployment and Documentation](#deployment-and-documentation)
-19. [License](#license)
+1. [Visual Preview](#visual-preview)
+2. [Executive Summary](#executive-summary)
+3. [Reader Paths](#reader-paths)
+4. [Why It Feels Different](#why-it-feels-different)
+5. [Scope and Non-Goals](#scope-and-non-goals)
+6. [Design Objectives](#design-objectives)
+7. [Architecture Principles at a Glance](#architecture-principles-at-a-glance)
+8. [Methodological Framework](#methodological-framework)
+9. [Distinctive Capabilities](#distinctive-capabilities)
+10. [Governance and Trust Framework](#governance-and-trust-framework)
+11. [Reliability and Trust Model](#reliability-and-trust-model)
+12. [Operational Evaluation Criteria](#operational-evaluation-criteria)
+13. [Core Narrative Domains](#core-narrative-domains)
+14. [One-Session Experience Loop](#one-session-experience-loop)
+15. [Evidence Map](#evidence-map)
+16. [For Creators and Extenders](#for-creators-and-extenders)
+17. [Glossary](#glossary)
+18. [Quick Start](#quick-start)
+19. [Deployment and Documentation](#deployment-and-documentation)
+20. [License](#license)
 
 <a id="executive-summary"></a>
 
