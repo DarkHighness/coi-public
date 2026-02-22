@@ -168,6 +168,8 @@ describe("VFS global skills generator", () => {
     expect(commandPlayerRate).toContain("vfs_vm");
     expect(commandPlayerRate).toContain("unavailable in this loop");
     expect(commandPlayerRate).toContain("AI-to-AI self-notes");
+    expect(commandPlayerRate).toContain("Decision protocol (mandatory)");
+    expect(commandPlayerRate).toContain("append net-new evidence");
     expect(commandCleanup).toContain("vfs_vm");
     expect(commandCleanup).toContain("retconAck?: { summary }");
     expect(commandCleanup).toContain("JavaScript");

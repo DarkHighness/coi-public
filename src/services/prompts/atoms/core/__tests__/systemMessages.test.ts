@@ -22,6 +22,8 @@ describe("systemMessages atoms", () => {
     expect(content).not.toContain("vfs_vm");
     expect(content).toContain("workspace/PLAN.md");
     expect(content).toContain("major branch fracture");
+    expect(content).toContain("Decision protocol for SOUL/USER");
+    expect(content).toContain("append net-new evidence");
     expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
     expect(content).not.toContain(legacyFinishTool);
     expect(content).not.toContain(legacySearchTool);

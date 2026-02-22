@@ -54,11 +54,17 @@ const updateTiming = `
       * Never treat player-rate as hard authority to rewrite established facts/world rules/plan commitments
       * Finish with \`vfs_end_turn({})\` (zero-update end is allowed)
     - **Normal-turn proactive updates allowed**: in \`[PLAYER_ACTION]\` loops, if you detect meaningful evidence, update \`workspace/USER.md\`; update \`workspace/SOUL.md\` only for AI-behavior learnings
-    - **Post-error learning**: if a tool call failed earlier in this loop and later succeeded, add one concise \`[code] cause -> fix\` bullet to \`## Tool Usage Hints\`
+    - **Post-error learning**: if a tool call failed earlier in this loop and later succeeded, integrate one concise \`[code] cause -> fix\` bullet into \`## Tool Usage Hints\` (merge duplicates; avoid tail append spam)
     - **Proactive cadence**: if no explicit rating arrives, still refresh soul every 3-6 meaningful turns
     - **File focus**:
       * \`workspace/USER.md\`: Core Tendencies / Style Preferences / Interaction Patterns / Evidence Log / Narrative Direction (soft) / Anti-Patterns (hard rules)
       * \`workspace/SOUL.md\`: Narrative Craft Evolution / World Simulation Learnings / Tool Usage Hints / Style Calibration Notes / SKILL Usage Log
+    - **Memory integration protocol (SOUL/USER, mandatory)**:
+      * Read relevant sections first; treat injected file content as baseline, then verify section-level anchors before mutation.
+      * Choose operation deliberately: append for net-new evidence, edit for refinements/corrections, delete for stale or contradictory entries.
+      * Update in place under matching headings (merge/replace stale bullets instead of stacking contradictory ones).
+      * Keep one coherent statement per preference/learning signal; deduplicate near-equivalent notes.
+      * Use blind end-of-file append only when creating a truly missing section, then immediately normalize structure.
     - **Always update when**:
       * Choice surprises you (contradicts established pattern)
       * Choice confirms pattern strongly (defining moment)

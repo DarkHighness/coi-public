@@ -46,7 +46,7 @@ ${
   2) If \`details.hint.avoid\` is set, do NOT repeat that pattern. Use \`details.hint.nextCalls\` if present.
   3) Do NOT finish while blocking errors remain (\`WRITE_EXISTING_TARGET_RETRY_REQUIRED\`, \`FINISH_BLOCKED_BY_EXISTING_WRITE_FAILURE\`).
   4) If same \`code\` repeats twice, narrow scope and report blocker.
-  5) On retry success, append \`[code] cause -> fix\` to \`workspace/SOUL.md § Tool Usage Hints\`.
+  5) On retry success, integrate one concise \`[code] cause -> fix\` bullet into \`workspace/SOUL.md\` § \`## Tool Usage Hints\` (merge duplicates; do not blind-append at file end).
 </runtime_floor>`;
 
 const OUTLINE_RUNTIME_FLOOR = `<runtime_floor>

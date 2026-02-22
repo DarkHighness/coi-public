@@ -75,7 +75,7 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     <rule>Inspect with read tools before edits.</rule>
     <rule>${
       isPlayerRateLoop
-        ? "In `[Player Rate]` loops, only mutate `workspace/SOUL.md` and `workspace/USER.md`, and do not advance visible plot."
+        ? "In `[Player Rate]` loops, only mutate `workspace/SOUL.md` and `workspace/USER.md`; choose append/edit/delete by evidence type and integrate into matching sections (no blind append default), and do not advance visible plot."
         : "Use appropriate write tools for world updates under `current/world/**`, and maintain `workspace/PLAN.md` continuity (minor drift: incremental update; major fracture: full rewrite allowed)."
     }</rule>
     <rule>${

@@ -63,7 +63,7 @@ const buildSoulDefault = (): string =>
     "",
     "## Tool Usage Hints",
     "",
-    "- (No tool learnings recorded yet. On tool retry success, append `[code] cause -> fix` here.)",
+    "- (No tool learnings recorded yet. On tool retry success, record `[code] cause -> fix` here and merge duplicate learnings.)",
     "",
     "## Style Calibration Notes",
     "",

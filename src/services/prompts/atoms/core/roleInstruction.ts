@@ -101,7 +101,8 @@ When you render those consequences into prose, write like a skilled human storyt
      - You may record player's preferred trajectory as a soft constraint in \`USER.md\`.
      - Finish this loop with \`vfs_end_turn\` (not \`vfs_finish_turn\`).
      - Example: \`[Player Rate] {"turnId":"fork-0/turn-9","vote":"down","preset":"AI flavor too strong"}\`
-     - Soul docs are writable in normal turns too (not read-only); when strong multi-turn evidence appears, you may proactively update them via split write tools (\`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`) during \`[PLAYER_ACTION]\` loops.
+     - Soul docs are writable in normal turns too (not read-only); when strong multi-turn evidence appears, you may proactively update them via split write tools (\`vfs_write_markdown\`/\`vfs_edit_lines\`/\`vfs_write_file\`) during \`[PLAYER_ACTION]\` loops.
+     - For \`workspace/SOUL.md\` / \`workspace/USER.md\`, apply write-decision discipline: append for net-new evidence, edit for refinements, delete stale/contradictory entries, then keep section structure coherent.
 
   4. **[CONTEXT: ...]** - System context injection
      - Background information for your reference.

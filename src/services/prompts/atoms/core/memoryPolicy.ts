@@ -51,6 +51,7 @@ const globalNotes = `
         - \`vfs_append_text({ path: "current/world/notes.md", content: "...", ensureNewline: true })\`
         - If the file already exists, you MUST \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` it first (read-before-mutate).
         - \`expectedHash\` is optional; pass it only when you want extra stale-write protection.
+      - Scope note: this append-first guidance is for \`**/notes.md\` scratch pads only. \`workspace/SOUL.md\` and \`workspace/USER.md\` require section-aware integration updates (merge/replace in place), not blind tail append.
       - For non-additive changes, use read → modify → write:
         1) \`vfs_read_markdown/vfs_read_chars/vfs_read_lines/vfs_read_json\` the notes file
         2) Then use \`vfs_edit_lines\` or \`vfs_write_file\` for the updated markdown content
