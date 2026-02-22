@@ -350,13 +350,107 @@ function buildInitialHistory(
 
   if (recentHistory && recentHistory.length > 0) {
     console.log(`[SessionContext] Hydrating ${recentHistory.length} segments.`);
-    const hydratedMessages = hydrateSegments(recentHistory);
+    const hydratedMessages =
+      options?.startupMode === "turn"
+        ? hydrateTurnSegmentsAsActionNarrationPairs(recentHistory)
+        : hydrateSegments(recentHistory);
     initialHistory = [...initialHistory, ...hydratedMessages];
   }
 
   return protocol === "gemini"
     ? (toGeminiFormat(initialHistory) as unknown[])
     : (initialHistory as unknown[]);
+}
+
+const isNarrationRole = (
+  role: StorySegment["role"],
+): role is "model" | "system" => role === "model" || role === "system";
+
+const isActionRole = (role: StorySegment["role"]): role is "user" | "command" =>
+  role === "user" || role === "command";
+
+const toHydratedActionText = (segment: StorySegment): string => {
+  if (segment.role === "user") {
+    return hasKnownUserMarker(segment.text)
+      ? segment.text
+      : `[PLAYER_ACTION] ${segment.text}`;
+  }
+
+  if (segment.role === "command") {
+    return segment.text.startsWith("[SUDO]")
+      ? segment.text
+      : `[SUDO] ${segment.text}`;
+  }
+
+  return segment.text;
+};
+
+/**
+ * Normalize turn history for new sessions into strict action+narration pairs:
+ * ([PLAYER_ACTION] + assistant narrative) repeated.
+ */
+function hydrateTurnSegmentsAsActionNarrationPairs(
+  segments: StorySegment[],
+): UnifiedMessage[] {
+  const pairedMessages: UnifiedMessage[] = [];
+
+  let pendingAction: StorySegment | null = null;
+  let narrationChunks: string[] = [];
+  let droppedLeadingNarration = 0;
+  let droppedDanglingActions = 0;
+
+  const flushPair = () => {
+    if (!pendingAction) return;
+
+    if (narrationChunks.length === 0) {
+      droppedDanglingActions += 1;
+      pendingAction = null;
+      return;
+    }
+
+    pairedMessages.push({
+      role: "user",
+      content: [{ type: "text", text: toHydratedActionText(pendingAction) }],
+    });
+    pairedMessages.push({
+      role: "assistant",
+      content: [{ type: "text", text: narrationChunks.join("\n\n") }],
+    });
+
+    pendingAction = null;
+    narrationChunks = [];
+  };
+
+  for (const segment of segments) {
+    if (isActionRole(segment.role)) {
+      flushPair();
+      pendingAction = segment;
+      narrationChunks = [];
+      continue;
+    }
+
+    if (isNarrationRole(segment.role)) {
+      if (!pendingAction) {
+        droppedLeadingNarration += 1;
+        continue;
+      }
+      const text = segment.text.trim();
+      if (text.length > 0) {
+        narrationChunks.push(text);
+      }
+      continue;
+    }
+  }
+
+  flushPair();
+
+  if (droppedLeadingNarration > 0 || droppedDanglingActions > 0) {
+    console.log(
+      `[SessionContext] Turn hydration normalized history (dropped leading narration: ${droppedLeadingNarration}, dangling actions: ${droppedDanglingActions}).`,
+    );
+  }
+
+  return pairedMessages;
 }
 
 /**

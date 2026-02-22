@@ -296,6 +296,56 @@ describe("sessionContext", () => {
     );
   });
 
+  it("normalizes turn startup history into action+narration pairs", async () => {
+    sessionManagerMock.isEmpty.mockReturnValue(true);
+    sessionManagerMock.getHistory.mockReturnValue([]);
+
+    await setupSession({
+      slotId: "slot-turn",
+      forkId: 0,
+      vfsSession: { setActiveForkId: vi.fn() } as any,
+      providerId: "provider-turn",
+      modelId: "model-turn",
+      protocol: "openai",
+      systemInstruction: "system-inst",
+      contextMessages: [createTextMessage("system", "seed")],
+      startupMode: "turn",
+      recentHistory: [
+        { role: "model", text: "opening narration without action" },
+        { role: "user", text: "inspect room" },
+        { role: "model", text: "You inspect the room." },
+        { role: "model", text: "Dust hangs in the air." },
+        { role: "user", text: "open the door" },
+        { role: "command", text: "stabilize timeline" },
+        { role: "system", text: "Timeline stabilization succeeded." },
+        { role: "user", text: "dangling action" },
+      ] as any[],
+    });
+
+    const initializedHistory = sessionManagerMock.setHistory.mock
+      .calls[0]?.[1] as UnifiedMessage[] | undefined;
+    const allTexts =
+      initializedHistory?.flatMap((msg) =>
+        msg.content
+          .filter(
+            (part): part is { type: "text"; text: string } =>
+              part.type === "text",
+          )
+          .map((part) => part.text),
+      ) ?? [];
+
+    expect(allTexts).toContain("[PLAYER_ACTION] inspect room");
+    expect(allTexts).toContain(
+      "You inspect the room.\n\nDust hangs in the air.",
+    );
+    expect(allTexts).toContain("[SUDO] stabilize timeline");
+    expect(allTexts).toContain("Timeline stabilization succeeded.");
+
+    expect(allTexts).not.toContain("opening narration without action");
+    expect(allTexts).not.toContain("[PLAYER_ACTION] open the door");
+    expect(allTexts).not.toContain("[PLAYER_ACTION] dangling action");
+  });
+
   it("surfaces parsed hot-start refs in cold-start guidance", async () => {
     sessionManagerMock.isEmpty.mockReturnValue(true);
     sessionManagerMock.getHistory.mockReturnValue([]);
