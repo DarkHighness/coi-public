@@ -543,7 +543,11 @@ export async function runAgenticLoopRefactored(
 
       // Accumulate usage
       accumulateUsage(loopState.totalUsage, aiResult.usage);
-      const contextUsageSnapshot =
+      // Context only grows within a single agentic loop (conversation history
+      // is append-only). If the provider reports lower usageTokens than we
+      // have already seen, the report is anomalous (e.g. provider omitted
+      // promptTokens) — reuse the previous snapshot to avoid UI jumps.
+      const rawContextUsageSnapshot =
         providerReportedUsageTokens !== null
           ? buildToolCallContextUsageSnapshot({
               settings,
@@ -554,6 +558,12 @@ export async function runAgenticLoopRefactored(
               autoCompactThreshold: settings.extra?.autoCompactThreshold,
             })
           : null;
+      const contextUsageSnapshot =
+        rawContextUsageSnapshot &&
+        lastContextUsage &&
+        rawContextUsageSnapshot.usageTokens < lastContextUsage.usageTokens
+          ? lastContextUsage
+          : rawContextUsageSnapshot;
       if (contextUsageSnapshot) {
         lastContextUsage = contextUsageSnapshot;
       }

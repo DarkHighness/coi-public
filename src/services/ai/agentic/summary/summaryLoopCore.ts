@@ -30,10 +30,6 @@ import {
   resolveModelContextWindowTokensWithLookup,
 } from "../../../modelContextWindows";
 import { NON_STORY_OUTLINE_MAX_OUTPUT_TOKENS } from "../../../tokenBudget";
-import {
-  buildToolCallContextUsageSnapshot,
-  resolveProviderReportedUsageTokens,
-} from "../../contextUsage";
 import { toJsonValue } from "../../../jsonValue";
 import {
   accumulateSummaryUsage,
@@ -427,27 +423,16 @@ export async function runSummaryLoopCore(options: {
 
       incrementToolCalls(loopState.budgetState, functionCalls.length);
 
-      const providerUsageTokens = resolveProviderReportedUsageTokens(usage);
-      const usageTokensForSnapshot =
-        providerUsageTokens ?? Math.max(0, usage?.totalTokens || 0);
-      const contextUsageSnapshot =
-        usageTokensForSnapshot > 0
-          ? buildToolCallContextUsageSnapshot({
-              settings,
-              usageTokens: usageTokensForSnapshot,
-              promptTokens: usage?.promptTokens || 0,
-              completionTokens: usage?.completionTokens || 0,
-              totalTokens: usage?.totalTokens || 0,
-              autoCompactThreshold: settings.extra?.autoCompactThreshold,
-            })
-          : undefined;
-
+      // NOTE: Do NOT attach contextUsage to summary loop tool calls.
+      // The summary loop runs a separate, shorter conversation whose token
+      // counts do not reflect the main conversation's context pressure.
+      // Attaching them would cause the UI to suddenly display misleadingly
+      // small values (e.g. 1000-2000 tokens).
       const liveToolCalls: ToolCallRecord[] = functionCalls.map((call) => ({
         name: call.name,
         input: call.args,
         output: null,
         timestamp: Date.now(),
-        contextUsage: contextUsageSnapshot,
       }));
       input.onToolCallsUpdate?.([...liveToolCalls]);
 
