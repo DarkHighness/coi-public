@@ -7,6 +7,9 @@ const generateAdventureTurnMock = vi.hoisted(() => vi.fn());
 const deriveGameStateFromVfsMock = vi.hoisted(() => vi.fn());
 const mergeDerivedViewStateMock = vi.hoisted(() => vi.fn());
 const createStateSnapshotMock = vi.hoisted(() => vi.fn());
+const createForkMock = vi.hoisted(() => vi.fn());
+const forkConversationMock = vi.hoisted(() => vi.fn());
+const writeForkTreeMock = vi.hoisted(() => vi.fn());
 const updateRAGDocumentsBackgroundMock = vi.hoisted(() => vi.fn());
 const rebuildSessionsAfterHeavyMutationMock = vi.hoisted(() => vi.fn());
 
@@ -20,6 +23,16 @@ vi.mock("../../services/vfs/derivations", () => ({
   deriveGameStateFromVfs: deriveGameStateFromVfsMock,
 }));
 
+vi.mock("../../services/vfs/conversation", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../services/vfs/conversation")>();
+  return {
+    ...actual,
+    forkConversation: forkConversationMock,
+    writeForkTree: writeForkTreeMock,
+  };
+});
+
 vi.mock("../../hooks/vfsViewState", () => ({
   mergeDerivedViewState: mergeDerivedViewStateMock,
 }));
@@ -29,6 +42,7 @@ vi.mock("../../utils/snapshotManager", async (importOriginal) => {
     await importOriginal<typeof import("../../utils/snapshotManager")>();
   return {
     ...actual,
+    createFork: createForkMock,
     createStateSnapshot: createStateSnapshotMock,
   };
 });
@@ -146,6 +160,34 @@ function createDeps(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   rebuildSessionsAfterHeavyMutationMock.mockResolvedValue(undefined);
+  createForkMock.mockImplementation(
+    (
+      currentForkId: number,
+      currentForkTree: { nodes: Record<number, any>; nextForkId: number },
+      sourceNodeId: string,
+      currentTurn: number,
+    ) => {
+      const newForkId = currentForkTree.nextForkId;
+      return {
+        newForkId,
+        newForkTree: {
+          nodes: {
+            ...currentForkTree.nodes,
+            [newForkId]: {
+              id: newForkId,
+              parentId: currentForkId,
+              createdAt: 0,
+              createdAtTurn: currentTurn,
+              sourceNodeId,
+            },
+          },
+          nextForkId: newForkId + 1,
+        },
+      };
+    },
+  );
+  forkConversationMock.mockImplementation(() => undefined);
+  writeForkTreeMock.mockImplementation(() => undefined);
 
   createStateSnapshotMock.mockReturnValue({ snap: true });
   deriveGameStateFromVfsMock.mockImplementation(() => ({
@@ -406,5 +448,108 @@ describe("commandActions", () => {
       "application/json",
     );
     expect(deps.triggerSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses latest in-memory fork tree when creating a fork from restored history", async () => {
+    const deps = createDeps();
+    deps.gameStateRef.current = {
+      ...createBaseGameState(),
+      forkId: 4,
+      forkTree: {
+        nodes: {
+          0: {
+            id: 0,
+            parentId: null,
+            createdAt: 1,
+            createdAtTurn: 0,
+            sourceNodeId: "",
+          },
+          1: {
+            id: 1,
+            parentId: 0,
+            createdAt: 2,
+            createdAtTurn: 1,
+            sourceNodeId: "model-fork-0/turn-1",
+          },
+          2: {
+            id: 2,
+            parentId: 1,
+            createdAt: 3,
+            createdAtTurn: 2,
+            sourceNodeId: "model-fork-1/turn-2",
+          },
+          3: {
+            id: 3,
+            parentId: 2,
+            createdAt: 4,
+            createdAtTurn: 3,
+            sourceNodeId: "model-fork-2/turn-3",
+          },
+          4: {
+            id: 4,
+            parentId: 3,
+            createdAt: 5,
+            createdAtTurn: 4,
+            sourceNodeId: "model-fork-3/turn-4",
+          },
+        },
+        nextForkId: 5,
+      },
+    } as any;
+
+    deriveGameStateFromVfsMock
+      .mockReset()
+      // After restoreVfsToTurn: old snapshot with stale fork tree.
+      .mockReturnValueOnce({
+        ...createBaseGameState(),
+        forkId: 0,
+        forkTree: {
+          nodes: {
+            0: {
+              id: 0,
+              parentId: null,
+              createdAt: 1,
+              createdAtTurn: 0,
+              sourceNodeId: "",
+            },
+          },
+          nextForkId: 2,
+        },
+      })
+      // After forkConversation/writeForkTree.
+      .mockReturnValueOnce({
+        ...createBaseGameState(),
+        forkId: 5,
+        forkTree: {
+          nodes: {
+            0: {
+              id: 0,
+              parentId: null,
+              createdAt: 1,
+              createdAtTurn: 0,
+              sourceNodeId: "",
+            },
+            5: {
+              id: 5,
+              parentId: 0,
+              createdAt: 6,
+              createdAtTurn: 1,
+              sourceNodeId: "model-fork-0/turn-1",
+            },
+          },
+          nextForkId: 6,
+        },
+      });
+
+    const actions = createCommandActions(deps as any);
+    await actions.navigateToNode("model-fork-0/turn-1", true);
+
+    expect(createForkMock).toHaveBeenCalledTimes(1);
+    const createForkArgs = createForkMock.mock.calls[0];
+    expect(createForkArgs?.[0]).toBe(0);
+    expect(createForkArgs?.[1]?.nextForkId).toBe(5);
+    expect(createForkArgs?.[2]).toBe("model-fork-0/turn-1");
+    expect(createForkArgs?.[3]).toBe(1);
+    expect(deps.gameStateRef.current.forkId).toBe(5);
   });
 });

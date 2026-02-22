@@ -488,7 +488,7 @@ export const useGameAction = ({
 
           // If reusing, just set processing and clear error
           if (reuseExistingNode) {
-            return {
+            const nextState = {
               ...prev,
               isProcessing: true,
               liveToolCalls: [],
@@ -497,6 +497,8 @@ export const useGameAction = ({
               forkTree: currentForkTree,
               // History invalidation handled by session manager
             };
+            gameStateRef.current = nextState;
+            return nextState;
           }
 
           // Otherwise add new node
@@ -527,7 +529,7 @@ export const useGameAction = ({
             [userNodeId]: newNode,
           };
 
-          return {
+          const nextState = {
             ...prev,
             isProcessing: true,
             liveToolCalls: [],
@@ -539,6 +541,8 @@ export const useGameAction = ({
             forkTree: currentForkTree,
             // History invalidation handled by session manager (forkId change creates new session)
           };
+          gameStateRef.current = nextState;
+          return nextState;
         });
       } else {
         setGameState((prev) => ({
@@ -678,6 +682,8 @@ export const useGameAction = ({
         // Note: History is now managed internally by session manager
         const effectiveGameState = {
           ...gameStateRef.current,
+          forkId: currentForkId,
+          forkTree: currentForkTree,
         };
 
         const runtimeVfsMode: "normal" | "god" = gameStateRef.current.godMode

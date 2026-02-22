@@ -147,6 +147,7 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
 
     // Track played animations to prevent re-typing
     const playedAnimations = useRef<Set<string>>(new Set());
+    const renderedForkIdRef = useRef<number | null>(null);
     const historicalSegmentsRef = useRef<StorySegment[]>([]);
     const historicalSegmentsVersionRef = useRef(0);
     const latestSegmentRef = useRef<StorySegment | null>(null);
@@ -940,6 +941,23 @@ export const StoryFeed = forwardRef<StoryFeedRef, StoryFeedProps>(
     const totalSegments = currentHistory.length;
     const latestSegment =
       totalSegments > 0 ? currentHistory[totalSegments - 1] : null;
+
+    const currentForkId =
+      typeof gameState.forkId === "number" && Number.isFinite(gameState.forkId)
+        ? Math.floor(gameState.forkId)
+        : 0;
+
+    // When switching to another fork, pre-mark current segments as played so
+    // duplicated historical content doesn't replay the typewriter animation.
+    if (renderedForkIdRef.current === null) {
+      renderedForkIdRef.current = currentForkId;
+    } else if (renderedForkIdRef.current !== currentForkId) {
+      for (const segment of currentHistory) {
+        playedAnimations.current.add(segment.id);
+      }
+      renderedForkIdRef.current = currentForkId;
+    }
+
     const enableScrollWindowing =
       layout === "scroll" &&
       !disableVirtualization &&

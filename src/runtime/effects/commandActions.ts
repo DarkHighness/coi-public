@@ -409,6 +409,8 @@ export function createCommandActions({
       return;
     }
 
+    const latestKnownForkTree = gameStateRef.current.forkTree;
+
     setGameState((prev) => ({
       ...prev,
       isProcessing: true,
@@ -426,9 +428,30 @@ export function createCommandActions({
 
       if (isFork) {
         const baseDerived = deriveGameStateFromVfs(vfsSession.snapshot());
+        // Important: restoring an old turn may carry an outdated forkTree (lower nextForkId),
+        // which can reuse an existing forkId and accidentally reuse old sessions.
+        // Merge with the latest in-memory tree and preserve monotonic nextForkId.
+        const restoredForkTree = baseDerived.forkTree;
+        const restoredNextForkId =
+          typeof restoredForkTree?.nextForkId === "number" &&
+          Number.isFinite(restoredForkTree.nextForkId)
+            ? Math.floor(restoredForkTree.nextForkId)
+            : 1;
+        const latestNextForkId =
+          typeof latestKnownForkTree?.nextForkId === "number" &&
+          Number.isFinite(latestKnownForkTree.nextForkId)
+            ? Math.floor(latestKnownForkTree.nextForkId)
+            : restoredNextForkId;
+        const forkTreeForBranching = {
+          nodes: {
+            ...(restoredForkTree?.nodes || {}),
+            ...(latestKnownForkTree?.nodes || {}),
+          },
+          nextForkId: Math.max(restoredNextForkId, latestNextForkId),
+        };
         const forkResult = createFork(
-          baseDerived.forkId ?? forkId,
-          baseDerived.forkTree,
+          forkId,
+          forkTreeForBranching,
           nodeId,
           turn,
         );
