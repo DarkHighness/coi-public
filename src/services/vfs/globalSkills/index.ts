@@ -9,7 +9,7 @@ import type { VfsFile, VfsFileMap } from "../types";
 import { hashContent, normalizeVfsPath } from "../utils";
 import type { GlobalSkillSeed } from "./types";
 import {
-  SKILLS_README_SEED,
+  buildSkillsReadmeSeed,
   SKILLS_STYLE_SEED,
   SKILLS_TAXONOMY_SEED,
   buildSkillsIndexSeed,
@@ -4004,15 +4004,25 @@ export function getAllSkillIndexEntries(): SkillIndexEntry[] {
   }));
 }
 
-function buildAllSkillSeeds(): GlobalSkillSeed[] {
+interface BuildGlobalVfsSkillsOptions {
+  includeExperimentalVfsVm?: boolean;
+}
+
+function buildAllSkillSeedsWithOptions(
+  options?: BuildGlobalVfsSkillsOptions,
+): GlobalSkillSeed[] {
   // Generate skills from atoms
-  const atomSkills = generateVfsSkillSeeds();
+  const atomSkills = generateVfsSkillSeeds({
+    includeExperimentalVfsVm: options?.includeExperimentalVfsVm,
+  });
 
   const allIndexEntries = getAllSkillIndexEntries();
 
   // Build the complete skills set
   return [
-    SKILLS_README_SEED,
+    buildSkillsReadmeSeed({
+      includeExperimentalVfsVm: options?.includeExperimentalVfsVm,
+    }),
     SKILLS_STYLE_SEED,
     SKILLS_TAXONOMY_SEED,
     ...atomSkills,
@@ -4028,8 +4038,11 @@ function buildAllSkillSeeds(): GlobalSkillSeed[] {
 /**
  * Build the complete VFS skills file map
  */
-export function buildGlobalVfsSkills(now: number = Date.now()): VfsFileMap {
-  const skills = buildAllSkillSeeds();
+export function buildGlobalVfsSkills(
+  now: number = Date.now(),
+  options?: BuildGlobalVfsSkillsOptions,
+): VfsFileMap {
+  const skills = buildAllSkillSeedsWithOptions(options);
   const files: VfsFileMap = {};
 
   for (const seed of skills) {

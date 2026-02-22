@@ -427,4 +427,36 @@ describe("VFS global skills generator", () => {
       ),
     ).toBe(false);
   });
+
+  it("hides experimental vfs_vm guidance in skills when disabled", () => {
+    const seeds = generateVfsSkillSeeds({
+      includeExperimentalVfsVm: false,
+    });
+    const runtimeHub = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/SKILL.md",
+    )?.content;
+    const commandTurn = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/turn/SKILL.md",
+    )?.content;
+    const commandSudo = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/sudo/SKILL.md",
+    )?.content;
+    const commandCleanup = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/cleanup/SKILL.md",
+    )?.content;
+    const playerRate = seeds.find(
+      (seed) => seed.path === "skills/commands/runtime/player-rate/SKILL.md",
+    )?.content;
+    const files = buildGlobalVfsSkills(0, {
+      includeExperimentalVfsVm: false,
+    });
+    const readme = files["skills/README.md"]?.content ?? "";
+
+    expect(runtimeHub).not.toContain("vfs_vm");
+    expect(commandTurn).not.toContain("vfs_vm");
+    expect(commandSudo).not.toContain("vfs_vm");
+    expect(commandCleanup).not.toContain("vfs_vm");
+    expect(playerRate).not.toContain("vfs_vm");
+    expect(readme).not.toContain("vfs_vm");
+  });
 });

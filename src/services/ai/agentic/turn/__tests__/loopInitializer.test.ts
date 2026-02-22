@@ -126,8 +126,45 @@ describe("loopInitializer", () => {
       "skills/core/protocols/SKILL.md",
       "skills/craft/writing/SKILL.md",
     ]);
+    expect(state.vfsVmExperimentalEnabled).toBe(false);
+    expect(state.activeTools.some((tool) => tool.name === "vfs_vm")).toBe(
+      false,
+    );
     expect(state.requiredPresetSkillPaths).toEqual([]);
     expect(state.requiredPresetSkillRequirements).toEqual([]);
+  });
+
+  it("enables vfs_vm in active tools only when experimental setting is on", () => {
+    const vfsSession = new VfsSession();
+
+    const disabled = createLoopState(
+      {} as any,
+      { embedding: { enabled: false }, extra: {} } as any,
+      false,
+      false,
+      vfsSession,
+      [],
+    );
+    expect(disabled.vfsVmExperimentalEnabled).toBe(false);
+    expect(disabled.activeTools.some((tool) => tool.name === "vfs_vm")).toBe(
+      false,
+    );
+
+    const enabled = createLoopState(
+      {} as any,
+      {
+        embedding: { enabled: false },
+        extra: { vfsVmExperimentalEnabled: true },
+      } as any,
+      false,
+      false,
+      vfsSession,
+      [],
+    );
+    expect(enabled.vfsVmExperimentalEnabled).toBe(true);
+    expect(enabled.activeTools.some((tool) => tool.name === "vfs_vm")).toBe(
+      true,
+    );
   });
 
   it("sets required command skill path for sudo/cleanup modes", () => {

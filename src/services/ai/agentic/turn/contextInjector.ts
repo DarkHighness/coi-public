@@ -173,9 +173,12 @@ export function injectSudoModeInstruction(
   ragEnabled: boolean = true,
   preloadedSkillPaths: string[] = [],
   requiredCommandSkillPaths: string[] = [],
+  vfsVmEnabled: boolean = false,
 ): void {
   history.push(
-    createUserMessage(sudoModeInstruction({ toolsetId: "turn", ragEnabled })),
+    createUserMessage(
+      sudoModeInstruction({ toolsetId: "turn", ragEnabled, vfsVmEnabled }),
+    ),
   );
   injectCommandSkillStatus(
     history,
@@ -204,6 +207,7 @@ export function injectNormalTurnInstruction(
   satisfiedCommandSkillPaths: string[] = [],
   requiredCommandSkillPaths: string[] = [],
   satisfiedPresetSkillPaths: string[] = [],
+  vfsVmEnabled: boolean = false,
 ): void {
   history.push(
     createUserMessage(
@@ -215,6 +219,7 @@ export function injectNormalTurnInstruction(
             ? "playerRate"
             : "turn",
         ragEnabled,
+        vfsVmEnabled,
       }),
     ),
   );

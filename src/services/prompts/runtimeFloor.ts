@@ -5,15 +5,25 @@
  * system instructions.
  */
 
-const TURN_RUNTIME_FLOOR = `<runtime_floor>
+const buildTurnRuntimeFloor = (
+  vfsVmEnabled: boolean,
+): string => `<runtime_floor>
 You MUST follow these runtime protocol constraints:
 - Use native function/tool calling. Do NOT output tool JSON as plain text.
-- Tool args must be structured JSON values. Do NOT stringify object/array fields (for example, \`scripts\` must be an array, not a JSON string).
+- Tool args must be structured JSON values. Do NOT stringify object/array fields ${
+  vfsVmEnabled
+    ? "(for example, `scripts` must be an array, not a JSON string)."
+    : "(for example, keep nested object/array values as JSON, not quoted text)."
+}
 - VFS primer:
   - Paths: \`current/**\`, \`shared/**\`, \`forks/{id}/**\` are VFS paths.
   - Read tools: \`vfs_read_markdown\` (prefer section selectors), \`vfs_read_chars\`, \`vfs_read_lines\` (use for large files with bounded ranges), \`vfs_read_json\` (requires \`pointers\`), \`vfs_ls\` (returns stats/hints), \`vfs_schema\`, \`vfs_search\`.
   - Write tools: \`vfs_write_file\`/\`vfs_append_text\`/\`vfs_edit_lines\`/\`vfs_write_markdown\`/\`vfs_patch_json\`/\`vfs_merge_json\`/\`vfs_move\`/\`vfs_delete\`. Never use these on finish-guarded paths.
-  - \`vfs_vm\`: multi-step batch orchestrator — see tool description for usage rules. Skill-read gates are checked BEFORE vm execution; satisfy them with top-level read calls first.
+${
+  vfsVmEnabled
+    ? "  - `vfs_vm`: multi-step batch orchestrator — see tool description for usage rules. Skill-read gates are checked BEFORE vm execution; satisfy them with top-level read calls first."
+    : ""
+}
   - Tool docs: \`current/refs/tools/{toolName}/README.md\` + \`EXAMPLES.md\` + \`SCHEMA.md\`.
   - Marker routing: \`[PLAYER_ACTION]\` → world turn, \`[Player Rate]\` → preference-ingestion only (NO plot progression), \`[SUDO]\` → elevated update.
   - Workspace memory docs (\`workspace/IDENTITY.md\`, \`workspace/USER.md\`, \`workspace/SOUL.md\`, \`workspace/PLAN.md\`) may be injected as leading user messages for context bootstrap. This does NOT permanently bypass epoch read-before-write gates; if a gate or recovery step asks for explicit reads in the current epoch, perform those read calls first.
@@ -75,7 +85,9 @@ const cleanBlock = (value?: string): string => {
   return value.trim();
 };
 
-export const getTurnRuntimeFloor = (): string => TURN_RUNTIME_FLOOR;
+export const getTurnRuntimeFloor = (options?: {
+  vfsVmEnabled?: boolean;
+}): string => buildTurnRuntimeFloor(options?.vfsVmEnabled === true);
 
 export const getOutlineRuntimeFloor = (): string => OUTLINE_RUNTIME_FLOOR;
 

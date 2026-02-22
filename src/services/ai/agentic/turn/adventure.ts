@@ -64,6 +64,7 @@ import {
   getTurnRuntimeFloor,
 } from "../../../prompts/runtimeFloor";
 import { syncCustomRulesAckState } from "../../../customRulesAckState";
+import { isExperimentalVfsVmEnabled } from "../../../vfs/experimentalFlags";
 
 import {
   executeTurnWithRecovery,
@@ -214,6 +215,7 @@ export const generateAdventureTurn = async (
   const isCleanupMode = context.userAction.startsWith("[CLEANUP]");
   const isPlayerRateMode = context.userAction.startsWith("[Player Rate]");
   const finishToolName = isPlayerRateMode ? "vfs_end_turn" : "vfs_finish_turn";
+  const vfsVmEnabled = isExperimentalVfsVmEnabled(settings);
 
   // ===== Build system instruction using Skills System =====
   const baseSystemInstruction = buildCoreSystemInstructionWithSkills({
@@ -246,13 +248,14 @@ export const generateAdventureTurn = async (
     cultureSkillPath: culturePreferenceContext.skillPath,
     cultureHubSkillPath: culturePreferenceContext.hubSkillPath,
     cultureNamingPolicy: culturePreferenceContext.namingPolicy,
+    vfsVmEnabled,
   });
 
   console.log(
     `[Adventure] Built system instruction with skills. Length: ${baseSystemInstruction.length} chars`,
   );
 
-  const runtimeFloor = getTurnRuntimeFloor();
+  const runtimeFloor = getTurnRuntimeFloor({ vfsVmEnabled });
 
   const systemDefaultInjectionEnabled =
     settings.extra?.systemDefaultInjectionEnabled ?? true;

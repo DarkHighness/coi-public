@@ -148,6 +148,42 @@ export const SettingsExtra: React.FC = () => {
           </button>
         </div>
 
+        {/* Experimental vfs_vm Toggle */}
+        <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
+          <div>
+            <div className="text-xs font-bold text-theme-text uppercase tracking-widest">
+              {t("settings.extra.vfsVmExperimental") || "vfs_vm (Experimental)"}
+            </div>
+            <div className="text-[10px] text-theme-muted mt-1">
+              {t("settings.extra.vfsVmExperimentalHelp") ||
+                "Manually enable the experimental vfs_vm orchestrator. When disabled, vfs_vm guidance is hidden from prompts and skills."}
+            </div>
+          </div>
+          <button
+            aria-label={
+              t("settings.extra.vfsVmExperimental") || "vfs_vm experimental"
+            }
+            data-testid="vfs-vm-experimental-toggle"
+            onClick={() =>
+              updateExtra(
+                "vfsVmExperimentalEnabled",
+                !(extra.vfsVmExperimentalEnabled ?? false),
+              )
+            }
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              extra.vfsVmExperimentalEnabled
+                ? "bg-orange-500"
+                : "bg-theme-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                extra.vfsVmExperimentalEnabled ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Culture Preference */}
         <div className="flex items-start justify-between gap-4 py-4 border-b border-theme-border/25">
           <div>

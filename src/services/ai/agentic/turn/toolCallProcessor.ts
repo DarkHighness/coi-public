@@ -12,6 +12,7 @@ import {
 import { createError } from "../../../tools/toolResult";
 import type { LoopState } from "./loopInitializer";
 import type { GameState, AISettings } from "../../../../types";
+import { isExperimentalVfsVmEnabled } from "../../../vfs/experimentalFlags";
 
 export interface ToolCallContext {
   loopState: LoopState;
@@ -38,6 +39,10 @@ export function executeGenericTool(
 
   if (!hasHandler(name)) {
     return createError(`Unknown tool: ${name}`, "UNKNOWN");
+  }
+
+  if (name === "vfs_vm" && !isExperimentalVfsVmEnabled(settings)) {
+    return createError("Tool is not available in current runtime.", "UNKNOWN");
   }
 
   const toolContext: ToolContext = {

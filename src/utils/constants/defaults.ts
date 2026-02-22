@@ -160,6 +160,7 @@ export const DEFAULTS: AISettings = {
     providerManagedMaxTokens: true,
     forceAutoToolChoice: true,
     toolCallCarousel: true,
+    vfsVmExperimentalEnabled: false,
     visualMaxAgenticRounds: 3,
     visualMaxToolCalls: 24,
     visualRetryLimit: 3,

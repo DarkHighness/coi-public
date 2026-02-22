@@ -62,6 +62,7 @@ export type VfsToolHandlerKey =
 
 export interface VfsToolCapabilityV2 {
   summary: string;
+  experimental?: boolean;
   readOnly: boolean;
   mayWriteClasses: VfsPermissionClass[];
   needsElevationFor: VfsPermissionClass[];

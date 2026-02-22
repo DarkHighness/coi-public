@@ -38,8 +38,8 @@ describe("prompt flow isolation", () => {
     expect(getTurnRuntimeFloor()).toContain("hard gate");
     expect(getTurnRuntimeFloor()).toContain("commands/runtime/SKILL.md");
     expect(getTurnRuntimeFloor()).toContain("Error recovery");
-    // vfs_vm details are now in the tool description; runtime floor has a brief reference
-    expect(getTurnRuntimeFloor()).toContain("vfs_vm");
+    expect(getTurnRuntimeFloor()).not.toContain("vfs_vm");
+    expect(getTurnRuntimeFloor({ vfsVmEnabled: true })).toContain("vfs_vm");
 
     // Outline runtime floor: quick-start, skill paths, error recovery
     expect(getOutlineRuntimeFloor()).toContain("Quick-start (recommended)");

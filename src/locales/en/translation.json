@@ -728,6 +728,8 @@
       "nsfwHelp": "Enable adult/explicit content generation. This will produce mature content.",
       "toolCallCarousel": "Tool Call Carousel",
       "toolCallCarouselHelp": "Show a rotating tool-call style loading animation (e.g., vfs_read_chars/vfs_read_lines/vfs_read_json({...})) while AI is generating.",
+      "vfsVmExperimental": "vfs_vm (Experimental)",
+      "vfsVmExperimentalHelp": "Manually enable experimental vfs_vm orchestration. Disabled by default; when off, prompts and skills do not expose vfs_vm.",
       "culturePreference": "Culture Preference",
       "culturePreferenceHelp": "Choose how cultural-circle skills are selected for names, social norms, religion, history, and expression style.",
       "culturePreferences": {

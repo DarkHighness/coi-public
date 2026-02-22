@@ -566,9 +566,17 @@ const buildToolSchemaMarkdown = (params: {
     "",
   ].join("\n");
 
-export const buildGlobalVfsToolDocs = (): VfsFileMap => {
+export interface BuildGlobalVfsToolDocsOptions {
+  includeExperimentalVfsVm?: boolean;
+}
+
+export const buildGlobalVfsToolDocs = (
+  options?: BuildGlobalVfsToolDocsOptions,
+): VfsFileMap => {
   const files: VfsFileMap = {};
-  const allTools = vfsToolRegistry.getDefinitions();
+  const allTools = vfsToolRegistry.getDefinitions({
+    includeExperimentalTools: options?.includeExperimentalVfsVm ?? true,
+  });
 
   const indexEntries: ToolIndexEntry[] = [];
 

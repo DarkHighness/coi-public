@@ -8,6 +8,10 @@ import type { VfsFile, VfsFileMap, VfsContentType } from "../types";
 import { hashContent } from "../utils";
 import { buildGlobalVfsToolDocs } from "./toolDocs";
 
+export interface BuildGlobalVfsRefsOptions {
+  includeExperimentalVfsVm?: boolean;
+}
+
 const createFile = (
   path: string,
   content: string,
@@ -29,7 +33,9 @@ const addText = (files: VfsFileMap, path: string, content: string): void => {
   );
 };
 
-export const buildGlobalVfsRefs = (): VfsFileMap => {
+export const buildGlobalVfsRefs = (
+  options?: BuildGlobalVfsRefsOptions,
+): VfsFileMap => {
   const files: VfsFileMap = {};
 
   const writeItem = (
@@ -101,7 +107,9 @@ export const buildGlobalVfsRefs = (): VfsFileMap => {
     ].join("\n"),
   );
 
-  const toolDocs = buildGlobalVfsToolDocs();
+  const toolDocs = buildGlobalVfsToolDocs({
+    includeExperimentalVfsVm: options?.includeExperimentalVfsVm,
+  });
   for (const [path, file] of Object.entries(toolDocs)) {
     files[path] = file;
   }

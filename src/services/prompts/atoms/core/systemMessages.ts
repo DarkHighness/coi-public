@@ -18,6 +18,7 @@ export interface SystemMessageInput {
   budgetPrompt?: string;
   toolsetId?: VfsToolsetId;
   ragEnabled?: boolean;
+  vfsVmEnabled?: boolean;
 }
 
 export interface RetconAckSystemMessageInput {
@@ -51,9 +52,15 @@ export const sudoModeInstruction: Atom<SystemMessageInput> = defineAtom(
     exportName: "sudoModeInstruction",
   },
   (input) => {
-    const { toolsetId = "turn", ragEnabled = true } = input || {};
+    const {
+      toolsetId = "turn",
+      ragEnabled = true,
+      vfsVmEnabled = false,
+    } = input || {};
     const capabilityText = gateSemanticCapabilityText(
-      vfsToolRegistry.formatCapabilitiesForPrompt(toolsetId),
+      vfsToolRegistry.formatCapabilitiesForPrompt(toolsetId, {
+        includeExperimentalTools: vfsVmEnabled,
+      }),
       ragEnabled,
     );
 
@@ -62,9 +69,9 @@ This is a **GM COMMAND**. The user action is already prefixed with **[SUDO]**. T
 
 **TOOLS**:
 ${capabilityText}
-- \`vfs_vm\` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining \`async function main(ctx)\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers inside. Forbidden: \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`/\`VFS.*\`.
+${vfsVmEnabled ? "- `vfs_vm` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining `async function main(ctx)`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers inside. Forbidden: `import`/`eval`/`Function`/`globalThis`/`window`/`VFS.*`." : ""}
 - **TOOL ARG SHAPE (STRICT)**: Never stringify nested JSON fields.
-- \`vfs_vm.scripts\` MUST be an array value (for example \`["async function main(ctx){...}"]\`), not a quoted JSON string.
+${vfsVmEnabled ? '- `vfs_vm.scripts` MUST be an array value (for example `["async function main(ctx){...}"]`), not a quoted JSON string.' : ""}
 - \`vfs_finish_turn.assistant\` MUST be an object value, not a quoted JSON string.
 
 **SKILLS**:
@@ -88,7 +95,7 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
     source: "atoms/core/systemMessages.ts",
     exportName: "normalTurnInstruction",
   },
-  ({ finishToolName, toolsetId, ragEnabled = true }) => {
+  ({ finishToolName, toolsetId, ragEnabled = true, vfsVmEnabled = false }) => {
     const resolvedToolsetId =
       toolsetId ?? (finishToolName === "vfs_end_turn" ? "playerRate" : "turn");
     const isPlayerRateToolset = resolvedToolsetId === "playerRate";
@@ -96,7 +103,9 @@ export const normalTurnInstruction: Atom<SystemMessageInput> = defineAtom(
       finishToolName ||
       vfsToolRegistry.getToolset(resolvedToolsetId).finishToolName;
     const capabilityText = gateSemanticCapabilityText(
-      vfsToolRegistry.formatCapabilitiesForPrompt(resolvedToolsetId),
+      vfsToolRegistry.formatCapabilitiesForPrompt(resolvedToolsetId, {
+        includeExperimentalTools: vfsVmEnabled,
+      }),
       ragEnabled,
     );
 
@@ -106,15 +115,17 @@ You are in AGENTIC MODE (VFS-only).
 **TOOLS**:
 ${capabilityText}
 ${
-  isPlayerRateToolset
+  isPlayerRateToolset && vfsVmEnabled
     ? "- `vfs_vm` is not available in `[Player Rate]` toolset."
-    : "- `vfs_vm` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining `async function main(ctx)`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers inside. Forbidden: `import`/`eval`/`Function`/`globalThis`/`window`/`VFS.*`. Gate: skill-read gates are checked BEFORE vm runs — satisfy them with top-level reads first."
+    : !isPlayerRateToolset && vfsVmEnabled
+      ? "- `vfs_vm` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining `async function main(ctx)`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers inside. Forbidden: `import`/`eval`/`Function`/`globalThis`/`window`/`VFS.*`. Gate: skill-read gates are checked BEFORE vm runs — satisfy them with top-level reads first."
+      : ""
 }
 - **TOOL ARG SHAPE (STRICT)**: Never stringify nested JSON fields.
 ${
   isPlayerRateToolset
     ? '- `vfs_end_turn` args must be the object `{}` (not the string `"{}"`).'
-    : '- `vfs_vm.scripts` MUST be an array value (for example `["async function main(ctx){...}"]`), not a quoted JSON string.\n- `vfs_finish_turn.assistant` MUST be an object value, not a quoted JSON string.'
+    : `${vfsVmEnabled ? '- `vfs_vm.scripts` MUST be an array value (for example `["async function main(ctx){...}"]`), not a quoted JSON string.\n' : ""}- \`vfs_finish_turn.assistant\` MUST be an object value, not a quoted JSON string.`
 }
 
 **SKILLS**:
@@ -176,9 +187,11 @@ export const cleanupTurnInstruction: Atom<SystemMessageInput> = defineAtom(
     source: "atoms/core/systemMessages.ts",
     exportName: "cleanupTurnInstruction",
   },
-  ({ finishToolName, ragEnabled = true }) => {
+  ({ finishToolName, ragEnabled = true, vfsVmEnabled = false }) => {
     const capabilityText = gateSemanticCapabilityText(
-      vfsToolRegistry.formatCapabilitiesForPrompt("cleanup"),
+      vfsToolRegistry.formatCapabilitiesForPrompt("cleanup", {
+        includeExperimentalTools: vfsVmEnabled,
+      }),
       ragEnabled,
     );
 
@@ -187,9 +200,9 @@ You are in CLEANUP MODE (VFS-only).
 
 **TOOLS**:
 ${capabilityText}
-- \`vfs_vm\` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining \`async function main(ctx)\`. Use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers inside. Forbidden: \`import\`/\`eval\`/\`Function\`/\`globalThis\`/\`window\`/\`VFS.*\`.
+${vfsVmEnabled ? "- `vfs_vm` = batch orchestrator. MUST be the ONLY top-level tool call. Provide exactly one JS script defining `async function main(ctx)`. Use `ctx.call(name,args)` or `ctx.vfs_*` helpers inside. Forbidden: `import`/`eval`/`Function`/`globalThis`/`window`/`VFS.*`." : ""}
 - **TOOL ARG SHAPE (STRICT)**: Never stringify nested JSON fields.
-- \`vfs_vm.scripts\` MUST be an array value (for example \`["async function main(ctx){...}"]\`), not a quoted JSON string.
+${vfsVmEnabled ? '- `vfs_vm.scripts` MUST be an array value (for example `["async function main(ctx){...}"]`), not a quoted JSON string.' : ""}
 - \`vfs_finish_turn.assistant\` MUST be an object value, not a quoted JSON string.
 
 **SKILLS**:

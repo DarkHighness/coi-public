@@ -1128,6 +1128,11 @@ export interface AISettings {
     disableModelFilter?: boolean; // Bypass model capability filtering, show all models
     forceAutoToolChoice?: boolean; // Force toolChoice to "auto" regardless of requested "required"
     toolCallCarousel?: boolean; // Show tool-call style carousel while AI is generating (default: true)
+    /**
+     * Experimental: enable `vfs_vm` batch orchestrator in turn/cleanup loops.
+     * Default false. When disabled, prompts/skills/docs must not expose vfs_vm.
+     */
+    vfsVmExperimentalEnabled?: boolean;
     maxToolCalls?: number; // Maximum total tool calls per agentic loop (default: 50)
     maxAgenticRounds?: number; // Maximum number of agentic loop rounds (default: 20)
     outlineMaxToolCalls?: number; // Maximum total tool calls for outline loops (default: 36)

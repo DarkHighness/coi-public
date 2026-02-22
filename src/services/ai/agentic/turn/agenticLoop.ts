@@ -477,6 +477,7 @@ export async function runAgenticLoopRefactored(
         loopState.isRAGEnabled,
         satisfiedCommandSkillPaths,
         loopState.requiredCommandSkillPaths,
+        loopState.vfsVmExperimentalEnabled,
       );
     } else {
       injectNormalTurnInstruction(
@@ -503,6 +504,7 @@ export async function runAgenticLoopRefactored(
         satisfiedCommandSkillPaths,
         loopState.requiredCommandSkillPaths,
         satisfiedPresetSkillPaths,
+        loopState.vfsVmExperimentalEnabled,
       );
     }
 

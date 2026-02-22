@@ -8,6 +8,7 @@ import { defineAtom, defineSkillAtom } from "../../trace/runtime";
 export interface OutputFormatInput {
   language: string;
   finishToolName?: string;
+  vfsVmEnabled?: boolean;
 }
 
 export const outputFormat: Atom<OutputFormatInput> = defineAtom(
@@ -16,9 +17,12 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
     source: "atoms/core/outputFormat.ts",
     exportName: "outputFormat",
   },
-  ({ language, finishToolName }) => {
+  ({ language, finishToolName, vfsVmEnabled = false }) => {
     const resolvedFinishToolName = finishToolName || "vfs_finish_turn";
     const isPlayerRateLoop = resolvedFinishToolName === "vfs_end_turn";
+    const vmProtocol = vfsVmEnabled
+      ? "- `vfs_vm`: if used, it must be the ONLY top-level tool call. Inside: only allowlisted tools, no recursion, JavaScript only (no `globalThis`/`window`/`import`/`eval`/`Function`), and exactly one script that defines `async function main(ctx)`. Vm output is `main` return value. Inside `main(ctx)`, use `ctx.call(name,args)` or `ctx.vfs_*` helpers (for example `await ctx.vfs_read_chars({...})`), and never use `VFS.read(...)` or any `VFS.*` namespace. Outside `vfs_vm`, call `vfs_*` tools directly as top-level tool calls; `ctx.*` is only available inside `main(ctx)`. Runtime enforces bounded inner tool calls/script length and returns bounded `console.log` logs. Finish at most once and last."
+      : "";
 
     return `
 <output_format>
@@ -37,7 +41,8 @@ export const outputFormat: Atom<OutputFormatInput> = defineAtom(
   <turn_files>
     **TURN COMPLETION RULE**:
     - Every loop MUST end with \`${resolvedFinishToolName}\` as the LAST tool call.
-    - \`vfs_vm\`: if used, it must be the ONLY top-level tool call. Inside: only allowlisted tools, no recursion, JavaScript only (no \`globalThis\`/\`window\`/\`import\`/\`eval\`/\`Function\`), and exactly one script that defines \`async function main(ctx)\`. Vm output is \`main\` return value. Inside \`main(ctx)\`, use \`ctx.call(name,args)\` or \`ctx.vfs_*\` helpers (for example \`await ctx.vfs_read_chars({...})\`), and never use \`VFS.read(...)\` or any \`VFS.*\` namespace. Outside \`vfs_vm\`, call \`vfs_*\` tools directly as top-level tool calls; \`ctx.*\` is only available inside \`main(ctx)\`. Runtime enforces bounded inner tool calls/script length and returns bounded \`console.log\` logs. Finish at most once and last.
+    - If a tool is marked as exclusive-call mode, it must be the ONLY top-level tool call in that response.
+    ${vmProtocol ? `${vmProtocol}` : ""}
     - Do NOT place read-only tools before finish unless they directly support same-response writes.
     - Do NOT write finish-guarded paths (\`current/conversation/**\`, \`current/summary/state.json\`) via generic write tools.
     - ${

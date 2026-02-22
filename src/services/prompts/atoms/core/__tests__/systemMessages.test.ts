@@ -19,17 +19,22 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("NO COMMIT SPAM");
     expect(content).toContain("PREFLIGHT");
     expect(content).toContain("broad full-file");
+    expect(content).not.toContain("vfs_vm");
+    expect(content).toContain("workspace/PLAN.md");
+    expect(content).toContain("major branch fracture");
+    expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
+    expect(content).not.toContain(legacyFinishTool);
+    expect(content).not.toContain(legacySearchTool);
+  });
+
+  it("includes vfs_vm protocol only when experimental toggle is enabled", () => {
+    const content = normalTurnInstruction({ vfsVmEnabled: true });
     expect(content).toContain("vfs_vm");
     expect(content).toContain("ONLY top-level tool call");
     expect(content).toContain("JS script");
     expect(content).toContain("globalThis");
     expect(content).toContain("VFS.*");
     expect(content).toContain("ctx.call");
-    expect(content).toContain("workspace/PLAN.md");
-    expect(content).toContain("major branch fracture");
-    expect(content).not.toContain("current/custom_rules/NN-*/RULES.md");
-    expect(content).not.toContain(legacyFinishTool);
-    expect(content).not.toContain(legacySearchTool);
   });
 
   it("removes semantic guidance when RAG is disabled", () => {
@@ -55,12 +60,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("vfs_search");
     expect(content).toContain("WRITE FAILURE REPAIR MODE");
     expect(content).toContain("PREFLIGHT");
-    expect(content).toContain("vfs_vm");
-    expect(content).toContain("ONLY top-level tool call");
-    expect(content).toContain("JS script");
-    expect(content).toContain("globalThis");
-    expect(content).toContain("VFS.*");
-    expect(content).toContain("ctx.call");
+    expect(content).not.toContain("vfs_vm");
   });
 
   it("sudo mode instruction uses controlled elevated VFS workflow", () => {
@@ -71,12 +71,7 @@ describe("systemMessages atoms", () => {
     expect(content).toContain("forced elevated update payload");
     expect(content).toContain("immutable/finish policy constraints");
     expect(content).toContain("PREFLIGHT");
-    expect(content).toContain("vfs_vm");
-    expect(content).toContain("ONLY top-level tool call");
-    expect(content).toContain("JS script");
-    expect(content).toContain("globalThis");
-    expect(content).toContain("VFS.*");
-    expect(content).toContain("ctx.call");
+    expect(content).not.toContain("vfs_vm");
     expect(content).not.toContain("bypass normal simulation constraints");
     expect(content).not.toContain(legacyForceUpdateTool);
   });

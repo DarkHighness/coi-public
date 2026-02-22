@@ -33,6 +33,16 @@ const toDefinition = (entry: AnyVfsCatalogEntry): ZodToolDefinition => ({
   parameters: entry.parameters,
 });
 
+type VfsRegistryOptions = {
+  ragEnabled?: boolean;
+  includeExperimentalTools?: boolean;
+};
+
+type VfsRegistryVisibilityOptions = Pick<
+  VfsRegistryOptions,
+  "includeExperimentalTools"
+>;
+
 export class VfsToolRegistry {
   private readonly catalog: AnyVfsCatalogEntry[];
   private readonly byName = new Map<VfsToolName, AnyVfsCatalogEntry>();
@@ -91,7 +101,7 @@ export class VfsToolRegistry {
 
   public getDefinition(
     name: VfsToolName,
-    options?: { ragEnabled?: boolean },
+    options?: VfsRegistryOptions,
   ): ZodToolDefinition {
     if (name === "vfs_search" && options?.ragEnabled === false) {
       return VFS_SEARCH_TOOL_NO_SEMANTIC;
@@ -100,13 +110,24 @@ export class VfsToolRegistry {
     return toDefinition(this.getCatalogEntry(name));
   }
 
-  public getDefinitions(options?: {
-    ragEnabled?: boolean;
-  }): ZodToolDefinition[] {
-    return this.catalog.map((entry) => this.getDefinition(entry.name, options));
+  private includesEntry(
+    entry: AnyVfsCatalogEntry,
+    options?: VfsRegistryVisibilityOptions,
+  ): boolean {
+    const includeExperimental = options?.includeExperimentalTools ?? true;
+    return includeExperimental || entry.capability.experimental !== true;
   }
 
-  public getToolset(toolset: VfsToolsetId): VfsToolset {
+  public getDefinitions(options?: VfsRegistryOptions): ZodToolDefinition[] {
+    return this.catalog
+      .filter((entry) => this.includesEntry(entry, options))
+      .map((entry) => this.getDefinition(entry.name, options));
+  }
+
+  public getToolset(
+    toolset: VfsToolsetId,
+    options?: VfsRegistryVisibilityOptions,
+  ): VfsToolset {
     if (toolset === "outline") {
       const firstPhase = OUTLINE_PHASE_IDS[0] ?? "master_plan";
       const phaseTools = this.getOutlineToolsetByPhase(firstPhase);
@@ -117,13 +138,18 @@ export class VfsToolRegistry {
     }
 
     const tools = this.catalog
-      .filter((entry) => entry.capability.toolsets.includes(toolset))
+      .filter(
+        (entry) =>
+          entry.capability.toolsets.includes(toolset) &&
+          this.includesEntry(entry, options),
+      )
       .sort((a, b) => byOrder(a, b, toolset))
       .map((entry) => entry.name);
 
     const finish = this.catalog.find(
       (entry) =>
         entry.capability.toolsets.includes(toolset) &&
+        this.includesEntry(entry, options) &&
         entry.capability.isFinishTool === true,
     );
 
@@ -157,14 +183,14 @@ export class VfsToolRegistry {
 
   public getOutlineSubmitTool(
     phaseId: OutlinePhaseId,
-    options?: { ragEnabled?: boolean },
+    options?: VfsRegistryOptions,
   ): ZodToolDefinition {
     return this.getDefinition(this.getOutlineSubmitToolName(phaseId), options);
   }
 
   public getOutlineToolsForPhase(
     phaseId: OutlinePhaseId,
-    options?: { ragEnabled?: boolean },
+    options?: VfsRegistryOptions,
   ): ZodToolDefinition[] {
     return this.getOutlineToolsetByPhase(phaseId).map((name) =>
       this.getDefinition(name, options),
@@ -173,17 +199,20 @@ export class VfsToolRegistry {
 
   public getDefinitionsForToolset(
     toolset: VfsToolsetId,
-    options?: { ragEnabled?: boolean },
+    options?: VfsRegistryOptions,
   ): ZodToolDefinition[] {
     if (toolset === "outline") {
       return this.getOutlineToolsForPhase("master_plan", options);
     }
-    const toolsetInfo = this.getToolset(toolset);
+    const toolsetInfo = this.getToolset(toolset, options);
     return toolsetInfo.tools.map((name) => this.getDefinition(name, options));
   }
 
-  public formatToolsForPrompt(toolset: VfsToolsetId): string {
-    return this.getToolset(toolset)
+  public formatToolsForPrompt(
+    toolset: VfsToolsetId,
+    options?: VfsRegistryVisibilityOptions,
+  ): string {
+    return this.getToolset(toolset, options)
       .tools.map((name) => `- \`${name}\``)
       .join("\n");
   }
@@ -209,13 +238,15 @@ export class VfsToolRegistry {
     return `- \`${name}\`: ${capability.summary} (${clauses.join("; ")})`;
   }
 
-  public formatCapabilitiesForPrompt(toolset: VfsToolsetId): string {
-    const lines = this.getToolset(toolset).tools.map((name) =>
-      this.describeForPrompt(name),
-    );
+  public formatCapabilitiesForPrompt(
+    toolset: VfsToolsetId,
+    options?: VfsRegistryVisibilityOptions,
+  ): string {
+    const toolsetInfo = this.getToolset(toolset, options);
+    const lines = toolsetInfo.tools.map((name) => this.describeForPrompt(name));
 
     // Add shared write-tool constraints once instead of per-tool
-    const hasWriteTools = this.getToolset(toolset).tools.some(
+    const hasWriteTools = toolsetInfo.tools.some(
       (name) => !this.getCapability(name).readOnly,
     );
     if (hasWriteTools) {

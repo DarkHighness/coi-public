@@ -477,6 +477,16 @@ export type VfsSemanticIndexer = (
   options: Omit<VfsSearchOptions, "semantic">,
 ) => VfsSearchMatch[];
 
+export interface VfsSessionExperimentalFeatures {
+  vfsVm?: boolean;
+}
+
+const resolveExperimentalFeatures = (
+  value?: VfsSessionExperimentalFeatures,
+): Required<VfsSessionExperimentalFeatures> => ({
+  vfsVm: value?.vfsVm === true,
+});
+
 const isInScope = (filePath: string, rootPath?: string): boolean => {
   if (!rootPath) {
     return true;
@@ -529,10 +539,9 @@ const collectMatches = (
 export class VfsSession {
   private files: VfsFileMap = {};
   private activeForkId = 0;
-  private readonlyFiles: VfsFileMap = canonicalizeFileMap(
-    mergeFiles(buildGlobalVfsSkills(), buildGlobalVfsRefs()),
-    0,
-  );
+  private readonlyFiles: VfsFileMap = {};
+  private experimentalFeatures: Required<VfsSessionExperimentalFeatures> =
+    resolveExperimentalFeatures();
   private semanticIndexer?: VfsSemanticIndexer;
   private currentReadEpoch = 0;
   private seenByEpoch = new Map<string, number>();
@@ -549,8 +558,44 @@ export class VfsSession {
   >();
   private activeWriteContext: VfsWriteContext | null = null;
 
-  constructor(options?: { semanticIndexer?: VfsSemanticIndexer }) {
+  constructor(options?: {
+    semanticIndexer?: VfsSemanticIndexer;
+    experimentalFeatures?: VfsSessionExperimentalFeatures;
+  }) {
     this.semanticIndexer = options?.semanticIndexer;
+    this.experimentalFeatures = resolveExperimentalFeatures(
+      options?.experimentalFeatures,
+    );
+    this.rebuildReadonlyFiles();
+  }
+
+  private rebuildReadonlyFiles(): void {
+    this.readonlyFiles = canonicalizeFileMap(
+      mergeFiles(
+        buildGlobalVfsSkills(0, {
+          includeExperimentalVfsVm: this.experimentalFeatures.vfsVm,
+        }),
+        buildGlobalVfsRefs({
+          includeExperimentalVfsVm: this.experimentalFeatures.vfsVm,
+        }),
+      ),
+      0,
+    );
+  }
+
+  public setExperimentalFeatures(
+    features?: VfsSessionExperimentalFeatures,
+  ): void {
+    const next = resolveExperimentalFeatures(features);
+    if (next.vfsVm === this.experimentalFeatures.vfsVm) {
+      return;
+    }
+    this.experimentalFeatures = next;
+    this.rebuildReadonlyFiles();
+  }
+
+  public getExperimentalFeatures(): Required<VfsSessionExperimentalFeatures> {
+    return { ...this.experimentalFeatures };
   }
 
   public setActiveForkId(forkId: number): void {

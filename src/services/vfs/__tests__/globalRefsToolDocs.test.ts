@@ -65,4 +65,21 @@ describe("VFS global refs tool docs", () => {
       expect(schema).toContain("```ts");
     }
   });
+
+  it("hides experimental vfs_vm docs when experimental flag is disabled", () => {
+    const files = buildGlobalVfsRefs({
+      includeExperimentalVfsVm: false,
+    });
+    const toolsIndexRaw = files["refs/tools/index.json"]?.content ?? "{}";
+    const toolsIndex = JSON.parse(toolsIndexRaw) as {
+      tools?: Array<{ name: string }>;
+    };
+
+    expect(files["refs/tools/vfs_vm/README.md"]).toBeUndefined();
+    expect(files["refs/tools/vfs_vm/EXAMPLES.md"]).toBeUndefined();
+    expect(files["refs/tools/vfs_vm/SCHEMA.md"]).toBeUndefined();
+    expect(
+      (toolsIndex.tools ?? []).some((tool) => tool.name === "vfs_vm"),
+    ).toBe(false);
+  });
 });

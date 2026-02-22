@@ -598,6 +598,7 @@ export const VFS_TOOL_CATALOG: AnyVfsCatalogEntry[] = [
     capability: {
       summary:
         "Execute scripted multi-step VFS orchestration with runtime allowlist + finish ordering gate.",
+      experimental: true,
       readOnly: false,
       mayWriteClasses: [
         "default_editable",

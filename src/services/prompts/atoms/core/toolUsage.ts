@@ -22,6 +22,7 @@ const gateSemanticCapabilityText = (
 export interface ToolUsageInput {
   finishToolName?: string;
   ragEnabled?: boolean;
+  vfsVmEnabled?: boolean;
 }
 
 export const toolUsage: Atom<ToolUsageInput> = defineAtom(
@@ -34,9 +35,12 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
     const finishToolName = input?.finishToolName || "vfs_finish_turn";
     const toolsetId = finishToolName === "vfs_end_turn" ? "playerRate" : "turn";
     const ragEnabled = input?.ragEnabled ?? true;
+    const vfsVmEnabled = input?.vfsVmEnabled ?? false;
 
     const capabilityText = gateSemanticCapabilityText(
-      vfsToolRegistry.formatCapabilitiesForPrompt(toolsetId),
+      vfsToolRegistry.formatCapabilitiesForPrompt(toolsetId, {
+        includeExperimentalTools: vfsVmEnabled,
+      }),
       ragEnabled,
     );
     const searchModes = ragEnabled
@@ -68,13 +72,19 @@ export const toolUsage: Atom<ToolUsageInput> = defineAtom(
           "  - `workspace/SOUL.md`",
           "  - `workspace/USER.md`",
           "- Typical tools: `vfs_write_file`, `vfs_edit_lines`, `vfs_write_markdown`.",
-          "- `vfs_vm` / JSON patch / move / delete are NOT available in this loop.",
+          vfsVmEnabled
+            ? "- `vfs_vm` / JSON patch / move / delete are NOT available in this loop."
+            : "- JSON patch / move / delete are NOT available in this loop.",
         ].join("\n")
       : [
           "- Runtime state writes: `current/world/**`.",
           "- Plan continuity writes: `workspace/PLAN.md` (save-scoped).",
           "- Generic write/edit tools may include text + JSON mutations and file move/delete when allowlisted.",
-          "- If `vfs_vm` is available, it must be the ONLY top-level tool call. See tool description for details.",
+          ...(vfsVmEnabled
+            ? [
+                "- If `vfs_vm` is available, it must be the ONLY top-level tool call. See tool description for details.",
+              ]
+            : []),
         ].join("\n")
   }
 

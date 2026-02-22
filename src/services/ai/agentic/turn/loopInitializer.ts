@@ -25,6 +25,7 @@ import {
   type ConversationMarker,
 } from "./resultAccumulator";
 import type { ActivePresetSkillRequirement } from "../../utils";
+import { isExperimentalVfsVmEnabled } from "../../../vfs/experimentalFlags";
 
 // ============================================================================
 // Types
@@ -62,6 +63,8 @@ export interface LoopState {
   isRAGEnabled: boolean;
   /** Whether in CLEANUP mode */
   isCleanupMode: boolean;
+  /** Whether experimental vfs_vm is enabled */
+  vfsVmExperimentalEnabled: boolean;
   /** Logical turn kind for context-pressure routing */
   turnKind: AgenticTurnKind;
   /** Whether this loop is triggered by [Player Rate] */
@@ -108,6 +111,10 @@ export function createLoopState(
     turnKind?: AgenticTurnKind;
   },
 ): LoopState {
+  const vfsVmExperimentalEnabled = isExperimentalVfsVmEnabled(settings);
+  vfsSession.setExperimentalFeatures?.({
+    vfsVm: vfsVmExperimentalEnabled,
+  });
   const isPlayerRateMode =
     options?.isPlayerRateMode === true && !isSudoMode && !isCleanupMode;
   const turnKind =
@@ -122,6 +129,7 @@ export function createLoopState(
     isRAGEnabled,
     isCleanupMode,
     isPlayerRateMode,
+    vfsVmEnabled: vfsVmExperimentalEnabled,
   });
   const finishToolName = isCleanupMode
     ? vfsToolRegistry.getToolset("cleanup").finishToolName
@@ -191,6 +199,7 @@ export function createLoopState(
     activeTools,
     isSudoMode,
     isCleanupMode,
+    vfsVmExperimentalEnabled,
     turnKind,
     isPlayerRateMode,
     finishToolName,
@@ -232,8 +241,15 @@ export function createInitialTools(options: {
   isRAGEnabled: boolean;
   isCleanupMode: boolean;
   isPlayerRateMode?: boolean;
+  vfsVmEnabled?: boolean;
 }): ZodToolDefinition[] {
-  const { isSudoMode, isRAGEnabled, isCleanupMode, isPlayerRateMode } = options;
+  const {
+    isSudoMode,
+    isRAGEnabled,
+    isCleanupMode,
+    isPlayerRateMode,
+    vfsVmEnabled = true,
+  } = options;
   void isSudoMode;
 
   const toolsetId = isCleanupMode
@@ -244,6 +260,7 @@ export function createInitialTools(options: {
 
   return vfsToolRegistry.getDefinitionsForToolset(toolsetId, {
     ragEnabled: isRAGEnabled,
+    includeExperimentalTools: vfsVmEnabled,
   });
 }
 

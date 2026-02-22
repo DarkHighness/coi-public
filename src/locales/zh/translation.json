@@ -756,6 +756,8 @@
       "nsfwHelp": "启用NSFW内容生成。",
       "toolCallCarousel": "工具调用轮播",
       "toolCallCarouselHelp": "在 AI 生成时显示类似工具调用的轮播加载动画（例如 vfs_read_chars/vfs_read_lines/vfs_read_json({...})）。",
+      "vfsVmExperimental": "vfs_vm（实验性）",
+      "vfsVmExperimentalHelp": "手动开启实验性的 vfs_vm 编排工具。默认关闭；关闭时，prompt 与 skills 不会暴露 vfs_vm 信息。",
       "culturePreference": "文化圈偏好",
       "culturePreferenceHelp": "选择文化圈技能选择方式，用于命名、社会规范、宗教历史与情感表达风格。",
       "culturePreferences": {

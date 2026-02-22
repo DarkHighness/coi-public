@@ -73,7 +73,7 @@ describe("core prompt hygiene", () => {
     expect(content).not.toContain("vfs_finish_turn({ userAction");
     expect(content).not.toContain("retconAck?: { hash");
     expect(content).toContain("vfs_write_file");
-    expect(content).toContain("vfs_vm");
+    expect(content).not.toContain("vfs_vm");
     expect(content).toContain("ONLY top-level tool call");
     expect(content).toContain("current/conversation/**");
     expect(content).toContain("shared/narrative/conversation/*.json");

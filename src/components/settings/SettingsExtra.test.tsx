@@ -37,6 +37,7 @@ const baseSettings = () => ({
     detailedDescription: false,
     nsfw: false,
     toolCallCarousel: true,
+    vfsVmExperimentalEnabled: false,
     customInstructionEnabled: false,
     customInstruction: "",
   },
@@ -136,6 +137,22 @@ describe("SettingsExtra", () => {
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         extra: expect.objectContaining({ genderPreference: "pan_gender" }),
+      }),
+    );
+  });
+
+  it("toggles vfs_vm experimental setting", () => {
+    render(React.createElement(SettingsExtra));
+
+    const toggle = screen.getByTestId(
+      "vfs-vm-experimental-toggle",
+    ) as HTMLButtonElement;
+
+    fireEvent.click(toggle);
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extra: expect.objectContaining({ vfsVmExperimentalEnabled: true }),
       }),
     );
   });

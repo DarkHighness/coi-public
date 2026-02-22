@@ -79,6 +79,7 @@ describe("tool-calling prompt guardrails", () => {
     const runtimeFloor = getTurnRuntimeFloor();
     const turnInstruction = normalTurnInstruction({
       finishToolName: "vfs_finish_turn",
+      vfsVmEnabled: true,
     });
 
     expect(runtimeFloor).toContain("Do NOT stringify object/array fields");

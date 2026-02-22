@@ -429,7 +429,9 @@ export const runWithStructuredErrors = (
 };
 
 const cloneSession = (session: VfsSession): VfsSession => {
-  const clone = new VfsSession();
+  const clone = new VfsSession({
+    experimentalFeatures: session.getExperimentalFeatures(),
+  });
   clone.restore(session.snapshot());
   clone.restoreReadFenceState(session.snapshotReadFenceState());
   return clone;
