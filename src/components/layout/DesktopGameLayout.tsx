@@ -12,6 +12,7 @@ import { StoryTimeline } from "../StoryTimeline";
 import { useRuntimeContext } from "../../runtime/context";
 
 const PANEL_CONTENT_MOUNT_DELAY_MS = 140;
+const EDGE_TOGGLE_HOTZONE_WIDTH_PX = 18;
 
 interface DesktopGameLayoutProps {
   // Local UI state (managed by GamePage)
@@ -303,29 +304,6 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             onMouseDown={startResizing("sidebar")}
           />
         )}
-
-        {/* Toggle Button */}
-        <button
-          onClick={() => onUpdateUIState("sidebarCollapsed", !sidebarCollapsed)}
-          className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 w-8 h-16 bg-theme-surface backdrop-blur border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-colors z-40 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
-          title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-        >
-          <svg
-            className={`w-4 h-4 text-theme-text transition-transform ${
-              sidebarCollapsed ? "rotate-0" : "rotate-180"
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
       </div>
 
       {/* Main Content Area */}
@@ -409,14 +387,57 @@ export const DesktopGameLayout: React.FC<DesktopGameLayoutProps> = ({
             </Suspense>
           )}
         </div>
+      </div>
 
-        {/* Toggle Button */}
+      {/* Global Sidebar Toggle - rendered outside panel to avoid clipping/overlap */}
+      <div
+        className="group/left-toggle absolute top-1/2 -translate-y-1/2 z-[70] h-20"
+        style={{
+          left: `${sidebarCollapsed ? 0 : Math.max(0, sidebarWidth - EDGE_TOGGLE_HOTZONE_WIDTH_PX / 2)}px`,
+          width: `${EDGE_TOGGLE_HOTZONE_WIDTH_PX}px`,
+        }}
+      >
+        <button
+          onClick={() => onUpdateUIState("sidebarCollapsed", !sidebarCollapsed)}
+          className="absolute left-1/2 top-1/2 h-16 w-5 -translate-y-1/2 -translate-x-full pointer-events-none opacity-0 bg-theme-surface backdrop-blur border border-theme-border rounded-none flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-all duration-200 shadow-lg group-hover/left-toggle:pointer-events-auto group-hover/left-toggle:opacity-100 group-hover/left-toggle:-translate-x-1/2 group-focus-within/left-toggle:pointer-events-auto group-focus-within/left-toggle:opacity-100 group-focus-within/left-toggle:-translate-x-1/2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
+          title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          <svg
+            className={`w-4 h-4 text-theme-text transition-transform ${
+              sidebarCollapsed ? "rotate-0" : "rotate-180"
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Global Timeline Toggle - rendered outside panel to avoid clipping/overlap */}
+      <div
+        className="group/right-toggle hidden xl:block absolute top-1/2 -translate-y-1/2 z-[70] h-20"
+        style={{
+          right: `${timelineCollapsed ? 0 : Math.max(0, timelineWidth - EDGE_TOGGLE_HOTZONE_WIDTH_PX / 2)}px`,
+          width: `${EDGE_TOGGLE_HOTZONE_WIDTH_PX}px`,
+        }}
+      >
         <button
           onClick={() =>
             onUpdateUIState("timelineCollapsed", !timelineCollapsed)
           }
-          className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 w-8 h-16 bg-theme-surface backdrop-blur border border-theme-border rounded-full flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-colors z-40 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
+          className="absolute left-1/2 top-1/2 h-16 w-5 -translate-y-1/2 translate-x-0 pointer-events-none opacity-0 bg-theme-surface backdrop-blur border border-theme-border rounded-none flex items-center justify-center hover:bg-theme-surface-highlight/60 hover:border-theme-primary/30 transition-all duration-200 shadow-lg group-hover/right-toggle:pointer-events-auto group-hover/right-toggle:opacity-100 group-hover/right-toggle:-translate-x-1/2 group-focus-within/right-toggle:pointer-events-auto group-focus-within/right-toggle:opacity-100 group-focus-within/right-toggle:-translate-x-1/2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
           title={timelineCollapsed ? "Expand Timeline" : "Collapse Timeline"}
+          aria-label={
+            timelineCollapsed ? "Expand Timeline" : "Collapse Timeline"
+          }
         >
           <svg
             className={`w-4 h-4 text-theme-text transition-transform ${
