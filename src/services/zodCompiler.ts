@@ -123,19 +123,11 @@ function mergeOpenAISchemas(
   ]);
   if (variants.length === 1) return variants[0];
 
-  const uniqueTypes = Array.from(
-    new Set(
-      variants.flatMap((variant) => {
-        const variantType = variant.type;
-        return Array.isArray(variantType) ? variantType : [variantType];
-      }),
-    ),
-  );
-
+  // Do NOT include `type` alongside `anyOf` — many providers
+  // (notably Gemini) reject schemas where both coexist.
   return {
-    type: uniqueTypes.length === 1 ? uniqueTypes[0] : uniqueTypes,
     anyOf: variants,
-  };
+  } as any;
 }
 
 function dedupeGeminiSchemas(schemas: Schema[]): Schema[] {
@@ -164,12 +156,11 @@ function mergeGeminiSchemas(existing: Schema, incoming: Schema): Schema {
   ]);
   if (variants.length === 1) return variants[0];
 
-  const firstType = variants[0]?.type;
-  const result: Schema = {
+  // Do NOT include `type` alongside `anyOf` — Gemini rejects schemas
+  // where both coexist ("type and anyOf cannot be both populated").
+  return {
     anyOf: variants,
   };
-  if (firstType) result.type = firstType;
-  return result;
 }
 
 const _anyOfWarned = new Set<string>();
@@ -196,8 +187,9 @@ function buildAnyOfSchema(
     );
   }
 
+  // Do NOT include `type` alongside `anyOf` — providers like Gemini
+  // reject schemas where both coexist.
   return {
-    type: "object",
     anyOf: variants,
   };
 }
