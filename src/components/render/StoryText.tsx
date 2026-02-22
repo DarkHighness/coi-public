@@ -7,6 +7,7 @@ import { StoryTextHeader } from "./StoryTextHeader";
 import { MarkdownText } from "./MarkdownText";
 import { useSettings } from "../../hooks/useSettings";
 import { normalizeNarrativeMarkdown } from "./storyTextNormalization";
+import { resolveFontScale } from "../../utils/fontScale";
 
 interface StoryTextProps {
   text: string;
@@ -52,6 +53,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
     () => normalizeNarrativeMarkdown(text),
     [text],
   );
+  const storyFontScale = resolveFontScale(aiSettings.storyFontScaleLevel);
 
   const { isPlaying, isLoadingAudio, playAudio } = useStoryAudio(
     normalizedText,
@@ -99,7 +101,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
         )}
 
         <div
-          className={`mx-auto max-w-[72ch] prose prose-lg max-w-none text-theme-text font-serif leading-7 md:leading-8
+          className={`story-main-text mx-auto max-w-[72ch] prose prose-lg max-w-none text-theme-text font-serif leading-7 md:leading-8
             prose-p:my-4 md:prose-p:my-5
             prose-headings:font-semibold prose-headings:tracking-wide prose-headings:text-theme-text
             prose-strong:text-theme-text prose-em:text-theme-text/90
@@ -109,6 +111,11 @@ export const StoryText: React.FC<StoryTextProps> = ({
             prose-code:text-theme-text prose-code:bg-theme-surface/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
             prose-pre:bg-theme-surface/10 prose-pre:border prose-pre:border-theme-border/25
             ${isDarkMode ? "prose-invert" : ""}`}
+          style={
+            {
+              "--story-font-scale": String(storyFontScale),
+            } as React.CSSProperties
+          }
         >
           {isLast ? (
             <TypewriterText

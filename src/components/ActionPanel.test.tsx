@@ -32,6 +32,7 @@ const runtimeState = vi.hoisted(() => ({
       extra: {},
       modelContextWindows: {},
       learnedModelContextWindows: {},
+      actionPanelFontScaleLevel: 3,
     },
   },
   actions: {
@@ -153,5 +154,19 @@ describe("ActionPanel", () => {
 
     fireEvent.keyDown(window, { key: "1" });
     expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it("applies action panel font scale css variable", () => {
+    runtimeState.state.aiSettings = {
+      ...runtimeState.state.aiSettings,
+      actionPanelFontScaleLevel: 5,
+    } as any;
+
+    render(React.createElement(ActionPanel, { onAction: vi.fn() }));
+
+    const root = screen.getByTestId("action-panel-root");
+    expect(
+      (root as HTMLElement).style.getPropertyValue("--action-panel-font-scale"),
+    ).toBe("1.4");
   });
 });

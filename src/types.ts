@@ -962,6 +962,7 @@ export interface StoryThemeConfig {
 }
 
 export type LanguageCode = "en" | "zh";
+export type FontScaleLevel = 1 | 2 | 3 | 4 | 5;
 
 export type CulturePreference =
   | "follow_story_setting"
@@ -1093,6 +1094,10 @@ export interface AISettings {
   disableEnvironmentalEffects?: boolean;
   /** 在首页显示照片墙图片作为飘落背景 */
   galleryBackground?: boolean;
+  /** Main story display font scale level (1-5, default: 3) */
+  storyFontScaleLevel?: FontScaleLevel;
+  /** Action panel font scale level (1-5, default: 3) */
+  actionPanelFontScaleLevel?: FontScaleLevel;
 
   // Typewriter Effect Settings
   typewriterSpeed: number; // Characters per interval (1-100, lower = faster)

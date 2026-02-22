@@ -448,4 +448,54 @@ describe("SettingsContext", () => {
 
     expect(setSessionHistoryLruLimit).toHaveBeenCalledWith(32);
   });
+
+  it("normalizes font scale levels from storage and persists updates", async () => {
+    localStorage.setItem(
+      "chronicles_aisettings",
+      JSON.stringify({
+        story: { providerId: "p1", modelId: "m1" },
+        providers: { instances: [], nextId: 1 },
+        audioVolume: {
+          bgmVolume: 0.5,
+          bgmMuted: false,
+          ttsVolume: 1,
+          ttsMuted: false,
+        },
+        language: "en",
+        storyFontScaleLevel: 99,
+        actionPanelFontScaleLevel: -1,
+      }),
+    );
+
+    let captured: any = null;
+    const Consumer = () => {
+      captured = useSettingsContext();
+      return React.createElement("div");
+    };
+
+    render(
+      React.createElement(
+        SettingsProvider,
+        null,
+        React.createElement(Consumer),
+      ),
+    );
+
+    expect(captured.settings.storyFontScaleLevel).toBe(3);
+    expect(captured.settings.actionPanelFontScaleLevel).toBe(3);
+
+    await act(async () => {
+      captured.updateSettings({
+        ...captured.settings,
+        storyFontScaleLevel: 5,
+        actionPanelFontScaleLevel: 1,
+      });
+    });
+
+    const saved = JSON.parse(
+      localStorage.getItem("chronicles_aisettings") || "{}",
+    );
+    expect(saved.storyFontScaleLevel).toBe(5);
+    expect(saved.actionPanelFontScaleLevel).toBe(1);
+  });
 });

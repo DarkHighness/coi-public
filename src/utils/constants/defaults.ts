@@ -116,6 +116,8 @@ export const DEFAULTS: AISettings = {
   lockEnvTheme: false,
   fixedEnvTheme: undefined, // No fixed theme by default
   disableEnvironmentalEffects: false,
+  storyFontScaleLevel: 3,
+  actionPanelFontScaleLevel: 3,
   typewriterSpeed: 10, // Default: 10ms per character
   stackItemsPerPage: 10, // Default: 10 items per page in stack layout (must be even)
   stackShowOutline: true, // Default: show outline in stack mode

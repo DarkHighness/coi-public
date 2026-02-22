@@ -2,6 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "../../hooks/useSettings";
 import { ENV_THEMES } from "../../utils/constants";
+import {
+  DEFAULT_FONT_SCALE_LEVEL,
+  FONT_SCALE_BY_LEVEL,
+  normalizeFontScaleLevel,
+} from "../../utils/fontScale";
 
 export const SettingsAppearance: React.FC = () => {
   const { t } = useTranslation();
@@ -11,6 +16,14 @@ export const SettingsAppearance: React.FC = () => {
     themeMode,
     setThemeMode: onSetThemeMode,
   } = useSettings();
+  const fontScaleOptions = [1, 2, 3, 4, 5] as const;
+  const parseFontScaleLevel = (value: string): 1 | 2 | 3 | 4 | 5 =>
+    normalizeFontScaleLevel(
+      Number.parseInt(value, 10),
+      DEFAULT_FONT_SCALE_LEVEL,
+    );
+  const toPercent = (level: 1 | 2 | 3 | 4 | 5): number =>
+    Math.round(FONT_SCALE_BY_LEVEL[level] * 100);
 
   return (
     <div className="space-y-8 animate-slide-in">
@@ -213,6 +226,96 @@ export const SettingsAppearance: React.FC = () => {
                 className="flex-1 h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
               />
               <span className="text-xs text-theme-muted">{t("slow")}</span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-theme-border/50 space-y-5">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="font-bold text-theme-text">
+                    {t("storyFontScale")}
+                  </div>
+                  <div className="text-xs text-theme-muted">
+                    {t("storyFontScaleDesc")}
+                  </div>
+                </div>
+                <span className="text-sm font-mono text-theme-primary bg-theme-primary/10 px-2 py-1 rounded min-w-14 text-center">
+                  {toPercent(
+                    normalizeFontScaleLevel(
+                      currentSettings.storyFontScaleLevel,
+                      DEFAULT_FONT_SCALE_LEVEL,
+                    ),
+                  )}
+                  %
+                </span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="5"
+                step="1"
+                value={currentSettings.storyFontScaleLevel ?? 3}
+                onChange={(e) =>
+                  onUpdateSettings({
+                    ...currentSettings,
+                    storyFontScaleLevel: parseFontScaleLevel(e.target.value),
+                  })
+                }
+                className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+              />
+              <div className="mt-2 flex items-center justify-between text-[10px] text-theme-muted">
+                {fontScaleOptions.map((level) => (
+                  <span key={`story-font-scale-${level}`}>
+                    {toPercent(level)}%
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="font-bold text-theme-text">
+                    {t("actionPanelFontScale")}
+                  </div>
+                  <div className="text-xs text-theme-muted">
+                    {t("actionPanelFontScaleDesc")}
+                  </div>
+                </div>
+                <span className="text-sm font-mono text-theme-primary bg-theme-primary/10 px-2 py-1 rounded min-w-14 text-center">
+                  {toPercent(
+                    normalizeFontScaleLevel(
+                      currentSettings.actionPanelFontScaleLevel,
+                      DEFAULT_FONT_SCALE_LEVEL,
+                    ),
+                  )}
+                  %
+                </span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="5"
+                step="1"
+                value={currentSettings.actionPanelFontScaleLevel ?? 3}
+                onChange={(e) =>
+                  onUpdateSettings({
+                    ...currentSettings,
+                    actionPanelFontScaleLevel: parseFontScaleLevel(
+                      e.target.value,
+                    ),
+                  })
+                }
+                className="w-full h-2 bg-theme-border rounded-lg appearance-none cursor-pointer accent-theme-primary"
+              />
+              <div className="mt-2 flex items-center justify-between text-[10px] text-theme-muted">
+                {fontScaleOptions.map((level) => (
+                  <span key={`action-font-scale-${level}`}>
+                    {toPercent(level)}%
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 

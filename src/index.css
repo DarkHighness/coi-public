@@ -138,6 +138,48 @@ input:disabled {
     "Songti SC", "STSong", serif;
 }
 
+.story-main-text {
+  font-size: calc(1.125rem * var(--story-font-scale, 1));
+}
+
+.ap-text-10 {
+  font-size: calc(0.625rem * var(--action-panel-font-scale, 1));
+}
+
+.ap-text-11 {
+  font-size: calc(0.6875rem * var(--action-panel-font-scale, 1));
+}
+
+.ap-text-12 {
+  font-size: calc(0.75rem * var(--action-panel-font-scale, 1));
+}
+
+.ap-text-14 {
+  font-size: calc(0.875rem * var(--action-panel-font-scale, 1));
+}
+
+.ap-text-15 {
+  font-size: calc(0.9375rem * var(--action-panel-font-scale, 1));
+}
+
+.ap-text-16 {
+  font-size: calc(1rem * var(--action-panel-font-scale, 1));
+}
+
+.ap-text-18 {
+  font-size: calc(1.125rem * var(--action-panel-font-scale, 1));
+}
+
+@media (min-width: 48rem) {
+  .ap-md-text-16 {
+    font-size: calc(1rem * var(--action-panel-font-scale, 1));
+  }
+
+  .ap-md-text-18 {
+    font-size: calc(1.125rem * var(--action-panel-font-scale, 1));
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -559,8 +601,8 @@ input:disabled {
   background: color-mix(in srgb, var(--theme-primary) 35%, transparent);
 }
 
-.scale-content-expanded .story-text {
-  font-size: 1.1em;
+.scale-content-expanded .story-main-text {
+  font-size: calc(1.125rem * var(--story-font-scale, 1) * 1.1);
   line-height: 1.8;
 }
 

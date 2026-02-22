@@ -22,6 +22,7 @@ import {
   resolveModelContextWindowTokens,
 } from "../services/modelContextWindows";
 import { pickLatestToolCallContextUsage } from "../services/ai/contextUsage";
+import { resolveFontScale } from "../utils/fontScale";
 
 interface ActionPanelProps {
   onAction: (action: string) => void;
@@ -122,6 +123,9 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
     "retry" | "rebuild" | "cleanup" | null
   >(null);
   const { t } = useTranslation();
+  const actionPanelFontScale = resolveFontScale(
+    aiSettings.actionPanelFontScaleLevel,
+  );
 
   const lastSegment = currentHistory
     .filter((s) => s.role === "model" || s.role === "system")
@@ -724,7 +728,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
       className="group -mx-2 px-2 py-2 md:py-2.5 border-b border-theme-divider/60 hover:bg-theme-surface/10 transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
+        <div className="ap-text-11 mt-0.5 tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
           {customChoiceIndex}
         </div>
 
@@ -733,7 +737,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             <button
               type="button"
               onClick={openCustomChoice}
-              className="w-full text-left font-serif text-[15px] md:text-base text-theme-text-secondary italic py-0.5 hover:text-theme-text transition-colors"
+              className="w-full text-left font-serif ap-text-15 ap-md-text-16 text-theme-text-secondary italic py-0.5 hover:text-theme-text transition-colors"
             >
               {t("placeholder")}
             </button>
@@ -757,13 +761,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               placeholder={t("placeholder")}
               disabled={isDisabled}
               rows={1}
-              className="w-full bg-transparent text-theme-text px-2 py-1.5 focus:outline-none placeholder-theme-muted/50 resize-none min-h-10 max-h-[120px] font-serif leading-6"
+              className="w-full bg-transparent text-theme-text ap-text-15 ap-md-text-16 px-2 py-1.5 focus:outline-none placeholder-theme-muted/50 resize-none min-h-10 max-h-[120px] font-serif leading-6"
               style={{ height: "auto" }}
             />
           )}
 
           {showCommandHints && hasChoices && (
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-theme-text-secondary/80">
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 ap-text-11 text-theme-text-secondary/80">
               {commandHints.map((cmd) => (
                 <button
                   key={cmd.cmd}
@@ -834,11 +838,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   );
 
   return (
-    <div className="flex-none w-full z-30">
+    <div
+      className="flex-none w-full z-30"
+      data-testid="action-panel-root"
+      style={
+        {
+          "--action-panel-font-scale": String(actionPanelFontScale),
+        } as React.CSSProperties
+      }
+    >
       {/* God Mode Indicator */}
       {gameState.godMode && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 animate-pulse">
-          <div className="px-4 py-1.5 bg-theme-warning/15 border border-theme-warning/35 rounded-full text-theme-warning text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+          <div className="px-4 py-1.5 bg-theme-warning/15 border border-theme-warning/35 rounded-full text-theme-warning ap-text-12 font-bold uppercase tracking-widest flex items-center gap-2">
             <span className="text-lg">🔱</span>
             <span>{t("commands.godMode.indicator") || "GOD MODE"}</span>
             <span className="text-lg">🔱</span>
@@ -889,7 +901,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold ${CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone].badge}`}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full ap-text-10 uppercase tracking-widest font-bold ${CONFIRM_TONE_STYLES[activeConfirmDialog.content.tone].badge}`}
                   >
                     {activeConfirmDialog.content.badge}
                   </span>
@@ -897,19 +909,19 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
                 <h3
                   id="action-confirm-title"
-                  className="text-theme-text text-base md:text-lg font-semibold leading-tight"
+                  className="text-theme-text ap-text-16 ap-md-text-18 font-semibold leading-tight"
                 >
                   {activeConfirmDialog.content.title}
                 </h3>
 
-                <p className="mt-2 text-theme-text-secondary text-sm leading-6">
+                <p className="mt-2 text-theme-text-secondary ap-text-14 leading-6">
                   {activeConfirmDialog.content.description}
                 </p>
 
                 {activeConfirmDialog.content.detail && (
                   <pre
                     id="action-confirm-detail"
-                    className="mt-3 whitespace-pre-wrap break-words text-[12px] leading-5 bg-theme-surface/50 border border-theme-divider/70 rounded-lg px-3 py-2 text-theme-text"
+                    className="mt-3 whitespace-pre-wrap break-words ap-text-12 leading-5 bg-theme-surface/50 border border-theme-divider/70 rounded-lg px-3 py-2 text-theme-text"
                   >
                     {activeConfirmDialog.content.detail}
                   </pre>
@@ -946,7 +958,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
             <div className="flex justify-center">
               <div
                 className={[
-                  "text-[10px] uppercase tracking-widest font-bold select-none",
+                  "ap-text-10 uppercase tracking-widest font-bold select-none",
                   usageRatio !== null &&
                   usageRatio >= displayAutoCompactThreshold
                     ? "text-theme-warning"
@@ -1016,13 +1028,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           {hasTurnError && !gameState.isProcessing && (
             <div className="animate-fade-in-up">
               <div className="mx-auto max-w-[72ch] rounded-lg border border-theme-error/35 bg-theme-error/10 px-3 py-3 text-center">
-                <div className="text-[11px] uppercase tracking-widest text-theme-error mb-2">
+                <div className="ap-text-11 uppercase tracking-widest text-theme-error mb-2">
                   {t("game.errors.turnGenerationFailed")}
                 </div>
                 {onRetry && (
                   <button
                     onClick={() => setPendingAction("retry")}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-bold text-theme-primary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25"
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 ap-text-11 font-bold text-theme-primary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25"
                     title={t("retryGeneration")}
                   >
                     <svg
@@ -1055,7 +1067,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   <button
                     onClick={() => setPendingAction("retry")}
                     disabled={isDisabled}
-                    className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-bold text-theme-primary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 ap-text-11 font-bold text-theme-primary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("retryGeneration")}
                   >
                     <svg
@@ -1082,7 +1094,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   <button
                     onClick={() => setPendingAction("rebuild")}
                     disabled={isDisabled}
-                    className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-bold text-theme-warning uppercase tracking-widest border border-transparent hover:border-theme-warning/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-warning/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 ap-text-11 font-bold text-theme-warning uppercase tracking-widest border border-transparent hover:border-theme-warning/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-warning/25 disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("rebuildContext") || "Rebuild Context"}
                   >
                     <svg
@@ -1109,7 +1121,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   <button
                     onClick={() => setPendingAction("cleanup")}
                     disabled={isDisabled}
-                    className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-bold text-theme-info uppercase tracking-widest border border-transparent hover:border-theme-info/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-info/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 ap-text-11 font-bold text-theme-info uppercase tracking-widest border border-transparent hover:border-theme-info/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-info/25 disabled:opacity-50 disabled:cursor-not-allowed"
                     title={t("cleanupEntities") || "Cleanup Entities"}
                   >
                     <svg
@@ -1137,7 +1149,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                     {!isJumpOpen ? (
                       <button
                         onClick={() => setIsJumpOpen(true)}
-                        className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 hover:text-theme-primary transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25"
+                        className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-2 ap-text-11 font-bold text-theme-text-secondary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 hover:text-theme-primary transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25"
                         title={t("jumpToSegment") || "Jump to Segment"}
                       >
                         <svg
@@ -1169,13 +1181,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                               setIsJumpOpen(false);
                             }
                           }}
-                          className="w-16 bg-transparent text-xs font-mono text-theme-primary placeholder-theme-muted/50 focus:outline-none"
+                          className="w-16 bg-transparent ap-text-12 font-mono text-theme-primary placeholder-theme-muted/50 focus:outline-none"
                         />
                         <button
                           onClick={() => {
                             submitJumpToSegment(jumpInputValue);
                           }}
-                          className="px-2.5 py-1 rounded text-[10px] font-bold uppercase bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 transition-colors touch-manipulation"
+                          className="px-2.5 py-1 rounded ap-text-10 font-bold uppercase bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 transition-colors touch-manipulation"
                         >
                           {t("jumpGo") || "Go"}
                         </button>
@@ -1185,7 +1197,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                             onJumpToSegment("start");
                             setIsJumpOpen(false);
                           }}
-                          className="px-2 py-1 rounded text-[10px] font-bold uppercase text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface/10 transition-colors touch-manipulation"
+                          className="px-2 py-1 rounded ap-text-10 font-bold uppercase text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface/10 transition-colors touch-manipulation"
                         >
                           {t("jumpToStart") || "Top"}
                         </button>
@@ -1194,7 +1206,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                             onJumpToSegment("end");
                             setIsJumpOpen(false);
                           }}
-                          className="px-2 py-1 rounded text-[10px] font-bold uppercase text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface/10 transition-colors touch-manipulation"
+                          className="px-2 py-1 rounded ap-text-10 font-bold uppercase text-theme-text-secondary hover:text-theme-primary hover:bg-theme-surface/10 transition-colors touch-manipulation"
                         >
                           {t("jumpToEnd") || "Bot"}
                         </button>
@@ -1225,7 +1237,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 {availableChoices.length > 0 && (
                   <button
                     onClick={() => setIsChoicesExpanded(!isChoicesExpanded)}
-                    className="md:hidden flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-[11px] font-bold text-theme-primary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25"
+                    className="md:hidden flex min-h-9 items-center gap-2 rounded-md px-3 py-2 ap-text-11 font-bold text-theme-primary uppercase tracking-widest border border-transparent hover:border-theme-primary/35 hover:bg-theme-surface/10 transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/25"
                   >
                     {isChoicesExpanded ? (
                       <>
@@ -1286,18 +1298,18 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                             disabled={isDisabled}
                             className="w-full flex items-start gap-3 px-2 py-2 md:py-2.5 pr-12 text-left text-theme-text font-serif leading-6 md:leading-7 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                           >
-                            <div className="mt-0.5 text-[11px] tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
+                            <div className="ap-text-11 mt-0.5 tabular-nums text-theme-text-secondary/70 select-none w-5 text-right">
                               {idx + 1}
                             </div>
 
                             <div className="flex-1 min-w-0">
-                              <div className="text-[15px] md:text-base font-medium">
+                              <div className="ap-text-15 ap-md-text-16 font-medium">
                                 <span className="whitespace-pre-wrap break-words">
                                   {label}
                                 </span>
                               </div>
                               {consequence && gameState.unlockMode && (
-                                <div className="mt-1 text-[11px] text-theme-text-secondary/80 italic">
+                                <div className="ap-text-11 mt-1 text-theme-text-secondary/80 italic">
                                   {consequence}
                                 </div>
                               )}
@@ -1338,7 +1350,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
           {/* Command Hints - Only show when user starts with / */}
           {showCommandHints && !hasChoices && !hasTurnError && (
             <div
-              className={`flex flex-wrap gap-x-3 gap-y-1 px-2 text-[11px] text-theme-text-secondary/80 ${hasChoices ? "mx-auto max-w-[72ch]" : "justify-center"}`}
+              className={`flex flex-wrap gap-x-3 gap-y-1 px-2 ap-text-11 text-theme-text-secondary/80 ${hasChoices ? "mx-auto max-w-[72ch]" : "justify-center"}`}
             >
               {commandHints.map((cmd) => (
                 <button
@@ -1403,7 +1415,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                   placeholder={t("placeholder")}
                   disabled={isDisabled}
                   rows={1}
-                  className="flex-1 bg-transparent text-theme-text px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-11 max-h-[120px] self-center font-serif"
+                  className="flex-1 bg-transparent text-theme-text ap-text-15 ap-md-text-16 px-2 py-3 focus:outline-none placeholder-theme-muted/50 resize-none min-h-11 max-h-[120px] self-center font-serif"
                   style={{ height: "auto" }}
                 />
 

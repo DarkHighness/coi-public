@@ -13,6 +13,7 @@ import { ensureLanguageResources } from "../utils/i18n";
 import { upsertPerModelContextWindowOverride } from "../services/modelContextWindows";
 import { setSessionHistoryLruLimit } from "../services/vfs/conversation";
 import { getModels } from "../services/aiService";
+import { normalizeFontScaleLevel } from "../utils/fontScale";
 
 const STORAGE_KEY = "chronicles_aisettings";
 const MODEL_CACHE_KEY = "chronicles_model_cache";
@@ -179,6 +180,14 @@ function mergeSettings(parsed: Partial<AISettings>): AISettings {
       ...DEFAULTS.audioVolume,
       ...(sanitized.audioVolume || {}),
     },
+    storyFontScaleLevel: normalizeFontScaleLevel(
+      sanitized.storyFontScaleLevel,
+      DEFAULTS.storyFontScaleLevel,
+    ),
+    actionPanelFontScaleLevel: normalizeFontScaleLevel(
+      sanitized.actionPanelFontScaleLevel,
+      DEFAULTS.actionPanelFontScaleLevel,
+    ),
     typewriterSpeed: sanitized.typewriterSpeed ?? DEFAULTS.typewriterSpeed,
     stackItemsPerPage:
       sanitized.stackItemsPerPage ?? DEFAULTS.stackItemsPerPage,
