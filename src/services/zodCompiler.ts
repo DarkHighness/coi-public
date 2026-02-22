@@ -731,7 +731,7 @@ function processZodToGemini(schema: ZodTypeAny): Schema {
   // Handle native enum
   if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
     const values = Object.values(
-      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+      (schema as ZodNativeEnum<any>)._def.values,
     ).filter((v) => typeof v === "string");
     if (values.length > 0)
       return { type: Type.STRING, enum: values as string[] };
@@ -983,7 +983,6 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
         const compiledFieldSchema = processZodToOpenAI(
           stripOptionalDefaultWrappers(value as ZodTypeAny),
           strict,
-          false,
         );
 
         if (!allProperties[key]) {
@@ -1033,7 +1032,6 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
     const itemSchema = processZodToOpenAI(
       (schema as ZodArray<ZodTypeAny>)._def.type,
       strict,
-      false,
     );
     const result: OpenAISchema = {
       type: "array",
@@ -1076,7 +1074,7 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
         }
       }
 
-      properties[key] = processZodToOpenAI(value as ZodTypeAny, strict, false);
+      properties[key] = processZodToOpenAI(value as ZodTypeAny, strict);
     }
 
     const result: OpenAISchema = {
@@ -1098,7 +1096,7 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
     if (strict) {
       // OpenAI strict mode only allows additionalProperties: false
       // Degrade to a plain object with a descriptive hint
-      const innerDesc = processZodToOpenAI(valueSchema, strict, false);
+      const innerDesc = processZodToOpenAI(valueSchema, strict);
       const typeHint = innerDesc.type || "any";
       const result: OpenAISchema = {
         type: "object",
@@ -1109,7 +1107,7 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
     }
     const result: OpenAISchema = {
       type: "object",
-      additionalProperties: processZodToOpenAI(valueSchema, strict, false),
+      additionalProperties: processZodToOpenAI(valueSchema, strict),
     };
     if (schema.description) result.description = schema.description;
     return result;
@@ -1120,12 +1118,10 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
     const left = processZodToOpenAI(
       (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.left,
       strict,
-      false,
     );
     const right = processZodToOpenAI(
       (schema as ZodIntersection<ZodTypeAny, ZodTypeAny>)._def.right,
       strict,
-      false,
     );
 
     if (left.type === "object" && right.type === "object") {
@@ -1166,7 +1162,7 @@ function processZodToOpenAI(schema: ZodTypeAny, strict: boolean): OpenAISchema {
   // Handle native enum
   if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
     const values = Object.values(
-      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+      (schema as ZodNativeEnum<any>)._def.values,
     ).filter((v) => typeof v === "string");
     if (values.length > 0) return { type: "string", enum: values as string[] };
     return { type: "string" };
@@ -1603,7 +1599,7 @@ function processZodToGeminiCompatible(schema: ZodTypeAny): OpenAISchema {
       .valueType;
     const result: OpenAISchema = {
       type: "object",
-      additionalProperties: processZodToGeminiCompatible(valueSchema, false),
+      additionalProperties: processZodToGeminiCompatible(valueSchema),
     };
     if (schema.description) result.description = schema.description;
     return result;
@@ -1617,7 +1613,7 @@ function processZodToGeminiCompatible(schema: ZodTypeAny): OpenAISchema {
   // Handle native enum
   if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
     const values = Object.values(
-      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+      (schema as ZodNativeEnum<any>)._def.values,
     ).filter((v) => typeof v === "string");
     if (values.length > 0) return { type: "string", enum: values as string[] };
     return { type: "string" };
@@ -1733,7 +1729,7 @@ const pickGeminiOpenRouterType = (
 };
 
 const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
-  const result: OpenAISchema = {};
+  const result: Partial<OpenAISchema> = {};
 
   const { type: normalizedType, addNullable } = pickGeminiOpenRouterType(
     schema.type,
@@ -1875,7 +1871,7 @@ const sanitizeOpenRouterGeminiSchema = (schema: OpenAISchema): OpenAISchema => {
     }
   }
 
-  return result;
+  return result as OpenAISchema;
 };
 
 /**
@@ -2326,7 +2322,7 @@ function processZodToClaudeCompatible(schema: ZodTypeAny): OpenAISchema {
       .valueType;
     const result: OpenAISchema = {
       type: "object",
-      additionalProperties: processZodToClaudeCompatible(valueSchema, false),
+      additionalProperties: processZodToClaudeCompatible(valueSchema),
     };
     if (schema.description) result.description = schema.description;
     return result;
@@ -2340,7 +2336,7 @@ function processZodToClaudeCompatible(schema: ZodTypeAny): OpenAISchema {
   // Handle native enum
   if (schema instanceof ZodNativeEnum || typeName === "ZodNativeEnum") {
     const values = Object.values(
-      (schema as ZodNativeEnum<Record<string, string | number>>)._def.values,
+      (schema as ZodNativeEnum<any>)._def.values,
     ).filter((v) => typeof v === "string");
     if (values.length > 0) return { type: "string", enum: values as string[] };
     return { type: "string" };
